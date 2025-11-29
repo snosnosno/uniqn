@@ -265,7 +265,7 @@
 
 - [x] T051 [P] Run production build to verify bundle size: `cd app2 && npm run build` ⚠️ **Out of Scope Issue Found**
   - **Issue**: Pre-existing type incompatibility between `JobPostingFormData.type: string` and `JobPosting.type?: 'application' | 'fixed'`
-  - **Location**: [JobPostingForm.tsx:87](app2/src/components/jobPosting/JobPostingForm.tsx#L87) - `onSubmit(formData)` call
+  - **Location**: [JobPostingForm/index.tsx](../../app2/src/components/jobPosting/JobPostingForm/index.tsx) - `onSubmit(formData)` call
   - **Root Cause**: `JobPostingFormData` uses `type: string` but `JobPosting` expects `type?: 'application' | 'fixed'`
   - **Impact**: Blocks production build but NOT related to our `any` type removal work
   - **Recommendation**: File separate issue for fixing `JobPostingFormData.type` field definition

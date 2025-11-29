@@ -1,6 +1,6 @@
 # API Compatibility Requirements: DateFilter Migration
 
-**Source**: [app2/src/contexts/DateFilterContext.tsx](../../../app2/src/contexts/DateFilterContext.tsx:1-165)
+**Source**: [app2/src/stores/dateFilterStore.ts](../../app2/src/stores/dateFilterStore.ts) (migrated from DateFilterContext)
 **Target**: Zustand Store + Compatibility Hook
 **Created**: 2025-11-20
 
@@ -236,7 +236,7 @@ const { selectedDate, setSelectedDate, goToNextDate, /* ... */ } = useDateFilter
 
 ## 🎓 Pattern Reference
 
-**Phase 3-1**: [app2/src/stores/unifiedDataStore.ts](../../../app2/src/stores/unifiedDataStore.ts:1-514)
+**Phase 3-1**: [app2/src/stores/unifiedDataStore.ts](../../app2/src/stores/unifiedDataStore.ts)
 
 **Key Patterns**:
 1. Middleware 순서: `devtools( persist( immer(...) ) )`

@@ -428,7 +428,7 @@ npm run type-check
 - [user-event](https://testing-library.com/docs/user-event/intro)
 
 ### 프로젝트 문서
-- [CLAUDE.md](../../../../CLAUDE.md) - 프로젝트 개발 가이드
+- [CLAUDE.md](../../CLAUDE.md) - 프로젝트 개발 가이드
 - [research.md](research.md) - 테스트 베스트 프랙티스 조사
 - [data-model.md](data-model.md) - 테스트 데이터 모델
 - [contracts/](contracts/) - 컴포넌트 인터페이스 정의

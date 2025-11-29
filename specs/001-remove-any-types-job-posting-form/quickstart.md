@@ -263,8 +263,7 @@ const handleRoleChange = useCallback((oldRole: string, newRole: string) => {
 - [data-model.md](./data-model.md) - 데이터 모델 정의
 
 ### 프로젝트 문서
-- [CLAUDE.md](../../../CLAUDE.md) - UNIQN 프로젝트 개발 가이드
-- [constitution.md](../../../.specify/memory/constitution.md) - 프로젝트 헌장
+- [CLAUDE.md](../../CLAUDE.md) - UNIQN 프로젝트 개발 가이드
 
 ### TypeScript 리소스
 - [TypeScript Handbook](https://www.typescriptlang.org/docs/handbook/intro.html)

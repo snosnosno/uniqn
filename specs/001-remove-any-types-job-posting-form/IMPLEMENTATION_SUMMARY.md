@@ -135,7 +135,7 @@ npm run test
 
 ### Production Build Error
 **Issue**: Type incompatibility between `JobPostingFormData.type: string` and `JobPosting.type?: 'application' | 'fixed'`
-**Location**: [JobPostingForm.tsx:87](../../app2/src/components/jobPosting/JobPostingForm.tsx#L87)
+**Location**: [JobPostingForm/index.tsx](../../app2/src/components/jobPosting/JobPostingForm/index.tsx)
 **Impact**: Blocks production build
 **Root Cause**: Pre-existing design issue in codebase (not introduced by our changes)
 **Scope Decision**: **Out of scope** for this feature. This is a codebase-wide type definition issue.

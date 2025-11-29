@@ -373,9 +373,9 @@ feat: Zustand 마이그레이션 Phase 1-2 완료 - Context API 완전 제거
 - 문서: 4개 완성
 
 ## 📚 문서
-- [API Reference](specs/001-zustand-migration/api-reference.md)
-- [Best Practices](specs/001-zustand-migration/best-practices.md)
-- [Migration Complete](specs/001-zustand-migration/migration-complete.md)
+- [API Reference](./api-reference.md)
+- [Best Practices](./best-practices.md)
+- [Migration Complete](./migration-complete.md)
 ```
 
 #### 4. 머지 및 배포
