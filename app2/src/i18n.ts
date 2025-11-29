@@ -8,9 +8,10 @@ i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    debug: true,
-    fallbackLng: 'en',
-    supportedLngs: ['en', 'ko'],
+    debug: process.env.NODE_ENV === 'development',
+    fallbackLng: 'ko',
+    supportedLngs: ['ko', 'en'],
+    lng: 'ko',
     load: 'languageOnly', // ko-KR → ko, en-US → en
     interpolation: {
       escapeValue: false,

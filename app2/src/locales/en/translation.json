@@ -18,7 +18,8 @@
     "ulsan": "Ulsan",
     "gyeongnam": "Gyeongnam",
     "jeju": "Jeju",
-    "overseas": "Overseas"
+    "overseas": "Overseas",
+    "other": "Other"
   },
   "gender": {},
   "login": {
@@ -149,7 +150,13 @@
     "processPayrollLink": "Process Payroll",
     "topRatedDealers": "Top Rated Dealers",
     "ratingsCount": "({{count}} ratings)",
-    "noRatings": "No dealer ratings yet."
+    "noRatings": "No dealer ratings yet.",
+    "ceo": {
+      "title": "CEO Dashboard",
+      "subtitle": "Business-wide statistics and analytics",
+      "lastUpdated": "Last Updated",
+      "realtime": "Real-time"
+    }
   },
   "approvalPage": {
     "title": "Pending Registration Approvals",
@@ -241,6 +248,8 @@
     "comingSoon": "Coming Soon",
     "closeNotification": "Close notification",
     "requiredField": "Required field",
+    "optional": "Optional",
+    "show": "Show",
     "noName": "No name",
     "chipRebalance": "Chip rebalance",
     "undecided": "Undecided",
@@ -265,12 +274,18 @@
       "searching": "Searching...",
       "processing": "Processing..."
     },
+    "days": "days",
+    "processing": "Processing...",
     "name": "Name",
     "emailAddress": "Email Address",
     "date": "Date",
     "phone": "Phone",
     "statusLabel": "Status",
-    "status": "Status",
+    "status": {
+      "confirmed": "Confirmed",
+      "pending": "Pending",
+      "rejected": "Rejected"
+    },
     "location": "Location",
     "time": "Time",
     "application": "Application",
@@ -401,96 +416,76 @@
   },
   "announcements": {
     "title": "Announcements",
-    "pageTitle": "🔔 Announcements",
-    "description": "System announcements and update information",
+    "subtitle": "System announcements and update information",
     "createButton": "Create Announcement",
-    "noAnnouncements": "No Announcements",
-    "noAnnouncementsDescription": "You will be notified when new announcements are posted.",
+    "totalCount": "Total {{count}}",
+    "activeCount": "Active {{count}}",
+    "emptyTitle": "No announcements",
+    "emptyDescription": "You will be notified when new announcements are posted.",
     "goToNotifications": "Go to Notification Center",
-    "viewDetails": "View Details →",
-    "stats": {
-      "total": "Total {{count}}",
-      "active": "Active {{count}}"
-    },
+    "viewDetail": "View Details",
+    "notificationSettingsTitle": "Notification Settings",
+    "notificationSettingsDescription": "Check your notification settings to not miss important announcements.",
     "priority": {
       "normal": "Normal",
       "important": "Important",
       "urgent": "Urgent"
     },
     "createModal": {
-      "title": "📢 Create System Announcement",
-      "editMode": "✏️ Edit Mode",
-      "previewMode": "👁️ Preview",
-      "fields": {
-        "title": "Title",
-        "titlePlaceholder": "Enter announcement title",
-        "titleHelp": "{{count}}/100 characters",
-        "content": "Content",
-        "contentPlaceholder": "Enter announcement content",
-        "contentHelp": "{{count}}/2000 characters",
-        "priority": "Priority",
-        "startDate": "Start Date",
-        "endDate": "End Date",
-        "enableEndDate": "Set End Date",
-        "endDateDisabled": "End date setting disabled"
+      "title": "Create System Announcement",
+      "togglePreview": "Preview",
+      "toggleEdit": "Edit Mode",
+      "fieldTitle": "Title",
+      "fieldContent": "Content",
+      "fieldPriority": "Priority",
+      "fieldStartDate": "Start Date",
+      "fieldEndDate": "End Date",
+      "enableEndDate": "Set End Date",
+      "placeholderTitle": "Enter announcement title",
+      "placeholderContent": "Enter announcement content",
+      "characterCount": "{{count}}/{{max}} characters",
+      "validationError": "Input Error",
+      "buttonCancel": "Cancel",
+      "buttonSubmit": "Create",
+      "submitting": "Creating...",
+      "successMessage": "Announcement created and notifications sent to all users.",
+      "errorMessage": "Failed to create announcement.",
+      "previewEmpty": {
+        "title": "(No title)",
+        "content": "(No content)"
       },
-      "preview": {
-        "noTitle": "(No title)",
-        "noContent": "(No content)",
-        "startDate": "• Start: {{date}}",
-        "endDate": "• End: {{date}}",
-        "indefinite": "• Duration: Indefinite"
-      },
-      "validation": {
-        "error": "⚠️ Input Error",
-        "titleRequired": "Title is required.",
-        "titleTooLong": "Title must be 100 characters or less.",
-        "contentRequired": "Content is required.",
-        "contentTooLong": "Content must be 2000 characters or less.",
-        "startDateRequired": "Start date is required.",
-        "startDateInvalid": "Start date is invalid.",
-        "endDateInvalid": "End date is invalid.",
-        "endDateBeforeStart": "End date must be after start date.",
-        "priorityRequired": "Priority is required.",
-        "priorityInvalid": "Please select a valid priority."
-      },
-      "actions": {
-        "cancel": "Cancel",
-        "submit": "Create",
-        "submitting": "Creating..."
+      "period": {
+        "indefinite": "Indefinite",
+        "start": "Start Date",
+        "end": "End Date"
       }
     },
     "detailModal": {
-      "title": "Announcement Details",
-      "metadata": {
-        "author": "👤 Author: {{name}}",
-        "createdAt": "📅 Created: {{date}}",
-        "updatedAt": "📝 Updated: {{date}}",
-        "startDate": "📅 Start: {{date}}",
-        "endDate": "📅 End: {{date}}",
-        "indefinite": "📅 Duration: Indefinite",
-        "views": "👁️ Views: {{count}}"
+      "title": "Announcement",
+      "author": "Author",
+      "createdAt": "Created",
+      "period": "Period",
+      "viewCount": "Views",
+      "times": "times",
+      "indefinite": "Indefinite",
+      "sendResult": {
+        "title": "Notification Send Result",
+        "totalUsers": "Total Users",
+        "successCount": "Success",
+        "failedCount": "Failed",
+        "sentAt": "Sent At",
+        "people": "people"
       },
-      "actions": {
-        "edit": "Edit",
-        "delete": "Delete",
-        "close": "Close"
-      },
-      "deleteConfirm": "Are you sure you want to delete this announcement?",
-      "messages": {
-        "deleteSuccess": "Announcement deleted successfully.",
-        "deleteError": "Failed to delete announcement."
-      }
+      "buttonEdit": "Edit",
+      "buttonDelete": "Delete",
+      "buttonClose": "Close",
+      "confirmDelete": "Are you sure you want to delete this announcement?",
+      "deleteSuccess": "Announcement deleted successfully.",
+      "deleteError": "Failed to delete announcement."
     },
-    "messages": {
-      "createSuccess": "Announcement created and notifications sent to all users.",
-      "createError": "Failed to create announcement.",
-      "loadError": "Failed to load announcements.",
-      "retry": "Retry"
-    },
-    "info": {
-      "title": "Notification Settings",
-      "description": "Check your notification settings to not miss important announcements."
+    "error": {
+      "loadFailed": "Failed to load announcements",
+      "retryButton": "Retry"
     }
   },
   "participantDetailModal": {
@@ -506,11 +501,15 @@
     "scanMessage": "Please scan the QR code for attendance."
   },
   "attendancePage": {
-    "title": "Scan Attendance QR Code",
-    "lastScanned": "Last scan: {{scanResult}}",
-    "submitting": "Submitting attendance...",
+    "title": "QR Attendance",
+    "lastScanned": "QR code scanned",
+    "submitting": "Processing...",
     "success": "Attendance recorded successfully!",
-    "fail": "Failed to record attendance."
+    "fail": "Failed to record attendance.",
+    "howToUse": "How to Use",
+    "guide1": "Scan the QR code created by your administrator.",
+    "guide2": "Check-in and check-out use different QR codes.",
+    "guide3": "QR codes are automatically refreshed every minute."
   },
   "availableTimes": {
     "title": "Set Weekly Availability",
@@ -556,7 +555,7 @@
     "backToList": "Back to List",
     "playerCount": "{{count}} players",
     "prizePool": "Total Prize Pool",
-    "currency": "${{amount, currency}}",
+    "currency": "${{amount}}",
     "winner": "Winner",
     "finalRanking": "Final Ranking",
     "rank": "Rank",
@@ -570,58 +569,38 @@
     "viewResults": "View Results"
   },
   "jobBoard": {
+    "title": "Job Board",
+    "noJobsAvailable": "No job postings available.",
     "alerts": {
-      "loginRequired": "You must be logged in to apply.",
-      "profileNotFound": "Could not find staff profile.",
+      "applicationFailed": "Failed to submit application.",
       "applicationSuccess": "Application submitted successfully!",
       "applicationSubmitted": "Application submitted successfully!",
-      "applicationFailed": "Failed to submit application.",
-      "selectAssignment": "Please select a time and role to apply for.",
+      "cancelFailed": "Failed to cancel application.",
+      "cancelSuccess": "Application cancelled successfully.",
       "confirmCancel": "Are you sure you want to cancel your application?",
       "cancelMessage": "Are you sure you want to cancel your application?",
-      "cancelSuccess": "Application cancelled successfully.",
-      "cancelFailed": "Failed to cancel application."
+      "loginRequired": "You must be logged in to apply.",
+      "profileNotFound": "Could not find staff profile.",
+      "selectAssignment": "Please select a time and role to apply for."
     },
-    "loading": "Loading job postings...",
-    "title": "Job Board",
-    "applying": "Applying...",
-    "cancelling": "Cancelling...",
-    "applied": "Applied",
-    "cancelApplication": "Cancel Application",
-    "viewDetails": "View Details",
-    "loginRequired": "Login Required",
-    "preQuestions": "(Pre-screening)",
-    "unknownApplicant": "Unknown Applicant",
-    "preQuestion": {
-      "checkButton": "📝 Pre-screening Questions",
-      "completeFirst": "Please complete the pre-screening questions first",
-      "modalTitle": "Pre-screening Questions",
-      "noQuestions": "No pre-screening questions available.",
-      "submit": "Submit Answers",
-      "success": "Pre-screening questions submitted successfully!",
-      "error": "Error submitting pre-screening questions.",
-      "completed": "✓ Pre-screening Completed",
-      "requiredField": "Required field",
-      "answerPlaceholder": "Enter your answer...",
-      "selectOption": "Select an option"
-    },
-    "applyModal": {
-      "selectAssignment": "Select Time & Role",
-      "selectPlaceholder": "Select a time and role",
-      "full": "Full",
-      "confirm": "Confirm Application"
+    "search": {
+      "placeholder": "Search in title or description..."
     },
     "filters": {
       "allLocations": "All Locations",
       "type": "Recruitment Type",
       "allTypes": "All Types",
+      "allRoles": "All Roles",
       "startDate": "Start Date",
       "endDate": "End Date",
+      "month": "Month",
+      "day": "Day",
       "reset": "Reset Filters",
       "search": {
         "placeholder": "Search in title or description..."
       }
     },
+    "types": {},
     "tabs": {
       "regular": "Regular",
       "fixed": "Fixed",
@@ -685,7 +664,44 @@
         "successApprove": "Posting has been approved",
         "successReject": "Posting has been rejected"
       }
-    }
+    },
+    "noResults": "No results found.",
+    "loadMore": "Load More",
+    "applying": "Applying...",
+    "cancelApplication": "Cancel Application",
+    "cancelling": "Cancelling...",
+    "viewDetails": "View Details",
+    "loginRequired": "Login Required",
+    "applied": "Applied",
+    "preQuestions": "(Pre-screening)",
+    "preQuestion": {
+      "checkButton": "Pre-screening Questions",
+      "completeFirst": "Please complete the pre-screening questions first",
+      "modalTitle": "Pre-screening Questions",
+      "noQuestions": "No pre-screening questions available.",
+      "submit": "Submit Answers",
+      "success": "Pre-screening questions submitted successfully!",
+      "error": "Error submitting pre-screening questions.",
+      "completed": "Pre-screening Completed",
+      "requiredField": "Required field",
+      "answerPlaceholder": "Enter your answer...",
+      "selectOption": "Select an option"
+    },
+    "applyModal": {
+      "title": "Apply for Job",
+      "selectTimeAndRole": "Select time and role:",
+      "selectAssignment": "Select Time & Role",
+      "selectPlaceholder": "Select a time and role",
+      "full": "Full",
+      "confirm": "Confirm Application",
+      "success": "Application submitted successfully!",
+      "error": "Error occurred during application.",
+      "alreadyApplied": "You have already applied for this posting.",
+      "loginRequired": "Please log in to apply."
+    },
+    "error": "An error occurred while loading job postings.",
+    "loading": "Loading job postings...",
+    "unknownApplicant": "Unknown Applicant"
   },
   "jobPosting": {
     "announcement": {
@@ -780,7 +796,8 @@
       "type": "Employment Type",
       "matching": "Matching...",
       "button": "Auto Match",
-      "applicants": "Applicants"
+      "applicants": "Applicants",
+      "detailManagement": "Detail Management"
     },
     "edit": {
       "title": "Edit Job Posting",
@@ -854,6 +871,7 @@
     "uploadSuccess": "Profile image uploaded successfully.",
     "deleteSuccess": "Profile image deleted successfully.",
     "currentImage": "Current profile image",
+    "selectImage": "Select Image",
     "uploadError": "Failed to upload profile image.",
     "deleteError": "Failed to delete profile image."
   },
@@ -876,7 +894,7 @@
   },
   "participantLivePage": {
     "notFound": "Participant not found (ID: {{id}})",
-    "announcements": "📢 Announcements",
+    "announcements": "Announcements",
     "table": "Table: {{tableNumber}}",
     "seat": "Seat: {{seatNumber}}",
     "chips": "Chips: {{chipCount}}",
@@ -927,12 +945,38 @@
   "tableCard": {
     "dealer": "Dealer:"
   },
+  "days": {
+    "0": "Sun",
+    "1": "Mon",
+    "2": "Tue",
+    "3": "Wed",
+    "4": "Thu",
+    "5": "Fri",
+    "6": "Sat"
+  },
+  "months": {
+    "1": "Jan",
+    "2": "Feb",
+    "3": "Mar",
+    "4": "Apr",
+    "5": "May",
+    "6": "Jun",
+    "7": "Jul",
+    "8": "Aug",
+    "9": "Sep",
+    "10": "Oct",
+    "11": "Nov",
+    "12": "Dec"
+  },
   "tournament": {
     "initialName": "UNIQN Initial Tournament"
   },
   "theme": {
     "switchToLight": "Switch to Light Mode",
     "switchToDark": "Switch to Dark Mode"
+  },
+  "kakaoLogin": {
+    "button": "Login with Kakao"
   },
   "shiftSchedule": {
     "title": "Shift Schedule Management",
@@ -976,8 +1020,11 @@
   "attendance": {
     "status": {
       "not_started": "Not Started",
+      "notStarted": "Not Started",
       "checked_in": "Checked In",
+      "checkedIn": "Checked In",
       "checked_out": "Checked Out",
+      "checkedOut": "Checked Out",
       "absent": "Absent"
     },
     "labels": {
@@ -1033,15 +1080,6 @@
     "retry": "Try again",
     "refresh": "Refresh page",
     "details": "Show developer information"
-  },
-  "days": {
-    "0": "Sun",
-    "1": "Mon",
-    "2": "Tue",
-    "3": "Wed",
-    "4": "Thu",
-    "5": "Fri",
-    "6": "Sat"
   },
   "exceptions": {
     "late": {
@@ -1119,6 +1157,9 @@
   "report": {
     "title": "Submit Report",
     "targetInfo": "Report Target",
+    "targetName": "Name",
+    "eventTitle": "Event",
+    "eventDate": "Date",
     "type": "Report Type",
     "types": {
       "tardiness": {
@@ -1194,6 +1235,10 @@
       },
       "account": {
         "label": "Account Inquiry"
+      },
+      "report": {
+        "label": "Report",
+        "description": "Staff report related inquiries"
       },
       "other": {}
     },
@@ -1279,6 +1324,31 @@
       "endTime": "End Time"
     }
   },
+  "qr": {
+    "modalTitle": "Generate QR Code",
+    "modalDescription": "Generate a QR code for check-in or check-out and share with staff.",
+    "checkInTab": "Check-in QR",
+    "checkOutTab": "Check-out QR",
+    "checkInTitle": "Check-in QR Code",
+    "checkOutTitle": "Check-out QR Code",
+    "checkInBadge": "Check-in",
+    "checkOutBadge": "Check-out",
+    "scanInstructions": "Scan the QR code below",
+    "checkInGuide": "Scan this QR code when you arrive.",
+    "checkOutGuide": "Scan this QR code when you leave.",
+    "roundUpInfo": "Check-out time is rounded to {{interval}} minute intervals.",
+    "loading": "Generating QR code...",
+    "error": "Failed to generate QR code",
+    "retry": "Retry",
+    "refresh": "Manual Refresh",
+    "seconds": "seconds",
+    "autoRefreshIn": "Auto refresh in",
+    "infoTitle": "Information",
+    "info1": "QR codes are automatically refreshed every minute.",
+    "info2": "Check-in and check-out use separate QR codes.",
+    "info3": "Each QR code can only be used once and expires after 2 minutes.",
+    "info4": "Check-out time is automatically rounded to {{interval}} minute intervals."
+  },
   "consent": {
     "title": "Service Agreement",
     "description": "Please agree to the following terms to use the service.",
@@ -1293,32 +1363,17 @@
     "marketing": "Marketing Communications",
     "locationService": "Location Services",
     "pushNotification": "Push Notifications",
-    "descriptions": {
-      "termsOfService": "Terms and conditions for using our service",
-      "privacyPolicy": "How we collect and use your personal information",
-      "marketing": "Receive promotional emails and notifications",
-      "locationService": "Allow access to location information for enhanced service",
-      "pushNotification": "Receive push notifications about important updates"
-    },
-    "agreedAt": "Agreed on: {{date}}",
-    "viewDocument": "View Full Document",
+    "termsOfServiceDescription": "I agree to the terms of service.",
+    "privacyPolicyDescription": "I agree to the collection and use of personal information.",
+    "marketingDescription": "Receive events, promotions and marketing information.",
+    "locationServiceDescription": "Use location-based services.",
+    "pushNotificationDescription": "Receive app push notifications.",
+    "viewDetails": "View Details",
+    "requiredWarning": "Please agree to all required terms.",
     "submit": "Agree and Continue",
-    "errors": {
-      "requiredConsents": "You must agree to the required terms to continue.",
-      "updateFailed": "Failed to update consent preferences.",
-      "loadFailed": "Failed to load consent information."
-    },
-    "success": {
-      "updated": "Your consent preferences have been updated successfully.",
-      "created": "Service agreement completed successfully."
-    },
-    "history": {
-      "title": "Consent Change History",
-      "changedAt": "Changed on",
-      "changedFields": "Changed Items",
-      "previousValue": "Previous",
-      "newValue": "New",
-      "noHistory": "No change history available."
+    "error": {
+      "requiredConsentsNotAgreed": "Please agree to all required terms.",
+      "submitFailed": "Failed to process consent."
     }
   },
   "settings": {
@@ -1332,171 +1387,133 @@
     },
     "consent": {
       "title": "Consent Management",
-      "description": "Manage your consent preferences for optional services.",
+      "required": "Required Agreements",
+      "optional": "Optional Agreements",
       "agreedAt": "Agreed on",
-      "notAgreed": "Not agreed",
-      "requiredNotice": "Required consents cannot be modified after signup. To withdraw, please delete your account.",
+      "version": "Version",
+      "requiredNote": "Required agreements cannot be changed. To withdraw, please delete your account.",
+      "optionalNote": "Optional agreements can be changed at any time.",
       "marketingEnabled": "Marketing communications enabled.",
       "marketingDisabled": "Marketing communications disabled.",
-      "locationEnabled": "Location services enabled.",
-      "locationDisabled": "Location services disabled.",
-      "pushEnabled": "Push notifications enabled.",
-      "pushDisabled": "Push notifications disabled.",
-      "updateSuccess": "Consent preferences updated successfully.",
-      "updateFailed": "Failed to update consent preferences.",
-      "viewHistory": "View Change History"
+      "locationServiceEnabled": "Location services enabled.",
+      "locationServiceDisabled": "Location services disabled.",
+      "pushNotificationEnabled": "Push notifications enabled.",
+      "pushNotificationDisabled": "Push notifications disabled.",
+      "updateFailed": "Failed to update consent settings.",
+      "loadFailed": "Failed to load consent information.",
+      "noConsent": "No consent information available.",
+      "infoTitle": "Information",
+      "infoMessage": "Optional agreements can be changed at any time during service use."
     },
     "security": {
       "title": "Security Settings",
-      "description": "Manage password and login notification settings.",
-      "password": {
-        "title": "Password Management",
-        "description": "Change your account password",
-        "changeButton": "Change Password",
-        "currentPassword": "Current Password",
-        "newPassword": "New Password",
-        "confirmPassword": "Confirm New Password",
-        "currentPasswordPlaceholder": "Enter current password",
-        "newPasswordPlaceholder": "Enter new password (min. 8 characters)",
-        "confirmPasswordPlaceholder": "Re-enter new password",
-        "strength": {
-          "title": "Password Strength",
-          "weak": "Weak",
-          "medium": "Medium",
-          "strong": "Strong"
-        },
-        "requirements": {
-          "title": "Password Requirements",
-          "length": "At least 8 characters",
-          "uppercase": "Include uppercase letters",
-          "lowercase": "Include lowercase letters",
-          "number": "Include numbers",
-          "special": "Include special characters (!@#$%^&*)"
-        },
-        "errors": {
-          "currentRequired": "Please enter your current password.",
-          "newRequired": "Please enter a new password.",
-          "tooShort": "Password must be at least 8 characters long.",
-          "mismatch": "Passwords do not match.",
-          "sameAsCurrent": "New password must be different from current password.",
-          "authFailed": "Current password is incorrect.",
-          "updateFailed": "Failed to update password."
-        },
-        "success": "Password changed successfully. Please log in again.",
-        "cancel": "Cancel",
-        "confirm": "Change Password"
-      },
-      "loginNotifications": {
-        "title": "Login Notification Settings",
-        "description": "Receive notifications for login activities",
-        "enabled": "Enable Login Notifications",
-        "enabledDescription": "Receive in-app notifications when login activity is detected",
-        "newDevice": "New Device Login",
-        "newDeviceDescription": "Notify when logging in from a new device",
-        "newLocation": "New Location Login",
-        "newLocationDescription": "Notify when logging in from a new location",
-        "suspiciousActivity": "Suspicious Activity Detection",
-        "suspiciousActivityDescription": "Notify when suspicious login activity is detected (recommended)",
-        "updateSuccess": "Login notification settings updated successfully.",
-        "updateFailed": "Failed to update login notification settings."
-      },
-      "sessionManagement": {
-        "title": "Session Management",
-        "description": "Manage active login sessions",
-        "currentSession": "Current Session",
-        "otherSessions": "Other Sessions",
-        "lastActive": "Last active",
-        "logoutAll": "Log Out All Sessions",
-        "logoutSuccess": "All sessions logged out successfully."
-      }
+      "password": "Change Password",
+      "passwordDescription": "Change your password regularly to keep your account safe.",
+      "changePassword": "Change Password",
+      "currentPassword": "Current Password",
+      "newPassword": "New Password",
+      "confirmPassword": "Confirm Password",
+      "passwordStrength": "Password Strength",
+      "passwordWeak": "Weak",
+      "passwordMedium": "Medium",
+      "passwordStrong": "Strong",
+      "passwordRequirement1": "At least 8 characters",
+      "passwordRequirement2": "Include uppercase and lowercase letters",
+      "passwordRequirement3": "Include numbers",
+      "passwordRequirement4": "Include special characters (recommended)",
+      "passwordMismatch": "Passwords do not match.",
+      "passwordSameAsCurrent": "Same as current password.",
+      "invalidPassword": "Invalid password information.",
+      "wrongPassword": "Current password is incorrect.",
+      "weakPassword": "Password is too weak.",
+      "passwordChanged": "Password changed successfully.",
+      "passwordChangeFailed": "Failed to change password.",
+      "loginNotifications": "Login Notification Settings",
+      "enableNotifications": "Enable Login Notifications",
+      "enableNotificationsDescription": "Receive notifications when new login activity is detected.",
+      "newDeviceNotification": "New Device Login Notification",
+      "newDeviceNotificationDescription": "Receive notifications when logging in from a new device.",
+      "newLocationNotification": "New Location Login Notification",
+      "newLocationNotificationDescription": "Receive notifications when logging in from a new location.",
+      "suspiciousActivityNotification": "Suspicious Activity Notification",
+      "suspiciousActivityNotificationDescription": "Receive notifications when abnormal login activity is detected.",
+      "recommendedSetting": "Recommended for security.",
+      "loginNotificationEnabled": "Login notifications enabled.",
+      "loginNotificationDisabled": "Login notifications disabled.",
+      "newDeviceNotificationUpdated": "New device notification settings updated.",
+      "newLocationNotificationUpdated": "New location notification settings updated.",
+      "suspiciousActivityNotificationUpdated": "Suspicious activity notification settings updated.",
+      "updateFailed": "Failed to update security settings.",
+      "loadFailed": "Failed to load security settings.",
+      "infoTitle": "Information",
+      "infoMessage": "Security notifications help keep your account safe."
     },
     "language": {
       "title": "Language Settings",
-      "description": "Select your preferred language",
-      "current": "Current Language",
-      "korean": "한국어",
-      "english": "English",
-      "updateSuccess": "Language settings updated successfully.",
-      "updateFailed": "Failed to update language settings."
+      "description": "Select the language to use for the service."
     },
     "account": {
       "title": "Account Management",
-      "description": "Delete your account and all associated data",
-      "deleteAccount": {
-        "title": "Delete Account",
-        "description": "Permanently delete your account and all data",
-        "button": "Request Account Deletion",
-        "warning": {
-          "title": "⚠️ Warning",
-          "message": "This action cannot be undone. All your data will be permanently deleted.",
-          "effects": "Once you delete your account, the following will happen:",
-          "effect1": "• All personal information will be permanently deleted",
-          "effect2": "• All application and work history will be deleted",
-          "effect3": "• All payroll information will be deleted",
-          "effect4": "• You will not be able to use this account again"
-        },
-        "gracePeriod": {
-          "title": "30-Day Grace Period",
-          "description": "After requesting deletion, you have 30 days to cancel. Your account will be deactivated during this period.",
-          "deactivated": "Your account is currently deactivated and scheduled for deletion.",
-          "canReactivate": "You can cancel the deletion request and reactivate your account anytime within 30 days."
-        },
-        "modal": {
-          "title": "Confirm Account Deletion",
-          "subtitle": "This action cannot be undone",
-          "reasonLabel": "Reason for Deletion (Optional)",
-          "reasonPlaceholder": "Please select a reason",
-          "reason": {
-            "notUseful": "Service not useful",
-            "privacyConcerns": "Privacy concerns",
-            "switchingService": "Switching to another service",
-            "tooManyEmails": "Too many notifications",
-            "difficultToUse": "Difficult to use",
-            "other": "Other"
-          },
-          "feedbackLabel": "Additional Feedback (Optional)",
-          "feedbackPlaceholder": "Please share any feedback to help us improve (max 500 characters)",
-          "passwordLabel": "Password Confirmation (Required)",
-          "passwordPlaceholder": "Enter your password to confirm deletion",
-          "confirmCheckbox": "I understand that this action cannot be undone and all my data will be permanently deleted.",
-          "cancel": "Cancel",
-          "confirm": "Confirm Deletion",
-          "errors": {
-            "passwordRequired": "Please enter your password to confirm.",
-            "confirmRequired": "Please check the confirmation box.",
-            "invalidPassword": "Password is incorrect.",
-            "deletionFailed": "Failed to request account deletion."
-          },
-          "success": "Account deletion requested. Your account will be deleted in 30 days."
-        },
-        "pending": {
-          "title": "Account Deletion Pending",
-          "requestedAt": "Requested on",
-          "scheduledDeletionAt": "Scheduled deletion date",
-          "remainingDays": "{{days}} days remaining",
-          "cancelButton": "Cancel Deletion Request",
-          "confirmCancel": "Are you sure you want to cancel the account deletion request?",
-          "cancelSuccess": "Account deletion request cancelled successfully. Your account has been reactivated.",
-          "cancelFailed": "Failed to cancel account deletion request."
-        }
-      }
+      "dangerZoneWarning": "Danger Zone",
+      "dangerZoneDescription": "Account deletion cannot be undone. Please proceed with caution.",
+      "deleteAccount": "Delete Account",
+      "deleteAccountDescription": "Permanently delete your account and all data.",
+      "deletionEffects": "Effects of account deletion",
+      "deletionEffect1": "All personal information will be permanently deleted.",
+      "deletionEffect2": "All content you created will be deleted.",
+      "deletionEffect3": "Account will be automatically deleted after 30 days. Can be cancelled within this period.",
+      "deletionEffect4": "Cannot be recovered after deletion.",
+      "gracePeriodTitle": "30-Day Grace Period",
+      "gracePeriodDescription": "You can cancel within 30 days after requesting deletion. Logging in during this period will automatically cancel the request.",
+      "requestDeletion": "Request Account Deletion",
+      "irreversibleAction": "This action cannot be undone.",
+      "deletionPending": "Account Deletion Pending",
+      "deletionPendingDescription": "Account deletion has been scheduled. It will be automatically deleted on the date below.",
+      "requestedAt": "Requested on",
+      "scheduledDeletionAt": "Scheduled deletion date",
+      "remainingDays": "Remaining time",
+      "cancelDeletion": "Cancel Deletion",
+      "cancelDeletionNote": "Cancel account deletion and continue using the service normally.",
+      "deletionCancelled": "Account deletion has been cancelled.",
+      "deletionCancelFailed": "Failed to cancel account deletion.",
+      "pending": {
+        "cancelSuccess": "Account deletion cancelled successfully."
+      },
+      "confirmDeletion": "Confirm Account Deletion",
+      "finalWarning": "Final Warning",
+      "deletionReason": "Reason for deletion (optional)",
+      "selectReason": "Select a reason",
+      "reason": {
+        "notUseful": "Service is not useful",
+        "privacyConcerns": "Privacy concerns",
+        "switchingService": "Switching to another service",
+        "tooManyEmails": "Too many notifications",
+        "difficultToUse": "Difficult to use",
+        "other": "Other"
+      },
+      "additionalFeedback": "Additional feedback",
+      "feedbackPlaceholder": "Please let us know what needs improvement (optional)",
+      "confirmPassword": "Confirm Password",
+      "confirmPasswordDescription": "Please enter your password to verify your identity.",
+      "confirmCheckbox": "I have read and understand all the above, and agree to delete my account.",
+      "invalidDeletionRequest": "Invalid deletion request information.",
+      "wrongPassword": "Password does not match.",
+      "tooManyRequests": "Too many requests. Please try again later.",
+      "deletionRequested": "Account deletion requested. It will be automatically deleted after 30 days.",
+      "deletionRequestFailed": "Failed to request account deletion.",
+      "gracePeriodNote": "30-Day Grace Period",
+      "gracePeriodNoteDescription": "Account will be deactivated for 30 days after the request, and can be cancelled within this period."
     }
   },
   "legal": {
     "termsOfService": {
-      "title": "Terms of Service",
-      "pageTitle": "Terms of Service"
+      "title": "Terms of Service"
     },
     "privacyPolicy": {
-      "title": "Privacy Policy",
-      "pageTitle": "Privacy Policy"
+      "title": "Privacy Policy"
     },
     "version": "Version",
     "effectiveDate": "Effective Date",
-    "lastUpdated": "Last Updated",
-    "backButton": "Back",
-    "printButton": "Print",
-    "article": "Article {{number}}",
-    "section": "Section {{number}}"
+    "lastUpdated": "Last Updated"
   }
 }
