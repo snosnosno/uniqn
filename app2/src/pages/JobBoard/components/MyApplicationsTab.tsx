@@ -98,8 +98,8 @@ const MultipleAssignmentsDisplay: React.FC<{
           {status === 'confirmed' ? (
             // 확정 상태: 간소화된 표시
             <div className="space-y-1">
-              {groupedByDate[date]?.map((item, idx) => (
-                <div key={idx} className="text-sm text-gray-700 dark:text-gray-200 font-medium">
+              {groupedByDate[date]?.map((item) => (
+                <div key={`${date}-${item.time}-${item.role}`} className="text-sm text-gray-700 dark:text-gray-200 font-medium">
                   📅 {date} ⏰ {item.time} 👤 {item.role ? String(t(`roles.${item.role}`) || item.role) : ''}
                 </div>
               ))}
@@ -111,8 +111,8 @@ const MultipleAssignmentsDisplay: React.FC<{
                 📅 {date}
               </div>
               <div className="space-y-1 ml-4">
-                {groupedByDate[date]?.map((item, idx) => (
-                  <div key={idx} className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
+                {groupedByDate[date]?.map((item) => (
+                  <div key={`${date}-${item.time}-${item.role}`} className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
                     <span>⏰ {item.time}</span>
                     {item.role && (
                       <span className="text-gray-600 dark:text-gray-300">

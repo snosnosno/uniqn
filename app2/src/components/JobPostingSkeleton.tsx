@@ -8,7 +8,10 @@ const JobPostingSkeleton: React.FC<JobPostingSkeletonProps> = ({ count = 3 }) =>
   return (
     <div className="space-y-4">
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+        <div
+          key={`skeleton-${index}`}
+          className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden"
+        >
           <div className="p-4 sm:p-6 animate-pulse">
             <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between">
               <div className="flex-1 mb-4 lg:mb-0">

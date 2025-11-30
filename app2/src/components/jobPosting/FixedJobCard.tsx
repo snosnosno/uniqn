@@ -142,9 +142,9 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
           </div>
           <div className="flex flex-wrap gap-2">
             {requiredRolesWithCount.length > 0 ? (
-              requiredRolesWithCount.map((role, index) => (
+              requiredRolesWithCount.map((role) => (
                 <span
-                  key={index}
+                  key={role.name}
                   className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100"
                 >
                   {role.name} {role.count}명

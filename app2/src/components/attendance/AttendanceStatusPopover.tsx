@@ -12,8 +12,10 @@ import { logger } from '../../utils/logger';
 import { createWorkLogId } from '../../utils/workLogSimplified';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
 import type { WorkLog } from '../../types/unifiedData';
+import type { AttendanceStatus } from '../../types/attendance';
 
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
+// Re-export for backward compatibility
+export type { AttendanceStatus };
 
 interface AttendanceStatusPopoverProps {
   workLogId: string;

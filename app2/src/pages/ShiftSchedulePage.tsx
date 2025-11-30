@@ -294,7 +294,7 @@ const ShiftSchedulePage: React.FC = () => {
           <div className="space-y-2 max-h-32 overflow-y-auto">
             {validationResult.violations.map((violation, index) => (
               <div
-                key={index}
+                key={`${violation.type}-${violation.message}-${index}`}
                 className={`text-sm p-2 rounded ${
                   violation.severity === 'error'
                     ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400'

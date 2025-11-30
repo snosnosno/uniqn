@@ -72,13 +72,13 @@ export const DateSlider: React.FC<DateSliderProps> = ({ selectedDate, onDateSele
         </button>
 
         {/* 날짜 버튼들 */}
-        {dates.map((date, index) => {
+        {dates.map((date) => {
           const today = isToday(date);
           const selected = isSelected(date);
 
           return (
             <button
-              key={index}
+              key={date.toISOString()}
               ref={today ? todayRef : null}
               onClick={() => onDateSelect(date)}
               className={`

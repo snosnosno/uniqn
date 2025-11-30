@@ -5,6 +5,7 @@ import {
   RoleRequirement,
   DateSpecificRequirement,
   JobPostingUtils,
+  JobPosting,
 } from '@/types/jobPosting';
 import { timestampToLocalDateString } from '@/utils/dateUtils';
 import { logger } from '@/utils/logger';
@@ -13,7 +14,7 @@ import { formatDateDisplay } from '@/utils/applicants';
 
 interface ApplicantActionsProps {
   applicant: Applicant;
-  jobPosting: any;
+  jobPosting: JobPosting;
   selectedAssignment: Assignment | null;
   onAssignmentChange: (value: string) => void;
   onConfirm: () => void;

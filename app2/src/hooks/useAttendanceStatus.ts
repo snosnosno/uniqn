@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Timestamp,
   collection,
@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 
 import { logger } from '../utils/logger';
-import { AttendanceStatus } from '../components/attendance/AttendanceStatusCard';
+import type { AttendanceStatus } from '../types/attendance';
 import { formatTime } from '../utils/dateUtils';
 import { getTodayString } from '../utils/jobPosting/dateUtils';
 import { db } from '../firebase';
@@ -17,7 +17,12 @@ import { useFirestoreQuery } from './firestore';
 
 import { WorkLog } from './useShiftSchedule';
 
-export interface AttendanceRecord {
+/**
+ * UI 표시용 출석 기록 인터페이스
+ * @description useAttendanceStatus 훅에서 사용하는 UI용 출석 데이터 구조
+ * @see types/attendance.ts의 AttendanceRecord와 구분 (Firestore 저장용)
+ */
+export interface AttendanceDisplayRecord {
   staffId: string;
   workLogId?: string; // WorkLog ID 추가 (출석상태 드롭다운에서 사용)
   status: AttendanceStatus;
@@ -27,6 +32,9 @@ export interface AttendanceRecord {
   scheduledEndTime?: string | undefined;
   workLog?: WorkLog;
 }
+
+/** @deprecated AttendanceDisplayRecord 사용 권장 */
+export type AttendanceRecord = AttendanceDisplayRecord;
 
 interface UseAttendanceStatusProps {
   eventId?: string;
@@ -94,7 +102,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     }
 
     try {
-      const records: AttendanceRecord[] = [];
+      const records: AttendanceDisplayRecord[] = [];
       const typedWorkLogs = rawWorkLogs.map((doc) => doc as unknown as WorkLog);
 
       typedWorkLogs.forEach((workLog) => {
@@ -119,7 +127,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   }, [rawWorkLogs, localUpdates]);
 
   // WorkLog 데이터로부터 출석 상태를 계산하는 함수
-  const calculateAttendanceStatus = (workLog: WorkLog): AttendanceRecord => {
+  const calculateAttendanceStatus = (workLog: WorkLog): AttendanceDisplayRecord => {
     const _now = new Date();
     const currentTime = _now.toTimeString().substring(0, 5); // HH:MM format
 
@@ -213,7 +221,9 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   };
 
   // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
-  const getStaffAttendanceStatus = (staffIdOrWorkLogId: string): AttendanceRecord | undefined => {
+  const getStaffAttendanceStatus = (
+    staffIdOrWorkLogId: string
+  ): AttendanceDisplayRecord | undefined => {
     // workLogId로 먼저 검색 시도 (virtual_ 접두사 포함)
     if (staffIdOrWorkLogId.includes('virtual_') || staffIdOrWorkLogId.includes('_')) {
       // workLogId로 검색

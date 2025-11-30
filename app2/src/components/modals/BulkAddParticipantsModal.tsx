@@ -162,7 +162,7 @@ const BulkAddParticipantsModal: React.FC<BulkAddParticipantsModalProps> = ({
                 <tbody>
                   {parsedData.map((participant, index) => (
                     <tr
-                      key={index}
+                      key={`participant-${participant.name || index}`}
                       className={`border-b dark:border-gray-700 ${!participant.isValid ? 'bg-red-50 dark:bg-red-900/30' : ''}`}
                     >
                       <td className="px-3 py-2">

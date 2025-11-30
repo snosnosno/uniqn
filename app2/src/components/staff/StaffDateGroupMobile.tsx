@@ -12,7 +12,9 @@ interface StaffDateGroupMobileProps {
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceStatusResult 타입이 hooks와 types에서 다르게 정의됨
   getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (unifiedData vs attendance)
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;

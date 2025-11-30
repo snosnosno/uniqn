@@ -190,9 +190,9 @@ const FeatureSection: React.FC<FeatureSectionProps> = ({ content, onFeatureClick
                 {/* 혜택 목록 */}
                 {feature.benefits && feature.benefits.length > 0 && (
                   <ul className="space-y-2">
-                    {feature.benefits.map((benefit, index) => (
+                    {feature.benefits.map((benefit) => (
                       <li
-                        key={index}
+                        key={benefit}
                         className="flex items-start text-sm text-gray-600 dark:text-gray-300"
                       >
                         <svg

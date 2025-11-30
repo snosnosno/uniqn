@@ -184,7 +184,7 @@ export const ImageGallery: React.FC<{
       <div className={`grid ${columnClasses[columns]} gap-4 ${className}`}>
         {images.map((image, index) => (
           <button
-            key={index}
+            key={image.src || `image-${index}`}
             onClick={() => setSelectedIndex(index)}
             className="relative aspect-square overflow-hidden rounded-lg hover:opacity-90 transition-opacity focus:outline-none focus:ring-2 focus:ring-primary-500 dark:focus:ring-primary-400"
             aria-label={`이미지 ${index + 1} 보기: ${image.alt}`}

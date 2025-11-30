@@ -173,8 +173,8 @@ const TargetSection: React.FC<TargetSectionProps> = ({ targets, onTargetClick })
                 {/* 혜택 목록 */}
                 {target.benefits && target.benefits.length > 0 && (
                   <ul className="space-y-3 mb-8">
-                    {target.benefits.map((benefit, index) => (
-                      <li key={index} className="flex items-start">
+                    {target.benefits.map((benefit) => (
+                      <li key={benefit} className="flex items-start">
                         <svg
                           className="w-5 h-5 text-green-500 dark:text-green-400 mr-3 mt-0.5 flex-shrink-0"
                           fill="none"

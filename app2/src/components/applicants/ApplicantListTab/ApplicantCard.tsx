@@ -5,11 +5,23 @@ import PreQuestionDisplay from './PreQuestionDisplay';
 import { getApplicantSelections, formatDateDisplay } from '@/utils/applicants';
 import StaffProfileModal from '../../modals/StaffProfileModal';
 import { StaffData } from '@/hooks/useStaffManagement';
+import { JobPosting } from '@/types/jobPosting';
+import { Selection } from '@/types/applicants/selection';
+
+/** 처리된 지원 정보 (그룹화된 선택 표시용) */
+interface ProcessedApplication {
+  displayDateRange: string;
+  dayCount?: number;
+  time: string;
+  roles: string[];
+  isGrouped: boolean;
+  checkMethod: 'group' | 'individual';
+}
 
 interface ApplicantCardProps {
   applicant: Applicant;
-  jobPosting?: any; // 역할 정보 복원을 위한 구인공고 데이터
-  children?: React.ReactNode; // 액션 버튼들을 위한 children
+  jobPosting?: JobPosting;
+  children?: React.ReactNode;
 }
 
 /**
@@ -134,9 +146,9 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(
                     {applicantSelections.length > 0 &&
                       (() => {
                         // 🎯 선택 사항을 그룹과 개별로 분류
-                        const processedApplications = new Map<string, any>();
+                        const processedApplications = new Map<string, ProcessedApplication>();
 
-                        applicantSelections.forEach((selection: any) => {
+                        applicantSelections.forEach((selection: Selection) => {
                           // checkMethod가 'group'이고 dates가 여러 개인 경우 그룹으로 처리
                           if (
                             selection.checkMethod === 'group' &&
@@ -146,8 +158,11 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(
                             const groupKey = `group-${selection.groupId || selection.time}`;
 
                             if (!processedApplications.has(groupKey)) {
+                              // selection.dates.length > 1 체크를 통과했으므로 첫/마지막 요소는 존재함
+                              const firstDate = selection.dates[0]!;
+                              const lastDate = selection.dates[selection.dates.length - 1]!;
                               processedApplications.set(groupKey, {
-                                displayDateRange: `${formatDateDisplay(selection.dates[0])}~${formatDateDisplay(selection.dates[selection.dates.length - 1])}`,
+                                displayDateRange: `${formatDateDisplay(firstDate)}~${formatDateDisplay(lastDate)}`,
                                 dayCount: selection.dates.length,
                                 time: selection.time,
                                 roles: [],

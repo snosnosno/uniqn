@@ -143,7 +143,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
         ))}
 
         {/* 날짜 셀 */}
-        {calendarDays.map((day, idx) => {
+        {calendarDays.map((day) => {
           const dateKey = format(day, 'yyyy-MM-dd');
           const dayEvents = eventsByDate.get(dateKey) || [];
           const isCurrentMonth = isSameMonth(day, currentDate);
@@ -152,7 +152,7 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
 
           return (
             <div
-              key={idx}
+              key={format(day, 'yyyy-MM-dd')}
               onClick={() => handleDateCellClick(day)}
               className={`
                 bg-white dark:bg-gray-800 p-1 min-h-[120px] cursor-pointer

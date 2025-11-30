@@ -305,8 +305,8 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               <div className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4">
                 <h3 className="font-semibold mb-3">📈 실시간 성능 지표</h3>
                 <div className="space-y-2">
-                  {performanceMetrics.map((metric, index) => (
-                    <div key={index} className="flex justify-between items-center">
+                  {performanceMetrics.map((metric) => (
+                    <div key={metric.name} className="flex justify-between items-center">
                       <span className="text-sm text-gray-600 dark:text-gray-300">
                         {metric.name}
                       </span>
@@ -464,9 +464,9 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
               <h3 className="font-semibold">🚀 성능 모니터링</h3>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {performanceMetrics.map((metric, index) => (
+                {performanceMetrics.map((metric) => (
                   <div
-                    key={index}
+                    key={metric.name}
                     className="bg-gray-50 dark:bg-gray-700 dark:bg-gray-700 rounded-lg p-4"
                   >
                     <div className="flex items-center justify-between mb-2">

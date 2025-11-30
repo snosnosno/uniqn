@@ -210,8 +210,8 @@ const SendAnnouncementModal: React.FC<SendAnnouncementModalProps> = ({
           {errors.length > 0 && (
             <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
               <ul className="text-sm text-red-600 dark:text-red-400 list-disc list-inside">
-                {errors.map((error, index) => (
-                  <li key={index}>{error}</li>
+                {errors.map((error) => (
+                  <li key={error}>{error}</li>
                 ))}
               </ul>
             </div>

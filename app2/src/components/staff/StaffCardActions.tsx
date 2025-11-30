@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
 import { UnifiedWorkLog } from '../../types/unified/workLog';
-
-type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
+import type { AttendanceStatus } from '../../types/attendance';
 
 interface StaffCardActionsProps {
   showActions: boolean;

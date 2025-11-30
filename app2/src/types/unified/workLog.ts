@@ -232,6 +232,7 @@ export interface WorkLogSortOption {
  * }
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 타입 가드: 입력 타입이 unknown인 데이터를 UnifiedWorkLog로 좁히기 위함
 export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
   return (
     data &&
@@ -255,6 +256,7 @@ export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
  * }
  * ```
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 유효성 검사: 외부에서 들어온 데이터의 타입을 알 수 없음
 export const validateWorkLog = (data: any): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 

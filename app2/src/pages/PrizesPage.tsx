@@ -126,7 +126,7 @@ const PrizesPage: React.FC = () => {
 
           <div className="space-y-2 mb-4">
             {(isManual ? manualPayouts : calculatedPayouts).map((payout, i) => (
-              <div key={i} className="flex items-center gap-4">
+              <div key={`rank-${i + 1}`} className="flex items-center gap-4">
                 <span className="font-semibold w-12 text-lg text-gray-900 dark:text-gray-100">
                   {t('prizes.rank', { rank: i + 1 })}
                 </span>

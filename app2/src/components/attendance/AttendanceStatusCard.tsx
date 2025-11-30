@@ -1,8 +1,10 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { ClockIcon, CheckCircleIcon, ExclamationTriangleIcon } from '../Icons';
+import type { AttendanceStatus } from '../../types/attendance';
 
-export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
+// Re-export for backward compatibility
+export type { AttendanceStatus };
 
 interface AttendanceStatusCardProps {
   status: AttendanceStatus;

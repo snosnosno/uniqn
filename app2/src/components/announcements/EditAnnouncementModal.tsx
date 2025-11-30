@@ -331,8 +331,8 @@ const EditAnnouncementModal: React.FC<EditAnnouncementModalProps> = ({
                   ⚠️ 입력 오류
                 </p>
                 <ul className="list-disc list-inside text-sm text-red-700 dark:text-red-400 space-y-1">
-                  {validationErrors.map((error, index) => (
-                    <li key={index}>{error}</li>
+                  {validationErrors.map((error) => (
+                    <li key={error}>{error}</li>
                   ))}
                 </ul>
               </div>

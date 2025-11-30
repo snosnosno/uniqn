@@ -85,8 +85,8 @@ const PlanCard: React.FC<PlanCardProps> = ({ planType, isCurrentPlan, onSelect }
 
       {/* 기능 목록 */}
       <div className="space-y-3 mb-6">
-        {plan.features.map((feature, index) => (
-          <div key={index} className="flex items-start gap-2">
+        {plan.features.map((feature) => (
+          <div key={feature} className="flex items-start gap-2">
             <CheckIcon className="w-5 h-5 text-green-600 dark:text-green-400 flex-shrink-0 mt-0.5" />
             <span className="text-sm text-gray-700 dark:text-gray-300">{feature}</span>
           </div>

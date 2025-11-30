@@ -15,7 +15,9 @@ interface VirtualizedStaffTableProps {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (hooks vs types)
   getStaffAttendanceStatus: (staffId: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
@@ -31,7 +33,9 @@ interface ItemData {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
   getStaffAttendanceStatus: (staffId: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;

@@ -19,7 +19,9 @@ interface StaffCardProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (hooks vs types)
   getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (useAttendanceStatus vs types/attendance)
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;

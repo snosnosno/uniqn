@@ -248,6 +248,7 @@ export interface QueryConstraint {
     | 'array-contains-any'
     | 'in'
     | 'not-in';
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase query value는 다양한 타입 (string, number, boolean, array 등)을 허용
   value: any;
 }
 

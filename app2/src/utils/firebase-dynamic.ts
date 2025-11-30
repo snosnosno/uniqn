@@ -6,10 +6,15 @@
 import { getApp } from 'firebase/app';
 
 import { logger } from '../utils/logger';
+
 // Storage 모듈 캐시
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 동적 import된 Firebase 모듈, 타입 추론 불가
 let storageModule: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase Storage 인스턴스, 동적 로딩으로 타입 불명확
 let storageInstance: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 동적 import된 Firebase Functions 모듈
 let functionsModule: any = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase Functions 인스턴스, 동적 로딩으로 타입 불명확
 let functionsInstance: any = null;
 
 // 에뮬레이터 설정

@@ -16,15 +16,18 @@ interface StaffRowProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입이 여러 파일에 다르게 정의됨 (hooks vs types)
   getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (useAttendanceStatus vs types/attendance)
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
-  showDate?: boolean; // 날짜 표시 여부 (단일 테이블 모드에서 사용)
+  showDate?: boolean;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
-  canEdit?: boolean; // 수정 권한 여부
+  canEdit?: boolean;
   getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceStatus 타입이 여러 파일에 정의됨
   applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
   multiSelectMode?: boolean; // 선택 모드 활성화 여부
   isSelected?: boolean; // 현재 행이 선택되었는지

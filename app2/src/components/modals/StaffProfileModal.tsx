@@ -13,7 +13,9 @@ interface StaffProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   staff: StaffData | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 실제 데이터 구조가 { workLog?: WorkLog, status?: string, ... } 형태로 타입 정의와 불일치
   attendanceRecord?: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 실제 데이터 구조가 { workLog?: WorkLog } 형태로 WorkLog 타입과 불일치
   workLogRecord?: any;
 }
 

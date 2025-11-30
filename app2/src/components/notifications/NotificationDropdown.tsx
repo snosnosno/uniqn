@@ -179,7 +179,7 @@ export const NotificationDropdown = memo<NotificationDropdownProps>(({ className
               {loading ? (
                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                   {[...Array(3)].map((_, i) => (
-                    <NotificationSkeleton key={i} />
+                    <NotificationSkeleton key={`skeleton-${i}`} />
                   ))}
                 </div>
               ) : recentNotifications.length === 0 ? (

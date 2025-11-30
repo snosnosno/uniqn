@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useReactTable, getCoreRowModel, flexRender, ColumnDef } from '@tanstack/react-table';
 import {
   ClockIcon,
@@ -94,6 +95,7 @@ const ValidationTooltip: React.FC<{
   staffId: string;
   timeSlot: string;
 }> = ({ violations, staffId, timeSlot }) => {
+  const { t } = useTranslation();
   const relevantViolations = violations.filter(
     (v) => v.staffId === staffId && v.timeSlot === timeSlot
   );
@@ -102,8 +104,11 @@ const ValidationTooltip: React.FC<{
 
   return (
     <div className="absolute z-10 bg-white dark:bg-gray-800 border dark:border-gray-700 rounded shadow-lg p-2 text-xs w-64 top-full left-0 mt-1">
-      {relevantViolations.map((violation, index) => (
-        <div key={index} className="mb-1 last:mb-0">
+      {relevantViolations.map((violation) => (
+        <div
+          key={`violation-${violation.severity}-${violation.type}-${violation.message}`}
+          className="mb-1 last:mb-0"
+        >
           <div
             className={`flex items-center gap-1 ${
               violation.severity === 'error'
@@ -124,7 +129,7 @@ const ValidationTooltip: React.FC<{
           </div>
           {violation.suggestedFix && (
             <div className="text-gray-600 dark:text-gray-300 ml-4 mt-1">
-              제안: {violation.suggestedFix}
+              {t('shift.validation.suggestion', '제안')}: {violation.suggestedFix}
             </div>
           )}
         </div>
@@ -137,6 +142,7 @@ const ValidationTooltip: React.FC<{
 const ValidationSummary: React.FC<{
   validationResult: ValidationResult;
 }> = ({ validationResult }) => {
+  const { t } = useTranslation();
   const errorCount = validationResult.violations.filter((v) => v.severity === 'error').length;
   const warningCount = validationResult.violations.filter((v) => v.severity === 'warning').length;
   const infoCount = validationResult.violations.filter((v) => v.severity === 'info').length;
@@ -145,7 +151,9 @@ const ValidationSummary: React.FC<{
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-green-50 dark:bg-green-900/30 border border-green-200 dark:border-green-700 rounded-md text-green-700 dark:text-green-300">
         <CheckCircleIcon className="w-4 h-4" />
-        <span className="text-sm font-medium">모든 교대 규칙을 준수합니다</span>
+        <span className="text-sm font-medium">
+          {t('shift.validation.allRulesComplied', '모든 교대 규칙을 준수합니다')}
+        </span>
       </div>
     );
   }
@@ -155,27 +163,37 @@ const ValidationSummary: React.FC<{
       {errorCount > 0 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 rounded-md text-red-700 dark:text-red-300">
           <ExclamationIcon className="w-4 h-4" />
-          <span className="text-sm font-medium">{errorCount}개의 오류가 있습니다</span>
+          <span className="text-sm font-medium">
+            {t('shift.validation.errorCount', '{{count}}개의 오류가 있습니다', {
+              count: errorCount,
+            })}
+          </span>
         </div>
       )}
       {warningCount > 0 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-md text-yellow-700 dark:text-yellow-300">
           <InformationCircleIcon className="w-4 h-4" />
-          <span className="text-sm font-medium">{warningCount}개의 경고가 있습니다</span>
+          <span className="text-sm font-medium">
+            {t('shift.validation.warningCount', '{{count}}개의 경고가 있습니다', {
+              count: warningCount,
+            })}
+          </span>
         </div>
       )}
       {infoCount > 0 && (
         <div className="flex items-center gap-2 px-3 py-2 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-md text-blue-700 dark:text-blue-300">
           <InformationCircleIcon className="w-4 h-4" />
-          <span className="text-sm font-medium">{infoCount}개의 정보가 있습니다</span>
+          <span className="text-sm font-medium">
+            {t('shift.validation.infoCount', '{{count}}개의 정보가 있습니다', { count: infoCount })}
+          </span>
         </div>
       )}
       {validationResult.suggestions.length > 0 && (
         <div className="text-sm text-gray-600 dark:text-gray-300">
-          <div className="font-medium mb-1">제안사항:</div>
+          <div className="font-medium mb-1">{t('shift.validation.suggestions', '제안사항')}:</div>
           <ul className="list-disc list-inside space-y-1">
-            {validationResult.suggestions.map((suggestion, index) => (
-              <li key={index}>{suggestion}</li>
+            {validationResult.suggestions.map((suggestion) => (
+              <li key={suggestion}>{suggestion}</li>
             ))}
           </ul>
         </div>
@@ -258,12 +276,13 @@ const CellEditor: React.FC<{
   onCancel: () => void;
   tables: Array<{ id: string; name: string; tableNumber: number; status?: string }>;
 }> = ({ value: initialValue, onSave, onCancel, tables }) => {
+  const { t } = useTranslation();
   const [value, setValue] = useState(initialValue);
 
   const availableOptions = useMemo(() => {
     const options = [
-      { value: '', label: '대기' },
-      { value: '휴식', label: '휴식' },
+      { value: '', label: t('shift.status.waiting', '대기') },
+      { value: '휴식', label: t('shift.status.break', '휴식') },
     ];
 
     const activeTables = tables.filter((t) => t.status === 'open');
@@ -275,7 +294,7 @@ const CellEditor: React.FC<{
     });
 
     return options;
-  }, [tables]);
+  }, [tables, t]);
 
   const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const newValue = event.target.value;
@@ -315,6 +334,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
   readonly = false,
   height = 400,
 }) => {
+  const { t } = useTranslation();
   const [editingCell, setEditingCell] = useState<{ rowId: string; columnId: string } | null>(null);
 
   // 데이터 변환
@@ -340,7 +360,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
       {
         id: 'staffName',
         accessorKey: 'staffName',
-        header: '스태프',
+        header: t('shift.staff', '스태프'),
         size: 120,
         enableResizing: false,
         cell: ({ row }) => (
@@ -351,7 +371,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
                 {row.original.staffName}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                출근: {row.original.startTime}
+                {t('shift.checkIn', '출근')}: {row.original.startTime}
               </div>
             </div>
           </div>
@@ -402,7 +422,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
     }));
 
     return [...baseColumns, ...timeColumns];
-  }, [timeSlots, readonly, tables, validationResult, editingCell, onCellChange]);
+  }, [timeSlots, readonly, tables, validationResult, editingCell, onCellChange, t]);
 
   // 테이블 인스턴스
   const table = useReactTable({
@@ -454,7 +474,7 @@ const LightweightDataGrid: React.FC<LightweightDataGridProps> = ({
                 <td colSpan={columns.length} className="px-4 py-8 text-center">
                   <div className="flex flex-col items-center justify-center text-gray-500 dark:text-gray-400 dark:text-gray-500">
                     <TableIcon className="w-8 h-8 mb-2" />
-                    <p className="text-sm">등록된 딜러가 없습니다</p>
+                    <p className="text-sm">{t('shift.noDealers', '등록된 딜러가 없습니다')}</p>
                   </div>
                 </td>
               </tr>

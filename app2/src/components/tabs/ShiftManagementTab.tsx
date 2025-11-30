@@ -199,9 +199,9 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                 });
 
                 if (dateReq && dateReq.timeSlots?.length > 0) {
-                  return dateReq.timeSlots.map((timeSlot: any, index: number) => (
+                  return dateReq.timeSlots.map((timeSlot: any) => (
                     <div
-                      key={index}
+                      key={`timeslot-${timeSlot.time}`}
                       className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"
                     >
                       <span className="font-medium text-gray-700 dark:text-gray-300">

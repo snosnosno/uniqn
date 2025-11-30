@@ -17,7 +17,10 @@ const PreQuestionDisplay: React.FC<PreQuestionDisplayProps> = ({ applicant }) =>
     <div className="mt-3 p-2 w-full bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
       <div className="space-y-2">
         {applicant.preQuestionAnswers.map((answer, index) => (
-          <div key={index} className="text-sm text-gray-900 dark:text-gray-100">
+          <div
+            key={`q-${index}-${answer.question?.slice(0, 20) || 'unknown'}`}
+            className="text-sm text-gray-900 dark:text-gray-100"
+          >
             <p className="font-medium text-gray-700 dark:text-gray-200">
               Q{index + 1}. {answer.question}
               {answer.required ? (

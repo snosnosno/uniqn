@@ -11,7 +11,9 @@ interface StaffDateGroupProps {
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (hooks vs types)
   getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
   attendanceRecords: any[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
@@ -19,6 +21,7 @@ interface StaffDateGroupProps {
   eventId?: string;
   canEdit?: boolean;
   getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceStatus 타입 충돌
   applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
   multiSelectMode?: boolean;
   selectedStaff?: Set<string>;

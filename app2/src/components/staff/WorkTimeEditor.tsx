@@ -639,8 +639,8 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
             <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">오류</h4>
             <ul className="list-disc list-inside text-red-700 dark:text-red-400 space-y-1">
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
+              {validationErrors.map((error) => (
+                <li key={error}>{error}</li>
               ))}
             </ul>
           </div>

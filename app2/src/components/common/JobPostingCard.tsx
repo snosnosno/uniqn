@@ -392,10 +392,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               👥 모집역할
             </div>
             <div className="ml-4 space-y-1">
-              {post.requiredRolesWithCount.map((roleWithCount, index: number) => {
+              {post.requiredRolesWithCount.map((roleWithCount) => {
                 const roleName = roleWithCount.role || roleWithCount.name || '';
                 return (
-                  <div key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                  <div
+                    key={roleName || 'unknown-role'}
+                    className="text-sm text-gray-600 dark:text-gray-300"
+                  >
                     {t(`roles.${roleName}`, roleName)}: {roleWithCount.count}명
                   </div>
                 );
@@ -414,7 +417,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
       return (
         <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-          {displayReqs.map((req: DateSpecificRequirement, index: number) => {
+          {displayReqs.map((req: DateSpecificRequirement) => {
             // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
             const firstTimeSlot = req.timeSlots?.[0];
             const hasMultiDuration =
@@ -426,13 +429,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             }
 
             return (
-              <div key={index} className="mb-3">
+              <div key={`date-${req.date}`} className="mb-3">
                 <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
                   📅 {dateDisplay} 일정
                 </div>
                 <div className="ml-4 space-y-1">
-                  {(req.timeSlots || []).map((ts: TimeSlot, tsIndex: number) => (
-                    <div key={tsIndex} className="mb-2">
+                  {(req.timeSlots || []).map((ts: TimeSlot) => (
+                    <div key={`ts-${req.date}-${ts.time}`} className="mb-2">
                       {ts.isTimeToBeAnnounced ? (
                         <>
                           <>
@@ -447,7 +450,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                               const isFull = confirmedCount >= role.count;
                               return (
                                 <div
-                                  key={roleIndex}
+                                  key={`role-tba-${role.name}`}
                                   className="text-sm text-gray-600 dark:text-gray-300"
                                 >
                                   {roleIndex === 0 ? (
@@ -498,7 +501,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                               const isFull = confirmedCount >= role.count;
                               return (
                                 <div
-                                  key={roleIndex}
+                                  key={`role-${ts.time}-${role.name}`}
                                   className="text-sm text-gray-600 dark:text-gray-300"
                                 >
                                   {roleIndex === 0 ? (
@@ -581,10 +584,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                 👥 모집역할
               </div>
               <div className="ml-2 space-y-1">
-                {post.requiredRolesWithCount.map((roleWithCount, index: number) => {
+                {post.requiredRolesWithCount.map((roleWithCount) => {
                   const roleName = roleWithCount.role || roleWithCount.name || '';
                   return (
-                    <div key={index} className="text-sm text-gray-600 dark:text-gray-300">
+                    <div
+                      key={roleName || 'unknown-role'}
+                      className="text-sm text-gray-600 dark:text-gray-300"
+                    >
                       {t(`roles.${roleName}`, roleName)}: {roleWithCount.count}명
                     </div>
                   );
@@ -664,7 +670,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                 const isFull = displayCount >= r.count;
                                 return (
                                   <div
-                                    key={roleIndex}
+                                    key={`role-multi-${r.name}`}
                                     className="text-sm text-gray-600 dark:text-gray-300"
                                   >
                                     {roleIndex === 0 ? (

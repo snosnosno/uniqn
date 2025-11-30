@@ -174,6 +174,15 @@ export interface WorkLog {
   };
 }
 
+/**
+ * UnifiedData용 출석 기록 인터페이스
+ * @description UnifiedDataStore에서 사용하는 출석 기록 구조 (eventId 기반)
+ *
+ * @deprecated 신규 개발 시 types/attendance.ts의 AttendanceRecord 사용 권장
+ * 이 타입은 UnifiedDataStore 호환성을 위해 유지됩니다.
+ *
+ * @see types/attendance.ts - AttendanceRecord (SSOT)
+ */
 export interface AttendanceRecord {
   id: string;
   staffId: string;

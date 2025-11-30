@@ -319,8 +319,8 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           {jobPosting.fixedData.requiredRolesWithCount &&
           jobPosting.fixedData.requiredRolesWithCount.length > 0 ? (
             <div className="grid grid-cols-2 gap-2">
-              {jobPosting.fixedData.requiredRolesWithCount.map((roleItem, index) => (
-                <div key={index} className="flex items-center gap-2 text-sm">
+              {jobPosting.fixedData.requiredRolesWithCount.map((roleItem) => (
+                <div key={roleItem.name} className="flex items-center gap-2 text-sm">
                   <span className="font-medium text-gray-700 dark:text-gray-300">
                     {roleItem.name}
                   </span>
@@ -342,7 +342,10 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">📋 사전질문</h4>
           <div className="space-y-3">
             {jobPosting.preQuestions.map((question: any, index: number) => (
-              <div key={index} className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg">
+              <div
+                key={`question-${index}-${typeof question === 'object' ? question.question?.slice(0, 20) : String(question).slice(0, 20)}`}
+                className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg"
+              >
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {index + 1}. {typeof question === 'object' ? question.question : question}
                   {typeof question === 'object' && question.required && (

@@ -272,15 +272,15 @@ const TableDetailModal: React.FC<TableDetailModalProps> = ({
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2 text-center">
-          {(table.seats || []).map((participantId, i) => {
+          {(table.seats || []).map((participantId, seatIndex) => {
             const participant = participantId
               ? participants?.find((p) => p.id === participantId)
               : undefined;
             return (
               <Seat
-                key={i}
+                key={`seat-${table.id}-${seatIndex}`}
                 table={table}
-                seatIndex={i}
+                seatIndex={seatIndex}
                 participantId={participantId}
                 {...(participant && { participant })}
                 getParticipantName={getParticipantName}

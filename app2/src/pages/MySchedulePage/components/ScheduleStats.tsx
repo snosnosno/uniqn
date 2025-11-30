@@ -52,8 +52,11 @@ const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }
     // 모바일 레이아웃 - 2x2 그리드
     return (
       <div className="grid grid-cols-2 gap-3">
-        {statItems.map((item, index) => (
-          <div key={index} className={`${item.bgColor} border ${item.borderColor} rounded-lg p-3`}>
+        {statItems.map((item) => (
+          <div
+            key={item.label}
+            className={`${item.bgColor} border ${item.borderColor} rounded-lg p-3`}
+          >
             <div className="flex items-center gap-2 mb-2">
               {item.icon}
               <span className="text-xs text-gray-600 dark:text-gray-300">{item.label}</span>
@@ -70,8 +73,8 @@ const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
       <div className="grid grid-cols-4 gap-6">
-        {statItems.map((item, index) => (
-          <div key={index} className="text-center">
+        {statItems.map((item) => (
+          <div key={item.label} className="text-center">
             <div
               className={`inline-flex items-center justify-center w-12 h-12 ${item.bgColor} rounded-full mb-3`}
             >

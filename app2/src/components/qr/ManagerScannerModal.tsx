@@ -581,9 +581,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                 최근 스캔 이력
               </label>
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg divide-y divide-gray-200 dark:divide-gray-700 max-h-64 overflow-y-auto">
-                {scanHistory.map((item, index) => (
+                {scanHistory.map((item) => (
                   <div
-                    key={index}
+                    key={`scan-${item.staffName}-${item.time}-${item.mode}`}
                     className="px-4 py-3 flex items-center justify-between hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
                     <div className="flex items-center space-x-3">

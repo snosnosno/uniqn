@@ -75,12 +75,12 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
 
           {requiredRolesWithCount.length > 0 ? (
             <div className="space-y-2">
-              {requiredRolesWithCount.map((role: RoleWithCount, index: number) => {
+              {requiredRolesWithCount.map((role: RoleWithCount) => {
                 const isSelected = selectedRoles.includes(role.name);
 
                 return (
                   <label
-                    key={index}
+                    key={role.name}
                     className={`flex items-center p-3 rounded-lg cursor-pointer transition-all border-2 ${
                       isSelected
                         ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/30'
