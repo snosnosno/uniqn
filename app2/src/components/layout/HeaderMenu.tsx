@@ -1,27 +1,7 @@
-import React, { useState, useRef, useEffect, useCallback, memo } from 'react';
+import React, { useState, useRef, useEffect, useCallback, memo, useMemo } from 'react';
 import { logger } from '../../utils/logger';
 import { useTranslation } from 'react-i18next';
-import {
-  FaUsers,
-  FaTable,
-  FaClock,
-  FaTrophy,
-  FaUserCircle,
-  FaFileInvoice,
-  FaClipboardList,
-  FaSignOutAlt,
-  FaUserCheck,
-  FaCalendarAlt,
-  FaQuestionCircle,
-  FaEnvelope,
-  FaBell,
-  FaCoins,
-  FaCreditCard,
-  FaHistory,
-  FaStar,
-  FaCog,
-  FaExclamationTriangle,
-} from '../Icons/ReactIconsReplacement';
+import { FaSignOutAlt, FaTrophy } from '../Icons/ReactIconsReplacement';
 import { NavLink, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../../contexts/AuthContext';
@@ -29,11 +9,27 @@ import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { usePermissions } from '../../hooks/usePermissions';
 import NotificationDropdown from '../notifications/NotificationDropdown';
 import { ThemeToggle } from '../ThemeToggle';
+import {
+  BASE_MENU,
+  CUSTOMER_CENTER_MENU,
+  PAYMENT_MENU,
+  AUTH_MENU,
+  TOURNAMENT_BASE_ITEMS,
+  TOURNAMENT_ADMIN_ITEMS,
+  ADMIN_MENU,
+  ADMIN_PAYMENT_MENU,
+  type MenuItem,
+  type MenuGroup,
+} from './menuConfig';
+
+// ============================================
+// Sub Components
+// ============================================
 
 interface NavItemProps {
   to: string;
   label: string;
-  Icon: React.ComponentType<any>;
+  Icon: React.ComponentType<{ className?: string }>;
   isOpen: boolean;
   onNavigate?: () => void;
 }
@@ -43,9 +39,11 @@ const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => 
 
   const navLinkClasses = useCallback(
     ({ isActive }: { isActive: boolean }) =>
-      `flex items-center rounded-lg transition-colors ${isActive ? 'bg-blue-600 dark:bg-blue-700 text-white' : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'} ${isOpen ? 'justify-start' : 'justify-center'} ${
-        isMobile ? 'p-4 text-lg' : 'p-2'
-      }`,
+      `flex items-center rounded-lg transition-colors ${
+        isActive
+          ? 'bg-blue-600 dark:bg-blue-700 text-white'
+          : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+      } ${isOpen ? 'justify-start' : 'justify-center'} ${isMobile ? 'p-4 text-lg' : 'p-2'}`,
     [isOpen, isMobile]
   );
 
@@ -61,20 +59,15 @@ const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => 
   );
 });
 
-interface SubMenuItem {
-  to: string;
-  label: string;
-  Icon: React.ComponentType<any>;
-}
-
 interface NavDropdownProps {
   label: string;
-  Icon: React.ComponentType<any>;
-  items: SubMenuItem[];
+  Icon: React.ComponentType<{ className?: string }>;
+  items: MenuItem[];
   onNavigate?: () => void;
+  t: (key: string, defaultValue: string) => string;
 }
 
-const NavDropdown = memo(({ label, Icon, items, onNavigate }: NavDropdownProps) => {
+const NavDropdown = memo(({ label, Icon, items, onNavigate, t }: NavDropdownProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
@@ -118,7 +111,7 @@ const NavDropdown = memo(({ label, Icon, items, onNavigate }: NavDropdownProps) 
               onClick={onNavigate}
             >
               <item.Icon className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
-              <span className="ml-2">{item.label}</span>
+              <span className="ml-2">{t(item.labelKey, item.labelDefault)}</span>
             </NavLink>
           ))}
         </div>
@@ -126,6 +119,50 @@ const NavDropdown = memo(({ label, Icon, items, onNavigate }: NavDropdownProps) 
     </div>
   );
 });
+
+// 메뉴 섹션 구분선
+const MenuDivider = memo(() => (
+  <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
+));
+
+// 메뉴 그룹 렌더링 컴포넌트
+interface MenuGroupRendererProps {
+  group: MenuGroup;
+  t: (key: string, defaultValue: string) => string;
+  onNavigate: () => void;
+}
+
+const MenuGroupRenderer = memo(({ group, t, onNavigate }: MenuGroupRendererProps) => {
+  if (group.type === 'dropdown' && group.items && group.Icon) {
+    return (
+      <NavDropdown
+        label={t(group.labelKey || '', group.labelDefault || '')}
+        Icon={group.Icon}
+        items={group.items}
+        onNavigate={onNavigate}
+        t={t}
+      />
+    );
+  }
+
+  if (group.type === 'item' && group.to && group.Icon) {
+    return (
+      <NavItem
+        to={group.to}
+        label={t(group.labelKey || '', group.labelDefault || '')}
+        Icon={group.Icon}
+        isOpen={true}
+        onNavigate={onNavigate}
+      />
+    );
+  }
+
+  return null;
+});
+
+// ============================================
+// Main Component
+// ============================================
 
 export const HeaderMenu: React.FC = () => {
   const { t, i18n, ready } = useTranslation();
@@ -136,8 +173,8 @@ export const HeaderMenu: React.FC = () => {
   const menuRef = useRef<HTMLDivElement>(null);
   const isMobile = useMediaQuery('(max-width: 768px)');
 
-  // 권한 디버깅을 위한 로그
-  React.useEffect(() => {
+  // 권한 디버깅 로그
+  useEffect(() => {
     logger.info('HeaderMenu 권한 상태', {
       component: 'HeaderMenu',
       data: {
@@ -151,6 +188,15 @@ export const HeaderMenu: React.FC = () => {
       },
     });
   }, [currentUser, role, isAdmin, canManageApplicants, permissions, authLoading, ready]);
+
+  // 토너먼트 메뉴 아이템 (역할에 따라 동적 생성)
+  const tournamentItems = useMemo(() => {
+    const items = [...TOURNAMENT_BASE_ITEMS];
+    if (role === 'admin' || role === 'manager') {
+      items.push(...TOURNAMENT_ADMIN_ITEMS);
+    }
+    return items;
+  }, [role]);
 
   const handleLogout = useCallback(async () => {
     try {
@@ -170,6 +216,14 @@ export const HeaderMenu: React.FC = () => {
     [i18n]
   );
 
+  const closeMenu = useCallback(() => {
+    setIsMenuOpen(false);
+  }, []);
+
+  const toggleMenu = useCallback(() => {
+    setIsMenuOpen((prev) => !prev);
+  }, []);
+
   // 외부 클릭 시 메뉴 닫기
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -179,9 +233,7 @@ export const HeaderMenu: React.FC = () => {
     };
 
     document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
+    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   // ESC 키로 메뉴 닫기
@@ -193,25 +245,13 @@ export const HeaderMenu: React.FC = () => {
     };
 
     document.addEventListener('keydown', handleEscape);
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-    };
-  }, []);
-
-  const toggleMenu = useCallback(() => {
-    setIsMenuOpen(!isMenuOpen);
-  }, [isMenuOpen]);
-
-  const closeMenu = useCallback(() => {
-    setIsMenuOpen(false);
+    return () => document.removeEventListener('keydown', handleEscape);
   }, []);
 
   return (
     <div className="relative flex items-center gap-2" ref={menuRef}>
-      {/* 다크모드 토글 */}
       <ThemeToggle />
 
-      {/* 알림 드롭다운 */}
       {currentUser && !authLoading && <NotificationDropdown />}
 
       {/* 햄버거 메뉴 버튼 */}
@@ -226,32 +266,27 @@ export const HeaderMenu: React.FC = () => {
         style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
       >
         <svg
-          className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`}
+          className={isMobile ? 'w-6 h-6' : 'w-5 h-5'}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
           viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
         >
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
         </svg>
       </button>
 
       {/* 드롭다운 메뉴 */}
-      {isMenuOpen ? (
+      {isMenuOpen && (
         <>
-          {/* 외부 클릭 감지를 위한 오버레이 */}
-          <div className="fixed inset-0 z-40" onClick={() => setIsMenuOpen(false)} />
+          <div className="fixed inset-0 z-40" onClick={closeMenu} />
 
-          {/* 메뉴 컨테이너 */}
           <div
-            className={`
-            ${
+            className={
               isMobile
                 ? 'fixed inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col'
                 : 'absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 min-w-64 w-64'
             }
-          `}
           >
             {/* 메뉴 헤더 */}
             <div
@@ -270,200 +305,70 @@ export const HeaderMenu: React.FC = () => {
                     {t('layout.subtitle', 'Tournament Management System')}
                   </p>
                 </div>
-                {isMobile ? (
+                {isMobile && (
                   <button
-                    onClick={() => setIsMenuOpen(false)}
+                    onClick={closeMenu}
                     className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                     aria-label="Close menu"
                   >
                     <span className="text-2xl">×</span>
                   </button>
-                ) : null}
+                )}
               </div>
             </div>
 
             {/* 네비게이션 메뉴 */}
             <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
-              {/* 기본 메뉴 (모든 사용자) */}
-              <NavItem
-                to="/app/profile"
-                label={t('nav.myProfile', 'My Profile')}
-                Icon={FaUserCircle}
-                isOpen={true}
-                onNavigate={closeMenu}
-              />
-              <NavItem
-                to="/app/my-schedule"
-                label={t('nav.mySchedule', '내 스케줄')}
-                Icon={FaCalendarAlt}
-                isOpen={true}
-                onNavigate={closeMenu}
-              />
-              <NavItem
-                to="/app/jobs"
-                label={t('nav.jobBoard', 'Job Board')}
-                Icon={FaClipboardList}
-                isOpen={true}
-                onNavigate={closeMenu}
-              />
+              {/* 기본 메뉴 */}
+              {BASE_MENU.map((group) => (
+                <MenuGroupRenderer key={group.id} group={group} t={t} onNavigate={closeMenu} />
+              ))}
 
-              {/* 고객 센터 (모든 사용자) */}
-              <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-              <NavDropdown
-                label={t('nav.customerCenter', '고객 센터')}
-                Icon={FaQuestionCircle}
-                items={[
-                  {
-                    to: '/app/announcements',
-                    label: t('nav.announcements', '공지사항'),
-                    Icon: FaBell,
-                  },
-                  {
-                    to: '/app/support',
-                    label: t('nav.support', '고객지원'),
-                    Icon: FaQuestionCircle,
-                  },
-                ]}
-                onNavigate={closeMenu}
-              />
+              {/* 고객 센터 */}
+              <MenuDivider />
+              <MenuGroupRenderer group={CUSTOMER_CENTER_MENU} t={t} onNavigate={closeMenu} />
 
-              {/* 결제 메뉴 (모든 사용자) */}
-              <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-              <NavDropdown
-                label={t('nav.paymentAndChip', '결제 및 칩 관리')}
-                Icon={FaCreditCard}
-                items={[
-                  {
-                    to: '/app/chip/recharge',
-                    label: t('nav.chipRecharge', '칩 충전'),
-                    Icon: FaCoins,
-                  },
-                  {
-                    to: '/app/payment/history',
-                    label: t('nav.paymentHistory', '결제 내역'),
-                    Icon: FaCreditCard,
-                  },
-                  {
-                    to: '/app/chip/history',
-                    label: t('nav.chipHistory', '칩 사용 내역'),
-                    Icon: FaHistory,
-                  },
-                  {
-                    to: '/app/subscription',
-                    label: t('nav.subscription', '구독 플랜'),
-                    Icon: FaStar,
-                  },
-                ]}
-                onNavigate={closeMenu}
-              />
+              {/* 결제 및 칩 관리 */}
+              <MenuDivider />
+              <MenuGroupRenderer group={PAYMENT_MENU} t={t} onNavigate={closeMenu} />
 
-              {/* 로딩 상태가 아닐 때만 권한 기반 메뉴 표시 */}
+              {/* 인증된 사용자 메뉴 */}
               {!authLoading && currentUser && (
                 <>
-                  <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
+                  <MenuDivider />
+                  <MenuGroupRenderer group={AUTH_MENU} t={t} onNavigate={closeMenu} />
 
-                  {/* Job Posting Management - 모든 역할에서 표시 (권한은 개별 확인) */}
-                  <NavItem
-                    to="/app/admin/job-postings"
-                    label={t('nav.managePostings', 'Manage Postings')}
-                    Icon={FaFileInvoice}
-                    isOpen={true}
-                    onNavigate={closeMenu}
-                  />
-
-                  {/* Tournament Management - All authenticated users */}
-                  <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
+                  {/* 토너먼트 관리 */}
+                  <MenuDivider />
                   <NavDropdown
                     label={t('nav.tournamentManagement', '토너먼트 관리')}
                     Icon={FaTrophy}
-                    items={[
-                      {
-                        to: '/app/tournaments',
-                        label: t('nav.tournaments', '토너먼트'),
-                        Icon: FaTrophy,
-                      },
-                      {
-                        to: '/app/participants',
-                        label: t('nav.participantManagement', '참가자 관리'),
-                        Icon: FaUsers,
-                      },
-                      { to: '/app/tables', label: t('common.table', '테이블'), Icon: FaTable },
-                      ...(role === 'admin' || role === 'manager'
-                        ? [
-                            {
-                              to: '/app/admin/shift-schedule',
-                              label: t('nav.shiftSchedule', 'Shift Schedule'),
-                              Icon: FaClock,
-                            },
-                            {
-                              to: '/app/admin/prizes',
-                              label: t('nav.prizes', 'Prizes'),
-                              Icon: FaTrophy,
-                            },
-                          ]
-                        : []),
-                    ]}
+                    items={tournamentItems}
                     onNavigate={closeMenu}
+                    t={t}
                   />
 
                   {/* Admin 전용 메뉴 */}
                   {role === 'admin' && (
                     <>
-                      <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-                      <NavItem
-                        to="/app/admin/user-management"
-                        label={t('nav.userManagement', 'User Management')}
-                        Icon={FaUsers}
-                        isOpen={true}
-                        onNavigate={closeMenu}
-                      />
-                      <NavItem
-                        to="/app/admin/inquiries"
-                        label={t('nav.inquiryManagement', '문의 관리')}
-                        Icon={FaEnvelope}
-                        isOpen={true}
-                        onNavigate={closeMenu}
-                      />
-                      <NavItem
-                        to="/app/admin/approvals"
-                        label={t('nav.approvals', 'Approvals')}
-                        Icon={FaUserCheck}
-                        isOpen={true}
-                        onNavigate={closeMenu}
-                      />
-                      <NavItem
-                        to="/app/admin/job-posting-approvals"
-                        label={t('nav.tournamentApprovals', '대회 공고 승인')}
-                        Icon={FaTrophy}
-                        isOpen={true}
-                        onNavigate={closeMenu}
-                      />
+                      <MenuDivider />
+                      {ADMIN_MENU.map((group) => (
+                        <MenuGroupRenderer
+                          key={group.id}
+                          group={group}
+                          t={t}
+                          onNavigate={closeMenu}
+                        />
+                      ))}
 
-                      {/* 결제 관리 (Admin 전용) */}
-                      <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
-                      <NavDropdown
-                        label={t('nav.paymentSystemManagement', '결제 시스템 관리')}
-                        Icon={FaCog}
-                        items={[
-                          {
-                            to: '/app/admin/chip-management',
-                            label: t('nav.chipManagement', '칩 관리'),
-                            Icon: FaCog,
-                          },
-                          {
-                            to: '/app/admin/refund-blacklist',
-                            label: t('nav.refundBlacklist', '환불 블랙리스트'),
-                            Icon: FaExclamationTriangle,
-                          },
-                        ]}
-                        onNavigate={closeMenu}
-                      />
+                      <MenuDivider />
+                      <MenuGroupRenderer group={ADMIN_PAYMENT_MENU} t={t} onNavigate={closeMenu} />
                     </>
                   )}
                 </>
               )}
 
-              {/* 로딩 상태 표시 */}
+              {/* 로딩 상태 */}
               {authLoading && (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
                   {t('common.checkingPermissions', '권한 확인 중...')}
@@ -482,7 +387,6 @@ export const HeaderMenu: React.FC = () => {
             <div
               className={`border-t border-gray-200 dark:border-gray-700 space-y-2 ${isMobile ? 'p-6' : 'p-2'}`}
             >
-              {/* 언어 선택 */}
               <select
                 className="w-full p-2 rounded-lg text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 transition-colors hover:bg-gray-50 dark:hover:bg-gray-600 text-sm"
                 onChange={handleLanguageChange}
@@ -492,7 +396,6 @@ export const HeaderMenu: React.FC = () => {
                 <option value="ko">한국어</option>
               </select>
 
-              {/* 로그아웃 버튼 */}
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center p-2 rounded-lg transition-colors text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 justify-start"
@@ -503,7 +406,7 @@ export const HeaderMenu: React.FC = () => {
             </div>
           </div>
         </>
-      ) : null}
+      )}
     </div>
   );
 };
