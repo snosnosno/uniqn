@@ -268,9 +268,6 @@ export type { UseSecuritySettingsReturn } from './useSecuritySettings';
 // Utility & UI Hooks
 // =============================================================================
 
-/** 날짜 유틸 Hook */
-export { useDateUtils } from './useDateUtils';
-
 /** 캐시된 날짜 포맷 Hook */
 export { useCachedFormatDate } from './useCachedFormatDate';
 

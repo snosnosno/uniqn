@@ -22,7 +22,6 @@ import {
   normalizePostingType,
 } from '../../utils/jobPosting/jobPostingHelpers';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
-import { useDateUtils } from '../../hooks/useDateUtils';
 import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
@@ -84,7 +83,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   className = '',
 }) => {
   const { t } = useTranslation();
-  const { formatDateDisplay } = useDateUtils();
   const [creatorInfo, setCreatorInfo] = useState<{ name: string; nickname?: string } | null>(null);
 
   // 구인자 정보 가져오기
@@ -1011,8 +1009,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
         {/* 관리자용 - 생성/수정 정보 */}
         {variant === 'admin-list' && (
           <div className="mt-3 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
-            <span>생성: {formatDateDisplay(post.createdAt)}</span>
-            {post.updatedAt && <span>수정: {formatDateDisplay(post.updatedAt)}</span>}
+            <span>생성: {formatDateUtil(post.createdAt)}</span>
+            {post.updatedAt && <span>수정: {formatDateUtil(post.updatedAt)}</span>}
           </div>
         )}
 

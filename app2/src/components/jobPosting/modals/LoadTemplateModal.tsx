@@ -1,7 +1,7 @@
 import React from 'react';
 import { JobPostingTemplate } from '@/types/jobPosting';
-import { useDateUtils } from '@/hooks/useDateUtils';
 import { formatSalaryDisplay, getBenefitDisplayNames } from '@/utils/jobPosting/jobPostingHelpers';
+import { formatDate } from '@/utils/jobPosting/dateUtils';
 import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
 import LoadingSpinner from '../../LoadingSpinner';
@@ -25,8 +25,6 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
   onLoadTemplate,
   onDeleteTemplate,
 }) => {
-  const { formatDateDisplay } = useDateUtils();
-
   const handleLoadTemplate = async (template: JobPostingTemplate) => {
     try {
       await onLoadTemplate(template);
@@ -98,7 +96,7 @@ const LoadTemplateModal: React.FC<LoadTemplateModalProps> = ({
                           </div>
                         )}
                       <p className="text-xs text-gray-400 dark:text-gray-500 mt-2">
-                        생성: {formatDateDisplay(template.createdAt)}
+                        생성: {formatDate(template.createdAt)}
                       </p>
                     </div>
 

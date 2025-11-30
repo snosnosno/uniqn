@@ -1,13 +1,16 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { DateSpecificRequirement, TimeSlot } from '../../types/jobPosting';
-import { useDateUtils } from '../../hooks/useDateUtils';
 import {
   createNewDateSpecificRequirement,
   PREDEFINED_ROLES,
   getRoleDisplayName,
 } from '../../utils/jobPosting/jobPostingHelpers';
-import { convertToDateString } from '../../utils/jobPosting/dateUtils';
+import {
+  convertToDateString,
+  dateStringToDropdownValue,
+  dropdownValueToDateString,
+} from '../../utils/jobPosting/dateUtils';
 import Button from '../ui/Button';
 import DateDropdownSelector from '../time/DateDropdownSelector';
 import { Select } from '../common/Select';
@@ -52,7 +55,6 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   onDateSpecificRoleChange,
 }) => {
   const { t } = useTranslation();
-  const { toDropdownValue, fromDropdownValue } = useDateUtils();
   const [customRoleNames, setCustomRoleNames] = useState<Record<string, string>>({});
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -82,7 +84,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
       return;
     }
 
-    const dateStr = fromDropdownValue(selectedDate);
+    const dateStr = dropdownValueToDateString(selectedDate);
     const selectedDateObj = new Date(dateStr);
     const today = new Date();
 
@@ -146,7 +148,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
     requirementIndex: number,
     value: { year?: string; month?: string; day?: string }
   ) => {
-    const newDate = fromDropdownValue(value);
+    const newDate = dropdownValueToDateString(value);
     const selectedDateObj = new Date(newDate);
     const today = new Date();
 
@@ -387,7 +389,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                 <div className="flex items-center space-x-2">
                   <span className="text-sm font-semibold text-gray-700 dark:text-gray-200"></span>
                   <DateDropdownSelector
-                    value={toDropdownValue(dateStr)}
+                    value={dateStringToDropdownValue(dateStr)}
                     onChange={(value) => handleDateChange(requirementIndex, value)}
                   />
                 </div>
@@ -408,9 +410,14 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
                 <div className="flex items-center space-x-2 mt-2 ml-6">
                   <span className="text-sm text-gray-600 dark:text-gray-300">~</span>
                   <DateDropdownSelector
-                    value={toDropdownValue(requirement.timeSlots[0]?.duration?.endDate || dateStr)}
+                    value={dateStringToDropdownValue(
+                      requirement.timeSlots[0]?.duration?.endDate || dateStr
+                    )}
                     onChange={(value) =>
-                      handleDurationEndDateChange(requirementIndex, fromDropdownValue(value))
+                      handleDurationEndDateChange(
+                        requirementIndex,
+                        dropdownValueToDateString(value)
+                      )
                     }
                   />
                 </div>
