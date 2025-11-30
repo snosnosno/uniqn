@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { networkManager } from '../utils/offlineSupport';
 import { logger } from '../utils/logger';
 
@@ -23,9 +23,23 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
   const [showIndicator, setShowIndicator] = useState(!isOnline || showOnlineStatus);
   const [isVisible, setIsVisible] = useState(false);
 
+  // 타이머 ref로 cleanup 관리
+  const hideTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const animationTimerRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const unsubscribe = networkManager.addListener((online) => {
       setIsOnline(online);
+
+      // 이전 타이머들 정리
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+        hideTimerRef.current = null;
+      }
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+        animationTimerRef.current = null;
+      }
 
       if (!online) {
         // 오프라인이 되면 즉시 표시
@@ -39,16 +53,25 @@ const NetworkStatusIndicator: React.FC<NetworkStatusIndicatorProps> = ({
           setIsVisible(true);
         } else {
           setIsVisible(true);
-          setTimeout(() => {
+          hideTimerRef.current = setTimeout(() => {
             setIsVisible(false);
-            setTimeout(() => setShowIndicator(false), 300); // 애니메이션 완료 후 숨김
+            animationTimerRef.current = setTimeout(() => setShowIndicator(false), 300); // 애니메이션 완료 후 숨김
           }, 2000); // 2초 후 숨김
         }
         logger.info('네트워크 연결이 복구됨');
       }
     });
 
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // 컴포넌트 언마운트 시 타이머 정리
+      if (hideTimerRef.current) {
+        clearTimeout(hideTimerRef.current);
+      }
+      if (animationTimerRef.current) {
+        clearTimeout(animationTimerRef.current);
+      }
+    };
   }, [showOnlineStatus]);
 
   if (!showIndicator) return null;

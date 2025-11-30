@@ -208,18 +208,6 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     };
   };
 
-  // applyOptimisticUpdate 함수는 이미 위에 정의되어 있으므로 중복 제거
-  // 3초 후 로컬 업데이트 제거 기능 추가
-  const _clearOptimisticUpdate = (workLogId: string) => {
-    setTimeout(() => {
-      setLocalUpdates((prev) => {
-        const newMap = new Map(prev);
-        newMap.delete(workLogId);
-        return newMap;
-      });
-    }, 3000);
-  };
-
   // 특정 스태프의 출석 상태를 가져오는 함수 - workLogId 기반으로 검색
   const getStaffAttendanceStatus = (
     staffIdOrWorkLogId: string

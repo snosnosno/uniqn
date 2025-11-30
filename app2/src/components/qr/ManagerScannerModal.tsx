@@ -64,6 +64,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
 
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const scannerRef = useRef<Html5QrcodeScanner | null>(null);
+  const scannerRestartTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   /**
    * 모달 열릴 때 스캔 컨텍스트 초기화
@@ -126,8 +127,13 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           currentScanner
             .clear()
             .then(() => {
+              // 이전 타이머 정리
+              if (scannerRestartTimerRef.current) {
+                clearTimeout(scannerRestartTimerRef.current);
+              }
               // 0.5초 후 재시작
-              setTimeout(() => {
+              scannerRestartTimerRef.current = setTimeout(() => {
+                scannerRestartTimerRef.current = null;
                 if (scanMode === 'camera' && isOpen) {
                   const newScanner = new Html5QrcodeScanner(
                     'qr-reader',
@@ -165,6 +171,11 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
 
     // Cleanup
     return () => {
+      // 타이머 정리
+      if (scannerRestartTimerRef.current) {
+        clearTimeout(scannerRestartTimerRef.current);
+        scannerRestartTimerRef.current = null;
+      }
       const currentScanner = scannerRef.current;
       if (currentScanner) {
         scannerRef.current = null;

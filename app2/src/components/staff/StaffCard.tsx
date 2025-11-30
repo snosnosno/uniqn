@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
 
@@ -60,6 +60,18 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
     // 🚀 출석 상태 Optimistic Update를 위한 로컬 상태
     const [optimisticAttendanceStatus, setOptimisticAttendanceStatus] =
       useState<AttendanceStatus | null>(null);
+
+    // 타이머 ref로 cleanup 관리
+    const optimisticResetTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    // 컴포넌트 언마운트 시 타이머 정리
+    useEffect(() => {
+      return () => {
+        if (optimisticResetTimerRef.current) {
+          clearTimeout(optimisticResetTimerRef.current);
+        }
+      };
+    }, []);
 
     const { lightImpact, mediumImpact, selectionFeedback } = useHapticFeedback();
 
@@ -320,9 +332,15 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
                         // 🚀 즉시 UI 업데이트 (Optimistic Update)
                         setOptimisticAttendanceStatus(newStatus);
 
+                        // 이전 타이머 정리
+                        if (optimisticResetTimerRef.current) {
+                          clearTimeout(optimisticResetTimerRef.current);
+                        }
+
                         // Firebase 업데이트 완료 후 실제 상태로 동기화 (3초 후 초기화)
-                        setTimeout(() => {
+                        optimisticResetTimerRef.current = setTimeout(() => {
                           setOptimisticAttendanceStatus(null);
+                          optimisticResetTimerRef.current = null;
                         }, 3000);
                       }}
                     />
