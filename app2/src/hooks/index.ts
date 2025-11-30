@@ -162,9 +162,6 @@ export { useNotificationSettings } from './useNotificationSettings';
 // Tournament Hooks
 // =============================================================================
 
-/** 토너먼트 목록 Hook */
-export { useTournamentList } from './useTournamentList';
-
 /** 토너먼트 Hook */
 export { useTournaments } from './useTournaments';
 
