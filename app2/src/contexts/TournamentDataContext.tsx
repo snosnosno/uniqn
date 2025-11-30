@@ -17,7 +17,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useCallback } from 'react';
 import { DocumentReference, DocumentData } from 'firebase/firestore';
-import { useTournament } from './TournamentContext';
+import { useTournament } from './TournamentContextAdapter';
 import { useTournaments, Tournament } from '../hooks/useTournaments';
 import { logger } from '../utils/logger';
 

@@ -96,8 +96,14 @@ export type { ShiftSchedule, ShiftDealer, WorkLog } from './useShiftSchedule';
 // Staff Hooks
 // =============================================================================
 
-/** 스태프 관리 Hook */
-export { useStaffManagement } from './useStaffManagement';
+/** 스태프 관리 타입 */
+export type {
+  StaffData,
+  StaffFilters,
+  GroupedStaffData,
+  JobRole,
+  UserRole,
+} from './useStaffManagement';
 
 /** 스태프 QR Hook */
 export { useStaffQR } from './useStaffQR';

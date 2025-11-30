@@ -24,8 +24,6 @@ import {
   hasAdminPrivilege,
 } from '../types/unifiedData';
 import { ScheduleEvent } from '../types/schedule';
-// Timestamp는 향후 필터링 기능에서 사용 예정
-// import { Timestamp } from 'firebase/firestore';
 
 /**
  * 기본 통합 데이터 훅 (Zustand 기반)

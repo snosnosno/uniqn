@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React, { Suspense } from 'react';
-// import { lazyWithRetry } from './utils/lazyWithRetry';
 import { Routes, Route, Navigate } from 'react-router-dom';
 
 // Feature Flags

@@ -10,10 +10,7 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
 import Modal from '../components/ui/Modal';
-// 카카오 로그인 기능 - 나중에 다시 활성화 예정
-// import KakaoLoginButton from '../components/auth/KakaoLoginButton';
 import { useAuth } from '../contexts/AuthContext';
-// import { KakaoUserInfo, KakaoAuthResponse } from '../utils/kakaoSdk';
 import { recordLoginAttempt, isLoginBlocked, formatBlockTime } from '../services/authSecurity';
 import { secureStorage } from '../utils/secureStorage';
 import { toast } from '../utils/toast';

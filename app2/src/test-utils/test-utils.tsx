@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, RenderOptions } from '@testing-library/react';
 import { AuthContext } from '../contexts/AuthContext';
-import { TournamentProvider } from '../contexts/TournamentContext';
+import { TournamentProvider } from '../contexts/TournamentContextAdapter';
 import { MemoryRouter } from 'react-router-dom';
 
 // Mock user for testing

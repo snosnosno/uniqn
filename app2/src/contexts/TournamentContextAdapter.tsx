@@ -40,10 +40,34 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { useTournamentStore } from '../stores/tournamentStore';
+import {
+  useTournamentStore,
+  type Participant,
+  type Table,
+  type BlindLevel,
+  type TournamentSettings,
+} from '../stores/tournamentStore';
 import type { User } from '../types/common';
-import { TournamentState } from './TournamentContext';
 import { useAuth } from './AuthContext';
+
+// TournamentState 인터페이스 (하위 호환성 유지)
+export interface TournamentState {
+  userId: string | null;
+  tournamentId: string | null;
+  participants: Participant[];
+  tables: Table[];
+  blinds: BlindLevel[];
+  currentLevel: number;
+  tournamentStatus: 'pending' | 'running' | 'paused' | 'finished';
+  settings: TournamentSettings;
+  blindLevel: number;
+  remainingTime: number;
+  isTimerRunning: boolean;
+  currentUser: User | null;
+}
+
+// 타입 re-export (하위 호환성)
+export type { Participant, Table, BlindLevel, TournamentSettings };
 
 // 기존 Action 타입과 호환되는 인터페이스
 type Action =

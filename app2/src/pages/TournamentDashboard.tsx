@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { toast } from '../utils/toast';
 import { IconType, FaUsers, FaClock, FaTrophy } from '../components/Icons/ReactIconsReplacement';
 
-import { TournamentContext, Participant } from '../contexts/TournamentContext';
+import { TournamentContext, type Participant } from '../contexts/TournamentContextAdapter';
 import { setupTestData } from '../firebase';
 
 const TournamentDashboard = () => {

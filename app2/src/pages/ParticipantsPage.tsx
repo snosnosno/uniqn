@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 import { useTranslation } from 'react-i18next';
 import { writeBatch, doc, collection } from 'firebase/firestore';
 import { db } from '../firebase';

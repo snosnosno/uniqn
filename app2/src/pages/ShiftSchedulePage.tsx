@@ -1,5 +1,3 @@
-// Firebase imports - 향후 사용 예정
-// import { collection, query, doc, deleteField, updateDoc, serverTimestamp, setDoc, where } from 'firebase/firestore';
 import { logger } from '../utils/logger';
 import { toISODateString } from '../utils/dateUtils';
 import React, { useState, useMemo, useEffect } from 'react';
@@ -18,31 +16,26 @@ import {
 } from '../components/Icons/ReactIconsReplacement';
 
 import ShiftGridComponent from '../components/ShiftGridComponent';
-// import TimeIntervalSelector from '../components/time/TimeIntervalSelector'; // 향후 사용 예정
-// import { useAuth } from '../contexts/AuthContext'; // 향후 사용 예정
 import { useUnifiedData } from '../hooks/useUnifiedData';
 import { WorkLog } from '../types/unifiedData';
-// import { db } from '../firebase'; // 향후 사용 예정
 import { useShiftSchedule, ShiftDealer } from '../hooks/useShiftSchedule';
 import { useTables } from '../hooks/useTables';
 import { useToast } from '../hooks/useToast';
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 
 const ShiftSchedulePage: React.FC = () => {
   const { state: tournamentState } = useTournament();
   const { t } = useTranslation();
-  // const { currentUser } = useAuth(); // 향후 사용 예정
   const { showError } = useToast();
 
   // 현재 선택된 날짜 상태
   const [selectedDate] = useState<string>(() => {
     const today = new Date();
     const datePart = toISODateString(today);
-    return datePart || ''; // YYYY-MM-DD 형식
+    return datePart || '';
   });
-  // setSelectedDate - 향후 사용 예정
 
-  // 임시 이벤트 ID (추후 이벤트 선택 기능으로 확장)
+  // 이벤트 ID (추후 이벤트 선택 기능으로 확장 예정)
   const [selectedEventId] = useState<string>('default-event');
 
   // 🚀 WorkLog에서 스태프 데이터 가져오기 (persons 컬렉션 통합)

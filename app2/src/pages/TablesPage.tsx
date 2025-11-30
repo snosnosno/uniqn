@@ -21,7 +21,7 @@ import AssignmentResultModal, {
 } from '../components/modals/AssignmentResultModal';
 import { useDateFilter } from '../hooks/useDateFilter';
 import { useMediaQuery } from '../hooks/useMediaQuery';
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 import { useParticipants, Participant } from '../hooks/useParticipants';
 import { useSettings } from '../hooks/useSettings';
 import { useTables, Table } from '../hooks/useTables';

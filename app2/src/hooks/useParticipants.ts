@@ -15,8 +15,6 @@ import { useState, useEffect, useMemo } from 'react';
 import i18n from '../i18n';
 
 import { db } from '../firebase';
-// 향후 안전한 구독 기능 사용 예정
-// import { safeOnSnapshot } from '../utils/firebaseConnectionManager';
 import { withFirebaseErrorHandling } from '../utils/firebaseUtils';
 import { useFirestoreCollection } from './firestore';
 

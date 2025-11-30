@@ -4,8 +4,6 @@ import {
   createNewPreQuestion,
   PREDEFINED_ROLES,
 } from '../utils/jobPosting/jobPostingHelpers';
-// import { dropdownValueToDateString } from '../utils/jobPosting/dateUtils'; // 현재 사용하지 않음
-
 import { JobPosting, JobPostingFormData } from '../types/jobPosting';
 import { DateSpecificRequirement, Benefits } from '../types/jobPosting/base';
 import { toast } from '../utils/toast';

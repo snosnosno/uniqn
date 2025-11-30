@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useTournament } from '../contexts/TournamentContext';
+import { useTournament } from '../contexts/TournamentContextAdapter';
 import { useTournamentData } from '../contexts/TournamentDataContext';
 import { Tournament, isDefaultTournament } from '../hooks/useTournaments';
 import { logger } from '../utils/logger';
