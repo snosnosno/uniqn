@@ -68,7 +68,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     for (let hour = 0; hour < 24; hour++) {
       options.push({
         value: hour.toString().padStart(2, '0'),
-        label: `${hour.toString().padStart(2, '0')}시`,
+        label: t('common.hourSuffix', '{{hour}}시', { hour: hour.toString().padStart(2, '0') }),
       });
     }
     return options;
@@ -79,7 +79,9 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     for (let minute = 0; minute < 60; minute += 5) {
       options.push({
         value: minute.toString().padStart(2, '0'),
-        label: `${minute.toString().padStart(2, '0')}분`,
+        label: t('common.minuteSuffix', '{{minute}}분', {
+          minute: minute.toString().padStart(2, '0'),
+        }),
       });
     }
     return options;
@@ -179,16 +181,21 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
       const endTime = combineTime(endHour, endMinute);
 
       if (!startTime && !endTime) {
-        errors.push('최소한 시작 시간 또는 종료 시간 중 하나는 설정해야 합니다.');
+        errors.push(
+          t(
+            'validation.requiredTimeField',
+            '최소한 시작 시간 또는 종료 시간 중 하나는 설정해야 합니다.'
+          )
+        );
       }
 
       // 시간 형식 검증
       if (startTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(startTime)) {
-        errors.push('시작 시간 형식이 올바르지 않습니다.');
+        errors.push(t('validation.invalidStartTimeFormat', '시작 시간 형식이 올바르지 않습니다.'));
       }
 
       if (endTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(endTime)) {
-        errors.push('종료 시간 형식이 올바르지 않습니다.');
+        errors.push(t('validation.invalidEndTimeFormat', '종료 시간 형식이 올바르지 않습니다.'));
       }
     }
 
@@ -301,15 +308,17 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         if (editMode === 'time') {
           const startTime = combineTime(startHour, startMinute);
           const endTime = combineTime(endHour, endMinute);
-          const timeInfo = `${startTime ? `출근: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `퇴근: ${endTime}` : ''}`;
+          const checkInLabel = t('attendance.checkIn', '출근');
+          const checkOutLabel = t('attendance.checkOut', '퇴근');
+          const timeInfo = `${startTime ? `${checkInLabel}: ${startTime}` : ''}${startTime && endTime ? ' / ' : ''}${endTime ? `${checkOutLabel}: ${endTime}` : ''}`;
           showSuccess(t('toast.bulk.timeUpdateSuccess', { count: successCount, timeInfo }));
         } else {
           const statusText =
             attendanceStatus === 'not_started'
-              ? '출근 전'
+              ? t('attendance.status.notStarted', '출근 전')
               : attendanceStatus === 'checked_in'
-                ? '출근'
-                : '퇴근';
+                ? t('attendance.status.checkedIn', '출근')
+                : t('attendance.status.checkedOut', '퇴근');
           showSuccess(
             t('toast.bulk.statusUpdateSuccess', { count: successCount, status: statusText })
           );
@@ -377,7 +386,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 flex items-center disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
       >
         <TimesIcon className="w-4 h-4 mr-2" />
-        취소
+        {t('common.cancel', '취소')}
       </button>
       <button
         onClick={handleBulkUpdate}
@@ -387,12 +396,14 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         {isUpdating ? (
           <>
             <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
-            <span>처리 중...</span>
+            <span>{t('common.processing', '처리 중...')}</span>
           </>
         ) : (
           <>
             <SaveIcon className="w-4 h-4 mr-2" />
-            <span>{selectedStaff.length}명 일괄 수정</span>
+            <span>
+              {t('bulkEdit.updateCount', '{{count}}명 일괄 수정', { count: selectedStaff.length })}
+            </span>
           </>
         )}
       </button>
@@ -403,21 +414,24 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="일괄 수정"
+      title={t('bulkEdit.title', '일괄 수정')}
       size="lg"
       footer={footerButtons}
-      aria-label="일괄 수정"
+      aria-label={t('bulkEdit.title', '일괄 수정')}
     >
       <div className="space-y-6">
         {/* 선택된 스태프 정보 */}
         <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
           <div className="flex items-center mb-2">
             <UsersIcon className="w-5 h-5 text-blue-600 mr-2" />
-            <h3 className="font-semibold text-lg">선택된 스태프</h3>
+            <h3 className="font-semibold text-lg">
+              {t('bulkEdit.selectedStaff', '선택된 스태프')}
+            </h3>
           </div>
           <p className="text-gray-700 dark:text-gray-200">
-            총 <span className="font-bold text-blue-600">{selectedStaff.length}명</span>의 스태프가
-            선택되었습니다.
+            {t('bulkEdit.selectedCount', '총 {{count}}명의 스태프가 선택되었습니다.', {
+              count: selectedStaff.length,
+            })}
           </p>
           <div className="mt-2 max-h-32 overflow-y-auto">
             <div className="flex flex-wrap gap-2">
@@ -445,7 +459,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               }`}
             >
               <ClockIcon className="w-4 h-4 inline-block mr-2" />
-              근무 시간 수정
+              {t('bulkEdit.editWorkTime', '근무 시간 수정')}
             </button>
             <button
               onClick={() => setEditMode('status')}
@@ -456,7 +470,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               }`}
             >
               <CalendarIcon className="w-4 h-4 inline-block mr-2" />
-              출석 상태 수정
+              {t('bulkEdit.editAttendance', '출석 상태 수정')}
             </button>
           </nav>
         </div>
@@ -466,7 +480,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           <div className="space-y-4">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
               <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                ⚠️ 설정한 시간이 선택된 모든 스태프에게 동일하게 적용됩니다.
+                ⚠️{' '}
+                {t(
+                  'bulkEdit.timeWarning',
+                  '설정한 시간이 선택된 모든 스태프에게 동일하게 적용됩니다.'
+                )}
               </p>
             </div>
 
@@ -474,7 +492,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               {/* 시작 시간 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  시작 시간
+                  {t('workTime.startTime', '시작 시간')}
                 </label>
                 <div className="flex space-x-2">
                   <select
@@ -482,7 +500,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     onChange={(e) => setStartHour(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">시</option>
+                    <option value="">{t('common.hour', '시')}</option>
                     {hourOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -494,7 +512,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     onChange={(e) => setStartMinute(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">분</option>
+                    <option value="">{t('common.minute', '분')}</option>
                     {minuteOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -507,8 +525,10 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
               {/* 종료 시간 */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  종료 시간
-                  <span className="text-gray-500 dark:text-gray-400 text-xs ml-1">(선택사항)</span>
+                  {t('workTime.endTime', '종료 시간')}
+                  <span className="text-gray-500 dark:text-gray-400 text-xs ml-1">
+                    ({t('common.optional', '선택사항')})
+                  </span>
                 </label>
                 <div className="flex space-x-2">
                   <select
@@ -516,7 +536,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     onChange={(e) => setEndHour(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">시</option>
+                    <option value="">{t('common.hour', '시')}</option>
                     {hourOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -528,7 +548,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     onChange={(e) => setEndMinute(e.target.value)}
                     className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 rounded-md focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">분</option>
+                    <option value="">{t('common.minute', '분')}</option>
                     {minuteOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -542,10 +562,12 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
             {/* 미리보기 */}
             {(combineTime(startHour, startMinute) || combineTime(endHour, endMinute)) && (
               <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
-                <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-2">적용될 시간</h4>
+                <h4 className="font-medium text-gray-700 dark:text-gray-200 mb-2">
+                  {t('bulkEdit.previewTime', '적용될 시간')}
+                </h4>
                 <div className="text-lg font-mono dark:text-gray-100">
-                  {combineTime(startHour, startMinute) || '변경 없음'} ~{' '}
-                  {combineTime(endHour, endMinute) || '미정'}
+                  {combineTime(startHour, startMinute) || t('common.noChange', '변경 없음')} ~{' '}
+                  {combineTime(endHour, endMinute) || t('common.tbd', '미정')}
                 </div>
               </div>
             )}
@@ -555,13 +577,17 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
           <div className="space-y-4">
             <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
               <p className="text-sm text-yellow-800 dark:text-yellow-300">
-                ⚠️ 선택한 출석 상태가 모든 스태프에게 동일하게 적용됩니다.
+                ⚠️{' '}
+                {t(
+                  'bulkEdit.statusWarning',
+                  '선택한 출석 상태가 모든 스태프에게 동일하게 적용됩니다.'
+                )}
               </p>
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-3">
-                출석 상태 선택
+                {t('bulkEdit.selectStatus', '출석 상태 선택')}
               </label>
               <div className="space-y-2">
                 <label className="flex items-center p-3 border dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700">
@@ -574,7 +600,9 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   />
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-gray-500 dark:bg-gray-400 rounded-full mr-2"></div>
-                    <span className="font-medium dark:text-gray-100">출근 전</span>
+                    <span className="font-medium dark:text-gray-100">
+                      {t('attendance.status.notStarted', '출근 전')}
+                    </span>
                   </div>
                 </label>
 
@@ -588,7 +616,7 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   />
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-green-500 dark:bg-green-600 rounded-full mr-2"></div>
-                    <span className="font-medium">출근</span>
+                    <span className="font-medium">{t('attendance.status.checkedIn', '출근')}</span>
                   </div>
                 </label>
 
@@ -602,7 +630,9 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                   />
                   <div className="flex items-center">
                     <div className="w-2 h-2 bg-blue-500 dark:bg-blue-400 rounded-full mr-2"></div>
-                    <span className="font-medium dark:text-gray-100">퇴근</span>
+                    <span className="font-medium dark:text-gray-100">
+                      {t('attendance.status.checkedOut', '퇴근')}
+                    </span>
                   </div>
                 </label>
               </div>
@@ -613,7 +643,9 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
         {/* 유효성 검사 오류 */}
         {validationErrors.length > 0 && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">오류</h4>
+            <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">
+              {t('common.error', '오류')}
+            </h4>
             <ul className="list-disc list-inside text-red-700 dark:text-red-400 space-y-1">
               {validationErrors.map((error) => (
                 <li key={error}>{error}</li>

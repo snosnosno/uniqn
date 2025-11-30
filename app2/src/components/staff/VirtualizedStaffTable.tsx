@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
 import { FixedSizeList as List } from 'react-window';
 
@@ -51,6 +52,7 @@ const VirtualizedTableRow: React.FC<{
   style: React.CSSProperties;
   data: ItemData;
 }> = React.memo(({ index, style, data }) => {
+  const { t } = useTranslation();
   const {
     staffList,
     onEditWorkTime,
@@ -98,10 +100,11 @@ const VirtualizedTableRow: React.FC<{
 
   // 메모이제이션된 출근/퇴근 시간 데이터 (항상 호출)
   const memoizedTimeData = useMemo(() => {
+    const tbdText = t('common.tbd', '미정');
     if (!staff) {
       return {
         displayStartTime: '',
-        displayEndTime: '미정',
+        displayEndTime: tbdText,
         startTimeColor: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
         endTimeColor: 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
         hasEndTime: false,
@@ -122,25 +125,25 @@ const VirtualizedTableRow: React.FC<{
 
     return {
       displayStartTime: formatTimeDisplay(startTime),
-      displayEndTime: endTime ? formatTimeDisplay(endTime) : '미정',
+      displayEndTime: endTime ? formatTimeDisplay(endTime) : tbdText,
       startTimeColor: getTimeSlotColor(startTime),
       endTimeColor: endTime
         ? getTimeSlotColor(endTime)
         : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
       hasEndTime: !!endTime,
       hasActualStartTime: !!actualStartTime, // 실제 출근시간이 있는지 여부
-      isScheduledTimeTBD: scheduledStartTime === '미정', // 예정시간이 미정인지 여부
+      isScheduledTimeTBD: scheduledStartTime === '미정' || scheduledStartTime === tbdText, // 예정시간이 미정인지 여부
     };
-  }, [staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor]);
+  }, [staff, attendanceRecord, exceptionRecord, formatTimeDisplay, getTimeSlotColor, t]);
 
   if (!staff) {
     return <div style={style} />;
   }
 
   // 스태프 데이터
-  const displayName = staff.name || '이름 미정';
+  const displayName = staff.name || t('staff.nameTBD', '이름 미정');
   const avatarInitial = (staff.name || 'U').charAt(0).toUpperCase();
-  const roleDisplay = staff.assignedRole || staff.role || '역할 미정';
+  const roleDisplay = staff.assignedRole || staff.role || t('staff.roleTBD', '역할 미정');
   const hasContact = !!(staff.phone || staff.email);
 
   return (
@@ -158,12 +161,12 @@ const VirtualizedTableRow: React.FC<{
           } ${memoizedTimeData.startTimeColor}`}
           title={
             !data.canEdit
-              ? '수정 권한이 없습니다'
+              ? t('common.noEditPermission', '수정 권한이 없습니다')
               : memoizedTimeData.hasActualStartTime
-                ? '실제 출근시간 수정'
+                ? t('attendance.editActualCheckIn', '실제 출근시간 수정')
                 : memoizedTimeData.isScheduledTimeTBD
-                  ? '미정 - 출근시간 설정'
-                  : '예정 출근시간 수정'
+                  ? t('attendance.setCheckInTime', '미정 - 출근시간 설정')
+                  : t('attendance.editScheduledCheckIn', '예정 출근시간 수정')
           }
         >
           {memoizedTimeData.hasActualStartTime
@@ -183,7 +186,11 @@ const VirtualizedTableRow: React.FC<{
           className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
             data.canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
           } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && data.canEdit ? 'hover:bg-gray-200 dark:hover:bg-gray-600' : ''}`}
-          title={!data.canEdit ? '수정 권한이 없습니다' : '예정 퇴근시간 수정'}
+          title={
+            !data.canEdit
+              ? t('common.noEditPermission', '수정 권한이 없습니다')
+              : t('attendance.editScheduledCheckOut', '예정 퇴근시간 수정')
+          }
         >
           {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
         </button>
@@ -259,7 +266,9 @@ const VirtualizedTableRow: React.FC<{
             </div>
           )}
           {!hasContact && (
-            <span className="text-gray-400 dark:text-gray-500 text-xs">연락처 없음</span>
+            <span className="text-gray-400 dark:text-gray-500 text-xs">
+              {t('staff.noContact', '연락처 없음')}
+            </span>
           )}
         </div>
       </div>
@@ -288,9 +297,13 @@ const VirtualizedTableRow: React.FC<{
                 ? 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/20'
                 : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
             }`}
-            title={data.canEdit ? '스태프 삭제' : '수정 권한이 없습니다'}
+            title={
+              data.canEdit
+                ? t('staff.deleteStaff', '스태프 삭제')
+                : t('common.noEditPermission', '수정 권한이 없습니다')
+            }
           >
-            삭제
+            {t('common.delete', '삭제')}
           </button>
         </div>
       </div>
@@ -315,6 +328,8 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   eventId,
   canEdit = true,
 }) => {
+  const { t } = useTranslation();
+
   const itemData = useMemo(
     (): ItemData => ({
       staffList,
@@ -347,7 +362,9 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
   if (staffList.length === 0) {
     return (
       <div className="bg-gray-50 dark:bg-gray-700 p-6 rounded-lg text-center">
-        <p className="text-gray-600 dark:text-gray-300">표시할 스태프가 없습니다.</p>
+        <p className="text-gray-600 dark:text-gray-300">
+          {t('staff.noStaffToDisplay', '표시할 스태프가 없습니다.')}
+        </p>
       </div>
     );
   }
@@ -357,25 +374,25 @@ const VirtualizedStaffTable: React.FC<VirtualizedStaffTableProps> = ({
       {/* 테이블 헤더 */}
       <div className="flex w-full bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          출근
+          {t('attendance.checkIn', '출근')}
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          퇴근
+          {t('attendance.checkOut', '퇴근')}
         </div>
         <div className="px-4 py-3 flex-1 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          이름
+          {t('common.name', '이름')}
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          역할
+          {t('common.role', '역할')}
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-40 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          연락처
+          {t('common.contact', '연락처')}
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          출석
+          {t('common.attendance', '출석')}
         </div>
         <div className="px-4 py-3 flex-shrink-0 w-32 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-          작업
+          {t('common.actions', '작업')}
         </div>
       </div>
 

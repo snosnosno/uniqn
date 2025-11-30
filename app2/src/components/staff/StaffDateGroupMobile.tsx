@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import { logger } from '../../utils/logger';
 import { StaffData } from '../../hooks/useStaffManagement';
@@ -46,6 +47,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
   getStaffWorkLog,
   onReport,
 }) => {
+  const { t } = useTranslation();
   const staffCount = staffList.length;
   const selectedCount = multiSelectMode
     ? Array.from(selectedStaff).filter((id) => staffList.some((staff) => staff.id === id)).length
@@ -84,12 +86,14 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="text-white">
-              {date === '날짜 미정' ? (
+              {date === '날짜 미정' || date === t('common.dateTBD', '날짜 미정') ? (
                 <div className="flex items-center space-x-3">
                   <span className="text-lg">📅</span>
                   <div>
-                    <div className="text-lg font-semibold">날짜 미정</div>
-                    <div className="text-xs text-blue-200 dark:text-blue-300">일정 조정 필요</div>
+                    <div className="text-lg font-semibold">{t('common.dateTBD', '날짜 미정')}</div>
+                    <div className="text-xs text-blue-200 dark:text-blue-300">
+                      {t('schedule.adjustmentNeeded', '일정 조정 필요')}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -106,7 +110,15 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                             if (!year || !month || !day) return date;
                             const fullYear = 2000 + parseInt(year);
                             const dateObj = new Date(fullYear, parseInt(month) - 1, parseInt(day));
-                            const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+                            const weekDays = [
+                              t('common.days.sun', '일'),
+                              t('common.days.mon', '월'),
+                              t('common.days.tue', '화'),
+                              t('common.days.wed', '수'),
+                              t('common.days.thu', '목'),
+                              t('common.days.fri', '금'),
+                              t('common.days.sat', '토'),
+                            ];
                             const weekDay = weekDays[dateObj.getDay()];
                             return `${month}-${day}(${weekDay})`;
                           }
@@ -128,7 +140,9 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
 
             <div className="flex items-center space-x-2">
               <div className="bg-white dark:bg-gray-800 bg-opacity-25 dark:bg-opacity-50 rounded-full px-3 py-1.5">
-                <span className="text-white text-sm font-semibold">{staffCount}명</span>
+                <span className="text-white text-sm font-semibold">
+                  {t('common.peopleCount', '{{count}}명', { count: staffCount })}
+                </span>
               </div>
 
               {multiSelectMode && (
@@ -136,7 +150,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                   {selectedCount > 0 && (
                     <div className="bg-yellow-400 dark:bg-yellow-600 rounded-full px-3 py-1.5">
                       <span className="text-yellow-900 dark:text-yellow-100 text-sm font-semibold">
-                        {selectedCount}개 선택
+                        {t('common.selectedCount', '{{count}}개 선택', { count: selectedCount })}
                       </span>
                     </div>
                   )}
@@ -145,7 +159,9 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
                     className="bg-white dark:bg-gray-800 bg-opacity-20 dark:bg-opacity-40 hover:bg-opacity-30 dark:hover:bg-opacity-60 rounded-full px-3 py-1.5 transition-all"
                   >
                     <span className="text-white text-sm font-semibold">
-                      {selectedCount === staffList.length ? '그룹 해제' : '그룹 선택'}
+                      {selectedCount === staffList.length
+                        ? t('common.deselectGroup', '그룹 해제')
+                        : t('common.selectGroup', '그룹 선택')}
                     </span>
                   </button>
                 </>
@@ -200,7 +216,7 @@ const StaffDateGroupMobile: React.FC<StaffDateGroupMobileProps> = ({
             <div className="text-center py-8">
               <div className="text-gray-400 dark:text-gray-500 text-4xl mb-2">👥</div>
               <div className="text-gray-600 dark:text-gray-300 text-sm font-medium">
-                이 날짜에 할당된 스태프가 없습니다
+                {t('staff.noStaffForDate', '이 날짜에 할당된 스태프가 없습니다')}
               </div>
             </div>
           )}

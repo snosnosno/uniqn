@@ -294,7 +294,7 @@ export const HeaderMenu: React.FC = () => {
               />
               <NavItem
                 to="/app/my-schedule"
-                label="내 스케줄"
+                label={t('nav.mySchedule', '내 스케줄')}
                 Icon={FaCalendarAlt}
                 isOpen={true}
                 onNavigate={closeMenu}
@@ -310,10 +310,14 @@ export const HeaderMenu: React.FC = () => {
               {/* 고객 센터 (모든 사용자) */}
               <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
               <NavDropdown
-                label="고객 센터"
+                label={t('nav.customerCenter', '고객 센터')}
                 Icon={FaQuestionCircle}
                 items={[
-                  { to: '/app/announcements', label: '공지사항', Icon: FaBell },
+                  {
+                    to: '/app/announcements',
+                    label: t('nav.announcements', '공지사항'),
+                    Icon: FaBell,
+                  },
                   {
                     to: '/app/support',
                     label: t('nav.support', '고객지원'),
@@ -326,13 +330,29 @@ export const HeaderMenu: React.FC = () => {
               {/* 결제 메뉴 (모든 사용자) */}
               <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
               <NavDropdown
-                label="결제 및 칩 관리"
+                label={t('nav.paymentAndChip', '결제 및 칩 관리')}
                 Icon={FaCreditCard}
                 items={[
-                  { to: '/app/chip/recharge', label: '칩 충전', Icon: FaCoins },
-                  { to: '/app/payment/history', label: '결제 내역', Icon: FaCreditCard },
-                  { to: '/app/chip/history', label: '칩 사용 내역', Icon: FaHistory },
-                  { to: '/app/subscription', label: '구독 플랜', Icon: FaStar },
+                  {
+                    to: '/app/chip/recharge',
+                    label: t('nav.chipRecharge', '칩 충전'),
+                    Icon: FaCoins,
+                  },
+                  {
+                    to: '/app/payment/history',
+                    label: t('nav.paymentHistory', '결제 내역'),
+                    Icon: FaCreditCard,
+                  },
+                  {
+                    to: '/app/chip/history',
+                    label: t('nav.chipHistory', '칩 사용 내역'),
+                    Icon: FaHistory,
+                  },
+                  {
+                    to: '/app/subscription',
+                    label: t('nav.subscription', '구독 플랜'),
+                    Icon: FaStar,
+                  },
                 ]}
                 onNavigate={closeMenu}
               />
@@ -354,11 +374,19 @@ export const HeaderMenu: React.FC = () => {
                   {/* Tournament Management - All authenticated users */}
                   <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
                   <NavDropdown
-                    label="토너먼트 관리"
+                    label={t('nav.tournamentManagement', '토너먼트 관리')}
                     Icon={FaTrophy}
                     items={[
-                      { to: '/app/tournaments', label: '토너먼트', Icon: FaTrophy },
-                      { to: '/app/participants', label: '참가자 관리', Icon: FaUsers },
+                      {
+                        to: '/app/tournaments',
+                        label: t('nav.tournaments', '토너먼트'),
+                        Icon: FaTrophy,
+                      },
+                      {
+                        to: '/app/participants',
+                        label: t('nav.participantManagement', '참가자 관리'),
+                        Icon: FaUsers,
+                      },
                       { to: '/app/tables', label: t('common.table', '테이블'), Icon: FaTable },
                       ...(role === 'admin' || role === 'manager'
                         ? [
@@ -403,17 +431,28 @@ export const HeaderMenu: React.FC = () => {
                         isOpen={true}
                         onNavigate={closeMenu}
                       />
+                      <NavItem
+                        to="/app/admin/job-posting-approvals"
+                        label={t('nav.tournamentApprovals', '대회 공고 승인')}
+                        Icon={FaTrophy}
+                        isOpen={true}
+                        onNavigate={closeMenu}
+                      />
 
                       {/* 결제 관리 (Admin 전용) */}
                       <hr className="my-2 border-t border-gray-200 dark:border-gray-700" />
                       <NavDropdown
-                        label="결제 시스템 관리"
+                        label={t('nav.paymentSystemManagement', '결제 시스템 관리')}
                         Icon={FaCog}
                         items={[
-                          { to: '/app/admin/chip-management', label: '칩 관리', Icon: FaCog },
+                          {
+                            to: '/app/admin/chip-management',
+                            label: t('nav.chipManagement', '칩 관리'),
+                            Icon: FaCog,
+                          },
                           {
                             to: '/app/admin/refund-blacklist',
-                            label: '환불 블랙리스트',
+                            label: t('nav.refundBlacklist', '환불 블랙리스트'),
                             Icon: FaExclamationTriangle,
                           },
                         ]}
@@ -427,14 +466,14 @@ export const HeaderMenu: React.FC = () => {
               {/* 로딩 상태 표시 */}
               {authLoading && (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  권한 확인 중...
+                  {t('common.checkingPermissions', '권한 확인 중...')}
                 </div>
               )}
 
               {/* 인증되지 않은 상태 */}
               {!authLoading && !currentUser && (
                 <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-                  로그인이 필요합니다
+                  {t('auth.loginRequired', '로그인이 필요합니다')}
                 </div>
               )}
             </nav>

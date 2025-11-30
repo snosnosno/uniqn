@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface StaffCardHeaderProps {
   name: string;
@@ -22,8 +23,10 @@ const StaffCardHeader: React.FC<StaffCardHeaderProps> = React.memo(
     onShowProfile,
     staffId,
   }) => {
-    const displayName = name || '이름 미정';
-    const roleDisplay = assignedRole || role || '역할 미정';
+    const { t } = useTranslation();
+
+    const displayName = name || t('staff.nameTBD', '이름 미정');
+    const roleDisplay = assignedRole || role || t('staff.roleTBD', '역할 미정');
 
     // 날짜 포맷팅 (08-08(금) 형식)
     const formatDateShort = (dateStr: string | undefined) => {
@@ -32,7 +35,15 @@ const StaffCardHeader: React.FC<StaffCardHeaderProps> = React.memo(
         const d = new Date(dateStr);
         const month = String(d.getMonth() + 1).padStart(2, '0');
         const day = String(d.getDate()).padStart(2, '0');
-        const weekDays = ['일', '월', '화', '수', '목', '금', '토'];
+        const weekDays = [
+          t('common.days.sun', '일'),
+          t('common.days.mon', '월'),
+          t('common.days.tue', '화'),
+          t('common.days.wed', '수'),
+          t('common.days.thu', '목'),
+          t('common.days.fri', '금'),
+          t('common.days.sat', '토'),
+        ];
         const weekDay = weekDays[d.getDay()];
         return `${month}-${day}(${weekDay})`;
       } catch {

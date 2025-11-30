@@ -120,6 +120,7 @@
     "jobBoard": "Job Board",
     "myProfile": "My Profile",
     "myAvailability": "My Availability",
+    "mySchedule": "My Schedule",
     "attendance": "Attendance",
     "staffManagement": "Staff Management",
     "managePostings": "Manage Postings",
@@ -133,7 +134,21 @@
     "approvals": "Approvals",
     "userManagement": "User Management",
     "inquiryManagement": "Inquiry Management",
-    "support": "Support"
+    "support": "Support",
+    "customerCenter": "Customer Center",
+    "ceoDashboard": "CEO Dashboard",
+    "paymentAndChip": "Payment & Chip Management",
+    "chipRecharge": "Chip Recharge",
+    "paymentHistory": "Payment History",
+    "chipHistory": "Chip Usage History",
+    "subscription": "Subscription Plan",
+    "tournamentManagement": "Tournament Management",
+    "tournaments": "Tournaments",
+    "participantManagement": "Participant Management",
+    "tournamentApprovals": "Tournament Approvals",
+    "paymentSystemManagement": "Payment System Management",
+    "chipManagement": "Chip Management",
+    "refundBlacklist": "Refund Blacklist"
   },
   "layout": {
     "title": "UNIQN",
@@ -311,7 +326,10 @@
     "staff": "Staff",
     "table": "Table",
     "totalHours": "Total Hours",
-    "loading": "Loading..."
+    "loading": "Loading...",
+    "countItems": "{{count}} items",
+    "hours": "{{count}} hours",
+    "timeTBD": "Time TBD"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -1015,7 +1033,46 @@
     "notificationSettings": "Notification Settings",
     "conflictNotifications": "Conflict notifications",
     "assignedDealer": "assigned",
-    "minuteInterval": "minute interval"
+    "minuteInterval": "minute interval",
+    "noJobPosting": "Cannot load job posting information.",
+    "description": "Staff shift schedule and time management",
+    "shiftManagement": "Shift Management",
+    "shiftManagementFeature": "Shift Management Feature",
+    "comingSoonMessage": "Staff shift management feature will be available in a future update.",
+    "assignedStaff": "Assigned Staff",
+    "noAssignedStaff": "No staff assigned.",
+    "timeSlotInfo": "Time Slot Info",
+    "rolesCount": "{{count}} roles",
+    "noTimeSlotsForDate": "No time slots set for the selected date.",
+    "shiftStatus": "Shift Status",
+    "shiftStatusComingSoon": "Shift status tracking will be added in a future update.",
+    "features": {
+      "scheduleManagement": "Shift Schedule Management",
+      "autoWorkRecord": "Automatic Work Time Recording",
+      "shiftAlerts": "Shift Alert System",
+      "attendanceTracking": "Staff Attendance Tracking"
+    },
+    "upcomingFeatures": {
+      "title": "Upcoming Shift Management Features",
+      "shiftSchedule": "Shift Schedule",
+      "shiftScheduleDesc": "Systematically manage staff shift schedules.",
+      "autoRecord": "Auto Record",
+      "autoRecordDesc": "Automatically record work hours based on shift times.",
+      "attendanceManagement": "Attendance Management",
+      "attendanceManagementDesc": "Track and manage staff attendance in real-time."
+    }
+  },
+  "schedule": {
+    "stats": {
+      "completed": "Completed Schedules",
+      "totalItems": "Total {{count}} items",
+      "upcoming": "Upcoming Schedules",
+      "confirmed": "Confirmed schedules",
+      "thisMonthEarnings": "This Month's Earnings",
+      "totalEarnings": "Total ₩{{amount}}",
+      "totalHours": "Total Work Hours",
+      "plannedHours": "Planned work hours"
+    }
   },
   "attendance": {
     "status": {

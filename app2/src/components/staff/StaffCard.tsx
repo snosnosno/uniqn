@@ -55,7 +55,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
     onReport,
     multiSelectMode = false,
   }) => {
-    useTranslation();
+    const { t } = useTranslation();
     const [showActions, setShowActions] = useState(false);
     // 🚀 출석 상태 Optimistic Update를 위한 로컬 상태
     const [optimisticAttendanceStatus, setOptimisticAttendanceStatus] =
@@ -68,12 +68,12 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
 
     const memoizedStaffData = useMemo(
       () => ({
-        displayName: staff.name || '이름 미정',
+        displayName: staff.name || t('staff.nameTBD', '이름 미정'),
         avatarInitial: (staff.name || 'U').charAt(0).toUpperCase(),
-        roleDisplay: staff.assignedRole || staff.role || '역할 미정',
+        roleDisplay: staff.assignedRole || staff.role || t('staff.roleTBD', '역할 미정'),
         hasContact: !!(staff.phone || staff.email),
       }),
-      [staff.name, staff.assignedRole, staff.role, staff.phone, staff.email]
+      [staff.name, staff.assignedRole, staff.role, staff.phone, staff.email, t]
     );
 
     const memoizedAttendanceData = useMemo(() => {
@@ -185,15 +185,17 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
 
       return {
         displayStartTime: formatTimeDisplay(scheduledStartTime),
-        displayEndTime: scheduledEndTime ? formatTimeDisplay(scheduledEndTime) : '미정',
+        displayEndTime: scheduledEndTime
+          ? formatTimeDisplay(scheduledEndTime)
+          : t('common.tbd', '미정'),
         startTimeColor: getTimeSlotColor(scheduledStartTime),
         endTimeColor: scheduledEndTime
           ? getTimeSlotColor(scheduledEndTime)
           : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
         hasEndTime: !!scheduledEndTime,
-        isScheduledTimeTBD: scheduledStartTime === '미정',
+        isScheduledTimeTBD: scheduledStartTime === t('common.tbd', '미정'),
       };
-    }, [staff, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog]);
+    }, [staff, formatTimeDisplay, getTimeSlotColor, getStaffWorkLog, t]);
 
     const toggleActions = useCallback(
       (e: React.MouseEvent) => {
@@ -246,7 +248,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
                 : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
               : ''
           } touch-none select-none`}
-          aria-label={`스태프 카드: ${memoizedStaffData.displayName}`}
+          aria-label={t('staff.cardAriaLabel', '스태프 카드: {{name}}', {
+            name: memoizedStaffData.displayName,
+          })}
           aria-describedby={`staff-${staff.id}-details`}
         >
           <CardHeader className="px-3 py-1.5" id={`staff-${staff.id}-header`}>
@@ -348,11 +352,11 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
                           clipRule="evenodd"
                         />
                       </svg>
-                      <span className="hidden sm:inline">선택됨</span>
+                      <span className="hidden sm:inline">{t('common.selected', '선택됨')}</span>
                     </div>
                   ) : (
                     <div className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-600">
-                      <span className="hidden sm:inline">선택</span>
+                      <span className="hidden sm:inline">{t('common.select', '선택')}</span>
                     </div>
                   )}
                 </div>
@@ -365,9 +369,9 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
               <div className="mt-2 flex items-center justify-center text-xs text-gray-400 dark:text-gray-500 dark:text-gray-400 dark:text-gray-500">
                 <span className="flex items-center space-x-1">
                   <span>←</span>
-                  <span>액션</span>
+                  <span>{t('common.actions', '액션')}</span>
                   <span className="mx-2">•</span>
-                  <span>선택</span>
+                  <span>{t('common.select', '선택')}</span>
                   <span>→</span>
                 </span>
               </div>

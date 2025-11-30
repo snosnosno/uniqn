@@ -7,6 +7,7 @@
  */
 
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { WorkInfoTabProps } from '../types';
 import { parseTimeToString, calculateWorkHours } from '@/utils/workLogMapper';
 import { logger } from '@/utils/logger';
@@ -25,15 +26,11 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
   onCheckOut: _onCheckOut,
   isReadOnly: _isReadOnly,
 }) => {
-  // 역할명 한글 라벨
+  const { t } = useTranslation();
+
+  // 역할명 라벨
   const getRoleLabel = (role: string) => {
-    const labels: Record<string, string> = {
-      dealer: '딜러',
-      floor: '플로어',
-      manager: '매니저',
-      staff: '스태프',
-    };
-    return labels[role] || role;
+    return t(`roles.${role}`, role);
   };
 
   // 목표 WorkLog 찾기
@@ -86,7 +83,7 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
       targetWorkLog = {
         id: schedule.id,
         staffId: schedule.sourceCollection === 'applications' ? '' : schedule.sourceId || '',
-        staffName: '사용자',
+        staffName: t('common.user', '사용자'),
         date: schedule.date,
         role: schedule.role,
         scheduledStartTime: schedule.startTime,
@@ -107,13 +104,21 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
 
     try {
       // 날짜 파싱
-      let dateStr = '날짜 없음';
+      let dateStr = t('common.noDate', '날짜 없음');
       let dayName = '';
 
       if (log.date) {
         const dateValue = new Date(log.date);
         if (!isNaN(dateValue.getTime())) {
-          const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+          const dayNames = [
+            t('common.days.sun', '일'),
+            t('common.days.mon', '월'),
+            t('common.days.tue', '화'),
+            t('common.days.wed', '수'),
+            t('common.days.thu', '목'),
+            t('common.days.fri', '금'),
+            t('common.days.sat', '토'),
+          ];
           dayName = dayNames[dateValue.getDay()] || '';
           dateStr = `${String(dateValue.getMonth() + 1).padStart(2, '0')}-${String(dateValue.getDate()).padStart(2, '0')}`;
         }
@@ -122,11 +127,11 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
       // 시간 파싱
       const parseTime = (timeValue: string | { toDate: () => Date } | null | undefined): string => {
         const result = parseTimeToString(timeValue);
-        return result || '미정';
+        return result || t('common.tbd', '미정');
       };
 
-      let startTime = '미정';
-      let endTime = '미정';
+      let startTime = t('common.tbd', '미정');
+      let endTime = t('common.tbd', '미정');
 
       if (log.scheduledStartTime) {
         startTime = parseTime(log.scheduledStartTime);
@@ -164,11 +169,11 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
       );
       return [
         {
-          date: '오류',
+          date: t('common.error', '오류'),
           dayName: '',
           role: log.role || '',
-          startTime: '미정',
-          endTime: '미정',
+          startTime: t('common.tbd', '미정'),
+          endTime: t('common.tbd', '미정'),
           workHours: '0.0',
           status: 'not_started',
         },
@@ -180,7 +185,9 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
 
   return (
     <div>
-      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">📅 근무 내역</h4>
+      <h4 className="text-sm font-medium text-gray-700 dark:text-gray-200 mb-4">
+        📅 {t('workInfo.workHistory', '근무 내역')}
+      </h4>
       {workHistory.length > 0 ? (
         <div className="space-y-4">
           <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-x-auto">
@@ -188,22 +195,22 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
               <thead className="bg-gray-50 dark:bg-gray-700">
                 <tr>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    날짜
+                    {t('common.date', '날짜')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    역할
+                    {t('common.role', '역할')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    시작시간
+                    {t('workInfo.startTime', '시작시간')}
                   </th>
                   <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    종료시간
+                    {t('workInfo.endTime', '종료시간')}
                   </th>
                   <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    근무시간
+                    {t('workInfo.workHours', '근무시간')}
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    상태
+                    {t('common.status', '상태')}
                   </th>
                 </tr>
               </thead>
@@ -243,7 +250,8 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
                       {history.endTime}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100 text-right font-medium">
-                      {history.workHours}시간
+                      {history.workHours}
+                      {t('common.hourUnit', '시간')}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-center">
                       <span
@@ -258,11 +266,11 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
                         }`}
                       >
                         {history.status === 'checked_out'
-                          ? '퇴근'
+                          ? t('attendance.status.checkedOut', '퇴근')
                           : history.status === 'checked_in'
-                            ? '출근'
+                            ? t('attendance.status.checkedIn', '출근')
                             : history.status === 'not_started'
-                              ? '예정'
+                              ? t('attendance.status.scheduled', '예정')
                               : history.status}
                       </span>
                     </td>
@@ -276,21 +284,22 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
           <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
             <div className="flex justify-between items-center">
               <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
-                총 근무시간
+                {t('workInfo.totalWorkHours', '총 근무시간')}
               </span>
               <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}시간
+                {workHistory.reduce((sum, h) => sum + parseFloat(h.workHours), 0).toFixed(1)}
+                {t('common.hourUnit', '시간')}
               </span>
             </div>
             <div className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              총 {workHistory.length}일 근무
+              {t('workInfo.totalDaysWorked', '총 {{count}}일 근무', { count: workHistory.length })}
             </div>
           </div>
         </div>
       ) : (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <div className="text-4xl mb-2">📋</div>
-          <p className="text-sm">근무 내역이 없습니다.</p>
+          <p className="text-sm">{t('workInfo.noWorkHistory', '근무 내역이 없습니다.')}</p>
         </div>
       )}
     </div>

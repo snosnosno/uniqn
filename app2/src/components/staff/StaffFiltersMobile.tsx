@@ -73,15 +73,19 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {/* 상단 통계 및 모드 전환 */}
       <div className="flex items-center justify-between">
         <div className="text-sm text-gray-600 dark:text-gray-300">
-          <div className="font-medium">총 {totalStaffCount}명의 스태프</div>
+          <div className="font-medium">
+            {t('staff.totalCount', '총 {{count}}명의 스태프', { count: totalStaffCount })}
+          </div>
           {hasActiveFilters && filteredStaffCount !== totalStaffCount && (
             <div className="text-blue-600 dark:text-blue-400">
-              필터링된 결과: {filteredStaffCount}명
+              {t('staff.filteredResult', '필터링된 결과: {{count}}명', {
+                count: filteredStaffCount,
+              })}
             </div>
           )}
           {multiSelectMode && selectedCount > 0 && (
             <div className="text-purple-600 dark:text-purple-400 font-medium">
-              {selectedCount}명 선택됨
+              {t('common.selectedCount', '{{count}}명 선택됨', { count: selectedCount })}
             </div>
           )}
         </div>
@@ -97,7 +101,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
                   : 'bg-gray-100 dark:bg-gray-700 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 dark:border-gray-600'
               }`}
             >
-              {multiSelectMode ? '선택 모드' : '선택 모드'}
+              {t('common.selectMode', '선택 모드')}
             </button>
           )}
 
@@ -141,7 +145,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
         </div>
         <input
           type="text"
-          placeholder="스태프 이름, 역할, 연락처로 검색..."
+          placeholder={t('staff.searchPlaceholder', '스태프 이름, 역할, 연락처로 검색...')}
           className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-base"
           value={filters.searchTerm}
           onChange={(e) => handleSearchChange(e.target.value)}
@@ -172,13 +176,15 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
       {showFilters && (
         <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-medium text-gray-900 dark:text-gray-100">필터 옵션</h3>
+            <h3 className="font-medium text-gray-900 dark:text-gray-100">
+              {t('filters.options', '필터 옵션')}
+            </h3>
             {hasActiveFilters && (
               <button
                 onClick={clearFilters}
                 className="text-sm text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 underline"
               >
-                전체 초기화
+                {t('filters.resetAll', '전체 초기화')}
               </button>
             )}
           </div>
@@ -188,17 +194,17 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             {/* 날짜 필터 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                날짜
+                {t('common.date', '날짜')}
               </label>
               <select
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedDate}
                 onChange={(e) => handleDateChange(e.target.value)}
               >
-                <option value="all">모든 날짜</option>
+                <option value="all">{t('filters.allDates', '모든 날짜')}</option>
                 {availableDates.map((date) => (
                   <option key={date} value={date}>
-                    {date === '날짜 미정' ? '날짜 미정' : date}
+                    {date === '날짜 미정' ? t('common.dateTBD', '날짜 미정') : date}
                   </option>
                 ))}
               </select>
@@ -207,17 +213,17 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             {/* 역할 필터 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                역할
+                {t('common.role', '역할')}
               </label>
               <select
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedRole}
                 onChange={(e) => handleRoleChange(e.target.value)}
               >
-                <option value="all">모든 역할</option>
+                <option value="all">{t('filters.allRoles', '모든 역할')}</option>
                 {availableRoles.map((role) => (
                   <option key={role} value={role}>
-                    {role}
+                    {t(`roles.${role}`, role)}
                   </option>
                 ))}
               </select>
@@ -226,27 +232,31 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             {/* 상태 필터 */}
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
-                출석 상태
+                {t('attendance.attendanceStatus', '출석 상태')}
               </label>
               <select
                 className="w-full p-3 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
                 value={filters.selectedStatus}
                 onChange={(e) => handleStatusChange(e.target.value)}
               >
-                <option value="all">모든 상태</option>
-                <option value="present">출석</option>
-                <option value="late">지각</option>
-                <option value="early_leave">조퇴</option>
+                <option value="all">{t('filters.allStatus', '모든 상태')}</option>
+                <option value="present">{t('attendance.status.present', '출석')}</option>
+                <option value="late">{t('attendance.status.late', '지각')}</option>
+                <option value="early_leave">{t('attendance.status.earlyLeave', '조퇴')}</option>
               </select>
             </div>
           </div>
 
           {/* 표시 옵션 */}
           <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">표시 옵션</h4>
+            <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
+              {t('filters.displayOptions', '표시 옵션')}
+            </h4>
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-gray-700 dark:text-gray-200">날짜별 그룹화</span>
+                <span className="text-sm text-gray-700 dark:text-gray-200">
+                  {t('staff.groupByDate', '날짜별 그룹화')}
+                </span>
                 <label className="relative inline-flex items-center cursor-pointer">
                   <input
                     type="checkbox"
@@ -269,7 +279,9 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
             onClick={onBulkActions}
             className="w-full py-3 bg-purple-600 dark:bg-purple-700 text-white rounded-xl font-medium hover:bg-purple-700 dark:hover:bg-purple-800 transition-colors"
           >
-            선택된 {selectedCount}명 일괄 작업
+            {t('staff.bulkActionSelected', '선택된 {{count}}명 일괄 작업', {
+              count: selectedCount,
+            })}
           </button>
         )}
 
@@ -294,7 +306,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
         <div className="flex flex-wrap gap-2">
           {filters.searchTerm && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-              검색: "{filters.searchTerm}"
+              {t('filters.search', '검색')}: "{filters.searchTerm}"
               <button
                 onClick={() => handleSearchChange('')}
                 className="ml-2 text-blue-600 hover:text-blue-800"
@@ -305,7 +317,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           )}
           {filters.selectedDate !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-green-100 dark:bg-green-900/30 text-green-800">
-              날짜: {filters.selectedDate}
+              {t('common.date', '날짜')}: {filters.selectedDate}
               <button
                 onClick={() => handleDateChange('all')}
                 className="ml-2 text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300"
@@ -316,7 +328,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           )}
           {filters.selectedRole !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-              역할: {filters.selectedRole}
+              {t('common.role', '역할')}: {t(`roles.${filters.selectedRole}`, filters.selectedRole)}
               <button
                 onClick={() => handleRoleChange('all')}
                 className="ml-2 text-purple-600 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-200"
@@ -327,7 +339,7 @@ const StaffFiltersMobile: React.FC<StaffFiltersMobileProps> = ({
           )}
           {filters.selectedStatus !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-orange-100 text-orange-800">
-              상태: {filters.selectedStatus}
+              {t('common.status', '상태')}: {filters.selectedStatus}
               <button
                 onClick={() => handleStatusChange('all')}
                 className="ml-2 text-orange-600 hover:text-orange-800"

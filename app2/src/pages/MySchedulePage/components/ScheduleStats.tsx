@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   FaCalendarCheck,
   FaHourglassHalf,
@@ -13,36 +14,40 @@ interface ScheduleStatsProps {
 }
 
 const ScheduleStats: React.FC<ScheduleStatsProps> = ({ stats, isMobile = false }) => {
+  const { t } = useTranslation();
+
   const statItems = [
     {
       icon: <FaCalendarCheck className="w-5 h-5 text-blue-500 dark:text-blue-400" />,
-      label: '완료 일정',
-      value: `${stats.completedSchedules}건`,
-      subValue: `전체 ${stats.totalSchedules}건`,
+      label: t('schedule.stats.completed', '완료 일정'),
+      value: t('common.countItems', '{{count}}건', { count: stats.completedSchedules }),
+      subValue: t('schedule.stats.totalItems', '전체 {{count}}건', { count: stats.totalSchedules }),
       bgColor: 'bg-blue-50 dark:bg-blue-900/20',
       borderColor: 'border-blue-200 dark:border-blue-800',
     },
     {
       icon: <FaHourglassHalf className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />,
-      label: '예정 일정',
-      value: `${stats.upcomingSchedules}건`,
-      subValue: '확정된 일정',
+      label: t('schedule.stats.upcoming', '예정 일정'),
+      value: t('common.countItems', '{{count}}건', { count: stats.upcomingSchedules }),
+      subValue: t('schedule.stats.confirmed', '확정된 일정'),
       bgColor: 'bg-yellow-50 dark:bg-yellow-900/20',
       borderColor: 'border-yellow-200 dark:border-yellow-800',
     },
     {
       icon: <FaMoneyBillWave className="w-5 h-5 text-green-500 dark:text-green-400" />,
-      label: '이번달 수입',
+      label: t('schedule.stats.thisMonthEarnings', '이번달 수입'),
       value: `₩${stats.thisMonthEarnings.toLocaleString()}`,
-      subValue: `총 ₩${stats.totalEarnings.toLocaleString()}`,
+      subValue: t('schedule.stats.totalEarnings', '총 ₩{{amount}}', {
+        amount: stats.totalEarnings.toLocaleString(),
+      }),
       bgColor: 'bg-green-50 dark:bg-green-900/20',
       borderColor: 'border-green-200 dark:border-green-800',
     },
     {
       icon: <FaClock className="w-5 h-5 text-purple-500 dark:text-purple-400" />,
-      label: '총 근무시간',
-      value: `${stats.hoursWorked}시간`,
-      subValue: '예정 근무 시간',
+      label: t('schedule.stats.totalHours', '총 근무시간'),
+      value: t('common.hours', '{{count}}시간', { count: stats.hoursWorked }),
+      subValue: t('schedule.stats.plannedHours', '예정 근무 시간'),
       bgColor: 'bg-purple-50 dark:bg-purple-900/20',
       borderColor: 'border-purple-200 dark:border-purple-800',
     },

@@ -69,12 +69,12 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
       startTime.trim() !== '' &&
       !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(startTime)
     ) {
-      errors.push('시작 시간 형식이 올바르지 않습니다.');
+      errors.push(t('validation.invalidStartTimeFormat', '시작 시간 형식이 올바르지 않습니다.'));
     }
 
     // 종료시간 유효성 검사 (선택사항)
     if (endTime && endTime.trim() !== '' && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(endTime)) {
-      errors.push('종료 시간 형식이 올바르지 않습니다.');
+      errors.push(t('validation.invalidEndTimeFormat', '종료 시간 형식이 올바르지 않습니다.'));
     }
 
     setValidationErrors(errors);
@@ -343,7 +343,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
 
   // 모달 제목 - 통합 편집 모드
   const getModalTitle = () => {
-    return '근무 시간 수정';
+    return t('workTime.editTitle', '근무 시간 수정');
   };
 
   // 시간과 분 옵션 생성
@@ -352,7 +352,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
     for (let hour = 0; hour < 24; hour++) {
       options.push({
         value: hour.toString().padStart(2, '0'),
-        label: `${hour.toString().padStart(2, '0')}시`,
+        label: t('common.hourSuffix', '{{hour}}시', { hour: hour.toString().padStart(2, '0') }),
       });
     }
     return options;
@@ -363,7 +363,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
     for (let minute = 0; minute < 60; minute += 5) {
       options.push({
         value: minute.toString().padStart(2, '0'),
-        label: `${minute.toString().padStart(2, '0')}분`,
+        label: t('common.minuteSuffix', '{{minute}}분', {
+          minute: minute.toString().padStart(2, '0'),
+        }),
       });
     }
     return options;
@@ -424,10 +426,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
-                  👤 {workLog.staffName || '이름 미정'}
+                  👤 {workLog.staffName || t('staff.nameTBD', '이름 미정')}
                 </span>
                 <span className="text-sm text-gray-600 dark:text-gray-400">
-                  • {workLog.assignedRole || workLog.role || '역할 미정'}
+                  • {workLog.assignedRole || workLog.role || t('staff.roleTBD', '역할 미정')}
                 </span>
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
@@ -461,10 +463,10 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                       return String(workLog.date);
                     }
 
-                    return '날짜 정보 없음';
+                    return t('common.noDateInfo', '날짜 정보 없음');
                   } catch (error) {
                     // Error displaying date
-                    return workLog.date ? String(workLog.date) : '날짜 오류';
+                    return workLog.date ? String(workLog.date) : t('common.dateError', '날짜 오류');
                   }
                 })()}
               </div>
@@ -476,15 +478,15 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
         <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
           <h3 className="text-base font-semibold mb-2 flex items-center text-gray-900 dark:text-gray-100">
             <EditIcon className="w-4 h-4 mr-2 text-blue-600 dark:text-blue-400" />
-            근무 시간 설정
+            {t('workTime.settings', '근무 시간 설정')}
           </h3>
           <p className="text-xs text-gray-600 dark:text-gray-400 mb-3">
-            시간을 선택하지 않으면 '미정'으로 표시됩니다.
+            {t('workTime.noTimeHint', "시간을 선택하지 않으면 '미정'으로 표시됩니다.")}
           </p>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                출근 시간
+                {t('attendance.checkIn', '출근 시간')}
               </label>
               <div className="space-y-2">
                 <div className="flex space-x-2">
@@ -493,7 +495,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                     onChange={(e) => handleStartTimeChange(e.target.value, startMinute)}
                     className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="">시</option>
+                    <option value="">{t('common.hourPlaceholder', '시')}</option>
                     {hourOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -505,7 +507,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                     onChange={(e) => handleStartTimeChange(startHour, e.target.value)}
                     className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-blue-500 focus:border-blue-500"
                   >
-                    <option value="00">00분</option>
+                    <option value="00">
+                      {t('common.minuteSuffix', '{{minute}}분', { minute: '00' })}
+                    </option>
                     {minuteOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -523,16 +527,16 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                       setHasChanges(true);
                     }}
                     className="w-full px-2 py-1.5 text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition-colors"
-                    title="출근시간을 미정으로 설정"
+                    title={t('workTime.setStartTimeTBD', '출근시간을 미정으로 설정')}
                   >
-                    출근 시간 미정
+                    {t('workTime.startTimeTBD', '출근 시간 미정')}
                   </button>
                 )}
               </div>
             </div>
             <div>
               <label className="block text-sm font-medium mb-1 text-gray-700 dark:text-gray-300">
-                퇴근 시간
+                {t('attendance.checkOut', '퇴근 시간')}
               </label>
               <div className="space-y-2">
                 <div className="flex space-x-2">
@@ -541,7 +545,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                     onChange={(e) => handleEndTimeChange(e.target.value, endMinute)}
                     className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-green-500 focus:border-green-500"
                   >
-                    <option value="">시</option>
+                    <option value="">{t('common.hourPlaceholder', '시')}</option>
                     {hourOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -553,7 +557,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                     onChange={(e) => handleEndTimeChange(endHour, e.target.value)}
                     className="flex-1 px-2 py-1.5 border rounded-md font-mono text-sm border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:ring-green-500 focus:border-green-500"
                   >
-                    <option value="00">00분</option>
+                    <option value="00">
+                      {t('common.minuteSuffix', '{{minute}}분', { minute: '00' })}
+                    </option>
                     {minuteOptions.map((option) => (
                       <option key={option.value} value={option.value}>
                         {option.label}
@@ -569,9 +575,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                     setHasChanges(true);
                   }}
                   className="w-full px-2 py-1.5 text-xs text-gray-600 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-md transition-colors"
-                  title="퇴근시간을 미정으로 설정"
+                  title={t('workTime.setEndTimeTBD', '퇴근시간을 미정으로 설정')}
                 >
-                  퇴근 시간 미정
+                  {t('workTime.endTimeTBD', '퇴근 시간 미정')}
                 </button>
               </div>
             </div>
@@ -581,11 +587,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
         {/* 근무 시간 요약 */}
         <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg">
           <h3 className="text-base font-semibold text-gray-900 dark:text-gray-100 mb-2">
-            근무 시간 요약
+            {t('workTime.summary', '근무 시간 요약')}
           </h3>
           <div className="text-center">
             <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
-              근무시간
+              {t('workInfo.workHours', '근무시간')}
             </label>
             <div className="text-base font-mono font-bold text-blue-600 dark:text-blue-400">
               {startTime ? (
@@ -605,7 +611,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                         <div>{formatMinutesToTime(minutes)}</div>
                         {isNextDay && (
                           <div className="text-xs text-orange-600 dark:text-orange-400 mt-1">
-                            (다음날 {endTime}까지)
+                            {t('workTime.untilNextDay', '(다음날 {{time}}까지)', { time: endTime })}
                           </div>
                         )}
                       </div>
@@ -614,9 +620,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                     // 시작시간만 있는 경우
                     return (
                       <div>
-                        <div className="text-sm">시작시간: {startTime}</div>
+                        <div className="text-sm">
+                          {t('workTime.startTimeLabel', '시작시간')}: {startTime}
+                        </div>
                         <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">
-                          (종료시간 미정)
+                          {t('workTime.endTimeNotSet', '(종료시간 미정)')}
                         </div>
                       </div>
                     );
@@ -624,9 +632,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                 })()
               ) : (
                 <div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">시간 미정</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {t('common.timeTBD', '시간 미정')}
+                  </div>
                   <div className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-                    시작시간을 설정해주세요
+                    {t('workTime.pleaseSetStartTime', '시작시간을 설정해주세요')}
                   </div>
                 </div>
               )}
@@ -637,7 +647,9 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
         {/* 유효성 검사 오류 */}
         {validationErrors.length > 0 && (
           <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-            <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">오류</h4>
+            <h4 className="font-semibold text-red-800 dark:text-red-300 mb-2">
+              {t('common.error', '오류')}
+            </h4>
             <ul className="list-disc list-inside text-red-700 dark:text-red-400 space-y-1">
               {validationErrors.map((error) => (
                 <li key={error}>{error}</li>
@@ -653,7 +665,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
             className="px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 flex items-center"
           >
             <TimesIcon className="w-4 h-4 mr-2" />
-            닫기
+            {t('common.close', '닫기')}
           </button>
           <div className="flex space-x-3">
             <button
@@ -674,7 +686,11 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
               }`}
             >
               <SaveIcon className="w-4 h-4 mr-2" />
-              {isUpdating ? '저장 중...' : hasChanges ? '변경사항 저장' : '저장'}
+              {isUpdating
+                ? t('common.saving', '저장 중...')
+                : hasChanges
+                  ? t('common.saveChanges', '변경사항 저장')
+                  : t('common.save', '저장')}
             </button>
             {!hasChanges && (
               <button
@@ -685,7 +701,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
                 disabled={isUpdating}
                 className="px-4 py-2 bg-gray-600 dark:bg-gray-700 text-white rounded-md hover:bg-gray-700 dark:hover:bg-gray-800 disabled:opacity-50 flex items-center font-medium"
               >
-                저장 후 닫기
+                {t('common.saveAndClose', '저장 후 닫기')}
               </button>
             )}
           </div>

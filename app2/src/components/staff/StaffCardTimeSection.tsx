@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import { useResponsive } from '../../hooks/useResponsive';
 
 interface StaffCardTimeSectionProps {
@@ -23,6 +24,7 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(
     onEditWorkTime,
     staffId,
   }) => {
+    const { t } = useTranslation();
     const { isMobile } = useResponsive();
 
     // 미정 상태이거나 canEdit이 true인 경우 편집 가능
@@ -47,15 +49,22 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(
             } transition-all`}
             title={
               !canEdit
-                ? '수정 권한이 없습니다'
+                ? t('staff.noEditPermission', '수정 권한이 없습니다')
                 : multiSelectMode
-                  ? '다중 선택 모드에서는 시간을 수정할 수 없습니다'
-                  : '근무 시간 수정'
+                  ? t(
+                      'staff.cannotEditInMultiSelect',
+                      '다중 선택 모드에서는 시간을 수정할 수 없습니다'
+                    )
+                  : t('staff.editWorkTime', '근무 시간 수정')
             }
           >
             <div className="flex flex-col items-center">
-              <span className="text-sm">출근: {displayStartTime}</span>
-              <span className="text-sm">퇴근: {displayEndTime}</span>
+              <span className="text-sm">
+                {t('attendance.checkIn', '출근')}: {displayStartTime}
+              </span>
+              <span className="text-sm">
+                {t('attendance.checkOut', '퇴근')}: {displayEndTime}
+              </span>
             </div>
           </button>
         </div>
@@ -78,13 +87,18 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(
           } transition-opacity whitespace-nowrap border border-gray-200 dark:border-gray-600`}
           title={
             !canEdit
-              ? '수정 권한이 없습니다'
+              ? t('staff.noEditPermission', '수정 권한이 없습니다')
               : multiSelectMode
-                ? '다중 선택 모드에서는 시간을 수정할 수 없습니다'
-                : '근무 시간 수정'
+                ? t(
+                    'staff.cannotEditInMultiSelect',
+                    '다중 선택 모드에서는 시간을 수정할 수 없습니다'
+                  )
+                : t('staff.editWorkTime', '근무 시간 수정')
           }
         >
-          <span>출근: {displayStartTime}</span>
+          <span>
+            {t('attendance.checkIn', '출근')}: {displayStartTime}
+          </span>
         </button>
 
         <button
@@ -100,13 +114,18 @@ const StaffCardTimeSection: React.FC<StaffCardTimeSectionProps> = React.memo(
           } transition-opacity whitespace-nowrap border border-gray-200 dark:border-gray-600`}
           title={
             !canEdit
-              ? '수정 권한이 없습니다'
+              ? t('staff.noEditPermission', '수정 권한이 없습니다')
               : multiSelectMode
-                ? '다중 선택 모드에서는 시간을 수정할 수 없습니다'
-                : '근무 시간 수정'
+                ? t(
+                    'staff.cannotEditInMultiSelect',
+                    '다중 선택 모드에서는 시간을 수정할 수 없습니다'
+                  )
+                : t('staff.editWorkTime', '근무 시간 수정')
           }
         >
-          <span>퇴근: {displayEndTime}</span>
+          <span>
+            {t('attendance.checkOut', '퇴근')}: {displayEndTime}
+          </span>
         </button>
       </div>
     );

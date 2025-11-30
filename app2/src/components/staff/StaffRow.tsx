@@ -55,7 +55,7 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
     onSelect,
     onReport,
   }) => {
-    useTranslation();
+    const { t } = useTranslation();
 
     // 🔄 WorkLog 로딩 완료 후 강제 재렌더링을 위한 상태
     const [renderKey, setRenderKey] = useState(0);
@@ -81,12 +81,12 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
     // 메모이제이션된 기본 스태프 데이터
     const memoizedStaffData = useMemo(
       () => ({
-        displayName: staff.name || '이름 미정',
+        displayName: staff.name || t('staff.nameTBD', '이름 미정'),
         avatarInitial: (staff.name || 'U').charAt(0).toUpperCase(),
-        roleDisplay: staff.assignedRole || staff.role || '역할 미정',
+        roleDisplay: staff.assignedRole || staff.role || t('staff.roleTBD', '역할 미정'),
         hasContact: !!(staff.phone || staff.email),
       }),
-      [staff.name, staff.assignedRole, staff.role, staff.phone, staff.email]
+      [staff.name, staff.assignedRole, staff.role, staff.phone, staff.email, t]
     );
 
     // 메모이제이션된 출석 관련 데이터
@@ -189,17 +189,18 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
         } catch (error) {}
       }
 
+      const tbdText = t('common.tbd', '미정');
       return {
         displayStartTime: formatTimeDisplay(scheduledStartTime),
-        displayEndTime: scheduledEndTime ? formatTimeDisplay(scheduledEndTime) : '미정',
+        displayEndTime: scheduledEndTime ? formatTimeDisplay(scheduledEndTime) : tbdText,
         startTimeColor: getTimeSlotColor(scheduledStartTime),
         endTimeColor: scheduledEndTime
           ? getTimeSlotColor(scheduledEndTime)
           : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400',
         hasEndTime: !!scheduledEndTime,
-        isScheduledTimeTBD: scheduledStartTime === '미정', // 예정시간이 미정인지 여부
+        isScheduledTimeTBD: scheduledStartTime === '미정' || scheduledStartTime === tbdText, // 예정시간이 미정인지 여부
       };
-    }, [staff, formatTimeDisplay, getTimeSlotColor, currentWorkLog]);
+    }, [staff, formatTimeDisplay, getTimeSlotColor, currentWorkLog, t]);
 
     // 메모이제이션된 이벤트 핸들러들
     const handleEditStartTime = useCallback(
@@ -285,10 +286,10 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
             } ${memoizedTimeData.startTimeColor}`}
             title={
               !canEdit
-                ? '수정 권한이 없습니다'
+                ? t('common.noEditPermission', '수정 권한이 없습니다')
                 : memoizedTimeData.isScheduledTimeTBD
-                  ? '미정 - 출근시간 설정'
-                  : '예정 출근시간 수정'
+                  ? t('attendance.setCheckInTime', '미정 - 출근시간 설정')
+                  : t('attendance.editScheduledCheckIn', '예정 출근시간 수정')
             }
           >
             {memoizedTimeData.isScheduledTimeTBD ? '📋' : '🕘'} {memoizedTimeData.displayStartTime}
@@ -303,7 +304,11 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
             className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium transition-colors ${
               canEdit ? 'hover:opacity-80' : 'opacity-50 cursor-not-allowed'
             } ${memoizedTimeData.endTimeColor} ${!memoizedTimeData.hasEndTime && canEdit ? 'hover:bg-gray-200 dark:hover:bg-gray-600' : ''}`}
-            title={!canEdit ? '수정 권한이 없습니다' : '예정 퇴근시간 수정'}
+            title={
+              !canEdit
+                ? t('common.noEditPermission', '수정 권한이 없습니다')
+                : t('attendance.editScheduledCheckOut', '예정 퇴근시간 수정')
+            }
           >
             {memoizedTimeData.hasEndTime ? '🕕' : '⏳'} {memoizedTimeData.displayEndTime}
           </button>
@@ -395,7 +400,9 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
               </div>
             )}
             {!memoizedStaffData.hasContact && (
-              <span className="text-gray-400 dark:text-gray-500 text-xs">연락처 없음</span>
+              <span className="text-gray-400 dark:text-gray-500 text-xs">
+                {t('staff.noContact', '연락처 없음')}
+              </span>
             )}
           </div>
         </td>
@@ -449,13 +456,13 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
               onClick={(e) => {
                 e.stopPropagation();
                 if (onReport) {
-                  onReport(staff.id, staff.name || '알 수 없는 사용자');
+                  onReport(staff.id, staff.name || t('common.unknownUser', '알 수 없는 사용자'));
                 }
               }}
               className="px-2 py-1 text-xs font-medium rounded transition-colors text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-300 hover:bg-orange-50 dark:hover:bg-orange-900/30"
-              title="스태프 신고하기"
+              title={t('staff.reportStaff', '스태프 신고하기')}
             >
-              신고
+              {t('common.report', '신고')}
             </button>
             <button
               onClick={handleDeleteStaff}
@@ -465,9 +472,13 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
                   ? 'text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300 hover:bg-red-50 dark:hover:bg-red-900/30'
                   : 'text-gray-400 dark:text-gray-500 cursor-not-allowed'
               }`}
-              title={canEdit ? '스태프 삭제' : '수정 권한이 없습니다'}
+              title={
+                canEdit
+                  ? t('staff.deleteStaff', '스태프 삭제')
+                  : t('common.noEditPermission', '수정 권한이 없습니다')
+              }
             >
-              삭제
+              {t('common.delete', '삭제')}
             </button>
           </div>
         </td>

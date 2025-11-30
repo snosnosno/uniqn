@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { UnifiedWorkLog } from '../../types/unified/workLog';
 import type { AttendanceStatus } from '../../types/attendance';
 
@@ -45,6 +46,8 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
     assignedDate: _assignedDate,
     onReport,
   }) => {
+    const { t } = useTranslation();
+
     const handleActionClick = (e: React.MouseEvent, action: () => void) => {
       e.stopPropagation();
       lightImpact();
@@ -68,26 +71,28 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
       if ('isPaid' in workLog && workLog.isPaid) {
         return {
           allowed: false,
-          reason: '급여 지급 완료 후에는 삭제할 수 없습니다',
+          reason: t('staff.cannotDeleteAfterPaid', '급여 지급 완료 후에는 삭제할 수 없습니다'),
         };
       }
 
       // 상태에 따른 삭제 가능 여부
       if (!deletableStatuses.includes(status)) {
         const statusMessages: Record<string, string> = {
-          checked_in: '출근 후에는 삭제할 수 없습니다',
-          checked_out: '근무 완료 후에는 삭제할 수 없습니다',
-          completed: '근무 완료 후에는 삭제할 수 없습니다',
+          checked_in: t('staff.cannotDeleteAfterCheckIn', '출근 후에는 삭제할 수 없습니다'),
+          checked_out: t('staff.cannotDeleteAfterComplete', '근무 완료 후에는 삭제할 수 없습니다'),
+          completed: t('staff.cannotDeleteAfterComplete', '근무 완료 후에는 삭제할 수 없습니다'),
         };
 
         return {
           allowed: false,
-          reason: statusMessages[status] || '현재 상태에서는 삭제할 수 없습니다',
+          reason:
+            statusMessages[status] ||
+            t('staff.cannotDeleteCurrentState', '현재 상태에서는 삭제할 수 없습니다'),
         };
       }
 
       return { allowed: true, reason: undefined };
-    }, [workLog]);
+    }, [workLog, t]);
 
     if (!showActions) return null;
 
@@ -105,7 +110,11 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
                     ? 'text-blue-600 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50'
                     : 'text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700 cursor-not-allowed'
                 }`}
-                title={!canEdit ? '수정 권한이 없습니다' : '근무 시간 수정'}
+                title={
+                  !canEdit
+                    ? t('staff.noEditPermission', '수정 권한이 없습니다')
+                    : t('staff.editWorkTime', '근무 시간 수정')
+                }
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -115,7 +124,7 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
                     d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
                   />
                 </svg>
-                시간
+                {t('common.time', '시간')}
               </button>
 
               {/* 신고 버튼 - 모든 구인자가 사용 가능 */}
@@ -124,7 +133,7 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
                   handleActionClick(e, () => onReport && onReport(staffId, staffName))
                 }
                 className="inline-flex items-center px-3 py-2 text-xs font-medium rounded-lg transition-colors text-orange-600 bg-orange-50 dark:bg-orange-900/30 hover:bg-orange-100 dark:hover:bg-orange-900/50"
-                title="스태프 신고하기"
+                title={t('staff.reportStaff', '스태프 신고하기')}
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path
@@ -134,7 +143,7 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
                     d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
                   />
                 </svg>
-                신고
+                {t('common.report', '신고')}
               </button>
 
               <button
@@ -149,10 +158,10 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
                 }`}
                 title={
                   !canEdit
-                    ? '수정 권한이 없습니다'
+                    ? t('staff.noEditPermission', '수정 권한이 없습니다')
                     : !canDelete.allowed
                       ? canDelete.reason
-                      : '스태프 삭제'
+                      : t('staff.deleteStaff', '스태프 삭제')
                 }
               >
                 <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,7 +172,7 @@ const StaffCardActions: React.FC<StaffCardActionsProps> = React.memo(
                     d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
                   />
                 </svg>
-                삭제
+                {t('common.delete', '삭제')}
               </button>
             </div>
           </div>

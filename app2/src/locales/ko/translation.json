@@ -120,6 +120,7 @@
     "jobBoard": "구인구직",
     "myProfile": "내 프로필",
     "myAvailability": "가능 시간",
+    "mySchedule": "내 스케줄",
     "attendance": "출석체크",
     "staffManagement": "스태프 관리",
     "managePostings": "공고 관리",
@@ -133,7 +134,21 @@
     "approvals": "가입 승인",
     "userManagement": "사용자 관리",
     "inquiryManagement": "문의 관리",
-    "support": "고객지원"
+    "support": "고객지원",
+    "customerCenter": "고객 센터",
+    "ceoDashboard": "CEO 대시보드",
+    "paymentAndChip": "결제 및 칩 관리",
+    "chipRecharge": "칩 충전",
+    "paymentHistory": "결제 내역",
+    "chipHistory": "칩 사용 내역",
+    "subscription": "구독 플랜",
+    "tournamentManagement": "토너먼트 관리",
+    "tournaments": "토너먼트",
+    "participantManagement": "참가자 관리",
+    "tournamentApprovals": "토너먼트 승인",
+    "paymentSystemManagement": "결제 시스템 관리",
+    "chipManagement": "칩 관리",
+    "refundBlacklist": "환불 블랙리스트"
   },
   "layout": {
     "title": "UNIQN",
@@ -311,7 +326,10 @@
     "staff": "스태프",
     "table": "테이블",
     "totalHours": "총 근무 시간",
-    "loading": "로딩 중..."
+    "loading": "로딩 중...",
+    "countItems": "{{count}}건",
+    "hours": "{{count}}시간",
+    "timeTBD": "시간 미정"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -1015,7 +1033,46 @@
     "notificationSettings": "알림 설정",
     "conflictNotifications": "예약 충돌 알림",
     "assignedDealer": "명 배정됨",
-    "minuteInterval": "분 간격"
+    "minuteInterval": "분 간격",
+    "noJobPosting": "공고 정보를 불러올 수 없습니다.",
+    "description": "스태프 교대 스케줄 및 시간 관리",
+    "shiftManagement": "교대관리",
+    "shiftManagementFeature": "교대관리 기능",
+    "comingSoonMessage": "스태프들의 교대 근무 관리 기능이 향후 업데이트될 예정입니다.",
+    "assignedStaff": "할당된 스태프",
+    "noAssignedStaff": "할당된 스태프가 없습니다.",
+    "timeSlotInfo": "시간대 정보",
+    "rolesCount": "{{count}} 역할",
+    "noTimeSlotsForDate": "선택된 날짜에 설정된 시간대가 없습니다.",
+    "shiftStatus": "교대 상태",
+    "shiftStatusComingSoon": "교대 상태 추적 기능이 향후 추가될 예정입니다.",
+    "features": {
+      "scheduleManagement": "교대 일정 관리",
+      "autoWorkRecord": "근무 시간 자동 기록",
+      "shiftAlerts": "교대 알림 시스템",
+      "attendanceTracking": "스태프 출석 추적"
+    },
+    "upcomingFeatures": {
+      "title": "예정된 교대관리 기능",
+      "shiftSchedule": "교대 일정",
+      "shiftScheduleDesc": "스태프들의 교대 일정을 체계적으로 관리합니다.",
+      "autoRecord": "자동 기록",
+      "autoRecordDesc": "교대 시간에 맞춰 자동으로 근무 시간을 기록합니다.",
+      "attendanceManagement": "출석 관리",
+      "attendanceManagementDesc": "실시간으로 스태프 출석 상황을 추적하고 관리합니다."
+    }
+  },
+  "schedule": {
+    "stats": {
+      "completed": "완료된 일정",
+      "totalItems": "총 {{count}}건",
+      "upcoming": "예정된 일정",
+      "confirmed": "확정된 일정",
+      "thisMonthEarnings": "이번 달 예상 수입",
+      "totalEarnings": "총 ₩{{amount}}",
+      "totalHours": "총 근무 시간",
+      "plannedHours": "예정된 근무 시간"
+    }
   },
   "attendance": {
     "status": {

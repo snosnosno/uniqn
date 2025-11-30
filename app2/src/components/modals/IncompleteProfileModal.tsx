@@ -51,19 +51,22 @@ const IncompleteProfileModal: React.FC<IncompleteProfileModalProps> = ({
 
         {/* 제목 */}
         <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 text-center mb-3">
-          프로필을 완성해주세요
+          {t('profile.completeProfile', '프로필을 완성해주세요')}
         </h3>
 
         {/* 메시지 */}
         <div className="text-center mb-6">
           <p className="text-gray-600 dark:text-gray-300 mb-3">
-            구인공고에 지원하려면 프로필 필수 정보를 먼저 입력해야 합니다.
+            {t(
+              'profile.requiredFieldsMessage',
+              '구인공고에 지원하려면 프로필 필수 정보를 먼저 입력해야 합니다.'
+            )}
           </p>
 
           {/* 필수 필드 목록 */}
           <div className="bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4 mb-4">
             <p className="text-sm font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-              아래 정보를 입력해주세요:
+              {t('profile.enterFieldsBelow', '아래 정보를 입력해주세요:')}
             </p>
             <ul className="text-left text-sm text-yellow-700 dark:text-yellow-300 space-y-1">
               {missingFieldLabels.map((label) => (
@@ -98,7 +101,7 @@ const IncompleteProfileModal: React.FC<IncompleteProfileModalProps> = ({
             onClick={handleGoToProfile}
             className="flex-1 px-4 py-2.5 text-sm font-medium text-white bg-blue-600 dark:bg-blue-700 rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 transition-colors"
           >
-            프로필 작성하기
+            {t('profile.goToProfile', '프로필 작성하기')}
           </button>
         </div>
       </div>

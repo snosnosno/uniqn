@@ -7,6 +7,7 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { getTodayString } from '@/utils/jobPosting/dateUtils';
 import { calculateWorkHours } from '@/utils/workLogMapper';
@@ -37,6 +38,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
   onCancel,
   onDelete: _onDelete,
 }) => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'basic' | 'work' | 'calculation'>('basic');
   const [jobPosting, setJobPosting] = useState<JobPosting | null>(null);
   const [_loadingJobPosting, setLoadingJobPosting] = useState(false);
@@ -156,10 +158,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
     setReportTarget({
       id: createdBy,
-      name: '구인자',
+      name: t('common.employer', '구인자'),
     });
     setIsReportModalOpen(true);
-  }, [schedule, jobPosting]);
+  }, [schedule, jobPosting, t]);
 
   const handleReportModalClose = useCallback(() => {
     setIsReportModalOpen(false);
@@ -312,7 +314,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       ...(taxRate !== undefined && { taxRate }),
       ...(tax > 0 && { afterTaxAmount }),
     };
-  }, [schedule, jobPosting, realTimeWorkLogs]);
+  }, [schedule, jobPosting, getTargetWorkLog]);
 
   // 급여 정보 상태 관리
   const [salaryInfo, setSalaryInfo] = useState<SalaryInfo>({
@@ -348,7 +350,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
     try {
       // 날짜 파싱
-      let dateStr = '날짜 없음';
+      let dateStr = t('common.noDate', '날짜 없음');
 
       if (log.date) {
         const dateValue = new Date(log.date);
@@ -382,7 +384,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       );
       return [];
     }
-  }, [schedule, getTargetWorkLog]);
+  }, [schedule, getTargetWorkLog, t]);
 
   if (!schedule) return null;
 
@@ -391,9 +393,9 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
 
   // 탭 정의
   const tabs = [
-    { id: 'basic' as const, name: '정보', icon: '👤' },
-    { id: 'work' as const, name: '근무', icon: '🕐' },
-    { id: 'calculation' as const, name: '급여', icon: '💰' },
+    { id: 'basic' as const, name: t('schedule.tabs.info', '정보'), icon: '👤' },
+    { id: 'work' as const, name: t('schedule.tabs.work', '근무'), icon: '🕐' },
+    { id: 'calculation' as const, name: t('schedule.tabs.salary', '급여'), icon: '💰' },
   ];
 
   return (
@@ -408,7 +410,9 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               </span>
             </div>
             <div>
-              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">일정 상세</h3>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                {t('schedule.detail', '일정 상세')}
+              </h3>
               <p className="text-sm text-gray-500 dark:text-gray-400">{schedule?.role}</p>
             </div>
           </div>
@@ -468,7 +472,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               }}
               className="flex-1 px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors font-medium"
             >
-              퇴근하기
+              {t('attendance.actions.checkOut', '퇴근하기')}
             </button>
           )}
 
@@ -477,7 +481,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               onClick={() => setIsCancelConfirmOpen(true)}
               className="flex-1 px-4 py-2 bg-red-500 dark:bg-red-600 text-white rounded-lg hover:bg-red-600 transition-colors font-medium"
             >
-              지원 취소
+              {t('application.cancel', '지원 취소')}
             </button>
           )}
 
@@ -486,7 +490,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             <button
               onClick={handleReport}
               className="px-4 py-2 bg-orange-500 dark:bg-orange-600 text-white rounded-lg hover:bg-orange-600 dark:hover:bg-orange-500 transition-colors font-medium flex items-center gap-2"
-              title="구인자 신고하기"
+              title={t('report.reportEmployer', '구인자 신고하기')}
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path
@@ -496,7 +500,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
                   d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.232 16.5c-.77.833.192 2.5 1.732 2.5z"
                 />
               </svg>
-              신고
+              {t('common.report', '신고')}
             </button>
           )}
 
@@ -504,7 +508,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             onClick={onClose}
             className="px-4 py-2 bg-gray-200 dark:bg-gray-300 text-gray-700 dark:text-gray-800 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-200 transition-colors font-medium"
           >
-            닫기
+            {t('common.close', '닫기')}
           </button>
         </div>
 
@@ -512,7 +516,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
         <ReportModal
           isOpen={isReportModalOpen}
           onClose={handleReportModalClose}
-          targetUser={reportTarget || { id: '', name: '구인자' }}
+          targetUser={reportTarget || { id: '', name: t('common.employer', '구인자') }}
           event={{
             id: schedule?.eventId || '',
             title: jobPosting?.title || schedule?.eventName || '',
@@ -537,10 +541,10 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
               }
             }
           }}
-          title="지원 취소"
-          message="지원을 취소하시겠습니까?"
-          confirmText="취소하기"
-          cancelText="돌아가기"
+          title={t('application.cancel', '지원 취소')}
+          message={t('application.cancelConfirmMessage', '지원을 취소하시겠습니까?')}
+          confirmText={t('common.confirmCancel', '취소하기')}
+          cancelText={t('common.goBack', '돌아가기')}
           isDangerous={true}
           isLoading={isCancelling}
         />

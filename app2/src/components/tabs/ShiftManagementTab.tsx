@@ -34,7 +34,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
       <div className="p-6">
         <div className="flex justify-center items-center min-h-96">
           <div className="text-lg text-gray-500 dark:text-gray-400 dark:text-gray-500">
-            공고 정보를 불러올 수 없습니다.
+            {t('shiftSchedule.noJobPosting', '공고 정보를 불러올 수 없습니다.')}
           </div>
         </div>
       </div>
@@ -56,9 +56,11 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
       {/* 헤더 섹션 */}
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h3 className="text-lg font-medium">{jobPosting.title} - 시프트 관리</h3>
+          <h3 className="text-lg font-medium">
+            {jobPosting.title} - {t('shiftSchedule.title', '시프트 관리')}
+          </h3>
           <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
-            스태프 교대 스케줄 및 시간 관리
+            {t('shiftSchedule.description', '스태프 교대 스케줄 및 시간 관리')}
           </p>
         </div>
         <div className="text-sm text-gray-600 dark:text-gray-300">
@@ -116,22 +118,25 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
               <FaTable className="w-5 h-5 mr-2" />
-              교대관리
+              {t('shiftSchedule.shiftManagement', '교대관리')}
             </h4>
 
             <div className="text-center py-12">
               <FaCalendarAlt className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
               <h5 className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2">
-                교대관리 기능
+                {t('shiftSchedule.shiftManagementFeature', '교대관리 기능')}
               </h5>
               <p className="text-gray-500 dark:text-gray-400 mb-4">
-                스태프들의 교대 근무 관리 기능이 향후 업데이트될 예정입니다.
+                {t(
+                  'shiftSchedule.comingSoonMessage',
+                  '스태프들의 교대 근무 관리 기능이 향후 업데이트될 예정입니다.'
+                )}
               </p>
               <div className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                <p>• 교대 일정 관리</p>
-                <p>• 근무 시간 자동 기록</p>
-                <p>• 교대 알림 시스템</p>
-                <p>• 스태프 출석 추적</p>
+                <p>• {t('shiftSchedule.features.scheduleManagement', '교대 일정 관리')}</p>
+                <p>• {t('shiftSchedule.features.autoWorkRecord', '근무 시간 자동 기록')}</p>
+                <p>• {t('shiftSchedule.features.shiftAlerts', '교대 알림 시스템')}</p>
+                <p>• {t('shiftSchedule.features.attendanceTracking', '스태프 출석 추적')}</p>
               </div>
             </div>
           </div>
@@ -143,7 +148,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
             <h4 className="text-xl font-semibold mb-4 text-blue-600 dark:text-blue-400 flex items-center">
               <FaUsers className="w-5 h-5 mr-2" />
-              할당된 스태프 ({staff.length})
+              {t('shiftSchedule.assignedStaff', '할당된 스태프')} ({staff.length})
             </h4>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {staff.length > 0 ? (
@@ -165,14 +170,14 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                         {(staffMember as any).assignedRole || staffMember.role} |{' '}
                         {(staffMember as any).assignedTime ||
                           staffMember.assignedTime ||
-                          '시간 미정'}
+                          t('common.timeTBD', '시간 미정')}
                       </p>
                     </div>
                   </div>
                 ))
               ) : (
                 <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                  할당된 스태프가 없습니다.
+                  {t('shiftSchedule.noAssignedStaff', '할당된 스태프가 없습니다.')}
                 </p>
               )}
             </div>
@@ -182,7 +187,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/50">
             <h4 className="text-xl font-semibold mb-4 text-purple-600 flex items-center">
               <FaClock className="w-5 h-5 mr-2" />
-              시간대 정보 ({selectedDate})
+              {t('shiftSchedule.timeSlotInfo', '시간대 정보')} ({selectedDate})
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {(() => {
@@ -208,14 +213,19 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                         {timeSlot.time}
                       </span>
                       <span className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                        {timeSlot.roles?.length || 0} 역할
+                        {t('shiftSchedule.rolesCount', '{{count}} 역할', {
+                          count: timeSlot.roles?.length || 0,
+                        })}
                       </span>
                     </div>
                   ));
                 } else {
                   return (
                     <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
-                      선택된 날짜에 설정된 시간대가 없습니다.
+                      {t(
+                        'shiftSchedule.noTimeSlotsForDate',
+                        '선택된 날짜에 설정된 시간대가 없습니다.'
+                      )}
                     </p>
                   );
                 }
@@ -227,14 +237,15 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
           <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow dark:shadow-gray-900/50">
             <h4 className="text-xl font-semibold mb-4 text-green-600 dark:text-green-400 flex items-center">
               <FaTable className="w-5 h-5 mr-2" />
-              교대 상태
+              {t('shiftSchedule.shiftStatus', '교대 상태')}
             </h4>
             <div className="text-center py-8">
               <div className="text-gray-400 dark:text-gray-500 text-4xl mb-3">🔄</div>
               <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                교대 상태 추적 기능이
-                <br />
-                향후 추가될 예정입니다.
+                {t(
+                  'shiftSchedule.shiftStatusComingSoon',
+                  '교대 상태 추적 기능이 향후 추가될 예정입니다.'
+                )}
               </p>
             </div>
           </div>
@@ -244,25 +255,40 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
       {/* 교대관리 기능 소개 */}
       <div className="mt-6 bg-white dark:bg-gray-800 p-6 rounded-lg shadow">
         <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-4">
-          예정된 교대관리 기능
+          {t('shiftSchedule.upcomingFeatures.title', '예정된 교대관리 기능')}
         </h4>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">🔄 교대 일정</h5>
+            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+              🔄 {t('shiftSchedule.upcomingFeatures.shiftSchedule', '교대 일정')}
+            </h5>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              스태프들의 교대 일정을 체계적으로 관리합니다.
+              {t(
+                'shiftSchedule.upcomingFeatures.shiftScheduleDesc',
+                '스태프들의 교대 일정을 체계적으로 관리합니다.'
+              )}
             </p>
           </div>
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">⏰ 자동 기록</h5>
+            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+              ⏰ {t('shiftSchedule.upcomingFeatures.autoRecord', '자동 기록')}
+            </h5>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              교대 시간에 맞춰 자동으로 근무 시간을 기록합니다.
+              {t(
+                'shiftSchedule.upcomingFeatures.autoRecordDesc',
+                '교대 시간에 맞춰 자동으로 근무 시간을 기록합니다.'
+              )}
             </p>
           </div>
           <div className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg">
-            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">📋 출석 관리</h5>
+            <h5 className="font-medium text-gray-800 dark:text-gray-200 mb-2">
+              📋 {t('shiftSchedule.upcomingFeatures.attendanceManagement', '출석 관리')}
+            </h5>
             <p className="text-sm text-gray-600 dark:text-gray-300">
-              실시간으로 스태프 출석 상황을 추적하고 관리합니다.
+              {t(
+                'shiftSchedule.upcomingFeatures.attendanceManagementDesc',
+                '실시간으로 스태프 출석 상황을 추적하고 관리합니다.'
+              )}
             </p>
           </div>
         </div>

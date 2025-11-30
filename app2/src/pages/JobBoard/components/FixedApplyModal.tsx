@@ -36,8 +36,11 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
 
   // 근무 일정 텍스트
   const scheduleText = workSchedule
-    ? `주 ${workSchedule.daysPerWeek}일 근무 · ${formatWorkTimeDisplay(workSchedule.startTime, workSchedule.endTime)}`
-    : '근무 일정 미정';
+    ? t('jobPosting.workScheduleText', '주 {{days}}일 근무 · {{time}}', {
+        days: workSchedule.daysPerWeek,
+        time: formatWorkTimeDisplay(workSchedule.startTime, workSchedule.endTime),
+      })
+    : t('jobPosting.scheduleNotSet', '근무 일정 미정');
 
   return (
     <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
@@ -45,9 +48,11 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
         {/* 헤더 */}
         <div className="mb-4">
           <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
-            {posting.title} 지원하기
+            {posting.title} {t('jobPosting.apply', '지원하기')}
           </h3>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">📌 고정공고</p>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            📌 {t('jobPosting.fixedPosting', '고정공고')}
+          </p>
         </div>
 
         {/* 근무 정보 */}
@@ -70,7 +75,7 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
         {/* 역할 선택 */}
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            지원할 역할 선택 (여러 개 선택 가능)
+            {t('jobPosting.selectRoles', '지원할 역할 선택 (여러 개 선택 가능)')}
           </label>
 
           {requiredRolesWithCount.length > 0 ? (
@@ -98,7 +103,8 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
                         👤 {t(`roles.${role.name}`, role.name)}
                       </span>
                       <span className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                        (모집 {role.count}명)
+                        ({t('jobPosting.recruiting', '모집')} {role.count}
+                        {t('common.person', '명')})
                       </span>
                     </span>
                   </label>
@@ -107,7 +113,7 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
             </div>
           ) : (
             <div className="text-center py-4 text-gray-500 dark:text-gray-400">
-              <p>모집 역할 정보가 없습니다.</p>
+              <p>{t('jobPosting.noRoleInfo', '모집 역할 정보가 없습니다.')}</p>
             </div>
           )}
         </div>
@@ -117,7 +123,10 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
           <div className="flex items-start gap-2">
             <span className="text-yellow-600 dark:text-yellow-400">💡</span>
             <p className="text-sm text-yellow-800 dark:text-yellow-200">
-              고정공고는 상시 모집 공고입니다. 지원 후 채용 담당자가 연락드립니다.
+              {t(
+                'jobPosting.fixedPostingNotice',
+                '고정공고는 상시 모집 공고입니다. 지원 후 채용 담당자가 연락드립니다.'
+              )}
             </p>
           </div>
         </div>
@@ -128,14 +137,18 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
             onClick={onClose}
             className="py-2 px-4 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-600 dark:hover:bg-gray-500 min-h-[44px] text-sm"
           >
-            {t('common.cancel')}
+            {t('common.cancel', '취소')}
           </button>
           <button
             onClick={onApply}
             disabled={selectedRoles.length === 0 || isProcessing}
             className="py-2 px-4 bg-blue-600 dark:bg-blue-700 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[44px] text-sm"
           >
-            {isProcessing ? '처리 중...' : `지원하기 (${selectedRoles.length}개)`}
+            {isProcessing
+              ? t('common.processing', '처리 중...')
+              : t('jobPosting.applyWithCount', '지원하기 ({{count}}개)', {
+                  count: selectedRoles.length,
+                })}
           </button>
         </div>
       </div>
