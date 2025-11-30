@@ -108,13 +108,6 @@ export type {
 /** 스태프 QR Hook */
 export { useStaffQR } from './useStaffQR';
 
-/**
- * 스태프 선택 Hook (확장 버전)
- * @deprecated 새로운 코드에서는 useStaffSelectionV2 또는 hooks/staff/useStaffSelection 사용 권장
- * 이 버전은 localStorage 저장 기능이 포함되어 있으나 필수 인자가 필요합니다.
- */
-export { useStaffSelection } from './useStaffSelection';
-
 /** 스태프 근무 데이터 Hook */
 export { useStaffWorkData } from './useStaffWorkData';
 
