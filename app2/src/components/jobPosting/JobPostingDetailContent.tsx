@@ -84,7 +84,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
                   : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
               }`}
             >
-              {jobPosting.recruitmentType === 'fixed' ? '고정' : '지원'}
+              {jobPosting.recruitmentType === 'fixed'
+                ? t('jobPosting.recruitmentType.fixed', '고정')
+                : t('jobPosting.recruitmentType.apply', '지원')}
             </span>
           </div>
         )}
@@ -98,7 +100,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
                 : 'mb-4 pb-4 border-b border-gray-200 dark:border-gray-700'
             }
           >
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">📝 상세 설명</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2">
+              📝 {t('jobPosting.detail.description', '상세 설명')}
+            </h4>
             <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
               {jobPosting.description}
             </p>
@@ -109,38 +113,44 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           {/* 고정공고에서는 기간 정보 숨기기 */}
           {!hideScheduleInfo && (
             <p className="flex items-center">
-              <span className="font-medium w-20">기간:</span>
+              <span className="font-medium w-20">{t('jobPosting.detail.period', '기간')}:</span>
               <span>📅 {dateRangeDisplay}</span>
             </p>
           )}
           <p className="flex items-center">
-            <span className="font-medium w-20">지역:</span>
+            <span className="font-medium w-20">{t('jobPosting.detail.location', '지역')}:</span>
             <span>📍 {jobPosting.location}</span>
             {jobPosting.district && <span className="ml-1">({jobPosting.district})</span>}
           </p>
           {jobPosting.detailedAddress && (
             <p className="flex items-center">
-              <span className="font-medium w-20">상세주소:</span>
+              <span className="font-medium w-20">
+                {t('jobPosting.detail.detailedAddress', '상세주소')}:
+              </span>
               <span>{jobPosting.detailedAddress}</span>
             </p>
           )}
           {jobPosting.contactPhone && (
             <p className="flex items-center">
-              <span className="font-medium w-20">문의연락처:</span>
+              <span className="font-medium w-20">
+                {t('jobPosting.detail.contactPhone', '문의연락처')}:
+              </span>
               <span>📞 {jobPosting.contactPhone}</span>
             </p>
           )}
           {/* 급여 정보 */}
           {jobPosting.useRoleSalary && jobPosting.roleSalaries ? (
             <div className="mt-2">
-              <span className="font-medium">급여:</span>
-              <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">(역할별 급여)</span>
+              <span className="font-medium">{t('jobPosting.detail.salary', '급여')}:</span>
+              <span className="ml-2 text-xs text-gray-600 dark:text-gray-400">
+                ({t('jobPosting.detail.roleSalary', '역할별 급여')})
+              </span>
             </div>
           ) : (
             jobPosting.salaryType &&
             jobPosting.salaryAmount && (
               <p className="flex items-center">
-                <span className="font-medium w-20">급여:</span>
+                <span className="font-medium w-20">{t('jobPosting.detail.salary', '급여')}:</span>
                 <span>
                   💰 {formatSalaryDisplay(jobPosting.salaryType, jobPosting.salaryAmount)}
                 </span>
@@ -155,7 +165,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
         jobPosting.roleSalaries &&
         Object.keys(jobPosting.roleSalaries).length > 0 && (
           <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">💰 역할별 급여</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              💰 {t('jobPosting.detail.roleSalaryTitle', '역할별 급여')}
+            </h4>
             <div className="space-y-2 text-sm text-gray-900 dark:text-gray-100">
               {Object.entries(jobPosting.roleSalaries).map(([role, salary]) => (
                 <div key={role} className="flex items-center">
@@ -167,7 +179,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
                   </span>
                   <span className="ml-2">
                     {salary.salaryType === 'negotiable'
-                      ? '협의'
+                      ? t('jobPosting.salary.negotiable', '협의')
                       : formatSalaryDisplay(salary.salaryType, salary.salaryAmount)}
                   </span>
                 </div>
@@ -186,19 +198,23 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           return validBenefits.length > 0;
         })() && (
           <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
-            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🎁 복리후생</h4>
+            <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+              🎁 {t('jobPosting.detail.benefits', '복리후생')}
+            </h4>
             <div className="grid grid-cols-2 gap-2 text-sm text-gray-900 dark:text-gray-100">
               {Object.entries(jobPosting.benefits)
                 .filter(([_, value]) => value && typeof value === 'string' && value.trim() !== '')
                 .map(([key, value]) => (
                   <div key={key} className="flex">
                     <span className="font-medium min-w-[80px]">
-                      {key === 'guaranteedHours' && '보장시간'}
-                      {key === 'mealAllowance' && '식비'}
-                      {key === 'transportation' && '교통비'}
-                      {key === 'clothing' && '복장'}
-                      {key === 'meal' && '식사'}
-                      {key === 'accommodation' && '숙소'}:
+                      {key === 'guaranteedHours' &&
+                        t('jobPosting.benefits.guaranteedHours', '보장시간')}
+                      {key === 'mealAllowance' && t('jobPosting.benefits.mealAllowance', '식비')}
+                      {key === 'transportation' &&
+                        t('jobPosting.benefits.transportation', '교통비')}
+                      {key === 'clothing' && t('jobPosting.benefits.clothing', '복장')}
+                      {key === 'meal' && t('jobPosting.benefits.meal', '식사')}
+                      {key === 'accommodation' && t('jobPosting.benefits.accommodation', '숙소')}:
                     </span>
                     <span className="ml-2">{value}</span>
                   </div>
@@ -211,7 +227,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
       {!hideScheduleInfo && (
         <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
           <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-            ⏰ 모집 시간대 및 역할
+            ⏰ {t('jobPosting.detail.timeAndRoles', '모집 시간대 및 역할')}
           </h4>
 
           {/* 일자별 인원 요구사항 표시 */}
@@ -240,7 +256,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
                             <div className="font-semibold text-gray-700 dark:text-gray-200 text-sm min-w-[80px]">
                               {ts.isTimeToBeAnnounced ? (
                                 <span className="text-orange-600 dark:text-orange-400">
-                                  미정
+                                  {t('jobPosting.time.tbd', '미정')}
                                   {ts.tentativeDescription && (
                                     <span className="text-gray-600 dark:text-gray-400 font-normal ml-1">
                                       ({ts.tentativeDescription})
@@ -266,8 +282,13 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
                                     key={roleIndex}
                                     className={`text-sm ${isFull ? 'text-red-600 dark:text-red-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}
                                   >
-                                    {t(`roles.${r.name}`, r.name)}: {r.count}명
-                                    {isFull ? ' (마감)' : ` (${confirmedCount}/${r.count})`}
+                                    {t(`roles.${r.name}`, r.name)}:{' '}
+                                    {t('jobPosting.count.people', '{{count}}명', {
+                                      count: r.count,
+                                    })}
+                                    {isFull
+                                      ? ` (${t('jobPosting.status.closed', '마감')})`
+                                      : ` (${confirmedCount}/${r.count})`}
                                   </div>
                                 );
                               })}
@@ -283,7 +304,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           ) : (
             /* 날짜별 요구사항이 없는 경우 */
             <div className="text-sm text-gray-600 dark:text-gray-400">
-              모집 시간대 정보가 없습니다.
+              {t('jobPosting.detail.noTimeInfo', '모집 시간대 정보가 없습니다.')}
             </div>
           )}
         </div>
@@ -293,17 +314,25 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
       {isFixedJobPosting(jobPosting) && jobPosting.fixedData && (
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
           {/* 근무 조건 */}
-          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">🏢 근무 조건</h4>
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            🏢 {t('jobPosting.detail.workConditions', '근무 조건')}
+          </h4>
 
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>
-              <label className="text-gray-600 dark:text-gray-400">주 출근일수</label>
+              <label className="text-gray-600 dark:text-gray-400">
+                {t('jobPosting.detail.daysPerWeek', '주 출근일수')}
+              </label>
               <p className="text-gray-900 dark:text-gray-100 font-medium">
-                {jobPosting.fixedData.workSchedule.daysPerWeek}일
+                {t('jobPosting.count.days', '{{count}}일', {
+                  count: jobPosting.fixedData.workSchedule.daysPerWeek,
+                })}
               </p>
             </div>
             <div>
-              <label className="text-gray-600 dark:text-gray-400">근무시간</label>
+              <label className="text-gray-600 dark:text-gray-400">
+                {t('jobPosting.detail.workHours', '근무시간')}
+              </label>
               <p className="text-gray-900 dark:text-gray-100 font-medium">
                 {formatWorkTimeDisplay(
                   jobPosting.fixedData.workSchedule.startTime,
@@ -314,7 +343,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
           </div>
 
           {/* 모집 역할 */}
-          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-3">👥 모집 역할</h4>
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mt-4 mb-3">
+            👥 {t('jobPosting.detail.recruitRoles', '모집 역할')}
+          </h4>
 
           {jobPosting.fixedData.requiredRolesWithCount &&
           jobPosting.fixedData.requiredRolesWithCount.length > 0 ? (
@@ -325,13 +356,15 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
                     {roleItem.name}
                   </span>
                   <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    {roleItem.count}명
+                    {t('jobPosting.count.people', '{{count}}명', { count: roleItem.count })}
                   </span>
                 </div>
               ))}
             </div>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-gray-400">모집 역할이 없습니다</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {t('jobPosting.detail.noRoles', '모집 역할이 없습니다')}
+            </p>
           )}
         </div>
       )}
@@ -339,7 +372,9 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
       {/* 사전질문 */}
       {jobPosting.preQuestions && jobPosting.preQuestions.length > 0 && (
         <div>
-          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">📋 사전질문</h4>
+          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
+            📋 {t('jobPosting.detail.preQuestions', '사전질문')}
+          </h4>
           <div className="space-y-3">
             {jobPosting.preQuestions.map((question: any, index: number) => (
               <div

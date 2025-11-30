@@ -13,6 +13,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import { QRScanContext, StaffQRPayload, QRScanResult } from '../../types/staffQR';
 import { validateQRPayload, getOrCreateStaffQR } from '../../services/StaffQRService';
@@ -41,6 +42,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
   managerId,
   initialMode = 'check-in',
 }) => {
+  const { t } = useTranslation();
   const [scanContext, setScanContext] = useState<QRScanContext>({
     eventId,
     eventTitle,
@@ -199,7 +201,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         } catch {
           setScanResult({
             success: false,
-            message: '유효하지 않은 QR 형식입니다.',
+            message: t('qrScanner.error.invalidFormat', '유효하지 않은 QR 형식입니다.'),
           });
           return;
         }
@@ -212,7 +214,8 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         if (!validation.isValid) {
           setScanResult({
             success: false,
-            message: validation.error || '유효하지 않은 QR 코드입니다.',
+            message:
+              validation.error || t('qrScanner.error.invalidQR', '유효하지 않은 QR 코드입니다.'),
           });
           return;
         }
@@ -269,13 +272,13 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
 
         setScanResult({
           success: false,
-          message: '스캔 처리 중 오류가 발생했습니다.',
+          message: t('qrScanner.error.processingError', '스캔 처리 중 오류가 발생했습니다.'),
         });
       } finally {
         setScanning(false);
       }
     },
-    [eventId, scanContext, managerId]
+    [eventId, scanContext, managerId, t]
   );
 
   /**
@@ -307,7 +310,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
         {/* 헤더 */}
         <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4 flex items-center justify-between rounded-t-2xl">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">QR 출석 체크</h2>
+            <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+              {t('qrScanner.title', 'QR 출석 체크')}
+            </h2>
             <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{eventTitle}</p>
           </div>
           <button
@@ -331,7 +336,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           <div className="bg-gray-50 dark:bg-gray-900/50 rounded-xl p-4 space-y-4">
             <div className="flex items-center justify-between">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                출퇴근 모드
+                {t('qrScanner.mode.label', '출퇴근 모드')}
               </label>
               <div className="flex gap-2">
                 <button
@@ -342,7 +347,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                   }`}
                 >
-                  출근
+                  {t('qrScanner.mode.checkIn', '출근')}
                 </button>
                 <button
                   onClick={() => setScanContext((prev) => ({ ...prev, mode: 'check-out' }))}
@@ -352,7 +357,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                       : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                   }`}
                 >
-                  퇴근
+                  {t('qrScanner.mode.checkOut', '퇴근')}
                 </button>
               </div>
             </div>
@@ -360,7 +365,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
             {scanContext.mode === 'check-out' && (
               <div className="flex items-center justify-between">
                 <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                  라운드업 간격
+                  {t('qrScanner.roundUp.label', '라운드업 간격')}
                 </label>
                 <div className="flex gap-2">
                   <button
@@ -371,7 +376,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                         : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                     }`}
                   >
-                    15분
+                    {t('qrScanner.roundUp.15min', '15분')}
                   </button>
                   <button
                     onClick={() => setScanContext((prev) => ({ ...prev, roundUpInterval: 30 }))}
@@ -381,7 +386,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                         : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600'
                     }`}
                   >
-                    30분
+                    {t('qrScanner.roundUp.30min', '30분')}
                   </button>
                 </div>
               </div>
@@ -391,7 +396,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           {/* 스캔 모드 선택 */}
           <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block mb-3">
-              스캔 방식 선택
+              {t('qrScanner.scanMode.label', '스캔 방식 선택')}
             </label>
             <div className="flex gap-2">
               <button
@@ -417,7 +422,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"
                   />
                 </svg>
-                <span>📷 카메라 스캔</span>
+                <span>📷 {t('qrScanner.scanMode.camera', '카메라 스캔')}</span>
               </button>
               <button
                 onClick={() => setScanMode('manual')}
@@ -436,7 +441,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                     d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
                   />
                 </svg>
-                <span>⌨️ 수동 입력</span>
+                <span>⌨️ {t('qrScanner.scanMode.manual', '수동 입력')}</span>
               </button>
             </div>
           </div>
@@ -448,20 +453,20 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
               {cameraActive && (
                 <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
                   <p className="text-sm text-blue-800 dark:text-blue-300 text-center font-medium">
-                    📷 스태프의 QR 코드를 카메라에 비춰주세요
+                    📷 {t('qrScanner.camera.scanPrompt', '스태프의 QR 코드를 카메라에 비춰주세요')}
                   </p>
                   <p className="text-xs text-blue-600 dark:text-blue-400 text-center mt-1">
-                    자동으로 스캔되고 처리됩니다
+                    {t('qrScanner.camera.autoProcess', '자동으로 스캔되고 처리됩니다')}
                   </p>
                 </div>
               )}
               {!cameraActive && (
                 <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                   <p className="text-sm text-yellow-800 dark:text-yellow-300 text-center font-medium">
-                    ⚠️ 카메라를 초기화하는 중입니다...
+                    ⚠️ {t('qrScanner.camera.initializing', '카메라를 초기화하는 중입니다...')}
                   </p>
                   <p className="text-xs text-yellow-600 dark:text-yellow-400 text-center mt-1">
-                    카메라 권한을 허용해주세요
+                    {t('qrScanner.camera.permissionRequest', '카메라 권한을 허용해주세요')}
                   </p>
                 </div>
               )}
@@ -472,14 +477,17 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           {scanMode === 'manual' && (
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                QR 코드 수동 입력
+                {t('qrScanner.manual.label', 'QR 코드 수동 입력')}
               </label>
               <textarea
                 ref={inputRef}
                 value={manualInput}
                 onChange={(e) => setManualInput(e.target.value)}
                 onKeyDown={handleKeyDown}
-                placeholder="스태프의 QR 코드를 붙여넣기 하세요..."
+                placeholder={t(
+                  'qrScanner.manual.placeholder',
+                  '스태프의 QR 코드를 붙여넣기 하세요...'
+                )}
                 className="w-full h-24 px-4 py-3 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none font-mono text-sm"
                 disabled={scanning}
               />
@@ -491,7 +499,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                 {scanning ? (
                   <>
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white" />
-                    <span>처리 중...</span>
+                    <span>{t('qrScanner.manual.processing', '처리 중...')}</span>
                   </>
                 ) : (
                   <>
@@ -503,7 +511,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                         d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"
                       />
                     </svg>
-                    <span>스캔 처리</span>
+                    <span>{t('qrScanner.manual.submit', '스캔 처리')}</span>
                   </>
                 )}
               </button>
@@ -561,12 +569,14 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                   </p>
                   {scanResult.staffName && (
                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                      스태프: {scanResult.staffName}
+                      {t('qrScanner.result.staff', '스태프')}: {scanResult.staffName}
                     </p>
                   )}
                   {scanResult.remainingCooldown && (
                     <p className="text-sm text-gray-700 dark:text-gray-300 mt-1">
-                      남은 쿨다운: {scanResult.remainingCooldown}초
+                      {t('qrScanner.result.remainingCooldown', '남은 쿨다운')}:{' '}
+                      {scanResult.remainingCooldown}
+                      {t('common.seconds', '초')}
                     </p>
                   )}
                 </div>
@@ -578,7 +588,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
           {scanHistory.length > 0 && (
             <div className="space-y-3">
               <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">
-                최근 스캔 이력
+                {t('qrScanner.history.label', '최근 스캔 이력')}
               </label>
               <div className="bg-gray-50 dark:bg-gray-900/50 rounded-lg divide-y divide-gray-200 dark:divide-gray-700 max-h-64 overflow-y-auto">
                 {scanHistory.map((item) => (
@@ -604,7 +614,9 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
                             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
                         }`}
                       >
-                        {item.mode === 'check-in' ? '출근' : '퇴근'}
+                        {item.mode === 'check-in'
+                          ? t('qrScanner.mode.checkIn', '출근')
+                          : t('qrScanner.mode.checkOut', '퇴근')}
                       </span>
                     </div>
                     <span className="text-sm text-gray-500 dark:text-gray-400">{item.time}</span>
@@ -621,7 +633,7 @@ export const ManagerScannerModal: React.FC<ManagerScannerModalProps> = ({
             onClick={onClose}
             className="w-full px-4 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
           >
-            닫기
+            {t('common.close', '닫기')}
           </button>
         </div>
       </div>

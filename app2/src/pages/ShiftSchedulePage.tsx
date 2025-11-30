@@ -78,8 +78,8 @@ const ShiftSchedulePage: React.FC = () => {
       if (staffId && !staffMap.has(staffId)) {
         staffMap.set(staffId, {
           id: staffId,
-          name: workLog.staffInfo?.name || workLog.staffName || '이름 없음',
-          role: workLog.staffInfo?.jobRole?.[0] || workLog.role || '딜러',
+          name: workLog.staffInfo?.name || workLog.staffName || t('common.noName', '이름 없음'),
+          role: workLog.staffInfo?.jobRole?.[0] || workLog.role || t('roles.dealer', '딜러'),
           phone: workLog.staffInfo?.phone || '',
           email: workLog.staffInfo?.email || '',
           isActive: workLog.staffInfo?.isActive !== false, // 기본값 true
@@ -89,7 +89,7 @@ const ShiftSchedulePage: React.FC = () => {
     });
 
     return Array.from(staffMap.values());
-  }, [workLogs]);
+  }, [workLogs, t]);
 
   const availableDealers = useMemo(
     () =>
@@ -337,9 +337,14 @@ const ShiftSchedulePage: React.FC = () => {
               <FaCog className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-orange-800 font-semibold">업데이트 예정</h3>
+              <h3 className="text-orange-800 font-semibold">
+                {t('shiftSchedule.updatePending', '업데이트 예정')}
+              </h3>
               <p className="text-orange-700 text-sm">
-                이 페이지는 현재 업데이트 중입니다. 빠른 시일 내에 개선된 기능으로 찾아뵙겠습니다.
+                {t(
+                  'shiftSchedule.updatePendingMessage',
+                  '이 페이지는 현재 업데이트 중입니다. 빠른 시일 내에 개선된 기능으로 찾아뵙겠습니다.'
+                )}
               </p>
             </div>
           </div>
@@ -390,7 +395,7 @@ const ShiftSchedulePage: React.FC = () => {
                 </div>
                 <div className="w-64">
                   <div className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400 text-sm cursor-not-allowed">
-                    업데이트 예정
+                    {t('shiftSchedule.updatePending', '업데이트 예정')}
                   </div>
                 </div>
               </div>
@@ -404,8 +409,12 @@ const ShiftSchedulePage: React.FC = () => {
                   className="btn btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm btn-outline cursor-not-allowed"
                 >
                   <FaClock className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">업데이트 예정</span>
-                  <span className="sm:hidden">업데이트 예정</span>
+                  <span className="hidden sm:inline">
+                    {t('shiftSchedule.updatePending', '업데이트 예정')}
+                  </span>
+                  <span className="sm:hidden">
+                    {t('shiftSchedule.updatePending', '업데이트 예정')}
+                  </span>
                 </button>
               ) : null}
               <button
@@ -413,8 +422,12 @@ const ShiftSchedulePage: React.FC = () => {
                 className="btn btn-outline btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm cursor-not-allowed"
               >
                 <FaCog className="w-3 h-3 sm:w-4 sm:h-4" />
-                <span className="hidden sm:inline">업데이트 예정</span>
-                <span className="sm:hidden">업데이트 예정</span>
+                <span className="hidden sm:inline">
+                  {t('shiftSchedule.updatePending', '업데이트 예정')}
+                </span>
+                <span className="sm:hidden">
+                  {t('shiftSchedule.updatePending', '업데이트 예정')}
+                </span>
               </button>
               {!schedule && (
                 <button
@@ -422,8 +435,12 @@ const ShiftSchedulePage: React.FC = () => {
                   className="btn btn-primary btn-xs sm:btn-sm flex items-center gap-1 sm:gap-2 text-xs sm:text-sm cursor-not-allowed opacity-60"
                 >
                   <FaPlus className="w-3 h-3 sm:w-4 sm:h-4" />
-                  <span className="hidden sm:inline">업데이트 예정</span>
-                  <span className="sm:hidden">업데이트 예정</span>
+                  <span className="hidden sm:inline">
+                    {t('shiftSchedule.updatePending', '업데이트 예정')}
+                  </span>
+                  <span className="sm:hidden">
+                    {t('shiftSchedule.updatePending', '업데이트 예정')}
+                  </span>
                 </button>
               )}
             </div>
@@ -553,7 +570,7 @@ const ShiftSchedulePage: React.FC = () => {
                       <button
                         disabled={true}
                         className="btn btn-sm btn-outline btn-error opacity-50 cursor-not-allowed"
-                        title="업데이트 예정"
+                        title={t('shiftSchedule.updatePending', '업데이트 예정')}
                       >
                         <FaTrash className="w-3 h-3" />
                       </button>
@@ -594,7 +611,7 @@ const ShiftSchedulePage: React.FC = () => {
                         className="btn btn-sm btn-outline btn-success opacity-50 cursor-not-allowed"
                       >
                         <FaPlus className="w-3 h-3 mr-1" />
-                        업데이트 예정
+                        {t('shiftSchedule.updatePending', '업데이트 예정')}
                       </button>
                     ) : null}
                   </div>
@@ -669,7 +686,10 @@ const ShiftSchedulePage: React.FC = () => {
                   {t('shiftSchedule.defaultWorkTimeSettings')}
                 </label>
                 <div className="text-sm text-gray-600 dark:text-gray-300">
-                  새로운 스케줄 생성 시 사용되는 기본 시간 설정입니다.
+                  {t(
+                    'shiftSchedule.defaultWorkTimeSettingsDescription',
+                    '새로운 스케줄 생성 시 사용되는 기본 시간 설정입니다.'
+                  )}
                 </div>
               </div>
 
@@ -707,7 +727,7 @@ const ShiftSchedulePage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('shiftSchedule.defaultWorkTime')} (시간)
+                  {t('shiftSchedule.defaultWorkTime')} ({t('common.hours', '시간')})
                 </label>
                 <input
                   type="number"
@@ -723,7 +743,7 @@ const ShiftSchedulePage: React.FC = () => {
 
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  {t('shiftSchedule.defaultBreakTime')} (분)
+                  {t('shiftSchedule.defaultBreakTime')} ({t('common.minutes', '분')})
                 </label>
                 <input
                   type="number"
