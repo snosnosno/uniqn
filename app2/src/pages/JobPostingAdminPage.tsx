@@ -8,6 +8,7 @@ import JobPostingForm from '../components/jobPosting/JobPostingForm';
 import JobPostingList from '../components/jobPosting/JobPostingList';
 import EditJobPostingModal from '../components/jobPosting/modals/EditJobPostingModal';
 import ConfirmModal from '../components/modals/ConfirmModal';
+import type { JobPosting, JobPostingFormData } from '../types/jobPosting';
 
 const JobPostingAdminPage = () => {
   const { t } = useTranslation();
@@ -32,9 +33,10 @@ const JobPostingAdminPage = () => {
   } = useJobPostingOperations();
 
   // 공고 생성 핸들러
-  const handleCreate = async (formData: any) => {
+  const handleCreate = async (formData: Partial<JobPosting>) => {
     try {
-      await handleCreateJobPosting(formData);
+      // JobPostingForm의 Zod 검증을 통과한 데이터이므로 타입 단언 사용
+      await handleCreateJobPosting(formData as JobPostingFormData);
       toast.success(t('toast.jobPosting.createSuccess'));
       setIsCreateFormVisible(false);
     } catch (error) {
@@ -44,9 +46,10 @@ const JobPostingAdminPage = () => {
   };
 
   // 공고 수정 핸들러
-  const handleUpdate = async (postId: string, formData: any) => {
+  const handleUpdate = async (postId: string, formData: Partial<JobPosting>) => {
     try {
-      await handleUpdateJobPosting(postId, formData);
+      // JobPostingForm의 Zod 검증을 통과한 데이터이므로 타입 단언 사용
+      await handleUpdateJobPosting(postId, formData as JobPostingFormData);
       toast.success(t('toast.jobPosting.updateSuccess'));
     } catch (error) {
       toast.error(error instanceof Error ? error.message : t('toast.jobPosting.updateError'));

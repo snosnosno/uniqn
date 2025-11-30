@@ -20,6 +20,25 @@ interface BulkOperationResult {
   errors: Array<{ staffId: string; error: Error }>;
 }
 
+interface WorkLogTimeUpdate {
+  updatedAt: Timestamp;
+  scheduledStartTime?: Timestamp;
+  scheduledEndTime?: Timestamp;
+  [key: string]: Timestamp | undefined; // Index signature for Firestore UpdateData compatibility
+}
+
+interface WorkLogStatusUpdate {
+  status: 'not_started' | 'checked_in' | 'checked_out' | 'absent';
+  updatedAt: Timestamp;
+  [key: string]: string | Timestamp | undefined; // Index signature for Firestore UpdateData compatibility
+}
+
+interface BulkOperationDetails {
+  startTime?: string;
+  endTime?: string;
+  status?: string;
+}
+
 export class BulkOperationService {
   /**
    * 일괄 시간 수정
@@ -43,16 +62,11 @@ export class BulkOperationService {
             staff.workLogId || createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 
-          const updateData: any = {
+          const updateData: WorkLogTimeUpdate = {
             updatedAt: now,
+            ...(startTime && { scheduledStartTime: startTime }),
+            ...(endTime && { scheduledEndTime: endTime }),
           };
-
-          if (startTime) {
-            updateData.scheduledStartTime = startTime;
-          }
-          if (endTime) {
-            updateData.scheduledEndTime = endTime;
-          }
 
           // workLog가 없는 경우 새로 생성
           if (!staff.workLogId || staff.workLogId.startsWith('virtual_')) {
@@ -156,7 +170,7 @@ export class BulkOperationService {
           const workLogId = createWorkLogId(eventId, staff.id, dateString as string);
           const workLogRef = doc(db, 'workLogs', workLogId);
 
-          const updateData: any = {
+          const updateData: WorkLogStatusUpdate = {
             status,
             updatedAt: now,
           };
@@ -238,7 +252,7 @@ export class BulkOperationService {
   static generateResultMessage(
     result: BulkOperationResult,
     operationType: 'time' | 'status',
-    details?: any
+    details?: BulkOperationDetails
   ): { type: 'success' | 'error'; message: string } {
     if (result.errorCount === 0) {
       let message = `✅ ${result.successCount}명의 `;

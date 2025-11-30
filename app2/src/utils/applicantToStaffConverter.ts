@@ -16,11 +16,52 @@ export interface ApplicantData {
   date?: string;
 }
 
+/**
+ * 스태프 문서 데이터 인터페이스
+ */
+export interface StaffDocumentData {
+  id: string;
+  name: string;
+  email: string;
+  phone: string;
+  role: string;
+  timeSlot: string;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+  createdBy: string;
+  status: 'active';
+  eventIds: string[];
+  confirmedAt: Timestamp;
+  confirmedBy: string;
+}
+
+/**
+ * WorkLog 문서 데이터 인터페이스 (createWorkLog 반환 타입)
+ */
+export interface WorkLogDocumentData {
+  eventId: string;
+  staffId: string;
+  staffName: string;
+  role: string;
+  date: string;
+  scheduledStartTime: Timestamp | null;
+  scheduledEndTime: Timestamp | null;
+  actualStartTime: null;
+  actualEndTime: null;
+  status: 'not_started' | 'checked_in' | 'completed' | 'absent';
+  totalWorkMinutes: number;
+  totalBreakMinutes: number;
+  hoursWorked: number;
+  overtime: number;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
 export interface StaffCreationResult {
   staffId: string;
-  staffData: any;
+  staffData: StaffDocumentData | null;
   workLogId?: string | undefined;
-  workLogData?: any | undefined;
+  workLogData?: WorkLogDocumentData | undefined;
   success: boolean;
   error?: string | undefined;
 }
@@ -42,7 +83,7 @@ export async function createStaffFromApplicant(
     const staffId = applicant.applicantId;
 
     // 1. 스태프 문서 데이터 준비
-    const staffData = {
+    const staffData: StaffDocumentData = {
       id: staffId,
       name: applicant.applicantName,
       email: applicant.email || '',
@@ -52,7 +93,7 @@ export async function createStaffFromApplicant(
       createdAt: now,
       updatedAt: now,
       createdBy: managerId,
-      status: 'active',
+      status: 'active' as const,
       // 추가 필드
       eventIds: [eventId],
       confirmedAt: now,
@@ -61,7 +102,7 @@ export async function createStaffFromApplicant(
 
     // 2. WorkLog 데이터 준비 (날짜와 시간이 있는 경우)
     let workLogId: string | undefined;
-    let workLogData: any | undefined;
+    let workLogData: WorkLogDocumentData | undefined;
 
     if (applicant.date && applicant.timeSlot && applicant.timeSlot !== '미정') {
       workLogId = createWorkLogId(eventId, staffId, applicant.date);

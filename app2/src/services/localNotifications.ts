@@ -3,11 +3,26 @@ import { Capacitor } from '@capacitor/core';
 
 import { logger } from '../utils/logger';
 
+/**
+ * 알림 액션 데이터 타입
+ */
+export interface NotificationActionData {
+  type: 'approval_request' | 'schedule_reminder' | 'salary_payment' | 'attendance_reminder';
+  applicationId?: string;
+  applicantName?: string;
+  jobTitle?: string;
+  eventTitle?: string;
+  eventDate?: string;
+  location?: string;
+  amount?: number;
+  period?: string;
+}
+
 export interface NotificationData {
   id: number;
   title: string;
   body: string;
-  data?: any;
+  data?: NotificationActionData;
   schedule?: {
     at: Date;
   };
@@ -215,10 +230,10 @@ export const notifyAttendanceReminder = async (
 /**
  * 알림 액션 처리
  */
-const handleNotificationAction = (data: any) => {
+const handleNotificationAction = (data: NotificationActionData | undefined) => {
   logger.info('알림 액션 데이터', { data });
 
-  if (!data.type) {
+  if (!data?.type) {
     return;
   }
 

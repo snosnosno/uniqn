@@ -24,7 +24,7 @@ const ForgotPassword = () => {
     try {
       await sendPasswordReset(email);
       setMessage(t('forgotPassword.successMessage'));
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(t('forgotPassword.errorMessage'));
       logger.error('Error occurred', err instanceof Error ? err : new Error(String(err)), {
         component: 'ForgotPassword',

@@ -4,7 +4,7 @@ import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
 import { getApplicantSelections, formatDateDisplay } from '@/utils/applicants';
 import StaffProfileModal from '../../modals/StaffProfileModal';
-import { StaffData } from '@/hooks/useStaffManagement';
+import { StaffData, JobRole } from '@/hooks/useStaffManagement';
 import { JobPosting } from '@/types/jobPosting';
 import { Selection } from '@/types/applicants/selection';
 
@@ -46,7 +46,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(
           name: applicant.applicantName,
           phone: applicant.phone || '',
           email: applicant.email || '',
-          role: (applicant.assignedRole as any) || '',
+          role: (applicant.assignedRole as JobRole) || undefined,
           notes: applicant.notes || '',
           postingId: applicant.eventId || '',
           postingTitle: '', // 지원자 탭에서는 posting 정보가 없으므로 빈 문자열

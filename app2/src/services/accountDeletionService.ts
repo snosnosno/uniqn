@@ -23,7 +23,12 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { EmailAuthProvider, reauthenticateWithCredential, updateProfile } from 'firebase/auth';
+import {
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  updateProfile,
+  AuthError,
+} from 'firebase/auth';
 import { db, auth } from '../firebase';
 import { logger } from '../utils/logger';
 import {
@@ -123,7 +128,9 @@ export const requestAccountDeletion = async (
       throw error;
     }
 
-    if ((error as any).code === 'auth/wrong-password') {
+    // Firebase AuthError 타입 체크
+    const authError = error as AuthError;
+    if (authError?.code === 'auth/wrong-password') {
       logger.error('비밀번호 확인 실패', error as Error, {
         component: 'AccountDeletionService',
       });
