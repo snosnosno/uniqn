@@ -88,7 +88,11 @@ const PreQuestionsSection: React.FC<PreQuestionsSectionProps> = React.memo(
             {/* 기존 PreQuestionManager 컴포넌트 활용 */}
             <PreQuestionManager
               preQuestions={data.preQuestions}
-              onPreQuestionChange={(questionIndex: number, field: string, value: any) =>
+              onPreQuestionChange={(
+                questionIndex: number,
+                field: string,
+                value: string | boolean | string[]
+              ) =>
                 handlers.onQuestionChange(
                   questionIndex,
                   field as keyof (typeof data.preQuestions)[0],

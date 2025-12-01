@@ -34,6 +34,30 @@ interface CacheStats {
   totalEntries: number;
 }
 
+/** 로그 엔트리 타입 */
+interface LogEntry {
+  id: number;
+  timestamp: string;
+  level: string;
+  component: string;
+  message: string;
+  data: {
+    collections: string[];
+    loadingStates: boolean;
+    errors: Error | null;
+  };
+}
+
+/** Chrome Performance Memory API (비표준) */
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+/** 탭 타입 정의 */
+type TabId = 'overview' | 'data' | 'cache' | 'performance' | 'logs';
+
 /**
  * 통합 데이터 컨텍스트 개발자 도구
  * 실시간 성능 모니터링, 캐시 상태, 데이터 플로우 추적
@@ -42,12 +66,10 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
   const { t } = useTranslation();
   const { state, loading, error, refresh } = useUnifiedData();
 
-  const [activeTab, setActiveTab] = useState<
-    'overview' | 'data' | 'cache' | 'performance' | 'logs'
-  >('overview');
+  const [activeTab, setActiveTab] = useState<TabId>('overview');
   const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetric[]>([]);
   const [cacheStats, setCacheStats] = useState<CacheStats | null>(null);
-  const [logEntries, setLogEntries] = useState<any[]>([]);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [isRecordingLogs, setIsRecordingLogs] = useState(true);
   const [refreshCount, setRefreshCount] = useState(0);
 
@@ -90,9 +112,10 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
       status: totalDataSize > 1000 ? 'warning' : 'good',
     });
 
-    // 메모리 사용량 (브라우저 지원 시)
-    if ((performance as any).memory) {
-      const memoryMB = Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024);
+    // 메모리 사용량 (브라우저 지원 시 - Chrome 전용)
+    const perfWithMemory = performance as Performance & { memory?: PerformanceMemory };
+    if (perfWithMemory.memory) {
+      const memoryMB = Math.round(perfWithMemory.memory.usedJSHeapSize / 1024 / 1024);
       metrics.push({
         name: 'JS 힙 메모리',
         value: memoryMB,
@@ -285,7 +308,7 @@ const UnifiedDataDevTools: React.FC<DevToolsProps> = ({ isOpen, onToggle }) => {
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as TabId)}
               className={`px-4 py-2 text-sm font-medium border-r dark:border-gray-600 ${
                 activeTab === tab.id
                   ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400'

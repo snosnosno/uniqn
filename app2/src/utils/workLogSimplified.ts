@@ -216,6 +216,19 @@ export const calculateHoursWorked = (
 };
 
 /**
+ * WorkLog 업데이트 준비 결과 타입
+ */
+interface WorkLogUpdateData extends Omit<Partial<SimpleWorkLogInput>, 'timeSlot'> {
+  actualStartTime?: Timestamp | null;
+  actualEndTime?: Timestamp | null;
+  scheduledStartTime?: Timestamp | null;
+  scheduledEndTime?: Timestamp | null;
+  hoursWorked?: number;
+  totalWorkMinutes?: number;
+  updatedAt: Timestamp;
+}
+
+/**
  * WorkLog 업데이트 데이터 준비
  */
 export const prepareWorkLogUpdate = (
@@ -223,18 +236,18 @@ export const prepareWorkLogUpdate = (
     actualStartTime?: Timestamp | null;
     actualEndTime?: Timestamp | null;
   }
-) => {
-  const prepared: any = {
-    ...updates,
+): WorkLogUpdateData => {
+  const { timeSlot, ...restUpdates } = updates;
+  const prepared: WorkLogUpdateData = {
+    ...restUpdates,
     updatedAt: Timestamp.now(),
   };
 
   // 시간 필드 업데이트
-  if (updates.timeSlot !== undefined && updates.date) {
-    const { start, end } = parseTimeRange(updates.timeSlot);
+  if (timeSlot !== undefined && updates.date) {
+    const { start, end } = parseTimeRange(timeSlot);
     prepared.scheduledStartTime = timeToTimestamp(start, updates.date);
     prepared.scheduledEndTime = timeToTimestamp(end, updates.date);
-    delete prepared.timeSlot;
   }
 
   // 근무 시간 재계산

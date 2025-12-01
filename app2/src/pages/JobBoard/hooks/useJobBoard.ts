@@ -9,6 +9,8 @@ import {
   query,
   where,
   getDocs,
+  Timestamp,
+  FieldValue,
 } from 'firebase/firestore';
 import { useUnifiedData } from '@/hooks/useUnifiedData';
 // { useJobPostingData } - 향후 사용 예정
@@ -24,6 +26,59 @@ import { Assignment } from '@/types/application';
 import { sortJobPostingsByPriority } from '@/utils/jobPosting/sortingUtils';
 import { validateRequiredProfileFields } from '@/utils/profile/profileValidation';
 import { handleFirebaseError, isPermissionDenied, FirebaseError } from '@/utils/firebaseErrors';
+
+/** Infinite Query 페이지 타입 */
+interface JobPostingsPage {
+  jobs: JobPosting[];
+  nextCursor: unknown;
+}
+
+/** 내 지원 현황 아이템 타입 (향후 리팩토링용) */
+interface _MyApplicationItem {
+  id: string;
+  postId: string;
+  status: string;
+  appliedAt: Date | Timestamp | { seconds: number };
+  confirmedAt?: Date | Timestamp;
+  postTitle: string;
+  assignments: Assignment[];
+  assignedTime: string;
+  assignedRole: string;
+  assignedDate: string;
+  assignedTimes: string[];
+  assignedRoles: string[];
+  assignedDates: string[];
+  preQuestionAnswers?: PreQuestionAnswer[];
+  jobPosting: JobPosting | null;
+}
+
+/** Firestore 지원서 데이터 타입 */
+interface ApplicationDocumentData {
+  applicantId: string;
+  applicantName: string;
+  eventId: string;
+  postId: string;
+  postTitle: string;
+  status: string;
+  appliedAt: FieldValue;
+  assignments: Assignment[];
+  preQuestionAnswers?: PreQuestionAnswer[];
+}
+
+/** Timestamp에서 seconds 값을 안전하게 추출 */
+const getTimestampSeconds = (value: Date | Timestamp | { seconds: number } | undefined): number => {
+  if (!value) return 0;
+  if (value instanceof Date) return Math.floor(value.getTime() / 1000);
+  // Timestamp 타입은 toDate 메서드가 있음
+  if (value instanceof Timestamp) {
+    return Math.floor(value.toDate().getTime() / 1000);
+  }
+  // { seconds: number } 형태 체크
+  if (typeof value === 'object' && 'seconds' in value) {
+    return value.seconds;
+  }
+  return 0;
+};
 
 export interface JobFilters {
   location: string;
@@ -103,7 +158,7 @@ export const useJobBoard = () => {
 
   // Flatten and sort the infinite query data
   const jobPostings = useMemo(() => {
-    const result = infiniteData?.pages.flatMap((page: any) => page.jobs) || [];
+    const result = infiniteData?.pages.flatMap((page: JobPostingsPage) => page.jobs) || [];
 
     // 오늘 날짜 기준 우선순위 정렬 적용
     const sortedResult = sortJobPostingsByPriority(result);
@@ -190,24 +245,19 @@ export const useJobBoard = () => {
         assignedTimes: application.assignments?.map((a) => a.timeSlot) || [],
         assignedRoles: application.assignments?.map((a) => a.role) || [],
         assignedDates: application.assignments?.flatMap((a) => a.dates || []) || [],
-        preQuestionAnswers: (application as any).preQuestionAnswers,
-        jobPosting: jobPosting
-          ? {
-              ...jobPosting, // 모든 필드를 그대로 복사
-              recruitmentType: (jobPosting as any).recruitmentType || 'application', // 기본값 설정
-            }
-          : null,
+        preQuestionAnswers: application.preQuestionAnswers,
+        jobPosting: jobPosting || null,
       };
     });
 
     // 최신 지원 순으로 정렬
     applicationsWithJobData.sort((a, b) => {
-      const aDate = (a.appliedAt as any)?.seconds || 0;
-      const bDate = (b.appliedAt as any)?.seconds || 0;
+      const aDate = getTimestampSeconds(a.appliedAt);
+      const bDate = getTimestampSeconds(b.appliedAt);
       return bDate - aDate;
     });
 
-    return applicationsWithJobData as any[];
+    return applicationsWithJobData;
   }, [currentUser, unifiedDataLoading, applications, jobPostingsFromStore]);
 
   // 레거시 fetchMyApplications 함수 (호환성 유지)
@@ -406,9 +456,9 @@ export const useJobBoard = () => {
       const answers = preQuestionAnswers.get(selectedPost.id);
 
       // Firebase용 데이터 객체 구성 (간소화)
-      const applicationData: any = {
+      const applicationData: ApplicationDocumentData = {
         applicantId: currentUser.uid,
-        applicantName: staffDoc.data().name || t('jobBoard.unknownApplicant'),
+        applicantName: staffDoc.data()?.name || t('jobBoard.unknownApplicant'),
         eventId: selectedPost.id, // 필드명 통일: eventId 사용 (표준)
         postId: selectedPost.id, // 하위 호환성을 위해 유지
         postTitle: selectedPost.title,
@@ -417,33 +467,18 @@ export const useJobBoard = () => {
 
         // 🆕 통합된 assignments 구조 (Single Source of Truth)
         assignments,
+        // 사전질문 답변 (있으면 포함)
+        ...(answers && answers.length > 0 && { preQuestionAnswers: answers }),
       };
-
-      // 사전질문 답변이 있으면 추가
-      if (answers && answers.length > 0) {
-        applicationData.preQuestionAnswers = answers;
-      }
 
       // Firebase 저장 데이터 준비 완료
 
       // Firebase 저장 실행
 
-      const docRef = await addDoc(collection(db, 'applications'), applicationData);
-
-      // Firebase 저장 성공
-
-      // 즉시 캐시 업데이트를 위한 Application 객체 생성
-      const _newApplication = {
-        id: docRef.id,
-        ...applicationData,
-        createdAt: new Date() as any, // Timestamp 대신 Date 사용
-        updatedAt: new Date() as any,
-      };
+      await addDoc(collection(db, 'applications'), applicationData);
 
       // Firebase 실시간 구독이 자동으로 업데이트 처리 (Zustand Store)
       // dispatch 불필요 - onSnapshot이 자동으로 감지
-
-      // 지원서 즉시 업데이트 완료
 
       showSuccess(t('toast.application.submitSuccess', { count: selectedAssignments.length }));
       setAppliedJobs((prev) => new Map(prev).set(selectedPost.id, 'applied'));

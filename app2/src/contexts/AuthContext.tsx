@@ -38,7 +38,7 @@ interface AuthContextType {
   isAdmin: boolean;
   role: string | null;
   signOut: () => Promise<void>;
-  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<any>;
+  signIn: (email: string, password: string, rememberMe?: boolean) => Promise<UserCredential>;
   sendPasswordReset: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<UserCredential>;
   signInWithKakao: (kakaoToken: string, userInfo: unknown) => Promise<UserCredential>;
@@ -170,7 +170,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Firebase Functions을 통해 Custom Token 생성 및 로그인
       const { callFunctionLazy } = await import('../utils/firebase-dynamic');
-      const result = await callFunctionLazy('authenticateWithKakao', {
+      const result = await callFunctionLazy<{ customToken?: string }>('authenticateWithKakao', {
         accessToken: kakaoToken,
         userInfo: userInfo,
       });

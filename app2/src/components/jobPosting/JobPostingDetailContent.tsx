@@ -7,6 +7,7 @@ import {
   DateSpecificRequirement,
   JobPostingUtils,
   isFixedJobPosting,
+  PreQuestion,
 } from '../../types/jobPosting';
 import {
   formatDate as formatDateUtil,
@@ -376,7 +377,7 @@ const JobPostingDetailContent: React.FC<JobPostingDetailContentProps> = ({
             📋 {t('jobPosting.detail.preQuestions', '사전질문')}
           </h4>
           <div className="space-y-3">
-            {jobPosting.preQuestions.map((question: any, index: number) => (
+            {jobPosting.preQuestions.map((question: PreQuestion | string, index: number) => (
               <div
                 key={`question-${index}-${typeof question === 'object' ? question.question?.slice(0, 20) : String(question).slice(0, 20)}`}
                 className="bg-gray-50 dark:bg-gray-700 p-3 rounded-lg"

@@ -366,14 +366,25 @@ export const isStaffIdMatch = (recordStaffId: string, targetStaffId: string): bo
   return cleanRecordId === cleanTargetId;
 };
 
+/** 출석 기록 조회용 타입 */
+interface AttendanceRecordLike {
+  staffId: string;
+  workLog?: {
+    staffId?: string;
+    date?: string;
+    [key: string]: unknown;
+  };
+  [key: string]: unknown;
+}
+
 /**
  * AttendanceRecord에서 특정 스태프의 특정 날짜 WorkLog 찾기
  */
 export const findStaffWorkLog = (
-  attendanceRecords: any[],
+  attendanceRecords: AttendanceRecordLike[],
   staffId: string,
   date: string
-): any | undefined => {
+): AttendanceRecordLike | undefined => {
   return attendanceRecords.find((record) => {
     const staffMatch =
       isStaffIdMatch(record.staffId, staffId) ||

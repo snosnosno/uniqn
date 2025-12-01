@@ -1,5 +1,5 @@
 import React from 'react';
-import { JobPostingTemplate } from '@/types/jobPosting';
+import { JobPostingTemplate, JobPostingFormData } from '@/types/jobPosting';
 import { formatSalaryDisplay, getBenefitDisplayNames } from '@/utils/jobPosting/jobPostingHelpers';
 import { formatDate } from '@/utils/jobPosting/dateUtils';
 import Modal from '../../ui/Modal';
@@ -13,7 +13,7 @@ interface LoadTemplateModalProps {
   onClose: () => void;
   templates: JobPostingTemplate[];
   templatesLoading: boolean;
-  onLoadTemplate: (template: JobPostingTemplate) => Promise<any>;
+  onLoadTemplate: (template: JobPostingTemplate) => Promise<JobPostingFormData>;
   onDeleteTemplate: (templateId: string, templateName: string) => Promise<boolean>;
 }
 

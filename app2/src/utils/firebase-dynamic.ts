@@ -4,18 +4,22 @@
  */
 
 import { getApp } from 'firebase/app';
+import type { FirebaseStorage } from 'firebase/storage';
+import type { Functions } from 'firebase/functions';
 
 import { logger } from '../utils/logger';
 
+/** Firebase Storage 모듈 타입 */
+type StorageModule = typeof import('firebase/storage');
+/** Firebase Functions 모듈 타입 */
+type FunctionsModule = typeof import('firebase/functions');
+
 // Storage 모듈 캐시
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 동적 import된 Firebase 모듈, 타입 추론 불가
-let storageModule: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase Storage 인스턴스, 동적 로딩으로 타입 불명확
-let storageInstance: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 동적 import된 Firebase Functions 모듈
-let functionsModule: any = null;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase Functions 인스턴스, 동적 로딩으로 타입 불명확
-let functionsInstance: any = null;
+let storageModule: StorageModule | null = null;
+let storageInstance: FirebaseStorage | null = null;
+// Functions 모듈 캐시
+let functionsModule: FunctionsModule | null = null;
+let functionsInstance: Functions | null = null;
 
 // 에뮬레이터 설정
 const isEmulator = process.env.REACT_APP_USE_FIREBASE_EMULATOR === 'true';
@@ -43,7 +47,8 @@ export const getStorageLazy = async () => {
  */
 export const getStorageRefLazy = async (path: string) => {
   const storage = await getStorageLazy();
-  return storageModule.ref(storage, path);
+  // storageModule은 getStorageLazy() 호출 후 반드시 존재
+  return storageModule!.ref(storage, path);
 };
 
 /**
@@ -53,10 +58,11 @@ export const getStorageRefLazy = async (path: string) => {
  */
 export const uploadFileLazy = async (file: File, path: string) => {
   const storage = await getStorageLazy();
-  const storageRef = storageModule.ref(storage, path);
+  // storageModule은 getStorageLazy() 호출 후 반드시 존재
+  const storageRef = storageModule!.ref(storage, path);
 
   // 업로드 진행
-  const uploadTask = storageModule.uploadBytesResumable(storageRef, file);
+  const uploadTask = storageModule!.uploadBytesResumable(storageRef, file);
 
   return new Promise((resolve, reject) => {
     uploadTask.on(
@@ -64,14 +70,14 @@ export const uploadFileLazy = async (file: File, path: string) => {
       () => {
         // 진행률 추적 (UI 업데이트 시 활용 가능)
       },
-      (error: any) => {
-        logger.error('❌ 업로드 오류:', error instanceof Error ? error : new Error(String(error)), {
+      (error: Error) => {
+        logger.error('❌ 업로드 오류:', error, {
           component: 'firebase-dynamic',
         });
         reject(error);
       },
       async () => {
-        const downloadURL = await storageModule.getDownloadURL(uploadTask.snapshot.ref);
+        const downloadURL = await storageModule!.getDownloadURL(uploadTask.snapshot.ref);
         resolve(downloadURL);
       }
     );
@@ -107,14 +113,19 @@ export const getFunctionsLazy = async () => {
  * Firebase Function을 호출합니다.
  * @param functionName 함수 이름
  * @param data 전달할 데이터
+ * @returns 함수 실행 결과
  */
-export const callFunctionLazy = async (functionName: string, data?: any) => {
+export const callFunctionLazy = async <T = unknown>(
+  functionName: string,
+  data?: unknown
+): Promise<T> => {
   const functions = await getFunctionsLazy();
-  const callable = functionsModule.httpsCallable(functions, functionName);
+  // functionsModule은 getFunctionsLazy() 호출 후 반드시 존재
+  const callable = functionsModule!.httpsCallable(functions, functionName);
 
   try {
     const result = await callable(data);
-    return result.data;
+    return result.data as T;
   } catch (error) {
     logger.error(
       `❌ Cloud Function 호출 실패: ${functionName}`,
@@ -134,11 +145,12 @@ export const getDownloadURLLazy = async (path: string) => {
     await getStorageLazy();
   }
 
-  const storage = storageModule.getStorage();
-  const storageRef = storageModule.ref(storage, path);
+  // storageModule은 위 조건문 이후 반드시 존재
+  const storage = storageModule!.getStorage();
+  const storageRef = storageModule!.ref(storage, path);
 
   try {
-    const url = await storageModule.getDownloadURL(storageRef);
+    const url = await storageModule!.getDownloadURL(storageRef);
     return url;
   } catch (error) {
     logger.error(
@@ -159,11 +171,12 @@ export const deleteFileLazy = async (path: string) => {
     await getStorageLazy();
   }
 
-  const storage = storageModule.getStorage();
-  const storageRef = storageModule.ref(storage, path);
+  // storageModule은 위 조건문 이후 반드시 존재
+  const storage = storageModule!.getStorage();
+  const storageRef = storageModule!.ref(storage, path);
 
   try {
-    await storageModule.deleteObject(storageRef);
+    await storageModule!.deleteObject(storageRef);
   } catch (error) {
     logger.error('파일 삭제 실패:', error instanceof Error ? error : new Error(String(error)), {
       component: 'firebase-dynamic',

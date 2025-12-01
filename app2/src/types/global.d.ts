@@ -3,7 +3,8 @@
  */
 
 // Google Analytics gtag 함수
-declare function gtag(...args: any[]): void;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- GA4 gtag 함수는 다양한 인자 조합을 허용하므로 any 사용 불가피
+declare function gtag(...args: unknown[]): void;
 
 // Performance Observer 타입 확장
 interface PerformancePaintTiming extends PerformanceEntry {

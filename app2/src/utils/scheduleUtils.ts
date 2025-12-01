@@ -5,10 +5,30 @@ import { logger } from '../utils/logger';
  * 스케줄 관련 유틸리티 함수들
  */
 
+/** 다양한 형태의 날짜 값 타입 */
+export type DateValue =
+  | string
+  | Date
+  | Timestamp
+  | { seconds: number; nanoseconds?: number }
+  | { toDate: () => Date }
+  | null
+  | undefined;
+
+/** toDate 메서드를 가진 객체 타입 가드 */
+function hasToDate(obj: object): obj is { toDate: () => Date } {
+  return 'toDate' in obj && typeof (obj as { toDate?: unknown }).toDate === 'function';
+}
+
+/** seconds 속성을 가진 객체 타입 가드 */
+function hasSeconds(obj: object): obj is { seconds: number } {
+  return 'seconds' in obj && typeof (obj as { seconds?: unknown }).seconds === 'number';
+}
+
 /**
  * 다양한 타입의 날짜를 안전하게 YYYY-MM-DD 문자열로 변환
  */
-export const safeDateToString = (dateValue: any): string => {
+export const safeDateToString = (dateValue: DateValue): string => {
   if (!dateValue) return '';
 
   try {
@@ -16,9 +36,9 @@ export const safeDateToString = (dateValue: any): string => {
 
     // Firestore Timestamp 객체
     if (dateValue && typeof dateValue === 'object') {
-      if (typeof dateValue.toDate === 'function') {
+      if (hasToDate(dateValue)) {
         date = dateValue.toDate();
-      } else if (dateValue.seconds !== undefined) {
+      } else if (hasSeconds(dateValue)) {
         // Timestamp 객체 (seconds/nanoseconds)
         date = new Date(dateValue.seconds * 1000);
       } else if (dateValue instanceof Date) {
@@ -151,7 +171,7 @@ export const parseTimeString = (
 /**
  * 여러 날짜 배열에서 각 날짜를 안전하게 변환
  */
-export const parseDateArray = (dateArray: any[]): string[] => {
+export const parseDateArray = (dateArray: DateValue[]): string[] => {
   if (!Array.isArray(dateArray)) return [];
 
   return dateArray.map(safeDateToString).filter((date) => date !== ''); // 빈 문자열 제거
@@ -160,10 +180,13 @@ export const parseDateArray = (dateArray: any[]): string[] => {
 /**
  * 날짜 필드들을 순서대로 시도하여 첫 번째 유효한 날짜 반환
  */
-export const extractDateFromFields = (data: any, fields: string[]): string => {
+export const extractDateFromFields = (
+  data: { [key: string]: unknown },
+  fields: string[]
+): string => {
   for (const field of fields) {
     if (data[field]) {
-      const dateStr = safeDateToString(data[field]);
+      const dateStr = safeDateToString(data[field] as DateValue);
       if (dateStr) {
         return dateStr;
       }

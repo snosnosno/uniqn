@@ -153,7 +153,7 @@ export const useSecureStorage = () => {
   /**
    * 안전하게 데이터 저장
    */
-  const setSecureItem = useCallback((key: string, value: any) => {
+  const setSecureItem = useCallback((key: string, value: unknown) => {
     try {
       // XSS 방지를 위해 값을 sanitize
       const sanitizedValue =

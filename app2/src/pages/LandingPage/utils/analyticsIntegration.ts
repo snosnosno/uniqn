@@ -89,7 +89,7 @@ class AnalyticsIntegration {
     if (typeof gtag === 'undefined') {
       // 개발 환경에서는 mock gtag 함수 생성
       if (process.env.NODE_ENV === 'development') {
-        (window as any).gtag = (...args: any[]) => {
+        window.gtag = (...args: unknown[]) => {
           logger.info('Mock GA4 Event', { args });
         };
       } else {
@@ -348,10 +348,8 @@ class AnalyticsIntegration {
         bounceRate: `${bounceRate * 100}%`,
       };
 
-      // logger 사용 (import 필요시 추가)
-      if (typeof window !== 'undefined' && (window as any).logger) {
-        (window as any).logger.info('📈 Landing Page Analytics Summary', { data: analyticsData });
-      }
+      // import된 logger 직접 사용
+      logger.info('📈 Landing Page Analytics Summary', { data: analyticsData });
     }
 
     // 프로덕션에서는 서버로 전송

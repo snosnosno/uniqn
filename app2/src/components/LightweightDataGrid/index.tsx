@@ -19,6 +19,14 @@ interface GridRow {
   [timeSlot: string]: string;
 }
 
+/** 테이블 데이터 타입 */
+interface TableData {
+  id: string;
+  name: string;
+  tableNumber: number;
+  status?: 'open' | 'closed' | 'standby';
+}
+
 interface LightweightDataGridProps {
   dealers: Array<{
     id: string;
@@ -27,12 +35,7 @@ interface LightweightDataGridProps {
     assignments: { [timeSlot: string]: string };
   }>;
   timeSlots: string[];
-  tables: Array<{
-    id: string;
-    name: string;
-    tableNumber: number;
-    status?: 'open' | 'closed' | 'standby';
-  }>;
+  tables: TableData[];
   onCellChange: (staffId: string, timeSlot: string, value: string) => void;
   validationResult?: ValidationResult | null;
   readonly?: boolean;
@@ -213,7 +216,7 @@ const TableCell: React.FC<{
   validationResult: ValidationResult | null | undefined;
   isEditing: boolean;
   _readonly: boolean | undefined;
-  tables: any[];
+  tables: TableData[];
   onCellClick: () => void;
   onCellChange: (staffId: string, timeSlot: string, value: string) => void;
   setEditingCell: (cell: { rowId: string; columnId: string } | null) => void;

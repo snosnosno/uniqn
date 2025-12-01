@@ -20,11 +20,11 @@ interface SelectedStaff {
 }
 
 interface WorkLogUpdateData {
-  [key: string]: any;
+  [key: string]: Timestamp | string | null | undefined;
   updatedAt: Timestamp;
   scheduledStartTime?: Timestamp | null;
   scheduledEndTime?: Timestamp | null;
-  status?: string;
+  status?: 'not_started' | 'checked_in' | 'checked_out';
 }
 
 interface BulkTimeEditModalProps {
@@ -595,7 +595,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     type="radio"
                     value="not_started"
                     checked={attendanceStatus === 'not_started'}
-                    onChange={(e) => setAttendanceStatus(e.target.value as any)}
+                    onChange={(e) =>
+                      setAttendanceStatus(
+                        e.target.value as 'not_started' | 'checked_in' | 'checked_out'
+                      )
+                    }
                     className="mr-3"
                   />
                   <div className="flex items-center">
@@ -611,7 +615,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     type="radio"
                     value="checked_in"
                     checked={attendanceStatus === 'checked_in'}
-                    onChange={(e) => setAttendanceStatus(e.target.value as any)}
+                    onChange={(e) =>
+                      setAttendanceStatus(
+                        e.target.value as 'not_started' | 'checked_in' | 'checked_out'
+                      )
+                    }
                     className="mr-3"
                   />
                   <div className="flex items-center">
@@ -625,7 +633,11 @@ const BulkTimeEditModal: React.FC<BulkTimeEditModalProps> = ({
                     type="radio"
                     value="checked_out"
                     checked={attendanceStatus === 'checked_out'}
-                    onChange={(e) => setAttendanceStatus(e.target.value as any)}
+                    onChange={(e) =>
+                      setAttendanceStatus(
+                        e.target.value as 'not_started' | 'checked_in' | 'checked_out'
+                      )
+                    }
                     className="mr-3"
                   />
                   <div className="flex items-center">

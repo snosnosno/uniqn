@@ -1,6 +1,14 @@
 // Firebase 긴급 재설정 유틸리티
 import { logger } from './logger';
 
+/**
+ * 전역 window 객체에 firebase 속성이 있을 수 있음을 선언
+ * 레거시 Firebase SDK가 전역에 노출되는 경우를 위한 타입
+ */
+interface WindowWithFirebase extends Window {
+  firebase?: unknown;
+}
+
 export class FirebaseEmergencyReset {
   private static instance: FirebaseEmergencyReset;
   private resetInProgress = false;
@@ -52,10 +60,11 @@ export class FirebaseEmergencyReset {
     });
 
     // Firebase 관련 전역 변수 정리
-    if ((window as any).firebase) {
+    const windowWithFirebase = window as WindowWithFirebase;
+    if (windowWithFirebase.firebase) {
       try {
         // Firebase 인스턴스 정리
-        delete (window as any).firebase;
+        delete windowWithFirebase.firebase;
       } catch (error) {
         logger.warn('Could not clear Firebase instance:', {
           component: 'firebaseEmergencyReset',

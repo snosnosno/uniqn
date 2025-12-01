@@ -105,7 +105,11 @@ const SalarySection: React.FC<SalarySectionProps> = React.memo(({ data, handlers
               </label>
               <Select
                 value={data.salaryType || 'hourly'}
-                onChange={(value) => handlers.onSalaryTypeChange(value as any)}
+                onChange={(value) =>
+                  handlers.onSalaryTypeChange(
+                    value as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
+                  )
+                }
                 options={[
                   { value: 'hourly', label: '시급' },
                   { value: 'daily', label: '일급' },

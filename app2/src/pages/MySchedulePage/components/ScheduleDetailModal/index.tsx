@@ -224,7 +224,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     const effectiveStartTime = targetWorkLog?.scheduledStartTime || schedule.startTime;
     const effectiveEndTime = targetWorkLog?.scheduledEndTime || schedule.endTime;
 
-    // UnifiedWorkLog 형태로 변환
+    // UnifiedWorkLog 형태로 변환 (payroll 계산용 최소 데이터)
     const workLogData = {
       id: targetWorkLog?.id || schedule.id,
       scheduledStartTime: effectiveStartTime,
@@ -239,7 +239,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
     );
 
     // 근무시간 계산
-    const totalHours = calculateWorkHours(workLogData as any);
+    const totalHours = calculateWorkHours(workLogData as unknown as UnifiedWorkLog);
 
     // 스냅샷 우선: jobPosting이 없으면 스냅샷으로 가상 JobPosting 생성
     const effectiveJobPosting =
@@ -262,12 +262,12 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
             },
             taxSettings: schedule.snapshotData.taxSettings,
             createdBy: schedule.snapshotData.createdBy,
-          } as any)
+          } as unknown as JobPosting)
         : null);
 
     // 급여 계산
     const totalPay = calculateSingleWorkLogPayroll(
-      workLogData as any,
+      workLogData as unknown as UnifiedWorkLog,
       effectiveRole || 'staff',
       effectiveJobPosting
     );
@@ -362,7 +362,7 @@ const ScheduleDetailModal: React.FC<ScheduleDetailModalProps> = ({
       // 근무 시간 계산
       let workHoursValue = 0;
       try {
-        workHoursValue = calculateWorkHours(log as any);
+        workHoursValue = calculateWorkHours(log);
       } catch (error) {
         logger.error(
           '근무 시간 계산 오류:',

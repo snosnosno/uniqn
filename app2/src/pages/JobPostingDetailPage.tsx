@@ -89,10 +89,7 @@ const JobPostingDetailPageContent: React.FC = () => {
           return checkJobPostingPermission(tab.requiredPermission.action, jobPosting.createdBy);
         }
 
-        return checkPermission(
-          tab.requiredPermission.resource as any,
-          tab.requiredPermission.action
-        );
+        return checkPermission(tab.requiredPermission.resource, tab.requiredPermission.action);
       }
 
       return true;

@@ -14,6 +14,7 @@ import {
   BulkAllowanceSettings,
   RoleSalaryConfig,
 } from '../../types/payroll';
+import { StaffAllowanceData } from '../../workers/payrollCalculator.worker';
 import { usePayrollWorker } from '../../hooks/usePayrollWorker';
 import { normalizeRole } from '../../utils/workLogHelpers';
 
@@ -137,7 +138,9 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   }, [workLogs, jobPosting]);
 
   // 수당 및 급여 오버라이드 상태 관리
-  const [staffAllowanceOverrides, setStaffAllowanceOverrides] = useState<Record<string, any>>({});
+  const [staffAllowanceOverrides, setStaffAllowanceOverrides] = useState<
+    Record<string, StaffAllowanceData>
+  >({});
   const [roleSalaryOverrides, setRoleSalaryOverrides] = useState<
     Record<string, { salaryType: string; salaryAmount: number }>
   >({});
@@ -376,7 +379,16 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
           selectedStaffIds.length > 0 ? selectedStaffIds : payrollData.map((data) => data.staffId);
 
         // 수당 정보 업데이트
-        const updates: Record<string, any> = {};
+        const updates: Record<string, StaffAllowanceData> = {};
+
+        // 기본 수당 객체
+        const defaultAllowances: StaffAllowanceData = {
+          meal: 0,
+          transportation: 0,
+          accommodation: 0,
+          bonus: 0,
+          other: 0,
+        };
 
         targetStaffIds.forEach((staffId) => {
           // 해당 스태프의 근무일수 찾기
@@ -384,7 +396,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
           const workDays = staffData?.totalDays || 1;
 
           // 기존 수당과 새 설정 병합
-          const existingAllowances = staffAllowanceOverrides[staffId] || {};
+          const existingAllowances = staffAllowanceOverrides[staffId] || defaultAllowances;
 
           // 일당으로 설정된 수당들의 총액 계산
           const mealTotal = settings.allowances.meal?.enabled
@@ -463,12 +475,21 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
         // 오류 발생 시에도 로컬 상태는 업데이트 (사용자 경험 개선)
         const targetStaffIds =
           selectedStaffIds.length > 0 ? selectedStaffIds : payrollData.map((data) => data.staffId);
-        const updates: Record<string, any> = {};
+        const updates: Record<string, StaffAllowanceData> = {};
+
+        // 기본 수당 객체 (catch 블록용)
+        const defaultAllowances: StaffAllowanceData = {
+          meal: 0,
+          transportation: 0,
+          accommodation: 0,
+          bonus: 0,
+          other: 0,
+        };
 
         targetStaffIds.forEach((staffId) => {
           const staffData = payrollData.find((data) => data.staffId === staffId);
           const workDays = staffData?.totalDays || 1;
-          const existingAllowances = staffAllowanceOverrides[staffId] || {};
+          const existingAllowances = staffAllowanceOverrides[staffId] || defaultAllowances;
 
           const mealTotal = settings.allowances.meal?.enabled
             ? settings.allowances.meal.amount * workDays
@@ -513,7 +534,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
     [payrollData, selectedStaffIds, staffAllowanceOverrides, jobPosting]
   );
 
-  const updateStaffAllowances = useCallback((uniqueKey: string, allowances: any) => {
+  const updateStaffAllowances = useCallback((uniqueKey: string, allowances: StaffAllowanceData) => {
     // 개별 스태프 수당 업데이트
     setStaffAllowanceOverrides((prev) => ({
       ...prev,
@@ -608,7 +629,7 @@ const EnhancedPayrollTab: React.FC<EnhancedPayrollTabProps> = ({ jobPosting, eve
   );
 
   // 수당 편집 모달 열기
-  const openEditModal = useCallback((data: any) => {
+  const openEditModal = useCallback((data: EnhancedPayrollCalculation) => {
     setEditingStaff(data);
     setIsEditModalOpen(true);
   }, []);

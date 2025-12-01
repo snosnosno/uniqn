@@ -105,10 +105,14 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified, onSki
 
         logger.info('전화번호 인증 코드 발송 완료');
       }
-    } catch (error: any) {
-      const errorMessage = error.message || '인증 코드 발송에 실패했습니다.';
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : '인증 코드 발송에 실패했습니다.';
       setError(errorMessage);
-      logger.error('전화번호 인증 코드 발송 실패', error as Error);
+      logger.error(
+        '전화번호 인증 코드 발송 실패',
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       setLoading(false);
     }
@@ -149,8 +153,9 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified, onSki
         logger.info('전화번호 인증 완료');
         onVerified(data.phoneNumber);
       }
-    } catch (error: any) {
-      const errorMessage = error.message || '인증 코드 확인에 실패했습니다.';
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : '인증 코드 확인에 실패했습니다.';
       setError(errorMessage);
 
       // 시도 횟수 감소
@@ -161,7 +166,10 @@ const PhoneVerification: React.FC<PhoneVerificationProps> = ({ onVerified, onSki
         }
       }
 
-      logger.error('전화번호 인증 코드 확인 실패', error as Error);
+      logger.error(
+        '전화번호 인증 코드 확인 실패',
+        error instanceof Error ? error : new Error(String(error))
+      );
     } finally {
       setLoading(false);
     }

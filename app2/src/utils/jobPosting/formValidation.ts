@@ -1,4 +1,10 @@
-import { RoleRequirement, TimeSlot, DateSpecificRequirement } from '../../types/jobPosting';
+import {
+  RoleRequirement,
+  TimeSlot,
+  DateSpecificRequirement,
+  PreQuestion,
+  JobPostingFormData,
+} from '../../types/jobPosting';
 
 /**
  * 시간대 유효성 검증
@@ -68,7 +74,7 @@ export const validateDateSpecificRequirement = (requirement: DateSpecificRequire
 /**
  * 사전질문 유효성 검증
  */
-export const validatePreQuestion = (question: any): string[] => {
+export const validatePreQuestion = (question: PreQuestion): string[] => {
   const errors: string[] = [];
 
   if (!question.question?.trim()) {
@@ -85,7 +91,7 @@ export const validatePreQuestion = (question: any): string[] => {
 /**
  * 폼 데이터 전체 유효성 검증
  */
-export const validateJobPostingForm = (formData: any): string[] => {
+export const validateJobPostingForm = (formData: Partial<JobPostingFormData>): string[] => {
   const errors: string[] = [];
 
   // 기본 정보 검증
@@ -126,7 +132,7 @@ export const validateJobPostingForm = (formData: any): string[] => {
 
   // 사전질문 검증
   if (formData.usesPreQuestions) {
-    formData.preQuestions.forEach((question: any, index: number) => {
+    formData.preQuestions?.forEach((question: PreQuestion, index: number) => {
       const questionErrors = validatePreQuestion(question);
       errors.push(...questionErrors.map((error) => `사전질문 ${index + 1}: ${error}`));
     });

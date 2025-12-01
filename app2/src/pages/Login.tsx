@@ -281,7 +281,7 @@ const Login: React.FC = () => {
     try {
       await signInWithKakao(authResponse.access_token, userInfo);
       navigate('/app');
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(t('kakaoSignIn.error', '카카오 로그인에 실패했습니다.'));
       logger.error('Kakao Sign-In Error:', err instanceof Error ? err : new Error(String(err)), { component: 'Login' });
     }

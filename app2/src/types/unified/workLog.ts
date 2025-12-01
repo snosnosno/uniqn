@@ -232,14 +232,15 @@ export interface WorkLogSortOption {
  * }
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 타입 가드: 입력 타입이 unknown인 데이터를 UnifiedWorkLog로 좁히기 위함
-export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
+export const isUnifiedWorkLog = (data: unknown): data is UnifiedWorkLog => {
+  const record = data as Record<string, unknown>;
   return (
-    data &&
-    typeof data.staffId === 'string' &&
-    typeof data.eventId === 'string' &&
-    typeof data.date === 'string' &&
-    typeof data.staffName === 'string'
+    data !== null &&
+    typeof data === 'object' &&
+    typeof record.staffId === 'string' &&
+    typeof record.eventId === 'string' &&
+    typeof record.date === 'string' &&
+    typeof record.staffName === 'string'
   );
 };
 
@@ -256,32 +257,33 @@ export const isUnifiedWorkLog = (data: any): data is UnifiedWorkLog => {
  * }
  * ```
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 유효성 검사: 외부에서 들어온 데이터의 타입을 알 수 없음
-export const validateWorkLog = (data: any): { isValid: boolean; errors: string[] } => {
+export const validateWorkLog = (data: unknown): { isValid: boolean; errors: string[] } => {
   const errors: string[] = [];
 
-  if (!data) {
+  if (!data || typeof data !== 'object') {
     errors.push('WorkLog 데이터가 없습니다.');
     return { isValid: false, errors };
   }
 
-  if (!data.id || typeof data.id !== 'string') {
+  const record = data as Record<string, unknown>;
+
+  if (!record.id || typeof record.id !== 'string') {
     errors.push('id는 필수 문자열 필드입니다.');
   }
 
-  if (!data.staffId) {
+  if (!record.staffId) {
     errors.push('staffId는 필수 필드입니다.');
   }
 
-  if (!data.eventId) {
+  if (!record.eventId) {
     errors.push('eventId는 필수 필드입니다.');
   }
 
-  if (!data.staffName) {
+  if (!record.staffName) {
     errors.push('staffName은 필수 필드입니다.');
   }
 
-  if (!data.date || typeof data.date !== 'string') {
+  if (!record.date || typeof record.date !== 'string') {
     errors.push('date는 필수 문자열 필드입니다(YYYY-MM-DD 형식).');
   }
 

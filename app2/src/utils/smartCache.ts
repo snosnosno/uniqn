@@ -130,11 +130,11 @@ class SmartCache {
     }, this.config.cleanupInterval);
   }
 
-  private estimateSize(data: any): number {
+  private estimateSize(data: unknown): number {
     // JSON.stringify를 사용하여 대략적인 크기 추정
     try {
       return JSON.stringify(data).length * 2; // UTF-16이므로 2배
-    } catch (error) {
+    } catch {
       return 1024; // 기본값 1KB
     }
   }

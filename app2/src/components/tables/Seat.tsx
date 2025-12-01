@@ -43,7 +43,7 @@ export const Seat: React.FC<SeatProps> = ({
     return 'bg-gray-200 dark:bg-gray-700 border-2 border-dashed border-gray-400 dark:border-gray-600';
   };
 
-  const handleClick = (event: React.MouseEvent) => {
+  const handleClick = (event: React.SyntheticEvent) => {
     if (participantId && onPlayerSelect) {
       logger.info('좌석에서 참가자가 클릭되었습니다', {
         component: 'Seat',
@@ -59,7 +59,8 @@ export const Seat: React.FC<SeatProps> = ({
 
       event.preventDefault();
       event.stopPropagation();
-      onPlayerSelect(participantId, table.id, seatIndex, event);
+      // 키보드 이벤트에서도 호출될 수 있으므로 MouseEvent로 캐스팅
+      onPlayerSelect(participantId, table.id, seatIndex, event as React.MouseEvent);
     } else {
       logger.debug('좌석 클릭이 무시되었습니다', {
         component: 'Seat',
@@ -83,7 +84,7 @@ export const Seat: React.FC<SeatProps> = ({
           ? (e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault();
-                handleClick(e as any);
+                handleClick(e);
               }
             }
           : undefined

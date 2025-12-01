@@ -3,14 +3,33 @@ import { useTranslation } from 'react-i18next';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { formatDate as formatDateUtil } from '@/utils/jobPosting/dateUtils';
 import AssignmentDisplay from '@/components/common/AssignmentDisplay';
-import {
-  Application,
-  // Assignment // 미래 사용 예정
-} from '@/types/application';
+import type { Assignment, PreQuestionAnswer } from '@/types/application';
+import type { Timestamp } from 'firebase/firestore';
+
+/** MyApplicationsTab에서 사용하는 JobPosting 최소 필드 */
+interface MyApplicationsJobPosting {
+  location: string;
+  district?: string;
+  detailedAddress?: string;
+  recruitmentType?: 'application' | 'fixed';
+}
+
+/** MyApplicationsTab에서 사용하는 Application 타입 */
+interface MyApplicationsApplication {
+  id: string;
+  postId: string;
+  status: string;
+  appliedAt: Date | Timestamp | { seconds: number; nanoseconds?: number };
+  confirmedAt?: Date | Timestamp;
+  postTitle: string;
+  assignments: Assignment[];
+  preQuestionAnswers?: PreQuestionAnswer[];
+  jobPosting?: MyApplicationsJobPosting | null;
+}
 
 interface FirebaseTimestamp {
   seconds: number;
-  nanoseconds: number;
+  nanoseconds?: number;
   toDate?: () => Date;
 }
 
@@ -176,8 +195,8 @@ const SingleAssignmentDisplay: React.FC<{
 
 // 지원 카드 컴포넌트
 const ApplicationCard: React.FC<{
-  application: Application;
-  onViewDetail?: ((jobPosting: any) => void) | undefined;
+  application: MyApplicationsApplication;
+  onViewDetail?: ((postId: string) => void) | undefined;
   onCancel: (postId: string) => void;
   isProcessing: string | null;
 }> = ({ application, onViewDetail, onCancel, isProcessing }) => {
@@ -270,13 +289,13 @@ const ApplicationCard: React.FC<{
 // 🔄 중복된 interface 제거 완료 - types/application.ts 타입 사용
 
 interface MyApplicationsTabProps {
-  applications: Application[];
+  applications: MyApplicationsApplication[];
   loading: boolean;
   onRefresh: () => void;
   onCancel: (postId: string) => void;
   isProcessing: string | null;
   onTabChange: () => void;
-  onViewDetail?: (jobPosting: any) => void;
+  onViewDetail?: (postId: string) => void;
 }
 
 /**

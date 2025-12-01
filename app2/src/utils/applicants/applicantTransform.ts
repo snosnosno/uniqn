@@ -9,11 +9,26 @@
  * @module utils/applicants/applicantTransform
  */
 
+import { Timestamp } from 'firebase/firestore';
 import { logger } from '../logger';
 import { Applicant } from '../../components/applicants/ApplicantListTab/types';
 import { ApplicationHistoryService } from '../../services/ApplicationHistoryService';
 import { JobPosting, DateSpecificRequirement, TimeSlot } from '../../types/jobPosting';
 import type { Selection, DateGroupedSelections } from '../../types/applicants/selection';
+import type { Application, LegacyApplication } from '../../types/application';
+
+/**
+ * 날짜 값을 받을 수 있는 유니온 타입
+ * Firestore Timestamp, Date, 문자열 등 다양한 형태의 날짜를 처리
+ */
+type DateLike =
+  | string
+  | Date
+  | Timestamp
+  | { toDate: () => Date }
+  | { seconds: number }
+  | null
+  | undefined;
 
 /**
  * 구인공고에서 특정 시간대의 역할 정보를 가져오는 함수
@@ -83,12 +98,12 @@ const getRoleFromJobPosting = (
  * 날짜 값을 안전하게 문자열로 변환하는 함수
  * UTC 시간대 문제를 방지하기 위해 로컬 날짜로 처리
  */
-export const convertDateToString = (rawDate: any): string => {
+export const convertDateToString = (rawDate: DateLike): string => {
   if (!rawDate) return '';
 
   if (typeof rawDate === 'string') {
     return rawDate;
-  } else if (rawDate.toDate) {
+  } else if ('toDate' in rawDate && typeof rawDate.toDate === 'function') {
     // Firestore Timestamp 객체
     try {
       const date = rawDate.toDate();
@@ -107,7 +122,7 @@ export const convertDateToString = (rawDate: any): string => {
       );
       return '';
     }
-  } else if (rawDate.seconds) {
+  } else if ('seconds' in rawDate && typeof rawDate.seconds === 'number') {
     // seconds 속성이 있는 경우
     try {
       const date = new Date(rawDate.seconds * 1000);
@@ -396,7 +411,9 @@ export const getApplicantSelections = (
   // 확정 상태
   if (applicant.status === 'confirmed') {
     try {
-      const confirmed = ApplicationHistoryService.getConfirmedSelections(applicant as any);
+      const confirmed = ApplicationHistoryService.getConfirmedSelections(
+        applicant as unknown as Application | LegacyApplication
+      );
       // Assignment[]를 Selection[]로 변환
       return confirmed.map((assignment) => ({
         role: assignment.role || '',
@@ -419,7 +436,9 @@ export const getApplicantSelections = (
 
   // ApplicationHistory 서비스 사용
   try {
-    const originalData = ApplicationHistoryService.getOriginalApplicationData(applicant as any);
+    const originalData = ApplicationHistoryService.getOriginalApplicationData(
+      applicant as unknown as Application | LegacyApplication
+    );
     const roles = originalData.map((assignment) => assignment.role).filter(Boolean);
     const times = originalData.map((assignment) => assignment.timeSlot).filter(Boolean);
     const dates = originalData.flatMap((assignment) => assignment.dates || []).filter(Boolean);
@@ -432,7 +451,7 @@ export const getApplicantSelections = (
         const roleValue = roles[i] ?? '';
         const timeValue = times[i] ?? '';
         const dateValue = convertDateToString(dates[i]);
-        const duration = (applicant as any).assignedDurations?.[i] || undefined;
+        const duration = applicant.assignedDurations?.[i] || undefined;
 
         selections.push({
           role: roleValue,
@@ -478,7 +497,7 @@ export const getApplicantSelections = (
         dateValue = convertDateToString(applicant.assignedDate);
       }
 
-      const duration = (applicant as any).assignedDurations?.[i] || undefined;
+      const duration = applicant.assignedDurations?.[i] || undefined;
 
       selections.push({
         role: roleValue,

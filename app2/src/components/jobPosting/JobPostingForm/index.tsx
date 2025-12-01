@@ -10,7 +10,7 @@
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
-import { ZodError } from 'zod';
+import { ZodError, ZodIssue } from 'zod';
 import { useJobPostingForm } from '@/hooks/useJobPostingForm';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { JobPosting, JobPostingTemplate, Benefits } from '@/types/jobPosting';
@@ -134,8 +134,7 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
         if (error instanceof ZodError) {
           // Zod 검증 에러 처리
           const errors: Record<string, string> = {};
-          const zodError = error as any; // Zod v4 타입 호환성 문제 우회
-          zodError.errors?.forEach((err: any) => {
+          error.errors.forEach((err: ZodIssue) => {
             const path = err.path.join('.');
             errors[path] = err.message;
           });
@@ -394,7 +393,10 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
         },
         onRoleSalaryChange: (role: string | number, type: string, amount: number) => {
           const roleStr = typeof role === 'number' ? role.toString() : role;
-          handleRoleSalaryTypeChange(roleStr, type as any);
+          handleRoleSalaryTypeChange(
+            roleStr,
+            type as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
+          );
           handleRoleSalaryAmountChange(roleStr, amount.toString());
         },
       }),

@@ -5,9 +5,12 @@ import Input from '../ui/Input';
 import { Select } from '../common/Select';
 import { EmptyState } from '../common';
 
+/** PreQuestion 필드 값 타입 */
+type PreQuestionFieldValue = string | boolean | string[];
+
 interface PreQuestionManagerProps {
   preQuestions: PreQuestion[];
-  onPreQuestionChange: (questionIndex: number, field: string, value: any) => void;
+  onPreQuestionChange: (questionIndex: number, field: string, value: PreQuestionFieldValue) => void;
   onPreQuestionOptionChange: (questionIndex: number, optionIndex: number, value: string) => void;
   onAddPreQuestion: () => void;
   onRemovePreQuestion: (index: number) => void;

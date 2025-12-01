@@ -12,6 +12,7 @@ import { BasicInfoTabProps } from '../types';
 import { getSnapshotOrFallback } from '@/utils/scheduleSnapshot';
 import { parseTimeToString, calculateWorkHours } from '@/utils/workLogMapper';
 import { useUnifiedData } from '@/hooks/useUnifiedData';
+import { UnifiedWorkLog } from '@/types/unified/workLog';
 
 /**
  * BasicInfoTab - 일정 기본 정보 표시 컴포넌트
@@ -115,7 +116,8 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
 
     if (workLog) {
       // WorkLog가 있으면 calculateWorkHours 사용 (심야 근무 자동 처리)
-      return calculateWorkHours(workLog as any);
+      // WorkLog와 UnifiedWorkLog의 status 타입 차이로 인해 타입 캐스팅 필요
+      return calculateWorkHours(workLog as unknown as UnifiedWorkLog);
     }
 
     // WorkLog가 없으면 0 반환

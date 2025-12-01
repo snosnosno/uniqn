@@ -9,6 +9,18 @@
 import { useState, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
 
+/** Chrome의 비표준 performance.memory API 타입 */
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+/** Performance with memory (Chrome 전용) */
+interface PerformanceWithMemory extends Performance {
+  memory?: PerformanceMemory;
+}
+
 interface DevToolsState {
   isOpen: boolean;
   isEnabled: boolean;
@@ -99,8 +111,9 @@ export const useDevTools = () => {
     let performanceWarningShown = false;
 
     const checkPerformance = () => {
-      if ((performance as any).memory && !performanceWarningShown) {
-        const memoryMB = (performance as any).memory.usedJSHeapSize / 1024 / 1024;
+      const perf = performance as PerformanceWithMemory;
+      if (perf.memory && !performanceWarningShown) {
+        const memoryMB = perf.memory.usedJSHeapSize / 1024 / 1024;
 
         // 메모리 사용량이 200MB를 넘으면 경고
         if (memoryMB > 200) {

@@ -10,6 +10,11 @@ import { findTargetWorkLog, filterWorkLogsByRole } from '../../utils/workLogHelp
 
 import { UnifiedWorkLog } from '../../types/unified/workLog';
 
+/** Legacy WorkLog with deprecated timeSlot field */
+interface LegacyWorkLog extends UnifiedWorkLog {
+  timeSlot?: string;
+}
+
 interface DetailEditModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -169,9 +174,9 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           scheduledEndTime: log.scheduledEndTime || existingLog.scheduledEndTime,
           // 상태 정보 (더 진행된 상태 우선)
           status: log.status || existingLog.status,
-          // 기타 정보 병합 (타입 안전성을 위해 any로 캐스팅)
-          timeSlot: (log as any).timeSlot || (existingLog as any).timeSlot,
-          assignedTime: (log as any).assignedTime || (existingLog as any).assignedTime,
+          // 기타 정보 병합 (legacy 필드)
+          timeSlot: (log as LegacyWorkLog).timeSlot || (existingLog as LegacyWorkLog).timeSlot,
+          assignedTime: log.assignedTime || existingLog.assignedTime,
         });
       }
     });
@@ -210,7 +215,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
 
           if (log.date) {
             let dateValue: Date | null = null;
-            const logDate = log.date as any;
+            const logDate = log.date as string | Date | { seconds: number };
 
             if (typeof logDate === 'object' && 'seconds' in logDate) {
               dateValue = new Date(logDate.seconds * 1000);
@@ -262,8 +267,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           }
 
           // timeSlot 필드에서 직접 파싱 (백업)
-          if ((startTime === tbdText || endTime === tbdText) && (log as any).timeSlot) {
-            const timeSlot = (log as any).timeSlot;
+          if ((startTime === tbdText || endTime === tbdText) && (log as LegacyWorkLog).timeSlot) {
+            const timeSlot = (log as LegacyWorkLog).timeSlot;
             if (timeSlot && timeSlot !== tbdText && timeSlot.includes('-')) {
               const parts = timeSlot.split('-').map((t: string) => t.trim());
               if (parts[0] && startTime === tbdText) {
@@ -276,8 +281,8 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
           }
 
           // assignedTime이 있으면 변환해서 사용 (최종 백업)
-          if ((startTime === tbdText || endTime === tbdText) && (log as any).assignedTime) {
-            const assignedTime = (log as any).assignedTime;
+          if ((startTime === tbdText || endTime === tbdText) && log.assignedTime) {
+            const assignedTime = log.assignedTime;
             if (assignedTime && assignedTime.includes('-')) {
               const parts = assignedTime.split('-').map((t: string) => t.trim());
               if (parts[0] && startTime === tbdText) startTime = parts[0];

@@ -10,6 +10,7 @@ import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkInfoTabProps } from '../types';
 import { parseTimeToString, calculateWorkHours } from '@/utils/workLogMapper';
+import { UnifiedWorkLog } from '@/types/unified/workLog';
 import { logger } from '@/utils/logger';
 
 /**
@@ -88,10 +89,10 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
         role: schedule.role,
         scheduledStartTime: schedule.startTime,
         scheduledEndTime: schedule.endTime,
-        status: 'scheduled' as any,
+        status: 'scheduled' as const,
         type: 'schedule',
         eventId: schedule.eventId,
-      };
+      } satisfies Partial<UnifiedWorkLog>;
     }
 
     // 2. WorkLog 존재 확인
@@ -143,7 +144,7 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
       // 근무 시간 계산
       let workHours = 0;
       try {
-        workHours = calculateWorkHours(log as any);
+        workHours = calculateWorkHours(log as Partial<UnifiedWorkLog> as UnifiedWorkLog);
       } catch (error) {
         logger.error(
           '근무 시간 계산 오류:',

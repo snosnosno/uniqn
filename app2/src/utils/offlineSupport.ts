@@ -44,12 +44,16 @@ export const initializeOfflineSupport = async (
         }
       );
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const errorCode =
+      error && typeof error === 'object' && 'code' in error
+        ? (error as { code: string }).code
+        : undefined;
     logger.error(
       'Firebase 오프라인 지원 초기화 실패',
       error instanceof Error ? error : new Error(String(error)),
       {
-        errorCode: error.code,
+        errorCode,
         component: 'offlineSupport',
       }
     );
@@ -262,7 +266,7 @@ export class LocalCache {
   private readonly prefix = 'uniqn_cache_';
   private readonly maxAge = 24 * 60 * 60 * 1000; // 24시간
 
-  public set(key: string, data: any, ttl?: number): void {
+  public set<T>(key: string, data: T, ttl?: number): void {
     try {
       const item = {
         data,

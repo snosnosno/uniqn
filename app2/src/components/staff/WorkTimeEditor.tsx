@@ -113,7 +113,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
         staffId: workLog.staffId,
         staffName: workLog.staffName || '',
         date: workLog.date,
-        status: (workLog.status || 'scheduled') as any,
+        status: (workLog.status as WorkLog['status']) || 'not_started',
         updatedAt: Timestamp.now(),
       };
 
@@ -168,7 +168,12 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
           throw new Error(`WorkLog가 존재하지 않습니다. ID: ${workLog.id}`);
         }
 
-        const updatePayload: any = {
+        const updatePayload: {
+          updatedAt: Timestamp;
+          scheduledStartTime?: Timestamp | null;
+          scheduledEndTime?: Timestamp | null;
+          assignedTime?: string | null;
+        } = {
           updatedAt: Timestamp.now(),
         };
 
@@ -274,7 +279,7 @@ const WorkTimeEditor: React.FC<WorkTimeEditorProps> = ({ isOpen, onClose, workLo
         staffId: workLog.staffId,
         staffName: workLog.staffName || '',
         date: workLog.date,
-        status: (workLog.status || 'scheduled') as any,
+        status: (workLog.status as WorkLog['status']) || 'not_started',
         updatedAt: workLog.updatedAt || Timestamp.now(),
       };
 

@@ -57,6 +57,27 @@ export interface ConsecutiveDateGroupForUnconfirmed {
 }
 
 /**
+ * 시간대-역할 항목 (다중일 그룹용)
+ */
+interface TimeSlotRoleItem {
+  timeSlot: string;
+  role: string;
+  selection: Selection;
+}
+
+/**
+ * 다중일 그룹 인터페이스
+ */
+interface MultiDayGroup {
+  startDate: string;
+  endDate: string;
+  dates: string[];
+  dayCount: number;
+  displayDateRange: string;
+  timeSlotRoles: TimeSlotRoleItem[];
+}
+
+/**
  * 지원자의 선택사항을 연속된 날짜별로 그룹화하는 함수
  * checkMethod에 따라 그룹화/개별 표시 구분
  */
@@ -250,8 +271,8 @@ export const groupApplicationsByTimeAndRole = (
  * 다중일 선택사항 그룹화
  * @deprecated 새로운 groupApplicationsByTimeAndRole 함수 사용 권장
  */
-export const groupMultiDaySelections = (selections: Selection[]) => {
-  const dateRangeGroups = new Map<string, any>();
+export const groupMultiDaySelections = (selections: Selection[]): MultiDayGroup[] => {
+  const dateRangeGroups = new Map<string, MultiDayGroup>();
 
   selections.forEach((selection) => {
     if (selection.duration?.type === 'multi' && selection.duration?.endDate && selection.date) {
@@ -274,8 +295,9 @@ export const groupMultiDaySelections = (selections: Selection[]) => {
       }
 
       const group = dateRangeGroups.get(dateRangeKey);
+      if (!group) return;
       const existingRole = group.timeSlotRoles.find(
-        (tr: any) => tr.timeSlot === selection.time && tr.role === selection.role
+        (tr) => tr.timeSlot === selection.time && tr.role === selection.role
       );
 
       if (!existingRole) {
@@ -294,8 +316,8 @@ export const groupMultiDaySelections = (selections: Selection[]) => {
 /**
  * 단일 날짜 선택사항 그룹화
  */
-export const groupSingleDaySelections = (selections: Selection[]) => {
-  const groups = new Map<string, any>();
+export const groupSingleDaySelections = (selections: Selection[]): DateGroupedSelections[] => {
+  const groups = new Map<string, DateGroupedSelections>();
 
   selections.forEach((selection) => {
     const dateKey = selection.date || 'no-date';
@@ -305,10 +327,17 @@ export const groupSingleDaySelections = (selections: Selection[]) => {
         date: dateKey,
         displayDate: dateKey === 'no-date' ? '날짜 미정' : formatDateDisplay(dateKey),
         selections: [],
+        selectedCount: 0,
+        totalCount: 0,
       });
     }
 
-    groups.get(dateKey).selections.push(selection);
+    const group = groups.get(dateKey);
+    if (group) {
+      group.selections.push(selection);
+      group.totalCount++;
+      // selectedCount는 필터링 로직에서 별도 계산 필요
+    }
   });
 
   return Array.from(groups.values()).sort((a, b) => {

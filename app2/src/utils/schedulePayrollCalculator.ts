@@ -78,7 +78,7 @@ export function calculateSchedulePayroll(
   // 2. 근무 시간 계산 (심야 근무 자동 처리)
   let totalHours = 0;
   if (workLog) {
-    totalHours = calculateWorkHours(workLog as any);
+    totalHours = calculateWorkHours(workLog);
   }
 
   const basePay = totalHours * baseSalary;

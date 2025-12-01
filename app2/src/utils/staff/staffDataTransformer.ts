@@ -37,6 +37,8 @@ export interface StaffData {
   // 은행 정보
   bankName?: string;
   bankAccount?: string;
+  // 주민등록번호 (일부 표시용)
+  residentId?: string;
 }
 
 /**

@@ -14,6 +14,8 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUnifiedData } from '../../hooks/useUnifiedData';
 import type { WorkLog } from '../../types/unifiedData';
 import type { JobPosting } from '../../types/jobPosting/jobPosting';
+import type { AttendanceStatus } from '../../types/attendance';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
 import { getTodayString } from '../../utils/jobPosting/dateUtils';
 import { createWorkLogId, generateWorkLogIdCandidates } from '../../utils/workLogSimplified';
 
@@ -90,9 +92,11 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   }, []);
 
   // 🚀 커스텀 훅 사용
+  // Note: state.jobPostings는 unifiedData.JobPosting이며, useStaffData는 jobPosting.JobPosting을 기대함
+  // 두 타입은 구조적으로 호환되므로 unknown 경유 캐스트 사용
   const { staffData, groupedStaffData, uniqueStaffCount, filteredStaffCount } = useStaffData({
     workLogs: state.workLogs,
-    jobPostings: state.jobPostings as any,
+    jobPostings: state.jobPostings as unknown as Map<string, JobPosting>,
     currentJobPosting: jobPosting,
     filters,
   });
@@ -131,7 +135,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
   // 🎯 출석 상태 관련 헬퍼 함수
   const getStaffAttendanceStatus = useCallback(
-    (staffId: string, targetDate?: string) => {
+    (staffId: string, targetDate?: string): AttendanceDisplayRecord | null => {
       const searchDate = targetDate || getTodayString();
 
       if (!jobPosting?.id) return null;
@@ -141,7 +145,8 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
 
       if (workLog) {
         return {
-          status: workLog.status,
+          staffId,
+          status: (workLog.status as AttendanceStatus) || 'not_started',
           workLog: workLog,
           workLogId: workLog.id,
         };
@@ -153,13 +158,13 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
   );
 
   const applyOptimisticUpdate = useCallback(
-    (workLogId: string, status: string) => {
+    (workLogId: string, status: AttendanceStatus) => {
       const existingWorkLog = Array.from(state.workLogs.values()).find((wl) => wl.id === workLogId);
 
       if (existingWorkLog) {
         const optimisticWorkLog: Partial<WorkLog> = {
           ...existingWorkLog,
-          status: status as any,
+          status: status,
           updatedAt: Timestamp.fromDate(new Date()),
         };
 
@@ -519,7 +524,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     <StaffDateGroupMobile
                       key={date}
                       date={date}
-                      staffList={staffForDate as any}
+                      staffList={staffForDate}
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
@@ -533,7 +538,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       multiSelectMode={selection.multiSelectMode}
                       onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
-                      getStaffWorkLog={getStaffWorkLog as any}
+                      getStaffWorkLog={getStaffWorkLog}
                       onReport={handleReport}
                     />
                   );
@@ -549,7 +554,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                     <StaffDateGroup
                       key={date}
                       date={date}
-                      staffList={staffForDate as any}
+                      staffList={staffForDate}
                       isExpanded={isExpanded}
                       onToggleExpansion={toggleDateExpansion}
                       onEditWorkTime={handleEditWorkTime}
@@ -561,7 +566,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
                       onShowProfile={handleShowProfile}
                       eventId={jobPosting?.id}
                       canEdit={!!canEdit}
-                      getStaffWorkLog={getStaffWorkLog as any}
+                      getStaffWorkLog={getStaffWorkLog}
                       applyOptimisticUpdate={applyOptimisticUpdate}
                       multiSelectMode={selection.multiSelectMode}
                       selectedStaff={selection.selectedStaff}
@@ -600,7 +605,7 @@ const StaffManagementTab: React.FC<StaffManagementTabProps> = ({ jobPosting }) =
       <StaffProfileModal
         isOpen={modals.profileModal.isOpen}
         onClose={modals.profileModal.close}
-        staff={modals.profileModal.staff as any}
+        staff={modals.profileModal.staff}
         attendanceRecord={
           modals.profileModal.staff
             ? getStaffAttendanceStatus(modals.profileModal.staff.id)

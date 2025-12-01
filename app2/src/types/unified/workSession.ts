@@ -50,7 +50,7 @@ export interface WorkSession {
   // 추가 정보
   notes?: string;
   metadata?: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
@@ -164,6 +164,71 @@ function timeToMinutes(time: string): number {
 }
 
 /**
+ * 세션에서 변환된 WorkLog 호환 형식
+ */
+export interface SessionToWorkLogResult {
+  id: string;
+  staffId: string;
+  personId: string;
+  staffName: string;
+  date: string;
+  role: string;
+  scheduledStartTime: string;
+  scheduledEndTime: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled';
+  eventId: string;
+  eventName: string;
+  location?: string;
+  hourlyRate?: number;
+  totalHours?: number;
+  totalPay?: number;
+  isPaid?: boolean;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+
+/**
+ * workLog에서 session으로 변환할 때 필요한 입력 타입
+ */
+export interface WorkLogLikeInput {
+  id: string;
+  personId?: string;
+  staffId?: string;
+  staffName?: string;
+  personName?: string;
+  date: string;
+  role?: string;
+  scheduledStartTime?: string;
+  scheduledEndTime?: string;
+  actualStartTime?: string;
+  actualEndTime?: string;
+  status?:
+    | 'scheduled'
+    | 'in_progress'
+    | 'completed'
+    | 'cancelled'
+    | 'not_started'
+    | 'checked_in'
+    | 'checked_out';
+  attendanceStatus?: 'not_started' | 'checked_in' | 'checked_out';
+  eventId?: string;
+  eventName?: string;
+  location?: string;
+  hourlyRate?: number;
+  totalHours?: number;
+  totalPay?: number;
+  isPaid?: boolean;
+  paidAt?: Timestamp;
+  createdAt?: Timestamp;
+  updatedAt?: Timestamp;
+  applicationId?: string;
+  notes?: string;
+  metadata?: { [key: string]: unknown };
+}
+
+/**
  * 세션들을 날짜별로 그룹화
  */
 export function groupSessionsByDate(sessions: WorkSession[]): WorkSessionGroup[] {
@@ -201,7 +266,7 @@ export function groupSessionsByDate(sessions: WorkSession[]): WorkSessionGroup[]
 /**
  * 기존 workLog와의 호환성 변환
  */
-export function sessionToWorkLog(session: WorkSession): any {
+export function sessionToWorkLog(session: WorkSession): SessionToWorkLogResult {
   return {
     id: session.workLogId || session.id,
     staffId: session.personId, // 하위 호환성
@@ -229,10 +294,29 @@ export function sessionToWorkLog(session: WorkSession): any {
 /**
  * workLog를 session으로 변환
  */
-export function workLogToSession(workLog: any, sessionNumber: number = 1): WorkSession {
+export function workLogToSession(
+  workLog: WorkLogLikeInput,
+  sessionNumber: number = 1
+): WorkSession {
+  // status를 WorkSession 호환 상태로 변환
+  const mapStatus = (status?: string): 'scheduled' | 'in_progress' | 'completed' | 'cancelled' => {
+    switch (status) {
+      case 'in_progress':
+      case 'checked_in':
+        return 'in_progress';
+      case 'completed':
+      case 'checked_out':
+        return 'completed';
+      case 'cancelled':
+        return 'cancelled';
+      default:
+        return 'scheduled';
+    }
+  };
+
   return {
     id: workLog.id,
-    personId: workLog.personId || workLog.staffId,
+    personId: workLog.personId || workLog.staffId || '',
     personName: workLog.staffName || workLog.personName || '',
     workDate: workLog.date,
     sessionNumber,
@@ -241,7 +325,7 @@ export function workLogToSession(workLog: any, sessionNumber: number = 1): WorkS
     scheduledEndTime: workLog.scheduledEndTime || '',
     actualStartTime: workLog.actualStartTime,
     actualEndTime: workLog.actualEndTime,
-    status: workLog.status || 'scheduled',
+    status: mapStatus(workLog.status),
     attendanceStatus: workLog.attendanceStatus,
     eventId: workLog.eventId || '',
     eventName: workLog.eventName || '',

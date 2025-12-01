@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { logger } from '../../utils/logger';
 import { FixedSizeList as List } from 'react-window';
 
-import { StaffData } from '../../hooks/useStaffManagement';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
 import {
   useCachedFormatDate,
   useCachedTimeDisplay,
@@ -11,15 +12,17 @@ import {
 } from '../../hooks/useCachedFormatDate';
 import AttendanceStatusPopover from '../attendance/AttendanceStatusPopover';
 import { getTodayString, convertToDateString } from '../../utils/jobPosting/dateUtils';
+import { formatTime } from '../../utils/dateUtils';
 
 interface VirtualizedStaffTableProps {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (hooks vs types)
-  getStaffAttendanceStatus: (staffId: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean;
@@ -34,10 +37,11 @@ interface ItemData {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
-  getStaffAttendanceStatus: (staffId: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate: boolean;
@@ -111,17 +115,30 @@ const VirtualizedTableRow: React.FC<{
       };
     }
 
-    // actualStartTime/actualEndTime 사용
-    const actualStartTime =
+    // actualStartTime/actualEndTime 사용 - Timestamp를 문자열로 변환
+    const rawActualStartTime =
       exceptionRecord?.workLog?.actualStartTime || attendanceRecord?.actualStartTime;
+    const actualStartTime =
+      typeof rawActualStartTime === 'string'
+        ? rawActualStartTime
+        : rawActualStartTime
+          ? formatTime(rawActualStartTime, { defaultValue: '' })
+          : undefined;
+
     // @deprecated: assignedTime 사용, 추후 workLog.scheduledStartTime 우선 사용
     const scheduledStartTime = staff.assignedTime;
 
     // 출근시간 결정: 정산 목적으로 예정 시간 우선, 없으면 실제 시간
     const startTime = scheduledStartTime || actualStartTime;
 
-    // 퇴근시간
-    const endTime = exceptionRecord?.workLog?.actualEndTime || attendanceRecord?.actualEndTime;
+    // 퇴근시간 - Timestamp를 문자열로 변환
+    const rawEndTime = exceptionRecord?.workLog?.actualEndTime || attendanceRecord?.actualEndTime;
+    const endTime =
+      typeof rawEndTime === 'string'
+        ? rawEndTime
+        : rawEndTime
+          ? formatTime(rawEndTime, { defaultValue: '' })
+          : undefined;
 
     return {
       displayStartTime: formatTimeDisplay(startTime),

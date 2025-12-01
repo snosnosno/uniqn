@@ -198,7 +198,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
       staffName: staffName,
       date: workLogDate, // 디버깅을 위해 변수로 분리
       role: 'staff', // 기본값
-      status: newStatus as any,
+      status: newStatus,
       updatedAt: now,
       createdAt: now, // 기본값
     };
@@ -300,7 +300,12 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         if (docSnap.exists()) {
           // ✅ 기존 workLog 업데이트 - actual 시간과 상태만 업데이트 (scheduled 시간 유지)
           // UI 상태를 Firebase에 그대로 저장 (변환하지 않음)
-          const updateData: Record<string, any> = {
+          const updateData: {
+            status: AttendanceStatus;
+            updatedAt: Timestamp;
+            actualStartTime?: Timestamp | null;
+            actualEndTime?: Timestamp | null;
+          } = {
             status: newStatus,
             updatedAt: now,
           };
@@ -313,7 +318,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
           if (newStatus === 'checked_out') {
             updateData.actualEndTime = now;
             // actualStartTime이 없으면 현재 시간으로 설정
-            const existingData = docSnap.data() as any;
+            const existingData = docSnap.data() as Partial<WorkLog> | undefined;
             if (!existingData?.actualStartTime) {
               updateData.actualStartTime = now;
             }
@@ -353,7 +358,7 @@ const AttendanceStatusPopover: React.FC<AttendanceStatusPopoverProps> = ({
         staffName: staffName,
         date: getTodayString(),
         role: 'staff',
-        status: currentStatus as any, // 원래 상태로 복원
+        status: normalizedStatus, // 원래 상태로 복원 (scheduled -> not_started 변환됨)
         updatedAt: Timestamp.now(),
         createdAt: now,
       };

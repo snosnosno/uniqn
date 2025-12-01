@@ -189,7 +189,10 @@ export class PermissionUtils {
   ): boolean {
     if (!permissions) return false;
 
-    const resourcePermissions = permissions.permissions[resource] as any;
+    const resourcePermissions = permissions.permissions[resource] as Record<
+      string,
+      PermissionScope | boolean
+    >;
     const actionPermission = resourcePermissions[action];
 
     if (actionPermission === 'none') return false;
@@ -215,7 +218,10 @@ export class PermissionUtils {
   ): boolean {
     if (!permissions) return false;
 
-    const resourcePermissions = permissions.permissions.jobPostings as any;
+    const resourcePermissions = permissions.permissions.jobPostings as Record<
+      string,
+      PermissionScope
+    >;
     const actionPermission = resourcePermissions[action];
 
     if (actionPermission === 'none') return false;

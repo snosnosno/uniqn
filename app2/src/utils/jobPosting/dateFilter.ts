@@ -56,7 +56,7 @@ export const filterPostingsByDate = (
           reqDate = parseISO(req.date);
         } else if (req.date && typeof req.date === 'object' && 'toDate' in req.date) {
           // Firestore Timestamp
-          reqDate = (req.date as any).toDate();
+          reqDate = (req.date as { toDate: () => Date }).toDate();
         } else if (req.date instanceof Date) {
           reqDate = req.date;
         } else {

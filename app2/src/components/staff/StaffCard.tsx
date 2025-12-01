@@ -5,24 +5,31 @@ import { logger } from '../../utils/logger';
 import { useHapticFeedback } from '../../hooks/useHapticFeedback';
 import { useSwipeGestureReact } from '../../hooks/useSwipeGesture';
 import { useCachedTimeDisplay, useCachedTimeSlotColor } from '../../hooks/useCachedFormatDate';
-import { StaffData } from '../../hooks/useStaffManagement';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
 import AttendanceStatusPopover, { AttendanceStatus } from '../attendance/AttendanceStatusPopover';
 import { timestampToLocalDateString } from '../../utils/dateUtils';
-import { UnifiedWorkLog } from '../../types/unified/workLog';
+import type { WorkLog } from '../../types/unifiedData';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
 // BaseCard 및 하위 컴포넌트들 import
 import BaseCard, { CardHeader, CardBody } from '../ui/BaseCard';
 import StaffCardHeader from './StaffCardHeader';
 import StaffCardTimeSection from './StaffCardTimeSection';
 import StaffCardActions from './StaffCardActions';
 
+/** Legacy staff data with timeSlot (deprecated field from old data) */
+interface LegacyStaffData extends StaffData {
+  timeSlot?: string;
+}
+
 interface StaffCardProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (hooks vs types)
-  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (useAttendanceStatus vs types/attendance)
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean;
@@ -31,7 +38,7 @@ interface StaffCardProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null | undefined;
   multiSelectMode?: boolean;
   onReport?: (staffId: string, staffName: string) => void;
 }
@@ -147,7 +154,7 @@ const StaffCard: React.FC<StaffCardProps> = React.memo(
       const workLog = getStaffWorkLog ? getStaffWorkLog(staff.id, dateString) : null;
 
       // workLog.scheduledStartTime을 우선 사용, assignedTime/timeSlot은 fallback
-      let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot;
+      let scheduledStartTime = staff.assignedTime || (staff as LegacyStaffData).timeSlot;
       if (workLog?.scheduledStartTime) {
         try {
           if (typeof workLog.scheduledStartTime === 'string') {

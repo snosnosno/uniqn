@@ -173,11 +173,19 @@ export const getTimeStatistics = (
   };
 };
 
+/** 타임스탬프 입력 타입 */
+type TimestampInput = { toDate: () => Date } | Date | number | string | null | undefined;
+
 // Timestamp/Date 변환 헬퍼
-export const toDate = (timestamp: any): Date => {
+export const toDate = (timestamp: TimestampInput): Date => {
   if (!timestamp) return new Date();
 
-  if (timestamp && typeof timestamp.toDate === 'function') {
+  if (
+    timestamp &&
+    typeof timestamp === 'object' &&
+    'toDate' in timestamp &&
+    typeof timestamp.toDate === 'function'
+  ) {
     return timestamp.toDate();
   }
   if (timestamp instanceof Date) {
@@ -193,8 +201,24 @@ export const toDate = (timestamp: any): Date => {
   return new Date();
 };
 
+/** 시간 계산 입력 타입 */
+type TimeCalculationInput = { toDate: () => Date } | Date | string | null | undefined;
+
+/** toDate 메서드를 가진 객체 타입 가드 */
+function hasToDateMethod(obj: unknown): obj is { toDate: () => Date } {
+  return (
+    obj !== null &&
+    typeof obj === 'object' &&
+    'toDate' in obj &&
+    typeof (obj as { toDate?: unknown }).toDate === 'function'
+  );
+}
+
 // 근무 시간 계산 (분 단위) - 다음날 계산 지원
-export const calculateMinutes = (startTime: any, endTime: any): number => {
+export const calculateMinutes = (
+  startTime: TimeCalculationInput,
+  endTime: TimeCalculationInput
+): number => {
   if (!startTime || !endTime) return 0;
 
   // "미정" 체크
@@ -205,7 +229,7 @@ export const calculateMinutes = (startTime: any, endTime: any): number => {
     let endDate: Date;
 
     // startTime 변환
-    if (startTime && typeof startTime.toDate === 'function') {
+    if (hasToDateMethod(startTime)) {
       startDate = startTime.toDate();
     } else if (startTime instanceof Date) {
       startDate = startTime;
@@ -219,7 +243,7 @@ export const calculateMinutes = (startTime: any, endTime: any): number => {
     }
 
     // endTime 변환
-    if (endTime && typeof endTime.toDate === 'function') {
+    if (hasToDateMethod(endTime)) {
       endDate = endTime.toDate();
     } else if (endTime instanceof Date) {
       endDate = endTime;

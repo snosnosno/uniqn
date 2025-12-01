@@ -4,6 +4,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
+import { FirebaseQueryValue } from '../common';
 
 /**
  * 이벤트(공고) 기본 정보
@@ -163,7 +164,7 @@ export interface SubcollectionQueryOptions {
       | 'array-contains'
       | 'in'
       | 'array-contains-any';
-    value: any;
+    value: FirebaseQueryValue;
   }>;
 }
 

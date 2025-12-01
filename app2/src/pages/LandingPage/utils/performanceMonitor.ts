@@ -5,6 +5,19 @@
 
 import { logger } from '@/utils/logger';
 
+/** Network Information API 타입 (실험적 API) */
+interface NetworkInformation {
+  effectiveType?: '2g' | '3g' | '4g' | 'slow-2g';
+  downlink?: number;
+  rtt?: number;
+  saveData?: boolean;
+}
+
+/** Navigator with Network Information API */
+interface NavigatorWithConnection extends Navigator {
+  connection?: NetworkInformation;
+}
+
 interface PerformanceMetrics {
   // Core Web Vitals
   lcp?: number; // Largest Contentful Paint
@@ -140,9 +153,14 @@ class PerformanceMonitor {
         let clsValue = 0;
         const clsObserver = new PerformanceObserver((list) => {
           const entries = list.getEntries();
-          entries.forEach((entry: any) => {
-            if (!entry.hadRecentInput) {
-              clsValue += entry.value;
+          entries.forEach((entry) => {
+            // Layout Shift Entry 타입 확장 (hadRecentInput, value는 LayoutShift 전용 속성)
+            const layoutEntry = entry as PerformanceEntry & {
+              hadRecentInput?: boolean;
+              value?: number;
+            };
+            if (!layoutEntry.hadRecentInput && layoutEntry.value) {
+              clsValue += layoutEntry.value;
             }
           });
           this.metrics.cls = clsValue;
@@ -170,7 +188,8 @@ class PerformanceMonitor {
 
     // 네트워크 정보 (가능한 경우)
     if ('connection' in navigator) {
-      const connection = (navigator as any).connection;
+      const nav = navigator as NavigatorWithConnection;
+      const connection = nav.connection;
       this.metrics.connection = {
         effectiveType: connection?.effectiveType,
         downlink: connection?.downlink,
@@ -182,12 +201,14 @@ class PerformanceMonitor {
     let totalSize = 0;
     let maxLoadTime = 0;
 
-    resourceEntries.forEach((entry: any) => {
-      if (entry.transferSize) {
-        totalSize += entry.transferSize;
+    resourceEntries.forEach((entry) => {
+      // PerformanceResourceTiming 타입 캐스팅 (resource 엔트리의 실제 타입)
+      const resourceEntry = entry as PerformanceResourceTiming;
+      if (resourceEntry.transferSize) {
+        totalSize += resourceEntry.transferSize;
       }
-      if (entry.responseEnd - entry.fetchStart > maxLoadTime) {
-        maxLoadTime = entry.responseEnd - entry.fetchStart;
+      if (resourceEntry.responseEnd - resourceEntry.fetchStart > maxLoadTime) {
+        maxLoadTime = resourceEntry.responseEnd - resourceEntry.fetchStart;
       }
     });
 
@@ -225,10 +246,8 @@ class PerformanceMonitor {
     if (process.env.NODE_ENV === 'development') {
       const metricsReport = this.getMetricsReport();
 
-      // logger 사용 (import 필요시 추가)
-      if (typeof window !== 'undefined' && (window as any).logger) {
-        (window as any).logger.info('🚀 Landing Page Performance Metrics', { data: metricsReport });
-      }
+      // import된 logger 직접 사용
+      logger.info('🚀 Landing Page Performance Metrics', { data: metricsReport });
       return;
     }
 

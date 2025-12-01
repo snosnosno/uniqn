@@ -1,8 +1,10 @@
 import React from 'react';
 
-import { StaffData } from '../../hooks/useStaffManagement';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
 import StaffRow from './StaffRow';
-import { UnifiedWorkLog } from '../../types/unified/workLog';
+import type { WorkLog } from '../../types/unifiedData';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
+import type { AttendanceStatus } from '../../types/attendance';
 
 interface StaffDateGroupProps {
   date: string;
@@ -11,18 +13,18 @@ interface StaffDateGroupProps {
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (hooks vs types)
-  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceStatus 타입 충돌
-  applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null | undefined;
+  applyOptimisticUpdate?: (workLogId: string, newStatus: AttendanceStatus) => void;
   multiSelectMode?: boolean;
   selectedStaff?: Set<string>;
   onStaffSelect?: (staffId: string) => void;

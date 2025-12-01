@@ -1,10 +1,35 @@
 import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Timestamp } from 'firebase/firestore';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '@/types/jobPosting';
 import { formatDate as formatDateUtil, generateDateRange } from '@/utils/jobPosting/dateUtils';
 // formatDateRangeDisplay - 향후 사용 예정
 import { logger } from '@/utils/logger';
 import { Assignment } from '@/types/application';
+
+/** DateSpecificRequirement.date 필드를 문자열로 변환 */
+const dateToString = (dateValue: string | Timestamp | { seconds: number }): string => {
+  if (typeof dateValue === 'string') {
+    return dateValue;
+  }
+
+  try {
+    let jsDate: Date;
+    if ('toDate' in dateValue && typeof dateValue.toDate === 'function') {
+      // Firebase Timestamp
+      jsDate = dateValue.toDate();
+    } else if ('seconds' in dateValue) {
+      // Raw Timestamp 객체
+      jsDate = new Date(dateValue.seconds * 1000);
+    } else {
+      return '';
+    }
+    return `${jsDate.getFullYear()}-${String(jsDate.getMonth() + 1).padStart(2, '0')}-${String(jsDate.getDate()).padStart(2, '0')}`;
+  } catch (error) {
+    logger.error('Date conversion error:', error as Error);
+    return '';
+  }
+};
 
 interface ApplyModalProps {
   isOpen: boolean;
@@ -60,21 +85,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
         let startDate = '';
 
         // 날짜 문자열 추출
-        if (typeof dateReq.date === 'string') {
-          startDate = dateReq.date;
-        } else if (dateReq.date) {
-          try {
-            if ((dateReq.date as any).toDate) {
-              const date = (dateReq.date as any).toDate();
-              startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            } else if ((dateReq.date as any).seconds) {
-              const date = new Date((dateReq.date as any).seconds * 1000);
-              startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-            }
-          } catch (error) {
-            logger.error('Date conversion error:', error as Error);
-          }
-        }
+        startDate = dateToString(dateReq.date);
 
         // 날짜 범위 생성 및 자동 선택 (하나의 Assignment로 그룹화)
         if (startDate && endDate) {
@@ -214,7 +225,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
     role: string,
     dates: string[],
     isChecked: boolean,
-    duration?: any
+    duration?: TimeSlot['duration']
   ) => {
     // 🎯 v2.0: 새로운 통합 구조에 맞게 Assignment 생성
     const groupAssignment: Assignment = {
@@ -301,24 +312,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                   const endDate = firstTimeSlot.duration.endDate;
                   dateDisplay = `${formatDateUtil(dateReq.date)} ~ ${formatDateUtil(endDate)}`;
                   // 다중 날짜인 경우 날짜 범위를 확장하여 각 날짜별로 선택 가능하게 함
-                  let startDate = '';
-
-                  if (typeof dateReq.date === 'string') {
-                    startDate = dateReq.date;
-                  } else if (dateReq.date) {
-                    try {
-                      // Timestamp 객체 처리
-                      if ((dateReq.date as any).toDate) {
-                        const date = (dateReq.date as any).toDate();
-                        startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                      } else if ((dateReq.date as any).seconds) {
-                        const date = new Date((dateReq.date as any).seconds * 1000);
-                        startDate = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                      }
-                    } catch (error) {
-                      logger.error('Date conversion error:', error as Error);
-                    }
-                  }
+                  const startDate = dateToString(dateReq.date);
 
                   if (startDate && endDate) {
                     expandedDates = generateDateRange(startDate, endDate);
@@ -468,26 +462,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                           <div className="space-y-2">
                             {ts.roles.map((r: RoleRequirement, roleIndex: number) => {
                               // 날짜 문자열 변환 (타임스탬프 → 문자열)
-                              let dateString = '';
-                              if (typeof dateReq.date === 'string') {
-                                dateString = dateReq.date;
-                              } else if (dateReq.date) {
-                                try {
-                                  if ((dateReq.date as any).toDate) {
-                                    const date = (dateReq.date as any).toDate();
-                                    dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                                  } else if ((dateReq.date as any).seconds) {
-                                    const date = new Date((dateReq.date as any).seconds * 1000);
-                                    dateString = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-                                  }
-                                } catch (error) {
-                                  logger.error(
-                                    'Date conversion error in single date:',
-                                    error as Error
-                                  );
-                                  dateString = String(dateReq.date);
-                                }
-                              }
+                              const dateString = dateToString(dateReq.date);
 
                               const assignment: Assignment = {
                                 timeSlot: ts.time,

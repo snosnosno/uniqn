@@ -8,6 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import type { StaffData } from '../../utils/staff/staffDataTransformer';
+import type { WorkLogWithTimestamp } from '../../components/staff/WorkTimeEditor';
 
 export interface DeleteConfirmData {
   isOpen: boolean;
@@ -31,10 +32,10 @@ export interface UseStaffModalsReturn {
   // 근무 시간 수정 모달
   workTimeEditor: {
     isOpen: boolean;
-    workLog: any | null;
-    open: (workLog: any) => void;
+    workLog: WorkLogWithTimestamp | null;
+    open: (workLog: WorkLogWithTimestamp) => void;
     close: () => void;
-    setWorkLog: (workLog: any) => void;
+    setWorkLog: (workLog: WorkLogWithTimestamp) => void;
   };
   // 스태프 프로필 모달
   profileModal: {
@@ -75,7 +76,7 @@ export function useStaffModals(): UseStaffModalsReturn {
 
   // 근무 시간 수정 모달
   const [isWorkTimeEditorOpen, setIsWorkTimeEditorOpen] = useState(false);
-  const [selectedWorkLog, setSelectedWorkLog] = useState<any | null>(null);
+  const [selectedWorkLog, setSelectedWorkLog] = useState<WorkLogWithTimestamp | null>(null);
 
   // 스태프 프로필 모달
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
@@ -105,7 +106,7 @@ export function useStaffModals(): UseStaffModalsReturn {
     workTimeEditor: {
       isOpen: isWorkTimeEditorOpen,
       workLog: selectedWorkLog,
-      open: useCallback((workLog: any) => {
+      open: useCallback((workLog: WorkLogWithTimestamp) => {
         setSelectedWorkLog(workLog);
         setIsWorkTimeEditorOpen(true);
       }, []),
@@ -113,7 +114,7 @@ export function useStaffModals(): UseStaffModalsReturn {
         setIsWorkTimeEditorOpen(false);
         setSelectedWorkLog(null);
       }, []),
-      setWorkLog: useCallback((workLog: any) => {
+      setWorkLog: useCallback((workLog: WorkLogWithTimestamp) => {
         setSelectedWorkLog(workLog);
       }, []),
     },

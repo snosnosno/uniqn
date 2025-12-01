@@ -26,16 +26,51 @@ export const sortJobPostingsByPriority = (jobPostings: JobPosting[]): JobPosting
     },
   });
 
+  /** 날짜 필드 입력 타입 */
+  type DateFieldInput =
+    | string
+    | number
+    | Date
+    | { toDate: () => Date }
+    | { seconds: number }
+    | null
+    | undefined;
+
+  /** toDate 메서드를 가진 객체 타입 가드 */
+  const hasToDate = (obj: unknown): obj is { toDate: () => Date } => {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'toDate' in obj &&
+      typeof (obj as { toDate?: unknown }).toDate === 'function'
+    );
+  };
+
+  /** seconds 속성을 가진 객체 타입 가드 */
+  const hasSeconds = (obj: unknown): obj is { seconds: number } => {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'seconds' in obj &&
+      typeof (obj as { seconds?: unknown }).seconds === 'number'
+    );
+  };
+
   // 원본 배열을 복사하여 정렬 (원본 수정 방지)
   const sorted = [...jobPostings].sort((a, b) => {
     try {
       // 날짜 변환 - Firestore Timestamp 또는 Date 객체 처리
-      const getDateFromField = (dateField: any): Date => {
+      const getDateFromField = (dateField: DateFieldInput): Date => {
         if (!dateField) return new Date('9999-12-31'); // null/undefined는 최하위 우선순위
 
         // Firestore Timestamp 객체인 경우
-        if (dateField?.toDate && typeof dateField.toDate === 'function') {
+        if (hasToDate(dateField)) {
           return dateField.toDate();
+        }
+
+        // seconds 필드가 있는 객체
+        if (hasSeconds(dateField)) {
+          return new Date(dateField.seconds * 1000);
         }
 
         // 이미 Date 객체인 경우
@@ -151,7 +186,7 @@ export const sortJobPostingsByPriority = (jobPostings: JobPosting[]): JobPosting
             }
             // seconds 필드가 있는 객체
             if (dateField && typeof dateField === 'object' && 'seconds' in dateField) {
-              return new Date((dateField as any).seconds * 1000);
+              return new Date((dateField as { seconds: number }).seconds * 1000);
             }
             // 문자열 또는 기타
             return new Date(dateField as string);
@@ -178,28 +213,43 @@ export const sortJobPostingsByPriority = (jobPostings: JobPosting[]): JobPosting
   return sorted;
 };
 
+/** 우선순위 라벨용 날짜 입력 타입 */
+type PriorityDateInput = Date | { toDate: () => Date } | string | number | null | undefined;
+
 /**
  * 우선순위 라벨 반환 (디버깅/UI용)
  */
-const getPriorityLabel = (startDate: any, endDate?: any): string => {
+const getPriorityLabel = (startDate: PriorityDateInput, endDate?: PriorityDateInput): string => {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  /** toDate 메서드 체크 */
+  const hasToDateMethod = (obj: unknown): obj is { toDate: () => Date } => {
+    return (
+      obj !== null &&
+      typeof obj === 'object' &&
+      'toDate' in obj &&
+      typeof (obj as { toDate?: unknown }).toDate === 'function'
+    );
+  };
+
   const start =
     startDate instanceof Date
       ? startDate
-      : startDate?.toDate
+      : hasToDateMethod(startDate)
         ? startDate.toDate()
-        : new Date(startDate);
+        : startDate
+          ? new Date(startDate as string | number)
+          : new Date('9999-12-31');
   const end =
     endDate instanceof Date
       ? endDate
-      : endDate?.toDate
+      : hasToDateMethod(endDate)
         ? endDate.toDate()
         : endDate
-          ? new Date(endDate)
+          ? new Date(endDate as string | number)
           : start;
 
   if (isNaN(start.getTime())) return '날짜 오류';
@@ -251,7 +301,7 @@ export const addPriorityLabels = (
           }
           // seconds 필드가 있는 객체
           if (dateField && typeof dateField === 'object' && 'seconds' in dateField) {
-            return new Date((dateField as any).seconds * 1000);
+            return new Date((dateField as { seconds: number }).seconds * 1000);
           }
           // 문자열 또는 기타
           return new Date(dateField as string);

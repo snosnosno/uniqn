@@ -6,17 +6,27 @@ import { FaPhone, FaEnvelope, FaStar } from '../Icons/ReactIconsReplacement';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { db } from '../../firebase';
 import Modal, { ModalFooter } from '../ui/Modal';
-import { StaffData } from '../../hooks/useStaffManagement';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
 import { PreQuestionAnswer } from '../../types/jobPosting';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
+
+/** WorkLog 시간 데이터 (레거시 호환, 향후 사용 예정) */
+interface _WorkLogTimeData {
+  actualStartTime?: string | Date | null;
+  actualEndTime?: string | Date | null;
+  scheduledStartTime?: string | Date | null;
+  scheduledEndTime?: string | Date | null;
+  status?: string;
+}
 
 interface StaffProfileModalProps {
   isOpen: boolean;
   onClose: () => void;
   staff: StaffData | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 실제 데이터 구조가 { workLog?: WorkLog, status?: string, ... } 형태로 타입 정의와 불일치
-  attendanceRecord?: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- 실제 데이터 구조가 { workLog?: WorkLog } 형태로 WorkLog 타입과 불일치
-  workLogRecord?: any;
+  /** AttendanceDisplayRecord 또는 null */
+  attendanceRecord?: AttendanceDisplayRecord | null;
+  /** WorkLog 정보가 포함된 레코드 (AttendanceDisplayRecord 호환) */
+  workLogRecord?: AttendanceDisplayRecord;
 }
 
 interface ProfileData extends StaffData {

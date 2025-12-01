@@ -4,7 +4,8 @@ import { Applicant } from './types';
 import PreQuestionDisplay from './PreQuestionDisplay';
 import { getApplicantSelections, formatDateDisplay } from '@/utils/applicants';
 import StaffProfileModal from '../../modals/StaffProfileModal';
-import { StaffData, JobRole } from '@/hooks/useStaffManagement';
+import type { StaffData } from '@/utils/staff/staffDataTransformer';
+import type { JobRole } from '@/hooks/useStaffManagement';
 import { JobPosting } from '@/types/jobPosting';
 import { Selection } from '@/types/applicants/selection';
 
@@ -43,6 +44,7 @@ const ApplicantCard: React.FC<ApplicantCardProps> = React.memo(
       ? {
           id: applicant.applicantId || applicant.id,
           userId: applicant.applicantId || applicant.id,
+          staffId: applicant.applicantId || applicant.id,
           name: applicant.applicantName,
           phone: applicant.phone || '',
           email: applicant.email || '',

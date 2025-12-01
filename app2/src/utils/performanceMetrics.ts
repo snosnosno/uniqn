@@ -24,6 +24,17 @@
 import { logger } from './logger';
 import { addBreadcrumb } from './sentry';
 
+/** First Input Delay (FID) 엔트리 타입 */
+interface PerformanceEventTiming extends PerformanceEntry {
+  processingStart: number;
+}
+
+/** Layout Shift Entry 타입 */
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput?: boolean;
+  value?: number;
+}
+
 /**
  * 성능 메트릭 타입
  */
@@ -235,8 +246,9 @@ export const measureWebVitals = (): void => {
   try {
     const fidObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        const fid = entry.processingStart - entry.startTime;
+      entries.forEach((entry) => {
+        const fidEntry = entry as PerformanceEventTiming;
+        const fid = fidEntry.processingStart - fidEntry.startTime;
 
         recordMetric({
           name: 'webvitals.FID',
@@ -258,9 +270,10 @@ export const measureWebVitals = (): void => {
     let clsReported = false;
     const clsObserver = new PerformanceObserver((list) => {
       const entries = list.getEntries();
-      entries.forEach((entry: any) => {
-        if (!entry.hadRecentInput) {
-          clsValue += entry.value;
+      entries.forEach((entry) => {
+        const layoutEntry = entry as LayoutShiftEntry;
+        if (!layoutEntry.hadRecentInput && layoutEntry.value) {
+          clsValue += layoutEntry.value;
         }
       });
     });

@@ -3,11 +3,18 @@
  * staffId와 userId 불일치 문제를 해결하기 위한 통합 매핑 함수
  */
 
+/** 스태프 식별자를 가질 수 있는 객체 타입 */
+interface StaffIdentifiable {
+  staffId?: string;
+  userId?: string;
+  id?: string;
+}
+
 /**
  * 스태프 객체에서 고유 식별자 추출
  * staffId, userId, id 순서로 체크하여 첫 번째 유효한 값 반환
  */
-export function getStaffIdentifier(staff: any): string {
+export function getStaffIdentifier(staff: StaffIdentifiable | null | undefined): string {
   if (!staff) return '';
   return staff.staffId || staff.userId || staff.id || '';
 }
@@ -17,7 +24,10 @@ export function getStaffIdentifier(staff: any): string {
  * WorkLog의 staffId 또는 userId가 주어진 식별자 목록에 포함되는지 체크
  * 접미사가 붙은 ID도 체크 (예: "userId_0", "userId_1" 등)
  */
-export function matchStaffIdentifier(log: any, staffIdentifiers: string[]): boolean {
+export function matchStaffIdentifier(
+  log: StaffIdentifiable | null | undefined,
+  staffIdentifiers: string[]
+): boolean {
   if (!log || !staffIdentifiers || staffIdentifiers.length === 0) return false;
 
   const logId = log.staffId || log.userId || '';
@@ -42,7 +52,10 @@ export function matchStaffIdentifier(log: any, staffIdentifiers: string[]): bool
  * 두 스태프 객체가 같은 사람인지 확인
  * staffId, userId, id 중 하나라도 일치하면 같은 사람으로 판단
  */
-export function isSameStaff(staff1: any, staff2: any): boolean {
+export function isSameStaff(
+  staff1: StaffIdentifiable | null | undefined,
+  staff2: StaffIdentifiable | null | undefined
+): boolean {
   if (!staff1 || !staff2) return false;
 
   const id1 = getStaffIdentifier(staff1);
@@ -61,7 +74,7 @@ export function isSameStaff(staff1: any, staff2: any): boolean {
  * 스태프 목록에서 중복 제거
  * 같은 사람이 여러 번 포함된 경우 하나만 유지
  */
-export function getUniqueStaffIdentifiers(staffList: any[]): string[] {
+export function getUniqueStaffIdentifiers(staffList: StaffIdentifiable[]): string[] {
   if (!staffList || staffList.length === 0) return [];
 
   const uniqueIds = new Set<string>();

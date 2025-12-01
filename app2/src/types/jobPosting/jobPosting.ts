@@ -343,10 +343,10 @@ export interface JobPostingTemplate {
   name: string;
   description?: string;
   createdBy: string;
-  createdAt: any;
+  createdAt: Timestamp | Date;
   templateData: Partial<JobPostingFormData>;
   usageCount?: number;
-  lastUsedAt?: any;
+  lastUsedAt?: Timestamp | Date;
   isPublic?: boolean;
 }
 

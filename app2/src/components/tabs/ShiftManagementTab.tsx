@@ -10,9 +10,38 @@ import {
 } from '../Icons/ReactIconsReplacement';
 import { toISODateString } from '../../utils/dateUtils';
 import { useJobPostingContext } from '../../contexts/JobPostingContextAdapter';
+import type { JobPosting, DateSpecificRequirement, TimeSlot } from '../../types/jobPosting';
+import type { Timestamp } from 'firebase/firestore';
+
+/** 스태프 멤버 타입 (컨텍스트에서 반환되는 타입) */
+interface StaffMember {
+  id: string;
+  name?: string;
+  role?: string;
+  assignedRole?: string;
+  assignedTime?: string;
+}
+
+/** 날짜 값을 Date 객체로 변환 */
+const toDate = (dateValue: string | Timestamp | { seconds: number }): Date | null => {
+  try {
+    if (typeof dateValue === 'string') {
+      return new Date(dateValue);
+    }
+    if ('toDate' in dateValue && typeof dateValue.toDate === 'function') {
+      return dateValue.toDate();
+    }
+    if ('seconds' in dateValue) {
+      return new Date(dateValue.seconds * 1000);
+    }
+    return null;
+  } catch {
+    return null;
+  }
+};
 
 interface ShiftManagementTabProps {
-  jobPosting?: any;
+  jobPosting?: JobPosting | null;
 }
 
 const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) => {
@@ -152,7 +181,7 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             </h4>
             <div className="space-y-3 max-h-64 overflow-y-auto">
               {staff.length > 0 ? (
-                staff.map((staffMember: any) => (
+                (staff as StaffMember[]).map((staffMember) => (
                   <div
                     key={staffMember.id}
                     className="flex items-center bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg shadow-sm dark:shadow-blue-900/50"
@@ -167,10 +196,8 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
                         {staffMember.name}
                       </p>
                       <p className="text-sm text-gray-500 dark:text-gray-400 dark:text-gray-500">
-                        {(staffMember as any).assignedRole || staffMember.role} |{' '}
-                        {(staffMember as any).assignedTime ||
-                          staffMember.assignedTime ||
-                          t('common.timeTBD', '시간 미정')}
+                        {staffMember.assignedRole || staffMember.role} |{' '}
+                        {staffMember.assignedTime || t('common.timeTBD', '시간 미정')}
                       </p>
                     </div>
                   </div>
@@ -191,20 +218,22 @@ const ShiftManagementTab: React.FC<ShiftManagementTabProps> = ({ jobPosting }) =
             </h4>
             <div className="space-y-2 max-h-48 overflow-y-auto">
               {(() => {
-                const dateReq = jobPosting.dateSpecificRequirements?.find((dr: any) => {
-                  try {
-                    const dateValue = dr.date;
-                    if (!dateValue) return false;
-                    const date = new Date(dateValue);
-                    if (isNaN(date.getTime())) return false;
-                    return toISODateString(date) === selectedDate;
-                  } catch {
-                    return false;
+                const dateReq = jobPosting.dateSpecificRequirements?.find(
+                  (dr: DateSpecificRequirement) => {
+                    try {
+                      const dateValue = dr.date;
+                      if (!dateValue) return false;
+                      const date = toDate(dateValue);
+                      if (!date || isNaN(date.getTime())) return false;
+                      return toISODateString(date) === selectedDate;
+                    } catch {
+                      return false;
+                    }
                   }
-                });
+                );
 
                 if (dateReq && dateReq.timeSlots?.length > 0) {
-                  return dateReq.timeSlots.map((timeSlot: any) => (
+                  return (dateReq.timeSlots as TimeSlot[]).map((timeSlot) => (
                     <div
                       key={`timeslot-${timeSlot.time}`}
                       className="flex items-center justify-between p-2 bg-gray-50 dark:bg-gray-700 rounded"

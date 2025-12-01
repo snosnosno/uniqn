@@ -179,7 +179,7 @@ export interface ErrorHandlerOptions {
   component: string;
   action?: string;
   userId?: string;
-  data?: any;
+  data?: Record<string, unknown>;
   showAlert?: boolean;
   fallbackMessage?: string;
 }
@@ -206,7 +206,7 @@ export const handleError = (error: unknown, options: ErrorHandlerOptions): strin
   }
 
   // 로깅
-  const logContext: any = {
+  const logContext: Record<string, unknown> = {
     component,
     data,
     errorDetails: {
@@ -252,11 +252,15 @@ export class ErrorBoundaryHelper {
     return { hasError: true, error };
   }
 
-  static logComponentError(error: Error, errorInfo: any, componentName: string) {
+  static logComponentError(
+    error: Error,
+    errorInfo: { componentStack?: string },
+    componentName: string
+  ) {
     handleError(error, {
       component: `${componentName} (ErrorBoundary)`,
       action: 'Component Error',
-      data: { errorInfo },
+      data: { componentStack: errorInfo.componentStack },
     });
   }
 }
@@ -267,7 +271,7 @@ export class ErrorBoundaryHelper {
  * @deprecated 새로운 firebaseErrors 모듈의 handleFirebaseError를 사용하세요
  * @see {@link handleFirebaseErrorUtil}
  */
-export const handleFirebaseError = (error: any, options: ErrorHandlerOptions): string => {
+export const handleFirebaseError = (error: unknown, options: ErrorHandlerOptions): string => {
   // 새로운 firebaseErrors 유틸리티 사용
   const context = {
     component: options.component,
@@ -293,12 +297,13 @@ export const handleFirebaseError = (error: any, options: ErrorHandlerOptions): s
 /**
  * 네트워크 에러 처리 헬퍼
  */
-export const handleNetworkError = (error: any, options: ErrorHandlerOptions): string => {
+export const handleNetworkError = (error: unknown, options: ErrorHandlerOptions): string => {
   let userFriendlyMessage = '네트워크 연결을 확인해주세요.';
 
-  if (error?.message?.includes('fetch')) {
+  const errorMessage = extractErrorMessage(error, '');
+  if (errorMessage.includes('fetch')) {
     userFriendlyMessage = '서버에 연결할 수 없습니다.';
-  } else if (error?.message?.includes('timeout')) {
+  } else if (errorMessage.includes('timeout')) {
     userFriendlyMessage = '요청 시간이 초과되었습니다.';
   }
 

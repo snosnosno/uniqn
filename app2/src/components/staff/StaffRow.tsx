@@ -1,7 +1,7 @@
 import React, { useMemo, useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { StaffData } from '../../hooks/useStaffManagement';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
 import {
   useCachedFormatDate,
   useCachedTimeDisplay,
@@ -10,25 +10,27 @@ import {
 import AttendanceStatusPopover from '../attendance/AttendanceStatusPopover';
 import { getTodayString, convertToDateString } from '../../utils/jobPosting/dateUtils';
 import { generateVirtualWorkLogId, normalizeStaffDate } from '../../utils/workLogUtils';
-import { UnifiedWorkLog } from '../../types/unified/workLog';
+import type { WorkLog } from '../../types/unifiedData';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
+import type { AttendanceStatus } from '../../types/attendance';
 
 interface StaffRowProps {
   staff: StaffData;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입이 여러 파일에 다르게 정의됨 (hooks vs types)
-  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (useAttendanceStatus vs types/attendance)
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceStatus 타입이 여러 파일에 정의됨
-  applyOptimisticUpdate?: (workLogId: string, newStatus: any) => void;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null | undefined;
+  applyOptimisticUpdate?: (workLogId: string, newStatus: AttendanceStatus) => void;
   multiSelectMode?: boolean; // 선택 모드 활성화 여부
   isSelected?: boolean; // 현재 행이 선택되었는지
   onSelect?: (staffId: string) => void; // 선택 핸들러
@@ -144,7 +146,8 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
     // 메모이제이션된 출근/퇴근 시간 데이터
     const memoizedTimeData = useMemo(() => {
       // 🔥 workLog.scheduledStartTime을 최우선으로 사용 (Firebase 실시간 데이터)
-      let scheduledStartTime = staff.assignedTime || (staff as any).timeSlot; // fallback값
+      // Note: timeSlot 필드는 더 이상 사용되지 않음, assignedTime만 사용
+      let scheduledStartTime = staff.assignedTime; // fallback값
 
       // 🔥 workLog.scheduledStartTime을 최우선으로 확인 (Firebase 실시간 업데이트 반영)
       if (currentWorkLog?.scheduledStartTime) {
@@ -510,7 +513,11 @@ const StaffRow: React.FC<StaffRowProps> = React.memo(
     const actualStaffId = prevProps.staff.id.replace(/_\d+$/, '');
 
     // 해당 스태프의 출석 기록 찾기 (더 정확한 매칭)
-    const findAttendanceRecord = (records: any[], staffId: string, date: string) => {
+    const findAttendanceRecord = (
+      records: AttendanceDisplayRecord[],
+      staffId: string,
+      date: string
+    ) => {
       return records.find((r) => {
         // staffId 매칭
         const isStaffMatch =

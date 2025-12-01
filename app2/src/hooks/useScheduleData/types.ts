@@ -1,8 +1,63 @@
 import { Timestamp } from 'firebase/firestore';
 import { ScheduleEvent, ScheduleFilters, ScheduleStats } from '../../types/schedule';
+import type { Assignment } from '../../types/application';
 
 /** Firebase Timestamp 또는 문자열/Date 형태의 날짜 타입 */
 export type DateLike = Timestamp | string | Date;
+
+/**
+ * 날짜별 지원 선택 정보 (레거시 구조)
+ */
+export interface DateAssignmentSelection {
+  timeSlot: string;
+  role: string;
+}
+
+/**
+ * 날짜별 지원 정보 (레거시 구조)
+ */
+export interface DateAssignment {
+  date: string;
+  selections: DateAssignmentSelection[];
+}
+
+/**
+ * 스냅샷 데이터 - 공고 삭제 시 보존용
+ * ScheduleEvent.snapshotData와 호환되는 타입
+ */
+export interface SnapshotData {
+  /** 공고 제목 */
+  title?: string;
+  /** 급여 정보 (Critical - 급여 계산 필수) */
+  salary: {
+    type: 'hourly' | 'daily' | 'monthly' | 'other';
+    amount: number;
+    useRoleSalary?: boolean;
+    roleSalaries?: Record<string, { type: string; amount: number }>;
+  };
+  /** 수당 정보 */
+  allowances?: {
+    meal?: number;
+    transportation?: number;
+    accommodation?: number;
+  };
+  /** 세금 설정 */
+  taxSettings?: {
+    enabled: boolean;
+    taxRate?: number;
+    taxAmount?: number;
+  };
+  /** 장소 정보 (필수) */
+  location: string;
+  detailedAddress?: string;
+  district?: string;
+  contactPhone?: string;
+  /** 생성자 (필수) */
+  createdBy: string;
+  /** 스냅샷 메타 정보 */
+  snapshotAt: Timestamp;
+  snapshotReason?: 'confirmed' | 'worklog_created' | 'posting_deleted';
+}
 
 /** 날짜별 요구사항 */
 export interface DateSpecificRequirement {
@@ -79,7 +134,13 @@ export interface ApplicationData {
 }
 
 /** 근무 로그 상태 */
-export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'absent';
+export type WorkLogStatus =
+  | 'not_started'
+  | 'scheduled'
+  | 'checked_in'
+  | 'checked_out'
+  | 'completed'
+  | 'absent';
 
 export interface WorkLogData {
   id: string;
@@ -87,10 +148,10 @@ export interface WorkLogData {
   staffName: string;
   role?: string;
   date: string;
-  scheduledStartTime?: string;
-  scheduledEndTime?: string;
-  actualStartTime?: string;
-  actualEndTime?: string;
+  scheduledStartTime?: DateLike;
+  scheduledEndTime?: DateLike;
+  actualStartTime?: DateLike;
+  actualEndTime?: DateLike;
   hoursWorked?: number;
   overtimeHours?: number;
   earlyLeaveHours?: number;
@@ -124,4 +185,51 @@ export interface JobPostingData {
   taxSettings?: TaxSettings;
   /** 생성자 */
   createdBy?: string;
+}
+
+/**
+ * Application/ApplicationData 통합 처리를 위한 확장 타입
+ * 레거시 필드와 신규 필드 모두 포함
+ */
+export interface ExtendedApplicationData extends ApplicationData {
+  eventId?: string;
+  assignments?: Assignment[];
+  dateAssignments?: DateAssignment[];
+  snapshotData?: SnapshotData;
+}
+
+/**
+ * WorkLog 데이터 확장 타입
+ */
+export interface ExtendedWorkLogData extends WorkLogData {
+  snapshotData?: SnapshotData;
+  totalWorkMinutes?: number;
+}
+
+/** eventId 필드 존재 여부 확인 */
+export function hasEventId(
+  data: ApplicationData | ExtendedApplicationData
+): data is ExtendedApplicationData & { eventId: string } {
+  return 'eventId' in data && typeof data.eventId === 'string';
+}
+
+/** assignments 필드 존재 여부 확인 */
+export function hasAssignments(
+  data: ApplicationData | ExtendedApplicationData
+): data is ExtendedApplicationData & { assignments: Assignment[] } {
+  return 'assignments' in data && Array.isArray(data.assignments);
+}
+
+/** dateAssignments 필드 존재 여부 확인 */
+export function hasDateAssignments(
+  data: ApplicationData | ExtendedApplicationData
+): data is ExtendedApplicationData & { dateAssignments: DateAssignment[] } {
+  return 'dateAssignments' in data && Array.isArray(data.dateAssignments);
+}
+
+/** snapshotData 필드 존재 여부 확인 */
+export function hasSnapshotData<T extends Record<string, unknown>>(
+  data: T
+): data is T & { snapshotData: SnapshotData } {
+  return 'snapshotData' in data && data.snapshotData !== undefined;
 }

@@ -315,7 +315,7 @@ export class ApplicationHistoryService {
       errors.push('assignments 배열이 비어있습니다.');
     } else {
       // 각 assignment 검증
-      dataToValidate.assignments.forEach((assignment: any, index: number) => {
+      dataToValidate.assignments.forEach((assignment: Partial<Assignment>, index: number) => {
         if (!assignment.role) errors.push(`assignments[${index}]: role 누락`);
         if (!assignment.timeSlot) errors.push(`assignments[${index}]: timeSlot 누락`);
         if (

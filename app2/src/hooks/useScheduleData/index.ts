@@ -5,6 +5,8 @@ import { logger } from '../../utils/logger';
 import { handleError } from '../../utils/errorHandler';
 import { ScheduleEvent, ScheduleStats } from '../../types/schedule';
 import type { Application, WorkLog } from '../../types/unifiedData';
+import type { JobPosting } from '../../types/jobPosting';
+import type { UnifiedWorkLog } from '../../types/unified/workLog';
 
 // Local imports
 import { UseScheduleDataReturn } from './types';
@@ -309,7 +311,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
               },
               taxSettings: event.snapshotData.taxSettings,
               createdBy: event.snapshotData.createdBy,
-            } as any)
+            } as unknown as JobPosting)
           : null;
 
       logger.info('✅ effectiveJobPosting 결정', {
@@ -346,17 +348,21 @@ const useScheduleData = (): UseScheduleDataReturn => {
         calculateSingleWorkLogPayroll,
         calculateWorkHours,
       } = require('../../utils/payrollCalculations');
-      const totalHours = calculateWorkHours(workLogData as any);
+      const totalHours = calculateWorkHours(workLogData as unknown as UnifiedWorkLog);
 
       // 급여 계산 (모달과 동일)
       const totalPay = calculateSingleWorkLogPayroll(
-        workLogData as any,
+        workLogData as unknown as UnifiedWorkLog,
         effectiveRole,
         effectiveJobPosting
       );
 
-      // 수당 계산
-      const _allowancesResult = calculateAllowances(effectiveJobPosting, 1, event.snapshotData);
+      // 수당 계산 (effectiveJobPosting 타입 변환 필요 - unifiedData vs jobPosting 타입 차이)
+      const _allowancesResult = calculateAllowances(
+        effectiveJobPosting as unknown as JobPosting | null,
+        1,
+        event.snapshotData
+      );
 
       // 세금 계산
       const taxSettings = event.snapshotData?.taxSettings || jobPosting?.taxSettings;
@@ -439,7 +445,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
               },
               taxSettings: event.snapshotData.taxSettings,
               createdBy: event.snapshotData.createdBy,
-            } as any)
+            } as unknown as JobPosting)
           : null;
 
       logger.info('✅ effectiveJobPosting 결정', {
@@ -476,7 +482,7 @@ const useScheduleData = (): UseScheduleDataReturn => {
 
       // 급여 계산 (모달과 동일)
       const totalPay = calculateSingleWorkLogPayroll(
-        workLogData as any,
+        workLogData as unknown as UnifiedWorkLog,
         effectiveRole,
         effectiveJobPosting
       );

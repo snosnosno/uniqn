@@ -118,16 +118,25 @@ export const utils = {
    * 반응형 패딩 반환
    */
   getResponsivePadding: (component: keyof typeof padding): string => {
-    if (typeof padding[component] === 'object' && 'mobile' in padding[component]) {
-      const p = padding[component] as any;
+    const paddingValue = padding[component];
+    if (
+      typeof paddingValue === 'object' &&
+      paddingValue !== null &&
+      'mobile' in paddingValue &&
+      'desktop' in paddingValue
+    ) {
+      const p = paddingValue as {
+        mobile: string | { x: string; y: string };
+        desktop: string | { x: string; y: string };
+      };
       return `
-        padding: ${p.mobile};
+        padding: ${typeof p.mobile === 'string' ? p.mobile : `${p.mobile.y} ${p.mobile.x}`};
         @media (min-width: ${breakpoints.md}) {
-          padding: ${p.desktop};
+          padding: ${typeof p.desktop === 'string' ? p.desktop : `${p.desktop.y} ${p.desktop.x}`};
         }
       `;
     }
-    return `padding: ${padding[component]};`;
+    return `padding: ${String(paddingValue)};`;
   },
 
   /**

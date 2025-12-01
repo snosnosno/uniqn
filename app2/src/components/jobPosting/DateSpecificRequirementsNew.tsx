@@ -10,6 +10,7 @@ import {
   convertToDateString,
   dateStringToDropdownValue,
   dropdownValueToDateString,
+  type DateInput,
 } from '../../utils/jobPosting/dateUtils';
 import Button from '../ui/Button';
 import DateDropdownSelector from '../time/DateDropdownSelector';
@@ -67,7 +68,7 @@ const DateSpecificRequirementsNew: React.FC<DateSpecificRequirementsProps> = ({
   });
 
   // 날짜를 문자열로 변환
-  const getDateString = (date: any): string => {
+  const getDateString = (date: DateInput): string => {
     return convertToDateString(date);
   };
 

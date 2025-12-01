@@ -17,12 +17,17 @@ import TemplateModal from './TemplateModal';
 import LoadTemplateModal from './LoadTemplateModal';
 import ConfirmModal from '../../modals/ConfirmModal';
 import { toast } from '@/utils/toast';
+import type { JobPosting, JobPostingFormData, JobPostingTemplate } from '@/types/jobPosting';
+import type { DateSpecificRequirement } from '@/types/jobPosting/base';
+
+/** 역할별 급여 설정 타입 (JobPostingFormData.roleSalaries의 값 타입) */
+type RoleSalaryConfig = NonNullable<JobPostingFormData['roleSalaries']>[string];
 
 interface EditJobPostingModalProps {
   isOpen: boolean;
   onClose: () => void;
-  currentPost: any;
-  onUpdate: (postId: string, formData: any) => Promise<void>;
+  currentPost: JobPosting | null;
+  onUpdate: (postId: string, formData: Partial<JobPostingFormData>) => Promise<void>;
   isUpdating?: boolean;
 }
 
@@ -62,7 +67,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     handleRoleSalaryTypeChange,
     handleRoleSalaryAmountChange,
     handleCustomRoleNameChange,
-  } = useJobPostingForm(currentPost);
+  } = useJobPostingForm(currentPost ?? undefined);
 
   const {
     templates,
@@ -87,12 +92,13 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
   React.useEffect(() => {
     if (currentPost) {
-      setFormData(currentPost);
+      setFormData(currentPost as unknown as JobPostingFormData);
     }
   }, [currentPost, setFormData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!currentPost) return;
 
     try {
       await onUpdate(currentPost.id, formData);
@@ -101,15 +107,18 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     }
   };
 
-  const handleDateSpecificRequirementsChange = (requirements: any[]) => {
-    setFormData((prev: any) => ({ ...prev, dateSpecificRequirements: requirements }));
+  const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
+    setFormData((prev: JobPostingFormData) => ({
+      ...prev,
+      dateSpecificRequirements: requirements,
+    }));
   };
 
   const handleSaveTemplateWrapper = async () => {
     await handleSaveTemplate(formData);
   };
 
-  const handleLoadTemplateWrapper = async (template: any) => {
+  const handleLoadTemplateWrapper = async (template: JobPostingTemplate) => {
     const templateFormData = await handleLoadTemplate(template);
     setFormDataFromTemplate(templateFormData);
     return templateFormData;
@@ -190,7 +199,9 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                   name="location"
                   value={formData.location}
                   onChange={(value) =>
-                    handleFormChange({ target: { name: 'location', value } } as any)
+                    handleFormChange({
+                      target: { name: 'location', value },
+                    } as React.ChangeEvent<HTMLSelectElement>)
                   }
                   options={LOCATIONS.map((location) => ({ value: location, label: location }))}
                   required
@@ -273,7 +284,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
                 {/* 역할별 급여 목록 */}
                 {Object.entries(formData.roleSalaries || {}).map(
-                  ([role, salary]: [string, any]) => (
+                  ([role, salary]: [string, RoleSalaryConfig]) => (
                     <div key={role} className="grid grid-cols-12 gap-2 items-center">
                       {/* 역할 선택 - 기타일 때만 특별 처리 */}
                       {role === 'other' ? (
@@ -346,7 +357,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
                             value={salary.salaryAmount}
                             onChange={(e) => handleRoleSalaryAmountChange(role, e.target.value)}
                             placeholder="급여 금액"
-                            disabled={isUpdating || salary.salaryType === 'negotiable'}
+                            disabled={isUpdating}
                           />
                         )}
                       </div>
@@ -694,7 +705,11 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
             <Select
               name="status"
               value={formData.status}
-              onChange={(value) => handleFormChange({ target: { name: 'status', value } } as any)}
+              onChange={(value) =>
+                handleFormChange({
+                  target: { name: 'status', value },
+                } as React.ChangeEvent<HTMLSelectElement>)
+              }
               options={[
                 { value: 'open', label: '모집중' },
                 { value: 'closed', label: '마감' },

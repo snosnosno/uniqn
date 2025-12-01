@@ -15,7 +15,8 @@ import { getTodayString } from '../utils/jobPosting/dateUtils';
 import { db } from '../firebase';
 import { useFirestoreQuery } from './firestore';
 
-import { WorkLog } from './useShiftSchedule';
+import { WorkLog as ShiftWorkLog } from './useShiftSchedule';
+import type { WorkLog as UnifiedWorkLog } from '../types/unifiedData';
 
 /**
  * UI 표시용 출석 기록 인터페이스
@@ -30,7 +31,7 @@ export interface AttendanceDisplayRecord {
   actualEndTime?: string | undefined;
   scheduledStartTime?: string | undefined;
   scheduledEndTime?: string | undefined;
-  workLog?: WorkLog;
+  workLog?: ShiftWorkLog | UnifiedWorkLog;
 }
 
 /** @deprecated AttendanceDisplayRecord 사용 권장 */
@@ -77,7 +78,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
     data: rawWorkLogs,
     loading,
     error: hookError,
-  } = useFirestoreQuery<Omit<WorkLog, 'id'>>(
+  } = useFirestoreQuery<Omit<ShiftWorkLog, 'id'>>(
     workLogsQuery || query(collection(db, 'workLogs'), where('__name__', '==', '__non_existent__')),
     {
       enabled: workLogsQuery !== null,
@@ -103,7 +104,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
     try {
       const records: AttendanceDisplayRecord[] = [];
-      const typedWorkLogs = rawWorkLogs.map((doc) => doc as unknown as WorkLog);
+      const typedWorkLogs = rawWorkLogs.map((doc) => doc as unknown as ShiftWorkLog);
 
       typedWorkLogs.forEach((workLog) => {
         // localUpdates에 있는 경우 해당 상태 사용
@@ -127,7 +128,7 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
   }, [rawWorkLogs, localUpdates]);
 
   // WorkLog 데이터로부터 출석 상태를 계산하는 함수
-  const calculateAttendanceStatus = (workLog: WorkLog): AttendanceDisplayRecord => {
+  const calculateAttendanceStatus = (workLog: ShiftWorkLog): AttendanceDisplayRecord => {
     const _now = new Date();
     const currentTime = _now.toTimeString().substring(0, 5); // HH:MM format
 

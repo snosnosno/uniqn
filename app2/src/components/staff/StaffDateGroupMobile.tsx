@@ -2,9 +2,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { logger } from '../../utils/logger';
-import { StaffData } from '../../hooks/useStaffManagement';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
 import StaffCard from './StaffCard';
-import { UnifiedWorkLog } from '../../types/unified/workLog';
+import type { WorkLog } from '../../types/unifiedData';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
 
 interface StaffDateGroupMobileProps {
   date: string;
@@ -13,10 +14,11 @@ interface StaffDateGroupMobileProps {
   onToggleExpansion: (date: string) => void;
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceStatusResult 타입이 hooks와 types에서 다르게 정의됨
-  getStaffAttendanceStatus: (staffId: string, targetDate?: string) => any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- AttendanceRecord 타입 충돌 (unifiedData vs attendance)
-  attendanceRecords: any[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   selectedStaff?: Set<string>;
@@ -24,7 +26,7 @@ interface StaffDateGroupMobileProps {
   multiSelectMode?: boolean;
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
-  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null | undefined;
   onReport?: (staffId: string, staffName: string) => void;
 }
 

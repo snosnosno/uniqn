@@ -68,8 +68,13 @@ export const FaGoogle: React.FC<{ className?: string }> = ({ className }) => (
   </svg>
 );
 
+/** SVG 아이콘 컴포넌트 타입 */
+type SvgIconComponent = React.ForwardRefExoticComponent<
+  React.PropsWithoutRef<React.SVGProps<SVGSVGElement>> & React.RefAttributes<SVGSVGElement>
+>;
+
 // 아이콘 래퍼 컴포넌트 - className 지원을 위해
-const createIconWrapper = (Icon: React.ComponentType<any>) => {
+const createIconWrapper = (Icon: SvgIconComponent) => {
   return React.forwardRef<SVGSVGElement, { className?: string; onClick?: () => void }>(
     (props, ref) => <Icon ref={ref} {...props} />
   );
@@ -137,5 +142,7 @@ export const FaHistory = createIconWrapper(ClockHistoryIcon);
 export const FaCheckCircleSolid = createIconWrapper(CheckCircleIconSolid);
 export const FaExclamationTriangleSolid = createIconWrapper(ExclamationTriangleIconSolid);
 
-// IconType 타입 대체 - heroicons와 호환되도록
-export type IconType = React.ComponentType<any>;
+// IconType 타입 대체 - 래퍼 컴포넌트와 호환되도록
+export type IconType = React.ForwardRefExoticComponent<
+  { className?: string; onClick?: () => void } & React.RefAttributes<SVGSVGElement>
+>;

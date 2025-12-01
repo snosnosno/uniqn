@@ -129,9 +129,11 @@ class KeyboardService {
       const handler = listener[event];
       if (handler) {
         if (data) {
-          (handler as any)(data);
+          // onKeyboardShow, onKeyboardWillShow 핸들러
+          (handler as (info: { keyboardHeight: number }) => void)(data);
         } else {
-          (handler as any)();
+          // onKeyboardHide, onKeyboardWillHide 핸들러
+          (handler as () => void)();
         }
       }
     });

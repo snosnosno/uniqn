@@ -57,7 +57,7 @@ export interface Person {
 
   // 추가 정보 (확장 가능)
   metadata?: {
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 

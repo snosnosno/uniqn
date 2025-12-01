@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 import { logger } from '../../utils/logger';
 
 // 날짜 입력 타입 정의
-type DateInput =
+export type DateInput =
   | Timestamp
   | Date
   | string

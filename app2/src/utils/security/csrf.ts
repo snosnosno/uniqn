@@ -4,6 +4,15 @@ import { logger } from '../logger';
  * CSRF (Cross-Site Request Forgery) 보호를 위한 토큰 관리 유틸리티
  */
 
+/**
+ * Axios 요청 설정 타입 (간소화 버전)
+ * 실제 AxiosRequestConfig 타입 대신 필요한 속성만 정의
+ */
+interface AxiosRequestConfigLike {
+  headers?: Record<string, string>;
+  [key: string]: unknown;
+}
+
 // CSRF 토큰 저장 키
 const CSRF_TOKEN_KEY = 'uniqn-csrf-token';
 const CSRF_TOKEN_EXPIRY_KEY = 'uniqn-csrf-expiry';
@@ -168,7 +177,9 @@ export function addCsrfHeader(headers: HeadersInit = {}): HeadersInit {
  * @param config Axios 요청 설정
  * @returns 수정된 설정
  */
-export function addCsrfToAxiosConfig(config: any): any {
+export function addCsrfToAxiosConfig<T extends AxiosRequestConfigLike>(
+  config: T
+): T & { headers: Record<string, string> } {
   const token = ensureCsrfToken();
 
   return {

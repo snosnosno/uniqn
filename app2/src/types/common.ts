@@ -12,7 +12,22 @@
  * - scheduledStartTime/EndTime (표준)
  * - 모든 Firebase 문서는 FirebaseDocument를 상속받습니다.
  */
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp, GeoPoint, DocumentReference } from 'firebase/firestore';
+
+/**
+ * Firebase 쿼리 값 타입
+ * Firebase query에서 사용 가능한 값 타입들의 유니온
+ */
+export type FirebaseQueryValue =
+  | string
+  | number
+  | boolean
+  | null
+  | Date
+  | Timestamp
+  | GeoPoint
+  | DocumentReference
+  | readonly (string | number | boolean | null | Date | Timestamp)[];
 
 /**
  * Firebase 문서 기본 타입
@@ -248,8 +263,7 @@ export interface QueryConstraint {
     | 'array-contains-any'
     | 'in'
     | 'not-in';
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Firebase query value는 다양한 타입 (string, number, boolean, array 등)을 허용
-  value: any;
+  value: FirebaseQueryValue;
 }
 
 // 폼 에러 타입

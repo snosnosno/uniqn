@@ -1,6 +1,24 @@
 import React from 'react';
 import { logger } from './logger';
 
+/** Chrome의 비표준 performance.memory API 타입 */
+interface PerformanceMemory {
+  usedJSHeapSize: number;
+  totalJSHeapSize: number;
+  jsHeapSizeLimit: number;
+}
+
+/** Performance with memory (Chrome 전용) */
+interface PerformanceWithMemory extends Performance {
+  memory?: PerformanceMemory;
+}
+
+/** Layout Shift Entry 타입 */
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput?: boolean;
+  value?: number;
+}
+
 interface PerformanceMetric {
   name: string;
   value: number;
@@ -140,8 +158,9 @@ class PerformanceMonitor {
 
   // 메모리 사용량 측정
   async measureMemory(): Promise<void> {
-    if ('memory' in performance && typeof (performance as any).memory === 'object') {
-      const memory = (performance as any).memory;
+    const perf = performance as PerformanceWithMemory;
+    if (perf.memory) {
+      const memory = perf.memory;
       this.recordMetric('사용된 JS 힙 크기', memory.usedJSHeapSize / 1048576, 'MB');
       this.recordMetric('전체 JS 힙 크기', memory.totalJSHeapSize / 1048576, 'MB');
       this.recordMetric('JS 힙 크기 제한', memory.jsHeapSizeLimit / 1048576, 'MB');
@@ -206,8 +225,9 @@ class PerformanceMonitor {
     try {
       const clsObserver = new PerformanceObserver((list) => {
         for (const entry of list.getEntries()) {
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          const layoutEntry = entry as LayoutShiftEntry;
+          if (!layoutEntry.hadRecentInput && layoutEntry.value) {
+            clsValue += layoutEntry.value;
             this.recordMetric('Cumulative Layout Shift (CLS)', clsValue, 'score');
           }
         }

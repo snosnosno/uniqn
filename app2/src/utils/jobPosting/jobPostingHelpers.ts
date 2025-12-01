@@ -138,14 +138,18 @@ export const createNewDateSpecificRequirement = (date: string): DateSpecificRequ
 /**
  * 템플릿에서 폼 데이터로 변환
  */
-export const templateToFormData = (template: JobPostingTemplate) => {
-  const templateData = template.templateData as any;
+export const templateToFormData = (template: JobPostingTemplate): JobPostingFormData => {
+  const templateData = template.templateData;
   const today = getTodayString();
 
   return {
+    // 필수 필드들 명시적 지정
+    title: templateData.title || '',
+    description: templateData.description || '',
+    location: templateData.location || '서울',
+    postingType: templateData.postingType || 'regular',
+    // 나머지 필드들
     ...templateData,
-    startDate: today,
-    endDate: today,
     status: 'open' as const, // 템플릿에서 불러온 공고는 항상 open 상태로 설정
     // 날짜와 인원 요구사항은 템플릿에서 가져오지 않고 새로 생성
     dateSpecificRequirements: [createNewDateSpecificRequirement(today)],
@@ -205,11 +209,11 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
   const requiredRolesArray = Array.from(requiredRoles);
 
   // undefined 필드를 제거하여 Firestore 에러 방지
-  const cleanFormData: any = {};
+  const cleanFormData: Record<string, unknown> = {};
 
   // 기본 필드 복사 (undefined가 아닌 것만)
   Object.keys(formData).forEach((key) => {
-    const value = (formData as any)[key];
+    const value = formData[key as keyof JobPostingFormData];
     if (value !== undefined) {
       cleanFormData[key] = value;
     }
@@ -299,15 +303,32 @@ export const prepareFormDataForFirebase = (formData: JobPostingFormData) => {
   return result;
 };
 
+/** 날짜 값 입력 타입 */
+type DateValueInput =
+  | string
+  | Date
+  | { toDate: () => Date }
+  | { seconds: number }
+  | null
+  | undefined;
+
 /**
  * Firebase 데이터를 폼 데이터로 변환
  */
 export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostingFormData => {
-  const convertDate = (dateValue: any): string => {
+  const convertDate = (dateValue: DateValueInput): string => {
     if (!dateValue) return '';
     if (typeof dateValue === 'string') return dateValue;
-    if (dateValue.toDate && typeof dateValue.toDate === 'function') {
+    if (
+      typeof dateValue === 'object' &&
+      'toDate' in dateValue &&
+      typeof dateValue.toDate === 'function'
+    ) {
       const date = dateValue.toDate();
+      return toISODateString(date) || '';
+    }
+    if (typeof dateValue === 'object' && 'seconds' in dateValue) {
+      const date = new Date(dateValue.seconds * 1000);
       return toISODateString(date) || '';
     }
     if (dateValue instanceof Date) {
@@ -517,10 +538,19 @@ export const formatRoleSalaryDisplay = (
   return `${roleName}: ${salaryText}`;
 };
 
+/** 역할별 급여 정보 타입 */
+interface RoleSalaryInfo {
+  salaryType: string;
+  salaryAmount: string;
+  customRoleName?: string;
+}
+
 /**
  * 역할별 급여 목록 표시
  */
-export const formatRoleSalariesDisplay = (roleSalaries?: Record<string, any>): string => {
+export const formatRoleSalariesDisplay = (
+  roleSalaries?: Record<string, RoleSalaryInfo>
+): string => {
   if (!roleSalaries || Object.keys(roleSalaries).length === 0) return '';
 
   return Object.entries(roleSalaries)
@@ -561,7 +591,10 @@ export const formatWorkTimeDisplay = (startTime: string, endTime: string): strin
 /**
  * 특정 역할의 급여 가져오기
  */
-export const getRoleSalary = (roleSalaries?: Record<string, any>, role?: string): string => {
+export const getRoleSalary = (
+  roleSalaries?: Record<string, RoleSalaryInfo>,
+  role?: string
+): string => {
   if (!roleSalaries || !role) return '';
   const salary = roleSalaries[role];
   if (!salary) return '';

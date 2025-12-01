@@ -1,17 +1,20 @@
 import React, { useMemo } from 'react';
 import { FixedSizeList as List } from 'react-window';
 
-import { StaffData } from '../../hooks/useStaffManagement';
-import { AttendanceRecord } from '../../hooks/useAttendanceStatus';
-import { UnifiedWorkLog } from '../../types/unified/workLog';
+import { StaffData } from '../../utils/staff/staffDataTransformer';
+import type { AttendanceDisplayRecord } from '../../hooks/useAttendanceStatus';
+import type { WorkLog } from '../../types/unifiedData';
 import StaffCard from './StaffCard';
 
 interface VirtualizedStaffListProps {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => AttendanceRecord | undefined;
-  attendanceRecords: AttendanceRecord[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate?: boolean;
@@ -23,15 +26,18 @@ interface VirtualizedStaffListProps {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null | undefined;
 }
 
 interface ItemData {
   staffList: StaffData[];
   onEditWorkTime: (staffId: string, timeType?: 'start' | 'end') => void;
   onDeleteStaff: (staffId: string) => Promise<void>;
-  getStaffAttendanceStatus: (staffId: string) => AttendanceRecord | undefined;
-  attendanceRecords: AttendanceRecord[];
+  getStaffAttendanceStatus: (
+    staffId: string,
+    targetDate?: string
+  ) => AttendanceDisplayRecord | null;
+  attendanceRecords: AttendanceDisplayRecord[];
   formatTimeDisplay: (time: string | undefined) => string;
   getTimeSlotColor: (time: string | undefined) => string;
   showDate: boolean;
@@ -41,7 +47,7 @@ interface ItemData {
   onShowProfile?: (staffId: string) => void;
   eventId?: string;
   canEdit?: boolean;
-  getStaffWorkLog?: (staffId: string, date: string) => UnifiedWorkLog | null;
+  getStaffWorkLog?: (staffId: string, date: string) => WorkLog | null | undefined;
 }
 
 // 메모이제이션된 리스트 아이템 컴포넌트
