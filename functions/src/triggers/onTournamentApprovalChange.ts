@@ -1,20 +1,18 @@
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
-
-const db = admin.firestore();
-const FieldValue = admin.firestore.FieldValue;
 
 /**
  * 대회 공고 승인/거부 알림 Trigger
  * tournamentConfig.approvalStatus 변경 감지 → 작성자에게 알림 전송
  */
-export const onTournamentApprovalChange = onDocumentUpdated(
-  'jobPostings/{postingId}',
-  async (event) => {
-    const postingId = event.params.postingId;
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
+export const onTournamentApprovalChange = functions
+  .region('asia-northeast3')
+  .firestore.document('jobPostings/{postingId}')
+  .onUpdate(async (change, context) => {
+    const postingId = context.params.postingId;
+    const before = change.before.data();
+    const after = change.after.data();
 
     // 1. 데이터 검증
     if (!before || !after) {
@@ -41,13 +39,15 @@ export const onTournamentApprovalChange = onDocumentUpdated(
     } else if (afterStatus === 'rejected') {
       await sendRejectionNotification(postingId, after);
     }
-  }
-);
+  });
 
 /**
  * 승인 알림 전송
  */
-async function sendApprovalNotification(postingId: string, posting: any) {
+async function sendApprovalNotification(postingId: string, posting: FirebaseFirestore.DocumentData) {
+  const db = admin.firestore();
+  const FieldValue = admin.firestore.FieldValue;
+
   const userId = posting.createdBy;
   const title = posting.title;
   const approvedBy = posting.tournamentConfig?.approvedBy;
@@ -89,7 +89,10 @@ async function sendApprovalNotification(postingId: string, posting: any) {
 /**
  * 거부 알림 전송
  */
-async function sendRejectionNotification(postingId: string, posting: any) {
+async function sendRejectionNotification(postingId: string, posting: FirebaseFirestore.DocumentData) {
+  const db = admin.firestore();
+  const FieldValue = admin.firestore.FieldValue;
+
   const userId = posting.createdBy;
   const title = posting.title;
   const rejectedBy = posting.tournamentConfig?.rejectedBy;

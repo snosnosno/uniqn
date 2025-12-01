@@ -1,8 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-const db = admin.firestore();
-
 /**
  * 칩 만료 알림 Cloud Scheduler
  *
@@ -27,6 +25,7 @@ export const chipExpiryNotification = functions.pubsub
   .schedule('0 9 * * *') // 매일 09:00
   .timeZone('Asia/Seoul')
   .onRun(async (context) => {
+    const db = admin.firestore();
     const now = new Date();
 
     functions.logger.info('칩 만료 알림 발송 시작', {
@@ -165,6 +164,7 @@ async function sendExpiryNotifications(
   }[],
   currentTime: Date
 ): Promise<void> {
+  const db = admin.firestore();
   const notificationsRef = db.collection('notifications');
 
   // 칩 타입별로 그룹화
@@ -275,6 +275,8 @@ function getExpiryMessage(
  */
 export const sendManualChipExpiryNotification = functions.https.onCall(
   async (data: any, context: any) => {
+    const db = admin.firestore();
+
     // 관리자 권한 확인
     if (!context.auth || context.auth.token?.role !== 'admin') {
       throw new functions.https.HttpsError(

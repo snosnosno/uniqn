@@ -8,6 +8,7 @@
  */
 
 import * as Sentry from '@sentry/node';
+import type { ErrorEvent } from '@sentry/node';
 // import { ProfilingIntegration } from '@sentry/profiling-node'; // 추후 프로파일링 필요 시 활성화
 import * as functions from 'firebase-functions';
 
@@ -31,10 +32,10 @@ export const initSentry = (): void => {
     tracesSampleRate: 0.1, // 10%
 
     // 민감 정보 필터링
-    beforeSend(event) {
+    beforeSend(event: ErrorEvent) {
       // 환경변수에서 민감 정보 제거
       if (event.contexts?.runtime?.env) {
-        const env = event.contexts.runtime.env as Record<string, any>;
+        const env = event.contexts.runtime.env as Record<string, unknown>;
         const filteredEnv: Record<string, string> = {};
 
         Object.keys(env).forEach((key) => {
@@ -64,8 +65,8 @@ export const initSentry = (): void => {
           'ssn',
         ];
 
-        const requestData = event.request.data as Record<string, any>;
-        const filteredData: Record<string, any> = { ...requestData };
+        const requestData = event.request.data as Record<string, unknown>;
+        const filteredData: Record<string, unknown> = { ...requestData };
 
         sensitiveFields.forEach((field) => {
           if (filteredData[field]) {
@@ -80,11 +81,7 @@ export const initSentry = (): void => {
     },
 
     // 무시할 에러
-    ignoreErrors: [
-      'PERMISSION_DENIED',
-      'UNAUTHENTICATED',
-      'NOT_FOUND',
-    ],
+    ignoreErrors: ['PERMISSION_DENIED', 'UNAUTHENTICATED', 'NOT_FOUND'],
   });
 
   console.info('✅ Sentry (Functions) 초기화 완료');
@@ -96,14 +93,15 @@ export const initSentry = (): void => {
  * @param fn Cloud Function
  * @returns 래핑된 Function
  */
-export const wrapFunction = <T extends (...args: any[]) => any>(fn: T): T => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- 제네릭 함수 래퍼를 위해 any 필요
+export const wrapFunction = <T extends (...args: unknown[]) => unknown>(fn: T): T => {
   return ((...args: Parameters<T>) => {
     try {
       const result = fn(...args);
 
       // Promise를 반환하는 경우
-      if (result && typeof result.then === 'function') {
-        return result.catch((error: Error) => {
+      if (result && typeof (result as Promise<unknown>).then === 'function') {
+        return (result as Promise<unknown>).catch((error: Error) => {
           Sentry.captureException(error);
           throw error;
         });

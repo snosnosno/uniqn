@@ -1,8 +1,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-const db = admin.firestore();
-
 /**
  * 칩 만료 처리 Cloud Scheduler
  *
@@ -27,6 +25,7 @@ export const expireChips = functions.pubsub
   .schedule('0 0 * * *') // 매일 00:00
   .timeZone('Asia/Seoul')
   .onRun(async (context) => {
+    const db = admin.firestore();
     const now = new Date();
     const currentTime = admin.firestore.Timestamp.now();
 
@@ -161,6 +160,7 @@ async function processExpiredChips(
   },
   currentTime: admin.firestore.Timestamp
 ): Promise<void> {
+  const db = admin.firestore();
   const chipBalanceRef = db.collection('users').doc(userId).collection('chipBalance').doc('current');
 
   await db.runTransaction(async (transaction) => {

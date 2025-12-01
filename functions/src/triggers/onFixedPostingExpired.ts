@@ -12,9 +12,9 @@
  * - 알림 타입: 'work' (근무 관련)
  */
 
+import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 
 /**
  * 고정 공고 만료 알림 Trigger
@@ -22,15 +22,13 @@ import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
  * 경로: jobPostings/{postingId}
  * 이벤트: onUpdate
  */
-export const onFixedPostingExpired = onDocumentUpdated(
-  {
-    document: 'jobPostings/{postingId}',
-    memory: '256MiB'
-  },
-  async (event) => {
-    const before = event.data?.before.data();
-    const after = event.data?.after.data();
-    const postingId = event.params.postingId;
+export const onFixedPostingExpired = functions
+  .region('asia-northeast3')
+  .firestore.document('jobPostings/{postingId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+    const postingId = context.params.postingId;
 
     // 변경 전후 데이터 확인
     if (!before || !after) {
@@ -99,5 +97,4 @@ export const onFixedPostingExpired = onDocumentUpdated(
       });
       // 알림 전송 실패는 critical하지 않으므로 에러를 던지지 않음
     }
-  }
-);
+  });

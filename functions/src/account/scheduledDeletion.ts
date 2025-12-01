@@ -16,8 +16,6 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 
-const db = admin.firestore();
-
 /**
  * 예약된 계정 삭제 처리 함수
  *
@@ -27,6 +25,7 @@ export const processScheduledDeletions = functions.pubsub
   .schedule('0 18 * * *') // 매일 UTC 18:00 (KST 03:00)
   .timeZone('UTC')
   .onRun(async (context) => {
+    const db = admin.firestore();
     functions.logger.info('예약된 계정 삭제 작업 시작');
 
     try {
@@ -120,6 +119,7 @@ export const processScheduledDeletions = functions.pubsub
  * @param userId - 삭제할 사용자 ID
  */
 async function deleteUserSubcollections(userId: string): Promise<void> {
+  const db = admin.firestore();
   const userRef = db.collection('users').doc(userId);
 
   // 삭제할 하위 컬렉션 목록
@@ -199,6 +199,8 @@ async function deleteUserSubcollections(userId: string): Promise<void> {
  */
 export const forceDeleteAccount = functions.https.onCall(
   async (data, context) => {
+    const db = admin.firestore();
+
     // 관리자 권한 확인
     if (context.auth?.token?.role !== 'admin') {
       throw new functions.https.HttpsError(
