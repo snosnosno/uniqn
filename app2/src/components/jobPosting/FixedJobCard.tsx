@@ -50,10 +50,15 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
     }
 
     // 근무 일정 텍스트 (익일 자동 표시)
-    const scheduleText = `주 ${workSchedule.daysPerWeek}일 근무 · ${formatWorkTimeDisplay(workSchedule.startTime, workSchedule.endTime)}`;
+    const scheduleText = t('jobBoard.fixed.workSchedule', '주 {{days}}일 근무 · {{time}}', {
+      days: workSchedule.daysPerWeek,
+      time: formatWorkTimeDisplay(workSchedule.startTime, workSchedule.endTime),
+    });
 
     // 조회수 텍스트
-    const viewCountText = `조회 ${viewCount.toLocaleString()}`;
+    const viewCountText = t('jobBoard.fixed.viewCount', '조회 {{count}}', {
+      count: viewCount,
+    });
 
     // 카드 클릭 핸들러 (상세보기)
     const handleCardClick = (e: React.MouseEvent) => {
@@ -80,7 +85,9 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
         onClick={handleCardClick}
         className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg p-6 shadow-sm hover:shadow-md dark:hover:shadow-gray-900/50 transition-shadow cursor-pointer group relative"
         role="article"
-        aria-label={`고정공고: ${posting.title}`}
+        aria-label={t('jobBoard.fixed.cardAriaLabel', '고정공고: {{title}}', {
+          title: posting.title,
+        })}
       >
         {/* 제목 */}
         <h3 className="text-xl font-bold text-gray-900 dark:text-gray-100 mb-3">{posting.title}</h3>
@@ -138,7 +145,9 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
             <span className="text-lg" aria-hidden="true">
               👥
             </span>
-            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">모집 역할</p>
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {t('jobBoard.fixed.recruitmentRoles', '모집 역할')}
+            </p>
           </div>
           <div className="flex flex-wrap gap-2">
             {requiredRolesWithCount.length > 0 ? (
@@ -147,11 +156,14 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
                   key={role.name}
                   className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-100"
                 >
-                  {role.name} {role.count}명
+                  {t(`roles.${role.name}`, role.name)}{' '}
+                  {t('jobBoard.fixed.roleCount', '{{count}}명', { count: role.count })}
                 </span>
               ))
             ) : (
-              <span className="text-sm text-gray-500 dark:text-gray-400">모집 역할 정보 없음</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">
+                {t('jobBoard.fixed.noRoleInfo', '모집 역할 정보 없음')}
+              </span>
             )}
           </div>
         </div>
@@ -194,6 +206,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
                 stroke="currentColor"
                 viewBox="0 0 24 24"
                 xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
               >
                 <path
                   strokeLinecap="round"
@@ -202,7 +215,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
                   d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
                 />
               </svg>
-              <span>클릭하여 상세보기</span>
+              <span>{t('jobBoard.fixed.clickToViewDetails', '클릭하여 상세보기')}</span>
             </div>
           </div>
 
@@ -211,7 +224,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
             <button
               disabled
               className="px-4 py-2 bg-gray-500 dark:bg-gray-600 text-white font-medium rounded-md cursor-not-allowed"
-              aria-label="이미 지원완료한 공고입니다"
+              aria-label={t('jobBoard.card.alreadyAppliedAria', '이미 지원완료한 공고입니다')}
             >
               {t('jobBoard.applied')}
             </button>
@@ -219,7 +232,7 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
             <button
               disabled
               className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white font-medium rounded-md cursor-not-allowed"
-              aria-label="지원이 확정된 공고입니다"
+              aria-label={t('jobBoard.card.confirmedAria', '지원이 확정된 공고입니다')}
             >
               {t('common.status.confirmed')}
             </button>
@@ -227,7 +240,9 @@ export const FixedJobCard = React.memo<FixedJobCardProps>(
             <button
               onClick={handleApplyClick}
               className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white font-medium rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:ring-offset-2 dark:focus:ring-offset-gray-800 transition-colors"
-              aria-label={`${posting.title} 공고에 지원하기`}
+              aria-label={t('jobBoard.card.applyAria', '{{title}}에 지원하기', {
+                title: posting.title,
+              })}
             >
               {t('common.apply')}
             </button>

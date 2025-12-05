@@ -228,17 +228,20 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
     // 닉네임이 있으면 "이름(닉네임)" 형식으로 표시
     if (creatorInfo.nickname) {
-      return `구인자: ${creatorInfo.name}(${creatorInfo.nickname})`;
+      return t('jobPosting.creatorWithNickname', '구인자: {{name}}({{nickname}})', {
+        name: creatorInfo.name,
+        nickname: creatorInfo.nickname,
+      });
     }
 
-    return `구인자: ${creatorInfo.name}`;
+    return t('jobPosting.creator', '구인자: {{name}}', { name: creatorInfo.name });
   };
 
   // 날짜 변환 처리
   const formatDate = (
     date: string | Date | { toDate: () => Date } | { seconds: number } | null | undefined
   ): string => {
-    if (!date) return '미정';
+    if (!date) return t('common.tbd', '미정');
 
     // Firebase Timestamp
     if (date && typeof date === 'object' && 'toDate' in date) {
@@ -262,7 +265,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
       if (expiresAt) {
         return `${formatDate(post.fixedConfig.createdAt)} ~ ${formatDate(expiresAt)}`;
       }
-      return `${post.fixedConfig.durationDays}일 고정공고`;
+      return t('jobPosting.fixedDuration', '{{days}}일 고정공고', {
+        days: post.fixedConfig.durationDays,
+      });
     }
 
     const dates: string[] = [];
@@ -430,12 +435,14 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           {/* 근무조건 */}
           <div className="mb-3">
             <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
-              🕐 근무조건
+              🕐 {t('jobPosting.workConditions', '근무조건')}
             </div>
             <div className="ml-4 space-y-1">
               <div className="text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium text-gray-700 dark:text-gray-200">
-                  주 {post.workSchedule.daysPerWeek}일
+                  {t('jobPosting.daysPerWeek', '주 {{days}}일', {
+                    days: post.workSchedule.daysPerWeek,
+                  })}
                 </span>
                 <span className="ml-3">
                   {post.workSchedule.startTime} ~ {post.workSchedule.endTime}
@@ -447,7 +454,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
           {/* 모집역할 */}
           <div>
             <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
-              👥 모집역할
+              👥 {t('jobPosting.recruitmentRoles', '모집역할')}
             </div>
             <div className="ml-4 space-y-1">
               {post.requiredRolesWithCount.map((roleWithCount) => {
@@ -489,7 +496,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             return (
               <div key={`date-${req.date}`} className="mb-3">
                 <div className="font-medium text-gray-700 dark:text-gray-200 mb-1 flex items-center text-sm">
-                  📅 {dateDisplay} 일정
+                  📅 {dateDisplay} {t('jobPosting.schedule', '일정')}
                 </div>
                 <div className="ml-4 space-y-1">
                   {(req.timeSlots || []).map((ts: TimeSlot) => {
@@ -530,7 +537,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     } else {
       // 날짜별 요구사항이 없는 경우
       return (
-        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">시간대 정보가 없습니다.</div>
+        <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          {t('jobPosting.noTimeSlotInfo', '시간대 정보가 없습니다.')}
+        </div>
       );
     }
   };
@@ -551,11 +560,13 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             {/* 근무조건 */}
             <div>
               <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                🕐 근무조건
+                🕐 {t('jobPosting.workConditions', '근무조건')}
               </div>
               <div className="ml-2 text-sm text-gray-600 dark:text-gray-300">
                 <span className="font-medium text-gray-700 dark:text-gray-200">
-                  주 {post.workSchedule.daysPerWeek}일
+                  {t('jobPosting.daysPerWeek', '주 {{days}}일', {
+                    days: post.workSchedule.daysPerWeek,
+                  })}
                 </span>
                 <span className="ml-3">
                   {post.workSchedule.startTime} ~ {post.workSchedule.endTime}
@@ -566,7 +577,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             {/* 모집역할 */}
             <div>
               <div className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center">
-                👥 모집역할
+                👥 {t('jobPosting.recruitmentRoles', '모집역할')}
               </div>
               <div className="ml-2 space-y-1">
                 {post.requiredRolesWithCount.map((roleWithCount) => {
@@ -678,7 +689,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                           <span
                                             className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
                                           >
-                                            {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                            {isFull
+                                              ? t('jobPosting.closed', '(마감)')
+                                              : `(${displayCount}/${r.count})`}
                                           </span>
                                         </span>
                                       </>
@@ -693,7 +706,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                         <span
                                           className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
                                         >
-                                          {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                          {isFull
+                                            ? t('jobPosting.closed', '(마감)')
+                                            : `(${displayCount}/${r.count})`}
                                         </span>
                                       </div>
                                     )}
@@ -753,7 +768,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                           <span
                                             className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
                                           >
-                                            {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                            {isFull
+                                              ? t('jobPosting.closed', '(마감)')
+                                              : `(${displayCount}/${r.count})`}
                                           </span>
                                         </span>
                                       </>
@@ -768,7 +785,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                                         <span
                                           className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
                                         >
-                                          {isFull ? '(마감)' : `(${displayCount}/${r.count})`}
+                                          {isFull
+                                            ? t('jobPosting.closed', '(마감)')
+                                            : `(${displayCount}/${r.count})`}
                                         </span>
                                       </div>
                                     )}
@@ -792,9 +811,11 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
         <div className="mb-4">
           <div className="font-medium text-gray-700 dark:text-gray-200 mb-2 flex items-center text-sm">
             <span className="mr-2">⏰</span>
-            <span>모집 시간대</span>
+            <span>{t('jobPosting.recruitmentTimeSlots', '모집 시간대')}</span>
           </div>
-          <div className="text-sm text-gray-500 dark:text-gray-400">시간대 정보가 없습니다.</div>
+          <div className="text-sm text-gray-500 dark:text-gray-400">
+            {t('jobPosting.noTimeSlotInfo', '시간대 정보가 없습니다.')}
+          </div>
         </div>
       );
     }
@@ -838,7 +859,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               {/* 긴급 공고 깜빡이는 배지 */}
               {normalizePostingType(post) === 'urgent' && (
                 <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 animate-pulse">
-                  🚨 긴급
+                  🚨 {t('jobPosting.urgent', '긴급')}
                 </span>
               )}
 
@@ -900,7 +921,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                     <span className="mr-2 mt-0.5">💰</span>
                     <div className="break-words">
                       <span className="font-medium text-gray-700 dark:text-gray-200">
-                        역할별 급여
+                        {t('jobPosting.roleSalary', '역할별 급여')}
                       </span>
                       <div className="mt-1 space-y-0.5">
                         {Object.entries(post.roleSalaries)
@@ -912,7 +933,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                           ))}
                         {Object.keys(post.roleSalaries).length > 3 && (
                           <div className="text-xs text-gray-400 dark:text-gray-500">
-                            외 {Object.keys(post.roleSalaries).length - 3}개 역할
+                            {t('jobPosting.andMoreRoles', '외 {{count}}개 역할', {
+                              count: Object.keys(post.roleSalaries).length - 3,
+                            })}
                           </div>
                         )}
                       </div>
@@ -970,7 +993,10 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
             {/* 지원자 수 */}
             {showApplicationCount && post.applicants && (post.applicants || []).length > 0 && (
               <div className="text-sm text-blue-600 dark:text-blue-400">
-                🙋‍♂️ {(post.applicants || []).length}명 지원
+                🙋‍♂️{' '}
+                {t('jobPosting.applicantCount', '{{count}}명 지원', {
+                  count: (post.applicants || []).length,
+                })}
               </div>
             )}
 
@@ -1027,8 +1053,18 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
         {/* 관리자용 - 생성/수정 정보 */}
         {variant === 'admin-list' && (
           <div className="mt-3 text-xs text-gray-400 dark:text-gray-500 flex justify-between">
-            <span>생성: {formatDateUtil(post.createdAt)}</span>
-            {post.updatedAt && <span>수정: {formatDateUtil(post.updatedAt)}</span>}
+            <span>
+              {t('jobPosting.createdAt', '생성: {{date}}', {
+                date: formatDateUtil(post.createdAt),
+              })}
+            </span>
+            {post.updatedAt && (
+              <span>
+                {t('jobPosting.updatedAt', '수정: {{date}}', {
+                  date: formatDateUtil(post.updatedAt),
+                })}
+              </span>
+            )}
           </div>
         )}
 
