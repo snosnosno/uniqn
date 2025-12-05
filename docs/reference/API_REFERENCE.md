@@ -33,6 +33,11 @@ This document provides a reference for all Firebase Cloud Functions used in the 
 | `logActionHttp` | HTTPS (onRequest) | HTTP endpoint version of `logAction`. |
 | `updateJobPostingApplicantCount` | Firestore (onWrite) | Updates the applicant count on a job posting. |
 | `updateEventParticipantCount` | Firestore (onWrite) | Updates the participant count on an event. |
+| **🏆 Tournament Approval** | | |
+| `approveJobPosting` | HTTPS (onCall) | **Admin-only:** Approves a tournament job posting. |
+| `rejectJobPosting` | HTTPS (onCall) | **Admin-only:** Rejects a tournament job posting with reason. |
+| `resubmitJobPosting` | HTTPS (onCall) | Resubmits a rejected tournament job posting. |
+| `onTournamentApprovalChange` | Firestore (onUpdate) | Sends notifications when tournament approval status changes. |
 | **💳 Payment System** | | |
 | `confirmPayment` | HTTPS (onCall) | Confirms a payment and grants chips to the user. |
 | `manualGrantChips` | HTTPS (onCall) | **Admin-only:** Manually grants chips to a user. |
@@ -87,6 +92,117 @@ This document provides a reference for all Firebase Cloud Functions used in the 
 - **Description**: Automatically creates a user document in the `users` collection in Firestore when a new user is created in Firebase Authentication. It also parses extra data (like phone and gender) embedded in the `displayName`.
 - **Parameters**: `user` (AuthUserRecord): The user record created in Firebase Auth.
 - **Returns**: `null`
+
+---
+
+## 🏆 Tournament Approval Functions
+
+### `approveJobPosting`
+
+- **Trigger**: HTTPS (onCall)
+- **Description**: **Admin-only** function to approve a tournament job posting. Changes the approval status from 'pending' to 'approved'.
+- **Parameters**:
+    - `postingId` (string): The ID of the job posting to approve.
+- **Returns**:
+    ```typescript
+    {
+      success: boolean;
+      postingId: string;
+      approvedBy: string;
+      approvedAt: string;
+    }
+    ```
+- **Security**: **Admin-only**. Requires `admin` role in custom claims.
+- **Processing**:
+    1. Validates admin authentication
+    2. Checks if posting exists and is a tournament type
+    3. Verifies current status is 'pending'
+    4. Updates `tournamentConfig.approvalStatus` to 'approved'
+    5. Records `approvedBy` and `approvedAt`
+    6. Triggers `onTournamentApprovalChange` for notification
+- **Error Codes**:
+    - `unauthenticated`: User not logged in
+    - `permission-denied`: User is not an admin
+    - `not-found`: Job posting not found
+    - `invalid-argument`: Not a tournament posting
+    - `failed-precondition`: Not in pending status
+
+### `rejectJobPosting`
+
+- **Trigger**: HTTPS (onCall)
+- **Description**: **Admin-only** function to reject a tournament job posting with a reason.
+- **Parameters**:
+    - `postingId` (string): The ID of the job posting to reject.
+    - `reason` (string): Rejection reason (minimum 10 characters).
+- **Returns**:
+    ```typescript
+    {
+      success: boolean;
+      postingId: string;
+      rejectedBy: string;
+      rejectedAt: string;
+    }
+    ```
+- **Security**: **Admin-only**. Requires `admin` role in custom claims.
+- **Processing**:
+    1. Validates admin authentication
+    2. Validates rejection reason (minimum 10 characters)
+    3. Checks if posting exists and is a tournament type
+    4. Verifies current status is 'pending'
+    5. Updates `tournamentConfig.approvalStatus` to 'rejected'
+    6. Records `rejectedBy`, `rejectedAt`, and `rejectionReason`
+    7. Triggers `onTournamentApprovalChange` for notification
+- **Error Codes**:
+    - `unauthenticated`: User not logged in
+    - `permission-denied`: User is not an admin
+    - `not-found`: Job posting not found
+    - `invalid-argument`: Not a tournament posting or reason too short
+    - `failed-precondition`: Not in pending status
+
+### `resubmitJobPosting`
+
+- **Trigger**: HTTPS (onCall)
+- **Description**: Allows the posting owner to resubmit a rejected tournament job posting for re-review.
+- **Parameters**:
+    - `postingId` (string): The ID of the job posting to resubmit.
+- **Returns**:
+    ```typescript
+    {
+      success: boolean;
+      postingId: string;
+      resubmittedBy: string;
+      resubmittedAt: string;
+    }
+    ```
+- **Security**: Authenticated users only. Must be the posting owner.
+- **Processing**:
+    1. Validates user authentication
+    2. Checks if posting exists and user is the owner
+    3. Verifies posting is a tournament type
+    4. Verifies current status is 'rejected'
+    5. Preserves previous rejection info in `previousRejection`
+    6. Updates `tournamentConfig.approvalStatus` to 'pending'
+    7. Records `resubmittedAt` and `resubmittedBy`
+    8. Clears previous rejection fields
+- **Error Codes**:
+    - `unauthenticated`: User not logged in
+    - `permission-denied`: User is not the posting owner
+    - `not-found`: Job posting not found
+    - `invalid-argument`: Not a tournament posting
+    - `failed-precondition`: Not in rejected status
+
+### `onTournamentApprovalChange`
+
+- **Trigger**: Firestore (onUpdate) on `jobPostings/{postingId}`
+- **Description**: Sends notifications to the posting owner when a tournament approval status changes.
+- **Processing**:
+    1. Detects changes to `tournamentConfig.approvalStatus`
+    2. If changed to 'approved': Creates success notification
+    3. If changed to 'rejected': Creates notification with rejection reason
+    4. Notification is stored in `notifications` collection
+- **Notification Types**:
+    - `tournament_approved`: "대회 공고가 승인되었습니다"
+    - `tournament_rejected`: "대회 공고가 거부되었습니다. 사유: {reason}"
 
 ---
 

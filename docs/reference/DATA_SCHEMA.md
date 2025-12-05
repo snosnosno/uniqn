@@ -177,6 +177,23 @@ Document ID: Auto-generated
   "maxApplications"?: number,  // 최대 지원자 수
   "autoClose": boolean,        // 자동 마감 여부
   "tags"?: string[],          // 태그
+  "postingType": "regular" | "fixed" | "tournament",  // 공고 타입 ✅
+  "tournamentConfig"?: {       // 대회 공고 전용 (postingType === 'tournament')
+    "approvalStatus": "pending" | "approved" | "rejected",  // 승인 상태
+    "submittedAt"?: Timestamp,   // 제출일시
+    "approvedBy"?: string,       // 승인자 ID
+    "approvedAt"?: Timestamp,    // 승인일시
+    "rejectedBy"?: string,       // 거부자 ID
+    "rejectedAt"?: Timestamp,    // 거부일시
+    "rejectionReason"?: string,  // 거부 사유 (10자 이상)
+    "resubmittedAt"?: Timestamp, // 재제출일시
+    "resubmittedBy"?: string,    // 재제출자 ID
+    "previousRejection"?: {      // 이전 거부 정보 (재제출 시 보존)
+      "reason": string,
+      "rejectedBy": string,
+      "rejectedAt": Timestamp
+    }
+  },
   "createdAt": Timestamp,      // 생성일시
   "updatedAt": Timestamp,      // 수정일시
   "createdBy": string,         // 생성자 ID
@@ -184,7 +201,7 @@ Document ID: Auto-generated
 }
 ```
 
-**인덱스**: `status`, `isPublic`, `applicationDeadline`, `createdAt`
+**인덱스**: `status`, `isPublic`, `applicationDeadline`, `createdAt`, `postingType + tournamentConfig.approvalStatus + createdAt`
 
 ### 5. attendanceRecords (출석 기록)
 
