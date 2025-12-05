@@ -739,7 +739,11 @@
       "expand": "Expand Info",
       "collapse": "Collapse Info",
       "section": "Job Posting Basic Information"
-    }
+    },
+    "schedule": "Schedule",
+    "creatorWithNickname": "Creator: {{name}}({{nickname}})",
+    "createdAt": "Created: {{date}}",
+    "updatedAt": "Updated: {{date}}"
   },
   "jobPostingAdmin": {
     "alerts": {

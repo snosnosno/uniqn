@@ -739,7 +739,11 @@
       "expand": "정보 열기",
       "collapse": "정보 닫기",
       "section": "공고 기본 정보"
-    }
+    },
+    "schedule": "일정",
+    "creatorWithNickname": "구인자: {{name}}({{nickname}})",
+    "createdAt": "생성: {{date}}",
+    "updatedAt": "수정: {{date}}"
   },
   "jobPostingAdmin": {
     "alerts": {
