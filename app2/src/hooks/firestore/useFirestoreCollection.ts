@@ -19,7 +19,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import { collection, query, onSnapshot, QueryConstraint, DocumentData } from 'firebase/firestore';
+import { collection, query, onSnapshot, DocumentData } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import type { FirestoreCollectionResult, FirestoreDocument, CollectionHookOptions } from './types';
