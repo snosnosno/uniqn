@@ -29,6 +29,23 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
 }) => {
   const { t } = useTranslation();
 
+  // 🎹 키보드 이벤트 핸들러 (ESC 키로 모달 닫기)
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && isOpen) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   if (!isOpen || !posting.fixedData) return null;
 
   const { fixedData } = posting;
@@ -43,11 +60,19 @@ const FixedApplyModal: React.FC<FixedApplyModalProps> = ({
     : t('jobPosting.scheduleNotSet', '근무 일정 미정');
 
   return (
-    <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+    <div
+      className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="fixed-apply-modal-title"
+    >
       <div className="relative top-4 sm:top-20 mx-auto p-4 sm:p-6 border w-full max-w-[95%] sm:max-w-lg shadow-lg rounded-md bg-white dark:bg-gray-800">
         {/* 헤더 */}
         <div className="mb-4">
-          <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100">
+          <h3
+            id="fixed-apply-modal-title"
+            className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100"
+          >
             {posting.title} {t('jobPosting.apply', '지원하기')}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">

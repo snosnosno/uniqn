@@ -235,7 +235,7 @@ export const useJobBoard = () => {
         appliedAt: application.appliedAt || application.createdAt || new Date(),
         confirmedAt: application.confirmedAt,
         // 🔧 핵심 수정: postTitle 필드 추가 (jobPosting에서 가져오기)
-        postTitle: jobPosting?.title || application.postTitle || '제목 없음',
+        postTitle: jobPosting?.title || application.postTitle || t('common.noTitle', '제목 없음'),
         // 🎯 중요: assignments 배열을 그대로 전달 (MyApplicationsTab에서 직접 사용)
         assignments: application.assignments || [],
         // 레거시 호환성을 위한 개별 필드들 (하위 호환성)
@@ -258,7 +258,7 @@ export const useJobBoard = () => {
     });
 
     return applicationsWithJobData;
-  }, [currentUser, unifiedDataLoading, applications, jobPostingsFromStore]);
+  }, [currentUser, unifiedDataLoading, applications, jobPostingsFromStore, t]);
 
   /**
    * 내 지원 현황 새로고침 (레거시 호환성)
@@ -364,14 +364,19 @@ export const useJobBoard = () => {
       setSelectedAssignments((prev) => [...prev, assignment]);
     } else {
       setSelectedAssignments((prev) =>
-        prev.filter(
-          (item) =>
-            !(
-              item.timeSlot === assignment.timeSlot &&
-              item.role === assignment.role &&
-              JSON.stringify(item.dates?.sort()) === JSON.stringify(assignment.dates?.sort())
-            )
-        )
+        prev.filter((item) => {
+          // 🔒 Null safety: dates 배열을 안전하게 비교
+          const itemDates = item.dates ?? [];
+          const assignmentDates = assignment.dates ?? [];
+          const itemDatesSorted = [...itemDates].sort();
+          const assignmentDatesSorted = [...assignmentDates].sort();
+
+          return !(
+            item.timeSlot === assignment.timeSlot &&
+            item.role === assignment.role &&
+            JSON.stringify(itemDatesSorted) === JSON.stringify(assignmentDatesSorted)
+          );
+        })
       );
     }
   };

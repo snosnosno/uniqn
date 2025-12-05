@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslation } from 'react-i18next';
 import Modal from '@/components/ui/Modal';
 import JobPostingDetailContent from '@/components/jobPosting/JobPostingDetailContent';
 import { JobPosting } from '@/types/jobPosting';
@@ -13,6 +14,8 @@ interface JobDetailModalProps {
  * 구인공고 상세 정보 모달 컴포넌트
  */
 const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, onClose, jobPosting }) => {
+  const { t } = useTranslation();
+
   if (!jobPosting) return null;
 
   // 고정공고인지 확인 (postingType 필드 사용)
@@ -28,8 +31,15 @@ const JobDetailModal: React.FC<JobDetailModalProps> = ({ isOpen, onClose, jobPos
             ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300'
             : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300'
         }`}
+        aria-label={
+          isFixedPosting
+            ? t('jobPosting.postingType.fixedLabel', '고정공고 유형')
+            : t('jobPosting.postingType.applicationLabel', '지원공고 유형')
+        }
       >
-        {isFixedPosting ? '고정' : '지원'}
+        {isFixedPosting
+          ? t('jobPosting.postingType.fixed', '고정')
+          : t('jobPosting.postingType.application', '지원')}
       </span>
     </div>
   );
