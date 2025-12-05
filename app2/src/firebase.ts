@@ -74,8 +74,8 @@ try {
 
 export { db };
 
-// Initialize Functions
-export const functions = getFunctions(app);
+// Initialize Functions (asia-northeast3 리전 명시 - CORS 오류 방지)
+export const functions = getFunctions(app, 'asia-northeast3');
 
 // Storage는 동적 로딩을 위해 별도 유틸리티 사용
 

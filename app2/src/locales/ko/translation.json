@@ -1718,7 +1718,12 @@
       "staffDeleteError": "staff 컬렉션 자동 삭제 중 오류가 발생했습니다.",
       "createError": "공고 등록 중 오류가 발생했습니다.",
       "updateError": "공고 수정 중 오류가 발생했습니다.",
-      "deleteSuccess": "\"{{title}}\" 공고가 삭제되었습니다."
+      "deleteSuccess": "\"{{title}}\" 공고가 삭제되었습니다.",
+      "notOwner": "본인이 작성한 공고만 재제출할 수 있습니다",
+      "onlyTournamentCanResubmit": "대회 공고만 재제출 가능합니다",
+      "onlyRejectedCanResubmit": "거부된 공고만 재제출 가능합니다",
+      "resubmitSuccess": "공고가 재제출되었습니다. 관리자 승인을 기다려주세요",
+      "resubmitError": "공고 재제출 중 오류가 발생했습니다"
     },
     "dateRequirements": {
       "maxDates": "최대 30개의 날짜까지만 추가할 수 있습니다.",

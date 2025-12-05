@@ -4,6 +4,10 @@ import {
   query,
   where,
   orderBy,
+  doc,
+  updateDoc,
+  getDoc,
+  Timestamp,
   type Query,
   type DocumentData,
 } from 'firebase/firestore';
@@ -13,14 +17,17 @@ import { JobPosting } from '../types/jobPosting/jobPosting';
 import { logger } from '../utils/logger';
 import { toast } from '../utils/toast';
 import { useFirestoreQuery } from './firestore';
+import { useAuth } from '../contexts/AuthContext';
 import i18n from '../i18n/config';
 
 /**
  * 대회 공고 승인 시스템 Hook
  * admin 전용 - 승인 대기 중인 대회 공고 조회 및 승인/거부 처리
+ * 업주용 - 거부된 공고 재제출
  */
 export const useJobPostingApproval = () => {
   const [processing, setProcessing] = useState(false);
+  const { currentUser } = useAuth();
 
   // 승인 대기 중인 대회 공고 쿼리 생성
   const pendingQuery = useMemo((): Query<DocumentData> => {
@@ -146,6 +153,81 @@ export const useJobPostingApproval = () => {
     }
   }, []);
 
+  /**
+   * 거부된 대회 공고 재제출
+   * 업주(공고 작성자)만 자신의 거부된 공고를 재제출할 수 있음
+   */
+  const resubmit = useCallback(
+    async (postingId: string) => {
+      if (!postingId) {
+        toast.error(i18n.t('toast.jobPosting.idRequired'));
+        return;
+      }
+
+      if (!currentUser) {
+        toast.error(i18n.t('toast.auth.loginRequired'));
+        return;
+      }
+
+      setProcessing(true);
+
+      try {
+        // 공고 문서 조회
+        const postingRef = doc(db, 'jobPostings', postingId);
+        const postingSnap = await getDoc(postingRef);
+
+        if (!postingSnap.exists()) {
+          toast.error(i18n.t('toast.jobPosting.notFound'));
+          return;
+        }
+
+        const postingData = postingSnap.data() as JobPosting;
+
+        // 소유권 확인
+        if (postingData.createdBy !== currentUser.uid) {
+          toast.error(i18n.t('toast.jobPosting.notOwner'));
+          return;
+        }
+
+        // 대회 공고인지 확인
+        if (postingData.postingType !== 'tournament') {
+          toast.error(i18n.t('toast.jobPosting.onlyTournamentCanResubmit'));
+          return;
+        }
+
+        // 거부 상태인지 확인
+        if (postingData.tournamentConfig?.approvalStatus !== 'rejected') {
+          toast.error(i18n.t('toast.jobPosting.onlyRejectedCanResubmit'));
+          return;
+        }
+
+        // 재제출 처리: approvalStatus를 pending으로 변경하고 resubmittedAt 설정
+        await updateDoc(postingRef, {
+          'tournamentConfig.approvalStatus': 'pending',
+          'tournamentConfig.resubmittedAt': Timestamp.now(),
+          updatedAt: Timestamp.now(),
+        });
+
+        toast.success(i18n.t('toast.jobPosting.resubmitSuccess'));
+        logger.info('공고 재제출 완료', {
+          component: 'useJobPostingApproval',
+          data: { postingId },
+        });
+      } catch (err: unknown) {
+        logger.error('공고 재제출 실패', err instanceof Error ? err : new Error(String(err)), {
+          component: 'useJobPostingApproval',
+          data: { postingId },
+        });
+
+        toast.error(i18n.t('toast.jobPosting.resubmitError'));
+        throw err;
+      } finally {
+        setProcessing(false);
+      }
+    },
+    [currentUser]
+  );
+
   return {
     pendingPostings,
     loading,
@@ -153,5 +235,6 @@ export const useJobPostingApproval = () => {
     processing,
     approve,
     reject,
+    resubmit,
   };
 };

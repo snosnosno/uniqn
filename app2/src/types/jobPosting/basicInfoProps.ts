@@ -54,8 +54,9 @@ export interface BasicInfoHandlers {
 
   /**
    * 공고 타입 변경 핸들러
+   * - 대회공고 선택 시 tournamentConfig 설정 필요
    */
-  onPostingTypeChange?: (postingType: PostingType) => void;
+  onPostingTypeChange: (postingType: PostingType) => void;
 
   /**
    * 고정공고 기간 변경 핸들러

@@ -27,6 +27,10 @@ import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { extractNameFromDisplayName, extractNicknameFromDisplayName } from '../../utils/userUtils';
 import { formatChipCost } from '../../utils/jobPosting/chipCalculator';
+import { TournamentStatusBadge } from '../jobPosting/TournamentStatusBadge';
+import { RejectionReasonDisplay } from '../jobPosting/RejectionReasonDisplay';
+import { ResubmitButton } from '../jobPosting/ResubmitButton';
+import { useAuth } from '../../contexts/AuthContext';
 
 export interface JobPostingCardProps {
   post: JobPosting & { applicationCount?: number };
@@ -35,6 +39,10 @@ export interface JobPostingCardProps {
   renderExtra?: (post: JobPosting) => React.ReactNode;
   showStatus?: boolean;
   showApplicationCount?: boolean;
+  /** 대회 공고의 승인 상태 배지 및 거부 사유 표시 (기본값: false) */
+  showTournamentStatus?: boolean;
+  /** 거부된 대회 공고의 재제출 버튼 표시 (기본값: false) */
+  showResubmitButton?: boolean;
   className?: string;
 }
 
@@ -80,10 +88,16 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   renderExtra,
   showStatus = true,
   showApplicationCount = false,
+  showTournamentStatus = false,
+  showResubmitButton = false,
   className = '',
 }) => {
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
   const [creatorInfo, setCreatorInfo] = useState<{ name: string; nickname?: string } | null>(null);
+
+  // 현재 사용자가 공고 작성자인지 확인
+  const isOwner = currentUser?.uid === post.createdBy;
 
   // 구인자 정보 가져오기
   useEffect(() => {
@@ -869,6 +883,16 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   {getStatusDisplayName(post.status)}
                 </span>
               )}
+
+              {/* 대회 공고 승인 상태 배지 */}
+              {showTournamentStatus &&
+                normalizePostingType(post) === 'tournament' &&
+                post.tournamentConfig && (
+                  <TournamentStatusBadge
+                    tournamentConfig={post.tournamentConfig}
+                    showRejectionReason={true}
+                  />
+                )}
             </div>
 
             {/* 기본 정보 */}
@@ -979,6 +1003,27 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
             {/* 추가 콘텐츠 */}
             {renderExtra && renderExtra(post)}
+
+            {/* 대회 공고 거부 사유 표시 */}
+            {showTournamentStatus &&
+              normalizePostingType(post) === 'tournament' &&
+              post.tournamentConfig && (
+                <RejectionReasonDisplay
+                  tournamentConfig={post.tournamentConfig}
+                  collapsible={true}
+                  defaultExpanded={true}
+                />
+              )}
+
+            {/* 거부된 대회 공고 재제출 버튼 (소유자에게만 표시) */}
+            {showResubmitButton &&
+              isOwner &&
+              normalizePostingType(post) === 'tournament' &&
+              post.tournamentConfig && (
+                <div className="mt-3">
+                  <ResubmitButton postingId={post.id} tournamentConfig={post.tournamentConfig} />
+                </div>
+              )}
           </div>
 
           {/* 액션 버튼 영역 - admin-list가 아닌 경우만 여기에 표시 */}

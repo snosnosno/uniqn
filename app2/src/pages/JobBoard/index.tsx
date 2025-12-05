@@ -174,6 +174,13 @@ const JobBoardPage = () => {
                     // normalizePostingType은 이미 useJobPostings Hook에서 처리됨
                     return post.postingType === activePostingType;
                   });
+
+                  // 대회 공고는 승인된(approved) 것만 표시
+                  if (activePostingType === 'tournament') {
+                    filtered = filtered.filter(
+                      (post) => post.tournamentConfig?.approvalStatus === 'approved'
+                    );
+                  }
                 }
 
                 // 날짜 필터링 (지원 탭에만)

@@ -113,6 +113,8 @@ const JobPostingList: React.FC<JobPostingListProps> = React.memo(
               renderActions={renderAdminActions}
               showStatus={true}
               showApplicationCount={true}
+              showTournamentStatus={true}
+              showResubmitButton={true}
               className="border-none shadow-none"
             />
           ))}
