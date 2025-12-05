@@ -131,22 +131,31 @@ const JobBoardPage = () => {
                 </svg>
               </div>
               <div>
-                <p className="font-bold">데이터 로딩 오류</p>
+                <p className="font-bold">{t('error.dataLoading', '데이터 로딩 오류')}</p>
                 <p className="text-sm">
                   {error.message?.includes('index') || error.message?.includes('Index')
-                    ? 'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.'
+                    ? t(
+                        'error.firebase.indexRequired',
+                        'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.'
+                      )
                     : error.message?.includes('permission')
-                      ? '권한이 없습니다. 로그인 상태를 확인해 주세요.'
+                      ? t(
+                          'error.firebase.permissionDenied',
+                          '권한이 없습니다. 로그인 상태를 확인해 주세요.'
+                        )
                       : error.message?.includes('network')
-                        ? '네트워크 연결을 확인해 주세요.'
-                        : '데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.'}
+                        ? t('error.firebase.networkError', '네트워크 연결을 확인해 주세요.')
+                        : t(
+                            'error.firebase.loadingError',
+                            '데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.'
+                          )}
                 </p>
                 <details className="mt-2">
                   <summary className="text-xs cursor-pointer text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
-                    기술적 세부사항
+                    {t('error.technicalDetails', '기술적 세부사항')}
                   </summary>
                   <pre className="text-xs mt-1 bg-red-50 dark:bg-red-900/10 p-2 rounded overflow-auto">
-                    {error.message || 'Unknown error'}
+                    {error.message || t('error.unknown', 'Unknown error')}
                   </pre>
                 </details>
               </div>

@@ -273,6 +273,9 @@ const ApplicationCard: React.FC<{
                 onClick={() => onCancel(application.postId)}
                 disabled={isProcessing === application.postId}
                 className="px-4 py-2 bg-red-600 dark:bg-red-700 text-white rounded hover:bg-red-700 dark:hover:bg-red-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-sm flex-1 sm:flex-initial"
+                aria-label={t('application.cancelApplicationAriaLabel', '{{title}} 지원 취소', {
+                  title: application.postTitle,
+                })}
               >
                 {isProcessing === application.postId
                   ? t('application.canceling', '취소 중...')
