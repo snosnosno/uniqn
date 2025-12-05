@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 import { useJobPostingApproval } from '../hooks/useJobPostingApproval';
 import { ApprovalModal } from '../components/jobPosting/ApprovalModal';
 import { JobPosting } from '../types/jobPosting/jobPosting';
-import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CheckIcon, XMarkIcon, EyeIcon } from '@heroicons/react/24/outline';
 import { logger } from '../utils/logger';
 import JobPostingCard from '../components/common/JobPostingCard';
+import JobDetailModal from './JobBoard/components/JobDetailModal';
 
 /**
  * 대회 공고 승인 관리 페이지 (Admin 전용)
@@ -14,6 +15,12 @@ const ApprovalManagementPage: React.FC = () => {
   const { pendingPostings, loading, error, processing, approve, reject } = useJobPostingApproval();
   const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null);
   const [modalMode, setModalMode] = useState<'approve' | 'reject' | null>(null);
+  const [detailPosting, setDetailPosting] = useState<JobPosting | null>(null);
+
+  const handleViewDetail = (posting: JobPosting) => {
+    logger.info('상세보기 모달 열기', { postingId: posting.id });
+    setDetailPosting(posting);
+  };
 
   const handleApprove = (posting: JobPosting) => {
     logger.info('승인 모달 열기');
@@ -140,8 +147,13 @@ const ApprovalManagementPage: React.FC = () => {
                     <XMarkIcon className="h-5 w-5 mr-1.5" />
                     거부
                   </button>
-                  {/* 빈 div로 3열 그리드 맞춤 */}
-                  <div />
+                  <button
+                    onClick={() => handleViewDetail(post as JobPosting)}
+                    className="inline-flex items-center justify-center px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                  >
+                    <EyeIcon className="h-5 w-5 mr-1.5" />
+                    자세히
+                  </button>
                 </>
               )}
             />
@@ -160,6 +172,13 @@ const ApprovalManagementPage: React.FC = () => {
           processing={processing}
         />
       )}
+
+      {/* 상세보기 모달 */}
+      <JobDetailModal
+        isOpen={!!detailPosting}
+        onClose={() => setDetailPosting(null)}
+        jobPosting={detailPosting}
+      />
     </div>
   );
 };
