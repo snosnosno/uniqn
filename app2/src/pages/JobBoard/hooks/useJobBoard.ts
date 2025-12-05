@@ -260,11 +260,21 @@ export const useJobBoard = () => {
     return applicationsWithJobData;
   }, [currentUser, unifiedDataLoading, applications, jobPostingsFromStore]);
 
-  // 레거시 fetchMyApplications 함수 (호환성 유지)
+  /**
+   * 내 지원 현황 새로고침 (레거시 호환성)
+   *
+   * @deprecated UnifiedDataStore가 Firebase onSnapshot으로 실시간 동기화하므로
+   * 수동 새로고침이 불필요합니다. 이 함수는 하위 호환성을 위해 유지됩니다.
+   *
+   * 실제 동작: 사용자에게 실시간 동기화 상태를 알림
+   */
   const fetchMyApplications = useCallback(() => {
-    // UnifiedDataContext가 실시간으로 업데이트하므로 별도 fetch 불필요
-    // 하지만 기존 컴포넌트 호환성을 위해 빈 함수로 유지
-  }, []);
+    // UnifiedDataStore가 Firebase onSnapshot으로 실시간 동기화
+    // 새로고침 버튼 클릭 시 사용자에게 피드백 제공
+    if (!unifiedDataLoading) {
+      showSuccess(t('toast.application.realTimeSync', '실시간 동기화 중입니다'));
+    }
+  }, [unifiedDataLoading, showSuccess, t]);
 
   // UnifiedDataContext를 사용하므로 탭 변경 시 별도 데이터 로딩 불필요
 

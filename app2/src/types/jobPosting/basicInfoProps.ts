@@ -87,4 +87,16 @@ export type BasicInfoValidation = ValidationState<BasicInfoErrors>;
  * BasicInfoSection Props
  */
 export interface BasicInfoSectionProps
-  extends SectionProps<BasicInfoData, BasicInfoHandlers, BasicInfoValidation> {}
+  extends SectionProps<BasicInfoData, BasicInfoHandlers, BasicInfoValidation> {
+  /**
+   * 폼 모드
+   * - 'create': 공고 작성 모드 (기본값)
+   * - 'edit': 공고 수정 모드 (공고 타입 변경 불가)
+   */
+  mode?: 'create' | 'edit';
+
+  /**
+   * 수정 중 비활성화 상태
+   */
+  isDisabled?: boolean;
+}

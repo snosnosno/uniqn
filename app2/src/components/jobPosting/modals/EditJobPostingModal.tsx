@@ -1,27 +1,41 @@
-import React from 'react';
+/**
+ * EditJobPostingModal - 공고 수정 모달 (리팩토링 버전)
+ *
+ * JobPostingForm의 섹션 컴포넌트들을 재사용하여 코드 중복을 제거하고
+ * 일관된 UI/UX를 제공합니다.
+ *
+ * @see app2/src/components/jobPosting/JobPostingForm/sections
+ */
+
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { ZodError, ZodIssue } from 'zod';
 import { useJobPostingForm } from '@/hooks/useJobPostingForm';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
-import {
-  LOCATIONS,
-  PREDEFINED_ROLES,
-  getRoleDisplayName,
-} from '@/utils/jobPosting/jobPostingHelpers';
+import { jobPostingFormSchema } from '@/schemas/jobPosting';
 import Modal from '../../ui/Modal';
 import Button from '../../ui/Button';
-import Input from '../../ui/Input';
-import { Select } from '../../common/Select';
-import DateSpecificRequirementsNew from '../DateSpecificRequirementsNew';
-import PreQuestionManager from '../PreQuestionManager';
 import TemplateModal from './TemplateModal';
 import LoadTemplateModal from './LoadTemplateModal';
 import ConfirmModal from '../../modals/ConfirmModal';
+import { Select } from '../../common/Select';
 import { toast } from '@/utils/toast';
-import type { JobPosting, JobPostingFormData, JobPostingTemplate } from '@/types/jobPosting';
-import type { DateSpecificRequirement } from '@/types/jobPosting/base';
 
-/** 역할별 급여 설정 타입 (JobPostingFormData.roleSalaries의 값 타입) */
-type RoleSalaryConfig = NonNullable<JobPostingFormData['roleSalaries']>[string];
+// 섹션 컴포넌트 재사용
+import {
+  BasicInfoSection,
+  SalarySection,
+  DateRequirementsSection,
+  PreQuestionsSection,
+} from '../JobPostingForm/sections';
+
+import type {
+  JobPosting,
+  JobPostingFormData,
+  JobPostingTemplate,
+  Benefits,
+} from '@/types/jobPosting';
+import type { DateSpecificRequirement } from '@/types/jobPosting/base';
 
 interface EditJobPostingModalProps {
   isOpen: boolean;
@@ -31,6 +45,12 @@ interface EditJobPostingModalProps {
   isUpdating?: boolean;
 }
 
+/**
+ * EditJobPostingModal 컴포넌트
+ *
+ * JobPostingForm의 섹션 컴포넌트를 재사용하여 일관성 유지
+ * mode='edit'으로 공고 타입 변경 불가 처리
+ */
 const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
   isOpen,
   onClose,
@@ -39,6 +59,12 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
   isUpdating = false,
 }) => {
   const { t } = useTranslation();
+
+  // Zod 검증 상태
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
+  const [touchedFields, setTouchedFields] = useState<Record<string, boolean>>({});
+
+  // 폼 상태 및 핸들러
   const {
     formData,
     handleFormChange,
@@ -46,6 +72,7 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     handleDateSpecificTimeToBeAnnouncedToggle,
     handleDateSpecificTentativeDescriptionChange,
     handleDateSpecificRoleChange,
+    handleDateSpecificRequirementsChange,
     handlePreQuestionsToggle,
     handlePreQuestionChange,
     handlePreQuestionOptionChange,
@@ -63,12 +90,11 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     handleRoleSalaryToggle,
     handleAddRoleToSalary,
     handleRemoveRoleFromSalary,
-    handleRoleChange,
     handleRoleSalaryTypeChange,
     handleRoleSalaryAmountChange,
-    handleCustomRoleNameChange,
   } = useJobPostingForm(currentPost ?? undefined);
 
+  // 템플릿 관리
   const {
     templates,
     templatesLoading,
@@ -90,30 +116,60 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
     closeLoadTemplateModal,
   } = useTemplateManager();
 
+  // currentPost 변경 시 폼 데이터 설정
   React.useEffect(() => {
     if (currentPost) {
       setFormData(currentPost as unknown as JobPostingFormData);
     }
   }, [currentPost, setFormData]);
 
+  // 폼 제출 핸들러 (Zod 검증 통합)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentPost) return;
 
+    // 모든 필드를 touched로 표시
+    const allFields = Object.keys(formData).reduce(
+      (acc, key) => {
+        acc[key] = true;
+        return acc;
+      },
+      {} as Record<string, boolean>
+    );
+    setTouchedFields(allFields);
+
     try {
+      // Zod 스키마 검증
+      jobPostingFormSchema.parse(formData);
+
+      // 검증 성공 - 에러 초기화 및 제출
+      setValidationErrors({});
       await onUpdate(currentPost.id, formData);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
+      if (error instanceof ZodError) {
+        // Zod 검증 에러 처리
+        const errors: Record<string, string> = {};
+        error.errors.forEach((err: ZodIssue) => {
+          const path = err.path.join('.');
+          errors[path] = err.message;
+        });
+        setValidationErrors(errors);
+        toast.error(t('toast.jobPosting.checkInput'));
+      } else {
+        toast.error(error instanceof Error ? error.message : '공고 수정 중 오류가 발생했습니다.');
+      }
     }
   };
 
-  const handleDateSpecificRequirementsChange = (requirements: DateSpecificRequirement[]) => {
-    setFormData((prev: JobPostingFormData) => ({
-      ...prev,
-      dateSpecificRequirements: requirements,
-    }));
-  };
+  // 날짜별 인원 요구사항 변경 핸들러
+  const handleDateRequirementsChange = React.useCallback(
+    (requirements: DateSpecificRequirement[]) => {
+      handleDateSpecificRequirementsChange(requirements);
+    },
+    [handleDateSpecificRequirementsChange]
+  );
 
+  // 템플릿 래퍼 함수들
   const handleSaveTemplateWrapper = async () => {
     await handleSaveTemplate(formData);
   };
@@ -126,14 +182,236 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
 
   const handleDeleteTemplateWrapper = async (templateId: string, templateName: string) => {
     handleDeleteTemplateClick(templateId, templateName);
-    return true; // Return true to indicate the modal should wait for confirmation
+    return true;
   };
+
+  /**
+   * BasicInfoSection Props 준비 (useMemo로 메모이제이션)
+   */
+  const basicInfoData = React.useMemo(
+    () => ({
+      title: formData.title,
+      location: formData.location || '',
+      district: formData.district || '',
+      detailedAddress: formData.detailedAddress || '',
+      description: formData.description,
+      postingType: formData.postingType,
+      contactPhone: formData.contactPhone || '',
+      fixedConfig: formData.fixedConfig,
+    }),
+    [
+      formData.title,
+      formData.location,
+      formData.district,
+      formData.detailedAddress,
+      formData.description,
+      formData.postingType,
+      formData.contactPhone,
+      formData.fixedConfig,
+    ]
+  );
+
+  const basicInfoValidation = React.useMemo(
+    () => ({
+      errors: {
+        title: validationErrors['title'],
+        location: validationErrors['location'],
+        district: validationErrors['district'],
+        detailedAddress: validationErrors['detailedAddress'],
+        description: validationErrors['description'],
+        postingType: validationErrors['postingType'],
+        contactPhone: validationErrors['contactPhone'],
+      },
+      touched: {
+        title: touchedFields['title'] || false,
+        location: touchedFields['location'] || false,
+        district: touchedFields['district'] || false,
+        detailedAddress: touchedFields['detailedAddress'] || false,
+        description: touchedFields['description'] || false,
+        postingType: touchedFields['postingType'] || false,
+        contactPhone: touchedFields['contactPhone'] || false,
+      },
+    }),
+    [validationErrors, touchedFields]
+  );
+
+  const basicInfoHandlers = React.useMemo(
+    () => ({
+      onFormChange: handleFormChange,
+      onLocationChange: (location: string, district?: string) => {
+        const updates: Partial<typeof formData> = { location };
+        if (district !== undefined) {
+          updates.district = district;
+        }
+        setFormData((prev) => ({
+          ...prev,
+          ...updates,
+        }));
+        if (district) {
+          handleDistrictChange(district);
+        }
+      },
+      // 수정 모드에서는 공고 타입 변경 불가 - 빈 함수
+      onPostingTypeChange: () => {},
+      onFixedDurationChange: undefined, // 수정 모드에서 고정 기간 변경 불가
+    }),
+    [handleFormChange, handleDistrictChange, setFormData]
+  );
+
+  /**
+   * SalarySection Props 준비
+   */
+  const salaryData = React.useMemo(
+    () => ({
+      salaryType: formData.salaryType,
+      salaryAmount: formData.salaryAmount || '',
+      benefits: formData.benefits,
+      useRoleSalary: formData.useRoleSalary || false,
+      roleSalaries: formData.roleSalaries || {},
+    }),
+    [
+      formData.salaryType,
+      formData.salaryAmount,
+      formData.benefits,
+      formData.useRoleSalary,
+      formData.roleSalaries,
+    ]
+  );
+
+  const salaryValidation = React.useMemo(
+    () => ({
+      errors: {
+        salaryType: validationErrors['salaryType'],
+        salaryAmount: validationErrors['salaryAmount'],
+      },
+      touched: {
+        salaryType: touchedFields['salaryType'] || false,
+        salaryAmount: touchedFields['salaryAmount'] || false,
+      },
+    }),
+    [validationErrors, touchedFields]
+  );
+
+  const salaryHandlers = React.useMemo(
+    () => ({
+      onSalaryTypeChange: handleSalaryTypeChange,
+      onSalaryAmountChange: (amount: number) => handleSalaryAmountChange(amount.toString()),
+      onBenefitToggle: handleBenefitToggle,
+      onBenefitChange: (benefitType: keyof Benefits, value: string) =>
+        handleBenefitChange(benefitType, value),
+      onRoleSalaryToggle: handleRoleSalaryToggle,
+      onAddRole: handleAddRoleToSalary,
+      onRemoveRole: (roleIndex: string | number) => {
+        const roleStr = typeof roleIndex === 'number' ? roleIndex.toString() : roleIndex;
+        handleRemoveRoleFromSalary(roleStr);
+      },
+      onRoleSalaryChange: (role: string | number, type: string, amount: number) => {
+        const roleStr = typeof role === 'number' ? role.toString() : role;
+        handleRoleSalaryTypeChange(
+          roleStr,
+          type as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
+        );
+        handleRoleSalaryAmountChange(roleStr, amount.toString());
+      },
+    }),
+    [
+      handleSalaryTypeChange,
+      handleSalaryAmountChange,
+      handleBenefitToggle,
+      handleBenefitChange,
+      handleRoleSalaryToggle,
+      handleAddRoleToSalary,
+      handleRemoveRoleFromSalary,
+      handleRoleSalaryTypeChange,
+      handleRoleSalaryAmountChange,
+    ]
+  );
+
+  /**
+   * DateRequirementsSection Props 준비
+   */
+  const dateRequirementsData = React.useMemo(
+    () => ({
+      dateSpecificRequirements: formData.dateSpecificRequirements || [],
+    }),
+    [formData.dateSpecificRequirements]
+  );
+
+  const dateRequirementsValidation = React.useMemo(
+    () => ({
+      errors: {
+        dateSpecificRequirements: validationErrors['dateSpecificRequirements'],
+      },
+      touched: {
+        dateSpecificRequirements: touchedFields['dateSpecificRequirements'],
+      },
+    }),
+    [validationErrors, touchedFields]
+  );
+
+  const dateRequirementsHandlers = React.useMemo(
+    () => ({
+      onRequirementsChange: handleDateRequirementsChange,
+      onTimeSlotChange: handleDateSpecificTimeSlotChange,
+      onTimeToBeAnnouncedToggle: handleDateSpecificTimeToBeAnnouncedToggle,
+      onTentativeDescriptionChange: handleDateSpecificTentativeDescriptionChange,
+      onRoleChange: handleDateSpecificRoleChange,
+    }),
+    [
+      handleDateRequirementsChange,
+      handleDateSpecificTimeSlotChange,
+      handleDateSpecificTimeToBeAnnouncedToggle,
+      handleDateSpecificTentativeDescriptionChange,
+      handleDateSpecificRoleChange,
+    ]
+  );
+
+  /**
+   * PreQuestionsSection Props 준비
+   */
+  const preQuestionsData = React.useMemo(
+    () => ({
+      usesPreQuestions: formData.usesPreQuestions ?? false,
+      preQuestions: formData.preQuestions || [],
+    }),
+    [formData.usesPreQuestions, formData.preQuestions]
+  );
+
+  const preQuestionsValidation = React.useMemo(
+    () => ({
+      errors: validationErrors,
+      touched: touchedFields,
+    }),
+    [validationErrors, touchedFields]
+  );
+
+  const preQuestionsHandlers = React.useMemo(
+    () => ({
+      onToggle: handlePreQuestionsToggle,
+      onQuestionChange: handlePreQuestionChange,
+      onOptionChange: handlePreQuestionOptionChange,
+      onAddQuestion: addPreQuestion,
+      onRemoveQuestion: removePreQuestion,
+      onAddOption: addPreQuestionOption,
+      onRemoveOption: removePreQuestionOption,
+    }),
+    [
+      handlePreQuestionsToggle,
+      handlePreQuestionChange,
+      handlePreQuestionOptionChange,
+      addPreQuestion,
+      removePreQuestion,
+      addPreQuestionOption,
+      removePreQuestionOption,
+    ]
+  );
 
   if (!isOpen || !currentPost) return null;
 
   return (
     <>
       <Modal isOpen={isOpen} onClose={onClose} title="공고 수정">
+        {/* 템플릿 버튼 */}
         <div className="flex justify-between items-center mb-4">
           <div className="flex space-x-2">
             <Button
@@ -156,530 +434,39 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
             </Button>
           </div>
         </div>
+
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* 기본 정보 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                대회명(매장명) <span className="text-red-500 dark:text-red-400">*</span>
-              </label>
-              <Input
-                type="text"
-                name="title"
-                value={formData.title}
-                onChange={handleFormChange}
-                placeholder="대회명(매장명)"
-                maxLength={25}
-                required
-                disabled={isUpdating}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                공고 타입
-              </label>
-              <div className="mt-1 px-3 py-2 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-gray-900 dark:text-gray-100">
-                {formData.postingType === 'regular' && '📋 지원 공고'}
-                {formData.postingType === 'fixed' && '📌 고정 공고'}
-                {formData.postingType === 'tournament' && '🏆 대회 공고'}
-                {formData.postingType === 'urgent' && '🚨 긴급 공고'}
-              </div>
-              <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                공고 타입은 작성 후 변경할 수 없습니다
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  지역 <span className="text-red-500 dark:text-red-400">*</span>
-                </label>
-                <Select
-                  name="location"
-                  value={formData.location}
-                  onChange={(value) =>
-                    handleFormChange({
-                      target: { name: 'location', value },
-                    } as React.ChangeEvent<HTMLSelectElement>)
-                  }
-                  options={LOCATIONS.map((location) => ({ value: location, label: location }))}
-                  required
-                  disabled={isUpdating}
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  시/군/구
-                </label>
-                <Input
-                  type="text"
-                  name="district"
-                  value={formData.district || ''}
-                  onChange={(e) => handleDistrictChange(e.target.value)}
-                  placeholder="시/군/구를 입력하세요"
-                  maxLength={25}
-                  disabled={isUpdating}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                상세 주소
-              </label>
-              <Input
-                type="text"
-                name="detailedAddress"
-                value={formData.detailedAddress}
-                onChange={handleFormChange}
-                placeholder="상세 주소를 입력하세요"
-                maxLength={25}
-                disabled={isUpdating}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                문의 연락처 <span className="text-red-500 dark:text-red-400">*</span>
-              </label>
-              <Input
-                type="text"
-                name="contactPhone"
-                value={formData.contactPhone || ''}
-                onChange={handleFormChange}
-                placeholder="010-0000-0000"
-                maxLength={25}
-                required
-                disabled={isUpdating}
-              />
-            </div>
-          </div>
-
-          {/* 급여 정보 */}
-          <div className="space-y-4">
-            <div className="flex items-center">
-              <input
-                type="checkbox"
-                id="useRoleSalary-edit"
-                checked={formData.useRoleSalary || false}
-                onChange={(e) => handleRoleSalaryToggle(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                disabled={isUpdating}
-              />
-              <label
-                htmlFor="useRoleSalary-edit"
-                className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300"
-              >
-                역할별 급여 설정
-              </label>
-            </div>
-
-            {formData.useRoleSalary ? (
-              <div className="space-y-3 border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
-                <div className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  각 역할별로 급여를 설정하세요. 기본값: 시급 20,000원
-                </div>
-
-                {/* 역할별 급여 목록 */}
-                {Object.entries(formData.roleSalaries || {}).map(
-                  ([role, salary]: [string, RoleSalaryConfig]) => (
-                    <div key={role} className="grid grid-cols-12 gap-2 items-center">
-                      {/* 역할 선택 - 기타일 때만 특별 처리 */}
-                      {role === 'other' ? (
-                        <>
-                          <div className="col-span-2">
-                            <Select
-                              value={role}
-                              onChange={(value) => handleRoleChange(role, value)}
-                              options={PREDEFINED_ROLES.map((r) => ({
-                                value: r,
-                                label: getRoleDisplayName(r),
-                              }))}
-                              disabled={isUpdating}
-                            />
-                          </div>
-                          <div className="col-span-3">
-                            <Input
-                              type="text"
-                              value={salary.customRoleName || ''}
-                              onChange={(e) => handleCustomRoleNameChange(role, e.target.value)}
-                              placeholder="역할명을 입력하세요"
-                              disabled={isUpdating}
-                            />
-                          </div>
-                        </>
-                      ) : (
-                        <div className="col-span-4">
-                          <Select
-                            value={role}
-                            onChange={(value) => handleRoleChange(role, value)}
-                            options={PREDEFINED_ROLES.map((r) => ({
-                              value: r,
-                              label: getRoleDisplayName(r),
-                            }))}
-                            disabled={isUpdating}
-                          />
-                        </div>
-                      )}
-
-                      {/* 급여 유형 */}
-                      <div className={role === 'other' ? 'col-span-2' : 'col-span-3'}>
-                        <Select
-                          value={salary.salaryType}
-                          onChange={(value) =>
-                            handleRoleSalaryTypeChange(
-                              role,
-                              value as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
-                            )
-                          }
-                          options={[
-                            { value: 'hourly', label: '시급' },
-                            { value: 'daily', label: '일급' },
-                            { value: 'monthly', label: '월급' },
-                            { value: 'negotiable', label: '협의' },
-                            { value: 'other', label: '기타' },
-                          ]}
-                          disabled={isUpdating}
-                        />
-                      </div>
-
-                      {/* 급여 금액 */}
-                      <div className="col-span-3">
-                        {salary.salaryType === 'negotiable' ? (
-                          <div className="text-gray-500 dark:text-gray-400 text-sm py-2">
-                            급여 협의
-                          </div>
-                        ) : (
-                          <Input
-                            type="text"
-                            value={salary.salaryAmount}
-                            onChange={(e) => handleRoleSalaryAmountChange(role, e.target.value)}
-                            placeholder="급여 금액"
-                            disabled={isUpdating}
-                          />
-                        )}
-                      </div>
-
-                      {/* 삭제 버튼 */}
-                      <div className="col-span-2">
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleRemoveRoleFromSalary(role)}
-                          disabled={isUpdating}
-                        >
-                          삭제
-                        </Button>
-                      </div>
-                    </div>
-                  )
-                )}
-
-                {/* 역할 추가 버튼 */}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="sm"
-                  onClick={handleAddRoleToSalary}
-                  disabled={isUpdating}
-                >
-                  + 역할 추가
-                </Button>
-              </div>
-            ) : (
-              // 기존 통합 급여 입력
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    급여 유형 <span className="text-red-500 dark:text-red-400">*</span>
-                  </label>
-                  <Select
-                    name="salaryType"
-                    value={formData.salaryType || ''}
-                    onChange={(value) =>
-                      handleSalaryTypeChange(
-                        value as 'hourly' | 'daily' | 'monthly' | 'negotiable' | 'other'
-                      )
-                    }
-                    options={[
-                      { value: '', label: '선택하세요' },
-                      { value: 'hourly', label: '시급' },
-                      { value: 'daily', label: '일급' },
-                      { value: 'monthly', label: '월급' },
-                      { value: 'negotiable', label: '협의' },
-                      { value: 'other', label: '기타' },
-                    ]}
-                    required={!formData.useRoleSalary}
-                    disabled={isUpdating}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    급여 금액 <span className="text-red-500 dark:text-red-400">*</span>
-                  </label>
-                  {formData.salaryType === 'negotiable' ? (
-                    <div className="text-gray-500 dark:text-gray-400 text-sm py-2">급여 협의</div>
-                  ) : (
-                    <Input
-                      type="text"
-                      name="salaryAmount"
-                      value={formData.salaryAmount || ''}
-                      onChange={(e) => handleSalaryAmountChange(e.target.value)}
-                      placeholder="급여 금액을 입력하세요"
-                      required={
-                        !formData.useRoleSalary &&
-                        (formData.salaryType as
-                          | 'hourly'
-                          | 'daily'
-                          | 'monthly'
-                          | 'negotiable'
-                          | 'other'
-                          | undefined) !== 'negotiable'
-                      }
-                      disabled={
-                        isUpdating ||
-                        (formData.salaryType as
-                          | 'hourly'
-                          | 'daily'
-                          | 'monthly'
-                          | 'negotiable'
-                          | 'other'
-                          | undefined) === 'negotiable'
-                      }
-                    />
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* 복리후생 */}
-          <div className="space-y-4">
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-              복리후생 (제공되는 정보만 입력)
-            </label>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {/* 보장시간 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="benefit-guaranteedHours-edit"
-                  checked={!!formData.benefits?.guaranteedHours}
-                  onChange={(e) => handleBenefitToggle('guaranteedHours', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isUpdating}
-                />
-                <label
-                  htmlFor="benefit-guaranteedHours-edit"
-                  className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                >
-                  보장시간
-                </label>
-                {formData.benefits?.guaranteedHours !== undefined && (
-                  <Input
-                    type="text"
-                    value={formData.benefits.guaranteedHours}
-                    onChange={(e) => handleBenefitChange('guaranteedHours', e.target.value)}
-                    placeholder="예시: 6시간"
-                    maxLength={25}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                )}
-              </div>
-
-              {/* 복장 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="benefit-clothing-edit"
-                  checked={!!formData.benefits?.clothing}
-                  onChange={(e) => handleBenefitToggle('clothing', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isUpdating}
-                />
-                <label
-                  htmlFor="benefit-clothing-edit"
-                  className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                >
-                  복장
-                </label>
-                {formData.benefits?.clothing !== undefined && (
-                  <Input
-                    type="text"
-                    value={formData.benefits.clothing}
-                    onChange={(e) => handleBenefitChange('clothing', e.target.value)}
-                    placeholder="예시: 검은셔츠,슬랙스,운동화"
-                    maxLength={25}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                )}
-              </div>
-
-              {/* 식사 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="benefit-meal-edit"
-                  checked={!!formData.benefits?.meal}
-                  onChange={(e) => handleBenefitToggle('meal', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isUpdating}
-                />
-                <label
-                  htmlFor="benefit-meal-edit"
-                  className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                >
-                  식사
-                </label>
-                {formData.benefits?.meal !== undefined && (
-                  <Input
-                    type="text"
-                    value={formData.benefits.meal}
-                    onChange={(e) => handleBenefitChange('meal', e.target.value)}
-                    placeholder="식사 정보 입력"
-                    maxLength={25}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                )}
-              </div>
-
-              {/* 교통비 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="benefit-transportation-edit"
-                  checked={!!formData.benefits?.transportation}
-                  onChange={(e) => handleBenefitToggle('transportation', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isUpdating}
-                />
-                <label
-                  htmlFor="benefit-transportation-edit"
-                  className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                >
-                  교통비
-                </label>
-                {formData.benefits?.transportation !== undefined && (
-                  <Input
-                    type="text"
-                    value={formData.benefits.transportation}
-                    onChange={(e) => handleBenefitChange('transportation', e.target.value)}
-                    placeholder="예시: 10000"
-                    maxLength={25}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                )}
-              </div>
-
-              {/* 식비 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="benefit-mealAllowance-edit"
-                  checked={!!formData.benefits?.mealAllowance}
-                  onChange={(e) => handleBenefitToggle('mealAllowance', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isUpdating}
-                />
-                <label
-                  htmlFor="benefit-mealAllowance-edit"
-                  className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                >
-                  식비
-                </label>
-                {formData.benefits?.mealAllowance !== undefined && (
-                  <Input
-                    type="text"
-                    value={formData.benefits.mealAllowance}
-                    onChange={(e) => handleBenefitChange('mealAllowance', e.target.value)}
-                    placeholder="예시: 10000"
-                    maxLength={25}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                )}
-              </div>
-
-              {/* 숙소 */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="benefit-accommodation-edit"
-                  checked={!!formData.benefits?.accommodation}
-                  onChange={(e) => handleBenefitToggle('accommodation', e.target.checked)}
-                  className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                  disabled={isUpdating}
-                />
-                <label
-                  htmlFor="benefit-accommodation-edit"
-                  className="text-sm text-gray-700 dark:text-gray-300 whitespace-nowrap"
-                >
-                  숙소
-                </label>
-                {formData.benefits?.accommodation !== undefined && (
-                  <Input
-                    type="text"
-                    value={formData.benefits.accommodation}
-                    onChange={(e) => handleBenefitChange('accommodation', e.target.value)}
-                    placeholder="예시: 제공 또는 숙소비"
-                    maxLength={25}
-                    className="flex-1"
-                    disabled={isUpdating}
-                  />
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* 날짜별 인원 요구사항 설정 */}
-          <DateSpecificRequirementsNew
-            requirements={formData.dateSpecificRequirements || []}
-            onRequirementsChange={handleDateSpecificRequirementsChange}
-            onDateSpecificTimeSlotChange={handleDateSpecificTimeSlotChange}
-            onDateSpecificTimeToBeAnnouncedToggle={handleDateSpecificTimeToBeAnnouncedToggle}
-            onDateSpecificTentativeDescriptionChange={handleDateSpecificTentativeDescriptionChange}
-            onDateSpecificRoleChange={handleDateSpecificRoleChange}
+          {/* 기본 정보 - mode='edit'으로 공고 타입 변경 불가 */}
+          <BasicInfoSection
+            data={basicInfoData}
+            handlers={basicInfoHandlers}
+            validation={basicInfoValidation}
+            mode="edit"
+            isDisabled={isUpdating}
           />
 
-          {/* 사전질문 설정 */}
-          <div className="space-y-4">
-            <div className="flex items-center space-x-2">
-              <input
-                type="checkbox"
-                id="usesPreQuestions-edit"
-                checked={'usesPreQuestions' in formData ? formData.usesPreQuestions : false}
-                onChange={(e) => handlePreQuestionsToggle(e.target.checked)}
-                className="rounded border-gray-300 dark:border-gray-600 text-indigo-600 focus:ring-indigo-500"
-                disabled={isUpdating}
-              />
-              <label
-                htmlFor="usesPreQuestions-edit"
-                className="text-sm text-gray-700 dark:text-gray-300"
-              >
-                사전질문 사용(추가 질문)
-              </label>
-            </div>
+          {/* 급여 정보 */}
+          <SalarySection
+            data={salaryData}
+            handlers={salaryHandlers}
+            validation={salaryValidation}
+          />
 
-            {'usesPreQuestions' in formData && formData.usesPreQuestions && (
-              <PreQuestionManager
-                preQuestions={formData.preQuestions || []}
-                onPreQuestionChange={handlePreQuestionChange}
-                onPreQuestionOptionChange={handlePreQuestionOptionChange}
-                onAddPreQuestion={addPreQuestion}
-                onRemovePreQuestion={removePreQuestion}
-                onAddPreQuestionOption={addPreQuestionOption}
-                onRemovePreQuestionOption={removePreQuestionOption}
-              />
-            )}
-          </div>
+          {/* 날짜별 인원 요구사항 (고정공고가 아닐 때만 표시) */}
+          {formData.postingType !== 'fixed' && (
+            <DateRequirementsSection
+              data={dateRequirementsData}
+              handlers={dateRequirementsHandlers}
+              validation={dateRequirementsValidation}
+            />
+          )}
+
+          {/* 사전질문 */}
+          <PreQuestionsSection
+            data={preQuestionsData}
+            handlers={preQuestionsHandlers}
+            validation={preQuestionsValidation}
+          />
 
           {/* 상세 설명 */}
           <div>
@@ -718,6 +505,24 @@ const EditJobPostingModal: React.FC<EditJobPostingModalProps> = ({
               disabled={isUpdating}
             />
           </div>
+
+          {/* 검증 에러 표시 */}
+          {touchedFields && Object.keys(validationErrors).length > 0 && (
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+              <h4 className="text-sm font-medium text-red-800 dark:text-red-300 mb-2">
+                입력 내용을 확인해주세요
+              </h4>
+              <ul className="space-y-1">
+                {Object.entries(validationErrors).map(([key, error]) =>
+                  error ? (
+                    <li key={key} className="text-sm text-red-600 dark:text-red-400">
+                      • {error}
+                    </li>
+                  ) : null
+                )}
+              </ul>
+            </div>
+          )}
 
           {/* 버튼 */}
           <div className="flex justify-end space-x-3">
