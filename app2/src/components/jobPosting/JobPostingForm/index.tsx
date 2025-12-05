@@ -234,10 +234,12 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
         onPostingTypeChange: (postingType: 'regular' | 'fixed' | 'urgent' | 'tournament') => {
           if (postingType === 'tournament') {
             const { fixedConfig: _fixedConfig, urgentConfig: _urgentConfig, ...rest } = formData;
+            // 기존 tournamentConfig가 있으면 보존, 없으면 새로 생성
+            const existingConfig = formData.tournamentConfig;
             setFormData({
               ...rest,
               postingType: 'tournament',
-              tournamentConfig: {
+              tournamentConfig: existingConfig || {
                 approvalStatus: 'pending' as const,
                 submittedAt: Timestamp.fromDate(new Date()),
               },

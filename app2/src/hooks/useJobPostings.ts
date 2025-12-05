@@ -42,6 +42,11 @@ export const useJobPostings = (filters: JobPostingFilters) => {
         // postingType 필터 적용
         if (filters.postingType && filters.postingType !== 'all') {
           jobs = jobs.filter((job) => normalizePostingType(job) === filters.postingType);
+
+          // 대회 공고는 승인된(approved) 것만 표시
+          if (filters.postingType === 'tournament') {
+            jobs = jobs.filter((job) => job.tournamentConfig?.approvalStatus === 'approved');
+          }
         }
 
         if (filters.startDate && filters.role && filters.role !== 'all') {
@@ -120,6 +125,11 @@ export const useInfiniteJobPostings = (filters: JobPostingFilters) => {
         // postingType 필터 적용
         if (filters.postingType && filters.postingType !== 'all') {
           jobs = jobs.filter((job) => normalizePostingType(job) === filters.postingType);
+
+          // 대회 공고는 승인된(approved) 것만 표시
+          if (filters.postingType === 'tournament') {
+            jobs = jobs.filter((job) => job.tournamentConfig?.approvalStatus === 'approved');
+          }
         }
 
         if (filters.startDate && filters.role && filters.role !== 'all') {

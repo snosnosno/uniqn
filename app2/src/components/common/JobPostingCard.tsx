@@ -27,6 +27,10 @@ import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { extractNameFromDisplayName, extractNicknameFromDisplayName } from '../../utils/userUtils';
 import { formatChipCost } from '../../utils/jobPosting/chipCalculator';
+import { TournamentStatusBadge } from '../jobPosting/TournamentStatusBadge';
+import { RejectionReasonDisplay } from '../jobPosting/RejectionReasonDisplay';
+import { ResubmitButton } from '../jobPosting/ResubmitButton';
+import { useAuth } from '../../contexts/AuthContext';
 
 export interface JobPostingCardProps {
   post: JobPosting & { applicationCount?: number };
@@ -35,6 +39,10 @@ export interface JobPostingCardProps {
   renderExtra?: (post: JobPosting) => React.ReactNode;
   showStatus?: boolean;
   showApplicationCount?: boolean;
+  /** 대회 공고의 승인 상태 배지 및 거부 사유 표시 (기본값: false) */
+  showTournamentStatus?: boolean;
+  /** 거부된 대회 공고의 재제출 버튼 표시 (기본값: false) */
+  showResubmitButton?: boolean;
   className?: string;
 }
 
@@ -80,10 +88,16 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
   renderExtra,
   showStatus = true,
   showApplicationCount = false,
+  showTournamentStatus = false,
+  showResubmitButton = false,
   className = '',
 }) => {
   const { t } = useTranslation();
+  const { currentUser } = useAuth();
   const [creatorInfo, setCreatorInfo] = useState<{ name: string; nickname?: string } | null>(null);
+
+  // 현재 사용자가 공고 작성자인지 확인
+  const isOwner = currentUser?.uid === post.createdBy;
 
   // 구인자 정보 가져오기
   useEffect(() => {
@@ -357,6 +371,52 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     }
   };
 
+  // 역할별 모집 현황 렌더링 헬퍼 (중복 코드 제거)
+  const renderRoleRequirements = (
+    roles: RoleRequirement[],
+    dateString: string,
+    timeSlotTime: string,
+    timeDisplay: React.ReactNode,
+    keyPrefix: string
+  ) => {
+    return roles.map((role: RoleRequirement, roleIndex: number) => {
+      const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+        post,
+        dateString,
+        timeSlotTime,
+        role.name
+      );
+      const isFull = confirmedCount >= role.count;
+
+      return (
+        <div key={`${keyPrefix}-${role.name}`} className="text-sm text-gray-600 dark:text-gray-300">
+          {roleIndex === 0 ? (
+            <>
+              {timeDisplay}
+              <span className="ml-3">
+                {t(`roles.${role.name}`, role.name)}: {role.count}명
+                <span
+                  className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                >
+                  ({confirmedCount}/{role.count})
+                </span>
+              </span>
+            </>
+          ) : (
+            <div className="pl-[50px]">
+              {t(`roles.${role.name}`, role.name)}: {role.count}명
+              <span
+                className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+              >
+                ({confirmedCount}/{role.count})
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
   // 시간대 및 역할 렌더링
   const renderTimeSlots = () => {
     // ✅ 고정공고: 근무조건 및 모집역할 표시
@@ -432,108 +492,35 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   📅 {dateDisplay} 일정
                 </div>
                 <div className="ml-4 space-y-1">
-                  {(req.timeSlots || []).map((ts: TimeSlot) => (
-                    <div key={`ts-${req.date}-${ts.time}`} className="mb-2">
-                      {ts.isTimeToBeAnnounced ? (
-                        <>
-                          <>
-                            {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
-                              const dateString = timestampToLocalDateString(req.date);
-                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                dateString,
-                                ts.time,
-                                role.name
-                              );
-                              const isFull = confirmedCount >= role.count;
-                              return (
-                                <div
-                                  key={`role-tba-${role.name}`}
-                                  className="text-sm text-gray-600 dark:text-gray-300"
-                                >
-                                  {roleIndex === 0 ? (
-                                    <>
-                                      <span className="font-medium text-orange-600 dark:text-orange-400">
-                                        미정
-                                        {ts.tentativeDescription && (
-                                          <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
-                                            ({ts.tentativeDescription})
-                                          </span>
-                                        )}
-                                      </span>
-                                      <span className="ml-3">
-                                        {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                        <span
-                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                        >
-                                          ({confirmedCount}/{role.count})
-                                        </span>
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <div className="pl-[50px]">
-                                      {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span
-                                        className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                      >
-                                        ({confirmedCount}/{role.count})
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </>
-                        </>
-                      ) : (
-                        <>
-                          <>
-                            {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
-                              const dateString = timestampToLocalDateString(req.date);
-                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                dateString,
-                                ts.time,
-                                role.name
-                              );
-                              const isFull = confirmedCount >= role.count;
-                              return (
-                                <div
-                                  key={`role-${ts.time}-${role.name}`}
-                                  className="text-sm text-gray-600 dark:text-gray-300"
-                                >
-                                  {roleIndex === 0 ? (
-                                    <>
-                                      <span className="font-medium text-gray-700 dark:text-gray-200">
-                                        {ts.time}
-                                      </span>
-                                      <span className="ml-3">
-                                        {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                        <span
-                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                        >
-                                          ({confirmedCount}/{role.count})
-                                        </span>
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <div className="pl-[50px]">
-                                      {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span
-                                        className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                      >
-                                        ({confirmedCount}/{role.count})
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </>
-                        </>
-                      )}
-                    </div>
-                  ))}
+                  {(req.timeSlots || []).map((ts: TimeSlot) => {
+                    const dateString = timestampToLocalDateString(req.date);
+                    const timeDisplay = ts.isTimeToBeAnnounced ? (
+                      <span className="font-medium text-orange-600 dark:text-orange-400">
+                        미정
+                        {ts.tentativeDescription && (
+                          <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
+                            ({ts.tentativeDescription})
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="font-medium text-gray-700 dark:text-gray-200">
+                        {ts.time}
+                      </span>
+                    );
+
+                    return (
+                      <div key={`ts-${req.date}-${ts.time}`} className="mb-2">
+                        {renderRoleRequirements(
+                          ts.roles || [],
+                          dateString,
+                          ts.time,
+                          timeDisplay,
+                          `role-${req.date}-${ts.time}`
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );
@@ -869,6 +856,16 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   {getStatusDisplayName(post.status)}
                 </span>
               )}
+
+              {/* 대회 공고 승인 상태 배지 */}
+              {showTournamentStatus &&
+                normalizePostingType(post) === 'tournament' &&
+                post.tournamentConfig && (
+                  <TournamentStatusBadge
+                    tournamentConfig={post.tournamentConfig}
+                    showRejectionReason={true}
+                  />
+                )}
             </div>
 
             {/* 기본 정보 */}
@@ -979,6 +976,27 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
 
             {/* 추가 콘텐츠 */}
             {renderExtra && renderExtra(post)}
+
+            {/* 대회 공고 거부 사유 표시 */}
+            {showTournamentStatus &&
+              normalizePostingType(post) === 'tournament' &&
+              post.tournamentConfig && (
+                <RejectionReasonDisplay
+                  tournamentConfig={post.tournamentConfig}
+                  collapsible={true}
+                  defaultExpanded={true}
+                />
+              )}
+
+            {/* 거부된 대회 공고 재제출 버튼 (소유자에게만 표시) */}
+            {showResubmitButton &&
+              isOwner &&
+              normalizePostingType(post) === 'tournament' &&
+              post.tournamentConfig && (
+                <div className="mt-3">
+                  <ResubmitButton postingId={post.id} tournamentConfig={post.tournamentConfig} />
+                </div>
+              )}
           </div>
 
           {/* 액션 버튼 영역 - admin-list가 아닌 경우만 여기에 표시 */}

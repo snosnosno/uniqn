@@ -96,7 +96,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(
                 name="postingType"
                 value="regular"
                 checked={data.postingType === 'regular'}
-                onChange={handlers.onFormChange}
+                onChange={() => handlers.onPostingTypeChange('regular')}
                 className="sr-only"
               />
               <div className="text-xl mr-2">📋</div>
@@ -122,7 +122,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(
                 name="postingType"
                 value="fixed"
                 checked={data.postingType === 'fixed'}
-                onChange={handlers.onFormChange}
+                onChange={() => handlers.onPostingTypeChange('fixed')}
                 className="sr-only"
               />
               <div className="text-xl mr-2">📌</div>
@@ -148,7 +148,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(
                 name="postingType"
                 value="tournament"
                 checked={data.postingType === 'tournament'}
-                onChange={handlers.onFormChange}
+                onChange={() => handlers.onPostingTypeChange('tournament')}
                 className="sr-only"
               />
               <div className="text-xl mr-2">🏆</div>
@@ -174,7 +174,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = React.memo(
                 name="postingType"
                 value="urgent"
                 checked={data.postingType === 'urgent'}
-                onChange={handlers.onFormChange}
+                onChange={() => handlers.onPostingTypeChange('urgent')}
                 className="sr-only"
               />
               <div className="text-xl mr-2">🚨</div>
