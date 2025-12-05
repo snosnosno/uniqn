@@ -15,10 +15,23 @@ const ForgotPassword = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // 이메일 유효성 검사
+  const isValidEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setMessage('');
+
+    // 이메일 형식 검증
+    if (!isValidEmail(email)) {
+      setError(t('forgotPassword.invalidEmail', '올바른 이메일 형식을 입력해주세요.'));
+      return;
+    }
+
     setLoading(true);
 
     try {

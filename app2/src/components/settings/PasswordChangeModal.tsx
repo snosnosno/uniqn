@@ -218,6 +218,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
                   disabled={isSubmitting}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
+                  maxLength={128}
                 />
                 <button
                   type="button"
@@ -252,6 +253,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
                   minLength={8}
+                  maxLength={128}
                 />
                 <button
                   type="button"
@@ -271,7 +273,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
               {newPassword.length > 0 && (
                 <div className="mt-2">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs text-gray-600 dark:text-gray-400 dark:text-gray-500">
+                    <span className="text-xs text-gray-600 dark:text-gray-400">
                       {t('settings.security.passwordStrength')}
                     </span>
                     <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
@@ -332,6 +334,7 @@ export const PasswordChangeModal: React.FC<PasswordChangeModalProps> = ({ isOpen
                   disabled={isSubmitting}
                   className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 pr-10 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   required
+                  maxLength={128}
                 />
                 <button
                   type="button"

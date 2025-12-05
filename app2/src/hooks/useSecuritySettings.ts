@@ -8,7 +8,7 @@
  * @since 2025-01-23
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { doc, setDoc, updateDoc } from 'firebase/firestore';
 import {
   EmailAuthProvider,
@@ -109,12 +109,23 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
     },
   });
 
-  // 문서가 없으면 기본값 생성 시도
-  const loginNotificationSettings = useMemo(() => {
-    if (!currentUser) return null;
+  // 기본 설정 생성 시도 추적 (중복 생성 방지)
+  const hasCreatedDefaultSettings = useRef(false);
 
-    if (!settingsData && !loading && settingsPath) {
-      // 기본 설정 생성
+  // 문서가 없으면 기본값 생성 (useEffect로 부수효과 처리)
+  useEffect(() => {
+    if (!currentUser || !settingsPath || loading || settingsData) {
+      return;
+    }
+
+    // 이미 생성 시도했으면 스킵
+    if (hasCreatedDefaultSettings.current) {
+      return;
+    }
+
+    hasCreatedDefaultSettings.current = true;
+
+    const createDefaultSettings = async () => {
       const defaultSettings: LoginNotificationSettings = {
         ...DEFAULT_LOGIN_NOTIFICATION_SETTINGS,
         updatedAt: new Date(),
@@ -122,27 +133,44 @@ export const useSecuritySettings = (): UseSecuritySettingsReturn => {
 
       const settingsRef = doc(db, settingsPath);
 
-      // 비동기 작업을 즉시 실행 함수로 처리
-      (async () => {
-        try {
-          await setDoc(settingsRef, defaultSettings);
-          logger.info('기본 로그인 알림 설정 생성', {
-            component: 'useSecuritySettings',
-            data: { userId: currentUser.uid },
-          });
-        } catch (err) {
-          logger.error('기본 설정 생성 실패', err as Error, {
-            component: 'useSecuritySettings',
-            data: { userId: currentUser.uid },
-          });
-        }
-      })();
+      try {
+        await setDoc(settingsRef, defaultSettings);
+        logger.info('기본 로그인 알림 설정 생성', {
+          component: 'useSecuritySettings',
+          data: { userId: currentUser.uid },
+        });
+      } catch (err) {
+        logger.error('기본 설정 생성 실패', err as Error, {
+          component: 'useSecuritySettings',
+          data: { userId: currentUser.uid },
+        });
+        // 실패 시 다음 시도 허용
+        hasCreatedDefaultSettings.current = false;
+      }
+    };
 
-      return defaultSettings;
+    createDefaultSettings();
+  }, [currentUser, settingsPath, loading, settingsData]);
+
+  // 설정 데이터 반환 (순수 함수)
+  const loginNotificationSettings = useMemo(() => {
+    if (!currentUser) return null;
+
+    // 데이터가 있으면 반환, 없으면 기본값 반환 (UI 표시용)
+    if (settingsData) {
+      return settingsData;
     }
 
-    return settingsData;
-  }, [settingsData, loading, currentUser, settingsPath]);
+    // 로딩 중이 아니고 데이터가 없으면 기본값 표시
+    if (!loading) {
+      return {
+        ...DEFAULT_LOGIN_NOTIFICATION_SETTINGS,
+        updatedAt: new Date(),
+      };
+    }
+
+    return null;
+  }, [settingsData, loading, currentUser]);
 
   /**
    * 비밀번호 변경

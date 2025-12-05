@@ -244,8 +244,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = useCallback(async () => {
     try {
-      // localStorage 설정 정리
-      localStorage.removeItem('rememberMe');
+      // secureStorage 설정 정리 (signIn과 일관성 유지)
+      secureStorage.removeItem('rememberMe');
 
       logger.info('로그아웃 처리 완료', { component: 'AuthContext' });
 

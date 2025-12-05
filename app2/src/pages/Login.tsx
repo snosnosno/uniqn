@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { logger } from '../utils/logger';
 import { useTranslation } from 'react-i18next';
 import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
@@ -11,7 +11,6 @@ import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
 import Modal from '../components/ui/Modal';
 import { useAuth } from '../contexts/AuthContext';
-import { recordLoginAttempt, isLoginBlocked, formatBlockTime } from '../services/authSecurity';
 import { secureStorage } from '../utils/secureStorage';
 import { toast } from '../utils/toast';
 
@@ -21,12 +20,10 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
-  const [isBlocked, setIsBlocked] = useState(false);
-  const [attempts, setAttempts] = useState(0);
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle, currentUser /* , signInWithKakao */ } = useAuth();
+  const { signIn, signInWithGoogle, signOut, currentUser /* , signInWithKakao */ } = useAuth();
 
   // 🔍 디버깅: 환경 변수 확인 (개발 환경에서만)
   useEffect(() => {
@@ -40,33 +37,6 @@ const Login: React.FC = () => {
       });
     }
   }, []);
-
-  // 차단 상태 확인 함수 (메모이제이션)
-  const checkBlockStatus = useCallback(async () => {
-    try {
-      const blockStatus = await isLoginBlocked(email);
-      if (blockStatus.isBlocked && blockStatus.remainingTime) {
-        setIsBlocked(true);
-        setAttempts(blockStatus.attempts || 0);
-        setError(
-          t(
-            'login.blockedMessage',
-            `로그인 시도가 너무 많아 ${formatBlockTime(blockStatus.remainingTime)} 후에 다시 시도할 수 있습니다.`
-          )
-        );
-      } else {
-        setIsBlocked(false);
-        setAttempts(blockStatus.attempts || 0);
-        setError('');
-      }
-    } catch (error) {
-      logger.error(
-        '로그인 차단 상태 확인 실패:',
-        error instanceof Error ? error : new Error(String(error)),
-        { component: 'Login' }
-      );
-    }
-  }, [email, t]);
 
   // 컴포넌트 마운트 시 이전 설정 불러오기
   useEffect(() => {
@@ -90,48 +60,42 @@ const Login: React.FC = () => {
     }
   }, []);
 
-  // 이메일 변경 시 차단 상태 확인 (debounce)
-  useEffect(() => {
-    if (!email) return;
-
-    const timer = setTimeout(() => {
-      checkBlockStatus();
-    }, 500); // 500ms debounce
-
-    return () => clearTimeout(timer);
-  }, [email, checkBlockStatus]);
-
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
 
-    // 차단 상태 확인 (이미 메모이제이션된 함수 재사용)
-    if (isBlocked) {
-      setError(t('login.blockedMessage', '로그인이 차단되었습니다.'));
-      return;
-    }
-
     try {
       const userCredential = await signIn(email, password, rememberMe);
 
-      // 로그인 성공 시 시도 기록
-      await recordLoginAttempt(email, true);
-
       // 이메일 인증 확인
       if (userCredential?.user && !userCredential.user.emailVerified) {
+        // 미인증 사용자는 로그아웃 처리 (보안)
+        await signOut();
         setShowEmailVerificationModal(true);
-        logger.warn('이메일 미인증 사용자 로그인', {
+        logger.warn('이메일 미인증 사용자 로그인 - 로그아웃 처리', {
           component: 'Login',
           data: { email },
         });
         return;
       }
 
+      // 약관 동의 여부 확인 (Google 로그인과 동일하게)
+      const db = getFirestore();
+      const consentRef = doc(db, 'users', userCredential.user.uid, 'consents', 'current');
+      const consentDoc = await getDoc(consentRef);
+
+      if (!consentDoc.exists()) {
+        // 동의 내역이 없으면 약관 동의 페이지로 이동
+        logger.info('동의 내역 없음, 약관 동의 페이지로 이동', {
+          component: 'Login',
+          data: { userId: userCredential.user.uid },
+        });
+        navigate('/consent', { state: { from: '/app' } });
+        return;
+      }
+
       navigate('/app');
     } catch (err: unknown) {
-      // 로그인 실패 시 시도 기록
-      await recordLoginAttempt(email, false);
-
       // FirebaseError 타입 체크
       if (err instanceof FirebaseError) {
         switch (err.code) {
@@ -168,9 +132,6 @@ const Login: React.FC = () => {
           { component: 'Login' }
         );
       }
-
-      // 차단 상태 업데이트 (메모이제이션된 함수 재사용)
-      await checkBlockStatus();
     }
   };
 
@@ -317,42 +278,6 @@ const Login: React.FC = () => {
           autoComplete="current-password"
         />
 
-        {/* 보안 상태 표시 */}
-        {attempts > 0 && !isBlocked && (
-          <div
-            className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 p-4"
-            role="alert"
-            aria-live="polite"
-          >
-            <div className="flex">
-              <div className="flex-shrink-0">
-                <svg
-                  className="h-5 w-5 text-yellow-400 dark:text-yellow-500"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.732-.833-2.5 0L4.268 15.5c-.77.833.192 2.5 1.732 2.5z"
-                  />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  {t(
-                    'login.attemptWarning',
-                    `로그인 실패: ${attempts}회. 5회 실패 시 15분간 차단됩니다.`
-                  )}
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-
         {error && (
           <div
             className="text-red-500 dark:text-red-400 text-sm text-center"
@@ -372,7 +297,6 @@ const Login: React.FC = () => {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
               className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700"
-              disabled={isBlocked}
             />
             <label
               htmlFor="remember-me"
@@ -394,16 +318,9 @@ const Login: React.FC = () => {
         <div>
           <button
             type="submit"
-            disabled={isBlocked}
-            aria-disabled={isBlocked}
-            aria-busy={false}
-            className={`w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white ${
-              isBlocked
-                ? 'bg-gray-400 dark:bg-gray-600 cursor-not-allowed'
-                : 'bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600'
-            } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
+            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 hover:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
           >
-            {isBlocked ? t('login.blockedButton', '차단됨') : t('common.login')}
+            {t('common.login')}
           </button>
         </div>
       </form>
@@ -423,12 +340,7 @@ const Login: React.FC = () => {
         <div className="mt-6 space-y-3">
           <button
             onClick={handleGoogleSignIn}
-            disabled={isBlocked}
-            className={`w-full inline-flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium ${
-              isBlocked
-                ? 'bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 border-gray-300 dark:border-gray-600 cursor-not-allowed'
-                : 'bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700'
-            }`}
+            className="w-full inline-flex justify-center py-2 px-4 border rounded-md shadow-sm text-sm font-medium bg-white dark:bg-gray-800 text-gray-500 dark:text-gray-300 border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
           >
             <FaGoogle className="h-5 w-5" />
             <span className="ml-2">{t('login.googleSignIn')}</span>
@@ -439,7 +351,6 @@ const Login: React.FC = () => {
           <KakaoLoginButton
             onSuccess={handleKakaoSignIn}
             onError={handleKakaoSignInError}
-            disabled={isBlocked}
           />
           */}
         </div>
