@@ -35,16 +35,6 @@ interface FirebaseTimestamp {
 
 type DateValue = string | Date | FirebaseTimestamp;
 
-// 날짜/시간 포맷팅 유틸 함수들 (향후 사용 예정)
-// const formatDateTimeValue = (value: string | DateValue): string => {
-//   if (!value) return '';
-//   if (typeof value === 'string') return value;
-//   if (typeof value === 'object' && 'seconds' in value) {
-//     return formatDateUtil(value as FirebaseTimestamp);
-//   }
-//   return String(value);
-// };
-
 const formatDateOnly = (value: DateValue, fallback: string = ''): string => {
   return value ? formatDateUtil(value) : fallback;
 };
@@ -81,117 +71,6 @@ const StatusBadge: React.FC<{ status: string }> = ({ status }) => {
     </span>
   );
 };
-
-// 🔧 Legacy 다중 지원 시간대 표시 컴포넌트 (하위 호환성) - 현재 미사용
-/*
-const MultipleAssignmentsDisplay: React.FC<{
-  assignedTimes: string[];
-  assignedRoles: string[];
-  assignedDates?: DateValue[] | undefined;
-  status: string;
-  t: (key: string) => string;
-}> = ({ assignedTimes, assignedRoles, assignedDates, status, t }) => {
-  // 날짜별로 그룹화
-  const groupedByDate: Record<string, Array<{time: string, role: string, index: number}>> = {};
-
-  assignedTimes.forEach((time: string, index: number) => {
-    const dateValue = assignedDates?.[index];
-    const dateString = formatDateOnly(dateValue || '');
-
-    if (!groupedByDate[dateString]) {
-      groupedByDate[dateString] = [];
-    }
-
-    groupedByDate[dateString]!.push({
-      time: formatDateTimeValue(time),
-      role: assignedRoles[index] || '',
-      index
-    });
-  });
-
-  // 날짜 정렬
-  const sortedDates = Object.keys(groupedByDate).sort();
-
-  return (
-    <div className="space-y-2">
-      {sortedDates.map((date) => (
-        <div key={date} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-          {status === 'confirmed' ? (
-            // 확정 상태: 간소화된 표시
-            <div className="space-y-1">
-              {groupedByDate[date]?.map((item) => (
-                <div key={`${date}-${item.time}-${item.role}`} className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-                  📅 {date} ⏰ {item.time} 👤 {item.role ? String(t(`roles.${item.role}`) || item.role) : ''}
-                </div>
-              ))}
-            </div>
-          ) : (
-            // 대기 상태: 기존 표시 방식 유지
-            <>
-              <div className="text-blue-600 dark:text-blue-400 font-medium mb-1">
-                📅 {date}
-              </div>
-              <div className="space-y-1 ml-4">
-                {groupedByDate[date]?.map((item) => (
-                  <div key={`${date}-${item.time}-${item.role}`} className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
-                    <span>⏰ {item.time}</span>
-                    {item.role && (
-                      <span className="text-gray-600 dark:text-gray-300">
-                        - {String(t(`roles.${item.role}`) || item.role)}
-                      </span>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-      ))}
-    </div>
-  );
-};
-*/
-
-// 단일 지원 시간대 표시 컴포넌트 (현재 미사용)
-/*
-const SingleAssignmentDisplay: React.FC<{
-  assignedTime?: string | DateValue | undefined;
-  assignedRole?: string | undefined;
-  assignedDate?: DateValue | undefined;
-  status: string;
-  t: (key: string) => string;
-}> = ({ assignedTime, assignedRole, assignedDate, status, t }) => (
-  <div className="p-2 bg-gray-50 dark:bg-gray-700 rounded-lg">
-    {status === 'confirmed' ? (
-      // 확정 상태: 날짜 시간 역할 순서로 한 줄 간소화
-      <div className="text-sm text-gray-700 dark:text-gray-200 font-medium">
-        📅 {assignedDate ? formatDateOnly(assignedDate) : ''} ⏰ {formatDateTimeValue(assignedTime || '')} 👤 {assignedRole ? (String(t(`roles.${assignedRole}`) || assignedRole)) : ''}
-      </div>
-    ) : (
-      // 대기 상태: 기존 표시 방식 유지
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-col sm:flex-row sm:items-center space-y-1 sm:space-y-0 sm:space-x-2">
-          // 날짜 - 모바일에서 첫 줄
-          {assignedDate && (
-            <div className="text-blue-600 dark:text-blue-400 font-medium">
-              📅 {formatDateOnly(assignedDate)}
-            </div>
-          )}
-          // 시간과 역할 - 모바일에서 둘째 줄
-          <div className="flex items-center space-x-2 text-gray-700 dark:text-gray-200">
-            <span>⏰ {formatDateTimeValue(assignedTime || '')}</span>
-            {assignedRole && (
-              <span className="text-gray-600 dark:text-gray-300">
-                - {String(t(`roles.${assignedRole}`) || assignedRole)}
-              </span>
-            )}
-          </div>
-        </div>
-      </div>
-    )}
-  </div>
-);
-*/
 
 // 지원 카드 컴포넌트
 const ApplicationCard: React.FC<{

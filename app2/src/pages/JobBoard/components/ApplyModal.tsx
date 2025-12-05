@@ -3,7 +3,6 @@ import { useTranslation } from 'react-i18next';
 import { Timestamp } from 'firebase/firestore';
 import { JobPosting, TimeSlot, RoleRequirement, DateSpecificRequirement } from '@/types/jobPosting';
 import { formatDate as formatDateUtil, generateDateRange } from '@/utils/jobPosting/dateUtils';
-// formatDateRangeDisplay - 향후 사용 예정
 import { logger } from '@/utils/logger';
 import { Assignment } from '@/types/application';
 
@@ -82,10 +81,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
         firstTimeSlot.duration.endDate
       ) {
         const endDate = firstTimeSlot.duration.endDate;
-        let startDate = '';
-
-        // 날짜 문자열 추출
-        startDate = dateToString(dateReq.date);
+        const startDate = dateToString(dateReq.date);
 
         // 날짜 범위 생성 및 자동 선택 (하나의 Assignment로 그룹화)
         if (startDate && endDate) {
@@ -105,7 +101,6 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                 return confirmedCount < role.count;
               });
 
-              // 🎯 v2.0: 사용 가능한 날짜가 있으면 새 구조로 Assignment 생성
               if (availableDates.length > 0) {
                 const groupId = `${ts.time}_${role.name}_${startDate}_${endDate}`;
 
@@ -118,7 +113,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                     availableDates.length > 1
                       ? groupId
                       : `single_${ts.time}_${role.name}_${availableDates[0]}`,
-                  checkMethod: availableDates.length > 1 ? 'group' : 'individual', // 🎯 체크 방식 구분
+                  checkMethod: availableDates.length > 1 ? 'group' : 'individual',
                   duration:
                     availableDates.length > 1
                       ? {
@@ -143,9 +138,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
       // 처리 완료 표시
       autoSelectionProcessedRef.current = true;
 
-      // 각 항목을 개별적으로 추가 (이미 선택된 항목은 체크)
       autoSelectedAssignments.forEach((assignment) => {
-        // 🎯 v2.0: 새 구조 기반 중복 확인
         const isAlreadySelected = selectedAssignments.some((selected) => {
           return (
             selected.timeSlot === assignment.timeSlot &&
@@ -178,11 +171,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 선택된 항목인지 확인 (dates 배열 고려)
-  // 🎯 v2.0: Assignment 선택 여부 확인 (새 구조 기반)
+  /** Assignment 선택 여부 확인 */
   const isAssignmentSelected = (assignment: Assignment): boolean => {
     return selectedAssignments.some((selected) => {
-      // 🛡️ 안전한 dates 배열 비교
       const selectedDates = selected.dates ?? [];
       const assignmentDates = assignment.dates ?? [];
       if (selectedDates.length === 0 || assignmentDates.length === 0) return false;
@@ -195,13 +186,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
     });
   };
 
-  // 그룹(여러 날짜) 전체가 선택되었는지 확인
+  /** 그룹(여러 날짜) 전체가 선택되었는지 확인 */
   const isGroupSelected = (timeSlot: string, role: string, dates: string[]): boolean => {
-    // 🛡️ 빈 배열 안전 체크
     if (!dates || dates.length === 0) return false;
 
-    // 1. dates 배열을 포함한 Assignment가 있는지 확인
-    const hasGroupAssignment = selectedAssignments.some((selected) => {
+    return selectedAssignments.some((selected) => {
       const selectedDates = selected.dates ?? [];
       if (selectedDates.length === 0) return false;
 
@@ -211,23 +200,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
         JSON.stringify([...selectedDates].sort()) === JSON.stringify([...dates].sort())
       );
     });
-
-    if (hasGroupAssignment) {
-      return true;
-    }
-
-    // 2. 개별 Assignment들이 모두 선택되어 있는지 확인 (하위호환성)
-    return dates.every((date) =>
-      selectedAssignments.some((selected) => {
-        const selectedDates = selected.dates ?? [];
-        return (
-          selected.timeSlot === timeSlot && selected.role === role && selectedDates.includes(date)
-        );
-      })
-    );
   };
 
-  // 그룹 일괄 선택/해제 처리
+  /** 그룹 일괄 선택/해제 처리 */
   const handleGroupAssignmentChange = (
     timeSlot: string,
     role: string,
@@ -235,7 +210,6 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
     isChecked: boolean,
     duration?: TimeSlot['duration']
   ) => {
-    // 🛡️ 빈 배열 안전 체크
     if (!dates || dates.length === 0) {
       logger.warn('handleGroupAssignmentChange: dates 배열이 비어있음', {
         component: 'ApplyModal',
@@ -244,18 +218,16 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
       return;
     }
 
-    // 🛡️ 안전한 배열 접근
     const firstDate = dates[0] ?? '';
     const lastDate = dates[dates.length - 1] ?? '';
 
-    // 🎯 v2.0: 새로운 통합 구조에 맞게 Assignment 생성
     const groupAssignment: Assignment = {
       role,
       timeSlot,
-      dates, // 항상 배열 형태 (단일 날짜도 배열)
+      dates,
       isGrouped: true,
       groupId: `${timeSlot}_${role}_${firstDate}_${lastDate}`,
-      checkMethod: 'group', // 🎯 그룹 체크 방식 명시
+      checkMethod: 'group',
       duration: duration
         ? dates.length > 1
           ? {
@@ -273,31 +245,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           },
     };
 
-    if (isChecked) {
-      // 선택: dates 배열을 포함한 Assignment 추가
-      onAssignmentChange(groupAssignment, true);
-    } else {
-      // 해제: 같은 timeSlot과 role을 가진 Assignment 제거
-      // 🎯 v2.0: 날짜별로 개별 Assignment도 생성 (하위 호환성)
-      dates.forEach((date) => {
-        const singleAssignment: Assignment = {
-          role,
-          timeSlot,
-          dates: [date], // 단일 날짜도 배열 형태
-          isGrouped: false,
-          groupId: `single_${timeSlot}_${role}_${date}`,
-          checkMethod: 'individual', // 🎯 개별 체크 방식 명시
-          duration: {
-            type: 'single',
-            startDate: date || '',
-          },
-        };
-        onAssignmentChange(singleAssignment, false);
-      });
-
-      // dates 배열을 포함한 Assignment도 제거
-      onAssignmentChange(groupAssignment, false);
-    }
+    onAssignmentChange(groupAssignment, isChecked);
   };
 
   return (
