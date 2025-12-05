@@ -182,26 +182,35 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
   // 🎯 v2.0: Assignment 선택 여부 확인 (새 구조 기반)
   const isAssignmentSelected = (assignment: Assignment): boolean => {
     return selectedAssignments.some((selected) => {
+      // 🛡️ 안전한 dates 배열 비교
+      const selectedDates = selected.dates ?? [];
+      const assignmentDates = assignment.dates ?? [];
+      if (selectedDates.length === 0 || assignmentDates.length === 0) return false;
+
       return (
         selected.timeSlot === assignment.timeSlot &&
         selected.role === assignment.role &&
-        selected.dates &&
-        assignment.dates &&
-        JSON.stringify(selected.dates.sort()) === JSON.stringify(assignment.dates.sort())
+        JSON.stringify([...selectedDates].sort()) === JSON.stringify([...assignmentDates].sort())
       );
     });
   };
 
   // 그룹(여러 날짜) 전체가 선택되었는지 확인
   const isGroupSelected = (timeSlot: string, role: string, dates: string[]): boolean => {
+    // 🛡️ 빈 배열 안전 체크
+    if (!dates || dates.length === 0) return false;
+
     // 1. dates 배열을 포함한 Assignment가 있는지 확인
-    const hasGroupAssignment = selectedAssignments.some(
-      (selected) =>
+    const hasGroupAssignment = selectedAssignments.some((selected) => {
+      const selectedDates = selected.dates ?? [];
+      if (selectedDates.length === 0) return false;
+
+      return (
         selected.timeSlot === timeSlot &&
         selected.role === role &&
-        selected.dates &&
-        JSON.stringify(selected.dates.sort()) === JSON.stringify(dates.sort())
-    );
+        JSON.stringify([...selectedDates].sort()) === JSON.stringify([...dates].sort())
+      );
+    });
 
     if (hasGroupAssignment) {
       return true;
@@ -209,13 +218,12 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
 
     // 2. 개별 Assignment들이 모두 선택되어 있는지 확인 (하위호환성)
     return dates.every((date) =>
-      selectedAssignments.some(
-        (selected) =>
-          selected.timeSlot === timeSlot &&
-          selected.role === role &&
-          selected.dates &&
-          selected.dates.includes(date)
-      )
+      selectedAssignments.some((selected) => {
+        const selectedDates = selected.dates ?? [];
+        return (
+          selected.timeSlot === timeSlot && selected.role === role && selectedDates.includes(date)
+        );
+      })
     );
   };
 
@@ -227,28 +235,41 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
     isChecked: boolean,
     duration?: TimeSlot['duration']
   ) => {
+    // 🛡️ 빈 배열 안전 체크
+    if (!dates || dates.length === 0) {
+      logger.warn('handleGroupAssignmentChange: dates 배열이 비어있음', {
+        component: 'ApplyModal',
+        data: { timeSlot, role },
+      });
+      return;
+    }
+
+    // 🛡️ 안전한 배열 접근
+    const firstDate = dates[0] ?? '';
+    const lastDate = dates[dates.length - 1] ?? '';
+
     // 🎯 v2.0: 새로운 통합 구조에 맞게 Assignment 생성
     const groupAssignment: Assignment = {
       role,
       timeSlot,
       dates, // 항상 배열 형태 (단일 날짜도 배열)
       isGrouped: true,
-      groupId: `${timeSlot}_${role}_${dates[0]}_${dates[dates.length - 1]}`,
+      groupId: `${timeSlot}_${role}_${firstDate}_${lastDate}`,
       checkMethod: 'group', // 🎯 그룹 체크 방식 명시
       duration: duration
         ? dates.length > 1
           ? {
               type: 'consecutive' as const,
-              startDate: dates[0] || '',
-              endDate: dates[dates.length - 1] || '',
+              startDate: firstDate,
+              endDate: lastDate,
             }
           : {
               type: 'single' as const,
-              startDate: dates[0] || '',
+              startDate: firstDate,
             }
         : {
             type: 'single' as const,
-            startDate: dates[0] || '',
+            startDate: firstDate,
           },
     };
 
@@ -280,15 +301,23 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50">
+    <div
+      className="fixed inset-0 bg-gray-600 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 overflow-y-auto h-full w-full z-50"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="apply-modal-title"
+    >
       <div className="relative top-4 sm:top-10 mx-auto p-3 sm:p-5 border w-full max-w-[95%] sm:max-w-4xl shadow-lg rounded-md bg-white dark:bg-gray-800 h-[95vh] sm:h-[85vh] flex flex-col">
-        <h3 className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100 mb-4">
+        <h3
+          id="apply-modal-title"
+          className="text-lg font-medium leading-6 text-gray-900 dark:text-gray-100 mb-4"
+        >
           {t('jobBoard.applyModal.title', { postTitle: jobPosting.title })}
         </h3>
 
         <div className="flex-1 overflow-y-auto">
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-            시간대 및 역할 선택 (여러 개 선택 가능)
+            {t('jobBoard.applyModal.selectTimeSlotRole', '시간대 및 역할 선택 (여러 개 선택 가능)')}
           </label>
 
           {/* 일자별 인원 요구사항 표시 */}
@@ -338,7 +367,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                               ⏰{' '}
                               {ts.isTimeToBeAnnounced ? (
                                 <span className="text-orange-600">
-                                  미정
+                                  {t('jobBoard.applyModal.timeTBA', '미정')}
                                   {ts.tentativeDescription && (
                                     <span className="text-gray-600 dark:text-gray-400 font-normal ml-2">
                                       ({ts.tentativeDescription})
@@ -420,7 +449,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                             : 'text-gray-500 dark:text-gray-400'
                                         }`}
                                       >
-                                        {isFull ? '마감' : `(${confirmedCountPerDay}/${r.count})`}
+                                        {isFull
+                                          ? t('jobBoard.applyModal.closed', '마감')
+                                          : `(${confirmedCountPerDay}/${r.count})`}
                                       </span>
                                     </span>
                                   </label>
@@ -448,7 +479,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                             ⏰{' '}
                             {ts.isTimeToBeAnnounced ? (
                               <span className="text-orange-600">
-                                미정
+                                {t('jobBoard.applyModal.timeTBA', '미정')}
                                 {ts.tentativeDescription && (
                                   <span className="text-gray-600 dark:text-gray-300 font-normal ml-2">
                                     ({ts.tentativeDescription})
@@ -519,7 +550,11 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
                                           : 'text-gray-500 dark:text-gray-400'
                                       }`}
                                     >
-                                      ({isFull ? '마감' : `${confirmedCount}/${r.count}`})
+                                      (
+                                      {isFull
+                                        ? t('jobBoard.applyModal.closed', '마감')
+                                        : `${confirmedCount}/${r.count}`}
+                                      )
                                     </span>
                                   </span>
                                 </label>
@@ -535,7 +570,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             )
           ) : (
             <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-              <p>지원 가능한 시간대가 없습니다.</p>
+              <p>
+                {t('jobBoard.applyModal.noAvailableTimeSlots', '지원 가능한 시간대가 없습니다.')}
+              </p>
             </div>
           )}
         </div>
@@ -546,8 +583,9 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               <button
                 onClick={onBack}
                 className="py-3 px-6 sm:py-2 sm:px-4 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-700 dark:hover:bg-blue-500 min-h-[48px] text-sm sm:text-base"
+                aria-label={t('jobBoard.applyModal.backToEdit', '뒤로 (수정)')}
               >
-                뒤로 (수정)
+                {t('jobBoard.applyModal.backToEdit', '뒤로 (수정)')}
               </button>
             )}
           </div>
@@ -555,6 +593,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
             <button
               onClick={onClose}
               className="py-3 px-6 sm:py-2 sm:px-4 bg-gray-500 dark:bg-gray-600 text-white rounded hover:bg-gray-700 dark:hover:bg-gray-700 min-h-[48px] text-sm sm:text-base"
+              aria-label={t('common.cancel')}
             >
               {t('common.cancel')}
             </button>
@@ -562,8 +601,17 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
               onClick={onApply}
               disabled={selectedAssignments.length === 0 || isProcessing}
               className="py-3 px-6 sm:py-2 sm:px-4 bg-green-600 dark:bg-green-700 text-white rounded hover:bg-green-700 dark:hover:bg-green-600 disabled:bg-gray-400 dark:disabled:bg-gray-600 min-h-[48px] text-sm sm:text-base"
+              aria-label={t('jobBoard.applyModal.applyWithCount', {
+                count: selectedAssignments.length,
+              })}
+              aria-disabled={selectedAssignments.length === 0 || isProcessing}
             >
-              {isProcessing ? t('jobBoard.applying') : `지원하기 (${selectedAssignments.length}개)`}
+              {isProcessing
+                ? t('jobBoard.applying')
+                : t('jobBoard.applyModal.applyWithCount', {
+                    count: selectedAssignments.length,
+                    defaultValue: `지원하기 (${selectedAssignments.length}개)`,
+                  })}
             </button>
           </div>
         </div>

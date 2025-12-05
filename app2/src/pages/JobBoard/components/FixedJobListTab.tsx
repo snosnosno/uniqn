@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import { useToast } from '@/hooks/useToast';
 import { doc, getDoc, addDoc, collection, Timestamp } from 'firebase/firestore';
+import { handleFirebaseError, FirebaseError } from '@/utils/firebaseErrors';
 import { db } from '@/firebase';
 import { useUnifiedData } from '@/hooks/useUnifiedData';
 
@@ -157,8 +158,17 @@ const FixedJobListTab: React.FC = () => {
       setSelectedPosting(null);
       setSelectedRoles([]);
     } catch (err) {
-      logger.error('지원 제출 오류:', err as Error);
-      showError(t('toast.application.submitError'));
+      // 🛡️ 통합 Firebase 에러 처리
+      const errorMessage = handleFirebaseError(err as FirebaseError, {
+        operation: 'submitFixedApplication',
+        postingId: selectedPosting.id,
+        userId: currentUser.uid,
+      });
+      logger.error('지원 제출 오류', err as Error, {
+        component: 'FixedJobListTab',
+        data: { postingId: selectedPosting.id },
+      });
+      showError(errorMessage || t('toast.application.submitError'));
     } finally {
       setIsProcessing(false);
     }
@@ -210,36 +220,56 @@ const FixedJobListTab: React.FC = () => {
 
   // 에러 발생
   if (error) {
+    // 🌐 i18n: 에러 메시지 국제화
+    const getErrorMessage = () => {
+      if (error.message?.includes('index') || error.message?.includes('Index')) {
+        return t(
+          'error.firebase.indexRequired',
+          'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.'
+        );
+      }
+      if (error.message?.includes('permission')) {
+        return t(
+          'error.firebase.permissionDenied',
+          '권한이 없습니다. 로그인 상태를 확인해 주세요.'
+        );
+      }
+      if (error.message?.includes('network')) {
+        return t('error.firebase.networkError', '네트워크 연결을 확인해 주세요.');
+      }
+      return t(
+        'error.firebase.loadingError',
+        '데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.'
+      );
+    };
+
     return (
       <div className="container mx-auto p-4">
-        <div className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded">
+        <div
+          className="bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded"
+          role="alert"
+          aria-live="assertive"
+        >
           <div className="flex">
             <div className="py-1">
               <svg
                 className="fill-current h-6 w-6 text-red-500 dark:text-red-400 mr-4"
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 20 20"
+                aria-hidden="true"
               >
                 <path d="M2.93 17.07A10 10 0 1 1 17.07 2.93 10 10 0 0 1 2.93 17.07zm12.73-1.41A8 8 0 1 0 4.34 4.34a8 8 0 0 0 11.32 11.32zM9 11V9h2v6H9v-4zm0-6h2v2H9V5z" />
               </svg>
             </div>
             <div>
-              <p className="font-bold">데이터 로딩 오류</p>
-              <p className="text-sm">
-                {error.message?.includes('index') || error.message?.includes('Index')
-                  ? 'Firebase 인덱스 설정이 필요합니다. 관리자에게 문의하세요.'
-                  : error.message?.includes('permission')
-                    ? '권한이 없습니다. 로그인 상태를 확인해 주세요.'
-                    : error.message?.includes('network')
-                      ? '네트워크 연결을 확인해 주세요.'
-                      : '데이터를 불러오는 중 오류가 발생했습니다. 페이지를 새로고침해 주세요.'}
-              </p>
+              <p className="font-bold">{t('error.dataLoading', '데이터 로딩 오류')}</p>
+              <p className="text-sm">{getErrorMessage()}</p>
               <details className="mt-2">
                 <summary className="text-xs cursor-pointer text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300">
-                  기술적 세부사항
+                  {t('error.technicalDetails', '기술적 세부사항')}
                 </summary>
                 <pre className="text-xs mt-1 bg-red-50 dark:bg-red-900/10 p-2 rounded overflow-auto">
-                  {error.message || 'Unknown error'}
+                  {error.message || t('error.unknown', 'Unknown error')}
                 </pre>
               </details>
             </div>
@@ -260,6 +290,7 @@ const FixedJobListTab: React.FC = () => {
             stroke="currentColor"
             viewBox="0 0 24 24"
             xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
           >
             <path
               strokeLinecap="round"
@@ -269,10 +300,10 @@ const FixedJobListTab: React.FC = () => {
             />
           </svg>
           <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">
-            현재 모집 중인 고정공고가 없습니다
+            {t('jobBoard.fixed.noPostings', '현재 모집 중인 고정공고가 없습니다')}
           </h3>
           <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            새로운 고정공고가 등록되면 여기에 표시됩니다.
+            {t('jobBoard.fixed.noPostingsHint', '새로운 고정공고가 등록되면 여기에 표시됩니다.')}
           </p>
         </div>
       </div>
@@ -297,19 +328,27 @@ const FixedJobListTab: React.FC = () => {
 
       {/* 무한 스크롤 트리거 요소 */}
       {hasMore && (
-        <div ref={loadMoreRef} className="h-20 flex items-center justify-center mt-8">
+        <div
+          ref={loadMoreRef}
+          className="h-20 flex items-center justify-center mt-8"
+          aria-label={t('jobBoard.infiniteScroll.triggerArea', '더 보기 영역')}
+        >
           {loading ? (
-            <span className="text-gray-500 dark:text-gray-400">로딩 중...</span>
+            <span className="text-gray-500 dark:text-gray-400" aria-live="polite">
+              {t('common.loading', '로딩 중...')}
+            </span>
           ) : (
-            <span className="text-gray-400 dark:text-gray-500">스크롤하여 더 보기</span>
+            <span className="text-gray-400 dark:text-gray-500">
+              {t('jobBoard.infiniteScroll.scrollToLoad', '스크롤하여 더 보기')}
+            </span>
           )}
         </div>
       )}
 
       {/* 모든 공고 확인 메시지 */}
       {!hasMore && postings.length > 0 && (
-        <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
-          모든 공고를 확인했습니다.
+        <p className="text-center text-gray-500 dark:text-gray-400 mt-8" aria-live="polite">
+          {t('jobBoard.infiniteScroll.allLoaded', '모든 공고를 확인했습니다.')}
         </p>
       )}
 
