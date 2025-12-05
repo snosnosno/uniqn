@@ -1,5 +1,14 @@
 {
   "approve": "승인",
+  "bulkEdit": {
+    "title": "일괄 수정",
+    "updateCount": "{{count}}명 일괄 수정",
+    "selectedStaff": "선택된 스태프",
+    "selectedCount": "총 {{count}}명의 스태프가 선택되었습니다.",
+    "editWorkTime": "근무 시간 수정",
+    "editAttendance": "출석 상태 수정",
+    "timeWarning": "설정한 시간이 선택된 모든 스태프에게 동일하게 적용됩니다."
+  },
   "locations": {
     "seoul": "서울",
     "gyeonggi": "경기",
@@ -303,6 +312,10 @@
     },
     "location": "지역",
     "time": "시간",
+    "hour": "시",
+    "minute": "분",
+    "hourSuffix": "{{hour}}시",
+    "minuteSuffix": "{{minute}}분",
     "application": "지원",
     "other": "기타",
     "gender": "성별",
@@ -1880,7 +1893,9 @@
     "workTime": {
       "workLogNotFound": "작업 로그 정보가 없습니다.",
       "updateSuccess": "시간이 성공적으로 업데이트되었습니다.",
-      "updateError": "시간 업데이트 중 오류가 발생했습니다."
+      "updateError": "시간 업데이트 중 오류가 발생했습니다.",
+      "startTime": "시작 시간",
+      "endTime": "종료 시간"
     },
     "inquiry": {
       "loadError": "문의 목록을 불러오는데 실패했습니다.",

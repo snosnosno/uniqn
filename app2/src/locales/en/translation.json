@@ -1,5 +1,14 @@
 {
   "approve": "Approve",
+  "bulkEdit": {
+    "title": "Bulk Edit",
+    "updateCount": "Bulk edit {{count}} staff",
+    "selectedStaff": "Selected Staff",
+    "selectedCount": "{{count}} staff selected.",
+    "editWorkTime": "Edit Work Time",
+    "editAttendance": "Edit Attendance",
+    "timeWarning": "The set time will be applied equally to all selected staff."
+  },
   "locations": {
     "seoul": "Seoul",
     "gyeonggi": "Gyeonggi",
@@ -303,6 +312,10 @@
     },
     "location": "Location",
     "time": "Time",
+    "hour": "Hour",
+    "minute": "Minute",
+    "hourSuffix": "{{hour}}h",
+    "minuteSuffix": "{{minute}}m",
     "application": "Application",
     "other": "Other",
     "gender": "Gender",
@@ -1883,7 +1896,9 @@
     "workTime": {
       "workLogNotFound": "Work log information not found.",
       "updateSuccess": "Time updated successfully.",
-      "updateError": "Error updating time."
+      "updateError": "Error updating time.",
+      "startTime": "Start Time",
+      "endTime": "End Time"
     },
     "inquiry": {
       "loadError": "Failed to load inquiry list.",
