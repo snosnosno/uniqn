@@ -5,6 +5,8 @@ import {
   PreQuestion,
   JobPostingFormData,
 } from '../../types/jobPosting';
+import i18n from '../../i18n';
+import { jobPostingFormSchema } from '../../schemas/jobPosting';
 
 /**
  * 시간대 유효성 검증
@@ -13,19 +15,19 @@ export const validateTimeSlot = (timeSlot: TimeSlot): string[] => {
   const errors: string[] = [];
 
   if (!timeSlot.isTimeToBeAnnounced && !timeSlot.time) {
-    errors.push('시간을 입력해주세요.');
+    errors.push(i18n.t('validation.timeRequired'));
   }
 
   if (timeSlot.roles.length === 0) {
-    errors.push('최소 하나의 역할을 추가해주세요.');
+    errors.push(i18n.t('validation.minOneRole'));
   }
 
   timeSlot.roles.forEach((role, index) => {
     if (!role.name) {
-      errors.push(`역할 ${index + 1}의 이름을 선택해주세요.`);
+      errors.push(i18n.t('validation.roleNameRequired', { index: index + 1 }));
     }
     if (role.count < 1) {
-      errors.push(`역할 ${index + 1}의 인원은 최소 1명이어야 합니다.`);
+      errors.push(i18n.t('validation.roleCountMin', { index: index + 1 }));
     }
   });
 
@@ -39,33 +41,37 @@ export const validateDateSpecificRequirement = (requirement: DateSpecificRequire
   const errors: string[] = [];
 
   if (!requirement.date) {
-    errors.push('날짜를 선택해주세요.');
+    errors.push(i18n.t('validation.dateRequired'));
   } else {
     const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
 
     // 날짜 형식 검증
     if (!validateDateFormat(dateStr)) {
-      errors.push(`올바른 날짜 형식이 아닙니다. (${dateStr})`);
+      errors.push(i18n.t('validation.invalidDateFormat', { date: dateStr }));
     } else {
       // 과거 날짜 검증
       if (!validateNotPastDate(dateStr)) {
-        errors.push(`과거 날짜는 선택할 수 없습니다. (${dateStr})`);
+        errors.push(i18n.t('validation.pastDateNotAllowed', { date: dateStr }));
       }
 
       // 1년 이후 날짜 검증
       if (!validateNotFutureDate(dateStr)) {
-        errors.push(`1년 이후의 날짜는 선택할 수 없습니다. (${dateStr})`);
+        errors.push(i18n.t('validation.futureDateNotAllowed', { date: dateStr }));
       }
     }
   }
 
   if (requirement.timeSlots.length === 0) {
-    errors.push('최소 하나의 시간대를 추가해주세요.');
+    errors.push(i18n.t('validation.minOneTimeSlot'));
   }
 
   requirement.timeSlots.forEach((timeSlot, index) => {
     const timeSlotErrors = validateTimeSlot(timeSlot);
-    errors.push(...timeSlotErrors.map((error) => `시간대 ${index + 1}: ${error}`));
+    errors.push(
+      ...timeSlotErrors.map((error) =>
+        i18n.t('validation.timeSlotError', { index: index + 1, error })
+      )
+    );
   });
 
   return errors;
@@ -78,67 +84,69 @@ export const validatePreQuestion = (question: PreQuestion): string[] => {
   const errors: string[] = [];
 
   if (!question.question?.trim()) {
-    errors.push('질문 내용을 입력해주세요.');
+    errors.push(i18n.t('validation.questionRequired'));
   }
 
   if (question.type === 'select' && (!question.options || question.options.length === 0)) {
-    errors.push('선택형 질문은 최소 하나의 옵션이 필요합니다.');
+    errors.push(i18n.t('validation.selectOptionRequired'));
   }
 
   return errors;
 };
 
 /**
- * 폼 데이터 전체 유효성 검증
+ * 폼 데이터 전체 유효성 검증 (Zod 스키마 기반)
  */
 export const validateJobPostingForm = (formData: Partial<JobPostingFormData>): string[] => {
   const errors: string[] = [];
 
-  // 기본 정보 검증
-  if (!formData.title?.trim()) {
-    errors.push('제목을 입력해주세요.');
+  // Zod 스키마로 기본 검증
+  const result = jobPostingFormSchema.safeParse(formData);
+
+  if (!result.success) {
+    // Zod 에러를 문자열 배열로 변환
+    result.error.errors.forEach((err) => {
+      errors.push(err.message);
+    });
   }
 
-  if (!formData.location?.trim()) {
-    errors.push('지역을 선택해주세요.');
-  }
-
-  if (!formData.contactPhone?.trim()) {
-    errors.push('문의 연락처를 입력해주세요.');
-  }
-
-  // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
-
-  // 시간대 검증 - 날짜별 요구사항만 사용
-  if (!formData.dateSpecificRequirements || formData.dateSpecificRequirements.length === 0) {
-    errors.push('최소 하나의 날짜별 요구사항을 추가해주세요.');
-  }
-
-  // 일자별 요구사항 검증
+  // 추가 검증: 일자별 요구사항 상세 검증
   const dates = new Set<string>();
   formData.dateSpecificRequirements?.forEach(
     (requirement: DateSpecificRequirement, index: number) => {
       // 중복 날짜 검사
       const dateStr = typeof requirement.date === 'string' ? requirement.date : '';
-      if (dates.has(dateStr)) {
-        errors.push(`일자 ${index + 1}: 중복된 날짜입니다 (${dateStr})`);
+      if (dateStr && dates.has(dateStr)) {
+        errors.push(i18n.t('validation.duplicateDate', { index: index + 1, date: dateStr }));
       }
-      dates.add(dateStr);
+      if (dateStr) {
+        dates.add(dateStr);
+      }
 
+      // 날짜별 요구사항 상세 검증
       const requirementErrors = validateDateSpecificRequirement(requirement);
-      errors.push(...requirementErrors.map((error) => `일자 ${index + 1}: ${error}`));
+      errors.push(
+        ...requirementErrors.map((error) =>
+          i18n.t('validation.dateError', { index: index + 1, error })
+        )
+      );
     }
   );
 
-  // 사전질문 검증
+  // 추가 검증: 사전질문 상세 검증
   if (formData.usesPreQuestions) {
     formData.preQuestions?.forEach((question: PreQuestion, index: number) => {
       const questionErrors = validatePreQuestion(question);
-      errors.push(...questionErrors.map((error) => `사전질문 ${index + 1}: ${error}`));
+      errors.push(
+        ...questionErrors.map((error) =>
+          i18n.t('validation.preQuestionError', { index: index + 1, error })
+        )
+      );
     });
   }
 
-  return errors;
+  // 중복 에러 제거
+  return Array.from(new Set(errors));
 };
 
 /**
@@ -151,7 +159,7 @@ export const checkDuplicateRoles = (roles: RoleRequirement[]): string[] => {
 
   if (duplicates.length > 0) {
     const uniqueDuplicates = Array.from(new Set(duplicates));
-    errors.push(`중복된 역할이 있습니다: ${uniqueDuplicates.join(', ')}`);
+    errors.push(i18n.t('validation.duplicateRoles', { roles: uniqueDuplicates.join(', ') }));
   }
 
   return errors;

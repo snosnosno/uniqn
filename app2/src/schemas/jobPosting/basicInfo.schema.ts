@@ -97,13 +97,18 @@ export const basicInfoSchema = z.object({
   postingType: PostingTypeSchema,
 
   /**
-   * 문의 연락처 (선택)
+   * 문의 연락처 (필수)
+   * - 최소 1자
+   * - 최대 25자
    */
   contactPhone: z
-    .string()
-    .trim()
-    .regex(/^[0-9-+()]*$/, { message: '올바른 전화번호 형식이 아닙니다' })
-    .optional(),
+    .string({
+      required_error: '문의 연락처를 입력해주세요',
+      invalid_type_error: '문의 연락처는 문자열이어야 합니다',
+    })
+    .min(1, { message: '문의 연락처를 입력해주세요' })
+    .max(25, { message: '문의 연락처는 25자를 초과할 수 없습니다' })
+    .trim(),
 });
 
 /**

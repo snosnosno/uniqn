@@ -44,8 +44,6 @@ import { initializePerformance } from './utils/firebasePerformance';
 import { initializeFontOptimization } from './utils/fontOptimizer';
 import { initializeOfflineSupport } from './utils/offlineSupport';
 import { logger } from './utils/logger';
-// i18n 초기화
-import './i18n/config';
 
 // Capacitor 네이티브 서비스 초기화 컴포넌트
 import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
