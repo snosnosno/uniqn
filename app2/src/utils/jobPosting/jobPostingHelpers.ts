@@ -340,10 +340,12 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
   return {
     title: data.title || '',
     type: data.type || 'application',
+    postingType: data.postingType || 'regular', // 공고 타입 복원
     description: data.description || '',
     location: data.location || '',
     detailedAddress: data.detailedAddress,
     district: data.district,
+    contactPhone: data.contactPhone, // 문의 연락처 복원
     // startDate/endDate는 더 이상 사용하지 않음 - dateSpecificRequirements로 관리
     status: data.status || 'open',
     dateSpecificRequirements: (data.dateSpecificRequirements || []).map(
@@ -360,6 +362,13 @@ export const prepareFirebaseDataForForm = (data: Partial<JobPosting>): JobPostin
     benefits: data.benefits,
     useRoleSalary: data.useRoleSalary,
     roleSalaries: data.roleSalaries,
+    // 타입별 config 필드 복원
+    ...(data.tournamentConfig && { tournamentConfig: data.tournamentConfig }),
+    ...(data.fixedConfig && { fixedConfig: data.fixedConfig }),
+    ...(data.urgentConfig && { urgentConfig: data.urgentConfig }),
+    // 고정공고 근무일정 복원
+    ...(data.workSchedule && { workSchedule: data.workSchedule }),
+    ...(data.requiredRolesWithCount && { requiredRolesWithCount: data.requiredRolesWithCount }),
   } as JobPostingFormData;
 };
 

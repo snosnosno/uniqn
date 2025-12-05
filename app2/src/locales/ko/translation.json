@@ -1755,6 +1755,9 @@
       "processError": "결제 처리 중 오류가 발생했습니다",
       "freePlanCancelRequired": "무료 플랜으로 변경하려면 현재 구독을 취소해주세요."
     },
+    "auth": {
+      "loginRequired": "로그인이 필요합니다"
+    },
     "account": {
       "deletionCancelled": "계정 삭제가 취소되었습니다.",
       "deletionCancelFailed": "계정 삭제 취소에 실패했습니다.",
