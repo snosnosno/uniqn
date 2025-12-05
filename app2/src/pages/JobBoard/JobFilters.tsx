@@ -99,7 +99,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
               <option value="">{t('common.all')}</option>
               {[...Array(12)].map((_, i) => (
                 <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                  {i + 1}월
+                  {t('jobBoard.filters.monthOption', '{{month}}월', { month: i + 1 })}
                 </option>
               ))}
             </select>
@@ -122,7 +122,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
               <option value="">{t('common.all')}</option>
               {[...Array(31)].map((_, i) => (
                 <option key={i + 1} value={String(i + 1).padStart(2, '0')}>
-                  {i + 1}일
+                  {t('jobBoard.filters.dayOption', '{{day}}일', { day: i + 1 })}
                 </option>
               ))}
             </select>
@@ -159,7 +159,7 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
         <div className="mt-4 flex justify-end items-center gap-4">
           {hasActiveFilters() && (
             <span className="text-sm text-blue-600 dark:text-blue-400 font-medium">
-              필터 적용 중
+              {t('jobBoard.filters.filterActive', '필터 적용 중')}
             </span>
           )}
           <button
@@ -170,9 +170,9 @@ const JobFiltersComponent: React.FC<JobFiltersProps> = ({ filters, onFilterChang
                 ? 'text-white bg-blue-600 dark:bg-blue-700 border border-blue-600 dark:border-blue-700 hover:bg-blue-700 dark:hover:bg-blue-600'
                 : 'text-gray-400 dark:text-gray-500 bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 cursor-not-allowed'
             }`}
-            aria-label="필터 초기화"
+            aria-label={t('jobBoard.filters.resetFiltersAria', '필터 초기화')}
           >
-            필터 초기화
+            {t('jobBoard.filters.resetFilters', '필터 초기화')}
           </button>
         </div>
       </div>

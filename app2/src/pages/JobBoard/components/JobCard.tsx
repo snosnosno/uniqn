@@ -36,7 +36,9 @@ const JobCard: React.FC<JobCardProps> = ({
           variant="primary"
           size="sm"
           onClick={() => onViewDetail(post)}
-          aria-label={`${post.title} 상세정보 보기`}
+          aria-label={t('jobBoard.card.viewDetailsAria', '{{title}} 상세정보 보기', {
+            title: post.title,
+          })}
           className="flex-1 sm:w-full"
         >
           {t('jobBoard.viewDetails')}
@@ -52,7 +54,13 @@ const JobCard: React.FC<JobCardProps> = ({
   const renderActionButton = () => {
     if (!canApply) {
       return (
-        <Button variant="ghost" size="sm" disabled fullWidth aria-label="로그인이 필요합니다">
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled
+          fullWidth
+          aria-label={t('jobBoard.card.loginRequiredAria', '로그인이 필요합니다')}
+        >
           {t('jobBoard.loginRequired')}
         </Button>
       );
@@ -65,7 +73,7 @@ const JobCard: React.FC<JobCardProps> = ({
           size="sm"
           disabled
           fullWidth
-          aria-label="이미 지원완료한 공고입니다"
+          aria-label={t('jobBoard.card.alreadyAppliedAria', '이미 지원완료한 공고입니다')}
         >
           {t('jobBoard.applied')}
         </Button>
@@ -79,7 +87,7 @@ const JobCard: React.FC<JobCardProps> = ({
           size="sm"
           disabled
           fullWidth
-          aria-label="지원이 확정된 공고입니다"
+          aria-label={t('jobBoard.card.confirmedAria', '지원이 확정된 공고입니다')}
         >
           {t('common.status.confirmed')}
         </Button>
@@ -94,7 +102,7 @@ const JobCard: React.FC<JobCardProps> = ({
         disabled={isProcessing}
         loading={isProcessing}
         fullWidth
-        aria-label={`${post.title}에 지원하기`}
+        aria-label={t('jobBoard.card.applyAria', '{{title}}에 지원하기', { title: post.title })}
       >
         {isProcessing ? (
           t('jobBoard.applying')
