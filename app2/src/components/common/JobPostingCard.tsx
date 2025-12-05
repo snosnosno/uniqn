@@ -371,6 +371,52 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     }
   };
 
+  // 역할별 모집 현황 렌더링 헬퍼 (중복 코드 제거)
+  const renderRoleRequirements = (
+    roles: RoleRequirement[],
+    dateString: string,
+    timeSlotTime: string,
+    timeDisplay: React.ReactNode,
+    keyPrefix: string
+  ) => {
+    return roles.map((role: RoleRequirement, roleIndex: number) => {
+      const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
+        post,
+        dateString,
+        timeSlotTime,
+        role.name
+      );
+      const isFull = confirmedCount >= role.count;
+
+      return (
+        <div key={`${keyPrefix}-${role.name}`} className="text-sm text-gray-600 dark:text-gray-300">
+          {roleIndex === 0 ? (
+            <>
+              {timeDisplay}
+              <span className="ml-3">
+                {t(`roles.${role.name}`, role.name)}: {role.count}명
+                <span
+                  className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+                >
+                  ({confirmedCount}/{role.count})
+                </span>
+              </span>
+            </>
+          ) : (
+            <div className="pl-[50px]">
+              {t(`roles.${role.name}`, role.name)}: {role.count}명
+              <span
+                className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
+              >
+                ({confirmedCount}/{role.count})
+              </span>
+            </div>
+          )}
+        </div>
+      );
+    });
+  };
+
   // 시간대 및 역할 렌더링
   const renderTimeSlots = () => {
     // ✅ 고정공고: 근무조건 및 모집역할 표시
@@ -446,108 +492,35 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
                   📅 {dateDisplay} 일정
                 </div>
                 <div className="ml-4 space-y-1">
-                  {(req.timeSlots || []).map((ts: TimeSlot) => (
-                    <div key={`ts-${req.date}-${ts.time}`} className="mb-2">
-                      {ts.isTimeToBeAnnounced ? (
-                        <>
-                          <>
-                            {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
-                              const dateString = timestampToLocalDateString(req.date);
-                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                dateString,
-                                ts.time,
-                                role.name
-                              );
-                              const isFull = confirmedCount >= role.count;
-                              return (
-                                <div
-                                  key={`role-tba-${role.name}`}
-                                  className="text-sm text-gray-600 dark:text-gray-300"
-                                >
-                                  {roleIndex === 0 ? (
-                                    <>
-                                      <span className="font-medium text-orange-600 dark:text-orange-400">
-                                        미정
-                                        {ts.tentativeDescription && (
-                                          <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
-                                            ({ts.tentativeDescription})
-                                          </span>
-                                        )}
-                                      </span>
-                                      <span className="ml-3">
-                                        {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                        <span
-                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                        >
-                                          ({confirmedCount}/{role.count})
-                                        </span>
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <div className="pl-[50px]">
-                                      {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span
-                                        className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                      >
-                                        ({confirmedCount}/{role.count})
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </>
-                        </>
-                      ) : (
-                        <>
-                          <>
-                            {(ts.roles || []).map((role: RoleRequirement, roleIndex: number) => {
-                              const dateString = timestampToLocalDateString(req.date);
-                              const confirmedCount = JobPostingUtils.getConfirmedStaffCount(
-                                post,
-                                dateString,
-                                ts.time,
-                                role.name
-                              );
-                              const isFull = confirmedCount >= role.count;
-                              return (
-                                <div
-                                  key={`role-${ts.time}-${role.name}`}
-                                  className="text-sm text-gray-600 dark:text-gray-300"
-                                >
-                                  {roleIndex === 0 ? (
-                                    <>
-                                      <span className="font-medium text-gray-700 dark:text-gray-200">
-                                        {ts.time}
-                                      </span>
-                                      <span className="ml-3">
-                                        {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                        <span
-                                          className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                        >
-                                          ({confirmedCount}/{role.count})
-                                        </span>
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <div className="pl-[50px]">
-                                      {t(`roles.${role.name}`, role.name)}: {role.count}명
-                                      <span
-                                        className={`ml-1 ${isFull ? 'text-red-600 dark:text-red-400' : 'text-green-600 dark:text-green-400'}`}
-                                      >
-                                        ({confirmedCount}/{role.count})
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </>
-                        </>
-                      )}
-                    </div>
-                  ))}
+                  {(req.timeSlots || []).map((ts: TimeSlot) => {
+                    const dateString = timestampToLocalDateString(req.date);
+                    const timeDisplay = ts.isTimeToBeAnnounced ? (
+                      <span className="font-medium text-orange-600 dark:text-orange-400">
+                        미정
+                        {ts.tentativeDescription && (
+                          <span className="text-gray-600 dark:text-gray-300 font-normal ml-1">
+                            ({ts.tentativeDescription})
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span className="font-medium text-gray-700 dark:text-gray-200">
+                        {ts.time}
+                      </span>
+                    );
+
+                    return (
+                      <div key={`ts-${req.date}-${ts.time}`} className="mb-2">
+                        {renderRoleRequirements(
+                          ts.roles || [],
+                          dateString,
+                          ts.time,
+                          timeDisplay,
+                          `role-${req.date}-${ts.time}`
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             );

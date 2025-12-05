@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useJobPostingApproval } from '../hooks/useJobPostingApproval';
 import { ApprovalModal } from '../components/jobPosting/ApprovalModal';
 import { JobPosting } from '../types/jobPosting/jobPosting';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../firebase';
 import { logger } from '../utils/logger';
 
 /**
@@ -15,6 +17,68 @@ const ApprovalManagementPage: React.FC = () => {
   const { pendingPostings, loading, error, processing, approve, reject } = useJobPostingApproval();
   const [selectedPosting, setSelectedPosting] = useState<JobPosting | null>(null);
   const [modalMode, setModalMode] = useState<'approve' | 'reject' | null>(null);
+  const [creatorNames, setCreatorNames] = useState<Map<string, string>>(new Map());
+
+  // 작성자 이름 조회
+  useEffect(() => {
+    const fetchCreatorNames = async () => {
+      const newNames = new Map<string, string>();
+
+      for (const posting of pendingPostings) {
+        if (!posting.createdBy || creatorNames.has(posting.createdBy)) {
+          continue;
+        }
+
+        try {
+          // 프로필에서 이름 조회
+          const profileDocRef = doc(db, 'users', posting.createdBy, 'profile', 'basic');
+          const profileDoc = await getDoc(profileDocRef);
+
+          if (profileDoc.exists()) {
+            const profileData = profileDoc.data();
+            if (profileData?.name) {
+              newNames.set(posting.createdBy, profileData.name);
+              continue;
+            }
+          }
+
+          // users 문서에서 이름 조회
+          const userDocRef = doc(db, 'users', posting.createdBy);
+          const userDoc = await getDoc(userDocRef);
+
+          if (userDoc.exists()) {
+            const userData = userDoc.data();
+            if (userData?.displayName) {
+              newNames.set(posting.createdBy, userData.displayName);
+              continue;
+            }
+            if (userData?.name) {
+              newNames.set(posting.createdBy, userData.name);
+              continue;
+            }
+          }
+        } catch (err) {
+          logger.error(
+            '작성자 정보 조회 실패',
+            err instanceof Error ? err : new Error(String(err)),
+            { component: 'ApprovalManagementPage', data: { createdBy: posting.createdBy } }
+          );
+        }
+      }
+
+      if (newNames.size > 0) {
+        setCreatorNames((prev) => {
+          const merged = new Map(prev);
+          newNames.forEach((value, key) => merged.set(key, value));
+          return merged;
+        });
+      }
+    };
+
+    if (pendingPostings.length > 0) {
+      fetchCreatorNames();
+    }
+  }, [pendingPostings, creatorNames]);
 
   const handleApprove = (posting: JobPosting) => {
     logger.info('승인 모달 열기');
@@ -146,7 +210,8 @@ const ApprovalManagementPage: React.FC = () => {
                         format(posting.createdAt.toDate(), 'yyyy.MM.dd HH:mm', { locale: ko })}
                     </div>
                     <div>
-                      <span className="font-medium">작성자 ID:</span> {posting.createdBy}
+                      <span className="font-medium">작성자:</span>{' '}
+                      {creatorNames.get(posting.createdBy) || posting.createdBy}
                     </div>
                     <div>
                       <span className="font-medium">모집 인원:</span>{' '}

@@ -1,8 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { ChevronDownIcon, ChevronUpIcon } from '@heroicons/react/24/outline';
+import { doc, getDoc } from 'firebase/firestore';
+import { db } from '../../firebase';
 import { TournamentConfig } from '../../types/jobPosting/jobPosting';
+import { logger } from '../../utils/logger';
 
 interface RejectionReasonDisplayProps {
   tournamentConfig: TournamentConfig;
@@ -24,13 +27,65 @@ export const RejectionReasonDisplay: React.FC<RejectionReasonDisplayProps> = ({
   defaultExpanded = true,
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [adminName, setAdminName] = useState<string | null>(null);
+
+  const { rejectionReason, rejectedAt, rejectedBy } = tournamentConfig;
+
+  // 관리자 이름 조회
+  useEffect(() => {
+    const fetchAdminName = async () => {
+      if (!rejectedBy) return;
+
+      try {
+        // 프로필에서 이름 조회
+        const profileDocRef = doc(db, 'users', rejectedBy, 'profile', 'basic');
+        const profileDoc = await getDoc(profileDocRef);
+
+        if (profileDoc.exists()) {
+          const profileData = profileDoc.data();
+          if (profileData?.name) {
+            setAdminName(profileData.name);
+            return;
+          }
+        }
+
+        // users 문서에서 이름 조회
+        const userDocRef = doc(db, 'users', rejectedBy);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          if (userData?.displayName) {
+            setAdminName(userData.displayName);
+            return;
+          }
+          if (userData?.name) {
+            setAdminName(userData.name);
+            return;
+          }
+        }
+
+        // 이름을 찾지 못한 경우 ID 유지
+        logger.warn('관리자 이름을 찾을 수 없음', {
+          component: 'RejectionReasonDisplay',
+          data: { rejectedBy },
+        });
+      } catch (error) {
+        logger.error(
+          '관리자 정보 조회 실패',
+          error instanceof Error ? error : new Error(String(error)),
+          { component: 'RejectionReasonDisplay', data: { rejectedBy } }
+        );
+      }
+    };
+
+    fetchAdminName();
+  }, [rejectedBy]);
 
   // rejected 상태가 아니면 렌더링하지 않음
   if (tournamentConfig.approvalStatus !== 'rejected') {
     return null;
   }
-
-  const { rejectionReason, rejectedAt, rejectedBy } = tournamentConfig;
 
   // 거부 사유가 없으면 렌더링하지 않음
   if (!rejectionReason) {
@@ -95,7 +150,9 @@ export const RejectionReasonDisplay: React.FC<RejectionReasonDisplayProps> = ({
             {rejectionReason}
           </p>
           {rejectedBy && (
-            <p className="mt-1 text-xs text-red-500 dark:text-red-400">처리자 ID: {rejectedBy}</p>
+            <p className="mt-1 text-xs text-red-500 dark:text-red-400">
+              처리자: {adminName || rejectedBy}
+            </p>
           )}
         </div>
       )}

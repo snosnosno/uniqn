@@ -53,6 +53,7 @@ export { sendLoginNotification, recordLoginFailure } from './account/loginNotifi
 // --- Job Posting Approval Functions (Phase 7) ---
 export { approveJobPosting } from './api/jobPostings/approveJobPosting';
 export { rejectJobPosting } from './api/jobPostings/rejectJobPosting';
+export { resubmitJobPosting } from './api/jobPostings/resubmitJobPosting';
 export { onTournamentApprovalChange } from './triggers/onTournamentApprovalChange';
 
 // --- Job Posting Scheduled Functions (Phase 5) ---
