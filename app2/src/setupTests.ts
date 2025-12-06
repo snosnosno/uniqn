@@ -37,9 +37,8 @@ global.TextDecoder = TextDecoder as any;
 
 // ReadableStream polyfill for Firebase Functions
 if (typeof global.ReadableStream === 'undefined') {
-  global.ReadableStream = class ReadableStream {
-    constructor() {}
-  } as any;
+  // eslint-disable-next-line @typescript-eslint/no-extraneous-class
+  global.ReadableStream = class ReadableStream {} as unknown as typeof ReadableStream;
 }
 
 // ========================================

@@ -8,9 +8,18 @@
  * @feature 002-phase3-integration
  */
 
-import { renderHook, act, waitFor } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useDateFilterStore } from '../dateFilterStore';
 import { toISODateString } from '../../utils/dateUtils';
+
+// Store 초기화 헬퍼 함수
+const resetStore = () => {
+  const { result } = renderHook(() => useDateFilterStore());
+  act(() => {
+    result.current.setSelectedDate('');
+    result.current.setAvailableDates([]);
+  });
+};
 
 describe('DateFilterStore', () => {
   beforeEach(() => {
@@ -18,11 +27,7 @@ describe('DateFilterStore', () => {
     localStorage.clear();
 
     // Zustand store 초기화
-    const { result } = renderHook(() => useDateFilterStore());
-    act(() => {
-      result.current.setSelectedDate('');
-      result.current.setAvailableDates([]);
-    });
+    resetStore();
   });
 
   describe('T010: setSelectedDate updates state correctly', () => {
@@ -215,7 +220,7 @@ describe('DateFilterStore', () => {
 
     it('should select nearest future date if today is not in availableDates', () => {
       const { result } = renderHook(() => useDateFilterStore());
-      const today = toISODateString(new Date()) || '';
+      // today는 테스트 문맥상 필요하지 않음 (미래 날짜만 사용)
 
       // 오늘보다 미래 날짜들만 설정
       const futureDate1 = '2099-12-30';

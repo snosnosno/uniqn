@@ -347,10 +347,9 @@ describe('useFirestoreQuery', () => {
       });
 
       const firstDoc = result.current.data[0] as FirestoreDocument<Staff> | undefined;
-      if (firstDoc) {
-        expect(firstDoc.id).toBe('1');
-        expect(firstDoc.name).toBe('홍길동');
-      }
+      expect(firstDoc).toBeDefined();
+      expect(firstDoc?.id).toBe('1');
+      expect(firstDoc?.name).toBe('홍길동');
     });
   });
 

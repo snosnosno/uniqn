@@ -10,7 +10,7 @@
  * @author T-HOLDEM Development Team
  */
 
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, act } from '@testing-library/react';
 import { useFirestoreMutation } from '../useFirestoreMutation';
 
 // Mock Firebase

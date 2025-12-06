@@ -71,21 +71,26 @@ export const useStaffWorkData = ({
   let contextWorkLogs: UnifiedWorkLog[] | undefined;
   let contextLoading = false;
   let jobPosting: JobPosting | null = null;
-  let confirmedStaff: ConfirmedStaff[] = [];
 
   try {
     const context = useJobPostingContext();
     jobPosting = context.jobPosting as JobPosting | null;
     contextWorkLogs = context.workLogs;
     contextLoading = context.workLogsLoading;
-    confirmedStaff = jobPosting?.confirmedStaff || [];
   } catch {
     // Context가 없는 환경 (Provider 밖에서 사용)
   }
 
+  // confirmedStaff를 useMemo로 래핑하여 안정적인 참조 유지
+  const confirmedStaff = useMemo(
+    () => jobPosting?.confirmedStaff || [],
+    [jobPosting?.confirmedStaff]
+  );
+
   // Context에서 WorkLogs 사용 (직접 구독 완전 제거)
   // EnhancedPayrollTab은 항상 JobPostingProvider 내부에서만 사용되므로 안전
-  const workLogs = contextWorkLogs || [];
+  // 안정적인 빈 배열 참조 사용
+  const workLogs = useMemo(() => contextWorkLogs || [], [contextWorkLogs]);
   const workLogsLoading = contextLoading;
   const workLogsError = null as Error | null;
 
@@ -349,6 +354,8 @@ export const useStaffWorkData = ({
     calculateBasePay,
     getDefaultAllowances,
     staffAllowanceOverrides,
+    startDate,
+    endDate,
   ]);
 
   // 사용 가능한 역할 목록
@@ -389,7 +396,7 @@ export const useStaffWorkData = ({
         end: endDate || '',
       },
     };
-  }, [staffWorkData]);
+  }, [staffWorkData, startDate, endDate]);
 
   // 스태프 선택 토글
   const toggleStaffSelection = useCallback((uniqueKey: string) => {

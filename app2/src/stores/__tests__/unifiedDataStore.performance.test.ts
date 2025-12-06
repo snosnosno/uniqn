@@ -23,17 +23,22 @@ jest.mock('../../firebase', () => ({
   functions: {},
 }));
 
+// Store 초기화 헬퍼 함수
+const resetStore = () => {
+  const { result } = renderHook(() => useUnifiedDataStore());
+  act(() => {
+    result.current.setStaff(new Map());
+    result.current.setWorkLogs(new Map());
+    result.current.setApplications(new Map());
+    result.current.setAttendanceRecords(new Map());
+    result.current.setJobPostings(new Map());
+  });
+};
+
 describe('UnifiedDataStore - 성능 테스트', () => {
   beforeEach(() => {
     // Store 초기화
-    const { result } = renderHook(() => useUnifiedDataStore());
-    act(() => {
-      result.current.setStaff(new Map());
-      result.current.setWorkLogs(new Map());
-      result.current.setApplications(new Map());
-      result.current.setAttendanceRecords(new Map());
-      result.current.setJobPostings(new Map());
-    });
+    resetStore();
   });
 
   describe('대량 데이터 처리', () => {

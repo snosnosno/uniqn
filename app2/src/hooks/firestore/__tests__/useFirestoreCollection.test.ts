@@ -11,7 +11,7 @@
  */
 
 import { renderHook, waitFor, act } from '@testing-library/react';
-import { collection, query, where, orderBy, limit } from 'firebase/firestore';
+import { where, orderBy, limit } from 'firebase/firestore';
 import { useFirestoreCollection } from '../useFirestoreCollection';
 import type { FirestoreDocument } from '../types';
 

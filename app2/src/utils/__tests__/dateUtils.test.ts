@@ -236,15 +236,11 @@ describe('DateUtils: Phase 3 Functions', () => {
         new Date('2025-11-21T10:30:00Z'),
       ];
 
-      // When & Then: 모두 true 반환
+      // When & Then: 모두 true 반환하고 Date 메서드 접근 가능
       validDates.forEach((date) => {
         expect(isValidDate(date)).toBe(true);
-
-        // Type Guard 동작 확인
-        if (isValidDate(date)) {
-          // TypeScript가 date를 Date 타입으로 인식해야 함
-          expect(date.getTime()).toBeDefined();
-        }
+        // Type Guard가 통과하면 Date 메서드 접근 가능 확인
+        expect(date.getTime()).toBeDefined();
       });
     });
 
@@ -279,14 +275,12 @@ describe('DateUtils: Phase 3 Functions', () => {
       const value: unknown = new Date('2025-11-20');
 
       // When: isValidDate로 타입 체크
-      if (isValidDate(value)) {
-        // Then: TypeScript가 value를 Date로 인식
-        expect(value.getFullYear()).toBe(2025);
-        expect(value.getMonth()).toBe(10); // 0-based (11월 = 10)
-        expect(value.getDate()).toBe(20);
-      } else {
-        throw new Error('Should be valid date');
-      }
+      expect(isValidDate(value)).toBe(true);
+      // Then: TypeScript가 value를 Date로 인식 (타입 단언 사용)
+      const dateValue = value as Date;
+      expect(dateValue.getFullYear()).toBe(2025);
+      expect(dateValue.getMonth()).toBe(10); // 0-based (11월 = 10)
+      expect(dateValue.getDate()).toBe(20);
     });
 
     it('극단적인 날짜 값도 처리해야 함', () => {

@@ -55,7 +55,7 @@ const UserManagementPage: React.FC = () => {
       (err) => {
         logger.error(
           'Error fetching user list: ',
-          err instanceof Error ? err : new Error(String(error)),
+          err instanceof Error ? err : new Error(String(err)),
           { component: 'UserManagementPage' }
         );
         setError(t('userManagement.fetchError'));

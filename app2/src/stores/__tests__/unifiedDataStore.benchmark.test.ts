@@ -22,15 +22,20 @@ jest.mock('../../firebase', () => ({
   functions: {},
 }));
 
+// Store 초기화 헬퍼 함수
+const resetStore = () => {
+  const { result } = renderHook(() => useUnifiedDataStore());
+  act(() => {
+    result.current.setStaff(new Map());
+    result.current.setWorkLogs(new Map());
+    result.current.setApplications(new Map());
+  });
+};
+
 describe('UnifiedDataStore Performance Benchmark', () => {
   beforeEach(() => {
     // Store 초기화
-    const { result } = renderHook(() => useUnifiedDataStore());
-    act(() => {
-      result.current.setStaff(new Map());
-      result.current.setWorkLogs(new Map());
-      result.current.setApplications(new Map());
-    });
+    resetStore();
   });
 
   // ========== 1. CRUD 작업 실행 시간 벤치마크 ==========

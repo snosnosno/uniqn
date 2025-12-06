@@ -226,7 +226,7 @@ export const ConsentManager: React.FC<ConsentManagerProps> = ({
       component: 'ConsentManager',
       data: { agreed: newAgreed },
     });
-  }, [isAllAgreed, onChange, termsVersion, privacyVersion]);
+  }, [isAllAgreed, onChange, termsVersion, privacyVersion, consents.userId]);
 
   /**
    * 제출 핸들러

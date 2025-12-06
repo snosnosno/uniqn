@@ -78,7 +78,7 @@ export const useGroupByDate = <T>(options: GroupByDateOptions<T>): UseGroupByDat
     } else {
       isInitializedRef.current = true;
     }
-  }, [storageKey, defaultExpanded]);
+  }, [storageKey, defaultExpanded, data, getDateKey]);
 
   // 그룹화된 데이터 생성
   const groupedData = useMemo((): GroupedData<T> => {

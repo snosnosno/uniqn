@@ -19,7 +19,7 @@ import {
   extractEmailDomain,
   isCommonEmailDomain,
   COMMON_EMAIL_DOMAINS,
-  type EmailValidationResult,
+  // EmailValidationResult 타입은 validateEmail 반환값으로 암시적 사용
 } from '../emailValidator';
 
 describe('emailValidator', () => {

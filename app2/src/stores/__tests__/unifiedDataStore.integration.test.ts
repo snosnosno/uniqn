@@ -36,6 +36,18 @@ jest.mock('../../firebase', () => ({
   functions: {},
 }));
 
+// Store 초기화 헬퍼 함수
+const resetStore = () => {
+  const { result } = renderHook(() => useUnifiedDataStore());
+  act(() => {
+    result.current.setStaff(new Map());
+    result.current.setWorkLogs(new Map());
+    result.current.setApplications(new Map());
+    result.current.setLoading(false);
+    result.current.setError(null);
+  });
+};
+
 // 실제 Firebase 연동이 필요한 테스트이므로 skip
 describe.skip('UnifiedDataStore - 통합 테스트', () => {
   beforeEach(() => {
@@ -43,14 +55,7 @@ describe.skip('UnifiedDataStore - 통합 테스트', () => {
     staffSnapshotCallback = null;
 
     // Store 초기화
-    const { result } = renderHook(() => useUnifiedDataStore());
-    act(() => {
-      result.current.setStaff(new Map());
-      result.current.setWorkLogs(new Map());
-      result.current.setApplications(new Map());
-      result.current.setLoading(false);
-      result.current.setError(null);
-    });
+    resetStore();
   });
 
   describe('Firebase 실시간 구독', () => {
@@ -101,8 +106,8 @@ describe.skip('UnifiedDataStore - 통합 테스트', () => {
       // Store에 데이터가 업데이트되었는지 확인
       await waitFor(() => {
         expect(result.current.staff.size).toBe(1);
-        expect(result.current.staff.get('staff1')?.name).toBe('홍길동');
       });
+      expect(result.current.staff.get('staff1')?.name).toBe('홍길동');
     });
   });
 });
