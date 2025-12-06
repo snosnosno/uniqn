@@ -135,19 +135,3 @@ export {
   completeAccountDeletion,
   isPendingDeletion,
 } from './accountDeletionService';
-
-// =============================================================================
-// Security Services
-// =============================================================================
-
-/** 인증 보안 서비스 */
-export {
-  recordLoginAttempt,
-  isLoginBlocked,
-  clearLoginAttempts,
-  getSuspiciousAttempts,
-  cleanupOldAttempts,
-  formatBlockTime,
-  SECURITY_CONFIG,
-} from './authSecurity';
-export type { LoginAttempt } from './authSecurity';
