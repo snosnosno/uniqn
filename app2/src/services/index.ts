@@ -17,7 +17,7 @@
  * // 여러 서비스 import
  * import {
  *   initializePushNotifications,
- *   BulkOperationService
+ *   ApplicantConversionService
  * } from '@/services';
  * ```
  */
@@ -64,13 +64,6 @@ export {
   handleCheckIn,
   handleCheckOut,
 } from './StaffQRAttendanceService';
-
-// =============================================================================
-// Data Services
-// =============================================================================
-
-/** 대량 작업 서비스 */
-export { BulkOperationService } from './BulkOperationService';
 
 // =============================================================================
 // Notification Services
