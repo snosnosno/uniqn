@@ -525,9 +525,7 @@ npm run build
 - **설정 파일**: [src/config/features.ts](../../app2/src/config/features.ts)
 - **준비 중 페이지**: [src/components/ComingSoon.tsx](../../app2/src/components/ComingSoon.tsx)
 - **라우팅**: [src/App.tsx](../../app2/src/App.tsx)
-- **모바일 메뉴**: [src/components/navigation/MobileMenu.tsx](../../app2/src/components/navigation/MobileMenu.tsx)
-- **하단 탭바**: [src/components/navigation/BottomTabBar.tsx](../../app2/src/components/navigation/BottomTabBar.tsx)
-- **데스크톱 네비게이션**: [src/components/navigation/ResponsiveNav.tsx](../../app2/src/components/navigation/ResponsiveNav.tsx)
+- **레이아웃**: [src/components/layout/Layout.tsx](../../app2/src/components/layout/Layout.tsx)
 
 ### 외부 문서
 
@@ -541,6 +539,7 @@ npm run build
 
 | 버전 | 날짜 | 변경 내용 | 작성자 |
 |------|------|-----------|--------|
+| 1.0.1 | 2025-12-06 | 삭제된 navigation 컴포넌트 링크 제거 | Claude |
 | 1.0.0 | 2025-01-23 | 초기 문서 작성 | Claude |
 
 ---
