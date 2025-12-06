@@ -1,413 +1,311 @@
 /**
- * LandingPage 메인 컴포넌트
+ * LandingPage - 심플한 앱 스타일 시작 화면
  *
- * TDD GREEN 단계: 테스트를 통과하는 랜딩페이지 메인 컴포넌트 구현
- * Hero, Feature, Target, CTA 섹션을 통합하고 스크롤 동작 및 분석 기능 포함
+ * 기능:
+ * - 다크모드 토글
+ * - 언어 선택 (한국어/영어)
+ * - 로그인/회원가입 버튼 (비로그인 시)
+ * - 로그인 사용자: 알림, 프로필 메뉴, 앱으로 이동 버튼
+ * - 앱 다운로드 버튼 (placeholder)
+ * - 이용약관/개인정보처리방침 링크
  */
 
-import React, { useEffect, useCallback, useState, lazy, Suspense } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useLandingAnalytics } from './hooks/useLandingAnalytics';
+import React, { useCallback, useState, useRef, useEffect } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
+import { useTheme } from '../../contexts/ThemeContext';
+import { useAuth } from '../../contexts/AuthContext';
+import { NotificationDropdown } from '../../components/notifications/NotificationDropdown';
 import {
-  HeroContent,
-  FeatureSection as FeatureSectionType,
-  TargetGroup,
-  CTASection as CTASectionType,
-} from './types';
-import { logger } from '../../utils/logger';
-import performanceMonitor from './utils/performanceMonitor';
-import './styles/LandingPage.css';
-
-// 네비게이션과 Footer는 즉시 로드 (중요한 UI 요소)
-import LandingNavigation from './components/LandingNavigation';
-import FooterSection from './components/FooterSection';
-
-// Lazy load components for better performance
-const HeroSection = lazy(() => import('./components/HeroSection'));
-const FeatureSection = lazy(() => import('./components/FeatureSection'));
-const TargetSection = lazy(() => import('./components/TargetSection'));
-const CTASection = lazy(() => import('./components/CTASection'));
-
-// 간단한 로딩 컴포넌트
-const SectionLoader: React.FC = () => (
-  <div className="w-full h-64 bg-gray-100 dark:bg-gray-800 animate-pulse rounded-lg"></div>
-);
-
-// 랜딩페이지 콘텐츠 데이터
-const heroContent: HeroContent = {
-  title: 'Smart Tournament Management with UNIQN',
-  subtitle: 'Complete Tournament Management Solution',
-  description: '효율적인 스태프 관리와 원활한 토너먼트 운영을 위한 원스톱 솔루션입니다.',
-  ctaText: '무료로 시작하기',
-  ctaLink: '/signup',
-};
-
-const featureContent: FeatureSectionType = {
-  title: '주요 기능',
-  subtitle: 'Powerful features provided by UNIQN',
-  features: [
-    {
-      id: 'job-posting',
-      title: '구인 관리',
-      description: '효과적인 구인공고 및 지원자 관리',
-      icon: 'briefcase',
-      benefits: ['맞춤형 구인공고', '지원자 필터링', '면접 스케줄 관리'],
-    },
-    {
-      id: 'staff-management',
-      title: '스태프 관리',
-      description: '체계적인 인력 관리 및 스케줄링',
-      icon: 'users',
-      benefits: ['스마트 스케줄링', '출석 관리', '급여 자동 계산'],
-    },
-    {
-      id: 'payroll',
-      title: '급여 정산',
-      description: '정확하고 투명한 급여 계산 시스템',
-      icon: 'currency-dollar',
-      benefits: ['자동 급여 계산', '세금 공제 처리', '급여명세서 발급'],
-    },
-    {
-      id: 'tournament-management',
-      title: '토너먼트 관리',
-      description: '효율적인 토너먼트 생성 및 관리 시스템',
-      icon: 'trophy',
-      benefits: ['실시간 진행 상황 추적', '자동 순위 계산', '상금 분배 관리'],
-    },
-  ],
-};
-
-const targetGroups: TargetGroup[] = [
-  {
-    id: 'tournament-organizers',
-    name: '대회사',
-    title: '토너먼트 주최자를 위한 완벽한 솔루션',
-    description: '대규모 토너먼트 운영에 필요한 모든 기능을 한 곳에서 관리하세요.',
-    benefits: [
-      '실시간 참가자 관리',
-      '자동 대진표 생성',
-      '상금 분배 시스템',
-      '라이브 스트리밍 지원',
-    ],
-    icon: 'building-office',
-    ctaText: '대회사 솔루션 보기',
-  },
-  {
-    id: 'poker-rooms',
-    name: 'Poker Rooms',
-    title: 'New Standard for Poker Room Operations',
-    description: '효율적인 게임 관리와 고객 서비스로 매출을 극대화하세요.',
-    benefits: ['테이블 관리 시스템', '고객 등급 관리', '자동 정산 시스템', '예약 관리 기능'],
-    icon: 'home',
-    ctaText: 'View Poker Room Solution',
-  },
-  {
-    id: 'staff',
-    name: '스태프',
-    title: '스태프를 위한 스마트 워크 플랫폼',
-    description: '편리한 스케줄 관리와 투명한 급여 시스템으로 더 나은 근무환경을 경험하세요.',
-    benefits: ['유연한 스케줄 관리', '실시간 급여 확인', '간편한 출퇴근 체크', '커리어 성장 지원'],
-    icon: 'user-group',
-    ctaText: '스태프 지원하기',
-  },
-];
-
-const ctaContent: CTASectionType = {
-  title: '지금 바로 시작하세요',
-  description:
-    'Experience more efficient and systematic tournament management with UNIQN. Start with a free trial.',
-  primaryCTA: {
-    text: '무료로 시작하기',
-    link: '/signup',
-    variant: 'primary',
-  },
-  secondaryCTA: {
-    text: '데모 보기',
-    link: '/demo',
-    variant: 'secondary',
-  },
-};
+  SunIcon,
+  MoonIcon,
+  UserCircleIcon,
+  Cog6ToothIcon,
+  ArrowRightOnRectangleIcon,
+  Squares2X2Icon,
+} from '@heroicons/react/24/outline';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const analytics = useLandingAnalytics();
-  const [activeSection, setActiveSection] = useState<string>('hero');
+  const { t, i18n } = useTranslation();
+  const { isDark, toggleTheme } = useTheme();
+  const { currentUser, signOut, loading: authLoading } = useAuth();
 
-  // 페이지 로드 시 분석 추적 및 성능 모니터링 초기화
+  // 프로필 드롭다운 상태
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const profileRef = useRef<HTMLDivElement>(null);
+
+  // 프로필 드롭다운 외부 클릭 감지
   useEffect(() => {
-    analytics.trackPageView('landing-page');
-
-    // 성능 모니터링 초기화
-    performanceMonitor.initialize();
-
-    // 페이지 성능 메트릭 수집 (기존 로직 유지 + 성능 모니터 연동)
-    const collectPerformanceMetrics = () => {
-      const navigation = performance.getEntriesByType(
-        'navigation'
-      )[0] as PerformanceNavigationTiming;
-
-      if (navigation) {
-        const performanceData = {
-          loadTime: navigation.loadEventEnd - navigation.fetchStart,
-          domContentLoaded: navigation.domContentLoadedEventEnd - navigation.fetchStart,
-          firstPaint: performance.getEntriesByName('first-paint')[0]?.startTime || 0,
-        };
-
-        // 기존 분석 시스템으로 전송
-        analytics.trackPerformance('page_load', performanceData);
-
-        // 성능 모니터에서 상세 메트릭 보고서 출력 (개발 환경)
-        if (process.env.NODE_ENV === 'development') {
-          setTimeout(() => {
-            const report = performanceMonitor.getMetricsReport();
-            const alerts = performanceMonitor.checkPerformanceAlerts();
-
-            logger.info('🚀 Landing Page Performance Report', report);
-
-            if (alerts.length > 0) {
-              logger.warn('⚠️ Performance Alerts', { alerts });
-            } else {
-              logger.info('✅ All performance metrics are within acceptable ranges');
-            }
-          }, 3000); // 3초 후 메트릭 출력 (모든 데이터 수집 완료)
-        }
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
+        setIsProfileOpen(false);
       }
     };
 
-    // DOM 로드 완료 후 메트릭 수집
-    if (document.readyState === 'complete') {
-      collectPerformanceMetrics();
-    } else {
-      window.addEventListener('load', collectPerformanceMetrics);
+    if (isProfileOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
     }
 
-    // 컴포넌트 언마운트 시 성능 모니터 정리
     return () => {
-      window.removeEventListener('load', collectPerformanceMetrics);
-      performanceMonitor.cleanup();
+      document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [analytics]);
+  }, [isProfileOpen]);
 
-  // 스크롤 이벤트 핸들러
-  useEffect(() => {
-    const handleScroll = () => {
-      const scrollY = window.scrollY;
-      const windowHeight = window.innerHeight;
-      const documentHeight = document.documentElement.scrollHeight;
-
-      // 스크롤 깊이 계산 (백분율)
-      const scrollDepth = Math.round((scrollY / (documentHeight - windowHeight)) * 100);
-
-      // 스크롤 추적 (25% 단위)
-      if (scrollDepth % 25 === 0 && scrollDepth > 0) {
-        analytics.trackScroll(scrollDepth, activeSection);
-      }
-
-      // 활성 섹션 업데이트
-      const sections = [
-        { id: 'hero', element: document.querySelector('[data-testid="hero-section"]') },
-        { id: 'features', element: document.querySelector('[data-testid="feature-section"]') },
-        { id: 'targets', element: document.querySelector('[data-testid="target-section"]') },
-        { id: 'cta', element: document.querySelector('[data-testid="cta-section"]') },
-      ];
-
-      for (const section of sections) {
-        if (section.element) {
-          const rect = section.element.getBoundingClientRect();
-          if (rect.top <= windowHeight / 2 && rect.bottom >= windowHeight / 2) {
-            setActiveSection(section.id);
-            break;
-          }
-        }
-      }
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [analytics, activeSection]);
-
-  // CTA 클릭 핸들러
-  const handleCtaClick = useCallback(
-    (link: string) => {
-      const ctaText = link === '/signup' ? '무료로 시작하기' : '데모 보기';
-
-      analytics.trackCtaClick(ctaText, link, {
-        section: activeSection,
-        timestamp: Date.now(),
-      });
-
-      // 네비게이션
-      navigate(link);
+  // 언어 변경 핸들러
+  const handleLanguageChange = useCallback(
+    (lang: string) => {
+      i18n.changeLanguage(lang);
+      localStorage.setItem('i18nextLng', lang);
     },
-    [analytics, navigate, activeSection]
+    [i18n]
   );
 
-  // 기능 클릭 핸들러
-  const handleFeatureClick = useCallback(
-    (featureId: string) => {
-      analytics.trackInteraction('feature_click', {
-        feature_id: featureId,
-        section: 'features',
-      });
-
-      // 기능별 실제 페이지로 이동
-      const routeMap: Record<string, string> = {
-        'job-posting': '/admin/job-postings',
-        'staff-management': '/admin/shift-schedule',
-        payroll: '/admin/job-postings',
-        'tournament-management': '/admin/participants',
-      };
-
-      const route = routeMap[featureId];
-      if (route) {
-        navigate(route);
-      } else {
-        logger.info('Feature clicked', { featureId });
-      }
-    },
-    [analytics, navigate]
-  );
-
-  // 타겟 클릭 핸들러
-  const handleTargetClick = useCallback(
-    (targetId: string) => {
-      analytics.trackInteraction('target_click', {
-        target_id: targetId,
-        section: 'targets',
-      });
-
-      // 타겟별 실제 기능으로 이동
-      const routeMap: Record<string, string> = {
-        'tournament-organizers': '/admin/job-postings',
-        'poker-rooms': '/admin/job-postings',
-        staff: '/jobs',
-      };
-
-      const route = routeMap[targetId];
-      if (route) {
-        navigate(route);
-      } else {
-        // fallback to solutions page
-        navigate(`/solutions/${targetId}`);
-      }
-    },
-    [analytics, navigate]
-  );
-
-  // 스킵 링크 핸들러
-  const handleSkipToMain = useCallback(
-    (event: React.KeyboardEvent) => {
-      if (event.key === 'Enter') {
-        event.preventDefault();
-        const mainContent = document.getElementById('main-content');
-        if (mainContent) {
-          mainContent.focus();
-          analytics.trackInteraction('skip_link_used', {
-            accessibility: true,
-          });
-        }
-      }
-    },
-    [analytics]
-  );
-
-  // 네비게이션 섹션 클릭 핸들러
-  const handleNavigationSectionClick = useCallback(
-    (sectionId: string) => {
-      analytics.trackInteraction('nav_section_click', {
-        section: sectionId,
-        navigation_type: 'landing_nav',
-      });
-    },
-    [analytics]
-  );
+  // 로그아웃 핸들러
+  const handleSignOut = useCallback(async () => {
+    setIsProfileOpen(false);
+    await signOut();
+    navigate('/');
+  }, [signOut, navigate]);
 
   return (
-    <div data-testid="landing-page" className="min-h-screen scroll-smooth landing-page">
-      {/* 네비게이션 바 */}
-      <LandingNavigation onSectionClick={handleNavigationSectionClick} />
+    <div className="min-h-screen w-screen overflow-x-hidden bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
+      {/* 상단 헤더 */}
+      <header className="w-full flex justify-between items-center p-3 md:p-6">
+        {/* 왼쪽: 다크모드 토글 */}
+        <button
+          onClick={toggleTheme}
+          className="p-2 rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-shadow"
+          aria-label={
+            isDark
+              ? t('landing.lightMode', '라이트 모드로 전환')
+              : t('landing.darkMode', '다크 모드로 전환')
+          }
+        >
+          {isDark ? (
+            <SunIcon className="w-6 h-6 text-yellow-500" />
+          ) : (
+            <MoonIcon className="w-6 h-6 text-gray-600" />
+          )}
+        </button>
 
-      {/* 스킵 링크 (접근성) */}
-      <a
-        href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-20 focus:left-4 bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg z-50 focus-visible"
-        onKeyDown={handleSkipToMain}
-      >
-        메인 콘텐츠로 건너뛰기
-      </a>
+        {/* 오른쪽: 로그인 상태에 따른 메뉴 */}
+        <div className="flex items-center gap-1.5 md:gap-3">
+          {/* 로그인 사용자 메뉴 */}
+          {currentUser && !authLoading && (
+            <>
+              {/* 알림 */}
+              <NotificationDropdown />
+
+              {/* 프로필 드롭다운 */}
+              <div className="relative" ref={profileRef}>
+                <button
+                  onClick={() => setIsProfileOpen(!isProfileOpen)}
+                  className="p-2 rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-shadow"
+                  aria-label={t('landing.profile', '내 프로필')}
+                  aria-expanded={isProfileOpen}
+                >
+                  <UserCircleIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
+                </button>
+
+                {/* 프로필 드롭다운 메뉴 */}
+                {isProfileOpen && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                    {/* 모바일에서만 앱으로 이동 메뉴 표시 */}
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        navigate('/dashboard');
+                      }}
+                      className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 md:hidden"
+                    >
+                      <Squares2X2Icon className="w-5 h-5" />
+                      {t('landing.goToApp', '앱으로 이동')}
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1 md:hidden" />
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        navigate('/profile');
+                      }}
+                      className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <UserCircleIcon className="w-5 h-5" />
+                      {t('landing.profile', '내 프로필')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        setIsProfileOpen(false);
+                        navigate('/settings');
+                      }}
+                      className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <Cog6ToothIcon className="w-5 h-5" />
+                      {t('landing.settings', '설정')}
+                    </button>
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
+                    <button
+                      onClick={handleSignOut}
+                      className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
+                    >
+                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
+                      {t('landing.logout', '로그아웃')}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* 앱으로 이동 버튼 - 모바일: 아이콘만, 데스크톱: 텍스트 */}
+              <button
+                onClick={() => navigate('/dashboard')}
+                className="p-2 md:px-4 md:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
+                aria-label={t('landing.goToApp', '앱으로 이동')}
+              >
+                <Squares2X2Icon className="w-5 h-5 md:hidden" />
+                <span className="hidden md:inline">{t('landing.goToApp', '앱으로 이동')}</span>
+              </button>
+            </>
+          )}
+
+          {/* 언어 선택 (항상 표시) - 모바일: 컴팩트 */}
+          <select
+            value={i18n.language.split('-')[0]}
+            onChange={(e) => handleLanguageChange(e.target.value)}
+            className="px-2 py-1.5 md:px-3 md:py-2 text-sm md:text-base rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            aria-label={t('landing.selectLanguage', '언어 선택')}
+          >
+            <option value="ko">KO</option>
+            <option value="en">EN</option>
+          </select>
+        </div>
+      </header>
 
       {/* 메인 콘텐츠 */}
-      <main id="main-content" role="main" tabIndex={-1}>
-        {/* Hero 섹션 */}
-        <Suspense fallback={<SectionLoader />}>
-          <HeroSection content={heroContent} onCtaClick={handleCtaClick} />
-        </Suspense>
+      <main className="flex-1 w-full flex flex-col items-center justify-center px-4 py-6 md:py-8">
+        {/* 로고 영역 */}
+        <div className="text-center mb-8">
+          {/* 임시 이미지 로고 */}
+          <div className="w-24 h-24 md:w-32 md:h-32 mx-auto mb-4 bg-gradient-to-br from-blue-500 to-blue-700 rounded-2xl flex items-center justify-center shadow-lg">
+            <span className="text-4xl md:text-5xl font-bold text-white">U</span>
+          </div>
 
-        {/* Features 섹션 */}
-        <Suspense fallback={<SectionLoader />}>
-          <FeatureSection content={featureContent} onFeatureClick={handleFeatureClick} />
-        </Suspense>
+          {/* 텍스트 로고 */}
+          <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white tracking-tight">
+            UNIQN
+          </h1>
+        </div>
 
-        {/* Target 섹션 */}
-        <Suspense fallback={<SectionLoader />}>
-          <TargetSection targets={targetGroups} onTargetClick={handleTargetClick} />
-        </Suspense>
+        {/* 서브 텍스트 */}
+        <p className="text-lg md:text-xl text-gray-600 dark:text-gray-300 text-center mb-10 max-w-md">
+          {t('landing.subtitle', '홀덤펍과 딜러를 연결합니다')}
+        </p>
 
-        {/* CTA 섹션 */}
-        <Suspense fallback={<SectionLoader />}>
-          <CTASection content={ctaContent} onCtaClick={handleCtaClick} />
-        </Suspense>
+        {/* CTA 버튼 영역 - 비로그인 상태에서만 표시 */}
+        {!currentUser && !authLoading && (
+          <div className="w-full max-w-xs space-y-4">
+            {/* 로그인 버튼 */}
+            <button
+              onClick={() => navigate('/login')}
+              className="w-full py-4 px-6 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all min-h-[52px]"
+            >
+              {t('landing.login', '로그인')}
+            </button>
+
+            {/* 회원가입 버튼 */}
+            <button
+              onClick={() => navigate('/signup')}
+              className="w-full py-4 px-6 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 font-semibold rounded-xl border-2 border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 shadow-md hover:shadow-lg transition-all min-h-[52px]"
+            >
+              {t('landing.signup', '회원가입')}
+            </button>
+          </div>
+        )}
+
+        {/* 로그인 상태: 환영 메시지 */}
+        {currentUser && !authLoading && (
+          <p className="text-lg text-gray-600 dark:text-gray-400 text-center">
+            {t('landing.welcomeBack', {
+              name: (() => {
+                // displayName 형식: "이름 [JSON]" 에서 닉네임 또는 이름 추출
+                const displayName = currentUser.displayName;
+                if (displayName) {
+                  // "이름 [JSON]" 형식 파싱
+                  const match = displayName.match(/^(.+?)\s*\[(.+)\]$/);
+                  if (match && match[1] && match[2]) {
+                    const realName = match[1];
+                    try {
+                      const jsonData = JSON.parse(match[2]);
+                      // 배열이면 첫 번째 요소, 객체면 그대로 사용
+                      const data = Array.isArray(jsonData) ? jsonData[0] : jsonData;
+                      // 닉네임 우선, 없으면 실제 이름
+                      return data?.nickname || realName;
+                    } catch {
+                      return realName;
+                    }
+                  }
+                  // JSON 형식이 아니면 그대로 사용
+                  return displayName;
+                }
+                return currentUser.email?.split('@')[0] || 'User';
+              })(),
+              defaultValue: '다시 오신 것을 환영합니다, {{name}}님!',
+            })}
+          </p>
+        )}
+
+        {/* 앱 다운로드 버튼 */}
+        <div className="mt-8 md:mt-10 flex flex-col sm:flex-row gap-2 md:gap-3">
+          <button
+            disabled
+            className="flex items-center justify-center gap-2 px-4 py-2.5 md:px-5 md:py-3 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl cursor-not-allowed opacity-60"
+            aria-label={`App Store - ${t('landing.comingSoon', '준비중')}`}
+          >
+            <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z" />
+            </svg>
+            <div className="text-left">
+              <div className="text-[10px] md:text-xs">{t('landing.comingSoon', '준비중')}</div>
+              <div className="text-xs md:text-sm font-semibold">App Store</div>
+            </div>
+          </button>
+
+          <button
+            disabled
+            className="flex items-center justify-center gap-2 px-4 py-2.5 md:px-5 md:py-3 bg-gray-200 dark:bg-gray-700 text-gray-500 dark:text-gray-400 rounded-xl cursor-not-allowed opacity-60"
+            aria-label={`Google Play - ${t('landing.comingSoon', '준비중')}`}
+          >
+            <svg className="w-5 h-5 md:w-6 md:h-6" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3,20.5V3.5C3,2.91 3.34,2.39 3.84,2.15L13.69,12L3.84,21.85C3.34,21.6 3,21.09 3,20.5M16.81,15.12L6.05,21.34L14.54,12.85L16.81,15.12M20.16,10.81C20.5,11.08 20.75,11.5 20.75,12C20.75,12.5 20.53,12.9 20.18,13.18L17.89,14.5L15.39,12L17.89,9.5L20.16,10.81M6.05,2.66L16.81,8.88L14.54,11.15L6.05,2.66Z" />
+            </svg>
+            <div className="text-left">
+              <div className="text-[10px] md:text-xs">{t('landing.comingSoon', '준비중')}</div>
+              <div className="text-xs md:text-sm font-semibold">Google Play</div>
+            </div>
+          </button>
+        </div>
       </main>
 
-      {/* Footer 섹션 */}
-      <FooterSection />
-
-      {/* 플로팅 네비게이션 (옵션) */}
-      <nav
-        className="fixed right-6 top-1/2 transform -translate-y-1/2 z-40 hidden lg:block floating-nav"
-        aria-label="페이지 섹션 네비게이션"
-      >
-        <div className="bg-white dark:bg-gray-800 bg-opacity-90 dark:bg-opacity-90 backdrop-blur-sm rounded-full p-3 shadow-lg">
-          {[
-            { id: 'hero', label: '홈' },
-            { id: 'features', label: '기능' },
-            { id: 'targets', label: '솔루션' },
-            { id: 'cta', label: '시작하기' },
-          ].map((section) => (
-            <button
-              key={section.id}
-              onClick={() => {
-                const element = document.querySelector(`[data-testid="${section.id}-section"]`);
-                if (element) {
-                  element.scrollIntoView({ behavior: 'smooth' });
-                  analytics.trackInteraction('nav_click', {
-                    section: section.id,
-                    navigation_type: 'floating',
-                  });
-                }
-              }}
-              className={`
-                block w-3 h-3 rounded-full mb-3 last:mb-0 floating-nav-dot focus-visible
-                ${
-                  activeSection === section.id
-                    ? 'bg-blue-600 dark:bg-blue-500 scale-125 active'
-                    : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
-                }
-              `}
-              aria-label={`${section.label} 섹션으로 이동`}
-              title={section.label}
-            />
-          ))}
+      {/* 하단 링크 */}
+      <footer className="py-4 md:py-6 px-4 text-center">
+        <div className="flex flex-wrap justify-center items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-500 dark:text-gray-400">
+          <Link
+            to="/terms-of-service"
+            className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            {t('landing.terms', '이용약관')}
+          </Link>
+          <span className="text-gray-300 dark:text-gray-600">|</span>
+          <Link
+            to="/privacy-policy"
+            className="hover:text-gray-700 dark:hover:text-gray-200 transition-colors"
+          >
+            {t('landing.privacy', '개인정보처리방침')}
+          </Link>
         </div>
-      </nav>
-
-      {/* 분석 에러 처리 */}
-      {analytics.error && process.env.NODE_ENV === 'development' && (
-        <div className="fixed bottom-4 right-4 bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg shadow-lg z-50">
-          <strong className="font-bold">분석 오류:</strong>
-          <span className="block sm:inline ml-1">{analytics.error.message}</span>
-        </div>
-      )}
+        <p className="mt-2 md:mt-3 text-[10px] md:text-xs text-gray-400 dark:text-gray-500">
+          © {new Date().getFullYear()} UNIQN. All rights reserved.
+        </p>
+      </footer>
     </div>
   );
 };

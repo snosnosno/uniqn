@@ -1938,5 +1938,21 @@
     "dateError": "{{index}}번째 날짜: {{error}}",
     "preQuestionError": "{{index}}번째 사전질문: {{error}}",
     "duplicateRoles": "중복된 역할이 있습니다: {{roles}}"
+  },
+  "landing": {
+    "lightMode": "라이트 모드로 전환",
+    "darkMode": "다크 모드로 전환",
+    "selectLanguage": "언어 선택",
+    "subtitle": "홀덤펍과 딜러를 연결합니다",
+    "login": "로그인",
+    "signup": "회원가입",
+    "comingSoon": "준비중",
+    "terms": "이용약관",
+    "privacy": "개인정보처리방침",
+    "goToApp": "앱으로 이동",
+    "welcomeBack": "다시 오신 것을 환영합니다, {{name}}님!",
+    "profile": "내 프로필",
+    "settings": "설정",
+    "logout": "로그아웃"
   }
 }

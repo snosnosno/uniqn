@@ -1938,5 +1938,21 @@
     "dateError": "Date #{{index}}: {{error}}",
     "preQuestionError": "Pre-question #{{index}}: {{error}}",
     "duplicateRoles": "Duplicate roles found: {{roles}}"
+  },
+  "landing": {
+    "lightMode": "Switch to Light Mode",
+    "darkMode": "Switch to Dark Mode",
+    "selectLanguage": "Select Language",
+    "subtitle": "Connecting Poker Pubs and Dealers",
+    "login": "Login",
+    "signup": "Sign Up",
+    "comingSoon": "Coming Soon",
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "goToApp": "Go to App",
+    "welcomeBack": "Welcome back, {{name}}!",
+    "profile": "My Profile",
+    "settings": "Settings",
+    "logout": "Logout"
   }
 }
