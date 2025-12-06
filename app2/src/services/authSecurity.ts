@@ -58,7 +58,6 @@ export const recordLoginAttempt = async (email: string, success: boolean): Promi
   try {
     const ip = await getClientIP();
     const userAgent = getUserAgent();
-    const _attemptId = `${ip}_${Date.now()}`; // 보안 로깅용
 
     const attemptData: Partial<LoginAttempt> = {
       ip,

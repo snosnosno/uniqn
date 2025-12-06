@@ -12,7 +12,6 @@ import type { UnifiedWorkLog } from '../../types/unified/workLog';
 import { UseScheduleDataReturn } from './types';
 import { processApplicationData, processWorkLogData } from './dataProcessors';
 import { filterSchedules, createDefaultFilters } from './filterUtils';
-import { calculateAllowances } from '../../utils/payrollCalculations';
 
 /**
  * 스케줄 데이터를 관리하는 커스텀 훅
@@ -355,13 +354,6 @@ const useScheduleData = (): UseScheduleDataReturn => {
         workLogData as unknown as UnifiedWorkLog,
         effectiveRole,
         effectiveJobPosting
-      );
-
-      // 수당 계산 (effectiveJobPosting 타입 변환 필요 - unifiedData vs jobPosting 타입 차이)
-      const _allowancesResult = calculateAllowances(
-        effectiveJobPosting as unknown as JobPosting | null,
-        1,
-        event.snapshotData
       );
 
       // 세금 계산

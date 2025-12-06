@@ -6,7 +6,7 @@ import { formatCurrency } from '../../i18n-helpers';
 import { logger } from '../../utils/logger';
 import { calculateWorkHours, parseTimeToString } from '../../utils/workLogMapper';
 import { getStaffIdentifier, matchStaffIdentifier } from '../../utils/staffIdMapper';
-import { findTargetWorkLog, filterWorkLogsByRole } from '../../utils/workLogHelpers';
+import { filterWorkLogsByRole } from '../../utils/workLogHelpers';
 
 import { UnifiedWorkLog } from '../../types/unified/workLog';
 
@@ -108,36 +108,7 @@ const DetailEditModal: React.FC<DetailEditModalProps> = ({
     }
   }, [staff]);
 
-  // 역할 추론 함수 제거 - 정확한 역할 정보만 사용
-
-  // getTargetWorkLog 패턴 적용 - ScheduleDetailModal 참고
-  const _getTargetWorkLog = useCallback(
-    (date: string) => {
-      if (!staff) return null;
-
-      const staffId = getStaffIdentifier(staff);
-
-      // 1. 우선 정확한 조건으로 WorkLog 찾기
-      let targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
-        staffId,
-        date,
-        role: staff.role,
-      });
-
-      // 2. 못찾으면 role 없이 찾기
-      if (!targetWorkLog) {
-        targetWorkLog = findTargetWorkLog(realTimeWorkLogs, {
-          staffId,
-          date,
-        });
-      }
-
-      return targetWorkLog;
-    },
-    [staff, realTimeWorkLogs]
-  );
-
-  // 날짜별 근무 내역 계산 - getTargetWorkLog 패턴 사용
+  // 날짜별 근무 내역 계산
   const workHistory = useMemo(() => {
     if (!staff) return [];
 

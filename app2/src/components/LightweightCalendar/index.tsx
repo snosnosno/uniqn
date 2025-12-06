@@ -206,12 +206,8 @@ const LightweightCalendar: React.FC<LightweightCalendarProps> = ({
     );
   };
 
-  // 주 뷰 렌더링 (간단한 구현)
+  // 주 뷰 렌더링 (placeholder)
   const renderWeekView = () => {
-    const _weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
-    const _weekEnd = endOfWeek(currentDate, { weekStartsOn: 0 });
-    // const weekDays = eachDayOfInterval({ start: _weekStart, end: _weekEnd });
-
     return (
       <div className="text-center py-20 text-gray-500 dark:text-gray-400 dark:text-gray-500">
         주간 뷰는 준비 중입니다.

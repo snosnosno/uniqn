@@ -353,8 +353,6 @@ export const useApplicantActions = ({
           return;
         }
 
-        const _applicationRef = doc(db, 'applications', applicant.id);
-
         // 🏗️ ApplicationHistory 서비스를 통한 확정 처리 (데이터 무결성 보장)
         await ApplicationHistoryService.confirmApplication(applicant.id, assignments);
 

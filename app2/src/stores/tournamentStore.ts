@@ -291,12 +291,8 @@ export const useTournamentStore = create<TournamentState>()(
 
         balanceTables: () =>
           set((state) => {
-            const activeTables = state.tables.filter((t) => t.players.length > 0);
-            const totalPlayers = activeTables.reduce((sum, t) => sum + t.players.length, 0);
-            const _targetPlayersPerTable = Math.ceil(totalPlayers / activeTables.length); // 미래 재분배 로직용
-
-            // 재분배 로직은 복잡하므로 여기서는 기본 구조만 제공
-            // Table balancing calculation completed
+            // 재분배 로직 placeholder - 향후 구현 예정
+            void state; // lint용 사용 표시
           }),
 
         reset: () => set(() => initialState),

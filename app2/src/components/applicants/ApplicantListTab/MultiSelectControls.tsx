@@ -1,12 +1,9 @@
 import React, { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { toast } from '@/utils/toast';
 import { Applicant, Assignment } from './types';
 import { JobPosting } from '@/types/jobPosting/jobPosting';
 import type { Selection } from '@/types/applicants/selection';
 import {
-  getApplicantSelectionsByDate,
-  getDateSelectionStats,
   getApplicantSelections,
   groupSingleDaySelections,
   formatDateDisplay,
@@ -241,34 +238,9 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
     });
   }, [groupedSelections]);
 
-  // 날짜별 그룹화된 선택 사항 (메모이제이션) - 기존 코드 호환성 유지
-  const dateGroupedSelections = useMemo(() => {
-    const groups = getApplicantSelectionsByDate(applicant, jobPosting);
-
-    // 각 그룹의 선택된 개수 계산
-    return groups.map((group) => {
-      const stats = getDateSelectionStats(
-        group.selections,
-        selectedAssignments.map((assignment) => ({
-          timeSlot: assignment.timeSlot,
-          role: assignment.role || '',
-          date: assignment.dates?.[0] || '',
-        })),
-        group.date
-      );
-      return {
-        ...group,
-        selectedCount: stats.selectedCount,
-      };
-    });
-  }, [applicant, selectedAssignments, jobPosting]);
-
   if (allSortedCards.length === 0) {
     return null;
   }
-
-  const _totalSelectedCount = selectedAssignments.length;
-  const _totalCount = dateGroupedSelections.reduce((sum, group) => sum + group.totalCount, 0);
 
   /**
    * 특정 assignment가 선택되었는지 확인하는 함수
@@ -284,15 +256,6 @@ const MultiSelectControls: React.FC<MultiSelectControlsProps> = ({
         assignment.role === normalizedRole &&
         (assignment.dates?.[0] || '') === normalizedDate
     );
-  };
-
-  /**
-   * 지원 시간을 수정하는 함수
-   */
-  const _handleTimeChange = async (_index: number, _newTime: string) => {
-    // 시간 변경 기능은 현재 비활성화됨
-    // 향후 필요시 구현 예정
-    toast.info(t('toast.common.comingSoon'));
   };
 
   /**

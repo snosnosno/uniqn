@@ -129,8 +129,8 @@ export const useAttendanceStatus = ({ eventId, date }: UseAttendanceStatusProps)
 
   // WorkLog 데이터로부터 출석 상태를 계산하는 함수
   const calculateAttendanceStatus = (workLog: ShiftWorkLog): AttendanceDisplayRecord => {
-    const _now = new Date();
-    const currentTime = _now.toTimeString().substring(0, 5); // HH:MM format
+    const now = new Date();
+    const currentTime = now.toTimeString().substring(0, 5); // HH:MM format
 
     let status: AttendanceStatus = 'not_started';
 
