@@ -3,8 +3,9 @@
  *
  * @description
  * XSS, SQL Injection 방지, 입력 검증 등 보안 강화
+ * Core 모듈의 통합 보안 패턴 활용
  *
- * @version 1.0.0
+ * @version 1.1.0
  * @since 2025-01-23
  */
 
@@ -12,76 +13,40 @@ import type { ConsentCreateInput, ConsentUpdateInput } from '../../types/consent
 import type { DeletionRequestInput } from '../../types/accountDeletion';
 import type { PasswordChangeInput } from '../../types/security';
 
-/**
- * XSS 패턴 검사
- */
-const XSS_PATTERNS = [
-  /<script[^>]*>.*?<\/script>/gi,
-  /javascript:/gi,
-  /on\w+\s*=/gi,
-  /<iframe[^>]*>/gi,
-  /<object[^>]*>/gi,
-  /<embed[^>]*>/gi,
-];
+// ===== Core 모듈에서 보안 패턴 및 함수 import =====
+import {
+  hasXSSPattern as coreHasXSSPattern,
+  hasSQLInjectionPattern as coreHasSQLInjectionPattern,
+  isSafeText as coreIsSafeText,
+  sanitizeInput as coreSanitizeInput,
+} from '../core';
 
 /**
- * SQL Injection 패턴 검사
- */
-const SQL_INJECTION_PATTERNS = [
-  /union.*select/gi,
-  /select.*from/gi,
-  /insert.*into/gi,
-  /delete.*from/gi,
-  /drop.*table/gi,
-  /update.*set/gi,
-  /exec\s*\(/gi,
-];
-
-/**
- * XSS 공격 패턴 검사
+ * XSS 공격 패턴 검사 (Core 모듈 위임)
  */
 export const hasXSSPattern = (text: string): boolean => {
-  return XSS_PATTERNS.some((pattern) => pattern.test(text));
+  return coreHasXSSPattern(text);
 };
 
 /**
- * SQL Injection 패턴 검사
+ * SQL Injection 패턴 검사 (Core 모듈 위임)
  */
 export const hasSQLInjectionPattern = (text: string): boolean => {
-  return SQL_INJECTION_PATTERNS.some((pattern) => pattern.test(text));
+  return coreHasSQLInjectionPattern(text);
 };
 
 /**
- * 안전한 텍스트 검증
+ * 안전한 텍스트 검증 (Core 모듈 위임)
  */
 export const isSafeText = (text: string, maxLength: number = 500): boolean => {
-  if (!text || typeof text !== 'string') {
-    return false;
-  }
-
-  if (text.length > maxLength) {
-    return false;
-  }
-
-  if (hasXSSPattern(text)) {
-    return false;
-  }
-
-  if (hasSQLInjectionPattern(text)) {
-    return false;
-  }
-
-  return true;
+  return coreIsSafeText(text, maxLength);
 };
 
 /**
- * 입력 텍스트 정제 (XSS 방지)
+ * 입력 텍스트 정제 (XSS 방지) (Core 모듈 위임)
  */
 export const sanitizeInput = (input: string): string => {
-  return input
-    .replace(/<script[^>]*>.*?<\/script>/gi, '')
-    .replace(/<[^>]+>/g, '')
-    .trim();
+  return coreSanitizeInput(input);
 };
 
 /**

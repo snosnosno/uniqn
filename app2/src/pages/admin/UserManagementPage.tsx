@@ -2,14 +2,11 @@ import { collection, query, where, onSnapshot } from 'firebase/firestore';
 import { logger } from '../../utils/logger';
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router-dom';
 
-import EditUserModal from '../../components/modals/EditUserModal';
-import ConfirmModal from '../../components/modals/ConfirmModal';
+import UserDetailModal from '../../components/modals/UserDetailModal';
+import PenaltyModal from '../../components/modals/PenaltyModal';
 import { useAuth } from '../../contexts/AuthContext';
 import { db } from '../../firebase';
-import { callFunctionLazy } from '../../utils/firebase-dynamic';
-import { toast } from '../../utils/toast';
 
 interface User {
   id: string;
@@ -25,11 +22,10 @@ const UserManagementPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { isAdmin } = useAuth();
 
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // 모달 상태
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+  const [isPenaltyModalOpen, setIsPenaltyModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
-  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
-  const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (!isAdmin) {
@@ -37,10 +33,7 @@ const UserManagementPage: React.FC = () => {
       return;
     }
 
-    const q = query(
-      collection(db, 'users'),
-      where('role', 'in', ['admin', 'dealer', 'manager', 'pending_manager'])
-    );
+    const q = query(collection(db, 'users'), where('role', 'in', ['admin', 'staff', 'manager']));
 
     const unsubscribe = onSnapshot(
       q,
@@ -66,40 +59,27 @@ const UserManagementPage: React.FC = () => {
     return () => unsubscribe();
   }, [isAdmin, t]);
 
-  const handleDeleteClick = (user: User) => {
-    setUserToDelete(user);
-    setIsDeleteConfirmOpen(true);
-  };
-
-  const handleDeleteConfirm = async () => {
-    if (!userToDelete) return;
-
-    setError(null);
-    setIsDeleting(true);
-    try {
-      await callFunctionLazy('deleteUser', { uid: userToDelete.id });
-      toast.success(t('userManagement.deleteSuccess'));
-      setIsDeleteConfirmOpen(false);
-      setUserToDelete(null);
-    } catch (err: unknown) {
-      logger.error('Error deleting user:', err instanceof Error ? err : new Error(String(err)), {
-        component: 'UserManagementPage',
-      });
-      const errorMessage = err instanceof Error ? err.message : String(err);
-      setError(errorMessage || t('userManagement.deleteError'));
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  const handleOpenEditModal = (user: User) => {
+  // 상세 모달 열기
+  const handleViewDetail = (user: User) => {
     setSelectedUser(user);
-    setIsEditModalOpen(true);
+    setIsDetailModalOpen(true);
   };
 
-  const handleCloseEditModal = () => {
+  // 패널티 모달 열기
+  const handleOpenPenalty = (user: User) => {
+    setSelectedUser(user);
+    setIsPenaltyModalOpen(true);
+  };
+
+  // 모달 닫기
+  const handleCloseDetailModal = () => {
     setSelectedUser(null);
-    setIsEditModalOpen(false);
+    setIsDetailModalOpen(false);
+  };
+
+  const handleClosePenaltyModal = () => {
+    setSelectedUser(null);
+    setIsPenaltyModalOpen(false);
   };
 
   if (loading) {
@@ -119,13 +99,10 @@ const UserManagementPage: React.FC = () => {
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
       <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-6">
+        <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
             {t('userManagement.title')}
           </h1>
-          <Link to="/app/admin/staff/new" className="btn btn-primary">
-            {t('userManagement.addNew')}
-          </Link>
         </div>
         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md">
           <ul className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -134,23 +111,22 @@ const UserManagementPage: React.FC = () => {
                 <li key={user.id} className="p-4 flex justify-between items-center">
                   <div>
                     <p className="font-semibold text-gray-900 dark:text-gray-100">{user.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                   </div>
                   <div className="flex items-center space-x-4">
                     <span className="text-sm capitalize text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-full">
                       {user.role}
                     </span>
                     <button
-                      onClick={() => handleOpenEditModal(user)}
+                      onClick={() => handleViewDetail(user)}
                       className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                     >
-                      {t('common.edit')}
+                      {t('common.detail')}
                     </button>
                     <button
-                      onClick={() => handleDeleteClick(user)}
+                      onClick={() => handleOpenPenalty(user)}
                       className="text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-300"
                     >
-                      {t('common.delete')}
+                      {t('penalty.button')}
                     </button>
                   </div>
                 </li>
@@ -164,29 +140,18 @@ const UserManagementPage: React.FC = () => {
         </div>
       </div>
 
-      {isEditModalOpen && selectedUser ? (
-        <EditUserModal
-          isOpen={isEditModalOpen}
-          onClose={handleCloseEditModal}
-          user={selectedUser}
-        />
-      ) : null}
+      {/* 상세 모달 */}
+      <UserDetailModal
+        isOpen={isDetailModalOpen}
+        onClose={handleCloseDetailModal}
+        user={selectedUser}
+      />
 
-      <ConfirmModal
-        isOpen={isDeleteConfirmOpen}
-        onClose={() => {
-          if (!isDeleting) {
-            setIsDeleteConfirmOpen(false);
-            setUserToDelete(null);
-          }
-        }}
-        onConfirm={handleDeleteConfirm}
-        title={t('userManagement.confirmDelete')}
-        message={userToDelete ? `${userToDelete.name} (${userToDelete.email})` : ''}
-        confirmText={t('common.delete')}
-        cancelText={t('common.cancel')}
-        isDangerous={true}
-        isLoading={isDeleting}
+      {/* 패널티 모달 */}
+      <PenaltyModal
+        isOpen={isPenaltyModalOpen}
+        onClose={handleClosePenaltyModal}
+        user={selectedUser}
       />
     </div>
   );

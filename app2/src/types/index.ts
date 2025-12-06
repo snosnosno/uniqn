@@ -114,6 +114,24 @@ export * from './simplePayroll';
 // 기타 타입들
 export * from './permissions';
 
+// 패널티 관련 타입
+export type {
+  Penalty,
+  PenaltyType,
+  PenaltyDuration,
+  WarningDuration,
+  LoginBlockDuration,
+  PenaltyStatus,
+  PenaltyCreateInput,
+} from './penalty';
+
+export {
+  PENALTY_DURATION_DAYS,
+  PENALTY_DURATION_OPTIONS,
+  WARNING_DURATION_OPTIONS,
+  LOGIN_BLOCK_DURATION_OPTIONS,
+} from './penalty';
+
 // 공지 관련 타입
 export type {
   AnnouncementStatus,

@@ -55,7 +55,8 @@
     "emailVerificationResend": "Resend Verification Email",
     "emailVerificationResending": "Resending...",
     "emailVerificationResent": "Verification email has been resent.",
-    "emailVerificationResendFailed": "Failed to resend verification email."
+    "emailVerificationResendFailed": "Failed to resend verification email.",
+    "blockedByPenalty": "Your account has been blocked due to a penalty. Please contact the administrator."
   },
   "adminLogin": {
     "approvalPending": "Your account is pending approval. Please contact an administrator.",
@@ -143,7 +144,6 @@
     "announcements": "Announcements",
     "history": "History",
     "logout": "Logout",
-    "approvals": "Approvals",
     "userManagement": "User Management",
     "inquiryManagement": "Inquiry Management",
     "support": "Support",
@@ -185,13 +185,6 @@
       "realtime": "Real-time"
     }
   },
-  "approvalPage": {
-    "title": "Pending Registration Approvals",
-    "fetchError": "Failed to fetch pending approvals.",
-    "processError": "Failed to process {{action}} request. Please try again.",
-    "actionsHeader": "Actions",
-    "noPending": "There are no users awaiting approval."
-  },
   "userManagement": {
     "loading": "Loading user list...",
     "accessDenied": "You do not have permission to view this page.",
@@ -202,15 +195,6 @@
     "confirmDelete": "Are you sure you want to delete this user? This action cannot be undone.",
     "deleteSuccess": "User deleted successfully.",
     "deleteError": "Failed to delete user."
-  },
-  "staffNew": {
-    "accessDeniedAction": "You do not have permission to perform this action.",
-    "accessDeniedView": "You do not have permission to view this page.",
-    "alertSuccess": "Staff created successfully!",
-    "errorUnknown": "An unknown error occurred.",
-    "title": "Add New Staff",
-    "roleAdmin": "Admin",
-    "buttonCreate": "Create Staff"
   },
   "staffListPage": {
     "title": "My Confirmed Staff",
@@ -282,6 +266,7 @@
     "confirm": "Confirm",
     "delete": "Delete",
     "edit": "Edit",
+    "detail": "Details",
     "add": "Add",
     "search": "Search",
     "role": "Role",
@@ -893,7 +878,14 @@
     "selectExperience": "Please select your years of experience",
     "selectNationality": "Please select your nationality",
     "residentId": "Resident ID:",
-    "gender": "Gender:"
+    "gender": "Gender:",
+    "age": "Age"
+  },
+  "roles": {
+    "admin": "Admin",
+    "manager": "Manager",
+    "staff": "Staff",
+    "user": "User"
   },
   "profileImage": {
     "uploadSuccess": "Profile image uploaded successfully.",
@@ -1954,5 +1946,70 @@
     "profile": "My Profile",
     "settings": "Settings",
     "logout": "Logout"
+  },
+  "userDetail": {
+    "title": "User Details",
+    "basicInfo": "Basic Information",
+    "experience": "Experience",
+    "history": "History",
+    "bankInfo": "Bank Information",
+    "notes": "Notes",
+    "noPhoto": "No Photo",
+    "noData": "No Data"
+  },
+  "penalty": {
+    "title": "Penalty Management",
+    "button": "Penalty",
+    "addNew": "Add New Penalty",
+    "type": "Penalty Type",
+    "typeWarning": "Warning",
+    "typeLoginBlock": "Login Block",
+    "warningDescription": "A warning banner will be shown to the user",
+    "loginBlockDescription": "User login will be blocked",
+    "reason": "Penalty Reason",
+    "reasonPlaceholder": "Enter penalty reason",
+    "details": "Details",
+    "detailsPlaceholder": "Enter details (optional)",
+    "selectDuration": "Select Duration",
+    "history": "Penalty History",
+    "noHistory": "No penalty history",
+    "status": {
+      "active": "Active",
+      "expired": "Expired",
+      "cancelled": "Cancelled"
+    },
+    "duration": {
+      "1day": "1 Day",
+      "3days": "3 Days",
+      "7days": "7 Days",
+      "30days": "30 Days",
+      "90days": "90 Days",
+      "permanent": "Permanent"
+    },
+    "addSuccess": "Penalty added successfully",
+    "addError": "Failed to add penalty",
+    "cancel": "Cancel Penalty",
+    "cancelReason": "Cancellation Reason",
+    "cancelReasonPlaceholder": "Enter cancellation reason",
+    "cancelSuccess": "Penalty cancelled successfully",
+    "cancelError": "Failed to cancel penalty",
+    "expires": "Expires",
+    "permanent": "Permanent Block",
+    "expiringNow": "Expiring soon",
+    "startDate": "Start Date"
+  },
+  "penaltyBanner": {
+    "title": "Penalty Warning",
+    "reason": "Reason",
+    "remaining": "Expires in {{days}} days",
+    "remainingHours": "Expires in {{hours}} hours",
+    "dismiss": "Dismiss"
+  },
+  "loginBlockedModal": {
+    "title": "Login Blocked",
+    "reason": "Reason",
+    "details": "Details",
+    "remainingTime": "Remaining Time",
+    "contactAdmin": "Please contact the administrator for more information."
   }
 }

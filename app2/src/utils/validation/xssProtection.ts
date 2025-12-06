@@ -2,30 +2,19 @@
  * XSS 방지 유틸리티
  *
  * DOMPurify 기반 HTML sanitizer 및 정규식 검증
+ * Core 모듈의 통합 보안 패턴 활용
  *
  * @see https://github.com/cure53/DOMPurify
  */
 
 import DOMPurify from 'dompurify';
 
-/**
- * 위험한 XSS 패턴 정규식
- *
- * 다음 패턴을 차단:
- * - <script> 태그
- * - javascript: 프로토콜
- * - on* 이벤트 핸들러 (onclick, onerror 등)
- * - data: URL (base64 인코딩된 스크립트)
- */
-const DANGEROUS_PATTERNS = [
-  /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, // <script> 태그
-  /javascript:/gi, // javascript: 프로토콜
-  /on\w+\s*=/gi, // on* 이벤트 핸들러
-  /data:text\/html/gi, // data:text/html URL
-  /<iframe/gi, // <iframe> 태그
-  /<object/gi, // <object> 태그
-  /<embed/gi, // <embed> 태그
-];
+// ===== Core 모듈에서 보안 패턴 import =====
+import { XSS_PATTERNS, validateNoXSSPatterns as coreValidateNoXSSPatterns } from '../core';
+
+// DANGEROUS_PATTERNS는 XSS_PATTERNS로 통합됨 (core/securityPatterns.ts)
+// 하위 호환성: XSS_PATTERNS를 re-export
+export { XSS_PATTERNS };
 
 /**
  * HTML 문자열을 sanitize하여 XSS 공격 방지
@@ -54,6 +43,7 @@ export function sanitizeHtml(dirty: string): string {
 
 /**
  * 텍스트 입력값에서 위험한 XSS 패턴 검증
+ * Core 모듈의 통합 검증 함수 활용
  *
  * @param text - 검증할 텍스트
  * @returns 위험한 패턴이 없으면 true, 있으면 false
@@ -65,7 +55,7 @@ export function sanitizeHtml(dirty: string): string {
  * ```
  */
 export function validateNoXssPatterns(text: string): boolean {
-  return !DANGEROUS_PATTERNS.some((pattern) => pattern.test(text));
+  return coreValidateNoXSSPatterns(text);
 }
 
 /**

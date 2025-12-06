@@ -1,11 +1,22 @@
 import { Timestamp } from 'firebase/firestore';
 import { logger } from './logger';
 
+// ===== Core 모듈에서 타입 및 함수 import =====
+import type { DateInput as CoreDateInput } from './core/dateTypes';
+import {
+  hasToDateMethod,
+  hasSecondsProperty,
+  isValidDate as coreIsValidDate,
+  formatDateToISO,
+  toDateString as coreToDateString,
+  getKoreanDate as coreGetKoreanDate,
+} from './core';
+
 /**
  * 간소화된 날짜 유틸리티
  * 모든 날짜를 표준 형식으로 통합 처리
  *
- * 기존 432줄 → 95줄로 대폭 간소화
+ * 기존 432줄 → Core 모듈 활용으로 간소화
  * 하위 호환성 100% 유지
  *
  * Phase 3 추가 함수:
@@ -16,60 +27,16 @@ import { logger } from './logger';
  */
 
 // ===== Type Definitions (TypeScript Strict Mode) =====
+// Core에서 re-export (하위 호환성 유지)
 
-/**
- * Firebase Timestamp-like 객체 타입
- */
-type TimestampLike = {
-  seconds: number;
-  nanoseconds?: number;
-};
+// TimestampLike 타입은 core/dateTypes.ts에서 통합 관리
 
 /**
  * 날짜 입력 타입 (모든 허용 가능한 날짜 형식)
  */
-export type DateInput = Date | string | number | Timestamp | TimestampLike | null | undefined;
+export type DateInput = CoreDateInput;
 
-// ===== Internal Helper (재귀 방지용 핵심 함수) =====
-
-/**
- * Date 객체를 YYYY-MM-DD 형식으로 변환 (내부 헬퍼)
- * @internal
- * @param date - Date 객체
- * @returns YYYY-MM-DD 형식 문자열
- */
-function formatDateToISO(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Firebase Timestamp 타입 가드
- * @internal
- */
-function hasToDateMethod(input: unknown): input is { toDate: () => Date } {
-  return (
-    input !== null &&
-    typeof input === 'object' &&
-    'toDate' in input &&
-    typeof (input as { toDate: unknown }).toDate === 'function'
-  );
-}
-
-/**
- * TimestampLike 타입 가드
- * @internal
- */
-function hasSecondsProperty(input: unknown): input is TimestampLike {
-  return (
-    input !== null &&
-    typeof input === 'object' &&
-    'seconds' in input &&
-    typeof (input as { seconds: unknown }).seconds === 'number'
-  );
-}
+// ===== Core 함수 re-export (하위 호환성 유지) =====
 
 /**
  * 모든 날짜 타입을 yyyy-MM-dd 문자열로 변환
@@ -77,46 +44,7 @@ function hasSecondsProperty(input: unknown): input is TimestampLike {
  * @returns yyyy-MM-dd 형식의 날짜 문자열
  */
 export function toDateString(input: DateInput): string {
-  if (!input) return formatDateToISO(new Date());
-
-  try {
-    let date: Date;
-
-    // Timestamp 처리 (Firebase)
-    if (hasToDateMethod(input)) {
-      date = input.toDate();
-    }
-    // seconds 속성이 있는 객체 (Timestamp-like)
-    else if (hasSecondsProperty(input)) {
-      date = new Date(input.seconds * 1000);
-    }
-    // Date 객체
-    else if (input instanceof Date) {
-      date = input;
-    }
-    // yyyy-MM-dd 형식 문자열은 그대로 반환
-    else if (typeof input === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(input)) {
-      return input;
-    }
-    // 문자열 또는 숫자
-    else if (typeof input === 'string' || typeof input === 'number') {
-      date = new Date(input);
-    }
-    // 알 수 없는 타입
-    else {
-      return formatDateToISO(new Date());
-    }
-
-    // 유효한 날짜인지 확인
-    if (isNaN(date.getTime())) {
-      return formatDateToISO(new Date());
-    }
-
-    // yyyy-MM-dd 형식으로 반환
-    return formatDateToISO(date);
-  } catch {
-    return formatDateToISO(new Date());
-  }
+  return coreToDateString(input);
 }
 
 /**
@@ -144,11 +72,7 @@ export function normalizeDate(dateString: string): string {
       return '';
     }
 
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0');
-    const day = String(date.getDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
+    return formatDateToISO(date);
   } catch {
     return '';
   }
@@ -163,19 +87,7 @@ export function normalizeDate(dateString: string): string {
  * getKoreanDate() => '2025-01-17'
  */
 export function getKoreanDate(): string {
-  try {
-    // 한국 시간대 (UTC+9)
-    const now = new Date();
-    const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
-
-    const year = koreaTime.getUTCFullYear();
-    const month = String(koreaTime.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(koreaTime.getUTCDate()).padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
-  } catch {
-    return formatDateToISO(new Date());
-  }
+  return coreGetKoreanDate();
 }
 
 /**
@@ -252,14 +164,6 @@ export function toTimestamp(input: DateInput): Timestamp {
   const date = new Date(dateStr);
   return Timestamp.fromDate(date);
 }
-
-// 🔄 MIGRATED: getTodayString은 utils/jobPosting/dateUtils.ts로 이동됨
-// 더 많은 기능과 캐싱이 포함된 버전을 사용하세요
-//
-// 기존 함수:
-// export function getTodayString(): string {
-//   return toDateString(new Date());
-// }
 
 /**
  * yy-MM-dd(요일) 형식의 문자열을 yyyy-MM-dd로 변환
@@ -479,5 +383,5 @@ export function parseDate(dateString: string | null | undefined): Date | null {
  * isValidDate("2025-11-20"); // false (문자열은 Date 타입 아님)
  */
 export function isValidDate(date: unknown): date is Date {
-  return date instanceof Date && !isNaN(date.getTime());
+  return coreIsValidDate(date);
 }

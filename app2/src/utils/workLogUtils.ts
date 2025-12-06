@@ -3,19 +3,13 @@ import { parseToDate, getTodayString } from './jobPosting/dateUtils';
 import { createWorkLogId } from './workLogSimplified';
 import { toISODateString } from './dateUtils';
 
+// ===== Core 모듈에서 타입 import =====
+import type { DateInput } from './core/dateTypes';
+import { hasToDateMethod, hasSecondsProperty } from './core';
+
 /**
  * WorkLog 생성 및 관리를 위한 유틸리티 함수들
  */
-
-// 날짜 입력 타입 정의
-type DateInput =
-  | Timestamp
-  | Date
-  | string
-  | number
-  | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
-  | null
-  | undefined;
 
 /**
  * 다양한 날짜 형식을 YYYY-MM-DD 형식으로 표준화
@@ -25,32 +19,43 @@ export const normalizeStaffDate = (date: DateInput): string => {
   if (!date) return getTodayString();
 
   try {
-    // Firebase Timestamp 객체 처리
-    if (typeof date === 'object' && 'seconds' in date) {
-      const seconds = date.seconds as number;
-      const isoString = new Date(seconds * 1000).toISOString();
+    // 1. 문자열 타입 처리 (타입 좁히기 이슈 방지를 위해 먼저 처리)
+    if (typeof date === 'string') {
+      // YYYY-MM-DD 형식인 경우
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return date;
+      }
+
+      // Timestamp 문자열 처리 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
+      if (date.startsWith('Timestamp(')) {
+        const match = date.match(/seconds=(\d+)/);
+        if (match && match[1]) {
+          const seconds = parseInt(match[1], 10);
+          const isoString = new Date(seconds * 1000).toISOString();
+          const datePart = isoString.split('T')[0];
+          return datePart || getTodayString();
+        }
+      }
+
+      // 기타 문자열은 Date로 변환 시도
+      const dateObj = new Date(date);
+      if (!isNaN(dateObj.getTime())) {
+        const isoString = dateObj.toISOString();
+        const datePart = isoString.split('T')[0];
+        return datePart || getTodayString();
+      }
+      return getTodayString();
+    }
+
+    // 2. Firebase Timestamp 객체 처리 (seconds 속성)
+    if (hasSecondsProperty(date)) {
+      const isoString = new Date(date.seconds * 1000).toISOString();
       const datePart = isoString.split('T')[0];
       return datePart || getTodayString();
     }
 
-    // Timestamp 문자열 처리 (예: 'Timestamp(seconds=1753833600, nanoseconds=0)')
-    if (typeof date === 'string' && date.startsWith('Timestamp(')) {
-      const match = date.match(/seconds=(\d+)/);
-      if (match && match[1]) {
-        const seconds = parseInt(match[1], 10);
-        const isoString = new Date(seconds * 1000).toISOString();
-        const datePart = isoString.split('T')[0];
-        return datePart || getTodayString();
-      }
-    }
-
-    // 이미 YYYY-MM-DD 형식인 경우
-    if (typeof date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
-      return date;
-    }
-
-    // toDate 메서드가 있는 객체 (Firebase Timestamp)
-    if (typeof date === 'object' && 'toDate' in date && typeof date.toDate === 'function') {
+    // 3. toDate 메서드가 있는 객체 (Firebase Timestamp)
+    if (hasToDateMethod(date)) {
       const dateObj = date.toDate();
       if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
         const isoString = dateObj.toISOString();
@@ -59,14 +64,14 @@ export const normalizeStaffDate = (date: DateInput): string => {
       }
     }
 
-    // Date 객체 또는 문자열/숫자를 Date로 변환
-    const dateObj = date instanceof Date ? date : new Date(date as string | number);
+    // 4. Date 객체 또는 숫자를 Date로 변환
+    const dateObj = date instanceof Date ? date : new Date(date as number);
     if (!isNaN(dateObj.getTime())) {
       const isoString = dateObj.toISOString();
       const datePart = isoString.split('T')[0];
       return datePart || getTodayString();
     }
-  } catch (error) {
+  } catch {
     // 변환 실패 시 오늘 날짜 반환
   }
 
@@ -266,57 +271,6 @@ export const convertAssignedTimeToScheduled = (
 
   return { scheduledStartTime, scheduledEndTime };
 };
-
-/**
- * 🚀 createVirtualWorkLog 제거됨 - 스태프 확정 시 WorkLog 사전 생성으로 대체
- * 가상 WorkLog는 더 이상 사용하지 않습니다.
- */
-// 🚀 createVirtualWorkLog 함수 전체 주석 처리됨
-// export const createVirtualWorkLog = (params: CreateWorkLogParams) => {
-//   const {
-//     eventId,
-//     staffId,
-//     staffName,
-//     role,
-//     date,
-//     assignedTime,
-//     scheduledStartTime,
-//     scheduledEndTime,
-//     actualStartTime,
-//     actualEndTime,
-//     status = 'not_started'
-//   } = params;
-//
-//   const workLogId = generateWorkLogId(eventId, staffId, date);
-//
-//   let startTime = scheduledStartTime;
-//   let endTime = scheduledEndTime;
-//
-//   if (!startTime && assignedTime && assignedTime !== '미정') {
-//     const { scheduledStartTime: convertedStart, scheduledEndTime: convertedEnd } =
-//       convertAssignedTimeToScheduled(assignedTime, date);
-//     startTime = convertedStart;
-//     if (!endTime) {
-//       endTime = convertedEnd;
-//     }
-//   }
-//
-//   return {
-//     id: `virtual_${workLogId}`,
-//     eventId,
-//     staffId,
-//     staffName: staffName,
-//     role,
-//     date,
-//     scheduledStartTime: startTime || null,
-//     scheduledEndTime: endTime || null,
-//     actualStartTime: actualStartTime || null,
-//     actualEndTime: actualEndTime || null,
-//     status,
-//     isVirtual: true,
-//     assignedTime: assignedTime || null
-//   };
-// };
 
 /**
  * 새로운 WorkLog 데이터 생성 (DB 저장용)

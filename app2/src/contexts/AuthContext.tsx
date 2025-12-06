@@ -15,6 +15,8 @@ import {
 import { logger } from '../utils/logger';
 import { setSentryUser } from '../utils/sentry';
 import { secureStorage } from '../utils/secureStorage';
+import { getActiveLoginBlockPenalty } from '../services/penaltyService';
+import type { Penalty } from '../types/penalty';
 import i18n from '../i18n';
 import React, {
   createContext,
@@ -26,6 +28,19 @@ import React, {
 } from 'react';
 
 import { auth } from '../firebase';
+
+/**
+ * 로그인 차단 에러 (패널티 정보 포함)
+ */
+export class LoginBlockedError extends Error {
+  penalty: Penalty;
+
+  constructor(penalty: Penalty) {
+    super('LOGIN_BLOCKED');
+    this.name = 'LoginBlockedError';
+    this.penalty = penalty;
+  }
+}
 
 // 확장된 User 인터페이스 (Firebase User + 추가 필드)
 export interface User extends FirebaseUser {
@@ -136,8 +151,30 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           },
         });
 
-        return signInWithEmailAndPassword(auth, email, password);
+        const userCredential = await signInWithEmailAndPassword(auth, email, password);
+
+        // 로그인 차단 패널티 확인 (패널티 데이터 포함)
+        const blockPenalty = await getActiveLoginBlockPenalty(userCredential.user.uid);
+        if (blockPenalty) {
+          logger.warn('로그인 차단된 사용자 로그인 시도', {
+            component: 'AuthContext',
+            data: { uid: userCredential.user.uid, email, penaltyId: blockPenalty.id },
+          });
+
+          // 로그아웃 처리
+          await auth.signOut();
+
+          // LoginBlockedError 에러 던지기 (패널티 정보 포함)
+          throw new LoginBlockedError(blockPenalty);
+        }
+
+        return userCredential;
       } catch (error) {
+        // LoginBlockedError는 다시 던지기
+        if (error instanceof LoginBlockedError) {
+          throw error;
+        }
+
         logger.error(
           '로그인 persistence 설정 실패:',
           error instanceof Error ? error : new Error(String(error)),

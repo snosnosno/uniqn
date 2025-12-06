@@ -1,8 +1,12 @@
-import React, { memo } from 'react';
+import React, { memo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { FaQrcode } from '../Icons/ReactIconsReplacement';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
+import { useAuth } from '../../contexts/AuthContext';
+import { getActiveWarningPenalty } from '../../services/penaltyService';
+import type { Penalty } from '../../types/penalty';
+import PenaltyWarningBanner from '../banners/PenaltyWarningBanner';
 
 import HeaderMenu from './HeaderMenu';
 
@@ -10,6 +14,28 @@ export const Layout = memo(() => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const isMobile = useMediaQuery('(max-width: 768px)');
+  const { currentUser } = useAuth();
+  const [activeWarning, setActiveWarning] = useState<Penalty | null>(null);
+
+  // 활성 경고 패널티 확인
+  useEffect(() => {
+    const checkWarningPenalty = async () => {
+      if (!currentUser?.uid) {
+        setActiveWarning(null);
+        return;
+      }
+
+      try {
+        const warning = await getActiveWarningPenalty(currentUser.uid);
+        setActiveWarning(warning);
+      } catch {
+        // 에러 시 조용히 무시 (사용자 경험 우선)
+        setActiveWarning(null);
+      }
+    };
+
+    checkWarningPenalty();
+  }, [currentUser?.uid]);
 
   const handleAttendanceClick = () => {
     navigate('/app/attendance');
@@ -59,8 +85,19 @@ export const Layout = memo(() => {
         </div>
       </header>
 
+      {/* 패널티 경고 배너 */}
+      {activeWarning && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <PenaltyWarningBanner penalty={activeWarning} onDismiss={() => setActiveWarning(null)} />
+        </div>
+      )}
+
       {/* 메인 콘텐츠 */}
-      <main className="content-safe px-1 sm:px-4 md:px-6 lg:px-8 pt-18 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100 dark:bg-gray-900">
+      <main
+        className={`content-safe px-1 sm:px-4 md:px-6 lg:px-8 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100 dark:bg-gray-900 ${
+          activeWarning ? 'pt-28' : 'pt-18'
+        }`}
+      >
         <React.Suspense
           fallback={
             <div className="text-gray-700 dark:text-gray-300">{t('common.messages.loading')}</div>

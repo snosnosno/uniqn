@@ -1,6 +1,10 @@
 // 시간 관련 유틸리티 함수들
 import { logger } from './logger';
 
+// ===== Core 모듈에서 타입 및 함수 import =====
+import type { TimestampInput, TimeCalculationInput } from './core/dateTypes';
+import { hasToDateMethod, toDate as coreToDate } from './core';
+
 export interface TimeInterval {
   label: string;
   value: number; // 분 단위
@@ -173,46 +177,10 @@ export const getTimeStatistics = (
   };
 };
 
-/** 타임스탬프 입력 타입 */
-type TimestampInput = { toDate: () => Date } | Date | number | string | null | undefined;
-
-// Timestamp/Date 변환 헬퍼
+// Timestamp/Date 변환 헬퍼 (Core 모듈 활용)
 export const toDate = (timestamp: TimestampInput): Date => {
-  if (!timestamp) return new Date();
-
-  if (
-    timestamp &&
-    typeof timestamp === 'object' &&
-    'toDate' in timestamp &&
-    typeof timestamp.toDate === 'function'
-  ) {
-    return timestamp.toDate();
-  }
-  if (timestamp instanceof Date) {
-    return timestamp;
-  }
-  if (typeof timestamp === 'number') {
-    return new Date(timestamp);
-  }
-  if (typeof timestamp === 'string') {
-    return new Date(timestamp);
-  }
-
-  return new Date();
+  return coreToDate(timestamp);
 };
-
-/** 시간 계산 입력 타입 */
-type TimeCalculationInput = { toDate: () => Date } | Date | string | null | undefined;
-
-/** toDate 메서드를 가진 객체 타입 가드 */
-function hasToDateMethod(obj: unknown): obj is { toDate: () => Date } {
-  return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'toDate' in obj &&
-    typeof (obj as { toDate?: unknown }).toDate === 'function'
-  );
-}
 
 // 근무 시간 계산 (분 단위) - 다음날 계산 지원
 export const calculateMinutes = (

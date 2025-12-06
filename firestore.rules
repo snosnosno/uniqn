@@ -206,6 +206,27 @@ service cloud.firestore {
         // 보안 설정 삭제는 계정 삭제 시에만 가능 (관리자)
         allow delete: if isPrivileged();
       }
+
+      // Subcollection: penalties (패널티 관리)
+      match /penalties/{penaltyId} {
+        // 읽기: 본인 또는 관리자 가능
+        allow read: if isSignedIn() && (request.auth.uid == userId || isPrivileged());
+
+        // 생성: 관리자만 가능
+        allow create: if isSignedIn() && isPrivileged() &&
+          request.resource.data.keys().hasAll(['userId', 'type', 'reason', 'duration', 'startDate', 'status', 'createdBy']) &&
+          request.resource.data.userId == userId &&
+          request.resource.data.type in ['warning', 'loginBlock'] &&
+          isSafeText(request.resource.data.reason, 100) &&
+          request.resource.data.duration in ['1d', '3d', '7d', '30d', '90d', 'permanent'] &&
+          request.resource.data.status == 'active';
+
+        // 수정: 관리자만 가능 (취소 처리)
+        allow update: if isSignedIn() && isPrivileged();
+
+        // 삭제: 관리자만 가능
+        allow delete: if request.auth.token.role == 'admin';
+      }
     }
 
     // --- Events Collection ---

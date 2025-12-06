@@ -2,15 +2,17 @@ import { Timestamp } from 'firebase/firestore';
 
 import { logger } from '../../utils/logger';
 
-// 날짜 입력 타입 정의
-export type DateInput =
-  | Timestamp
-  | Date
-  | string
-  | number
-  | { toDate?: () => Date; seconds?: number; nanoseconds?: number }
-  | null
-  | undefined;
+// ===== Core 모듈에서 타입 및 함수 import =====
+import type { DateInput as CoreDateInput } from '../core/dateTypes';
+import {
+  hasToDateMethod,
+  isISODateString,
+  formatDateToISO,
+  getTodayString as coreGetTodayString,
+} from '../core';
+
+// 날짜 입력 타입 정의 (하위 호환성 유지)
+export type DateInput = CoreDateInput;
 
 // 전역 캐시 맵 - formatDate 함수 성능 최적화
 const formatDateCache = new Map<string, string>();
@@ -68,8 +70,8 @@ export const parseToDate = (dateInput: DateInput): Date | null => {
         return null;
       }
 
-      // Timestamp 변환
-      if (typeof dateInput.toDate === 'function') {
+      // Timestamp 변환 (hasToDateMethod 타입 가드 사용)
+      if (hasToDateMethod(dateInput)) {
         const date = dateInput.toDate();
         return isNaN(date.getTime()) ? null : date;
       } else {
@@ -241,8 +243,8 @@ export const convertToDateString = (dateInput: DateInput): string => {
 
   try {
     // 이미 yyyy-MM-dd 형식인지 확인
-    if (typeof dateInput === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(dateInput.trim())) {
-      return dateInput.trim();
+    if (isISODateString(dateInput)) {
+      return dateInput;
     }
 
     // 통합된 변환 함수 사용
@@ -257,11 +259,7 @@ export const convertToDateString = (dateInput: DateInput): string => {
     }
 
     // 로컬 날짜로 변환하여 타임존 차이로 인한 날짜 변경 방지
-    const year = date.getFullYear();
-    const month = (date.getMonth() + 1).toString().padStart(2, '0');
-    const day = date.getDate().toString().padStart(2, '0');
-
-    return `${year}-${month}-${day}`;
+    return formatDateToISO(date);
   } catch (error) {
     logger.error(
       'Error converting date to string:',
@@ -490,11 +488,7 @@ export const convertToTimestamp = (dateInput: DateInput): Timestamp | null => {
  * 로컬 타임존 기준으로 오늘 날짜 반환
  */
 export const getTodayString = (): string => {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = (today.getMonth() + 1).toString().padStart(2, '0');
-  const day = today.getDate().toString().padStart(2, '0');
-  return `${year}-${month}-${day}`;
+  return coreGetTodayString();
 };
 
 /**

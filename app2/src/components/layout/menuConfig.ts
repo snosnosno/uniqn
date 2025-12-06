@@ -6,7 +6,6 @@ import {
   FaUserCircle,
   FaFileInvoice,
   FaClipboardList,
-  FaUserCheck,
   FaCalendarAlt,
   FaQuestionCircle,
   FaBell,
@@ -191,15 +190,6 @@ export const ADMIN_MENU: MenuGroup[] = [
     labelKey: 'nav.inquiryManagement',
     labelDefault: '문의 관리',
     Icon: FaEnvelope,
-    roles: ['admin'],
-  },
-  {
-    id: 'approvals',
-    type: 'item',
-    to: '/app/admin/approvals',
-    labelKey: 'nav.approvals',
-    labelDefault: 'Approvals',
-    Icon: FaUserCheck,
     roles: ['admin'],
   },
   {

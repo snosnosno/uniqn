@@ -10,7 +10,9 @@ import { getFirestore, doc, getDoc } from 'firebase/firestore';
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
 import Modal from '../components/ui/Modal';
-import { useAuth } from '../contexts/AuthContext';
+import LoginBlockedModal from '../components/modals/LoginBlockedModal';
+import { useAuth, LoginBlockedError } from '../contexts/AuthContext';
+import type { Penalty } from '../types/penalty';
 import { secureStorage } from '../utils/secureStorage';
 import { toast } from '../utils/toast';
 
@@ -22,6 +24,8 @@ const Login: React.FC = () => {
   const [error, setError] = useState('');
   const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
   const [isResendingEmail, setIsResendingEmail] = useState(false);
+  const [blockedPenalty, setBlockedPenalty] = useState<Penalty | null>(null);
+  const [showLoginBlockedModal, setShowLoginBlockedModal] = useState(false);
   const navigate = useNavigate();
   const { signIn, signInWithGoogle, signOut, currentUser /* , signInWithKakao */ } = useAuth();
 
@@ -96,6 +100,17 @@ const Login: React.FC = () => {
 
       navigate('/app');
     } catch (err: unknown) {
+      // 패널티 로그인 차단 - 모달로 상세 정보 표시
+      if (err instanceof LoginBlockedError) {
+        setBlockedPenalty(err.penalty);
+        setShowLoginBlockedModal(true);
+        logger.warn('패널티 차단된 사용자 로그인 시도', {
+          component: 'Login',
+          data: { email, penaltyId: err.penalty.id },
+        });
+        return;
+      }
+
       // FirebaseError 타입 체크
       if (err instanceof FirebaseError) {
         switch (err.code) {
@@ -403,6 +418,15 @@ const Login: React.FC = () => {
           </div>
         </div>
       </Modal>
+
+      {/* 로그인 차단 모달 */}
+      {blockedPenalty && (
+        <LoginBlockedModal
+          isOpen={showLoginBlockedModal}
+          onClose={() => setShowLoginBlockedModal(false)}
+          penalty={blockedPenalty}
+        />
+      )}
     </AuthLayout>
   );
 };

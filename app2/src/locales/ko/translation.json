@@ -55,7 +55,8 @@
     "emailVerificationResend": "인증 이메일 재발송",
     "emailVerificationResending": "재발송 중...",
     "emailVerificationResent": "인증 이메일이 재발송되었습니다.",
-    "emailVerificationResendFailed": "이메일 재발송에 실패했습니다."
+    "emailVerificationResendFailed": "이메일 재발송에 실패했습니다.",
+    "blockedByPenalty": "계정이 패널티로 인해 차단되었습니다. 관리자에게 문의하세요."
   },
   "adminLogin": {
     "approvalPending": "가입 승인 대기중입니다. 관리자에게 문의하세요.",
@@ -143,7 +144,6 @@
     "announcements": "공지사항",
     "history": "기록",
     "logout": "로그아웃",
-    "approvals": "가입 승인",
     "userManagement": "사용자 관리",
     "inquiryManagement": "문의 관리",
     "support": "고객지원",
@@ -185,13 +185,6 @@
       "realtime": "실시간"
     }
   },
-  "approvalPage": {
-    "title": "가입 승인 대기 목록",
-    "fetchError": "승인 대기 목록을 불러오는 데 실패했습니다.",
-    "processError": "{{action}} 요청 처리에 실패했습니다. 잠시 후 다시 시도해주세요.",
-    "actionsHeader": "작업",
-    "noPending": "현재 승인 대기 중인 사용자가 없습니다."
-  },
   "userManagement": {
     "loading": "사용자 목록 로딩 중...",
     "accessDenied": "이 페이지를 볼 권한이 없습니다.",
@@ -202,15 +195,6 @@
     "confirmDelete": "정말로 이 사용자를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
     "deleteSuccess": "사용자가 성공적으로 삭제되었습니다.",
     "deleteError": "사용자 삭제에 실패했습니다."
-  },
-  "staffNew": {
-    "accessDeniedAction": "이 작업을 수행할 권한이 없습니다.",
-    "accessDeniedView": "이 페이지를 볼 권한이 없습니다.",
-    "alertSuccess": "스태프가 성공적으로 생성되었습니다!",
-    "errorUnknown": "알 수 없는 오류가 발생했습니다.",
-    "title": "새 스태프 추가",
-    "roleAdmin": "관리자",
-    "buttonCreate": "스태프 생성"
   },
   "staffListPage": {
     "title": "확정 스태프",
@@ -282,6 +266,7 @@
     "confirm": "확인",
     "delete": "삭제",
     "edit": "수정",
+    "detail": "상세",
     "add": "추가",
     "search": "검색",
     "role": "역할",
@@ -893,7 +878,14 @@
     "selectExperience": "경력을 선택하세요",
     "selectNationality": "국적을 선택하세요",
     "residentId": "주민등록번호:",
-    "gender": "성별:"
+    "gender": "성별:",
+    "age": "나이"
+  },
+  "roles": {
+    "admin": "관리자",
+    "manager": "매니저",
+    "staff": "스태프",
+    "user": "사용자"
   },
   "profileImage": {
     "uploadSuccess": "프로필 사진이 업로드되었습니다.",
@@ -1954,5 +1946,70 @@
     "profile": "내 프로필",
     "settings": "설정",
     "logout": "로그아웃"
+  },
+  "userDetail": {
+    "title": "사용자 상세 정보",
+    "basicInfo": "기본 정보",
+    "experience": "경력",
+    "history": "이력",
+    "bankInfo": "은행 정보",
+    "notes": "비고",
+    "noPhoto": "사진 없음",
+    "noData": "정보 없음"
+  },
+  "penalty": {
+    "title": "패널티 관리",
+    "button": "패널티",
+    "addNew": "새 패널티 추가",
+    "type": "패널티 유형",
+    "typeWarning": "경고",
+    "typeLoginBlock": "로그인 차단",
+    "warningDescription": "사용자에게 경고 배너가 표시됩니다",
+    "loginBlockDescription": "사용자의 로그인이 차단됩니다",
+    "reason": "패널티 사유",
+    "reasonPlaceholder": "패널티 사유를 입력하세요",
+    "details": "상세 내용",
+    "detailsPlaceholder": "상세 내용을 입력하세요 (선택)",
+    "selectDuration": "기간 선택",
+    "history": "패널티 이력",
+    "noHistory": "패널티 이력이 없습니다",
+    "status": {
+      "active": "활성",
+      "expired": "만료",
+      "cancelled": "취소됨"
+    },
+    "duration": {
+      "1day": "1일",
+      "3days": "3일",
+      "7days": "7일",
+      "30days": "30일",
+      "90days": "90일",
+      "permanent": "영구"
+    },
+    "addSuccess": "패널티가 추가되었습니다",
+    "addError": "패널티 추가에 실패했습니다",
+    "cancel": "패널티 취소",
+    "cancelReason": "취소 사유",
+    "cancelReasonPlaceholder": "취소 사유를 입력하세요",
+    "cancelSuccess": "패널티가 취소되었습니다",
+    "cancelError": "패널티 취소에 실패했습니다",
+    "expires": "만료일",
+    "permanent": "영구 차단",
+    "expiringNow": "곧 해제 예정",
+    "startDate": "시작일"
+  },
+  "penaltyBanner": {
+    "title": "패널티 경고",
+    "reason": "사유",
+    "remaining": "{{days}}일 후 해제",
+    "remainingHours": "{{hours}}시간 후 해제",
+    "dismiss": "닫기"
+  },
+  "loginBlockedModal": {
+    "title": "로그인 차단됨",
+    "reason": "사유",
+    "details": "상세 사유",
+    "remainingTime": "남은 기간",
+    "contactAdmin": "자세한 내용은 관리자에게 문의하세요."
   }
 }

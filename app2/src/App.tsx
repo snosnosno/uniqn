@@ -89,12 +89,11 @@ const TermsOfServicePage = React.lazy(() => import('./pages/legal/TermsOfService
 const PrivacyPolicyPage = React.lazy(() => import('./pages/legal/PrivacyPolicyPage'));
 
 // Extract components from chunks
-const { ApprovalPage, UserManagementPage, InquiryManagementPage } = adminChunk;
+const { UserManagementPage, InquiryManagementPage } = adminChunk;
 
 const { AttendancePage, AvailableTimesPage, MySchedulePage } = staffChunk;
 
-const { JobBoardPage, JobPostingAdminPage, JobPostingDetailPage, StaffNewPage } =
-  jobManagementChunk;
+const { JobBoardPage, JobPostingAdminPage, JobPostingDetailPage } = jobManagementChunk;
 
 const {
   ParticipantsPage,
@@ -483,14 +482,6 @@ const App: React.FC = () => {
                                   element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}
                                 >
                                   <Route
-                                    path="staff/new"
-                                    element={
-                                      <Suspense fallback={<LoadingSpinner />}>
-                                        <StaffNewPage />
-                                      </Suspense>
-                                    }
-                                  />
-                                  <Route
                                     path="shift-schedule"
                                     element={
                                       FEATURE_FLAGS.SHIFT_SCHEDULE ? (
@@ -545,14 +536,6 @@ const App: React.FC = () => {
                                   path="admin"
                                   element={<RoleBasedRoute allowedRoles={['admin']} />}
                                 >
-                                  <Route
-                                    path="approvals"
-                                    element={
-                                      <Suspense fallback={<LoadingSpinner />}>
-                                        <ApprovalPage />
-                                      </Suspense>
-                                    }
-                                  />
                                   <Route
                                     path="user-management"
                                     element={

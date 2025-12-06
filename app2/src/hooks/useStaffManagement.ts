@@ -19,7 +19,7 @@ export type JobRole =
   | 'Cashier'; // 캐셔
 
 // 계정 권한
-export type UserRole = 'staff' | 'manager' | 'admin' | 'pending_manager';
+export type UserRole = 'staff' | 'manager' | 'admin';
 
 export interface StaffData {
   id: string;
@@ -28,7 +28,7 @@ export interface StaffData {
   email?: string;
   phone?: string;
   role?: JobRole; // 업무 역할 (딜러, 플로어 등)
-  userRole?: UserRole; // 계정 권한 (dealer, manager, admin 등)
+  userRole?: UserRole; // 계정 권한 (staff, manager, admin)
   gender?: string;
   age?: number;
   experience?: string;

@@ -2,7 +2,6 @@ import { lazy } from 'react';
 
 // Admin 기능 그룹 - 하나의 청크로 묶음
 export const adminChunk = {
-  ApprovalPage: lazy(() => import('../pages/admin/Approval')),
   UserManagementPage: lazy(() => import('../pages/admin/UserManagementPage')),
   InquiryManagementPage: lazy(() => import('../pages/admin/InquiryManagementPage')),
 };
@@ -19,7 +18,6 @@ export const jobManagementChunk = {
   JobBoardPage: lazy(() => import('../pages/JobBoardPage')),
   JobPostingAdminPage: lazy(() => import('../pages/JobPostingAdminPage')),
   JobPostingDetailPage: lazy(() => import('../pages/JobPostingDetailPage')),
-  StaffNewPage: lazy(() => import('../pages/StaffNewPage')),
 };
 
 // 토너먼트 운영 관리 그룹

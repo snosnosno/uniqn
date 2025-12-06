@@ -1,6 +1,9 @@
 import DOMPurify from 'dompurify';
 import { logger } from '../logger';
 
+// ===== Core 모듈에서 보안 패턴 import =====
+import { XSS_PATTERNS } from '../core';
+
 /**
  * XSS 공격을 방지하기 위한 텍스트 sanitize 유틸리티
  */
@@ -119,12 +122,12 @@ export function sanitizeUrl(url: string, defaultUrl: string = '#'): string {
  * @param defaultValue 파싱 실패 시 반환할 기본값
  * @returns 파싱된 객체 또는 기본값
  */
-export function safeJsonParse<T = any>(jsonString: string, defaultValue: T): T {
+export function safeJsonParse<T = unknown>(jsonString: string, defaultValue: T): T {
   try {
-    // JSON 파싱 전에 XSS 패턴 검사
-    const xssPatterns = [/<script[^>]*>.*?<\/script>/gi, /javascript:/gi, /on\w+\s*=/gi];
-
-    for (const pattern of xssPatterns) {
+    // JSON 파싱 전에 XSS 패턴 검사 (Core 모듈의 통합 패턴 사용)
+    for (const pattern of XSS_PATTERNS) {
+      // 정규식 상태 초기화 (global 플래그 사용 시 필요)
+      pattern.lastIndex = 0;
       if (pattern.test(jsonString)) {
         logger.warn('JSON에서 XSS 패턴이 감지되었습니다', {
           component: 'sanitizer',
@@ -134,7 +137,7 @@ export function safeJsonParse<T = any>(jsonString: string, defaultValue: T): T {
       }
     }
 
-    return JSON.parse(jsonString);
+    return JSON.parse(jsonString) as T;
   } catch (error) {
     logger.debug('JSON 파싱 오류', {
       component: 'sanitizer',
