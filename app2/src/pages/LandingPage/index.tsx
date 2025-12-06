@@ -2,182 +2,28 @@
  * LandingPage - 심플한 앱 스타일 시작 화면
  *
  * 기능:
- * - 다크모드 토글
- * - 언어 선택 (한국어/영어)
+ * - HeaderMenu (다크모드 토글, 알림, 햄버거 메뉴)
  * - 로그인/회원가입 버튼 (비로그인 시)
- * - 로그인 사용자: 알림, 프로필 메뉴, 앱으로 이동 버튼
  * - 앱 다운로드 버튼 (placeholder)
  * - 이용약관/개인정보처리방침 링크
  */
 
-import React, { useCallback, useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { useTheme } from '../../contexts/ThemeContext';
 import { useAuth } from '../../contexts/AuthContext';
-import { NotificationDropdown } from '../../components/notifications/NotificationDropdown';
-import {
-  SunIcon,
-  MoonIcon,
-  UserCircleIcon,
-  Cog6ToothIcon,
-  ArrowRightOnRectangleIcon,
-  Squares2X2Icon,
-} from '@heroicons/react/24/outline';
+import { HeaderMenu } from '../../components/layout/HeaderMenu';
 
 const LandingPage: React.FC = () => {
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
-  const { isDark, toggleTheme } = useTheme();
-  const { currentUser, signOut, loading: authLoading } = useAuth();
-
-  // 프로필 드롭다운 상태
-  const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const profileRef = useRef<HTMLDivElement>(null);
-
-  // 프로필 드롭다운 외부 클릭 감지
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (profileRef.current && !profileRef.current.contains(event.target as Node)) {
-        setIsProfileOpen(false);
-      }
-    };
-
-    if (isProfileOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
-
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, [isProfileOpen]);
-
-  // 언어 변경 핸들러
-  const handleLanguageChange = useCallback(
-    (lang: string) => {
-      i18n.changeLanguage(lang);
-      localStorage.setItem('i18nextLng', lang);
-    },
-    [i18n]
-  );
-
-  // 로그아웃 핸들러
-  const handleSignOut = useCallback(async () => {
-    setIsProfileOpen(false);
-    await signOut();
-    navigate('/');
-  }, [signOut, navigate]);
+  const { t } = useTranslation();
+  const { currentUser, loading: authLoading } = useAuth();
 
   return (
     <div className="min-h-screen w-screen overflow-x-hidden bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex flex-col">
       {/* 상단 헤더 */}
-      <header className="w-full flex justify-between items-center p-3 md:p-6">
-        {/* 왼쪽: 다크모드 토글 */}
-        <button
-          onClick={toggleTheme}
-          className="p-2 rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-shadow"
-          aria-label={
-            isDark
-              ? t('landing.lightMode', '라이트 모드로 전환')
-              : t('landing.darkMode', '다크 모드로 전환')
-          }
-        >
-          {isDark ? (
-            <SunIcon className="w-6 h-6 text-yellow-500" />
-          ) : (
-            <MoonIcon className="w-6 h-6 text-gray-600" />
-          )}
-        </button>
-
-        {/* 오른쪽: 로그인 상태에 따른 메뉴 */}
-        <div className="flex items-center gap-1.5 md:gap-3">
-          {/* 로그인 사용자 메뉴 */}
-          {currentUser && !authLoading && (
-            <>
-              {/* 알림 */}
-              <NotificationDropdown />
-
-              {/* 프로필 드롭다운 */}
-              <div className="relative" ref={profileRef}>
-                <button
-                  onClick={() => setIsProfileOpen(!isProfileOpen)}
-                  className="p-2 rounded-full bg-white dark:bg-gray-700 shadow-md hover:shadow-lg transition-shadow"
-                  aria-label={t('landing.profile', '내 프로필')}
-                  aria-expanded={isProfileOpen}
-                >
-                  <UserCircleIcon className="w-6 h-6 text-gray-600 dark:text-gray-300" />
-                </button>
-
-                {/* 프로필 드롭다운 메뉴 */}
-                {isProfileOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
-                    {/* 모바일에서만 앱으로 이동 메뉴 표시 */}
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        navigate('/dashboard');
-                      }}
-                      className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2 md:hidden"
-                    >
-                      <Squares2X2Icon className="w-5 h-5" />
-                      {t('landing.goToApp', '앱으로 이동')}
-                    </button>
-                    <div className="border-t border-gray-200 dark:border-gray-700 my-1 md:hidden" />
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        navigate('/profile');
-                      }}
-                      className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                    >
-                      <UserCircleIcon className="w-5 h-5" />
-                      {t('landing.profile', '내 프로필')}
-                    </button>
-                    <button
-                      onClick={() => {
-                        setIsProfileOpen(false);
-                        navigate('/settings');
-                      }}
-                      className="w-full px-4 py-2 text-left text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                    >
-                      <Cog6ToothIcon className="w-5 h-5" />
-                      {t('landing.settings', '설정')}
-                    </button>
-                    <div className="border-t border-gray-200 dark:border-gray-700 my-1" />
-                    <button
-                      onClick={handleSignOut}
-                      className="w-full px-4 py-2 text-left text-red-600 dark:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-2"
-                    >
-                      <ArrowRightOnRectangleIcon className="w-5 h-5" />
-                      {t('landing.logout', '로그아웃')}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* 앱으로 이동 버튼 - 모바일: 아이콘만, 데스크톱: 텍스트 */}
-              <button
-                onClick={() => navigate('/dashboard')}
-                className="p-2 md:px-4 md:py-2 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600 text-white text-sm font-medium rounded-lg shadow-md hover:shadow-lg transition-all"
-                aria-label={t('landing.goToApp', '앱으로 이동')}
-              >
-                <Squares2X2Icon className="w-5 h-5 md:hidden" />
-                <span className="hidden md:inline">{t('landing.goToApp', '앱으로 이동')}</span>
-              </button>
-            </>
-          )}
-
-          {/* 언어 선택 (항상 표시) - 모바일: 컴팩트 */}
-          <select
-            value={i18n.language.split('-')[0]}
-            onChange={(e) => handleLanguageChange(e.target.value)}
-            className="px-2 py-1.5 md:px-3 md:py-2 text-sm md:text-base rounded-lg bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-700 dark:text-gray-200 shadow-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            aria-label={t('landing.selectLanguage', '언어 선택')}
-          >
-            <option value="ko">KO</option>
-            <option value="en">EN</option>
-          </select>
-        </div>
+      <header className="w-full flex justify-end items-center p-3 md:p-6">
+        <HeaderMenu />
       </header>
 
       {/* 메인 콘텐츠 */}
