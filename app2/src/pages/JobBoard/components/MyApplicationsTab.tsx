@@ -112,29 +112,15 @@ const ApplicationCard: React.FC<{
           {t('application.appliedTimeSlots', '지원한 시간대')}
         </h4>
 
-        {/* 🎯 개발 단계: 모든 데이터는 새 구조 (마이그레이션 불필요) */}
-        {(() => {
-          // 🎯 개발 단계: 마이그레이션 로직 제거
-          const processedApplication = application;
-
-          // assignments 배열 표시 (Single Source of Truth) - 공통 컴포넌트 사용
-          if (processedApplication.assignments && processedApplication.assignments.length > 0) {
-            return (
-              <AssignmentDisplay
-                assignments={processedApplication.assignments}
-                status={processedApplication.status}
-              />
-            );
-          } else {
-            return (
-              <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
-                <div className="text-gray-500 dark:text-gray-400 text-sm">
-                  {t('application.noApplicationInfo', '지원 정보 없음')}
-                </div>
-              </div>
-            );
-          }
-        })()}
+        {application.assignments && application.assignments.length > 0 ? (
+          <AssignmentDisplay assignments={application.assignments} status={application.status} />
+        ) : (
+          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-2">
+            <div className="text-gray-500 dark:text-gray-400 text-sm">
+              {t('application.noApplicationInfo', '지원 정보 없음')}
+            </div>
+          </div>
+        )}
 
         {application.jobPosting && (
           <div className="mt-3 flex flex-col sm:flex-row gap-2">
@@ -167,8 +153,6 @@ const ApplicationCard: React.FC<{
     </div>
   );
 };
-
-// 🔄 중복된 interface 제거 완료 - types/application.ts 타입 사용
 
 interface MyApplicationsTabProps {
   applications: MyApplicationsApplication[];

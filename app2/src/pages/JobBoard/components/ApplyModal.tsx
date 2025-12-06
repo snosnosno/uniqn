@@ -228,8 +228,8 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
       isGrouped: true,
       groupId: `${timeSlot}_${role}_${firstDate}_${lastDate}`,
       checkMethod: 'group',
-      duration: duration
-        ? dates.length > 1
+      duration:
+        duration && dates.length > 1
           ? {
               type: 'consecutive' as const,
               startDate: firstDate,
@@ -238,11 +238,7 @@ const ApplyModal: React.FC<ApplyModalProps> = ({
           : {
               type: 'single' as const,
               startDate: firstDate,
-            }
-        : {
-            type: 'single' as const,
-            startDate: firstDate,
-          },
+            },
     };
 
     onAssignmentChange(groupAssignment, isChecked);

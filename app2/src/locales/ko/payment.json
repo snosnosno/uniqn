@@ -181,21 +181,6 @@
     "currency": {
       "krw": "원",
       "usd": "$"
-    },
-    "loading": "로딩 중...",
-    "error": "오류",
-    "success": "성공",
-    "cancel": "취소",
-    "confirm": "확인",
-    "close": "닫기",
-    "save": "저장",
-    "delete": "삭제",
-    "edit": "수정",
-    "search": "검색",
-    "filter": "필터",
-    "reset": "초기화",
-    "next": "다음",
-    "previous": "이전",
-    "submit": "제출"
+    }
   }
 }

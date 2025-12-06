@@ -13,7 +13,6 @@ import {
   FieldValue,
 } from 'firebase/firestore';
 import { useUnifiedData } from '@/hooks/useUnifiedData';
-// { useJobPostingData } - 향후 사용 예정
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/useToast';
@@ -31,25 +30,6 @@ import { handleFirebaseError, isPermissionDenied, FirebaseError } from '@/utils/
 interface JobPostingsPage {
   jobs: JobPosting[];
   nextCursor: unknown;
-}
-
-/** 내 지원 현황 아이템 타입 (향후 리팩토링용) */
-interface _MyApplicationItem {
-  id: string;
-  postId: string;
-  status: string;
-  appliedAt: Date | Timestamp | { seconds: number };
-  confirmedAt?: Date | Timestamp;
-  postTitle: string;
-  assignments: Assignment[];
-  assignedTime: string;
-  assignedRole: string;
-  assignedDate: string;
-  assignedTimes: string[];
-  assignedRoles: string[];
-  assignedDates: string[];
-  preQuestionAnswers?: PreQuestionAnswer[];
-  jobPosting: JobPosting | null;
 }
 
 /** Firestore 지원서 데이터 타입 */
@@ -194,9 +174,6 @@ export const useJobBoard = () => {
 
     setAppliedJobs(appliedMap);
   }, [jobPostings, currentUser, applications]);
-
-  // UnifiedDataContext에서 지원 현황 가져오기 (향후 사용 예정)
-  // const { jobPostings: allJobPostings } = useJobPostingData();
 
   // 내 지원 현황 계산 (memoized) - MyApplicationsTab과 호환되는 타입으로 변환
   const myApplications = useMemo(() => {

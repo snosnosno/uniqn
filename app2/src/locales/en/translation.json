@@ -30,7 +30,11 @@
     "overseas": "Overseas",
     "other": "Other"
   },
-  "gender": {},
+  "gender": {
+    "male": "Male",
+    "female": "Female",
+    "other": "Other"
+  },
   "login": {
     "rememberMe": "Remember me",
     "forgotPassword": "Forgot your password?",
@@ -120,7 +124,6 @@
     "numbers": "Include numbers",
     "specialChars": "Include special characters (Bonus +10 points)"
   },
-  "modal": {},
   "confirmModal": {
     "inputMismatch": "Input does not match. Please enter \"{{value}}\" exactly."
   },
@@ -250,15 +253,7 @@
     "chip_master": "Chip Master",
     "registration": "Registration",
     "security": "Security",
-    "cashier": "Cashier",
-    "딜러": "Dealer",
-    "플로어": "Floor",
-    "서빙": "Serving",
-    "토너먼트 디렉터": "Tournament Director",
-    "칩 마스터": "Chip Master",
-    "등록": "Registration",
-    "보안요원": "Security",
-    "캐셔": "Cashier"
+    "cashier": "Cashier"
   },
   "common": {
     "back": "Back",
@@ -631,7 +626,6 @@
         "placeholder": "Search in title or description..."
       }
     },
-    "types": {},
     "tabs": {
       "regular": "Regular",
       "fixed": "Fixed",
@@ -849,7 +843,6 @@
       "selectRole": "Select role",
       "viewProfile": "View Profile",
       "ageUnit": " years old",
-      "statusValue": {},
       "status_applied": "Applied",
       "status_confirmed": "Confirmed",
       "status_pending": "Pending"
@@ -1344,7 +1337,9 @@
         "label": "Report",
         "description": "Staff report related inquiries"
       },
-      "other": {}
+      "other": {
+        "label": "Other"
+      }
     },
     "status": {
       "open": "Open",

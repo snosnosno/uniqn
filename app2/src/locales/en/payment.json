@@ -190,21 +190,6 @@
     "currency": {
       "krw": "KRW",
       "usd": "$"
-    },
-    "loading": "Loading...",
-    "error": "Error",
-    "success": "Success",
-    "cancel": "Cancel",
-    "confirm": "Confirm",
-    "close": "Close",
-    "save": "Save",
-    "delete": "Delete",
-    "edit": "Edit",
-    "search": "Search",
-    "filter": "Filter",
-    "reset": "Reset",
-    "next": "Next",
-    "previous": "Previous",
-    "submit": "Submit"
+    }
   }
 }

@@ -313,7 +313,8 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     return { totalConfirmed, totalRequired };
   };
 
-  const _progressInfo = getProgressInfo();
+  // progressInfo는 향후 확장을 위해 getProgressInfo() 유지
+  getProgressInfo();
 
   // variant별 레이아웃 클래스
   const getContainerClasses = () => {
@@ -335,18 +336,7 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     }
   };
 
-  const getContentClasses = () => {
-    switch (variant) {
-      case 'admin-list':
-        return 'p-3 sm:p-4 md:p-6';
-      case 'user-card':
-        return 'p-3 sm:p-4 md:p-6';
-      case 'detail-info':
-        return 'p-3 sm:p-4 md:p-6';
-      default:
-        return 'p-3 sm:p-4 md:p-6';
-    }
-  };
+  const getContentClasses = () => 'p-3 sm:p-4 md:p-6';
 
   // 기본 정보 섹션 레이아웃 클래스
   const getBasicInfoClasses = () => {
@@ -477,12 +467,9 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
     // 일반공고: 날짜별 요구사항 표시
     const dateReqs = post.dateSpecificRequirements || [];
     if (dateReqs.length > 0) {
-      // 모든 날짜를 표시하도록 변경 (expandTimeSlots 조건 제거)
-      const displayReqs = dateReqs;
-
       return (
         <div className="text-sm text-gray-600 dark:text-gray-300 mb-3">
-          {displayReqs.map((req: DateSpecificRequirement) => {
+          {dateReqs.map((req: DateSpecificRequirement) => {
             // 다중일 체크 - 첫 번째 timeSlot의 duration을 확인 (모든 timeSlot이 동일한 duration을 가짐)
             const firstTimeSlot = req.timeSlots?.[0];
             const hasMultiDuration =

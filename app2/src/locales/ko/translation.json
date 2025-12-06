@@ -30,7 +30,11 @@
     "overseas": "해외",
     "other": "기타"
   },
-  "gender": {},
+  "gender": {
+    "male": "남성",
+    "female": "여성",
+    "other": "기타"
+  },
   "login": {
     "rememberMe": "로그인 상태 유지",
     "forgotPassword": "비밀번호를 잊으셨나요?",
@@ -120,7 +124,6 @@
     "numbers": "숫자 포함",
     "specialChars": "특수문자 포함 (보너스 +10점)"
   },
-  "modal": {},
   "confirmModal": {
     "inputMismatch": "입력값이 일치하지 않습니다. \"{{value}}\"를 정확히 입력해주세요."
   },
@@ -250,15 +253,7 @@
     "chip_master": "칩 마스터",
     "registration": "등록",
     "security": "보안요원",
-    "cashier": "캐셔",
-    "딜러": "딜러",
-    "플로어": "플로어",
-    "서빙": "서빙",
-    "토너먼트 디렉터": "토너먼트 디렉터",
-    "칩 마스터": "칩 마스터",
-    "등록": "등록",
-    "보안요원": "보안요원",
-    "캐셔": "캐셔"
+    "cashier": "캐셔"
   },
   "common": {
     "back": "뒤로가기",
@@ -631,7 +626,6 @@
         "placeholder": "공고 제목, 설명으로 검색..."
       }
     },
-    "types": {},
     "tabs": {
       "regular": "지원",
       "fixed": "고정",
@@ -849,7 +843,6 @@
       "selectRole": "역할 선택",
       "viewProfile": "프로필 보기",
       "ageUnit": "세",
-      "statusValue": {},
       "status_applied": "지원함",
       "status_confirmed": "확정됨",
       "status_pending": "대기 중"
@@ -1344,7 +1337,9 @@
         "label": "신고",
         "description": "스태프 신고 관련 문의"
       },
-      "other": {}
+      "other": {
+        "label": "기타"
+      }
     },
     "status": {
       "open": "열림",
@@ -1806,7 +1801,10 @@
       "emailError": "이메일 발송 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요."
     },
     "common": {
-      "loginRequired": "로그인이 필요합니다."
+      "loginRequired": "로그인이 필요합니다.",
+      "csvTxtOnly": "CSV 또는 TXT 파일만 지원됩니다.",
+      "fileReadError": "파일을 읽는 중 오류가 발생했습니다.",
+      "comingSoon": "이 기능은 곧 출시됩니다."
     },
     "notification": {
       "markReadFailed": "알림 읽음 처리에 실패했습니다.",
