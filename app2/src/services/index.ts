@@ -16,9 +16,8 @@
  *
  * // 여러 서비스 import
  * import {
- *   takePhoto,
- *   scanQRCode,
- *   initializePushNotifications
+ *   initializePushNotifications,
+ *   BulkOperationService
  * } from '@/services';
  * ```
  */
@@ -72,30 +71,6 @@ export {
 
 /** 대량 작업 서비스 */
 export { BulkOperationService } from './BulkOperationService';
-
-// =============================================================================
-// Camera Services
-// =============================================================================
-
-/** 카메라 서비스 */
-export {
-  takePhoto,
-  selectFromGallery,
-  takeCameraPhoto,
-  photoToBlob,
-  resizeImage,
-  checkCameraPermission,
-  requestCameraPermission,
-} from './camera';
-export type { CameraOptions } from './camera';
-
-// =============================================================================
-// QR Scanner Services
-// =============================================================================
-
-/** QR 스캐너 서비스 */
-export { scanQRCode, parseAttendanceQR, scanQRFromFile, validateQRCode } from './qrScanner';
-export type { QRScanResult } from './qrScanner';
 
 // =============================================================================
 // Notification Services
