@@ -214,9 +214,6 @@ export { usePaymentHistory } from './usePaymentHistory';
 /** 환불 요청 Hook */
 export { useRefundRequest } from './useRefundRequest';
 
-/** 구독 플랜 Hook */
-export { useSubscriptionPlans } from './useSubscriptionPlans';
-
 /** 토스 결제 Hook */
 export { useTossPayment } from './useTossPayment';
 
