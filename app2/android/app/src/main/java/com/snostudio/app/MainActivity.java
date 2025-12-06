@@ -1,4 +1,4 @@
-package com.uniqn.app;
+package com.snostudio.app;
 
 import com.getcapacitor.BridgeActivity;
 

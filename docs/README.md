@@ -153,7 +153,8 @@ docs/
 
 | 문서 | 설명 |
 |------|------|
-| [DEPLOYMENT_CHECKLIST.md](releases/DEPLOYMENT_CHECKLIST.md) | v0.2.4 배포 체크리스트 |
+| [APP_RELEASE_CHECKLIST.md](releases/APP_RELEASE_CHECKLIST.md) | 📱 **앱스토어 출시 체크리스트** 🆕 |
+| [DEPLOYMENT_CHECKLIST.md](releases/DEPLOYMENT_CHECKLIST.md) | v0.2.4 기능 배포 체크리스트 |
 | [DEPLOYMENT_SUMMARY_v0.2.4.md](releases/DEPLOYMENT_SUMMARY_v0.2.4.md) | v0.2.4 배포 요약 |
 | [PRODUCTION_TEST_GUIDE_v0.2.4.md](releases/PRODUCTION_TEST_GUIDE_v0.2.4.md) | v0.2.4 프로덕션 테스트 가이드 |
 
