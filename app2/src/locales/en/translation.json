@@ -237,7 +237,11 @@
     "chip_master": "Chip Master",
     "registration": "Registration",
     "security": "Security",
-    "cashier": "Cashier"
+    "cashier": "Cashier",
+    "admin": "Admin",
+    "manager": "Manager",
+    "staff": "Staff",
+    "user": "User"
   },
   "common": {
     "back": "Back",
@@ -711,7 +715,18 @@
     },
     "error": "An error occurred while loading job postings.",
     "loading": "Loading job postings...",
-    "unknownApplicant": "Unknown Applicant"
+    "unknownApplicant": "Unknown Applicant",
+    "card": {
+      "viewDetailsAria": "View details for {{title}}",
+      "applyAria": "Apply for {{title}}"
+    },
+    "filter": {
+      "openFilter": "Open filter",
+      "filter": "Filter"
+    },
+    "refresh": {
+      "ariaLabel": "Refresh page"
+    }
   },
   "jobPosting": {
     "announcement": {
@@ -880,12 +895,6 @@
     "residentId": "Resident ID:",
     "gender": "Gender:",
     "age": "Age"
-  },
-  "roles": {
-    "admin": "Admin",
-    "manager": "Manager",
-    "staff": "Staff",
-    "user": "User"
   },
   "profileImage": {
     "uploadSuccess": "Profile image uploaded successfully.",
