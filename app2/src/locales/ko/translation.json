@@ -326,7 +326,13 @@
     "loading": "로딩 중...",
     "countItems": "{{count}}건",
     "hours": "{{count}}시간",
-    "timeTBD": "시간 미정"
+    "timeTBD": "시간 미정",
+    "prev": "이전",
+    "next": "다음",
+    "prevPage": "이전 페이지",
+    "nextPage": "다음 페이지",
+    "goToPage": "{{page}}페이지로 이동",
+    "retry": "다시 시도"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -431,76 +437,114 @@
   },
   "announcements": {
     "title": "공지사항",
-    "subtitle": "시스템 공지 및 업데이트 정보",
-    "createButton": "공지사항 등록",
-    "totalCount": "전체 {{count}}개",
-    "activeCount": "활성 {{count}}개",
-    "emptyTitle": "공지사항이 없습니다",
-    "emptyDescription": "새로운 공지사항이 등록되면 알림을 받으실 수 있습니다.",
-    "goToNotifications": "알림 센터로 이동",
-    "viewDetail": "자세히 보기",
-    "notificationSettingsTitle": "알림 설정",
-    "notificationSettingsDescription": "중요한 공지사항을 놓치지 않도록 알림 센터에서 알림 설정을 확인하세요.",
+    "description": "시스템 공지 및 업데이트 정보",
+    "banner": "배너",
+    "hasImage": "이미지",
+    "viewDetail": "자세히 보기 →",
+    "stats": {
+      "total": "전체 {{count}}개",
+      "page": "페이지 {{current}} / {{total}}"
+    },
+    "empty": {
+      "title": "공지사항이 없습니다",
+      "description": "새로운 공지사항이 등록되면 여기에 표시됩니다."
+    },
+    "error": {
+      "loadFailed": "공지사항을 불러올 수 없습니다"
+    },
     "priority": {
       "normal": "일반",
       "important": "중요",
       "urgent": "긴급"
     },
-    "createModal": {
-      "title": "시스템 공지사항 등록",
-      "togglePreview": "미리보기",
-      "toggleEdit": "편집 모드",
-      "fieldTitle": "제목",
-      "fieldContent": "내용",
-      "fieldPriority": "우선순위",
-      "fieldStartDate": "공개 시작일",
-      "fieldEndDate": "공개 종료일",
-      "enableEndDate": "공개 종료일 설정",
-      "placeholderTitle": "공지사항 제목을 입력하세요",
-      "placeholderContent": "공지사항 내용을 입력하세요",
-      "characterCount": "{{count}}/{{max}}자",
+    "card": {
+      "viewDetail": "자세히 보기",
+      "views": "회",
+      "bannerBadge": "배너"
+    },
+    "detail": {
+      "title": "공지사항",
+      "period": "공개 기간",
+      "views": "회",
+      "indefinite": "무기한",
+      "attachedImage": "첨부 이미지"
+    },
+    "delete": {
+      "title": "공지사항 삭제",
+      "message": "정말 이 공지사항을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+    },
+    "create": {
+      "title": "공지사항 등록",
+      "button": "등록"
+    },
+    "edit": {
+      "title": "공지사항 수정"
+    },
+    "form": {
+      "titleLabel": "제목",
+      "titlePlaceholder": "공지사항 제목을 입력하세요",
+      "contentLabel": "내용",
+      "contentPlaceholder": "공지사항 내용을 입력하세요",
+      "priority": "우선순위",
+      "startDateLabel": "공개 시작일",
+      "endDateLabel": "공개 종료일 설정",
+      "showAsBanner": "메인 화면 배너로 표시",
+      "showAsBannerDesc": "로그인 후 메인 화면 상단에 배너로 표시됩니다",
+      "image": "이미지 첨부",
+      "preview": "미리보기",
+      "editMode": "편집 모드",
+      "noTitle": "(제목 없음)",
+      "noContent": "(내용 없음)",
+      "startDate": "공개 시작",
+      "endDate": "공개 종료",
+      "noEndDate": "공개 기간: 무기한",
+      "attachedImage": "첨부 이미지",
       "validationError": "입력 오류",
-      "buttonCancel": "취소",
-      "buttonSubmit": "등록하기",
+      "submit": "등록하기",
       "submitting": "등록 중...",
-      "successMessage": "공지사항이 등록되고 모든 사용자에게 알림이 전송되었습니다.",
-      "errorMessage": "공지사항 등록에 실패했습니다.",
-      "previewEmpty": {
-        "title": "(제목 없음)",
-        "content": "(내용 없음)"
-      },
-      "period": {
-        "indefinite": "무기한",
-        "start": "공개 시작",
-        "end": "공개 종료"
+      "save": "저장",
+      "saving": "저장 중...",
+      "update": "수정하기",
+      "updating": "수정 중..."
+    },
+    "validation": {
+      "titleRequired": "제목을 입력해주세요",
+      "titleTooShort": "제목은 2자 이상 입력해주세요",
+      "titleTooLong": "제목은 100자 이하로 입력해주세요",
+      "contentRequired": "내용을 입력해주세요",
+      "contentTooShort": "내용은 2자 이상 입력해주세요",
+      "contentTooLong": "내용은 2000자 이하로 입력해주세요",
+      "endDateBeforeStart": "종료일은 시작일 이후여야 합니다",
+      "xssDetected": "잠재적으로 위험한 문자가 포함되어 있습니다"
+    },
+    "imageUpload": {
+      "title": "이미지 첨부",
+      "label": "이미지 첨부",
+      "optional": "선택",
+      "preview": "첨부 이미지",
+      "delete": "이미지 삭제",
+      "dropzone": "이미지를 드래그하거나 클릭하여 업로드",
+      "dropHere": "여기에 놓으세요",
+      "clickOrDrag": "클릭하거나 이미지를 드래그하세요",
+      "formats": "JPEG, PNG, GIF, WebP (최대 5MB)",
+      "dragDrop": "이미지를 드래그하거나 클릭하여 선택",
+      "supportedFormats": "지원 형식: JPEG, PNG, GIF, WebP (최대 5MB)",
+      "uploading": "업로드 중...",
+      "change": "이미지 변경",
+      "remove": "이미지 삭제",
+      "invalidType": "지원하지 않는 이미지 형식입니다. (JPEG, PNG, GIF, WebP만 가능)",
+      "tooLarge": "이미지 크기는 5MB 이하만 가능합니다.",
+      "error": {
+        "invalidType": "지원하지 않는 파일 형식입니다",
+        "tooLarge": "파일 크기가 5MB를 초과합니다",
+        "uploadFailed": "이미지 업로드에 실패했습니다"
       }
     },
-    "detailModal": {
-      "title": "공지사항",
-      "author": "작성자",
-      "createdAt": "작성일",
-      "period": "공개 기간",
-      "viewCount": "조회수",
-      "times": "회",
-      "indefinite": "무기한",
-      "sendResult": {
-        "title": "알림 전송 결과",
-        "totalUsers": "전체 사용자",
-        "successCount": "전송 성공",
-        "failedCount": "전송 실패",
-        "sentAt": "전송 시간",
-        "people": "명"
-      },
-      "buttonEdit": "수정",
-      "buttonDelete": "삭제",
-      "buttonClose": "닫기",
-      "confirmDelete": "정말 이 공지사항을 삭제하시겠습니까?",
-      "deleteSuccess": "공지사항이 삭제되었습니다.",
-      "deleteError": "공지사항 삭제에 실패했습니다."
-    },
-    "error": {
-      "loadFailed": "공지사항을 불러올 수 없습니다",
-      "retryButton": "다시 시도"
+    "bannerDisplay": {
+      "label": "중요 공지사항",
+      "hideForToday": "오늘 하루 보지 않기",
+      "hideForTodayShort": "오늘 안 보기",
+      "dismiss": "닫기"
     }
   },
   "participantDetailModal": {

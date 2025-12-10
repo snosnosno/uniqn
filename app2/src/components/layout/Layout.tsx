@@ -1,13 +1,29 @@
-import React, { memo, useState, useEffect } from 'react';
+/**
+ * 메인 레이아웃 컴포넌트
+ *
+ * @description
+ * 앱의 기본 레이아웃 구조를 정의
+ * - 헤더 (고정)
+ * - 공지사항 배너 (조건부)
+ * - 패널티 경고 배너 (조건부)
+ * - 메인 콘텐츠
+ *
+ * @version 2.0.0
+ * @since 2025-12-10
+ */
+
+import React, { memo, useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Outlet, useNavigate, Link } from 'react-router-dom';
 import { FaQrcode } from '../Icons/ReactIconsReplacement';
 import { useMediaQuery } from '../../hooks/useMediaQuery';
 import { useAuth } from '../../contexts/AuthContext';
+import { useSystemAnnouncements } from '../../hooks/useSystemAnnouncements';
+import { useAnnouncementBanner } from '../../hooks/useAnnouncementBanner';
 import { getActiveWarningPenalty } from '../../services/penaltyService';
 import type { Penalty } from '../../types/penalty';
 import PenaltyWarningBanner from '../banners/PenaltyWarningBanner';
-
+import AnnouncementBanner from '../banners/AnnouncementBanner';
 import HeaderMenu from './HeaderMenu';
 
 export const Layout = memo(() => {
@@ -16,6 +32,13 @@ export const Layout = memo(() => {
   const isMobile = useMediaQuery('(max-width: 768px)');
   const { currentUser } = useAuth();
   const [activeWarning, setActiveWarning] = useState<Penalty | null>(null);
+
+  // 공지사항 배너 데이터
+  const { bannerAnnouncements } = useSystemAnnouncements();
+
+  // 배너 상태 관리
+  const { currentBanner, dismissBanner, availableBannerCount } =
+    useAnnouncementBanner(bannerAnnouncements);
 
   // 활성 경고 패널티 확인
   useEffect(() => {
@@ -40,6 +63,50 @@ export const Layout = memo(() => {
   const handleAttendanceClick = () => {
     navigate('/app/attendance');
   };
+
+  /**
+   * 배너 닫기 (다음 배너로 이동)
+   */
+  const handleBannerDismiss = () => {
+    dismissBanner(false);
+  };
+
+  /**
+   * "오늘 하루 보지 않기"
+   */
+  const handleBannerHideForToday = () => {
+    dismissBanner(true);
+  };
+
+  /**
+   * 콘텐츠 상단 여백 계산
+   * - 기본: 헤더(64px) + 패딩(8px) = 72px (pt-18)
+   * - 배너 있을 때: 헤더(64px) + 배너(~56px) + 패딩(8px) = ~128px (pt-32)
+   * - 경고 있을 때: 헤더(64px) + 경고(~48px) + 패딩(8px) = ~120px (pt-30)
+   * - 둘 다 있을 때: 헤더(64px) + 배너(~56px) + 경고(~48px) + 패딩(8px) = ~176px (pt-44)
+   */
+  const contentPaddingTop = useMemo(() => {
+    const hasBanner = !!currentBanner;
+    const hasWarning = !!activeWarning;
+
+    if (hasBanner && hasWarning) {
+      return 'pt-44'; // 176px
+    }
+    if (hasBanner) {
+      return 'pt-32'; // 128px
+    }
+    if (hasWarning) {
+      return 'pt-28'; // 112px
+    }
+    return 'pt-18'; // 72px (기본)
+  }, [currentBanner, activeWarning]);
+
+  /**
+   * 경고 배너 위치 계산
+   * - 배너가 있으면 배너 아래
+   * - 배너가 없으면 헤더 바로 아래
+   */
+  const warningBannerTop = currentBanner ? 'top-[120px]' : 'top-16';
 
   return (
     <div className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-50 font-sans safe-area-all transition-colors duration-200">
@@ -85,18 +152,28 @@ export const Layout = memo(() => {
         </div>
       </header>
 
+      {/* 공지사항 배너 */}
+      {currentBanner && (
+        <div className="fixed top-16 left-0 right-0 z-40">
+          <AnnouncementBanner
+            announcement={currentBanner}
+            onDismiss={handleBannerDismiss}
+            onHideForToday={handleBannerHideForToday}
+            remainingCount={availableBannerCount - 1}
+          />
+        </div>
+      )}
+
       {/* 패널티 경고 배너 */}
       {activeWarning && (
-        <div className="fixed top-16 left-0 right-0 z-40">
+        <div className={`fixed ${warningBannerTop} left-0 right-0 z-40`}>
           <PenaltyWarningBanner penalty={activeWarning} onDismiss={() => setActiveWarning(null)} />
         </div>
       )}
 
       {/* 메인 콘텐츠 */}
       <main
-        className={`content-safe px-1 sm:px-4 md:px-6 lg:px-8 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100 dark:bg-gray-900 ${
-          activeWarning ? 'pt-28' : 'pt-18'
-        }`}
+        className={`content-safe px-1 sm:px-4 md:px-6 lg:px-8 pb-3 sm:pb-4 md:pb-6 lg:pb-8 overflow-y-auto bg-gray-100 dark:bg-gray-900 ${contentPaddingTop}`}
       >
         <React.Suspense
           fallback={

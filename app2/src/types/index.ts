@@ -168,9 +168,8 @@ export type {
   AnnouncementStatus as SystemAnnouncementStatus,
   CreateSystemAnnouncementInput,
   UpdateSystemAnnouncementInput,
-  SendSystemAnnouncementRequest,
-  SendSystemAnnouncementResponse,
   SystemAnnouncementFilter,
+  AnnouncementPaginationState,
 } from './systemAnnouncement';
 
 export {

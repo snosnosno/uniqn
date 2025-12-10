@@ -18,7 +18,7 @@ import {
   connectFirestoreEmulator,
 } from 'firebase/firestore';
 import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
-// Storage는 동적 import를 위해 직접 import하지 않음
+import { getStorage, connectStorageEmulator } from 'firebase/storage';
 
 import type { JobPostingFilters } from './hooks/useJobPostings';
 import type {
@@ -77,7 +77,8 @@ export { db };
 // Initialize Functions (asia-northeast3 리전 명시 - CORS 오류 방지)
 export const functions = getFunctions(app, 'asia-northeast3');
 
-// Storage는 동적 로딩을 위해 별도 유틸리티 사용
+// Initialize Storage
+export const storage = getStorage(app);
 
 if (isEmulator) {
   // Connect Functions Emulator
@@ -108,6 +109,13 @@ if (isEmulator) {
   try {
     // Connect Firestore Emulator
     connectFirestoreEmulator(db, 'localhost', 8080);
+  } catch (error) {
+    // Emulator already connected or unavailable
+  }
+
+  try {
+    // Connect Storage Emulator
+    connectStorageEmulator(storage, 'localhost', 9199);
   } catch (error) {
     // Emulator already connected or unavailable
   }

@@ -63,17 +63,14 @@ export interface SystemAnnouncement {
   /** 조회수 */
   viewCount: number;
 
-  /** 전송 결과 */
-  sendResult?: {
-    /** 전송 성공 수 */
-    successCount: number;
-    /** 전송 실패 수 */
-    failedCount: number;
-    /** 전체 사용자 수 */
-    totalUsers: number;
-    /** 전송 시간 */
-    sentAt?: Timestamp;
-  };
+  /** 배너로 표시 여부 */
+  showAsBanner: boolean;
+
+  /** 첨부 이미지 URL */
+  imageUrl?: string;
+
+  /** 첨부 이미지 Storage 경로 */
+  imageStoragePath?: string;
 }
 
 /**
@@ -94,6 +91,15 @@ export interface CreateSystemAnnouncementInput {
 
   /** 공개 종료일 (선택) */
   endDate?: Date | null;
+
+  /** 배너로 표시 여부 */
+  showAsBanner?: boolean;
+
+  /** 첨부 이미지 URL */
+  imageUrl?: string;
+
+  /** 첨부 이미지 Storage 경로 */
+  imageStoragePath?: string;
 }
 
 /**
@@ -117,44 +123,15 @@ export interface UpdateSystemAnnouncementInput {
 
   /** 활성 상태 */
   isActive?: boolean;
-}
 
-/**
- * 공지사항 전송 요청 데이터 (Firebase Functions 호출용)
- */
-export interface SendSystemAnnouncementRequest {
-  /** 공지 ID */
-  announcementId: string;
+  /** 배너로 표시 여부 */
+  showAsBanner?: boolean;
 
-  /** 공지 제목 */
-  title: string;
+  /** 첨부 이미지 URL */
+  imageUrl?: string;
 
-  /** 공지 내용 */
-  content: string;
-
-  /** 우선순위 */
-  priority: AnnouncementPriority;
-}
-
-/**
- * 공지사항 전송 응답 데이터
- */
-export interface SendSystemAnnouncementResponse {
-  /** 성공 여부 */
-  success: boolean;
-
-  /** 공지 문서 ID */
-  announcementId?: string;
-
-  /** 전송 결과 */
-  result?: {
-    successCount: number;
-    failedCount: number;
-    totalUsers: number;
-  };
-
-  /** 에러 메시지 (실패 시) */
-  error?: string;
+  /** 첨부 이미지 Storage 경로 */
+  imageStoragePath?: string;
 }
 
 /**
@@ -172,6 +149,29 @@ export interface SystemAnnouncementFilter {
 
   /** 종료 날짜 */
   endDate?: Date;
+}
+
+/**
+ * 페이지네이션 상태
+ */
+export interface AnnouncementPaginationState {
+  /** 현재 페이지 (1부터 시작) */
+  currentPage: number;
+
+  /** 페이지당 항목 수 */
+  pageSize: number;
+
+  /** 전체 항목 수 */
+  totalCount: number;
+
+  /** 전체 페이지 수 */
+  totalPages: number;
+
+  /** 다음 페이지 존재 여부 */
+  hasNextPage: boolean;
+
+  /** 이전 페이지 존재 여부 */
+  hasPrevPage: boolean;
 }
 
 /**

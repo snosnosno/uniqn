@@ -2,20 +2,28 @@
  * 공지사항 페이지
  *
  * @description
- * 시스템 공지 및 앱 업데이트 알림을 표시하는 페이지
- * - 관리자: 공지사항 등록/수정/삭제 가능
- * - 일반 사용자: 공지사항 조회만 가능
+ * 시스템 공지사항을 관리하는 페이지
+ * - 관리자: 공지사항 등록/수정/삭제
+ * - 일반 사용자: 조회만 가능
+ * - 페이지네이션 (10개씩)
+ * - 이미지 첨부 지원
  *
- * @version 2.0.0
- * @since 2025-10-02
- * @updated 2025-10-25
+ * @version 3.0.0
+ * @since 2025-12-10
  */
 
-import React, { useState, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import React, { useState, useCallback, memo } from 'react';
+import { useTranslation } from 'react-i18next';
+import {
+  PlusIcon,
+  MegaphoneIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ExclamationTriangleIcon,
+  ArrowPathIcon,
+} from '@heroicons/react/24/outline';
 import LoadingSpinner from '../components/LoadingSpinner';
+import AnnouncementCard from '../components/announcements/AnnouncementCard';
 import CreateAnnouncementModal from '../components/announcements/CreateAnnouncementModal';
 import EditAnnouncementModal from '../components/announcements/EditAnnouncementModal';
 import AnnouncementDetailModal from '../components/announcements/AnnouncementDetailModal';
@@ -23,18 +31,30 @@ import { useAuth } from '../contexts/AuthContext';
 import { useSystemAnnouncements } from '../hooks/useSystemAnnouncements';
 import { logger } from '../utils/logger';
 import type { SystemAnnouncement } from '../types';
-import { getPriorityLabel, getPriorityBadgeStyle } from '../types';
 
-const AnnouncementsPage: React.FC = () => {
-  const navigate = useNavigate();
+/**
+ * 공지사항 페이지 컴포넌트
+ */
+const AnnouncementsPage: React.FC = memo(() => {
+  const { t } = useTranslation();
   const { isAdmin, role } = useAuth();
+
+  // Hook - 단일 소스 (모든 기능 제공)
   const {
     announcements,
-    activeAnnouncements,
     loading,
     error,
+    pagination,
+    goToPage,
+    nextPage,
+    prevPage,
     incrementViewCount,
+    createAnnouncement,
+    updateAnnouncement,
     deleteAnnouncement,
+    uploadImage,
+    deleteImage,
+    uploadProgress,
   } = useSystemAnnouncements();
 
   // 모달 상태
@@ -56,14 +76,15 @@ const AnnouncementsPage: React.FC = () => {
   );
 
   /**
-   * 등록 성공
+   * 등록 성공 핸들러
    */
   const handleCreateSuccess = useCallback(() => {
-    // 목록 자동 새로고침 (실시간 구독)
+    setIsCreateModalOpen(false);
+    logger.info('공지사항 등록 완료', { component: 'AnnouncementsPage' });
   }, []);
 
   /**
-   * 수정 핸들러
+   * 수정 버튼 클릭
    */
   const handleEdit = useCallback((announcement: SystemAnnouncement) => {
     setSelectedAnnouncement(announcement);
@@ -72,11 +93,12 @@ const AnnouncementsPage: React.FC = () => {
   }, []);
 
   /**
-   * 수정 성공
+   * 수정 성공 핸들러
    */
   const handleEditSuccess = useCallback(() => {
-    // 목록 자동 새로고침 (실시간 구독)
+    setIsEditModalOpen(false);
     setSelectedAnnouncement(null);
+    logger.info('공지사항 수정 완료', { component: 'AnnouncementsPage' });
   }, []);
 
   /**
@@ -86,32 +108,45 @@ const AnnouncementsPage: React.FC = () => {
     async (announcementId: string) => {
       try {
         await deleteAnnouncement(announcementId);
+        logger.info('공지사항 삭제 완료', {
+          component: 'AnnouncementsPage',
+          data: { announcementId },
+        });
       } catch (err) {
         logger.error('공지사항 삭제 실패', err instanceof Error ? err : new Error(String(err)), {
           component: 'AnnouncementsPage',
           data: { announcementId },
         });
+        throw err; // 모달에서 에러 처리하도록
       }
     },
     [deleteAnnouncement]
   );
 
   /**
-   * 우선순위별 정렬 (긴급 > 중요 > 일반)
+   * 상세 모달 닫기
    */
-  const sortedAnnouncements = [...activeAnnouncements].sort((a, b) => {
-    const priorityOrder = { urgent: 3, important: 2, normal: 1 };
-    const priorityDiff = priorityOrder[b.priority] - priorityOrder[a.priority];
+  const handleDetailClose = useCallback(() => {
+    setIsDetailModalOpen(false);
+    setSelectedAnnouncement(null);
+  }, []);
 
-    if (priorityDiff !== 0) return priorityDiff;
+  /**
+   * 수정 모달 닫기
+   */
+  const handleEditClose = useCallback(() => {
+    setIsEditModalOpen(false);
+    setSelectedAnnouncement(null);
+  }, []);
 
-    // 우선순위가 같으면 최신순 (null 체크 추가)
-    if (!a.createdAt || !b.createdAt) return 0;
-    const aDate = a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate();
-    const bDate = b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate();
-    return bDate.getTime() - aDate.getTime();
-  });
+  /**
+   * 페이지 새로고침
+   */
+  const handleRefresh = useCallback(() => {
+    window.location.reload();
+  }, []);
 
+  // 로딩 상태
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -120,21 +155,24 @@ const AnnouncementsPage: React.FC = () => {
     );
   }
 
+  // 에러 상태
   if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 sm:p-6 lg:p-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">⚠️</div>
+            <ExclamationTriangleIcon className="w-16 h-16 mx-auto mb-4 text-red-500" />
             <h3 className="text-xl font-semibold text-red-700 dark:text-red-400 mb-2">
-              공지사항을 불러올 수 없습니다
+              {t('announcements.error.loadFailed', '공지사항을 불러올 수 없습니다')}
             </h3>
             <p className="text-gray-600 dark:text-gray-300 mb-4">{error.message}</p>
             <button
-              onClick={() => window.location.reload()}
-              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
+              type="button"
+              onClick={handleRefresh}
+              className="inline-flex items-center gap-2 bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
             >
-              다시 시도
+              <ArrowPathIcon className="w-5 h-5" />
+              {t('common.retry', '다시 시도')}
             </button>
           </div>
         </div>
@@ -147,153 +185,176 @@ const AnnouncementsPage: React.FC = () => {
       {/* 헤더 */}
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-              🔔 공지사항
-            </h1>
-            <p className="text-gray-600 dark:text-gray-300">시스템 공지 및 업데이트 정보</p>
+          <div className="flex items-center gap-3">
+            <MegaphoneIcon className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                {t('announcements.title', '공지사항')}
+              </h1>
+              <p className="text-gray-600 dark:text-gray-300">
+                {t('announcements.description', '시스템 공지 및 업데이트 정보')}
+              </p>
+            </div>
           </div>
 
           {/* 관리자 전용: 등록 버튼 */}
           {role === 'admin' && (
             <button
+              type="button"
               onClick={() => setIsCreateModalOpen(true)}
-              className="bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-3 py-1.5 rounded-lg transition-colors text-sm font-medium flex items-center space-x-1.5"
+              className="inline-flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 text-white px-4 py-2 rounded-lg transition-colors text-sm font-medium"
             >
-              <span>➕</span>
-              <span>등록</span>
+              <PlusIcon className="w-5 h-5" />
+              <span>{t('announcements.create.button', '등록')}</span>
             </button>
           )}
         </div>
 
         {/* 통계 */}
-        <div className="mt-4 flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
-          <span>전체 {announcements.length}개</span>
-          <span>•</span>
-          <span>활성 {activeAnnouncements.length}개</span>
+        <div className="mt-4 flex items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
+          <span>
+            {t('announcements.stats.total', '전체 {{count}}개', {
+              count: pagination.totalCount,
+            })}
+          </span>
+          <span className="text-gray-400">|</span>
+          <span>
+            {t('announcements.stats.page', '페이지 {{current}} / {{total}}', {
+              current: pagination.currentPage,
+              total: pagination.totalPages || 1,
+            })}
+          </span>
         </div>
       </div>
 
       {/* 공지사항 목록 */}
-      {sortedAnnouncements.length === 0 ? (
+      {announcements.length === 0 ? (
         /* 빈 목록 */
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
           <div className="text-center py-12">
-            <div className="text-6xl mb-4">📢</div>
+            <MegaphoneIcon className="w-16 h-16 mx-auto mb-4 text-gray-400" />
             <h3 className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-2">
-              공지사항이 없습니다
+              {t('announcements.empty.title', '공지사항이 없습니다')}
             </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-6">
-              새로운 공지사항이 등록되면 알림을 받으실 수 있습니다.
+            <p className="text-gray-500 dark:text-gray-400">
+              {t(
+                'announcements.empty.description',
+                '새로운 공지사항이 등록되면 여기에 표시됩니다.'
+              )}
             </p>
-            <button
-              onClick={() => navigate('/app/notifications')}
-              className="bg-blue-500 hover:bg-blue-600 dark:bg-blue-600 dark:hover:bg-blue-700 text-white px-6 py-2 rounded-lg transition-colors"
-            >
-              알림 센터로 이동
-            </button>
           </div>
         </div>
       ) : (
-        /* 공지사항 카드 목록 */
-        <div className="space-y-4">
-          {sortedAnnouncements.map((announcement) => (
-            <div
-              key={announcement.id}
-              onClick={() => handleAnnouncementClick(announcement)}
-              className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow cursor-pointer"
-            >
-              {/* 카드 헤더 */}
-              <div className="flex items-start justify-between mb-3">
-                <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100 flex-1 pr-4 line-clamp-2">
-                  {announcement.title}
-                </h3>
-                <span
-                  className={`px-3 py-1 rounded-full text-sm font-medium whitespace-nowrap ${getPriorityBadgeStyle(announcement.priority)}`}
-                >
-                  {getPriorityLabel(announcement.priority)}
-                </span>
-              </div>
-
-              {/* 카드 메타 정보 */}
-              <div className="flex items-center space-x-4 text-sm text-gray-600 dark:text-gray-300">
-                <span className="flex items-center space-x-1">
-                  <span>👤</span>
-                  <span>{announcement.createdByName}</span>
-                </span>
-                <span>•</span>
-                <span className="flex items-center space-x-1">
-                  <span>📅</span>
-                  <span>
-                    {announcement.createdAt
-                      ? format(
-                          announcement.createdAt instanceof Date
-                            ? announcement.createdAt
-                            : announcement.createdAt.toDate(),
-                          'yyyy.MM.dd HH:mm',
-                          { locale: ko }
-                        )
-                      : '-'}
-                  </span>
-                </span>
-                <span>•</span>
-                <span className="flex items-center space-x-1">
-                  <span>👁️</span>
-                  <span>{announcement.viewCount.toLocaleString()}회</span>
-                </span>
-              </div>
-
-              {/* 읽기 더보기 표시 */}
-              <div className="mt-3 text-sm text-blue-600 dark:text-blue-400 font-medium">
-                자세히 보기 →
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* 안내 */}
-      <div className="mt-6 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700 rounded-lg p-4">
-        <div className="flex items-start">
-          <span className="text-blue-500 dark:text-blue-400 text-xl mr-3">ℹ️</span>
-          <div>
-            <h4 className="text-sm font-semibold text-blue-900 dark:text-blue-200 mb-1">
-              알림 설정
-            </h4>
-            <p className="text-sm text-blue-700 dark:text-blue-300">
-              중요한 공지사항을 놓치지 않도록 알림 센터에서 알림 설정을 확인하세요.
-            </p>
+        <>
+          {/* 공지사항 카드 목록 */}
+          <div className="space-y-4">
+            {announcements.map((announcement) => (
+              <AnnouncementCard
+                key={announcement.id}
+                announcement={announcement}
+                onClick={handleAnnouncementClick}
+              />
+            ))}
           </div>
-        </div>
-      </div>
+
+          {/* 페이지네이션 */}
+          {pagination.totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-center gap-2">
+              {/* 이전 버튼 */}
+              <button
+                type="button"
+                onClick={prevPage}
+                disabled={!pagination.hasPrevPage}
+                className="inline-flex items-center gap-1 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label={t('common.prevPage', '이전 페이지')}
+              >
+                <ChevronLeftIcon className="w-5 h-5" />
+                <span className="hidden sm:inline">{t('common.prev', '이전')}</span>
+              </button>
+
+              {/* 페이지 번호 */}
+              <div className="flex items-center gap-1">
+                {Array.from({ length: pagination.totalPages }, (_, i) => i + 1)
+                  .filter((page) => {
+                    // 현재 페이지 주변 2개씩만 표시
+                    const current = pagination.currentPage;
+                    return (
+                      page === 1 || page === pagination.totalPages || Math.abs(page - current) <= 2
+                    );
+                  })
+                  .map((page, index, filtered) => {
+                    // 생략 부호 표시
+                    const prevPage = filtered[index - 1];
+                    const showEllipsis = prevPage && page - prevPage > 1;
+
+                    return (
+                      <React.Fragment key={page}>
+                        {showEllipsis && (
+                          <span className="px-2 text-gray-500 dark:text-gray-400">...</span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => goToPage(page)}
+                          className={`min-w-[40px] h-10 rounded-lg font-medium transition-colors ${
+                            page === pagination.currentPage
+                              ? 'bg-blue-600 text-white'
+                              : 'bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700'
+                          }`}
+                          aria-label={t('common.goToPage', '{{page}}페이지로 이동', { page })}
+                          aria-current={page === pagination.currentPage ? 'page' : undefined}
+                        >
+                          {page}
+                        </button>
+                      </React.Fragment>
+                    );
+                  })}
+              </div>
+
+              {/* 다음 버튼 */}
+              <button
+                type="button"
+                onClick={nextPage}
+                disabled={!pagination.hasNextPage}
+                className="inline-flex items-center gap-1 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                aria-label={t('common.nextPage', '다음 페이지')}
+              >
+                <span className="hidden sm:inline">{t('common.next', '다음')}</span>
+                <ChevronRightIcon className="w-5 h-5" />
+              </button>
+            </div>
+          )}
+        </>
+      )}
 
       {/* 등록 모달 */}
       <CreateAnnouncementModal
         isOpen={isCreateModalOpen}
         onClose={() => setIsCreateModalOpen(false)}
         onSuccess={handleCreateSuccess}
+        createAnnouncement={createAnnouncement}
+        uploadImage={uploadImage}
+        deleteImage={deleteImage}
+        uploadProgress={uploadProgress}
       />
 
       {/* 수정 모달 */}
       {selectedAnnouncement && (
         <EditAnnouncementModal
           isOpen={isEditModalOpen}
-          onClose={() => {
-            setIsEditModalOpen(false);
-            setSelectedAnnouncement(null);
-          }}
+          onClose={handleEditClose}
           onSuccess={handleEditSuccess}
           announcement={selectedAnnouncement}
+          updateAnnouncement={updateAnnouncement}
+          uploadImage={uploadImage}
+          deleteImage={deleteImage}
+          uploadProgress={uploadProgress}
         />
       )}
 
       {/* 상세 모달 */}
       <AnnouncementDetailModal
         isOpen={isDetailModalOpen}
-        onClose={() => {
-          setIsDetailModalOpen(false);
-          setSelectedAnnouncement(null);
-        }}
+        onClose={handleDetailClose}
         announcement={selectedAnnouncement}
         isAdmin={isAdmin}
         onEdit={handleEdit}
@@ -301,6 +362,8 @@ const AnnouncementsPage: React.FC = () => {
       />
     </div>
   );
-};
+});
+
+AnnouncementsPage.displayName = 'AnnouncementsPage';
 
 export default AnnouncementsPage;
