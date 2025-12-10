@@ -175,11 +175,11 @@ const TournamentsPage: React.FC = () => {
   const getStatusLabel = (status: Tournament['status']) => {
     switch (status) {
       case 'upcoming':
-        return '예정';
+        return t('tournaments.status.upcoming');
       case 'active':
-        return '진행 중';
+        return t('tournaments.status.active');
       case 'completed':
-        return '완료';
+        return t('tournaments.status.completed');
     }
   };
 
@@ -219,9 +219,9 @@ const TournamentsPage: React.FC = () => {
     const tomorrow = toISODateString(new Date(Date.now() + 86400000)) || '';
 
     if (dateKey === today) {
-      return '오늘';
+      return t('tournaments.today');
     } else if (dateKey === tomorrow) {
-      return '내일';
+      return t('tournaments.tomorrow');
     } else {
       return formatDateDisplay(dateKey);
     }
@@ -230,7 +230,7 @@ const TournamentsPage: React.FC = () => {
   if (loading) {
     return (
       <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
-        <div className="text-center">로딩 중...</div>
+        <div className="text-center">{t('tournaments.loading')}</div>
       </div>
     );
   }
@@ -239,7 +239,7 @@ const TournamentsPage: React.FC = () => {
     return (
       <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
         <div className="text-red-500 dark:text-red-400">
-          토너먼트 목록을 불러오는데 실패했습니다: {error.message}
+          {t('tournaments.loadError')}: {error.message}
         </div>
       </div>
     );
@@ -248,33 +248,36 @@ const TournamentsPage: React.FC = () => {
   return (
     <div className="p-6 bg-gray-100 dark:bg-gray-900 min-h-screen">
       <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">토너먼트 관리</h1>
+        <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+          {t('tournaments.title')}
+        </h1>
         <div className="flex gap-2">
           <button
             onClick={collapseAll}
             className="btn btn-secondary btn-sm"
             disabled={isSubmitting}
           >
-            전체 접기
+            {t('tournaments.collapseAll')}
           </button>
           <button onClick={expandAll} className="btn btn-secondary btn-sm" disabled={isSubmitting}>
-            전체 펼치기
+            {t('tournaments.expandAll')}
           </button>
           <button
             onClick={handleOpenCreateModal}
             className="btn btn-primary flex items-center gap-2"
             disabled={isSubmitting}
           >
-            <FaPlus className="w-4 h-4" />새 토너먼트
+            <FaPlus className="w-4 h-4" />
+            {t('tournaments.newTournament')}
           </button>
         </div>
       </div>
 
       {visibleTournaments.length === 0 ? (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">생성된 토너먼트가 없습니다.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">{t('tournaments.empty')}</p>
           <button onClick={handleOpenCreateModal} className="btn btn-primary">
-            첫 번째 토너먼트 만들기
+            {t('tournaments.createFirst')}
           </button>
         </div>
       ) : (
@@ -304,7 +307,7 @@ const TournamentsPage: React.FC = () => {
                     <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100">
                       {getDateLabel(dateKey)}
                       <span className="ml-2 text-sm font-normal text-gray-600 dark:text-gray-300">
-                        ({count}개)
+                        ({t('tournaments.count', { count })})
                       </span>
                     </h2>
                   </div>
@@ -350,7 +353,7 @@ const TournamentsPage: React.FC = () => {
                               {state.tournamentId === tournament.id && (
                                 <FaCheck className="w-3 h-3" />
                               )}
-                              선택
+                              {t('tournaments.select')}
                             </button>
                             <button
                               onClick={() => handleOpenEditModal(tournament)}
@@ -382,26 +385,30 @@ const TournamentsPage: React.FC = () => {
       <Modal
         isOpen={isCreateModalOpen}
         onClose={() => !isSubmitting && setIsCreateModalOpen(false)}
-        title="새 토너먼트 만들기"
+        title={t('tournaments.modal.createTitle')}
         closeOnEsc={!isSubmitting}
         closeOnBackdrop={!isSubmitting}
       >
         <form onSubmit={handleCreate} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">토너먼트 이름 *</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.nameLabel')} *
+            </label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               className="input-field w-full"
-              placeholder="예: 2025 홀덤 대회"
+              placeholder={t('tournaments.modal.namePlaceholder')}
               required
               disabled={isSubmitting}
               autoFocus
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">날짜 *</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.dateLabel')} *
+            </label>
             <input
               type="date"
               value={formData.date}
@@ -412,18 +419,22 @@ const TournamentsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">장소</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.locationLabel')}
+            </label>
             <input
               type="text"
               value={formData.location}
               onChange={(e) => setFormData({ ...formData, location: e.target.value })}
               className="input-field w-full"
-              placeholder="예: 서울 강남구"
+              placeholder={t('tournaments.modal.locationPlaceholder')}
               disabled={isSubmitting}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">상태</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.statusLabel')}
+            </label>
             <select
               value={formData.status}
               onChange={(e) =>
@@ -432,13 +443,15 @@ const TournamentsPage: React.FC = () => {
               className="input-field w-full"
               disabled={isSubmitting}
             >
-              <option value="upcoming">예정</option>
-              <option value="active">진행 중</option>
-              <option value="completed">완료</option>
+              <option value="upcoming">{t('tournaments.status.upcoming')}</option>
+              <option value="active">{t('tournaments.status.active')}</option>
+              <option value="completed">{t('tournaments.status.completed')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">색상 *</label>
+            <label className="block text-sm font-medium mb-2">
+              {t('tournaments.modal.colorLabel')} *
+            </label>
             <div className="flex gap-3 flex-wrap">
               {TOURNAMENT_COLORS.map((color) => (
                 <button
@@ -468,10 +481,10 @@ const TournamentsPage: React.FC = () => {
               className="btn btn-secondary"
               disabled={isSubmitting}
             >
-              취소
+              {t('common.cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? '생성 중...' : '생성'}
+              {isSubmitting ? t('tournaments.modal.creating') : t('tournaments.modal.create')}
             </button>
           </div>
         </form>
@@ -481,13 +494,15 @@ const TournamentsPage: React.FC = () => {
       <Modal
         isOpen={isEditModalOpen}
         onClose={() => !isSubmitting && setIsEditModalOpen(false)}
-        title="토너먼트 수정"
+        title={t('tournaments.modal.editTitle')}
         closeOnEsc={!isSubmitting}
         closeOnBackdrop={!isSubmitting}
       >
         <form onSubmit={handleUpdate} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">토너먼트 이름 *</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.nameLabel')} *
+            </label>
             <input
               type="text"
               value={formData.name}
@@ -499,7 +514,9 @@ const TournamentsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">날짜 *</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.dateLabel')} *
+            </label>
             <input
               type="date"
               value={formData.date}
@@ -510,7 +527,9 @@ const TournamentsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">장소</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.locationLabel')}
+            </label>
             <input
               type="text"
               value={formData.location}
@@ -520,7 +539,9 @@ const TournamentsPage: React.FC = () => {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">상태</label>
+            <label className="block text-sm font-medium mb-1">
+              {t('tournaments.modal.statusLabel')}
+            </label>
             <select
               value={formData.status}
               onChange={(e) =>
@@ -529,13 +550,15 @@ const TournamentsPage: React.FC = () => {
               className="input-field w-full"
               disabled={isSubmitting}
             >
-              <option value="upcoming">예정</option>
-              <option value="active">진행 중</option>
-              <option value="completed">완료</option>
+              <option value="upcoming">{t('tournaments.status.upcoming')}</option>
+              <option value="active">{t('tournaments.status.active')}</option>
+              <option value="completed">{t('tournaments.status.completed')}</option>
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium mb-2">색상 *</label>
+            <label className="block text-sm font-medium mb-2">
+              {t('tournaments.modal.colorLabel')} *
+            </label>
             <div className="flex gap-3 flex-wrap">
               {TOURNAMENT_COLORS.map((color) => (
                 <button
@@ -565,10 +588,10 @@ const TournamentsPage: React.FC = () => {
               className="btn btn-secondary"
               disabled={isSubmitting}
             >
-              취소
+              {t('common.cancel')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-              {isSubmitting ? '수정 중...' : '수정'}
+              {isSubmitting ? t('tournaments.modal.updating') : t('tournaments.modal.update')}
             </button>
           </div>
         </form>
@@ -579,10 +602,10 @@ const TournamentsPage: React.FC = () => {
         isOpen={isDeleteConfirmOpen}
         onClose={() => !isSubmitting && setIsDeleteConfirmOpen(false)}
         onConfirm={handleDeleteConfirm}
-        title="토너먼트 삭제"
-        message="이 토너먼트를 삭제하시겠습니까? 관련된 모든 데이터가 함께 삭제됩니다."
-        confirmText="삭제"
-        cancelText="취소"
+        title={t('tournaments.modal.deleteTitle')}
+        message={t('tournaments.modal.deleteMessage')}
+        confirmText={t('common.delete')}
+        cancelText={t('common.cancel')}
         isDangerous={true}
         isLoading={isSubmitting}
       />

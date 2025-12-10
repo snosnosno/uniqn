@@ -446,10 +446,10 @@ const ParticipantsPage: React.FC = () => {
         {!state.tournamentId ? (
           <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              ⚠️ 토너먼트를 먼저 선택해주세요.
+              ⚠️ {t('tournaments.selectFirst')}
             </p>
             <p className="text-sm text-gray-400 dark:text-gray-500">
-              위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.
+              {t('tournaments.selectFirstDesc')}
             </p>
           </div>
         ) : (
@@ -475,12 +475,12 @@ const ParticipantsPage: React.FC = () => {
                     title={
                       state.tournamentId === 'ALL' ||
                       (!!state.tournamentId && isDefaultTournament(state.tournamentId))
-                        ? '전체보기에서는 참가자를 추가할 수 없습니다.'
+                        ? t('tournaments.cannotAddInAllView')
                         : undefined
                     }
                   >
                     <FaPlus className="w-4 h-4" />
-                    대량 추가
+                    {t('participantsPage.bulkAdd')}
                   </button>
                   <button
                     onClick={() => handleOpenModal(null)}
@@ -496,12 +496,12 @@ const ParticipantsPage: React.FC = () => {
                     title={
                       state.tournamentId === 'ALL' ||
                       (!!state.tournamentId && isDefaultTournament(state.tournamentId))
-                        ? '전체보기에서는 참가자를 추가할 수 없습니다.'
+                        ? t('tournaments.cannotAddInAllView')
                         : undefined
                     }
                   >
                     <FaPlus className="w-4 h-4" />
-                    참가자 추가
+                    {t('participantsPage.addParticipant')}
                   </button>
                   <button
                     onClick={handleExportParticipants}
@@ -509,7 +509,8 @@ const ParticipantsPage: React.FC = () => {
                     disabled={isModalOpen || isBulkModalOpen || filteredParticipants.length === 0}
                     tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                   >
-                    엑셀 내보내기 ({filteredParticipants.length}명)
+                    {t('participantsPage.exportExcel')} (
+                    {t('participantsPage.count', { count: filteredParticipants.length })})
                   </button>
                   <button
                     onClick={handleDeleteAll}
@@ -520,7 +521,7 @@ const ParticipantsPage: React.FC = () => {
                     tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                   >
                     <FaTrash className="w-3 h-3" />
-                    전체 삭제
+                    {t('participantsPage.deleteAll')}
                   </button>
                 </div>
               </div>
@@ -544,7 +545,8 @@ const ParticipantsPage: React.FC = () => {
                     tabIndex={isModalOpen || isBulkModalOpen ? -1 : 0}
                   >
                     <FaTrash className="w-3 h-3" />
-                    선택 삭제 ({selectedIds.size}명)
+                    {t('participantsPage.deleteSelected')} (
+                    {t('participantsPage.count', { count: selectedIds.size })})
                   </button>
                 )}
               </div>
@@ -577,8 +579,12 @@ const ParticipantsPage: React.FC = () => {
                     <th className="px-4 py-2 text-gray-900 dark:text-gray-100 whitespace-nowrap">
                       {t('common.location')}
                     </th>
-                    <th className="px-4 py-2 text-gray-900 dark:text-gray-100">기타</th>
-                    <th className="px-4 py-2 text-gray-900 dark:text-gray-100">비고</th>
+                    <th className="px-4 py-2 text-gray-900 dark:text-gray-100">
+                      {t('participantsPage.etc')}
+                    </th>
+                    <th className="px-4 py-2 text-gray-900 dark:text-gray-100">
+                      {t('participantsPage.note')}
+                    </th>
                     <th className="px-4 py-2 text-gray-900 dark:text-gray-100">
                       {t('participants.tableHeaderActions')}
                     </th>
@@ -655,7 +661,8 @@ const ParticipantsPage: React.FC = () => {
                 {currentTournament && (
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
                     <p className="text-sm text-gray-700 dark:text-gray-200">
-                      <span className="font-semibold">토너먼트:</span> {currentTournament.name}
+                      <span className="font-semibold">{t('participantsPage.tournament')}:</span>{' '}
+                      {currentTournament.name}
                     </p>
                   </div>
                 )}
@@ -673,13 +680,15 @@ const ParticipantsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">ID</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('participantsPage.id')}
+                  </label>
                   <input
                     type="text"
                     value={newParticipant.userId || ''}
                     onChange={(e) => setNewParticipant((p) => ({ ...p, userId: e.target.value }))}
                     className="input-field w-full"
-                    placeholder="사용자 ID"
+                    placeholder={t('participantsPage.idPlaceholder')}
                   />
                 </div>
                 <div>
@@ -711,27 +720,33 @@ const ParticipantsPage: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">기타</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('participantsPage.etc')}
+                  </label>
                   <input
                     type="text"
                     value={newParticipant.etc || ''}
                     onChange={(e) => setNewParticipant((p) => ({ ...p, etc: e.target.value }))}
                     className="input-field w-full"
-                    placeholder="기타 정보"
+                    placeholder={t('participantsPage.etcPlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">비고</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('participantsPage.note')}
+                  </label>
                   <input
                     type="text"
                     value={newParticipant.note || ''}
                     onChange={(e) => setNewParticipant((p) => ({ ...p, note: e.target.value }))}
                     className="input-field w-full"
-                    placeholder="비고"
+                    placeholder={t('participantsPage.notePlaceholder')}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">상태</label>
+                  <label className="block text-sm font-medium mb-1">
+                    {t('participantsPage.statusLabel')}
+                  </label>
                   <select
                     value={newParticipant.status}
                     onChange={(e) =>
@@ -742,9 +757,9 @@ const ParticipantsPage: React.FC = () => {
                     }
                     className="input-field w-full"
                   >
-                    <option value="active">활성</option>
-                    <option value="busted">탈락</option>
-                    <option value="no-show">불참</option>
+                    <option value="active">{t('participantsPage.statusActive')}</option>
+                    <option value="busted">{t('participantsPage.statusBusted')}</option>
+                    <option value="no-show">{t('participantsPage.statusNoShow')}</option>
                   </select>
                 </div>
                 <div className="flex justify-between items-center">
@@ -772,7 +787,7 @@ const ParticipantsPage: React.FC = () => {
                         }}
                         className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
                       >
-                        자리 이동
+                        {t('participantsPage.moveSeat')}
                       </button>
                     )}
                   </div>
@@ -824,10 +839,10 @@ const ParticipantsPage: React.FC = () => {
                 }
               }}
               onConfirm={handleBulkDeleteConfirm}
-              title="선택 삭제 확인"
-              message={`${selectedIds.size}명의 참가자를 삭제하시겠습니까?`}
-              confirmText="삭제"
-              cancelText="취소"
+              title={t('participantsPage.confirmBulkDelete')}
+              message={t('participantsPage.confirmBulkDeleteMsg', { count: selectedIds.size })}
+              confirmText={t('common.delete')}
+              cancelText={t('common.cancel')}
               isDangerous={true}
               isLoading={isDeleting}
             />
@@ -841,15 +856,15 @@ const ParticipantsPage: React.FC = () => {
                 }
               }}
               onConfirm={handleDeleteAllConfirm}
-              title="전체 삭제 확인"
-              message={`모든 참가자(${participants.length}명)를 삭제합니다.\n이 작업은 되돌릴 수 없습니다.`}
-              confirmText="전체 삭제"
-              cancelText="취소"
+              title={t('participantsPage.confirmDeleteAll')}
+              message={t('participantsPage.confirmDeleteAllMsg', { count: participants.length })}
+              confirmText={t('participantsPage.confirmDeleteAllBtn')}
+              cancelText={t('common.cancel')}
               isDangerous={true}
               isLoading={isDeleting}
               requireTextInput={{
-                placeholder: '"전체삭제"를 입력하세요',
-                confirmValue: '전체삭제',
+                placeholder: t('participantsPage.confirmDeleteInput'),
+                confirmValue: t('participantsPage.confirmDeleteValue'),
                 caseSensitive: true,
               }}
             />

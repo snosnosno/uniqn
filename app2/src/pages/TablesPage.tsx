@@ -280,8 +280,11 @@ const TablesPage: React.FC = () => {
   const handleExportToExcel = async () => {
     setConfirmModal({
       isOpen: true,
-      title: '엑셀 내보내기',
-      message: `현재 테이블 배치를 엑셀 파일로 내보내시겠습니까?\n\n총 ${tables.length}개의 테이블과 ${participants.length}명의 참가자 정보가 포함됩니다.`,
+      title: t('tablesPage.modal.exportTitle'),
+      message: t('tablesPage.modal.exportMessage', {
+        tableCount: tables.length,
+        participantCount: participants.length,
+      }),
       onConfirm: async () => {
         try {
           await exportTablesToExcel(tables, participants, t);
@@ -340,15 +343,15 @@ const TablesPage: React.FC = () => {
   const handleAutoAssignWaiting = async (participant: Participant) => {
     setConfirmModal({
       isOpen: true,
-      title: '자동 배정',
-      message: `${participant.name} 참가자를 자동으로 배정하시겠습니까?`,
+      title: t('tablesPage.modal.autoAssignTitle'),
+      message: t('tablesPage.modal.autoAssignMessage', { name: participant.name }),
       onConfirm: async () => {
         try {
           const results = await assignWaitingParticipants([participant]);
           if (results.length > 0) {
             setAssignmentResultModal({
               isOpen: true,
-              title: '자동 배정 완료',
+              title: t('tablesPage.modal.autoAssignSuccess'),
               results,
             });
           }
@@ -368,8 +371,8 @@ const TablesPage: React.FC = () => {
   const handleCloseTable = async (tableId: string) => {
     setConfirmModal({
       isOpen: true,
-      title: '테이블 닫기',
-      message: '테이블을 닫으시겠습니까? 참가자들은 다른 테이블로 이동됩니다.',
+      title: t('tablesPage.modal.closeTableTitle'),
+      message: t('tablesPage.modal.closeTableMessage'),
       onConfirm: async () => {
         try {
           const results = await closeTable(tableId);
@@ -385,7 +388,7 @@ const TablesPage: React.FC = () => {
             }));
             setAssignmentResultModal({
               isOpen: true,
-              title: '테이블 닫기 완료',
+              title: t('tablesPage.modal.closeTableSuccess'),
               results: assignmentResults,
             });
           } else {
@@ -407,9 +410,8 @@ const TablesPage: React.FC = () => {
   const handleDeleteTable = async (tableId: string) => {
     setConfirmModal({
       isOpen: true,
-      title: '테이블 삭제',
-      message:
-        '테이블을 삭제하시겠습니까? 참가자들은 다른 테이블로 이동되고 테이블은 완전히 제거됩니다.',
+      title: t('tablesPage.modal.deleteTableTitle'),
+      message: t('tablesPage.modal.deleteTableMessage'),
       onConfirm: async () => {
         try {
           const results = await deleteTable(tableId);
@@ -425,7 +427,7 @@ const TablesPage: React.FC = () => {
             }));
             setAssignmentResultModal({
               isOpen: true,
-              title: '테이블 삭제 완료',
+              title: t('tablesPage.modal.deleteTableSuccess'),
               results: assignmentResults,
             });
           } else {
@@ -501,7 +503,7 @@ const TablesPage: React.FC = () => {
       toast.success(
         t('toast.participants.manualAssignSuccess', {
           name: waitingParticipantForAssignment.name,
-          table: table.name || `테이블 ${table.tableNumber}`,
+          table: table.name || `${t('common.table')} ${table.tableNumber}`,
           seat: seatIndex + 1,
         })
       );
@@ -561,7 +563,8 @@ const TablesPage: React.FC = () => {
         const tournament = tournaments.find((t) => t.id === tid);
         const color =
           tid === 'UNASSIGNED' ? UNASSIGNED_COLOR : tournament?.color || UNASSIGNED_COLOR;
-        const name = tid === 'UNASSIGNED' ? '전체' : tournament?.name || '알 수 없음';
+        const name =
+          tid === 'UNASSIGNED' ? t('tablesPage.all') : tournament?.name || t('tablesPage.unknown');
 
         legendMap[tid] = { color, count: 0, name };
       }
@@ -572,7 +575,7 @@ const TablesPage: React.FC = () => {
       id: tid,
       ...data,
     }));
-  }, [state.tournamentId, tables, tournaments]);
+  }, [state.tournamentId, tables, tournaments, t]);
 
   const onPlayerSelectInModal = (
     participantId: string,
@@ -626,9 +629,9 @@ const TablesPage: React.FC = () => {
 
       {!state.tournamentId ? (
         <div className="bg-white dark:bg-gray-800 shadow-md rounded-lg p-8 text-center">
-          <p className="text-gray-500 dark:text-gray-400 mb-4">⚠️ 토너먼트를 먼저 선택해주세요.</p>
+          <p className="text-gray-500 dark:text-gray-400 mb-4">⚠️ {t('tournaments.selectFirst')}</p>
           <p className="text-sm text-gray-400 dark:text-gray-500">
-            위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.
+            {t('tournaments.selectFirstDesc')}
           </p>
         </div>
       ) : (
@@ -656,7 +659,7 @@ const TablesPage: React.FC = () => {
                     onClick={handleToggleSelectionMode}
                     className={`btn text-sm ${isSelectionMode ? 'btn-secondary bg-gray-600 dark:bg-gray-700' : 'btn-primary'}`}
                   >
-                    {isSelectionMode ? '취소' : '테이블 배정'}
+                    {isSelectionMode ? t('common.cancel') : t('tablesPage.assignTables')}
                   </button>
                 )}
                 <button
@@ -664,14 +667,16 @@ const TablesPage: React.FC = () => {
                     const activePlayers = participants.filter((p) => p.status === 'active');
                     setConfirmModal({
                       isOpen: true,
-                      title: '자동 재배치',
-                      message: `활성 참가자 ${activePlayers.length}명을 자동으로 재배치하시겠습니까?\n\n현재 좌석 배치가 초기화되고 새로운 자리가 배정됩니다.`,
+                      title: t('tablesPage.modal.redistributeTitle'),
+                      message: t('tablesPage.modal.redistributeMessage', {
+                        count: activePlayers.length,
+                      }),
                       onConfirm: async () => {
                         const results = await autoAssignSeats(activePlayers);
                         if (results.length > 0) {
                           setAssignmentResultModal({
                             isOpen: true,
-                            title: '자동 재배치 완료',
+                            title: t('tablesPage.modal.redistributeSuccess'),
                             results,
                           });
                         }
@@ -688,14 +693,16 @@ const TablesPage: React.FC = () => {
                     const activePlayers = participants.filter((p) => p.status === 'active');
                     setConfirmModal({
                       isOpen: true,
-                      title: '칩 균형 재배치',
-                      message: `활성 참가자 ${activePlayers.length}명을 칩 스택 기준으로 균형있게 재배치하시겠습니까?\n\n각 테이블의 평균 칩이 비슷하도록 자동으로 조정됩니다.\n현재 좌석 배치가 변경됩니다.`,
+                      title: t('tablesPage.modal.chipBalanceTitle'),
+                      message: t('tablesPage.modal.chipBalanceMessage', {
+                        count: activePlayers.length,
+                      }),
                       onConfirm: async () => {
                         const results = await autoBalanceByChips(activePlayers);
                         if (results.length > 0) {
                           setAssignmentResultModal({
                             isOpen: true,
-                            title: '칩 균형 재배치 완료',
+                            title: t('tablesPage.modal.chipBalanceSuccess'),
                             results,
                           });
                         }
@@ -720,14 +727,14 @@ const TablesPage: React.FC = () => {
                 <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg border border-blue-200 dark:border-blue-700">
                   <div className="flex flex-wrap items-center gap-3">
                     <label className="font-semibold text-gray-700 dark:text-gray-200">
-                      토너먼트 선택:
+                      {t('tablesPage.selectTournament')}
                     </label>
                     <select
                       value={targetTournamentId}
                       onChange={(e) => setTargetTournamentId(e.target.value)}
                       className="input-field flex-1 min-w-[200px]"
                     >
-                      <option value="">목적지 선택</option>
+                      <option value="">{t('tablesPage.selectDestination')}</option>
                       {tournaments
                         .filter((t) => t.id !== 'ALL')
                         .map((tournament) => (
@@ -741,10 +748,10 @@ const TablesPage: React.FC = () => {
                       className="btn btn-primary text-sm"
                       disabled={selectedTableIds.length === 0 || !targetTournamentId}
                     >
-                      ✅ 할당 ({selectedTableIds.length}개)
+                      ✅ {t('tablesPage.assign')} ({selectedTableIds.length})
                     </button>
                     <button onClick={handleCancelSelection} className="btn btn-secondary text-sm">
-                      ❌ 취소
+                      ❌ {t('common.cancel')}
                     </button>
                   </div>
                 </div>
@@ -816,18 +823,26 @@ const TablesPage: React.FC = () => {
           {waitingParticipants.length > 0 && (
             <div className="mb-6 bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
               <h2 className="text-xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-                대기 중 참가자
+                {t('tablesPage.waitingParticipants')}
               </h2>
               <div className="overflow-x-auto">
                 <table className="w-full table-auto">
                   <thead className="bg-gray-200 dark:bg-gray-700">
                     <tr>
-                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">이름</th>
-                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">ID</th>
-                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">칩</th>
-                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">위치</th>
+                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">
+                        {t('common.name')}
+                      </th>
+                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">
+                        {t('participantsPage.id')}
+                      </th>
+                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">
+                        {t('common.chips')}
+                      </th>
+                      <th className="px-4 py-2 text-left text-gray-900 dark:text-gray-100">
+                        {t('tablesPage.position')}
+                      </th>
                       <th className="px-4 py-2 text-center text-gray-900 dark:text-gray-100">
-                        배정
+                        {t('tablesPage.assign')}
                       </th>
                     </tr>
                   </thead>
@@ -846,7 +861,9 @@ const TablesPage: React.FC = () => {
                         <td className="px-4 py-2 text-gray-900 dark:text-gray-100">
                           {participant.chips}
                         </td>
-                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400">대기중</td>
+                        <td className="px-4 py-2 text-gray-500 dark:text-gray-400">
+                          {t('tablesPage.waiting')}
+                        </td>
                         <td className="px-4 py-2">
                           <div className="flex justify-center gap-2">
                             <button
@@ -855,9 +872,13 @@ const TablesPage: React.FC = () => {
                               disabled={
                                 tablesLoading || participantsLoading || totalEmptySeats === 0
                               }
-                              title={totalEmptySeats === 0 ? '빈 자리가 없습니다' : '자동 배정'}
+                              title={
+                                totalEmptySeats === 0
+                                  ? t('tablesPage.noEmptySeat')
+                                  : t('tablesPage.autoAssign')
+                              }
                             >
-                              자동 배정
+                              {t('tablesPage.autoAssign')}
                             </button>
                             <button
                               onClick={() => handleManualAssignOpen(participant)}
@@ -865,9 +886,13 @@ const TablesPage: React.FC = () => {
                               disabled={
                                 tablesLoading || participantsLoading || totalEmptySeats === 0
                               }
-                              title={totalEmptySeats === 0 ? '빈 자리가 없습니다' : '수동 배정'}
+                              title={
+                                totalEmptySeats === 0
+                                  ? t('tablesPage.noEmptySeat')
+                                  : t('tablesPage.manualAssign')
+                              }
                             >
-                              수동 배정
+                              {t('tablesPage.manualAssign')}
                             </button>
                           </div>
                         </td>
@@ -988,7 +1013,7 @@ const TablesPage: React.FC = () => {
               setIsParticipantEditModalOpen(false);
               setEditingParticipant(null);
             }}
-            title="참가자 수정"
+            title={t('tablesPage.editParticipant')}
             closeOnEsc={true}
             closeOnBackdrop={true}
             showCloseButton={true}
@@ -1005,7 +1030,7 @@ const TablesPage: React.FC = () => {
               >
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    이름
+                    {t('common.name')}
                   </label>
                   <input
                     type="text"
@@ -1019,7 +1044,7 @@ const TablesPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    ID
+                    {t('participantsPage.id')}
                   </label>
                   <input
                     type="text"
@@ -1028,12 +1053,12 @@ const TablesPage: React.FC = () => {
                       setEditingParticipant((p) => (p ? { ...p, userId: e.target.value } : null))
                     }
                     className="input-field w-full"
-                    placeholder="사용자 ID"
+                    placeholder={t('tablesPage.userIdPlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    전화번호
+                    {t('common.phone')}
                   </label>
                   <input
                     type="text"
@@ -1046,7 +1071,7 @@ const TablesPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    칩
+                    {t('common.chips')}
                   </label>
                   <input
                     type="number"
@@ -1061,7 +1086,7 @@ const TablesPage: React.FC = () => {
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    기타
+                    {t('participantsPage.etc')}
                   </label>
                   <input
                     type="text"
@@ -1070,12 +1095,12 @@ const TablesPage: React.FC = () => {
                       setEditingParticipant((p) => (p ? { ...p, etc: e.target.value } : null))
                     }
                     className="input-field w-full"
-                    placeholder="기타 정보"
+                    placeholder={t('participantsPage.etcPlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    비고
+                    {t('participantsPage.note')}
                   </label>
                   <input
                     type="text"
@@ -1084,12 +1109,12 @@ const TablesPage: React.FC = () => {
                       setEditingParticipant((p) => (p ? { ...p, note: e.target.value } : null))
                     }
                     className="input-field w-full"
-                    placeholder="비고"
+                    placeholder={t('participantsPage.notePlaceholder')}
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium mb-1 text-gray-900 dark:text-gray-100">
-                    상태
+                    {t('participantsPage.statusLabel')}
                   </label>
                   <select
                     value={editingParticipant.status}
@@ -1102,9 +1127,9 @@ const TablesPage: React.FC = () => {
                     }
                     className="input-field w-full"
                   >
-                    <option value="active">활성</option>
-                    <option value="busted">탈락</option>
-                    <option value="no-show">불참</option>
+                    <option value="active">{t('participantsPage.statusActive')}</option>
+                    <option value="busted">{t('participantsPage.statusBusted')}</option>
+                    <option value="no-show">{t('participantsPage.statusNoShow')}</option>
                   </select>
                 </div>
                 <div className="flex justify-between items-center">
@@ -1131,7 +1156,7 @@ const TablesPage: React.FC = () => {
                         }}
                         className="px-4 py-2 bg-blue-500 dark:bg-blue-600 text-white rounded hover:bg-blue-600 dark:hover:bg-blue-500 transition-colors"
                       >
-                        자리 이동
+                        {t('participantsPage.moveSeat')}
                       </button>
                     )}
                   </div>
@@ -1144,10 +1169,10 @@ const TablesPage: React.FC = () => {
                       }}
                       className="btn btn-secondary"
                     >
-                      취소
+                      {t('common.cancel')}
                     </button>
                     <button type="submit" className="btn btn-primary">
-                      저장
+                      {t('common.save')}
                     </button>
                   </div>
                 </div>

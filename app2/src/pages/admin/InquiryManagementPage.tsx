@@ -286,7 +286,7 @@ const InquiryManagementPage: React.FC = () => {
 
   // userName에서 순수 이름만 추출 (JSON 데이터 제거)
   const extractUserName = (userName: string): string => {
-    if (!userName) return '알 수 없음';
+    if (!userName) return t('inquiry.unknown');
     // "[" 이전의 텍스트만 추출하고 trim
     const bracketIndex = userName.indexOf('[');
     if (bracketIndex > 0) {
@@ -355,8 +355,10 @@ const InquiryManagementPage: React.FC = () => {
     <div className="container mx-auto px-4 py-6">
       {/* 헤더 */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">문의 관리</h1>
-        <p className="text-gray-600 dark:text-gray-300">고객 문의를 관리하고 답변할 수 있습니다.</p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100 mb-2">
+          {t('inquiry.title')}
+        </h1>
+        <p className="text-gray-600 dark:text-gray-300">{t('inquiry.subtitle')}</p>
       </div>
 
       {/* 통계 카드 */}
@@ -365,7 +367,9 @@ const InquiryManagementPage: React.FC = () => {
           <div className="flex items-center">
             <FaEnvelope className="h-8 w-8 text-blue-500 dark:text-blue-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">전체 문의</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {t('inquiry.stats.total')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.total}</p>
             </div>
           </div>
@@ -374,7 +378,9 @@ const InquiryManagementPage: React.FC = () => {
           <div className="flex items-center">
             <FaClock className="h-8 w-8 text-red-500 dark:text-red-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">대기중</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {t('inquiry.stats.open')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.open}</p>
             </div>
           </div>
@@ -383,7 +389,9 @@ const InquiryManagementPage: React.FC = () => {
           <div className="flex items-center">
             <FaReply className="h-8 w-8 text-yellow-500 dark:text-yellow-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">처리중</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {t('inquiry.stats.inProgress')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
                 {stats.inProgress}
               </p>
@@ -394,7 +402,9 @@ const InquiryManagementPage: React.FC = () => {
           <div className="flex items-center">
             <FaCheck className="h-8 w-8 text-green-500 dark:text-green-400" />
             <div className="ml-3">
-              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">완료</p>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                {t('inquiry.stats.closed')}
+              </p>
               <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">{stats.closed}</p>
             </div>
           </div>
@@ -409,7 +419,7 @@ const InquiryManagementPage: React.FC = () => {
             <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4" />
             <input
               type="text"
-              placeholder="제목, 내용, 작성자 검색..."
+              placeholder={t('inquiry.filter.searchPlaceholder')}
               className="w-full pl-10 pr-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               value={filters.search}
               onChange={(e) => setFilters((prev) => ({ ...prev, search: e.target.value }))}
@@ -424,10 +434,10 @@ const InquiryManagementPage: React.FC = () => {
               setFilters((prev) => ({ ...prev, status: e.target.value as InquiryStatus | 'all' }))
             }
           >
-            <option value="all">모든 상태</option>
-            <option value="open">대기중</option>
-            <option value="in_progress">처리중</option>
-            <option value="closed">완료</option>
+            <option value="all">{t('inquiry.filter.allStatus')}</option>
+            <option value="open">{t('inquiry.status.open')}</option>
+            <option value="in_progress">{t('inquiry.status.inProgress')}</option>
+            <option value="closed">{t('inquiry.status.closed')}</option>
           </select>
 
           {/* 카테고리 필터 */}
@@ -441,8 +451,8 @@ const InquiryManagementPage: React.FC = () => {
               }))
             }
           >
-            <option value="all">모든 카테고리</option>
-            <option value="report">🚨 신고</option>
+            <option value="all">{t('inquiry.filter.allCategory')}</option>
+            <option value="report">🚨 {t('inquiry.report')}</option>
             {INQUIRY_CATEGORIES.filter((cat) => cat.key !== 'report').map((category) => (
               <option key={category.key} value={category.key}>
                 {category.icon} {t(category.labelKey)}
@@ -461,10 +471,10 @@ const InquiryManagementPage: React.FC = () => {
               }))
             }
           >
-            <option value="all">전체 기간</option>
-            <option value="today">오늘</option>
-            <option value="week">최근 7일</option>
-            <option value="month">최근 1개월</option>
+            <option value="all">{t('inquiry.filter.allPeriod')}</option>
+            <option value="today">{t('inquiry.filter.today')}</option>
+            <option value="week">{t('inquiry.filter.week')}</option>
+            <option value="month">{t('inquiry.filter.month')}</option>
           </select>
 
           {/* 정렬 */}
@@ -473,9 +483,9 @@ const InquiryManagementPage: React.FC = () => {
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as SortOption)}
           >
-            <option value="newest">최신순</option>
-            <option value="oldest">오래된순</option>
-            <option value="status">상태순</option>
+            <option value="newest">{t('inquiry.filter.newest')}</option>
+            <option value="oldest">{t('inquiry.filter.oldest')}</option>
+            <option value="status">{t('inquiry.filter.byStatus')}</option>
           </select>
         </div>
       </div>
@@ -487,22 +497,22 @@ const InquiryManagementPage: React.FC = () => {
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  문의 정보
+                  {t('inquiry.table.inquiryInfo')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  작성자
+                  {t('inquiry.table.author')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  카테고리
+                  {t('inquiry.table.category')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  상태
+                  {t('inquiry.table.status')}
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  작성일
+                  {t('inquiry.table.createdAt')}
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                  작업
+                  {t('inquiry.table.actions')}
                 </th>
               </tr>
             </thead>
@@ -513,7 +523,7 @@ const InquiryManagementPage: React.FC = () => {
                     colSpan={6}
                     className="px-6 py-12 text-center text-gray-500 dark:text-gray-400"
                   >
-                    조건에 맞는 문의가 없습니다.
+                    {t('inquiry.empty')}
                   </td>
                 </tr>
               ) : (
@@ -531,7 +541,7 @@ const InquiryManagementPage: React.FC = () => {
                             </span>
                             {inquiry.category === 'report' && (
                               <span className="ml-2 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 text-xs font-medium rounded-full">
-                                신고
+                                {t('inquiry.report')}
                               </span>
                             )}
                           </div>
@@ -573,7 +583,7 @@ const InquiryManagementPage: React.FC = () => {
                             className="inline-flex items-center px-3 py-1 border border-gray-300 dark:border-gray-600 shadow-sm text-sm leading-4 font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-600 hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                           >
                             <FaEye className="h-4 w-4 mr-1" />
-                            보기
+                            {t('inquiry.view')}
                           </button>
                           {inquiry.status !== 'closed' && (
                             <select
@@ -584,9 +594,9 @@ const InquiryManagementPage: React.FC = () => {
                               }
                               disabled={updatingStatus}
                             >
-                              <option value="open">대기중</option>
-                              <option value="in_progress">처리중</option>
-                              <option value="closed">완료</option>
+                              <option value="open">{t('inquiry.status.open')}</option>
+                              <option value="in_progress">{t('inquiry.status.inProgress')}</option>
+                              <option value="closed">{t('inquiry.status.closed')}</option>
                             </select>
                           )}
                         </div>
@@ -615,13 +625,13 @@ const InquiryManagementPage: React.FC = () => {
               <div className="bg-white dark:bg-gray-800 px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                 <div className="mb-4">
                   <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                    문의 상세 정보
+                    {t('inquiry.detail.title')}
                   </h3>
                   <div className="border-b border-gray-200 dark:border-gray-700 pb-4">
                     <div className="grid grid-cols-2 gap-4 text-sm">
                       <div>
                         <span className="font-medium text-gray-500 dark:text-gray-400">
-                          작성자:
+                          {t('inquiry.detail.author')}:
                         </span>
                         <span className="ml-2 dark:text-gray-300">
                           {extractUserName(selectedInquiry.userName)}
@@ -629,13 +639,13 @@ const InquiryManagementPage: React.FC = () => {
                       </div>
                       <div>
                         <span className="font-medium text-gray-500 dark:text-gray-400">
-                          이메일:
+                          {t('inquiry.detail.email')}:
                         </span>
                         <span className="ml-2 dark:text-gray-300">{selectedInquiry.userEmail}</span>
                       </div>
                       <div>
                         <span className="font-medium text-gray-500 dark:text-gray-400">
-                          카테고리:
+                          {t('inquiry.detail.category')}:
                         </span>
                         <span className="ml-2 dark:text-gray-300">
                           {getCategoryInfo(selectedInquiry.category).name}
@@ -643,7 +653,7 @@ const InquiryManagementPage: React.FC = () => {
                       </div>
                       <div>
                         <span className="font-medium text-gray-500 dark:text-gray-400">
-                          작성일:
+                          {t('inquiry.detail.createdAt')}:
                         </span>
                         <span className="ml-2 dark:text-gray-300">
                           {formatDate(selectedInquiry.createdAt)}
@@ -654,12 +664,16 @@ const InquiryManagementPage: React.FC = () => {
                 </div>
 
                 <div className="mb-4">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">제목</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    {t('inquiry.detail.subject')}
+                  </h4>
                   <p className="text-gray-700 dark:text-gray-300">{selectedInquiry.subject}</p>
                 </div>
 
                 <div className="mb-6">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">내용</h4>
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                    {t('inquiry.detail.content')}
+                  </h4>
                   <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                     <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
                       {extractMessage(selectedInquiry.message)}
@@ -671,13 +685,13 @@ const InquiryManagementPage: React.FC = () => {
                 {selectedInquiry.category === 'report' && selectedInquiry.reportMetadata && (
                   <div className="mb-6">
                     <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      신고 상세 정보
+                      {t('inquiry.detail.reportDetail')}
                     </h4>
                     <div className="bg-red-50 dark:bg-red-900/30 p-4 rounded-lg border border-red-200 dark:border-red-700">
                       <div className="grid grid-cols-2 gap-4 text-sm">
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">
-                            신고 유형:
+                            {t('inquiry.detail.reportType')}:
                           </span>
                           <span className="ml-2 text-red-800 dark:text-red-200">
                             {getReportTypeName(selectedInquiry.reportMetadata.type)}
@@ -685,17 +699,17 @@ const InquiryManagementPage: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">
-                            신고자 유형:
+                            {t('inquiry.detail.reporterType')}:
                           </span>
                           <span className="ml-2 text-red-800 dark:text-red-200">
                             {selectedInquiry.reportMetadata.reporterType === 'employer'
-                              ? '관리자'
-                              : '직원'}
+                              ? t('inquiry.reporterTypes.employer')
+                              : t('inquiry.reporterTypes.staff')}
                           </span>
                         </div>
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">
-                            신고 대상:
+                            {t('inquiry.detail.reportTarget')}:
                           </span>
                           <span className="ml-2 text-red-800 dark:text-red-200">
                             {selectedInquiry.reportMetadata.targetName}
@@ -703,14 +717,16 @@ const InquiryManagementPage: React.FC = () => {
                         </div>
                         <div>
                           <span className="font-medium text-red-700 dark:text-red-300">
-                            이벤트:
+                            {t('inquiry.detail.event')}:
                           </span>
                           <span className="ml-2 text-red-800 dark:text-red-200">
                             {selectedInquiry.reportMetadata.eventTitle}
                           </span>
                         </div>
                         <div className="col-span-2">
-                          <span className="font-medium text-red-700 dark:text-red-300">날짜:</span>
+                          <span className="font-medium text-red-700 dark:text-red-300">
+                            {t('inquiry.detail.date')}:
+                          </span>
                           <span className="ml-2 text-red-800 dark:text-red-200">
                             {selectedInquiry.reportMetadata.date}
                           </span>
@@ -723,7 +739,7 @@ const InquiryManagementPage: React.FC = () => {
                 {selectedInquiry.response && (
                   <div className="mb-6">
                     <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
-                      관리자 답변
+                      {t('inquiry.detail.adminResponse')}
                     </h4>
                     <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg">
                       <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
@@ -731,7 +747,8 @@ const InquiryManagementPage: React.FC = () => {
                       </p>
                       {selectedInquiry.respondedAt && (
                         <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
-                          답변일: {formatDate(selectedInquiry.respondedAt)}
+                          {t('inquiry.detail.responseDate')}:{' '}
+                          {formatDate(selectedInquiry.respondedAt)}
                         </p>
                       )}
                     </div>
@@ -740,13 +757,15 @@ const InquiryManagementPage: React.FC = () => {
 
                 {selectedInquiry.status !== 'closed' && (
                   <div>
-                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">답변 작성</h4>
+                    <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
+                      {t('inquiry.detail.writeResponse')}
+                    </h4>
                     <textarea
                       value={response}
                       onChange={(e) => setResponse(e.target.value)}
                       rows={4}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      placeholder="고객에게 전달할 답변을 입력하세요..."
+                      placeholder={t('inquiry.detail.responsePlaceholder')}
                     />
                   </div>
                 )}
@@ -760,7 +779,7 @@ const InquiryManagementPage: React.FC = () => {
                     disabled={!response.trim() || updatingStatus}
                     className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 dark:bg-blue-700 text-base font-medium text-white hover:bg-blue-700 dark:hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-blue-400 sm:ml-3 sm:w-auto sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {updatingStatus ? '저장 중...' : '답변 저장'}
+                    {updatingStatus ? t('inquiry.saving') : t('inquiry.saveResponse')}
                   </button>
                 )}
                 <button
@@ -768,7 +787,7 @@ const InquiryManagementPage: React.FC = () => {
                   onClick={() => setShowModal(false)}
                   className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 dark:border-gray-600 shadow-sm px-4 py-2 bg-white dark:bg-gray-600 text-base font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
                 >
-                  닫기
+                  {t('inquiry.close')}
                 </button>
               </div>
             </div>

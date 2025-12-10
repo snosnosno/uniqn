@@ -86,9 +86,7 @@ export const DateSlider: React.FC<DateSliderProps> = ({ selectedDate, onDateSele
                 ${
                   selected
                     ? 'bg-blue-600 dark:bg-blue-700 text-white'
-                    : today
-                      ? 'bg-blue-500 dark:bg-blue-600 text-white hover:bg-blue-600 dark:hover:bg-blue-700'
-                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }
               `}
               aria-label={getDateLabel(date)}

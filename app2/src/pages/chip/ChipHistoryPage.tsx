@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../contexts/AuthContext';
 import { useChipBalance } from '../../hooks/useChipBalance';
 import { format } from 'date-fns';
@@ -23,6 +24,7 @@ import type { ChipTransactionView, ChipTransactionType } from '../../types/payme
  * - 엑셀 다운로드 (추후 구현)
  */
 const ChipHistoryPage: React.FC = () => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { recentTransactions, fetchRecentTransactions, isLoading } = useChipBalance();
@@ -32,15 +34,15 @@ const ChipHistoryPage: React.FC = () => {
   const [filteredTransactions, setFilteredTransactions] = useState<ChipTransactionView[]>([]);
 
   /**
-   * 트랜잭션 타입 한글 변환
+   * 트랜잭션 타입 번역
    */
   const getTypeLabel = (type: ChipTransactionType): string => {
     const labels: Record<ChipTransactionType, string> = {
-      grant: '지급',
-      purchase: '구매',
-      use: '사용',
-      expire: '소멸',
-      refund: '환불',
+      grant: t('chipHistory.filter.grant'),
+      purchase: t('chipHistory.filter.purchase'),
+      use: t('chipHistory.filter.use'),
+      expire: t('chipHistory.filter.expire'),
+      refund: t('chipHistory.filter.refund'),
     };
     return labels[type] || type;
   };
@@ -101,12 +103,12 @@ const ChipHistoryPage: React.FC = () => {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="rounded-lg bg-white dark:bg-gray-800 p-8 text-center shadow-md">
-          <p className="text-gray-900 dark:text-gray-100">로그인이 필요합니다.</p>
+          <p className="text-gray-900 dark:text-gray-100">{t('chipHistory.loginRequired')}</p>
           <button
             onClick={() => navigate('/login')}
             className="mt-4 rounded-lg bg-blue-600 dark:bg-blue-500 px-4 py-2 text-white hover:bg-blue-700 dark:hover:bg-blue-600"
           >
-            로그인하기
+            {t('chipHistory.login')}
           </button>
         </div>
       </div>
@@ -122,10 +124,12 @@ const ChipHistoryPage: React.FC = () => {
             onClick={() => navigate(-1)}
             className="mb-4 text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
           >
-            ← 뒤로 가기
+            {t('chipHistory.back')}
           </button>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">칩 사용 내역</h1>
-          <p className="mt-2 text-gray-600 dark:text-gray-400">칩 충전 및 사용 기록을 확인하세요</p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            {t('chipHistory.title')}
+          </h1>
+          <p className="mt-2 text-gray-600 dark:text-gray-400">{t('chipHistory.subtitle')}</p>
         </div>
 
         {/* 필터 및 검색 */}
@@ -138,12 +142,12 @@ const ChipHistoryPage: React.FC = () => {
               onChange={(e) => setFilterType(e.target.value as ChipTransactionType | 'all')}
               className="rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
             >
-              <option value="all">전체</option>
-              <option value="grant">지급</option>
-              <option value="purchase">구매</option>
-              <option value="use">사용</option>
-              <option value="expire">소멸</option>
-              <option value="refund">환불</option>
+              <option value="all">{t('chipHistory.filter.all')}</option>
+              <option value="grant">{t('chipHistory.filter.grant')}</option>
+              <option value="purchase">{t('chipHistory.filter.purchase')}</option>
+              <option value="use">{t('chipHistory.filter.use')}</option>
+              <option value="expire">{t('chipHistory.filter.expire')}</option>
+              <option value="refund">{t('chipHistory.filter.refund')}</option>
             </select>
           </div>
 
@@ -156,7 +160,7 @@ const ChipHistoryPage: React.FC = () => {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="검색..."
+              placeholder={t('common.search')}
               className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 py-2 pl-10 pr-3 text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400"
             />
           </div>
@@ -167,14 +171,14 @@ const ChipHistoryPage: React.FC = () => {
             disabled={isLoading}
             className="rounded-md bg-blue-600 dark:bg-blue-500 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50"
           >
-            {isLoading ? '로딩 중...' : '새로고침'}
+            {isLoading ? t('chipHistory.loading') : t('chipHistory.refresh')}
           </button>
         </div>
 
         {/* 거래 내역 테이블 */}
         {filteredTransactions.length === 0 ? (
           <div className="rounded-lg bg-white dark:bg-gray-800 p-12 text-center shadow-md">
-            <p className="text-gray-500 dark:text-gray-400">거래 내역이 없습니다</p>
+            <p className="text-gray-500 dark:text-gray-400">{t('chipHistory.empty')}</p>
           </div>
         ) : (
           <div className="overflow-hidden rounded-lg bg-white dark:bg-gray-800 shadow-md">
@@ -183,22 +187,22 @@ const ChipHistoryPage: React.FC = () => {
                 <thead className="bg-gray-50 dark:bg-gray-900">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      날짜
+                      {t('chipHistory.table.date')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      타입
+                      {t('chipHistory.table.type')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      설명
+                      {t('chipHistory.table.description')}
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      칩 타입
+                      {t('chipHistory.table.chipType')}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      금액
+                      {t('chipHistory.table.amount')}
                     </th>
                     <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
-                      잔액
+                      {t('chipHistory.table.balance')}
                     </th>
                   </tr>
                 </thead>
@@ -220,10 +224,14 @@ const ChipHistoryPage: React.FC = () => {
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm">
                         {tx.chipType === 'red' && (
-                          <span className="text-red-600 dark:text-red-400">🔴 빨간칩</span>
+                          <span className="text-red-600 dark:text-red-400">
+                            {t('chipHistory.chipTypes.red')}
+                          </span>
                         )}
                         {tx.chipType === 'blue' && (
-                          <span className="text-blue-600 dark:text-blue-400">🔵 파란칩</span>
+                          <span className="text-blue-600 dark:text-blue-400">
+                            {t('chipHistory.chipTypes.blue')}
+                          </span>
                         )}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
