@@ -35,7 +35,8 @@ interface NavItemProps {
 }
 
 const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isSmall = useMediaQuery('(max-width: 480px)');
+  const isMedium = useMediaQuery('(max-width: 768px)');
 
   const navLinkClasses = useCallback(
     ({ isActive }: { isActive: boolean }) =>
@@ -43,13 +44,15 @@ const NavItem = memo(({ to, label, Icon, isOpen, onNavigate }: NavItemProps) => 
         isActive
           ? 'bg-blue-600 dark:bg-blue-700 text-white'
           : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-      } ${isOpen ? 'justify-start' : 'justify-center'} ${isMobile ? 'p-4 text-lg' : 'p-2'}`,
-    [isOpen, isMobile]
+      } ${isOpen ? 'justify-start' : 'justify-center'} ${
+        isSmall ? 'p-4 text-lg' : isMedium ? 'p-3 text-base' : 'p-2 text-sm'
+      }`,
+    [isOpen, isSmall, isMedium]
   );
 
   return (
     <NavLink to={to} className={navLinkClasses} onClick={onNavigate}>
-      <Icon className={isMobile ? 'w-6 h-6' : 'w-5 h-5'} />
+      <Icon className={isSmall ? 'w-6 h-6' : isMedium ? 'w-5 h-5' : 'w-5 h-5'} />
       <span
         className={`ml-3 transition-opacity duration-200 ${isOpen ? 'opacity-100' : 'opacity-0 h-0 w-0'}`}
       >
@@ -69,18 +72,19 @@ interface NavDropdownProps {
 
 const NavDropdown = memo(({ label, Icon, items, onNavigate, t }: NavDropdownProps) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const isSmall = useMediaQuery('(max-width: 480px)');
+  const isMedium = useMediaQuery('(max-width: 768px)');
 
   return (
     <div>
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={`w-full flex items-center justify-between rounded-lg transition-colors text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 ${
-          isMobile ? 'p-4 text-lg' : 'p-2'
+          isSmall ? 'p-4 text-lg' : isMedium ? 'p-3 text-base' : 'p-2 text-sm'
         }`}
       >
         <div className="flex items-center">
-          <Icon className={isMobile ? 'w-6 h-6' : 'w-5 h-5'} />
+          <Icon className={isSmall ? 'w-6 h-6' : isMedium ? 'w-5 h-5' : 'w-5 h-5'} />
           <span className="ml-3">{label}</span>
         </div>
         <svg
@@ -95,7 +99,7 @@ const NavDropdown = memo(({ label, Icon, items, onNavigate, t }: NavDropdownProp
 
       {isExpanded && (
         <div
-          className={`ml-4 mt-1 space-y-1 ${isMobile ? 'pl-4' : 'pl-2'} border-l-2 border-gray-300 dark:border-gray-600`}
+          className={`ml-4 mt-1 space-y-1 ${isSmall ? 'pl-4' : isMedium ? 'pl-3' : 'pl-2'} border-l-2 border-gray-300 dark:border-gray-600`}
         >
           {items.map((item) => (
             <NavLink
@@ -106,11 +110,11 @@ const NavDropdown = memo(({ label, Icon, items, onNavigate, t }: NavDropdownProp
                   isActive
                     ? 'bg-blue-600 dark:bg-blue-700 text-white'
                     : 'text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                } ${isMobile ? 'p-3 text-base' : 'p-2 text-sm'}`
+                } ${isSmall ? 'p-3 text-base' : isMedium ? 'p-2.5 text-sm' : 'p-2 text-sm'}`
               }
               onClick={onNavigate}
             >
-              <item.Icon className={isMobile ? 'w-5 h-5' : 'w-4 h-4'} />
+              <item.Icon className={isSmall ? 'w-5 h-5' : 'w-4 h-4'} />
               <span className="ml-2">{t(item.labelKey, item.labelDefault)}</span>
             </NavLink>
           ))}
@@ -171,7 +175,11 @@ export const HeaderMenu: React.FC = () => {
   const { canManageApplicants, permissions } = usePermissions();
   const navigate = useNavigate();
   const menuRef = useRef<HTMLDivElement>(null);
-  const isMobile = useMediaQuery('(max-width: 768px)');
+
+  // 반응형 브레이크포인트
+  const isSmall = useMediaQuery('(max-width: 480px)');
+  const isMedium = useMediaQuery('(max-width: 768px)');
+  const isLarge = useMediaQuery('(max-width: 1024px)');
 
   // 권한 디버깅 로그
   useEffect(() => {
@@ -258,15 +266,18 @@ export const HeaderMenu: React.FC = () => {
       <button
         onClick={toggleMenu}
         className={`flex items-center justify-center rounded-lg border-2 border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
-          isMobile ? 'p-3 w-12 h-12' : 'p-2 w-10 h-10'
+          isSmall ? 'p-3 w-12 h-12' : isMedium ? 'p-2.5 w-11 h-11' : 'p-2 w-10 h-10'
         }`}
         aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
         aria-expanded={isMenuOpen}
         aria-haspopup="true"
-        style={{ minWidth: isMobile ? '48px' : '40px', minHeight: isMobile ? '48px' : '40px' }}
+        style={{
+          minWidth: isSmall ? '48px' : isMedium ? '44px' : '40px',
+          minHeight: isSmall ? '48px' : isMedium ? '44px' : '40px',
+        }}
       >
         <svg
-          className={isMobile ? 'w-6 h-6' : 'w-5 h-5'}
+          className={isSmall ? 'w-6 h-6' : isMedium ? 'w-5.5 h-5.5' : 'w-5 h-5'}
           fill="none"
           stroke="currentColor"
           strokeWidth="2"
@@ -283,42 +294,56 @@ export const HeaderMenu: React.FC = () => {
 
           <div
             className={
-              isMobile
+              isSmall
                 ? 'fixed inset-0 bg-white dark:bg-gray-800 z-50 flex flex-col'
-                : 'absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 min-w-64 w-64'
+                : isMedium
+                  ? 'fixed inset-x-4 top-16 bottom-4 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 flex flex-col'
+                  : isLarge
+                    ? 'absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 w-72 max-h-[calc(100vh-100px)] flex flex-col'
+                    : 'absolute right-0 top-full mt-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-50 w-80 max-h-[calc(100vh-100px)] flex flex-col'
             }
           >
             {/* 메뉴 헤더 */}
             <div
-              className={`border-b border-gray-200 dark:border-gray-700 ${isMobile ? 'p-6' : 'p-4'}`}
+              className={`border-b border-gray-200 dark:border-gray-700 ${
+                isSmall ? 'p-6' : isMedium ? 'p-5' : 'p-4'
+              }`}
             >
               <div className="flex items-center justify-between">
                 <div>
                   <h2
-                    className={`font-semibold text-gray-800 dark:text-gray-50 ${isMobile ? 'text-2xl' : 'text-lg'}`}
+                    className={`font-semibold text-gray-800 dark:text-gray-50 ${
+                      isSmall ? 'text-2xl' : isMedium ? 'text-xl' : 'text-lg'
+                    }`}
                   >
                     {t('layout.title', 'UNIQN')}
                   </h2>
                   <p
-                    className={`text-gray-500 dark:text-gray-400 ${isMobile ? 'text-base' : 'text-sm'}`}
+                    className={`text-gray-500 dark:text-gray-400 ${
+                      isSmall ? 'text-base' : isMedium ? 'text-sm' : 'text-sm'
+                    }`}
                   >
                     {t('layout.subtitle', 'Tournament Management System')}
                   </p>
                 </div>
-                {isMobile && (
+                {isMedium && (
                   <button
                     onClick={closeMenu}
                     className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
                     aria-label="Close menu"
                   >
-                    <span className="text-2xl">×</span>
+                    <span className={isSmall ? 'text-2xl' : 'text-xl'}>×</span>
                   </button>
                 )}
               </div>
             </div>
 
             {/* 네비게이션 메뉴 */}
-            <nav className={`space-y-1 flex-1 ${isMobile ? 'p-6 overflow-y-auto' : 'p-2'}`}>
+            <nav
+              className={`space-y-1 flex-1 overflow-y-auto ${
+                isSmall ? 'p-6' : isMedium ? 'p-4' : 'p-2'
+              }`}
+            >
               {/* 기본 메뉴 */}
               {BASE_MENU.map((group) => (
                 <MenuGroupRenderer key={group.id} group={group} t={t} onNavigate={closeMenu} />
@@ -385,7 +410,9 @@ export const HeaderMenu: React.FC = () => {
 
             {/* 사용자 섹션 */}
             <div
-              className={`border-t border-gray-200 dark:border-gray-700 space-y-2 ${isMobile ? 'p-6' : 'p-2'}`}
+              className={`border-t border-gray-200 dark:border-gray-700 space-y-2 ${
+                isSmall ? 'p-6' : isMedium ? 'p-4' : 'p-2'
+              }`}
             >
               <select
                 className="w-full p-2 rounded-lg text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 transition-colors hover:bg-gray-50 dark:hover:bg-gray-600 text-sm"
