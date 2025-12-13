@@ -1,3 +1,9 @@
+/**
+ * UNIQN Mobile - Root Layout
+ * 앱 전체 레이아웃
+ */
+
+import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'react-native';
@@ -28,36 +34,17 @@ export default function RootLayout() {
           <StatusBar style={isDark ? 'light' : 'dark'} />
           <Stack
             screenOptions={{
-              headerStyle: {
-                backgroundColor: isDark ? '#1f2937' : '#ffffff',
-              },
-              headerTintColor: isDark ? '#f9fafb' : '#111827',
-              headerTitleStyle: {
-                fontWeight: '600',
-              },
+              headerShown: false,
+              animation: 'slide_from_right',
               contentStyle: {
                 backgroundColor: isDark ? '#111827' : '#f9fafb',
               },
             }}
           >
-            <Stack.Screen
-              name="index"
-              options={{
-                title: 'UNIQN',
-              }}
-            />
-            <Stack.Screen
-              name="(auth)"
-              options={{
-                headerShown: false,
-              }}
-            />
-            <Stack.Screen
-              name="(tabs)"
-              options={{
-                headerShown: false,
-              }}
-            />
+            <Stack.Screen name="index" />
+            <Stack.Screen name="(auth)" />
+            <Stack.Screen name="(app)" />
+            <Stack.Screen name="+not-found" />
           </Stack>
         </QueryClientProvider>
       </SafeAreaProvider>

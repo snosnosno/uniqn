@@ -1,0 +1,196 @@
+/**
+ * UNIQN Mobile - 구인공고 관련 Zod 스키마
+ *
+ * @version 1.0.0
+ * @description Zod 4.x 호환
+ */
+
+import { z } from 'zod';
+
+/**
+ * XSS 방지 검증
+ */
+const xssValidation = (val: string) => {
+  const dangerous = /<script|javascript:|on\w+=/i;
+  return !dangerous.test(val);
+};
+
+/**
+ * 공고 타입 스키마
+ */
+export const postingTypeSchema = z.enum(['regular', 'fixed', 'tournament', 'urgent'], {
+  error: '올바른 공고 타입을 선택해주세요',
+});
+
+export type PostingType = z.infer<typeof postingTypeSchema>;
+
+/**
+ * 급여 타입 스키마
+ */
+export const salaryTypeSchema = z.enum(['hourly', 'daily', 'monthly', 'other'], {
+  error: '올바른 급여 타입을 선택해주세요',
+});
+
+export type SalaryTypeSchema = z.infer<typeof salaryTypeSchema>;
+
+/**
+ * 역할 스키마
+ */
+export const roleSchema = z.enum(['dealer', 'manager', 'chiprunner', 'admin'], {
+  error: '올바른 역할을 선택해주세요',
+});
+
+/**
+ * 역할별 모집 인원 스키마
+ */
+export const roleRequirementSchema = z.object({
+  role: roleSchema,
+  count: z
+    .number()
+    .min(1, { message: '최소 1명 이상이어야 합니다' })
+    .max(100, { message: '최대 100명까지 가능합니다' }),
+});
+
+/**
+ * 급여 정보 스키마
+ */
+export const salaryInfoSchema = z.object({
+  type: salaryTypeSchema,
+  amount: z.number().min(0, { message: '급여는 0 이상이어야 합니다' }),
+  useRoleSalary: z.boolean().optional().default(false),
+});
+
+/**
+ * 수당 정보 스키마
+ */
+export const allowancesSchema = z
+  .object({
+    meal: z.number().min(0).optional(),
+    transportation: z.number().min(0).optional(),
+    accommodation: z.number().min(0).optional(),
+  })
+  .optional();
+
+/**
+ * 기본 정보 스키마
+ */
+export const basicInfoSchema = z.object({
+  title: z
+    .string()
+    .min(1, { message: '공고 제목을 입력해주세요' })
+    .min(2, { message: '공고 제목은 최소 2자 이상이어야 합니다' })
+    .max(25, { message: '공고 제목은 25자를 초과할 수 없습니다' })
+    .trim()
+    .refine(xssValidation, {
+      message: '위험한 문자열이 포함되어 있습니다',
+    }),
+
+  location: z
+    .string()
+    .min(1, { message: '근무 장소를 선택해주세요' })
+    .trim(),
+
+  district: z.string().trim().optional(),
+
+  detailedAddress: z
+    .string()
+    .trim()
+    .max(200, { message: '상세 주소는 200자를 초과할 수 없습니다' })
+    .optional(),
+
+  description: z
+    .string()
+    .trim()
+    .max(500, { message: '공고 설명은 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, {
+      message: '위험한 문자열이 포함되어 있습니다',
+    })
+    .optional(),
+
+  contactPhone: z
+    .string()
+    .min(1, { message: '문의 연락처를 입력해주세요' })
+    .max(25, { message: '문의 연락처는 25자를 초과할 수 없습니다' })
+    .trim(),
+});
+
+export type BasicInfoData = z.infer<typeof basicInfoSchema>;
+
+/**
+ * 날짜/시간 정보 스키마
+ */
+export const dateTimeSchema = z.object({
+  workDate: z
+    .string()
+    .min(1, { message: '근무 날짜를 선택해주세요' })
+    .regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
+
+  timeSlot: z.string().min(1, { message: '근무 시간을 입력해주세요' }),
+});
+
+export type DateTimeData = z.infer<typeof dateTimeSchema>;
+
+/**
+ * 공고 생성 전체 스키마
+ */
+export const createJobPostingSchema = basicInfoSchema
+  .merge(dateTimeSchema)
+  .extend({
+    postingType: postingTypeSchema.optional().default('regular'),
+    roles: z.array(roleRequirementSchema).min(1, { message: '최소 1개 역할을 추가해주세요' }),
+    salary: salaryInfoSchema,
+    allowances: allowancesSchema,
+    isUrgent: z.boolean().optional().default(false),
+    tags: z.array(z.string()).optional(),
+  })
+  .refine(
+    (data) => {
+      // 긴급 공고는 7일 이내만 가능
+      if (data.postingType === 'urgent' || data.isUrgent) {
+        const targetDate = new Date(data.workDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor(
+          (targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+        );
+        return diffDays >= 0 && diffDays <= 7;
+      }
+      return true;
+    },
+    {
+      message: '긴급 공고는 오늘부터 최대 7일 이내의 날짜만 가능합니다',
+      path: ['workDate'],
+    }
+  );
+
+export type CreateJobPostingFormData = z.infer<typeof createJobPostingSchema>;
+
+/**
+ * 공고 필터 스키마
+ */
+export const jobFilterSchema = z.object({
+  status: z.enum(['draft', 'active', 'closed', 'cancelled']).optional(),
+  roles: z.array(roleSchema).optional(),
+  district: z.string().optional(),
+  dateRange: z
+    .object({
+      start: z.string(),
+      end: z.string(),
+    })
+    .optional(),
+  searchTerm: z.string().optional(),
+  isUrgent: z.boolean().optional(),
+});
+
+export type JobFilterData = z.infer<typeof jobFilterSchema>;
+
+/**
+ * 지원 메시지 스키마
+ */
+export const applicationMessageSchema = z
+  .string()
+  .max(200, { message: '메시지는 200자를 초과할 수 없습니다' })
+  .refine(xssValidation, {
+    message: '위험한 문자열이 포함되어 있습니다',
+  })
+  .optional();
