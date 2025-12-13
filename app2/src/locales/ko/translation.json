@@ -244,7 +244,14 @@
     "admin": "관리자",
     "manager": "매니저",
     "staff": "스태프",
-    "user": "사용자"
+    "user": "사용자",
+    "floorManager": "플로어 매니저",
+    "runner": "러너",
+    "waitress": "웨이트리스",
+    "photographer": "포토그래퍼",
+    "host": "호스트",
+    "cleaner": "청소",
+    "other": "기타"
   },
   "common": {
     "back": "뒤로가기",
@@ -350,10 +357,7 @@
     "confirmCancel": "취소하기",
     "contact": "연락처",
     "count": "건",
-    "currency": {
-      "default": "{{amount}}원",
-      "krw": "₩{{amount}}"
-    },
+    "currency": "{{amount}}원",
     "dateError": "날짜 오류",
     "dateNotSet": "날짜 미정",
     "dateTBD": "날짜 미정",
@@ -392,7 +396,8 @@
     "unknownUser": "알 수 없는 사용자",
     "user": "사용자",
     "won": "원",
-    "hide": "숨기기"
+    "hide": "숨기기",
+    "currencyKrw": "₩{{amount}}"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
@@ -1011,14 +1016,24 @@
     "scheduleNotSet": "근무 일정 미정",
     "selectRoles": "지원할 역할 선택 (여러 개 선택 가능)",
     "status": {
-      "closed": "마감"
+      "closed": "마감",
+      "open": "모집중",
+      "draft": "임시저장",
+      "pending": "승인 대기",
+      "approved": "승인됨",
+      "rejected": "거절됨"
     },
     "time": {
       "tbd": "미정"
     },
     "urgent": "긴급",
     "workConditions": "근무조건",
-    "workScheduleText": "주 {{days}}일 근무 · {{time}}"
+    "workScheduleText": "주 {{days}}일 근무 · {{time}}",
+    "type": {
+      "tournament": "토너먼트",
+      "fixed": "고정",
+      "temporary": "임시"
+    }
   },
   "jobPostingAdmin": {
     "alerts": {
@@ -1084,7 +1099,25 @@
     },
     "create": {
       "title": "공고 생성",
-      "button": "공고 작성"
+      "button": "공고 작성",
+      "dealer": "딜러",
+      "floor": "플로어",
+      "floorManager": "플로어 매니저",
+      "serving": "서빙",
+      "runner": "러너",
+      "waitress": "웨이트리스",
+      "photographer": "포토그래퍼",
+      "host": "호스트",
+      "security": "보안",
+      "cleaner": "청소",
+      "cashier": "캐셔",
+      "admin": "관리자",
+      "manager": "매니저",
+      "staff": "스태프",
+      "tournament_director": "토너먼트 디렉터",
+      "chip_master": "칩 마스터",
+      "registration": "등록",
+      "other": "기타"
     },
     "manage": {
       "title": "구인 공고 관리",
@@ -1113,7 +1146,9 @@
       "ageUnit": "세",
       "status_applied": "지원함",
       "status_confirmed": "확정됨",
-      "status_pending": "대기 중"
+      "status_pending": "대기 중",
+      "status_rejected": "거절됨",
+      "status_cancelled": "취소됨"
     },
     "unknownUser": "알 수 없는 사용자"
   },
@@ -1245,7 +1280,11 @@
       "welcome": "토너먼트 관리 패널에 오신 것을 환영합니다. 왼쪽 메뉴를 사용하여 이벤트의 다양한 측면을 관리하세요.",
       "running": "진행중",
       "paused": "일시중지됨",
-      "stopped": "중지됨"
+      "stopped": "중지됨",
+      "ongoing": "진행중",
+      "completed": "완료",
+      "upcoming": "예정",
+      "cancelled": "취소됨"
     }
   },
   "privateRoute": {
@@ -1495,7 +1534,15 @@
     "applicationInfoNotFound": "지원 정보를 찾을 수 없습니다.",
     "unsupportedScheduleType": "지원되지 않는 일정 타입입니다.",
     "paymentApprovalFailed": "결제 승인에 실패했습니다.",
-    "firebaseEmulatorFailed": "Firebase Emulator 연결에 실패했습니다."
+    "firebaseEmulatorFailed": "Firebase Emulator 연결에 실패했습니다.",
+    "fetchFailed": "데이터를 불러오는데 실패했습니다.",
+    "saveFailed": "저장에 실패했습니다.",
+    "deleteFailed": "삭제에 실패했습니다.",
+    "unauthorized": "권한이 없습니다.",
+    "notFound": "찾을 수 없습니다.",
+    "invalidInput": "입력값이 올바르지 않습니다.",
+    "serverError": "서버 오류가 발생했습니다.",
+    "timeout": "요청 시간이 초과되었습니다."
   },
   "exceptions": {
     "late": {
@@ -1803,7 +1850,11 @@
       "system": "시스템",
       "work": "근무",
       "schedule": "일정",
-      "finance": "재무"
+      "finance": "재무",
+      "all": "전체",
+      "job": "구인",
+      "payment": "결제",
+      "announcement": "공지"
     },
     "types": {
       "job_posting_announcement": "공고 공지",
@@ -1813,7 +1864,11 @@
       "job_application": "지원서 제출",
       "staff_approval": "지원 확정",
       "staff_rejection": "지원 취소",
-      "schedule_change": "근무시간 변경"
+      "schedule_change": "근무시간 변경",
+      "job_confirmed": "구직 확정",
+      "job_rejected": "구직 거절",
+      "payment_complete": "결제 완료",
+      "system": "시스템"
     },
     "descriptions": {
       "system": "시스템 공지 및 신규 공고 알림",
@@ -2462,7 +2517,8 @@
     "status": {
       "upcoming": "예정",
       "active": "진행 중",
-      "completed": "완료"
+      "completed": "완료",
+      "cancelled": "취소됨"
     },
     "modal": {
       "createTitle": "새 토너먼트 만들기",
@@ -2596,7 +2652,8 @@
     "status": {
       "confirmed": "✅ 확정",
       "pending": "⏳ 대기중",
-      "rejected": "❌ 미선정"
+      "rejected": "❌ 미선정",
+      "cancelled": "취소됨"
     },
     "viewDetail": "자세히보기",
     "viewDetailAriaLabel": "공고 상세정보 보기"
@@ -2746,7 +2803,8 @@
     "staff": "스태프",
     "status": {
       "break": "휴식",
-      "waiting": "대기"
+      "waiting": "대기",
+      "working": "근무중"
     },
     "validation": {
       "allRulesComplied": "모든 교대 규칙을 준수합니다",
@@ -2868,7 +2926,14 @@
       "receipt": "영수증",
       "status": "상태"
     },
-    "title": "결제 내역"
+    "title": "결제 내역",
+    "status": {
+      "success": "성공",
+      "failed": "실패",
+      "pending": "대기",
+      "cancelled": "취소됨",
+      "refunded": "환불됨"
+    }
   },
   "paymentSuccess": {
     "message": "결제가 완료되었습니다",
@@ -2878,5 +2943,26 @@
       "title": "주문 정보"
     },
     "title": "결제 성공"
+  },
+  "workLog": {
+    "status": {
+      "pending": "대기중",
+      "confirmed": "확정됨",
+      "rejected": "거절됨"
+    }
+  },
+  "payment": {
+    "method": {
+      "card": "카드",
+      "bank": "계좌이체",
+      "virtual": "가상계좌",
+      "phone": "휴대폰 결제"
+    }
+  },
+  "confirm": {
+    "delete": "정말 삭제하시겠습니까?",
+    "cancel": "정말 취소하시겠습니까?",
+    "save": "변경사항을 저장하시겠습니까?",
+    "logout": "로그아웃 하시겠습니까?"
   }
 }

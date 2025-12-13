@@ -244,7 +244,14 @@
     "admin": "Admin",
     "manager": "Manager",
     "staff": "Staff",
-    "user": "User"
+    "user": "User",
+    "floorManager": "Floor Manager",
+    "runner": "Runner",
+    "waitress": "Waitress",
+    "photographer": "Photographer",
+    "host": "Host",
+    "cleaner": "Cleaner",
+    "other": "Other"
   },
   "common": {
     "back": "Back",
@@ -344,10 +351,7 @@
     "confirmCancel": "Cancel",
     "contact": "Contact",
     "count": "items",
-    "currency": {
-      "default": "{{amount}}원",
-      "krw": "₩{{amount}}"
-    },
+    "currency": "{{amount}} KRW",
     "dateError": "Date error",
     "dateNotSet": "Date TBD",
     "dateTBD": "Date TBD",
@@ -392,7 +396,8 @@
     "prevPage": "Previous page",
     "nextPage": "Next page",
     "goToPage": "{{page}}페이지로 이동",
-    "retry": "Retry"
+    "retry": "Retry",
+    "currencyKrw": "₩{{amount}}"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -1011,14 +1016,24 @@
     "scheduleNotSet": "근무 일정 미정",
     "selectRoles": "지원할 역할 선택 (여러 개 선택 가능)",
     "status": {
-      "closed": "Closed"
+      "closed": "Closed",
+      "open": "Open",
+      "draft": "Draft",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
     },
     "time": {
       "tbd": "TBD"
     },
     "urgent": "Urgent",
     "workConditions": "근무조건",
-    "workScheduleText": "주 {{days}}일 근무 · {{time}}"
+    "workScheduleText": "주 {{days}}일 근무 · {{time}}",
+    "type": {
+      "tournament": "Tournament",
+      "fixed": "Fixed",
+      "temporary": "Temporary"
+    }
   },
   "jobPostingAdmin": {
     "alerts": {
@@ -1084,7 +1099,25 @@
     },
     "create": {
       "title": "Create Job Posting",
-      "button": "Create New Posting"
+      "button": "Create New Posting",
+      "dealer": "Dealer",
+      "floor": "Floor",
+      "floorManager": "Floor Manager",
+      "serving": "Serving",
+      "runner": "Runner",
+      "waitress": "Waitress",
+      "photographer": "Photographer",
+      "host": "Host",
+      "security": "Security",
+      "cleaner": "Cleaner",
+      "cashier": "Cashier",
+      "admin": "Admin",
+      "manager": "Manager",
+      "staff": "Staff",
+      "tournament_director": "Tournament Director",
+      "chip_master": "Chip Master",
+      "registration": "Registration",
+      "other": "Other"
     },
     "manage": {
       "title": "Manage Job Postings",
@@ -1113,7 +1146,9 @@
       "ageUnit": " years old",
       "status_applied": "Applied",
       "status_confirmed": "Confirmed",
-      "status_pending": "Pending"
+      "status_pending": "Pending",
+      "status_rejected": "Rejected",
+      "status_cancelled": "Cancelled"
     },
     "unknownUser": "Unknown User"
   },
@@ -1245,7 +1280,11 @@
       "welcome": "Welcome to the tournament control panel. Use the menu on the left to manage different aspects of the event.",
       "running": "Running",
       "paused": "Paused",
-      "stopped": "Stopped"
+      "stopped": "Stopped",
+      "ongoing": "Ongoing",
+      "completed": "Completed",
+      "upcoming": "Upcoming",
+      "cancelled": "Cancelled"
     }
   },
   "privateRoute": {
@@ -1495,7 +1534,15 @@
     "applicationInfoNotFound": "Application information not found.",
     "unsupportedScheduleType": "Unsupported schedule type.",
     "paymentApprovalFailed": "Payment approval failed.",
-    "firebaseEmulatorFailed": "Firebase Emulator connection failed."
+    "firebaseEmulatorFailed": "Firebase Emulator connection failed.",
+    "fetchFailed": "Failed to fetch data.",
+    "saveFailed": "Failed to save.",
+    "deleteFailed": "Failed to delete.",
+    "unauthorized": "Unauthorized.",
+    "notFound": "Not found.",
+    "invalidInput": "Invalid input.",
+    "serverError": "Server error occurred.",
+    "timeout": "Request timed out."
   },
   "exceptions": {
     "late": {
@@ -1803,7 +1850,11 @@
       "system": "System",
       "work": "Work",
       "schedule": "Schedule",
-      "finance": "Finance"
+      "finance": "Finance",
+      "all": "All",
+      "job": "Job",
+      "payment": "Payment",
+      "announcement": "Announcement"
     },
     "types": {
       "job_posting_announcement": "Job Announcement",
@@ -1813,7 +1864,11 @@
       "job_application": "Application Submitted",
       "staff_approval": "Application Confirmed",
       "staff_rejection": "Application Cancelled",
-      "schedule_change": "Schedule Changed"
+      "schedule_change": "Schedule Changed",
+      "job_confirmed": "Job Confirmed",
+      "job_rejected": "Job Rejected",
+      "payment_complete": "Payment Complete",
+      "system": "System"
     },
     "descriptions": {
       "system": "System announcements and new job postings",
@@ -2462,7 +2517,8 @@
     "status": {
       "upcoming": "Upcoming",
       "active": "Active",
-      "completed": "Completed"
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     },
     "modal": {
       "createTitle": "Create New Tournament",
@@ -2596,7 +2652,8 @@
     "status": {
       "confirmed": "✅ Confirmed",
       "pending": "⏳ Pending",
-      "rejected": "❌ Rejected"
+      "rejected": "❌ Rejected",
+      "cancelled": "Cancelled"
     },
     "viewDetail": "View detail",
     "viewDetailAriaLabel": "View job posting details"
@@ -2746,7 +2803,8 @@
     "staff": "Staff",
     "status": {
       "break": "Break",
-      "waiting": "Pending"
+      "waiting": "Pending",
+      "working": "Working"
     },
     "validation": {
       "allRulesComplied": "모든 교대 규칙을 준수합니다",
@@ -2868,7 +2926,14 @@
       "receipt": "Receipt",
       "status": "Status"
     },
-    "title": "Payment History"
+    "title": "Payment History",
+    "status": {
+      "success": "Success",
+      "failed": "Failed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    }
   },
   "paymentSuccess": {
     "message": "Payment completed",
@@ -2878,5 +2943,26 @@
       "title": "Order Info"
     },
     "title": "Payment Success"
+  },
+  "workLog": {
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected"
+    }
+  },
+  "payment": {
+    "method": {
+      "card": "Card",
+      "bank": "Bank Transfer",
+      "virtual": "Virtual Account",
+      "phone": "Phone Payment"
+    }
+  },
+  "confirm": {
+    "delete": "Are you sure you want to delete?",
+    "cancel": "Are you sure you want to cancel?",
+    "save": "Do you want to save changes?",
+    "logout": "Do you want to logout?"
   }
 }
