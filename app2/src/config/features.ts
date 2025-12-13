@@ -31,22 +31,25 @@ export const FEATURE_FLAGS = {
    * 토너먼트 관리 기능
    * - 경로: /app/tournaments
    * - 설명: 토너먼트 생성, 조회, 수정, 삭제 관리
+   * - 상태: 초기 출시 시 비공개
    */
-  TOURNAMENTS: true,
+  TOURNAMENTS: false,
 
   /**
    * 참가자 관리 기능
    * - 경로: /app/participants
    * - 설명: 토너먼트 참가자 등록 및 관리
+   * - 상태: 초기 출시 시 비공개
    */
-  PARTICIPANTS: true,
+  PARTICIPANTS: false,
 
   /**
    * 테이블 관리 기능
    * - 경로: /app/tables
    * - 설명: 게임 테이블 생성 및 배치 관리
+   * - 상태: 초기 출시 시 비공개
    */
-  TABLES: true,
+  TABLES: false,
 
   /**
    * 교대 관리 기능

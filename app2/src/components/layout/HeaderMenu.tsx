@@ -21,6 +21,7 @@ import {
   type MenuItem,
   type MenuGroup,
 } from './menuConfig';
+import { FEATURE_FLAGS } from '../../config/features';
 
 // ============================================
 // Sub Components
@@ -363,15 +364,19 @@ export const HeaderMenu: React.FC = () => {
                   <MenuDivider />
                   <MenuGroupRenderer group={AUTH_MENU} t={t} onNavigate={closeMenu} />
 
-                  {/* 토너먼트 관리 */}
-                  <MenuDivider />
-                  <NavDropdown
-                    label={t('nav.tournamentManagement', '토너먼트 관리')}
-                    Icon={FaTrophy}
-                    items={tournamentItems}
-                    onNavigate={closeMenu}
-                    t={t}
-                  />
+                  {/* 토너먼트 관리 (Feature Flag로 제어) */}
+                  {FEATURE_FLAGS.TOURNAMENTS && (
+                    <>
+                      <MenuDivider />
+                      <NavDropdown
+                        label={t('nav.tournamentManagement', '토너먼트 관리')}
+                        Icon={FaTrophy}
+                        items={tournamentItems}
+                        onNavigate={closeMenu}
+                        t={t}
+                      />
+                    </>
+                  )}
 
                   {/* Admin 전용 메뉴 */}
                   {role === 'admin' && (
