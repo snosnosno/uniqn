@@ -134,7 +134,7 @@ export const AccountDangerZone: React.FC = () => {
                 {t('settings.account.remainingDays')}
               </span>
               <span className="text-lg font-bold text-amber-900 dark:text-amber-300">
-                {remainingDays} {t('common.days')}
+                {remainingDays} {t('common.daysUnit')}
               </span>
             </div>
           </div>

@@ -7,7 +7,9 @@
     "selectedCount": "{{count}} staff selected.",
     "editWorkTime": "Edit Work Time",
     "editAttendance": "Edit Attendance",
-    "timeWarning": "The set time will be applied equally to all selected staff."
+    "timeWarning": "The set time will be applied equally to all selected staff.",
+    "previewTime": "Preview time",
+    "selectStatus": "Select attendance status"
   },
   "locations": {
     "seoul": "Seoul",
@@ -77,7 +79,8 @@
     "backToLogin": "Back to Login",
     "genderLabel": "Gender",
     "genderMale": "Male",
-    "genderFemale": "Female"
+    "genderFemale": "Female",
+    "invalidEmail": "올바른 이메일 형식을 입력해주세요."
   },
   "signUp": {
     "title": "Sign Up",
@@ -241,7 +244,14 @@
     "admin": "Admin",
     "manager": "Manager",
     "staff": "Staff",
-    "user": "User"
+    "user": "User",
+    "floorManager": "Floor Manager",
+    "runner": "Runner",
+    "waitress": "Waitress",
+    "photographer": "Photographer",
+    "host": "Host",
+    "cleaner": "Cleaner",
+    "other": "Other"
   },
   "common": {
     "back": "Back",
@@ -282,7 +292,16 @@
       "searching": "Searching...",
       "processing": "Processing..."
     },
-    "days": "days",
+    "daysUnit": "days",
+    "days": {
+      "sun": "Sun",
+      "mon": "Mon",
+      "tue": "Tue",
+      "wed": "Wed",
+      "thu": "Thu",
+      "fri": "Fri",
+      "sat": "Sat"
+    },
     "processing": "Processing...",
     "name": "Name",
     "emailAddress": "Email Address",
@@ -326,7 +345,61 @@
     "loading": "Loading...",
     "countItems": "{{count}} items",
     "hours": "{{count}} hours",
-    "timeTBD": "Time TBD"
+    "timeTBD": "Time TBD",
+    "actions": "Actions",
+    "checkingPermissions": "Checking permissions...",
+    "confirmCancel": "Cancel",
+    "contact": "Contact",
+    "count": "items",
+    "currency": {
+      "default": "{{amount}} KRW",
+      "krw": "KRW"
+    },
+    "dateError": "Date error",
+    "dateNotSet": "Date TBD",
+    "dateTBD": "Date TBD",
+    "deselectGroup": "Deselect group",
+    "employer": "Employer",
+    "goBack": "Go back",
+    "hourPlaceholder": "hour",
+    "hourUnit": "hour",
+    "minutes": "minute",
+    "nameTbd": "Name TBD",
+    "noAnswer": "No answer",
+    "noChange": "No change",
+    "noDate": "No date",
+    "noDateInfo": "No date info",
+    "noEditPermission": "No edit permission",
+    "noTitle": "No title",
+    "notProvided": "Not provided",
+    "notRegistered": "Not registered",
+    "notes": "Notes",
+    "parseError": "Parse error",
+    "peopleCount": "{{count}}명",
+    "person": "people",
+    "pleaseLogin": "Login required.",
+    "print": "Print",
+    "refreshing": "Refreshing...",
+    "report": "Report",
+    "saveAndClose": "Save and close",
+    "saveChanges": "Save changes",
+    "saving": "Saving...",
+    "seconds": "second",
+    "select": "Select",
+    "selectGroup": "Select group",
+    "selected": "Selected",
+    "selectedCount": "{{count}}개 선택",
+    "tbd": "TBD",
+    "unknownUser": "Unknown user",
+    "user": "User",
+    "won": "Won",
+    "hide": "Hide",
+    "prev": "Previous",
+    "next": "Next",
+    "prevPage": "Previous page",
+    "nextPage": "Next page",
+    "goToPage": "{{page}}페이지로 이동",
+    "retry": "Retry"
   },
   "payrollAdmin": {
     "alertSuccess": "Payrolls calculated successfully! Fetching updated data...",
@@ -501,6 +574,106 @@
     "error": {
       "loadFailed": "Failed to load announcements",
       "retryButton": "Retry"
+    },
+    "description": "System notices and updates",
+    "banner": "Banner",
+    "hasImage": "Image",
+    "stats": {
+      "total": "전체 {{count}}개",
+      "page": "페이지 {{current}} / {{total}}"
+    },
+    "empty": {
+      "title": "No announcements",
+      "description": "새로운 공지사항이 등록되면 여기에 표시됩니다."
+    },
+    "card": {
+      "viewDetail": "View detail",
+      "views": "views",
+      "bannerBadge": "Banner"
+    },
+    "detail": {
+      "title": "Announcements",
+      "period": "Display period",
+      "views": "views",
+      "indefinite": "Indefinite",
+      "attachedImage": "Attached image"
+    },
+    "delete": {
+      "title": "Delete announcement",
+      "message": "정말 이 공지사항을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+    },
+    "create": {
+      "title": "Create announcement",
+      "button": "Create"
+    },
+    "edit": {
+      "title": "Edit announcement"
+    },
+    "form": {
+      "titleLabel": "Title",
+      "titlePlaceholder": "공지사항 제목을 입력하세요",
+      "contentLabel": "Content",
+      "contentPlaceholder": "공지사항 내용을 입력하세요",
+      "priority": "Priority",
+      "startDateLabel": "Start date",
+      "endDateLabel": "Enable end date",
+      "showAsBanner": "Show as main banner",
+      "showAsBannerDesc": "로그인 후 메인 화면 상단에 배너로 표시됩니다",
+      "image": "Attach image",
+      "preview": "Preview",
+      "editMode": "편집 모드",
+      "noTitle": "(제목 없음)",
+      "noContent": "(내용 없음)",
+      "startDate": "공개 시작",
+      "endDate": "공개 종료",
+      "noEndDate": "공개 기간: 무기한",
+      "attachedImage": "Attached image",
+      "validationError": "Validation error",
+      "submit": "Submit",
+      "submitting": "Submitting...",
+      "save": "저장",
+      "saving": "저장 중...",
+      "update": "Update",
+      "updating": "Updating..."
+    },
+    "validation": {
+      "titleRequired": "제목을 입력해주세요",
+      "titleTooShort": "제목은 2자 이상 입력해주세요",
+      "titleTooLong": "제목은 100자 이하로 입력해주세요",
+      "contentRequired": "내용을 입력해주세요",
+      "contentTooShort": "내용은 2자 이상 입력해주세요",
+      "contentTooLong": "내용은 2000자 이하로 입력해주세요",
+      "endDateBeforeStart": "종료일은 시작일 이후여야 합니다",
+      "xssDetected": "잠재적으로 위험한 문자가 포함되어 있습니다"
+    },
+    "imageUpload": {
+      "title": "Attach image",
+      "label": "Attach image",
+      "optional": "Optional",
+      "preview": "Attached image",
+      "delete": "Delete image",
+      "dropzone": "이미지를 드래그하거나 클릭하여 업로드",
+      "dropHere": "Drop here",
+      "clickOrDrag": "클릭하거나 이미지를 드래그하세요",
+      "formats": "JPEG, PNG, GIF, WebP (최대 5MB)",
+      "dragDrop": "이미지를 드래그하거나 클릭하여 선택",
+      "supportedFormats": "지원 형식: JPEG, PNG, GIF, WebP (최대 5MB)",
+      "uploading": "업로드 중...",
+      "change": "이미지 변경",
+      "remove": "Delete image",
+      "invalidType": "지원하지 않는 이미지 형식입니다. (JPEG, PNG, GIF, WebP만 가능)",
+      "tooLarge": "이미지 크기는 5MB 이하만 가능합니다.",
+      "error": {
+        "invalidType": "지원하지 않는 파일 형식입니다",
+        "tooLarge": "파일 크기가 5MB를 초과합니다",
+        "uploadFailed": "이미지 업로드에 실패했습니다"
+      }
+    },
+    "bannerDisplay": {
+      "label": "Important announcement",
+      "hideForToday": "Hide for today",
+      "hideForTodayShort": "Hide today",
+      "dismiss": "닫기"
     }
   },
   "participantDetailModal": {
@@ -524,7 +697,8 @@
     "howToUse": "How to Use",
     "guide1": "Scan the QR code created by your administrator.",
     "guide2": "Check-in and check-out use different QR codes.",
-    "guide3": "QR codes are automatically refreshed every minute."
+    "guide3": "QR codes are automatically refreshed every minute.",
+    "subtitle": "Show the QR code to the manager"
   },
   "availableTimes": {
     "title": "Set Weekly Availability",
@@ -613,7 +787,12 @@
       "reset": "Reset Filters",
       "search": {
         "placeholder": "Search in title or description..."
-      }
+      },
+      "dayOption": "{{day}}일",
+      "filterActive": "필터 적용 중",
+      "monthOption": "{{month}}월",
+      "resetFilters": "Reset filters",
+      "resetFiltersAria": "Reset filters"
     },
     "tabs": {
       "regular": "Regular",
@@ -637,7 +816,16 @@
       "chipCostLabel": "Chip cost",
       "expiresIn": "Expires: D-{{days}}",
       "expired": "Expired",
-      "expiresOn": "Expires on: {{date}}"
+      "expiresOn": "Expires on: {{date}}",
+      "cardAriaLabel": "고정공고: {{title}}",
+      "clickToViewDetails": "클릭하여 상세보기",
+      "noPostings": "현재 모집 중인 고정공고가 없습니다",
+      "noPostingsHint": "새로운 고정공고가 등록되면 여기에 표시됩니다.",
+      "noRoleInfo": "모집 역할 정보 없음",
+      "recruitmentRoles": "Recruitment roles",
+      "roleCount": "{{count}}명",
+      "viewCount": "조회 {{count}}",
+      "workSchedule": "주 {{days}}일 근무 · {{time}}"
     },
     "urgent": {
       "label": "Urgent",
@@ -711,21 +899,38 @@
       "success": "Application submitted successfully!",
       "error": "Error occurred during application.",
       "alreadyApplied": "You have already applied for this posting.",
-      "loginRequired": "Please log in to apply."
+      "loginRequired": "Please log in to apply.",
+      "backToEdit": "뒤로 (수정)",
+      "closed": "Closed",
+      "noAvailableTimeSlots": "No available time slots.",
+      "selectTimeSlotRole": "시간대 및 역할 선택 (여러 개 선택 가능)",
+      "timeTBA": "TBD",
+      "applyWithCount": "Apply ({{count}})"
     },
     "error": "An error occurred while loading job postings.",
     "loading": "Loading job postings...",
     "unknownApplicant": "Unknown Applicant",
     "card": {
       "viewDetailsAria": "View details for {{title}}",
-      "applyAria": "Apply for {{title}}"
+      "applyAria": "Apply for {{title}}",
+      "alreadyAppliedAria": "이미 지원완료한 공고입니다",
+      "confirmedAria": "지원이 확정된 공고입니다",
+      "loginRequiredAria": "Login required"
     },
     "filter": {
       "openFilter": "Open filter",
-      "filter": "Filter"
+      "filter": "Filter",
+      "closeFilter": "Close filter",
+      "filterApplied": "Filter applied"
     },
     "refresh": {
       "ariaLabel": "Refresh page"
+    },
+    "infiniteScroll": {
+      "allLoaded": "모든 공고를 확인했습니다",
+      "loadingMore": "추가 공고를 불러오는 중...",
+      "scrollToLoad": "스크롤하여 더 보기",
+      "triggerArea": "더 보기 영역"
     }
   },
   "jobPosting": {
@@ -750,7 +955,87 @@
     "schedule": "Schedule",
     "creatorWithNickname": "Creator: {{name}}({{nickname}})",
     "createdAt": "Created: {{date}}",
-    "updatedAt": "Updated: {{date}}"
+    "updatedAt": "Updated: {{date}}",
+    "andMoreRoles": "외 {{count}}개 역할",
+    "applicantCount": "{{count}}명 지원",
+    "apply": "Apply",
+    "applyWithCount": "지원하기 ({{count}}개)",
+    "benefits": {
+      "accommodation": "Accommodation",
+      "clothing": "복장",
+      "guaranteedHours": "보장시간",
+      "meal": "Meals",
+      "mealAllowance": "Meal allowance",
+      "transportation": "Transportation"
+    },
+    "closed": "(마감)",
+    "count": {
+      "days": "{{count}}일",
+      "people": "{{count}}명"
+    },
+    "creator": "구인자: {{name}}",
+    "daysPerWeek": "주 {{days}}일",
+    "detail": {
+      "benefits": "Benefits",
+      "contactPhone": "문의연락처",
+      "daysPerWeek": "주 출근일수",
+      "description": "상세 설명",
+      "detailedAddress": "상세주소",
+      "location": "Location",
+      "noRoles": "모집 역할이 없습니다",
+      "noTimeInfo": "모집 시간대 정보가 없습니다.",
+      "period": "Period",
+      "preQuestions": "사전질문",
+      "recruitRoles": "Recruitment roles",
+      "roleSalary": "Role-based salary",
+      "roleSalaryTitle": "Role-based salary",
+      "salary": "Salary",
+      "timeAndRoles": "모집 시간대 및 역할",
+      "workConditions": "Work conditions",
+      "workHours": "근무시간"
+    },
+    "fixedDuration": "{{days}}일 고정공고",
+    "fixedPosting": "고정공고",
+    "noRoleInfo": "모집 역할 정보가 없습니다.",
+    "noTimeSlotInfo": "시간대 정보가 없습니다.",
+    "postingType": {
+      "application": "Application",
+      "applicationLabel": "지원공고 유형",
+      "fixed": "Fixed",
+      "fixedLabel": "고정공고 유형"
+    },
+    "recruiting": "모집",
+    "recruitmentRoles": "모집역할",
+    "recruitmentTimeSlots": "Recruitment time slots",
+    "recruitmentType": {
+      "apply": "Application",
+      "fixed": "Fixed"
+    },
+    "roleSalary": "Role-based salary",
+    "salary": {
+      "negotiable": "Negotiable"
+    },
+    "scheduleNotSet": "근무 일정 미정",
+    "selectRoles": "지원할 역할 선택 (여러 개 선택 가능)",
+    "status": {
+      "closed": "Closed",
+      "open": "Open",
+      "draft": "Draft",
+      "pending": "Pending",
+      "approved": "Approved",
+      "rejected": "Rejected"
+    },
+    "time": {
+      "tbd": "TBD"
+    },
+    "urgent": "Urgent",
+    "workConditions": "근무조건",
+    "workScheduleText": "주 {{days}}일 근무 · {{time}}",
+    "type": {
+      "tournament": "Tournament",
+      "fixed": "Fixed",
+      "temporary": "Temporary"
+    }
   },
   "jobPostingAdmin": {
     "alerts": {
@@ -816,7 +1101,25 @@
     },
     "create": {
       "title": "Create Job Posting",
-      "button": "Create New Posting"
+      "button": "Create New Posting",
+      "dealer": "Dealer",
+      "floor": "Floor",
+      "floorManager": "Floor Manager",
+      "serving": "Serving",
+      "runner": "Runner",
+      "waitress": "Waitress",
+      "photographer": "Photographer",
+      "host": "Host",
+      "security": "Security",
+      "cleaner": "Cleaner",
+      "cashier": "Cashier",
+      "admin": "Admin",
+      "manager": "Manager",
+      "staff": "Staff",
+      "tournament_director": "Tournament Director",
+      "chip_master": "Chip Master",
+      "registration": "Registration",
+      "other": "Other"
     },
     "manage": {
       "title": "Manage Job Postings",
@@ -845,14 +1148,19 @@
       "ageUnit": " years old",
       "status_applied": "Applied",
       "status_confirmed": "Confirmed",
-      "status_pending": "Pending"
+      "status_pending": "Pending",
+      "status_rejected": "Rejected",
+      "status_cancelled": "Cancelled"
     },
     "unknownUser": "Unknown User"
   },
   "profile": {
     "residentId": "Resident ID",
     "region": "Region",
-    "selectRegion": "Please select a region"
+    "selectRegion": "Please select a region",
+    "completeProfile": "프로필을 완성해주세요",
+    "enterFieldsBelow": "아래 정보를 입력해주세요:",
+    "goToProfile": "프로필 작성하기"
   },
   "profilePage": {
     "eventIdMissing": "Event ID is missing",
@@ -894,7 +1202,8 @@
     "selectNationality": "Please select your nationality",
     "residentId": "Resident ID:",
     "gender": "Gender:",
-    "age": "Age"
+    "age": "Age",
+    "userNotFound": "User not found"
   },
   "profileImage": {
     "uploadSuccess": "Profile image uploaded successfully.",
@@ -902,7 +1211,15 @@
     "currentImage": "Current profile image",
     "selectImage": "Select Image",
     "uploadError": "Failed to upload profile image.",
-    "deleteError": "Failed to delete profile image."
+    "deleteError": "Failed to delete profile image.",
+    "cancel": "Cancel",
+    "cropPreview": "크롭 미리보기",
+    "cropTitle": "Crop image",
+    "deleteImage": "Delete",
+    "fileSizeError": "파일 크기는 5MB 이하여야 합니다.",
+    "fileTypeError": "이미지 파일만 업로드할 수 있습니다.",
+    "upload": "업로드",
+    "uploading": "Uploading..."
   },
   "payrollPage": {
     "loading": "Loading payroll data...",
@@ -965,7 +1282,11 @@
       "welcome": "Welcome to the tournament control panel. Use the menu on the left to manage different aspects of the event.",
       "running": "Running",
       "paused": "Paused",
-      "stopped": "Stopped"
+      "stopped": "Stopped",
+      "ongoing": "Ongoing",
+      "completed": "Completed",
+      "upcoming": "Upcoming",
+      "cancelled": "Cancelled"
     }
   },
   "privateRoute": {
@@ -1071,7 +1392,10 @@
       "autoRecordDesc": "Automatically record work hours based on shift times.",
       "attendanceManagement": "Attendance Management",
       "attendanceManagementDesc": "Track and manage staff attendance in real-time."
-    }
+    },
+    "updatePending": "업데이트 예정",
+    "defaultBreakTime": "Default break time",
+    "defaultWorkTime": "Default work time"
   },
   "schedule": {
     "stats": {
@@ -1083,7 +1407,28 @@
       "totalEarnings": "Total ₩{{amount}}",
       "totalHours": "Total Work Hours",
       "plannedHours": "Planned work hours"
-    }
+    },
+    "adjustmentNeeded": "일정 조정 필요",
+    "basicInfo": "Basic info",
+    "detail": "Schedule detail",
+    "detailedAddress": "상세주소",
+    "location": "장소",
+    "posting": "Posting",
+    "status": {
+      "applied": "지원중",
+      "cancelled": "Cancel",
+      "completed": "완료",
+      "confirmed": "확정"
+    },
+    "tabs": {
+      "info": "정보",
+      "salary": "Salary",
+      "work": "근무"
+    },
+    "workDays": "Days worked",
+    "workHours": "근무시간",
+    "workSummary": "Work summary",
+    "workTime": "근무시간"
   },
   "attendance": {
     "status": {
@@ -1093,7 +1438,11 @@
       "checkedIn": "Checked In",
       "checked_out": "Checked Out",
       "checkedOut": "Checked Out",
-      "absent": "Absent"
+      "absent": "Absent",
+      "earlyLeave": "Early leave",
+      "late": "Late",
+      "present": "Present",
+      "scheduled": "Scheduled"
     },
     "labels": {
       "checkIn": "Check In Time",
@@ -1137,7 +1486,17 @@
       "endTimeRequired": "Please enter end time.",
       "invalidTimeFormat": "Please enter valid time format (HH:MM).",
       "endTimeAfterStart": "End time must be after start time."
-    }
+    },
+    "absent": "Absent",
+    "checkIn": "Start time",
+    "checkOut": "End time",
+    "checkedIn": "Check in",
+    "checkedOut": "Check out",
+    "editScheduledCheckIn": "Edit scheduled check-in",
+    "editScheduledCheckOut": "Edit scheduled check-out",
+    "notStarted": "Not started",
+    "scheduled": "Scheduled",
+    "setCheckInTime": "TBD - Set check-in time"
   },
   "errors": {
     "title": "An error has occurred",
@@ -1177,7 +1536,15 @@
     "applicationInfoNotFound": "Application information not found.",
     "unsupportedScheduleType": "Unsupported schedule type.",
     "paymentApprovalFailed": "Payment approval failed.",
-    "firebaseEmulatorFailed": "Firebase Emulator connection failed."
+    "firebaseEmulatorFailed": "Firebase Emulator connection failed.",
+    "fetchFailed": "Failed to fetch data.",
+    "saveFailed": "Failed to save.",
+    "deleteFailed": "Failed to delete.",
+    "unauthorized": "Unauthorized.",
+    "notFound": "Not found.",
+    "invalidInput": "Invalid input.",
+    "serverError": "Server error occurred.",
+    "timeout": "Request timed out."
   },
   "exceptions": {
     "late": {
@@ -1217,7 +1584,56 @@
       "workHours": "Work Hours",
       "overtime": "Overtime",
       "exceptions": "Exceptions"
-    }
+    },
+    "afterTaxPay": "After-tax pay",
+    "allowance": {
+      "accommodationPerDay": "숙소비: {{amount}}원/일",
+      "bonus": "bonus",
+      "mealPerDay": "식비: {{amount}}원/일",
+      "other": "Other",
+      "transportPerDay": "교통비: {{amount}}원/일"
+    },
+    "allowanceInfo": "Allowance info",
+    "allowanceTotal": "Total allowances",
+    "basePay": "Base pay",
+    "basePayCalculation": "Base pay calculation",
+    "basePayTotal": "Base pay total",
+    "baseSalary": "기본 급여",
+    "basicInfo": "Basic info",
+    "dailyBasedCalculation": "일당 기반 계산",
+    "daysFormat": "{{days}}일",
+    "daysWorked": "{{days}}일 근무",
+    "detailTitle": "정산 상세",
+    "endTime": "종료시간",
+    "fixedTax": "Fixed tax",
+    "hoursFormat": "{{hours}}시간",
+    "manuallyEdited": "수동으로 수정됨",
+    "noAllowanceInfo": "수당 정보가 없습니다.",
+    "noWorkHistory": "근무 내역이 없습니다.",
+    "salaryInfo": "Salary info",
+    "salaryType": {
+      "daily": "Daily",
+      "hourly": "Hourly",
+      "label": "Salary type",
+      "monthly": "Monthly",
+      "other": "Other"
+    },
+    "startTime": "시작시간",
+    "tabs": {
+      "basic": "정보",
+      "calculation": "Salary",
+      "work": "근무"
+    },
+    "tax": "Tax",
+    "taxRate": "세율 ({{rate}}%)",
+    "taxSettings": "Settings",
+    "totalPay": "총 지급액",
+    "totalWorkDaysCount": "총 {{count}}일 근무",
+    "totalWorkHours": "총 근무시간",
+    "workDays": "Days worked",
+    "workHistory": "Work history",
+    "workHours": "근무시간",
+    "workSummary": "Work summary"
   },
   "support": {
     "title": "Customer Support",
@@ -1242,7 +1658,8 @@
       "messagePlaceholder": "Please describe your inquiry in detail",
       "submit": "Submit Inquiry",
       "success": "Your inquiry has been submitted successfully!",
-      "error": "An error occurred while submitting your inquiry."
+      "error": "An error occurred while submitting your inquiry.",
+      "submitting": "Submitting..."
     },
     "myInquiries": {
       "title": "My Inquiries",
@@ -1318,35 +1735,75 @@
       "reviewed": "Under Review",
       "resolved": "Resolved",
       "dismissed": "Dismissed"
-    }
+    },
+    "reportEmployer": "구인자 신고하기",
+    "submitting": "Submitting..."
   },
   "inquiry": {
-    "categories": {
-      "general": {
-        "label": "General Inquiry"
-      },
-      "technical": {
-        "label": "Technical Support"
-      },
-      "payment": {
-        "label": "Payment Inquiry"
-      },
-      "account": {
-        "label": "Account Inquiry"
-      },
-      "report": {
-        "label": "Report",
-        "description": "Staff report related inquiries"
-      },
-      "other": {
-        "label": "Other"
-      }
+    "title": "Inquiry Management",
+    "subtitle": "Manage and respond to customer inquiries.",
+    "stats": {
+      "total": "Total Inquiries",
+      "open": "Open",
+      "inProgress": "In Progress",
+      "closed": "Closed"
+    },
+    "filter": {
+      "searchPlaceholder": "Search title, content, author...",
+      "allStatus": "All Status",
+      "allCategory": "All Categories",
+      "allPeriod": "All Time",
+      "today": "Today",
+      "week": "Last 7 Days",
+      "month": "Last 30 Days",
+      "newest": "Newest",
+      "oldest": "Oldest",
+      "byStatus": "By Status"
+    },
+    "table": {
+      "inquiryInfo": "Inquiry Info",
+      "author": "Author",
+      "category": "Category",
+      "status": "Status",
+      "createdAt": "Created",
+      "actions": "Actions"
     },
     "status": {
       "open": "Open",
-      "in_progress": "In Progress",
+      "inProgress": "In Progress",
       "closed": "Closed"
-    }
+    },
+    "empty": "No inquiries match the criteria.",
+    "report": "Report",
+    "view": "View",
+    "detail": {
+      "title": "Inquiry Details",
+      "author": "Author",
+      "email": "Email",
+      "category": "Category",
+      "createdAt": "Created",
+      "subject": "Subject",
+      "content": "Content",
+      "reportDetail": "Report Details",
+      "reportType": "Report Type",
+      "reporterType": "Reporter Type",
+      "reportTarget": "Report Target",
+      "event": "Event",
+      "date": "Date",
+      "adminResponse": "Admin Response",
+      "responseDate": "Response Date",
+      "writeResponse": "Write Response",
+      "responsePlaceholder": "Enter your response to the customer..."
+    },
+    "reporterTypes": {
+      "employer": "Employer",
+      "staff": "Staff"
+    },
+    "saveResponse": "Save Response",
+    "saving": "Saving...",
+    "close": "Close",
+    "unknown": "Unknown",
+    "admin": "Admin"
   },
   "faq": {
     "general": {
@@ -1388,13 +1845,18 @@
     "deleteAll": "Delete all",
     "filters": {
       "unread": "Unread",
-      "read": "Read"
+      "read": "Read",
+      "all": "All"
     },
     "categories": {
       "system": "System",
       "work": "Work",
       "schedule": "Schedule",
-      "finance": "Finance"
+      "finance": "Finance",
+      "all": "All",
+      "job": "Job",
+      "payment": "Payment",
+      "announcement": "Announcement"
     },
     "types": {
       "job_posting_announcement": "Job Announcement",
@@ -1404,7 +1866,11 @@
       "job_application": "Application Submitted",
       "staff_approval": "Application Confirmed",
       "staff_rejection": "Application Cancelled",
-      "schedule_change": "Schedule Changed"
+      "schedule_change": "Schedule Changed",
+      "job_confirmed": "Job Confirmed",
+      "job_rejected": "Job Rejected",
+      "payment_complete": "Payment Complete",
+      "system": "System"
     },
     "descriptions": {
       "system": "System announcements and new job postings",
@@ -1577,7 +2043,8 @@
       "deletionCancelled": "Account deletion has been cancelled.",
       "deletionCancelFailed": "Failed to cancel account deletion.",
       "pending": {
-        "cancelSuccess": "Account deletion cancelled successfully."
+        "cancelSuccess": "Account deletion cancelled successfully.",
+        "cancelFailed": "Failed to cancel account deletion"
       },
       "confirmDeletion": "Confirm Account Deletion",
       "finalWarning": "Final Warning",
@@ -1750,7 +2217,18 @@
       "countRange": "Please enter between 1 and 200 people."
     },
     "payment": {
-      "refundReasonRequired": "Please enter refund reason."
+      "refundReasonRequired": "Please enter refund reason.",
+      "freePlanCancelRequired": "Free plan requires cancellation",
+      "invalidInfo": "Invalid payment information",
+      "loginRequired": "Login required for payment",
+      "processError": "Payment process error",
+      "requestError": "Payment request error",
+      "subscriptionComingSoon": "Subscription coming soon",
+      "successWithChip": "Payment complete! {{chips}} chips charged",
+      "systemConfigError": "Payment system configuration error",
+      "systemInitError": "Payment system initialization error",
+      "systemNotInitialized": "Payment system not initialized",
+      "termsRequired": "Payment terms agreement required"
     },
     "auth": {
       "loginRequired": "Login is required"
@@ -1805,7 +2283,8 @@
       "loginRequired": "Login is required.",
       "csvTxtOnly": "Only CSV or TXT files are supported.",
       "fileReadError": "Error reading file.",
-      "comingSoon": "This feature is coming soon."
+      "comingSoon": "This feature is coming soon.",
+      "copyFailed": "Copy failed"
     },
     "notification": {
       "markReadFailed": "Failed to mark notification as read.",
@@ -1877,7 +2356,8 @@
       "cancelFailed": "Application cancel failed: {{message}}",
       "postingNotFound": "Job posting not found.",
       "selectAtLeastOneRole": "Please select at least one role.",
-      "submitError": "Error submitting application."
+      "submitError": "Error submitting application.",
+      "realTimeSync": "실시간 동기화 중입니다"
     },
     "attendance": {
       "checkInTimeNotSet": "Check-in time not set. Please set check-in time first.",
@@ -1938,7 +2418,9 @@
     "duplicateDate": "Date #{{index}} is duplicated: {{date}}",
     "dateError": "Date #{{index}}: {{error}}",
     "preQuestionError": "Pre-question #{{index}}: {{error}}",
-    "duplicateRoles": "Duplicate roles found: {{roles}}"
+    "duplicateRoles": "Duplicate roles found: {{roles}}",
+    "invalidEndTimeFormat": "종료 시간 형식이 올바르지 않습니다.",
+    "invalidStartTimeFormat": "시작 시간 형식이 올바르지 않습니다."
   },
   "landing": {
     "lightMode": "Switch to Light Mode",
@@ -2037,7 +2519,8 @@
     "status": {
       "upcoming": "Upcoming",
       "active": "Active",
-      "completed": "Completed"
+      "completed": "Completed",
+      "cancelled": "Cancelled"
     },
     "modal": {
       "createTitle": "Create New Tournament",
@@ -2059,72 +2542,6 @@
     "selectFirst": "Please select a tournament first.",
     "selectFirstDesc": "Select a tournament from the dropdown above or create a new one.",
     "cannotAddInAllView": "Cannot add in all view mode."
-  },
-  "inquiry": {
-    "title": "Inquiry Management",
-    "subtitle": "Manage and respond to customer inquiries.",
-    "stats": {
-      "total": "Total Inquiries",
-      "open": "Open",
-      "inProgress": "In Progress",
-      "closed": "Closed"
-    },
-    "filter": {
-      "searchPlaceholder": "Search title, content, author...",
-      "allStatus": "All Status",
-      "allCategory": "All Categories",
-      "allPeriod": "All Time",
-      "today": "Today",
-      "week": "Last 7 Days",
-      "month": "Last 30 Days",
-      "newest": "Newest",
-      "oldest": "Oldest",
-      "byStatus": "By Status"
-    },
-    "table": {
-      "inquiryInfo": "Inquiry Info",
-      "author": "Author",
-      "category": "Category",
-      "status": "Status",
-      "createdAt": "Created",
-      "actions": "Actions"
-    },
-    "status": {
-      "open": "Open",
-      "inProgress": "In Progress",
-      "closed": "Closed"
-    },
-    "empty": "No inquiries match the criteria.",
-    "report": "Report",
-    "view": "View",
-    "detail": {
-      "title": "Inquiry Details",
-      "author": "Author",
-      "email": "Email",
-      "category": "Category",
-      "createdAt": "Created",
-      "subject": "Subject",
-      "content": "Content",
-      "reportDetail": "Report Details",
-      "reportType": "Report Type",
-      "reporterType": "Reporter Type",
-      "reportTarget": "Report Target",
-      "event": "Event",
-      "date": "Date",
-      "adminResponse": "Admin Response",
-      "responseDate": "Response Date",
-      "writeResponse": "Write Response",
-      "responsePlaceholder": "Enter your response to the customer..."
-    },
-    "reporterTypes": {
-      "employer": "Employer",
-      "staff": "Staff"
-    },
-    "saveResponse": "Save Response",
-    "saving": "Saving...",
-    "close": "Close",
-    "unknown": "Unknown",
-    "admin": "Admin"
   },
   "chipHistory": {
     "title": "Chip History",
@@ -2218,5 +2635,336 @@
       "chipBalanceMessage": "Redistribute tables based on chip amounts?",
       "chipBalanceSuccess": "Chip balance redistribution completed"
     }
+  },
+  "application": {
+    "address": "Address",
+    "appliedDate": "Applied date",
+    "appliedTimeSlots": "Applied time slots",
+    "cancel": "Cancel application",
+    "cancelApplication": "Cancel application",
+    "cancelApplicationAriaLabel": "{{title}} 지원 취소",
+    "cancelConfirmMessage": "Are you sure you want to cancel this application?",
+    "canceling": "Canceling...",
+    "goToJobPostings": "Go to job postings",
+    "loadingApplications": "Loading applications...",
+    "myApplicationsTitle": "My Applications",
+    "noApplicationInfo": "No application info",
+    "noApplicationsYet": "No applications yet.",
+    "noTitle": "No title",
+    "status": {
+      "confirmed": "✅ Confirmed",
+      "pending": "⏳ Pending",
+      "rejected": "❌ Rejected",
+      "cancelled": "Cancelled"
+    },
+    "viewDetail": "View detail",
+    "viewDetailAriaLabel": "View job posting details"
+  },
+  "auth": {
+    "loginRequired": "Login required"
+  },
+  "emailVerification": {
+    "autoCheck": "You will be redirected automatically when verified.",
+    "checkButton": "Check verification",
+    "checkError": "Error checking verification status.",
+    "notVerifiedYet": "Email not verified yet.",
+    "resendButton": "Resend verification email",
+    "resendSuccess": "Verification email resent.",
+    "resending": "Sending...",
+    "subtitle": "Email verification is required to activate your account.",
+    "title": "Email Verification",
+    "verificationSuccess": "Email verified successfully!",
+    "resendCountdown": "Resend available in {{seconds}}s",
+    "resendError": "Error resending verification email."
+  },
+  "error": {
+    "dataLoading": "데이터 로딩 오류",
+    "firebase": {
+      "networkError": "네트워크 연결을 확인해 주세요."
+    },
+    "technicalDetails": "Technical details",
+    "unknown": "Unknown error"
+  },
+  "filters": {
+    "allDates": "모든 날짜",
+    "allRoles": "모든 역할",
+    "allStatus": "모든 상태",
+    "reset": "Reset filters",
+    "search": "Search"
+  },
+  "kakaoSignIn": {
+    "error": "카카오 로그인에 실패했습니다."
+  },
+  "qrScanner": {
+    "camera": {
+      "autoProcess": "자동으로 스캔되고 처리됩니다",
+      "initializing": "카메라를 초기화하는 중입니다...",
+      "permissionRequest": "카메라 권한을 허용해주세요",
+      "scanPrompt": "스태프의 QR 코드를 카메라에 비춰주세요"
+    },
+    "error": {
+      "invalidFormat": "유효하지 않은 QR 형식입니다.",
+      "invalidQR": "유효하지 않은 QR 코드입니다.",
+      "processingError": "스캔 처리 중 오류가 발생했습니다."
+    },
+    "history": {
+      "label": "최근 스캔 이력"
+    },
+    "manual": {
+      "label": "QR 코드 수동 입력",
+      "processing": "Processing...",
+      "submit": "스캔 처리"
+    },
+    "mode": {
+      "checkIn": "Check in",
+      "checkOut": "Check out",
+      "label": "출퇴근 모드"
+    },
+    "result": {
+      "remainingCooldown": "남은 쿨다운",
+      "staff": "Staff"
+    },
+    "roundUp": {
+      "15min": "15분",
+      "30min": "30분",
+      "label": "라운드업 간격"
+    },
+    "scanMode": {
+      "camera": "카메라 스캔",
+      "label": "스캔 방식 선택",
+      "manual": "Manual input"
+    },
+    "title": "QR 출석 체크"
+  },
+  "region": {
+    "busan": "Busan",
+    "chungbuk": "Chungbuk",
+    "chungnam": "Chungnam",
+    "daegu": "Daegu",
+    "daejeon": "Daejeon",
+    "gangwon": "Gangwon",
+    "gwangju": "Gwangju",
+    "gyeongbuk": "Gyeongbuk",
+    "gyeonggi": "Gyeonggi",
+    "gyeongnam": "Gyeongnam",
+    "incheon": "Incheon",
+    "jeju": "Jeju",
+    "jeonbuk": "Jeonbuk",
+    "jeonnam": "Jeonnam",
+    "sejong": "Sejong",
+    "seoul": "Seoul",
+    "ulsan": "Ulsan"
+  },
+  "salary": {
+    "afterTax": "After-tax pay",
+    "allowance": "Allowance",
+    "allowances": {
+      "accommodation": "숙소비",
+      "bonus": "bonus",
+      "dailyBased": "일당 기반 계산",
+      "lodging": "숙박비",
+      "meal": "Meal allowance",
+      "noAllowances": "설정된 수당이 없습니다.",
+      "other": "Other allowances",
+      "settings": "Allowance settings",
+      "total": "Total allowances",
+      "transportation": "Transportation"
+    },
+    "basePay": {
+      "calculation": "Base pay calculation",
+      "label": "Base pay",
+      "total": "Base pay total"
+    },
+    "calculationNotice": {
+      "title": "급여 계산 안내"
+    },
+    "daysUnit": "{{days}}일",
+    "estimatedBasePay": "Estimated base pay",
+    "fixedTax": "Fixed tax",
+    "hoursUnit": "{{hours}}시간",
+    "info": "Salary info",
+    "postingBaseSalary": "공고 기본급여",
+    "roleBasedSalary": "Role-based salary",
+    "salary": "Salary",
+    "salaryType": "Salary type",
+    "setting": "설정",
+    "settlementAmount": "Settlement amount",
+    "systemDefault": "System default",
+    "tax": "Tax",
+    "totalPay": "총 지급액",
+    "type": {
+      "daily": "Daily",
+      "hourly": "Hourly",
+      "monthly": "Monthly"
+    },
+    "workDays": "{{days}}일 근무"
+  },
+  "shift": {
+    "checkIn": "Check in",
+    "noDealers": "등록된 딜러가 없습니다",
+    "staff": "Staff",
+    "status": {
+      "break": "Break",
+      "waiting": "Pending",
+      "working": "Working"
+    },
+    "validation": {
+      "allRulesComplied": "모든 교대 규칙을 준수합니다",
+      "errorCount": "{{count}}개의 오류가 있습니다",
+      "infoCount": "{{count}}개의 정보가 있습니다",
+      "suggestion": "Suggestion",
+      "suggestions": "제안사항",
+      "warningCount": "{{count}}개의 경고가 있습니다"
+    }
+  },
+  "staff": {
+    "cannotDeleteAfterCheckIn": "출근 후에는 삭제할 수 없습니다",
+    "cannotDeleteAfterComplete": "근무 완료 후에는 삭제할 수 없습니다",
+    "cannotDeleteAfterPaid": "급여 지급 완료 후에는 삭제할 수 없습니다",
+    "cannotDeleteCurrentState": "현재 상태에서는 삭제할 수 없습니다",
+    "cardAriaLabel": "스태프 카드: {{name}}",
+    "deleteStaff": "Delete staff",
+    "editWorkTime": "Edit work time",
+    "filteredResult": "필터링된 결과: {{count}}명",
+    "groupByDate": "날짜별 그룹화",
+    "nameTBD": "Name TBD",
+    "noContact": "No phone",
+    "noEditPermission": "No edit permission",
+    "noStaffForDate": "이 날짜에 할당된 스태프가 없습니다",
+    "reportStaff": "스태프 신고하기",
+    "roleTBD": "Role TBD",
+    "searchPlaceholder": "스태프 이름, 역할, 연락처로 검색...",
+    "totalCount": "총 {{count}}명의 스태프"
+  },
+  "staffProfile": {
+    "age": "Age",
+    "ageYears": "{{age}}세",
+    "call": "Call",
+    "email": "Email",
+    "experience": "Experience",
+    "gender": "Gender",
+    "history": "History",
+    "noEmail": "No email",
+    "noPhone": "전화번호 없음",
+    "notes": "기타 사항",
+    "preQuestionAnswers": "Pre-question answers",
+    "rating": "Rating",
+    "ratingCount": "{{count}}개 평점",
+    "region": "Location",
+    "title": "스태프 프로필"
+  },
+  "subscription": {
+    "chipsCount": "{{count}}칩",
+    "currentPlan": "Current plan",
+    "description": "매월 자동으로 파란칩이 지급됩니다.",
+    "faq": {
+      "cancelSubscription": "구독을 취소하면 어떻게 되나요?",
+      "changePlan": "플랜을 변경할 수 있나요?",
+      "chipsValidity": "파란칩 유효기간은 얼마나 되나요?",
+      "title": "자주 묻는 질문",
+      "whenChipsGranted": "파란칩은 언제 지급되나요?"
+    },
+    "free": "Free",
+    "monthlyAutoGrant": "매월 자동 지급",
+    "perMonth": "/ 월",
+    "priceAmount": "{{price}}원",
+    "selectPlan": "구독 플랜 선택",
+    "startFree": "무료 시작",
+    "subscribe": "Subscribe"
+  },
+  "workInfo": {
+    "endTime": "종료시간",
+    "noWorkHistory": "근무 내역이 없습니다.",
+    "startTime": "시작시간",
+    "totalDaysWorked": "총 {{count}}일 근무",
+    "totalWorkHours": "총 근무시간",
+    "workHistory": "Work history",
+    "workHours": "근무시간"
+  },
+  "workTime": {
+    "editTitle": "Edit work time",
+    "endTime": "종료 시간",
+    "endTimeNotSet": "(종료시간 미정)",
+    "endTimeTBD": "End time TBD",
+    "noTimeHint": "시간을 선택하지 않으면 ",
+    "pleaseSetStartTime": "시작시간을 설정해주세요",
+    "setEndTimeTBD": "퇴근시간을 미정으로 설정",
+    "setStartTimeTBD": "출근시간을 미정으로 설정",
+    "settings": "Work time settings",
+    "startTime": "시작 시간",
+    "startTimeLabel": "시작시간",
+    "startTimeTBD": "Start time TBD",
+    "summary": "근무 시간 요약",
+    "untilNextDay": "(다음날 {{time}}까지)"
+  },
+  "chipRecharge": {
+    "button": {
+      "charge": "Charge"
+    },
+    "package": {
+      "bonus": "Bonus",
+      "chips": "Chips",
+      "price": "Price"
+    },
+    "selectPackage": "Select package",
+    "title": "Chip Recharge"
+  },
+  "paymentHistory": {
+    "empty": "No payment history",
+    "error": {
+      "loadFailed": "Failed to load payment history"
+    },
+    "filter": {
+      "all": "All",
+      "failed": "Failed",
+      "pending": "Pending",
+      "success": "Success"
+    },
+    "table": {
+      "amount": "Amount",
+      "date": "Date",
+      "method": "Method",
+      "orderId": "Order ID",
+      "receipt": "Receipt",
+      "status": "Status"
+    },
+    "title": "Payment History",
+    "status": {
+      "success": "Success",
+      "failed": "Failed",
+      "pending": "Pending",
+      "cancelled": "Cancelled",
+      "refunded": "Refunded"
+    }
+  },
+  "paymentSuccess": {
+    "message": "Payment completed",
+    "orderInfo": {
+      "amount": "Amount",
+      "orderId": "Order ID",
+      "title": "Order Info"
+    },
+    "title": "Payment Success"
+  },
+  "workLog": {
+    "status": {
+      "pending": "Pending",
+      "confirmed": "Confirmed",
+      "rejected": "Rejected"
+    }
+  },
+  "payment": {
+    "method": {
+      "card": "Card",
+      "bank": "Bank Transfer",
+      "virtual": "Virtual Account",
+      "phone": "Phone Payment"
+    }
+  },
+  "confirm": {
+    "delete": "Are you sure you want to delete?",
+    "cancel": "Are you sure you want to cancel?",
+    "save": "Do you want to save changes?",
+    "logout": "Do you want to logout?"
   }
 }
