@@ -30,6 +30,11 @@ android/.gradle/
 .env.local
 .env.*.local
 
+# Firebase config (보안상 중요!)
+google-services.json
+GoogleService-Info.plist
+firebase.json
+
 # Editor
 .vscode/
 .idea/
