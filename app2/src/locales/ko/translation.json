@@ -357,7 +357,10 @@
     "confirmCancel": "취소하기",
     "contact": "연락처",
     "count": "건",
-    "currency": "{{amount}}원",
+    "currency": {
+      "default": "{{amount}}원",
+      "krw": "원"
+    },
     "dateError": "날짜 오류",
     "dateNotSet": "날짜 미정",
     "dateTBD": "날짜 미정",
@@ -396,8 +399,7 @@
     "unknownUser": "알 수 없는 사용자",
     "user": "사용자",
     "won": "원",
-    "hide": "숨기기",
-    "currencyKrw": "₩{{amount}}"
+    "hide": "숨기기"
   },
   "payrollAdmin": {
     "alertSuccess": "급여가 성공적으로 계산되었습니다! 업데이트된 데이터를 가져옵니다...",
