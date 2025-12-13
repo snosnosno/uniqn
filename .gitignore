@@ -12,6 +12,7 @@ node_modules/
 build/
 */build/
 lib/
+!uniqn-mobile/src/lib/
 dist/
 */dist/
 
@@ -74,7 +75,9 @@ serviceAccountKey*.json
 *-adminsdk-*.json
 firebase-adminsdk-*.json
 google-services.json
+!uniqn-mobile/google-services.json
 GoogleService-Info.plist
+!uniqn-mobile/GoogleService-Info.plist
 
 # Security certificates and keys
 *.key

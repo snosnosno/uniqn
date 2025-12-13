@@ -1,0 +1,896 @@
+# 06. Firebase 연동 전략
+
+## Firebase 설정
+
+### 패키지 선택
+```yaml
+# React Native Firebase (권장)
+@react-native-firebase/app: ^20.0.0
+@react-native-firebase/auth: ^20.0.0
+@react-native-firebase/firestore: ^20.0.0
+@react-native-firebase/storage: ^20.0.0
+@react-native-firebase/messaging: ^20.0.0  # FCM
+@react-native-firebase/analytics: ^20.0.0
+
+# 이유:
+# - 네이티브 모듈 사용 (성능 우수)
+# - Expo와 호환 (expo-dev-client 필요)
+# - 기존 Firebase 프로젝트와 호환
+```
+
+### 초기화 설정
+```typescript
+// src/lib/firebase.ts
+import { initializeApp, getApps, getApp } from '@react-native-firebase/app';
+import auth from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import storage from '@react-native-firebase/storage';
+import messaging from '@react-native-firebase/messaging';
+
+// Firebase 자동 초기화 (google-services.json / GoogleService-Info.plist)
+// 별도 config 불필요
+
+// Firestore 설정
+firestore().settings({
+  persistence: true, // 오프라인 지원
+  cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED,
+});
+
+export const db = firestore();
+export const authInstance = auth();
+export const storageInstance = storage();
+export const messagingInstance = messaging();
+
+// 타입 내보내기
+export type FirebaseUser = ReturnType<typeof auth>['currentUser'];
+export type DocumentData = FirebaseFirestoreTypes.DocumentData;
+```
+
+### Expo 설정
+```json
+// app.json
+{
+  "expo": {
+    "plugins": [
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
+          }
+        }
+      ]
+    ],
+    "ios": {
+      "googleServicesFile": "./GoogleService-Info.plist"
+    },
+    "android": {
+      "googleServicesFile": "./google-services.json"
+    }
+  }
+}
+```
+
+---
+
+## Authentication 서비스
+
+### authService
+```typescript
+// src/services/auth/authService.ts
+import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import firestore from '@react-native-firebase/firestore';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { useAuthStore } from '@/stores/authStore';
+import { AuthError } from '@/utils/errors';
+import type { User } from '@/types';
+
+// Google Sign-In 설정
+GoogleSignin.configure({
+  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
+});
+
+export const authService = {
+  // 이메일 로그인
+  async signInWithEmail(email: string, password: string): Promise<User> {
+    try {
+      const credential = await auth().signInWithEmailAndPassword(email, password);
+      return await this.fetchAndSetUser(credential.user);
+    } catch (error: any) {
+      throw new AuthError(error.code, this.getErrorMessage(error.code));
+    }
+  },
+
+  // 회원가입
+  async signUpWithEmail(
+    email: string,
+    password: string,
+    profileData: Partial<User>
+  ): Promise<User> {
+    try {
+      const credential = await auth().createUserWithEmailAndPassword(email, password);
+
+      // Firestore에 프로필 저장
+      await firestore().collection('users').doc(credential.user.uid).set({
+        ...profileData,
+        email,
+        role: 'user',
+        consentCompleted: false,
+        profileCompleted: false,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+      });
+
+      // 이메일 인증 발송
+      await credential.user.sendEmailVerification();
+
+      return await this.fetchAndSetUser(credential.user);
+    } catch (error: any) {
+      throw new AuthError(error.code, this.getErrorMessage(error.code));
+    }
+  },
+
+  // Google 로그인
+  async signInWithGoogle(): Promise<User> {
+    try {
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
+      const { idToken } = await GoogleSignin.signIn();
+      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
+      const credential = await auth().signInWithCredential(googleCredential);
+
+      // 신규 사용자인 경우 프로필 생성
+      const userDoc = await firestore()
+        .collection('users')
+        .doc(credential.user.uid)
+        .get();
+
+      if (!userDoc.exists) {
+        await firestore().collection('users').doc(credential.user.uid).set({
+          email: credential.user.email,
+          displayName: credential.user.displayName,
+          photoURL: credential.user.photoURL,
+          role: 'user',
+          consentCompleted: false,
+          profileCompleted: false,
+          createdAt: firestore.FieldValue.serverTimestamp(),
+        });
+      }
+
+      return await this.fetchAndSetUser(credential.user);
+    } catch (error: any) {
+      throw new AuthError(error.code || 'GOOGLE_SIGN_IN_ERROR', '구글 로그인에 실패했습니다.');
+    }
+  },
+
+  // 로그아웃
+  async signOut(): Promise<void> {
+    try {
+      await auth().signOut();
+      try {
+        await GoogleSignin.signOut();
+      } catch {
+        // Google 로그인이 아닌 경우 무시
+      }
+      useAuthStore.getState().logout();
+    } catch (error: any) {
+      throw new AuthError(error.code, '로그아웃에 실패했습니다.');
+    }
+  },
+
+  // 비밀번호 재설정
+  async sendPasswordResetEmail(email: string): Promise<void> {
+    try {
+      await auth().sendPasswordResetEmail(email);
+    } catch (error: any) {
+      throw new AuthError(error.code, this.getErrorMessage(error.code));
+    }
+  },
+
+  // 사용자 데이터 조회 및 Store 업데이트
+  async fetchAndSetUser(firebaseUser: FirebaseAuthTypes.User): Promise<User> {
+    const userDoc = await firestore()
+      .collection('users')
+      .doc(firebaseUser.uid)
+      .get();
+
+    const userData = userDoc.data();
+
+    // 패널티 확인
+    if (userData?.penalty?.isBlocked) {
+      const now = new Date();
+      const blockedUntil = userData.penalty.blockedUntil?.toDate();
+      if (blockedUntil && blockedUntil > now) {
+        throw new AuthError('ACCOUNT_BLOCKED', '계정이 정지되었습니다.');
+      }
+    }
+
+    const user: User = {
+      uid: firebaseUser.uid,
+      email: firebaseUser.email,
+      displayName: userData?.displayName || firebaseUser.displayName,
+      photoURL: userData?.photoURL || firebaseUser.photoURL,
+      role: userData?.role || 'user',
+      consentCompleted: userData?.consentCompleted || false,
+      profileCompleted: userData?.profileCompleted || false,
+    };
+
+    useAuthStore.getState().setUser(user);
+    return user;
+  },
+
+  // 인증 상태 리스너
+  onAuthStateChanged(callback: (user: FirebaseAuthTypes.User | null) => void) {
+    return auth().onAuthStateChanged(callback);
+  },
+
+  // 에러 메시지 변환
+  getErrorMessage(code: string): string {
+    const messages: Record<string, string> = {
+      'auth/invalid-email': '유효하지 않은 이메일 형식입니다.',
+      'auth/user-disabled': '비활성화된 계정입니다.',
+      'auth/user-not-found': '등록되지 않은 이메일입니다.',
+      'auth/wrong-password': '비밀번호가 일치하지 않습니다.',
+      'auth/email-already-in-use': '이미 사용 중인 이메일입니다.',
+      'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
+      'auth/too-many-requests': '잠시 후 다시 시도해주세요.',
+      'auth/network-request-failed': '네트워크 연결을 확인해주세요.',
+    };
+    return messages[code] || '인증에 실패했습니다. 다시 시도해주세요.';
+  },
+};
+```
+
+### useAuthListener 훅
+```typescript
+// src/hooks/useAuthListener.ts
+import { useEffect } from 'react';
+import { authService } from '@/services/auth/authService';
+import { useAuthStore } from '@/stores/authStore';
+
+export function useAuthListener() {
+  const { setUser, setLoading, logout } = useAuthStore();
+
+  useEffect(() => {
+    const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
+      if (firebaseUser) {
+        try {
+          await authService.fetchAndSetUser(firebaseUser);
+        } catch (error) {
+          // 패널티 등의 이유로 로그인 불가
+          logout();
+        }
+      } else {
+        logout();
+      }
+      setLoading(false);
+    });
+
+    return unsubscribe;
+  }, []);
+}
+```
+
+---
+
+## Firestore 서비스
+
+### 기본 CRUD 서비스
+```typescript
+// src/services/firebase/firestoreService.ts
+import firestore, {
+  FirebaseFirestoreTypes,
+} from '@react-native-firebase/firestore';
+import { AppError } from '@/utils/errors';
+
+type QueryConstraint = FirebaseFirestoreTypes.QueryConstraint;
+type DocumentData = FirebaseFirestoreTypes.DocumentData;
+
+export const firestoreService = {
+  // 문서 조회
+  async getDoc<T>(
+    collectionPath: string,
+    docId: string
+  ): Promise<T | null> {
+    try {
+      const doc = await firestore().collection(collectionPath).doc(docId).get();
+      if (!doc.exists) return null;
+      return { id: doc.id, ...doc.data() } as T;
+    } catch (error) {
+      throw new AppError('FIRESTORE_ERROR', 'FETCH_FAILED', '데이터 조회에 실패했습니다.');
+    }
+  },
+
+  // 컬렉션 조회
+  async getDocs<T>(
+    collectionPath: string,
+    constraints: QueryConstraint[] = []
+  ): Promise<T[]> {
+    try {
+      let query: FirebaseFirestoreTypes.Query = firestore().collection(collectionPath);
+
+      for (const constraint of constraints) {
+        query = query.where(
+          constraint.fieldPath,
+          constraint.opStr,
+          constraint.value
+        );
+      }
+
+      const snapshot = await query.get();
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as T[];
+    } catch (error) {
+      throw new AppError('FIRESTORE_ERROR', 'FETCH_FAILED', '데이터 조회에 실패했습니다.');
+    }
+  },
+
+  // 문서 생성
+  async addDoc<T extends DocumentData>(
+    collectionPath: string,
+    data: Omit<T, 'id'>
+  ): Promise<string> {
+    try {
+      const docRef = await firestore().collection(collectionPath).add({
+        ...data,
+        createdAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      });
+      return docRef.id;
+    } catch (error) {
+      throw new AppError('FIRESTORE_ERROR', 'CREATE_FAILED', '데이터 생성에 실패했습니다.');
+    }
+  },
+
+  // 문서 업데이트
+  async updateDoc(
+    collectionPath: string,
+    docId: string,
+    data: Partial<DocumentData>
+  ): Promise<void> {
+    try {
+      await firestore().collection(collectionPath).doc(docId).update({
+        ...data,
+        updatedAt: firestore.FieldValue.serverTimestamp(),
+      });
+    } catch (error) {
+      throw new AppError('FIRESTORE_ERROR', 'UPDATE_FAILED', '데이터 수정에 실패했습니다.');
+    }
+  },
+
+  // 문서 삭제
+  async deleteDoc(collectionPath: string, docId: string): Promise<void> {
+    try {
+      await firestore().collection(collectionPath).doc(docId).delete();
+    } catch (error) {
+      throw new AppError('FIRESTORE_ERROR', 'DELETE_FAILED', '데이터 삭제에 실패했습니다.');
+    }
+  },
+
+  // 배치 쓰기
+  async batchWrite(
+    operations: Array<{
+      type: 'set' | 'update' | 'delete';
+      collection: string;
+      docId: string;
+      data?: DocumentData;
+    }>
+  ): Promise<void> {
+    try {
+      const batch = firestore().batch();
+
+      for (const op of operations) {
+        const docRef = firestore().collection(op.collection).doc(op.docId);
+
+        switch (op.type) {
+          case 'set':
+            batch.set(docRef, {
+              ...op.data,
+              updatedAt: firestore.FieldValue.serverTimestamp(),
+            });
+            break;
+          case 'update':
+            batch.update(docRef, {
+              ...op.data,
+              updatedAt: firestore.FieldValue.serverTimestamp(),
+            });
+            break;
+          case 'delete':
+            batch.delete(docRef);
+            break;
+        }
+      }
+
+      await batch.commit();
+    } catch (error) {
+      throw new AppError('FIRESTORE_ERROR', 'BATCH_FAILED', '일괄 처리에 실패했습니다.');
+    }
+  },
+
+  // 실시간 구독
+  subscribe<T>(
+    collectionPath: string,
+    constraints: QueryConstraint[],
+    onData: (data: T[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    let query: FirebaseFirestoreTypes.Query = firestore().collection(collectionPath);
+
+    for (const constraint of constraints) {
+      query = query.where(
+        constraint.fieldPath,
+        constraint.opStr,
+        constraint.value
+      );
+    }
+
+    return query.onSnapshot(
+      (snapshot) => {
+        const data = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as T[];
+        onData(data);
+      },
+      (error) => {
+        onError?.(error);
+      }
+    );
+  },
+};
+```
+
+### 구인공고 서비스
+```typescript
+// src/services/job/jobPostingService.ts
+import firestore from '@react-native-firebase/firestore';
+import { firestoreService } from '@/services/firebase/firestoreService';
+import type { JobPosting, JobFilters, Application } from '@/types';
+
+export const jobPostingService = {
+  // 필터링된 공고 조회
+  async getFiltered(filters: JobFilters): Promise<JobPosting[]> {
+    let query = firestore()
+      .collection('jobPostings')
+      .where('status', '==', 'active')
+      .orderBy('createdAt', 'desc');
+
+    // 지역 필터
+    if (filters.location.length > 0) {
+      query = query.where('location.district', 'in', filters.location);
+    }
+
+    // 날짜 필터
+    if (filters.dateFrom) {
+      query = query.where('dates', 'array-contains-any', [filters.dateFrom]);
+    }
+
+    // 공고 유형 필터
+    if (filters.postingType.length > 0) {
+      query = query.where('postingType', 'in', filters.postingType);
+    }
+
+    const snapshot = await query.limit(50).get();
+
+    let jobs = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as JobPosting[];
+
+    // 클라이언트 측 추가 필터링 (Firestore 제한)
+    if (filters.salaryMin) {
+      jobs = jobs.filter((job) => job.salary >= filters.salaryMin!);
+    }
+    if (filters.salaryMax) {
+      jobs = jobs.filter((job) => job.salary <= filters.salaryMax!);
+    }
+    if (filters.searchQuery) {
+      const query = filters.searchQuery.toLowerCase();
+      jobs = jobs.filter(
+        (job) =>
+          job.title.toLowerCase().includes(query) ||
+          job.location.address.toLowerCase().includes(query)
+      );
+    }
+
+    return jobs;
+  },
+
+  // 상세 조회
+  async getById(id: string): Promise<JobPosting | null> {
+    return firestoreService.getDoc<JobPosting>('jobPostings', id);
+  },
+
+  // 지원하기
+  async apply(jobId: string, applicationData: Partial<Application>): Promise<string> {
+    const applicationId = await firestoreService.addDoc('applications', {
+      ...applicationData,
+      jobId,
+      status: 'pending',
+    });
+
+    // 공고 지원자 수 업데이트
+    await firestore()
+      .collection('jobPostings')
+      .doc(jobId)
+      .update({
+        applicantCount: firestore.FieldValue.increment(1),
+      });
+
+    return applicationId;
+  },
+
+  // 지원 취소
+  async cancelApplication(applicationId: string, jobId: string): Promise<void> {
+    await firestoreService.updateDoc('applications', applicationId, {
+      status: 'cancelled',
+    });
+
+    await firestore()
+      .collection('jobPostings')
+      .doc(jobId)
+      .update({
+        applicantCount: firestore.FieldValue.increment(-1),
+      });
+  },
+
+  // 내 지원 목록
+  async getMyApplications(userId: string): Promise<Application[]> {
+    const snapshot = await firestore()
+      .collection('applications')
+      .where('applicantId', '==', userId)
+      .orderBy('createdAt', 'desc')
+      .get();
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as Application[];
+  },
+};
+```
+
+---
+
+## Storage 서비스
+
+```typescript
+// src/services/firebase/storageService.ts
+import storage from '@react-native-firebase/storage';
+import { AppError } from '@/utils/errors';
+
+export const storageService = {
+  // 이미지 업로드
+  async uploadImage(
+    path: string,
+    uri: string,
+    onProgress?: (progress: number) => void
+  ): Promise<string> {
+    try {
+      const reference = storage().ref(path);
+      const task = reference.putFile(uri);
+
+      if (onProgress) {
+        task.on('state_changed', (snapshot) => {
+          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+          onProgress(progress);
+        });
+      }
+
+      await task;
+      return await reference.getDownloadURL();
+    } catch (error) {
+      throw new AppError('STORAGE_ERROR', 'UPLOAD_FAILED', '이미지 업로드에 실패했습니다.');
+    }
+  },
+
+  // 프로필 이미지 업로드
+  async uploadProfileImage(
+    userId: string,
+    uri: string,
+    onProgress?: (progress: number) => void
+  ): Promise<string> {
+    const path = `profiles/${userId}/${Date.now()}.jpg`;
+    return this.uploadImage(path, uri, onProgress);
+  },
+
+  // 이미지 삭제
+  async deleteImage(url: string): Promise<void> {
+    try {
+      const reference = storage().refFromURL(url);
+      await reference.delete();
+    } catch (error) {
+      // 이미 삭제된 경우 무시
+      console.warn('Image already deleted or not found');
+    }
+  },
+};
+```
+
+---
+
+## Push Notification (FCM)
+
+### FCM 설정
+```typescript
+// src/services/notification/fcmService.ts
+import messaging from '@react-native-firebase/messaging';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import firestore from '@react-native-firebase/firestore';
+
+const FCM_TOKEN_KEY = 'fcm_token';
+
+export const fcmService = {
+  // 권한 요청
+  async requestPermission(): Promise<boolean> {
+    const authStatus = await messaging().requestPermission();
+    return (
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL
+    );
+  },
+
+  // FCM 토큰 조회 및 저장
+  async getAndSaveToken(userId: string): Promise<string | null> {
+    try {
+      const hasPermission = await this.requestPermission();
+      if (!hasPermission) return null;
+
+      const token = await messaging().getToken();
+      const savedToken = await AsyncStorage.getItem(FCM_TOKEN_KEY);
+
+      // 토큰이 변경된 경우에만 저장
+      if (token !== savedToken) {
+        await firestore().collection('users').doc(userId).update({
+          fcmToken: token,
+          fcmTokenUpdatedAt: firestore.FieldValue.serverTimestamp(),
+          platform: Platform.OS,
+        });
+        await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
+      }
+
+      return token;
+    } catch (error) {
+      console.error('FCM token error:', error);
+      return null;
+    }
+  },
+
+  // 토큰 갱신 리스너
+  onTokenRefresh(userId: string, callback?: (token: string) => void) {
+    return messaging().onTokenRefresh(async (token) => {
+      await firestore().collection('users').doc(userId).update({
+        fcmToken: token,
+        fcmTokenUpdatedAt: firestore.FieldValue.serverTimestamp(),
+      });
+      await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
+      callback?.(token);
+    });
+  },
+
+  // 포그라운드 메시지 핸들러
+  onForegroundMessage(
+    callback: (message: messaging.RemoteMessage) => void
+  ) {
+    return messaging().onMessage(callback);
+  },
+
+  // 백그라운드 메시지 핸들러 (앱 외부에서 호출)
+  setBackgroundMessageHandler(
+    handler: (message: messaging.RemoteMessage) => Promise<void>
+  ) {
+    messaging().setBackgroundMessageHandler(handler);
+  },
+
+  // 알림 클릭 핸들러
+  onNotificationOpenedApp(
+    callback: (message: messaging.RemoteMessage) => void
+  ) {
+    return messaging().onNotificationOpenedApp(callback);
+  },
+
+  // 앱이 종료된 상태에서 알림으로 열린 경우
+  async getInitialNotification(): Promise<messaging.RemoteMessage | null> {
+    return messaging().getInitialNotification();
+  },
+};
+```
+
+### FCM 초기화 훅
+```typescript
+// src/hooks/useFCM.ts
+import { useEffect } from 'react';
+import { fcmService } from '@/services/notification/fcmService';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
+import { navigation } from '@/utils/navigation';
+
+export function useFCM() {
+  const user = useAuthStore((s) => s.user);
+  const { show: showToast } = useToastStore();
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    // 토큰 등록
+    fcmService.getAndSaveToken(user.uid);
+
+    // 토큰 갱신 리스너
+    const unsubscribeToken = fcmService.onTokenRefresh(user.uid);
+
+    // 포그라운드 메시지 핸들러
+    const unsubscribeMessage = fcmService.onForegroundMessage((message) => {
+      showToast({
+        type: 'info',
+        message: message.notification?.body || '새 알림이 있습니다.',
+      });
+    });
+
+    // 알림 클릭 핸들러
+    const unsubscribeOpened = fcmService.onNotificationOpenedApp((message) => {
+      handleNotificationNavigation(message.data);
+    });
+
+    // 앱 종료 상태에서 열린 경우
+    fcmService.getInitialNotification().then((message) => {
+      if (message) {
+        handleNotificationNavigation(message.data);
+      }
+    });
+
+    return () => {
+      unsubscribeToken();
+      unsubscribeMessage();
+      unsubscribeOpened();
+    };
+  }, [user?.uid]);
+}
+
+function handleNotificationNavigation(data?: Record<string, string>) {
+  if (!data?.type) return;
+
+  switch (data.type) {
+    case 'job_application':
+      navigation.toJobPostingDetail(data.jobId);
+      break;
+    case 'schedule_update':
+      navigation.toScheduleDetail(data.scheduleId);
+      break;
+    case 'message':
+      navigation.toNotifications();
+      break;
+    default:
+      navigation.toNotifications();
+  }
+}
+```
+
+---
+
+## 데이터 모델 (Firestore 컬렉션)
+
+### 컬렉션 구조
+```
+firestore/
+├── users/                      # 사용자
+│   └── {userId}/
+│       ├── profile data
+│       ├── notifications/      # 서브컬렉션
+│       └── qrMetadata/         # 서브컬렉션
+│
+├── jobPostings/                # 구인공고
+│   └── {postingId}/
+│       └── posting data
+│
+├── applications/               # 지원
+│   └── {applicationId}/
+│       └── application data
+│
+├── workLogs/                   # 근무 기록
+│   └── {workLogId}/
+│       └── work log data
+│
+├── inquiries/                  # 문의
+│   └── {inquiryId}/
+│       └── inquiry data
+│
+└── staff/                      # 스태프 정보
+    └── {staffId}/
+        └── staff data
+```
+
+### 인덱스 설정
+```
+// firestore.indexes.json
+{
+  "indexes": [
+    {
+      "collectionGroup": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "applications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "applicantId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "workLogs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "staffId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "DESCENDING" }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+## 오프라인 지원
+
+### 오프라인 캐시 설정
+```typescript
+// Firestore 오프라인 지원 (기본 활성화)
+firestore().settings({
+  persistence: true,
+  cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED,
+});
+
+// 네트워크 상태 확인
+import NetInfo from '@react-native-community/netinfo';
+
+export async function isOnline(): Promise<boolean> {
+  const state = await NetInfo.fetch();
+  return state.isConnected ?? false;
+}
+
+// 오프라인 시 캐시된 데이터 사용
+async function getJobsWithOfflineSupport(): Promise<JobPosting[]> {
+  try {
+    const online = await isOnline();
+
+    if (!online) {
+      // 캐시에서 읽기
+      const snapshot = await firestore()
+        .collection('jobPostings')
+        .get({ source: 'cache' });
+
+      return snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as JobPosting[];
+    }
+
+    // 온라인: 서버에서 읽기
+    const snapshot = await firestore()
+      .collection('jobPostings')
+      .get({ source: 'server' });
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as JobPosting[];
+  } catch (error) {
+    // 네트워크 오류 시 캐시 시도
+    const snapshot = await firestore()
+      .collection('jobPostings')
+      .get({ source: 'cache' });
+
+    return snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+    })) as JobPosting[];
+  }
+}
+```
