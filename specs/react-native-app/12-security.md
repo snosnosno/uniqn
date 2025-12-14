@@ -1180,12 +1180,96 @@ export function useSanitizedInput() {
 
 ## 8. 권한 시스템
 
-### 권한 서비스
+### 8.1 권한 체계 개요
+
+UNIQN 앱은 4단계 권한 체계를 사용합니다:
+
+```
+┌──────────────────────────────────────────────────────────────────────┐
+│                        UNIQN 권한 체계                                │
+├──────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  🔓 guest (비로그인)                                                  │
+│  └── 공고 목록 조회만 (미리보기 수준)                                  │
+│                                                                       │
+│  👤 staff (기본 가입자) ─── 로그인 필수                                │
+│  └── 공고 검색/필터 + 상세보기 + 지원 + QR 출퇴근 + 내 스케줄          │
+│                                                                       │
+│  🏢 employer (구인자)                                                 │
+│  └── staff 권한 + 공고 작성/관리 + 지원자 확정/거절 + 정산             │
+│                                                                       │
+│  ⚙️ admin (관리자)                                                    │
+│  └── 모든 권한 + 사용자 관리 + 시스템 설정                             │
+│                                                                       │
+└──────────────────────────────────────────────────────────────────────┘
+```
+
+### 8.2 권한 매트릭스
+
+| 기능 | guest | staff | employer | admin |
+|------|:-----:|:-----:|:--------:|:-----:|
+| **공고 목록 조회** | ✅ | ✅ | ✅ | ✅ |
+| **공고 검색/필터** | ❌ | ✅ | ✅ | ✅ |
+| **공고 상세 보기** | ❌ | ✅ | ✅ | ✅ |
+| **지원하기** | ❌ | ✅ | ✅ | ✅ |
+| **QR 출퇴근** | ❌ | ✅ | ✅ | ✅ |
+| **내 스케줄** | ❌ | ✅ | ✅ | ✅ |
+| **내 지원 내역** | ❌ | ✅ | ✅ | ✅ |
+| **프로필 관리** | ❌ | ✅ | ✅ | ✅ |
+| **공고 작성** | ❌ | ❌ | ✅ | ✅ |
+| **지원자 관리** | ❌ | ❌ | ✅ | ✅ |
+| **정산** | ❌ | ❌ | ✅ | ✅ |
+| **사용자 관리** | ❌ | ❌ | ❌ | ✅ |
+| **시스템 설정** | ❌ | ❌ | ❌ | ✅ |
+
+### 8.3 역할 정의
+
+```typescript
+// src/types/permission.ts
+
+/**
+ * UserRole: 시스템 내 사용자의 권한 등급
+ * - guest는 role이 null (비로그인 상태)
+ * - 가입 시 기본값: 'staff'
+ */
+export type UserRole = 'staff' | 'employer' | 'admin';
+
+/**
+ * 역할 계층 (높을수록 상위 권한)
+ */
+export const UserRoleHierarchy = {
+  admin: 100,     // 시스템 관리자 (전체 권한)
+  employer: 50,   // 구인자 (공고 관리 + staff 권한)
+  staff: 10,      // 기본 가입자 (지원, 출퇴근)
+  // guest: 0     // 비로그인 (role === null)
+} as const;
+
+/**
+ * 역할별 설명
+ */
+export const UserRoleDescriptions = {
+  admin: '시스템 관리자 - 모든 권한',
+  employer: '구인자 - 공고 작성 및 지원자 관리',
+  staff: '스태프 - 공고 지원 및 근무',
+} as const;
+```
+
+### 8.4 권한 서비스
 
 ```typescript
 // src/services/permissionService.ts
 import { UserRole, Permission, ResourceAction } from '@/types/permission';
 
+/**
+ * guest (비로그인) 권한 - role이 null일 때
+ */
+const GUEST_PERMISSIONS: Permission[] = [
+  Permission.JOB_VIEW_LIST,  // 공고 목록만 조회 가능
+];
+
+/**
+ * 역할별 권한 매트릭스
+ */
 type PermissionMatrix = Record<UserRole, Permission[]>;
 
 const PERMISSION_MATRIX: PermissionMatrix = {
@@ -1194,13 +1278,37 @@ const PERMISSION_MATRIX: PermissionMatrix = {
     Permission.ALL,
   ],
   employer: [
+    // === staff 권한 포함 ===
+    // 공고 조회 (검색, 필터, 상세)
+    Permission.JOB_VIEW_LIST,
+    Permission.JOB_VIEW_DETAIL,
+    Permission.JOB_SEARCH,
+    Permission.JOB_FILTER,
+
+    // 지원
+    Permission.APPLICATION_CREATE,
+    Permission.APPLICATION_CANCEL_OWN,
+    Permission.APPLICATION_VIEW_OWN,
+
+    // 출퇴근
+    Permission.ATTENDANCE_CHECKIN,
+    Permission.ATTENDANCE_CHECKOUT,
+    Permission.ATTENDANCE_VIEW_OWN,
+
+    // 스케줄
+    Permission.SCHEDULE_VIEW_OWN,
+
+    // 프로필
+    Permission.PROFILE_VIEW_OWN,
+    Permission.PROFILE_UPDATE_OWN,
+
+    // === employer 전용 권한 ===
     // 공고 관리
     Permission.JOB_CREATE,
     Permission.JOB_UPDATE_OWN,
     Permission.JOB_DELETE_OWN,
-    Permission.JOB_VIEW_ALL,
 
-    // 지원 관리
+    // 지원자 관리
     Permission.APPLICATION_VIEW_OWN_JOBS,
     Permission.APPLICATION_CONFIRM,
     Permission.APPLICATION_REJECT,
@@ -1218,8 +1326,11 @@ const PERMISSION_MATRIX: PermissionMatrix = {
     Permission.CHIP_VIEW_OWN,
   ],
   staff: [
-    // 공고 조회
-    Permission.JOB_VIEW_PUBLIC,
+    // 공고 조회 (검색, 필터, 상세)
+    Permission.JOB_VIEW_LIST,
+    Permission.JOB_VIEW_DETAIL,
+    Permission.JOB_SEARCH,
+    Permission.JOB_FILTER,
 
     // 지원
     Permission.APPLICATION_CREATE,
@@ -1234,24 +1345,32 @@ const PERMISSION_MATRIX: PermissionMatrix = {
     // 스케줄
     Permission.SCHEDULE_VIEW_OWN,
 
-    // 칩
-    Permission.CHIP_VIEW_OWN,
-  ],
-  user: [
-    // 기본 조회 권한만
-    Permission.JOB_VIEW_PUBLIC,
+    // 프로필
     Permission.PROFILE_VIEW_OWN,
     Permission.PROFILE_UPDATE_OWN,
+
+    // 칩
+    Permission.CHIP_VIEW_OWN,
   ],
 };
 
 class PermissionService {
   private userPermissions: Set<Permission> = new Set();
+  private currentRole: UserRole | null = null;
 
   /**
    * 사용자 권한 설정
+   * @param role - 사용자 역할 (null이면 guest)
    */
-  setUserRole(role: UserRole): void {
+  setUserRole(role: UserRole | null): void {
+    this.currentRole = role;
+
+    // guest (비로그인) 처리
+    if (role === null) {
+      this.userPermissions = new Set(GUEST_PERMISSIONS);
+      return;
+    }
+
     const permissions = PERMISSION_MATRIX[role] || [];
 
     this.userPermissions = new Set(
@@ -1259,6 +1378,13 @@ class PermissionService {
         ? Object.values(Permission)
         : permissions
     );
+  }
+
+  /**
+   * guest 여부 확인
+   */
+  isGuest(): boolean {
+    return this.currentRole === null;
   }
 
   /**
@@ -1292,6 +1418,9 @@ class PermissionService {
     action: ResourceAction,
     userId: string
   ): Promise<boolean> {
+    // guest는 리소스 접근 불가
+    if (this.isGuest()) return false;
+
     const resource = await this.fetchResource(resourceType, resourceId);
     if (!resource) return false;
 
@@ -1349,19 +1478,19 @@ class PermissionService {
 export const permissionService = new PermissionService();
 ```
 
-### 권한 확인 훅
+### 8.5 권한 확인 훅
 
 ```typescript
 // src/hooks/usePermissions.ts
 import { useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
-import { permissionService } from '@/services/permissionService';
-import { Permission } from '@/types/permission';
+import { permissionService, GUEST_PERMISSIONS } from '@/services/permissionService';
+import { Permission, UserRole } from '@/types/permission';
 
 export function usePermissions() {
-  const { user, role } = useAuthStore();
+  const { user, role, isAuthenticated } = useAuthStore();
 
-  // 역할 변경 시 권한 업데이트
+  // 역할 변경 시 권한 업데이트 (guest 포함)
   useMemo(() => {
     permissionService.setUserRole(role);
   }, [role]);

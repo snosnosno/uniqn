@@ -71,6 +71,180 @@ ID 필드:
   - 명확한 의미 전달 (startTime vs time)
 ```
 
+### Role 타입 정의 (중요)
+
+시스템에는 두 가지 다른 Role 개념이 존재합니다:
+
+```typescript
+// src/types/roles.ts
+
+/**
+ * UserRole: 시스템 내 사용자의 권한 등급
+ * - users 컬렉션에서 사용
+ * - 앱 접근 권한 및 기능 제어에 사용
+ *
+ * 권한 체계:
+ * - guest (비로그인): role === null → 공고 목록만 조회 가능
+ * - staff (기본 가입자): 공고 검색/상세/지원, QR 출퇴근, 내 스케줄
+ * - employer (구인자): staff 권한 + 공고 작성/관리, 지원자 확정/거절, 정산
+ * - admin (관리자): 모든 권한 + 사용자 관리, 시스템 설정
+ */
+export type UserRole = 'staff' | 'employer' | 'admin'
+
+export const UserRoleHierarchy = {
+  admin: 100,     // 시스템 관리자 (전체 권한)
+  employer: 50,   // 구인자 (공고 관리 + staff 권한)
+  staff: 10,      // 기본 가입자 (지원, 출퇴근)
+  // guest: 0     // 비로그인 (role === null)
+} as const
+
+export const UserRoleDescriptions = {
+  admin: '시스템 관리자 - 모든 권한',
+  employer: '구인자 - 공고 작성 및 지원자 관리',
+  staff: '스태프 - 공고 지원 및 근무',
+} as const
+
+/**
+ * StaffRole: 근무 시 담당하는 직무/포지션
+ * - staff 컬렉션, workLogs, applications에서 사용
+ * - 구인공고 모집 역할 및 근무 배정에 사용
+ */
+export type StaffRole =
+  | 'dealer'      // 딜러
+  | 'floor'       // 플로어
+  | 'td'          // Tournament Director (토너먼트 디렉터)
+  | 'dc'          // Dealer Coordinator (딜러 코디네이터)
+  | 'chips'       // Chip Master (칩 마스터)
+  | 'register'    // 레지스터 (접수/등록)
+  | 'serving'     // 서빙
+  | 'guard'       // 가드 (경호/보안)
+  | 'manager'     // 매니저
+
+export const StaffRoleLabels: Record<StaffRole, string> = {
+  dealer: '딜러',
+  floor: '플로어',
+  td: '토너먼트 디렉터',
+  dc: '딜러 코디네이터',
+  chips: '칩 마스터',
+  register: '레지스터',
+  serving: '서빙',
+  guard: '가드',
+  manager: '매니저',
+} as const
+
+// 역할별 우선순위 (정산/배치 시 참고)
+export const StaffRolePriority: Record<StaffRole, number> = {
+  td: 9,        // 최고 책임자
+  manager: 8,
+  dc: 7,
+  floor: 6,
+  chips: 5,
+  dealer: 4,
+  register: 3,
+  serving: 2,
+  guard: 1,
+} as const
+
+// 타입 가드
+export function isValidUserRole(role: string): role is UserRole {
+  return ['admin', 'employer', 'staff'].includes(role)
+}
+
+// Guest 여부 확인 (role이 null이면 guest)
+export function isGuest(role: UserRole | null): boolean {
+  return role === null
+}
+
+const STAFF_ROLES: StaffRole[] = ['dealer', 'floor', 'td', 'dc', 'chips', 'register', 'serving', 'guard', 'manager']
+
+export function isValidStaffRole(role: string): role is StaffRole {
+  return STAFF_ROLES.includes(role as StaffRole)
+}
+```
+
+### users vs staff 컬렉션 책임 분리
+
+| 구분 | users 컬렉션 | staff 컬렉션 |
+|------|-------------|--------------|
+| **목적** | 시스템 사용자 계정 | 스태프 프로필/이력 |
+| **1:1 관계** | Firebase Auth UID | userId로 users 참조 |
+| **Role 의미** | 시스템 접근 권한 (UserRole) | 근무 직무 (StaffRole) |
+| **생성 시점** | 회원가입 시 자동 (staff 기본) | 스태프 등록 시 수동 |
+| **필수 여부** | 모든 사용자 | 스태프로 활동하는 사용자만 |
+| **주요 필드** | email, chipBalance, consents | bankName, experience, rating |
+
+```
+Guest (비로그인)
+└── users/       →  (없음, role === null)
+
+사용자 A (기본 가입자 - 공고 지원만)
+├── users/userA  →  role: 'staff' (기본값)
+└── staff/staffA →  role: 'dealer' (직무), userId: 'userA'
+
+사용자 B (구인자 - 공고 작성/관리)
+├── users/userB  →  role: 'employer'
+└── staff/       →  (없음, 직접 근무하지 않음)
+
+사용자 C (관리자)
+├── users/userC  →  role: 'admin'
+└── staff/staffC →  role: 'td' (직무), userId: 'userC' (선택적)
+```
+
+### 역할 업그레이드 플로우
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                     역할 업그레이드 플로우                    │
+└─────────────────────────────────────────────────────────────┘
+
+Guest (비로그인)
+    │
+    │ 회원가입
+    ▼
+Staff (기본 가입자, role: 'staff')
+    │
+    │ 공고 작성 요청 시 → 사업자 등록 인증
+    ▼
+Employer (구인자, role: 'employer')
+    │
+    │ 관리자 승인
+    ▼
+Admin (관리자, role: 'admin') - 일반적으로 수동 부여
+```
+
+### Service 네이밍 컨벤션
+
+```yaml
+Service 파일명 규칙:
+  기본형: "{도메인}Service.ts"
+  예시:
+    - jobPostingService.ts       # 구인공고 CRUD
+    - applicationService.ts      # 지원서 관리
+    - attendanceService.ts       # 출퇴근 관리
+    - paymentService.ts          # 결제 처리
+
+금지 패턴:
+  - jobPostingCreateService.ts   # ❌ 동작을 파일명에 포함하지 않음
+  - createJobPosting.ts          # ❌ 동사로 시작하지 않음
+  - JobPostingService.ts         # ❌ PascalCase 사용하지 않음
+
+메서드 네이밍 규칙:
+  조회: get{Entity}, get{Entity}List, get{Entity}ById
+  생성: create{Entity}
+  수정: update{Entity}
+  삭제: delete{Entity}
+  검색: search{Entity}, filter{Entity}
+  상태변경: confirm{Entity}, cancel{Entity}, close{Entity}
+
+예시 (jobPostingService.ts):
+  - getJobPosting(id)            # 단건 조회
+  - getJobPostings(filters)      # 목록 조회
+  - createJobPosting(data)       # 생성
+  - updateJobPosting(id, data)   # 수정
+  - deleteJobPosting(id)         # 삭제
+  - closeJobPosting(id, reason)  # 상태 변경
+```
+
 ---
 
 ## 2. Firestore 컬렉션 구조
@@ -86,7 +260,7 @@ interface User {
   nickname?: string             // 닉네임
 
   // === 역할 및 권한 ===
-  role: 'admin' | 'manager' | 'dealer' | 'staff' | 'user'
+  role: UserRole                // 'staff' | 'employer' | 'admin' (회원가입 시 기본 'staff')
   isActive: boolean             // 활성 상태
 
   // === 연락처 ===
@@ -146,7 +320,7 @@ interface Staff {
   phone: string                 // 연락처
 
   // === 역할 및 상태 ===
-  role: 'dealer' | 'manager' | 'chiprunner' | 'admin'
+  role: StaffRole               // dealer | floor | td | dc | chips | register | serving | guard | manager
   status: 'active' | 'inactive'
 
   // === 연락처 ===

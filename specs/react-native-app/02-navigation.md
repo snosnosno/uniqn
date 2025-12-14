@@ -23,7 +23,12 @@ app/
 ├── index.tsx                   # 시작점 (리다이렉트)
 ├── +not-found.tsx              # 404 페이지
 │
-├── (auth)/                     # 🔓 인증 전 (Guest)
+├── (public)/                   # 🌐 비로그인 접근 가능 (Guest)
+│   ├── _layout.tsx
+│   └── jobs/
+│       └── index.tsx           # 공고 목록 (미리보기)
+│
+├── (auth)/                     # 🔓 인증 화면
 │   ├── _layout.tsx
 │   ├── login.tsx
 │   ├── signup.tsx
@@ -33,18 +38,18 @@ app/
 │       ├── terms.tsx
 │       └── privacy.tsx
 │
-├── (app)/                      # 🔐 인증 후 (User)
+├── (app)/                      # 🔐 로그인 필수 (Staff 이상)
 │   ├── _layout.tsx
 │   │
 │   ├── (tabs)/                 # 📱 하단 탭
 │   │   ├── _layout.tsx
-│   │   ├── index.tsx           # 구인구직 (홈)
+│   │   ├── index.tsx           # 구인구직 (홈, 검색/필터 포함)
 │   │   ├── schedule.tsx        # 내 스케줄
-│   │   ├── qr.tsx              # QR 코드
+│   │   ├── qr.tsx              # QR 코드 (출퇴근)
 │   │   └── profile.tsx         # 프로필
 │   │
 │   ├── jobs/                   # 구인구직 상세
-│   │   ├── [id].tsx            # 공고 상세 보기
+│   │   ├── [id].tsx            # 공고 상세 보기 (로그인 필수)
 │   │   └── apply/[id].tsx      # 지원하기
 │   │
 │   ├── schedule/               # 스케줄 상세
@@ -60,7 +65,7 @@ app/
 │   │
 │   └── support.tsx             # 고객센터
 │
-├── (manager)/                  # 👔 매니저 전용
+├── (employer)/                 # 🏢 구인자 전용 (Employer 이상)
 │   ├── _layout.tsx
 │   │
 │   ├── job-posting/
@@ -87,10 +92,11 @@ app/
 
 ## 화면 흐름도
 
-### 1. 인증 플로우
+### 1. 인증 플로우 (권한 체계 반영)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                     인증 플로우                              │
+│  권한: guest(비로그인) < staff(가입자) < employer < admin    │
 └─────────────────────────────────────────────────────────────┘
 
 앱 시작
@@ -98,16 +104,24 @@ app/
     ▼
 ┌─────────┐     인증됨      ┌─────────┐
 │  Splash  │ ─────────────▶ │ (tabs)  │
-│  Screen  │                │   홈    │
+│  Screen  │                │   홈    │ ─────▶ 검색/필터/상세 가능
 └────┬─────┘                └─────────┘
      │
-     │ 미인증
+     │ 미인증 (guest)
      ▼
+┌─────────────────────────────────────┐
+│     (public) 공고 목록               │
+│     - 목록만 조회 가능               │
+│     - 검색/필터/상세보기 불가         │
+└─────────────────┬───────────────────┘
+                  │
+                  │ 로그인 필요 기능 클릭
+                  ▼
 ┌─────────┐                 ┌─────────┐
 │  Login  │ ◀─────────────▶ │ SignUp  │
 └────┬────┘                 └────┬────┘
      │                           │
-     │ 로그인 성공                │ 회원가입 성공
+     │ 로그인 성공                │ 회원가입 (→ staff 기본)
      │                           │
      ▼                           ▼
 ┌─────────────────────────────────────┐
@@ -124,7 +138,7 @@ app/
                   ▼
             ┌─────────┐
             │ (tabs)  │
-            │   홈    │
+            │   홈    │ ─────▶ 모든 기능 사용 가능
             └─────────┘
 ```
 
@@ -154,7 +168,7 @@ app/
 └─────────────┘              └─────────────┘
 ```
 
-### 3. 공고 관리 플로우 (매니저)
+### 3. 공고 관리 플로우 (Employer)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                   공고 관리 플로우                            │
@@ -229,15 +243,46 @@ export default function RootLayout() {
           }}
           initialRouteName={initialRoute}
         >
+          <Stack.Screen name="(public)" />   {/* Guest 접근 가능 */}
           <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(app)" />
-          <Stack.Screen name="(manager)" />
-          <Stack.Screen name="(admin)" />
+          <Stack.Screen name="(app)" />       {/* Staff 이상 */}
+          <Stack.Screen name="(employer)" />  {/* Employer 이상 */}
+          <Stack.Screen name="(admin)" />     {/* Admin만 */}
         </Stack>
         <ModalManager />
         <ToastManager />
       </GestureHandlerRootView>
     </QueryClientProvider>
+  );
+}
+```
+
+### Public 레이아웃 (Guest 접근 가능)
+```tsx
+// app/(public)/_layout.tsx
+import { Stack } from 'expo-router';
+import { GuestJobListHeader } from '@/components/guest/GuestJobListHeader';
+
+/**
+ * Guest(비로그인) 사용자가 접근 가능한 공개 영역
+ * - 공고 목록만 조회 가능 (검색/필터/상세보기 불가)
+ */
+export default function PublicLayout() {
+  return (
+    <Stack
+      screenOptions={{
+        headerShown: true,
+        animation: 'fade',
+      }}
+    >
+      <Stack.Screen
+        name="jobs/index"
+        options={{
+          title: '구인구직',
+          header: () => <GuestJobListHeader />,
+        }}
+      />
+    </Stack>
   );
 }
 ```
@@ -381,17 +426,22 @@ export default function TabLayout() {
 }
 ```
 
-### 매니저 레이아웃
+### 구인자(Employer) 레이아웃
 ```tsx
-// app/(manager)/_layout.tsx
+// app/(employer)/_layout.tsx
 import { Stack, Redirect } from 'expo-router';
 import { usePermissions } from '@/hooks/usePermissions';
 
-export default function ManagerLayout() {
-  const { canManageJobPostings, isLoading } = usePermissions();
+/**
+ * Employer(구인자) 전용 레이아웃
+ * - staff 권한에서 employer로 업그레이드 필요
+ * - 공고 작성/관리, 지원자 확정/거절, 정산 기능
+ */
+export default function EmployerLayout() {
+  const { isEmployer, isLoading } = usePermissions();
 
   if (isLoading) return <LoadingScreen />;
-  if (!canManageJobPostings) return <Redirect href="/(app)/(tabs)" />;
+  if (!isEmployer) return <Redirect href="/(app)/(tabs)" />;
 
   return (
     <Stack
@@ -473,6 +523,15 @@ import { useEffect, useState } from 'react';
 import { useRouter, useSegments } from 'expo-router';
 import { useAuthStore } from '@/stores/authStore';
 
+/**
+ * 권한 기반 네비게이션 가드
+ *
+ * 권한 체계:
+ * - guest (비로그인): role === null → (public) 영역만 접근
+ * - staff (기본 가입자): (app) 영역 접근
+ * - employer (구인자): (employer) 영역 접근
+ * - admin: 모든 영역 접근
+ */
 export function useAuthGuard() {
   const segments = useSegments();
   const router = useRouter();
@@ -482,16 +541,23 @@ export function useAuthGuard() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inProtectedGroup = ['(app)', '(manager)', '(admin)'].includes(
-      segments[0]
-    );
+    const currentSegment = segments[0];
+    const inPublicGroup = currentSegment === '(public)';
+    const inAuthGroup = currentSegment === '(auth)';
+    const inProtectedGroup = ['(app)', '(employer)', '(admin)'].includes(currentSegment);
 
-    if (!isAuthenticated && inProtectedGroup) {
-      // 미인증 상태에서 보호된 영역 접근 → 로그인으로
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroup) {
-      // 인증 상태에서 인증 영역 접근 → 앱으로
+    // Guest (비로그인) 상태
+    if (!isAuthenticated) {
+      if (inProtectedGroup) {
+        // 보호된 영역 접근 시도 → 공개 영역으로
+        router.replace('/(public)/jobs');
+      }
+      setIsReady(true);
+      return;
+    }
+
+    // 인증된 상태에서 인증/공개 영역 접근
+    if (isAuthenticated && (inAuthGroup || inPublicGroup)) {
       if (!user?.consentCompleted) {
         router.replace('/(auth)/consent');
       } else if (!user?.profileCompleted) {
@@ -507,6 +573,7 @@ export function useAuthGuard() {
   return {
     isReady,
     shouldRedirect: !isAuthenticated,
+    isGuest: !isAuthenticated,
   };
 }
 ```
@@ -517,45 +584,127 @@ export function useAuthGuard() {
 import { useMemo } from 'react';
 import { useAuthStore } from '@/stores/authStore';
 
-type Role = 'admin' | 'manager' | 'staff' | 'user';
+/**
+ * 역할 타입 정의
+ * - guest는 role이 null (비로그인 상태)
+ */
+type UserRole = 'staff' | 'employer' | 'admin';
 
-const ROLE_HIERARCHY: Record<Role, number> = {
-  admin: 100,
-  manager: 50,
-  staff: 20,
-  user: 10,
+/**
+ * 역할 계층 (높을수록 상위 권한)
+ */
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  admin: 100,     // 시스템 관리자
+  employer: 50,   // 구인자 (공고 관리)
+  staff: 10,      // 기본 가입자 (지원, 출퇴근)
+  // guest: 0     // 비로그인 (role === null)
 };
 
 export function usePermissions() {
-  const { user, isLoading } = useAuthStore();
-  const role = (user?.role as Role) ?? 'user';
+  const { user, isAuthenticated, isLoading } = useAuthStore();
+  const role = user?.role as UserRole | null;
 
   const permissions = useMemo(() => {
+    // Guest (비로그인) - 공고 목록만 조회 가능
+    if (!isAuthenticated || role === null) {
+      return {
+        isGuest: true,
+        isStaff: false,
+        isEmployer: false,
+        isAdmin: false,
+        canViewJobList: true,    // 목록 조회만 가능
+        canSearchJobs: false,    // 검색 불가
+        canFilterJobs: false,    // 필터 불가
+        canViewJobDetail: false, // 상세보기 불가
+        canApplyToJob: false,
+        canCheckIn: false,
+        canCheckOut: false,
+        canViewSchedule: false,
+        canCreateJobPosting: false,
+        canManageApplicants: false,
+        canSettlePayment: false,
+        canManageUsers: false,
+        canViewAdminPanel: false,
+      };
+    }
+
     const level = ROLE_HIERARCHY[role] ?? 0;
 
     return {
-      // 역할
-      isAdmin: role === 'admin',
-      isManager: role === 'manager' || role === 'admin',
+      // 역할 플래그
+      isGuest: false,
       isStaff: level >= ROLE_HIERARCHY.staff,
+      isEmployer: level >= ROLE_HIERARCHY.employer,
+      isAdmin: role === 'admin',
 
-      // 기능별 권한
-      canManageJobPostings: level >= ROLE_HIERARCHY.manager,
-      canApproveJobPostings: role === 'admin',
+      // Staff 권한 (로그인 사용자 기본)
+      canViewJobList: true,
+      canSearchJobs: true,
+      canFilterJobs: true,
+      canViewJobDetail: true,
+      canApplyToJob: level >= ROLE_HIERARCHY.staff,
+      canCheckIn: level >= ROLE_HIERARCHY.staff,
+      canCheckOut: level >= ROLE_HIERARCHY.staff,
+      canViewSchedule: level >= ROLE_HIERARCHY.staff,
+
+      // Employer 권한
+      canCreateJobPosting: level >= ROLE_HIERARCHY.employer,
+      canManageApplicants: level >= ROLE_HIERARCHY.employer,
+      canSettlePayment: level >= ROLE_HIERARCHY.employer,
+
+      // Admin 권한
       canManageUsers: role === 'admin',
-      canManageInquiries: role === 'admin',
       canViewAdminPanel: role === 'admin',
 
-      // 공고별 권한 체크
+      // 리소스별 권한 체크
       canEditJobPosting: (creatorId: string) =>
         role === 'admin' || user?.uid === creatorId,
-      canManageApplicants: (creatorId: string) =>
-        level >= ROLE_HIERARCHY.manager &&
+      canManageJobApplicants: (creatorId: string) =>
+        level >= ROLE_HIERARCHY.employer &&
         (role === 'admin' || user?.uid === creatorId),
     };
-  }, [role, user?.uid]);
+  }, [role, user?.uid, isAuthenticated]);
 
-  return { ...permissions, isLoading };
+  return { ...permissions, isLoading, role };
+}
+```
+
+### 로그인 유도 컴포넌트
+```typescript
+// src/components/guest/LoginPrompt.tsx
+import { View, Text, TouchableOpacity } from 'react-native';
+import { useRouter } from 'expo-router';
+import { LockClosedIcon } from '@/components/icons';
+
+interface LoginPromptProps {
+  message?: string;
+  actionLabel?: string;
+}
+
+/**
+ * Guest 사용자에게 로그인 유도하는 컴포넌트
+ * 검색, 필터, 상세보기 등 로그인 필요 기능에서 사용
+ */
+export function LoginPrompt({
+  message = '이 기능을 사용하려면 로그인이 필요합니다',
+  actionLabel = '로그인하기',
+}: LoginPromptProps) {
+  const router = useRouter();
+
+  return (
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+      <LockClosedIcon className="w-16 h-16 text-gray-400 mb-4" />
+      <Text className="text-gray-600 dark:text-gray-400 text-center mb-6">
+        {message}
+      </Text>
+      <TouchableOpacity
+        className="bg-primary-600 px-6 py-3 rounded-lg"
+        onPress={() => router.push('/(auth)/login')}
+      >
+        <Text className="text-white font-semibold">{actionLabel}</Text>
+      </TouchableOpacity>
+    </View>
+  );
 }
 ```
 
@@ -643,13 +792,13 @@ export const navigation = {
   // 알림
   toNotifications: () => router.push('/(app)/notifications'),
 
-  // 공고 관리 (매니저)
-  toMyJobPostings: () => router.push('/(manager)/job-posting'),
-  toCreateJobPosting: () => router.push('/(manager)/job-posting/create'),
+  // 공고 관리 (Employer)
+  toMyJobPostings: () => router.push('/(employer)/job-posting'),
+  toCreateJobPosting: () => router.push('/(employer)/job-posting/create'),
   toJobPostingDetail: (id: string) =>
-    router.push(`/(manager)/job-posting/${id}`),
+    router.push(`/(employer)/job-posting/${id}`),
   toApplicants: (id: string) =>
-    router.push(`/(manager)/job-posting/${id}/applicants`),
+    router.push(`/(employer)/job-posting/${id}/applicants`),
 
   // 관리자
   toAdminUsers: () => router.push('/(admin)/users'),
