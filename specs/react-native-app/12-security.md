@@ -321,6 +321,344 @@ export const sessionManager = new SessionManager();
 
 ---
 
+## 2.1 휴대폰 본인인증 (Identity Verification)
+
+### 개요
+
+회원가입 시 **필수** 본인인증을 통해 실명 확인 및 중복 가입을 방지합니다.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                     Identity Verification Flow                           │
+├─────────────────────────────────────────────────────────────────────────┤
+│                                                                          │
+│  ┌──────────────┐    ┌──────────────┐    ┌──────────────┐              │
+│  │  회원가입     │───▶│  본인인증    │───▶│  인증 완료   │              │
+│  │  Step 1      │    │  Step 2      │    │  → Step 3   │              │
+│  └──────────────┘    └──────────────┘    └──────────────┘              │
+│                             │                                           │
+│                             ▼                                           │
+│                    ┌──────────────────┐                                │
+│                    │  인증 서비스      │                                │
+│                    │  • PASS 인증     │                                │
+│                    │  • 카카오 인증    │                                │
+│                    │  • NICE/KCB     │                                │
+│                    └──────────────────┘                                │
+│                             │                                           │
+│                             ▼                                           │
+│                    ┌──────────────────┐                                │
+│                    │  CI/DI 검증      │                                │
+│                    │  중복 가입 확인   │                                │
+│                    └──────────────────┘                                │
+│                                                                          │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+### 지원 인증 방식
+
+| 인증 방식 | 설명 | 비용 | 우선순위 |
+|----------|------|------|---------|
+| **PASS 인증** | 통신3사 통합 앱 인증 | 건당 50~100원 | 1순위 |
+| **카카오 인증** | 카카오톡 기반 인증 | 건당 50~100원 | 2순위 |
+| **NICE 본인인증** | 전통적 본인인증 | 건당 100~200원 | 출시 후 검토 |
+
+### 본인인증 서비스
+
+```typescript
+// src/services/identity/identityVerificationService.ts
+import { WebView } from 'react-native-webview';
+import { secureStorage } from '@/lib/secureStorage';
+import firestore from '@react-native-firebase/firestore';
+
+export type VerificationMethod = 'pass' | 'kakao' | 'nice';
+
+export interface VerificationResult {
+  success: boolean;
+  data?: {
+    name: string;           // 실명
+    birthDate: string;      // 생년월일 (YYYYMMDD)
+    gender: 'M' | 'F';      // 성별
+    phone: string;          // 휴대폰 번호
+    ci: string;             // 연계정보 (Connecting Information)
+    di: string;             // 중복가입확인정보
+    verifiedAt: Date;       // 인증 일시
+    method: VerificationMethod;
+  };
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
+class IdentityVerificationService {
+  private readonly API_BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
+  /**
+   * 본인인증 시작 (인증 URL 요청)
+   */
+  async startVerification(method: VerificationMethod): Promise<string> {
+    const response = await fetch(`${this.API_BASE_URL}/auth/identity/start`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ method }),
+    });
+
+    if (!response.ok) {
+      throw new Error('인증 시작에 실패했습니다.');
+    }
+
+    const { verificationUrl } = await response.json();
+    return verificationUrl;
+  }
+
+  /**
+   * 본인인증 결과 확인
+   */
+  async verifyResult(requestId: string): Promise<VerificationResult> {
+    const response = await fetch(`${this.API_BASE_URL}/auth/identity/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ requestId }),
+    });
+
+    const result = await response.json();
+    return result;
+  }
+
+  /**
+   * CI 값으로 중복 가입 확인
+   */
+  async checkDuplicateUser(ci: string): Promise<boolean> {
+    const snapshot = await firestore()
+      .collection('users')
+      .where('identity.ci', '==', ci)
+      .limit(1)
+      .get();
+
+    return !snapshot.empty;
+  }
+
+  /**
+   * 인증 정보 저장 (암호화)
+   */
+  async saveVerificationData(
+    userId: string,
+    data: VerificationResult['data']
+  ): Promise<void> {
+    if (!data) throw new Error('인증 데이터가 없습니다.');
+
+    // Firestore에 저장 (민감 정보는 암호화)
+    await firestore().collection('users').doc(userId).update({
+      identity: {
+        verified: true,
+        name: data.name,                    // 실명 (표시용)
+        birthDate: data.birthDate,          // 생년월일
+        gender: data.gender,                // 성별
+        phoneLastFour: data.phone.slice(-4), // 휴대폰 뒷자리
+        ci: data.ci,                        // CI (중복확인용)
+        // DI는 저장하지 않음 (서비스별 고유값)
+        verifiedAt: firestore.FieldValue.serverTimestamp(),
+        method: data.method,
+      },
+      // 프로필에도 반영
+      displayName: data.name,
+      phone: data.phone,
+    });
+  }
+}
+
+export const identityVerificationService = new IdentityVerificationService();
+```
+
+### 본인인증 화면 컴포넌트
+
+```typescript
+// src/features/auth/screens/IdentityVerificationScreen.tsx
+import React, { useState, useCallback } from 'react';
+import { View, Alert } from 'react-native';
+import { WebView } from 'react-native-webview';
+import { useRouter } from 'expo-router';
+import {
+  identityVerificationService,
+  VerificationMethod,
+  VerificationResult
+} from '@/services/identity/identityVerificationService';
+
+interface Props {
+  onVerificationComplete: (result: VerificationResult) => void;
+  onCancel: () => void;
+}
+
+export function IdentityVerificationScreen({ onVerificationComplete, onCancel }: Props) {
+  const [verificationUrl, setVerificationUrl] = useState<string | null>(null);
+  const [selectedMethod, setSelectedMethod] = useState<VerificationMethod | null>(null);
+
+  const startVerification = useCallback(async (method: VerificationMethod) => {
+    try {
+      setSelectedMethod(method);
+      const url = await identityVerificationService.startVerification(method);
+      setVerificationUrl(url);
+    } catch (error) {
+      Alert.alert('오류', '본인인증을 시작할 수 없습니다. 다시 시도해주세요.');
+    }
+  }, []);
+
+  const handleWebViewMessage = useCallback(async (event: any) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+
+      if (data.type === 'VERIFICATION_COMPLETE') {
+        const result = await identityVerificationService.verifyResult(data.requestId);
+
+        if (result.success && result.data) {
+          // 중복 가입 확인
+          const isDuplicate = await identityVerificationService.checkDuplicateUser(
+            result.data.ci
+          );
+
+          if (isDuplicate) {
+            Alert.alert(
+              '가입 불가',
+              '이미 가입된 회원입니다. 로그인해주세요.',
+              [{ text: '확인', onPress: onCancel }]
+            );
+            return;
+          }
+
+          onVerificationComplete(result);
+        } else {
+          Alert.alert('인증 실패', result.error?.message || '본인인증에 실패했습니다.');
+        }
+      } else if (data.type === 'VERIFICATION_CANCEL') {
+        setVerificationUrl(null);
+        setSelectedMethod(null);
+      }
+    } catch (error) {
+      Alert.alert('오류', '인증 결과를 확인할 수 없습니다.');
+    }
+  }, [onVerificationComplete, onCancel]);
+
+  // 인증 방법 선택 UI
+  if (!verificationUrl) {
+    return (
+      <View className="flex-1 bg-white dark:bg-gray-900 p-4">
+        <Text className="text-xl font-bold text-center mb-8">
+          본인인증
+        </Text>
+
+        <Text className="text-gray-600 dark:text-gray-400 text-center mb-8">
+          안전한 서비스 이용을 위해{'\n'}본인인증이 필요합니다
+        </Text>
+
+        {/* PASS 인증 */}
+        <TouchableOpacity
+          onPress={() => startVerification('pass')}
+          className="bg-blue-500 rounded-xl p-4 mb-4"
+        >
+          <Text className="text-white text-center font-semibold">
+            📱 휴대폰 본인인증 (PASS)
+          </Text>
+        </TouchableOpacity>
+
+        {/* 카카오 인증 */}
+        <TouchableOpacity
+          onPress={() => startVerification('kakao')}
+          className="bg-yellow-400 rounded-xl p-4"
+        >
+          <Text className="text-gray-900 text-center font-semibold">
+            💬 카카오 인증
+          </Text>
+        </TouchableOpacity>
+
+        <Text className="text-xs text-gray-500 text-center mt-8">
+          본인인증 정보는 암호화되어 안전하게 저장됩니다.
+        </Text>
+      </View>
+    );
+  }
+
+  // WebView로 인증 진행
+  return (
+    <WebView
+      source={{ uri: verificationUrl }}
+      onMessage={handleWebViewMessage}
+      javaScriptEnabled
+      domStorageEnabled
+      startInLoadingState
+      style={{ flex: 1 }}
+    />
+  );
+}
+```
+
+### Firestore 사용자 스키마 (인증 정보 포함)
+
+```typescript
+// src/types/user.ts
+interface UserIdentity {
+  verified: boolean;
+  name: string;              // 실명
+  birthDate: string;         // YYYYMMDD
+  gender: 'M' | 'F';
+  phoneLastFour: string;     // 마지막 4자리
+  ci: string;                // 연계정보 (중복확인용)
+  verifiedAt: Timestamp;
+  method: 'pass' | 'kakao' | 'nice';
+}
+
+interface User {
+  uid: string;
+  email: string;
+  displayName: string;
+  photoURL?: string;
+  phone?: string;
+  role: 'staff' | 'employer' | 'admin';
+
+  // 본인인증 정보
+  identity: UserIdentity;
+
+  // 기타 필드...
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
+```
+
+### 보안 고려사항
+
+```yaml
+데이터 보호:
+  - CI 값은 해시 처리 후 저장 (중복 확인 목적)
+  - 실명, 생년월일은 Firebase 보안 규칙으로 본인만 조회 가능
+  - 전화번호 전체는 저장하지 않음 (뒷자리만)
+
+중복 가입 방지:
+  - CI (Connecting Information) 기반 중복 확인
+  - 동일 CI로 가입 시도 시 차단
+  - 기존 계정 안내 및 로그인 유도
+
+접근 제어:
+  - 본인인증 완료 전 서비스 이용 불가
+  - 인증 정보 수정 불가 (재인증 필요)
+  - 관리자도 민감 정보 직접 조회 불가
+```
+
+### Firebase Security Rules (인증 정보)
+
+```javascript
+// firestore.rules에 추가
+match /users/{userId} {
+  // 본인인증 정보는 본인만 읽기 가능
+  allow read: if request.auth.uid == userId;
+
+  // identity 필드는 서버에서만 수정 가능
+  allow update: if request.auth.uid == userId &&
+    !request.resource.data.diff(resource.data).affectedKeys()
+      .hasAny(['identity.ci', 'identity.verified']);
+}
+```
+
+---
+
 ## 3. 데이터 검증
 
 ### Zod 스키마 정의

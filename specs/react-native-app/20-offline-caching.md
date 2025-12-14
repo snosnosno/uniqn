@@ -1078,6 +1078,464 @@ const styles = StyleSheet.create({
 
 ---
 
+## 6.1 충돌 해결 전략 (Conflict Resolution)
+
+### 개요
+
+오프라인에서 동일 데이터를 수정하면 온라인 복귀 시 충돌이 발생할 수 있습니다.
+
+```yaml
+충돌 시나리오:
+  - 동일 문서 동시 수정 (사용자 A 오프라인 + 사용자 B 온라인)
+  - 오프라인 중 서버 데이터 변경
+  - 동일 사용자의 다중 기기 동기화
+
+해결 전략:
+  기본: Last-Write-Wins (LWW) + Version Vector
+  고급: Field-level Merge (필드별 병합)
+  사용자 개입: Conflict UI (수동 선택)
+```
+
+### Version Vector 기반 충돌 감지
+
+```typescript
+// src/lib/conflictResolution.ts
+import firestore from '@react-native-firebase/firestore';
+
+interface VersionedDocument {
+  id: string;
+  _version: number;
+  _updatedAt: firestore.Timestamp;
+  _updatedBy: string;
+  [key: string]: any;
+}
+
+interface ConflictResult<T> {
+  hasConflict: boolean;
+  resolution: 'local' | 'server' | 'merge' | 'manual';
+  resolvedData: T;
+  conflictDetails?: {
+    localVersion: number;
+    serverVersion: number;
+    conflictingFields: string[];
+  };
+}
+
+/**
+ * 충돌 감지 및 해결
+ */
+export async function resolveConflict<T extends VersionedDocument>(
+  collectionPath: string,
+  localData: T,
+  strategy: 'lww' | 'field-merge' | 'manual' = 'lww'
+): Promise<ConflictResult<T>> {
+  // 1. 서버 최신 데이터 조회
+  const serverDoc = await firestore()
+    .collection(collectionPath)
+    .doc(localData.id)
+    .get();
+
+  if (!serverDoc.exists) {
+    // 서버에 문서 없음 → 로컬 데이터 사용
+    return {
+      hasConflict: false,
+      resolution: 'local',
+      resolvedData: localData,
+    };
+  }
+
+  const serverData = serverDoc.data() as T;
+
+  // 2. 버전 비교
+  if (localData._version >= serverData._version) {
+    // 로컬이 최신 또는 동일 → 충돌 없음
+    return {
+      hasConflict: false,
+      resolution: 'local',
+      resolvedData: localData,
+    };
+  }
+
+  // 3. 충돌 감지됨 → 전략에 따라 해결
+  const conflictingFields = detectConflictingFields(localData, serverData);
+
+  if (conflictingFields.length === 0) {
+    // 필드 충돌 없음 → 서버 데이터 + 로컬 변경사항 병합
+    return {
+      hasConflict: false,
+      resolution: 'merge',
+      resolvedData: { ...serverData, ...getLocalChanges(localData, serverData) },
+    };
+  }
+
+  // 4. 전략별 해결
+  switch (strategy) {
+    case 'lww':
+      return resolveLWW(localData, serverData, conflictingFields);
+
+    case 'field-merge':
+      return resolveFieldMerge(localData, serverData, conflictingFields);
+
+    case 'manual':
+      return {
+        hasConflict: true,
+        resolution: 'manual',
+        resolvedData: serverData,
+        conflictDetails: {
+          localVersion: localData._version,
+          serverVersion: serverData._version,
+          conflictingFields,
+        },
+      };
+
+    default:
+      return resolveLWW(localData, serverData, conflictingFields);
+  }
+}
+
+/**
+ * Last-Write-Wins 전략
+ */
+function resolveLWW<T extends VersionedDocument>(
+  localData: T,
+  serverData: T,
+  conflictingFields: string[]
+): ConflictResult<T> {
+  const localTime = localData._updatedAt?.toMillis() ?? 0;
+  const serverTime = serverData._updatedAt?.toMillis() ?? 0;
+
+  const winner = localTime > serverTime ? 'local' : 'server';
+  const resolvedData = winner === 'local' ? localData : serverData;
+
+  return {
+    hasConflict: true,
+    resolution: winner,
+    resolvedData: {
+      ...resolvedData,
+      _version: Math.max(localData._version, serverData._version) + 1,
+    },
+    conflictDetails: {
+      localVersion: localData._version,
+      serverVersion: serverData._version,
+      conflictingFields,
+    },
+  };
+}
+
+/**
+ * 필드별 병합 전략
+ */
+function resolveFieldMerge<T extends VersionedDocument>(
+  localData: T,
+  serverData: T,
+  conflictingFields: string[]
+): ConflictResult<T> {
+  const merged = { ...serverData };
+
+  // 충돌 없는 필드는 로컬 값 사용
+  for (const key of Object.keys(localData)) {
+    if (!conflictingFields.includes(key) && key !== '_version' && key !== '_updatedAt') {
+      merged[key] = localData[key];
+    }
+  }
+
+  // 충돌 필드는 타임스탬프 기준 최신 값 사용
+  for (const field of conflictingFields) {
+    const localTime = localData._updatedAt?.toMillis() ?? 0;
+    const serverTime = serverData._updatedAt?.toMillis() ?? 0;
+    merged[field] = localTime > serverTime ? localData[field] : serverData[field];
+  }
+
+  merged._version = Math.max(localData._version, serverData._version) + 1;
+
+  return {
+    hasConflict: true,
+    resolution: 'merge',
+    resolvedData: merged as T,
+    conflictDetails: {
+      localVersion: localData._version,
+      serverVersion: serverData._version,
+      conflictingFields,
+    },
+  };
+}
+
+/**
+ * 충돌 필드 감지
+ */
+function detectConflictingFields<T>(local: T, server: T): string[] {
+  const conflicts: string[] = [];
+  const skipFields = ['_version', '_updatedAt', '_updatedBy', 'id'];
+
+  for (const key of Object.keys(local as object)) {
+    if (skipFields.includes(key)) continue;
+
+    if (JSON.stringify(local[key]) !== JSON.stringify(server[key])) {
+      conflicts.push(key);
+    }
+  }
+
+  return conflicts;
+}
+
+/**
+ * 로컬 변경사항 추출
+ */
+function getLocalChanges<T>(local: T, server: T): Partial<T> {
+  const changes: Partial<T> = {};
+  const skipFields = ['_version', '_updatedAt', '_updatedBy', 'id'];
+
+  for (const key of Object.keys(local as object)) {
+    if (skipFields.includes(key)) continue;
+
+    if (JSON.stringify(local[key]) !== JSON.stringify(server[key])) {
+      changes[key as keyof T] = local[key as keyof T];
+    }
+  }
+
+  return changes;
+}
+```
+
+### 향상된 오프라인 큐 (충돌 해결 통합)
+
+```typescript
+// src/lib/offlineQueue.ts 업데이트
+import { resolveConflict, ConflictResult } from './conflictResolution';
+
+interface QueuedAction {
+  id: string;
+  type: 'CANCEL_APPLICATION' | 'UPDATE_PROFILE' | 'UPDATE_SETTINGS' | 'UPDATE_DOCUMENT';
+  payload: any;
+  timestamp: number;
+  retryCount: number;
+  maxRetries: number;
+  conflictStrategy: 'lww' | 'field-merge' | 'manual';
+  originalData?: any; // 오프라인 시점의 원본 데이터
+}
+
+interface ProcessResult {
+  success: boolean;
+  conflict?: ConflictResult<any>;
+  error?: Error;
+}
+
+class OfflineQueueManagerV2 {
+  private readonly QUEUE_KEY = 'pending_actions_v2';
+  private isProcessing = false;
+  private conflictCallbacks: Map<string, (conflict: ConflictResult<any>) => Promise<any>> = new Map();
+
+  /**
+   * 충돌 해결 콜백 등록
+   */
+  registerConflictHandler(
+    actionType: string,
+    handler: (conflict: ConflictResult<any>) => Promise<any>
+  ): void {
+    this.conflictCallbacks.set(actionType, handler);
+  }
+
+  /**
+   * 개별 액션 처리 (충돌 해결 포함)
+   */
+  private async processActionWithConflictResolution(
+    action: QueuedAction
+  ): Promise<ProcessResult> {
+    try {
+      // 일반 액션 처리
+      if (action.type !== 'UPDATE_DOCUMENT') {
+        await this.processSimpleAction(action);
+        return { success: true };
+      }
+
+      // 문서 업데이트 → 충돌 해결 필요
+      const { collectionPath, documentId, data } = action.payload;
+
+      const conflictResult = await resolveConflict(
+        collectionPath,
+        { id: documentId, ...data, ...action.originalData },
+        action.conflictStrategy
+      );
+
+      if (!conflictResult.hasConflict) {
+        // 충돌 없음 → 바로 저장
+        await this.saveDocument(collectionPath, documentId, conflictResult.resolvedData);
+        return { success: true };
+      }
+
+      if (conflictResult.resolution === 'manual') {
+        // 수동 해결 필요 → 콜백 호출
+        const handler = this.conflictCallbacks.get(action.type);
+        if (handler) {
+          const userResolved = await handler(conflictResult);
+          await this.saveDocument(collectionPath, documentId, userResolved);
+          return { success: true, conflict: conflictResult };
+        }
+        // 핸들러 없음 → 서버 데이터 유지
+        return { success: true, conflict: conflictResult };
+      }
+
+      // 자동 해결됨 → 저장
+      await this.saveDocument(collectionPath, documentId, conflictResult.resolvedData);
+      return { success: true, conflict: conflictResult };
+
+    } catch (error) {
+      return { success: false, error: error as Error };
+    }
+  }
+
+  private async saveDocument(
+    collectionPath: string,
+    documentId: string,
+    data: any
+  ): Promise<void> {
+    await firestore()
+      .collection(collectionPath)
+      .doc(documentId)
+      .set(data, { merge: true });
+  }
+
+  private async processSimpleAction(action: QueuedAction): Promise<void> {
+    switch (action.type) {
+      case 'CANCEL_APPLICATION':
+        await applicationService.cancel(action.payload.applicationId);
+        break;
+      case 'UPDATE_PROFILE':
+        await profileService.update(action.payload.userId, action.payload.data);
+        break;
+      case 'UPDATE_SETTINGS':
+        await settingsService.update(action.payload);
+        break;
+    }
+  }
+
+  // ... 기존 메서드들
+}
+
+export const offlineQueueManagerV2 = new OfflineQueueManagerV2();
+```
+
+### 충돌 해결 UI
+
+```typescript
+// src/components/ConflictResolutionModal.tsx
+import React from 'react';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
+import { ConflictResult } from '@/lib/conflictResolution';
+
+interface ConflictResolutionModalProps {
+  visible: boolean;
+  conflict: ConflictResult<any>;
+  onResolve: (choice: 'local' | 'server' | 'merge') => void;
+  onCancel: () => void;
+}
+
+export function ConflictResolutionModal({
+  visible,
+  conflict,
+  onResolve,
+  onCancel,
+}: ConflictResolutionModalProps) {
+  if (!conflict.conflictDetails) return null;
+
+  return (
+    <Modal visible={visible} onClose={onCancel} title="데이터 충돌 감지">
+      <View style={styles.container}>
+        <Text style={styles.description}>
+          오프라인 중 변경한 데이터가 서버와 충돌합니다.
+          어떤 버전을 사용하시겠습니까?
+        </Text>
+
+        <Text style={styles.sectionTitle}>충돌 필드:</Text>
+        <ScrollView style={styles.fieldList}>
+          {conflict.conflictDetails.conflictingFields.map((field) => (
+            <View key={field} style={styles.fieldItem}>
+              <Text style={styles.fieldName}>{field}</Text>
+            </View>
+          ))}
+        </ScrollView>
+
+        <View style={styles.buttonGroup}>
+          <Button
+            variant="outline"
+            onPress={() => onResolve('local')}
+            style={styles.button}
+          >
+            내 변경사항 사용
+          </Button>
+          <Button
+            variant="outline"
+            onPress={() => onResolve('server')}
+            style={styles.button}
+          >
+            서버 버전 사용
+          </Button>
+          <Button
+            variant="primary"
+            onPress={() => onResolve('merge')}
+            style={styles.button}
+          >
+            자동 병합
+          </Button>
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { padding: 16 },
+  description: { fontSize: 14, color: '#6b7280', marginBottom: 16 },
+  sectionTitle: { fontSize: 14, fontWeight: '600', marginBottom: 8 },
+  fieldList: { maxHeight: 120, marginBottom: 16 },
+  fieldItem: {
+    backgroundColor: '#fef3c7',
+    padding: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  fieldName: { fontSize: 12, fontWeight: '500', color: '#92400e' },
+  buttonGroup: { gap: 8 },
+  button: { marginBottom: 8 },
+});
+```
+
+### 충돌 해결 정책
+
+```yaml
+컬렉션별 기본 전략:
+  users:
+    전략: field-merge
+    이유: 프로필 필드별 독립적 수정 가능
+    예외: role 필드는 서버 우선
+
+  applications:
+    전략: lww
+    이유: 상태 전이가 순차적 (pending → confirmed)
+    예외: 취소는 항상 허용
+
+  jobPostings:
+    전략: server-wins
+    이유: 구인자 데이터 일관성 중요
+
+  workLogs:
+    전략: manual
+    이유: 출퇴근 기록 정확성 필수
+
+  settings:
+    전략: field-merge
+    이유: 설정 항목별 독립적
+
+충돌 알림:
+  자동 해결: 토스트로 "동기화 완료 (충돌 자동 해결)"
+  수동 필요: 모달로 선택 요청
+  실패: 에러 토스트 + 재시도 버튼
+```
+
+---
+
 ## 7. 동기화 전략
 
 ### 백그라운드 동기화

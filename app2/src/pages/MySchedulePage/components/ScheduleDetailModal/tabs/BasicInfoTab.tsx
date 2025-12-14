@@ -249,7 +249,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-gray-500 dark:text-gray-400">
-                {t('common.status', '상태')}:
+                {t('common.statusLabel', '상태')}:
               </span>
               <span className={`text-sm px-2 py-1 rounded-full ${typeDisplay.color}`}>
                 {typeDisplay.text}
@@ -320,7 +320,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                 :
               </span>
               <span className="text-sm text-gray-900 dark:text-gray-100">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: baseSalary.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -330,7 +330,9 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                 {t('salary.estimatedBasePay', '예상 기본급')}:
               </span>
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {t('common.currency', '{{amount}}원', { amount: basePay.toLocaleString('ko-KR') })}
+                {t('common.currency.default', '{{amount}}원', {
+                  amount: basePay.toLocaleString('ko-KR'),
+                })}
               </span>
             </div>
             {totalAllowances > 0 && (
@@ -339,7 +341,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                   {t('salary.allowance', '수당')}:
                 </span>
                 <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: totalAllowances.toLocaleString('ko-KR'),
                   })}
                 </span>
@@ -366,7 +368,7 @@ const BasicInfoTab: React.FC<BasicInfoTabProps> = ({
                     {t('salary.settlementAmount', '정산 금액')}:
                   </span>
                   <span className="text-sm font-medium text-indigo-600 dark:text-indigo-400">
-                    {t('common.currency', '{{amount}}원', {
+                    {t('common.currency.default', '{{amount}}원', {
                       amount: schedule.payrollAmount.toLocaleString('ko-KR'),
                     })}
                   </span>

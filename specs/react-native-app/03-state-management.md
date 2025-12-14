@@ -544,6 +544,67 @@ export const queryClient = new QueryClient({
   },
 });
 
+// 전역 캐싱 정책 (컬렉션별 최적화)
+export const cachingPolicies = {
+  // 자주 변경되는 데이터 (실시간성 중요)
+  realtime: {
+    staleTime: 0,
+    gcTime: 5 * 60 * 1000, // 5분
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    examples: ['notifications', 'unreadCount'],
+  },
+
+  // 자주 변경되는 데이터 (목록)
+  frequent: {
+    staleTime: 2 * 60 * 1000, // 2분
+    gcTime: 10 * 60 * 1000, // 10분
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    examples: ['jobPostings.list', 'applications.mine'],
+  },
+
+  // 보통 빈도 (상세 정보)
+  standard: {
+    staleTime: 5 * 60 * 1000, // 5분
+    gcTime: 30 * 60 * 1000, // 30분
+    refetchOnMount: true,
+    refetchOnWindowFocus: false,
+    examples: ['jobPostings.detail', 'users.profile'],
+  },
+
+  // 드물게 변경 (설정, 정적 데이터)
+  stable: {
+    staleTime: 30 * 60 * 1000, // 30분
+    gcTime: 24 * 60 * 60 * 1000, // 24시간
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    examples: ['settings', 'regions', 'roles'],
+  },
+
+  // 오프라인 우선 (캐시 최우선)
+  offlineFirst: {
+    staleTime: Infinity,
+    gcTime: 7 * 24 * 60 * 60 * 1000, // 7일
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    networkMode: 'offlineFirst',
+    examples: ['mySchedule', 'cachedJobPostings'],
+  },
+} as const;
+
+// 캐싱 정책 적용 헬퍼
+export function getCacheConfig(policy: keyof typeof cachingPolicies) {
+  const config = cachingPolicies[policy];
+  return {
+    staleTime: config.staleTime,
+    gcTime: config.gcTime,
+    refetchOnMount: config.refetchOnMount,
+    refetchOnWindowFocus: config.refetchOnWindowFocus,
+    ...(config.networkMode && { networkMode: config.networkMode }),
+  };
+}
+
 // Query Keys 중앙 관리
 export const queryKeys = {
   // 구인공고

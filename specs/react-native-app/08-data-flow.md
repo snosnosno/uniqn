@@ -1,5 +1,9 @@
 # 08. 핵심 데이터 흐름 설계
 
+> **타입 참조**: 이 문서의 모든 타입 정의는 [23-api-reference.md](./23-api-reference.md)를 권위 있는 소스로 합니다.
+> - `UserRole` vs `StaffRole` 구분: 23-api-reference.md의 "Role 타입 정의" 섹션 참조
+> - `users` vs `staff` 컬렉션 책임: 23-api-reference.md의 "users vs staff 컬렉션 책임 분리" 섹션 참조
+
 ## 전체 비즈니스 플로우
 
 ```

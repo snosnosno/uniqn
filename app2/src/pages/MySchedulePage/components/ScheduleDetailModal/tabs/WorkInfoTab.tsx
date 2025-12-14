@@ -211,7 +211,7 @@ const WorkInfoTab: React.FC<WorkInfoTabProps> = ({
                     {t('workInfo.workHours', '근무시간')}
                   </th>
                   <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                    {t('common.status', '상태')}
+                    {t('common.statusLabel', '상태')}
                   </th>
                 </tr>
               </thead>

@@ -57,7 +57,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                   : t('salary.daysUnit', '{{days}}일', { days: salaryInfo.totalDays })}
               </span>
               <span className="font-medium text-gray-900 dark:text-gray-100">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.baseSalary.toLocaleString('ko-KR'),
                 })}{' '}
                 ×{' '}
@@ -71,7 +71,9 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.basePay.total', '기본급 합계')}
               </span>
               <span className="text-base font-bold text-gray-900 dark:text-gray-100">
-                {t('common.currency', '{{amount}}원', { amount: basePay.toLocaleString('ko-KR') })}
+                {t('common.currency.default', '{{amount}}원', {
+                  amount: basePay.toLocaleString('ko-KR'),
+                })}
               </span>
             </div>
           </div>
@@ -101,7 +103,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-300">
                   {t('salary.allowances.meal', '식비')}:{' '}
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: salaryInfo.allowances.dailyRates.meal.toLocaleString('ko-KR'),
                   })}{' '}
                   ×{' '}
@@ -111,7 +113,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 </span>
                 <span className="text-gray-900 dark:text-gray-100 font-medium">
                   ={' '}
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: (salaryInfo.allowances.meal || 0).toLocaleString('ko-KR'),
                   })}
                 </span>
@@ -121,7 +123,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-300">
                   {t('salary.allowances.transportation', '교통비')}:{' '}
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: salaryInfo.allowances.dailyRates.transportation.toLocaleString('ko-KR'),
                   })}{' '}
                   ×{' '}
@@ -131,7 +133,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 </span>
                 <span className="text-gray-900 dark:text-gray-100 font-medium">
                   ={' '}
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: (salaryInfo.allowances.transportation || 0).toLocaleString('ko-KR'),
                   })}
                 </span>
@@ -141,7 +143,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600 dark:text-gray-300">
                   {t('salary.allowances.accommodation', '숙소비')}:{' '}
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: salaryInfo.allowances.dailyRates.accommodation.toLocaleString('ko-KR'),
                   })}{' '}
                   ×{' '}
@@ -151,7 +153,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 </span>
                 <span className="text-gray-900 dark:text-gray-100 font-medium">
                   ={' '}
-                  {t('common.currency', '{{amount}}원', {
+                  {t('common.currency.default', '{{amount}}원', {
                     amount: (salaryInfo.allowances.accommodation || 0).toLocaleString('ko-KR'),
                   })}
                 </span>
@@ -168,7 +170,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.allowances.meal', '식비')}
               </span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.allowances.meal.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -180,7 +182,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.allowances.transportation', '교통비')}
               </span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.allowances.transportation.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -192,7 +194,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.allowances.lodging', '숙박비')}
               </span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.allowances.accommodation.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -204,7 +206,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.allowances.bonus', '보너스')}
               </span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.allowances.bonus.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -216,7 +218,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.allowances.other', '기타 수당')}
               </span>
               <span className="text-gray-900 dark:text-gray-100 font-medium">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.allowances.other.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -238,7 +240,9 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               {t('salary.basePay.label', '기본급')}
             </span>
             <span className="text-gray-900 dark:text-gray-100">
-              {t('common.currency', '{{amount}}원', { amount: basePay.toLocaleString('ko-KR') })}
+              {t('common.currency.default', '{{amount}}원', {
+                amount: basePay.toLocaleString('ko-KR'),
+              })}
             </span>
           </div>
           <div className="flex justify-between text-sm">
@@ -246,7 +250,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               {t('salary.allowances.total', '수당 합계')}
             </span>
             <span className="text-gray-900 dark:text-gray-100">
-              {t('common.currency', '{{amount}}원', {
+              {t('common.currency.default', '{{amount}}원', {
                 amount: totalAllowances.toLocaleString('ko-KR'),
               })}
             </span>
@@ -256,7 +260,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               <span className="text-gray-600 dark:text-gray-300">{t('salary.tax', '세금')}</span>
               <span className="text-red-600 dark:text-red-400">
                 -
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.tax.toLocaleString('ko-KR'),
                 })}
               </span>
@@ -267,7 +271,9 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
               {t('salary.totalPay', '총 지급액')}
             </span>
             <span className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-              {t('common.currency', '{{amount}}원', { amount: totalPay.toLocaleString('ko-KR') })}
+              {t('common.currency.default', '{{amount}}원', {
+                amount: totalPay.toLocaleString('ko-KR'),
+              })}
             </span>
           </div>
           {salaryInfo.afterTaxAmount !== undefined && salaryInfo.afterTaxAmount > 0 && (
@@ -276,7 +282,7 @@ const CalculationTab: React.FC<CalculationTabProps> = ({
                 {t('salary.afterTax', '세후 급여')}
               </span>
               <span className="text-lg font-bold text-green-600 dark:text-green-400">
-                {t('common.currency', '{{amount}}원', {
+                {t('common.currency.default', '{{amount}}원', {
                   amount: salaryInfo.afterTaxAmount.toLocaleString('ko-KR'),
                 })}
               </span>

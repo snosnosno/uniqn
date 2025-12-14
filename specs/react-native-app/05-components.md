@@ -902,6 +902,133 @@ export function Toast({ type, message, onClose }: ToastProps) {
 
 ## 비즈니스 컴포넌트
 
+### DateSlider (날짜 선택)
+```typescript
+// src/components/job/DateSlider.tsx
+import { useRef, useEffect, useMemo } from 'react';
+import { ScrollView, View, Text, Pressable } from 'react-native';
+import { subDays, addDays, isSameDay, isToday, isYesterday } from 'date-fns';
+
+interface DateSliderProps {
+  selectedDate: Date | null;
+  onDateSelect: (date: Date | null) => void;
+}
+
+export function DateSlider({ selectedDate, onDateSelect }: DateSliderProps) {
+  const scrollRef = useRef<ScrollView>(null);
+  const todayRef = useRef<View>(null);
+
+  // 날짜 범위 생성 (어제 ~ +14일 = 16일)
+  const dates = useMemo(() => {
+    const yesterday = subDays(new Date(), 1);
+    return Array.from({ length: 16 }, (_, i) => addDays(yesterday, i));
+  }, []);
+
+  // 오늘 날짜로 자동 스크롤 (마운트 시)
+  useEffect(() => {
+    // ScrollView의 scrollTo로 오늘 위치로 이동
+    const todayIndex = dates.findIndex(isToday);
+    if (todayIndex > 0 && scrollRef.current) {
+      // 대략 버튼 너비 80px * index
+      scrollRef.current.scrollTo({ x: todayIndex * 80, animated: true });
+    }
+  }, []);
+
+  // 날짜 라벨
+  const getDateLabel = (date: Date): string => {
+    if (isToday(date)) return '오늘';
+    if (isYesterday(date)) return '어제';
+    return `${date.getMonth() + 1}/${date.getDate()}`;
+  };
+
+  // 선택 여부
+  const isSelected = (date: Date): boolean => {
+    return selectedDate ? isSameDay(date, selectedDate) : false;
+  };
+
+  return (
+    <View className="mb-4">
+      <ScrollView
+        ref={scrollRef}
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerClassName="gap-2 px-1"
+      >
+        {/* 전체 버튼 */}
+        <Pressable
+          onPress={() => onDateSelect(null)}
+          className={`
+            px-4 py-2 rounded-lg
+            ${selectedDate === null
+              ? 'bg-primary-600 dark:bg-primary-500'
+              : 'bg-gray-100 dark:bg-gray-700'
+            }
+          `}
+        >
+          <Text
+            className={`
+              font-medium
+              ${selectedDate === null
+                ? 'text-white'
+                : 'text-gray-700 dark:text-gray-300'
+              }
+            `}
+          >
+            전체
+          </Text>
+        </Pressable>
+
+        {/* 날짜 버튼들 */}
+        {dates.map((date, index) => {
+          const today = isToday(date);
+          const selected = isSelected(date);
+
+          return (
+            <Pressable
+              key={date.toISOString()}
+              ref={today ? todayRef : null}
+              onPress={() => onDateSelect(date)}
+              className={`
+                px-4 py-2 rounded-lg min-w-[60px] items-center
+                ${selected
+                  ? 'bg-primary-600 dark:bg-primary-500'
+                  : 'bg-gray-100 dark:bg-gray-700'
+                }
+              `}
+            >
+              <Text
+                className={`
+                  font-medium
+                  ${selected
+                    ? 'text-white'
+                    : 'text-gray-700 dark:text-gray-300'
+                  }
+                `}
+              >
+                {getDateLabel(date)}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </ScrollView>
+    </View>
+  );
+}
+```
+
+**기능:**
+- 가로 스크롤 날짜 선택
+- 어제 ~ +14일 범위 (16일)
+- "전체" 옵션으로 필터 해제
+- 오늘 날짜 자동 스크롤
+- "오늘", "어제" 특수 라벨
+
+**사용처:**
+- 구인구직 > 지원 탭에서만 표시
+- 날짜별 공고 필터링
+
+---
+
 ### JobCard
 ```typescript
 // src/components/job/JobCard.tsx
@@ -1210,6 +1337,7 @@ export * from './FormTimePicker';
 export * from './FormCheckbox';
 
 // src/components/job/index.ts
+export * from './DateSlider';
 export * from './JobCard';
 export * from './JobFilters';
 export * from './ApplicationStatus';

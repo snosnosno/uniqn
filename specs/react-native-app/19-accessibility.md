@@ -1095,6 +1095,215 @@ describe('Color Contrast', () => {
 
 ---
 
+## 9. 접근성 구현 로드맵
+
+### Phase별 구현 계획
+
+```yaml
+Phase 1 (MVP): 기본 접근성 - 2주
+  우선순위: P0 (필수)
+  목표: 앱 스토어 심사 통과, 기본 사용성 보장
+
+  구현 항목:
+    터치 타겟:
+      - 모든 버튼/링크 최소 44x44pt
+      - hitSlop 적용 (작은 아이콘)
+      - 터치 영역 간격 8pt 이상
+
+    색상 대비:
+      - 본문 텍스트: 4.5:1 이상
+      - 큰 텍스트 (18pt+): 3:1 이상
+      - 포커스 표시: 명확한 시각적 피드백
+
+    기본 라벨:
+      - 모든 버튼에 accessibilityLabel
+      - 이미지에 대체 텍스트 (또는 hidden)
+      - 입력 필드에 라벨 연결
+
+  테스트:
+    - 자동화 접근성 테스트 (jest-axe)
+    - 수동 색상 대비 검사
+
+---
+
+Phase 2 (Beta): 스크린리더 지원 - 3주
+  우선순위: P1 (중요)
+  목표: VoiceOver/TalkBack 완전 지원
+
+  구현 항목:
+    스크린리더 최적화:
+      - accessibilityRole 전체 적용
+        - button, link, header, image, text
+        - tab, tablist, menu, menuitem
+      - 읽기 순서 최적화 (accessibilityElementsHidden)
+      - 상태 변경 알림 (accessibilityLiveRegion)
+
+    네비게이션:
+      - 헤더 레벨 구조화 (h1, h2, h3)
+      - 랜드마크 영역 정의
+      - 건너뛰기 링크 구현
+
+    동적 콘텐츠:
+      - 로딩 상태 알림
+      - 에러 메시지 즉시 읽기 (assertive)
+      - 성공 알림 (polite)
+      - 모달 포커스 트랩
+
+  테스트:
+    - VoiceOver 전체 플로우 테스트 (iOS)
+    - TalkBack 전체 플로우 테스트 (Android)
+    - 스크린리더 사용자 피드백 수집
+
+---
+
+Phase 3 (Release): 고급 접근성 - 2주
+  우선순위: P2 (권장)
+  목표: WCAG 2.1 AA 완전 준수
+
+  구현 항목:
+    모션 제어:
+      - reduceMotion 감지 및 대응
+      - 애니메이션 비활성화 옵션
+      - 자동 재생 콘텐츠 제어
+
+    폰트 스케일링:
+      - 시스템 폰트 크기 지원
+      - 200% 확대 시 레이아웃 유지
+      - 최소/최대 폰트 크기 제한
+
+    복잡한 컴포넌트:
+      - 달력 접근성 (날짜 선택)
+      - 슬라이더 접근성
+      - 차트/그래프 대체 텍스트
+
+    키보드 네비게이션:
+      - 외부 키보드 지원 (iPad/태블릿)
+      - 포커스 순서 최적화
+      - 단축키 지원
+
+  테스트:
+    - WCAG 2.1 AA 준수 감사
+    - 접근성 전문가 리뷰
+    - 다양한 보조 기기 테스트
+```
+
+### 우선순위 기준
+
+```yaml
+P0 (필수) - Phase 1:
+  기준:
+    - 앱 스토어 심사 필수 요구사항
+    - 법적 요구사항 (ADA, 장애인차별금지법)
+    - 기본 사용성에 영향
+  예시:
+    - 터치 타겟 크기
+    - 색상 대비
+    - 기본 라벨
+
+P1 (중요) - Phase 2:
+  기준:
+    - 주요 사용자 경험에 영향
+    - 스크린리더 사용자 지원
+    - 완전한 앱 탐색 가능
+  예시:
+    - accessibilityRole
+    - 상태 변경 알림
+    - 모달 접근성
+
+P2 (권장) - Phase 3:
+  기준:
+    - 고급 사용성 향상
+    - 다양한 보조 기기 지원
+    - 완전한 WCAG 준수
+  예시:
+    - 모션 제어
+    - 폰트 스케일링
+    - 키보드 네비게이션
+```
+
+### 컴포넌트별 접근성 구현 순서
+
+```yaml
+Phase 1 (기본):
+  우선 구현:
+    - Button: 터치 타겟, 라벨, 상태
+    - Text: 대비, 스케일링
+    - Image: 대체 텍스트
+    - TextInput: 라벨 연결, 에러 표시
+    - TouchableOpacity: 터치 영역, 피드백
+
+Phase 2 (스크린리더):
+  확장 구현:
+    - Modal: 포커스 트랩, 역할
+    - Toast: 라이브 리전
+    - List/FlatList: 그룹화, 인덱스
+    - Tab/Navigation: 탭 역할, 선택 상태
+    - Header: 헤더 역할, 레벨
+
+Phase 3 (고급):
+  완성 구현:
+    - DatePicker: 접근 가능한 달력
+    - Slider: 조절 가능한 값
+    - Chart: 데이터 테이블 대안
+    - Dropdown: 콤보박스 패턴
+    - Carousel: 슬라이드 네비게이션
+```
+
+### 테스트 자동화 통합
+
+```typescript
+// jest.setup.js
+import { toHaveNoViolations } from 'jest-axe';
+expect.extend(toHaveNoViolations);
+
+// 접근성 테스트 유틸리티
+// tests/utils/accessibility.ts
+import { render } from '@testing-library/react-native';
+import { axe } from 'jest-axe';
+
+export async function testAccessibility(component: React.ReactElement) {
+  const { container } = render(component);
+  const results = await axe(container);
+  expect(results).toHaveNoViolations();
+}
+
+// CI 파이프라인 통합
+// .github/workflows/accessibility.yml
+name: Accessibility Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: npm ci
+      - run: npm run test:a11y
+```
+
+### 모니터링 및 유지보수
+
+```yaml
+정기 검토:
+  주기: 매 릴리스 전
+  항목:
+    - 새 컴포넌트 접근성 검토
+    - 자동화 테스트 통과 확인
+    - 스크린리더 수동 테스트
+
+피드백 수집:
+  채널:
+    - 앱 내 접근성 피드백 버튼
+    - 이메일: accessibility@uniqn.app
+  대응: 24시간 내 확인, 7일 내 해결
+
+업데이트 추적:
+  - React Native 접근성 API 변경 사항
+  - WCAG 가이드라인 업데이트
+  - iOS/Android 접근성 신기능
+```
+
+---
+
 ## 참고 자료
 
 - [React Native Accessibility](https://reactnative.dev/docs/accessibility)

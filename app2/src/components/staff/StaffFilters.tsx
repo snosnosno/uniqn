@@ -223,7 +223,7 @@ const StaffFilters: React.FC<StaffFiltersProps> = ({
           )}
           {filters.selectedStatus !== 'all' && (
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300">
-              {t('common.status', '상태')}: {filters.selectedStatus}
+              {t('common.statusLabel', '상태')}: {filters.selectedStatus}
               <button
                 onClick={() => handleStatusChange('all')}
                 className="ml-2 text-orange-600 dark:text-orange-400 hover:text-orange-800 dark:hover:text-orange-200"

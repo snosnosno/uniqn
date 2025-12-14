@@ -1583,6 +1583,444 @@ jobs:
 
 ---
 
+## 11. 웹 성능 최적화 전략
+
+### 11.1 번들 최적화
+
+#### 코드 스플리팅
+
+```typescript
+// app/(app)/(tabs)/job-board/index.tsx
+import { lazy, Suspense } from 'react';
+import { isWeb } from '@/utils/platform';
+import { LoadingScreen } from '@/components/common/LoadingScreen';
+
+// 웹에서만 동적 import (네이티브는 번들 크기 영향 없음)
+const FilterPanel = isWeb
+  ? lazy(() => import('@/components/job/FilterPanel'))
+  : require('@/components/job/FilterPanel').FilterPanel;
+
+const MapView = isWeb
+  ? lazy(() => import('@/components/job/MapView'))
+  : require('@/components/job/MapView').MapView;
+
+export default function JobBoardScreen() {
+  return (
+    <View>
+      <Suspense fallback={<LoadingScreen />}>
+        <FilterPanel />
+        <JobList />
+        <MapView />
+      </Suspense>
+    </View>
+  );
+}
+```
+
+#### 라우트 기반 스플리팅
+
+```typescript
+// app/_layout.tsx (웹 전용 최적화)
+import { Stack } from 'expo-router';
+import { Platform } from 'react-native';
+
+// 웹에서 청크 그룹화를 위한 매직 코멘트
+const screens = Platform.select({
+  web: {
+    JobBoard: () => import(/* webpackChunkName: "job-board" */ './(app)/(tabs)/job-board'),
+    Schedule: () => import(/* webpackChunkName: "schedule" */ './(app)/(tabs)/schedule'),
+    Profile: () => import(/* webpackChunkName: "profile" */ './(app)/(tabs)/profile'),
+    Admin: () => import(/* webpackChunkName: "admin" */ './(app)/admin'),
+  },
+  default: undefined, // 네이티브는 정적 import
+});
+```
+
+### 11.2 이미지 최적화
+
+```typescript
+// src/components/common/OptimizedImage.tsx
+import { Image, ImageProps, Platform } from 'react-native';
+import { useState, useMemo } from 'react';
+
+interface OptimizedImageProps extends ImageProps {
+  src: string;
+  width: number;
+  height: number;
+  priority?: boolean; // LCP 이미지용
+}
+
+export function OptimizedImage({
+  src,
+  width,
+  height,
+  priority = false,
+  ...props
+}: OptimizedImageProps) {
+  const [loaded, setLoaded] = useState(false);
+
+  // 웹에서 srcset 생성 (Firebase Storage 리사이징 활용)
+  const webProps = useMemo(() => {
+    if (Platform.OS !== 'web') return {};
+
+    const sizes = [width, width * 1.5, width * 2].map(w => Math.round(w));
+    const srcSet = sizes
+      .map(w => `${getResizedUrl(src, w)} ${w}w`)
+      .join(', ');
+
+    return {
+      srcSet,
+      sizes: `(max-width: ${width}px) 100vw, ${width}px`,
+      loading: priority ? 'eager' : 'lazy' as const,
+      decoding: 'async' as const,
+      fetchPriority: priority ? 'high' : 'auto' as const,
+    };
+  }, [src, width, priority]);
+
+  return (
+    <>
+      {/* 로딩 플레이스홀더 */}
+      {!loaded && (
+        <View
+          style={{
+            width,
+            height,
+            backgroundColor: '#f3f4f6',
+            position: 'absolute',
+          }}
+        />
+      )}
+      <Image
+        {...props}
+        source={{ uri: src }}
+        style={[{ width, height }, props.style]}
+        onLoad={() => setLoaded(true)}
+        {...webProps}
+      />
+    </>
+  );
+}
+
+// Firebase Storage 리사이징 URL 생성
+function getResizedUrl(url: string, width: number): string {
+  // Firebase Extensions Image Resizing 사용 시
+  if (url.includes('firebasestorage.googleapis.com')) {
+    return url.replace(
+      /\/o\/(.+?)\?/,
+      `/o/resized%2F${width}_$1?`
+    );
+  }
+  return url;
+}
+```
+
+### 11.3 렌더링 최적화
+
+```typescript
+// src/components/job/JobList.tsx
+import { FlashList } from '@shopify/flash-list';
+import { isWeb } from '@/utils/platform';
+import { useWindowDimensions } from 'react-native';
+import { useMemo, useCallback } from 'react';
+import { JobCard, JobCardSkeleton } from './JobCard';
+
+interface JobListProps {
+  jobs: Job[];
+  isLoading: boolean;
+}
+
+export function JobList({ jobs, isLoading }: JobListProps) {
+  const { width } = useWindowDimensions();
+
+  // 웹에서 반응형 컬럼 수 계산
+  const numColumns = useMemo(() => {
+    if (!isWeb) return 1;
+    if (width >= 1280) return 3;
+    if (width >= 768) return 2;
+    return 1;
+  }, [width]);
+
+  // 메모이제이션된 렌더러
+  const renderItem = useCallback(
+    ({ item }: { item: Job }) => <JobCard job={item} />,
+    []
+  );
+
+  const keyExtractor = useCallback((item: Job) => item.id, []);
+
+  // 스켈레톤 로딩
+  if (isLoading) {
+    return (
+      <View style={styles.skeletonContainer}>
+        {Array.from({ length: 6 }).map((_, i) => (
+          <JobCardSkeleton key={i} />
+        ))}
+      </View>
+    );
+  }
+
+  return (
+    <FlashList
+      data={jobs}
+      renderItem={renderItem}
+      keyExtractor={keyExtractor}
+      numColumns={numColumns}
+      estimatedItemSize={280}
+      // 웹 최적화 옵션
+      removeClippedSubviews={!isWeb} // 웹에서는 비활성화 (버그 방지)
+      drawDistance={isWeb ? 500 : 250} // 웹에서 더 많이 프리렌더
+      // 무한 스크롤
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+    />
+  );
+}
+```
+
+### 11.4 Core Web Vitals 최적화
+
+```typescript
+// src/utils/webVitals.ts
+import { isWeb } from './platform';
+
+interface WebVitalsMetric {
+  name: string;
+  value: number;
+  rating: 'good' | 'needs-improvement' | 'poor';
+}
+
+export function reportWebVitals(onReport: (metric: WebVitalsMetric) => void) {
+  if (!isWeb) return;
+
+  // web-vitals 라이브러리 동적 로드
+  import('web-vitals').then(({ onCLS, onFID, onLCP, onFCP, onTTFB }) => {
+    onCLS(onReport);
+    onFID(onReport);
+    onLCP(onReport);
+    onFCP(onReport);
+    onTTFB(onReport);
+  });
+}
+
+// app/_layout.tsx에서 초기화
+useEffect(() => {
+  if (isWeb) {
+    reportWebVitals((metric) => {
+      // Analytics로 전송
+      analyticsService.logEvent('web_vitals', {
+        metric_name: metric.name,
+        metric_value: metric.value,
+        metric_rating: metric.rating,
+      });
+
+      // 개발 환경에서 콘솔 출력
+      if (__DEV__) {
+        console.log(`[WebVitals] ${metric.name}: ${metric.value} (${metric.rating})`);
+      }
+    });
+  }
+}, []);
+```
+
+### 11.5 캐싱 전략
+
+```typescript
+// src/lib/webCache.ts
+import { isWeb } from '@/utils/platform';
+
+// Service Worker 캐시 전략
+export const cacheStrategies = {
+  // 정적 자산: Cache First
+  static: {
+    cacheName: 'static-v1',
+    maxAge: 31536000, // 1년
+    types: ['js', 'css', 'woff2', 'woff', 'ttf'],
+  },
+
+  // 이미지: Cache First + 네트워크 업데이트
+  images: {
+    cacheName: 'images-v1',
+    maxAge: 604800, // 1주
+    maxEntries: 100,
+    types: ['jpg', 'jpeg', 'png', 'webp', 'svg', 'gif'],
+  },
+
+  // API: Network First + 캐시 폴백
+  api: {
+    cacheName: 'api-v1',
+    maxAge: 300, // 5분
+    networkTimeout: 5000, // 5초
+  },
+
+  // HTML: Network First (항상 최신)
+  document: {
+    cacheName: 'document-v1',
+    maxAge: 0,
+    networkTimeout: 3000,
+  },
+};
+
+// HTTP 캐시 헤더 (Firebase Hosting)
+export const cacheHeaders = {
+  // 정적 자산 (빌드 해시 포함)
+  '**/*.@(js|css)': {
+    'Cache-Control': 'public, max-age=31536000, immutable',
+  },
+  // 폰트
+  '**/*.@(woff|woff2|ttf|otf)': {
+    'Cache-Control': 'public, max-age=31536000, immutable',
+  },
+  // 이미지
+  '**/*.@(jpg|jpeg|png|webp|svg|gif|ico)': {
+    'Cache-Control': 'public, max-age=604800, stale-while-revalidate=86400',
+  },
+  // HTML (항상 검증)
+  '**/*.html': {
+    'Cache-Control': 'no-cache, must-revalidate',
+  },
+  // JSON 데이터
+  '**/*.json': {
+    'Cache-Control': 'public, max-age=300, stale-while-revalidate=60',
+  },
+};
+```
+
+### 11.6 프리로딩 및 프리페칭
+
+```typescript
+// src/components/common/Prefetch.tsx
+import { useEffect } from 'react';
+import { isWeb } from '@/utils/platform';
+import { useRouter, usePathname } from 'expo-router';
+
+interface PrefetchProps {
+  href: string;
+  children: React.ReactNode;
+}
+
+export function Prefetch({ href, children }: PrefetchProps) {
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isWeb) return;
+
+    // 링크 프리페치
+    const link = document.createElement('link');
+    link.rel = 'prefetch';
+    link.href = href;
+    document.head.appendChild(link);
+
+    return () => {
+      document.head.removeChild(link);
+    };
+  }, [href]);
+
+  return children;
+}
+
+// 중요 리소스 프리로드
+// app/_layout.tsx
+export function RootLayout() {
+  useEffect(() => {
+    if (!isWeb) return;
+
+    // 중요 폰트 프리로드
+    const fontPreload = document.createElement('link');
+    fontPreload.rel = 'preload';
+    fontPreload.href = '/fonts/pretendard-variable.woff2';
+    fontPreload.as = 'font';
+    fontPreload.type = 'font/woff2';
+    fontPreload.crossOrigin = 'anonymous';
+    document.head.appendChild(fontPreload);
+
+    // 중요 이미지 프리로드 (히어로 이미지 등)
+    const heroPreload = document.createElement('link');
+    heroPreload.rel = 'preload';
+    heroPreload.href = '/images/hero.webp';
+    heroPreload.as = 'image';
+    document.head.appendChild(heroPreload);
+  }, []);
+
+  return <Stack />;
+}
+```
+
+### 11.7 성능 모니터링 대시보드
+
+```yaml
+성능 목표 (SLA):
+  LCP (Largest Contentful Paint): < 2.5초
+  FID (First Input Delay): < 100ms
+  CLS (Cumulative Layout Shift): < 0.1
+  TTFB (Time to First Byte): < 600ms
+  FCP (First Contentful Paint): < 1.8초
+
+번들 크기 예산:
+  초기 JS: < 200KB (gzip)
+  전체 JS: < 500KB (gzip)
+  CSS: < 50KB (gzip)
+  이미지/페이지: < 500KB
+
+모니터링 도구:
+  - Firebase Performance Monitoring
+  - Google Analytics 4 (Web Vitals)
+  - Sentry Performance
+  - Lighthouse CI (PR별 체크)
+
+알림 설정:
+  LCP > 4초: Critical Alert
+  FID > 300ms: Warning Alert
+  CLS > 0.25: Warning Alert
+  JS 번들 +10%: PR 블록
+
+성능 회귀 방지:
+  - PR당 Lighthouse CI 실행
+  - 번들 크기 diff 리포트
+  - 성능 예산 초과 시 PR 블록
+```
+
+### 11.8 성능 체크리스트
+
+```yaml
+빌드 최적화:
+  - [ ] Tree shaking 활성화
+  - [ ] 사용하지 않는 import 제거
+  - [ ] 동적 import로 코드 스플리팅
+  - [ ] 번들 분석 (webpack-bundle-analyzer)
+
+로딩 최적화:
+  - [ ] Critical CSS 인라인
+  - [ ] 폰트 프리로드
+  - [ ] LCP 이미지 프리로드
+  - [ ] 비동기 스크립트 로딩
+
+렌더링 최적화:
+  - [ ] React.memo() 적절히 사용
+  - [ ] useMemo/useCallback 적절히 사용
+  - [ ] 가상화 리스트 사용 (FlashList)
+  - [ ] 스켈레톤 UI 구현
+
+이미지 최적화:
+  - [ ] WebP 포맷 사용
+  - [ ] 반응형 이미지 (srcset)
+  - [ ] Lazy loading 적용
+  - [ ] 이미지 CDN 사용
+
+캐싱 최적화:
+  - [ ] 정적 자산 장기 캐싱
+  - [ ] API 응답 캐싱 (TanStack Query)
+  - [ ] Service Worker 캐싱
+  - [ ] HTTP 캐시 헤더 설정
+
+모니터링:
+  - [ ] Web Vitals 추적
+  - [ ] 에러 모니터링 (Sentry)
+  - [ ] 성능 알림 설정
+  - [ ] 정기 성능 리뷰
+```
+
+---
+
 ## 요약
 
 ### React Native Web 체크리스트
