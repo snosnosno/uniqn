@@ -42,38 +42,45 @@
 
 ## 기술 스택
 
+> ⚠️ **버전 고정 필수**: 호환성 문제 방지를 위해 아래 버전 준수
+> (DEVELOPMENT_CHECKLIST.md 1.2절 버전 기준)
+
 ```yaml
 Core:
-  - React Native: 0.73+
-  - Expo: SDK 50+
-  - TypeScript: 5.0+
+  - React Native: 0.76+        # Expo SDK 52 기준
+  - Expo: SDK 52+              # 최신 안정 버전
+  - React: 18.3+               # Concurrent 기능
+  - TypeScript: 5.3+           # strict 모드
 
 Navigation:
-  - Expo Router: 3.0+ (파일 기반 라우팅)
+  - Expo Router: 4.0+ (파일 기반 라우팅)
 
 State Management:
-  - Zustand: 4.5+ (전역 상태)
-  - TanStack Query: 5.0+ (서버 상태)
+  - Zustand: 5.0+ (전역 상태, persist 미들웨어)
+  - TanStack Query: 5.17+ (서버 상태, v5 API)
 
 Backend:
+  - Firebase: 11.0+ (Modular API)
   - Firebase Auth: 인증
   - Cloud Firestore: 데이터베이스
   - Cloud Functions: 서버리스 함수
   - Cloud Storage: 파일 저장
 
 UI/Styling:
-  - NativeWind: 4.0+ (Tailwind CSS)
-  - React Native Reanimated: 애니메이션
-  - React Native Gesture Handler: 제스처
+  - NativeWind: 4.0+ (Tailwind v4 호환)
+  - React Native Reanimated: 3.0+ (애니메이션)
+  - React Native Gesture Handler: 2.0+ (제스처)
 
 Forms & Validation:
-  - React Hook Form: 7.0+
+  - React Hook Form: 7.54+ (Zod 연동)
   - Zod: 3.23+ (기존 스키마 재사용)
 
 Utilities:
   - date-fns: 날짜 처리
   - expo-camera: QR 스캐닝
   - expo-notifications: 푸시 알림
+  - @shopify/flash-list: 가상화 리스트
+  - expo-image: 이미지 최적화
 ```
 
 ---

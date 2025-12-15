@@ -83,6 +83,8 @@ export enum NotificationType {
   CHECKIN_REMINDER = 'checkin_reminder',
   /** 노쇼 알림 */
   NO_SHOW_ALERT = 'no_show_alert',
+  /** 근무 시간 변경 (스태프에게) - 관리자가 시간 수정 시 */
+  SCHEDULE_CHANGE = 'schedule_change',
 
   // === 정산 관련 ===
   /** 정산 완료 (스태프에게) */
@@ -200,6 +202,12 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     title: '노쇼 알림',
     body: (d) => `${d.staffName}님이 출근하지 않았습니다.`,
     link: (d) => `/job-management/${d.jobPostingId}/attendance`,
+  },
+
+  [NotificationType.SCHEDULE_CHANGE]: {
+    title: '⏰ 근무 시간 변경',
+    body: (d) => `"${d.jobTitle}" 근무 시간이 변경되었습니다.\n${d.changeDescription || ''}`,
+    link: (d) => `/schedule?date=${d.workDate}`,
   },
 
   // === 정산 관련 ===
@@ -474,6 +482,58 @@ export const onCheckOut = functions.firestore
           jobPostingId,
           staffName,
           workHours: `${workHours}시간`,
+          workLogId: context.params.workLogId,
+        },
+      });
+    }
+  });
+
+/**
+ * 근무 시간 변경 시 → 스태프에게 알림
+ * 관리자(구인자)가 시간을 수정하면 해당 스태프에게 알림 발송
+ */
+export const onWorkTimeChanged = functions.firestore
+  .document('workLogs/{workLogId}')
+  .onUpdate(async (change, context) => {
+    const before = change.before.data();
+    const after = change.after.data();
+
+    // 시간 변경 감지 (출근 또는 퇴근 시간이 수정된 경우)
+    const checkInChanged = before.actualCheckIn?.toMillis() !== after.actualCheckIn?.toMillis();
+    const checkOutChanged = before.actualCheckOut?.toMillis() !== after.actualCheckOut?.toMillis();
+
+    // 관리자에 의한 수정인지 확인 (updatedBy 필드 체크)
+    const isAdminEdit = after.lastEditedBy && after.lastEditedBy !== after.staffId;
+
+    if ((checkInChanged || checkOutChanged) && isAdminEdit) {
+      const { staffId, jobPostingId, actualCheckIn, actualCheckOut, workDate } = after;
+
+      // 공고 정보 조회
+      const jobPosting = await admin.firestore()
+        .collection('jobPostings')
+        .doc(jobPostingId)
+        .get();
+
+      const { title } = jobPosting.data()!;
+
+      // 변경 내용 설명 생성
+      const changes: string[] = [];
+      if (checkInChanged && actualCheckIn) {
+        changes.push(`출근: ${formatTime(actualCheckIn.toDate())}`);
+      }
+      if (checkOutChanged && actualCheckOut) {
+        changes.push(`퇴근: ${formatTime(actualCheckOut.toDate())}`);
+      }
+
+      // 스태프에게 알림
+      await sendNotification({
+        recipientId: staffId,
+        type: NotificationType.SCHEDULE_CHANGE,
+        data: {
+          jobPostingId,
+          jobTitle: title,
+          workDate: workDate,
+          changeDescription: changes.join(', '),
           workLogId: context.params.workLogId,
         },
       });
@@ -1822,6 +1882,7 @@ export function NotificationTabBarIcon({ focused, color, size }: TabBarIconProps
 | 출근 체크인 | 구인자 | STAFF_CHECKED_IN |
 | 노쇼 (+30분) | 구인자 | NO_SHOW_ALERT |
 | 퇴근 체크아웃 | 구인자 | STAFF_CHECKED_OUT |
+| 시간 변경 (관리자) | 스태프 | SCHEDULE_CHANGE |
 | 정산 완료 | 스태프 | SETTLEMENT_COMPLETED |
 | 새 공고 | 관심지역 스태프 | NEW_JOB_IN_AREA |
 | 공고 마감 임박 | 지원자 | JOB_CLOSING_SOON |

@@ -900,6 +900,822 @@ export function Toast({ type, message, onClose }: ToastProps) {
 
 ---
 
+## 상태 표시 컴포넌트
+
+### Loading (로딩 스피너)
+```typescript
+// src/components/ui/Loading.tsx
+import { View, ActivityIndicator, Text } from 'react-native';
+
+type LoadingSize = 'sm' | 'md' | 'lg';
+
+interface LoadingProps {
+  /** 로딩 크기 */
+  size?: LoadingSize;
+  /** 로딩 메시지 (선택) */
+  message?: string;
+  /** 전체 화면 중앙 배치 여부 */
+  fullScreen?: boolean;
+  /** 커스텀 색상 */
+  color?: string;
+}
+
+const sizeMap: Record<LoadingSize, 'small' | 'large'> = {
+  sm: 'small',
+  md: 'small',
+  lg: 'large',
+};
+
+const sizeStyleMap: Record<LoadingSize, string> = {
+  sm: 'w-4 h-4',
+  md: 'w-6 h-6',
+  lg: 'w-10 h-10',
+};
+
+export function Loading({
+  size = 'md',
+  message,
+  fullScreen = false,
+  color,
+}: LoadingProps) {
+  const content = (
+    <View className="items-center justify-center">
+      <ActivityIndicator
+        size={sizeMap[size]}
+        color={color || '#6366F1'}
+        className={sizeStyleMap[size]}
+      />
+      {message && (
+        <Text className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+          {message}
+        </Text>
+      )}
+    </View>
+  );
+
+  if (fullScreen) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
+        {content}
+      </View>
+    );
+  }
+
+  return content;
+}
+```
+
+**사용 예시:**
+```tsx
+// 기본 사용
+<Loading />
+
+// 메시지와 함께
+<Loading size="lg" message="데이터를 불러오는 중..." />
+
+// 전체 화면
+<Loading fullScreen message="로딩 중..." />
+```
+
+### EmptyState (빈 상태)
+```typescript
+// src/components/ui/EmptyState.tsx
+import { View, Text } from 'react-native';
+import { Button } from './Button';
+import {
+  InboxIcon,
+  DocumentIcon,
+  CalendarIcon,
+  BellIcon,
+  MagnifyingGlassIcon,
+} from '@/components/icons';
+
+type EmptyStateVariant = 'default' | 'search' | 'schedule' | 'notifications' | 'documents';
+
+interface EmptyStateProps {
+  /** 빈 상태 유형 */
+  variant?: EmptyStateVariant;
+  /** 제목 */
+  title?: string;
+  /** 설명 메시지 */
+  description?: string;
+  /** 액션 버튼 텍스트 */
+  actionLabel?: string;
+  /** 액션 버튼 클릭 핸들러 */
+  onAction?: () => void;
+  /** 커스텀 아이콘 */
+  icon?: React.ReactNode;
+}
+
+const variantConfig: Record<
+  EmptyStateVariant,
+  { icon: typeof InboxIcon; defaultTitle: string; defaultDescription: string }
+> = {
+  default: {
+    icon: InboxIcon,
+    defaultTitle: '데이터가 없습니다',
+    defaultDescription: '표시할 내용이 없습니다.',
+  },
+  search: {
+    icon: MagnifyingGlassIcon,
+    defaultTitle: '검색 결과 없음',
+    defaultDescription: '검색 조건을 변경해 보세요.',
+  },
+  schedule: {
+    icon: CalendarIcon,
+    defaultTitle: '스케줄이 없습니다',
+    defaultDescription: '예정된 일정이 없습니다.',
+  },
+  notifications: {
+    icon: BellIcon,
+    defaultTitle: '알림이 없습니다',
+    defaultDescription: '새로운 알림이 없습니다.',
+  },
+  documents: {
+    icon: DocumentIcon,
+    defaultTitle: '문서가 없습니다',
+    defaultDescription: '등록된 문서가 없습니다.',
+  },
+};
+
+export function EmptyState({
+  variant = 'default',
+  title,
+  description,
+  actionLabel,
+  onAction,
+  icon,
+}: EmptyStateProps) {
+  const config = variantConfig[variant];
+  const Icon = config.icon;
+
+  return (
+    <View className="flex-1 items-center justify-center px-6 py-12">
+      {/* 아이콘 */}
+      <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+        {icon || <Icon size={32} color="#9CA3AF" />}
+      </View>
+
+      {/* 제목 */}
+      <Text className="mb-2 text-center text-lg font-semibold text-gray-900 dark:text-gray-100">
+        {title || config.defaultTitle}
+      </Text>
+
+      {/* 설명 */}
+      <Text className="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        {description || config.defaultDescription}
+      </Text>
+
+      {/* 액션 버튼 */}
+      {actionLabel && onAction && (
+        <Button variant="primary" onPress={onAction}>
+          {actionLabel}
+        </Button>
+      )}
+    </View>
+  );
+}
+```
+
+**사용 예시:**
+```tsx
+// 기본 빈 상태
+<EmptyState />
+
+// 검색 결과 없음
+<EmptyState
+  variant="search"
+  actionLabel="필터 초기화"
+  onAction={() => resetFilters()}
+/>
+
+// 커스텀 메시지
+<EmptyState
+  title="지원 내역이 없습니다"
+  description="관심 있는 공고에 지원해 보세요!"
+  actionLabel="공고 보기"
+  onAction={() => navigate('/job-board')}
+/>
+```
+
+### ErrorState (에러 상태)
+```typescript
+// src/components/ui/ErrorState.tsx
+import { View, Text } from 'react-native';
+import { Button } from './Button';
+import {
+  ExclamationTriangleIcon,
+  WifiIcon,
+  ServerIcon,
+  ShieldExclamationIcon,
+} from '@/components/icons';
+
+type ErrorVariant = 'default' | 'network' | 'server' | 'permission' | 'notFound';
+
+interface ErrorStateProps {
+  /** 에러 유형 */
+  variant?: ErrorVariant;
+  /** 에러 제목 */
+  title?: string;
+  /** 에러 설명 */
+  description?: string;
+  /** 재시도 버튼 텍스트 */
+  retryLabel?: string;
+  /** 재시도 핸들러 */
+  onRetry?: () => void;
+  /** 뒤로가기 핸들러 */
+  onGoBack?: () => void;
+  /** 에러 코드 (개발용) */
+  errorCode?: string;
+}
+
+const variantConfig: Record<
+  ErrorVariant,
+  { icon: typeof ExclamationTriangleIcon; defaultTitle: string; defaultDescription: string; iconColor: string }
+> = {
+  default: {
+    icon: ExclamationTriangleIcon,
+    defaultTitle: '오류가 발생했습니다',
+    defaultDescription: '잠시 후 다시 시도해 주세요.',
+    iconColor: '#EF4444',
+  },
+  network: {
+    icon: WifiIcon,
+    defaultTitle: '네트워크 오류',
+    defaultDescription: '인터넷 연결을 확인해 주세요.',
+    iconColor: '#F59E0B',
+  },
+  server: {
+    icon: ServerIcon,
+    defaultTitle: '서버 오류',
+    defaultDescription: '서버에 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.',
+    iconColor: '#EF4444',
+  },
+  permission: {
+    icon: ShieldExclamationIcon,
+    defaultTitle: '접근 권한 없음',
+    defaultDescription: '이 페이지에 접근할 권한이 없습니다.',
+    iconColor: '#F59E0B',
+  },
+  notFound: {
+    icon: ExclamationTriangleIcon,
+    defaultTitle: '페이지를 찾을 수 없습니다',
+    defaultDescription: '요청하신 페이지가 존재하지 않습니다.',
+    iconColor: '#6B7280',
+  },
+};
+
+export function ErrorState({
+  variant = 'default',
+  title,
+  description,
+  retryLabel = '다시 시도',
+  onRetry,
+  onGoBack,
+  errorCode,
+}: ErrorStateProps) {
+  const config = variantConfig[variant];
+  const Icon = config.icon;
+
+  return (
+    <View className="flex-1 items-center justify-center px-6 py-12">
+      {/* 아이콘 */}
+      <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-red-50 dark:bg-red-900/20">
+        <Icon size={32} color={config.iconColor} />
+      </View>
+
+      {/* 제목 */}
+      <Text className="mb-2 text-center text-lg font-semibold text-gray-900 dark:text-gray-100">
+        {title || config.defaultTitle}
+      </Text>
+
+      {/* 설명 */}
+      <Text className="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
+        {description || config.defaultDescription}
+      </Text>
+
+      {/* 에러 코드 (개발 모드) */}
+      {__DEV__ && errorCode && (
+        <Text className="mb-4 text-xs text-gray-400 dark:text-gray-500">
+          에러 코드: {errorCode}
+        </Text>
+      )}
+
+      {/* 액션 버튼들 */}
+      <View className="flex-row gap-3">
+        {onGoBack && (
+          <Button variant="outline" onPress={onGoBack}>
+            뒤로 가기
+          </Button>
+        )}
+        {onRetry && (
+          <Button variant="primary" onPress={onRetry}>
+            {retryLabel}
+          </Button>
+        )}
+      </View>
+    </View>
+  );
+}
+```
+
+**사용 예시:**
+```tsx
+// 기본 에러
+<ErrorState onRetry={() => refetch()} />
+
+// 네트워크 에러
+<ErrorState
+  variant="network"
+  onRetry={() => refetch()}
+/>
+
+// 권한 에러
+<ErrorState
+  variant="permission"
+  onGoBack={() => router.back()}
+/>
+
+// 커스텀 에러
+<ErrorState
+  title="데이터를 불러올 수 없습니다"
+  description="서버 연결에 실패했습니다."
+  errorCode="E2001"
+  onRetry={() => refetch()}
+/>
+```
+
+### LoadingOverlay (전체 로딩 오버레이)
+```typescript
+// src/components/ui/LoadingOverlay.tsx
+import { View, Text, Modal, ActivityIndicator } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  FadeIn,
+  FadeOut,
+} from 'react-native-reanimated';
+
+interface LoadingOverlayProps {
+  /** 표시 여부 */
+  visible: boolean;
+  /** 로딩 메시지 */
+  message?: string;
+  /** 투명 배경 (true면 반투명, false면 완전 불투명) */
+  transparent?: boolean;
+  /** 취소 가능 여부 (백버튼/탭으로 닫기) */
+  cancellable?: boolean;
+  /** 취소 핸들러 */
+  onCancel?: () => void;
+}
+
+export function LoadingOverlay({
+  visible,
+  message = '처리 중...',
+  transparent = true,
+  cancellable = false,
+  onCancel,
+}: LoadingOverlayProps) {
+  if (!visible) return null;
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={cancellable ? onCancel : undefined}
+    >
+      <Animated.View
+        entering={FadeIn.duration(200)}
+        exiting={FadeOut.duration(200)}
+        className={`
+          flex-1 items-center justify-center
+          ${transparent ? 'bg-black/50' : 'bg-white dark:bg-gray-900'}
+        `}
+      >
+        <View
+          className={`
+            items-center rounded-2xl p-6
+            ${transparent ? 'bg-white dark:bg-gray-800' : ''}
+          `}
+        >
+          <ActivityIndicator size="large" color="#6366F1" />
+          <Text className="mt-4 text-base text-gray-700 dark:text-gray-300">
+            {message}
+          </Text>
+        </View>
+      </Animated.View>
+    </Modal>
+  );
+}
+```
+
+**사용 예시:**
+```tsx
+// 기본 사용
+<LoadingOverlay visible={isSubmitting} />
+
+// 커스텀 메시지
+<LoadingOverlay
+  visible={isUploading}
+  message="파일 업로드 중..."
+/>
+
+// 취소 가능
+<LoadingOverlay
+  visible={isLoading}
+  message="검색 중..."
+  cancellable
+  onCancel={() => cancelSearch()}
+/>
+```
+
+### MobileHeader (모바일 헤더)
+```typescript
+// src/components/ui/MobileHeader.tsx
+import { View, Text, Pressable, Platform, StatusBar } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
+import { ChevronLeftIcon } from '@/components/icons';
+
+interface MobileHeaderProps {
+  /** 헤더 제목 */
+  title?: string;
+  /** 뒤로가기 표시 여부 */
+  showBack?: boolean;
+  /** 뒤로가기 커스텀 핸들러 */
+  onBack?: () => void;
+  /** 왼쪽 커스텀 컴포넌트 */
+  leftComponent?: React.ReactNode;
+  /** 오른쪽 액션 컴포넌트 */
+  rightComponent?: React.ReactNode;
+  /** 투명 배경 여부 */
+  transparent?: boolean;
+  /** 큰 제목 스타일 (iOS 스타일) */
+  largeTitle?: boolean;
+  /** 하단 테두리 표시 */
+  showBorder?: boolean;
+}
+
+export function MobileHeader({
+  title,
+  showBack = true,
+  onBack,
+  leftComponent,
+  rightComponent,
+  transparent = false,
+  largeTitle = false,
+  showBorder = true,
+}: MobileHeaderProps) {
+  const insets = useSafeAreaInsets();
+
+  const handleBack = () => {
+    if (onBack) {
+      onBack();
+    } else {
+      router.back();
+    }
+  };
+
+  return (
+    <View
+      className={`
+        ${transparent ? '' : 'bg-white dark:bg-gray-900'}
+        ${showBorder && !transparent ? 'border-b border-gray-200 dark:border-gray-800' : ''}
+      `}
+      style={{ paddingTop: insets.top }}
+    >
+      {/* 기본 헤더 */}
+      <View className="h-14 flex-row items-center justify-between px-4">
+        {/* 왼쪽 영역 */}
+        <View className="min-w-[60px] flex-row items-center">
+          {leftComponent || (showBack && (
+            <Pressable
+              onPress={handleBack}
+              className="mr-2 -ml-2 p-2"
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            >
+              <ChevronLeftIcon size={24} color="#111827" className="dark:text-white" />
+            </Pressable>
+          ))}
+        </View>
+
+        {/* 제목 (중앙) */}
+        {title && !largeTitle && (
+          <Text
+            className="flex-1 text-center text-lg font-semibold text-gray-900 dark:text-gray-100"
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        )}
+
+        {/* 오른쪽 영역 */}
+        <View className="min-w-[60px] flex-row items-center justify-end">
+          {rightComponent}
+        </View>
+      </View>
+
+      {/* 큰 제목 (iOS 스타일) */}
+      {title && largeTitle && (
+        <View className="px-4 pb-2">
+          <Text className="text-3xl font-bold text-gray-900 dark:text-gray-100">
+            {title}
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+}
+```
+
+**사용 예시:**
+```tsx
+// 기본 헤더
+<MobileHeader title="공고 상세" />
+
+// 액션 버튼 포함
+<MobileHeader
+  title="설정"
+  rightComponent={
+    <Pressable onPress={handleSave}>
+      <Text className="text-primary-600">저장</Text>
+    </Pressable>
+  }
+/>
+
+// 큰 제목 스타일
+<MobileHeader
+  title="내 스케줄"
+  largeTitle
+  showBack={false}
+/>
+
+// 투명 배경 (이미지 위)
+<MobileHeader
+  showBack
+  transparent
+  rightComponent={<ShareButton />}
+/>
+
+// 커스텀 왼쪽 컴포넌트
+<MobileHeader
+  title="알림"
+  leftComponent={<CloseButton />}
+  rightComponent={<SettingsButton />}
+/>
+```
+
+### Skeleton (스켈레톤 로딩)
+```typescript
+// src/components/ui/Skeleton.tsx
+import { useEffect } from 'react';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withTiming,
+  interpolate,
+  Easing,
+} from 'react-native-reanimated';
+
+type SkeletonVariant = 'text' | 'avatar' | 'card' | 'list-item' | 'rectangular' | 'circular';
+
+interface SkeletonProps {
+  /** 스켈레톤 변형 */
+  variant?: SkeletonVariant;
+  /** 너비 (숫자 또는 퍼센트 문자열) */
+  width?: number | string;
+  /** 높이 */
+  height?: number;
+  /** 둥근 모서리 반경 */
+  borderRadius?: number;
+  /** 애니메이션 활성화 */
+  animated?: boolean;
+  /** 커스텀 스타일 */
+  style?: ViewStyle;
+  /** 다크모드 배경색 사용 */
+  dark?: boolean;
+}
+
+// 변형별 기본 스타일
+const variantStyles: Record<SkeletonVariant, { width: number | string; height: number; borderRadius: number }> = {
+  text: { width: '100%', height: 16, borderRadius: 4 },
+  avatar: { width: 48, height: 48, borderRadius: 24 },
+  card: { width: '100%', height: 120, borderRadius: 12 },
+  'list-item': { width: '100%', height: 72, borderRadius: 8 },
+  rectangular: { width: '100%', height: 100, borderRadius: 0 },
+  circular: { width: 40, height: 40, borderRadius: 20 },
+};
+
+export function Skeleton({
+  variant = 'text',
+  width,
+  height,
+  borderRadius,
+  animated = true,
+  style,
+  dark = false,
+}: SkeletonProps) {
+  const shimmerValue = useSharedValue(0);
+
+  useEffect(() => {
+    if (animated) {
+      shimmerValue.value = withRepeat(
+        withTiming(1, {
+          duration: 1500,
+          easing: Easing.linear,
+        }),
+        -1, // 무한 반복
+        false // 리버스 없음
+      );
+    }
+  }, [animated, shimmerValue]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    if (!animated) return {};
+
+    const opacity = interpolate(
+      shimmerValue.value,
+      [0, 0.5, 1],
+      [0.3, 0.6, 0.3]
+    );
+
+    return { opacity };
+  });
+
+  const defaultStyle = variantStyles[variant];
+
+  const finalWidth = width ?? defaultStyle.width;
+  const finalHeight = height ?? defaultStyle.height;
+  const finalBorderRadius = borderRadius ?? defaultStyle.borderRadius;
+
+  return (
+    <Animated.View
+      style={[
+        {
+          width: typeof finalWidth === 'number' ? finalWidth : undefined,
+          height: finalHeight,
+          borderRadius: finalBorderRadius,
+          backgroundColor: dark ? '#374151' : '#E5E7EB', // gray-700 / gray-200
+          overflow: 'hidden',
+        },
+        typeof finalWidth === 'string' && styles[finalWidth as keyof typeof styles],
+        animatedStyle,
+        style,
+      ]}
+      className={`${dark ? 'bg-gray-700' : 'bg-gray-200'}`}
+    />
+  );
+}
+
+const styles = StyleSheet.create({
+  '100%': { width: '100%' },
+  '75%': { width: '75%' },
+  '50%': { width: '50%' },
+  '25%': { width: '25%' },
+});
+
+// 프리셋 컴포넌트
+export function SkeletonText({ lines = 3, ...props }: SkeletonProps & { lines?: number }) {
+  return (
+    <View className="space-y-2">
+      {Array.from({ length: lines }).map((_, index) => (
+        <Skeleton
+          key={index}
+          variant="text"
+          width={index === lines - 1 ? '60%' : '100%'}
+          {...props}
+        />
+      ))}
+    </View>
+  );
+}
+
+export function SkeletonAvatar({ size = 48, ...props }: SkeletonProps & { size?: number }) {
+  return (
+    <Skeleton
+      variant="circular"
+      width={size}
+      height={size}
+      borderRadius={size / 2}
+      {...props}
+    />
+  );
+}
+
+export function SkeletonCard(props: SkeletonProps) {
+  return (
+    <View className="rounded-xl bg-white dark:bg-gray-800 p-4 shadow-sm">
+      <View className="flex-row items-center mb-3">
+        <SkeletonAvatar {...props} />
+        <View className="ml-3 flex-1">
+          <Skeleton variant="text" width="40%" height={14} {...props} />
+          <View className="h-2" />
+          <Skeleton variant="text" width="60%" height={12} {...props} />
+        </View>
+      </View>
+      <SkeletonText lines={2} {...props} />
+    </View>
+  );
+}
+
+export function SkeletonListItem(props: SkeletonProps) {
+  return (
+    <View className="flex-row items-center py-3 px-4">
+      <SkeletonAvatar size={40} {...props} />
+      <View className="ml-3 flex-1">
+        <Skeleton variant="text" width="70%" height={16} {...props} />
+        <View className="h-1" />
+        <Skeleton variant="text" width="40%" height={12} {...props} />
+      </View>
+      <Skeleton variant="rectangular" width={60} height={24} borderRadius={4} {...props} />
+    </View>
+  );
+}
+
+// 공고 카드 스켈레톤
+export function SkeletonJobCard(props: SkeletonProps) {
+  return (
+    <View className="rounded-xl bg-white dark:bg-gray-800 p-4 shadow-sm mb-3">
+      {/* 헤더 */}
+      <View className="flex-row justify-between items-start mb-3">
+        <Skeleton variant="text" width="60%" height={20} {...props} />
+        <Skeleton variant="rectangular" width={60} height={24} borderRadius={12} {...props} />
+      </View>
+
+      {/* 위치 정보 */}
+      <View className="flex-row items-center mb-2">
+        <Skeleton variant="circular" width={16} height={16} {...props} />
+        <View className="w-2" />
+        <Skeleton variant="text" width="40%" height={14} {...props} />
+      </View>
+
+      {/* 날짜 정보 */}
+      <View className="flex-row items-center mb-3">
+        <Skeleton variant="circular" width={16} height={16} {...props} />
+        <View className="w-2" />
+        <Skeleton variant="text" width="50%" height={14} {...props} />
+      </View>
+
+      {/* 급여 */}
+      <Skeleton variant="text" width="30%" height={18} {...props} />
+    </View>
+  );
+}
+```
+
+**사용 예시:**
+```tsx
+// 기본 텍스트 스켈레톤
+<Skeleton variant="text" />
+
+// 아바타 스켈레톤
+<Skeleton variant="avatar" />
+<SkeletonAvatar size={64} />
+
+// 카드 스켈레톤
+<Skeleton variant="card" />
+<SkeletonCard />
+
+// 리스트 아이템 스켈레톤
+<SkeletonListItem />
+
+// 커스텀 크기
+<Skeleton width={200} height={100} borderRadius={8} />
+
+// 애니메이션 비활성화
+<Skeleton variant="text" animated={false} />
+
+// 다크모드 배경
+<Skeleton variant="card" dark />
+
+// 여러 줄 텍스트
+<SkeletonText lines={4} />
+
+// 공고 카드 로딩
+{isLoading ? (
+  <SkeletonJobCard />
+) : (
+  <JobCard data={job} />
+)}
+
+// 리스트 로딩 상태
+{isLoading ? (
+  <>
+    <SkeletonListItem />
+    <SkeletonListItem />
+    <SkeletonListItem />
+  </>
+) : (
+  <FlatList data={items} ... />
+)}
+```
+
+---
+
 ## 비즈니스 컴포넌트
 
 ### DateSlider (날짜 선택)
@@ -1321,7 +2137,11 @@ export * from './Toast';
 export * from './ToastManager';
 export * from './ModalManager';
 export * from './Loading';
+export * from './LoadingOverlay';
 export * from './EmptyState';
+export * from './ErrorState';
+export * from './MobileHeader';
+export * from './Skeleton';
 export * from './Avatar';
 export * from './Divider';
 export * from './Switch';

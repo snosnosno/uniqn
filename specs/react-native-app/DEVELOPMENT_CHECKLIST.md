@@ -1,8 +1,21 @@
 # UNIQN Mobile 개발 체크리스트
 
 **목표**: iOS + Android + Web 단일 코드베이스 (React Native + Expo)
-**예상 기간**: 16주 (Phase 1-6) + 버퍼 2주
+**개발 철학**: 완성도 우선, 시니어 레벨 품질 기준
 **개발 도구**: Claude Code (Opus 4.5)
+
+### 범위 명시
+
+#### ✅ 포함
+- 구인구직 (공고 등록/지원/관리)
+- 스케줄 및 QR 출퇴근
+- 푸시 알림
+- 정산 계산 및 기록
+
+#### ❌ 제외 (별도 프로젝트)
+- **칩 충전/결제**: PG사 연동 필요, 별도 결제 모듈로 분리
+- **실제 송금**: 정산 기록만 관리, 실제 이체는 외부 처리
+- **본인인증 실제 연동**: Phase 6에서 PASS/카카오 연동 (MVP는 Mock)
 
 ---
 
@@ -16,7 +29,38 @@
 
 ---
 
-## Phase 1: 프로젝트 기반 (3주)
+## Phase 의존성 맵
+
+```mermaid
+graph LR
+    P1[Phase 1: 기반] --> P2[Phase 2: 인증+구인구직]
+    P1 --> P3[Phase 3: 스케줄+알림]
+    P2 --> P3
+    P2 --> P4[Phase 4: 구인자 기능]
+    P3 --> P4
+    P4 --> P5[Phase 5: 최적화]
+    P5 --> P6[Phase 6: 출시]
+```
+
+### 의존성 상세
+
+| Phase | 선행 조건 | 병렬 가능 작업 |
+|:-----:|----------|---------------|
+| 1 | - | 환경 설정, 컴포넌트 작업 동시 진행 |
+| 2 | Phase 1 완료 | 인증 UI, 구인구직 UI 동시 진행 |
+| 3 | Phase 2 인증 완료 | 캘린더, 알림 동시 진행 |
+| 4 | Phase 3 QR 출퇴근 완료 | 공고관리, 정산 동시 진행 |
+| 5 | Phase 4 P0 완료 | 성능, 보안, 테스트 동시 진행 |
+| 6 | Phase 5 품질 게이트 통과 | 앱스토어, 문서화 동시 진행 |
+
+### 롤백 포인트
+- **Phase 2 완료 후**: 제한적 MVP 출시 (알림 없음, 기본 구인구직만)
+- **Phase 3 완료 후**: MVP 출시 (QR 출퇴근 + 푸시 알림)
+- **Phase 4 완료 후**: 전체 출시 (구인자 기능 포함)
+
+---
+
+## Phase 1: 프로젝트 기반
 
 ### 1.1 프로젝트 초기화 [P0]
 - [ ] Expo 프로젝트 생성 (`npx create-expo-app@latest`)
@@ -25,8 +69,27 @@
 - [ ] Path alias 설정 (`@/` → `src/`)
 - [ ] ESLint/Prettier 설정
 - [ ] Husky + lint-staged 설정 (pre-commit 검증)
+- [ ] .editorconfig 설정 (일관된 코드 스타일)
+- [ ] PR 템플릿 생성 (변경사항, 테스트 방법, 스크린샷)
 
-### 1.2 코드 이전 (app2/ → uniqn-app/) [P0]
+### 1.2 핵심 라이브러리 버전 [P0]
+> ⚠️ **버전 고정 필수**: 호환성 문제 방지를 위해 아래 버전 준수
+
+| 라이브러리 | 버전 | 비고 |
+|-----------|------|------|
+| Expo SDK | 52+ | 최신 안정 버전 |
+| React Native | 0.76+ | Expo SDK 52 기준 |
+| React | 18.3+ | Concurrent 기능 |
+| TypeScript | 5.3+ | strict 모드 |
+| NativeWind | 4.0+ | Tailwind v4 호환 |
+| Zustand | 5.0+ | persist 미들웨어 |
+| React Query | 5.17+ | v5 API |
+| React Hook Form | 7.54+ | Zod 연동 |
+| Zod | 3.23+ | 스키마 검증 |
+| Firebase | 11.0+ | Modular API |
+| Expo Router | 4.0+ | 파일 기반 라우팅 |
+
+### 1.3 코드 이전 (app2/ → uniqn-app/) [P0]
 - [ ] `types/` 복사 (100% 재사용)
 - [ ] `schemas/` 복사 (Zod 스키마)
 - [ ] `constants/` 복사
@@ -46,7 +109,7 @@
 | className | style (NativeWind) | [ ] |
 | localStorage | MMKV/SecureStore | [ ] |
 
-### 1.3 핵심 기반 시스템 [P0] ([03-state-management.md](./03-state-management.md))
+### 1.4 핵심 기반 시스템 [P0] ([03-state-management.md](./03-state-management.md))
 | 항목 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | Firebase 연동 (Auth, Firestore) | [ ] | P0 |
@@ -57,21 +120,66 @@
 | 환경변수 설정 (.env.dev/prod) | [ ] | P0 |
 | ThemeProvider (다크모드) | [ ] | P0 |
 | 디자인 토큰 (colors, spacing) | [ ] | P0 |
-| AppError 클래스 | [ ] | P0 |
 
-### 1.4 추가 기반 시스템 [P1]
+### 1.5 에러 처리 기반 [P0] ([09-error-handling.md](./09-error-handling.md))
+
+#### 에러 클래스 계층 구현 [P0]
+| 항목 | 체크 | 설명 |
+|------|:----:|------|
+| AppError 베이스 클래스 | [ ] | code, category, severity, userMessage |
+| AuthError 클래스 | [ ] | 인증 관련 (로그인, 토큰 만료) |
+| NetworkError 클래스 | [ ] | 연결, 타임아웃, 서버 도달 불가 |
+| ValidationError 클래스 | [ ] | 입력 검증 실패 |
+| PermissionError 클래스 | [ ] | 권한 부족 |
+
+#### 에러 인프라 [P0]
+- [ ] 에러 코드 체계 정의 (E1xxx~E7xxx)
+- [ ] Firebase 에러 → AppError 매핑 함수
+- [ ] 사용자 친화적 메시지 매핑 (한글)
+- [ ] errorStore (Zustand) 구현
+- [ ] withErrorHandling 래퍼 함수
+- [ ] normalizeError 유틸리티
+
+### 1.6 로깅 전략 [P0]
+
+#### 로깅 인프라 [P0]
+- [ ] LoggerService 구현 (console 래퍼)
+- [ ] 로그 레벨 정의 (debug, info, warn, error)
+- [ ] 구조화된 로그 포맷 (timestamp, level, context, message)
+- [ ] 환경별 로그 레벨 설정 (dev: debug, prod: warn)
+- [ ] 민감 정보 마스킹 (password, token, 개인정보)
+
+#### 로깅 통합 [P0]
+- [ ] React Query 로깅 (query, mutation 실패)
+- [ ] Navigation 로깅 (화면 전환 추적)
+- [ ] Crashlytics 연동 준비 (구조화된 포맷)
+- [ ] 로그 sampling 전략 (프로덕션 부하 관리)
+
+### 1.7 환경 분리 [P0]
+
+#### 환경 설정 [P0]
+- [ ] 환경 구분 (development, staging, production)
+- [ ] 환경별 Firebase 프로젝트 분리
+- [ ] 환경변수 검증 (필수값 체크)
+- [ ] 스테이징 환경 Firebase 설정
+
+### 1.8 추가 기반 시스템 [P1]
 | 항목 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | React Hook Form + zodResolver | [ ] | P1 |
 | i18n 설정 (한/영) | [ ] | P1 |
 | modalStore 설정 | [ ] | P1 |
-| errorStore 설정 | [ ] | P1 |
 | useNetworkStatus 훅 | [ ] | P1 |
 | Platform 플래그 (isWeb, isIOS, isAndroid) | [ ] | P1 |
 | mmkvStorage 설정 | [ ] | P1 |
-| AuthError, NetworkError 클래스 | [ ] | P1 |
 
-### 1.5 나중에 추가할 기반 [P2]
+### 1.9 Firebase Functions 기본 설정 [P0]
+- [ ] Functions 프로젝트 초기화 (`firebase init functions`)
+- [ ] TypeScript 설정
+- [ ] 로컬 에뮬레이터 설정
+- [ ] 기본 배포 테스트
+
+### 1.10 나중에 추가할 기반 [P2]
 | 항목 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | cachingPolicies 설정 | [ ] | P2 |
@@ -84,7 +192,7 @@
 | JobPostingStructuredData | [ ] | P2 |
 | IndexedDBStorage (웹) | [ ] | P2 |
 
-### 1.6 핵심 컴포넌트 (15개) [P0] ([05-components.md](./05-components.md))
+### 1.11 핵심 컴포넌트 (15개) [P0] ([05-components.md](./05-components.md))
 
 #### UI 기본 [P0]
 - [ ] Button (variants: primary, secondary, outline)
@@ -101,7 +209,7 @@
 - [ ] ToastManager (중앙 토스트 관리)
 
 #### 폼 컴포넌트 [P0]
-- [ ] FormField (폼 필드 래퍼)
+- [ ] FormField (폼 필드 래퍼 + 에러 표시)
 - [ ] FormSelect (선택 필드)
 
 #### 레이아웃 [P0]
@@ -109,23 +217,34 @@
 - [ ] Skeleton (스켈레톤 로딩)
 - [ ] MobileHeader (모바일 헤더)
 
-### 1.7 네비게이션 [P0] ([02-navigation.md](./02-navigation.md))
+### 1.12 네비게이션 [P0] ([02-navigation.md](./02-navigation.md))
 - [ ] useAppInitialize (앱 초기화)
 - [ ] useAuthGuard (인증 가드)
 - [ ] +not-found.tsx (404 처리)
 - [ ] 기본 탭 네비게이션 구조
 
-### 1.8 플랫폼 빌드 확인 [P0]
+### 1.13 플랫폼 빌드 확인 [P0]
 - [ ] iOS 시뮬레이터 실행
 - [ ] Android 에뮬레이터 실행
 - [ ] Web 빌드 성공 (`npx expo export -p web`)
 
-### 1.9 Phase 1 테스트 [P0]
+### 1.14 Phase 1 테스트 [P0]
+
+#### 테스트 인프라 설정 [P0]
 - [ ] Jest 설정 (jest.config.js)
 - [ ] Testing Library 설정
-- [ ] 핵심 컴포넌트 단위 테스트 (Button, Input, Card)
-- [ ] 스토어 단위 테스트 (authStore)
+- [ ] MSW 설정 (Mock Service Worker)
+- [ ] Mock 데이터 팩토리 구축
+
+#### 단위 테스트 [P0]
+- [ ] 핵심 컴포넌트 테스트 (Button, Input, Card)
+- [ ] authStore 테스트
+- [ ] 에러 클래스 테스트
+- [ ] 유틸리티 함수 테스트
+
+#### 품질 검증 [P0]
 - [ ] ESLint 에러 0개 확인
+- [ ] TypeScript strict 에러 0개 확인
 
 ### ✓ Phase 1 검증 기준
 ```
@@ -133,6 +252,7 @@
 □ Firebase Auth 로그인/로그아웃 동작
 □ 다크모드 토글 동작
 □ Toast 알림 표시됨
+□ 에러 발생 시 사용자 친화적 메시지 표시
 □ 테스트 통과율 100%
 ```
 
@@ -140,7 +260,7 @@
 
 ---
 
-## Phase 2: 인증 + 구인구직 (3주)
+## Phase 2: 인증 + 구인구직
 
 ### 2.1 인증 시스템 [P0]
 | 기능 | 체크 | 우선순위 |
@@ -150,19 +270,82 @@
 | 비밀번호 찾기 | [ ] | P0 |
 | 세션 관리 (토큰 갱신) | [ ] | P0 |
 | 소셜 로그인 (Google) | [ ] | P1 |
-| 소셜 로그인 (Apple) | [ ] | P1 |
+| 소셜 로그인 (Apple) | [ ] | P0 |
 | 소셜 로그인 (카카오) | [ ] | P1 |
 | 생체 인증 | [ ] | P2 |
+
+#### 비밀번호 정책 [P0]
+> ⚠️ **필수 준수**: 보안 강화를 위한 비밀번호 규칙
+
+| 규칙 | 요구사항 | 체크 |
+|------|----------|:----:|
+| 최소 길이 | 8자 이상 | [ ] |
+| 최대 길이 | 128자 이하 | [ ] |
+| 대문자 | 1개 이상 포함 | [ ] |
+| 소문자 | 1개 이상 포함 | [ ] |
+| 숫자 | 1개 이상 포함 | [ ] |
+| 특수문자 | 1개 이상 포함 (`!@#$%^&*`) | [ ] |
+| 연속 문자 | 3자 이상 연속 금지 (`123`, `abc`) | [ ] |
+| 이전 비밀번호 | 최근 3개와 동일 금지 | [ ] |
+
+- [ ] passwordSchema (Zod) 구현
+- [ ] 비밀번호 강도 점수 계산 (0-100)
+- [ ] 실시간 유효성 피드백 UI
 
 #### 인증 컴포넌트 [P0]
 - [ ] LoginScreen
 - [ ] SignupScreen (AccountStep, ProfileStep, CompleteStep)
 - [ ] ForgotPasswordScreen
 - [ ] StepIndicator (단계 표시)
-- [ ] PasswordStrength (비밀번호 강도)
+- [ ] PasswordStrength (비밀번호 강도 + 규칙 체크 표시)
 - [ ] SocialLoginButtons
 
-### 2.2 본인인증 (Mock) [P1]
+#### 인증 에러 처리 [P0]
+- [ ] 로그인 실패 에러 (잘못된 자격증명)
+- [ ] 계정 비활성화 에러
+- [ ] 이메일 미인증 에러
+- [ ] 로그인 시도 횟수 초과 에러
+- [ ] 토큰 만료 시 자동 갱신
+- [ ] 비밀번호 정책 위반 에러
+
+### 2.2 회원탈퇴 + 개인정보 관리 [P0]
+> ⚠️ **법적 필수**: 개인정보보호법 준수 (회원탈퇴, 개인정보 열람/삭제 권리)
+
+#### 회원탈퇴 [P0]
+| 기능 | 체크 | 설명 |
+|------|:----:|------|
+| 탈퇴 화면 UI | [ ] | 탈퇴 사유 선택, 경고 메시지 |
+| 탈퇴 확인 절차 | [ ] | 비밀번호 재입력 또는 본인인증 |
+| 계정 비활성화 | [ ] | 즉시 로그아웃, 로그인 차단 |
+| 데이터 익명화 | [ ] | 개인정보 마스킹 처리 |
+| 완전 삭제 예약 | [ ] | 30일 유예 후 완전 삭제 (복구 기간) |
+| 탈퇴 철회 | [ ] | 유예 기간 내 복구 요청 |
+
+#### 개인정보 열람/삭제 [P0]
+| 기능 | 체크 | 설명 |
+|------|:----:|------|
+| 내 정보 열람 | [ ] | 저장된 모든 개인정보 조회 |
+| 정보 수정 | [ ] | 이름, 연락처 등 수정 |
+| 정보 삭제 요청 | [ ] | 특정 정보 삭제 요청 |
+| 데이터 내보내기 | [ ] | JSON/CSV 형태로 다운로드 |
+| 동의 내역 관리 | [ ] | 마케팅 등 동의 철회 |
+
+#### 회원탈퇴 서비스 [P0]
+- [ ] AccountDeletionService 구현
+- [ ] 탈퇴 사유 저장 (analytics용, 익명화)
+- [ ] Firebase Auth 계정 삭제
+- [ ] Firestore 관련 문서 익명화/삭제
+- [ ] FCM 토큰 삭제
+- [ ] 탈퇴 완료 이메일 발송
+
+#### 회원탈퇴 컴포넌트 [P0]
+- [ ] AccountDeletionScreen
+- [ ] DeletionReasonSelect (탈퇴 사유)
+- [ ] DeletionConfirmModal (최종 확인)
+- [ ] MyDataScreen (개인정보 열람)
+- [ ] DataExportButton (내보내기)
+
+### 2.3 본인인증 (Mock) [P1]
 > ⚠️ **실제 연동은 Phase 6에서 진행. 지금은 뼈대만 구현**
 
 - [ ] IdentityVerificationData 타입 정의
@@ -171,7 +354,7 @@
 - [ ] 본인인증 화면 UI (실제 연동 없이)
 - [ ] 인증 상태 저장 구조 (users/{uid}/verification)
 
-### 2.3 구인구직 [P0]
+### 2.4 구인구직 [P0]
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | 공고 목록 (FlashList) | [ ] | P0 |
@@ -183,20 +366,41 @@
 
 #### 비즈니스 컴포넌트 [P0]
 - [ ] JobCard (공고 카드)
-- [ ] JobFilters (필터 UI)
 - [ ] ApplicationStatus (지원 상태)
 - [ ] Badge (상태 표시)
+
+#### 비즈니스 컴포넌트 [P1]
+- [ ] JobFilters (필터 UI)
+
+#### 비즈니스 에러 클래스 [P0]
+- [ ] InsufficientChipsError (칩 부족)
+- [ ] AlreadyAppliedError (중복 지원)
+- [ ] ApplicationClosedError (지원 마감)
+- [ ] MaxCapacityReachedError (정원 초과)
 
 #### 위치 기반 검색 [P2]
 - [ ] geofire-common 설치
 - [ ] useUserLocation 훅
 - [ ] useNearbyJobs 훅
 
-### 2.4 Phase 2 테스트 [P0]
-- [ ] 인증 플로우 통합 테스트
-- [ ] 공고 목록 컴포넌트 테스트
-- [ ] 지원하기 플로우 테스트
-- [ ] E2E: 로그인 → 공고 보기 → 지원 (Maestro)
+### 2.5 Phase 2 테스트 [P0]
+
+#### 단위 테스트 [P0]
+- [ ] applicationService 테스트
+  - [ ] 정상 지원 케이스
+  - [ ] 중복 지원 에러 케이스
+  - [ ] 칩 부족 에러 케이스
+  - [ ] 마감된 공고 에러 케이스
+- [ ] 인증 서비스 테스트
+
+#### 통합 테스트 [P0]
+- [ ] 로그인 폼 테스트 (유효성 검증)
+- [ ] 회원가입 폼 테스트 (단계별)
+- [ ] JobCard 렌더링 테스트
+- [ ] 공고 목록 무한스크롤 테스트
+
+#### E2E 테스트 [P0]
+- [ ] 로그인 → 공고 보기 → 지원 (Maestro)
 
 ### ✓ Phase 2 검증 기준
 ```
@@ -205,14 +409,15 @@
 □ 공고 상세 → 지원하기 완료
 □ 지원 내역 확인 가능
 □ 본인인증 Mock UI 동작
-□ 테스트 통과율 80%+
+□ 비즈니스 에러 발생 시 적절한 메시지 표시
+□ 테스트 커버리지: services 70%+ (MVP 기준)
 ```
 
 **관련 문서**: [04-screens.md](./04-screens.md), [06-firebase.md](./06-firebase.md)
 
 ---
 
-## Phase 3: 스케줄 + 알림 (3주)
+## Phase 3: 스케줄 + 알림
 
 ### 3.1 내 스케줄 & QR [P0]
 | 기능 | 체크 | 우선순위 |
@@ -224,12 +429,41 @@
 | 출근/퇴근 체크 | [ ] | P0 |
 | 근무 기록 목록 | [ ] | P1 |
 
+#### 스태프 스케줄 동기화 [P0]
+> 💡 **결정 사항**: QR 실패/오류 시 관리자가 시간 조정, 스태프는 동기화된 정보 확인
+- [ ] 실시간 WorkLog 구독 (onSnapshot)
+- [ ] 시간 변경 시 UI 자동 갱신
+- [ ] 변경 알림 표시 (Toast 또는 Badge)
+- [ ] 스케줄 변경 푸시 알림 수신 (Phase 3.2와 연계)
+
 #### 스케줄 컴포넌트 [P0]
 - [ ] CalendarView (캘린더)
 - [ ] ScheduleCard (스케줄 카드)
 - [ ] BottomSheet (하단 시트)
 - [ ] QRScanner (네이티브)
 - [ ] QRScannerWeb (웹용)
+
+#### QR 코드 정책 [P0]
+> 💡 **보안 강화**: QR 코드 유효시간 및 검증 정책
+
+| 정책 | 값 | 설명 | 체크 |
+|------|:--:|------|:----:|
+| QR 유효시간 | 5분 | 생성 후 5분간 유효 | [ ] |
+| 갱신 주기 | 3분 | 만료 2분 전 자동 갱신 | [ ] |
+| 1회용 사용 | O | 출근/퇴근 시 QR 무효화 | [ ] |
+| 위치 검증 | 선택 | GPS 기반 위치 검증 (P2) | [ ] |
+
+- [ ] QR 코드 생성 시 만료 시간 포함 (timestamp + 5min)
+- [ ] QR 스캔 시 만료 시간 검증
+- [ ] 만료된 QR 스캔 시 ExpiredQRCodeError 처리
+- [ ] QR 자동 갱신 타이머 (useQRAutoRefresh 훅)
+
+#### QR 에러 처리 [P0]
+- [ ] InvalidQRCodeError (유효하지 않은 QR)
+- [ ] ExpiredQRCodeError (만료된 QR)
+- [ ] NotCheckedInError (출근 전 퇴근 시도)
+- [ ] AlreadyCheckedInError (중복 출근)
+- [ ] QR 스캔 재시도 로직
 
 ### 3.2 푸시 알림 [P1]
 | 기능 | 체크 | 우선순위 |
@@ -241,6 +475,21 @@
 | 알림 설정 화면 | [ ] | P2 |
 | 백그라운드 알림 | [ ] | P2 |
 
+#### 알림 읽음 처리 [P1]
+| 기능 | 체크 | 설명 |
+|------|:----:|------|
+| 읽음/안읽음 상태 | [ ] | isRead 필드 관리 |
+| 개별 읽음 처리 | [ ] | 알림 탭 시 읽음 처리 |
+| 전체 읽음 처리 | [ ] | "모두 읽음" 버튼 |
+| 안읽은 알림 카운트 | [ ] | 탭 바 뱃지 표시 |
+| 알림 삭제 | [ ] | 개별/전체 삭제 |
+| 알림 그룹핑 | [ ] | 동일 유형 알림 그룹화 (P2) |
+
+- [ ] markAsRead(notificationId) 함수
+- [ ] markAllAsRead() 함수
+- [ ] useUnreadCount() 훅 (실시간 카운트)
+- [ ] NotificationBadge 컴포넌트
+
 #### 알림 서비스 [P1]
 - [ ] FCMService (토큰 관리)
 - [ ] notificationStore (Zustand)
@@ -251,12 +500,26 @@
 - [ ] onApplicationCreated → 구인자 알림
 - [ ] onApplicationConfirmed → 스태프 알림
 - [ ] onCheckIn/onCheckOut → 구인자 알림
+- [ ] onWorkTimeChanged → 스태프 알림 (시간 변경)
 
 ### 3.3 Phase 3 테스트 [P0]
+
+#### 단위 테스트 [P0]
+- [ ] attendanceService 테스트
+  - [ ] 정상 출근/퇴근
+  - [ ] 잘못된 QR 에러
+  - [ ] 중복 출근 에러
+- [ ] date 유틸리티 테스트
+  - [ ] 근무 시간 계산
+  - [ ] 상대 시간 포맷
+
+#### 통합 테스트 [P0]
 - [ ] 캘린더 렌더링 테스트
 - [ ] QR 스캔 플로우 테스트
 - [ ] 출퇴근 체크 통합 테스트
-- [ ] E2E: 스케줄 확인 → QR 출근 → 퇴근 (Maestro)
+
+#### E2E 테스트 [P0]
+- [ ] 스케줄 확인 → QR 출근 → 퇴근 (Maestro)
 
 ### ✓ Phase 3 검증 기준
 ```
@@ -264,14 +527,15 @@
 □ QR 스캔으로 출근/퇴근 체크
 □ 출퇴근 기록 저장됨
 □ FCM 토큰 발급 및 저장
-□ 테스트 통과율 80%+
+□ QR 에러 시 재스캔 유도 메시지 표시
+□ 테스트 커버리지: services 70%+ (MVP 기준)
 ```
 
 **관련 문서**: [10-notifications.md](./10-notifications.md), [02-navigation.md](./02-navigation.md)
 
 ---
 
-## Phase 4: 구인자 기능 (3주)
+## Phase 4: 구인자 기능
 
 ### 4.1 공고 관리 [P0]
 | 기능 | 체크 | 우선순위 |
@@ -286,6 +550,7 @@
 - [ ] useAutoSave 훅 (30초 자동 저장)
 - [ ] 단계별 유효성 검사 (Zod)
 - [ ] StepNavigation (이전/다음)
+- [ ] 폼 데이터 영속성 (MMKV)
 
 ### 4.2 지원자 관리 [P0]
 | 기능 | 체크 | 우선순위 |
@@ -304,20 +569,44 @@
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | 출퇴근 현황 | [ ] | P0 |
-| 시간 수정 | [ ] | P1 |
+| **시간 수정 (관리자)** | [ ] | P0 |
 | 정산 계산 | [ ] | P0 |
 | 개별 정산 | [ ] | P0 |
 | 일괄 정산 | [ ] | P1 |
+
+#### 관리자 시간 수정 [P0]
+> 💡 **결정 사항**: QR 실패/오류 시 관리자(구인자)가 시간 조정, 스태프는 동기화만
+- [ ] WorkTimeEditor 컴포넌트 (app2 이전)
+- [ ] canEdit 권한 체계 구현
+- [ ] Optimistic Update + 롤백 패턴
+- [ ] 시간 수정 시 자동 알림 발송 (onWorkTimeChanged)
+- [ ] 시간 수정 사유 기록 (선택적)
+
+#### 정산 에러 처리 [P0]
+- [ ] AlreadySettledError (중복 정산)
+- [ ] InvalidWorkLogError (잘못된 근무 기록)
+- [ ] 정산 금액 검증 로직
 
 #### 서비스 레이어 [P0]
 - [ ] SettlementService (정산 계산)
 - [ ] CalendarService (캘린더 이벤트)
 
 ### 4.4 Phase 4 테스트 [P0]
+
+#### 단위 테스트 [P0]
+- [ ] settlementService 테스트
+  - [ ] 정산 금액 계산 정확성
+  - [ ] 시간외 수당 계산
+  - [ ] 중복 정산 방지
+- [ ] jobPostingService 테스트
+
+#### 통합 테스트 [P0]
 - [ ] 공고 작성 플로우 테스트
 - [ ] 지원자 확정/거절 테스트
-- [ ] 정산 계산 로직 단위 테스트
-- [ ] E2E: 공고 등록 → 지원자 확정 → 정산 (Maestro)
+- [ ] 정산 플로우 테스트
+
+#### E2E 테스트 [P0]
+- [ ] 공고 등록 → 지원자 확정 → 정산 (Maestro)
 
 ### ✓ Phase 4 검증 기준
 ```
@@ -325,14 +614,15 @@
 □ 지원자 확정 시 알림 발송
 □ 정산 금액 정확히 계산
 □ 구인자 대시보드 동작
-□ 테스트 통과율 80%+
+□ 중복 정산 방지 동작
+□ 테스트 커버리지: services 70%+ (MVP 기준)
 ```
 
 **관련 문서**: [06-firebase.md](./06-firebase.md), [08-data-flow.md](./08-data-flow.md)
 
 ---
 
-## Phase 5: 최적화 + 배포 준비 (2주)
+## Phase 5: 최적화 + 배포 준비
 
 ### 5.1 관리자 기능 [P1]
 | 기능 | 체크 | 우선순위 |
@@ -347,11 +637,45 @@
 - [ ] 코드 스플리팅 설정
 - [ ] Tree shaking 확인
 - [ ] 번들 크기 < 500KB (gzip)
+- [ ] 번들 분석 리포트 생성
+
+#### 번들 분석 도구 [P0]
+| 도구 | 용도 | 체크 |
+|------|------|:----:|
+| expo-bundle-analyzer | 번들 시각화 | [ ] |
+| source-map-explorer | 소스맵 분석 | [ ] |
+| webpack-bundle-analyzer | 웹 번들 분석 | [ ] |
+
+- [ ] 번들 분석 npm 스크립트 추가 (`npm run analyze:bundle`)
+- [ ] CI/CD 번들 크기 체크 자동화 (500KB 초과 시 실패)
+- [ ] 번들 크기 히스토리 추적 (PR별 비교)
 
 #### 렌더링 최적화 [P0]
 - [ ] FlashList 가상화 전체 적용
 - [ ] React.memo 적절히 사용
-- [ ] 리렌더링 프로파일링
+- [ ] useMemo/useCallback 검토
+- [ ] 불필요한 리렌더링 제거
+- [ ] React DevTools Profiler 분석
+
+#### 이미지 최적화 [P0]
+| 최적화 항목 | 방법 | 체크 |
+|------------|------|:----:|
+| 포맷 변환 | WebP 우선 사용 (30% 용량 감소) | [ ] |
+| 리사이징 | 디바이스별 적정 크기 (1x, 2x, 3x) | [ ] |
+| 지연 로딩 | 뷰포트 진입 시 로딩 | [ ] |
+| 플레이스홀더 | 블러 해시 또는 썸네일 | [ ] |
+| 캐싱 | expo-image 메모리/디스크 캐시 | [ ] |
+
+- [ ] expo-image 설정 (cachePolicy, placeholder)
+- [ ] 이미지 프리로딩 (우선순위 높은 이미지)
+- [ ] CDN 이미지 URL 최적화 쿼리 파라미터
+- [ ] 이미지 용량 가이드라인 (썸네일 <50KB, 상세 <200KB)
+
+#### 메모리 최적화 [P1]
+- [ ] useEffect cleanup 검증
+- [ ] 구독 해제 검증 (onSnapshot, NetInfo)
+- [ ] 이미지 캐시 크기 제한 (100MB)
+- [ ] 대용량 리스트 페이지네이션
 
 #### 성능 지표 [P0]
 | 지표 | 목표 | 체크 |
@@ -361,7 +685,34 @@
 | 화면 전환 | < 300ms | [ ] |
 | 리스트 스크롤 | 60fps | [ ] |
 
-### 5.3 Analytics [P1] ([16-analytics.md](./16-analytics.md))
+### 5.3 복구 전략 구현 [P0]
+
+#### 재시도 로직 [P0]
+- [ ] withRetry 유틸리티 (exponential backoff)
+- [ ] 지터(jitter) 추가 (서버 부하 분산)
+- [ ] 재시도 가능 에러 판별 로직
+- [ ] 최대 재시도 횟수 설정
+
+#### 오프라인 지원 - Level 2: 읽기 캐싱 [P1]
+> 💡 **결정 사항**: MVP는 읽기 캐싱만 지원. 쓰기 큐잉은 출시 후 검토.
+- [ ] 네트워크 상태 감지 (useNetworkStatus)
+- [ ] 오프라인 상태 배너 표시
+- [ ] React Query 캐시 활용 (오프라인 읽기)
+- [ ] 캐시 유효성 정책 설정 (staleTime, cacheTime)
+
+#### 오프라인 쓰기 [P2] (출시 후)
+- [ ] offlineQueue 구현
+- [ ] 네트워크 복구 시 자동 동기화
+- [ ] useOfflineMutation 훅
+- [ ] 충돌 해결 전략
+
+#### React Query 에러 복구 [P0]
+- [ ] QueryCache onError 설정
+- [ ] MutationCache onError 설정
+- [ ] 토큰 만료 시 자동 갱신
+- [ ] 재시도 조건 설정 (카테고리별)
+
+### 5.4 Analytics [P1] ([16-analytics.md](./16-analytics.md))
 - [ ] Firebase Analytics 초기화
 - [ ] AnalyticsService 구현
 - [ ] 화면 조회 자동 추적
@@ -369,33 +720,101 @@
 - [ ] CrashlyticsService 구현
 - [ ] ErrorBoundary-Crashlytics 연동
 
-### 5.4 딥링킹 [P1] ([17-deep-linking.md](./17-deep-linking.md))
+### 5.5 딥링킹 [P1] ([17-deep-linking.md](./17-deep-linking.md))
 - [ ] Custom Scheme (`uniqn://`)
 - [ ] DeepLinkService 구현
 - [ ] 알림 → 딥링크 연동
 - [ ] Universal Links (iOS) [P2]
 - [ ] App Links (Android) [P2]
 
-### 5.5 Phase 5 테스트 [P0]
+### 5.6 보안 강화 [P0]
+
+#### 입력 검증 강화 [P0]
+- [ ] 모든 사용자 입력 Zod 검증
+- [ ] XSS 방지 적용 확인
+- [ ] 민감 데이터 SecureStore 저장
+- [ ] API 키 환경변수 관리
+
+#### 인증 보안 [P0]
+- [ ] JWT 토큰 만료 처리 검증
+- [ ] Refresh 토큰 로테이션
+- [ ] 세션 무효화 처리
+- [ ] Firestore Security Rules 테스트
+
+#### 의존성 보안 [P1]
+- [ ] npm audit 실행 및 취약점 해결
+- [ ] 보안 취약점 없음 확인
+- [ ] 라이센스 컴플라이언스 검사
+
+### 5.7 버전 관리 [P0]
+
+#### 앱 버전 관리 [P0]
+- [ ] 시맨틱 버저닝 (MAJOR.MINOR.PATCH)
+- [ ] 버전 정보 앱 내 표시
+- [ ] 빌드 번호 자동 증가 (CI/CD)
+- [ ] CHANGELOG.md 자동 생성
+
+#### 강제 업데이트 시스템 [P1]
+- [ ] 최소 지원 버전 관리 (Remote Config)
+- [ ] 강제 업데이트 모달 컴포넌트
+- [ ] 권장 업데이트 모달 (무시 가능)
+- [ ] 앱스토어/플레이스토어 링크
+
+### 5.8 Feature Flag 시스템 [P1]
+
+#### Feature Flag 인프라 [P1]
+- [ ] Firebase Remote Config 연동
+- [ ] FeatureFlagService 구현
+- [ ] useFeatureFlag 훅
+- [ ] 기본값 폴백 처리
+
+#### 초기 Feature Flags [P1]
+| Flag | 설명 | 기본값 |
+|------|------|:------:|
+| `enable_social_login` | 소셜 로그인 | true |
+| `enable_biometric` | 생체 인증 | false |
+| `maintenance_mode` | 점검 모드 | false |
+
+### 5.9 Phase 5 테스트 [P0]
+
+#### 성능 테스트 [P0]
 - [ ] 성능 측정 자동화
-- [ ] 전체 E2E 테스트 (스태프 + 구인자 시나리오)
-- [ ] 접근성 테스트 (WCAG 2.1 AA)
-- [ ] 테스트 커버리지 80%+ 확인
+- [ ] 성능 기준 충족 검증
+- [ ] 메모리 누수 테스트
+
+#### 회귀 테스트 [P0]
+- [ ] 전체 E2E 테스트 (스태프 시나리오)
+- [ ] 전체 E2E 테스트 (구인자 시나리오)
+- [ ] Critical Path 100% 통과
+
+#### 접근성 테스트 [P1]
+- [ ] axe-core 연동 (웹)
+- [ ] VoiceOver 수동 테스트 (iOS)
+- [ ] TalkBack 수동 테스트 (Android)
+- [ ] 색상 대비 검증 (4.5:1 이상)
+- [ ] accessibilityLabel 누락 검사
+
+#### 커버리지 검증 [P0]
+- [ ] 전체 커버리지 60%+ 확인 (MVP 기준)
+- [ ] services/ 커버리지 70%+ 확인 (MVP 기준)
+- [ ] utils/ 커버리지 80%+ 확인 (MVP 기준)
 
 ### ✓ Phase 5 검증 기준
 ```
 □ 성능 지표 모두 충족
 □ Analytics 이벤트 수집됨
 □ 딥링크로 앱 내 이동 동작
-□ 전체 테스트 커버리지 80%+
+□ 전체 테스트 커버리지 60%+ (MVP 기준)
 □ 크래시 리포팅 동작
+□ 보안 취약점 0개
+□ 오프라인 → 온라인 전환 시 데이터 동기화
 ```
 
 **관련 문서**: [07-improvements.md](./07-improvements.md), [09-error-handling.md](./09-error-handling.md)
 
 ---
 
-## Phase 6: 앱스토어 출시 (2주 + 버퍼 2주)
+## Phase 6: 앱스토어 출시
 
 ### 6.1 본인인증 실제 연동 [P1]
 > ⚠️ **외부 서비스 연동 - 지연 가능성 있음**
@@ -420,7 +839,6 @@
 - [ ] 심사 노트 작성 (영문)
 - [ ] 연령 등급 (17+)
 - [ ] ATT 권한 요청
-- [ ] Sign in with Apple
 
 ### 6.4 Android 심사 준비 [P0]
 - [ ] 데모 계정 준비
@@ -440,18 +858,64 @@
 - [ ] build-prod.yml (태그 트리거)
 - [ ] OTA 업데이트 설정
 
+#### 자동화 품질 게이트 [P0]
+- [ ] PR 시 자동 테스트 실행
+- [ ] 커버리지 임계값 체크 (MVP 60%)
+- [ ] 린트/타입체크 통과 필수
+- [ ] 번들 크기 체크 자동화
+
 #### 배포 [P0]
 - [ ] TestFlight 배포
 - [ ] Google Play 내부 테스트
 - [ ] Firebase Hosting (웹)
 
-### 6.6 전환 체크리스트 [P0]
+#### 배포 안정성 [P1]
+- [ ] 스테이징 환경 구축
+- [ ] 롤백 자동화
+- [ ] 배포 후 헬스체크
+- [ ] OTA 업데이트 테스트
+
+### 6.6 문서화 완료 [P1]
+
+#### 개발자 문서 [P1]
+- [ ] README.md 완성 (설치, 실행, 배포)
+- [ ] CONTRIBUTING.md (기여 가이드)
+- [ ] 아키텍처 다이어그램 (Mermaid)
+- [ ] API 참조 문서
+
+#### 운영 문서 [P1]
+- [ ] 배포 가이드
+- [ ] 트러블슈팅 가이드
+- [ ] 모니터링 대시보드 설정 가이드
+
+### 6.7 운영 준비 [P0]
+
+#### SLA/SLO 정의 [P0]
+- [ ] 가용성 목표 (99.5%+)
+- [ ] 응답 시간 목표 (API < 500ms)
+- [ ] 에러율 목표 (< 1%)
+- [ ] 목표 측정 대시보드 구축
+
+#### 인시던트 대응 [P0]
+- [ ] 인시던트 심각도 정의 (P1~P4)
+- [ ] 에스컬레이션 경로 문서화
+- [ ] On-call 체계 (선택사항)
+- [ ] 인시던트 회고 템플릿
+
+#### 모니터링 알림 [P0]
+- [ ] 에러율 급증 알림 (> 5%)
+- [ ] 응답 시간 저하 알림 (> 2초)
+- [ ] 서버 상태 알림 (Firebase 장애)
+- [ ] 알림 채널 설정 (Slack/Email)
+
+### 6.8 전환 체크리스트 [P0]
 
 #### 출시 전
 - [ ] 모든 P0 기능 구현
 - [ ] iOS/Android/Web 모두 동작
-- [ ] 테스트 커버리지 80%+
+- [ ] 테스트 커버리지 60%+ (MVP 기준)
 - [ ] 성능 기준 충족
+- [ ] 보안 감사 완료
 
 #### 전환 당일
 - [ ] 기존 웹앱에 안내 배너
@@ -471,40 +935,55 @@
 □ 실 사용자 로그인 성공
 □ 에러율 5% 미만
 □ 모니터링 정상 동작
+□ 롤백 절차 검증 완료
 ```
 
 **관련 문서**: [14-migration-plan.md](./14-migration-plan.md), [18-app-store-guide.md](./18-app-store-guide.md)
 
 ---
 
-## 품질 게이트 (모든 Phase)
+## 품질 게이트 (통합)
 
-### 코드 품질 [P0] ([01-architecture.md](./01-architecture.md))
-- [ ] TypeScript strict 에러 0개
-- [ ] ESLint 경고 < 10개
-- [ ] 네이밍 컨벤션 통일
+> **사용법**: Phase별 검증 기준은 해당 Phase의 최소 조건. 아래는 전체 기준.
 
-### 보안 [P0] ([12-security.md](./12-security.md))
-- [ ] 모든 입력 검증 (Zod)
-- [ ] XSS 방지
-- [ ] SecureStorage 사용 (민감 정보)
-- [ ] Firestore Security Rules
+### 필수 게이트 (PR 머지 전 확인)
 
-### UI/UX [P0] ([11-ux-guidelines.md](./11-ux-guidelines.md))
-- [ ] 다크모드 100% 지원
-- [ ] 터치 타겟 44px 이상
-- [ ] 로딩/에러/빈 상태 처리
-- [ ] 반응형 (모바일/태블릿/데스크톱)
+| 항목 | 기준 | 검증 방법 |
+|------|------|----------|
+| TypeScript | strict 에러 0개 | `npm run type-check` |
+| ESLint | 에러 0개, 경고 <10개 | `npm run lint` |
+| 테스트 | MVP 60%+ / 출시 75%+ | `npm run test:coverage` |
+| 빌드 | 성공 | `npm run build` |
 
-### 접근성 [P1] ([19-accessibility.md](./19-accessibility.md))
-- [ ] 스크린리더 호환
-- [ ] 색상 대비 4.5:1 이상
-- [ ] accessibilityLabel 적용
+### 기능별 체크 (해당 시 확인)
 
-### 에러 처리 [P0] ([09-error-handling.md](./09-error-handling.md))
-- [ ] AppError 클래스 계층
-- [ ] 사용자 친화적 메시지 (한글)
-- [ ] 글로벌 에러 핸들러
+| 영역 | 체크리스트 |
+|------|-----------|
+| **보안** | Zod 검증, XSS 방지, SecureStorage, Security Rules |
+| **UI/UX** | 다크모드, 터치 44px+, 로딩/에러/빈 상태 |
+| **접근성** | accessibilityLabel, 색상 대비 4.5:1 |
+| **에러** | AppError 사용, 한글 메시지, 재시도 로직 |
+| **로깅** | 구조화 포맷, 민감정보 마스킹 |
+| **개인정보** | 동의 수집, 열람/삭제 기능 |
+
+### 테스트 커버리지 [P0]
+
+#### MVP 단계 (출시 전)
+| 영역 | 목표 | 체크 |
+|------|------|:----:|
+| 전체 | 60%+ | [ ] |
+| services/ | 70%+ | [ ] |
+| utils/ | 80%+ | [ ] |
+
+#### 안정화 단계 (출시 후)
+| 영역 | 목표 | 체크 |
+|------|------|:----:|
+| 전체 | 75%+ | [ ] |
+| services/ | 85%+ | [ ] |
+| utils/ | 90%+ | [ ] |
+| hooks/ | 70%+ | [ ] |
+| stores/ | 75%+ | [ ] |
+| components/ | 60%+ | [ ] |
 
 ---
 
@@ -560,21 +1039,56 @@
 
 ## 진행 상태 요약
 
-| Phase | 기간 | 상태 | 진행률 |
-|-------|------|:----:|:------:|
-| 1. 프로젝트 기반 | 3주 | ⬜ | 0% |
-| 2. 인증 + 구인구직 | 3주 | ⬜ | 0% |
-| 3. 스케줄 + 알림 | 3주 | ⬜ | 0% |
-| 4. 구인자 기능 | 3주 | ⬜ | 0% |
-| 5. 최적화 + 배포준비 | 2주 | ⬜ | 0% |
-| 6. 앱스토어 출시 | 2주+버퍼 | ⬜ | 0% |
+| Phase | 상태 | 진행률 |
+|-------|:----:|:------:|
+| 1. 프로젝트 기반 | ⬜ | 0% |
+| 2. 인증 + 구인구직 | ⬜ | 0% |
+| 3. 스케줄 + 알림 | ⬜ | 0% |
+| 4. 구인자 기능 | ⬜ | 0% |
+| 5. 최적화 + 배포준비 | ⬜ | 0% |
+| 6. 앱스토어 출시 | ⬜ | 0% |
 
 **범례**: ⬜ 미시작 | 🟨 진행중 | ✅ 완료
-
-**총 예상 기간**: 16주 + 버퍼 2주 = 18주
 
 ---
 
 *생성일: 2024-12*
 *업데이트: 2025-12*
-*버전: 3.0*
+*버전: 5.3*
+
+### 버전 5.3 변경사항
+- [Phase 1] 핵심 라이브러리 버전 명시 (Expo SDK 52+, RN 0.76+ 등)
+- [Phase 2] 회원탈퇴 + 개인정보 열람/삭제 기능 추가 (법적 필수)
+- [Phase 2] 비밀번호 정책 상세화 (8자+, 대소문자, 숫자, 특수문자)
+- [Phase 3] QR 코드 유효시간 정책 추가 (5분 유효, 3분 자동 갱신)
+- [Phase 3] 알림 읽음 처리 기능 추가 (개별/전체 읽음, 뱃지 카운트)
+- [Phase 5] 이미지 최적화 섹션 추가 (WebP, 리사이징, 캐싱)
+- [Phase 5] 번들 분석 도구 추가 (expo-bundle-analyzer, CI 자동화)
+- Phase 1 섹션 번호 재정렬 (1.2 → 1.14)
+- Phase 2 섹션 번호 재정렬 (2.2 → 2.5)
+
+### 버전 5.2 변경사항
+- Phase별 테스트 커버리지 목표 통일 (전체 60%/75%, services 70%/85%)
+- 자동화 품질 게이트 커버리지 임계값 60%로 변경
+- 롤백 포인트 표현 명확화 ("제한적 MVP 출시")
+- Phase 6.3 Apple 로그인 중복 제거 (Phase 2에서 처리)
+- JobFilters P0 → P1로 변경 (필터/검색 기능과 일치)
+
+### 버전 5.1 변경사항
+- 테스트 커버리지 목표 현실화 (MVP 60%, 출시 75%)
+- Apple 로그인 P0으로 승격 (iOS 앱스토어 정책)
+- 칩/결제/송금 범위 명시 (제외 항목)
+- Firebase Functions 기본 설정 Phase 1에 추가
+- 품질 게이트 통합 (중복 제거, 단일 참조점)
+- 코드 리뷰 체크리스트 제거 (품질 게이트로 통합)
+
+### 버전 5.0 변경사항
+- 오프라인 지원 Level 2로 간소화 (읽기 캐싱만, 쓰기 큐잉 P2로 이동)
+- QR 실패 대응: 관리자 시간 수정 + 스태프 실시간 동기화 (app2 패턴)
+- 로깅 전략 섹션 추가 (1.5)
+- 환경 분리 섹션 추가 (1.6, 스테이징 포함)
+- 버전 관리/강제 업데이트 섹션 추가 (5.7)
+- Feature Flag 시스템 추가 (5.8)
+- 운영 준비 섹션 추가 (6.7, SLA/인시던트 대응)
+- 개인정보 보호/로깅 표준 품질 게이트 추가
+- Phase 의존성 맵 및 롤백 포인트 추가
