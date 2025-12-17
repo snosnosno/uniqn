@@ -15,7 +15,7 @@ import { logger } from '@/utils/logger';
 // Types
 // ============================================================================
 
-type RouteGroup = '(auth)' | '(app)' | '(manager)' | '(admin)' | '(public)';
+type RouteGroup = '(auth)' | '(app)' | '(employer)' | '(admin)' | '(public)';
 
 interface RouteConfig {
   requiredAuth: boolean;
@@ -40,11 +40,11 @@ const ROUTE_CONFIGS: Record<RouteGroup, RouteConfig> = {
   },
   '(app)': {
     requiredAuth: true,
-    requiredRole: 'user', // 최소 user 권한 필요 (로그인만 되어 있으면 됨)
+    requiredRole: 'staff', // 최소 staff 권한 필요 (로그인만 되어 있으면 됨)
   },
-  '(manager)': {
+  '(employer)': {
     requiredAuth: true,
-    requiredRole: 'manager', // manager 이상 권한 필요
+    requiredRole: 'employer', // employer 이상 권한 필요 (구인자)
   },
   '(admin)': {
     requiredAuth: true,
@@ -167,10 +167,10 @@ export function useIsAdmin(): boolean {
 }
 
 /**
- * 매니저 권한 확인 (구인자 역할)
+ * 구인자 권한 확인
  */
-export function useIsManager(): boolean {
-  return useHasPermission('manager');
+export function useIsEmployer(): boolean {
+  return useHasPermission('employer');
 }
 
 /**

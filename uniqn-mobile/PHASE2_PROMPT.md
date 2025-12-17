@@ -53,9 +53,21 @@ uniqn-mobile/
 
 ### 2.1 인증 시스템 [P0]
 ```yaml
+인증 방식:
+  - ID/PW (이메일/비밀번호) 로그인
+  - 소셜 로그인: Apple(P0), Google(P1), 카카오(P1)
+  - ⚠️ 이메일 인증 사용 안함 → 휴대폰 본인인증으로 대체
+
+회원가입 (4단계):
+  1. 계정 정보 (이메일/비밀번호 또는 소셜 로그인)
+  2. 휴대폰 본인인증 (필수) - PASS 또는 카카오 인증
+  3. 프로필 정보 (닉네임, 역할 선택)
+  4. 약관 동의
+
 구현 항목:
-  - 이메일 로그인
-  - 회원가입 (3단계: 계정 → 프로필 → 완료)
+  - 로그인 (ID/PW + 소셜)
+  - 회원가입 (4단계)
+  - 휴대폰 본인인증 (Mock - Phase 6에서 실제 연동)
   - 비밀번호 찾기
   - Apple 소셜 로그인 (P0, iOS 필수)
   - 세션 관리 (토큰 갱신)
@@ -136,16 +148,21 @@ export class MaxCapacityReachedError extends AppError {} // 정원 초과
 우선순위: 높음
 컴포넌트:
   - src/components/auth/LoginForm.tsx
-  - src/components/auth/SignupForm.tsx (AccountStep, ProfileStep, CompleteStep)
+  - src/components/auth/SignupForm.tsx (4단계: AccountStep → IdentityStep → ProfileStep → TermsStep)
+  - src/components/auth/IdentityVerification.tsx (본인인증 - Mock)
   - src/components/auth/PasswordStrength.tsx
   - src/components/auth/StepIndicator.tsx
-  - src/components/auth/SocialLoginButtons.tsx
+  - src/components/auth/SocialLoginButtons.tsx (Google, Apple, 카카오)
   - src/components/auth/ForgotPasswordForm.tsx
 
 화면:
   - app/(auth)/login.tsx
-  - app/(auth)/signup.tsx
+  - app/(auth)/signup.tsx (4단계 플로우)
   - app/(auth)/forgot-password.tsx
+
+참고:
+  - 이메일 인증 사용 안함
+  - 휴대폰 본인인증 필수 (Phase 2는 Mock, Phase 6에서 실제 연동)
 ```
 
 ### Step 4: 구인구직 컴포넌트
@@ -274,8 +291,9 @@ npm test            # 테스트 통과
 
 ### Phase 2 완료 기준
 ```
-□ 이메일 회원가입 → 로그인 완료
-□ Apple 로그인 동작 (iOS)
+□ ID/PW 회원가입 (4단계) → 로그인 완료
+□ 휴대폰 본인인증 Mock UI 동작
+□ Apple 소셜 로그인 동작 (iOS)
 □ 공고 목록 무한스크롤 동작
 □ 공고 상세 → 지원하기 완료
 □ 지원 내역 확인 가능

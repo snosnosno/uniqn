@@ -17,9 +17,15 @@ export interface FirebaseDocument {
 }
 
 /**
- * 사용자 역할
+ * 사용자 역할 (앱 권한)
+ *
+ * - admin: 관리자 (모든 기능)
+ * - employer: 구인자 (공고 관리, 지원자 관리)
+ * - staff: 스태프 (지원, 스케줄 확인)
+ *
+ * ⚠️ StaffRole과 혼동 주의: StaffRole은 포커룸 직무 (dealer, manager 등)
  */
-export type UserRole = 'admin' | 'manager' | 'dealer' | 'staff' | 'user';
+export type UserRole = 'admin' | 'employer' | 'staff';
 
 /**
  * 사용자 타입

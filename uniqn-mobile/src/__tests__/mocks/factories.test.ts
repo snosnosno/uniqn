@@ -15,8 +15,8 @@ import {
   createMockStaffList,
   createMockJobPostings,
   createMockAdmin,
-  createMockManager,
-  createMockDealer,
+  createMockEmployer,
+  createMockStaffUser,
   createActiveJobPosting,
   createClosedJobPosting,
   createAcceptedApplication,
@@ -181,18 +181,18 @@ describe('Mock Factories', () => {
       expect(admin.name).toBe('관리자');
     });
 
-    it('should create manager staff', () => {
-      const manager = createMockManager();
+    it('should create employer user', () => {
+      const employer = createMockEmployer();
 
-      expect(manager.role).toBe('manager');
-      expect(manager.name).toBe('매니저');
+      expect(employer.role).toBe('employer');
+      expect(employer.name).toBe('구인자');
     });
 
-    it('should create dealer staff', () => {
-      const dealer = createMockDealer();
+    it('should create staff user', () => {
+      const staff = createMockStaffUser();
 
-      expect(dealer.role).toBe('dealer');
-      expect(dealer.name).toBe('딜러');
+      expect(staff.role).toBe('staff');
+      expect(staff.name).toBe('스태프');
     });
 
     it('should create active job posting', () => {

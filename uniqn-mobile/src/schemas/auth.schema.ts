@@ -86,9 +86,12 @@ export const phoneSchema = z
   );
 
 /**
- * 역할 선택 스키마
+ * 역할 선택 스키마 (회원가입 시)
+ *
+ * - staff: 스태프 (지원자)
+ * - employer: 구인자 (공고 등록)
  */
-export const roleSelectSchema = z.enum(['staff', 'manager'], {
+export const roleSelectSchema = z.enum(['staff', 'employer'], {
   error: '역할을 선택해주세요',
 });
 
@@ -103,15 +106,16 @@ export const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 /**
- * 회원가입 Step 1 스키마 (기본 정보)
+ * 회원가입 Step 1 스키마 (계정 정보)
+ *
+ * 플로우: 계정 → 본인인증 → 프로필 → 약관동의
+ * ⚠️ 이메일 인증 사용 안함 - 휴대폰 본인인증으로 대체
  */
 export const signUpStep1Schema = z
   .object({
     email: emailSchema,
     password: passwordSchema,
     passwordConfirm: passwordConfirmSchema,
-    name: nameSchema,
-    nickname: nicknameSchema,
   })
   .refine((data) => data.password === data.passwordConfirm, {
     message: '비밀번호가 일치하지 않습니다',
@@ -121,19 +125,43 @@ export const signUpStep1Schema = z
 export type SignUpStep1Data = z.infer<typeof signUpStep1Schema>;
 
 /**
- * 회원가입 Step 2 스키마 (연락처)
+ * 회원가입 Step 2 스키마 (본인인증 - 필수)
+ *
+ * PASS 또는 카카오 본인인증을 통해 실명/휴대폰 번호 검증
  */
 export const signUpStep2Schema = z.object({
-  phone: phoneSchema,
+  identityVerified: z.literal(true, {
+    error: '본인인증이 필요합니다',
+  }),
+  identityProvider: z.enum(['pass', 'kakao'], {
+    error: '본인인증 제공자를 선택해주세요',
+  }),
+  verifiedName: nameSchema,  // 본인인증된 실명
+  verifiedPhone: phoneSchema,  // 본인인증된 휴대폰 번호
 });
 
 export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
 
 /**
- * 회원가입 Step 3 스키마 (역할 & 동의)
+ * 회원가입 Step 3 스키마 (프로필 정보)
  */
 export const signUpStep3Schema = z.object({
-  role: roleSelectSchema,
+  nickname: z
+    .string()
+    .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
+    .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
+    .trim(),
+  role: z.enum(['staff', 'employer'], {
+    error: '역할을 선택해주세요',
+  }),
+});
+
+export type SignUpStep3Data = z.infer<typeof signUpStep3Schema>;
+
+/**
+ * 회원가입 Step 4 스키마 (약관 동의)
+ */
+export const signUpStep4Schema = z.object({
   termsAgreed: z.literal(true, {
     error: '이용약관에 동의해주세요',
   }),
@@ -143,18 +171,28 @@ export const signUpStep3Schema = z.object({
   marketingAgreed: z.boolean().optional().default(false),
 });
 
-export type SignUpStep3Data = z.infer<typeof signUpStep3Schema>;
+export type SignUpStep4Data = z.infer<typeof signUpStep4Schema>;
 
 /**
- * 전체 회원가입 스키마
+ * 전체 회원가입 스키마 (4단계)
  */
-export const signUpSchema = signUpStep1Schema
-  .merge(signUpStep2Schema)
-  .merge(signUpStep3Schema.omit({ termsAgreed: true, privacyAgreed: true }))
-  .extend({
-    termsAgreed: z.boolean(),
-    privacyAgreed: z.boolean(),
-  });
+export const signUpSchema = z.object({
+  // Step 1: 계정 정보
+  email: emailSchema,
+  password: passwordSchema,
+  // Step 2: 본인인증
+  identityVerified: z.boolean(),
+  identityProvider: z.enum(['pass', 'kakao']).optional(),
+  verifiedName: z.string().optional(),
+  verifiedPhone: z.string().optional(),
+  // Step 3: 프로필
+  nickname: z.string(),
+  role: z.enum(['staff', 'employer']),
+  // Step 4: 약관 동의
+  termsAgreed: z.boolean(),
+  privacyAgreed: z.boolean(),
+  marketingAgreed: z.boolean().optional(),
+});
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;
 

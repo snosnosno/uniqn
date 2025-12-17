@@ -118,7 +118,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.AUTH_TOKEN_EXPIRED]: '로그인이 만료되었습니다. 다시 로그인해주세요',
   [ERROR_CODES.AUTH_SESSION_EXPIRED]: '세션이 만료되었습니다. 다시 로그인해주세요',
   [ERROR_CODES.AUTH_ACCOUNT_DISABLED]: '비활성화된 계정입니다. 고객센터에 문의해주세요',
-  [ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED]: '이메일 인증이 필요합니다',
+  [ERROR_CODES.AUTH_EMAIL_NOT_VERIFIED]: '본인인증이 필요합니다',  // 휴대폰 본인인증
   [ERROR_CODES.AUTH_TOO_MANY_REQUESTS]: '너무 많은 시도입니다. 잠시 후 다시 시도해주세요',
   [ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN]: '보안을 위해 다시 로그인해주세요',
 

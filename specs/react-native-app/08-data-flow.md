@@ -239,7 +239,7 @@ export const jobPostingCreateService = {
 
 ### 공고 작성 화면 (멀티 스텝)
 ```typescript
-// app/(manager)/job-posting/create.tsx
+// app/(employer)/job-posting/create.tsx
 import { useState } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';

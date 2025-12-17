@@ -158,8 +158,8 @@ export const authService = {
         createdAt: firestore.FieldValue.serverTimestamp(),
       });
 
-      // 4. 이메일 인증 발송
-      await credential.user.sendEmailVerification();
+      // 4. 이메일 인증 발송 - 사용하지 않음 (휴대폰 본인인증으로 대체)
+      // await credential.user.sendEmailVerification();
 
       return await this.fetchAndSetUser(credential.user);
     } catch (error: any) {

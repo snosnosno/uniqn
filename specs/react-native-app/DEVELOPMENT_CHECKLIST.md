@@ -265,14 +265,19 @@ graph LR
 ### 2.1 인증 시스템 [P0]
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
-| 로그인 (이메일) | [ ] | P0 |
-| 회원가입 (3단계) | [ ] | P0 |
+| 로그인 (이메일/비밀번호) | [ ] | P0 |
+| 회원가입 (4단계) | [ ] | P0 |
+| **휴대폰 본인인증 (필수)** | [ ] | P0 |
 | 비밀번호 찾기 | [ ] | P0 |
 | 세션 관리 (토큰 갱신) | [ ] | P0 |
-| 소셜 로그인 (Google) | [ ] | P1 |
 | 소셜 로그인 (Apple) | [ ] | P0 |
+| 소셜 로그인 (Google) | [ ] | P1 |
 | 소셜 로그인 (카카오) | [ ] | P1 |
 | 생체 인증 | [ ] | P2 |
+
+> ⚠️ **인증 방식**: ID/PW 또는 소셜 로그인 + 휴대폰 본인인증 필수
+> - 이메일 인증은 사용하지 않음
+> - 휴대폰 본인인증으로 실명 확인 및 중복가입 방지
 
 #### 비밀번호 정책 [P0]
 > ⚠️ **필수 준수**: 보안 강화를 위한 비밀번호 규칙
@@ -294,16 +299,19 @@ graph LR
 
 #### 인증 컴포넌트 [P0]
 - [ ] LoginScreen
-- [ ] SignupScreen (AccountStep, ProfileStep, CompleteStep)
+- [ ] SignupScreen (4단계: AccountStep → IdentityStep → ProfileStep → TermsStep)
+- [ ] IdentityVerificationScreen (본인인증 WebView)
 - [ ] ForgotPasswordScreen
 - [ ] StepIndicator (단계 표시)
 - [ ] PasswordStrength (비밀번호 강도 + 규칙 체크 표시)
-- [ ] SocialLoginButtons
+- [ ] SocialLoginButtons (Google, Apple, 카카오)
 
 #### 인증 에러 처리 [P0]
 - [ ] 로그인 실패 에러 (잘못된 자격증명)
 - [ ] 계정 비활성화 에러
-- [ ] 이메일 미인증 에러
+- [ ] 본인인증 미완료 에러
+- [ ] 본인인증 실패/만료 에러
+- [ ] 중복가입 에러 (CI 중복)
 - [ ] 로그인 시도 횟수 초과 에러
 - [ ] 토큰 만료 시 자동 갱신
 - [ ] 비밀번호 정책 위반 에러

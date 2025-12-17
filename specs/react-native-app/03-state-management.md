@@ -56,7 +56,7 @@ interface User {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  role: 'admin' | 'manager' | 'staff' | 'user';
+  role: 'admin' | 'employer' | 'staff';  // employer: 구인자, staff: 스태프
   consentCompleted: boolean;
   profileCompleted: boolean;
 }
@@ -76,7 +76,7 @@ interface AuthState {
 
   // Derived (computed)
   isAdmin: () => boolean;
-  isManager: () => boolean;
+  isEmployer: () => boolean;  // employer 이상 (구인자)
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -111,9 +111,9 @@ export const useAuthStore = create<AuthState>()(
 
       // Computed
       isAdmin: () => get().user?.role === 'admin',
-      isManager: () => {
+      isEmployer: () => {
         const role = get().user?.role;
-        return role === 'admin' || role === 'manager';
+        return role === 'admin' || role === 'employer';
       },
     }),
     {

@@ -1538,7 +1538,7 @@ export const ErrorMessages: Record<string, string> = {
   [ErrorCodes.AUTH_INVALID_CREDENTIALS]: '이메일 또는 비밀번호가 올바르지 않습니다',
   [ErrorCodes.AUTH_SESSION_EXPIRED]: '세션이 만료되었습니다. 다시 로그인해주세요',
   [ErrorCodes.AUTH_UNAUTHORIZED]: '접근 권한이 없습니다',
-  [ErrorCodes.AUTH_EMAIL_NOT_VERIFIED]: '이메일 인증이 필요합니다',
+  [ErrorCodes.AUTH_EMAIL_NOT_VERIFIED]: '본인인증이 필요합니다',  // 휴대폰 본인인증
   [ErrorCodes.AUTH_ACCOUNT_DISABLED]: '계정이 비활성화되었습니다',
 
   [ErrorCodes.VALIDATION_REQUIRED_FIELD]: '필수 항목을 입력해주세요',

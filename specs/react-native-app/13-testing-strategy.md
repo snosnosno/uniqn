@@ -718,10 +718,12 @@ name: Login Flow
 
 ### 회원가입 플로우 테스트
 
+> ⚠️ **참고**: 4단계 플로우 (계정 → 본인인증 → 프로필 → 완료). 이메일 인증 사용 안함.
+
 ```yaml
 # maestro/flows/auth/signup.yaml
 appId: com.uniqn.app
-name: Signup Flow
+name: Signup Flow (4 Steps)
 ---
 - launchApp
 
@@ -745,23 +747,36 @@ name: Signup Flow
 
 - tapOn: "다음"
 
-# Step 2: 프로필 정보
+# Step 2: 본인인증 (필수)
+- assertVisible: "본인인증"
+
+# PASS 인증 또는 카카오 인증 선택 (테스트 모드에서는 스킵 가능)
+- tapOn:
+    id: "identity-verify-pass"
+
+# 테스트 환경에서는 모의 인증 처리
+- waitForAnimationToEnd
+- assertVisible: "인증이 완료되었습니다"
+
+- tapOn: "다음"
+
+# Step 3: 프로필 정보 + 약관 동의
 - assertVisible: "프로필 설정"
 
 - tapOn:
-    id: "name-input"
-- inputText: "테스트 사용자"
-
-- tapOn:
-    id: "phone-input"
-- inputText: "010-1234-5678"
+    id: "nickname-input"
+- inputText: "테스트사용자"
 
 # 역할 선택
 - tapOn: "스태프"
 
+# 필수 약관 동의
+- tapOn:
+    id: "terms-required-checkbox"
+
 - tapOn: "다음"
 
-# Step 3: 완료
+# Step 4: 완료
 - assertVisible: "가입 완료"
 
 - takeScreenshot: "signup_complete"

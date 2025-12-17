@@ -47,18 +47,17 @@ export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated
 
 /**
  * 역할 계층 (숫자가 높을수록 상위 권한)
- * - admin: 최고 관리자
- * - manager: 매니저 (구인자 역할 포함)
- * - dealer: 딜러
- * - staff: 스태프
- * - user: 일반 사용자
+ *
+ * - admin: 최고 관리자 (모든 기능)
+ * - employer: 구인자 (공고 관리, 지원자 관리)
+ * - staff: 스태프 (지원, 스케줄 확인)
+ *
+ * ⚠️ StaffRole(직무: dealer, manager 등)과 혼동 주의
  */
 export const ROLE_HIERARCHY: Record<UserRole, number> = {
   admin: 100,
-  manager: 50,
-  dealer: 30,
-  staff: 20,
-  user: 10,
+  employer: 50,
+  staff: 10,
 };
 
 interface AuthState {
@@ -73,7 +72,7 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
-  isManager: boolean;
+  isEmployer: boolean;  // 구인자 이상 권한
   isStaff: boolean;
 
   // 액션
@@ -100,7 +99,7 @@ const initialState = {
   isAuthenticated: false,
   isLoading: false,
   isAdmin: false,
-  isManager: false,
+  isEmployer: false,
   isStaff: false,
 };
 
@@ -121,7 +120,7 @@ export const useAuthStore = create<AuthState>()(
             status: 'unauthenticated',
             isAuthenticated: false,
             isAdmin: false,
-            isManager: false,
+            isEmployer: false,
             isStaff: false,
           });
           return;
@@ -150,7 +149,7 @@ export const useAuthStore = create<AuthState>()(
           set({
             profile: null,
             isAdmin: false,
-            isManager: false,
+            isEmployer: false,
             isStaff: false,
           });
           return;
@@ -161,9 +160,9 @@ export const useAuthStore = create<AuthState>()(
         set({
           profile,
           isAdmin: profile.role === 'admin',
-          // manager 이상 (admin, manager)
-          isManager: roleLevel >= ROLE_HIERARCHY.manager,
-          // staff 이상 (admin, manager, dealer, staff)
+          // employer 이상 (admin, employer)
+          isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
+          // staff 이상 (admin, employer, staff)
           isStaff: roleLevel >= ROLE_HIERARCHY.staff,
         });
       },
@@ -239,7 +238,7 @@ export const selectProfile = (state: AuthState) => state.profile;
 export const selectIsAuthenticated = (state: AuthState) => state.isAuthenticated;
 export const selectIsLoading = (state: AuthState) => state.isLoading;
 export const selectIsAdmin = (state: AuthState) => state.isAdmin;
-export const selectIsManager = (state: AuthState) => state.isManager;
+export const selectIsEmployer = (state: AuthState) => state.isEmployer;
 export const selectIsStaff = (state: AuthState) => state.isStaff;
 export const selectAuthStatus = (state: AuthState) => state.status;
 export const selectAuthError = (state: AuthState) => state.error;

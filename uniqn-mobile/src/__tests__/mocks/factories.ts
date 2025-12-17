@@ -260,19 +260,19 @@ export function createMockAdmin(): MockStaff {
   });
 }
 
-export function createMockManager(): MockStaff {
+export function createMockEmployer(): MockStaff {
   return createMockStaff({
-    role: 'manager',
-    name: '매니저',
-    email: 'manager@example.com',
+    role: 'employer',
+    name: '구인자',
+    email: 'employer@example.com',
   });
 }
 
-export function createMockDealer(): MockStaff {
+export function createMockStaffUser(): MockStaff {
   return createMockStaff({
-    role: 'dealer',
-    name: '딜러',
-    email: 'dealer@example.com',
+    role: 'staff',
+    name: '스태프',
+    email: 'staff@example.com',
   });
 }
 

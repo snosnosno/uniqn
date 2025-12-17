@@ -108,7 +108,7 @@ App.tsx (599줄) → 모든 라우트
 app/
 ├── (auth)/_layout.tsx      # 인증 영역 레이아웃
 ├── (app)/_layout.tsx       # 앱 영역 레이아웃 + 인증 가드
-├── (manager)/_layout.tsx   # 매니저 영역 + 권한 체크
+├── (employer)/_layout.tsx  # 구인자 영역 + 권한 체크
 └── (admin)/_layout.tsx     # 관리자 영역 + 권한 체크
 ```
 
@@ -175,11 +175,11 @@ app/
 export const permissions = {
   // 역할 기반
   isAdmin: (role: Role) => role === 'admin',
-  isManager: (role: Role) => role === 'admin' || role === 'manager',
-  isStaff: (role: Role) => ['admin', 'manager', 'staff'].includes(role),
+  isEmployer: (role: Role) => role === 'admin' || role === 'employer',  // 구인자 이상
+  isStaff: (role: Role) => ['admin', 'employer', 'staff'].includes(role),
 
   // 기능 기반
-  canManageJobPostings: (role: Role) => permissions.isManager(role),
+  canManageJobPostings: (role: Role) => permissions.isEmployer(role),
   canApproveJobPostings: (role: Role) => permissions.isAdmin(role),
   canManageUsers: (role: Role) => permissions.isAdmin(role),
 
@@ -188,7 +188,7 @@ export const permissions = {
     permissions.isAdmin(role) || userId === creatorId,
 
   canManageApplicants: (role: Role, userId: string, creatorId: string) =>
-    permissions.isManager(role) &&
+    permissions.isEmployer(role) &&
     (permissions.isAdmin(role) || userId === creatorId),
 };
 
@@ -199,15 +199,15 @@ export function usePermissions() {
 
   return useMemo(() => ({
     isAdmin: permissions.isAdmin(user?.role),
-    isManager: permissions.isManager(user?.role),
+    isEmployer: permissions.isEmployer(user?.role),
     canManageJobPostings: permissions.canManageJobPostings(user?.role),
     // ...
   }), [user?.role]);
 }
 
 // ✅ 레이아웃에서 통합 체크
-// app/(manager)/_layout.tsx
-export default function ManagerLayout() {
+// app/(employer)/_layout.tsx
+export default function EmployerLayout() {
   const { canManageJobPostings, isLoading } = usePermissions();
 
   if (isLoading) return <LoadingScreen />;
@@ -414,14 +414,14 @@ export function useInterval(callback: () => void, delay: number | null) {
 
 ```typescript
 // ✅ 레이아웃에서 권한 체크
-// app/(manager)/job-posting/[id]/_layout.tsx
+// app/(employer)/job-posting/[id]/_layout.tsx
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { canEditJobPosting } = usePermissions();
   const { data: job, isLoading } = useJobPosting(id);
 
   if (isLoading) return <LoadingScreen />;
-  if (!job) return <Redirect href="/(manager)/job-posting" />;
+  if (!job) return <Redirect href="/(employer)/job-posting" />;
   if (!canEditJobPosting(job.creatorId)) {
     return <Redirect href="/(app)" />;
   }

@@ -19,6 +19,6 @@ export {
   useAuthGuard,
   useHasPermission,
   useIsAdmin,
-  useIsManager,
+  useIsEmployer,
   useIsStaff,
 } from './useAuthGuard';

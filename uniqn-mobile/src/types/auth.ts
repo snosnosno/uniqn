@@ -13,13 +13,15 @@ export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated
 
 /**
  * 인증된 사용자 정보
+ *
+ * ⚠️ 이메일 인증은 사용하지 않음 - 휴대폰 본인인증으로 대체
  */
 export interface AuthUser {
   uid: string;
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  emailVerified: boolean;
+  emailVerified: boolean;  // Firebase 기본 필드 (미사용, 휴대폰 본인인증으로 대체)
   phoneNumber: string | null;
 }
 
@@ -32,22 +34,27 @@ export interface LoginRequest {
 }
 
 /**
- * 회원가입 요청 (3단계)
+ * 회원가입 요청 (4단계)
+ *
+ * 플로우: 계정 → 본인인증 → 프로필 → 약관동의
+ * ⚠️ 이메일 인증 사용 안함 - 휴대폰 본인인증 필수
  */
 export interface SignUpRequest {
-  // Step 1: 기본 정보
+  // Step 1: 계정 정보
   email: string;
   password: string;
-  name: string;
-  nickname?: string;
 
-  // Step 2: 연락처
-  phone: string;
+  // Step 2: 본인인증 (필수)
+  identityVerified: boolean;
+  identityProvider?: 'pass' | 'kakao';  // 본인인증 제공자
+  verifiedName?: string;  // 본인인증된 실명
+  verifiedPhone?: string;  // 본인인증된 휴대폰 번호
 
-  // Step 3: 역할 선택
-  role: 'staff' | 'manager';
+  // Step 3: 프로필 정보
+  nickname: string;
+  role: 'staff' | 'employer';
 
-  // 동의 정보
+  // Step 4: 약관 동의
   termsAgreed: boolean;
   privacyAgreed: boolean;
   marketingAgreed?: boolean;
@@ -84,11 +91,15 @@ export interface PhoneVerification {
 
 /**
  * 사용자 인증 상태
+ *
+ * ⚠️ 이메일 인증은 사용하지 않음 - 휴대폰 본인인증으로 대체
+ * - emailVerified: Firebase 기본 필드 (참조용, 실제 검증에 사용 안함)
+ * - phoneVerified: 휴대폰 본인인증 완료 여부 (필수)
  */
 export interface UserVerificationStatus {
   userId: string;
-  emailVerified: boolean;
-  phoneVerified: boolean;
+  emailVerified: boolean;  // Firebase 기본 필드 (미사용)
+  phoneVerified: boolean;  // 휴대폰 본인인증 완료 여부 (필수)
   phoneNumber?: string;
   verifiedAt?: Timestamp;
   updatedAt: Timestamp;

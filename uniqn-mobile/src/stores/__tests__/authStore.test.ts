@@ -13,7 +13,7 @@ import {
   selectProfile,
   selectIsAuthenticated,
   selectIsAdmin,
-  selectIsManager,
+  selectIsEmployer,
   selectIsStaff,
   type AuthUser,
   type UserProfile,
@@ -36,7 +36,7 @@ describe('AuthStore', () => {
       expect(state.isAuthenticated).toBe(false);
       expect(state.isLoading).toBe(false);
       expect(state.isAdmin).toBe(false);
-      expect(state.isManager).toBe(false);
+      expect(state.isEmployer).toBe(false);
       expect(state.isStaff).toBe(false);
       expect(state.error).toBeNull();
     });
@@ -113,16 +113,16 @@ describe('AuthStore', () => {
       const state = useAuthStore.getState();
       expect(state.profile).toEqual(mockProfile);
       expect(state.isAdmin).toBe(true);
-      expect(state.isManager).toBe(true);
+      expect(state.isEmployer).toBe(true);
       expect(state.isStaff).toBe(true);
     });
 
-    it('should set correct flags for manager role', () => {
+    it('should set correct flags for employer role', () => {
       const mockProfile: UserProfile = {
         uid: 'test-uid',
-        email: 'manager@example.com',
-        name: '매니저',
-        role: 'manager',
+        email: 'employer@example.com',
+        name: '구인자',
+        role: 'employer',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -133,27 +133,7 @@ describe('AuthStore', () => {
 
       const state = useAuthStore.getState();
       expect(state.isAdmin).toBe(false);
-      expect(state.isManager).toBe(true);
-      expect(state.isStaff).toBe(true);
-    });
-
-    it('should set correct flags for dealer role', () => {
-      const mockProfile: UserProfile = {
-        uid: 'test-uid',
-        email: 'dealer@example.com',
-        name: '딜러',
-        role: 'dealer',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      act(() => {
-        useAuthStore.getState().setProfile(mockProfile);
-      });
-
-      const state = useAuthStore.getState();
-      expect(state.isAdmin).toBe(false);
-      expect(state.isManager).toBe(false);
+      expect(state.isEmployer).toBe(true);
       expect(state.isStaff).toBe(true);
     });
 
@@ -173,28 +153,8 @@ describe('AuthStore', () => {
 
       const state = useAuthStore.getState();
       expect(state.isAdmin).toBe(false);
-      expect(state.isManager).toBe(false);
+      expect(state.isEmployer).toBe(false);
       expect(state.isStaff).toBe(true);
-    });
-
-    it('should set correct flags for user role', () => {
-      const mockProfile: UserProfile = {
-        uid: 'test-uid',
-        email: 'user@example.com',
-        name: '일반 사용자',
-        role: 'user',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-
-      act(() => {
-        useAuthStore.getState().setProfile(mockProfile);
-      });
-
-      const state = useAuthStore.getState();
-      expect(state.isAdmin).toBe(false);
-      expect(state.isManager).toBe(false);
-      expect(state.isStaff).toBe(false);
     });
 
     it('should clear flags when profile is null', () => {
@@ -218,7 +178,7 @@ describe('AuthStore', () => {
       const state = useAuthStore.getState();
       expect(state.profile).toBeNull();
       expect(state.isAdmin).toBe(false);
-      expect(state.isManager).toBe(false);
+      expect(state.isEmployer).toBe(false);
       expect(state.isStaff).toBe(false);
     });
   });
@@ -321,54 +281,42 @@ describe('AuthStore', () => {
   describe('ROLE_HIERARCHY', () => {
     it('should have correct role values', () => {
       expect(ROLE_HIERARCHY.admin).toBe(100);
-      expect(ROLE_HIERARCHY.manager).toBe(50);
-      expect(ROLE_HIERARCHY.dealer).toBe(30);
-      expect(ROLE_HIERARCHY.staff).toBe(20);
-      expect(ROLE_HIERARCHY.user).toBe(10);
+      expect(ROLE_HIERARCHY.employer).toBe(50);
+      expect(ROLE_HIERARCHY.staff).toBe(10);
     });
 
-    it('should have admin > manager > dealer > staff > user', () => {
-      expect(ROLE_HIERARCHY.admin).toBeGreaterThan(ROLE_HIERARCHY.manager);
-      expect(ROLE_HIERARCHY.manager).toBeGreaterThan(ROLE_HIERARCHY.dealer);
-      expect(ROLE_HIERARCHY.dealer).toBeGreaterThan(ROLE_HIERARCHY.staff);
-      expect(ROLE_HIERARCHY.staff).toBeGreaterThan(ROLE_HIERARCHY.user);
+    it('should have admin > employer > staff', () => {
+      expect(ROLE_HIERARCHY.admin).toBeGreaterThan(ROLE_HIERARCHY.employer);
+      expect(ROLE_HIERARCHY.employer).toBeGreaterThan(ROLE_HIERARCHY.staff);
     });
   });
 
   describe('hasPermission', () => {
     it('should return false for null role', () => {
-      expect(hasPermission(null, 'user')).toBe(false);
+      expect(hasPermission(null, 'staff')).toBe(false);
       expect(hasPermission(null, 'admin')).toBe(false);
     });
 
     it('should return true when user role >= required role', () => {
       expect(hasPermission('admin', 'admin')).toBe(true);
-      expect(hasPermission('admin', 'manager')).toBe(true);
-      expect(hasPermission('admin', 'dealer')).toBe(true);
+      expect(hasPermission('admin', 'employer')).toBe(true);
       expect(hasPermission('admin', 'staff')).toBe(true);
-      expect(hasPermission('admin', 'user')).toBe(true);
     });
 
     it('should return false when user role < required role', () => {
-      expect(hasPermission('user', 'admin')).toBe(false);
-      expect(hasPermission('user', 'manager')).toBe(false);
-      expect(hasPermission('user', 'dealer')).toBe(false);
-      expect(hasPermission('user', 'staff')).toBe(false);
+      expect(hasPermission('staff', 'admin')).toBe(false);
+      expect(hasPermission('staff', 'employer')).toBe(false);
     });
 
-    it('should handle manager permissions correctly', () => {
-      expect(hasPermission('manager', 'manager')).toBe(true);
-      expect(hasPermission('manager', 'dealer')).toBe(true);
-      expect(hasPermission('manager', 'staff')).toBe(true);
-      expect(hasPermission('manager', 'user')).toBe(true);
-      expect(hasPermission('manager', 'admin')).toBe(false);
+    it('should handle employer permissions correctly', () => {
+      expect(hasPermission('employer', 'employer')).toBe(true);
+      expect(hasPermission('employer', 'staff')).toBe(true);
+      expect(hasPermission('employer', 'admin')).toBe(false);
     });
 
     it('should handle staff permissions correctly', () => {
       expect(hasPermission('staff', 'staff')).toBe(true);
-      expect(hasPermission('staff', 'user')).toBe(true);
-      expect(hasPermission('staff', 'dealer')).toBe(false);
-      expect(hasPermission('staff', 'manager')).toBe(false);
+      expect(hasPermission('staff', 'employer')).toBe(false);
       expect(hasPermission('staff', 'admin')).toBe(false);
     });
   });
@@ -420,14 +368,14 @@ describe('AuthStore', () => {
       act(() => {
         useAuthStore.setState({
           isAdmin: true,
-          isManager: true,
+          isEmployer: true,
           isStaff: true,
         });
       });
 
       const state = useAuthStore.getState();
       expect(selectIsAdmin(state)).toBe(true);
-      expect(selectIsManager(state)).toBe(true);
+      expect(selectIsEmployer(state)).toBe(true);
       expect(selectIsStaff(state)).toBe(true);
     });
   });

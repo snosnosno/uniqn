@@ -680,7 +680,7 @@ export function lazyLoad<T extends ComponentType<any>>(
 }
 
 // 사용 예시
-// app/(app)/(manager)/create-posting/index.tsx
+// app/(employer)/create-posting/index.tsx
 const CreatePostingWizard = lazyLoad(
   () => import('@/components/posting/CreatePostingWizard')
 );

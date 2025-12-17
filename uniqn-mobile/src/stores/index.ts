@@ -19,7 +19,7 @@ export {
   selectIsAuthenticated,
   selectIsLoading,
   selectIsAdmin,
-  selectIsManager,
+  selectIsEmployer,
   selectIsStaff,
   selectAuthStatus,
   selectAuthError,
