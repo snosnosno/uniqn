@@ -38,7 +38,8 @@ const statusConfig = {
 
 export default function ScheduleScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [schedules, setSchedules] = useState(MOCK_SCHEDULES);
+  // setSchedules는 실제 API 연동 시 사용 예정
+  const [schedules, _setSchedules] = useState(MOCK_SCHEDULES);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

@@ -90,13 +90,15 @@ export default function SettingsScreen() {
           <SettingItem
             icon={<UserIcon size={22} color="#6B7280" />}
             label="프로필 수정"
-            onPress={() => {}}
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            onPress={() => {}} // TODO: 프로필 수정 화면 구현
           />
           <Divider spacing="sm" />
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"
-            onPress={() => {}}
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            onPress={() => {}} // TODO: 비밀번호 변경 화면 구현
           />
         </Card>
 
@@ -133,13 +135,15 @@ export default function SettingsScreen() {
           <SettingItem
             icon={<View className="h-[22px] w-[22px]" />}
             label="이용약관"
-            onPress={() => {}}
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            onPress={() => {}} // TODO: 이용약관 화면 구현
           />
           <Divider spacing="sm" />
           <SettingItem
             icon={<View className="h-[22px] w-[22px]" />}
             label="개인정보처리방침"
-            onPress={() => {}}
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            onPress={() => {}} // TODO: 개인정보처리방침 화면 구현
           />
         </Card>
       </ScrollView>

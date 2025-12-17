@@ -5,8 +5,8 @@
  * @version 1.0.0
  */
 
-import { Feather, MaterialIcons, Ionicons } from '@expo/vector-icons';
-import { ComponentProps } from 'react';
+// eslint-disable-next-line import/no-unresolved
+import { Feather, MaterialIcons } from '@expo/vector-icons';
 
 type IconProps = {
   size?: number;

@@ -6,7 +6,7 @@
 import { View, Text, ScrollView, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Card, Badge, Button, EmptyState } from '@/components/ui';
+import { Card, Badge, EmptyState } from '@/components/ui';
 import { BellIcon, MapPinIcon, CalendarIcon, CurrencyDollarIcon } from '@/components/icons';
 import { useState, useCallback } from 'react';
 import { Pressable } from 'react-native';
@@ -41,7 +41,8 @@ const MOCK_JOBS = [
 
 export default function JobsScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [jobs, setJobs] = useState(MOCK_JOBS);
+  // setJobs는 실제 API 연동 시 사용 예정
+  const [jobs, _setJobs] = useState(MOCK_JOBS);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
@@ -89,7 +90,7 @@ export default function JobsScreen() {
           jobs.map((job) => (
             <Card
               key={job.id}
-              onPress={() => console.log('Job detail:', job.id)}
+              onPress={() => router.push(`/(app)/jobs/${job.id}`)} // TODO: 상세 화면 구현
               className="mb-3"
             >
               <View className="flex-row items-start justify-between">

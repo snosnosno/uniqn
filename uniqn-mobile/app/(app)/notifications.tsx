@@ -40,7 +40,8 @@ const MOCK_NOTIFICATIONS = [
 
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [notifications, setNotifications] = useState(MOCK_NOTIFICATIONS);
+  // setNotifications는 실제 API 연동 시 사용 예정
+  const [notifications, _setNotifications] = useState(MOCK_NOTIFICATIONS);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);

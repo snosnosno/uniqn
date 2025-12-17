@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 
-interface LoadingProps {
+export interface LoadingProps {
   size?: 'small' | 'large';
   color?: string;
   message?: string;

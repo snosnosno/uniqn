@@ -10,7 +10,7 @@ import { View, Text } from 'react-native';
 import { SearchIcon, DocumentIcon } from '@/components/icons';
 import { Button } from './Button';
 
-interface EmptyStateProps {
+export interface EmptyStateProps {
   title?: string;
   description?: string;
   icon?: React.ReactNode;

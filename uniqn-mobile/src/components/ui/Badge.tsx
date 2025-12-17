@@ -11,7 +11,7 @@ import { View, Text } from 'react-native';
 type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error';
 type BadgeSize = 'sm' | 'md';
 
-interface BadgeProps {
+export interface BadgeProps {
   children: React.ReactNode;
   variant?: BadgeVariant;
   size?: BadgeSize;

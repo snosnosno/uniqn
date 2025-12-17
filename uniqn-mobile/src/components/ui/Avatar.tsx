@@ -10,7 +10,7 @@ import { View, Text, Image } from 'react-native';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
-interface AvatarProps {
+export interface AvatarProps {
   source?: string;
   name?: string;
   size?: AvatarSize;

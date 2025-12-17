@@ -63,7 +63,8 @@ export default function QRScreen() {
             <Text className="mt-1 text-center text-sm text-gray-500 dark:text-gray-400">
               카메라 권한이 필요합니다
             </Text>
-            <Button variant="outline" className="mt-4" onPress={() => {}}>
+            {/* eslint-disable-next-line @typescript-eslint/no-empty-function */}
+            <Button variant="outline" className="mt-4" onPress={() => {/* TODO: 카메라 권한 요청 */}}>
               카메라 권한 요청
             </Button>
           </Card>

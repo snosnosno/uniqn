@@ -1,6 +1,16 @@
+/**
+ * UNIQN Mobile - Firebase 설정
+ *
+ * TODO [출시 전]: 환경별 Firebase 프로젝트 분리 (dev/staging/prod)
+ * TODO [출시 전]: Firebase Analytics 초기화 추가
+ * TODO [출시 전]: Crashlytics 초기화 추가
+ * TODO [출시 전]: Firebase Performance Monitoring 추가
+ */
+
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth, initializeAuth } from 'firebase/auth';
 // @ts-expect-error - Firebase 12.x React Native persistence
+// eslint-disable-next-line import/no-unresolved
 import { getReactNativePersistence } from '@firebase/auth/react-native';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';

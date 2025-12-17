@@ -11,7 +11,7 @@ import { View, Pressable, ViewProps } from 'react-native';
 type CardVariant = 'elevated' | 'outlined' | 'filled';
 type CardPadding = 'none' | 'sm' | 'md' | 'lg';
 
-interface CardProps extends ViewProps {
+export interface CardProps extends ViewProps {
   children: React.ReactNode;
   variant?: CardVariant;
   padding?: CardPadding;

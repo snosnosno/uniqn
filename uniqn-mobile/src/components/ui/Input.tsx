@@ -11,7 +11,7 @@ import { EyeIcon, EyeSlashIcon } from '@/components/icons';
 
 type InputType = 'text' | 'email' | 'password' | 'number' | 'phone';
 
-interface InputProps extends Omit<TextInputProps, 'style'> {
+export interface InputProps extends Omit<TextInputProps, 'style'> {
   label?: string;
   error?: string;
   hint?: string;

@@ -11,7 +11,7 @@ import { Pressable, Text, ActivityIndicator, View, PressableProps } from 'react-
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
-interface ButtonProps extends Omit<PressableProps, 'children'> {
+export interface ButtonProps extends Omit<PressableProps, 'children'> {
   children: React.ReactNode;
   variant?: ButtonVariant;
   size?: ButtonSize;

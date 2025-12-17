@@ -110,7 +110,8 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<MessageIcon size={22} color="#6B7280" />}
             label="고객센터"
-            onPress={() => {}}
+            // eslint-disable-next-line @typescript-eslint/no-empty-function
+            onPress={() => {}} // TODO: 고객센터 기능 구현
           />
         </Card>
 

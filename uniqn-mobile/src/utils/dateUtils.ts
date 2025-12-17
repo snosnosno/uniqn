@@ -209,7 +209,7 @@ export const calculateWorkDuration = (startTime: string, endTime: string): numbe
   const [startHour, startMin] = startTime.split(':').map(Number);
   const [endHour, endMin] = endTime.split(':').map(Number);
 
-  let startMinutes = startHour * 60 + startMin;
+  const startMinutes = startHour * 60 + startMin;
   let endMinutes = endHour * 60 + endMin;
 
   // 자정을 넘어가는 경우

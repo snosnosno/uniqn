@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+.expo/
+android/
+ios/
+
+# Package manager
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Coverage
+coverage/
+
+# Generated
+*.d.ts
+*.min.js
+*.min.css
+
+# Config files that shouldn't be formatted
+.env*
+*.plist
+*.json

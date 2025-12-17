@@ -10,7 +10,9 @@
 
 ```yaml
 언어: 항상 한글로 답변
-작업 디렉토리: app2/ (모든 작업은 이 디렉토리에서 진행)
+작업 디렉토리:
+  - app2/: 기존 웹앱 (React + Capacitor)
+  - uniqn-mobile/: 신규 모바일앱 (React Native + Expo)
 배포 전 검증: npm run type-check && npm run lint && npm run build
 ```
 
@@ -37,7 +39,7 @@
 
 ```
 T-HOLDEM/
-├── app2/                    # 메인 애플리케이션
+├── app2/                    # 기존 웹앱 (React + Capacitor)
 │   └── src/
 │       ├── components/      # UI 컴포넌트 (40+ 폴더)
 │       ├── contexts/        # Context Providers (6개)
@@ -49,8 +51,13 @@ T-HOLDEM/
 │       ├── types/           # TypeScript 타입 정의
 │       ├── schemas/         # Zod 검증 스키마
 │       └── config/          # 설정 파일
+├── uniqn-mobile/            # 신규 모바일앱 (React Native + Expo) ⭐
+│   ├── app/                 # Expo Router (파일 기반 라우팅)
+│   └── src/                 # 소스 코드
+├── specs/                   # 스펙 문서
+│   └── react-native-app/    # RN 앱 스펙 (23개 문서)
 ├── functions/               # Firebase Functions
-└── docs/                    # 문서 (46개)
+└── docs/                    # 운영 문서 (46개)
 ```
 
 ### 기술 스택
@@ -633,5 +640,563 @@ perf: 리스트 렌더링 최적화 (React.memo 적용)
 
 ---
 
-*마지막 업데이트: 2025-11-30*
+## React Native 앱 개발 가이드 (uniqn-mobile/)
+
+> ⚠️ **중요**: 이 섹션은 React Native + Expo 기반 신규 모바일앱 개발에 적용됩니다.
+> 상세 스펙은 `specs/react-native-app/` 폴더의 문서들을 참조하세요.
+
+### 아키텍처 레이어 구조
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Presentation Layer (Screens, Components)                   │
+│  └─ UI 렌더링만, 비즈니스 로직/Firebase 직접 호출 금지        │
+├─────────────────────────────────────────────────────────────┤
+│  Hooks Layer (useAuth, useJobs, useSchedule)                │
+│  └─ 상태와 서비스 연결, 로딩/에러 상태 관리                   │
+├─────────────────────────────────────────────────────────────┤
+│  State Layer (Zustand + TanStack Query)                     │
+│  └─ Zustand: UI 상태, 세션  |  Query: 서버 데이터 캐싱       │
+├─────────────────────────────────────────────────────────────┤
+│  Service Layer (authService, jobService...)                 │
+│  └─ 비즈니스 로직, Firebase 호출, 에러 처리                  │
+├─────────────────────────────────────────────────────────────┤
+│  Firebase Layer (Auth, Firestore, Storage)                  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**의존성 규칙 (필수)**:
+```
+✅ 상위 레이어 → 하위 레이어 의존 가능
+✅ 같은 레이어 내 의존 가능
+❌ 하위 레이어 → 상위 레이어 의존 금지
+❌ Presentation → Firebase 직접 호출 금지
+❌ Hooks에서 다른 Hooks의 내부 상태 직접 수정 금지
+```
+
+### Provider 구조 (8→3단계 단순화)
+
+```tsx
+// ❌ 기존 (8단계 중첩) - 복잡하고 디버깅 어려움
+<ErrorBoundary>
+  <FirebaseErrorBoundary>
+    <QueryClientProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <ChipProvider>...
+
+// ✅ React Native (3단계로 단순화)
+<QueryClientProvider client={queryClient}>
+  <GestureHandlerRootView>
+    <ThemeProvider value={theme}>
+      <Stack />
+      <ModalManager />
+      <ToastManager />
+    </ThemeProvider>
+  </GestureHandlerRootView>
+</QueryClientProvider>
+```
+
+**Provider 대체 방안**:
+| 기존 Provider | 대체 방안 |
+|--------------|----------|
+| AuthProvider | `useAuthStore` (Zustand) |
+| ThemeProvider | `useThemeStore` (Zustand) |
+| ChipProvider | `useChipStore` (Zustand) |
+| TournamentProvider | 제외 (Phase 2) |
+
+### 상태 분리 원칙
+
+```yaml
+Zustand (클라이언트 상태):
+  - authStore: 인증 상태, 사용자 세션
+  - themeStore: 테마 설정
+  - toastStore: 토스트 알림
+  - modalStore: 모달 상태
+  - filterStore: 필터 조건
+
+TanStack Query (서버 상태):
+  - jobPostings: 구인공고 목록/상세
+  - applications: 지원 내역
+  - schedules: 스케줄 데이터
+  - notifications: 알림 목록
+```
+
+### Query Keys 중앙 관리
+
+```typescript
+// src/lib/queryClient.ts - 모든 Query Key는 여기서 관리
+export const queryKeys = {
+  jobPostings: {
+    all: ['jobPostings'] as const,
+    list: (filters: object) => ['jobPostings', 'list', filters] as const,
+    detail: (id: string) => ['jobPostings', 'detail', id] as const,
+    mine: () => ['jobPostings', 'mine'] as const,
+  },
+  applications: {
+    all: ['applications'] as const,
+    mine: () => ['applications', 'mine'] as const,
+  },
+  schedules: { ... },
+  notifications: { ... },
+};
+
+// 사용 예시
+useQuery({ queryKey: queryKeys.jobPostings.detail(id), ... });
+```
+
+### 캐싱 정책 (5단계)
+
+| 정책 | staleTime | 용도 | 예시 |
+|------|-----------|------|------|
+| `realtime` | 0 | 실시간 데이터 | notifications |
+| `frequent` | 2분 | 자주 변경 | jobPostings.list |
+| `standard` | 5분 | 보통 빈도 | jobPostings.detail |
+| `stable` | 30분 | 드물게 변경 | settings, regions |
+| `offlineFirst` | ∞ | 오프라인 우선 | mySchedule |
+
+### 권한 계층 및 라우트 그룹
+
+```typescript
+// 권한 계층 (숫자가 높을수록 상위 권한)
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  admin: 100,     // 관리자: 모든 기능
+  employer: 50,   // 구인자: 공고 관리, 지원자 관리
+  staff: 10,      // 스태프: 지원, 스케줄 확인
+  // guest: 0     // 비로그인: role === null
+};
+
+// 권한 비교 함수
+function hasPermission(userRole: UserRole | null, required: UserRole): boolean {
+  if (!userRole) return false;
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[required];
+}
+```
+
+**라우트 그룹 구조** (Expo Router):
+```
+app/
+├── (public)/           # 비로그인 접근 가능
+│   ├── index.tsx       # 홈/랜딩
+│   └── jobs/           # 공고 목록 (읽기 전용)
+├── (auth)/             # 인증 플로우
+│   ├── login.tsx
+│   ├── register.tsx
+│   └── forgot-password.tsx
+├── (app)/              # 로그인 필수 (staff+)
+│   ├── _layout.tsx     # AuthGuard 적용
+│   ├── jobs/[id]/apply.tsx
+│   ├── schedule/
+│   └── profile/
+├── (employer)/         # employer 이상
+│   ├── _layout.tsx     # PermissionGuard(employer)
+│   ├── my-postings/
+│   └── applicants/
+└── (admin)/            # admin 전용
+    ├── _layout.tsx     # PermissionGuard(admin)
+    └── users/
+```
+
+**라우트 가드 패턴**:
+```typescript
+// app/(app)/_layout.tsx
+export default function AppLayout() {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <LoadingScreen />;
+  if (!user) return <Redirect href="/login" />;
+
+  return <Stack />;
+}
+
+// app/(employer)/_layout.tsx
+export default function EmployerLayout() {
+  const { role } = useAuth();
+
+  if (!hasPermission(role, 'employer')) {
+    return <Redirect href="/" />;
+  }
+
+  return <Stack />;
+}
+```
+
+### Import 순서 규칙
+
+```typescript
+// 1. React/React Native
+import { useState, useEffect } from 'react';
+import { View, Text, Pressable } from 'react-native';
+
+// 2. 외부 라이브러리
+import { useQuery } from '@tanstack/react-query';
+import { z } from 'zod';
+
+// 3. 내부 모듈 (절대 경로)
+import { Button } from '@/components/ui';
+import { useAuth } from '@/hooks/useAuth';
+import { jobPostingService } from '@/services/job';
+
+// 4. 타입
+import type { JobPosting } from '@/types';
+
+// 5. 상대 경로 (같은 기능 내)
+import { JobCardSkeleton } from './JobCardSkeleton';
+```
+
+### 기술 스택 (버전 고정 필수)
+
+```yaml
+Core:
+  - Expo SDK: 52+
+  - React Native: 0.76+
+  - React: 18.3+
+  - TypeScript: 5.3+ (strict 모드)
+
+Navigation & State:
+  - Expo Router: 4.0+ (파일 기반 라우팅)
+  - Zustand: 5.0+ (전역 상태)
+  - TanStack Query: 5.17+ (서버 상태)
+
+UI/Styling:
+  - NativeWind: 4.0+ (Tailwind v4 호환)
+  - @shopify/flash-list: 가상화 리스트
+  - expo-image: 이미지 최적화
+
+Backend:
+  - Firebase: 11.0+ (Modular API)
+  - @react-native-firebase/*: 네이티브 SDK
+
+Forms & Validation:
+  - React Hook Form: 7.54+
+  - Zod: 3.23+ (기존 스키마 재사용)
+```
+
+### 폴더/파일 네이밍 규칙 (React Native)
+
+```
+파일명:
+├── 컴포넌트: PascalCase.tsx (JobCard.tsx)
+├── 훅: camelCase.ts (useJobPostings.ts)
+├── 서비스: camelCase.ts (jobPostingService.ts)
+├── 타입: camelCase.ts (jobPosting.ts)
+├── 유틸리티: camelCase.ts (formatters.ts)
+└── 상수: camelCase.ts (colors.ts)
+
+폴더명:
+├── 모두 kebab-case (job-posting/)
+└── 라우트 그룹: (parentheses) ((tabs)/, (auth)/)
+
+라우트 파일 (Expo Router):
+├── index.tsx         # 기본 라우트
+├── [id]/index.tsx    # 동적 라우트
+├── _layout.tsx       # 레이아웃
+└── +not-found.tsx    # 404 페이지
+```
+
+### 플랫폼 분기 패턴
+
+```typescript
+// 방법 1: 파일 기반 분기 (권장)
+src/components/
+├── Button.tsx        // 기본 (iOS/Android)
+├── Button.web.tsx    // 웹 전용
+└── index.ts          // 자동 선택
+
+// 방법 2: 조건부 분기
+import { Platform } from 'react-native';
+
+export function CameraScanner() {
+  if (Platform.OS === 'web') {
+    return <WebQRScanner />;  // 웹: navigator.mediaDevices
+  }
+  return <NativeCamera />;    // 네이티브: expo-camera
+}
+```
+
+**플랫폼별 차이점**:
+| 기능 | iOS/Android | Web |
+|------|-------------|-----|
+| **스토리지** | expo-secure-store | localStorage |
+| **푸시 알림** | FCM + APNS | 미지원 (인앱) |
+| **카메라/QR** | expo-camera | navigator.mediaDevices |
+| **햅틱** | expo-haptics | 미지원 |
+| **생체 인증** | expo-local-authentication | 미지원 |
+
+### 코드 변환 규칙 (Web → React Native)
+
+| Web 요소 | RN 요소 | NativeWind |
+|---------|---------|:----------:|
+| `<div>` | `<View>` | ✅ 그대로 |
+| `<span>`, `<p>`, `<h1>` | `<Text>` | ✅ 그대로 |
+| `<button>` | `<Pressable>` | ✅ 그대로 |
+| `<input>` | `<TextInput>` | ✅ 그대로 |
+| `<img>` | `<Image>` (expo-image) | ✅ 그대로 |
+| `<a>` | `<Link>` (expo-router) | ✅ 그대로 |
+| `onClick` | `onPress` | - |
+| `localStorage` | `MMKV` / `SecureStore` | - |
+
+```tsx
+// ❌ Web (React)
+<div className="p-4 bg-white dark:bg-gray-800">
+  <button onClick={handleClick}>클릭</button>
+</div>
+
+// ✅ React Native (NativeWind)
+<View className="p-4 bg-white dark:bg-gray-800">
+  <Pressable onPress={handlePress}>
+    <Text>클릭</Text>
+  </Pressable>
+</View>
+```
+
+### 코드 재사용 계획
+
+```yaml
+100% 재사용 (복사만):
+  - types/: TypeScript 타입 정의
+  - schemas/: Zod 스키마
+  - constants/: 상수
+
+90% 재사용 (import 경로 수정):
+  - utils/: 유틸리티 함수
+  - services/: Firebase import 변경
+
+70-80% 재사용 (플랫폼 분기):
+  - stores/: Zustand 스토어
+  - hooks/: Firebase 훅
+
+재작성 필요:
+  - components/: React DOM → React Native
+  - pages/ → app/: React Router → Expo Router
+```
+
+### Firebase 트랜잭션 규칙
+
+**트랜잭션 필수 사용 케이스**:
+```typescript
+// ❌ 금지: 여러 문서를 개별 업데이트 (데이터 불일치 위험)
+await updateDoc(applicationRef, { status: 'accepted' });
+await updateDoc(jobPostingRef, { applicantCount: increment(1) });
+await addDoc(workLogsRef, workLogData);
+
+// ✅ 필수: runTransaction으로 원자적 처리
+await firestore().runTransaction(async (transaction) => {
+  // 1. 모든 읽기 먼저
+  const applicationDoc = await transaction.get(applicationRef);
+  const jobPostingDoc = await transaction.get(jobPostingRef);
+
+  if (!applicationDoc.exists || !jobPostingDoc.exists) {
+    throw new Error('문서가 존재하지 않습니다');
+  }
+
+  // 2. 비즈니스 검증
+  const currentCount = jobPostingDoc.data()?.applicantCount ?? 0;
+  if (currentCount >= maxApplicants) {
+    throw new Error('모집 인원이 마감되었습니다');
+  }
+
+  // 3. 모든 쓰기 실행 (원자적)
+  transaction.update(applicationRef, {
+    status: 'accepted',
+    updatedAt: serverTimestamp(),
+  });
+  transaction.update(jobPostingRef, {
+    applicantCount: currentCount + 1,
+  });
+  transaction.set(workLogRef, {
+    ...workLogData,
+    createdAt: serverTimestamp(),
+  });
+});
+```
+
+**트랜잭션 사용 필수 시나리오**:
+| 시나리오 | 관련 문서 | 이유 |
+|---------|----------|------|
+| 지원 수락/거절 | applications, jobPostings, workLogs | 카운트 정합성 |
+| 출퇴근 기록 | workLogs, schedules | 중복 방지 |
+| 칩 충전/차감 | users, chipTransactions | 잔액 정합성 |
+| 공고 마감 | jobPostings, applications | 상태 일관성 |
+
+**트랜잭션 규칙**:
+```
+✅ 읽기(get) → 검증 → 쓰기(set/update) 순서 유지
+✅ 트랜잭션 내 최대 500개 문서 제한
+✅ 실패 시 자동 재시도 (최대 5회)
+❌ 트랜잭션 내 비동기 외부 호출 금지
+❌ 트랜잭션 내 UI 상태 변경 금지
+```
+
+### 에러 처리 체계
+
+```typescript
+// 에러 클래스 계층
+AppError (base)
+├── AuthError         // 인증 (로그인, 토큰 만료)
+├── NetworkError      // 연결, 타임아웃
+├── ValidationError   // 입력 검증 실패
+├── PermissionError   // 권한 부족
+└── BusinessError     // 칩 부족, 중복 지원 등
+
+// 에러 코드 체계
+E1xxx: 네트워크 에러
+E2xxx: 인증 에러
+E3xxx: 검증 에러
+E4xxx: Firebase 에러
+E5xxx: 보안 에러
+E6xxx: 비즈니스 에러
+E7xxx: 알 수 없는 에러
+
+// 필수 속성
+interface AppError {
+  code: string;           // 에러 코드
+  category: ErrorCategory;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  userMessage: string;    // 사용자 친화적 메시지 (한글)
+  isRetryable: boolean;   // 재시도 가능 여부
+}
+```
+
+### 보안 규칙 (React Native)
+
+```typescript
+// ✅ 민감 데이터: expo-secure-store
+import * as SecureStore from 'expo-secure-store';
+
+await SecureStore.setItemAsync('authToken', token, {
+  keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
+});
+
+// ✅ 일반 데이터: react-native-mmkv
+import { MMKV } from 'react-native-mmkv';
+const storage = new MMKV();
+storage.set('preferences', JSON.stringify(prefs));
+```
+
+**비밀번호 정책**:
+- 최소 8자, 최대 128자
+- 대문자 1개 이상
+- 소문자 1개 이상
+- 숫자 1개 이상
+- 특수문자 1개 이상 (`!@#$%^&*`)
+- 3자 이상 연속 금지 (`123`, `abc`)
+
+### 성능 규칙 (React Native)
+
+```typescript
+// ✅ 리스트: FlashList (FlatList 대신)
+import { FlashList } from '@shopify/flash-list';
+
+<FlashList
+  data={items}
+  renderItem={({ item }) => <ItemCard item={item} />}
+  estimatedItemSize={80}
+  keyExtractor={item => item.id}
+/>
+
+// ✅ 이미지: expo-image
+import { Image } from 'expo-image';
+
+<Image
+  source={uri}
+  placeholder={blurhash}
+  cachePolicy="memory-disk"
+  transition={200}
+/>
+```
+
+**성능 지표**:
+| 지표 | 목표 |
+|------|------|
+| 첫 로드 (모바일) | < 2초 |
+| 화면 전환 | < 300ms |
+| 리스트 스크롤 | 60fps |
+| 번들 크기 | < 500KB (gzip) |
+
+### Phase별 우선순위
+
+```
+P0 (필수): MVP 출시에 반드시 필요
+P1 (중요): 출시 전 구현 권장
+P2 (나중): 출시 후 구현 가능
+```
+
+**Phase 구조**:
+```
+Phase 1: 프로젝트 기반 (환경 설정, 핵심 컴포넌트)
+Phase 2: 인증 + 구인구직 (로그인, 공고 목록/상세/지원)
+Phase 3: 스케줄 + 알림 (캘린더, QR 출퇴근, 푸시)
+Phase 4: 구인자 기능 (공고 관리, 지원자 관리, 정산)
+Phase 5: 최적화 + 배포 준비 (성능, 보안, Analytics)
+Phase 6: 앱스토어 출시 (심사, 배포)
+```
+
+### 품질 게이트 (React Native)
+
+| 항목 | MVP 기준 | 출시 기준 |
+|------|:--------:|:---------:|
+| TypeScript strict 에러 | 0개 | 0개 |
+| ESLint 에러 | 0개 | 0개 |
+| ESLint 경고 | < 10개 | < 5개 |
+| 테스트 커버리지 (전체) | 60%+ | 75%+ |
+| 테스트 커버리지 (services/) | 70%+ | 85%+ |
+| 테스트 커버리지 (utils/) | 80%+ | 90%+ |
+
+### 개발 명령어 (uniqn-mobile/)
+
+```bash
+cd uniqn-mobile
+
+# 개발
+npx expo start                    # 개발 서버
+npm run type-check               # TypeScript 검증
+npm run lint                     # ESLint 검사
+
+# 플랫폼별 실행
+npx expo run:ios                 # iOS 시뮬레이터
+npx expo run:android             # Android 에뮬레이터
+npx expo export -p web           # Web 빌드
+
+# 테스트
+npm test                         # Jest 테스트
+npm run test:coverage           # 커버리지 리포트
+
+# 빌드 (EAS)
+eas build --platform ios         # iOS 빌드
+eas build --platform android     # Android 빌드
+eas submit                       # 스토어 제출
+```
+
+### 주요 스펙 문서
+
+| 문서 | 용도 |
+|------|------|
+| [DEVELOPMENT_CHECKLIST.md](specs/react-native-app/DEVELOPMENT_CHECKLIST.md) | 전체 작업 추적 |
+| [00-overview.md](specs/react-native-app/00-overview.md) | 프로젝트 구조 |
+| [01-architecture.md](specs/react-native-app/01-architecture.md) | 아키텍처 설계 |
+| [05-components.md](specs/react-native-app/05-components.md) | 컴포넌트 시스템 |
+| [09-error-handling.md](specs/react-native-app/09-error-handling.md) | 에러 처리 전략 |
+| [12-security.md](specs/react-native-app/12-security.md) | 보안 설계 |
+| [22-migration-mapping.md](specs/react-native-app/22-migration-mapping.md) | 코드 변환 가이드 |
+
+### 코드 리뷰 체크리스트 (React Native)
+
+**기능 추가 시**:
+- [ ] TypeScript strict mode 준수 (any 타입 없음)
+- [ ] `<Text>` 없이 문자열 렌더링 금지
+- [ ] NativeWind 다크모드 적용 (`dark:` 클래스)
+- [ ] 로딩/에러/빈 상태 처리
+- [ ] `FlashList` 사용 (긴 리스트)
+- [ ] `expo-image` 사용 (이미지)
+- [ ] 터치 타겟 최소 44px
+- [ ] `accessibilityLabel` 적용
+
+**플랫폼 분기 시**:
+- [ ] `Platform.OS` 또는 `.web.tsx` 파일 분리
+- [ ] 네이티브 전용 기능 (카메라, 푸시) 웹 대체 구현
+
+---
+
+*마지막 업데이트: 2025-12-16*
 *프로젝트 버전: v0.2.3*

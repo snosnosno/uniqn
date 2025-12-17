@@ -1,9 +1,11 @@
 /**
  * UNIQN Mobile - 로깅 유틸리티
  *
- * @description 구조화된 로깅 시스템
- * @version 1.0.0
+ * @description 구조화된 로깅 시스템 (AppError 통합)
+ * @version 1.1.0
  */
+
+import { isAppError, type AppError } from '@/errors/AppError';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -190,6 +192,7 @@ export const logger = {
    */
   group: (label: string): void => {
     if (!isProduction) {
+      // eslint-disable-next-line no-console
       console.group(label);
     }
   },
@@ -199,6 +202,7 @@ export const logger = {
    */
   groupEnd: (): void => {
     if (!isProduction) {
+      // eslint-disable-next-line no-console
       console.groupEnd();
     }
   },
@@ -208,8 +212,78 @@ export const logger = {
    */
   table: (data: Record<string, unknown>[] | object): void => {
     if (!isProduction) {
+      // eslint-disable-next-line no-console
       console.table(data);
     }
+  },
+
+  /**
+   * AppError 전용 로깅
+   * 에러의 모든 메타데이터를 포함하여 로깅
+   */
+  appError: (error: AppError | Error | unknown, context?: LogContext): void => {
+    if (isAppError(error)) {
+      const entry = createEntry('error', error.message, {
+        ...context,
+        code: error.code,
+        category: error.category,
+        severity: error.severity,
+        isRetryable: error.isRetryable,
+        ...error.metadata,
+      }, error.originalError);
+
+      output('error', entry);
+
+      // 프로덕션에서는 심각도에 따라 Crashlytics로 전송
+      // if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
+      //   crashlytics().recordError(error);
+      // }
+    } else if (error instanceof Error) {
+      logger.error(error.message, error, context);
+    } else {
+      logger.error(String(error), context);
+    }
+  },
+
+  /**
+   * 네트워크 요청 로깅
+   */
+  network: (
+    method: string,
+    url: string,
+    status?: number,
+    duration?: number,
+    context?: LogContext
+  ): void => {
+    const level: LogLevel = status && status >= 400 ? 'error' : 'info';
+    const message = `[Network] ${method} ${url}${status ? ` - ${status}` : ''}`;
+
+    output(level, createEntry(level, message, {
+      ...context,
+      method,
+      url,
+      status,
+      duration: duration ? `${duration.toFixed(2)}ms` : undefined,
+    }));
+  },
+
+  /**
+   * Firebase 작업 로깅
+   */
+  firebase: (
+    operation: 'read' | 'write' | 'delete' | 'query' | 'auth' | 'storage',
+    collection: string,
+    docId?: string,
+    context?: LogContext
+  ): void => {
+    const message = `[Firebase] ${operation.toUpperCase()} ${collection}${docId ? `/${docId}` : ''}`;
+
+    output('debug', createEntry('debug', message, {
+      ...context,
+      operation,
+      collection,
+      docId,
+    }));
   },
 };
 
