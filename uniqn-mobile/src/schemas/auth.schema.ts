@@ -21,14 +21,20 @@ export const emailSchema = z
 
 /**
  * 비밀번호 검증 스키마
- * - 최소 8자
- * - 대문자, 소문자, 숫자 포함
+ *
+ * 정책:
+ * - 최소 8자, 최대 128자
+ * - 대문자 1개 이상
+ * - 소문자 1개 이상
+ * - 숫자 1개 이상
+ * - 특수문자 1개 이상 (!@#$%^&*)
+ * - 3자 이상 연속 문자 금지 (123, abc 등)
  */
 export const passwordSchema = z
   .string()
   .min(1, { message: '비밀번호를 입력해주세요' })
   .min(8, { message: '비밀번호는 최소 8자 이상이어야 합니다' })
-  .max(50, { message: '비밀번호는 50자를 초과할 수 없습니다' })
+  .max(128, { message: '비밀번호는 128자를 초과할 수 없습니다' })
   .refine((val) => /[a-z]/.test(val), {
     message: '소문자를 포함해야 합니다',
   })
@@ -37,7 +43,26 @@ export const passwordSchema = z
   })
   .refine((val) => /[0-9]/.test(val), {
     message: '숫자를 포함해야 합니다',
-  });
+  })
+  .refine((val) => /[!@#$%^&*]/.test(val), {
+    message: '특수문자를 포함해야 합니다 (!@#$%^&*)',
+  })
+  .refine(
+    (val) => {
+      // 3자 이상 연속 문자 검사 (abc, 123, cba, 321 등)
+      for (let i = 0; i < val.length - 2; i++) {
+        const c1 = val.charCodeAt(i);
+        const c2 = val.charCodeAt(i + 1);
+        const c3 = val.charCodeAt(i + 2);
+        // 오름차순 연속 (abc, 123)
+        if (c2 === c1 + 1 && c3 === c2 + 1) return false;
+        // 내림차순 연속 (cba, 321)
+        if (c2 === c1 - 1 && c3 === c2 - 1) return false;
+      }
+      return true;
+    },
+    { message: '3자 이상 연속된 문자는 사용할 수 없습니다 (예: 123, abc)' }
+  );
 
 /**
  * 비밀번호 확인 검증 (단순)
@@ -162,13 +187,13 @@ export type SignUpStep3Data = z.infer<typeof signUpStep3Schema>;
  * 회원가입 Step 4 스키마 (약관 동의)
  */
 export const signUpStep4Schema = z.object({
-  termsAgreed: z.literal(true, {
-    error: '이용약관에 동의해주세요',
+  termsAgreed: z.boolean().refine((val) => val === true, {
+    message: '이용약관에 동의해주세요',
   }),
-  privacyAgreed: z.literal(true, {
-    error: '개인정보처리방침에 동의해주세요',
+  privacyAgreed: z.boolean().refine((val) => val === true, {
+    message: '개인정보처리방침에 동의해주세요',
   }),
-  marketingAgreed: z.boolean().optional().default(false),
+  marketingAgreed: z.boolean(),
 });
 
 export type SignUpStep4Data = z.infer<typeof signUpStep4Schema>;
@@ -191,7 +216,7 @@ export const signUpSchema = z.object({
   // Step 4: 약관 동의
   termsAgreed: z.boolean(),
   privacyAgreed: z.boolean(),
-  marketingAgreed: z.boolean().optional(),
+  marketingAgreed: z.boolean(),
 });
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;

@@ -1,28 +1,113 @@
 /**
  * UNIQN Mobile - Login Screen
  * 로그인 화면
+ *
+ * @version 2.0.0
  */
 
+import { useState, useCallback } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Link, router } from 'expo-router';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Input, Divider } from '@/components/ui';
-import { MailIcon, LockIcon } from '@/components/icons';
-import { useState } from 'react';
+import { Divider } from '@/components/ui';
+import { LoginForm, SocialLoginButtons } from '@/components/auth';
+import { login, signInWithApple, signInWithGoogle, signInWithKakao } from '@/services';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+import type { LoginFormData } from '@/schemas';
+
+type SocialProvider = 'apple' | 'google' | 'kakao';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
+  const { addToast } = useToastStore();
 
-  const handleLogin = async () => {
-    setLoading(true);
-    // TODO: Firebase Auth 연동
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(app)/(tabs)');
-    }, 1000);
-  };
+  // 이메일 로그인
+  const handleLogin = useCallback(async (data: LoginFormData) => {
+    setIsLoading(true);
+    try {
+      const result = await login(data);
+      if (result.user) {
+        logger.info('로그인 성공', { userId: result.user.uid });
+        addToast({ type: 'success', message: '로그인되었습니다.' });
+        router.replace('/(app)/(tabs)');
+      }
+    } catch (error) {
+      logger.error('로그인 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '로그인에 실패했습니다.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast]);
+
+  // Apple 로그인
+  const handleAppleLogin = useCallback(async () => {
+    setLoadingProvider('apple');
+    try {
+      const result = await signInWithApple();
+      if (result.user) {
+        logger.info('Apple 로그인 성공', { userId: result.user.uid });
+        addToast({ type: 'success', message: '로그인되었습니다.' });
+        router.replace('/(app)/(tabs)');
+      }
+    } catch (error) {
+      logger.error('Apple 로그인 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: 'Apple 로그인에 실패했습니다.',
+      });
+    } finally {
+      setLoadingProvider(null);
+    }
+  }, [addToast]);
+
+  // Google 로그인
+  const handleGoogleLogin = useCallback(async () => {
+    setLoadingProvider('google');
+    try {
+      const result = await signInWithGoogle();
+      if (result.user) {
+        logger.info('Google 로그인 성공', { userId: result.user.uid });
+        addToast({ type: 'success', message: '로그인되었습니다.' });
+        router.replace('/(app)/(tabs)');
+      }
+    } catch (error) {
+      logger.error('Google 로그인 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: 'Google 로그인에 실패했습니다.',
+      });
+    } finally {
+      setLoadingProvider(null);
+    }
+  }, [addToast]);
+
+  // Kakao 로그인
+  const handleKakaoLogin = useCallback(async () => {
+    setLoadingProvider('kakao');
+    try {
+      const result = await signInWithKakao();
+      if (result.user) {
+        logger.info('Kakao 로그인 성공', { userId: result.user.uid });
+        addToast({ type: 'success', message: '로그인되었습니다.' });
+        router.replace('/(app)/(tabs)');
+      }
+    } catch (error) {
+      logger.error('Kakao 로그인 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: '카카오 로그인에 실패했습니다.',
+      });
+    } finally {
+      setLoadingProvider(null);
+    }
+  }, [addToast]);
+
+  const isSocialLoading = loadingProvider !== null;
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
@@ -31,8 +116,10 @@ export default function LoginScreen() {
         className="flex-1"
       >
         <ScrollView
-          contentContainerClassName="flex-grow justify-center px-6 py-8"
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          className="px-6 py-8"
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
           {/* 로고 */}
           <View className="mb-10 items-center">
@@ -45,53 +132,22 @@ export default function LoginScreen() {
           </View>
 
           {/* 로그인 폼 */}
-          <View className="mb-6">
-            <View className="mb-4">
-              <Input
-                label="이메일"
-                placeholder="이메일을 입력하세요"
-                type="email"
-                value={email}
-                onChangeText={setEmail}
-                leftIcon={<MailIcon size={20} color="#9CA3AF" />}
-                autoCapitalize="none"
-                keyboardType="email-address"
-              />
-            </View>
-
-            <View className="mb-2">
-              <Input
-                label="비밀번호"
-                placeholder="비밀번호를 입력하세요"
-                type="password"
-                value={password}
-                onChangeText={setPassword}
-                leftIcon={<LockIcon size={20} color="#9CA3AF" />}
-              />
-            </View>
-
-            <Link href="/(auth)/forgot-password" asChild>
-              <Text className="text-right text-sm text-primary-600 dark:text-primary-400">
-                비밀번호 찾기
-              </Text>
-            </Link>
-          </View>
-
-          <Button onPress={handleLogin} loading={loading} fullWidth>
-            로그인
-          </Button>
+          <LoginForm
+            onSubmit={handleLogin}
+            isLoading={isLoading || isSocialLoading}
+          />
 
           <Divider label="또는" spacing="lg" />
 
-          {/* 회원가입 링크 */}
-          <View className="flex-row items-center justify-center">
-            <Text className="text-gray-600 dark:text-gray-400">계정이 없으신가요? </Text>
-            <Link href="/(auth)/signup" asChild>
-              <Text className="font-semibold text-primary-600 dark:text-primary-400">
-                회원가입
-              </Text>
-            </Link>
-          </View>
+          {/* 소셜 로그인 */}
+          <SocialLoginButtons
+            onAppleLogin={handleAppleLogin}
+            onGoogleLogin={handleGoogleLogin}
+            onKakaoLogin={handleKakaoLogin}
+            isLoading={isLoading}
+            loadingProvider={loadingProvider}
+            disabled={isLoading}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

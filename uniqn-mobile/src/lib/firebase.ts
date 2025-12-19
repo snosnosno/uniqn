@@ -8,7 +8,7 @@
  */
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, initializeAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, Auth } from 'firebase/auth';
 // @ts-expect-error - Firebase 12.x React Native persistence
 // eslint-disable-next-line import/no-unresolved
 import { getReactNativePersistence } from '@firebase/auth/react-native';
@@ -32,7 +32,7 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Auth 초기화 (플랫폼별 persistence 설정)
-let auth;
+let auth: Auth;
 if (Platform.OS === 'web') {
   auth = getAuth(app);
 } else {

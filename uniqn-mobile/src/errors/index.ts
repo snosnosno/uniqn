@@ -94,3 +94,32 @@ export {
   requiresReauthentication,
   getErrorAction,
 } from './errorUtils';
+
+// ============================================================================
+// Business Error Classes
+// ============================================================================
+
+export {
+  // 지원 관련
+  InsufficientChipsError,
+  AlreadyAppliedError,
+  ApplicationClosedError,
+  MaxCapacityReachedError,
+  // 출퇴근 관련
+  AlreadyCheckedInError,
+  NotCheckedInError,
+  InvalidQRCodeError,
+  ExpiredQRCodeError,
+  // 정산 관련
+  AlreadySettledError,
+  // Type Guards
+  isInsufficientChipsError,
+  isAlreadyAppliedError,
+  isApplicationClosedError,
+  isMaxCapacityReachedError,
+  isAlreadyCheckedInError,
+  isNotCheckedInError,
+  isInvalidQRCodeError,
+  isExpiredQRCodeError,
+  isAlreadySettledError,
+} from './BusinessErrors';

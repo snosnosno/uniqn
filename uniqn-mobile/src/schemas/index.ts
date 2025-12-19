@@ -56,3 +56,25 @@ export type {
   CreateJobPostingFormData,
   JobFilterData,
 } from './jobPosting.schema';
+
+// 지원서 스키마
+export {
+  applicationStatusSchema,
+  staffRoleSchema,
+  applicationMessageSchema as createApplicationMessageSchema,
+  createApplicationSchema,
+  applicationFilterSchema,
+  confirmApplicationSchema,
+  rejectApplicationSchema,
+  cancelApplicationSchema,
+} from './application.schema';
+
+export type {
+  ApplicationStatusSchema,
+  StaffRoleSchema,
+  CreateApplicationFormData,
+  ApplicationFilterData,
+  ConfirmApplicationData,
+  RejectApplicationData,
+  CancelApplicationData,
+} from './application.schema';

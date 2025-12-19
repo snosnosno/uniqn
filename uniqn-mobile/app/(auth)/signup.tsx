@@ -1,107 +1,68 @@
 /**
  * UNIQN Mobile - SignUp Screen
- * 회원가입 화면
+ * 4단계 회원가입 화면
+ *
+ * @description 계정 → 본인인증 → 프로필 → 약관동의
+ * @version 2.0.0
  */
 
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
-import { Link, router } from 'expo-router';
+import { useState, useCallback } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Input } from '@/components/ui';
-import { UserIcon, MailIcon, LockIcon, PhoneIcon } from '@/components/icons';
-import { useState } from 'react';
+import { SignupForm } from '@/components/auth';
+import { signUp } from '@/services';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+import type { SignUpFormData } from '@/schemas';
 
 export default function SignUpScreen() {
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { addToast } = useToastStore();
 
-  const handleSignUp = async () => {
-    setLoading(true);
-    // TODO: Firebase Auth 연동
-    setTimeout(() => {
-      setLoading(false);
-      router.replace('/(app)/(tabs)');
-    }, 1000);
+  const handleSignUp = useCallback(async (data: SignUpFormData) => {
+    setIsLoading(true);
+    try {
+      const result = await signUp(data);
+
+      if (result.user) {
+        logger.info('회원가입 성공', { userId: result.user.uid });
+        addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
+        router.replace('/(app)/(tabs)');
+      }
+    } catch (error) {
+      logger.error('회원가입 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '회원가입에 실패했습니다.',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast]);
+
+  const handleBack = () => {
+    router.back();
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        className="flex-1"
-      >
-        <ScrollView
-          contentContainerClassName="flex-grow px-6 py-8"
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* 헤더 */}
-          <View className="mb-8">
-            <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              회원가입
-            </Text>
-            <Text className="mt-2 text-gray-500 dark:text-gray-400">
-              UNIQN에 오신 것을 환영합니다
-            </Text>
-          </View>
+      {/* 헤더 */}
+      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+        <Pressable onPress={handleBack} className="p-2 -ml-2">
+          <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
+        </Pressable>
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+          회원가입
+        </Text>
+        <View className="w-8" />
+      </View>
 
-          {/* 회원가입 폼 */}
-          <View className="mb-6 gap-4">
-            <Input
-              label="이름"
-              placeholder="이름을 입력하세요"
-              value={name}
-              onChangeText={setName}
-              leftIcon={<UserIcon size={20} color="#9CA3AF" />}
-            />
-
-            <Input
-              label="이메일"
-              placeholder="이메일을 입력하세요"
-              type="email"
-              value={email}
-              onChangeText={setEmail}
-              leftIcon={<MailIcon size={20} color="#9CA3AF" />}
-              autoCapitalize="none"
-              keyboardType="email-address"
-            />
-
-            <Input
-              label="전화번호"
-              placeholder="전화번호를 입력하세요"
-              type="phone"
-              value={phone}
-              onChangeText={setPhone}
-              leftIcon={<PhoneIcon size={20} color="#9CA3AF" />}
-            />
-
-            <Input
-              label="비밀번호"
-              placeholder="비밀번호를 입력하세요"
-              type="password"
-              value={password}
-              onChangeText={setPassword}
-              leftIcon={<LockIcon size={20} color="#9CA3AF" />}
-              hint="8자 이상, 영문, 숫자 포함"
-            />
-          </View>
-
-          <Button onPress={handleSignUp} loading={loading} fullWidth>
-            회원가입
-          </Button>
-
-          {/* 로그인 링크 */}
-          <View className="mt-6 flex-row items-center justify-center">
-            <Text className="text-gray-600 dark:text-gray-400">이미 계정이 있으신가요? </Text>
-            <Link href="/(auth)/login" asChild>
-              <Text className="font-semibold text-primary-600 dark:text-primary-400">
-                로그인
-              </Text>
-            </Link>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
+      {/* 회원가입 폼 */}
+      <SignupForm
+        onSubmit={handleSignUp}
+        isLoading={isLoading}
+      />
     </SafeAreaView>
   );
 }

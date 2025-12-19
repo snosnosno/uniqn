@@ -1,100 +1,73 @@
 /**
  * UNIQN Mobile - Forgot Password Screen
  * 비밀번호 찾기 화면
+ *
+ * @version 2.0.0
  */
 
-import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { useState, useCallback } from 'react';
+import { View, Text, Pressable, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Input } from '@/components/ui';
-import { MailIcon, ChevronLeftIcon } from '@/components/icons';
-import { useState } from 'react';
-import { Pressable } from 'react-native';
+import { ForgotPasswordForm } from '@/components/auth';
+import { resetPassword } from '@/services';
+import { useToastStore } from '@/stores/toastStore';
+import { logger } from '@/utils/logger';
+import type { ResetPasswordFormData } from '@/schemas';
 
 export default function ForgotPasswordScreen() {
-  const [email, setEmail] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { addToast } = useToastStore();
 
-  const handleSendReset = async () => {
-    setLoading(true);
-    // TODO: Firebase Auth 연동
-    setTimeout(() => {
-      setLoading(false);
-      setSent(true);
-    }, 1000);
+  const handleSubmit = useCallback(async (data: ResetPasswordFormData) => {
+    setIsLoading(true);
+    try {
+      await resetPassword(data.email);
+      logger.info('비밀번호 재설정 이메일 발송', { email: data.email });
+      // 성공 시 ForgotPasswordForm 내부에서 성공 상태로 전환됨
+    } catch (error) {
+      logger.error('비밀번호 재설정 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '이메일 발송에 실패했습니다.',
+      });
+      throw error; // Form에서 에러 상태 처리를 위해 다시 throw
+    } finally {
+      setIsLoading(false);
+    }
+  }, [addToast]);
+
+  const handleBack = () => {
+    router.back();
   };
 
   return (
     <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
+      {/* 헤더 */}
+      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+        <Pressable onPress={handleBack} className="p-2 -ml-2">
+          <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
+        </Pressable>
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+          비밀번호 찾기
+        </Text>
+        <View className="w-8" />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        {/* 뒤로가기 버튼 */}
-        <Pressable
-          onPress={() => router.back()}
-          className="px-4 py-2 flex-row items-center"
-        >
-          <ChevronLeftIcon size={24} color="#6B7280" />
-          <Text className="ml-1 text-gray-600 dark:text-gray-400">뒤로</Text>
-        </Pressable>
-
         <ScrollView
-          contentContainerClassName="flex-grow px-6 py-8"
+          contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}
+          className="px-6 py-8"
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          {/* 헤더 */}
-          <View className="mb-8">
-            <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-              비밀번호 찾기
-            </Text>
-            <Text className="mt-2 text-gray-500 dark:text-gray-400">
-              가입한 이메일 주소를 입력하시면{'\n'}비밀번호 재설정 링크를 보내드립니다
-            </Text>
-          </View>
-
-          {sent ? (
-            // 전송 완료 상태
-            <View className="items-center py-8">
-              <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-success-100 dark:bg-success-900/30">
-                <MailIcon size={32} color="#22c55e" />
-              </View>
-              <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                이메일을 확인하세요
-              </Text>
-              <Text className="mt-2 text-center text-gray-500 dark:text-gray-400">
-                {email}으로{'\n'}비밀번호 재설정 링크를 보냈습니다
-              </Text>
-              <Button
-                variant="outline"
-                onPress={() => router.replace('/(auth)/login')}
-                className="mt-6"
-              >
-                로그인으로 돌아가기
-              </Button>
-            </View>
-          ) : (
-            // 이메일 입력 폼
-            <>
-              <View className="mb-6">
-                <Input
-                  label="이메일"
-                  placeholder="이메일을 입력하세요"
-                  type="email"
-                  value={email}
-                  onChangeText={setEmail}
-                  leftIcon={<MailIcon size={20} color="#9CA3AF" />}
-                  autoCapitalize="none"
-                  keyboardType="email-address"
-                />
-              </View>
-
-              <Button onPress={handleSendReset} loading={loading} fullWidth>
-                재설정 링크 보내기
-              </Button>
-            </>
-          )}
+          <ForgotPasswordForm
+            onSubmit={handleSubmit}
+            isLoading={isLoading}
+          />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

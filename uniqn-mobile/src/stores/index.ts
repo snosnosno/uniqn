@@ -44,3 +44,7 @@ export {
   selectIsAnyModalOpen,
 } from './modalStore';
 export type { ModalConfig, ModalType, ModalButton } from './modalStore';
+
+// Theme Store
+export { useThemeStore } from './themeStore';
+export type { ThemeMode } from './themeStore';
