@@ -74,3 +74,19 @@ export {
   useQRDisplayModal,
   useQRAutoRefresh,
 } from './useQRCode';
+
+// ============================================================================
+// Notification Hooks
+// ============================================================================
+
+export {
+  useNotificationList,
+  useNotificationRealtime,
+  useUnreadCountRealtime,
+  useMarkAsRead,
+  useMarkAllAsRead,
+  useDeleteNotification,
+  useNotificationSettingsQuery,
+  useSaveNotificationSettings,
+  useNotificationPermission,
+} from './useNotifications';

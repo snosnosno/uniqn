@@ -239,3 +239,28 @@ export const minutesToHoursMinutes = (
     display: mins > 0 ? `${hours}시간 ${mins}분` : `${hours}시간`,
   };
 };
+
+/**
+ * 상대적 시간 표시 (방금, N분 전, N시간 전, N일 전)
+ *
+ * @description 알림, 채팅 등에서 시간을 상대적으로 표시
+ */
+export const formatRelativeTime = (date: Date | Timestamp | string | null): string => {
+  const d = toDate(date);
+  if (!d) return '';
+
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+  const diffMinutes = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  if (diffMinutes < 1) return '방금';
+  if (diffMinutes < 60) return `${diffMinutes}분 전`;
+  if (diffHours < 24) return `${diffHours}시간 전`;
+  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}개월 전`;
+
+  return formatDateKorean(d);
+};

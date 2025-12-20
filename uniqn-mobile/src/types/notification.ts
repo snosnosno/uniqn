@@ -1,109 +1,252 @@
 /**
  * UNIQN Mobile - 알림 관련 타입 정의
  *
- * @version 1.0.0
+ * @description 푸시 알림, 인앱 알림 타입 정의
+ * @version 2.0.0
  */
 
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
 
+// ============================================================================
+// Notification Types (Enum-like)
+// ============================================================================
+
+/**
+ * 알림 타입 상수
+ *
+ * @description 모든 알림 종류를 정의하는 상수 객체
+ */
+export const NotificationType = {
+  // === 지원 관련 ===
+  /** 새로운 지원자 (구인자에게) */
+  NEW_APPLICATION: 'new_application',
+  /** 지원 취소됨 */
+  APPLICATION_CANCELLED: 'application_cancelled',
+  /** 확정됨 (스태프에게) */
+  APPLICATION_CONFIRMED: 'application_confirmed',
+  /** 확정 취소됨 */
+  CONFIRMATION_CANCELLED: 'confirmation_cancelled',
+  /** 거절됨 */
+  APPLICATION_REJECTED: 'application_rejected',
+
+  // === 출퇴근 관련 ===
+  /** 출근 체크인 알림 (구인자에게) */
+  STAFF_CHECKED_IN: 'staff_checked_in',
+  /** 퇴근 체크아웃 알림 (구인자에게) */
+  STAFF_CHECKED_OUT: 'staff_checked_out',
+  /** 출근 리마인더 (스태프에게) */
+  CHECKIN_REMINDER: 'checkin_reminder',
+  /** 노쇼 알림 */
+  NO_SHOW_ALERT: 'no_show_alert',
+  /** 근무 시간 변경 (스태프에게) - 관리자가 시간 수정 시 */
+  SCHEDULE_CHANGE: 'schedule_change',
+
+  // === 정산 관련 ===
+  /** 정산 완료 (스태프에게) */
+  SETTLEMENT_COMPLETED: 'settlement_completed',
+  /** 정산 요청 (구인자에게) */
+  SETTLEMENT_REQUESTED: 'settlement_requested',
+
+  // === 공고 관련 ===
+  /** 공고 마감 임박 */
+  JOB_CLOSING_SOON: 'job_closing_soon',
+  /** 새 공고 (관심 지역) */
+  NEW_JOB_IN_AREA: 'new_job_in_area',
+  /** 공고 수정됨 */
+  JOB_UPDATED: 'job_updated',
+  /** 공고 취소됨 */
+  JOB_CANCELLED: 'job_cancelled',
+
+  // === 칩 관련 ===
+  /** 칩 충전 완료 */
+  CHIPS_PURCHASED: 'chips_purchased',
+  /** 칩 잔액 부족 */
+  LOW_CHIPS_WARNING: 'low_chips_warning',
+  /** 칩 환불 완료 */
+  CHIPS_REFUNDED: 'chips_refunded',
+
+  // === 시스템 ===
+  /** 공지사항 */
+  ANNOUNCEMENT: 'announcement',
+  /** 시스템 점검 */
+  MAINTENANCE: 'maintenance',
+  /** 앱 업데이트 */
+  APP_UPDATE: 'app_update',
+
+  // === 관리자 ===
+  /** 문의 답변 완료 */
+  INQUIRY_ANSWERED: 'inquiry_answered',
+  /** 신고 처리 완료 */
+  REPORT_RESOLVED: 'report_resolved',
+} as const;
+
+export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
+
+// ============================================================================
+// Notification Categories
+// ============================================================================
+
 /**
  * 알림 카테고리
  */
+export const NotificationCategory = {
+  APPLICATION: 'application', // 지원 관련
+  ATTENDANCE: 'attendance', // 출퇴근 관련
+  SETTLEMENT: 'settlement', // 정산 관련
+  JOB: 'job', // 공고 관련
+  CHIPS: 'chips', // 칩 관련
+  SYSTEM: 'system', // 시스템
+  ADMIN: 'admin', // 관리자
+} as const;
+
 export type NotificationCategory =
-  | 'system' // 시스템 공지
-  | 'work' // 지원, 확정, 취소 관련
-  | 'schedule'; // 근무 관련
+  (typeof NotificationCategory)[keyof typeof NotificationCategory];
 
 /**
- * 알림 타입
+ * 알림 타입 → 카테고리 매핑
  */
-export type NotificationType =
-  // System
-  | 'system_announcement' // 시스템 공지
-  | 'new_job_posting' // 신규 공고
-  | 'app_update' // 앱 업데이트
-  // Work
-  | 'job_application' // 지원 완료
-  | 'staff_approval' // 지원 확정
-  | 'staff_rejection' // 지원 거절
-  // Schedule
-  | 'schedule_reminder' // 근무 알림
-  | 'schedule_change'; // 근무 변경
+export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
+  // 지원 관련
+  [NotificationType.NEW_APPLICATION]: NotificationCategory.APPLICATION,
+  [NotificationType.APPLICATION_CANCELLED]: NotificationCategory.APPLICATION,
+  [NotificationType.APPLICATION_CONFIRMED]: NotificationCategory.APPLICATION,
+  [NotificationType.CONFIRMATION_CANCELLED]: NotificationCategory.APPLICATION,
+  [NotificationType.APPLICATION_REJECTED]: NotificationCategory.APPLICATION,
+
+  // 출퇴근 관련
+  [NotificationType.STAFF_CHECKED_IN]: NotificationCategory.ATTENDANCE,
+  [NotificationType.STAFF_CHECKED_OUT]: NotificationCategory.ATTENDANCE,
+  [NotificationType.CHECKIN_REMINDER]: NotificationCategory.ATTENDANCE,
+  [NotificationType.NO_SHOW_ALERT]: NotificationCategory.ATTENDANCE,
+  [NotificationType.SCHEDULE_CHANGE]: NotificationCategory.ATTENDANCE,
+
+  // 정산 관련
+  [NotificationType.SETTLEMENT_COMPLETED]: NotificationCategory.SETTLEMENT,
+  [NotificationType.SETTLEMENT_REQUESTED]: NotificationCategory.SETTLEMENT,
+
+  // 공고 관련
+  [NotificationType.JOB_CLOSING_SOON]: NotificationCategory.JOB,
+  [NotificationType.NEW_JOB_IN_AREA]: NotificationCategory.JOB,
+  [NotificationType.JOB_UPDATED]: NotificationCategory.JOB,
+  [NotificationType.JOB_CANCELLED]: NotificationCategory.JOB,
+
+  // 칩 관련
+  [NotificationType.CHIPS_PURCHASED]: NotificationCategory.CHIPS,
+  [NotificationType.LOW_CHIPS_WARNING]: NotificationCategory.CHIPS,
+  [NotificationType.CHIPS_REFUNDED]: NotificationCategory.CHIPS,
+
+  // 시스템
+  [NotificationType.ANNOUNCEMENT]: NotificationCategory.SYSTEM,
+  [NotificationType.MAINTENANCE]: NotificationCategory.SYSTEM,
+  [NotificationType.APP_UPDATE]: NotificationCategory.SYSTEM,
+
+  // 관리자
+  [NotificationType.INQUIRY_ANSWERED]: NotificationCategory.ADMIN,
+  [NotificationType.REPORT_RESOLVED]: NotificationCategory.ADMIN,
+};
+
+// ============================================================================
+// Notification Priority
+// ============================================================================
 
 /**
  * 알림 우선순위
  */
-export type NotificationPriority = 'low' | 'medium' | 'high' | 'urgent';
+export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
 
 /**
- * 알림 액션 타입
+ * 알림 타입별 기본 우선순위
  */
-export type NotificationActionType =
-  | 'navigate' // 페이지 이동
-  | 'open_modal' // 모달 열기
-  | 'external_link' // 외부 링크
-  | 'none'; // 액션 없음
+export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, NotificationPriority> = {
+  // 지원 관련 - 대부분 high
+  [NotificationType.NEW_APPLICATION]: 'high',
+  [NotificationType.APPLICATION_CANCELLED]: 'normal',
+  [NotificationType.APPLICATION_CONFIRMED]: 'high',
+  [NotificationType.CONFIRMATION_CANCELLED]: 'high',
+  [NotificationType.APPLICATION_REJECTED]: 'normal',
+
+  // 출퇴근 관련 - 리마인더/노쇼는 urgent
+  [NotificationType.STAFF_CHECKED_IN]: 'normal',
+  [NotificationType.STAFF_CHECKED_OUT]: 'normal',
+  [NotificationType.CHECKIN_REMINDER]: 'urgent',
+  [NotificationType.NO_SHOW_ALERT]: 'urgent',
+  [NotificationType.SCHEDULE_CHANGE]: 'high',
+
+  // 정산 관련
+  [NotificationType.SETTLEMENT_COMPLETED]: 'high',
+  [NotificationType.SETTLEMENT_REQUESTED]: 'normal',
+
+  // 공고 관련
+  [NotificationType.JOB_CLOSING_SOON]: 'normal',
+  [NotificationType.NEW_JOB_IN_AREA]: 'low',
+  [NotificationType.JOB_UPDATED]: 'low',
+  [NotificationType.JOB_CANCELLED]: 'high',
+
+  // 칩 관련
+  [NotificationType.CHIPS_PURCHASED]: 'normal',
+  [NotificationType.LOW_CHIPS_WARNING]: 'high',
+  [NotificationType.CHIPS_REFUNDED]: 'normal',
+
+  // 시스템
+  [NotificationType.ANNOUNCEMENT]: 'normal',
+  [NotificationType.MAINTENANCE]: 'high',
+  [NotificationType.APP_UPDATE]: 'low',
+
+  // 관리자
+  [NotificationType.INQUIRY_ANSWERED]: 'normal',
+  [NotificationType.REPORT_RESOLVED]: 'normal',
+};
+
+// ============================================================================
+// Notification Data Types
+// ============================================================================
 
 /**
- * 알림 액션
+ * 알림 데이터 인터페이스
  */
-export interface NotificationAction {
-  type: NotificationActionType;
-  target?: string;
-  params?: Record<string, unknown>;
-}
-
-/**
- * 알림 타입
- */
-export interface Notification extends FirebaseDocument {
-  // 기본 정보
-  userId: string;
+export interface NotificationData extends FirebaseDocument {
+  /** 수신자 ID */
+  recipientId: string;
+  /** 알림 타입 */
   type: NotificationType;
-  category: NotificationCategory;
-  priority: NotificationPriority;
-
-  // 내용
+  /** 제목 */
   title: string;
+  /** 본문 */
   body: string;
-  imageUrl?: string;
-
-  // 액션
-  action: NotificationAction;
-
-  // 메타데이터
-  relatedId?: string;
-  senderId?: string;
-  data?: Record<string, unknown>;
-
-  // 상태
+  /** 딥링크 경로 */
+  link?: string;
+  /** 추가 데이터 */
+  data?: Record<string, string>;
+  /** 읽음 여부 */
   isRead: boolean;
-  isSent: boolean;
-
-  // 타임스탬프
-  sentAt?: Timestamp | Date;
-  readAt?: Timestamp | Date;
+  /** 생성 시간 */
+  createdAt: Timestamp;
+  /** 읽은 시간 */
+  readAt?: Timestamp;
 }
 
 /**
  * 알림 설정
  */
 export interface NotificationSettings {
-  userId: string;
+  /** 전체 알림 활성화 */
   enabled: boolean;
+  /** 카테고리별 설정 */
   categories: {
     [key in NotificationCategory]: {
       enabled: boolean;
       pushEnabled: boolean;
     };
   };
+  /** 방해 금지 시간 */
   quietHours?: {
     enabled: boolean;
     start: string; // "22:00"
     end: string; // "08:00"
   };
-  updatedAt?: Timestamp | Date;
+  /** 업데이트 시간 */
+  updatedAt?: Timestamp;
 }
 
 /**
@@ -112,7 +255,7 @@ export interface NotificationSettings {
 export interface NotificationFilter {
   isRead?: boolean;
   category?: NotificationCategory;
-  priority?: NotificationPriority;
+  types?: NotificationType[];
   startDate?: Date;
   endDate?: Date;
 }
@@ -126,38 +269,179 @@ export interface NotificationStats {
   byCategory: Record<NotificationCategory, number>;
 }
 
+// ============================================================================
+// Android Channel Types
+// ============================================================================
+
 /**
- * 알림 생성 입력
+ * Android 알림 채널 ID
  */
-export interface CreateNotificationInput {
-  userId: string;
-  type: NotificationType;
-  title: string;
-  body: string;
-  action: NotificationAction;
-  relatedId?: string;
-  data?: Record<string, unknown>;
+export const AndroidChannelId = {
+  DEFAULT: 'default',
+  APPLICATIONS: 'applications',
+  REMINDERS: 'reminders',
+  SETTLEMENT: 'settlement',
+  ANNOUNCEMENTS: 'announcements',
+} as const;
+
+export type AndroidChannelId = (typeof AndroidChannelId)[keyof typeof AndroidChannelId];
+
+/**
+ * 알림 타입 → Android 채널 매핑
+ */
+export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
+  // 지원 관련
+  [NotificationType.NEW_APPLICATION]: AndroidChannelId.APPLICATIONS,
+  [NotificationType.APPLICATION_CANCELLED]: AndroidChannelId.APPLICATIONS,
+  [NotificationType.APPLICATION_CONFIRMED]: AndroidChannelId.APPLICATIONS,
+  [NotificationType.CONFIRMATION_CANCELLED]: AndroidChannelId.APPLICATIONS,
+  [NotificationType.APPLICATION_REJECTED]: AndroidChannelId.APPLICATIONS,
+
+  // 출퇴근 관련
+  [NotificationType.STAFF_CHECKED_IN]: AndroidChannelId.DEFAULT,
+  [NotificationType.STAFF_CHECKED_OUT]: AndroidChannelId.DEFAULT,
+  [NotificationType.CHECKIN_REMINDER]: AndroidChannelId.REMINDERS,
+  [NotificationType.NO_SHOW_ALERT]: AndroidChannelId.REMINDERS,
+  [NotificationType.SCHEDULE_CHANGE]: AndroidChannelId.REMINDERS,
+
+  // 정산 관련
+  [NotificationType.SETTLEMENT_COMPLETED]: AndroidChannelId.SETTLEMENT,
+  [NotificationType.SETTLEMENT_REQUESTED]: AndroidChannelId.SETTLEMENT,
+
+  // 공고 관련
+  [NotificationType.JOB_CLOSING_SOON]: AndroidChannelId.DEFAULT,
+  [NotificationType.NEW_JOB_IN_AREA]: AndroidChannelId.DEFAULT,
+  [NotificationType.JOB_UPDATED]: AndroidChannelId.DEFAULT,
+  [NotificationType.JOB_CANCELLED]: AndroidChannelId.DEFAULT,
+
+  // 칩 관련
+  [NotificationType.CHIPS_PURCHASED]: AndroidChannelId.DEFAULT,
+  [NotificationType.LOW_CHIPS_WARNING]: AndroidChannelId.DEFAULT,
+  [NotificationType.CHIPS_REFUNDED]: AndroidChannelId.DEFAULT,
+
+  // 시스템
+  [NotificationType.ANNOUNCEMENT]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.MAINTENANCE]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.APP_UPDATE]: AndroidChannelId.ANNOUNCEMENTS,
+
+  // 관리자
+  [NotificationType.INQUIRY_ANSWERED]: AndroidChannelId.DEFAULT,
+  [NotificationType.REPORT_RESOLVED]: AndroidChannelId.DEFAULT,
+};
+
+// ============================================================================
+// Notification Labels
+// ============================================================================
+
+/**
+ * 알림 타입 라벨 (한글)
+ */
+export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
+  // 지원 관련
+  [NotificationType.NEW_APPLICATION]: '새로운 지원자',
+  [NotificationType.APPLICATION_CANCELLED]: '지원 취소',
+  [NotificationType.APPLICATION_CONFIRMED]: '지원 확정',
+  [NotificationType.CONFIRMATION_CANCELLED]: '확정 취소',
+  [NotificationType.APPLICATION_REJECTED]: '지원 거절',
+
+  // 출퇴근 관련
+  [NotificationType.STAFF_CHECKED_IN]: '출근 알림',
+  [NotificationType.STAFF_CHECKED_OUT]: '퇴근 알림',
+  [NotificationType.CHECKIN_REMINDER]: '출근 리마인더',
+  [NotificationType.NO_SHOW_ALERT]: '노쇼 알림',
+  [NotificationType.SCHEDULE_CHANGE]: '근무 시간 변경',
+
+  // 정산 관련
+  [NotificationType.SETTLEMENT_COMPLETED]: '정산 완료',
+  [NotificationType.SETTLEMENT_REQUESTED]: '정산 요청',
+
+  // 공고 관련
+  [NotificationType.JOB_CLOSING_SOON]: '공고 마감 임박',
+  [NotificationType.NEW_JOB_IN_AREA]: '새 공고',
+  [NotificationType.JOB_UPDATED]: '공고 수정',
+  [NotificationType.JOB_CANCELLED]: '공고 취소',
+
+  // 칩 관련
+  [NotificationType.CHIPS_PURCHASED]: '칩 충전 완료',
+  [NotificationType.LOW_CHIPS_WARNING]: '칩 잔액 부족',
+  [NotificationType.CHIPS_REFUNDED]: '칩 환불 완료',
+
+  // 시스템
+  [NotificationType.ANNOUNCEMENT]: '공지사항',
+  [NotificationType.MAINTENANCE]: '시스템 점검',
+  [NotificationType.APP_UPDATE]: '앱 업데이트',
+
+  // 관리자
+  [NotificationType.INQUIRY_ANSWERED]: '문의 답변',
+  [NotificationType.REPORT_RESOLVED]: '신고 처리 완료',
+};
+
+/**
+ * 알림 카테고리 라벨 (한글)
+ */
+export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> = {
+  [NotificationCategory.APPLICATION]: '지원/확정',
+  [NotificationCategory.ATTENDANCE]: '출퇴근',
+  [NotificationCategory.SETTLEMENT]: '정산',
+  [NotificationCategory.JOB]: '공고',
+  [NotificationCategory.CHIPS]: '칩',
+  [NotificationCategory.SYSTEM]: '시스템',
+  [NotificationCategory.ADMIN]: '관리자',
+};
+
+// ============================================================================
+// Utility Functions
+// ============================================================================
+
+/**
+ * 알림 카테고리 가져오기
+ */
+export function getNotificationCategory(type: NotificationType): NotificationCategory {
+  return NOTIFICATION_TYPE_TO_CATEGORY[type];
 }
 
 /**
- * 알림 타입 라벨
+ * 알림 우선순위 가져오기
  */
-export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
-  system_announcement: '시스템 공지',
-  new_job_posting: '신규 공고',
-  app_update: '앱 업데이트',
-  job_application: '지원 완료',
-  staff_approval: '지원 확정',
-  staff_rejection: '지원 거절',
-  schedule_reminder: '근무 알림',
-  schedule_change: '근무 변경',
-};
+export function getNotificationPriority(type: NotificationType): NotificationPriority {
+  return NOTIFICATION_DEFAULT_PRIORITY[type];
+}
+
+/**
+ * Android 채널 ID 가져오기
+ */
+export function getAndroidChannelId(type: NotificationType): AndroidChannelId {
+  return NOTIFICATION_TYPE_TO_CHANNEL[type];
+}
 
 /**
  * Timestamp/Date를 Date로 변환
  */
-export const toDateFromTimestamp = (value: Timestamp | Date | undefined): Date | undefined => {
+export function toDateFromTimestamp(value: Timestamp | Date | undefined): Date | undefined {
   if (!value) return undefined;
   if (value instanceof Date) return value;
   return value.toDate();
-};
+}
+
+/**
+ * 기본 알림 설정 생성
+ */
+export function createDefaultNotificationSettings(): NotificationSettings {
+  const categories = Object.values(NotificationCategory).reduce(
+    (acc, category) => ({
+      ...acc,
+      [category]: { enabled: true, pushEnabled: true },
+    }),
+    {} as NotificationSettings['categories']
+  );
+
+  return {
+    enabled: true,
+    categories,
+    quietHours: {
+      enabled: false,
+      start: '22:00',
+      end: '08:00',
+    },
+  };
+}

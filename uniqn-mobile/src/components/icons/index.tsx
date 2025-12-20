@@ -215,3 +215,56 @@ export const QrCodeIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconP
 export const ScanIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <MaterialIcons name="qr-code-scanner" size={size} color={color} />
 );
+
+// Notification Icons
+export const BellSlashIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="bell-off" size={size} color={color} />
+);
+
+export const UserPlusIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="user-plus" size={size} color={color} />
+);
+
+export const UserMinusIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="user-minus" size={size} color={color} />
+);
+
+export const XCircleIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="x-circle" size={size} color={color} />
+);
+
+export const CalendarDaysIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="calendar" size={size} color={color} />
+);
+
+export const BanknotesIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <MaterialIcons name="payments" size={size} color={color} />
+);
+
+export const MegaphoneIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <MaterialIcons name="campaign" size={size} color={color} />
+);
+
+export const WrenchScrewdriverIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="tool" size={size} color={color} />
+);
+
+export const ArrowPathIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="refresh-cw" size={size} color={color} />
+);
+
+export const ChatBubbleLeftIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="message-square" size={size} color={color} />
+);
+
+export const ShieldCheckIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="shield" size={size} color={color} />
+);
+
+export const MoonIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="moon" size={size} color={color} />
+);
+
+export const DevicePhoneMobileIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="smartphone" size={size} color={color} />
+);

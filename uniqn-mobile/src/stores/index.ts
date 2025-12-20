@@ -48,3 +48,20 @@ export type { ModalConfig, ModalType, ModalButton } from './modalStore';
 // Theme Store
 export { useThemeStore } from './themeStore';
 export type { ThemeMode } from './themeStore';
+
+// Notification Store
+export {
+  useNotificationStore,
+  useUnreadCount,
+  useNotifications,
+  useNotificationSettings,
+  useNotificationLoading,
+  useUnreadByCategory,
+  selectNotifications,
+  selectUnreadCount,
+  selectIsLoading as selectNotificationLoading,
+  selectHasMore,
+  selectSettings,
+  selectFilter,
+  selectUnreadByCategory,
+} from './notificationStore';

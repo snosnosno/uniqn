@@ -477,42 +477,55 @@ graph LR
 - [x] AlreadyCheckedInError (중복 출근) - `errors/BusinessErrors.ts`
 - [x] QR 스캔 재시도 로직 - `QRCodeScanner.tsx` (다시 스캔 버튼)
 
-### 3.2 푸시 알림 [P1]
+### 3.2 푸시 알림 [P1] ✅ (인앱 알림 완료)
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
-| FCM 설정 | [ ] | P1 |
-| 알림 권한 요청 | [ ] | P1 |
-| 포그라운드 알림 | [ ] | P1 |
-| 알림 목록 화면 | [ ] | P1 |
-| 알림 설정 화면 | [ ] | P2 |
-| 백그라운드 알림 | [ ] | P2 |
+| FCM 설정 | [ ] | P1 - TODO [출시 전]: EAS Build 설정 후 |
+| 알림 권한 요청 | [x] | P1 - useNotificationPermission 훅 |
+| 포그라운드 알림 | [ ] | P1 - TODO [출시 전]: FCM 설정 후 |
+| 알림 목록 화면 | [x] | P1 - NotificationList 컴포넌트 |
+| 알림 설정 화면 | [x] | P2 - NotificationSettings 컴포넌트 |
+| 백그라운드 알림 | [ ] | P2 - TODO [출시 전]: FCM 설정 후 |
 
-#### 알림 읽음 처리 [P1]
+#### 알림 읽음 처리 [P1] ✅
 | 기능 | 체크 | 설명 |
 |------|:----:|------|
-| 읽음/안읽음 상태 | [ ] | isRead 필드 관리 |
-| 개별 읽음 처리 | [ ] | 알림 탭 시 읽음 처리 |
-| 전체 읽음 처리 | [ ] | "모두 읽음" 버튼 |
-| 안읽은 알림 카운트 | [ ] | 탭 바 뱃지 표시 |
-| 알림 삭제 | [ ] | 개별/전체 삭제 |
+| 읽음/안읽음 상태 | [x] | isRead 필드 관리 |
+| 개별 읽음 처리 | [x] | 알림 탭 시 읽음 처리 |
+| 전체 읽음 처리 | [x] | "모두 읽음" 버튼 |
+| 안읽은 알림 카운트 | [x] | 탭 바 뱃지 표시 (NotificationBadge) |
+| 알림 삭제 | [x] | 개별/전체 삭제 |
 | 알림 그룹핑 | [ ] | 동일 유형 알림 그룹화 (P2) |
 
-- [ ] markAsRead(notificationId) 함수
-- [ ] markAllAsRead() 함수
-- [ ] useUnreadCount() 훅 (실시간 카운트)
-- [ ] NotificationBadge 컴포넌트
+- [x] markAsRead(notificationId) 함수 - `notificationService.ts`
+- [x] markAllAsRead() 함수 - `notificationService.ts`
+- [x] useUnreadCount() 훅 (실시간 카운트) - `useNotifications.ts`
+- [x] NotificationBadge 컴포넌트 - `components/notifications/`
 
-#### 알림 서비스 [P1]
-- [ ] FCMService (토큰 관리)
-- [ ] notificationStore (Zustand)
-- [ ] useNotificationListener 훅
-- [ ] NotificationTemplates 상수
+#### 알림 서비스 [P1] ✅
+- [ ] FCMService (토큰 관리) - TODO [출시 전]: EAS Build 설정 후
+- [x] notificationStore (Zustand) - `stores/notificationStore.ts`
+- [x] useNotificationListener 훅 - `useNotificationRealtime` in `useNotifications.ts`
+- [x] NotificationTemplates 상수 - `constants/notificationTemplates.ts`
+
+#### 알림 UI 컴포넌트 [P1] ✅
+- [x] NotificationBadge (읽지 않은 알림 뱃지)
+- [x] NotificationIcon (타입별 아이콘)
+- [x] NotificationItem (개별 알림 카드)
+- [x] NotificationList (알림 목록 + 무한 스크롤)
+- [x] NotificationSettings (알림 설정)
+
+#### 알림 타입 정의 [P1] ✅
+- [x] NotificationType (22개 알림 타입)
+- [x] NotificationCategory (7개 카테고리)
+- [x] NotificationData, NotificationSettings 인터페이스
+- [x] 알림 템플릿 (title, body 생성)
 
 #### Firebase Functions 트리거 [P1]
-- [ ] onApplicationCreated → 구인자 알림
-- [ ] onApplicationConfirmed → 스태프 알림
-- [ ] onCheckIn/onCheckOut → 구인자 알림
-- [ ] onWorkTimeChanged → 스태프 알림 (시간 변경)
+- [ ] onApplicationCreated → 구인자 알림 - TODO [출시 전]
+- [ ] onApplicationConfirmed → 스태프 알림 - TODO [출시 전]
+- [ ] onCheckIn/onCheckOut → 구인자 알림 - TODO [출시 전]
+- [ ] onWorkTimeChanged → 스태프 알림 (시간 변경) - TODO [출시 전]
 
 ### 3.3 Phase 3 테스트 [P0]
 

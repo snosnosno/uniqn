@@ -247,3 +247,13 @@ export const JOB_STATUS_LABELS = {
   closed: '마감',
   cancelled: '취소됨',
 } as const;
+
+// ============================================================================
+// 알림 템플릿
+// ============================================================================
+
+export {
+  NotificationTemplates,
+  createNotificationMessage,
+  type NotificationTemplate,
+} from './notificationTemplates';

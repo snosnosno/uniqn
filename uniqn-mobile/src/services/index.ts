@@ -100,3 +100,24 @@ export {
   validateQRCode,
   getQRCodeById,
 } from './qrCodeService';
+
+// Notification Service
+export {
+  notificationService,
+  fetchNotifications,
+  getUnreadCount,
+  getNotification,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  deleteNotifications,
+  cleanupOldNotifications,
+  subscribeToNotifications,
+  subscribeToUnreadCount,
+  getNotificationSettings,
+  saveNotificationSettings,
+  checkNotificationPermission,
+  requestNotificationPermission,
+  registerFCMToken,
+  unregisterFCMToken,
+} from './notificationService';

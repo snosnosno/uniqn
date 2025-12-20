@@ -72,16 +72,20 @@ export type {
   NotificationCategory,
   NotificationType,
   NotificationPriority,
-  NotificationActionType,
-  NotificationAction,
-  Notification,
+  NotificationData,
   NotificationSettings,
   NotificationFilter,
   NotificationStats,
-  CreateNotificationInput,
 } from './notification';
 
-export { NOTIFICATION_TYPE_LABELS, toDateFromTimestamp } from './notification';
+export {
+  NotificationCategory as NotificationCategoryConst,
+  NotificationType as NotificationTypeConst,
+  NOTIFICATION_TYPE_LABELS,
+  NOTIFICATION_CATEGORY_LABELS,
+  toDateFromTimestamp,
+  createDefaultNotificationSettings,
+} from './notification';
 
 // 스케줄 타입
 export type {
