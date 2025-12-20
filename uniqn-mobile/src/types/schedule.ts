@@ -197,3 +197,55 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
   checked_in: '근무 중',
   checked_out: '퇴근 완료',
 };
+
+// ============================================================================
+// QR Code Types
+// ============================================================================
+
+/**
+ * QR 코드 액션 타입
+ */
+export type QRCodeAction = 'checkIn' | 'checkOut';
+
+/**
+ * QR 코드 데이터 (Firestore 문서)
+ */
+export interface QRCodeData {
+  id: string;
+  eventId: string;
+  staffId: string;
+  action: QRCodeAction;
+  createdAt: Timestamp;
+  expiresAt: Timestamp;
+  isUsed: boolean;
+  usedAt?: Timestamp;
+}
+
+/**
+ * QR 코드 생성 요청
+ */
+export interface CreateQRCodeRequest {
+  eventId: string;
+  action: QRCodeAction;
+}
+
+/**
+ * QR 코드 스캔 결과
+ */
+export interface QRCodeScanResult {
+  success: boolean;
+  qrCodeId?: string;
+  eventId?: string;
+  action?: QRCodeAction;
+  error?: string;
+}
+
+/**
+ * QR 코드 검증 결과
+ */
+export interface QRCodeValidationResult {
+  isValid: boolean;
+  qrData?: QRCodeData;
+  error?: string;
+  errorCode?: 'EXPIRED' | 'INVALID' | 'USED' | 'WRONG_ACTION';
+}

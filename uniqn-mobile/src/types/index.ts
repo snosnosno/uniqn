@@ -95,6 +95,12 @@ export type {
   ScheduleGroup,
   AttendanceRequest,
   WorkLog,
+  // QR 코드 타입
+  QRCodeAction,
+  QRCodeData,
+  CreateQRCodeRequest,
+  QRCodeScanResult,
+  QRCodeValidationResult,
 } from './schedule';
 
 export {

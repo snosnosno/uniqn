@@ -92,6 +92,8 @@ let jobCounter = 0;
 let applicationCounter = 0;
 let workLogCounter = 0;
 let notificationCounter = 0;
+let qrCodeCounter = 0;
+let scheduleCounter = 0;
 
 export function resetCounters(): void {
   userCounter = 0;
@@ -100,6 +102,8 @@ export function resetCounters(): void {
   applicationCounter = 0;
   workLogCounter = 0;
   notificationCounter = 0;
+  qrCodeCounter = 0;
+  scheduleCounter = 0;
 }
 
 // ============================================================================
@@ -316,4 +320,156 @@ export function createUnreadNotification(): MockNotification {
 
 export function createReadNotification(): MockNotification {
   return createMockNotification({ isRead: true });
+}
+
+// ============================================================================
+// QR Code Factories
+// ============================================================================
+
+export interface MockQRCodeData {
+  id: string;
+  eventId: string;
+  staffId: string;
+  action: 'checkIn' | 'checkOut';
+  createdAt: { toMillis: () => number; toDate: () => Date };
+  expiresAt: { toMillis: () => number; toDate: () => Date };
+  isUsed: boolean;
+  usedAt?: { toMillis: () => number; toDate: () => Date };
+}
+
+export function createMockQRCodeData(
+  overrides: Partial<Omit<MockQRCodeData, 'createdAt' | 'expiresAt' | 'usedAt'>> & {
+    createdAt?: Date;
+    expiresAt?: Date;
+    usedAt?: Date;
+  } = {}
+): MockQRCodeData {
+  qrCodeCounter++;
+  const now = new Date();
+  const defaultExpiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5분 후
+
+  const createTimestamp = (date: Date) => ({
+    toMillis: () => date.getTime(),
+    toDate: () => date,
+  });
+
+  // Extract non-timestamp overrides
+  const { createdAt, expiresAt, usedAt, ...restOverrides } = overrides;
+
+  return {
+    id: `qr_${Date.now().toString(36)}_${qrCodeCounter}`,
+    eventId: `event-${qrCodeCounter}`,
+    staffId: `staff-${qrCodeCounter}`,
+    action: 'checkIn',
+    isUsed: false,
+    ...restOverrides,
+    createdAt: createTimestamp(createdAt ?? now),
+    expiresAt: createTimestamp(expiresAt ?? defaultExpiresAt),
+    ...(usedAt && { usedAt: createTimestamp(usedAt) }),
+  };
+}
+
+export function createExpiredQRCode(): MockQRCodeData {
+  const expired = new Date(Date.now() - 10 * 60 * 1000); // 10분 전 (이미 만료)
+  return createMockQRCodeData({
+    createdAt: new Date(expired.getTime() - 5 * 60 * 1000),
+    expiresAt: expired,
+  });
+}
+
+export function createUsedQRCode(): MockQRCodeData {
+  return createMockQRCodeData({
+    isUsed: true,
+    usedAt: new Date(),
+  });
+}
+
+export function createCheckInQRCode(): MockQRCodeData {
+  return createMockQRCodeData({ action: 'checkIn' });
+}
+
+export function createCheckOutQRCode(): MockQRCodeData {
+  return createMockQRCodeData({ action: 'checkOut' });
+}
+
+export interface MockScheduleEvent {
+  id: string;
+  type: 'applied' | 'confirmed' | 'completed' | 'cancelled';
+  date: string;
+  startTime: { toMillis: () => number; toDate: () => Date } | null;
+  endTime: { toMillis: () => number; toDate: () => Date } | null;
+  eventId: string;
+  eventName: string;
+  location: string;
+  role: string;
+  status: 'not_started' | 'checked_in' | 'checked_out';
+  sourceCollection: 'workLogs' | 'applications';
+  sourceId: string;
+  workLogId?: string;
+  applicationId?: string;
+}
+
+export function createMockScheduleEvent(
+  overrides: Partial<Omit<MockScheduleEvent, 'startTime' | 'endTime'>> & {
+    startTime?: Date | null;
+    endTime?: Date | null;
+  } = {}
+): MockScheduleEvent {
+  scheduleCounter++;
+  const createTimestamp = (date: Date) => ({
+    toMillis: () => date.getTime(),
+    toDate: () => date,
+  });
+
+  const defaultStartTime = new Date();
+  defaultStartTime.setHours(18, 0, 0, 0);
+  const defaultEndTime = new Date();
+  defaultEndTime.setHours(23, 0, 0, 0);
+
+  // Extract non-timestamp overrides
+  const { startTime, endTime, ...restOverrides } = overrides;
+
+  return {
+    id: `schedule-${scheduleCounter}`,
+    type: 'confirmed',
+    date: new Date().toISOString().split('T')[0],
+    eventId: `event-${scheduleCounter}`,
+    eventName: `테스트 이벤트 ${scheduleCounter}`,
+    location: '서울 강남구',
+    role: '딜러',
+    status: 'not_started',
+    sourceCollection: 'workLogs',
+    sourceId: `worklog-${scheduleCounter}`,
+    workLogId: `worklog-${scheduleCounter}`,
+    ...restOverrides,
+    startTime: startTime === null ? null : createTimestamp(startTime ?? defaultStartTime),
+    endTime: endTime === null ? null : createTimestamp(endTime ?? defaultEndTime),
+  };
+}
+
+export function createTodaySchedule(): MockScheduleEvent {
+  return createMockScheduleEvent({
+    date: new Date().toISOString().split('T')[0],
+  });
+}
+
+export function createUpcomingSchedule(): MockScheduleEvent {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  return createMockScheduleEvent({
+    date: tomorrow.toISOString().split('T')[0],
+  });
+}
+
+export function createCheckedInSchedule(): MockScheduleEvent {
+  return createMockScheduleEvent({
+    status: 'checked_in',
+  });
+}
+
+export function createCompletedSchedule(): MockScheduleEvent {
+  return createMockScheduleEvent({
+    type: 'completed',
+    status: 'checked_out',
+  });
 }

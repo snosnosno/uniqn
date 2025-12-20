@@ -137,6 +137,9 @@ export const MapPinIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconP
   <Feather name="map-pin" size={size} color={color} />
 );
 
+// Alias for MapPinIcon
+export const MapIcon = MapPinIcon;
+
 export const PhoneIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <Feather name="phone" size={size} color={color} />
 );

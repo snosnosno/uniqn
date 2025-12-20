@@ -9,3 +9,9 @@ export * from './ui';
 
 // 아이콘
 export * from './icons';
+
+// 스케줄 컴포넌트
+export * from './schedule';
+
+// QR 코드 컴포넌트
+export * from './qr';

@@ -59,3 +59,44 @@ export {
   type UserData,
   type UserDataExport,
 } from './accountDeletionService';
+
+// Schedule Service
+export {
+  getMySchedules,
+  getSchedulesByDate,
+  getSchedulesByMonth,
+  getScheduleById,
+  getTodaySchedules,
+  getUpcomingSchedules,
+  getScheduleStats,
+  subscribeToSchedules,
+  groupSchedulesByDate,
+  getCalendarMarkedDates,
+  type ScheduleQueryResult,
+} from './scheduleService';
+
+// Work Log Service
+export {
+  getMyWorkLogs,
+  getWorkLogsByDate,
+  getWorkLogById,
+  getTodayCheckedInWorkLog,
+  isCurrentlyWorking,
+  getWorkLogStats,
+  getMonthlyPayroll,
+  checkIn,
+  checkOut,
+  updateWorkTime,
+  updatePayrollStatus,
+  type CheckInResult,
+  type CheckOutResult,
+  type QRCodeData as WorkLogQRCodeData,
+  type WorkLogStats,
+} from './workLogService';
+
+// QR Code Service
+export {
+  createQRCode,
+  validateQRCode,
+  getQRCodeById,
+} from './qrCodeService';
