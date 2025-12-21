@@ -111,6 +111,17 @@ export interface AttendanceRequest {
 }
 
 /**
+ * 근무 시간 수정 이력
+ */
+export interface WorkTimeModification {
+  modifiedAt: string;
+  modifiedBy: string;
+  reason: string;
+  previousStartTime?: string | Timestamp;
+  previousEndTime?: string | Timestamp;
+}
+
+/**
  * 근무 기록 (WorkLog)
  */
 export interface WorkLog extends FirebaseDocument {
@@ -133,6 +144,11 @@ export interface WorkLog extends FirebaseDocument {
   // 정산
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
+  payrollDate?: Timestamp;
+  payrollNotes?: string;
+
+  // 수정 이력 (구인자에 의한 시간 수정)
+  modificationHistory?: WorkTimeModification[];
 
   notes?: string;
 }

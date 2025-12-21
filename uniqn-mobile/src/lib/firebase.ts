@@ -8,15 +8,10 @@
  */
 
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, initializeAuth, Auth } from 'firebase/auth';
-// @ts-expect-error - Firebase 12.x React Native persistence
-// eslint-disable-next-line import/no-unresolved
-import { getReactNativePersistence } from '@firebase/auth/react-native';
+import { getAuth, Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { getFunctions } from 'firebase/functions';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Platform } from 'react-native';
 
 // Firebase 설정 (tholdem-ebc18 프로젝트)
 const firebaseConfig = {
@@ -32,15 +27,8 @@ const firebaseConfig = {
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
 // Auth 초기화 (플랫폼별 persistence 설정)
-let auth: Auth;
-if (Platform.OS === 'web') {
-  auth = getAuth(app);
-} else {
-  // React Native에서는 AsyncStorage 사용
-  auth = initializeAuth(app, {
-    persistence: getReactNativePersistence(AsyncStorage),
-  });
-}
+// 웹에서는 기본 browser persistence, React Native에서는 AsyncStorage 사용
+const auth: Auth = getAuth(app)
 
 // Firestore 초기화
 const db = getFirestore(app);

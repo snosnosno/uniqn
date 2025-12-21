@@ -241,6 +241,15 @@ export const minutesToHoursMinutes = (
 };
 
 /**
+ * 기본 날짜 포맷 (2025.01.28)
+ */
+export const formatDate = (date: Date | Timestamp | string | null): string => {
+  const d = toDate(date);
+  if (!d) return '';
+  return format(d, 'yyyy.MM.dd');
+};
+
+/**
  * 상대적 시간 표시 (방금, N분 전, N시간 전, N일 전)
  *
  * @description 알림, 채팅 등에서 시간을 상대적으로 표시
