@@ -69,3 +69,34 @@ export {
 // 로거
 export { logger } from './logger';
 export { default } from './logger';
+
+// 에러 처리
+export {
+  normalizeError,
+  getFirebaseErrorMessage,
+  isFirebaseError,
+  isNetworkError,
+  isAuthError,
+  isPermissionError,
+  type NormalizedError,
+} from './errorUtils';
+
+export {
+  withErrorHandling,
+  withErrorHandlingSync,
+  type ErrorHandlingOptions,
+} from './withErrorHandling';
+
+export {
+  withRetry,
+  withRetryResult,
+  createRetryable,
+  retryOnErrors,
+  retryOnCategories,
+  FAST_RETRY,
+  STANDARD_RETRY,
+  AGGRESSIVE_RETRY,
+  CONSERVATIVE_RETRY,
+  type RetryOptions,
+  type RetryResult,
+} from './withRetry';

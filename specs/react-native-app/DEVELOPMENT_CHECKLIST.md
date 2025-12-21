@@ -802,11 +802,11 @@ graph LR
 
 ### 5.3 복구 전략 구현 [P0]
 
-#### 재시도 로직 [P0]
-- [ ] withRetry 유틸리티 (exponential backoff)
-- [ ] 지터(jitter) 추가 (서버 부하 분산)
-- [ ] 재시도 가능 에러 판별 로직
-- [ ] 최대 재시도 횟수 설정
+#### 재시도 로직 [P0] ✅
+- [x] withRetry 유틸리티 (exponential backoff) - utils/withRetry.ts
+- [x] 지터(jitter) 추가 (서버 부하 분산)
+- [x] 재시도 가능 에러 판별 로직 - shouldRetryError 함수
+- [x] 최대 재시도 횟수 설정 - 프리셋 제공 (FAST, STANDARD, AGGRESSIVE)
 
 #### 오프라인 지원 - Level 2: 읽기 캐싱 [P1]
 > 💡 **결정 사항**: MVP는 읽기 캐싱만 지원. 쓰기 큐잉은 출시 후 검토.
@@ -832,7 +832,7 @@ graph LR
 - [x] AnalyticsService 구현 - trackEvent, trackScreenView, setUserProperties
 - [x] 화면 조회 자동 추적 - trackScreenView 함수
 - [x] 핵심 이벤트 (login, signup, job_apply) - 헬퍼 함수 제공
-- [ ] CrashlyticsService 구현 [TODO 출시 전]
+- [x] CrashlyticsService 구현 - crashlyticsService.ts (recordError, breadcrumbs, 사용자 추적)
 - [ ] ErrorBoundary-Crashlytics 연동 [TODO 출시 전]
 
 ### 5.5 딥링킹 [P1] ([17-deep-linking.md](./17-deep-linking.md))
@@ -848,7 +848,7 @@ graph LR
 #### 입력 검증 강화 [P0]
 - [ ] 모든 사용자 입력 Zod 검증
 - [ ] XSS 방지 적용 확인
-- [ ] 민감 데이터 SecureStore 저장
+- [x] 민감 데이터 SecureStore 저장 - lib/secureStorage.ts (플랫폼 별 분기, TTL 지원)
 - [ ] API 키 환경변수 관리
 
 #### 인증 보안 [P0]
@@ -1161,7 +1161,7 @@ graph LR
 | 2. 인증 + 구인구직 | ✅ | 95% | P0 완료, 소셜로그인/본인인증 보류 |
 | 3. 스케줄 + 알림 | 🟨 | 80% | P0 스케줄+QR 완료, P1 인앱 알림 완료, FCM 보류 |
 | 4. 구인자 기능 | ✅ | 90% | 서비스/훅/테스트 완료, UI 대기 |
-| 5. 최적화 + 배포준비 | 🟨 | 55% | Analytics, 딥링킹, 에러처리 완료 |
+| 5. 최적화 + 배포준비 | 🟨 | 65% | Analytics, 딥링킹, 에러복구, 보안 완료 |
 | 6. 앱스토어 출시 | ⬜ | 0% | |
 
 **범례**: ⬜ 미시작 | 🟨 진행중 | ✅ 완료
@@ -1169,8 +1169,8 @@ graph LR
 ---
 
 *생성일: 2024-12*
-*업데이트: 2025-12-21*
-*버전: 5.6*
+*업데이트: 2025-12-22*
+*버전: 5.9*
 
 ### 버전 5.6 변경사항 (2025-12-21)
 - [Phase 3] P1 인앱 알림 시스템 전체 구현 완료
@@ -1184,6 +1184,12 @@ graph LR
 - [Phase 1] formatRelativeTime 함수 추가 (dateUtils.ts) - 상대 시간 표시
 - [Phase 1] 아이콘 추가 - BellIcon, BellSlashIcon, MoonIcon, TrashIcon
 - 진행 상태 요약: Phase 3 (70% → 80%) 업데이트
+
+### 버전 5.9 변경사항 (2025-12-22)
+- [Phase 5] CrashlyticsService 완료 - crashlyticsService.ts (에러 기록, breadcrumbs, 사용자 추적)
+- [Phase 5] 재시도 로직 완료 - withRetry.ts (exponential backoff, jitter, 에러 판별)
+- [Phase 5] SecureStore 래퍼 완료 - secureStorage.ts (플랫폼 분기, TTL 지원, 보안 스토리지)
+- 진행 상태 요약: Phase 5 (55% → 65%) 업데이트
 
 ### 버전 5.8 변경사항 (2025-12-22)
 - [Phase 5] Analytics 설정 완료 - analyticsService.ts (Firebase Analytics 웹 지원)

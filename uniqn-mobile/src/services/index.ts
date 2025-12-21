@@ -229,3 +229,27 @@ export {
   type DeepLinkRoute,
   type ParsedDeepLink,
 } from './deepLinkService';
+
+// Crashlytics Service
+export {
+  crashlyticsService,
+  setEnabled as setCrashlyticsEnabled,
+  recordError,
+  recordFatalError,
+  recordAppError,
+  recordComponentError,
+  recordNetworkError,
+  log as crashlyticsLog,
+  setAttribute as setCrashlyticsAttribute,
+  setAttributes as setCrashlyticsAttributes,
+  setUserId as setCrashlyticsUserId,
+  setUser as setCrashlyticsUser,
+  clearUser as clearCrashlyticsUser,
+  setScreen as setCrashlyticsScreen,
+  getBreadcrumbs,
+  clearBreadcrumbs,
+  type CrashSeverity,
+  type CrashContext,
+  type CrashlyticsAttributes,
+  type CrashlyticsUser,
+} from './crashlyticsService';

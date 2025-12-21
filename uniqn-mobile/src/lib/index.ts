@@ -15,3 +15,21 @@ export {
   cachingPolicies,
   invalidateQueries,
 } from './queryClient';
+
+// Secure Storage
+export {
+  secureStorage,
+  setItem,
+  getItem,
+  deleteItem,
+  deleteItems,
+  clearAll,
+  isExpired,
+  hasItem,
+  getStoredAt,
+  authStorage,
+  sessionStorage,
+  settingsStorage,
+  type SecureStorageOptions,
+  type KeychainAccessible,
+} from './secureStorage';
