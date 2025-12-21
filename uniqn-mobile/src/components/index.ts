@@ -18,3 +18,6 @@ export * from './qr';
 
 // 알림 컴포넌트
 export * from './notifications';
+
+// 구인자 컴포넌트
+export * from './employer';

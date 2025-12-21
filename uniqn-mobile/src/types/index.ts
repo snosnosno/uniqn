@@ -99,6 +99,7 @@ export type {
   ScheduleGroup,
   AttendanceRequest,
   WorkLog,
+  WorkTimeModification,
   // QR 코드 타입
   QRCodeAction,
   QRCodeData,

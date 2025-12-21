@@ -570,7 +570,7 @@ graph LR
 
 ## Phase 4: 구인자 기능
 
-### 4.1 공고 관리 [P0]
+### 4.1 공고 관리 [P0] (서비스/훅 완료)
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | 공고 작성 (5단계) | [ ] | P0 |
@@ -585,7 +585,29 @@ graph LR
 - [ ] StepNavigation (이전/다음)
 - [ ] 폼 데이터 영속성 (MMKV)
 
-### 4.2 지원자 관리 [P0]
+#### 공고 관리 서비스 레이어 [P0] ✅
+- [x] jobManagementService.ts - `services/jobManagementService.ts`
+  - [x] createJobPosting (공고 생성)
+  - [x] updateJobPosting (공고 수정)
+  - [x] deleteJobPosting (공고 삭제, Soft Delete)
+  - [x] closeJobPosting (공고 마감)
+  - [x] reopenJobPosting (공고 재오픈)
+  - [x] saveDraft (임시저장)
+  - [x] getDraft (임시저장 불러오기)
+  - [x] deleteDraft (임시저장 삭제)
+  - [x] getMyJobPostingStats (통계 조회)
+  - [x] bulkUpdateJobPostingStatus (일괄 상태 변경)
+
+#### 공고 관리 훅 [P0] ✅
+- [x] useJobManagement.ts - `hooks/useJobManagement.ts`
+  - [x] useMyJobPostings (내 공고 목록)
+  - [x] useJobPostingStats (통계)
+  - [x] useDraft, useSaveDraft, useDeleteDraft (임시저장)
+  - [x] useCreateJobPosting, useUpdateJobPosting, useDeleteJobPosting (CRUD)
+  - [x] useCloseJobPosting, useReopenJobPosting (상태 변경)
+  - [x] useBulkUpdateStatus (일괄 상태 변경)
+
+### 4.2 지원자 관리 [P0] (서비스/훅 완료)
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | 지원자 목록 | [ ] | P0 |
@@ -598,7 +620,27 @@ graph LR
 - [ ] ApplicantList (지원자 목록)
 - [ ] ConfirmModal (확인 모달)
 
-### 4.3 출퇴근/정산 [P0]
+#### 지원자 관리 서비스 레이어 [P0] ✅
+- [x] applicantManagementService.ts - `services/applicantManagementService.ts`
+  - [x] getApplicantsByJobPosting (지원자 목록)
+  - [x] confirmApplication (지원 확정 + WorkLog 생성)
+  - [x] rejectApplication (지원 거절)
+  - [x] bulkConfirmApplications (일괄 확정)
+  - [x] addToWaitlist (대기열 추가)
+  - [x] promoteFromWaitlist (대기열 → 확정)
+  - [x] markApplicationAsRead (읽음 처리)
+  - [x] getApplicantStatsByRole (역할별 통계)
+
+#### 지원자 관리 훅 [P0] ✅
+- [x] useApplicantManagement.ts - `hooks/useApplicantManagement.ts`
+  - [x] useApplicantsByJobPosting (지원자 목록)
+  - [x] useApplicantStats (역할별 통계)
+  - [x] useConfirmApplication, useRejectApplication (확정/거절)
+  - [x] useBulkConfirmApplications (일괄 확정)
+  - [x] useAddToWaitlist, usePromoteFromWaitlist (대기열 관리)
+  - [x] useMarkAsRead (읽음 처리)
+
+### 4.3 출퇴근/정산 [P0] (서비스/훅 완료)
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | 출퇴근 현황 | [ ] | P0 |
@@ -610,19 +652,42 @@ graph LR
 #### 관리자 시간 수정 [P0]
 > 💡 **결정 사항**: QR 실패/오류 시 관리자(구인자)가 시간 조정, 스태프는 동기화만
 - [ ] WorkTimeEditor 컴포넌트 (app2 이전)
-- [ ] canEdit 권한 체계 구현
+- [x] canEdit 권한 체계 구현 (서비스 내 소유권 검증) - `settlementService.ts`
 - [ ] Optimistic Update + 롤백 패턴
 - [ ] 시간 수정 시 자동 알림 발송 (onWorkTimeChanged)
-- [ ] 시간 수정 사유 기록 (선택적)
+- [x] 시간 수정 사유 기록 (선택적) - modificationHistory 필드
 
 #### 정산 에러 처리 [P0] (일부 완료)
 - [x] AlreadySettledError (중복 정산) - `errors/BusinessErrors.ts`
 - [ ] InvalidWorkLogError (잘못된 근무 기록)
-- [ ] 정산 금액 검증 로직
+- [x] 정산 금액 검증 로직 - calculateSettlement 함수
 
-#### 서비스 레이어 [P0]
-- [ ] SettlementService (정산 계산)
-- [ ] CalendarService (캘린더 이벤트)
+#### 정산 서비스 레이어 [P0] ✅
+- [x] settlementService.ts - `services/settlementService.ts`
+  - [x] getWorkLogsByJobPosting (공고별 근무 기록)
+  - [x] calculateSettlement (정산 금액 계산, 초과근무 포함)
+  - [x] updateWorkTime (시간 수정 + 이력 기록)
+  - [x] settleWorkLog (개별 정산)
+  - [x] bulkSettlement (일괄 정산)
+  - [x] updateSettlementStatus (정산 상태 변경)
+  - [x] getJobPostingSettlementSummary (공고별 정산 요약)
+  - [x] getMySettlementSummary (전체 정산 현황)
+
+#### 정산 관리 훅 [P0] ✅
+- [x] useSettlement.ts - `hooks/useSettlement.ts`
+  - [x] useWorkLogsByJobPosting (근무 기록 조회)
+  - [x] useSettlementSummary (정산 요약)
+  - [x] useMySettlementSummary (전체 요약)
+  - [x] useCalculateSettlement (정산 계산)
+  - [x] useUpdateWorkTime (시간 수정)
+  - [x] useSettleWorkLog (개별 정산)
+  - [x] useBulkSettlement (일괄 정산)
+  - [x] useUpdateSettlementStatus (상태 변경)
+  - [x] useSettlementDashboard (대시보드용 훅)
+
+#### 서비스 레이어 [P0] ✅
+- [x] SettlementService (정산 계산) - `services/settlementService.ts`
+- [ ] CalendarService (캘린더 이벤트) - scheduleService로 대체 가능
 
 ### 4.4 Phase 4 테스트 [P0]
 
@@ -1077,7 +1142,7 @@ graph LR
 | 1. 프로젝트 기반 | ✅ | 98% | P0 완료, P1/P2 일부 보류 |
 | 2. 인증 + 구인구직 | ✅ | 95% | P0 완료, 소셜로그인/본인인증 보류 |
 | 3. 스케줄 + 알림 | 🟨 | 80% | P0 스케줄+QR 완료, P1 인앱 알림 완료, FCM 보류 |
-| 4. 구인자 기능 | ⬜ | 0% | |
+| 4. 구인자 기능 | 🟨 | 50% | 서비스/훅 완료, UI 컴포넌트/화면 대기 |
 | 5. 최적화 + 배포준비 | ⬜ | 0% | |
 | 6. 앱스토어 출시 | ⬜ | 0% | |
 

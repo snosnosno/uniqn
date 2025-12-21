@@ -113,6 +113,39 @@ export const queryKeys = {
     user: () => [...queryKeys.settings.all, 'user'] as const,
     notification: () => [...queryKeys.settings.all, 'notification'] as const,
   },
+
+  // ============================================================================
+  // 구인자용 Query Keys (Employer)
+  // ============================================================================
+
+  // 공고 관리 (구인자)
+  jobManagement: {
+    all: ['jobManagement'] as const,
+    myPostings: () => [...queryKeys.jobManagement.all, 'myPostings'] as const,
+    stats: () => [...queryKeys.jobManagement.all, 'stats'] as const,
+    draft: () => [...queryKeys.jobManagement.all, 'draft'] as const,
+  },
+
+  // 지원자 관리 (구인자)
+  applicantManagement: {
+    all: ['applicantManagement'] as const,
+    byJobPosting: (jobPostingId: string) =>
+      [...queryKeys.applicantManagement.all, 'byJobPosting', jobPostingId] as const,
+    stats: (jobPostingId: string) =>
+      [...queryKeys.applicantManagement.all, 'stats', jobPostingId] as const,
+  },
+
+  // 정산 관리 (구인자)
+  settlement: {
+    all: ['settlement'] as const,
+    byJobPosting: (jobPostingId: string) =>
+      [...queryKeys.settlement.all, 'byJobPosting', jobPostingId] as const,
+    summary: (jobPostingId: string) =>
+      [...queryKeys.settlement.all, 'summary', jobPostingId] as const,
+    mySummary: () => [...queryKeys.settlement.all, 'mySummary'] as const,
+    calculation: (workLogId: string) =>
+      [...queryKeys.settlement.all, 'calculation', workLogId] as const,
+  },
 } as const;
 
 // ============================================================================

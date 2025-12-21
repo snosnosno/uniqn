@@ -121,3 +121,62 @@ export {
   registerFCMToken,
   unregisterFCMToken,
 } from './notificationService';
+
+// ============================================================================
+// 구인자용 서비스 (Employer Services)
+// ============================================================================
+
+// Job Management Service (구인자용 공고 관리)
+export {
+  createJobPosting,
+  updateJobPosting,
+  deleteJobPosting,
+  closeJobPosting,
+  reopenJobPosting,
+  saveDraft,
+  getDraft,
+  deleteDraft,
+  getMyJobPostingStats,
+  bulkUpdateJobPostingStatus,
+  type JobPostingDraft,
+  type CreateJobPostingResult,
+  type JobPostingStats,
+} from './jobManagementService';
+
+// Applicant Management Service (구인자용 지원자 관리)
+export {
+  getApplicantsByJobPosting,
+  confirmApplication,
+  rejectApplication,
+  bulkConfirmApplications,
+  addToWaitlist,
+  promoteFromWaitlist,
+  markApplicationAsRead,
+  getApplicantStatsByRole,
+  type ApplicantWithDetails,
+  type ApplicantListResult,
+  type ConfirmResult,
+  type BulkConfirmResult,
+} from './applicantManagementService';
+
+// Settlement Service (구인자용 정산 관리)
+export {
+  getWorkLogsByJobPosting,
+  calculateSettlement,
+  updateWorkTime as updateWorkTimeForSettlement,
+  settleWorkLog,
+  bulkSettlement,
+  updateSettlementStatus,
+  getJobPostingSettlementSummary,
+  getMySettlementSummary,
+  type SettlementWorkLog,
+  type CalculateSettlementInput,
+  type SettlementCalculation,
+  type SettleWorkLogInput,
+  type BulkSettlementInput,
+  type SettlementResult,
+  type BulkSettlementResult,
+  type JobPostingSettlementSummary,
+  type UpdateWorkTimeInput,
+  type SettlementFilters,
+} from './settlementService';
