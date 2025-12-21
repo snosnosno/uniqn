@@ -1076,7 +1076,7 @@ graph LR
 |-------|:----:|:------:|------|
 | 1. 프로젝트 기반 | ✅ | 98% | P0 완료, P1/P2 일부 보류 |
 | 2. 인증 + 구인구직 | ✅ | 95% | P0 완료, 소셜로그인/본인인증 보류 |
-| 3. 스케줄 + 알림 | 🟨 | 70% | P0 스케줄+QR 완료, 푸시알림(P1) 미시작 |
+| 3. 스케줄 + 알림 | 🟨 | 80% | P0 스케줄+QR 완료, P1 인앱 알림 완료, FCM 보류 |
 | 4. 구인자 기능 | ⬜ | 0% | |
 | 5. 최적화 + 배포준비 | ⬜ | 0% | |
 | 6. 앱스토어 출시 | ⬜ | 0% | |
@@ -1086,8 +1086,21 @@ graph LR
 ---
 
 *생성일: 2024-12*
-*업데이트: 2025-12-19*
-*버전: 5.5*
+*업데이트: 2025-12-21*
+*버전: 5.6*
+
+### 버전 5.6 변경사항 (2025-12-21)
+- [Phase 3] P1 인앱 알림 시스템 전체 구현 완료
+- [Phase 3] notificationStore (Zustand) 완료 - 알림 상태, 설정, 필터, 통계
+- [Phase 3] notificationService 완료 - Firestore CRUD, 실시간 구독, 권한 관리
+- [Phase 3] useNotifications 훅 완료 - React Query 통합, 알림 CRUD
+- [Phase 3] 알림 UI 컴포넌트 5개 완료 - NotificationBadge, NotificationIcon, NotificationItem, NotificationList, NotificationSettings
+- [Phase 3] NotificationTemplates 상수 완료 (13개 타입)
+- [Phase 1] errorUtils.ts 추가 - 에러 정규화, Firebase 에러 메시지 매핑
+- [Phase 1] withErrorHandling.ts 추가 - 재시도 지원 비동기 래퍼
+- [Phase 1] formatRelativeTime 함수 추가 (dateUtils.ts) - 상대 시간 표시
+- [Phase 1] 아이콘 추가 - BellIcon, BellSlashIcon, MoonIcon, TrashIcon
+- 진행 상태 요약: Phase 3 (70% → 80%) 업데이트
 
 ### 버전 5.5 변경사항 (2025-12-19)
 - [Phase 3] QR 스캐너 (웹) 완료 체크 - jsQR + MediaDevices API 사용
