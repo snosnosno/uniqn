@@ -2,7 +2,13 @@
  * UNIQN Mobile - useAppInitialize Hook
  *
  * @description 앱 초기화 상태 관리
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * 초기화 순서:
+ * 1. 환경변수 검증
+ * 2. Zustand hydration 대기 (AsyncStorage 복원)
+ * 3. Firebase 초기화
+ * 4. 인증 상태 확인
  *
  * TODO [출시 전]: 폰트 로딩 추가 (expo-font)
  * TODO [출시 전]: 푸시 알림 권한 확인 로직 추가
@@ -13,7 +19,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, waitForHydration } from '@/stores/authStore';
+import { validateEnv } from '@/lib/env';
+import { tryInitializeFirebase } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -55,13 +63,38 @@ export function useAppInitialize(): UseAppInitializeReturn {
       // 1. 스플래시 화면 유지
       await SplashScreen.preventAutoHideAsync();
 
-      // 2. 인증 상태 초기화 (AsyncStorage에서 복원)
+      // 2. 환경변수 검증
+      logger.debug('환경변수 검증 중...', { component: 'useAppInitialize' });
+      const envResult = validateEnv();
+      if (!envResult.success) {
+        throw new Error(envResult.error);
+      }
+      logger.debug('환경변수 검증 완료', { component: 'useAppInitialize' });
+
+      // 3. Zustand hydration 대기 (AsyncStorage에서 상태 복원)
+      logger.debug('Hydration 대기 중...', { component: 'useAppInitialize' });
+      const hydrated = await waitForHydration(5000);
+      if (!hydrated) {
+        logger.warn('Hydration 타임아웃', { component: 'useAppInitialize' });
+        // 타임아웃되어도 계속 진행 (초기 상태로 시작)
+      }
+      logger.debug('Hydration 완료', { component: 'useAppInitialize' });
+
+      // 4. Firebase 초기화 (지연 초기화)
+      logger.debug('Firebase 초기화 중...', { component: 'useAppInitialize' });
+      const firebaseResult = tryInitializeFirebase();
+      if (!firebaseResult.success) {
+        throw new Error(firebaseResult.error);
+      }
+      logger.debug('Firebase 초기화 완료', { component: 'useAppInitialize' });
+
+      // 5. 인증 상태 초기화 (복원된 상태 활용)
       await initializeAuth();
 
-      // 3. 인증 상태 확인 (Firebase Auth)
+      // 6. 인증 상태 확인 (Firebase Auth 리스너 등록)
       await checkAuthState();
 
-      // 4. 기타 초기화 작업 (필요 시 추가)
+      // 7. 기타 초기화 작업 (필요 시 추가)
       // - 폰트 로딩
       // - 설정 데이터 로딩
       // - 푸시 알림 권한 확인

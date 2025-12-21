@@ -67,6 +67,7 @@ interface AuthState {
   status: AuthStatus;
   isInitialized: boolean;
   error: string | null;
+  _hasHydrated: boolean;  // AsyncStorage에서 복원 완료 여부
 
   // 계산된 값 (getter 역할)
   isAuthenticated: boolean;
@@ -81,6 +82,7 @@ interface AuthState {
   setStatus: (status: AuthStatus) => void;
   setError: (error: string | null) => void;
   setInitialized: (initialized: boolean) => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
   initialize: () => Promise<void>;
   checkAuthState: () => Promise<void>;
   reset: () => void;
@@ -96,6 +98,7 @@ const initialState = {
   status: 'idle' as AuthStatus,
   isInitialized: false,
   error: null,
+  _hasHydrated: false,
   isAuthenticated: false,
   isLoading: false,
   isAdmin: false,
@@ -182,6 +185,10 @@ export const useAuthStore = create<AuthState>()(
         set({ isInitialized: initialized });
       },
 
+      setHasHydrated: (hasHydrated: boolean) => {
+        set({ _hasHydrated: hasHydrated });
+      },
+
       // 앱 초기화 시 저장된 인증 상태 복원
       initialize: async () => {
         const state = get();
@@ -225,6 +232,11 @@ export const useAuthStore = create<AuthState>()(
         profile: state.profile,
         isInitialized: state.isInitialized,
       }),
+      // AsyncStorage에서 데이터 복원 완료 시 호출
+      onRehydrateStorage: () => (state) => {
+        // 복원 완료 시 _hasHydrated를 true로 설정
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
@@ -242,6 +254,7 @@ export const selectIsEmployer = (state: AuthState) => state.isEmployer;
 export const selectIsStaff = (state: AuthState) => state.isStaff;
 export const selectAuthStatus = (state: AuthState) => state.status;
 export const selectAuthError = (state: AuthState) => state.error;
+export const selectHasHydrated = (state: AuthState) => state._hasHydrated;
 
 // ============================================================================
 // Utility Hooks
@@ -283,6 +296,54 @@ export function hasPermission(userRole: UserRole | null, requiredRole: UserRole)
   const userLevel = ROLE_HIERARCHY[userRole] ?? 0;
   const requiredLevel = ROLE_HIERARCHY[requiredRole] ?? 0;
   return userLevel >= requiredLevel;
+}
+
+// ============================================================================
+// Hydration Utilities
+// ============================================================================
+
+/**
+ * Hydration 완료 상태 훅
+ */
+export const useHasHydrated = () => useAuthStore(selectHasHydrated);
+
+/**
+ * Hydration 완료 대기 유틸리티
+ * AsyncStorage에서 데이터 복원이 완료될 때까지 대기
+ *
+ * @param timeout - 최대 대기 시간 (ms), 기본값 5000ms
+ * @returns Promise<boolean> - 복원 완료 여부
+ *
+ * @example
+ * ```ts
+ * // 앱 초기화 시
+ * const hydrated = await waitForHydration();
+ * if (hydrated) {
+ *   // 복원된 상태로 작업 수행
+ * }
+ * ```
+ */
+export async function waitForHydration(timeout = 5000): Promise<boolean> {
+  // 이미 hydrated인 경우 즉시 반환
+  if (useAuthStore.getState()._hasHydrated) {
+    return true;
+  }
+
+  // hydration 완료 대기
+  return new Promise<boolean>((resolve) => {
+    const timeoutId = setTimeout(() => {
+      unsubscribe();
+      resolve(false);
+    }, timeout);
+
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      if (state._hasHydrated) {
+        clearTimeout(timeoutId);
+        unsubscribe();
+        resolve(true);
+      }
+    });
+  });
 }
 
 export default useAuthStore;
