@@ -114,3 +114,7 @@ export {
   SCHEDULE_TYPE_LABELS,
   ATTENDANCE_STATUS_LABELS,
 } from './schedule';
+
+// 공고 작성 폼 타입
+export type { JobPostingFormData } from './jobPostingForm';
+export { INITIAL_JOB_POSTING_FORM_DATA } from './jobPostingForm';

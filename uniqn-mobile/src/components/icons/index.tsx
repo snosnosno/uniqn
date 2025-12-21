@@ -268,3 +268,16 @@ export const MoonIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconPro
 export const DevicePhoneMobileIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <Feather name="smartphone" size={size} color={color} />
 );
+
+// Misc
+export const GiftIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="gift" size={size} color={color} />
+);
+
+export const TagIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="tag" size={size} color={color} />
+);
+
+export const HashtagIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="hash" size={size} color={color} />
+);

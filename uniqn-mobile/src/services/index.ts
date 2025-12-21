@@ -180,3 +180,52 @@ export {
   type UpdateWorkTimeInput,
   type SettlementFilters,
 } from './settlementService';
+
+// ============================================================================
+// Analytics & Deep Link Services
+// ============================================================================
+
+// Analytics Service
+export {
+  analyticsService,
+  trackEvent,
+  trackScreenView,
+  setUserProperties,
+  setUserId,
+  setAnalyticsEnabled,
+  trackLogin,
+  trackSignup,
+  trackLogout,
+  trackJobView,
+  trackJobApply,
+  trackJobCreate,
+  trackCheckIn,
+  trackCheckOut,
+  trackSettlementComplete,
+  trackSearch,
+  trackError,
+  type AnalyticsEvent,
+  type AnalyticsEventParams,
+  type UserProperties as AnalyticsUserProperties,
+} from './analyticsService';
+
+// Deep Link Service
+export {
+  deepLinkService,
+  parseDeepLink,
+  navigateToDeepLink,
+  navigateFromNotification,
+  getRouteFromNotification,
+  createDeepLink,
+  createJobDeepLink,
+  createApplicationDeepLink,
+  createScheduleDeepLink,
+  setupDeepLinkListener,
+  getInitialDeepLink,
+  openExternalUrl,
+  linkingConfig,
+  APP_SCHEME,
+  WEB_DOMAIN,
+  type DeepLinkRoute,
+  type ParsedDeepLink,
+} from './deepLinkService';

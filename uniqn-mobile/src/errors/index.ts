@@ -89,6 +89,7 @@ export {
   // Retry Utilities
   type RetryOptions,
   withRetry,
+  isRetryableError,
   // Error Boundary Helpers
   isRecoverableError,
   requiresReauthentication,

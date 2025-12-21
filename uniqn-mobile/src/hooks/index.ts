@@ -15,6 +15,8 @@ export { useAppInitialize } from './useAppInitialize';
 // Auth & Navigation Hooks
 // ============================================================================
 
+export { useAuth } from './useAuth';
+
 export {
   useAuthGuard,
   useHasPermission,
@@ -90,6 +92,17 @@ export {
   useSaveNotificationSettings,
   useNotificationPermission,
 } from './useNotifications';
+
+// ============================================================================
+// Deep Link Hooks
+// ============================================================================
+
+export {
+  useDeepLinkSetup,
+  useNotificationNavigation,
+  useDeepLinkNavigation,
+  usePendingDeepLink,
+} from './useDeepLink';
 
 // ============================================================================
 // Employer Hooks (구인자용 훅)

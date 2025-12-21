@@ -2,40 +2,144 @@
  * UNIQN Mobile - React Query 설정
  *
  * @description Query Client 설정 및 Query Keys 중앙 관리
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * 기능:
+ * - 전역 에러 핸들링 (QueryCache, MutationCache)
+ * - 재시도 가능 에러 자동 재시도
+ * - 토큰 만료 시 자동 처리
+ * - 카테고리별 재시도 조건 설정
  *
  * TODO [출시 전]: 오프라인 지원 설정 (onlineManager)
  * TODO [출시 전]: 네트워크 재연결 시 자동 리페치 최적화
- * TODO [출시 전]: 글로벌 에러 핸들러에서 토스트 알림 연동
  */
 
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
+import {
+  normalizeError,
+  isRetryableError,
+  requiresReauthentication,
+} from '@/errors';
+
+// ============================================================================
+// 재시도 로직
+// ============================================================================
+
+/**
+ * 쿼리/뮤테이션 재시도 판별 함수
+ * 카테고리별로 재시도 가능 여부 결정
+ */
+function shouldRetry(failureCount: number, error: unknown): boolean {
+  // 최대 3회 재시도
+  if (failureCount >= 3) return false;
+
+  // 에러 정규화
+  const appError = normalizeError(error);
+
+  // 인증 관련 에러는 재시도하지 않음 (재로그인 필요)
+  if (requiresReauthentication(appError)) return false;
+
+  // 권한 에러는 재시도 의미 없음
+  if (appError.category === 'permission') return false;
+
+  // 검증 에러는 재시도 의미 없음
+  if (appError.category === 'validation') return false;
+
+  // 비즈니스 에러는 재시도 의미 없음 (이미 지원함, 정원 초과 등)
+  if (appError.category === 'business') return false;
+
+  // 그 외 재시도 가능 에러인지 확인
+  return isRetryableError(appError);
+}
+
+/**
+ * 재시도 딜레이 계산 (지수 백오프 + 지터)
+ */
+function getRetryDelay(attemptIndex: number): number {
+  const baseDelay = 1000; // 1초
+  const maxDelay = 30000; // 최대 30초
+  const exponentialDelay = Math.min(baseDelay * Math.pow(2, attemptIndex), maxDelay);
+  const jitter = Math.random() * 0.3 * exponentialDelay; // 0~30% 지터
+  return exponentialDelay + jitter;
+}
+
+// ============================================================================
+// Query/Mutation Cache 에러 핸들러
+// ============================================================================
+
+/**
+ * QueryCache 설정 - 쿼리 에러 전역 처리
+ */
+const queryCache = new QueryCache({
+  onError: (error, query) => {
+    const appError = normalizeError(error);
+
+    // 에러 로깅
+    logger.error('Query error', appError, {
+      queryKey: query.queryKey,
+      errorCode: appError.code,
+      errorCategory: appError.category,
+    });
+
+    // 토큰 만료 시 처리 (인증 상태 초기화는 AuthStore에서 처리)
+    if (requiresReauthentication(appError)) {
+      logger.warn('Authentication required', {
+        errorCode: appError.code,
+      });
+      // 인증 관련 처리는 useAuth 훅 또는 AuthStore에서 감지
+    }
+  },
+});
+
+/**
+ * MutationCache 설정 - 뮤테이션 에러 전역 처리
+ */
+const mutationCache = new MutationCache({
+  onError: (error, _variables, _context, mutation) => {
+    const appError = normalizeError(error);
+
+    // 에러 로깅
+    logger.error('Mutation error', appError, {
+      mutationKey: mutation.options.mutationKey,
+      errorCode: appError.code,
+      errorCategory: appError.category,
+    });
+
+    // 토큰 만료 시 처리
+    if (requiresReauthentication(appError)) {
+      logger.warn('Authentication required for mutation', {
+        errorCode: appError.code,
+      });
+    }
+  },
+});
 
 // ============================================================================
 // Query Client 설정
 // ============================================================================
 
 export const queryClient = new QueryClient({
+  queryCache,
+  mutationCache,
   defaultOptions: {
     queries: {
       // 5분 동안 데이터를 fresh로 간주
       staleTime: 5 * 60 * 1000,
       // 10분 동안 캐시 유지 (garbage collection time)
       gcTime: 10 * 60 * 1000,
-      // 실패 시 2회 재시도
-      retry: 2,
+      // 카테고리별 재시도 조건
+      retry: shouldRetry,
+      // 지수 백오프 + 지터 딜레이
+      retryDelay: getRetryDelay,
       // 창 포커스 시 리페치 비활성화 (모바일에서는 불필요)
       refetchOnWindowFocus: false,
       // 재연결 시 리페치
       refetchOnReconnect: true,
     },
     mutations: {
-      // 뮤테이션 실패 시 재시도하지 않음
+      // 뮤테이션은 기본적으로 재시도하지 않음 (중복 생성 방지)
       retry: false,
-      onError: (error) => {
-        logger.error('Mutation error', error instanceof Error ? error : undefined);
-      },
     },
   },
 });

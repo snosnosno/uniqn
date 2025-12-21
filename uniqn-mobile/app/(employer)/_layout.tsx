@@ -4,13 +4,13 @@
  */
 
 import { Stack, Redirect } from 'expo-router';
-import { useColorScheme, View, ActivityIndicator, Text } from 'react-native';
+import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuthStore, useHasRole } from '@/stores/authStore';
 
 export default function EmployerLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { isLoading, isAuthenticated, profile } = useAuthStore();
+  const { isLoading, isAuthenticated } = useAuthStore();
   const hasEmployerRole = useHasRole('employer');
 
   // 로딩 중
@@ -71,6 +71,18 @@ export default function EmployerLayout() {
         name="my-postings/[id]/settlements"
         options={{
           title: '정산 관리',
+        }}
+      />
+      <Stack.Screen
+        name="my-postings/create"
+        options={{
+          title: '공고 작성',
+        }}
+      />
+      <Stack.Screen
+        name="my-postings/[id]/edit"
+        options={{
+          title: '공고 수정',
         }}
       />
     </Stack>
