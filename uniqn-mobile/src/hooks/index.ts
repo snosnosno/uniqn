@@ -10,6 +10,7 @@
 // ============================================================================
 
 export { useAppInitialize } from './useAppInitialize';
+export { useVersionCheck, type UseVersionCheckReturn } from './useVersionCheck';
 
 // ============================================================================
 // Auth & Navigation Hooks

@@ -821,11 +821,11 @@ graph LR
 - [ ] useOfflineMutation 훅
 - [ ] 충돌 해결 전략
 
-#### React Query 에러 복구 [P0]
-- [ ] QueryCache onError 설정
-- [ ] MutationCache onError 설정
-- [ ] 토큰 만료 시 자동 갱신
-- [ ] 재시도 조건 설정 (카테고리별)
+#### React Query 에러 복구 [P0] ✅
+- [x] QueryCache onError 설정 - lib/queryClient.ts
+- [x] MutationCache onError 설정 - lib/queryClient.ts
+- [x] 토큰 만료 시 자동 갱신 - requiresReauthentication 처리
+- [x] 재시도 조건 설정 (카테고리별) - shouldRetryError, getRetryDelay
 
 ### 5.4 Analytics [P1] ([16-analytics.md](./16-analytics.md))
 - [x] Firebase Analytics 초기화 - analyticsService.ts (웹 지원, 네이티브 TODO)
@@ -864,17 +864,18 @@ graph LR
 
 ### 5.7 버전 관리 [P0]
 
-#### 앱 버전 관리 [P0]
-- [ ] 시맨틱 버저닝 (MAJOR.MINOR.PATCH)
-- [ ] 버전 정보 앱 내 표시
-- [ ] 빌드 번호 자동 증가 (CI/CD)
-- [ ] CHANGELOG.md 자동 생성
+#### 앱 버전 관리 [P0] ✅
+- [x] 시맨틱 버저닝 (MAJOR.MINOR.PATCH) - constants/version.ts
+- [x] 버전 정보 앱 내 표시 - versionInfo 객체 (displayVersion, fullVersion)
+- [ ] 빌드 번호 자동 증가 (CI/CD) [TODO 출시 전]
+- [ ] CHANGELOG.md 자동 생성 [TODO 출시 전]
 
-#### 강제 업데이트 시스템 [P1]
-- [ ] 최소 지원 버전 관리 (Remote Config)
-- [ ] 강제 업데이트 모달 컴포넌트
-- [ ] 권장 업데이트 모달 (무시 가능)
-- [ ] 앱스토어/플레이스토어 링크
+#### 강제 업데이트 시스템 [P1] ✅
+- [x] 최소 지원 버전 관리 - UPDATE_POLICY (Remote Config 준비됨)
+- [x] 강제 업데이트 모달 컴포넌트 - ForceUpdateModal.tsx
+- [x] 권장 업데이트 모달 (무시 가능) - dismissDays 설정 지원
+- [x] 앱스토어/플레이스토어 링크 - getStoreUrl(), STORE_URLS
+- [x] useVersionCheck 훅 - 버전 체크, 모달 관리, 스토어 이동
 
 ### 5.8 Feature Flag 시스템 [P1]
 
@@ -1184,6 +1185,14 @@ graph LR
 - [Phase 1] formatRelativeTime 함수 추가 (dateUtils.ts) - 상대 시간 표시
 - [Phase 1] 아이콘 추가 - BellIcon, BellSlashIcon, MoonIcon, TrashIcon
 - 진행 상태 요약: Phase 3 (70% → 80%) 업데이트
+
+### 버전 5.10 변경사항 (2025-12-22)
+- [Phase 5] React Query 에러 복구 완료 - QueryCache/MutationCache onError, 재시도 조건
+- [Phase 5] 버전 관리 시스템 완료 - constants/version.ts (시맨틱 버저닝, 업데이트 정책)
+- [Phase 5] useVersionCheck 훅 완료 - 버전 체크, 모달 관리, 앱스토어 이동
+- [Phase 5] ForceUpdateModal 컴포넌트 완료 - 강제/권장 업데이트 모달
+- [Phase 5] constants/index.ts 버전 export 통합
+- 진행 상태 요약: Phase 5 (65% → 75%) 업데이트
 
 ### 버전 5.9 변경사항 (2025-12-22)
 - [Phase 5] CrashlyticsService 완료 - crashlyticsService.ts (에러 기록, breadcrumbs, 사용자 추적)

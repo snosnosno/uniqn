@@ -5,72 +5,24 @@
  */
 
 // ============================================================================
-// 앱 버전 정보 (시맨틱 버저닝)
+// 앱 버전 정보 (version.ts에서 재export)
 // ============================================================================
 
-/**
- * 앱 버전 정보
- *
- * @description 시맨틱 버저닝 (MAJOR.MINOR.PATCH)
- * - MAJOR: 호환되지 않는 API 변경
- * - MINOR: 이전 버전과 호환되는 기능 추가
- * - PATCH: 이전 버전과 호환되는 버그 수정
- */
-export const APP_VERSION = {
-  /** 전체 버전 문자열 */
-  VERSION: '1.0.0',
-  /** 주요 버전 */
-  MAJOR: 1,
-  /** 부수 버전 */
-  MINOR: 0,
-  /** 패치 버전 */
-  PATCH: 0,
-  /** 빌드 번호 (EAS Build에서 자동 증가) */
-  BUILD_NUMBER: 1,
-  /** 빌드 날짜 */
-  BUILD_DATE: '2024-12-21',
-  /** 환경 (development, staging, production) */
-  ENVIRONMENT: __DEV__ ? 'development' : 'production',
-} as const;
-
-/**
- * 최소 지원 버전 (강제 업데이트 기준)
- * Remote Config에서 관리 예정
- */
-export const MIN_SUPPORTED_VERSION = {
-  /** iOS 최소 지원 버전 */
-  IOS: '1.0.0',
-  /** Android 최소 지원 버전 */
-  ANDROID: '1.0.0',
-} as const;
-
-/**
- * 버전 비교 유틸리티
- * @returns -1: a < b, 0: a === b, 1: a > b
- */
-export function compareVersions(a: string, b: string): number {
-  const partsA = a.split('.').map(Number);
-  const partsB = b.split('.').map(Number);
-
-  for (let i = 0; i < 3; i++) {
-    const numA = partsA[i] || 0;
-    const numB = partsB[i] || 0;
-    if (numA > numB) return 1;
-    if (numA < numB) return -1;
-  }
-
-  return 0;
-}
-
-/**
- * 강제 업데이트 필요 여부 확인
- */
-export function requiresUpdate(
-  currentVersion: string,
-  minVersion: string
-): boolean {
-  return compareVersions(currentVersion, minVersion) < 0;
-}
+export {
+  APP_VERSION,
+  BUILD_NUMBER,
+  ENVIRONMENT,
+  BUILD_DATE,
+  RUNTIME_VERSION,
+  UPDATE_POLICY,
+  parseVersion,
+  compareVersions,
+  isVersionAtLeast,
+  checkUpdateRequired,
+  getStoreUrl,
+  versionInfo,
+  type UpdateType,
+} from './version';
 
 // ============================================================================
 // 출석 상태

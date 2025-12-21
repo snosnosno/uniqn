@@ -1,0 +1,257 @@
+/**
+ * UNIQN Mobile - 버전 체크 훅
+ *
+ * @description 앱 버전 확인 및 업데이트 관리
+ * @version 1.0.0
+ *
+ * 주요 기능:
+ * - 앱 시작 시 버전 체크
+ * - 강제/권장 업데이트 모달 표시
+ * - Firebase Remote Config 연동 준비
+ * - 앱스토어 링크 연결
+ */
+
+import { useState, useEffect, useCallback } from 'react';
+import { Linking, Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { logger } from '@/utils/logger';
+import {
+  APP_VERSION,
+  UPDATE_POLICY,
+  checkUpdateRequired,
+  getStoreUrl,
+  type UpdateType,
+} from '@/constants/version';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+export interface VersionCheckResult {
+  /** 업데이트 타입 */
+  updateType: UpdateType;
+  /** 현재 버전 */
+  currentVersion: string;
+  /** 최소 지원 버전 */
+  minimumVersion: string;
+  /** 권장 버전 */
+  recommendedVersion: string;
+  /** 스토어 URL */
+  storeUrl: string;
+}
+
+export interface UseVersionCheckReturn {
+  /** 버전 체크 결과 */
+  result: VersionCheckResult | null;
+  /** 로딩 상태 */
+  isLoading: boolean;
+  /** 에러 */
+  error: Error | null;
+  /** 업데이트 모달 표시 여부 */
+  showUpdateModal: boolean;
+  /** 모달 닫기 (권장 업데이트만 가능) */
+  dismissModal: () => Promise<void>;
+  /** 스토어로 이동 */
+  goToStore: () => Promise<void>;
+  /** 버전 재확인 */
+  recheckVersion: () => Promise<void>;
+}
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const DISMISS_KEY_PREFIX = '@uniqn:update_dismissed_';
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+
+// ============================================================================
+// Hook
+// ============================================================================
+
+/**
+ * 앱 버전 체크 훅
+ *
+ * @example
+ * ```tsx
+ * function App() {
+ *   const { showUpdateModal, result, dismissModal, goToStore } = useVersionCheck();
+ *
+ *   if (showUpdateModal && result) {
+ *     return (
+ *       <UpdateModal
+ *         type={result.updateType}
+ *         onDismiss={result.updateType === 'recommended' ? dismissModal : undefined}
+ *         onUpdate={goToStore}
+ *       />
+ *     );
+ *   }
+ *
+ *   return <MainApp />;
+ * }
+ * ```
+ */
+export function useVersionCheck(): UseVersionCheckReturn {
+  const [result, setResult] = useState<VersionCheckResult | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+
+  /**
+   * 권장 업데이트 무시 여부 확인
+   */
+  const checkDismissed = useCallback(async (): Promise<boolean> => {
+    try {
+      const key = `${DISMISS_KEY_PREFIX}${UPDATE_POLICY.RECOMMENDED_VERSION}`;
+      const dismissedAt = await AsyncStorage.getItem(key);
+
+      if (!dismissedAt) return false;
+
+      const dismissedTime = parseInt(dismissedAt, 10);
+      const expiryTime =
+        dismissedTime + UPDATE_POLICY.RECOMMENDED_DISMISS_DAYS * DAY_IN_MS;
+
+      // 무시 기간이 지났으면 다시 표시
+      if (Date.now() > expiryTime) {
+        await AsyncStorage.removeItem(key);
+        return false;
+      }
+
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  /**
+   * 버전 체크 실행
+   */
+  const checkVersion = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
+
+      // TODO [출시 전]: Firebase Remote Config에서 최신 버전 정보 가져오기
+      // const remoteConfig = await fetchRemoteConfig();
+      // const minimumVersion = remoteConfig.getValue('minimum_version').asString();
+      // const recommendedVersion = remoteConfig.getValue('recommended_version').asString();
+
+      // 현재는 로컬 상수 사용
+      const minimumVersion = UPDATE_POLICY.MINIMUM_VERSION;
+      const recommendedVersion = UPDATE_POLICY.RECOMMENDED_VERSION;
+
+      const updateType = checkUpdateRequired(APP_VERSION);
+      const storeUrl = getStoreUrl();
+
+      const checkResult: VersionCheckResult = {
+        updateType,
+        currentVersion: APP_VERSION,
+        minimumVersion,
+        recommendedVersion,
+        storeUrl,
+      };
+
+      setResult(checkResult);
+
+      // 업데이트 모달 표시 여부 결정
+      if (updateType === 'required') {
+        // 강제 업데이트: 항상 표시
+        setShowUpdateModal(true);
+        logger.info('강제 업데이트 필요', {
+          currentVersion: APP_VERSION,
+          minimumVersion,
+        });
+      } else if (updateType === 'recommended') {
+        // 권장 업데이트: 무시하지 않았으면 표시
+        const isDismissed = await checkDismissed();
+        setShowUpdateModal(!isDismissed);
+
+        if (!isDismissed) {
+          logger.info('권장 업데이트 가능', {
+            currentVersion: APP_VERSION,
+            recommendedVersion,
+          });
+        }
+      } else {
+        setShowUpdateModal(false);
+      }
+    } catch (err) {
+      const checkError =
+        err instanceof Error ? err : new Error('버전 체크 실패');
+      setError(checkError);
+      logger.error('버전 체크 실패', checkError);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [checkDismissed]);
+
+  /**
+   * 권장 업데이트 모달 닫기
+   */
+  const dismissModal = useCallback(async () => {
+    if (result?.updateType !== 'recommended') {
+      // 강제 업데이트는 닫을 수 없음
+      logger.warn('강제 업데이트 모달은 닫을 수 없습니다');
+      return;
+    }
+
+    try {
+      const key = `${DISMISS_KEY_PREFIX}${UPDATE_POLICY.RECOMMENDED_VERSION}`;
+      await AsyncStorage.setItem(key, Date.now().toString());
+      setShowUpdateModal(false);
+
+      logger.info('권장 업데이트 무시', {
+        dismissDays: UPDATE_POLICY.RECOMMENDED_DISMISS_DAYS,
+      });
+    } catch (err) {
+      logger.error('업데이트 무시 저장 실패', err as Error);
+    }
+  }, [result?.updateType]);
+
+  /**
+   * 앱스토어로 이동
+   */
+  const goToStore = useCallback(async () => {
+    const storeUrl = getStoreUrl();
+
+    try {
+      const canOpen = await Linking.canOpenURL(storeUrl);
+
+      if (canOpen) {
+        await Linking.openURL(storeUrl);
+        logger.info('앱스토어 이동', { platform: Platform.OS, url: storeUrl });
+      } else {
+        // 웹 URL로 폴백
+        const webUrl = UPDATE_POLICY.STORE_URLS.web;
+        await Linking.openURL(webUrl);
+        logger.info('웹사이트로 이동', { url: webUrl });
+      }
+    } catch (err) {
+      logger.error('스토어 이동 실패', err as Error, { storeUrl });
+      throw err;
+    }
+  }, []);
+
+  /**
+   * 버전 재확인
+   */
+  const recheckVersion = useCallback(async () => {
+    await checkVersion();
+  }, [checkVersion]);
+
+  // 초기 버전 체크
+  useEffect(() => {
+    checkVersion();
+  }, [checkVersion]);
+
+  return {
+    result,
+    isLoading,
+    error,
+    showUpdateModal,
+    dismissModal,
+    goToStore,
+    recheckVersion,
+  };
+}
+
+export default useVersionCheck;
