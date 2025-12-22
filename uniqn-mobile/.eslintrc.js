@@ -102,5 +102,6 @@ module.exports = {
     'ios/',
     '*.d.ts',
     'coverage/',
+    'functions/',
   ],
 };

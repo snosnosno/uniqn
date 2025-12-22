@@ -100,3 +100,21 @@ export {
   type RetryOptions,
   type RetryResult,
 } from './withRetry';
+
+// 보안 유틸리티
+export {
+  XSS_PATTERNS,
+  SQL_INJECTION_PATTERNS,
+  hasXSSPattern,
+  hasSQLInjectionPattern,
+  xssValidation,
+  isSafeText,
+  sanitizeInput,
+  escapeHtml,
+  isSafeUrl,
+  isValidPhoneNumber,
+  isValidEmail,
+  secureLog,
+  isRateLimited,
+  getPasswordStrength,
+} from './security';

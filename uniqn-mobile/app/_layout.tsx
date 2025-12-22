@@ -14,6 +14,7 @@ import { queryClient } from '@/lib/queryClient';
 import { ToastManager, ModalManager, ErrorState } from '@/components/ui';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
+import { useNavigationTracking } from '@/hooks/useNavigationTracking';
 
 /**
  * 메인 네비게이션 컴포넌트
@@ -25,6 +26,9 @@ function MainNavigator() {
 
   // 앱 전역 인증 가드 - 초기화 완료 후에만 실행됨
   useAuthGuard();
+
+  // 화면 전환 추적 (Analytics + Crashlytics)
+  useNavigationTracking();
 
   return (
     <>

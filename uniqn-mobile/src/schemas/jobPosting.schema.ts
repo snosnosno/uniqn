@@ -6,14 +6,7 @@
  */
 
 import { z } from 'zod';
-
-/**
- * XSS 방지 검증
- */
-const xssValidation = (val: string) => {
-  const dangerous = /<script|javascript:|on\w+=/i;
-  return !dangerous.test(val);
-};
+import { xssValidation } from '@/utils/security';
 
 /**
  * 공고 타입 스키마

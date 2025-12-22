@@ -495,6 +495,41 @@ export async function setScreen(screenName: string): Promise<void> {
   await setAttribute('current_screen', screenName);
 }
 
+/**
+ * Breadcrumb 남기기 (이벤트 추적용)
+ * 크래시 발생 시 최근 이벤트 목록도 함께 전송됨
+ */
+export async function leaveBreadcrumb(
+  event: string,
+  data?: Record<string, string | number | boolean | undefined>
+): Promise<void> {
+  if (!isEnabled) return;
+
+  try {
+    // 데이터 직렬화
+    const dataStr = data
+      ? Object.entries(data)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => `${k}=${v}`)
+          .join(', ')
+      : '';
+
+    const message = dataStr ? `${event}: ${dataStr}` : event;
+    addBreadcrumb(message);
+
+    if (Platform.OS !== 'web' && crashlyticsInstance) {
+      // TODO [출시 전]: 아래 주석 해제
+      // crashlyticsInstance.log(message);
+    }
+
+    if (__DEV__) {
+      logger.debug('[Crashlytics Breadcrumb]', { event, data });
+    }
+  } catch (_err) {
+    // 조용히 처리
+  }
+}
+
 // ============================================================================
 // Export
 // ============================================================================
@@ -513,6 +548,7 @@ export const crashlyticsService = {
 
   // 로깅
   log,
+  leaveBreadcrumb,
   getBreadcrumbs,
   clearBreadcrumbs,
 

@@ -26,6 +26,12 @@ export {
   useIsStaff,
 } from './useAuthGuard';
 
+export {
+  useNavigationTracking,
+  useCurrentScreen,
+  useNavigationCount,
+} from './useNavigationTracking';
+
 // ============================================================================
 // Job & Application Hooks
 // ============================================================================
