@@ -30,7 +30,7 @@ import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
 } from '@/errors/BusinessErrors';
-import type { WorkLog, AttendanceStatus, PayrollStatus } from '@/types';
+import type { WorkLog, PayrollStatus } from '@/types';
 
 // ============================================================================
 // Constants
@@ -41,7 +41,7 @@ const QR_CODES_COLLECTION = 'qrCodes';
 const DEFAULT_PAGE_SIZE = 50;
 
 /** QR 코드 유효 시간 (5분) */
-const QR_VALIDITY_DURATION_MS = 5 * 60 * 1000;
+const _QR_VALIDITY_DURATION_MS = 5 * 60 * 1000;
 
 // ============================================================================
 // Types

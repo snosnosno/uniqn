@@ -15,7 +15,7 @@
  * - uniqn://my-applications - 내 지원 내역
  */
 
-import { Platform, Linking } from 'react-native';
+import { Linking } from 'react-native';
 import * as ExpoLinking from 'expo-linking';
 import { router } from 'expo-router';
 import { logger } from '@/utils/logger';
@@ -373,7 +373,8 @@ export async function navigateToDeepLink(url: string): Promise<boolean> {
       route_name: parsed.route.name,
     });
 
-    // Expo Router로 네비게이션
+    // Expo Router로 네비게이션 (동적 경로는 타입 체크 불가)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.push(expoPath as any);
 
     logger.info('딥링크 네비게이션 성공', {
@@ -439,6 +440,7 @@ export async function navigateFromNotification(
       route_name: route.name,
     });
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     router.push(expoPath as any);
 
     logger.info('알림 네비게이션 성공', { type, route: route.name });

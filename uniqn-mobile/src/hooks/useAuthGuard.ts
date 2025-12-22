@@ -5,9 +5,15 @@
  * @version 1.0.0
  */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useRouter, useSegments, usePathname } from 'expo-router';
-import { useAuthStore, hasPermission } from '@/stores/authStore';
+import {
+  useAuthStore,
+  hasPermission,
+  selectIsAuthenticated,
+  selectIsLoading,
+  selectProfile,
+} from '@/stores/authStore';
 import type { UserRole } from '@/types';
 import { logger } from '@/utils/logger';
 
@@ -78,8 +84,15 @@ export function useAuthGuard(): void {
   const segments = useSegments();
   const pathname = usePathname();
 
-  const { isAuthenticated, isLoading, profile } = useAuthStore();
+  // Selector를 사용하여 필요한 상태만 구독 (무한 루프 방지)
+  const isAuthenticated = useAuthStore(selectIsAuthenticated);
+  const isLoading = useAuthStore(selectIsLoading);
+  const profile = useAuthStore(selectProfile);
   const userRole = profile?.role ?? null;
+
+  // router를 ref로 저장하여 의존성 배열에서 제외 (안정적인 참조)
+  const routerRef = useRef(router);
+  routerRef.current = router;
 
   useEffect(() => {
     // 로딩 중에는 처리하지 않음
@@ -94,7 +107,7 @@ export function useAuthGuard(): void {
           component: 'useAuthGuard',
           pathname,
         });
-        router.replace('/(app)/(tabs)');
+        routerRef.current.replace('/(app)/(tabs)');
       }
       return;
     }
@@ -110,7 +123,7 @@ export function useAuthGuard(): void {
         component: 'useAuthGuard',
         pathname,
       });
-      router.replace(config.redirectTo || '/(app)/(tabs)');
+      routerRef.current.replace(config.redirectTo || '/(app)/(tabs)');
       return;
     }
 
@@ -121,7 +134,7 @@ export function useAuthGuard(): void {
         pathname,
         routeGroup,
       });
-      router.replace('/(auth)/login');
+      routerRef.current.replace('/(auth)/login');
       return;
     }
 
@@ -136,13 +149,15 @@ export function useAuthGuard(): void {
 
       // 권한이 부족하면 가능한 가장 높은 권한의 페이지로 리다이렉트
       if (isAuthenticated) {
-        router.replace('/(app)/(tabs)');
+        routerRef.current.replace('/(app)/(tabs)');
       } else {
-        router.replace('/(auth)/login');
+        routerRef.current.replace('/(auth)/login');
       }
       return;
     }
-  }, [isAuthenticated, isLoading, userRole, segments, pathname, router]);
+    // router를 의존성에서 제외하여 무한 루프 방지
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated, isLoading, userRole, segments, pathname]);
 }
 
 // ============================================================================

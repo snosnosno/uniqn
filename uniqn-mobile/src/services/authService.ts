@@ -27,7 +27,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { auth, db } from '@/lib/firebase';
+import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { AuthError, ERROR_CODES, mapFirebaseError } from '@/errors';
 import type { UserRole } from '@/types';
@@ -77,7 +77,7 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
     logger.info('로그인 시도', { email: data.email });
 
     const userCredential = await signInWithEmailAndPassword(
-      auth,
+      getFirebaseAuth(),
       data.email,
       data.password
     );
@@ -91,8 +91,8 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       });
     }
 
-    // 비활성화된 계정 체크
-    if (!profile.isActive) {
+    // 비활성화된 계정 체크 (명시적으로 false인 경우만)
+    if (profile.isActive === false) {
       throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_DISABLED, {
         userMessage: '비활성화된 계정입니다. 고객센터에 문의해주세요',
       });
@@ -119,7 +119,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
     // 1. Firebase Auth 사용자 생성
     const userCredential = await createUserWithEmailAndPassword(
-      auth,
+      getFirebaseAuth(),
       data.email,
       data.password
     );
@@ -154,7 +154,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       updatedAt: serverTimestamp() as Timestamp,
     };
 
-    await setDoc(doc(db, 'users', user.uid), profile);
+    await setDoc(doc(getFirebaseDb(), 'users', user.uid), profile);
 
     logger.info('회원가입 성공', { uid: user.uid, role: data.role });
 
@@ -174,7 +174,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 export async function signOut(): Promise<void> {
   try {
     logger.info('로그아웃 시도');
-    await firebaseSignOut(auth);
+    await firebaseSignOut(getFirebaseAuth());
     logger.info('로그아웃 성공');
   } catch (error) {
     logger.error('로그아웃 실패', error as Error);
@@ -188,7 +188,7 @@ export async function signOut(): Promise<void> {
 export async function resetPassword(email: string): Promise<void> {
   try {
     logger.info('비밀번호 재설정 이메일 전송', { email });
-    await sendPasswordResetEmail(auth, email);
+    await sendPasswordResetEmail(getFirebaseAuth(), email);
     logger.info('비밀번호 재설정 이메일 전송 성공', { email });
   } catch (error) {
     logger.error('비밀번호 재설정 실패', error as Error, { email });
@@ -201,7 +201,7 @@ export async function resetPassword(email: string): Promise<void> {
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   try {
-    const userDoc = await getDoc(doc(db, 'users', uid));
+    const userDoc = await getDoc(doc(getFirebaseDb(), 'users', uid));
 
     if (!userDoc.exists()) {
       return null;
@@ -224,7 +224,7 @@ export async function updateUserProfile(
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });
 
-    await updateDoc(doc(db, 'users', uid), {
+    await updateDoc(doc(getFirebaseDb(), 'users', uid), {
       ...updates,
       updatedAt: serverTimestamp(),
     });
@@ -241,7 +241,7 @@ export async function updateUserProfile(
  */
 export async function reauthenticate(password: string): Promise<void> {
   try {
-    const user = auth.currentUser;
+    const user = getFirebaseAuth().currentUser;
 
     if (!user || !user.email) {
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND);
@@ -261,7 +261,7 @@ export async function reauthenticate(password: string): Promise<void> {
  * 현재 로그인된 사용자 가져오기
  */
 export function getCurrentUser(): FirebaseUser | null {
-  return auth.currentUser;
+  return getFirebaseAuth().currentUser;
 }
 
 /**
@@ -270,7 +270,7 @@ export function getCurrentUser(): FirebaseUser | null {
 export function onAuthStateChanged(
   callback: (user: FirebaseUser | null) => void
 ): () => void {
-  return auth.onAuthStateChanged(callback);
+  return getFirebaseAuth().onAuthStateChanged(callback);
 }
 
 // ============================================================================

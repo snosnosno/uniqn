@@ -9,19 +9,36 @@
 // Firebase Mock - Must be first to prevent initialization
 // ============================================================================
 
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  auth: {},
-  storage: {},
-  functions: {},
-}));
-
 import { renderHook, act, waitFor } from '@testing-library/react-native';
 import {
   createMockWorkLog,
   createMockJobPosting,
   resetCounters,
 } from '../mocks/factories';
+
+// ============================================================================
+// Import After Mocks
+// ============================================================================
+
+import {
+  useWorkLogsByJobPosting,
+  useSettlementSummary,
+  useMySettlementSummary,
+  useCalculateSettlement,
+  useUpdateWorkTime,
+  useSettleWorkLog,
+  useBulkSettlement,
+  useUpdateSettlementStatus,
+  useSettlement,
+  useSettlementDashboard,
+} from '@/hooks/useSettlement';
+
+jest.mock('@/lib/firebase', () => ({
+  db: {},
+  auth: {},
+  storage: {},
+  functions: {},
+}));
 
 // ============================================================================
 // Mock Services
@@ -186,23 +203,6 @@ jest.mock('@/lib/queryClient', () => ({
     standard: 1000 * 60 * 5, // 5 minutes
   },
 }));
-
-// ============================================================================
-// Import After Mocks
-// ============================================================================
-
-import {
-  useWorkLogsByJobPosting,
-  useSettlementSummary,
-  useMySettlementSummary,
-  useCalculateSettlement,
-  useUpdateWorkTime,
-  useSettleWorkLog,
-  useBulkSettlement,
-  useUpdateSettlementStatus,
-  useSettlement,
-  useSettlementDashboard,
-} from '@/hooks/useSettlement';
 
 // ============================================================================
 // Test Utilities

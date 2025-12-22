@@ -15,37 +15,16 @@ import { ToastManager, ModalManager, ErrorState } from '@/components/ui';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 
-function AppContent() {
+/**
+ * 메인 네비게이션 컴포넌트
+ * 초기화 완료 후 렌더링되므로 useAuthGuard 안전하게 호출 가능
+ */
+function MainNavigator() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  // isInitialized는 추후 앱 상태 확인에 사용 예정
-  const { isInitialized: _isInitialized, isLoading, error, retry } = useAppInitialize();
 
-  // 앱 전역 인증 가드
+  // 앱 전역 인증 가드 - 초기화 완료 후에만 실행됨
   useAuthGuard();
-
-  // 초기화 중 로딩 표시
-  if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
-        <Text className="mt-4 text-gray-600 dark:text-gray-400">앱 로딩 중...</Text>
-      </View>
-    );
-  }
-
-  // 초기화 실패 시 에러 표시
-  if (error) {
-    return (
-      <View className="flex-1 bg-white dark:bg-gray-900">
-        <ErrorState
-          error={error}
-          title="앱을 불러올 수 없습니다"
-          onRetry={retry}
-        />
-      </View>
-    );
-  }
 
   return (
     <>
@@ -68,6 +47,40 @@ function AppContent() {
       <ModalManager />
     </>
   );
+}
+
+/**
+ * 앱 콘텐츠 컴포넌트
+ * 초기화 상태에 따라 로딩/에러/메인 화면 표시
+ */
+function AppContent() {
+  const { isInitialized, isLoading, error, retry } = useAppInitialize();
+
+  // 초기화 중 로딩 표시
+  if (isLoading || !isInitialized) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text className="mt-4 text-gray-600 dark:text-gray-400">앱 로딩 중...</Text>
+      </View>
+    );
+  }
+
+  // 초기화 실패 시 에러 표시
+  if (error) {
+    return (
+      <View className="flex-1 bg-white dark:bg-gray-900">
+        <ErrorState
+          error={error}
+          title="앱을 불러올 수 없습니다"
+          onRetry={retry}
+        />
+      </View>
+    );
+  }
+
+  // 초기화 완료 후 메인 네비게이터 렌더링
+  return <MainNavigator />;
 }
 
 export default function RootLayout() {

@@ -12,6 +12,15 @@ import {
 } from '../mocks/factories';
 import type { QRCodeScanResult, QRCodeValidationResult } from '@/types';
 
+// Import after mocks
+import {
+  useCreateQRCode,
+  useQRCodeScanner,
+  useValidateQRCode,
+  useQRScannerModal,
+  useQRDisplayModal,
+} from '@/hooks/useQRCode';
+
 // Mock services
 const mockCreateQRCode = jest.fn();
 const mockValidateQRCode = jest.fn();
@@ -90,15 +99,6 @@ jest.mock('@tanstack/react-query', () => ({
     };
   }),
 }));
-
-// Import after mocks
-import {
-  useCreateQRCode,
-  useQRCodeScanner,
-  useValidateQRCode,
-  useQRScannerModal,
-  useQRDisplayModal,
-} from '@/hooks/useQRCode';
 
 describe('useQRCode Hooks', () => {
   beforeEach(() => {

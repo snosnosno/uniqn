@@ -13,8 +13,6 @@ import {
   query,
   where,
   orderBy,
-  updateDoc,
-  writeBatch,
   runTransaction,
   serverTimestamp,
   Timestamp,
@@ -183,7 +181,7 @@ function calculateHoursWorked(
 /**
  * 날짜 문자열을 YYYY-MM-DD 형식으로 변환
  */
-function formatDateString(date: Date): string {
+function _formatDateString(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
@@ -223,7 +221,7 @@ export async function getWorkLogsByJobPosting(
 
     // 2. 근무 기록 쿼리 생성
     const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
-    let q = query(
+    const q = query(
       workLogsRef,
       where('eventId', '==', jobPostingId),
       orderBy('date', 'desc')

@@ -11,6 +11,20 @@ import {
 } from '../mocks/factories';
 import type { CreateJobPostingInput, StaffRole } from '@/types';
 
+// Import after mocks
+import {
+  createJobPosting,
+  updateJobPosting,
+  deleteJobPosting,
+  closeJobPosting,
+  reopenJobPosting,
+  saveDraft,
+  getDraft,
+  deleteDraft,
+  getMyJobPostingStats,
+  bulkUpdateJobPostingStatus,
+} from '@/services/jobManagementService';
+
 // ============================================================================
 // Firebase Mocks
 // ============================================================================
@@ -86,20 +100,6 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
 }));
-
-// Import after mocks
-import {
-  createJobPosting,
-  updateJobPosting,
-  deleteJobPosting,
-  closeJobPosting,
-  reopenJobPosting,
-  saveDraft,
-  getDraft,
-  deleteDraft,
-  getMyJobPostingStats,
-  bulkUpdateJobPostingStatus,
-} from '@/services/jobManagementService';
 
 // ============================================================================
 // Test Utilities

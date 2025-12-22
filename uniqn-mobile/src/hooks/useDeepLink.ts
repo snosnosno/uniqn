@@ -10,10 +10,9 @@
  */
 
 import { useEffect, useCallback, useRef } from 'react';
-import { useRouter, useSegments } from 'expo-router';
+// expo-router is used via deepLinkService
 import {
   setupDeepLinkListener,
-  getInitialDeepLink,
   navigateToDeepLink,
   navigateFromNotification,
   parseDeepLink,
@@ -34,7 +33,7 @@ import type { NotificationType, NotificationData } from '@/types/notification';
 // Types
 // ============================================================================
 
-interface DeepLinkState {
+interface _DeepLinkState {
   /** 마지막으로 처리된 딥링크 URL */
   lastUrl: string | null;
   /** 마지막 파싱 결과 */
@@ -198,7 +197,7 @@ export function useNotificationNavigation(): UseNotificationNavigationResult {
       if (!notification.isRead) {
         try {
           await markAsRead(notification.id);
-        } catch (error) {
+        } catch (_error) {
           // 읽음 처리 실패해도 네비게이션은 진행
           logger.warn('알림 읽음 처리 실패', { notificationId: notification.id });
         }
@@ -256,8 +255,6 @@ export function useNotificationNavigation(): UseNotificationNavigationResult {
  * ```
  */
 export function useDeepLinkNavigation() {
-  const router = useRouter();
-
   // 라우트로 네비게이션
   const navigate = useCallback((route: DeepLinkRoute) => {
     const url = createDeepLink(route);

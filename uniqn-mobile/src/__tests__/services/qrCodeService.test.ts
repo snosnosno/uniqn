@@ -14,6 +14,13 @@ import {
   resetCounters,
 } from '../mocks/factories';
 
+// Import after mocks
+import {
+  createQRCode,
+  validateQRCode,
+  getQRCodeById,
+} from '@/services/qrCodeService';
+
 // Mock Firebase
 const mockSetDoc = jest.fn();
 const mockGetDoc = jest.fn();
@@ -65,13 +72,6 @@ jest.mock('@/errors/BusinessErrors', () => ({
     }
   },
 }));
-
-// Import after mocks
-import {
-  createQRCode,
-  validateQRCode,
-  getQRCodeById,
-} from '@/services/qrCodeService';
 
 describe('qrCodeService', () => {
   beforeEach(() => {

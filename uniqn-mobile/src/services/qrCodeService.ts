@@ -6,7 +6,6 @@
  */
 
 import {
-  collection,
   doc,
   getDoc,
   setDoc,
@@ -15,10 +14,6 @@ import {
 import { db } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
-import {
-  InvalidQRCodeError,
-  ExpiredQRCodeError,
-} from '@/errors/BusinessErrors';
 import type {
   QRCodeData,
   QRCodeAction,

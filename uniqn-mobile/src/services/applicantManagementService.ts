@@ -15,9 +15,7 @@ import {
   orderBy,
   runTransaction,
   serverTimestamp,
-  Timestamp,
   increment,
-  writeBatch,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logger } from '@/utils/logger';

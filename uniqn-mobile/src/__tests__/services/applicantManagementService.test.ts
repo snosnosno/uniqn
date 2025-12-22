@@ -11,6 +11,18 @@ import {
   resetCounters,
 } from '../mocks/factories';
 
+// Import after mocks
+import {
+  getApplicantsByJobPosting,
+  confirmApplication,
+  rejectApplication,
+  bulkConfirmApplications,
+  addToWaitlist,
+  promoteFromWaitlist,
+  markApplicationAsRead,
+  getApplicantStatsByRole,
+} from '@/services/applicantManagementService';
+
 // ============================================================================
 // Firebase Mocks
 // ============================================================================
@@ -85,18 +97,6 @@ jest.mock('@/errors', () => ({
     }
   },
 }));
-
-// Import after mocks
-import {
-  getApplicantsByJobPosting,
-  confirmApplication,
-  rejectApplication,
-  bulkConfirmApplications,
-  addToWaitlist,
-  promoteFromWaitlist,
-  markApplicationAsRead,
-  getApplicantStatsByRole,
-} from '@/services/applicantManagementService';
 
 // ============================================================================
 // Test Utilities

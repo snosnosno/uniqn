@@ -17,7 +17,7 @@
 
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
-import { AppError, type ErrorCategory } from '@/errors/AppError';
+import { AppError } from '@/errors/AppError';
 
 // ============================================================================
 // Types
@@ -66,7 +66,7 @@ export interface CrashlyticsUser {
 
 let isInitialized = false;
 let isEnabled = true;
-let crashlyticsInstance: unknown = null;
+const crashlyticsInstance: unknown = null;
 let currentUser: CrashlyticsUser = {};
 const customAttributes: CrashlyticsAttributes = {};
 const breadcrumbs: string[] = [];
@@ -182,10 +182,10 @@ export async function recordError(
       crashlyticsInstance.recordError(error);
       */
     }
-  } catch (err) {
+  } catch (_err) {
     // Crashlytics 에러는 조용히 처리
     if (__DEV__) {
-      console.error('[Crashlytics] recordError failed', err);
+      console.error('[Crashlytics] recordError failed', _err);
     }
   }
 }
@@ -224,9 +224,9 @@ export async function recordFatalError(
       crashlyticsInstance.recordError(error);
       */
     }
-  } catch (err) {
+  } catch (_err) {
     if (__DEV__) {
-      console.error('[Crashlytics] recordFatalError failed', err);
+      console.error('[Crashlytics] recordFatalError failed', _err);
     }
   }
 }
@@ -250,7 +250,7 @@ export async function log(message: string): Promise<void> {
       // TODO [출시 전]: 아래 주석 해제
       // crashlyticsInstance.log(message);
     }
-  } catch (err) {
+  } catch (_err) {
     // 조용히 처리
   }
 }
@@ -268,7 +268,7 @@ export async function setAttribute(key: string, value: string): Promise<void> {
       // TODO [출시 전]: 아래 주석 해제
       // crashlyticsInstance.setAttribute(key, value);
     }
-  } catch (err) {
+  } catch (_err) {
     // 조용히 처리
   }
 }
@@ -288,7 +288,7 @@ export async function setAttributes(attributes: CrashlyticsAttributes): Promise<
       // TODO [출시 전]: 아래 주석 해제
       // crashlyticsInstance.setAttributes(attributes);
     }
-  } catch (err) {
+  } catch (_err) {
     // 조용히 처리
   }
 }
@@ -308,7 +308,7 @@ export async function setUserId(userId: string | null): Promise<void> {
     if (__DEV__) {
       logger.debug('Crashlytics User ID 설정', { userId: userId ?? undefined });
     }
-  } catch (err) {
+  } catch (_err) {
     // 조용히 처리
   }
 }
@@ -332,7 +332,7 @@ export async function setUser(user: CrashlyticsUser): Promise<void> {
     if (__DEV__) {
       logger.debug('Crashlytics User 설정', { user });
     }
-  } catch (err) {
+  } catch (_err) {
     // 조용히 처리
   }
 }
@@ -352,7 +352,7 @@ export async function clearUser(): Promise<void> {
     if (__DEV__) {
       logger.debug('Crashlytics User 초기화');
     }
-  } catch (err) {
+  } catch (_err) {
     // 조용히 처리
   }
 }

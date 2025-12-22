@@ -376,7 +376,7 @@ export function createRetryable<T>(
  */
 export function retryOnErrors<T>(
   fn: () => Promise<T>,
-  errorTypes: Array<new (...args: unknown[]) => Error>,
+  errorTypes: (new (...args: unknown[]) => Error)[],
   options: Omit<RetryOptions, 'shouldRetry'> = {}
 ): Promise<T> {
   return withRetry(fn, {

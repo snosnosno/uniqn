@@ -9,19 +9,35 @@
 // Firebase Mock - Must be first to prevent initialization
 // ============================================================================
 
-jest.mock('@/lib/firebase', () => ({
-  db: {},
-  auth: {},
-  storage: {},
-  functions: {},
-}));
-
 import { renderHook, act } from '@testing-library/react-native';
 import {
   createMockApplication,
   createMockJobPosting,
   resetCounters,
 } from '../mocks/factories';
+
+// ============================================================================
+// Import After Mocks
+// ============================================================================
+
+import {
+  useApplicantsByJobPosting,
+  useApplicantStats,
+  useConfirmApplication,
+  useRejectApplication,
+  useBulkConfirmApplications,
+  useAddToWaitlist,
+  usePromoteFromWaitlist,
+  useMarkAsRead,
+  useApplicantManagement,
+} from '@/hooks/useApplicantManagement';
+
+jest.mock('@/lib/firebase', () => ({
+  db: {},
+  auth: {},
+  storage: {},
+  functions: {},
+}));
 
 // ============================================================================
 // Mock Services
@@ -187,22 +203,6 @@ jest.mock('@/lib/queryClient', () => ({
     standard: 1000 * 60 * 5, // 5 minutes
   },
 }));
-
-// ============================================================================
-// Import After Mocks
-// ============================================================================
-
-import {
-  useApplicantsByJobPosting,
-  useApplicantStats,
-  useConfirmApplication,
-  useRejectApplication,
-  useBulkConfirmApplications,
-  useAddToWaitlist,
-  usePromoteFromWaitlist,
-  useMarkAsRead,
-  useApplicantManagement,
-} from '@/hooks/useApplicantManagement';
 
 // ============================================================================
 // Test Utilities

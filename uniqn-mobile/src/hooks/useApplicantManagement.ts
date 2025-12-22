@@ -363,7 +363,7 @@ export function useApplicantManagement(jobPostingId: string) {
       result = result.sort((a, b) => {
         let comparison = 0;
         switch (filters.sortBy) {
-          case 'appliedAt':
+          case 'appliedAt': {
             const aTime = a.createdAt
               ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate()).getTime()
               : 0;
@@ -372,6 +372,7 @@ export function useApplicantManagement(jobPostingId: string) {
               : 0;
             comparison = aTime - bTime;
             break;
+          }
           case 'name':
             comparison = (a.applicantName || '').localeCompare(b.applicantName || '');
             break;

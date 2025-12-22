@@ -16,7 +16,7 @@
  * TODO [출시 전]: 네트워크 상태 확인 로직 추가
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
@@ -49,12 +49,21 @@ export function useAppInitialize(): UseAppInitializeReturn {
     error: null,
   });
 
-  const { initialize: initializeAuth, checkAuthState } = useAuthStore();
+  // 무한 루프 방지를 위해 초기화 실행 여부 추적
+  const isInitializing = useRef(false);
 
   /**
    * 앱 초기화 수행
+   * NOTE: useAuthStore.getState()를 사용하여 안정적인 함수 참조 획득
+   * (destructuring으로 가져오면 매 렌더마다 새 참조가 생성되어 무한 루프 발생)
    */
   const initialize = useCallback(async () => {
+    // 이미 초기화 중이면 중복 실행 방지
+    if (isInitializing.current) {
+      return;
+    }
+    isInitializing.current = true;
+
     logger.info('앱 초기화 시작', { component: 'useAppInitialize' });
 
     setState((prev) => ({ ...prev, isLoading: true, error: null }));
@@ -89,10 +98,11 @@ export function useAppInitialize(): UseAppInitializeReturn {
       logger.debug('Firebase 초기화 완료', { component: 'useAppInitialize' });
 
       // 5. 인증 상태 초기화 (복원된 상태 활용)
-      await initializeAuth();
+      // getState()로 안정적인 함수 참조 획득
+      await useAuthStore.getState().initialize();
 
       // 6. 인증 상태 확인 (Firebase Auth 리스너 등록)
-      await checkAuthState();
+      await useAuthStore.getState().checkAuthState();
 
       // 7. 기타 초기화 작업 (필요 시 추가)
       // - 폰트 로딩
@@ -118,8 +128,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
     } finally {
       // 스플래시 화면 숨기기
       await SplashScreen.hideAsync();
+      isInitializing.current = false;
     }
-  }, [initializeAuth, checkAuthState]);
+  }, []); // 의존성 배열 비움 - getState()는 안정적인 참조
 
   /**
    * 재시도
@@ -140,7 +151,8 @@ export function useAppInitialize(): UseAppInitializeReturn {
       (nextAppState: AppStateStatus) => {
         if (nextAppState === 'active' && state.isInitialized) {
           logger.debug('앱 포그라운드 복귀', { component: 'useAppInitialize' });
-          checkAuthState();
+          // getState()로 안정적인 함수 참조 획득
+          useAuthStore.getState().checkAuthState();
         }
       }
     );
@@ -148,7 +160,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
     return () => {
       subscription.remove();
     };
-  }, [state.isInitialized, checkAuthState]);
+  }, [state.isInitialized]);
 
   return {
     ...state,

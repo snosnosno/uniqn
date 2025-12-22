@@ -9,12 +9,27 @@ import { useState, useCallback } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Timestamp } from 'firebase/firestore';
 import { Divider } from '@/components/ui';
 import { LoginForm, SocialLoginButtons } from '@/components/auth';
 import { login, signInWithApple, signInWithGoogle, signInWithKakao } from '@/services';
 import { useToastStore } from '@/stores/toastStore';
+import { useAuthStore, type UserProfile as StoreUserProfile } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import type { LoginFormData } from '@/schemas';
+
+/**
+ * Timestamp를 Date로 변환하는 헬퍼 함수
+ */
+function toDate(value: Timestamp | Date | unknown): Date {
+  if (value instanceof Timestamp) {
+    return value.toDate();
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  return new Date();
+}
 
 type SocialProvider = 'apple' | 'google' | 'kakao';
 
@@ -22,6 +37,7 @@ export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<SocialProvider | null>(null);
   const { addToast } = useToastStore();
+  const { setUser, setProfile } = useAuthStore();
 
   // 이메일 로그인
   const handleLogin = useCallback(async (data: LoginFormData) => {
@@ -29,6 +45,21 @@ export default function LoginScreen() {
     try {
       const result = await login(data);
       if (result.user) {
+        // authStore 업데이트 (Timestamp → Date 변환)
+        setUser(result.user);
+        const storeProfile: StoreUserProfile = {
+          uid: result.profile.uid,
+          email: result.profile.email,
+          name: result.profile.name,
+          nickname: result.profile.nickname,
+          phone: result.profile.phone,
+          role: result.profile.role,
+          photoURL: result.profile.photoURL,
+          createdAt: toDate(result.profile.createdAt),
+          updatedAt: toDate(result.profile.updatedAt),
+        };
+        setProfile(storeProfile);
+
         logger.info('로그인 성공', { userId: result.user.uid });
         addToast({ type: 'success', message: '로그인되었습니다.' });
         router.replace('/(app)/(tabs)');
@@ -42,7 +73,7 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, setUser, setProfile]);
 
   // Apple 로그인
   const handleAppleLogin = useCallback(async () => {

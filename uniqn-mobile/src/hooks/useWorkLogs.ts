@@ -22,7 +22,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
-import type { WorkLog } from '@/types';
+// WorkLog type is used by the service functions
 
 // ============================================================================
 // Types
@@ -205,7 +205,7 @@ export function useMonthlyPayroll(year: number, month: number, enabled = true) {
  */
 export function useCheckIn(options: UseCheckInOutOptions = {}) {
   const { onSuccess, onError } = options;
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);
 
   const mutation = useMutation({
@@ -259,7 +259,7 @@ export function useCheckIn(options: UseCheckInOutOptions = {}) {
  */
 export function useCheckOut(options: UseCheckInOutOptions = {}) {
   const { onSuccess, onError } = options;
-  const queryClient = useQueryClient();
+  const _queryClient = useQueryClient();
   const addToast = useToastStore((state) => state.addToast);
 
   const mutation = useMutation({

@@ -12,6 +12,19 @@ import {
   resetCounters,
 } from '../mocks/factories';
 
+// Import after mocks
+import {
+  getWorkLogsByJobPosting,
+  calculateSettlement,
+  settleWorkLog,
+  bulkSettlement,
+  updateSettlementStatus,
+  getJobPostingSettlementSummary,
+} from '@/services/settlementService';
+
+// Import Timestamp from mocked module for use in test utilities
+import { Timestamp } from 'firebase/firestore';
+
 // ============================================================================
 // Firebase Mocks
 // ============================================================================
@@ -90,19 +103,6 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
 }));
-
-// Import after mocks
-import {
-  getWorkLogsByJobPosting,
-  calculateSettlement,
-  settleWorkLog,
-  bulkSettlement,
-  updateSettlementStatus,
-  getJobPostingSettlementSummary,
-} from '@/services/settlementService';
-
-// Import Timestamp from mocked module for use in test utilities
-import { Timestamp } from 'firebase/firestore';
 
 // ============================================================================
 // Test Utilities

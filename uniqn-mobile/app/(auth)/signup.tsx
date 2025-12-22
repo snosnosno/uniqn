@@ -10,15 +10,31 @@ import { useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Timestamp } from 'firebase/firestore';
 import { SignupForm } from '@/components/auth';
 import { signUp } from '@/services';
 import { useToastStore } from '@/stores/toastStore';
+import { useAuthStore, type UserProfile as StoreUserProfile } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import type { SignUpFormData } from '@/schemas';
+
+/**
+ * Timestamp를 Date로 변환하는 헬퍼 함수
+ */
+function toDate(value: Timestamp | Date | unknown): Date {
+  if (value instanceof Timestamp) {
+    return value.toDate();
+  }
+  if (value instanceof Date) {
+    return value;
+  }
+  return new Date();
+}
 
 export default function SignUpScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToastStore();
+  const { setUser, setProfile } = useAuthStore();
 
   const handleSignUp = useCallback(async (data: SignUpFormData) => {
     setIsLoading(true);
@@ -26,6 +42,21 @@ export default function SignUpScreen() {
       const result = await signUp(data);
 
       if (result.user) {
+        // authStore 업데이트 (Timestamp → Date 변환)
+        setUser(result.user);
+        const storeProfile: StoreUserProfile = {
+          uid: result.profile.uid,
+          email: result.profile.email,
+          name: result.profile.name,
+          nickname: result.profile.nickname,
+          phone: result.profile.phone,
+          role: result.profile.role,
+          photoURL: result.profile.photoURL,
+          createdAt: toDate(result.profile.createdAt),
+          updatedAt: toDate(result.profile.updatedAt),
+        };
+        setProfile(storeProfile);
+
         logger.info('회원가입 성공', { userId: result.user.uid });
         addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
         router.replace('/(app)/(tabs)');
@@ -39,7 +70,7 @@ export default function SignUpScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [addToast]);
+  }, [addToast, setUser, setProfile]);
 
   const handleBack = () => {
     router.back();

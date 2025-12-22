@@ -25,8 +25,8 @@ import {
 jest.mock('firebase/auth');
 jest.mock('firebase/firestore');
 jest.mock('@/lib/firebase', () => ({
-  auth: { currentUser: null },
-  db: {},
+  getFirebaseAuth: jest.fn(() => ({ currentUser: null })),
+  getFirebaseDb: jest.fn(() => ({})),
 }));
 jest.mock('@/utils/logger', () => ({
   logger: {

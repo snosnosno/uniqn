@@ -15,6 +15,21 @@ import {
   type MockScheduleEvent,
 } from '../mocks/factories';
 
+// Import after mocks
+import {
+  groupSchedulesByDate,
+  getCalendarMarkedDates,
+  getMySchedules,
+  getSchedulesByDate,
+  getSchedulesByMonth,
+  getScheduleById,
+  getTodaySchedules,
+  getUpcomingSchedules,
+  subscribeToSchedules,
+  getScheduleStats,
+} from '@/services/scheduleService';
+import type { ScheduleEvent, ScheduleType } from '@/types';
+
 // Mock Firebase
 const mockGetDoc = jest.fn();
 const mockGetDocs = jest.fn();
@@ -63,21 +78,6 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
 }));
-
-// Import after mocks
-import {
-  groupSchedulesByDate,
-  getCalendarMarkedDates,
-  getMySchedules,
-  getSchedulesByDate,
-  getSchedulesByMonth,
-  getScheduleById,
-  getTodaySchedules,
-  getUpcomingSchedules,
-  subscribeToSchedules,
-  getScheduleStats,
-} from '@/services/scheduleService';
-import type { ScheduleEvent, ScheduleType } from '@/types';
 
 describe('scheduleService', () => {
   beforeEach(() => {

@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   getMySchedules,
@@ -25,8 +25,6 @@ import { logger } from '@/utils/logger';
 import type {
   ScheduleEvent,
   ScheduleFilters,
-  ScheduleStats,
-  ScheduleGroup,
   CalendarView,
 } from '@/types';
 

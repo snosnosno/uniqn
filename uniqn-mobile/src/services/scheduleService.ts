@@ -35,7 +35,7 @@ import type {
 // ============================================================================
 
 const WORK_LOGS_COLLECTION = 'workLogs';
-const APPLICATIONS_COLLECTION = 'applications';
+const _APPLICATIONS_COLLECTION = 'applications';
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
 const DEFAULT_PAGE_SIZE = 50;
 
