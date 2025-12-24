@@ -168,10 +168,10 @@ graph LR
 | 항목 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | React Hook Form + zodResolver | [ ] | P1 |
-| i18n 설정 (한/영) | [ ] | P1 |
+| i18n 설정 (한/영) | [ ] | P1 - ⚠️ 최종 출시 전 구현 |
 | modalStore 설정 | [x] | P1 |
-| useNetworkStatus 훅 | [ ] | P1 |
-| Platform 플래그 (isWeb, isIOS, isAndroid) | [ ] | P1 |
+| useNetworkStatus 훅 | [x] | P1 |
+| Platform 플래그 (isWeb, isIOS, isAndroid) | [x] | P1 |
 | mmkvStorage 설정 | [ ] | P1 |
 
 ### 1.9 Firebase Functions 기본 설정 [P0] ✅
@@ -186,7 +186,7 @@ graph LR
 | cachingPolicies 설정 | [ ] | P2 |
 | onlineManager 설정 | [ ] | P2 |
 | NetworkProvider | [ ] | P2 |
-| OfflineBanner 컴포넌트 | [ ] | P2 |
+| OfflineBanner 컴포넌트 | [x] | P2 |
 | useInterval 훅 | [ ] | P2 |
 | useFirestoreSubscription 훅 | [ ] | P2 |
 | SEO 컴포넌트 (웹) | [ ] | P2 |
@@ -359,13 +359,13 @@ graph LR
 - [x] deleteUserAccount - `functions/src/callable/accountFunctions.ts`
 - [x] exportUserData - `functions/src/callable/accountFunctions.ts`
 
-### 2.3 본인인증 (Mock) [P1]
+### 2.3 본인인증 (Mock) [P1] ✅
 > ⚠️ **실제 연동은 Phase 6에서 진행. 지금은 뼈대만 구현**
 
-- [ ] IdentityVerificationData 타입 정의
-- [ ] 본인인증 상태 머신 (idle → verifying → verified/failed)
-- [ ] MockIdentityService (테스트용 가짜 인증)
-- [ ] 본인인증 화면 UI (실제 연동 없이)
+- [x] IdentityVerificationData 타입 정의 - `IdentityVerification.tsx` (VerificationResult 인터페이스)
+- [x] 본인인증 상태 머신 (idle → verifying → verified/failed) - `VerificationStatus` 타입
+- [x] MockIdentityService (테스트용 가짜 인증) - 개발 모드에서 mock 인증 지원
+- [x] 본인인증 화면 UI (실제 연동 없이) - `IdentityVerification` 컴포넌트 (PASS/카카오)
 - [ ] 인증 상태 저장 구조 (users/{uid}/verification)
 
 ### 2.4 구인구직 [P0] ✅
@@ -383,8 +383,8 @@ graph LR
 - [x] ApplicationStatus (지원 상태) - `Badge.tsx`로 대체 구현
 - [x] Badge (상태 표시) - `components/ui/Badge.tsx`
 
-#### 비즈니스 컴포넌트 [P1]
-- [ ] JobFilters (필터 UI)
+#### 비즈니스 컴포넌트 [P1] ✅
+- [x] JobFilters (필터 UI) - `components/jobs/JobFilters.tsx` (지역/날짜/역할/긴급)
 
 #### 비즈니스 에러 클래스 [P0] ✅
 - [x] InsufficientChipsError (칩 부족) - `errors/BusinessErrors.ts`
@@ -444,7 +444,7 @@ graph LR
 | QR 스캐너 (네이티브) | [x] | P0 |
 | QR 스캐너 (웹) | [x] | P0 |
 | 출근/퇴근 체크 | [x] | P0 |
-| 근무 기록 목록 | [ ] | P1 |
+| 근무 기록 목록 | [x] | P1 |
 
 #### 스태프 스케줄 동기화 [P0] ✅
 > 💡 **결정 사항**: QR 실패/오류 시 관리자가 시간 조정, 스태프는 동기화된 정보 확인
@@ -682,9 +682,9 @@ graph LR
 - [ ] 시간 수정 시 자동 알림 발송 (onWorkTimeChanged) - P2
 - [x] 시간 수정 사유 기록 (선택적) - modificationHistory 필드
 
-#### 정산 에러 처리 [P0] (일부 완료)
+#### 정산 에러 처리 [P0] ✅
 - [x] AlreadySettledError (중복 정산) - `errors/BusinessErrors.ts`
-- [ ] InvalidWorkLogError (잘못된 근무 기록)
+- [x] InvalidWorkLogError (잘못된 근무 기록) - `errors/BusinessErrors.ts` + `AppError.ts` (E6010)
 - [x] 정산 금액 검증 로직 - calculateSettlement 함수
 
 #### 정산 서비스 레이어 [P0] ✅
@@ -820,8 +820,8 @@ graph LR
 
 #### 오프라인 지원 - Level 2: 읽기 캐싱 [P1]
 > 💡 **결정 사항**: MVP는 읽기 캐싱만 지원. 쓰기 큐잉은 출시 후 검토.
-- [ ] 네트워크 상태 감지 (useNetworkStatus)
-- [ ] 오프라인 상태 배너 표시
+- [x] 네트워크 상태 감지 (useNetworkStatus) - `hooks/useNetworkStatus.ts`
+- [x] 오프라인 상태 배너 표시 - `components/ui/OfflineBanner.tsx`
 - [ ] React Query 캐시 활용 (오프라인 읽기)
 - [ ] 캐시 유효성 정책 설정 (staleTime, cacheTime)
 

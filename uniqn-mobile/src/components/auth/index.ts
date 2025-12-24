@@ -24,3 +24,12 @@ export {
 
 // Social Login
 export { SocialLoginButtons } from './SocialLoginButtons';
+
+// Identity Verification
+export { IdentityVerification } from './IdentityVerification';
+export type {
+  IdentityProvider,
+  VerificationResult,
+  VerificationStatus,
+  IdentityVerificationProps,
+} from './IdentityVerification';

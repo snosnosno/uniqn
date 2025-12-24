@@ -272,6 +272,35 @@ export class AlreadySettledError extends AppError {
   }
 }
 
+/**
+ * 유효하지 않은 근무 기록 에러
+ */
+export class InvalidWorkLogError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      workLogId?: string;
+      reason?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_INVALID_WORKLOG,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        workLogId: options?.workLogId,
+        reason: options?.reason,
+      },
+    });
+    this.name = 'InvalidWorkLogError';
+    Object.setPrototypeOf(this, InvalidWorkLogError.prototype);
+  }
+}
+
 // ============================================================================
 // Type Guards
 // ============================================================================
@@ -310,4 +339,8 @@ export const isExpiredQRCodeError = (error: unknown): error is ExpiredQRCodeErro
 
 export const isAlreadySettledError = (error: unknown): error is AlreadySettledError => {
   return error instanceof AlreadySettledError;
+};
+
+export const isInvalidWorkLogError = (error: unknown): error is InvalidWorkLogError => {
+  return error instanceof InvalidWorkLogError;
 };

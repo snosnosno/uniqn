@@ -7,3 +7,5 @@
 
 export { CalendarView } from './CalendarView';
 export { ScheduleDetailSheet } from './ScheduleDetailSheet';
+export { WorkLogList } from './WorkLogList';
+export type { WorkLogListProps } from './WorkLogList';

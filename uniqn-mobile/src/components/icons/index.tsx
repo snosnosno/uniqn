@@ -281,3 +281,16 @@ export const TagIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProp
 export const HashtagIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <Feather name="hash" size={size} color={color} />
 );
+
+// Network Status
+export const WifiIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="wifi" size={size} color={color} />
+);
+
+export const WifiOff = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="wifi-off" size={size} color={color} />
+);
+
+export const RefreshCw = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="refresh-cw" size={size} color={color} />
+);

@@ -95,6 +95,7 @@ export const ERROR_CODES = {
   BUSINESS_INVALID_QR: 'E6007',
   BUSINESS_EXPIRED_QR: 'E6008',
   BUSINESS_ALREADY_SETTLED: 'E6009',
+  BUSINESS_INVALID_WORKLOG: 'E6010',
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -153,6 +154,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_INVALID_QR]: '유효하지 않은 QR 코드입니다',
   [ERROR_CODES.BUSINESS_EXPIRED_QR]: 'QR 코드가 만료되었습니다',
   [ERROR_CODES.BUSINESS_ALREADY_SETTLED]: '이미 정산 완료되었습니다',
+  [ERROR_CODES.BUSINESS_INVALID_WORKLOG]: '유효하지 않은 근무 기록입니다',
 
   // 알 수 없는 에러
   [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',
