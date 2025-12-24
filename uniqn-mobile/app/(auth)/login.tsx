@@ -75,15 +75,38 @@ export default function LoginScreen() {
     }
   }, [addToast, setUser, setProfile]);
 
+  // 소셜 로그인 공통 처리
+  const handleSocialLoginSuccess = useCallback(
+    (result: { user: { uid: string }; profile: { uid: string; email: string; name: string; nickname?: string; phone?: string; role: 'staff' | 'employer' | 'admin'; photoURL?: string; createdAt: Timestamp | Date; updatedAt: Timestamp | Date } }, provider: string) => {
+      // authStore 업데이트 (Timestamp → Date 변환)
+      setUser(result.user as import('firebase/auth').User);
+      const storeProfile: StoreUserProfile = {
+        uid: result.profile.uid,
+        email: result.profile.email,
+        name: result.profile.name,
+        nickname: result.profile.nickname,
+        phone: result.profile.phone,
+        role: result.profile.role,
+        photoURL: result.profile.photoURL,
+        createdAt: toDate(result.profile.createdAt),
+        updatedAt: toDate(result.profile.updatedAt),
+      };
+      setProfile(storeProfile);
+
+      logger.info(`${provider} 로그인 성공`, { userId: result.user.uid });
+      addToast({ type: 'success', message: '로그인되었습니다.' });
+      router.replace('/(app)/(tabs)');
+    },
+    [setUser, setProfile, addToast]
+  );
+
   // Apple 로그인
   const handleAppleLogin = useCallback(async () => {
     setLoadingProvider('apple');
     try {
       const result = await signInWithApple();
       if (result.user) {
-        logger.info('Apple 로그인 성공', { userId: result.user.uid });
-        addToast({ type: 'success', message: '로그인되었습니다.' });
-        router.replace('/(app)/(tabs)');
+        handleSocialLoginSuccess(result, 'Apple');
       }
     } catch (error) {
       logger.error('Apple 로그인 실패', error as Error);
@@ -94,7 +117,7 @@ export default function LoginScreen() {
     } finally {
       setLoadingProvider(null);
     }
-  }, [addToast]);
+  }, [addToast, handleSocialLoginSuccess]);
 
   // Google 로그인
   const handleGoogleLogin = useCallback(async () => {
@@ -102,9 +125,7 @@ export default function LoginScreen() {
     try {
       const result = await signInWithGoogle();
       if (result.user) {
-        logger.info('Google 로그인 성공', { userId: result.user.uid });
-        addToast({ type: 'success', message: '로그인되었습니다.' });
-        router.replace('/(app)/(tabs)');
+        handleSocialLoginSuccess(result, 'Google');
       }
     } catch (error) {
       logger.error('Google 로그인 실패', error as Error);
@@ -115,7 +136,7 @@ export default function LoginScreen() {
     } finally {
       setLoadingProvider(null);
     }
-  }, [addToast]);
+  }, [addToast, handleSocialLoginSuccess]);
 
   // Kakao 로그인
   const handleKakaoLogin = useCallback(async () => {
@@ -123,9 +144,7 @@ export default function LoginScreen() {
     try {
       const result = await signInWithKakao();
       if (result.user) {
-        logger.info('Kakao 로그인 성공', { userId: result.user.uid });
-        addToast({ type: 'success', message: '로그인되었습니다.' });
-        router.replace('/(app)/(tabs)');
+        handleSocialLoginSuccess(result, 'Kakao');
       }
     } catch (error) {
       logger.error('Kakao 로그인 실패', error as Error);
@@ -136,7 +155,7 @@ export default function LoginScreen() {
     } finally {
       setLoadingProvider(null);
     }
-  }, [addToast]);
+  }, [addToast, handleSocialLoginSuccess]);
 
   const isSocialLoading = loadingProvider !== null;
 

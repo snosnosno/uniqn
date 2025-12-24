@@ -24,6 +24,18 @@ export { EmptyState, type EmptyStateProps } from './EmptyState';
 export { ErrorState } from './ErrorState';
 
 // ============================================================================
+// Error Boundary
+// ============================================================================
+
+export {
+  ErrorBoundary,
+  withErrorBoundary,
+  ScreenErrorBoundary,
+  FeatureErrorBoundary,
+  type ErrorBoundaryProps,
+} from './ErrorBoundary';
+
+// ============================================================================
 // Feedback Components
 // ============================================================================
 

@@ -30,7 +30,7 @@ export const NotificationType = {
   /** 거절됨 */
   APPLICATION_REJECTED: 'application_rejected',
 
-  // === 출퇴근 관련 ===
+  // === 출퇴근/스케줄 관련 ===
   /** 출근 체크인 알림 (구인자에게) */
   STAFF_CHECKED_IN: 'staff_checked_in',
   /** 퇴근 체크아웃 알림 (구인자에게) */
@@ -41,6 +41,10 @@ export const NotificationType = {
   NO_SHOW_ALERT: 'no_show_alert',
   /** 근무 시간 변경 (스태프에게) - 관리자가 시간 수정 시 */
   SCHEDULE_CHANGE: 'schedule_change',
+  /** 새로운 근무 배정 (스태프에게) */
+  SCHEDULE_CREATED: 'schedule_created',
+  /** 근무 취소 (스태프에게) */
+  SCHEDULE_CANCELLED: 'schedule_cancelled',
 
   // === 정산 관련 ===
   /** 정산 완료 (스태프에게) */
@@ -114,12 +118,14 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.CONFIRMATION_CANCELLED]: NotificationCategory.APPLICATION,
   [NotificationType.APPLICATION_REJECTED]: NotificationCategory.APPLICATION,
 
-  // 출퇴근 관련
+  // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: NotificationCategory.ATTENDANCE,
   [NotificationType.STAFF_CHECKED_OUT]: NotificationCategory.ATTENDANCE,
   [NotificationType.CHECKIN_REMINDER]: NotificationCategory.ATTENDANCE,
   [NotificationType.NO_SHOW_ALERT]: NotificationCategory.ATTENDANCE,
   [NotificationType.SCHEDULE_CHANGE]: NotificationCategory.ATTENDANCE,
+  [NotificationType.SCHEDULE_CREATED]: NotificationCategory.ATTENDANCE,
+  [NotificationType.SCHEDULE_CANCELLED]: NotificationCategory.ATTENDANCE,
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: NotificationCategory.SETTLEMENT,
@@ -166,12 +172,14 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.CONFIRMATION_CANCELLED]: 'high',
   [NotificationType.APPLICATION_REJECTED]: 'normal',
 
-  // 출퇴근 관련 - 리마인더/노쇼는 urgent
+  // 출퇴근/스케줄 관련 - 리마인더/노쇼는 urgent
   [NotificationType.STAFF_CHECKED_IN]: 'normal',
   [NotificationType.STAFF_CHECKED_OUT]: 'normal',
   [NotificationType.CHECKIN_REMINDER]: 'urgent',
   [NotificationType.NO_SHOW_ALERT]: 'urgent',
   [NotificationType.SCHEDULE_CHANGE]: 'high',
+  [NotificationType.SCHEDULE_CREATED]: 'high',
+  [NotificationType.SCHEDULE_CANCELLED]: 'high',
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: 'high',
@@ -297,12 +305,14 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.CONFIRMATION_CANCELLED]: AndroidChannelId.APPLICATIONS,
   [NotificationType.APPLICATION_REJECTED]: AndroidChannelId.APPLICATIONS,
 
-  // 출퇴근 관련
+  // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: AndroidChannelId.DEFAULT,
   [NotificationType.STAFF_CHECKED_OUT]: AndroidChannelId.DEFAULT,
   [NotificationType.CHECKIN_REMINDER]: AndroidChannelId.REMINDERS,
   [NotificationType.NO_SHOW_ALERT]: AndroidChannelId.REMINDERS,
   [NotificationType.SCHEDULE_CHANGE]: AndroidChannelId.REMINDERS,
+  [NotificationType.SCHEDULE_CREATED]: AndroidChannelId.REMINDERS,
+  [NotificationType.SCHEDULE_CANCELLED]: AndroidChannelId.REMINDERS,
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: AndroidChannelId.SETTLEMENT,
@@ -344,12 +354,14 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.CONFIRMATION_CANCELLED]: '확정 취소',
   [NotificationType.APPLICATION_REJECTED]: '지원 거절',
 
-  // 출퇴근 관련
+  // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: '출근 알림',
   [NotificationType.STAFF_CHECKED_OUT]: '퇴근 알림',
   [NotificationType.CHECKIN_REMINDER]: '출근 리마인더',
   [NotificationType.NO_SHOW_ALERT]: '노쇼 알림',
   [NotificationType.SCHEDULE_CHANGE]: '근무 시간 변경',
+  [NotificationType.SCHEDULE_CREATED]: '새 근무 배정',
+  [NotificationType.SCHEDULE_CANCELLED]: '근무 취소',
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '정산 완료',

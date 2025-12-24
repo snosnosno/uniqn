@@ -110,6 +110,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '📝',
   },
 
+  [NotificationType.SCHEDULE_CREATED]: {
+    title: '📆 새 근무 배정',
+    body: (d) => `"${d.jobTitle}" 근무가 배정되었습니다. ${d.workDate} ${d.startTime || ''}`,
+    link: (d) => `/schedule?date=${d.workDate}`,
+    icon: '📆',
+  },
+
+  [NotificationType.SCHEDULE_CANCELLED]: {
+    title: '🚫 근무 취소',
+    body: (d) => `"${d.jobTitle}" ${d.workDate} 근무가 취소되었습니다.${d.reason ? ` 사유: ${d.reason}` : ''}`,
+    link: (d) => `/schedule?date=${d.workDate}`,
+    icon: '🚫',
+  },
+
   // =========================================================================
   // 정산 관련
   // =========================================================================

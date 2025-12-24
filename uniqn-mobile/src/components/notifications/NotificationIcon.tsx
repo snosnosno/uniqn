@@ -49,12 +49,14 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   [NotificationType.CONFIRMATION_CANCELLED]: XCircleIcon,
   [NotificationType.APPLICATION_REJECTED]: XCircleIcon,
 
-  // 출퇴근 관련
+  // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: ClockIcon,
   [NotificationType.STAFF_CHECKED_OUT]: ClockIcon,
   [NotificationType.CHECKIN_REMINDER]: CalendarDaysIcon,
   [NotificationType.NO_SHOW_ALERT]: ExclamationCircleIcon,
   [NotificationType.SCHEDULE_CHANGE]: CalendarDaysIcon,
+  [NotificationType.SCHEDULE_CREATED]: CalendarDaysIcon,
+  [NotificationType.SCHEDULE_CANCELLED]: XCircleIcon,
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: BanknotesIcon,
@@ -96,6 +98,8 @@ const typeEmojis: Record<NotificationType, string> = {
   [NotificationType.CHECKIN_REMINDER]: '⏰',
   [NotificationType.NO_SHOW_ALERT]: '⚠️',
   [NotificationType.SCHEDULE_CHANGE]: '📅',
+  [NotificationType.SCHEDULE_CREATED]: '📆',
+  [NotificationType.SCHEDULE_CANCELLED]: '🚫',
 
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '💰',

@@ -26,6 +26,8 @@ import {
   serverTimestamp,
   QueryDocumentSnapshot,
   getCountFromServer,
+  arrayUnion,
+  arrayRemove,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { db } from '@/lib/firebase';
@@ -486,33 +488,50 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 /**
  * FCM 토큰 등록
  *
- * @description Firestore에 FCM 토큰 저장
- * TODO [출시 전]: 실제 FCM 토큰 발급 구현
+ * @description Firestore에 FCM 토큰 저장 (arrayUnion 사용으로 중복 방지)
  */
 export async function registerFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {
     const userRef = doc(db, COLLECTIONS.USERS, userId);
     await updateDoc(userRef, {
-      fcmTokens: [token], // TODO: arrayUnion 사용으로 변경
+      fcmTokens: arrayUnion(token),
       lastTokenUpdate: serverTimestamp(),
     });
 
-    logger.info('FCM 토큰 등록', { userId });
+    logger.info('FCM 토큰 등록', { userId, tokenPrefix: token.substring(0, 20) });
   }, 'registerFCMToken');
 }
 
 /**
  * FCM 토큰 삭제
+ *
+ * @description Firestore에서 특정 FCM 토큰 제거 (arrayRemove 사용)
  */
 export async function unregisterFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {
     const userRef = doc(db, COLLECTIONS.USERS, userId);
     await updateDoc(userRef, {
-      fcmTokens: [], // TODO: arrayRemove 사용으로 변경
+      fcmTokens: arrayRemove(token),
     });
 
-    logger.info('FCM 토큰 삭제', { userId });
+    logger.info('FCM 토큰 삭제', { userId, tokenPrefix: token.substring(0, 20) });
   }, 'unregisterFCMToken');
+}
+
+/**
+ * 모든 FCM 토큰 삭제
+ *
+ * @description 로그아웃 시 해당 사용자의 모든 FCM 토큰 제거
+ */
+export async function unregisterAllFCMTokens(userId: string): Promise<void> {
+  return withErrorHandling(async () => {
+    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    await updateDoc(userRef, {
+      fcmTokens: [],
+    });
+
+    logger.info('모든 FCM 토큰 삭제', { userId });
+  }, 'unregisterAllFCMTokens');
 }
 
 // ============================================================================
@@ -547,6 +566,7 @@ export const notificationService = {
   // FCM
   registerFCMToken,
   unregisterFCMToken,
+  unregisterAllFCMTokens,
 };
 
 export default notificationService;

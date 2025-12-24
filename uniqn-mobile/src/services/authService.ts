@@ -274,29 +274,196 @@ export function onAuthStateChanged(
 }
 
 // ============================================================================
-// Social Login (TODO: Phase 2 P1)
+// Social Login
 // ============================================================================
 
 /**
+ * 개발 모드 여부 확인
+ */
+const IS_DEV_MODE = __DEV__ || process.env.NODE_ENV === 'development';
+
+/**
+ * Mock 소셜 로그인 결과 생성
+ *
+ * @description 개발 환경에서 소셜 로그인 테스트용 Mock 데이터 생성
+ * TODO [출시 전]: 실제 소셜 로그인으로 교체 필수
+ */
+async function createMockSocialLoginResult(
+  provider: 'apple' | 'google' | 'kakao',
+  mockEmail: string,
+  mockName: string
+): Promise<AuthResult> {
+  logger.warn(`[MOCK] ${provider} 소셜 로그인 - 개발 모드`, { provider });
+
+  // Mock 이메일로 실제 Firebase 계정 생성/로그인 시도
+  const mockPassword = `MockSocial_${provider}_12345!`;
+
+  try {
+    // 기존 계정으로 로그인 시도
+    const userCredential = await signInWithEmailAndPassword(
+      getFirebaseAuth(),
+      mockEmail,
+      mockPassword
+    );
+
+    const profile = await getUserProfile(userCredential.user.uid);
+
+    if (profile) {
+      logger.info(`[MOCK] ${provider} 기존 계정 로그인 성공`, {
+        uid: userCredential.user.uid,
+      });
+      return { user: userCredential.user, profile };
+    }
+
+    // 프로필이 없으면 생성
+    const newProfile = await createMockProfile(
+      userCredential.user.uid,
+      mockEmail,
+      mockName,
+      provider
+    );
+    return { user: userCredential.user, profile: newProfile };
+  } catch {
+    // 계정이 없으면 새로 생성
+    logger.info(`[MOCK] ${provider} 신규 계정 생성`, { email: mockEmail });
+
+    const userCredential = await createUserWithEmailAndPassword(
+      getFirebaseAuth(),
+      mockEmail,
+      mockPassword
+    );
+
+    await updateProfile(userCredential.user, { displayName: mockName });
+
+    const newProfile = await createMockProfile(
+      userCredential.user.uid,
+      mockEmail,
+      mockName,
+      provider
+    );
+
+    return { user: userCredential.user, profile: newProfile };
+  }
+}
+
+/**
+ * Mock 프로필 생성
+ */
+async function createMockProfile(
+  uid: string,
+  email: string,
+  name: string,
+  provider: 'apple' | 'google' | 'kakao'
+): Promise<UserProfile> {
+  const profile: UserProfile = {
+    uid,
+    email,
+    name,
+    nickname: name,
+    role: 'staff',
+    identityVerified: false, // Mock이므로 본인인증 미완료
+    identityProvider: undefined,
+    termsAgreed: true,
+    privacyAgreed: true,
+    marketingAgreed: false,
+    isActive: true,
+    createdAt: serverTimestamp() as Timestamp,
+    updatedAt: serverTimestamp() as Timestamp,
+  };
+
+  await setDoc(doc(getFirebaseDb(), 'users', uid), {
+    ...profile,
+    socialProvider: provider, // 소셜 로그인 제공자 기록
+  });
+
+  logger.info(`[MOCK] 프로필 생성 완료`, { uid, provider });
+
+  return profile;
+}
+
+/**
  * Apple 소셜 로그인
+ *
+ * @description
+ * - 개발 모드: Mock 데이터로 테스트
+ * - 프로덕션: 실제 Apple 인증 필요 (TODO)
+ *
  * TODO [출시 전]: expo-apple-authentication 사용 구현
  */
 export async function signInWithApple(): Promise<AuthResult> {
-  throw new Error('Apple 로그인은 아직 구현되지 않았습니다');
+  if (IS_DEV_MODE) {
+    return createMockSocialLoginResult(
+      'apple',
+      'mock-apple@uniqn.dev',
+      'Apple 테스트 사용자'
+    );
+  }
+
+  // TODO [출시 전]: 실제 Apple 로그인 구현
+  // import * as AppleAuthentication from 'expo-apple-authentication';
+  // const credential = await AppleAuthentication.signInAsync({...});
+  // const oAuthCredential = OAuthProvider.credential('apple.com', credential.identityToken);
+  // const userCredential = await signInWithCredential(getFirebaseAuth(), oAuthCredential);
+
+  throw new Error(
+    'Apple 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다. 출시 전 구현 필요.'
+  );
 }
 
 /**
  * Google 소셜 로그인
+ *
+ * @description
+ * - 개발 모드: Mock 데이터로 테스트
+ * - 프로덕션: 실제 Google 인증 필요 (TODO)
+ *
  * TODO [P1]: @react-native-google-signin/google-signin 사용 구현
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
-  throw new Error('Google 로그인은 아직 구현되지 않았습니다');
+  if (IS_DEV_MODE) {
+    return createMockSocialLoginResult(
+      'google',
+      'mock-google@uniqn.dev',
+      'Google 테스트 사용자'
+    );
+  }
+
+  // TODO [P1]: 실제 Google 로그인 구현
+  // import { GoogleSignin } from '@react-native-google-signin/google-signin';
+  // await GoogleSignin.hasPlayServices();
+  // const { idToken } = await GoogleSignin.signIn();
+  // const googleCredential = GoogleAuthProvider.credential(idToken);
+  // const userCredential = await signInWithCredential(getFirebaseAuth(), googleCredential);
+
+  throw new Error(
+    'Google 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다.'
+  );
 }
 
 /**
  * 카카오 소셜 로그인
+ *
+ * @description
+ * - 개발 모드: Mock 데이터로 테스트
+ * - 프로덕션: 실제 카카오 인증 필요 (TODO)
+ *
  * TODO [P1]: @react-native-seoul/kakao-login 사용 구현
  */
 export async function signInWithKakao(): Promise<AuthResult> {
-  throw new Error('카카오 로그인은 아직 구현되지 않았습니다');
+  if (IS_DEV_MODE) {
+    return createMockSocialLoginResult(
+      'kakao',
+      'mock-kakao@uniqn.dev',
+      '카카오 테스트 사용자'
+    );
+  }
+
+  // TODO [P1]: 실제 카카오 로그인 구현
+  // import { login as kakaoLogin } from '@react-native-seoul/kakao-login';
+  // const token = await kakaoLogin();
+  // Firebase Custom Token 방식 또는 Functions 연동 필요
+
+  throw new Error(
+    '카카오 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다.'
+  );
 }

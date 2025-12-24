@@ -225,9 +225,10 @@ graph LR
 - [x] 기본 탭 네비게이션 구조
 
 ### 1.13 플랫폼 빌드 확인 [P0]
-- [ ] iOS 시뮬레이터 실행
-- [ ] Android 에뮬레이터 실행
-- [ ] Web 빌드 성공 (`npx expo export -p web`)
+> ℹ️ **TODO [출시 전]**: 모든 기능 구현 완료 후 Phase 6 시작 전에 확인
+- [ ] iOS 시뮬레이터 실행 - TODO [출시 전]
+- [ ] Android 에뮬레이터 실행 - TODO [출시 전]
+- [ ] Web 빌드 성공 (`npx expo export -p web`) - TODO [출시 전]
 
 ### 1.14 Phase 1 테스트 [P0] ✅
 
@@ -271,9 +272,9 @@ graph LR
 | **휴대폰 본인인증 (필수)** | [ ] | P0 | - Phase 6에서 실제 연동
 | 비밀번호 찾기 | [x] | P0 |
 | 세션 관리 (토큰 갱신) | [x] | P0 |
-| 소셜 로그인 (Apple) | [ ] | P0 | - TODO [출시 전]
-| 소셜 로그인 (Google) | [ ] | P1 |
-| 소셜 로그인 (카카오) | [ ] | P1 |
+| 소셜 로그인 (Apple) | [x] | P0 | - Mock 완료, TODO [출시 전] 실제 연동
+| 소셜 로그인 (Google) | [x] | P1 | - Mock 완료, TODO [출시 전] 실제 연동
+| 소셜 로그인 (카카오) | [x] | P1 | - Mock 완료, TODO [출시 전] 실제 연동
 | 생체 인증 | [ ] | P2 |
 
 > ⚠️ **인증 방식**: ID/PW 또는 소셜 로그인 + 휴대폰 본인인증 필수
@@ -305,7 +306,7 @@ graph LR
 - [x] ForgotPasswordScreen - `app/(auth)/forgot-password.tsx` + `ForgotPasswordForm.tsx`
 - [x] StepIndicator (단계 표시) - `components/auth/StepIndicator.tsx`
 - [x] PasswordStrength (비밀번호 강도 + 규칙 체크 표시) - `components/auth/PasswordStrength.tsx`
-- [x] SocialLoginButtons (Google, Apple, 카카오) - `components/auth/SocialLoginButtons.tsx` (UI만, 로직 TODO)
+- [x] SocialLoginButtons (Google, Apple, 카카오) - `components/auth/SocialLoginButtons.tsx` (Mock 로직 완료, 실제 연동 TODO [출시 전])
 
 #### 인증 에러 처리 [P0] ✅
 - [x] 로그인 실패 에러 (잘못된 자격증명) - `AuthError` + `firebaseErrorMapper.ts`
@@ -445,12 +446,12 @@ graph LR
 | 출근/퇴근 체크 | [x] | P0 |
 | 근무 기록 목록 | [ ] | P1 |
 
-#### 스태프 스케줄 동기화 [P0]
+#### 스태프 스케줄 동기화 [P0] ✅
 > 💡 **결정 사항**: QR 실패/오류 시 관리자가 시간 조정, 스태프는 동기화된 정보 확인
 - [x] 실시간 WorkLog 구독 (onSnapshot) - `workLogService.ts` (subscribeToWorkLog, subscribeToMyWorkLogs, subscribeToTodayWorkStatus)
-- [ ] 시간 변경 시 UI 자동 갱신
-- [ ] 변경 알림 표시 (Toast 또는 Badge)
-- [ ] 스케줄 변경 푸시 알림 수신 (Phase 3.2와 연계)
+- [x] 시간 변경 시 UI 자동 갱신 - `useSchedules.ts` (realtime 옵션, subscribeToSchedules)
+- [x] 변경 알림 표시 (Toast 또는 Badge) - useNotifications 연동
+- [x] 스케줄 변경 푸시 알림 수신 - `functions/notifications/onScheduleChanged.ts`
 
 #### 스케줄 컴포넌트 [P0]
 - [x] CalendarView (캘린더)
@@ -481,15 +482,15 @@ graph LR
 - [x] AlreadyCheckedInError (중복 출근) - `errors/BusinessErrors.ts`
 - [x] QR 스캔 재시도 로직 - `QRCodeScanner.tsx` (다시 스캔 버튼)
 
-### 3.2 푸시 알림 [P1] ✅ (인앱 알림 완료)
+### 3.2 푸시 알림 [P0] ✅
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
-| FCM 설정 | [ ] | P1 - TODO [출시 전]: EAS Build 설정 후 |
-| 알림 권한 요청 | [x] | P1 - useNotificationPermission 훅 |
-| 포그라운드 알림 | [ ] | P1 - TODO [출시 전]: FCM 설정 후 |
+| FCM 설정 | [x] | P0 - `pushNotificationService.ts` (expo-notifications) |
+| 알림 권한 요청 | [x] | P0 - `usePushNotifications` 훅 |
+| 포그라운드 알림 | [x] | P0 - `pushNotificationService.ts` (포그라운드 핸들러) |
 | 알림 목록 화면 | [x] | P1 - NotificationList 컴포넌트 |
 | 알림 설정 화면 | [x] | P2 - NotificationSettings 컴포넌트 |
-| 백그라운드 알림 | [ ] | P2 - TODO [출시 전]: FCM 설정 후 |
+| 백그라운드 알림 | [ ] | P2 - TODO [출시 전]: EAS Build 네이티브 설정 후 |
 
 #### 알림 읽음 처리 [P1] ✅
 | 기능 | 체크 | 설명 |
@@ -506,11 +507,12 @@ graph LR
 - [x] useUnreadCount() 훅 (실시간 카운트) - `useNotifications.ts`
 - [x] NotificationBadge 컴포넌트 - `components/notifications/`
 
-#### 알림 서비스 [P1] ✅
-- [ ] FCMService (토큰 관리) - TODO [출시 전]: EAS Build 설정 후
+#### 알림 서비스 [P0] ✅
+- [x] pushNotificationService (토큰 관리) - `services/pushNotificationService.ts`
+- [x] usePushNotifications 훅 - `hooks/usePushNotifications.ts`
 - [x] notificationStore (Zustand) - `stores/notificationStore.ts`
 - [x] useNotificationListener 훅 - `useNotificationRealtime` in `useNotifications.ts`
-- [x] NotificationTemplates 상수 - `constants/notificationTemplates.ts`
+- [x] NotificationTemplates 상수 - `constants/notificationTemplates.ts` (22개 타입)
 
 #### 알림 UI 컴포넌트 [P1] ✅
 - [x] NotificationBadge (읽지 않은 알림 뱃지)
@@ -525,11 +527,13 @@ graph LR
 - [x] NotificationData, NotificationSettings 인터페이스
 - [x] 알림 템플릿 (title, body 생성)
 
-#### Firebase Functions 트리거 [P1] ✅
+#### Firebase Functions 트리거 [P0] ✅
 - [x] onSettlementCompleted → 스태프 정산 알림 - `functions/src/triggers/settlementTriggers.ts`
 - [x] sendCheckinReminders → 출근 30분 전 리마인더 - `functions/src/scheduled/scheduledTasks.ts`
 - [x] checkNoShow → 미출근 알림 - `functions/src/scheduled/scheduledTasks.ts`
 - [x] cleanupOldNotifications → 30일 이상 알림 정리 - `functions/src/scheduled/scheduledTasks.ts`
+- [x] onScheduleCreated → 스케줄 생성 알림 - `functions/src/notifications/onScheduleChanged.ts`
+- [x] onScheduleUpdated → 스케줄 변경 알림 - `functions/src/notifications/onScheduleChanged.ts`
 - [ ] onApplicationCreated → 구인자 알림 - TODO [출시 전]
 - [ ] onApplicationConfirmed → 스태프 알림 - TODO [출시 전]
 
@@ -833,13 +837,13 @@ graph LR
 - [x] 토큰 만료 시 자동 갱신 - requiresReauthentication 처리
 - [x] 재시도 조건 설정 (카테고리별) - shouldRetryError, getRetryDelay
 
-### 5.4 Analytics [P1] ([16-analytics.md](./16-analytics.md))
+### 5.4 Analytics [P0] ✅ ([16-analytics.md](./16-analytics.md))
 - [x] Firebase Analytics 초기화 - analyticsService.ts (웹 지원, 네이티브 TODO)
 - [x] AnalyticsService 구현 - trackEvent, trackScreenView, setUserProperties
 - [x] 화면 조회 자동 추적 - trackScreenView 함수
 - [x] 핵심 이벤트 (login, signup, job_apply) - 헬퍼 함수 제공
 - [x] CrashlyticsService 구현 - crashlyticsService.ts (recordError, breadcrumbs, 사용자 추적)
-- [ ] ErrorBoundary-Crashlytics 연동 [TODO 출시 전]
+- [x] ErrorBoundary-Crashlytics 연동 - `ErrorBoundary.tsx` (componentDidCatch에서 recordError 호출)
 
 ### 5.5 딥링킹 [P1] ([17-deep-linking.md](./17-deep-linking.md))
 - [x] Custom Scheme (`uniqn://`) - app.config.ts 설정 완료
@@ -860,8 +864,9 @@ graph LR
 
 #### 인증 보안 [P0] ✅
 - [x] JWT 토큰 만료 처리 검증 - `authStore.ts` 구현
-- [ ] Refresh 토큰 로테이션 - TODO [출시 전]
-- [x] 세션 무효화 처리 - `authStore.signOut()`
+- [x] Refresh 토큰 로테이션 - `sessionService.ts` (refreshSession, 토큰 갱신 + 로테이션)
+- [x] 세션 무효화 처리 - `authStore.signOut()`, `sessionService.invalidateAllSessions()`
+- [x] 로그인 속도 제한 - `sessionService.ts` (AUTH_RATE_LIMITED 에러)
 - [x] Firestore Security Rules - 프로젝트 루트 `firestore.rules` (1028줄, 포괄적 보안)
 
 #### Storage Security Rules [P0] ✅
@@ -1171,9 +1176,9 @@ graph LR
 |-------|:----:|:------:|------|
 | 1. 프로젝트 기반 | ✅ | 98% | P0 완료, P1/P2 일부 보류 |
 | 2. 인증 + 구인구직 | ✅ | 95% | P0 완료, 소셜로그인/본인인증 보류 |
-| 3. 스케줄 + 알림 | 🟨 | 80% | P0 스케줄+QR 완료, P1 인앱 알림 완료, FCM 보류 |
+| 3. 스케줄 + 알림 | ✅ | 90% | P0 스케줄+QR+FCM+실시간 알림 완료, 백그라운드 알림 보류 |
 | 4. 구인자 기능 | ✅ | 90% | 서비스/훅/테스트 완료, UI 대기 |
-| 5. 최적화 + 배포준비 | 🟨 | 65% | Analytics, 딥링킹, 에러복구, 보안 완료 |
+| 5. 최적화 + 배포준비 | 🟨 | 75% | Analytics, 딥링킹, 에러복구, 보안, 세션관리 완료 |
 | 6. 앱스토어 출시 | ⬜ | 0% | |
 
 **범례**: ⬜ 미시작 | 🟨 진행중 | ✅ 완료
@@ -1181,8 +1186,21 @@ graph LR
 ---
 
 *생성일: 2024-12*
-*업데이트: 2025-12-22*
-*버전: 5.9*
+*업데이트: 2025-12-24*
+*버전: 5.12*
+
+### 버전 5.12 변경사항 (2025-12-24)
+- [Phase 1-5] P0 보안 강화 및 Firebase Functions 구현 완료
+- [Phase 3] FCM 푸시 알림 설정 완료 - `pushNotificationService.ts`, `usePushNotifications.ts`
+- [Phase 3] 포그라운드 알림 처리 완료 - expo-notifications 통합
+- [Phase 3] Firebase Functions 스케줄 변경 알림 트리거 - `onScheduleChanged.ts` (onCreate, onUpdate)
+- [Phase 3] 실시간 스케줄 동기화 완료 - `workLogService.ts`, `useSchedules.ts`
+- [Phase 3] 알림 타입 추가 - SCHEDULE_CREATED, SCHEDULE_CANCELLED
+- [Phase 3] NotificationTemplates 확장 (22개 → 24개 타입)
+- [Phase 5] ErrorBoundary-Crashlytics 연동 완료
+- [Phase 5] Refresh 토큰 로테이션 완료 - `sessionService.ts`
+- [Phase 5] 로그인 속도 제한 구현 - AUTH_RATE_LIMITED 에러
+- 진행 상태 요약: Phase 3 (80% → 90%), Phase 5 (65% → 75%) 업데이트
 
 ### 버전 5.6 변경사항 (2025-12-21)
 - [Phase 3] P1 인앱 알림 시스템 전체 구현 완료
@@ -1196,6 +1214,13 @@ graph LR
 - [Phase 1] formatRelativeTime 함수 추가 (dateUtils.ts) - 상대 시간 표시
 - [Phase 1] 아이콘 추가 - BellIcon, BellSlashIcon, MoonIcon, TrashIcon
 - 진행 상태 요약: Phase 3 (70% → 80%) 업데이트
+
+### 버전 5.11 변경사항 (2025-12-22)
+- [Phase 2] Mock 소셜 로그인 구현 완료 - Apple, Google, Kakao (개발 모드)
+- [Phase 2] authService.ts - createMockSocialLoginResult, createMockProfile 함수 추가
+- [Phase 2] login.tsx - handleSocialLoginSuccess 공통 처리, authStore 업데이트 연동
+- [Phase 1] 빌드 확인 항목 TODO [출시 전]으로 명시 - iOS, Android, Web
+- 소셜 로그인 체크 완료 (Mock), 실제 연동은 출시 전 필요
 
 ### 버전 5.10 변경사항 (2025-12-22)
 - [Phase 5] React Query 에러 복구 완료 - QueryCache/MutationCache onError, 재시도 조건

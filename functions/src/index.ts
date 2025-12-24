@@ -45,6 +45,7 @@ export { onApplicationSubmitted } from './notifications/onApplicationSubmitted';
 export { onApplicationStatusChanged } from './notifications/onApplicationStatusChanged';
 export { onWorkTimeChanged } from './notifications/onWorkTimeChanged';
 export { broadcastNewJobPosting } from './notifications/broadcastNewJobPosting';
+export { onScheduleCreated, onScheduleCancelled } from './notifications/onScheduleChanged';
 
 // --- Account Management Functions ---
 export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';
