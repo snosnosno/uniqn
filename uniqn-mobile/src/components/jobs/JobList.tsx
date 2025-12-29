@@ -1,12 +1,13 @@
 /**
  * UNIQN Mobile - 구인공고 목록 컴포넌트
  *
- * @description 무한스크롤 지원 공고 목록
- * @version 1.0.0
+ * @description FlashList 기반 무한스크롤 공고 목록
+ * @version 1.1.0
  */
 
 import React, { useCallback } from 'react';
-import { View, RefreshControl, ActivityIndicator, FlatList } from 'react-native';
+import { View, RefreshControl, ActivityIndicator } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { JobCard } from './JobCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Skeleton } from '@/components/ui/Skeleton';
@@ -112,11 +113,11 @@ export function JobList({
   }
 
   return (
-    <FlatList
+    <FlashList
       data={jobs}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
-      contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+      contentContainerStyle={{ padding: 16 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl
@@ -135,9 +136,6 @@ export function JobList({
           icon="📋"
         />
       }
-      initialNumToRender={10}
-      maxToRenderPerBatch={10}
-      windowSize={5}
     />
   );
 }

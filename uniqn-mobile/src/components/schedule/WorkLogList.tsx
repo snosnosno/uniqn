@@ -1,19 +1,19 @@
 /**
  * UNIQN Mobile - 근무 기록 목록 컴포넌트
  *
- * @description 과거 근무 기록 히스토리 목록
- * @version 1.0.0
+ * @description FlashList 기반 근무 기록 히스토리 목록
+ * @version 1.1.0
  */
 
 import React, { useCallback, useMemo } from 'react';
 import {
   View,
   Text,
-  FlatList,
   RefreshControl,
   ActivityIndicator,
   Pressable,
 } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { Timestamp } from 'firebase/firestore';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
 import {
@@ -368,11 +368,11 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
     }
 
     return (
-      <FlatList
+      <FlashList
         data={workLogs}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
-        contentContainerStyle={{ padding: 16, flexGrow: 1 }}
+        contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
           onRefresh ? (
@@ -422,9 +422,6 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
             icon="📋"
           />
         }
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
       />
     );
   }

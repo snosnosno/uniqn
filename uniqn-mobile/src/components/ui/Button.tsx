@@ -2,24 +2,34 @@
  * UNIQN Mobile - Button 컴포넌트
  *
  * @description 다양한 스타일과 상태를 지원하는 버튼
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { Pressable, Text, ActivityIndicator, View, PressableProps } from 'react-native';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends Omit<PressableProps, 'children'> {
+  /** 버튼 텍스트 또는 컨텐츠 */
   children: React.ReactNode;
+  /** 버튼 스타일 변형 */
   variant?: ButtonVariant;
+  /** 버튼 크기 */
   size?: ButtonSize;
+  /** 로딩 상태 */
   loading?: boolean;
+  /** 비활성화 상태 */
   disabled?: boolean;
+  /** 아이콘 요소 */
   icon?: React.ReactNode;
+  /** 아이콘 위치 */
   iconPosition?: 'left' | 'right';
+  /** 전체 너비 사용 */
   fullWidth?: boolean;
+  /** 접근성 라벨 (미지정시 children 문자열 사용) */
+  accessibilityLabel?: string;
 }
 
 const variantStyles: Record<ButtonVariant, string> = {
@@ -51,7 +61,13 @@ const sizeTextStyles: Record<ButtonSize, string> = {
   lg: 'text-lg',
 };
 
-export function Button({
+/**
+ * 버튼 컴포넌트
+ *
+ * 다양한 variant, size, 아이콘 지원
+ * 접근성을 위한 accessibilityLabel 자동/수동 설정 지원
+ */
+export const Button = memo(function Button({
   children,
   variant = 'primary',
   size = 'md',
@@ -60,9 +76,15 @@ export function Button({
   icon,
   iconPosition = 'left',
   fullWidth = false,
+  accessibilityLabel,
   ...props
 }: ButtonProps) {
   const isDisabled = disabled || loading;
+
+  // children이 문자열인 경우 자동으로 accessibilityLabel 생성
+  const resolvedAccessibilityLabel =
+    accessibilityLabel ??
+    (typeof children === 'string' ? children : undefined);
 
   const getLoaderColor = () => {
     if (variant === 'primary' || variant === 'danger') return '#ffffff';
@@ -73,6 +95,12 @@ export function Button({
     <Pressable
       {...props}
       disabled={isDisabled}
+      accessibilityRole="button"
+      accessibilityLabel={resolvedAccessibilityLabel}
+      accessibilityState={{
+        disabled: isDisabled,
+        busy: loading,
+      }}
       className={`
         flex-row items-center justify-center rounded-lg
         ${variantStyles[variant]}
@@ -100,6 +128,6 @@ export function Button({
       )}
     </Pressable>
   );
-}
+});
 
 export default Button;

@@ -2,10 +2,10 @@
  * UNIQN Mobile - 구인공고 카드 컴포넌트
  *
  * @description 공고 목록에서 사용하는 간략한 정보 카드
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { JobPostingCard } from '@/types';
@@ -79,10 +79,25 @@ const getRoleLabel = (role: string): string => {
 // Component
 // ============================================================================
 
-export function JobCard({ job, onPress }: JobCardProps) {
+/**
+ * 구인공고 카드 컴포넌트
+ *
+ * FlashList 최적화를 위해 React.memo 적용
+ */
+export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
+  const handlePress = useCallback(() => {
+    onPress(job.id);
+  }, [job.id, onPress]);
+
+  // 접근성을 위한 설명 텍스트 생성
+  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDate(job.workDate)}, ${formatSalary(job.salary.type, job.salary.amount)}`;
+
   return (
     <Pressable
-      onPress={() => onPress(job.id)}
+      onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
       className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700 active:opacity-80"
     >
       {/* 상단: 긴급 + 제목 */}
@@ -150,6 +165,6 @@ export function JobCard({ job, onPress }: JobCardProps) {
       )}
     </Pressable>
   );
-}
+});
 
 export default JobCard;

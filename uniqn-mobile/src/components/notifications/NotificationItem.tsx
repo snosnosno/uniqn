@@ -2,7 +2,7 @@
  * UNIQN Mobile - NotificationItem 컴포넌트
  *
  * @description 개별 알림을 표시하는 카드 컴포넌트
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { memo, useCallback } from 'react';
@@ -56,9 +56,15 @@ export const NotificationItem = memo(function NotificationItem({
   const createdAt = toDateFromTimestamp(notification.createdAt);
   const timeAgo = createdAt ? formatRelativeTime(createdAt) : '';
 
+  // 접근성을 위한 설명 텍스트
+  const accessibilityLabel = `${notification.isRead ? '읽음' : '읽지 않음'}, ${notification.title}, ${notification.body}, ${timeAgo}`;
+
   const content = (
     <Pressable
       onPress={handlePress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityHint={notification.link ? '탭하면 관련 페이지로 이동합니다' : undefined}
       className={`
         px-4 py-3 border-b border-gray-100 dark:border-gray-800
         active:bg-gray-50 dark:active:bg-gray-800
@@ -117,6 +123,8 @@ export const NotificationItem = memo(function NotificationItem({
             <Pressable
               onPress={handleDelete}
               hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="알림 삭제"
               className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
             >
               <TrashIcon size={18} color="#9ca3af" />

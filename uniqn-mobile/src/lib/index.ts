@@ -33,3 +33,17 @@ export {
   type SecureStorageOptions,
   type KeychainAccessible,
 } from './secureStorage';
+
+// MMKV Storage (High-performance key-value storage)
+export {
+  mmkvStorage,
+  getMMKVInstance,
+  getSecureMMKVInstance,
+  getStorageItem,
+  setStorageItem,
+  removeStorageItem,
+  clearStorageByPrefix,
+  clearAllStorage,
+  STORAGE_KEYS,
+  type StorageKey,
+} from './mmkvStorage';
