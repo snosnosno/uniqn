@@ -301,3 +301,12 @@ export {
   type SessionState,
   type LoginAttempts,
 } from './sessionService';
+
+// Feature Flag Service
+export {
+  featureFlagService,
+  whenEnabled,
+  selectByFlag,
+  type FeatureFlags,
+  type FeatureFlagKey,
+} from './featureFlagService';

@@ -15,7 +15,13 @@
     "quality": "npm run type-check && npm run lint && npm run format:check",
     "test": "jest",
     "test:coverage": "jest --coverage",
-    "prepare": "husky"
+    "prepare": "husky",
+    "build:web": "expo export -p web",
+    "build:android": "expo prebuild --platform android",
+    "build:ios": "expo prebuild --platform ios",
+    "analyze:bundle": "expo export -p web && source-map-explorer dist/_expo/static/js/web/*.js --html bundle-report.html",
+    "audit": "npm audit",
+    "audit:fix": "npm audit fix"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.8",
@@ -76,6 +82,7 @@
     "jest-watch-typeahead": "^2.2.2",
     "lint-staged": "^15.5.0",
     "prettier": "^3.5.0",
+    "source-map-explorer": "^2.5.3",
     "typescript": "~5.9.2"
   },
   "lint-staged": {

@@ -157,3 +157,16 @@ export {
   useBulkSettlement,
   useUpdateSettlementStatus,
 } from './useSettlement';
+
+// ============================================================================
+// Feature Flag Hooks
+// ============================================================================
+
+export {
+  useFeatureFlag,
+  useFeatureFlagWithStatus,
+  useFeatureFlags,
+  useAllFeatureFlags,
+  useMaintenanceMode,
+  useWhenEnabled,
+} from './useFeatureFlag';
