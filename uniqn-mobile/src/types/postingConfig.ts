@@ -1,0 +1,272 @@
+/**
+ * UNIQN Mobile - 공고 타입별 설정 타입 정의
+ *
+ * @description 웹앱(app2/)과 호환되는 PostingType 및 관련 설정 타입
+ * 4가지 공고 타입: regular, fixed, tournament, urgent
+ *
+ * @version 1.0.0
+ * @see app2/src/types/jobPosting/jobPosting.ts
+ */
+
+import { Timestamp } from 'firebase/firestore';
+
+/**
+ * 공고 타입 (4가지)
+ *
+ * - regular: 일반 공고 (기본)
+ * - fixed: 고정 공고 (기간제, 칩 소모)
+ * - tournament: 대회 공고 (관리자 승인 필요)
+ * - urgent: 긴급 공고 (칩 소모, 우선 노출)
+ */
+export type PostingType = 'regular' | 'fixed' | 'tournament' | 'urgent';
+
+/**
+ * 고정 공고 설정
+ *
+ * @description 기간제 상시 채용 공고 설정
+ */
+export interface FixedConfig {
+  /** 게시 기간 (일) */
+  durationDays: 7 | 30 | 90;
+
+  /** 칩 소모량 */
+  chipCost: 3 | 5 | 10;
+
+  /** 만료 시간 */
+  expiresAt: Timestamp;
+
+  /** 생성 시간 */
+  createdAt: Timestamp;
+}
+
+/**
+ * 고정 공고 데이터 (근무 스케줄 포함)
+ */
+export interface FixedJobPostingData {
+  /** 근무 스케줄 */
+  workSchedule?: WorkSchedule;
+
+  /** 역할별 모집 인원 */
+  requiredRolesWithCount?: RoleWithCount[];
+}
+
+/**
+ * 근무 스케줄 (고정공고용)
+ */
+export interface WorkSchedule {
+  /** 근무 요일 */
+  weekdays?: string[];
+
+  /** 근무 시간대 */
+  timeSlots?: string[];
+
+  /** 추가 설명 */
+  description?: string;
+}
+
+/**
+ * 역할별 모집 인원
+ */
+export interface RoleWithCount {
+  role: string;
+  count: number;
+}
+
+/**
+ * 대회 공고 설정
+ *
+ * @description 관리자 승인이 필요한 공식 대회/토너먼트 공고
+ */
+export interface TournamentConfig {
+  /** 승인 상태 */
+  approvalStatus: 'pending' | 'approved' | 'rejected';
+
+  /** 승인한 관리자 ID */
+  approvedBy?: string;
+
+  /** 승인 시간 */
+  approvedAt?: Timestamp;
+
+  /** 거절한 관리자 ID */
+  rejectedBy?: string;
+
+  /** 거절 시간 */
+  rejectedAt?: Timestamp;
+
+  /** 거절 사유 */
+  rejectionReason?: string;
+
+  /** 재제출 시간 (거절 후 수정하여 재제출) */
+  resubmittedAt?: Timestamp;
+
+  /** 최초 제출 시간 */
+  submittedAt: Timestamp;
+}
+
+/**
+ * 긴급 공고 설정
+ *
+ * @description 급하게 인원이 필요한 경우의 공고 (우선 노출)
+ */
+export interface UrgentConfig {
+  /** 칩 소모량 (고정) */
+  chipCost: 5;
+
+  /** 생성 시간 */
+  createdAt: Timestamp;
+
+  /** 우선순위 */
+  priority: 'high';
+}
+
+/**
+ * 역할별 모집 인원 (기본)
+ */
+export interface RoleRequirement {
+  /** 역할 이름 */
+  name: string;
+
+  /** 필요 인원 */
+  count: number;
+}
+
+/**
+ * 시간대 정보
+ *
+ * @description 각 시간대별 근무 정보를 정의합니다.
+ */
+export interface TimeSlot {
+  /** 시작 시간 (HH:mm 형식) */
+  time: string;
+
+  /** 역할별 필요 인원 */
+  roles: RoleRequirement[];
+
+  /** 특정 날짜에만 적용될 때 사용 (yyyy-MM-dd 형식) */
+  date?: string;
+
+  /** 종료 시간 (HH:mm 형식) */
+  endTime?: string;
+
+  /** 다른 날짜에 종료되는 경우 종료 날짜 (yyyy-MM-dd 형식) */
+  endDate?: string;
+
+  /** 당일 전체 운영 여부 (00:00 ~ 23:59) */
+  isFullDay?: boolean;
+
+  /** 다음날 종료 여부 (자정을 넘는 경우) */
+  endsNextDay?: boolean;
+
+  /** 기간 설정 (여러 날 연속 근무) */
+  duration?: {
+    /** 단일 날짜 또는 여러 날짜 */
+    type: 'single' | 'multi';
+    /** multi일 때 종료 날짜 */
+    endDate?: string;
+  };
+
+  /** 미정 여부 */
+  isTimeToBeAnnounced?: boolean;
+
+  /** 미정인 경우 추가 설명 */
+  tentativeDescription?: string;
+}
+
+/**
+ * 날짜별 요구사항
+ *
+ * @description 각 날짜별 인원 요구사항과 시간대 정보를 정의합니다.
+ */
+export interface DateSpecificRequirement {
+  /** 날짜 (yyyy-MM-dd 형식 또는 Firebase Timestamp) */
+  date: string | Timestamp | { seconds: number };
+
+  /** 해당 날짜의 시간대별 요구사항 */
+  timeSlots: TimeSlot[];
+
+  /** 메인 행사 날짜 여부 */
+  isMainDate?: boolean;
+
+  /** 표시 순서 (정렬용) */
+  displayOrder?: number;
+
+  /** 날짜 설명 (예: "Day 1", "예선전") */
+  description?: string;
+}
+
+/**
+ * 공고 타입별 라벨
+ */
+export const POSTING_TYPE_LABELS: Record<PostingType, string> = {
+  regular: '일반',
+  fixed: '고정',
+  tournament: '대회',
+  urgent: '긴급',
+};
+
+/**
+ * 공고 타입별 배지 스타일 (NativeWind)
+ */
+export const POSTING_TYPE_BADGE_STYLES: Record<
+  PostingType,
+  { bgClass: string; textClass: string; darkBgClass: string; darkTextClass: string }
+> = {
+  regular: {
+    bgClass: 'bg-gray-100',
+    textClass: 'text-gray-700',
+    darkBgClass: 'dark:bg-gray-800',
+    darkTextClass: 'dark:text-gray-300',
+  },
+  fixed: {
+    bgClass: 'bg-blue-100',
+    textClass: 'text-blue-700',
+    darkBgClass: 'dark:bg-blue-900/30',
+    darkTextClass: 'dark:text-blue-300',
+  },
+  tournament: {
+    bgClass: 'bg-purple-100',
+    textClass: 'text-purple-700',
+    darkBgClass: 'dark:bg-purple-900/30',
+    darkTextClass: 'dark:text-purple-300',
+  },
+  urgent: {
+    bgClass: 'bg-red-100',
+    textClass: 'text-red-700',
+    darkBgClass: 'dark:bg-red-900/30',
+    darkTextClass: 'dark:text-red-300',
+  },
+};
+
+/**
+ * 날짜별 요구사항에서 날짜 문자열 추출
+ */
+export function getDateFromRequirement(req: DateSpecificRequirement): string {
+  if (typeof req.date === 'string') {
+    return req.date;
+  }
+  if (req.date instanceof Timestamp) {
+    return req.date.toDate().toISOString().split('T')[0] ?? '';
+  }
+  if ('seconds' in req.date) {
+    return new Date(req.date.seconds * 1000).toISOString().split('T')[0] ?? '';
+  }
+  return '';
+}
+
+/**
+ * 날짜별 요구사항 정렬
+ */
+export function sortDateRequirements(
+  requirements: DateSpecificRequirement[]
+): DateSpecificRequirement[] {
+  return [...requirements].sort((a, b) => {
+    // displayOrder가 있으면 우선
+    if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+      return a.displayOrder - b.displayOrder;
+    }
+    // 날짜로 정렬
+    const dateA = getDateFromRequirement(a);
+    const dateB = getDateFromRequirement(b);
+    return dateA.localeCompare(dateB);
+  });
+}

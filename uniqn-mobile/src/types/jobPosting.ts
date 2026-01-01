@@ -1,11 +1,25 @@
 /**
  * UNIQN Mobile - 구인공고 관련 타입 정의
  *
- * @version 1.0.0
+ * @version 2.0.0
+ * @description PostingType 4가지 + DateSpecificRequirement + PreQuestion 지원
  */
 
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument, Location, StaffRole } from './common';
+import type {
+  PostingType,
+  FixedConfig,
+  TournamentConfig,
+  UrgentConfig,
+  DateSpecificRequirement,
+  WorkSchedule,
+  RoleWithCount,
+} from './postingConfig';
+import type { PreQuestion } from './preQuestion';
+
+// Re-export for convenience
+export type { PostingType } from './postingConfig';
 
 /**
  * 공고 상태
@@ -62,45 +76,87 @@ export interface RoleRequirement {
 
 /**
  * 구인공고 타입
+ *
+ * @description v2.0: PostingType 4가지 + DateSpecificRequirement + PreQuestion 지원
  */
 export interface JobPosting extends FirebaseDocument {
-  // 기본 정보
+  // === 기본 정보 ===
   title: string;
   description?: string;
   status: JobPostingStatus;
 
-  // 장소 정보
+  // === 장소 정보 ===
   location: Location;
   detailedAddress?: string;
   contactPhone?: string;
 
-  // 일정 정보
+  // === 일정 정보 (레거시: 단일 날짜) ===
   workDate: string; // YYYY-MM-DD
   timeSlot: string; // "18:00 - 02:00" or "18:00~02:00"
   startTime?: Timestamp;
   endTime?: Timestamp;
 
-  // 모집 정보
+  // === 일정 정보 (v2.0: 다중 날짜) ===
+  /**
+   * 날짜별 모집 정보
+   * @description 여러 날짜에 각각 다른 시간대/역할 모집 가능
+   */
+  dateSpecificRequirements?: DateSpecificRequirement[];
+
+  // === 모집 정보 ===
   roles: RoleRequirement[];
   totalPositions: number;
   filledPositions: number;
 
-  // 급여 정보
+  // === 급여 정보 ===
   salary: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
 
-  // 소유자 정보
+  // === 소유자 정보 ===
   ownerId: string;
   ownerName?: string;
 
-  // 통계
+  // === 통계 ===
   viewCount?: number;
   applicationCount?: number;
 
-  // 메타데이터
+  // === 메타데이터 ===
   tags?: string[];
   isUrgent?: boolean;
+
+  // === PostingType v2.0 ===
+  /**
+   * 공고 타입
+   * - regular: 일반 공고 (기본)
+   * - fixed: 고정 공고 (기간제)
+   * - tournament: 대회 공고 (관리자 승인)
+   * - urgent: 긴급 공고 (우선 노출)
+   */
+  postingType?: PostingType;
+
+  /** 고정 공고 설정 */
+  fixedConfig?: FixedConfig;
+
+  /** 대회 공고 설정 */
+  tournamentConfig?: TournamentConfig;
+
+  /** 긴급 공고 설정 */
+  urgentConfig?: UrgentConfig;
+
+  // === 고정공고 전용 필드 ===
+  /** 근무 스케줄 */
+  workSchedule?: WorkSchedule;
+
+  /** 역할별 모집 인원 (상세) */
+  requiredRolesWithCount?: RoleWithCount[];
+
+  // === 사전질문 ===
+  /** 사전질문 사용 여부 */
+  usesPreQuestions?: boolean;
+
+  /** 사전질문 목록 */
+  preQuestions?: PreQuestion[];
 }
 
 /**

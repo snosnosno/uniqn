@@ -67,6 +67,77 @@ export type {
 
 export { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from './application';
 
+// 지원서 v2.0 추가 타입
+export type {
+  RecruitmentType,
+  CreateApplicationInputV2,
+  ConfirmApplicationInputV2,
+} from './application';
+
+// Assignment v2.0 타입
+export type {
+  DurationType,
+  AssignmentDuration,
+  CheckMethod,
+  Assignment,
+} from './assignment';
+
+export {
+  getAssignmentRole,
+  getAssignmentRoles,
+  isValidAssignment,
+  createSimpleAssignment,
+  createGroupedAssignment,
+} from './assignment';
+
+// 공고 타입별 설정
+export type {
+  PostingType,
+  FixedConfig,
+  FixedJobPostingData,
+  WorkSchedule,
+  RoleWithCount,
+  TournamentConfig,
+  UrgentConfig,
+  RoleRequirement as PostingRoleRequirement,
+  TimeSlot,
+  DateSpecificRequirement,
+} from './postingConfig';
+
+export {
+  POSTING_TYPE_LABELS,
+  POSTING_TYPE_BADGE_STYLES,
+  getDateFromRequirement,
+  sortDateRequirements,
+} from './postingConfig';
+
+// 사전질문 타입
+export type { PreQuestion, PreQuestionAnswer } from './preQuestion';
+
+export {
+  PRE_QUESTION_TYPE_LABELS,
+  initializePreQuestionAnswers,
+  validateRequiredAnswers,
+  findUnansweredRequired,
+  updateAnswer,
+} from './preQuestion';
+
+// 지원서 이력 관리
+export type {
+  OriginalApplication,
+  ConfirmationHistoryEntry,
+  HistorySummary,
+} from './applicationHistory';
+
+export {
+  createHistoryEntry,
+  addCancellationToEntry,
+  findActiveConfirmation,
+  countConfirmations,
+  countCancellations,
+  createHistorySummary,
+} from './applicationHistory';
+
 // 알림 타입
 export type {
   NotificationCategory,
@@ -118,3 +189,25 @@ export {
 // 공고 작성 폼 타입
 export type { JobPostingFormData } from './jobPostingForm';
 export { INITIAL_JOB_POSTING_FORM_DATA } from './jobPostingForm';
+
+// Admin 타입
+export type {
+  AdminUser,
+  AdminUserProfile,
+  AdminPenalty,
+  PenaltyType,
+  AdminUserFilters,
+  AdminUserSortField,
+  UpdateUserRoleInput,
+  UpdateUserInput,
+  CreatePenaltyInput,
+} from './admin';
+
+export {
+  PENALTY_TYPE_LABELS,
+  ADMIN_USER_SORT_LABELS,
+  USER_ROLE_LABELS,
+  USER_ROLE_BADGE_VARIANT,
+  COUNTRIES,
+  getCountryByCode,
+} from './admin';

@@ -37,6 +37,8 @@ export {
 // Application Service
 export {
   applyToJob,
+  applyToJobV2,
+  applyToJobLegacy,
   getMyApplications,
   getApplicationById,
   cancelApplication,
@@ -44,6 +46,30 @@ export {
   getApplicationStats,
   type ApplicationWithJob,
 } from './applicationService';
+
+// Application History Service (확정/취소 이력 관리)
+export {
+  confirmApplicationWithHistory,
+  cancelConfirmation,
+  getOriginalApplicationData,
+  getConfirmedSelections,
+  isV2Application,
+  getApplicationHistorySummary,
+  type ConfirmWithHistoryResult,
+  type CancelConfirmationResult,
+} from './applicationHistoryService';
+
+// Applicant Conversion Service (지원자→스태프 변환)
+export {
+  convertApplicantToStaff,
+  batchConvertApplicants,
+  isAlreadyStaff,
+  canConvertToStaff,
+  revertStaffConversion,
+  type ConversionResult,
+  type BulkConversionResult,
+  type ConversionOptions,
+} from './applicantConversionService';
 
 // Account Deletion Service
 export {

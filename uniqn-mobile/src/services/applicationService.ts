@@ -26,8 +26,18 @@ import {
   ApplicationClosedError,
   MaxCapacityReachedError,
 } from '@/errors';
-import type { Application, ApplicationStatus, CreateApplicationInput } from '@/types';
-import type { JobPosting } from '@/types';
+import type {
+  Application,
+  ApplicationStatus,
+  CreateApplicationInput,
+  CreateApplicationInputV2,
+  Assignment,
+  PreQuestionAnswer,
+  JobPosting,
+  RecruitmentType,
+} from '@/types';
+import { isValidAssignment, validateRequiredAnswers } from '@/types';
+import { ValidationError } from '@/errors';
 
 // ============================================================================
 // Constants
@@ -366,4 +376,226 @@ export async function getApplicationStats(
     logger.error('지원 통계 조회 실패', error as Error, { applicantId });
     throw mapFirebaseError(error);
   }
+}
+
+// ============================================================================
+// Application Service v2.0 (Assignment + PreQuestion 지원)
+// ============================================================================
+
+/**
+ * 공고에 지원하기 v2.0 (트랜잭션)
+ *
+ * @description Assignment 배열 + 사전질문 답변 지원
+ *
+ * 비즈니스 로직:
+ * 1. Assignment 유효성 검증
+ * 2. 사전질문 필수 답변 검증
+ * 3. 중복 지원 검사
+ * 4. 공고 상태/정원 확인
+ * 5. 지원서 생성 (v2.0 형식)
+ */
+export async function applyToJobV2(
+  input: CreateApplicationInputV2,
+  applicantId: string,
+  applicantName: string,
+  applicantPhone?: string,
+  applicantEmail?: string
+): Promise<Application> {
+  try {
+    logger.info('지원하기 v2.0 시작', {
+      jobPostingId: input.jobPostingId,
+      applicantId,
+      assignmentCount: input.assignments.length,
+    });
+
+    // 1. Assignment 유효성 검증
+    for (const assignment of input.assignments) {
+      if (!isValidAssignment(assignment)) {
+        throw new ValidationError({
+          userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해주세요.',
+          code: 'E3010',
+        });
+      }
+    }
+
+    const result = await runTransaction(db, async (transaction) => {
+      // 2. 공고 정보 읽기
+      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, input.jobPostingId);
+      const jobDoc = await transaction.get(jobRef);
+
+      if (!jobDoc.exists()) {
+        throw new ApplicationClosedError({
+          userMessage: '존재하지 않는 공고입니다',
+          jobPostingId: input.jobPostingId,
+        });
+      }
+
+      const jobData = jobDoc.data() as JobPosting;
+
+      // 3. 공고 상태 확인
+      if (jobData.status !== 'active') {
+        throw new ApplicationClosedError({
+          userMessage: '지원이 마감된 공고입니다',
+          jobPostingId: input.jobPostingId,
+        });
+      }
+
+      // 4. 사전질문 필수 답변 검증
+      if (jobData.usesPreQuestions && jobData.preQuestions?.length) {
+        if (!input.preQuestionAnswers?.length) {
+          throw new ValidationError({
+            userMessage: '사전질문에 답변해주세요',
+            code: 'E3011',
+          });
+        }
+
+        const isValid = validateRequiredAnswers(input.preQuestionAnswers);
+        if (!isValid) {
+          throw new ValidationError({
+            userMessage: '필수 질문에 모두 답변해주세요',
+            code: 'E3012',
+          });
+        }
+      }
+
+      // 5. 정원 확인
+      const currentApplications = jobData.applicationCount ?? 0;
+      const totalPositions = jobData.totalPositions ?? 0;
+
+      if (totalPositions > 0 && currentApplications >= totalPositions) {
+        throw new MaxCapacityReachedError({
+          userMessage: '모집 인원이 마감되었습니다',
+          jobPostingId: input.jobPostingId,
+          maxCapacity: totalPositions,
+          currentCount: currentApplications,
+        });
+      }
+
+      // 6. 중복 지원 검사 (복합 키)
+      const applicationId = `${input.jobPostingId}_${applicantId}`;
+      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+
+      const existingApp = await transaction.get(applicationRef);
+      if (existingApp.exists()) {
+        const existingData = existingApp.data() as Application;
+        if (existingData.status !== 'cancelled') {
+          throw new AlreadyAppliedError({
+            userMessage: '이미 지원한 공고입니다',
+            jobPostingId: input.jobPostingId,
+            applicationId: existingApp.id,
+          });
+        }
+      }
+
+      // 7. 모집 유형 결정
+      const recruitmentType: RecruitmentType =
+        jobData.postingType === 'fixed' ? 'fixed' : 'event';
+
+      // 8. 대표 역할 결정 (레거시 호환)
+      const firstAssignment = input.assignments[0];
+      const primaryRole =
+        firstAssignment?.role ?? firstAssignment?.roles?.[0] ?? 'dealer';
+
+      // 9. 지원서 데이터 생성 (v2.0)
+      const now = serverTimestamp();
+      const applicationData: Omit<Application, 'id'> = {
+        // 지원자 정보
+        applicantId,
+        applicantName,
+        applicantPhone,
+        applicantEmail,
+        applicantRole: primaryRole,
+
+        // 공고 정보 (레거시 호환)
+        jobPostingId: input.jobPostingId,
+        jobPostingTitle: jobData.title,
+        jobPostingDate: jobData.workDate,
+
+        // 공고 정보 (v2.0 표준)
+        eventId: input.jobPostingId,
+        postId: input.jobPostingId,
+        postTitle: jobData.title,
+
+        // 지원 정보
+        status: 'applied',
+        appliedRole: primaryRole,
+        message: input.message,
+        recruitmentType,
+
+        // v2.0 핵심 필드
+        assignments: input.assignments,
+        preQuestionAnswers: input.preQuestionAnswers,
+
+        // 메타데이터
+        isRead: false,
+        createdAt: now as Timestamp,
+        updatedAt: now as Timestamp,
+      };
+
+      // 10. 트랜잭션 쓰기
+      transaction.set(applicationRef, applicationData);
+      transaction.update(jobRef, {
+        applicationCount: increment(1),
+        updatedAt: serverTimestamp(),
+      });
+
+      return {
+        id: applicationId,
+        ...applicationData,
+      } as Application;
+    });
+
+    logger.info('지원하기 v2.0 성공', {
+      applicationId: result.id,
+      jobPostingId: input.jobPostingId,
+      assignmentCount: input.assignments.length,
+    });
+
+    return result;
+  } catch (error) {
+    logger.error('지원하기 v2.0 실패', error as Error, {
+      jobPostingId: input.jobPostingId,
+      applicantId,
+    });
+
+    if (
+      error instanceof AlreadyAppliedError ||
+      error instanceof ApplicationClosedError ||
+      error instanceof MaxCapacityReachedError ||
+      error instanceof ValidationError
+    ) {
+      throw error;
+    }
+
+    throw mapFirebaseError(error);
+  }
+}
+
+/**
+ * 레거시 지원 함수 래퍼
+ *
+ * @description 기존 applyToJob을 내부적으로 v2 형식으로 변환하여 처리
+ */
+export async function applyToJobLegacy(
+  input: CreateApplicationInput,
+  applicantId: string,
+  applicantName: string,
+  applicantPhone?: string
+): Promise<Application> {
+  // 레거시 입력을 v2 형식으로 변환
+  const v2Input: CreateApplicationInputV2 = {
+    jobPostingId: input.jobPostingId,
+    assignments: [
+      {
+        role: input.appliedRole,
+        timeSlot: '',
+        dates: [],
+        isGrouped: false,
+      },
+    ],
+    message: input.message,
+  };
+
+  // 기존 applyToJob 함수 호출 (레거시 형식 유지)
+  return applyToJob(input, applicantId, applicantName, applicantPhone);
 }

@@ -170,3 +170,13 @@ export {
   useMaintenanceMode,
   useWhenEnabled,
 } from './useFeatureFlag';
+
+// ============================================================================
+// Assignment v2.0 Hooks
+// ============================================================================
+
+export {
+  useAssignmentSelection,
+  type UseAssignmentSelectionOptions,
+  type UseAssignmentSelectionReturn,
+} from './useAssignmentSelection';

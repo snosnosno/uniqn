@@ -78,3 +78,48 @@ export type {
   RejectApplicationData,
   CancelApplicationData,
 } from './application.schema';
+
+// Assignment v2.0 스키마
+export {
+  roleSchema as assignmentRoleSchema,
+  rolesArraySchema,
+  timeSlotSchema,
+  dateSchema,
+  datesArraySchema,
+  durationTypeSchema,
+  durationSchema,
+  checkMethodSchema,
+  assignmentSchema,
+  assignmentsArraySchema,
+  createApplicationV2Schema,
+  confirmApplicationV2Schema,
+  cancelConfirmationSchema,
+} from './assignment.schema';
+
+export type {
+  AssignmentFormData,
+  AssignmentsArrayData,
+  CreateApplicationV2FormData,
+  ConfirmApplicationV2Data,
+  CancelConfirmationData,
+} from './assignment.schema';
+
+// 사전질문 스키마
+export {
+  preQuestionTypeSchema,
+  preQuestionSchema,
+  preQuestionsArraySchema,
+  preQuestionAnswerSchema,
+  preQuestionAnswersArraySchema,
+  validateRequiredAnswersSchema,
+  createApplicationWithPreQuestionsSchema,
+} from './preQuestion.schema';
+
+export type {
+  PreQuestionTypeData,
+  PreQuestionFormData,
+  PreQuestionsArrayData,
+  PreQuestionAnswerData,
+  PreQuestionAnswersArrayData,
+  CreateApplicationWithPreQuestionsData,
+} from './preQuestion.schema';
