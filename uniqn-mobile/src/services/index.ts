@@ -336,3 +336,20 @@ export {
   type FeatureFlags,
   type FeatureFlagKey,
 } from './featureFlagService';
+
+// Performance Service
+export {
+  performanceService,
+  startScreenTrace,
+  startApiTrace,
+  startTrace,
+  stopTrace,
+  recordMetric,
+  measureAsync,
+  measure,
+  recordNavigationTime,
+  recordRenderTime,
+  setPerformanceEnabled,
+  type PerformanceTrace,
+  type PerformanceMetrics,
+} from './performanceService';
