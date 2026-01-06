@@ -12,7 +12,12 @@ import {
   UserIcon,
   ChevronRightIcon,
 } from '@/components/icons';
-import { useState } from 'react';
+import { useThemeStore } from '@/stores/themeStore';
+import {
+  useNotificationSettingsQuery,
+  useSaveNotificationSettings,
+} from '@/hooks/useNotifications';
+import { useAuth } from '@/hooks/useAuth';
 
 // 태양 아이콘 (다크모드용)
 const SunIcon = ({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) => (
@@ -57,8 +62,29 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
 }
 
 export default function SettingsScreen() {
-  const [pushEnabled, setPushEnabled] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
+  const { isAuthenticated } = useAuth();
+
+  // 테마 설정
+  const { isDarkMode, setTheme } = useThemeStore();
+
+  // 알림 설정 (로그인 상태에서만)
+  const { data: notificationSettings } = useNotificationSettingsQuery();
+  const { saveSettings, isSaving } = useSaveNotificationSettings();
+
+  // 푸시 알림 토글
+  const handlePushToggle = (value: boolean) => {
+    if (notificationSettings) {
+      saveSettings({
+        ...notificationSettings,
+        pushEnabled: value,
+      });
+    }
+  };
+
+  // 다크모드 토글
+  const handleDarkModeToggle = (value: boolean) => {
+    setTheme(value ? 'dark' : 'light');
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
@@ -73,10 +99,11 @@ export default function SettingsScreen() {
             label="푸시 알림"
             rightElement={
               <Switch
-                value={pushEnabled}
-                onValueChange={setPushEnabled}
+                value={notificationSettings?.pushEnabled ?? true}
+                onValueChange={handlePushToggle}
+                disabled={isSaving || !isAuthenticated}
                 trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={pushEnabled ? '#3B82F6' : '#f4f3f4'}
+                thumbColor={notificationSettings?.pushEnabled ? '#3B82F6' : '#f4f3f4'}
               />
             }
           />
@@ -112,10 +139,10 @@ export default function SettingsScreen() {
             label="다크 모드"
             rightElement={
               <Switch
-                value={darkMode}
-                onValueChange={setDarkMode}
+                value={isDarkMode}
+                onValueChange={handleDarkModeToggle}
                 trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={darkMode ? '#3B82F6' : '#f4f3f4'}
+                thumbColor={isDarkMode ? '#3B82F6' : '#f4f3f4'}
               />
             }
           />

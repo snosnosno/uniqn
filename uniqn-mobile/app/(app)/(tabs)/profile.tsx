@@ -3,7 +3,7 @@
  * 프로필 화면
  */
 
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Avatar, Divider } from '@/components/ui';
@@ -15,13 +15,17 @@ import {
   MessageIcon,
   LogOutIcon,
 } from '@/components/icons';
+import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
+import { signOut } from '@/services/authService';
+import { useToastStore } from '@/stores/toastStore';
+import { useState } from 'react';
 
-// 임시 사용자 데이터
-const MOCK_USER = {
-  name: '홍길동',
-  email: 'user@example.com',
-  phone: '010-1234-5678',
-  role: '딜러',
+// 역할 한글 변환
+const ROLE_LABELS: Record<string, string> = {
+  admin: '관리자',
+  employer: '구인자',
+  staff: '스태프',
 };
 
 interface MenuItemProps {
@@ -53,10 +57,45 @@ function MenuItem({ icon, label, onPress, danger }: MenuItemProps) {
 }
 
 export default function ProfileScreen() {
+  const { profile, isLoading, user } = useAuth();
+  const reset = useAuthStore((state) => state.reset);
+  const addToast = useToastStore((state) => state.addToast);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+
   const handleLogout = () => {
-    // TODO: 로그아웃 처리
-    router.replace('/(auth)/login');
+    Alert.alert(
+      '로그아웃',
+      '정말 로그아웃 하시겠습니까?',
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '로그아웃',
+          style: 'destructive',
+          onPress: async () => {
+            setIsLoggingOut(true);
+            try {
+              await signOut();
+              reset();
+              router.replace('/(auth)/login');
+            } catch {
+              addToast({ type: 'error', message: '로그아웃에 실패했습니다' });
+            } finally {
+              setIsLoggingOut(false);
+            }
+          },
+        },
+      ]
+    );
   };
+
+  // 로딩 상태
+  if (isLoading) {
+    return (
+      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <ActivityIndicator size="large" color="#3B82F6" />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
@@ -76,16 +115,22 @@ export default function ProfileScreen() {
         {/* 프로필 정보 */}
         <Card className="mb-4">
           <View className="flex-row items-center">
-            <Avatar name={MOCK_USER.name} size="xl" />
+            <Avatar
+              name={profile?.name ?? user?.displayName ?? '사용자'}
+              size="xl"
+              imageUrl={profile?.photoURL ?? user?.photoURL ?? undefined}
+            />
             <View className="ml-4 flex-1">
               <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {MOCK_USER.name}
+                {profile?.name ?? user?.displayName ?? '이름 없음'}
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">{MOCK_USER.email}</Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                {profile?.email ?? user?.email ?? '이메일 없음'}
+              </Text>
               <View className="mt-1 flex-row items-center">
                 <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
                   <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
-                    {MOCK_USER.role}
+                    {profile?.role ? ROLE_LABELS[profile.role] ?? profile.role : '미설정'}
                   </Text>
                 </View>
               </View>
@@ -118,9 +163,15 @@ export default function ProfileScreen() {
         {/* 로그아웃 */}
         <Card>
           <MenuItem
-            icon={<LogOutIcon size={22} color="#EF4444" />}
-            label="로그아웃"
-            onPress={handleLogout}
+            icon={
+              isLoggingOut ? (
+                <ActivityIndicator size={22} color="#EF4444" />
+              ) : (
+                <LogOutIcon size={22} color="#EF4444" />
+              )
+            }
+            label={isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+            onPress={isLoggingOut ? () => {} : handleLogout}
             danger
           />
         </Card>

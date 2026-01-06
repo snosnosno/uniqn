@@ -3,54 +3,20 @@
  * 구인구직 메인 화면 (탭 홈)
  */
 
-import { View, Text, ScrollView, RefreshControl } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Badge, EmptyState } from '@/components/ui';
 import { BellIcon, MapPinIcon, CalendarIcon, CurrencyDollarIcon } from '@/components/icons';
-import { useState, useCallback } from 'react';
-import { Pressable } from 'react-native';
-
-// 임시 데이터
-const MOCK_JOBS = [
-  {
-    id: '1',
-    title: '강남 홀덤펍 딜러 모집',
-    location: '강남구',
-    date: '2024-12-20',
-    salary: 150000,
-    type: 'urgent',
-  },
-  {
-    id: '2',
-    title: '홍대 토너먼트 스태프',
-    location: '마포구',
-    date: '2024-12-22',
-    salary: 130000,
-    type: 'normal',
-  },
-  {
-    id: '3',
-    title: '판교 프라이빗 이벤트',
-    location: '성남시',
-    date: '2024-12-25',
-    salary: 180000,
-    type: 'fixed',
-  },
-];
+import { useJobPostings } from '@/hooks/useJobPostings';
+import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 
 export default function JobsScreen() {
-  const [refreshing, setRefreshing] = useState(false);
-  // setJobs는 실제 API 연동 시 사용 예정
-  const [jobs, _setJobs] = useState(MOCK_JOBS);
+  // 구인공고 목록 훅
+  const { jobs, isLoading, isRefreshing, refresh, loadMore, hasMore } = useJobPostings();
 
-  const onRefresh = useCallback(() => {
-    setRefreshing(true);
-    // TODO: 실제 데이터 fetch
-    setTimeout(() => {
-      setRefreshing(false);
-    }, 1000);
-  }, []);
+  // 읽지 않은 알림 수 (실시간)
+  const unreadCount = useUnreadCountRealtime();
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('ko-KR').format(amount) + '원';
@@ -67,8 +33,14 @@ export default function JobsScreen() {
           hitSlop={8}
         >
           <BellIcon size={24} color="#6B7280" />
-          {/* 알림 배지 */}
-          <View className="absolute right-1 top-1 h-2 w-2 rounded-full bg-error-500" />
+          {/* 알림 배지 (실시간) */}
+          {unreadCount > 0 && (
+            <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
+              <Text className="text-[10px] font-bold text-white">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </Text>
+            </View>
+          )}
         </Pressable>
       </View>
 
@@ -77,10 +49,22 @@ export default function JobsScreen() {
         className="flex-1"
         contentContainerClassName="p-4"
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
         }
+        onScrollEndDrag={() => {
+          if (hasMore) {
+            loadMore();
+          }
+        }}
       >
-        {jobs.length === 0 ? (
+        {isLoading && jobs.length === 0 ? (
+          <View className="flex-1 items-center justify-center py-20">
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text className="mt-4 text-gray-500 dark:text-gray-400">
+              공고를 불러오는 중...
+            </Text>
+          </View>
+        ) : jobs.length === 0 ? (
           <EmptyState
             title="등록된 공고가 없습니다"
             description="새로운 공고가 등록되면 알려드릴게요"
@@ -90,20 +74,25 @@ export default function JobsScreen() {
           jobs.map((job) => (
             <Card
               key={job.id}
-              onPress={() => router.push(`/(app)/jobs/${job.id}`)} // TODO: 상세 화면 구현
+              onPress={() => router.push(`/(app)/jobs/${job.id}`)}
               className="mb-3"
             >
               <View className="flex-row items-start justify-between">
                 <View className="flex-1">
                   <View className="mb-1 flex-row items-center">
-                    {job.type === 'urgent' && (
+                    {job.isUrgent && (
                       <Badge variant="error" size="sm" className="mr-2">
                         긴급
                       </Badge>
                     )}
-                    {job.type === 'fixed' && (
+                    {job.postingType === 'fixed' && (
                       <Badge variant="primary" size="sm" className="mr-2">
                         고정
+                      </Badge>
+                    )}
+                    {job.postingType === 'tournament' && (
+                      <Badge variant="secondary" size="sm" className="mr-2">
+                        대회
                       </Badge>
                     )}
                     <Text
@@ -125,14 +114,14 @@ export default function JobsScreen() {
                     <View className="flex-row items-center">
                       <CalendarIcon size={14} color="#6B7280" />
                       <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
-                        {job.date}
+                        {job.workDate}
                       </Text>
                     </View>
 
                     <View className="flex-row items-center">
                       <CurrencyDollarIcon size={14} color="#6B7280" />
                       <Text className="ml-1.5 text-sm font-medium text-primary-600 dark:text-primary-400">
-                        {formatCurrency(job.salary)}/일
+                        {formatCurrency(job.salary.amount)}/{job.salary.type === 'hourly' ? '시간' : '일'}
                       </Text>
                     </View>
                   </View>

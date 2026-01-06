@@ -1235,18 +1235,54 @@ graph LR
 
 ---
 
+## UI/UX 워크플로우 연동 상태 ✅
+
+> Mock 데이터 → 실제 훅/서비스 연동 현황
+
+### 탭 화면 연동 [P0] ✅
+
+| 화면 | 연동 항목 | 상태 | 비고 |
+|------|----------|:----:|------|
+| **홈 화면** | `useJobPostings` | ✅ | 구인공고 실데이터 연동 |
+| | `useUnreadCountRealtime` | ✅ | 헤더 알림 배지 (실시간) |
+| | Pull-to-refresh | ✅ | `isRefreshing` + `refresh` |
+| | 무한 스크롤 | ✅ | `loadMore` + `hasMore` |
+| **프로필 화면** | `useAuth` | ✅ | 사용자 프로필 연동 |
+| | `signOut` + `reset()` | ✅ | 로그아웃 + authStore 초기화 |
+| | Alert 확인 | ✅ | 로그아웃 전 확인 대화상자 |
+| **설정 화면** | `useThemeStore` | ✅ | 다크모드 토글 연동 |
+| | `useNotificationSettingsQuery` | ✅ | 푸시 설정 조회/저장 |
+
+### 서브 화면 연동 [P1] ✅
+
+| 화면 | 연동 항목 | 상태 | 비고 |
+|------|----------|:----:|------|
+| **알림 화면** | `useNotificationList` | ✅ | 알림 목록 실데이터 연동 |
+| | `useMarkAsRead` | ✅ | 개별 읽음 처리 |
+| | `useMarkAllAsRead` | ✅ | "모두 읽음" 버튼 |
+| | Timestamp 변환 | ✅ | Firebase Timestamp → Date |
+
+### 구인자 화면 연동 [P2]
+
+| 화면 | 연동 항목 | 상태 | 비고 |
+|------|----------|:----:|------|
+| **지원자 상세** | 상세 모달 | [ ] | TODO: 상세 모달 구현 |
+| **정산 상세** | 상세 모달 | [ ] | TODO: 상세 모달 구현 |
+
+---
+
 ## 진행 상태 요약
 
 | Phase | 상태 | 진행률 | 비고 |
 |-------|:----:|:------:|------|
 | 1. 프로젝트 기반 | ✅ | 100% | P0 완료, P1/P2 일부 보류 |
-| 2. 인증 + 구인구직 | ✅ | 97% | P0 완료, 필터/검색 완료, 찜하기만 보류 |
-| 3. 스케줄 + 알림 | ✅ | 92% | P0 완료, 백그라운드 알림만 보류 |
+| 2. 인증 + 구인구직 | ✅ | 98% | P0 완료, UI/UX 연동 완료 |
+| 3. 스케줄 + 알림 | ✅ | 95% | P0 완료, UI/UX 연동 완료 |
 | 4. 구인자 기능 | ✅ | 88% | 서비스/훅/테스트/UI 완료 |
 | 5. 최적화 + 배포준비 | 🟨 | 75% | CI/CD, 번들최적화, 성능측정 추가 완료 |
 | 6. 앱스토어 출시 | 🟨 | 15% | EAS/GitHub Actions 기반 구축 |
 
-**전체 완성도**: **90%** (MVP 출시 준비 완료)
+**전체 완성도**: **92%** (MVP 출시 준비 완료)
 **테스트 현황**: **222개** 테스트 (커버리지 ~89%)
 
 **범례**: ⬜ 미시작 | 🟨 진행중 | ✅ 완료
@@ -1255,7 +1291,16 @@ graph LR
 
 *생성일: 2024-12*
 *업데이트: 2026-01-06*
-*버전: 5.15*
+*버전: 5.16*
+
+### 버전 5.16 변경사항 (2026-01-06)
+- [전체] UI/UX 워크플로우 연동 섹션 추가 - Mock 데이터 → 실제 훅/서비스 연동 현황 추적
+- [Phase 2] 홈 화면 실데이터 연동 - `useJobPostings`, `useUnreadCountRealtime` (알림 배지)
+- [Phase 2] 프로필 화면 실데이터 연동 - `useAuth`, `signOut`, Alert 확인 대화상자
+- [Phase 3] 알림 화면 실데이터 연동 - `useNotificationList`, `useMarkAsRead`, `useMarkAllAsRead`
+- [Phase 3] 설정 화면 실데이터 연동 - `useThemeStore` (다크모드), `useNotificationSettingsQuery` (푸시 설정)
+- 진행 상태 요약: Phase 2(97% → 98%), Phase 3(92% → 95%) 업데이트
+- 전체 완성도 90% → 92% 업데이트
 
 ### 버전 5.15 변경사항 (2026-01-06)
 - [Phase 5] CI/CD 파이프라인 구축 완료 - `.github/workflows/ci.yml` (lint, type-check, test, bundle-check, EAS dry-run)
