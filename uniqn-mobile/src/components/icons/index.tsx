@@ -294,3 +294,16 @@ export const WifiOff = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProp
 export const RefreshCw = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <Feather name="refresh-cw" size={size} color={color} />
 );
+
+// Admin & Global
+export const GlobeIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="globe" size={size} color={color} />
+);
+
+export const ShieldIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="shield" size={size} color={color} />
+);
+
+export const CreditCardIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="credit-card" size={size} color={color} />
+);

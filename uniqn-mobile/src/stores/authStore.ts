@@ -1,17 +1,24 @@
 /**
  * UNIQN Mobile - Auth Store
  *
- * @description 인증 상태 관리 (Zustand)
- * @version 1.0.0
+ * @description 인증 상태 관리 (Zustand + MMKV)
+ * @version 1.2.0
  *
- * TODO [출시 전]: SecureStore로 민감 데이터 저장 방식 변경
- * TODO [출시 전]: 토큰 갱신 로직 구현
- * TODO [출시 전]: 세션 만료 처리 로직 추가
+ * 변경사항:
+ * - AsyncStorage → MMKV로 마이그레이션 (30배 빠름)
+ * - ✅ 토큰 저장: sessionService + secureStorage (expo-secure-store)
+ * - ✅ 토큰 갱신: sessionService.refreshToken()
+ * - ✅ 세션 만료: sessionService.expireSession()
+ *
+ * 참고:
+ * - 이 스토어는 user/profile 정보만 저장 (민감하지 않음)
+ * - 인증 토큰은 Firebase Auth가 내부 관리 + sessionService가 SecureStore에 백업
+ * - 로그인 시도 횟수 등 보안 데이터는 secureStorage 사용
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '@/lib/mmkvStorage';
 import { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole } from '@/types';
 
@@ -225,7 +232,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvStorage),
       // 민감한 정보는 저장하지 않음
       partialize: (state) => ({
         user: state.user,

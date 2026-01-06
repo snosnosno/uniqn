@@ -2,12 +2,16 @@
  * UNIQN Mobile - Avatar 컴포넌트
  *
  * @description expo-image 기반 프로필 이미지 또는 이니셜 표시
- * @version 1.1.0
+ * @version 1.2.0
+ *
+ * 변경사항:
+ * - blurhash placeholder 추가
  */
 
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
 import { Image } from 'expo-image';
+import { DEFAULT_BLURHASH } from './OptimizedImage';
 
 type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl';
 
@@ -86,6 +90,7 @@ export const Avatar = memo(function Avatar({
         source={source}
         className={`rounded-full ${sizeStyles[size]} ${className}`}
         contentFit="cover"
+        placeholder={DEFAULT_BLURHASH.avatar}
         transition={200}
         cachePolicy="memory-disk"
         accessibilityLabel={name ? `${name} 프로필 사진` : '프로필 사진'}

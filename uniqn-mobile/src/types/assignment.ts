@@ -9,6 +9,27 @@
  */
 
 /**
+ * 기간 타입
+ */
+export type DurationType = 'single' | 'consecutive' | 'multi';
+
+/**
+ * 체크 방식 타입
+ */
+export type CheckMethod = 'group' | 'individual';
+
+/**
+ * 기간 정보 구조체
+ */
+export interface AssignmentDuration {
+  type: DurationType;
+  /** 시작일 (YYYY-MM-DD 형식) */
+  startDate: string;
+  /** 종료일 (연속/다중일 경우) */
+  endDate?: string;
+}
+
+/**
  * 지원 선택사항 - 다중 역할/시간/날짜 조합
  *
  * @description
@@ -87,7 +108,7 @@ export interface Assignment {
    * - 'group': 그룹 전체를 한 번에 선택/해제
    * - 'individual': 개별 날짜별로 선택/해제
    */
-  checkMethod?: 'group' | 'individual';
+  checkMethod?: CheckMethod;
 
   /**
    * 모집 공고 구분자 (날짜 중복 모집 구분용)
@@ -101,13 +122,7 @@ export interface Assignment {
    * - consecutive: 연속 날짜
    * - multi: 다중 날짜 (비연속 포함)
    */
-  duration?: {
-    type: 'single' | 'consecutive' | 'multi';
-    /** 시작일 (YYYY-MM-DD 형식) */
-    startDate: string;
-    /** 종료일 (연속/다중일 경우) */
-    endDate?: string;
-  };
+  duration?: AssignmentDuration;
 }
 
 /**

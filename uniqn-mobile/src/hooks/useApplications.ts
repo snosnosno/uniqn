@@ -2,24 +2,38 @@
  * UNIQN Mobile - 지원 관리 훅
  *
  * @description 지원서 제출, 조회, 취소 관리
- * @version 1.0.0
+ * @version 2.0.0 - v2.0 Assignment + PreQuestion 지원
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMyApplications, applyToJob, cancelApplication as cancelApplicationService } from '@/services';
+import {
+  getMyApplications,
+  applyToJob,
+  applyToJobV2,
+  cancelApplication as cancelApplicationService,
+} from '@/services';
 import { queryKeys } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
-import type { Application, StaffRole } from '@/types';
+import type { Application, StaffRole, Assignment, PreQuestionAnswer } from '@/types';
 
 // ============================================================================
 // Types
 // ============================================================================
 
+/** v1.0 레거시 지원 파라미터 */
 interface SubmitApplicationParams {
   jobPostingId: string;
   role: StaffRole;
+  message?: string;
+}
+
+/** v2.0 지원 파라미터 (Assignment + PreQuestion) */
+interface SubmitApplicationV2Params {
+  jobPostingId: string;
+  assignments: Assignment[];
+  preQuestionAnswers?: PreQuestionAnswer[];
   message?: string;
 }
 
@@ -78,17 +92,30 @@ export function useApplications() {
     },
   });
 
-  // 지원 취소
-  const cancelMutation = useMutation({
-    mutationFn: (applicationId: string) => {
+  // v2.0 지원 제출 (Assignment + PreQuestion)
+  const submitV2Mutation = useMutation({
+    mutationFn: (params: SubmitApplicationV2Params) => {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
-      return cancelApplicationService(applicationId, user.uid);
+      return applyToJobV2(
+        {
+          jobPostingId: params.jobPostingId,
+          assignments: params.assignments,
+          preQuestionAnswers: params.preQuestionAnswers,
+          message: params.message,
+        },
+        user.uid,
+        user.displayName ?? '익명',
+        user.phoneNumber ?? undefined
+      );
     },
-    onSuccess: (_, applicationId) => {
-      logger.info('지원 취소', { applicationId });
-      addToast({ type: 'success', message: '지원이 취소되었습니다.' });
+    onSuccess: (data) => {
+      logger.info('v2.0 지원 완료', {
+        applicationId: data.id,
+        assignmentCount: data.assignments?.length ?? 0,
+      });
+      addToast({ type: 'success', message: '지원이 완료되었습니다.' });
 
       // 캐시 무효화
       queryClient.invalidateQueries({
@@ -99,10 +126,75 @@ export function useApplications() {
       });
     },
     onError: (error) => {
+      logger.error('v2.0 지원 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '지원에 실패했습니다.',
+      });
+    },
+  });
+
+  // 지원 취소 (Optimistic Update 적용)
+  const cancelMutation = useMutation({
+    mutationFn: (applicationId: string) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return cancelApplicationService(applicationId, user.uid);
+    },
+    // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
+    onMutate: async (applicationId: string) => {
+      // 진행 중인 refetch 취소 (낙관적 업데이트와 충돌 방지)
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.applications.mine(),
+      });
+
+      // 이전 데이터 스냅샷 저장 (롤백용)
+      const previousApplications = queryClient.getQueryData<Application[]>(
+        queryKeys.applications.mine()
+      );
+
+      // 낙관적으로 UI 업데이트 (취소된 것처럼 표시)
+      if (previousApplications) {
+        queryClient.setQueryData<Application[]>(
+          queryKeys.applications.mine(),
+          previousApplications.map(app =>
+            app.id === applicationId
+              ? { ...app, status: 'cancelled' as const }
+              : app
+          )
+        );
+      }
+
+      // 컨텍스트 반환 (롤백에 사용)
+      return { previousApplications };
+    },
+    onSuccess: (_, applicationId) => {
+      logger.info('지원 취소', { applicationId });
+      addToast({ type: 'success', message: '지원이 취소되었습니다.' });
+    },
+    onError: (error, _, context) => {
       logger.error('지원 취소 실패', error as Error);
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '취소에 실패했습니다.',
+      });
+
+      // 롤백: 이전 데이터로 복원
+      if (context?.previousApplications) {
+        queryClient.setQueryData(
+          queryKeys.applications.mine(),
+          context.previousApplications
+        );
+      }
+    },
+    // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.mine(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.all,
       });
     },
   });
@@ -132,9 +224,13 @@ export function useApplications() {
     isRefreshing: myApplicationsQuery.isRefetching,
     error: myApplicationsQuery.error,
 
-    // 지원 제출
+    // 지원 제출 (v1.0 레거시)
     submitApplication: submitMutation.mutate,
     isSubmitting: submitMutation.isPending,
+
+    // 지원 제출 (v2.0 Assignment + PreQuestion)
+    submitApplicationV2: submitV2Mutation.mutate,
+    isSubmittingV2: submitV2Mutation.isPending,
 
     // 지원 취소
     cancelApplication: cancelMutation.mutate,

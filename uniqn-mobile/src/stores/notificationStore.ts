@@ -1,13 +1,13 @@
 /**
  * UNIQN Mobile - Notification Store
  *
- * @description 알림 상태 관리 (Zustand)
- * @version 1.0.0
+ * @description 알림 상태 관리 (Zustand + MMKV)
+ * @version 1.1.0
  */
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '@/lib/mmkvStorage';
 import type {
   NotificationData,
   NotificationSettings,
@@ -373,7 +373,7 @@ export const useNotificationStore = create<NotificationState>()(
     }),
     {
       name: 'notification-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvStorage),
       // 캐싱할 데이터 선택 (알림 목록은 제외, 설정만 저장)
       partialize: (state) => ({
         settings: state.settings,

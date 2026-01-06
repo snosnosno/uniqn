@@ -164,6 +164,8 @@ export async function getMyWorkLogs(
 
 /**
  * 특정 날짜의 근무 기록 조회
+ *
+ * @description orderBy 대신 JS 정렬 사용 (복합 인덱스 불필요)
  */
 export async function getWorkLogsByDate(staffId: string, date: string): Promise<WorkLog[]> {
   try {
@@ -173,15 +175,21 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
-      where('date', '==', date),
-      orderBy('createdAt', 'asc')
+      where('date', '==', date)
     );
 
     const snapshot = await getDocs(q);
-    return snapshot.docs.map((docSnap) => ({
+    const workLogs = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
     })) as WorkLog[];
+
+    // createdAt 기준 오름차순 정렬 (JS)
+    return workLogs.sort((a, b) => {
+      const aTime = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
+      const bTime = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
+      return aTime - bTime;
+    });
   } catch (error) {
     logger.error('날짜별 근무 기록 조회 실패', error as Error, { staffId, date });
     throw mapFirebaseError(error);

@@ -6,8 +6,8 @@
  */
 
 // 지원자 관리
-export { ApplicantCard } from './ApplicantCard';
-export type { ApplicantCardProps } from './ApplicantCard';
+export { ApplicantCard as EmployerApplicantCard } from './ApplicantCard';
+export type { ApplicantCardProps as EmployerApplicantCardProps } from './ApplicantCard';
 
 export { ApplicantList } from './ApplicantList';
 export type { ApplicantListProps } from './ApplicantList';

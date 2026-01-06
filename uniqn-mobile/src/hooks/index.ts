@@ -180,3 +180,13 @@ export {
   type UseAssignmentSelectionOptions,
   type UseAssignmentSelectionReturn,
 } from './useAssignmentSelection';
+
+// ============================================================================
+// Realtime Query Integration Hooks
+// ============================================================================
+
+export {
+  useRealtimeQuery,
+  useRealtimeCollection,
+  useRealtimeDocument,
+} from './useRealtimeQuery';

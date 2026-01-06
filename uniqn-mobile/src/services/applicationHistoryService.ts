@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, MaxCapacityReachedError, ValidationError } from '@/errors';
+import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
 import type {
   Application,
   Assignment,
@@ -81,9 +81,8 @@ export async function confirmApplicationWithHistory(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 지원입니다',
-          code: 'E3001',
         });
       }
 
@@ -93,9 +92,8 @@ export async function confirmApplicationWithHistory(
       if (applicationData.confirmationHistory?.length) {
         const activeConfirmation = findActiveConfirmation(applicationData.confirmationHistory);
         if (activeConfirmation) {
-          throw new ValidationError({
+          throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
             userMessage: '이미 확정된 지원입니다',
-            code: 'E3002',
           });
         }
       }
@@ -105,9 +103,8 @@ export async function confirmApplicationWithHistory(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 공고입니다',
-          code: 'E3003',
         });
       }
 
@@ -115,9 +112,8 @@ export async function confirmApplicationWithHistory(
 
       // 공고 소유자 확인
       if (jobData.ownerId !== ownerId) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
-          code: 'E5001',
         });
       }
 
@@ -157,7 +153,7 @@ export async function confirmApplicationWithHistory(
       if (!originalApplication && applicationData.assignments) {
         originalApplication = {
           assignments: applicationData.assignments,
-          appliedAt: applicationData.createdAt,
+          appliedAt: (applicationData.createdAt as Timestamp) ?? Timestamp.now(),
         };
       }
 
@@ -279,9 +275,8 @@ export async function cancelConfirmation(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 지원입니다',
-          code: 'E3001',
         });
       }
 
@@ -289,9 +284,8 @@ export async function cancelConfirmation(
 
       // 확정 상태 확인
       if (applicationData.status !== 'confirmed') {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '확정된 지원만 취소할 수 있습니다',
-          code: 'E3004',
         });
       }
 
@@ -300,9 +294,8 @@ export async function cancelConfirmation(
       const activeConfirmation = findActiveConfirmation(confirmationHistory);
 
       if (!activeConfirmation) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '취소할 확정 이력이 없습니다',
-          code: 'E3005',
         });
       }
 
@@ -311,9 +304,8 @@ export async function cancelConfirmation(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 공고입니다',
-          code: 'E3003',
         });
       }
 
@@ -321,9 +313,8 @@ export async function cancelConfirmation(
 
       // 공고 소유자 확인
       if (jobData.ownerId !== ownerId) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
-          code: 'E5001',
         });
       }
 

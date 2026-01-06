@@ -8,7 +8,8 @@
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import type { JobPostingCard } from '@/types';
+import { PostingTypeBadge } from './PostingTypeBadge';
+import type { JobPostingCard, PostingType } from '@/types';
 
 // ============================================================================
 // Types
@@ -100,9 +101,13 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
       className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700 active:opacity-80"
     >
-      {/* 상단: 긴급 + 제목 */}
+      {/* 상단: 공고타입 + 긴급 + 제목 */}
       <View className="flex-row items-start justify-between mb-2">
-        <View className="flex-1 flex-row items-center">
+        <View className="flex-1 flex-row items-center flex-wrap">
+          {/* 공고 타입 뱃지 (regular는 표시 안 함) */}
+          {job.postingType && job.postingType !== 'regular' && (
+            <PostingTypeBadge type={job.postingType as PostingType} size="sm" className="mr-2" />
+          )}
           {job.isUrgent && (
             <Badge variant="error" size="sm" className="mr-2">
               긴급

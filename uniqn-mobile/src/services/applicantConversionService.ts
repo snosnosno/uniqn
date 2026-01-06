@@ -19,7 +19,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, ValidationError, AlreadyExistsError } from '@/errors';
+import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
 import type { Application, Assignment, Staff, JobPosting } from '@/types';
 
 // ============================================================================
@@ -93,9 +93,8 @@ export async function convertApplicantToStaff(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 지원입니다',
-          code: 'E3001',
         });
       }
 
@@ -103,9 +102,8 @@ export async function convertApplicantToStaff(
 
       // 확정 상태 확인
       if (applicationData.status !== 'confirmed') {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '확정된 지원만 스태프로 변환할 수 있습니다',
-          code: 'E3006',
         });
       }
 
@@ -114,9 +112,8 @@ export async function convertApplicantToStaff(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 공고입니다',
-          code: 'E3003',
         });
       }
 
@@ -124,9 +121,8 @@ export async function convertApplicantToStaff(
 
       // 공고 소유자 확인
       if (jobData.ownerId !== managerId) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
-          code: 'E5001',
         });
       }
 
@@ -145,9 +141,8 @@ export async function convertApplicantToStaff(
         const existingWorkLogs = await getDocs(existingWorkLogsQuery);
 
         if (!existingWorkLogs.empty) {
-          throw new AlreadyExistsError({
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_APPLIED, {
             userMessage: '이미 해당 이벤트의 스태프입니다',
-            code: 'E6001',
           });
         }
       }
@@ -268,7 +263,7 @@ export async function convertApplicantToStaff(
     return result;
   } catch (error) {
     logger.error('지원자→스태프 변환 실패', error as Error, { applicationId });
-    throw error instanceof ValidationError || error instanceof AlreadyExistsError
+    throw error instanceof ValidationError || error instanceof BusinessError
       ? error
       : mapFirebaseError(error);
   }
@@ -390,15 +385,17 @@ export async function canConvertToStaff(applicationId: string): Promise<{
 
     const applicationData = applicationDoc.data() as Application;
 
+    // completed 상태 먼저 체크 (이미 변환된 경우)
+    if (applicationData.status === 'completed') {
+      return { canConvert: false, reason: '이미 스태프로 변환되었습니다' };
+    }
+
+    // confirmed 상태인지 체크
     if (applicationData.status !== 'confirmed') {
       return {
         canConvert: false,
         reason: `확정된 지원만 변환 가능합니다 (현재: ${applicationData.status})`,
       };
-    }
-
-    if (applicationData.status === 'completed') {
-      return { canConvert: false, reason: '이미 스태프로 변환되었습니다' };
     }
 
     return { canConvert: true };
@@ -426,18 +423,16 @@ export async function revertStaffConversion(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 지원입니다',
-          code: 'E3001',
         });
       }
 
       const applicationData = applicationDoc.data() as Application;
 
       if (applicationData.status !== 'completed') {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '완료된 지원만 취소할 수 있습니다',
-          code: 'E3007',
         });
       }
 
@@ -446,17 +441,15 @@ export async function revertStaffConversion(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
           userMessage: '존재하지 않는 공고입니다',
-          code: 'E3003',
         });
       }
 
       const jobData = jobDoc.data() as JobPosting;
       if (jobData.ownerId !== managerId) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
-          code: 'E5001',
         });
       }
 

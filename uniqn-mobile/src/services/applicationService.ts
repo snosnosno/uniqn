@@ -25,6 +25,8 @@ import {
   AlreadyAppliedError,
   ApplicationClosedError,
   MaxCapacityReachedError,
+  ValidationError,
+  ERROR_CODES,
 } from '@/errors';
 import type {
   Application,
@@ -35,9 +37,9 @@ import type {
   PreQuestionAnswer,
   JobPosting,
   RecruitmentType,
+  StaffRole,
 } from '@/types';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
-import { ValidationError } from '@/errors';
 
 // ============================================================================
 // Constants
@@ -51,7 +53,7 @@ const JOB_POSTINGS_COLLECTION = 'jobPostings';
 // ============================================================================
 
 export interface ApplicationWithJob extends Application {
-  jobPosting?: JobPosting;
+  jobPosting?: Partial<JobPosting>;
 }
 
 // ============================================================================
@@ -183,6 +185,8 @@ export async function applyToJob(
 
 /**
  * 내 지원 내역 조회
+ *
+ * @description N+1 쿼리 최적화: 공고 정보를 배치로 조회
  */
 export async function getMyApplications(applicantId: string): Promise<ApplicationWithJob[]> {
   try {
@@ -196,7 +200,14 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
     );
 
     const snapshot = await getDocs(q);
-    const applications: ApplicationWithJob[] = [];
+
+    if (snapshot.empty) {
+      return [];
+    }
+
+    // 1. 모든 지원서 매핑 + 고유 공고 ID 수집
+    const applications: Application[] = [];
+    const jobPostingIds = new Set<string>();
 
     for (const docSnapshot of snapshot.docs) {
       const application = {
@@ -204,25 +215,53 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
         ...docSnapshot.data(),
       } as Application;
 
-      // 공고 정보 가져오기 (선택적)
-      try {
-        const jobDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, application.jobPostingId));
-        if (jobDoc.exists()) {
-          applications.push({
-            ...application,
-            jobPosting: { id: jobDoc.id, ...jobDoc.data() } as JobPosting,
-          });
-        } else {
-          applications.push(application);
-        }
-      } catch {
-        applications.push(application);
+      applications.push(application);
+
+      if (application.jobPostingId) {
+        jobPostingIds.add(application.jobPostingId);
       }
     }
 
-    logger.info('내 지원 내역 조회 완료', { applicantId, count: applications.length });
+    // 2. 공고 정보 배치 조회 (Promise.all로 병렬 처리)
+    const jobPostingMap = new Map<string, JobPosting>();
 
-    return applications;
+    if (jobPostingIds.size > 0) {
+      const jobPromises = Array.from(jobPostingIds).map(async (jobId) => {
+        try {
+          const jobDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, jobId));
+          if (jobDoc.exists()) {
+            return { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
+          }
+          return null;
+        } catch {
+          return null;
+        }
+      });
+
+      const jobResults = await Promise.all(jobPromises);
+
+      for (const job of jobResults) {
+        if (job) {
+          jobPostingMap.set(job.id, job);
+        }
+      }
+    }
+
+    // 3. 지원서에 공고 정보 조인 (O(1) 조회)
+    const applicationsWithJobs: ApplicationWithJob[] = applications.map((application) => {
+      const jobPosting = jobPostingMap.get(application.jobPostingId);
+      return jobPosting
+        ? { ...application, jobPosting }
+        : application;
+    });
+
+    logger.info('내 지원 내역 조회 완료', {
+      applicantId,
+      applicationCount: applications.length,
+      jobPostingCount: jobPostingMap.size,
+    });
+
+    return applicationsWithJobs;
   } catch (error) {
     logger.error('내 지원 내역 조회 실패', error as Error, { applicantId });
     throw mapFirebaseError(error);
@@ -411,9 +450,8 @@ export async function applyToJobV2(
     // 1. Assignment 유효성 검증
     for (const assignment of input.assignments) {
       if (!isValidAssignment(assignment)) {
-        throw new ValidationError({
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해주세요.',
-          code: 'E3010',
         });
       }
     }
@@ -443,17 +481,15 @@ export async function applyToJobV2(
       // 4. 사전질문 필수 답변 검증
       if (jobData.usesPreQuestions && jobData.preQuestions?.length) {
         if (!input.preQuestionAnswers?.length) {
-          throw new ValidationError({
+          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
             userMessage: '사전질문에 답변해주세요',
-            code: 'E3011',
           });
         }
 
         const isValid = validateRequiredAnswers(input.preQuestionAnswers);
         if (!isValid) {
-          throw new ValidationError({
+          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
             userMessage: '필수 질문에 모두 답변해주세요',
-            code: 'E3012',
           });
         }
       }
@@ -493,8 +529,9 @@ export async function applyToJobV2(
 
       // 8. 대표 역할 결정 (레거시 호환)
       const firstAssignment = input.assignments[0];
-      const primaryRole =
-        firstAssignment?.role ?? firstAssignment?.roles?.[0] ?? 'dealer';
+      const primaryRole = (
+        firstAssignment?.role ?? firstAssignment?.roles?.[0] ?? 'dealer'
+      ) as StaffRole;
 
       // 9. 지원서 데이터 생성 (v2.0)
       const now = serverTimestamp();

@@ -13,7 +13,7 @@
 
 import { AppState, type AppStateStatus } from 'react-native';
 import { getFirebaseAuth } from '@/lib/firebase';
-import * as SecureStore from 'expo-secure-store';
+import { authStorage, sessionStorage } from '@/lib/secureStorage';
 import { logger } from '@/utils/logger';
 import { crashlyticsService } from './crashlyticsService';
 import { useAuthStore } from '@/stores/authStore';
@@ -288,8 +288,8 @@ export async function refreshToken(): Promise<string | null> {
     // 토큰 강제 갱신 (true = force refresh)
     const newToken = await currentUser.getIdToken(true);
 
-    // SecureStore에 저장
-    await SecureStore.setItemAsync('auth_token', newToken);
+    // SecureStore에 저장 (중앙화된 secureStorage 사용)
+    await authStorage.setAuthToken(newToken);
 
     logger.info('토큰 갱신 성공');
     return newToken;
@@ -344,10 +344,9 @@ export async function checkLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const data = await SecureStore.getItemAsync(key);
-    if (!data) return;
-
-    const attempts: LoginAttempts = JSON.parse(data);
+    const { getItem, deleteItem } = await import('@/lib/secureStorage');
+    const attempts = await getItem<LoginAttempts>(key);
+    if (!attempts) return;
 
     // 잠금 상태 확인
     if (attempts.lockUntil && Date.now() < attempts.lockUntil) {
@@ -360,7 +359,7 @@ export async function checkLoginAttempts(email: string): Promise<void> {
 
     // 잠금 해제됨 - 초기화
     if (attempts.lockUntil && Date.now() >= attempts.lockUntil) {
-      await SecureStore.deleteItemAsync(key);
+      await deleteItem(key);
     }
   } catch (error) {
     if (error instanceof AppError) throw error;
@@ -375,10 +374,8 @@ export async function incrementLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const data = await SecureStore.getItemAsync(key);
-    const current: LoginAttempts = data
-      ? JSON.parse(data)
-      : { count: 0, lockUntil: null, lastAttempt: 0 };
+    const { getItem, setItem } = await import('@/lib/secureStorage');
+    const current = await getItem<LoginAttempts>(key) ?? { count: 0, lockUntil: null, lastAttempt: 0 };
 
     const newCount = current.count + 1;
     const shouldLock = newCount >= MAX_LOGIN_ATTEMPTS;
@@ -389,7 +386,7 @@ export async function incrementLoginAttempts(email: string): Promise<void> {
       lastAttempt: Date.now(),
     };
 
-    await SecureStore.setItemAsync(key, JSON.stringify(newAttempts));
+    await setItem(key, newAttempts);
 
     if (shouldLock) {
       logger.warn('로그인 시도 횟수 초과 - 계정 잠금', { email: email.substring(0, 3) + '***' });
@@ -406,7 +403,8 @@ export async function resetLoginAttempts(email: string): Promise<void> {
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    await SecureStore.deleteItemAsync(key);
+    const { deleteItem } = await import('@/lib/secureStorage');
+    await deleteItem(key);
     logger.debug('로그인 시도 횟수 초기화', { email: email.substring(0, 3) + '***' });
   } catch (error) {
     logger.error('로그인 시도 횟수 초기화 실패', error as Error);
@@ -420,10 +418,10 @@ export async function getRemainingLoginAttempts(email: string): Promise<number> 
   const key = `login_attempts_${email.toLowerCase()}`;
 
   try {
-    const data = await SecureStore.getItemAsync(key);
-    if (!data) return MAX_LOGIN_ATTEMPTS;
+    const { getItem } = await import('@/lib/secureStorage');
+    const attempts = await getItem<LoginAttempts>(key);
+    if (!attempts) return MAX_LOGIN_ATTEMPTS;
 
-    const attempts: LoginAttempts = JSON.parse(data);
     return Math.max(0, MAX_LOGIN_ATTEMPTS - attempts.count);
   } catch {
     return MAX_LOGIN_ATTEMPTS;

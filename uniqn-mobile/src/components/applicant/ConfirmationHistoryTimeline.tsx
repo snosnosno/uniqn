@@ -244,12 +244,8 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
   const displayHistory = useMemo(() => {
     if (!history?.length) return [];
     const sorted = [...history].sort((a, b) => {
-      const timeA = a.confirmedAt instanceof Timestamp
-        ? a.confirmedAt.toMillis()
-        : a.confirmedAt.seconds * 1000;
-      const timeB = b.confirmedAt instanceof Timestamp
-        ? b.confirmedAt.toMillis()
-        : b.confirmedAt.seconds * 1000;
+      const timeA = a.confirmedAt.toMillis();
+      const timeB = b.confirmedAt.toMillis();
       return timeA - timeB;
     });
     return maxDisplay ? sorted.slice(0, maxDisplay) : sorted;

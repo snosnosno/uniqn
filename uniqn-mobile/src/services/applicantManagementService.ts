@@ -2,7 +2,7 @@
  * UNIQN Mobile - 지원자 관리 서비스 (구인자용)
  *
  * @description 지원자 목록 조회, 확정, 거절, 대기자 관리 서비스
- * @version 1.0.0
+ * @version 2.0.0 - Assignment v2.0 지원
  */
 
 import {
@@ -20,11 +20,13 @@ import {
 import { db } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError } from '@/errors';
+import { confirmApplicationWithHistory } from './applicationHistoryService';
 import type {
   Application,
   ApplicationStatus,
   ApplicationStats,
   ConfirmApplicationInput,
+  ConfirmApplicationInputV2,
   RejectApplicationInput,
   JobPosting,
   StaffRole,
@@ -174,30 +176,63 @@ export async function getApplicantsByJobPosting(
  * 5. 근무 기록(WorkLog) 생성
  */
 export async function confirmApplication(
-  input: ConfirmApplicationInput,
+  input: ConfirmApplicationInput | ConfirmApplicationInputV2,
   ownerId: string
 ): Promise<ConfirmResult> {
   try {
     logger.info('지원 확정 시작', { applicationId: input.applicationId, ownerId });
 
-    const result = await runTransaction(db, async (transaction) => {
-      // 1. 지원서 읽기
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, input.applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
+    // v2.0 지원서 확인: selectedAssignments가 있거나 application에 assignments가 있으면 v2.0 처리
+    const applicationRef = doc(db, APPLICATIONS_COLLECTION, input.applicationId);
+    const applicationDoc = await getDoc(applicationRef);
 
-      if (!applicationDoc.exists()) {
+    if (!applicationDoc.exists()) {
+      throw new Error('존재하지 않는 지원입니다');
+    }
+
+    const applicationData = applicationDoc.data() as Application;
+
+    // v2.0 모드: assignments가 있는 지원서
+    if (applicationData.assignments?.length) {
+      const v2Input = input as ConfirmApplicationInputV2;
+      const selectedAssignments = v2Input.selectedAssignments ?? applicationData.assignments;
+
+      logger.info('v2.0 확정 모드 - confirmApplicationWithHistory로 위임', {
+        applicationId: input.applicationId,
+        assignmentCount: selectedAssignments.length,
+      });
+
+      const historyResult = await confirmApplicationWithHistory(
+        input.applicationId,
+        selectedAssignments,
+        ownerId
+      );
+
+      return {
+        applicationId: historyResult.applicationId,
+        workLogId: historyResult.workLogIds[0] ?? '',
+        message: `${applicationData.applicantName}님의 지원이 확정되었습니다 (${historyResult.workLogIds.length}개 근무 기록 생성)`,
+      };
+    }
+
+    // v1.0 레거시 모드: 단일 역할 지원서
+    const result = await runTransaction(db, async (transaction) => {
+      // 1. 지원서 다시 읽기 (트랜잭션 내)
+      const appDoc = await transaction.get(applicationRef);
+
+      if (!appDoc.exists()) {
         throw new Error('존재하지 않는 지원입니다');
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const appData = appDoc.data() as Application;
 
       // 이미 처리된 경우
-      if (applicationData.status !== 'applied' && applicationData.status !== 'pending') {
-        throw new Error(`이미 ${applicationData.status === 'confirmed' ? '확정' : '처리'}된 지원입니다`);
+      if (appData.status !== 'applied' && appData.status !== 'pending') {
+        throw new Error(`이미 ${appData.status === 'confirmed' ? '확정' : '처리'}된 지원입니다`);
       }
 
       // 2. 공고 읽기
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, appData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -218,19 +253,19 @@ export async function confirmApplication(
       if (totalPositions > 0 && currentFilled >= totalPositions) {
         throw new MaxCapacityReachedError({
           userMessage: '모집 인원이 마감되었습니다. 대기자로 등록하시겠습니까?',
-          jobPostingId: applicationData.jobPostingId,
+          jobPostingId: appData.jobPostingId,
           maxCapacity: totalPositions,
           currentCount: currentFilled,
         });
       }
 
       // 역할별 정원 확인
-      const appliedRole = applicationData.appliedRole;
+      const appliedRole = appData.appliedRole;
       const roleReq = jobData.roles.find((r) => r.role === appliedRole);
       if (roleReq && roleReq.filled >= roleReq.count) {
         throw new MaxCapacityReachedError({
           userMessage: `${appliedRole} 역할의 모집 인원이 마감되었습니다`,
-          jobPostingId: applicationData.jobPostingId,
+          jobPostingId: appData.jobPostingId,
           maxCapacity: roleReq.count,
           currentCount: roleReq.filled,
         });
@@ -242,11 +277,11 @@ export async function confirmApplication(
       const now = serverTimestamp();
 
       const workLogData = {
-        staffId: applicationData.applicantId,
-        staffName: applicationData.applicantName,
-        eventId: applicationData.jobPostingId,
+        staffId: appData.applicantId,
+        staffName: appData.applicantName,
+        eventId: appData.jobPostingId,
         eventName: jobData.title,
-        role: applicationData.appliedRole,
+        role: appData.appliedRole,
         date: jobData.workDate,
         status: 'scheduled', // not_started → scheduled
         attendanceStatus: 'not_started',
@@ -287,7 +322,7 @@ export async function confirmApplication(
       return {
         applicationId: input.applicationId,
         workLogId: workLogRef.id,
-        message: `${applicationData.applicantName}님의 지원이 확정되었습니다`,
+        message: `${appData.applicantName}님의 지원이 확정되었습니다`,
       };
     });
 

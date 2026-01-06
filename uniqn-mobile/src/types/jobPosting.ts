@@ -218,6 +218,8 @@ export interface JobPostingCard {
   status: JobPostingStatus;
   isUrgent?: boolean;
   applicationCount?: number;
+  /** 공고 타입 (v2.0) */
+  postingType?: PostingType;
 }
 
 /**
@@ -237,4 +239,5 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => ({
   status: posting.status,
   isUrgent: posting.isUrgent,
   applicationCount: posting.applicationCount,
+  postingType: posting.postingType,
 });

@@ -50,14 +50,22 @@ export type StaffRole = 'dealer' | 'manager' | 'chiprunner' | 'admin';
  * 스태프 타입
  */
 export interface Staff extends FirebaseDocument {
+  /** 연결된 사용자 ID */
+  userId?: string;
   name: string;
   phone: string;
   role: StaffRole;
-  status: 'active' | 'inactive';
+  status?: 'active' | 'inactive';
+  /** 활성 상태 (v2.0) */
+  isActive?: boolean;
   email?: string;
   bankName?: string;
   accountNumber?: string;
   notes?: string;
+  /** 총 근무 횟수 */
+  totalWorkCount?: number;
+  /** 평점 */
+  rating?: number;
 }
 
 /**

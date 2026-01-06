@@ -10,6 +10,7 @@ import { FirebaseDocument, StaffRole } from './common';
 import type { Assignment } from './assignment';
 import type { OriginalApplication, ConfirmationHistoryEntry } from './applicationHistory';
 import type { PreQuestionAnswer } from './preQuestion';
+import type { JobPosting } from './jobPosting';
 
 /**
  * 지원 상태
@@ -103,15 +104,7 @@ export interface Application extends FirebaseDocument {
   notes?: string;
 
   // === 공고 정보 (조회 시 조인) ===
-  jobPosting?: {
-    id: string;
-    title: string;
-    location: string;
-    district?: string;
-    detailedAddress?: string;
-    eventDate?: string;
-    [key: string]: string | undefined;
-  };
+  jobPosting?: Partial<JobPosting>;
 }
 
 /**

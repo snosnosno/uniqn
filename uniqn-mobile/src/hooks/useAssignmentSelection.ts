@@ -230,7 +230,7 @@ export function useAssignmentSelection({
         const slotsToAdd = newSlots.slice(0, remainingSlots);
 
         const newAssignments = slotsToAdd.map((slot) =>
-          createSimpleAssignment(selectedRole, slot.time, [date])
+          createSimpleAssignment(selectedRole, slot.time, date)
         );
 
         updateAssignments([...existingOtherDates, ...newAssignments]);

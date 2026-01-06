@@ -1,15 +1,23 @@
 /**
  * UNIQN Mobile - 지원서 폼 컴포넌트
  *
- * @description 구인공고 지원 폼
- * @version 1.0.0
+ * @description 구인공고 지원 폼 (v2.0: Assignment, PreQuestion 지원)
+ * @version 2.0.0
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable, Modal, ScrollView } from 'react-native';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
-import type { JobPosting, StaffRole } from '@/types';
+import { AssignmentSelector } from './AssignmentSelector';
+import { PreQuestionForm } from './PreQuestionForm';
+import type {
+  JobPosting,
+  StaffRole,
+  Assignment,
+  PreQuestionAnswer,
+} from '@/types';
+import { initializePreQuestionAnswers, findUnansweredRequired } from '@/types';
 
 // ============================================================================
 // Types
@@ -19,7 +27,14 @@ interface ApplicationFormProps {
   job: JobPosting;
   visible: boolean;
   isSubmitting: boolean;
+  /** 레거시: 단일 역할 선택 */
   onSubmit: (roleId: string, message?: string) => void;
+  /** v2.0: Assignment 배열 + 사전질문 답변 */
+  onSubmitV2?: (
+    assignments: Assignment[],
+    message?: string,
+    preQuestionAnswers?: PreQuestionAnswer[]
+  ) => void;
   onClose: () => void;
 }
 
@@ -63,23 +78,105 @@ export function ApplicationForm({
   visible,
   isSubmitting,
   onSubmit,
+  onSubmitV2,
   onClose,
 }: ApplicationFormProps) {
+  // v2.0 모드 판단: dateSpecificRequirements가 있으면 v2.0
+  const isV2Mode = Boolean(
+    job.dateSpecificRequirements && job.dateSpecificRequirements.length > 0
+  );
+
+  // v1.0 상태 (레거시)
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
+  // v2.0 상태
+  const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
+  const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(
+    () => initializePreQuestionAnswers(job.preQuestions ?? [])
+  );
+  const [errorQuestionIds, setErrorQuestionIds] = useState<string[]>([]);
+
+  // 사전질문 여부
+  const hasPreQuestions = Boolean(
+    job.usesPreQuestions && job.preQuestions && job.preQuestions.length > 0
+  );
+
+  // 사용 가능한 역할 (레거시)
   const availableRoles = job.roles.filter((r) => r.filled < r.count);
 
-  const handleSubmit = () => {
-    if (!selectedRole) return;
-    onSubmit(selectedRole, message.trim() || undefined);
-  };
+  // 제출 가능 여부 판단
+  const canSubmit = useMemo(() => {
+    if (isSubmitting) return false;
 
-  const handleClose = () => {
+    if (isV2Mode) {
+      // v2.0: Assignment가 1개 이상 선택되어야 함
+      if (selectedAssignments.length === 0) return false;
+
+      // 사전질문이 있으면 필수 답변 확인
+      if (hasPreQuestions) {
+        const unanswered = findUnansweredRequired(preQuestionAnswers);
+        if (unanswered.length > 0) return false;
+      }
+
+      return true;
+    }
+
+    // v1.0: 역할이 선택되어야 함
+    return selectedRole !== null && availableRoles.length > 0;
+  }, [
+    isSubmitting,
+    isV2Mode,
+    selectedAssignments,
+    hasPreQuestions,
+    preQuestionAnswers,
+    selectedRole,
+    availableRoles,
+  ]);
+
+  // 제출 핸들러
+  const handleSubmit = useCallback(() => {
+    if (!canSubmit) return;
+
+    if (isV2Mode && onSubmitV2) {
+      // 사전질문 필수 답변 검증
+      if (hasPreQuestions) {
+        const unanswered = findUnansweredRequired(preQuestionAnswers);
+        if (unanswered.length > 0) {
+          setErrorQuestionIds(unanswered);
+          return;
+        }
+      }
+
+      onSubmitV2(
+        selectedAssignments,
+        message.trim() || undefined,
+        hasPreQuestions ? preQuestionAnswers : undefined
+      );
+    } else if (selectedRole) {
+      onSubmit(selectedRole, message.trim() || undefined);
+    }
+  }, [
+    canSubmit,
+    isV2Mode,
+    onSubmitV2,
+    selectedAssignments,
+    message,
+    hasPreQuestions,
+    preQuestionAnswers,
+    selectedRole,
+    onSubmit,
+  ]);
+
+  // 닫기 핸들러 (상태 초기화)
+  const handleClose = useCallback(() => {
     setSelectedRole(null);
     setMessage('');
+    setSelectedAssignments([]);
+    setPreQuestionAnswers(initializePreQuestionAnswers(job.preQuestions ?? []));
+    setErrorQuestionIds([]);
     onClose();
-  };
+  }, [job.preQuestions, onClose]);
 
   return (
     <Modal
@@ -117,74 +214,99 @@ export function ApplicationForm({
             </Text>
           </View>
 
-          {/* 역할 선택 */}
-          <View className="mb-6">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-              지원할 역할 선택 <Text className="text-error-500">*</Text>
-            </Text>
+          {/* v2.0: AssignmentSelector (다중 날짜/시간/역할 선택) */}
+          {isV2Mode ? (
+            <View className="mb-6">
+              <AssignmentSelector
+                jobPosting={job}
+                selectedAssignments={selectedAssignments}
+                onSelectionChange={setSelectedAssignments}
+                disabled={isSubmitting}
+              />
+            </View>
+          ) : (
+            /* v1.0: 레거시 역할 선택 */
+            <View className="mb-6">
+              <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+                지원할 역할 선택 <Text className="text-error-500">*</Text>
+              </Text>
 
-            {availableRoles.length === 0 ? (
-              <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4">
-                <Text className="text-error-600 dark:text-error-400 text-center">
-                  모든 역할이 마감되었습니다
-                </Text>
-              </View>
-            ) : (
-              <View className="space-y-2">
-                {availableRoles.map((roleReq) => {
-                  const isSelected = selectedRole === roleReq.role;
-                  const remaining = roleReq.count - roleReq.filled;
+              {availableRoles.length === 0 ? (
+                <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4">
+                  <Text className="text-error-600 dark:text-error-400 text-center">
+                    모든 역할이 마감되었습니다
+                  </Text>
+                </View>
+              ) : (
+                <View className="space-y-2">
+                  {availableRoles.map((roleReq) => {
+                    const isSelected = selectedRole === roleReq.role;
+                    const remaining = roleReq.count - roleReq.filled;
 
-                  return (
-                    <Pressable
-                      key={roleReq.role}
-                      onPress={() => setSelectedRole(roleReq.role)}
-                      disabled={isSubmitting}
-                      className={`
-                        flex-row items-center justify-between p-4 rounded-lg border-2
-                        ${isSelected
-                          ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                          : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                        }
-                        ${isSubmitting ? 'opacity-50' : ''}
-                      `}
-                    >
-                      <View className="flex-row items-center">
-                        <View
-                          className={`
-                            w-5 h-5 rounded-full border-2 mr-3 items-center justify-center
-                            ${isSelected
-                              ? 'border-primary-500 bg-primary-500'
-                              : 'border-gray-300 dark:border-gray-600'
-                            }
-                          `}
-                        >
-                          {isSelected && (
-                            <View className="w-2 h-2 rounded-full bg-white" />
-                          )}
-                        </View>
-                        <Text
-                          className={`text-base font-medium ${
-                            isSelected
-                              ? 'text-primary-700 dark:text-primary-300'
-                              : 'text-gray-900 dark:text-white'
-                          }`}
-                        >
-                          {getRoleLabel(roleReq.role)}
-                        </Text>
-                      </View>
-                      <Badge
-                        variant={remaining <= 2 ? 'warning' : 'default'}
-                        size="sm"
+                    return (
+                      <Pressable
+                        key={roleReq.role}
+                        onPress={() => setSelectedRole(roleReq.role)}
+                        disabled={isSubmitting}
+                        className={`
+                          flex-row items-center justify-between p-4 rounded-lg border-2
+                          ${isSelected
+                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                          }
+                          ${isSubmitting ? 'opacity-50' : ''}
+                        `}
                       >
-                        {remaining}자리 남음
-                      </Badge>
-                    </Pressable>
-                  );
-                })}
-              </View>
-            )}
-          </View>
+                        <View className="flex-row items-center">
+                          <View
+                            className={`
+                              w-5 h-5 rounded-full border-2 mr-3 items-center justify-center
+                              ${isSelected
+                                ? 'border-primary-500 bg-primary-500'
+                                : 'border-gray-300 dark:border-gray-600'
+                              }
+                            `}
+                          >
+                            {isSelected && (
+                              <View className="w-2 h-2 rounded-full bg-white" />
+                            )}
+                          </View>
+                          <Text
+                            className={`text-base font-medium ${
+                              isSelected
+                                ? 'text-primary-700 dark:text-primary-300'
+                                : 'text-gray-900 dark:text-white'
+                            }`}
+                          >
+                            {getRoleLabel(roleReq.role)}
+                          </Text>
+                        </View>
+                        <Badge
+                          variant={remaining <= 2 ? 'warning' : 'default'}
+                          size="sm"
+                        >
+                          {remaining}자리 남음
+                        </Badge>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* 사전질문 폼 (v2.0) */}
+          {hasPreQuestions && (
+            <View className="mb-6">
+              <PreQuestionForm
+                questions={job.preQuestions ?? []}
+                answers={preQuestionAnswers}
+                onAnswersChange={setPreQuestionAnswers}
+                disabled={isSubmitting}
+                errorQuestionIds={errorQuestionIds}
+              />
+            </View>
+          )}
 
           {/* 메시지 입력 (선택) */}
           <View className="mb-6">
@@ -222,7 +344,7 @@ export function ApplicationForm({
         <View className="p-4 border-t border-gray-200 dark:border-gray-700">
           <Button
             onPress={handleSubmit}
-            disabled={!selectedRole || isSubmitting || availableRoles.length === 0}
+            disabled={!canSubmit}
             loading={isSubmitting}
             fullWidth
           >

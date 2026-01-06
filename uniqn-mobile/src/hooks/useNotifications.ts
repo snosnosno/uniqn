@@ -299,11 +299,11 @@ export function useMarkAllAsRead() {
 // ============================================================================
 
 /**
- * 알림 삭제 훅
+ * 알림 삭제 훅 (Optimistic Update 적용)
  */
 export function useDeleteNotification() {
   const queryClient = useQueryClient();
-  const { removeNotification } = useNotificationStore();
+  const { removeNotification, notifications, setNotifications } = useNotificationStore();
   const addToast = useToastStore((state) => state.addToast);
 
   const mutation = useMutation({
@@ -311,16 +311,31 @@ export function useDeleteNotification() {
       await deleteNotificationService(notificationId);
       return notificationId;
     },
-    onSuccess: (notificationId) => {
+    // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
+    onMutate: async (notificationId: string) => {
+      // 이전 상태 스냅샷 저장 (롤백용)
+      const previousNotifications = [...notifications];
+
+      // 즉시 UI에서 제거 (낙관적 업데이트)
       removeNotification(notificationId);
+
+      return { previousNotifications };
+    },
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: notificationKeys.all });
       addToast({
         type: 'success',
         message: '알림이 삭제되었습니다.',
       });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _, context) => {
       logger.error('알림 삭제 실패', error);
+
+      // 롤백: 이전 상태로 복원
+      if (context?.previousNotifications) {
+        setNotifications(context.previousNotifications);
+      }
+
       addToast({
         type: 'error',
         message: '알림 삭제에 실패했습니다.',
