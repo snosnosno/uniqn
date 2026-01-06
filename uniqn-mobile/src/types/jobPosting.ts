@@ -17,6 +17,7 @@ import type {
   RoleWithCount,
 } from './postingConfig';
 import type { PreQuestion } from './preQuestion';
+import type { FormRoleWithCount, TournamentDay } from './jobPostingForm';
 
 // Re-export for convenience
 export type { PostingType } from './postingConfig';
@@ -148,6 +149,12 @@ export interface JobPosting extends FirebaseDocument {
   /** 근무 스케줄 */
   workSchedule?: WorkSchedule;
 
+  /** 주 출근일수 (1-7) - fixed 타입용 */
+  daysPerWeek?: number;
+
+  /** 근무 요일 - fixed 타입용 */
+  workDays?: string[];
+
   /** 역할별 모집 인원 (상세) */
   requiredRolesWithCount?: RoleWithCount[];
 
@@ -176,22 +183,42 @@ export interface JobPostingFilters {
 }
 
 /**
- * 공고 생성 입력
+ * 공고 생성 입력 (v2.0 - 4가지 타입 지원)
  */
 export interface CreateJobPostingInput {
+  // 기본 정보
+  postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
   title: string;
   description?: string;
   location: Location;
   detailedAddress?: string;
   contactPhone?: string;
-  workDate: string;
-  timeSlot: string;
-  roles: RoleRequirement[];
+
+  // 일정 (타입별 분기)
+  workDate?: string;              // regular/urgent
+  timeSlot?: string;              // 기존 호환용 (deprecated)
+  startTime?: string;             // 출근시간
+  tournamentDates?: TournamentDay[];  // tournament
+  daysPerWeek?: number;           // fixed
+  workDays?: string[];            // fixed
+
+  // 역할
+  roles: RoleRequirement[] | FormRoleWithCount[];
+
+  // 급여
   salary: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
+  useRoleSalary?: boolean;
+  roleSalaries?: Record<string, SalaryInfo>;
+
+  // 사전질문
+  usesPreQuestions?: boolean;
+  preQuestions?: PreQuestion[];
+
+  // 기타
   tags?: string[];
-  isUrgent?: boolean;
+  isUrgent?: boolean;  // deprecated (postingType으로 대체)
 }
 
 /**

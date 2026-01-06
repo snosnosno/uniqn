@@ -1,8 +1,8 @@
 /**
- * UNIQN Mobile - 공고 작성 Step 1: 기본 정보
+ * UNIQN Mobile - 공고 작성 Step 1: 타입 선택 + 기본 정보
  *
- * @description 제목, 장소, 상세주소, 연락처, 설명 입력
- * @version 1.0.0
+ * @description 공고 타입 선택, 제목, 장소, 상세주소, 연락처, 설명 입력
+ * @version 2.0.0 - PostingTypeSelector 통합
  */
 
 import React, { useState, useCallback } from 'react';
@@ -10,7 +10,8 @@ import { View, Text, TextInput } from 'react-native';
 import { Button, Input, FormField } from '@/components';
 import { MapPinIcon, PhoneIcon } from '@/components/icons';
 import { basicInfoSchema } from '@/schemas/jobPosting.schema';
-import type { JobPostingFormData, Location } from '@/types';
+import type { JobPostingFormData, Location, PostingType } from '@/types';
+import { PostingTypeSelector } from './shared';
 
 // ============================================================================
 // Types
@@ -90,8 +91,27 @@ export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) 
     }
   }, [validate, onNext]);
 
+  // 공고 타입 변경 핸들러
+  const handlePostingTypeChange = useCallback((type: PostingType) => {
+    // 타입 변경 시 관련 필드 초기화
+    onUpdate({
+      postingType: type,
+      workDate: '',
+      startTime: '',
+      tournamentDates: [],
+      daysPerWeek: 5,
+      workDays: [],
+    });
+  }, [onUpdate]);
+
   return (
     <View className="flex-1 p-4">
+      {/* 공고 타입 선택 */}
+      <PostingTypeSelector
+        value={data.postingType}
+        onChange={handlePostingTypeChange}
+      />
+
       {/* 제목 */}
       <FormField label="공고 제목" required error={errors.title}>
         <Input
@@ -176,3 +196,5 @@ export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) 
     </View>
   );
 }
+
+export default Step1BasicInfo;

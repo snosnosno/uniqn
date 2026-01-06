@@ -1,16 +1,15 @@
 /**
  * UNIQN Mobile - 공고 작성 Step 4: 급여
  *
- * @description 급여 타입, 금액, 수당 설정
- * @version 1.0.0
+ * @description 급여 타입, 금액, 수당 설정 + 역할별 급여 옵션
+ * @version 2.0.0 - 역할별 급여 설정 추가
  */
 
-import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, Pressable, Switch } from 'react-native';
 import { Button, Input, FormField, Card } from '@/components';
 import { CurrencyDollarIcon, GiftIcon } from '@/components/icons';
-import { salaryInfoSchema } from '@/schemas/jobPosting.schema';
-import type { JobPostingFormData, SalaryType, RoleRequirement } from '@/types';
+import type { JobPostingFormData, SalaryType, SalaryInfo } from '@/types';
 
 // ============================================================================
 // Types
@@ -20,7 +19,7 @@ interface Step4SalaryProps {
   data: JobPostingFormData;
   onUpdate: (data: Partial<JobPostingFormData>) => void;
   onNext: () => void;
-  onPrev: () => void;
+  onBack: () => void;
 }
 
 // 급여 타입 옵션
@@ -28,7 +27,7 @@ const SALARY_TYPES: { value: SalaryType; label: string; example: string }[] = [
   { value: 'hourly', label: '시급', example: '15,000원/시간' },
   { value: 'daily', label: '일급', example: '150,000원/일' },
   { value: 'monthly', label: '월급', example: '3,000,000원/월' },
-  { value: 'other', label: '기타', example: '협의 가능' },
+  { value: 'other', label: '협의', example: '협의 가능' },
 ];
 
 // 수당 종류
@@ -54,7 +53,7 @@ const parseCurrency = (value: string): number => {
 // Component
 // ============================================================================
 
-export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps) {
+export function Step4Salary({ data, onUpdate, onNext, onBack }: Step4SalaryProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   // 급여 타입 변경
@@ -65,6 +64,7 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
         type,
       },
     });
+    setErrors({});
   }, [data.salary, onUpdate]);
 
   // 급여 금액 변경
@@ -76,6 +76,7 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
         amount,
       },
     });
+    setErrors({});
   }, [data.salary, onUpdate]);
 
   // 수당 변경
@@ -89,28 +90,59 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
     });
   }, [data.allowances, onUpdate]);
 
+  // 역할별 급여 토글
+  const handleUseRoleSalaryToggle = useCallback((value: boolean) => {
+    onUpdate({ useRoleSalary: value });
+    if (value && Object.keys(data.roleSalaries).length === 0) {
+      // 역할별 급여 초기화
+      const initialRoleSalaries: Record<string, SalaryInfo> = {};
+      data.roles.forEach((role) => {
+        initialRoleSalaries[role.name] = {
+          type: data.salary.type,
+          amount: data.salary.amount,
+          useRoleSalary: false,
+        };
+      });
+      onUpdate({ roleSalaries: initialRoleSalaries });
+    }
+  }, [data.roles, data.salary, data.roleSalaries, onUpdate]);
+
+  // 역할별 급여 금액 변경
+  const handleRoleSalaryChange = useCallback((roleName: string, value: string) => {
+    const amount = parseCurrency(value);
+    onUpdate({
+      roleSalaries: {
+        ...data.roleSalaries,
+        [roleName]: {
+          ...data.roleSalaries[roleName],
+          type: data.salary.type,
+          amount,
+        },
+      },
+    });
+  }, [data.salary.type, data.roleSalaries, onUpdate]);
+
   // 유효성 검증
   const validate = useCallback(() => {
-    const result = salaryInfoSchema.safeParse(data.salary);
+    const newErrors: Record<string, string> = {};
 
-    if (!result.success) {
-      const fieldErrors: Record<string, string> = {};
-      result.error.issues.forEach((issue) => {
-        const field = issue.path[0] as string;
-        fieldErrors[field] = issue.message;
+    if (data.salary.type !== 'other' && data.salary.amount <= 0) {
+      newErrors.amount = '급여 금액을 입력해주세요';
+    }
+
+    if (data.useRoleSalary) {
+      const hasZeroSalary = data.roles.some((role) => {
+        const roleSalary = data.roleSalaries[role.name];
+        return !roleSalary || roleSalary.amount <= 0;
       });
-      setErrors(fieldErrors);
-      return false;
+      if (hasZeroSalary && data.salary.type !== 'other') {
+        newErrors.roleSalary = '모든 역할의 급여를 입력해주세요';
+      }
     }
 
-    if (data.salary.amount <= 0 && data.salary.type !== 'other') {
-      setErrors({ amount: '급여 금액을 입력해주세요' });
-      return false;
-    }
-
-    setErrors({});
-    return true;
-  }, [data.salary]);
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  }, [data.salary, data.useRoleSalary, data.roleSalaries, data.roles]);
 
   // 다음 단계
   const handleNext = useCallback(() => {
@@ -118,6 +150,36 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
       onNext();
     }
   }, [validate, onNext]);
+
+  // 총 인원 계산
+  const totalCount = useMemo(() =>
+    data.roles.reduce((sum, r) => sum + r.count, 0),
+    [data.roles]
+  );
+
+  // 예상 총 비용 계산
+  const estimatedCost = useMemo(() => {
+    if (data.salary.type === 'other') return null;
+
+    let total = 0;
+    if (data.useRoleSalary) {
+      data.roles.forEach((role) => {
+        const roleSalary = data.roleSalaries[role.name];
+        if (roleSalary) {
+          total += roleSalary.amount * role.count;
+        }
+      });
+    } else {
+      total = data.salary.amount * totalCount;
+    }
+
+    // 시급은 8시간 기준
+    if (data.salary.type === 'hourly') {
+      total *= 8;
+    }
+
+    return total;
+  }, [data.salary, data.useRoleSalary, data.roleSalaries, data.roles, totalCount]);
 
   return (
     <View className="flex-1 p-4">
@@ -130,19 +192,25 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
               <Pressable
                 key={type.value}
                 onPress={() => handleSalaryTypeChange(type.value)}
-                className={`px-4 py-3 rounded-lg border ${
+                className={`px-4 py-3 rounded-lg border-2 ${
                   isSelected
-                    ? 'bg-primary-600 border-primary-600'
+                    ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}
+                accessibilityRole="radio"
+                accessibilityState={{ checked: isSelected }}
               >
                 <Text className={`font-medium ${
-                  isSelected ? 'text-white' : 'text-gray-900 dark:text-white'
+                  isSelected
+                    ? 'text-primary-600 dark:text-primary-400'
+                    : 'text-gray-900 dark:text-white'
                 }`}>
                   {type.label}
                 </Text>
                 <Text className={`text-xs mt-0.5 ${
-                  isSelected ? 'text-white/80' : 'text-gray-500 dark:text-gray-400'
+                  isSelected
+                    ? 'text-primary-500 dark:text-primary-300'
+                    : 'text-gray-500 dark:text-gray-400'
                 }`}>
                   {type.example}
                 </Text>
@@ -155,16 +223,16 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
       {/* 급여 금액 */}
       {data.salary.type !== 'other' && (
         <FormField label="급여 금액" required error={errors.amount} className="mt-4">
-          <View className="flex-row items-center">
+          <View className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3">
             <CurrencyDollarIcon size={20} color="#6B7280" />
             <Input
               placeholder="0"
               value={data.salary.amount > 0 ? formatCurrency(data.salary.amount) : ''}
               onChangeText={handleSalaryAmountChange}
               keyboardType="numeric"
-              className="flex-1 ml-2"
+              className="flex-1 border-0"
             />
-            <Text className="ml-2 text-gray-600 dark:text-gray-400">원</Text>
+            <Text className="text-gray-600 dark:text-gray-400">원</Text>
           </View>
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {data.salary.type === 'hourly' && '시간당 급여를 입력해주세요'}
@@ -172,6 +240,59 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
             {data.salary.type === 'monthly' && '월 급여를 입력해주세요'}
           </Text>
         </FormField>
+      )}
+
+      {/* 역할별 급여 설정 토글 */}
+      {data.salary.type !== 'other' && data.roles.length > 1 && (
+        <View className="mt-4 flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <View>
+            <Text className="text-gray-900 dark:text-white font-medium">
+              역할별 급여 설정
+            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">
+              각 역할마다 다른 급여를 설정합니다
+            </Text>
+          </View>
+          <Switch
+            value={data.useRoleSalary}
+            onValueChange={handleUseRoleSalaryToggle}
+            trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
+            thumbColor={data.useRoleSalary ? '#4F46E5' : '#F3F4F6'}
+          />
+        </View>
+      )}
+
+      {/* 역할별 급여 입력 */}
+      {data.useRoleSalary && data.salary.type !== 'other' && (
+        <View className="mt-4">
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            역할별 급여 설정
+          </Text>
+          {errors.roleSalary && (
+            <Text className="text-sm text-red-500 mb-2">{errors.roleSalary}</Text>
+          )}
+          {data.roles.map((role) => {
+            const roleSalary = data.roleSalaries[role.name];
+            return (
+              <View
+                key={role.name}
+                className="flex-row items-center mb-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+              >
+                <Text className="flex-1 font-medium text-gray-900 dark:text-white">
+                  {role.name} ({role.count}명)
+                </Text>
+                <Input
+                  placeholder="0"
+                  value={roleSalary?.amount > 0 ? formatCurrency(roleSalary.amount) : ''}
+                  onChangeText={(v) => handleRoleSalaryChange(role.name, v)}
+                  keyboardType="numeric"
+                  className="w-28 text-right"
+                />
+                <Text className="ml-2 text-gray-600 dark:text-gray-400">원</Text>
+              </View>
+            );
+          })}
+        </View>
       )}
 
       {/* 수당 설정 */}
@@ -214,35 +335,36 @@ export function Step4Salary({ data, onUpdate, onNext, onPrev }: Step4SalaryProps
       </View>
 
       {/* 예상 총 비용 */}
-      {data.salary.amount > 0 && data.roles.length > 0 && (
-        <View className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+      {estimatedCost !== null && estimatedCost > 0 && (
+        <View className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+          <Text className="text-sm text-primary-700 dark:text-primary-300 mb-2">
             예상 총 인건비 (1일 기준)
           </Text>
-          <Text className="text-2xl font-bold text-gray-900 dark:text-white">
-            {formatCurrency(
-              data.salary.amount *
-                data.roles.reduce((sum: number, r: RoleRequirement) => sum + r.count, 0) *
-                (data.salary.type === 'hourly' ? 8 : 1) // 시급은 8시간 기준
-            )}원
+          <Text className="text-2xl font-bold text-primary-900 dark:text-primary-100">
+            {formatCurrency(estimatedCost)}원
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-            {data.roles.reduce((sum: number, r: RoleRequirement) => sum + r.count, 0)}명 ×{' '}
-            {formatCurrency(data.salary.amount)}원
+          <Text className="text-xs text-primary-600 dark:text-primary-400 mt-1">
+            {totalCount}명 기준
             {data.salary.type === 'hourly' && ' × 8시간'}
           </Text>
         </View>
       )}
 
-      {/* 버튼 영역 */}
-      <View className="mt-6 flex-row gap-3">
-        <Button variant="outline" size="lg" onPress={onPrev} className="flex-1">
-          이전
-        </Button>
-        <Button variant="primary" size="lg" onPress={handleNext} className="flex-[2]">
-          다음 단계
-        </Button>
+      {/* 버튼 그룹 */}
+      <View className="flex-row gap-3 mt-6">
+        <View className="flex-1">
+          <Button variant="outline" size="lg" onPress={onBack} fullWidth>
+            이전
+          </Button>
+        </View>
+        <View className="flex-1">
+          <Button variant="primary" size="lg" onPress={handleNext} fullWidth>
+            다음 단계
+          </Button>
+        </View>
       </View>
     </View>
   );
 }
+
+export default Step4Salary;

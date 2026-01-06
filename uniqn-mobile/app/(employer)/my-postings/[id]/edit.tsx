@@ -23,7 +23,8 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import type { UpdateJobPostingInput, JobPostingFormData } from '@/types';
+import type { UpdateJobPostingInput, JobPostingFormData, FormRoleWithCount } from '@/types';
+import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types';
 
 // Step Components
 import {
@@ -31,8 +32,33 @@ import {
   Step2DateTime,
   Step3Roles,
   Step4Salary,
-  Step5Confirm,
+  Step6Confirm,
 } from '@/components/employer/job-form';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * RoleRequirement[] → FormRoleWithCount[] 변환
+ */
+function convertRolesToFormRoles(
+  roles: Array<{ role?: string; name?: string; count: number; filled?: number }>
+): FormRoleWithCount[] {
+  const ROLE_LABELS: Record<string, string> = {
+    dealer: '딜러',
+    floor: '플로어',
+    manager: '매니저',
+    chiprunner: '칩러너',
+    admin: '관리자',
+  };
+
+  return roles.map((r) => ({
+    name: r.name || ROLE_LABELS[r.role || ''] || r.role || '알 수 없음',
+    count: r.count,
+    isCustom: !!(r.name && !['딜러', '플로어'].includes(r.name)),
+  }));
+}
 
 // ============================================================================
 // Constants
@@ -70,22 +96,41 @@ export default function EditJobPostingScreen() {
   // 기존 데이터로 폼 초기화
   useEffect(() => {
     if (existingJob && !formData) {
+      // 기존 타임슬롯에서 출근 시간 추출 ("18:00 - 02:00" → "18:00")
+      const extractStartTime = (timeSlot: string | undefined): string => {
+        if (!timeSlot) return '';
+        const match = timeSlot.match(/^(\d{2}:\d{2})/);
+        return match ? match[1] : '';
+      };
+
       setFormData({
+        ...INITIAL_JOB_POSTING_FORM_DATA,
+        // Step 1
+        postingType: existingJob.postingType || (existingJob.isUrgent ? 'urgent' : 'regular'),
         title: existingJob.title || '',
         location: existingJob.location || null,
         detailedAddress: existingJob.detailedAddress || '',
         contactPhone: existingJob.contactPhone || '',
         description: existingJob.description || '',
+        // Step 2
         workDate: existingJob.workDate || '',
-        timeSlot: existingJob.timeSlot || '',
-        roles: existingJob.roles || [],
-        salary: existingJob.salary || {
-          type: 'daily',
-          amount: 0,
-          useRoleSalary: false,
-        },
+        startTime: extractStartTime(existingJob.timeSlot),
+        tournamentDates: [],
+        daysPerWeek: existingJob.daysPerWeek ?? 5,
+        workDays: existingJob.workDays ?? [],
+        // Step 3
+        roles: existingJob.roles
+          ? convertRolesToFormRoles(existingJob.roles as Array<{ role?: string; name?: string; count: number; filled?: number }>)
+          : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
+        // Step 4
+        salary: existingJob.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
         allowances: existingJob.allowances || {},
-        isUrgent: existingJob.isUrgent || false,
+        useRoleSalary: existingJob.salary?.useRoleSalary || false,
+        roleSalaries: existingJob.salary?.roleSalaries || {},
+        // Step 5
+        usesPreQuestions: existingJob.usesPreQuestions || false,
+        preQuestions: existingJob.preQuestions || [],
+        // 기타
         tags: existingJob.tags || [],
       });
 
@@ -130,6 +175,7 @@ export default function EditJobPostingScreen() {
 
     try {
       const input: UpdateJobPostingInput = {
+        postingType: formData.postingType,
         title: formData.title,
         description: formData.description || undefined,
         location: formData.location,
@@ -138,12 +184,11 @@ export default function EditJobPostingScreen() {
         // 확정된 지원자가 있으면 일정/역할 수정 불가
         ...(hasConfirmedApplicants ? {} : {
           workDate: formData.workDate,
-          timeSlot: formData.timeSlot,
+          startTime: formData.startTime,
           roles: formData.roles,
         }),
         salary: formData.salary,
         allowances: formData.allowances,
-        isUrgent: formData.isUrgent,
         tags: formData.tags,
       };
 
@@ -193,6 +238,11 @@ export default function EditJobPostingScreen() {
     );
   }
 
+  // 특정 단계로 이동
+  const handleEditStep = useCallback((step: number) => {
+    setCurrentStep(step);
+  }, []);
+
   // 현재 단계 렌더링
   const renderCurrentStep = () => {
     switch (currentStep) {
@@ -210,8 +260,7 @@ export default function EditJobPostingScreen() {
             data={formData}
             onUpdate={updateFormData}
             onNext={handleNextStep}
-            onPrev={handlePrevStep}
-            disabled={hasConfirmedApplicants}
+            onBack={handlePrevStep}
           />
         );
       case 3:
@@ -220,8 +269,7 @@ export default function EditJobPostingScreen() {
             data={formData}
             onUpdate={updateFormData}
             onNext={handleNextStep}
-            onPrev={handlePrevStep}
-            disabled={hasConfirmedApplicants}
+            onBack={handlePrevStep}
           />
         );
       case 4:
@@ -230,15 +278,16 @@ export default function EditJobPostingScreen() {
             data={formData}
             onUpdate={updateFormData}
             onNext={handleNextStep}
-            onPrev={handlePrevStep}
+            onBack={handlePrevStep}
           />
         );
       case 5:
         return (
-          <Step5Confirm
+          <Step6Confirm
             data={formData}
             onSubmit={handleSubmit}
-            onPrev={handlePrevStep}
+            onBack={handlePrevStep}
+            onEditStep={handleEditStep}
             isSubmitting={updateJobPosting.isPending}
             isEditMode={true}
           />

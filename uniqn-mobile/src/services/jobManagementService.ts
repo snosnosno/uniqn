@@ -26,6 +26,9 @@ import type {
   JobPostingStatus,
   CreateJobPostingInput,
   UpdateJobPostingInput,
+  SalaryInfo,
+  RoleRequirement,
+  StaffRole,
 } from '@/types';
 
 // ============================================================================
@@ -39,10 +42,32 @@ const DRAFTS_COLLECTION = 'jobPostingDrafts';
 // Types
 // ============================================================================
 
+/**
+ * 공고 작성 임시저장 데이터
+ *
+ * @description CreateJobPostingInput을 확장하여 6단계 폼에 필요한 추가 필드 포함
+ */
 export interface JobPostingDraft extends CreateJobPostingInput {
   id?: string;
   step: number;
   lastSavedAt: Timestamp;
+
+  // 추가 필드 (6단계 폼용)
+  postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
+  startTime?: string;
+  tournamentDates?: Array<{ day: number; date: string; startTime: string }>;
+  daysPerWeek?: number;
+  workDays?: string[];
+  useRoleSalary?: boolean;
+  roleSalaries?: Record<string, SalaryInfo>;
+  usesPreQuestions?: boolean;
+  preQuestions?: Array<{
+    id: string;
+    question: string;
+    required: boolean;
+    type: 'text' | 'textarea' | 'select';
+    options?: string[];
+  }>;
 }
 
 export interface CreateJobPostingResult {
@@ -58,6 +83,51 @@ export interface JobPostingStats {
   cancelled: number;
   totalApplications: number;
   totalViews: number;
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * 역할명 → StaffRole 코드 변환 맵
+ */
+const ROLE_NAME_TO_CODE: Record<string, StaffRole> = {
+  '딜러': 'dealer',
+  '매니저': 'manager',
+  '칩러너': 'chiprunner',
+  '관리자': 'admin',
+  // 플로어는 기본 StaffRole에 없으므로 dealer로 대체하거나 별도 처리
+};
+
+/**
+ * 입력 roles를 RoleRequirement[] 형식으로 변환
+ *
+ * @description FormRoleWithCount 또는 RoleRequirement 형식을 통합 처리
+ */
+function convertToRoleRequirements(
+  roles: Array<{ role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }>
+): RoleRequirement[] {
+  return roles.map((r) => {
+    // 이미 RoleRequirement 형식인 경우
+    if ('role' in r && r.role) {
+      return {
+        role: r.role as StaffRole,
+        count: r.count,
+        filled: r.filled ?? 0,
+      };
+    }
+
+    // FormRoleWithCount 형식인 경우
+    const name = r.name || '';
+    const roleCode = ROLE_NAME_TO_CODE[name] || 'dealer'; // 매핑되지 않은 경우 기본값
+
+    return {
+      role: roleCode,
+      count: r.count,
+      filled: r.filled ?? 0,
+    };
+  });
 }
 
 // ============================================================================
@@ -79,11 +149,24 @@ export async function createJobPosting(
     const newDocRef = doc(jobsRef);
     const now = serverTimestamp();
 
+    // 역할 변환 (FormRoleWithCount → RoleRequirement)
+    const convertedRoles = convertToRoleRequirements(
+      input.roles as Array<{ role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }>
+    );
+
     // 총 모집 인원 계산
-    const totalPositions = input.roles.reduce((sum, role) => sum + role.count, 0);
+    const totalPositions = convertedRoles.reduce((sum, role) => sum + role.count, 0);
+
+    // input에서 roles, startTime 분리 (startTime은 string → Timestamp 변환 필요)
+    const {
+      roles: _inputRoles,
+      startTime: inputStartTime,
+      ...restInput
+    } = input;
 
     const jobPostingData: Omit<JobPosting, 'id'> = {
-      ...input,
+      ...restInput,
+      roles: convertedRoles,
       status: 'active',
       ownerId,
       ownerName,
@@ -91,6 +174,12 @@ export async function createJobPosting(
       filledPositions: 0,
       viewCount: 0,
       applicationCount: 0,
+      // 필수 필드 기본값
+      workDate: restInput.workDate || '',
+      timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
+      // startTime은 Timestamp 타입이므로 undefined로 설정 (추후 변환 로직 추가)
+      startTime: undefined,
+      endTime: undefined,
       createdAt: now as Timestamp,
       updatedAt: now as Timestamp,
     };

@@ -169,7 +169,10 @@ export const LazyJobFormStep4 = lazy(
   () => import('@/components/employer/job-form/Step4Salary')
 );
 export const LazyJobFormStep5 = lazy(
-  () => import('@/components/employer/job-form/Step5Confirm')
+  () => import('@/components/employer/job-form/Step5PreQuestions')
+);
+export const LazyJobFormStep6 = lazy(
+  () => import('@/components/employer/job-form/Step6Confirm')
 );
 
 /**

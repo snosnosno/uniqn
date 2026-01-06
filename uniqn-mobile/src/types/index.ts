@@ -186,9 +186,19 @@ export {
   ATTENDANCE_STATUS_LABELS,
 } from './schedule';
 
-// 공고 작성 폼 타입
-export type { JobPostingFormData } from './jobPostingForm';
-export { INITIAL_JOB_POSTING_FORM_DATA } from './jobPostingForm';
+// 공고 작성 폼 타입 (v2.0)
+export type {
+  JobPostingFormData,
+  TournamentDay,
+  FormRoleWithCount,
+} from './jobPostingForm';
+export {
+  INITIAL_JOB_POSTING_FORM_DATA,
+  DEFAULT_ROLES,
+  POSTING_TYPE_INFO,
+  validateStep,
+  validateForm,
+} from './jobPostingForm';
 
 // Admin 타입
 export type {
