@@ -11,7 +11,7 @@ import {
   setDoc,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import type {
@@ -67,7 +67,7 @@ export async function createQRCode(
       isUsed: false,
     };
 
-    const qrRef = doc(db, QR_CODES_COLLECTION, qrCodeId);
+    const qrRef = doc(getFirebaseDb(), QR_CODES_COLLECTION, qrCodeId);
     await setDoc(qrRef, qrData);
 
     logger.info('QR 코드 생성 완료', { qrCodeId });
@@ -93,7 +93,7 @@ export async function validateQRCode(
   try {
     logger.info('QR 코드 검증 시작', { qrCodeId, expectedAction });
 
-    const qrRef = doc(db, QR_CODES_COLLECTION, qrCodeId);
+    const qrRef = doc(getFirebaseDb(), QR_CODES_COLLECTION, qrCodeId);
     const qrDoc = await getDoc(qrRef);
 
     if (!qrDoc.exists()) {
@@ -157,7 +157,7 @@ export async function validateQRCode(
  */
 export async function getQRCodeById(qrCodeId: string): Promise<QRCodeData | null> {
   try {
-    const qrRef = doc(db, QR_CODES_COLLECTION, qrCodeId);
+    const qrRef = doc(getFirebaseDb(), QR_CODES_COLLECTION, qrCodeId);
     const qrDoc = await getDoc(qrRef);
 
     if (!qrDoc.exists()) {

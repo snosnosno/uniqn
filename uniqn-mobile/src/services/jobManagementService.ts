@@ -18,7 +18,7 @@ import {
   getDocs,
   orderBy,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import type {
@@ -75,7 +75,7 @@ export async function createJobPosting(
   try {
     logger.info('공고 생성 시작', { ownerId, title: input.title });
 
-    const jobsRef = collection(db, COLLECTION_NAME);
+    const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
     const newDocRef = doc(jobsRef);
     const now = serverTimestamp();
 
@@ -126,8 +126,8 @@ export async function updateJobPosting(
   try {
     logger.info('공고 수정 시작', { jobPostingId, ownerId });
 
-    const result = await runTransaction(db, async (transaction) => {
-      const jobRef = doc(db, COLLECTION_NAME, jobPostingId);
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
+      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -193,8 +193,8 @@ export async function deleteJobPosting(
   try {
     logger.info('공고 삭제 시작', { jobPostingId, ownerId });
 
-    await runTransaction(db, async (transaction) => {
-      const jobRef = doc(db, COLLECTION_NAME, jobPostingId);
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -238,8 +238,8 @@ export async function closeJobPosting(
   try {
     logger.info('공고 마감 시작', { jobPostingId, ownerId });
 
-    await runTransaction(db, async (transaction) => {
-      const jobRef = doc(db, COLLECTION_NAME, jobPostingId);
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -281,8 +281,8 @@ export async function reopenJobPosting(
   try {
     logger.info('공고 재오픈 시작', { jobPostingId, ownerId });
 
-    await runTransaction(db, async (transaction) => {
-      const jobRef = doc(db, COLLECTION_NAME, jobPostingId);
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -331,7 +331,7 @@ export async function saveDraft(
   try {
     logger.info('임시저장 시작', { ownerId, step, draftId });
 
-    const draftsRef = collection(db, DRAFTS_COLLECTION);
+    const draftsRef = collection(getFirebaseDb(), DRAFTS_COLLECTION);
     const docRef = draftId ? doc(draftsRef, draftId) : doc(draftsRef);
 
     const draftData: JobPostingDraft = {
@@ -364,7 +364,7 @@ export async function getDraft(
   try {
     logger.info('임시저장 불러오기', { ownerId });
 
-    const draftsRef = collection(db, DRAFTS_COLLECTION);
+    const draftsRef = collection(getFirebaseDb(), DRAFTS_COLLECTION);
     const q = query(
       draftsRef,
       where('ownerId', '==', ownerId),
@@ -395,7 +395,7 @@ export async function deleteDraft(draftId: string): Promise<void> {
   try {
     logger.info('임시저장 삭제', { draftId });
 
-    const docRef = doc(db, DRAFTS_COLLECTION, draftId);
+    const docRef = doc(getFirebaseDb(), DRAFTS_COLLECTION, draftId);
     await deleteDoc(docRef);
 
     logger.info('임시저장 삭제 완료', { draftId });
@@ -414,7 +414,7 @@ export async function getMyJobPostingStats(
   try {
     logger.info('내 공고 통계 조회', { ownerId });
 
-    const jobsRef = collection(db, COLLECTION_NAME);
+    const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
     const q = query(jobsRef, where('ownerId', '==', ownerId));
 
     const snapshot = await getDocs(q);
@@ -478,9 +478,9 @@ export async function bulkUpdateJobPostingStatus(
     for (let i = 0; i < jobPostingIds.length; i += batchSize) {
       const batch = jobPostingIds.slice(i, i + batchSize);
 
-      await runTransaction(db, async (transaction) => {
+      await runTransaction(getFirebaseDb(), async (transaction) => {
         for (const jobPostingId of batch) {
-          const jobRef = doc(db, COLLECTION_NAME, jobPostingId);
+          const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
           const jobDoc = await transaction.get(jobRef);
 
           if (jobDoc.exists()) {

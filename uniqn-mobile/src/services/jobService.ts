@@ -20,7 +20,7 @@ import {
   updateDoc,
   increment,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
@@ -57,7 +57,7 @@ export async function getJobPostings(
   try {
     logger.info('공고 목록 조회', { filters, pageSize });
 
-    const jobsRef = collection(db, COLLECTION_NAME);
+    const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
     const constraints: Parameters<typeof query>[1][] = [];
 
     // 기본 필터: active 상태만
@@ -136,7 +136,7 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
   try {
     logger.info('공고 상세 조회', { id });
 
-    const docRef = doc(db, COLLECTION_NAME, id);
+    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, id);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -163,7 +163,7 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
  */
 export async function incrementViewCount(id: string): Promise<void> {
   try {
-    const docRef = doc(db, COLLECTION_NAME, id);
+    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, id);
     await updateDoc(docRef, {
       viewCount: increment(1),
     });

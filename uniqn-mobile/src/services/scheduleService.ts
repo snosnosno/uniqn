@@ -18,7 +18,7 @@ import {
   onSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import type {
@@ -263,7 +263,7 @@ export async function getMySchedules(
   try {
     logger.info('스케줄 목록 조회', { staffId, filters });
 
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const constraints: Parameters<typeof query>[1][] = [];
 
     // 스태프 ID 필터 (필수)
@@ -309,7 +309,7 @@ export async function getMySchedules(
     await Promise.all(
       eventIds.map(async (eventId) => {
         try {
-          const eventDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, eventId));
+          const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
           if (eventDoc.exists()) {
             const data = eventDoc.data();
             eventInfoMap.set(eventId, {
@@ -406,7 +406,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
     logger.info('스케줄 상세 조회', { scheduleId });
 
     // WorkLog에서 조회
-    const workLogDoc = await getDoc(doc(db, WORK_LOGS_COLLECTION, scheduleId));
+    const workLogDoc = await getDoc(doc(getFirebaseDb(), WORK_LOGS_COLLECTION, scheduleId));
 
     if (!workLogDoc.exists()) {
       logger.warn('스케줄을 찾을 수 없음', { scheduleId });
@@ -418,7 +418,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
     // 이벤트 정보 조회
     let eventInfo: { title: string; location: string } | undefined;
     try {
-      const eventDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, workLog.eventId));
+      const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId));
       if (eventDoc.exists()) {
         const data = eventDoc.data();
         eventInfo = {
@@ -484,7 +484,7 @@ export function subscribeToSchedules(
 ): Unsubscribe {
   logger.info('스케줄 구독 시작', { staffId });
 
-  const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
   const q = query(
     workLogsRef,
     where('staffId', '==', staffId),
@@ -508,7 +508,7 @@ export function subscribeToSchedules(
         await Promise.all(
           eventIds.map(async (eventId) => {
             try {
-              const eventDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, eventId));
+              const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
               if (eventDoc.exists()) {
                 const data = eventDoc.data();
                 eventInfoMap.set(eventId, {

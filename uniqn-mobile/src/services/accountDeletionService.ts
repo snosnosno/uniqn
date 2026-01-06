@@ -23,7 +23,7 @@ import {
   Timestamp,
 } from 'firebase/firestore';
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { db, auth } from '@/lib/firebase';
+import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, AuthError } from '@/errors';
 
@@ -116,7 +116,7 @@ export async function requestAccountDeletion(
   password: string,
   reasonDetail?: string
 ): Promise<DeletionRequest> {
-  const currentUser = auth.currentUser;
+  const currentUser = getFirebaseAuth().currentUser;
 
   if (!currentUser || !currentUser.email) {
     throw new AuthError('E2001', {
@@ -147,7 +147,7 @@ export async function requestAccountDeletion(
     };
 
     // 3. 사용자 문서 업데이트 (비활성화)
-    const userRef = doc(db, USERS_COLLECTION, currentUser.uid);
+    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, currentUser.uid);
     await updateDoc(userRef, {
       status: 'deactivated',
       deletionRequest,
@@ -185,7 +185,7 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
   try {
     logger.info('회원탈퇴 철회 요청', { userId });
 
-    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
@@ -225,7 +225,7 @@ export async function getMyData(userId: string): Promise<UserData | null> {
   try {
     logger.info('개인정보 조회', { userId });
 
-    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
@@ -258,7 +258,7 @@ export async function updateMyData(
   try {
     logger.info('개인정보 수정', { userId, fields: Object.keys(updates) });
 
-    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
     await updateDoc(userRef, {
       ...updates,
       updatedAt: serverTimestamp(),
@@ -285,7 +285,7 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
     }
 
     // 2. 지원 내역
-    const applicationsRef = collection(db, APPLICATIONS_COLLECTION);
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
     const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
     const applicationsSnapshot = await getDocs(applicationsQuery);
 
@@ -300,7 +300,7 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
     });
 
     // 3. 근무 기록
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const workLogsQuery = query(workLogsRef, where('staffId', '==', userId));
     const workLogsSnapshot = await getDocs(workLogsQuery);
 
@@ -344,10 +344,10 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
   try {
     logger.info('계정 완전 삭제 시작', { userId });
 
-    const batch = writeBatch(db);
+    const batch = writeBatch(getFirebaseDb());
 
     // 1. 지원 내역 익명화
-    const applicationsRef = collection(db, APPLICATIONS_COLLECTION);
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
     const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
     const applicationsSnapshot = await getDocs(applicationsQuery);
 
@@ -360,7 +360,7 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
     });
 
     // 2. 근무 기록 익명화
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const workLogsQuery = query(workLogsRef, where('staffId', '==', userId));
     const workLogsSnapshot = await getDocs(workLogsQuery);
 
@@ -372,7 +372,7 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
     });
 
     // 3. 알림 삭제
-    const notificationsRef = collection(db, NOTIFICATIONS_COLLECTION);
+    const notificationsRef = collection(getFirebaseDb(), NOTIFICATIONS_COLLECTION);
     const notificationsQuery = query(notificationsRef, where('userId', '==', userId));
     const notificationsSnapshot = await getDocs(notificationsQuery);
 
@@ -381,7 +381,7 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
     });
 
     // 4. 사용자 문서 삭제
-    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
     batch.delete(userRef);
 
     // 배치 실행
@@ -402,7 +402,7 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
  */
 export async function getDeletionStatus(userId: string): Promise<DeletionRequest | null> {
   try {
-    const userRef = doc(db, USERS_COLLECTION, userId);
+    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {

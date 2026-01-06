@@ -14,7 +14,7 @@ import {
   Timestamp,
   increment,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
 import type {
@@ -75,9 +75,9 @@ export async function confirmApplicationWithHistory(
   try {
     logger.info('지원 확정 (v2.0) 시작', { applicationId, ownerId });
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 읽기
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -99,7 +99,7 @@ export async function confirmApplicationWithHistory(
       }
 
       // 2. 공고 읽기
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -166,7 +166,7 @@ export async function confirmApplicationWithHistory(
 
       // 7. Assignment별 WorkLog 생성
       const workLogIds: string[] = [];
-      const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
       const now = serverTimestamp();
 
       for (const assignment of assignmentsToConfirm) {
@@ -269,9 +269,9 @@ export async function cancelConfirmation(
   try {
     logger.info('확정 취소 시작', { applicationId, ownerId });
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 읽기
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -300,7 +300,7 @@ export async function cancelConfirmation(
       }
 
       // 2. 공고 읽기
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -437,7 +437,7 @@ export async function getApplicationHistorySummary(
   lastCancelledAt?: Timestamp;
 } | null> {
   try {
-    const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {

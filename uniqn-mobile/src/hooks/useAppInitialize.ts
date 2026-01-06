@@ -21,7 +21,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { validateEnv } from '@/lib/env';
-import { tryInitializeFirebase } from '@/lib/firebase';
+import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -104,7 +104,67 @@ export function useAppInitialize(): UseAppInitializeReturn {
       // 6. 인증 상태 확인 (Firebase Auth 리스너 등록)
       await useAuthStore.getState().checkAuthState();
 
-      // 7. 기타 초기화 작업 (필요 시 추가)
+      // 7. Firebase Auth 상태 확정 대기 및 토큰 갱신
+      // 웹앱에서 가입한 계정도 모바일앱에서 최신 Custom Claims를 가져옴
+      logger.debug('Firebase Auth 상태 확정 대기 중...', { component: 'useAppInitialize' });
+
+      const auth = getFirebaseAuth();
+      const authUser = await new Promise<typeof auth.currentUser>((resolve) => {
+        // 이미 세션이 복원된 경우
+        if (auth.currentUser) {
+          resolve(auth.currentUser);
+          return;
+        }
+
+        // Auth 상태 변경 리스너로 세션 복원 대기
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          unsubscribe();
+          resolve(user);
+        });
+
+        // 타임아웃 (3초)
+        setTimeout(() => {
+          unsubscribe();
+          resolve(null);
+        }, 3000);
+      });
+
+      if (authUser) {
+        try {
+          await authUser.getIdToken(true);
+
+          // 토큰 결과 확인 (Custom Claims 포함 여부)
+          const tokenResult = await authUser.getIdTokenResult();
+          const claims = tokenResult.claims;
+
+          logger.info('토큰 강제 갱신 완료', {
+            component: 'useAppInitialize',
+            uid: authUser.uid,
+            email: authUser.email,
+            hasRole: !!claims.role,
+            role: claims.role || 'NOT_SET',
+            allClaims: JSON.stringify(claims),
+          });
+
+          // Custom Claims가 없으면 경고
+          if (!claims.role) {
+            logger.warn('Custom Claims에 role이 없습니다! Firestore Rules에서 거부될 수 있습니다.', {
+              component: 'useAppInitialize',
+              uid: authUser.uid,
+            });
+          }
+        } catch (tokenError) {
+          // 토큰 갱신 실패해도 앱은 계속 진행
+          logger.warn('토큰 갱신 실패', {
+            component: 'useAppInitialize',
+            error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+          });
+        }
+      } else {
+        logger.debug('로그인된 사용자 없음', { component: 'useAppInitialize' });
+      }
+
+      // 8. 기타 초기화 작업 (필요 시 추가)
       // - 폰트 로딩
       // - 설정 데이터 로딩
       // - 푸시 알림 권한 확인

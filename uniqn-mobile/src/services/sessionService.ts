@@ -130,8 +130,22 @@ function handleAppStateChange(state: AppStateStatus): void {
 /**
  * Firebase Auth 상태 변경 핸들러
  */
-function handleAuthStateChange(user: unknown): void {
+async function handleAuthStateChange(user: unknown): Promise<void> {
   if (user) {
+    // Custom Claims 갱신을 위해 토큰 강제 새로고침
+    // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
+    try {
+      const currentUser = getFirebaseAuth().currentUser;
+      if (currentUser) {
+        await currentUser.getIdToken(true);
+        logger.debug('토큰 강제 갱신 완료 (Custom Claims 로드)');
+      }
+    } catch (error) {
+      logger.warn('토큰 갱신 실패', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+
     // 로그인됨 - 세션 타이머 시작
     resetActivityTimer();
     startTokenRefreshInterval();

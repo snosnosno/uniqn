@@ -82,6 +82,10 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       data.password
     );
 
+    // Custom Claims 갱신을 위해 토큰 강제 새로고침
+    // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
+    await userCredential.user.getIdToken(true);
+
     // 사용자 프로필 가져오기
     const profile = await getUserProfile(userCredential.user.uid);
 

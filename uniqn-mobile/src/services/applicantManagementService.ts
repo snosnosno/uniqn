@@ -17,7 +17,7 @@ import {
   serverTimestamp,
   increment,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError } from '@/errors';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
@@ -82,7 +82,7 @@ export async function getApplicantsByJobPosting(
     logger.info('지원자 목록 조회', { jobPostingId, ownerId, statusFilter });
 
     // 공고 소유자 확인
-    const jobRef = doc(db, JOB_POSTINGS_COLLECTION, jobPostingId);
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
@@ -95,7 +95,7 @@ export async function getApplicantsByJobPosting(
     }
 
     // 지원자 목록 조회
-    const applicationsRef = collection(db, APPLICATIONS_COLLECTION);
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
     let q = query(
       applicationsRef,
       where('jobPostingId', '==', jobPostingId),
@@ -183,7 +183,7 @@ export async function confirmApplication(
     logger.info('지원 확정 시작', { applicationId: input.applicationId, ownerId });
 
     // v2.0 지원서 확인: selectedAssignments가 있거나 application에 assignments가 있으면 v2.0 처리
-    const applicationRef = doc(db, APPLICATIONS_COLLECTION, input.applicationId);
+    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
@@ -216,7 +216,7 @@ export async function confirmApplication(
     }
 
     // v1.0 레거시 모드: 단일 역할 지원서
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 다시 읽기 (트랜잭션 내)
       const appDoc = await transaction.get(applicationRef);
 
@@ -232,7 +232,7 @@ export async function confirmApplication(
       }
 
       // 2. 공고 읽기
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, appData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, appData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -272,7 +272,7 @@ export async function confirmApplication(
       }
 
       // 4. 근무 기록(WorkLog) 생성
-      const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
       const workLogRef = doc(workLogsRef);
       const now = serverTimestamp();
 
@@ -350,9 +350,9 @@ export async function rejectApplication(
   try {
     logger.info('지원 거절 시작', { applicationId: input.applicationId, ownerId });
 
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       // 지원서 읽기
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, input.applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -371,7 +371,7 @@ export async function rejectApplication(
       }
 
       // 공고 소유자 확인
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -452,8 +452,8 @@ export async function addToWaitlist(
   try {
     logger.info('대기자 등록 시작', { applicationId, ownerId });
 
-    await runTransaction(db, async (transaction) => {
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -463,7 +463,7 @@ export async function addToWaitlist(
       const applicationData = applicationDoc.data() as Application;
 
       // 공고 소유자 확인
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -477,7 +477,7 @@ export async function addToWaitlist(
 
       // 대기자 순번 계산
       const waitlistQuery = query(
-        collection(db, APPLICATIONS_COLLECTION),
+        collection(getFirebaseDb(), APPLICATIONS_COLLECTION),
         where('jobPostingId', '==', applicationData.jobPostingId),
         where('status', '==', 'waitlisted'),
         orderBy('waitlistOrder', 'desc')
@@ -516,8 +516,8 @@ export async function promoteFromWaitlist(
     const result = await confirmApplication({ applicationId }, ownerId);
 
     // 승격 시간 기록
-    const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
-    await runTransaction(db, async (transaction) => {
+    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       transaction.update(applicationRef, {
         waitlistPromotedAt: serverTimestamp(),
       });
@@ -540,7 +540,7 @@ export async function markApplicationAsRead(
   ownerId: string
 ): Promise<void> {
   try {
-    const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
@@ -550,14 +550,14 @@ export async function markApplicationAsRead(
     const applicationData = applicationDoc.data() as Application;
 
     // 공고 소유자 확인
-    const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists() || (jobDoc.data() as JobPosting).ownerId !== ownerId) {
       throw new Error('본인의 공고만 조회할 수 있습니다');
     }
 
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       transaction.update(applicationRef, {
         isRead: true,
         updatedAt: serverTimestamp(),

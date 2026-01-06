@@ -17,7 +17,7 @@ import {
   Timestamp,
   writeBatch,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
 import type { Application, Assignment, Staff, JobPosting } from '@/types';
@@ -87,9 +87,9 @@ export async function convertApplicantToStaff(
   try {
     logger.info('지원자→스태프 변환 시작', { applicationId, eventId, managerId });
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 읽기
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -108,7 +108,7 @@ export async function convertApplicantToStaff(
       }
 
       // 2. 공고 읽기 (권한 확인)
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -127,14 +127,14 @@ export async function convertApplicantToStaff(
       }
 
       // 3. 스태프 중복 확인
-      const staffRef = doc(db, STAFF_COLLECTION, applicationData.applicantId);
+      const staffRef = doc(getFirebaseDb(), STAFF_COLLECTION, applicationData.applicantId);
       const staffDoc = await transaction.get(staffRef);
       const isNewStaff = !staffDoc.exists();
 
       if (staffDoc.exists() && !skipExisting) {
         // 해당 이벤트에서 이미 스태프인지 확인
         const existingWorkLogsQuery = query(
-          collection(db, WORK_LOGS_COLLECTION),
+          collection(getFirebaseDb(), WORK_LOGS_COLLECTION),
           where('staffId', '==', applicationData.applicantId),
           where('eventId', '==', eventId)
         );
@@ -175,7 +175,7 @@ export async function convertApplicantToStaff(
 
       if (createWorkLogs) {
         const assignments = applicationData.assignments ?? [];
-        const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+        const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
         if (assignments.length > 0) {
           // v2.0: Assignment별 WorkLog 생성
@@ -343,7 +343,7 @@ export async function isAlreadyStaff(
   eventId?: string
 ): Promise<boolean> {
   try {
-    const staffRef = doc(db, STAFF_COLLECTION, userId);
+    const staffRef = doc(getFirebaseDb(), STAFF_COLLECTION, userId);
     const staffDoc = await getDoc(staffRef);
 
     if (!staffDoc.exists()) {
@@ -353,7 +353,7 @@ export async function isAlreadyStaff(
     // eventId가 지정된 경우 해당 이벤트의 WorkLog 존재 확인
     if (eventId) {
       const workLogsQuery = query(
-        collection(db, WORK_LOGS_COLLECTION),
+        collection(getFirebaseDb(), WORK_LOGS_COLLECTION),
         where('staffId', '==', userId),
         where('eventId', '==', eventId)
       );
@@ -376,7 +376,7 @@ export async function canConvertToStaff(applicationId: string): Promise<{
   reason?: string;
 }> {
   try {
-    const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
@@ -417,9 +417,9 @@ export async function revertStaffConversion(
   try {
     logger.info('스태프 변환 취소 시작', { applicationId, managerId });
 
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       // 지원서 읽기
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -437,7 +437,7 @@ export async function revertStaffConversion(
       }
 
       // 공고 소유자 확인
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {

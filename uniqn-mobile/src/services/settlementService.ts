@@ -17,7 +17,7 @@ import {
   serverTimestamp,
   Timestamp,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import type {
@@ -206,7 +206,7 @@ export async function getWorkLogsByJobPosting(
     logger.info('공고별 근무 기록 조회', { jobPostingId, ownerId, filters });
 
     // 1. 공고 소유권 확인
-    const jobRef = doc(db, JOB_POSTINGS_COLLECTION, jobPostingId);
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
@@ -220,7 +220,7 @@ export async function getWorkLogsByJobPosting(
     }
 
     // 2. 근무 기록 쿼리 생성
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
       where('eventId', '==', jobPostingId),
@@ -314,7 +314,7 @@ export async function calculateSettlement(
     logger.info('정산 금액 계산', { workLogId: input.workLogId, ownerId });
 
     // 1. 근무 기록 조회
-    const workLogRef = doc(db, WORK_LOGS_COLLECTION, input.workLogId);
+    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
     const workLogDoc = await getDoc(workLogRef);
 
     if (!workLogDoc.exists()) {
@@ -324,7 +324,7 @@ export async function calculateSettlement(
     const workLog = workLogDoc.data() as WorkLog;
 
     // 2. 공고 조회 및 소유권 확인
-    const jobRef = doc(db, JOB_POSTINGS_COLLECTION, workLog.eventId);
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
@@ -390,9 +390,9 @@ export async function updateWorkTime(
   try {
     logger.info('근무 시간 수정 시작', { input, ownerId });
 
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 근무 기록 조회
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, input.workLogId);
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -402,7 +402,7 @@ export async function updateWorkTime(
       const workLog = workLogDoc.data() as WorkLog;
 
       // 2. 공고 조회 및 소유권 확인
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, workLog.eventId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -473,9 +473,9 @@ export async function settleWorkLog(
   try {
     logger.info('개별 정산 처리 시작', { input, ownerId });
 
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 근무 기록 조회
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, input.workLogId);
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -485,7 +485,7 @@ export async function settleWorkLog(
       const workLog = workLogDoc.data() as WorkLog;
 
       // 2. 공고 조회 및 소유권 확인
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, workLog.eventId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -564,11 +564,11 @@ export async function bulkSettlement(
     }
 
     for (const batchIds of batches) {
-      await runTransaction(db, async (transaction) => {
+      await runTransaction(getFirebaseDb(), async (transaction) => {
         // 1. 모든 근무 기록 조회
         const workLogDocs = await Promise.all(
           batchIds.map(async (id) => {
-            const ref = doc(db, WORK_LOGS_COLLECTION, id);
+            const ref = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, id);
             const docSnap = await transaction.get(ref);
             return { id, ref, doc: docSnap };
           })
@@ -585,7 +585,7 @@ export async function bulkSettlement(
 
         const jobPostings = new Map<string, JobPosting>();
         for (const jobId of jobPostingIds) {
-          const jobRef = doc(db, JOB_POSTINGS_COLLECTION, jobId);
+          const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId);
           const jobDoc = await transaction.get(jobRef);
           if (jobDoc.exists()) {
             jobPostings.set(jobId, jobDoc.data() as JobPosting);
@@ -705,9 +705,9 @@ export async function updateSettlementStatus(
   try {
     logger.info('정산 상태 변경', { workLogId, status, ownerId });
 
-    await runTransaction(db, async (transaction) => {
+    await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 근무 기록 조회
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -717,7 +717,7 @@ export async function updateSettlementStatus(
       const workLog = workLogDoc.data() as WorkLog;
 
       // 2. 공고 조회 및 소유권 확인
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, workLog.eventId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -763,7 +763,7 @@ export async function getJobPostingSettlementSummary(
     logger.info('공고별 정산 요약 조회', { jobPostingId, ownerId });
 
     // 1. 공고 조회 및 소유권 확인
-    const jobRef = doc(db, JOB_POSTINGS_COLLECTION, jobPostingId);
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
@@ -777,7 +777,7 @@ export async function getJobPostingSettlementSummary(
     }
 
     // 2. 근무 기록 조회
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
       where('eventId', '==', jobPostingId)
@@ -882,7 +882,7 @@ export async function getMySettlementSummary(
     logger.info('전체 정산 요약 조회', { ownerId, dateRange });
 
     // 1. 내 공고 조회
-    const jobsRef = collection(db, JOB_POSTINGS_COLLECTION);
+    const jobsRef = collection(getFirebaseDb(), JOB_POSTINGS_COLLECTION);
     const jobsQuery = query(
       jobsRef,
       where('ownerId', '==', ownerId)

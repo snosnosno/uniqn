@@ -21,7 +21,7 @@ import {
   serverTimestamp,
   type Unsubscribe,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import {
@@ -139,7 +139,7 @@ export async function getMyWorkLogs(
   try {
     logger.info('근무 기록 목록 조회', { staffId });
 
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
@@ -171,7 +171,7 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
   try {
     logger.info('날짜별 근무 기록 조회', { staffId, date });
 
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
@@ -191,7 +191,14 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
       return aTime - bTime;
     });
   } catch (error) {
-    logger.error('날짜별 근무 기록 조회 실패', error as Error, { staffId, date });
+    // Firebase 에러 코드 추출하여 상세 로깅
+    const firebaseCode = (error as { code?: string })?.code || 'unknown';
+    logger.error('날짜별 근무 기록 조회 실패', error as Error, {
+      staffId,
+      date,
+      firebaseErrorCode: firebaseCode,
+      errorMessage: (error as Error)?.message,
+    });
     throw mapFirebaseError(error);
   }
 }
@@ -203,7 +210,7 @@ export async function getWorkLogById(workLogId: string): Promise<WorkLog | null>
   try {
     logger.info('근무 기록 상세 조회', { workLogId });
 
-    const docRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+    const docRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -227,9 +234,9 @@ export async function checkIn(
   try {
     logger.info('출근 체크 시작', { workLogId, qrCodeId });
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 근무 기록 조회
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -249,7 +256,7 @@ export async function checkIn(
 
       // 3. QR 코드 검증 (있는 경우)
       if (qrCodeId) {
-        const qrRef = doc(db, QR_CODES_COLLECTION, qrCodeId);
+        const qrRef = doc(getFirebaseDb(), QR_CODES_COLLECTION, qrCodeId);
         const qrDoc = await transaction.get(qrRef);
 
         if (!qrDoc.exists()) {
@@ -321,9 +328,9 @@ export async function checkOut(
   try {
     logger.info('퇴근 체크 시작', { workLogId, qrCodeId });
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 근무 기록 조회
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -342,7 +349,7 @@ export async function checkOut(
 
       // 3. QR 코드 검증 (있는 경우)
       if (qrCodeId) {
-        const qrRef = doc(db, QR_CODES_COLLECTION, qrCodeId);
+        const qrRef = doc(getFirebaseDb(), QR_CODES_COLLECTION, qrCodeId);
         const qrDoc = await transaction.get(qrRef);
 
         if (!qrDoc.exists()) {
@@ -450,7 +457,7 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
     const threeMonthsAgo = new Date(now);
     threeMonthsAgo.setMonth(now.getMonth() - 3);
 
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
@@ -535,7 +542,7 @@ export async function getMonthlyPayroll(
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
 
-    const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
@@ -591,7 +598,7 @@ export async function updateWorkTime(
   try {
     logger.info('근무 시간 수정', { workLogId, updates });
 
-    const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
 
     const updateData: Record<string, unknown> = {
       updatedAt: serverTimestamp(),
@@ -629,7 +636,7 @@ export async function updatePayrollStatus(
   try {
     logger.info('정산 상태 업데이트', { workLogId, status, amount });
 
-    const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
     const updateData: Record<string, unknown> = {
       payrollStatus: status,
       updatedAt: serverTimestamp(),
@@ -679,7 +686,7 @@ export function subscribeToWorkLog(
 ): Unsubscribe {
   logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
-  const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+  const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
 
   const unsubscribe = onSnapshot(
     workLogRef,
@@ -739,7 +746,7 @@ export function subscribeToMyWorkLogs(
 
   logger.info('근무 기록 목록 실시간 구독 시작', { staffId, dateRange });
 
-  const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
   // 쿼리 생성 - 날짜 범위 유무에 따라 분기
   const q = dateRange
@@ -798,7 +805,7 @@ export function subscribeToTodayWorkStatus(
 
   logger.info('오늘 근무 상태 실시간 구독 시작', { staffId, today });
 
-  const workLogsRef = collection(db, WORK_LOGS_COLLECTION);
+  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
   const q = query(
     workLogsRef,
     where('staffId', '==', staffId),

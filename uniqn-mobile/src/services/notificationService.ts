@@ -30,7 +30,7 @@ import {
   arrayRemove,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { normalizeError } from '@/utils/errorUtils';
 import { withErrorHandling } from '@/utils/withErrorHandling';
@@ -108,7 +108,7 @@ export async function fetchNotifications(
     const { userId, filter, pageSize = PAGE_SIZE, lastDoc } = options;
 
     // 기본 쿼리 조건
-    const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
     let q = query(
       notificationsRef,
       where('recipientId', '==', userId),
@@ -160,7 +160,7 @@ export async function fetchNotifications(
  */
 export async function getUnreadCount(userId: string): Promise<number> {
   return withErrorHandling(async () => {
-    const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
     const q = query(
       notificationsRef,
       where('recipientId', '==', userId),
@@ -177,7 +177,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
  */
 export async function getNotification(notificationId: string): Promise<NotificationData | null> {
   return withErrorHandling(async () => {
-    const docRef = doc(db, COLLECTIONS.NOTIFICATIONS, notificationId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -197,7 +197,7 @@ export async function getNotification(notificationId: string): Promise<Notificat
  */
 export async function markAsRead(notificationId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const docRef = doc(db, COLLECTIONS.NOTIFICATIONS, notificationId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
     await updateDoc(docRef, {
       isRead: true,
       readAt: serverTimestamp(),
@@ -212,7 +212,7 @@ export async function markAsRead(notificationId: string): Promise<void> {
  */
 export async function markAllAsRead(userId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
     const q = query(
       notificationsRef,
       where('recipientId', '==', userId),
@@ -227,7 +227,7 @@ export async function markAllAsRead(userId: string): Promise<void> {
     }
 
     // 배치 처리
-    const batch = writeBatch(db);
+    const batch = writeBatch(getFirebaseDb());
     const now = serverTimestamp();
 
     snapshot.docs.forEach((doc) => {
@@ -248,7 +248,7 @@ export async function markAllAsRead(userId: string): Promise<void> {
  */
 export async function deleteNotification(notificationId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const docRef = doc(db, COLLECTIONS.NOTIFICATIONS, notificationId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
     await deleteDoc(docRef);
 
     logger.info('알림 삭제', { notificationId });
@@ -262,10 +262,10 @@ export async function deleteNotifications(notificationIds: string[]): Promise<vo
   return withErrorHandling(async () => {
     if (notificationIds.length === 0) return;
 
-    const batch = writeBatch(db);
+    const batch = writeBatch(getFirebaseDb());
 
     notificationIds.forEach((id) => {
-      const docRef = doc(db, COLLECTIONS.NOTIFICATIONS, id);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, id);
       batch.delete(docRef);
     });
 
@@ -283,7 +283,7 @@ export async function cleanupOldNotifications(userId: string, daysToKeep = 30): 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-    const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
     const q = query(
       notificationsRef,
       where('recipientId', '==', userId),
@@ -297,7 +297,7 @@ export async function cleanupOldNotifications(userId: string, daysToKeep = 30): 
       return 0;
     }
 
-    const batch = writeBatch(db);
+    const batch = writeBatch(getFirebaseDb());
     snapshot.docs.forEach((doc) => {
       batch.delete(doc.ref);
     });
@@ -321,7 +321,7 @@ export function subscribeToNotifications(
   onNotifications: (notifications: NotificationData[]) => void,
   onError?: (error: Error) => void
 ): () => void {
-  const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
+  const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
   const q = query(
     notificationsRef,
     where('recipientId', '==', userId),
@@ -356,7 +356,7 @@ export function subscribeToUnreadCount(
   onCount: (count: number) => void,
   onError?: (error: Error) => void
 ): () => void {
-  const notificationsRef = collection(db, COLLECTIONS.NOTIFICATIONS);
+  const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
   const q = query(
     notificationsRef,
     where('recipientId', '==', userId),
@@ -390,7 +390,7 @@ export function subscribeToUnreadCount(
  */
 export async function getNotificationSettings(userId: string): Promise<NotificationSettings> {
   return withErrorHandling(async () => {
-    const docRef = doc(db, 'userSettings', userId);
+    const docRef = doc(getFirebaseDb(), 'userSettings', userId);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists() || !docSnap.data()?.notifications) {
@@ -409,7 +409,7 @@ export async function saveNotificationSettings(
   settings: NotificationSettings
 ): Promise<void> {
   return withErrorHandling(async () => {
-    const docRef = doc(db, 'userSettings', userId);
+    const docRef = doc(getFirebaseDb(), 'userSettings', userId);
     await updateDoc(docRef, {
       notifications: {
         ...settings,
@@ -492,7 +492,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  */
 export async function registerFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {
-    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
     await updateDoc(userRef, {
       fcmTokens: arrayUnion(token),
       lastTokenUpdate: serverTimestamp(),
@@ -509,7 +509,7 @@ export async function registerFCMToken(userId: string, token: string): Promise<v
  */
 export async function unregisterFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {
-    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
     await updateDoc(userRef, {
       fcmTokens: arrayRemove(token),
     });
@@ -525,7 +525,7 @@ export async function unregisterFCMToken(userId: string, token: string): Promise
  */
 export async function unregisterAllFCMTokens(userId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const userRef = doc(db, COLLECTIONS.USERS, userId);
+    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
     await updateDoc(userRef, {
       fcmTokens: [],
     });

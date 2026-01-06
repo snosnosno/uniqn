@@ -18,7 +18,7 @@ import {
   Timestamp,
   increment,
 } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import {
   mapFirebaseError,
@@ -78,9 +78,9 @@ export async function applyToJob(
   try {
     logger.info('지원하기 시작', { jobPostingId: input.jobPostingId, applicantId });
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 공고 정보 읽기
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, input.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, input.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -119,7 +119,7 @@ export async function applyToJob(
 
       // 5. 지원서 생성
       const applicationId = `${input.jobPostingId}_${applicantId}`;
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
 
       // 기존 지원 확인 (복합 키로 중복 방지)
       const existingApp = await transaction.get(applicationRef);
@@ -192,7 +192,7 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
   try {
     logger.info('내 지원 내역 조회', { applicantId });
 
-    const applicationsRef = collection(db, APPLICATIONS_COLLECTION);
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
     const q = query(
       applicationsRef,
       where('applicantId', '==', applicantId),
@@ -228,7 +228,7 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
     if (jobPostingIds.size > 0) {
       const jobPromises = Array.from(jobPostingIds).map(async (jobId) => {
         try {
-          const jobDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, jobId));
+          const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId));
           if (jobDoc.exists()) {
             return { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
           }
@@ -277,7 +277,7 @@ export async function getApplicationById(
   try {
     logger.info('지원 상세 조회', { applicationId });
 
-    const docRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -290,7 +290,7 @@ export async function getApplicationById(
     } as Application;
 
     // 공고 정보 가져오기
-    const jobDoc = await getDoc(doc(db, JOB_POSTINGS_COLLECTION, application.jobPostingId));
+    const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, application.jobPostingId));
 
     return {
       ...application,
@@ -314,8 +314,8 @@ export async function cancelApplication(
   try {
     logger.info('지원 취소 시작', { applicationId, applicantId });
 
-    await runTransaction(db, async (transaction) => {
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -346,7 +346,7 @@ export async function cancelApplication(
       });
 
       // 공고의 지원자 수 감소
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
       transaction.update(jobRef, {
         applicationCount: increment(-1),
         updatedAt: serverTimestamp(),
@@ -370,7 +370,7 @@ export async function hasAppliedToJob(
   try {
     // 복합 키로 직접 확인
     const applicationId = `${jobPostingId}_${applicantId}`;
-    const docRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+    const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
     const docSnap = await getDoc(docRef);
 
     if (!docSnap.exists()) {
@@ -456,9 +456,9 @@ export async function applyToJobV2(
       }
     }
 
-    const result = await runTransaction(db, async (transaction) => {
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 2. 공고 정보 읽기
-      const jobRef = doc(db, JOB_POSTINGS_COLLECTION, input.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, input.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -509,7 +509,7 @@ export async function applyToJobV2(
 
       // 6. 중복 지원 검사 (복합 키)
       const applicationId = `${input.jobPostingId}_${applicantId}`;
-      const applicationRef = doc(db, APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
 
       const existingApp = await transaction.get(applicationRef);
       if (existingApp.exists()) {
