@@ -28,10 +28,18 @@ export { ErrorState } from './ErrorState';
 // ============================================================================
 
 export {
+  // 기본 에러 바운더리
   ErrorBoundary,
   withErrorBoundary,
   ScreenErrorBoundary,
   FeatureErrorBoundary,
+  // 세분화된 에러 바운더리
+  NetworkErrorBoundary,
+  AuthErrorBoundary,
+  FormErrorBoundary,
+  DataFetchErrorBoundary,
+  CompositeErrorBoundary,
+  // 타입
   type ErrorBoundaryProps,
 } from './ErrorBoundary';
 
@@ -50,6 +58,19 @@ export { ModalManager } from './ModalManager';
 
 export { FormField, FormSection, FormRow } from './FormField';
 export { FormSelect, type SelectOption } from './FormSelect';
+export {
+  Checkbox,
+  CheckboxGroup,
+  type CheckboxProps,
+  type CheckboxGroupProps,
+} from './Checkbox';
+export { Radio, type RadioProps, type RadioOption } from './Radio';
+export {
+  DatePicker,
+  DateRangePicker,
+  type DatePickerProps,
+  type DateRangePickerProps,
+} from './DatePicker';
 
 // ============================================================================
 // Loading / Skeleton Components
@@ -67,6 +88,20 @@ export {
   SkeletonJobCard,
   SkeletonScheduleCard,
 } from './Skeleton';
+
+// ============================================================================
+// Image Components
+// ============================================================================
+
+export {
+  OptimizedImage,
+  AvatarImage,
+  BannerImage,
+  ProductImage,
+  DEFAULT_BLURHASH,
+  type OptimizedImageProps,
+  type BlurhashPreset,
+} from './OptimizedImage';
 
 // ============================================================================
 // Layout Components

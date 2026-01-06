@@ -344,4 +344,727 @@ export function FeatureErrorBoundary({
   );
 }
 
+// ============================================================================
+// Network Error Boundary
+// ============================================================================
+
+interface NetworkErrorFallbackProps {
+  error: Error | null;
+  onRetry: () => void;
+  isOffline?: boolean;
+}
+
+/**
+ * NetworkErrorFallback
+ *
+ * @description 네트워크 에러 시 표시할 UI
+ */
+function NetworkErrorFallback({
+  error,
+  onRetry,
+  isOffline = false,
+}: NetworkErrorFallbackProps): React.ReactElement {
+  return (
+    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-gray-900">
+      <View className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-6">
+        <Text className="text-4xl">{isOffline ? '📡' : '🌐'}</Text>
+      </View>
+
+      <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+        {isOffline ? '오프라인 상태입니다' : '네트워크 오류'}
+      </Text>
+
+      <Text className="text-gray-600 dark:text-gray-400 text-center mb-6 leading-6">
+        {isOffline
+          ? '인터넷 연결을 확인해주세요.'
+          : '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.'}
+      </Text>
+
+      {__DEV__ && error && (
+        <View className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6">
+          <Text className="text-xs text-orange-600 dark:text-orange-400 font-mono">
+            {error.message}
+          </Text>
+        </View>
+      )}
+
+      <Pressable
+        onPress={onRetry}
+        className="bg-orange-600 px-6 py-3 rounded-xl active:bg-orange-700"
+        accessibilityRole="button"
+        accessibilityLabel="다시 시도"
+      >
+        <Text className="text-white font-semibold">다시 시도</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * NetworkErrorBoundary
+ *
+ * @description 네트워크 관련 에러를 처리하는 에러 경계
+ * - 오프라인 상태 감지
+ * - 네트워크 타임아웃 처리
+ * - 서버 연결 실패 처리
+ */
+export class NetworkErrorBoundary extends Component<
+  ErrorBoundaryProps & { isOffline?: boolean },
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps & { isOffline?: boolean }) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    // 네트워크 관련 에러인지 확인
+    const isNetworkError =
+      error.message.includes('Network') ||
+      error.message.includes('fetch') ||
+      error.message.includes('timeout') ||
+      error.message.includes('connection') ||
+      error.name === 'NetworkError';
+
+    if (isNetworkError) {
+      return { hasError: true, error };
+    }
+
+    // 네트워크 에러가 아니면 상위로 전파
+    throw error;
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    const { name = 'Network', onError } = this.props;
+
+    this.setState({ errorInfo });
+
+    logger.error(`NetworkErrorBoundary [${name}] 에러 캐치`, error, {
+      component: name,
+      errorType: 'network',
+    });
+
+    crashlyticsService.recordError(error, {
+      domain: 'network',
+      component: name,
+    });
+
+    if (onError) {
+      onError(error, errorInfo);
+    }
+  }
+
+  handleRetry = (): void => {
+    const { onReset } = this.props;
+
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+
+    if (onReset) {
+      onReset();
+    }
+  };
+
+  render(): ReactNode {
+    const { children, isOffline = false, fallback } = this.props;
+    const { hasError, error } = this.state;
+
+    if (hasError) {
+      if (fallback) return fallback;
+      return (
+        <NetworkErrorFallback
+          error={error}
+          onRetry={this.handleRetry}
+          isOffline={isOffline}
+        />
+      );
+    }
+
+    return children;
+  }
+}
+
+// ============================================================================
+// Auth Error Boundary
+// ============================================================================
+
+interface AuthErrorFallbackProps {
+  error: Error | null;
+  onLogin: () => void;
+  onRetry: () => void;
+}
+
+/**
+ * AuthErrorFallback
+ *
+ * @description 인증 에러 시 표시할 UI
+ */
+function AuthErrorFallback({
+  error,
+  onLogin,
+  onRetry,
+}: AuthErrorFallbackProps): React.ReactElement {
+  const isSessionExpired = error?.message.includes('expired') || error?.message.includes('만료');
+
+  return (
+    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-gray-900">
+      <View className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mb-6">
+        <Text className="text-4xl">🔐</Text>
+      </View>
+
+      <Text className="text-xl font-bold text-gray-900 dark:text-white text-center mb-2">
+        {isSessionExpired ? '세션이 만료되었습니다' : '로그인이 필요합니다'}
+      </Text>
+
+      <Text className="text-gray-600 dark:text-gray-400 text-center mb-6 leading-6">
+        {isSessionExpired
+          ? '보안을 위해 다시 로그인해주세요.'
+          : '이 기능을 사용하려면 로그인이 필요합니다.'}
+      </Text>
+
+      {__DEV__ && error && (
+        <View className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6">
+          <Text className="text-xs text-yellow-600 dark:text-yellow-400 font-mono">
+            {error.message}
+          </Text>
+        </View>
+      )}
+
+      <View className="flex-row gap-3">
+        <Pressable
+          onPress={onLogin}
+          className="bg-indigo-600 px-6 py-3 rounded-xl active:bg-indigo-700"
+          accessibilityRole="button"
+          accessibilityLabel="로그인"
+        >
+          <Text className="text-white font-semibold">로그인</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onRetry}
+          className="bg-gray-200 dark:bg-gray-700 px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
+          accessibilityRole="button"
+          accessibilityLabel="다시 시도"
+        >
+          <Text className="text-gray-700 dark:text-gray-200 font-semibold">다시 시도</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * AuthErrorBoundary
+ *
+ * @description 인증 관련 에러를 처리하는 에러 경계
+ * - 세션 만료
+ * - 권한 없음
+ * - 인증 실패
+ */
+export class AuthErrorBoundary extends Component<
+  ErrorBoundaryProps & { onLogin?: () => void },
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps & { onLogin?: () => void }) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    // 인증 관련 에러인지 확인
+    const isAuthError =
+      error.message.includes('auth') ||
+      error.message.includes('permission') ||
+      error.message.includes('unauthorized') ||
+      error.message.includes('로그인') ||
+      error.message.includes('권한') ||
+      error.message.includes('만료') ||
+      error.message.includes('expired') ||
+      error.name === 'AuthError' ||
+      error.name === 'PermissionError';
+
+    if (isAuthError) {
+      return { hasError: true, error };
+    }
+
+    // 인증 에러가 아니면 상위로 전파
+    throw error;
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    const { name = 'Auth', onError } = this.props;
+
+    this.setState({ errorInfo });
+
+    logger.error(`AuthErrorBoundary [${name}] 에러 캐치`, error, {
+      component: name,
+      errorType: 'auth',
+    });
+
+    crashlyticsService.recordError(error, {
+      domain: 'auth',
+      component: name,
+    });
+
+    if (onError) {
+      onError(error, errorInfo);
+    }
+  }
+
+  handleRetry = (): void => {
+    const { onReset } = this.props;
+
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+
+    if (onReset) {
+      onReset();
+    }
+  };
+
+  handleLogin = (): void => {
+    const { onLogin } = this.props;
+
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+
+    if (onLogin) {
+      onLogin();
+    }
+  };
+
+  render(): ReactNode {
+    const { children, fallback } = this.props;
+    const { hasError, error } = this.state;
+
+    if (hasError) {
+      if (fallback) return fallback;
+      return (
+        <AuthErrorFallback
+          error={error}
+          onLogin={this.handleLogin}
+          onRetry={this.handleRetry}
+        />
+      );
+    }
+
+    return children;
+  }
+}
+
+// ============================================================================
+// Form Error Boundary
+// ============================================================================
+
+interface FormErrorFallbackProps {
+  error: Error | null;
+  onRetry: () => void;
+  onReset: () => void;
+}
+
+/**
+ * FormErrorFallback
+ *
+ * @description 폼 에러 시 표시할 UI
+ */
+function FormErrorFallback({
+  error,
+  onRetry,
+  onReset,
+}: FormErrorFallbackProps): React.ReactElement {
+  const isValidationError = error?.message.includes('validation') || error?.message.includes('검증');
+
+  return (
+    <View className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
+      <View className="flex-row items-center mb-3">
+        <Text className="text-2xl mr-3">⚠️</Text>
+        <Text className="text-base font-semibold text-red-800 dark:text-red-200 flex-1">
+          {isValidationError ? '입력값을 확인해주세요' : '폼 처리 중 오류 발생'}
+        </Text>
+      </View>
+
+      {error && (
+        <Text className="text-sm text-red-600 dark:text-red-400 mb-4 leading-5">
+          {error.message}
+        </Text>
+      )}
+
+      <View className="flex-row gap-2">
+        <Pressable
+          onPress={onRetry}
+          className="flex-1 bg-red-600 py-2.5 rounded-lg active:bg-red-700"
+          accessibilityRole="button"
+          accessibilityLabel="다시 시도"
+        >
+          <Text className="text-white font-medium text-center text-sm">다시 시도</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={onReset}
+          className="flex-1 bg-gray-200 dark:bg-gray-700 py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600"
+          accessibilityRole="button"
+          accessibilityLabel="초기화"
+        >
+          <Text className="text-gray-700 dark:text-gray-200 font-medium text-center text-sm">초기화</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * FormErrorBoundary
+ *
+ * @description 폼 관련 에러를 처리하는 에러 경계
+ * - 유효성 검증 실패
+ * - 제출 실패
+ * - 데이터 처리 오류
+ */
+export class FormErrorBoundary extends Component<
+  ErrorBoundaryProps & { onFormReset?: () => void },
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps & { onFormReset?: () => void }) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    // 폼 관련 에러인지 확인
+    const isFormError =
+      error.message.includes('form') ||
+      error.message.includes('validation') ||
+      error.message.includes('submit') ||
+      error.message.includes('검증') ||
+      error.message.includes('입력') ||
+      error.name === 'ValidationError' ||
+      error.name === 'FormError';
+
+    if (isFormError) {
+      return { hasError: true, error };
+    }
+
+    // 폼 에러가 아니면 상위로 전파
+    throw error;
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    const { name = 'Form', onError } = this.props;
+
+    this.setState({ errorInfo });
+
+    logger.error(`FormErrorBoundary [${name}] 에러 캐치`, error, {
+      component: name,
+      errorType: 'form',
+    });
+
+    // 폼 에러는 Crashlytics에 보내지 않음 (사용자 입력 오류)
+    if (onError) {
+      onError(error, errorInfo);
+    }
+  }
+
+  handleRetry = (): void => {
+    const { onReset } = this.props;
+
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+
+    if (onReset) {
+      onReset();
+    }
+  };
+
+  handleFormReset = (): void => {
+    const { onFormReset } = this.props;
+
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+
+    if (onFormReset) {
+      onFormReset();
+    }
+  };
+
+  render(): ReactNode {
+    const { children, fallback } = this.props;
+    const { hasError, error } = this.state;
+
+    if (hasError) {
+      if (fallback) return fallback;
+      return (
+        <FormErrorFallback
+          error={error}
+          onRetry={this.handleRetry}
+          onReset={this.handleFormReset}
+        />
+      );
+    }
+
+    return children;
+  }
+}
+
+// ============================================================================
+// Data Fetch Error Boundary
+// ============================================================================
+
+interface DataFetchErrorFallbackProps {
+  error: Error | null;
+  onRetry: () => void;
+  resourceName?: string;
+}
+
+/**
+ * DataFetchErrorFallback
+ *
+ * @description 데이터 로딩 에러 시 표시할 UI
+ */
+function DataFetchErrorFallback({
+  error,
+  onRetry,
+  resourceName = '데이터',
+}: DataFetchErrorFallbackProps): React.ReactElement {
+  return (
+    <View className="flex-1 items-center justify-center p-6">
+      <View className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center mb-4">
+        <Text className="text-3xl">📭</Text>
+      </View>
+
+      <Text className="text-lg font-semibold text-gray-900 dark:text-white text-center mb-2">
+        {resourceName}를 불러올 수 없습니다
+      </Text>
+
+      <Text className="text-gray-500 dark:text-gray-400 text-center mb-4 text-sm">
+        잠시 후 다시 시도해주세요
+      </Text>
+
+      {__DEV__ && error && (
+        <Text className="text-xs text-gray-400 dark:text-gray-500 text-center mb-4 font-mono">
+          {error.message}
+        </Text>
+      )}
+
+      <Pressable
+        onPress={onRetry}
+        className="bg-gray-200 dark:bg-gray-700 px-5 py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600"
+        accessibilityRole="button"
+        accessibilityLabel="새로고침"
+      >
+        <Text className="text-gray-700 dark:text-gray-200 font-medium">새로고침</Text>
+      </Pressable>
+    </View>
+  );
+}
+
+/**
+ * DataFetchErrorBoundary
+ *
+ * @description 데이터 페칭 관련 에러를 처리하는 에러 경계
+ * - API 호출 실패
+ * - 데이터 파싱 오류
+ * - 존재하지 않는 리소스
+ */
+export class DataFetchErrorBoundary extends Component<
+  ErrorBoundaryProps & { resourceName?: string },
+  ErrorBoundaryState
+> {
+  constructor(props: ErrorBoundaryProps & { resourceName?: string }) {
+    super(props);
+    this.state = {
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    };
+  }
+
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
+    // 데이터 페칭 관련 에러인지 확인
+    const isFetchError =
+      error.message.includes('fetch') ||
+      error.message.includes('data') ||
+      error.message.includes('load') ||
+      error.message.includes('not found') ||
+      error.message.includes('404') ||
+      error.message.includes('500') ||
+      error.name === 'FetchError' ||
+      error.name === 'DataError';
+
+    if (isFetchError) {
+      return { hasError: true, error };
+    }
+
+    // 데이터 에러가 아니면 상위로 전파
+    throw error;
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
+    const { name = 'DataFetch', onError, resourceName } = this.props;
+
+    this.setState({ errorInfo });
+
+    logger.error(`DataFetchErrorBoundary [${name}] 에러 캐치`, error, {
+      component: name,
+      errorType: 'dataFetch',
+      resourceName,
+    });
+
+    crashlyticsService.recordError(error, {
+      domain: 'dataFetch',
+      component: name,
+      resourceName,
+    });
+
+    if (onError) {
+      onError(error, errorInfo);
+    }
+  }
+
+  handleRetry = (): void => {
+    const { onReset } = this.props;
+
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
+
+    if (onReset) {
+      onReset();
+    }
+  };
+
+  render(): ReactNode {
+    const { children, fallback, resourceName } = this.props;
+    const { hasError, error } = this.state;
+
+    if (hasError) {
+      if (fallback) return fallback;
+      return (
+        <DataFetchErrorFallback
+          error={error}
+          onRetry={this.handleRetry}
+          resourceName={resourceName}
+        />
+      );
+    }
+
+    return children;
+  }
+}
+
+// ============================================================================
+// Composite Error Boundary (다중 에러 타입 처리)
+// ============================================================================
+
+interface CompositeErrorBoundaryProps extends ErrorBoundaryProps {
+  /** 처리할 에러 타입 */
+  handleTypes?: ('network' | 'auth' | 'form' | 'data' | 'all')[];
+  /** 오프라인 상태 */
+  isOffline?: boolean;
+  /** 로그인 콜백 */
+  onLogin?: () => void;
+  /** 폼 초기화 콜백 */
+  onFormReset?: () => void;
+  /** 리소스 이름 */
+  resourceName?: string;
+}
+
+/**
+ * CompositeErrorBoundary
+ *
+ * @description 여러 종류의 에러를 한 번에 처리하는 복합 에러 경계
+ *
+ * @example
+ * ```tsx
+ * <CompositeErrorBoundary
+ *   handleTypes={['network', 'auth', 'data']}
+ *   onLogin={() => router.push('/login')}
+ *   resourceName="공고 목록"
+ * >
+ *   <JobPostingList />
+ * </CompositeErrorBoundary>
+ * ```
+ */
+export function CompositeErrorBoundary({
+  children,
+  handleTypes = ['all'],
+  isOffline,
+  onLogin,
+  onFormReset,
+  resourceName,
+  ...props
+}: CompositeErrorBoundaryProps): React.ReactElement {
+  const shouldHandleAll = handleTypes.includes('all');
+
+  // 에러 타입에 따라 중첩된 에러 경계 구성
+  let wrappedChildren: ReactNode = children;
+
+  if (shouldHandleAll || handleTypes.includes('form')) {
+    wrappedChildren = (
+      <FormErrorBoundary {...props} onFormReset={onFormReset}>
+        {wrappedChildren}
+      </FormErrorBoundary>
+    );
+  }
+
+  if (shouldHandleAll || handleTypes.includes('data')) {
+    wrappedChildren = (
+      <DataFetchErrorBoundary {...props} resourceName={resourceName}>
+        {wrappedChildren}
+      </DataFetchErrorBoundary>
+    );
+  }
+
+  if (shouldHandleAll || handleTypes.includes('auth')) {
+    wrappedChildren = (
+      <AuthErrorBoundary {...props} onLogin={onLogin}>
+        {wrappedChildren}
+      </AuthErrorBoundary>
+    );
+  }
+
+  if (shouldHandleAll || handleTypes.includes('network')) {
+    wrappedChildren = (
+      <NetworkErrorBoundary {...props} isOffline={isOffline}>
+        {wrappedChildren}
+      </NetworkErrorBoundary>
+    );
+  }
+
+  // 최상위에 기본 에러 경계 추가
+  return (
+    <ErrorBoundary {...props}>
+      {wrappedChildren}
+    </ErrorBoundary>
+  );
+}
+
 export default ErrorBoundary;
