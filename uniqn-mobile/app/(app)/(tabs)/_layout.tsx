@@ -5,7 +5,7 @@
 
 import { Tabs } from 'expo-router';
 import { useColorScheme } from 'react-native';
-import { HomeIcon, CalendarIcon, QrCodeIcon, UserIcon } from '@/components/icons';
+import { HomeIcon, CalendarIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
@@ -47,8 +47,14 @@ export default function TabLayout() {
       <Tabs.Screen
         name="qr"
         options={{
-          title: 'QR',
-          tabBarIcon: ({ color, size }) => <QrCodeIcon color={color} size={size} />,
+          href: null, // 탭바에서 숨김 (상단 버튼으로 접근)
+        }}
+      />
+      <Tabs.Screen
+        name="employer"
+        options={{
+          title: '내 공고',
+          tabBarIcon: ({ color, size }) => <BriefcaseIcon color={color} size={size} />,
         }}
       />
       <Tabs.Screen

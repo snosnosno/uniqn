@@ -143,6 +143,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         cameraPermission: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
       },
     ],
+    '@react-native-community/datetimepicker',
   ],
 
   // 추가 설정

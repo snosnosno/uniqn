@@ -7,7 +7,7 @@ import { View, Text, ScrollView, RefreshControl, Pressable, ActivityIndicator } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Badge, EmptyState } from '@/components/ui';
-import { BellIcon, MapPinIcon, CalendarIcon, CurrencyDollarIcon } from '@/components/icons';
+import { BellIcon, QrCodeIcon, MapPinIcon, CalendarIcon, CurrencyDollarIcon } from '@/components/icons';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 
@@ -27,21 +27,30 @@ export default function JobsScreen() {
       {/* 헤더 */}
       <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
         <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">구인구직</Text>
-        <Pressable
-          onPress={() => router.push('/(app)/notifications')}
-          className="p-2"
-          hitSlop={8}
-        >
-          <BellIcon size={24} color="#6B7280" />
-          {/* 알림 배지 (실시간) */}
-          {unreadCount > 0 && (
-            <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-              <Text className="text-[10px] font-bold text-white">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Text>
-            </View>
-          )}
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => router.push('/(app)/(tabs)/qr')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <QrCodeIcon size={24} color="#6B7280" />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(app)/notifications')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <BellIcon size={24} color="#6B7280" />
+            {/* 알림 배지 (실시간) */}
+            {unreadCount > 0 && (
+              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
+                <Text className="text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* 공고 목록 */}

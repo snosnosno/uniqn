@@ -12,7 +12,7 @@ import DateTimePicker, {
 } from '@react-native-community/datetimepicker';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { CalendarIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { CalendarIcon, XMarkIcon } from '@/components/icons';
 
 // ============================================================================
 // Types
@@ -169,8 +169,7 @@ export const DatePicker = memo(function DatePicker({
       >
         {/* 캘린더 아이콘 */}
         <CalendarIcon
-          width={20}
-          height={20}
+          size={20}
           color={disabled ? '#9CA3AF' : '#6B7280'}
         />
 
@@ -187,7 +186,7 @@ export const DatePicker = memo(function DatePicker({
             accessibilityRole="button"
             accessibilityLabel="날짜 초기화"
           >
-            <XMarkIcon width={20} height={20} color="#9CA3AF" />
+            <XMarkIcon size={20} color="#9CA3AF" />
           </Pressable>
         )}
       </Pressable>

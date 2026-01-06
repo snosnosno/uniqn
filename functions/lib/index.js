@@ -37,8 +37,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.manualGrantSubscriptionChips = exports.grantMonthlyBlueChips = exports.cleanupRateLimitsScheduled = exports.sendManualChipExpiryNotification = exports.chipExpiryNotification = exports.expireChips = exports.rejectRefund = exports.approveRefund = exports.refundPayment = exports.manualGrantChips = exports.confirmPayment = void 0;
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = void 0;
+exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.onScheduleCancelled = exports.onScheduleCreated = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.manualGrantSubscriptionChips = exports.grantMonthlyBlueChips = exports.cleanupRateLimitsScheduled = exports.sendManualChipExpiryNotification = exports.chipExpiryNotification = exports.expireChips = exports.rejectRefund = exports.approveRefund = exports.refundPayment = exports.manualGrantChips = exports.confirmPayment = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -93,6 +93,9 @@ var onWorkTimeChanged_1 = require("./notifications/onWorkTimeChanged");
 Object.defineProperty(exports, "onWorkTimeChanged", { enumerable: true, get: function () { return onWorkTimeChanged_1.onWorkTimeChanged; } });
 var broadcastNewJobPosting_1 = require("./notifications/broadcastNewJobPosting");
 Object.defineProperty(exports, "broadcastNewJobPosting", { enumerable: true, get: function () { return broadcastNewJobPosting_1.broadcastNewJobPosting; } });
+var onScheduleChanged_1 = require("./notifications/onScheduleChanged");
+Object.defineProperty(exports, "onScheduleCreated", { enumerable: true, get: function () { return onScheduleChanged_1.onScheduleCreated; } });
+Object.defineProperty(exports, "onScheduleCancelled", { enumerable: true, get: function () { return onScheduleChanged_1.onScheduleCancelled; } });
 // --- Account Management Functions ---
 var scheduledDeletion_1 = require("./account/scheduledDeletion");
 Object.defineProperty(exports, "processScheduledDeletions", { enumerable: true, get: function () { return scheduledDeletion_1.processScheduledDeletions; } });
@@ -105,6 +108,8 @@ var approveJobPosting_1 = require("./api/jobPostings/approveJobPosting");
 Object.defineProperty(exports, "approveJobPosting", { enumerable: true, get: function () { return approveJobPosting_1.approveJobPosting; } });
 var rejectJobPosting_1 = require("./api/jobPostings/rejectJobPosting");
 Object.defineProperty(exports, "rejectJobPosting", { enumerable: true, get: function () { return rejectJobPosting_1.rejectJobPosting; } });
+var resubmitJobPosting_1 = require("./api/jobPostings/resubmitJobPosting");
+Object.defineProperty(exports, "resubmitJobPosting", { enumerable: true, get: function () { return resubmitJobPosting_1.resubmitJobPosting; } });
 var onTournamentApprovalChange_1 = require("./triggers/onTournamentApprovalChange");
 Object.defineProperty(exports, "onTournamentApprovalChange", { enumerable: true, get: function () { return onTournamentApprovalChange_1.onTournamentApprovalChange; } });
 // --- Job Posting Scheduled Functions (Phase 5) ---

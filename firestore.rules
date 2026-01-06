@@ -263,15 +263,23 @@ service cloud.firestore {
     // --- Notifications Collection ---
     // ✅ 보안 강화: 클라이언트 알림 생성 완전 차단 (Cloud Functions만 가능)
     match /notifications/{notificationId} {
-      // 본인의 알림만 읽기 가능 (userId 필드 기반)
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+      // 본인의 알림만 읽기 가능 (recipientId 또는 userId 필드 기반 - 하위 호환성)
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.recipientId ||
+        request.auth.uid == resource.data.userId
+      );
 
       // 본인의 알림만 읽음 처리 및 삭제 가능
-      allow update: if isSignedIn() && request.auth.uid == resource.data.userId
-        && request.resource.data.diff(resource.data).affectedKeys()
+      allow update: if isSignedIn() && (
+        request.auth.uid == resource.data.recipientId ||
+        request.auth.uid == resource.data.userId
+      ) && request.resource.data.diff(resource.data).affectedKeys()
           .hasOnly(['isRead', 'readAt']);
 
-      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+      allow delete: if isSignedIn() && (
+        request.auth.uid == resource.data.recipientId ||
+        request.auth.uid == resource.data.userId
+      );
 
       // ❌ 클라이언트 생성 완전 차단 (Cloud Functions만 가능)
       allow create: if false;
@@ -1017,6 +1025,164 @@ service cloud.firestore {
 
       // 삭제: 관리자만 가능
       allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // ================= 모바일 앱 지원 (v1.0.0) =================
+
+    // --- FCM Tokens (푸시 알림 토큰) ---
+    match /fcmTokens/{tokenId} {
+      // 읽기: 본인의 토큰만 가능, 관리자는 전체 조회 가능
+      allow read: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+
+      // 생성: 본인의 토큰만 등록 가능
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['userId', 'token', 'platform', 'createdAt']) &&
+        request.resource.data.token is string &&
+        request.resource.data.platform in ['ios', 'android', 'web'] &&
+        request.resource.data.createdAt is timestamp &&
+        (!('deviceId' in request.resource.data) || request.resource.data.deviceId is string) &&
+        (!('appVersion' in request.resource.data) || request.resource.data.appVersion is string);
+
+      // 수정: 본인의 토큰만 수정 가능
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 삭제: 본인 또는 관리자만 가능
+      allow delete: if isSignedIn() && (
+        request.auth.uid == resource.data.userId ||
+        isPrivileged()
+      );
+    }
+
+    // --- Device Sessions (디바이스 세션 관리) ---
+    match /deviceSessions/{sessionId} {
+      // 읽기: 본인의 세션만 가능
+      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 생성: 본인의 세션만 생성 가능
+      allow create: if isSignedIn() &&
+        request.auth.uid == request.resource.data.userId &&
+        request.resource.data.keys().hasAll(['userId', 'deviceId', 'platform', 'createdAt', 'lastActiveAt']) &&
+        request.resource.data.deviceId is string &&
+        request.resource.data.platform in ['ios', 'android', 'web'] &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.lastActiveAt is timestamp;
+
+      // 수정: 본인의 세션만 수정 가능 (lastActiveAt 업데이트 등)
+      allow update: if isSignedIn() && request.auth.uid == resource.data.userId;
+
+      // 삭제: 본인의 세션만 삭제 가능 (로그아웃)
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.userId;
+    }
+
+    // --- User Notification Settings (사용자 알림 설정) ---
+    match /users/{userId}/notificationSettings/{settingId} {
+      // 읽기: 본인만 가능
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 생성/수정: 본인만 가능
+      allow create, update: if isSignedIn() && isOwner(userId) &&
+        (!('pushEnabled' in request.resource.data) || request.resource.data.pushEnabled is bool) &&
+        (!('emailEnabled' in request.resource.data) || request.resource.data.emailEnabled is bool) &&
+        (!('categories' in request.resource.data) || request.resource.data.categories is map) &&
+        (!('quietHours' in request.resource.data) || request.resource.data.quietHours is map);
+
+      // 삭제: 본인만 가능
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // --- App Versions (앱 버전 관리 - 강제 업데이트용) ---
+    match /appVersions/{platform} {
+      // 읽기: 모든 사용자 (버전 확인용)
+      allow read: if true;
+
+      // 생성/수정/삭제: 관리자만 가능
+      allow create, update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- Feature Flags (기능 플래그) ---
+    match /featureFlags/{flagId} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 생성/수정/삭제: 관리자만 가능
+      allow create, update, delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- App Analytics (앱 분석 데이터) ---
+    match /appAnalytics/{analyticsId} {
+      // 읽기: 관리자만 가능
+      allow read: if isPrivileged();
+
+      // 생성: 모든 인증된 사용자 (익명 분석 데이터)
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['event', 'timestamp', 'platform']) &&
+        request.resource.data.event is string &&
+        request.resource.data.timestamp is timestamp &&
+        request.resource.data.platform in ['ios', 'android', 'web'] &&
+        (!('userId' in request.resource.data) || request.resource.data.userId == request.auth.uid);
+
+      // 수정/삭제: 불가 (분석 데이터 보존)
+      allow update, delete: if false;
+    }
+
+    // --- Crash Reports (크래시 리포트) ---
+    match /crashReports/{reportId} {
+      // 읽기: 관리자만 가능
+      allow read: if isPrivileged();
+
+      // 생성: 모든 인증된 사용자 (크래시 발생 시 자동 생성)
+      allow create: if isSignedIn() &&
+        request.resource.data.keys().hasAll(['error', 'stack', 'timestamp', 'platform', 'appVersion']) &&
+        request.resource.data.error is string &&
+        request.resource.data.timestamp is timestamp &&
+        request.resource.data.platform in ['ios', 'android', 'web'] &&
+        request.resource.data.appVersion is string;
+
+      // 수정: 관리자만 가능 (상태 변경)
+      allow update: if isPrivileged();
+
+      // 삭제: 관리자만 가능
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
+    // --- User Favorites (사용자 즐겨찾기 - 공고) ---
+    match /users/{userId}/favorites/{favoriteId} {
+      // 읽기: 본인만 가능
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 생성: 본인만 가능
+      allow create: if isSignedIn() && isOwner(userId) &&
+        request.resource.data.keys().hasAll(['jobPostingId', 'createdAt']) &&
+        request.resource.data.jobPostingId is string &&
+        request.resource.data.createdAt is timestamp;
+
+      // 삭제: 본인만 가능
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // 수정: 불필요 (즐겨찾기는 추가/삭제만)
+      allow update: if false;
+    }
+
+    // --- User Search History (검색 기록) ---
+    match /users/{userId}/searchHistory/{historyId} {
+      // 읽기: 본인만 가능
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 생성: 본인만 가능
+      allow create: if isSignedIn() && isOwner(userId) &&
+        request.resource.data.keys().hasAll(['query', 'createdAt']) &&
+        isSafeText(request.resource.data.query, 100) &&
+        request.resource.data.createdAt is timestamp;
+
+      // 삭제: 본인만 가능 (검색 기록 삭제)
+      allow delete: if isSignedIn() && isOwner(userId);
+
+      // 수정: 불필요
+      allow update: if false;
     }
 
     // Fallback rule: deny all other access

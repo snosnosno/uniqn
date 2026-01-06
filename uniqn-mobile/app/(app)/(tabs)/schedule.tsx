@@ -16,8 +16,11 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   MenuIcon,
+  QrCodeIcon,
+  BellIcon,
 } from '@/components/icons';
-import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus } from '@/hooks';
+import { router } from 'expo-router';
+import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useUnreadCountRealtime } from '@/hooks';
 import { Timestamp } from 'firebase/firestore';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus, CalendarView as CalendarViewType, QRCodeScanResult, QRCodeAction } from '@/types';
 
@@ -259,6 +262,9 @@ export default function ScheduleScreen() {
   // 뷰 모드 상태 (list | calendar)
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
 
+  // 읽지 않은 알림 수 (실시간)
+  const unreadCount = useUnreadCountRealtime();
+
   // 스케줄 상세 시트 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
   const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
@@ -356,8 +362,31 @@ export default function ScheduleScreen() {
   if (error && !isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-        <View className="bg-white px-4 py-3 dark:bg-gray-800">
+        <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
           <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">내 스케줄</Text>
+          <View className="flex-row items-center gap-2">
+            <Pressable
+              onPress={() => router.push('/(app)/(tabs)/qr')}
+              className="p-2"
+              hitSlop={8}
+            >
+              <QrCodeIcon size={24} color="#6B7280" />
+            </Pressable>
+            <Pressable
+              onPress={() => router.push('/(app)/notifications')}
+              className="p-2"
+              hitSlop={8}
+            >
+              <BellIcon size={24} color="#6B7280" />
+              {unreadCount > 0 && (
+                <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
+                  <Text className="text-[10px] font-bold text-white">
+                    {unreadCount > 99 ? '99+' : unreadCount}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </View>
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
@@ -373,8 +402,31 @@ export default function ScheduleScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
       {/* 헤더 */}
-      <View className="bg-white px-4 py-3 dark:bg-gray-800">
+      <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
         <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">내 스케줄</Text>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => router.push('/(app)/(tabs)/qr')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <QrCodeIcon size={24} color="#6B7280" />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(app)/notifications')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <BellIcon size={24} color="#6B7280" />
+            {unreadCount > 0 && (
+              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
+                <Text className="text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+        </View>
       </View>
 
       {/* 월 네비게이터 */}

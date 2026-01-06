@@ -162,7 +162,7 @@ export const FEATURE_FLAGS = {
    * - true: 점검 모드 활성화 (admin만 접근 가능)
    * - false: 정상 운영 (모든 사용자 접근 가능)
    */
-  MAINTENANCE_MODE: true,
+  MAINTENANCE_MODE: false,
 } as const;
 
 /**

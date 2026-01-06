@@ -14,9 +14,11 @@ import {
   LockIcon,
   MessageIcon,
   LogOutIcon,
+  QrCodeIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
+import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import { signOut } from '@/services/authService';
 import { useToastStore } from '@/stores/toastStore';
 import { useState } from 'react';
@@ -61,6 +63,7 @@ export default function ProfileScreen() {
   const reset = useAuthStore((state) => state.reset);
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const unreadCount = useUnreadCountRealtime();
 
   const handleLogout = () => {
     Alert.alert(
@@ -102,13 +105,36 @@ export default function ProfileScreen() {
       {/* 헤더 */}
       <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
         <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">프로필</Text>
-        <Pressable
-          onPress={() => router.push('/(app)/settings')}
-          className="p-2"
-          hitSlop={8}
-        >
-          <SettingsIcon size={24} color="#6B7280" />
-        </Pressable>
+        <View className="flex-row items-center gap-2">
+          <Pressable
+            onPress={() => router.push('/(app)/(tabs)/qr')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <QrCodeIcon size={24} color="#6B7280" />
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(app)/notifications')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <BellIcon size={24} color="#6B7280" />
+            {unreadCount > 0 && (
+              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
+                <Text className="text-[10px] font-bold text-white">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </Text>
+              </View>
+            )}
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(app)/settings')}
+            className="p-2"
+            hitSlop={8}
+          >
+            <SettingsIcon size={24} color="#6B7280" />
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">

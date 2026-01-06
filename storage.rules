@@ -1,26 +1,174 @@
 rules_version = '2';
 
 // Firebase Storage 보안 규칙
+// UNIQN Mobile App v1.0.0
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // ================= Helper Functions =================
+
+    // 인증 확인
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 본인 확인
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+
+    // 관리자 확인
+    function isAdmin() {
+      return request.auth.token.role == 'admin';
+    }
+
+    // 권한자 확인 (admin 또는 manager)
+    function isPrivileged() {
+      return request.auth.token.role == 'admin' || request.auth.token.role == 'manager';
+    }
+
+    // 이미지 파일 검증
+    function isValidImage() {
+      return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
+    }
+
+    // 파일 크기 검증 (MB 단위)
+    function isUnderSizeLimit(maxMB) {
+      return request.resource.size < maxMB * 1024 * 1024;
+    }
+
+    // ================= Profile Images =================
     // 프로필 이미지 - 인증된 사용자만 자신의 이미지 관리 가능
     match /profile-images/{userId}/{allPaths=**} {
-      allow read: if true;  // 모든 사용자가 프로필 사진 볼 수 있음
-      allow write: if request.auth != null && request.auth.uid == userId;
+      // 읽기: 모든 사용자가 프로필 사진 볼 수 있음
+      allow read: if true;
+
+      // 쓰기: 본인만 + 5MB 제한 + 이미지만
+      allow create, update: if isSignedIn() && isOwner(userId)
+                            && isUnderSizeLimit(5)
+                            && isValidImage();
+
+      // 삭제: 본인만
+      allow delete: if isSignedIn() && isOwner(userId);
     }
 
-    // 공지사항 이미지 - 인증된 사용자만 자신의 폴더에 업로드 가능
-    // (관리자 권한은 Firestore rules와 앱 레벨에서 체크)
+    // ================= Job Posting Images =================
+    // 공고 이미지 - 공고 작성자가 업로드
+    match /job-postings/{postingId}/{allPaths=**} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 쓰기: 인증된 사용자 + 10MB 제한 + 이미지만
+      // (구체적인 공고 작성자 권한은 Firestore에서 검증)
+      allow create, update: if isSignedIn()
+                            && isUnderSizeLimit(10)
+                            && isValidImage();
+
+      // 삭제: 인증된 사용자 (Firestore에서 권한 검증)
+      allow delete: if isSignedIn();
+    }
+
+    // ================= Announcements =================
+    // 공지사항 이미지 - 관리자/매니저가 업로드
     match /announcements/{userId}/{allPaths=**} {
-      allow read: if true;  // 모든 사용자가 공지사항 이미지 볼 수 있음
-      // 업로드: 인증 + 본인 폴더 + 5MB 제한 + 이미지만
-      allow create, update: if request.auth != null && request.auth.uid == userId
-                            && request.resource.size < 5 * 1024 * 1024
-                            && request.resource.contentType.matches('image/.*');
-      // 삭제: 인증 + 본인 폴더만 체크 (request.resource 없음)
-      allow delete: if request.auth != null && request.auth.uid == userId;
+      // 읽기: 모든 사용자가 공지사항 이미지 볼 수 있음
+      allow read: if true;
+
+      // 쓰기: 인증 + 본인 폴더 + 5MB 제한 + 이미지만
+      allow create, update: if isSignedIn() && isOwner(userId)
+                            && isUnderSizeLimit(5)
+                            && isValidImage();
+
+      // 삭제: 본인 또는 관리자
+      allow delete: if isSignedIn() && (isOwner(userId) || isPrivileged());
     }
 
+    // ================= Chat Attachments =================
+    // 채팅 첨부파일 (미래 기능용)
+    match /chat/{conversationId}/{allPaths=**} {
+      // 읽기: 인증된 사용자만
+      allow read: if isSignedIn();
+
+      // 쓰기: 인증된 사용자 + 20MB 제한
+      allow create: if isSignedIn()
+                    && isUnderSizeLimit(20)
+                    && (isValidImage() || request.resource.contentType.matches('application/pdf'));
+
+      // 수정/삭제: 불가 (채팅 기록 보존)
+      allow update, delete: if false;
+    }
+
+    // ================= ID Verification Documents =================
+    // 신분증 인증 문서 (민감 정보)
+    match /id-verification/{userId}/{allPaths=**} {
+      // 읽기: 본인 또는 관리자만
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // 쓰기: 본인만 + 10MB 제한 + 이미지만
+      allow create, update: if isSignedIn() && isOwner(userId)
+                            && isUnderSizeLimit(10)
+                            && isValidImage();
+
+      // 삭제: 본인 또는 관리자
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    // ================= QR Codes =================
+    // QR 코드 이미지 (출퇴근용)
+    match /qr-codes/{userId}/{allPaths=**} {
+      // 읽기: 본인 또는 관리자만
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // 쓰기: 본인만 + 1MB 제한 + 이미지만
+      allow create, update: if isSignedIn() && isOwner(userId)
+                            && isUnderSizeLimit(1)
+                            && isValidImage();
+
+      // 삭제: 본인만
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // ================= Receipts & Invoices =================
+    // 영수증 및 청구서 (결제 관련)
+    match /receipts/{userId}/{allPaths=**} {
+      // 읽기: 본인 또는 관리자만
+      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // 쓰기: Cloud Functions만 (클라이언트 차단)
+      allow create, update: if false;
+
+      // 삭제: 관리자만
+      allow delete: if isAdmin();
+    }
+
+    // ================= Exports =================
+    // 데이터 내보내기 파일
+    match /exports/{userId}/{allPaths=**} {
+      // 읽기: 본인만
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 쓰기: Cloud Functions만 (클라이언트 차단)
+      allow create, update: if false;
+
+      // 삭제: 본인 또는 관리자 (자동 정리)
+      allow delete: if isSignedIn() && (isOwner(userId) || isAdmin());
+    }
+
+    // ================= Temp Uploads =================
+    // 임시 업로드 (처리 전 파일)
+    match /temp/{userId}/{allPaths=**} {
+      // 읽기: 본인만
+      allow read: if isSignedIn() && isOwner(userId);
+
+      // 쓰기: 본인만 + 20MB 제한
+      allow create, update: if isSignedIn() && isOwner(userId)
+                            && isUnderSizeLimit(20);
+
+      // 삭제: 본인만
+      allow delete: if isSignedIn() && isOwner(userId);
+    }
+
+    // ================= Fallback =================
     // 그 외 모든 경로는 차단
     match /{allPaths=**} {
       allow read, write: if false;

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { Button, Input, FormField } from '@/components';
 import { MapPinIcon, PhoneIcon } from '@/components/icons';
 import { basicInfoSchema } from '@/schemas/jobPosting.schema';
@@ -22,13 +22,6 @@ interface Step1BasicInfoProps {
   onNext: () => void;
 }
 
-// 임시 장소 목록 (실제로는 Firebase에서 가져옴)
-const MOCK_LOCATIONS: Location[] = [
-  { name: '포커랜드 강남점', address: '서울시 강남구 테헤란로 123', district: '강남구' },
-  { name: '포커클럽 홍대점', address: '서울시 마포구 홍대로 45', district: '마포구' },
-  { name: '카지노홀덤 신촌점', address: '서울시 서대문구 신촌로 67', district: '서대문구' },
-  { name: '홀덤펍 잠실점', address: '서울시 송파구 올림픽로 89', district: '송파구' },
-];
 
 // ============================================================================
 // Component
@@ -36,13 +29,40 @@ const MOCK_LOCATIONS: Location[] = [
 
 export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) {
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [showLocationPicker, setShowLocationPicker] = useState(false);
+  const [locationName, setLocationName] = useState(data.location?.name || '');
+  const [locationAddress, setLocationAddress] = useState(data.location?.address || '');
+
+  // 장소 정보 업데이트
+  const updateLocation = useCallback((name: string, address: string) => {
+    if (name.trim()) {
+      const location: Location = {
+        name: name.trim(),
+        address: address.trim(),
+        district: '', // 주소에서 추출하거나 별도 입력
+      };
+      onUpdate({ location });
+    } else {
+      onUpdate({ location: null });
+    }
+  }, [onUpdate]);
+
+  // 장소명 변경
+  const handleLocationNameChange = useCallback((name: string) => {
+    setLocationName(name);
+    updateLocation(name, locationAddress);
+  }, [locationAddress, updateLocation]);
+
+  // 장소 주소 변경
+  const handleLocationAddressChange = useCallback((address: string) => {
+    setLocationAddress(address);
+    updateLocation(locationName, address);
+  }, [locationName, updateLocation]);
 
   // 유효성 검증
   const validate = useCallback(() => {
     const result = basicInfoSchema.safeParse({
       title: data.title,
-      location: data.location?.name || '',
+      location: locationName || '',
       district: data.location?.district,
       detailedAddress: data.detailedAddress,
       description: data.description,
@@ -61,7 +81,7 @@ export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) 
 
     setErrors({});
     return true;
-  }, [data]);
+  }, [data, locationName]);
 
   // 다음 단계
   const handleNext = useCallback(() => {
@@ -69,12 +89,6 @@ export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) 
       onNext();
     }
   }, [validate, onNext]);
-
-  // 장소 선택
-  const handleSelectLocation = useCallback((location: Location) => {
-    onUpdate({ location });
-    setShowLocationPicker(false);
-  }, [onUpdate]);
 
   return (
     <View className="flex-1 p-4">
@@ -92,51 +106,25 @@ export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) 
         </Text>
       </FormField>
 
-      {/* 장소 선택 */}
-      <FormField label="근무 장소" required error={errors.location} className="mt-4">
-        <Pressable
-          onPress={() => setShowLocationPicker(!showLocationPicker)}
-          className="flex-row items-center px-4 py-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-        >
-          <MapPinIcon size={20} color="#6B7280" />
-          <Text
-            className={`ml-3 flex-1 ${
-              data.location
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 dark:text-gray-500'
-            }`}
-          >
-            {data.location?.name || '장소를 선택해주세요'}
-          </Text>
-        </Pressable>
+      {/* 장소명 입력 */}
+      <FormField label="근무 장소명" required error={errors.location} className="mt-4">
+        <Input
+          placeholder="예: 홀덤펍 강남점"
+          value={locationName}
+          onChangeText={handleLocationNameChange}
+          maxLength={50}
+          leftIcon={<MapPinIcon size={20} color="#6B7280" />}
+        />
+      </FormField>
 
-        {/* 장소 선택 드롭다운 */}
-        {showLocationPicker && (
-          <View className="mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
-            {MOCK_LOCATIONS.map((location, index) => (
-              <Pressable
-                key={index}
-                onPress={() => handleSelectLocation(location)}
-                className={`px-4 py-3 ${
-                  index < MOCK_LOCATIONS.length - 1
-                    ? 'border-b border-gray-100 dark:border-gray-700'
-                    : ''
-                } ${
-                  data.location?.name === location.name
-                    ? 'bg-primary-50 dark:bg-primary-900/30'
-                    : ''
-                }`}
-              >
-                <Text className="font-medium text-gray-900 dark:text-white">
-                  {location.name}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                  {location.address}
-                </Text>
-              </Pressable>
-            ))}
-          </View>
-        )}
+      {/* 장소 주소 입력 */}
+      <FormField label="근무 장소 주소" required error={errors.locationAddress} className="mt-4">
+        <Input
+          placeholder="예: 서울시 강남구 테헤란로 123"
+          value={locationAddress}
+          onChangeText={handleLocationAddressChange}
+          maxLength={200}
+        />
       </FormField>
 
       {/* 상세 주소 */}
@@ -151,19 +139,14 @@ export function Step1BasicInfo({ data, onUpdate, onNext }: Step1BasicInfoProps) 
 
       {/* 연락처 */}
       <FormField label="문의 연락처" required error={errors.contactPhone} className="mt-4">
-        <View className="flex-row items-center">
-          <View className="absolute left-4 z-10">
-            <PhoneIcon size={20} color="#6B7280" />
-          </View>
-          <Input
-            placeholder="010-0000-0000"
-            value={data.contactPhone}
-            onChangeText={(contactPhone) => onUpdate({ contactPhone })}
-            keyboardType="phone-pad"
-            maxLength={25}
-            className="pl-12"
-          />
-        </View>
+        <Input
+          placeholder="010-0000-0000"
+          value={data.contactPhone}
+          onChangeText={(contactPhone) => onUpdate({ contactPhone })}
+          keyboardType="phone-pad"
+          maxLength={25}
+          leftIcon={<PhoneIcon size={20} color="#6B7280" />}
+        />
       </FormField>
 
       {/* 공고 설명 */}

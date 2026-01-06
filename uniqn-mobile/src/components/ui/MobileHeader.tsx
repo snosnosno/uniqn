@@ -132,7 +132,7 @@ export function MobileHeader({
         </View>
 
         {/* 오른쪽 영역 */}
-        <View className="w-12 items-end">{rightAction}</View>
+        <View className="min-w-12 items-end shrink-0">{rightAction}</View>
       </View>
     </View>
   );
