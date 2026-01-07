@@ -472,6 +472,12 @@ export async function getDraft(
       ...draftDoc.data(),
     } as JobPostingDraft;
   } catch (error) {
+    // 권한 에러는 임시저장이 없는 것으로 처리 (사용자 경험 개선)
+    const firebaseError = error as { code?: string };
+    if (firebaseError.code === 'permission-denied') {
+      logger.info('임시저장 조회 권한 없음 (새 사용자이거나 역할 미설정)', { ownerId });
+      return null;
+    }
     logger.error('임시저장 불러오기 실패', error as Error, { ownerId });
     throw mapFirebaseError(error);
   }

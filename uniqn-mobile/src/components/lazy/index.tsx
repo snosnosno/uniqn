@@ -154,7 +154,14 @@ export const LazyApplicationForm = lazy(
 );
 
 /**
- * Job Form Steps - 공고 작성 단계별 폼 (구인자용)
+ * Job Posting Scroll Form - 공고 작성 스크롤 폼 (권장)
+ */
+export const LazyJobPostingScrollForm = lazy(
+  () => import('@/components/employer/job-form/JobPostingScrollForm')
+);
+
+/**
+ * Job Form Steps - 공고 작성 단계별 폼 (레거시 - 호환성 유지)
  */
 export const LazyJobFormStep1 = lazy(
   () => import('@/components/employer/job-form/Step1BasicInfo')
@@ -285,6 +292,7 @@ export default {
   LazyJobFormStep3,
   LazyJobFormStep4,
   LazyJobFormStep5,
+  LazyJobFormStep6,
   LazyUserList,
   LazyUserDetail,
 };

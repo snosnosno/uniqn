@@ -71,6 +71,16 @@ export {
   type DatePickerProps,
   type DateRangePickerProps,
 } from './DatePicker';
+export {
+  CalendarPicker,
+  type CalendarPickerProps,
+} from './CalendarPicker';
+export {
+  TimePicker,
+  TimePickerGrid,
+  type TimePickerProps,
+  type TimePickerGridProps,
+} from './TimePicker';
 
 // ============================================================================
 // Loading / Skeleton Components

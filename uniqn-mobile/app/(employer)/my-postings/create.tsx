@@ -1,15 +1,14 @@
 /**
- * UNIQN Mobile - 공고 작성 화면 (6단계)
+ * UNIQN Mobile - 공고 작성 화면 (스크롤 폼)
  *
- * @description 구인자가 새 공고를 작성하는 6단계 폼 (4가지 타입 지원)
- * @version 2.0.0 - 4가지 공고 타입 + 6단계 플로우
+ * @description 구인자가 새 공고를 작성하는 한 페이지 스크롤 폼
+ * @version 3.0.0 - 스크롤 폼으로 변경 (웹앱과 동일한 UX)
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   KeyboardAvoidingView,
   Platform,
   Alert,
@@ -17,39 +16,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { StepIndicator, type StepInfo } from '@/components/auth/StepIndicator';
-import { Button, Loading, MobileHeader } from '@/components';
+import { Loading, MobileHeader } from '@/components';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting, useSaveDraft, useDraft, useDeleteDraft } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type { CreateJobPostingInput, JobPostingFormData } from '@/types';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
-
-// Step Components
-import {
-  Step1BasicInfo,
-  Step2DateTime,
-  Step2FixedSchedule,
-  Step2TournamentDates,
-  Step3Roles,
-  Step4Salary,
-  Step5PreQuestions,
-  Step6Confirm,
-} from '@/components/employer/job-form';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const JOB_POSTING_STEPS: StepInfo[] = [
-  { label: '타입/기본정보', shortLabel: '기본' },
-  { label: '일정', shortLabel: '일정' },
-  { label: '역할/인원', shortLabel: '역할' },
-  { label: '급여', shortLabel: '급여' },
-  { label: '사전질문', shortLabel: '질문' },
-  { label: '확인', shortLabel: '확인' },
-];
+import { JobPostingScrollForm } from '@/components/employer/job-form';
 
 // ============================================================================
 // Helper Functions
@@ -89,7 +63,6 @@ export default function CreateJobPostingScreen() {
   const { addToast } = useToastStore();
 
   // Form State
-  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<JobPostingFormData>(INITIAL_JOB_POSTING_FORM_DATA);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
@@ -119,39 +92,31 @@ export default function CreateJobPostingScreen() {
           {
             text: '이어서 작성',
             onPress: () => {
-              // Draft 데이터를 폼 데이터로 변환
               const loadedData: JobPostingFormData = {
                 ...INITIAL_JOB_POSTING_FORM_DATA,
-                // Step 1: 기본 정보
                 postingType: existingDraft.postingType || 'regular',
                 title: existingDraft.title || '',
                 location: existingDraft.location || null,
                 detailedAddress: existingDraft.detailedAddress || '',
                 contactPhone: existingDraft.contactPhone || '',
                 description: existingDraft.description || '',
-                // Step 2: 일정
                 workDate: existingDraft.workDate || '',
                 startTime: existingDraft.startTime || '',
                 tournamentDates: existingDraft.tournamentDates || [],
                 daysPerWeek: existingDraft.daysPerWeek || 5,
                 workDays: existingDraft.workDays || [],
-                // Step 3: 역할
                 roles: existingDraft.roles
                   ? convertToFormRoles(existingDraft.roles as Array<{ role?: string; name?: string; count: number }>)
                   : INITIAL_JOB_POSTING_FORM_DATA.roles,
-                // Step 4: 급여
                 salary: existingDraft.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
                 allowances: existingDraft.allowances || {},
                 useRoleSalary: existingDraft.useRoleSalary || false,
                 roleSalaries: existingDraft.roleSalaries || {},
-                // Step 5: 사전질문
                 usesPreQuestions: existingDraft.usesPreQuestions || false,
                 preQuestions: existingDraft.preQuestions || [],
-                // 기타
                 tags: existingDraft.tags || [],
               };
               setFormData(loadedData);
-              setCurrentStep(existingDraft.step || 1);
               setDraftId(existingDraft.id || null);
             },
           },
@@ -189,31 +154,10 @@ export default function CreateJobPostingScreen() {
     return () => subscription.remove();
   }, [hasUnsavedChanges, router]);
 
-  // 단계 데이터 업데이트
+  // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
     setHasUnsavedChanges(true);
-  }, []);
-
-  // 다음 단계
-  const handleNextStep = useCallback(() => {
-    if (currentStep < JOB_POSTING_STEPS.length) {
-      setCurrentStep((prev) => prev + 1);
-    }
-  }, [currentStep]);
-
-  // 이전 단계
-  const handlePrevStep = useCallback(() => {
-    if (currentStep > 1) {
-      setCurrentStep((prev) => prev - 1);
-    }
-  }, [currentStep]);
-
-  // 특정 단계로 이동 (Step6에서 수정 버튼)
-  const handleEditStep = useCallback((step: number) => {
-    if (step >= 1 && step <= JOB_POSTING_STEPS.length) {
-      setCurrentStep(step);
-    }
   }, []);
 
   // 임시저장
@@ -222,36 +166,30 @@ export default function CreateJobPostingScreen() {
 
     try {
       const draftData: Partial<CreateJobPostingInput> & Record<string, unknown> = {
-        // Step 1
         postingType: formData.postingType,
         title: formData.title,
         description: formData.description,
         location: formData.location || undefined,
         detailedAddress: formData.detailedAddress,
         contactPhone: formData.contactPhone,
-        // Step 2
         workDate: formData.workDate,
         startTime: formData.startTime,
         tournamentDates: formData.tournamentDates,
         daysPerWeek: formData.daysPerWeek,
         workDays: formData.workDays,
-        // Step 3
         roles: formData.roles,
-        // Step 4
         salary: formData.salary,
         allowances: formData.allowances,
         useRoleSalary: formData.useRoleSalary,
         roleSalaries: formData.roleSalaries,
-        // Step 5
         usesPreQuestions: formData.usesPreQuestions,
         preQuestions: formData.preQuestions,
-        // 기타
         tags: formData.tags,
       };
 
       const newDraftId = await saveDraft.mutateAsync({
         draft: draftData,
-        step: currentStep,
+        step: 1, // 스크롤 폼에서는 step이 의미없지만 호환성 유지
         draftId: draftId || undefined,
       });
 
@@ -262,7 +200,7 @@ export default function CreateJobPostingScreen() {
       logger.error('임시저장 실패', error as Error);
       addToast({ type: 'error', message: '임시저장에 실패했습니다' });
     }
-  }, [user, formData, currentStep, draftId, saveDraft, addToast]);
+  }, [user, formData, draftId, saveDraft, addToast]);
 
   // 공고 등록
   const handleSubmit = useCallback(async () => {
@@ -273,30 +211,24 @@ export default function CreateJobPostingScreen() {
 
     try {
       const input: CreateJobPostingInput = {
-        // Step 1
         postingType: formData.postingType,
         title: formData.title,
         description: formData.description || undefined,
         location: formData.location,
         detailedAddress: formData.detailedAddress || undefined,
         contactPhone: formData.contactPhone || undefined,
-        // Step 2 (타입별)
         workDate: formData.workDate,
         startTime: formData.startTime,
         tournamentDates: formData.tournamentDates,
         daysPerWeek: formData.daysPerWeek,
         workDays: formData.workDays,
-        // Step 3
         roles: formData.roles,
-        // Step 4
         salary: formData.salary,
         allowances: formData.allowances,
         useRoleSalary: formData.useRoleSalary,
         roleSalaries: formData.roleSalaries,
-        // Step 5
         usesPreQuestions: formData.usesPreQuestions,
         preQuestions: formData.preQuestions,
-        // 기타
         tags: formData.tags,
       };
 
@@ -321,27 +253,6 @@ export default function CreateJobPostingScreen() {
     }
   }, [user, formData, draftId, createJobPosting, deleteDraft, addToast, router]);
 
-  // Step2 타입별 분기 렌더링 (반드시 조건부 반환 이전에 선언)
-  const renderStep2 = useCallback(() => {
-    const commonProps = {
-      data: formData,
-      onUpdate: updateFormData,
-      onNext: handleNextStep,
-      onBack: handlePrevStep,
-    };
-
-    switch (formData.postingType) {
-      case 'fixed':
-        return <Step2FixedSchedule {...commonProps} />;
-      case 'tournament':
-        return <Step2TournamentDates {...commonProps} />;
-      case 'regular':
-      case 'urgent':
-      default:
-        return <Step2DateTime {...commonProps} />;
-    }
-  }, [formData, updateFormData, handleNextStep, handlePrevStep]);
-
   // 로딩 상태
   if (isDraftLoading) {
     return (
@@ -355,61 +266,6 @@ export default function CreateJobPostingScreen() {
       </SafeAreaView>
     );
   }
-
-  // 현재 단계 렌더링
-  const renderCurrentStep = () => {
-    switch (currentStep) {
-      case 1:
-        return (
-          <Step1BasicInfo
-            data={formData}
-            onUpdate={updateFormData}
-            onNext={handleNextStep}
-          />
-        );
-      case 2:
-        return renderStep2();
-      case 3:
-        return (
-          <Step3Roles
-            data={formData}
-            onUpdate={updateFormData}
-            onNext={handleNextStep}
-            onBack={handlePrevStep}
-          />
-        );
-      case 4:
-        return (
-          <Step4Salary
-            data={formData}
-            onUpdate={updateFormData}
-            onNext={handleNextStep}
-            onBack={handlePrevStep}
-          />
-        );
-      case 5:
-        return (
-          <Step5PreQuestions
-            data={formData}
-            onUpdate={updateFormData}
-            onNext={handleNextStep}
-            onBack={handlePrevStep}
-          />
-        );
-      case 6:
-        return (
-          <Step6Confirm
-            data={formData}
-            onSubmit={handleSubmit}
-            onBack={handlePrevStep}
-            onEditStep={handleEditStep}
-            isSubmitting={createJobPosting.isPending}
-          />
-        );
-      default:
-        return null;
-    }
-  };
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
@@ -442,44 +298,21 @@ export default function CreateJobPostingScreen() {
             router.back();
           }
         }}
-        rightAction={
-          currentStep < 6 ? (
-            <Button
-              variant="ghost"
-              size="sm"
-              onPress={handleSaveDraft}
-              disabled={saveDraft.isPending}
-            >
-              <Text className="text-primary-600 dark:text-primary-400 font-medium">
-                임시저장
-              </Text>
-            </Button>
-          ) : undefined
-        }
       />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        {/* 단계 표시기 */}
-        <View className="px-4 py-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
-          <StepIndicator
-            currentStep={currentStep}
-            steps={JOB_POSTING_STEPS}
-            showLabels={true}
-          />
-        </View>
-
-        {/* 폼 컨텐츠 */}
-        <ScrollView
-          className="flex-1"
-          contentContainerStyle={{ flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-        >
-          {renderCurrentStep()}
-        </ScrollView>
+        {/* 스크롤 폼 */}
+        <JobPostingScrollForm
+          data={formData}
+          onUpdate={updateFormData}
+          onSubmit={handleSubmit}
+          onSaveDraft={handleSaveDraft}
+          isSubmitting={createJobPosting.isPending}
+          isSavingDraft={saveDraft.isPending}
+        />
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
