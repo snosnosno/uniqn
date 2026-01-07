@@ -154,32 +154,10 @@ export const LazyApplicationForm = lazy(
 );
 
 /**
- * Job Posting Scroll Form - 공고 작성 스크롤 폼 (권장)
+ * Job Posting Scroll Form - 공고 작성 스크롤 폼
  */
 export const LazyJobPostingScrollForm = lazy(
   () => import('@/components/employer/job-form/JobPostingScrollForm')
-);
-
-/**
- * Job Form Steps - 공고 작성 단계별 폼 (레거시 - 호환성 유지)
- */
-export const LazyJobFormStep1 = lazy(
-  () => import('@/components/employer/job-form/Step1BasicInfo')
-);
-export const LazyJobFormStep2 = lazy(
-  () => import('@/components/employer/job-form/Step2DateTime')
-);
-export const LazyJobFormStep3 = lazy(
-  () => import('@/components/employer/job-form/Step3Roles')
-);
-export const LazyJobFormStep4 = lazy(
-  () => import('@/components/employer/job-form/Step4Salary')
-);
-export const LazyJobFormStep5 = lazy(
-  () => import('@/components/employer/job-form/Step5PreQuestions')
-);
-export const LazyJobFormStep6 = lazy(
-  () => import('@/components/employer/job-form/Step6Confirm')
 );
 
 /**
@@ -287,12 +265,7 @@ export default {
   LazyApplicantList,
   LazyJobFilters,
   LazyApplicationForm,
-  LazyJobFormStep1,
-  LazyJobFormStep2,
-  LazyJobFormStep3,
-  LazyJobFormStep4,
-  LazyJobFormStep5,
-  LazyJobFormStep6,
+  LazyJobPostingScrollForm,
   LazyUserList,
   LazyUserDetail,
 };
