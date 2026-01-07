@@ -9,7 +9,7 @@ import React, { useCallback, useMemo, memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FormField } from '@/components';
 import { DatePicker } from '@/components/ui/DatePicker';
-import { TimePickerGrid } from '@/components/ui/TimePicker';
+import { TimePicker } from '@/components/ui/TimePicker';
 import {
   CalendarIcon,
   PlusIcon,
@@ -44,21 +44,6 @@ function formatDate(date: Date | null): string {
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
-}
-
-function parseTime(timeString: string): Date | null {
-  if (!timeString) return null;
-  const [hours, minutes] = timeString.split(':').map(Number);
-  const date = new Date();
-  date.setHours(hours, minutes, 0, 0);
-  return date;
-}
-
-function formatTime(date: Date | null): string {
-  if (!date) return '';
-  const hours = String(date.getHours()).padStart(2, '0');
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  return `${hours}:${minutes}`;
 }
 
 // ============================================================================
@@ -129,7 +114,7 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
       </FormField>
 
       <FormField label="출근 시간" required error={errors?.startTime} className="mt-4">
-        <TimePickerGrid
+        <TimePicker
           value={data.startTime}
           onChange={(time) => onUpdate({ startTime: time })}
           placeholder="시간을 선택하세요"
@@ -228,7 +213,7 @@ const FixedSchedule = memo(function FixedSchedule({
 
       {/* 출근 시간 */}
       <FormField label="출근 시간" required error={errors?.startTime} className="mt-4">
-        <TimePickerGrid
+        <TimePicker
           value={data.startTime}
           onChange={(time) => onUpdate({ startTime: time })}
           placeholder="시간을 선택하세요"
@@ -278,9 +263,9 @@ const TournamentSchedule = memo(function TournamentSchedule({
     onUpdate({ tournamentDates: newDates });
   }, [tournamentDates, onUpdate]);
 
-  const handleTimeChange = useCallback((index: number, time: Date | null) => {
+  const handleTimeChange = useCallback((index: number, time: string) => {
     const newDates = [...tournamentDates];
-    newDates[index] = { ...newDates[index], startTime: formatTime(time) };
+    newDates[index] = { ...newDates[index], startTime: time };
     onUpdate({ tournamentDates: newDates });
   }, [tournamentDates, onUpdate]);
 
@@ -361,11 +346,10 @@ const TournamentSchedule = memo(function TournamentSchedule({
               </View>
               <View className="flex-1">
                 <Text className="text-xs text-gray-600 dark:text-gray-400 mb-1">출근 시간</Text>
-                <DatePicker
-                  value={parseTime(day.startTime)}
+                <TimePicker
+                  value={day.startTime}
                   onChange={(time) => handleTimeChange(index, time)}
                   placeholder="시간 선택"
-                  mode="time"
                 />
               </View>
             </View>
