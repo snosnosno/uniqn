@@ -12,12 +12,10 @@ import { ThemeToggle } from '../ThemeToggle';
 import {
   BASE_MENU,
   CUSTOMER_CENTER_MENU,
-  PAYMENT_MENU,
   AUTH_MENU,
   TOURNAMENT_BASE_ITEMS,
   TOURNAMENT_ADMIN_ITEMS,
   ADMIN_MENU,
-  ADMIN_PAYMENT_MENU,
   type MenuItem,
   type MenuGroup,
 } from './menuConfig';
@@ -354,10 +352,6 @@ export const HeaderMenu: React.FC = () => {
               <MenuDivider />
               <MenuGroupRenderer group={CUSTOMER_CENTER_MENU} t={t} onNavigate={closeMenu} />
 
-              {/* 결제 및 칩 관리 */}
-              <MenuDivider />
-              <MenuGroupRenderer group={PAYMENT_MENU} t={t} onNavigate={closeMenu} />
-
               {/* 인증된 사용자 메뉴 */}
               {!authLoading && currentUser && (
                 <>
@@ -390,9 +384,6 @@ export const HeaderMenu: React.FC = () => {
                           onNavigate={closeMenu}
                         />
                       ))}
-
-                      <MenuDivider />
-                      <MenuGroupRenderer group={ADMIN_PAYMENT_MENU} t={t} onNavigate={closeMenu} />
                     </>
                   )}
                 </>

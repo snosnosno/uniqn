@@ -152,18 +152,10 @@
     "support": "고객지원",
     "customerCenter": "고객 센터",
     "ceoDashboard": "CEO 대시보드",
-    "paymentAndChip": "결제 및 칩 관리",
-    "chipRecharge": "칩 충전",
-    "paymentHistory": "결제 내역",
-    "chipHistory": "칩 사용 내역",
-    "subscription": "구독 플랜",
     "tournamentManagement": "토너먼트 관리",
     "tournaments": "토너먼트",
     "participantManagement": "참가자 관리",
-    "tournamentApprovals": "토너먼트 승인",
-    "paymentSystemManagement": "결제 시스템 관리",
-    "chipManagement": "칩 관리",
-    "refundBlacklist": "환불 블랙리스트"
+    "tournamentApprovals": "토너먼트 승인"
   },
   "layout": {
     "title": "UNIQN",
@@ -806,14 +798,10 @@
       "7days": "7일",
       "30days": "30일",
       "90days": "90일",
-      "7daysWithChip": "7일 (3칩)",
-      "30daysWithChip": "30일 (5칩)",
-      "90daysWithChip": "90일 (10칩)",
       "7daysDescription": "1주일 노출",
       "30daysDescription": "1개월 노출",
       "90daysDescription": "3개월 노출",
       "selectedDuration": "선택한 기간",
-      "chipCostLabel": "차감 예정",
       "expiresIn": "만료: D-{{days}}",
       "expired": "만료됨",
       "expiresOn": "만료일: {{date}}",
@@ -829,7 +817,6 @@
     },
     "urgent": {
       "label": "긴급",
-      "chipCost": "5칩 (고정)",
       "badge": "긴급 모집",
       "description": "긴급 공고로 상단에 노출됩니다"
     },
@@ -2216,20 +2203,6 @@
       "maxRolesPerTimeSlot": "한 시간대에 최대 10개의 역할까지만 추가할 수 있습니다.",
       "countRange": "인원수는 1명에서 200명 사이로 입력해주세요."
     },
-    "payment": {
-      "refundReasonRequired": "환불 사유를 입력해주세요.",
-      "freePlanCancelRequired": "무료 플랜은 취소가 필요합니다",
-      "invalidInfo": "결제 정보가 올바르지 않습니다",
-      "loginRequired": "결제를 위해 로그인이 필요합니다",
-      "processError": "결제 처리 중 오류가 발생했습니다",
-      "requestError": "결제 요청 중 오류가 발생했습니다",
-      "subscriptionComingSoon": "구독 기능이 곧 제공됩니다",
-      "successWithChip": "결제 완료! {{chips}}칩이 충전되었습니다",
-      "systemConfigError": "결제 시스템 설정 오류",
-      "systemInitError": "결제 시스템 초기화 오류",
-      "systemNotInitialized": "결제 시스템이 초기화되지 않았습니다",
-      "termsRequired": "결제 약관 동의가 필요합니다"
-    },
     "auth": {
       "loginRequired": "로그인이 필요합니다"
     },
@@ -2295,11 +2268,6 @@
       "noReadToDelete": "읽은 알림이 없습니다.",
       "deletedCount": "{{count}}개의 알림이 삭제되었습니다.",
       "noToDelete": "삭제할 알림이 없습니다."
-    },
-    "chip": {
-      "userIdRequired": "사용자 ID를 입력해주세요.",
-      "amountMustBePositive": "칩 개수는 1개 이상이어야 합니다.",
-      "reasonRequired": "지급 사유를 입력해주세요."
     },
     "template": {
       "saveError": "템플릿 저장 중 오류가 발생했습니다.",
@@ -2542,36 +2510,6 @@
     "selectFirst": "토너먼트를 먼저 선택해주세요.",
     "selectFirstDesc": "위의 드롭다운에서 토너먼트를 선택하거나 새로 만들어주세요.",
     "cannotAddInAllView": "전체보기에서는 추가할 수 없습니다."
-  },
-  "chipHistory": {
-    "title": "칩 사용 내역",
-    "subtitle": "칩 충전 및 사용 기록을 확인하세요",
-    "back": "← 뒤로 가기",
-    "loginRequired": "로그인이 필요합니다.",
-    "login": "로그인하기",
-    "filter": {
-      "all": "전체",
-      "grant": "지급",
-      "purchase": "구매",
-      "use": "사용",
-      "expire": "소멸",
-      "refund": "환불"
-    },
-    "refresh": "새로고침",
-    "loading": "로딩 중...",
-    "empty": "거래 내역이 없습니다",
-    "table": {
-      "date": "날짜",
-      "type": "타입",
-      "description": "설명",
-      "chipType": "칩 타입",
-      "amount": "금액",
-      "balance": "잔액"
-    },
-    "chipTypes": {
-      "red": "🔴 빨간칩",
-      "blue": "🔵 파란칩"
-    }
   },
   "participantsPage": {
     "bulkAdd": "대량 추가",
@@ -2853,25 +2791,6 @@
     "region": "지역",
     "title": "스태프 프로필"
   },
-  "subscription": {
-    "chipsCount": "{{count}}칩",
-    "currentPlan": "현재 플랜",
-    "description": "매월 자동으로 파란칩이 지급됩니다.",
-    "faq": {
-      "cancelSubscription": "구독을 취소하면 어떻게 되나요?",
-      "changePlan": "플랜을 변경할 수 있나요?",
-      "chipsValidity": "파란칩 유효기간은 얼마나 되나요?",
-      "title": "자주 묻는 질문",
-      "whenChipsGranted": "파란칩은 언제 지급되나요?"
-    },
-    "free": "무료",
-    "monthlyAutoGrant": "매월 자동 지급",
-    "perMonth": "/ 월",
-    "priceAmount": "{{price}}원",
-    "selectPlan": "구독 플랜 선택",
-    "startFree": "무료 시작",
-    "subscribe": "구독하기"
-  },
   "workInfo": {
     "endTime": "종료시간",
     "noWorkHistory": "근무 내역이 없습니다.",
@@ -2897,68 +2816,11 @@
     "summary": "근무 시간 요약",
     "untilNextDay": "(다음날 {{time}}까지)"
   },
-  "chipRecharge": {
-    "button": {
-      "charge": "충전하기"
-    },
-    "package": {
-      "bonus": "보너스",
-      "chips": "칩",
-      "price": "가격"
-    },
-    "selectPackage": "패키지 선택",
-    "title": "칩 충전"
-  },
-  "paymentHistory": {
-    "empty": "결제 내역이 없습니다",
-    "error": {
-      "loadFailed": "결제 내역을 불러올 수 없습니다"
-    },
-    "filter": {
-      "all": "전체",
-      "failed": "실패",
-      "pending": "대기",
-      "success": "성공"
-    },
-    "table": {
-      "amount": "금액",
-      "date": "결제일",
-      "method": "결제 수단",
-      "orderId": "주문번호",
-      "receipt": "영수증",
-      "status": "상태"
-    },
-    "title": "결제 내역",
-    "status": {
-      "success": "성공",
-      "failed": "실패",
-      "pending": "대기",
-      "cancelled": "취소됨",
-      "refunded": "환불됨"
-    }
-  },
-  "paymentSuccess": {
-    "message": "결제가 완료되었습니다",
-    "orderInfo": {
-      "amount": "결제 금액",
-      "orderId": "주문번호",
-      "title": "주문 정보"
-    },
-    "title": "결제 성공"
-  },
   "workLog": {
     "status": {
       "pending": "대기중",
       "confirmed": "확정됨",
       "rejected": "거절됨"
-    }
-  },
-  "payment": {
-    "method": {
-      "card": "카드",
-      "bank": "계좌이체",
-      "virtual": "가상계좌",
-      "phone": "휴대폰 결제"
     }
   },
   "confirm": {

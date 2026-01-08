@@ -9,12 +9,6 @@ import {
   FaCalendarAlt,
   FaQuestionCircle,
   FaBell,
-  FaCoins,
-  FaCreditCard,
-  FaHistory,
-  FaStar,
-  FaCog,
-  FaExclamationTriangle,
   FaEnvelope,
 } from '../Icons/ReactIconsReplacement';
 
@@ -84,41 +78,6 @@ export const CUSTOMER_CENTER_MENU: MenuGroup = {
       labelKey: 'nav.support',
       labelDefault: '고객지원',
       Icon: FaQuestionCircle,
-    },
-  ],
-};
-
-// 결제 및 칩 관리 메뉴
-export const PAYMENT_MENU: MenuGroup = {
-  id: 'payment',
-  type: 'dropdown',
-  labelKey: 'nav.paymentAndChip',
-  labelDefault: '결제 및 칩 관리',
-  Icon: FaCreditCard,
-  items: [
-    {
-      to: '/app/chip/recharge',
-      labelKey: 'nav.chipRecharge',
-      labelDefault: '칩 충전',
-      Icon: FaCoins,
-    },
-    {
-      to: '/app/payment/history',
-      labelKey: 'nav.paymentHistory',
-      labelDefault: '결제 내역',
-      Icon: FaCreditCard,
-    },
-    {
-      to: '/app/chip/history',
-      labelKey: 'nav.chipHistory',
-      labelDefault: '칩 사용 내역',
-      Icon: FaHistory,
-    },
-    {
-      to: '/app/subscription',
-      labelKey: 'nav.subscription',
-      labelDefault: '구독 플랜',
-      Icon: FaStar,
     },
   ],
 };
@@ -202,27 +161,3 @@ export const ADMIN_MENU: MenuGroup[] = [
     roles: ['admin'],
   },
 ];
-
-// Admin 결제 시스템 관리
-export const ADMIN_PAYMENT_MENU: MenuGroup = {
-  id: 'admin-payment',
-  type: 'dropdown',
-  labelKey: 'nav.paymentSystemManagement',
-  labelDefault: '결제 시스템 관리',
-  Icon: FaCog,
-  roles: ['admin'],
-  items: [
-    {
-      to: '/app/admin/chip-management',
-      labelKey: 'nav.chipManagement',
-      labelDefault: '칩 관리',
-      Icon: FaCog,
-    },
-    {
-      to: '/app/admin/refund-blacklist',
-      labelKey: 'nav.refundBlacklist',
-      labelDefault: '환불 블랙리스트',
-      Icon: FaExclamationTriangle,
-    },
-  ],
-};

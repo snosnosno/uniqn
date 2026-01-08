@@ -199,23 +199,8 @@ export type { GroupByDateOptions, GroupedData, UseGroupByDateReturn } from './us
 export { useAttendanceStatus } from './useAttendanceStatus';
 
 // =============================================================================
-// Payment & Subscription Hooks
+// Payment Hooks (급여 관련만 유지)
 // =============================================================================
-
-/** 활성 구독 Hook */
-export { useActiveSubscription } from './useActiveSubscription';
-
-/** 칩 잔액 Hook */
-export { useChipBalance } from './useChipBalance';
-
-/** 결제 내역 Hook */
-export { usePaymentHistory } from './usePaymentHistory';
-
-/** 환불 요청 Hook */
-export { useRefundRequest } from './useRefundRequest';
-
-/** 토스 결제 Hook */
-export { useTossPayment } from './useTossPayment';
 
 /** 급여 계산 Worker Hook */
 export { usePayrollWorker } from './usePayrollWorker';

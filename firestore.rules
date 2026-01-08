@@ -37,15 +37,20 @@ service cloud.firestore {
              hasNoSQLInjection(text);
     }
 
-    // Updated: Check for 'admin', 'manager', and 'staff' roles
+    // 관리자 권한 확인 (admin, employer, manager)
+    // ⚠️ manager는 하위 호환성을 위해 유지 (employer와 동일 권한)
     function isPrivileged() {
-      return request.auth.token.role == 'admin' || request.auth.token.role == 'manager';
+      return request.auth.token.role == 'admin' ||
+             request.auth.token.role == 'employer' ||
+             request.auth.token.role == 'manager';  // 하위 호환성
     }
-    
-    // Check for any authenticated user with a valid role
+
+    // 유효한 역할 확인 (admin, employer, manager, staff)
+    // 역할 계층: admin(100) > employer/manager(50) > staff(10)
     function hasValidRole() {
-      return request.auth.token.role == 'admin' || 
-             request.auth.token.role == 'manager' || 
+      return request.auth.token.role == 'admin' ||
+             request.auth.token.role == 'employer' ||
+             request.auth.token.role == 'manager' ||  // 하위 호환성
              request.auth.token.role == 'staff';
     }
     
@@ -59,10 +64,6 @@ service cloud.firestore {
     // FixedConfig 검증 함수
     function validateFixedConfig(config) {
       return config.durationDays in [7, 30, 90] &&
-             config.chipCost in [3, 5, 10] &&
-             ((config.durationDays == 7 && config.chipCost == 3) ||
-              (config.durationDays == 30 && config.chipCost == 5) ||
-              (config.durationDays == 90 && config.chipCost == 10)) &&
              config.expiresAt is timestamp &&
              config.createdAt is timestamp;
     }
@@ -80,8 +81,7 @@ service cloud.firestore {
 
     // UrgentConfig 검증 함수
     function validateUrgentConfig(config) {
-      return config.chipCost == 5 &&
-             config.priority == 'high' &&
+      return config.priority == 'high' &&
              config.createdAt is timestamp;
     }
 
@@ -312,10 +312,8 @@ service cloud.firestore {
         (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
         (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp) &&
-        // 추가 필드 검증 (v0.2.4 - 칩 시스템)
+        // 추가 필드 검증
         (!('applicants' in request.resource.data) || request.resource.data.applicants is list) &&
-        (!('chipCost' in request.resource.data) || (request.resource.data.chipCost is number && request.resource.data.chipCost >= 0 && request.resource.data.chipCost <= 100)) &&
-        (!('isChipDeducted' in request.resource.data) || request.resource.data.isChipDeducted is bool) &&
         // 타입별 config 검증
         (!('fixedConfig' in request.resource.data) || (request.resource.data.postingType == 'fixed' && validateFixedConfig(request.resource.data.fixedConfig))) &&
         (!('tournamentConfig' in request.resource.data) || (request.resource.data.postingType == 'tournament' && validateTournamentConfig(request.resource.data.tournamentConfig))) &&
@@ -519,6 +517,31 @@ service cloud.firestore {
       allow read: if isSignedIn() && (hasValidRole() || request.auth.uid == resource.data.userId);
       allow create, update: if isSignedIn() && hasValidRole();
       allow delete: if isPrivileged();
+    }
+
+    // --- Job Posting Drafts Collection (임시저장) ---
+    match /jobPostingDrafts/{draftId} {
+      // Helper: 공고 관리 권한 확인 (hasValidRole에 employer 포함됨)
+      function canManageJobPostings() {
+        return hasValidRole();
+      }
+
+      // 개별 문서 읽기: 본인의 임시저장만 가능
+      allow get: if isSignedIn() && request.auth.uid == resource.data.ownerId;
+
+      // 쿼리(list): 공고 관리 권한이 있는 사용자만 가능 (실제 결과는 where ownerId 조건으로 필터링)
+      allow list: if isSignedIn() && canManageJobPostings();
+
+      // 생성: 본인 이름으로만 생성 가능 (공고 관리 권한 필요)
+      allow create: if isSignedIn() && canManageJobPostings() &&
+        request.auth.uid == request.resource.data.ownerId &&
+        request.resource.data.keys().hasAll(['ownerId', 'step', 'lastSavedAt']);
+
+      // 수정: 본인의 임시저장만 수정 가능
+      allow update: if isSignedIn() && request.auth.uid == resource.data.ownerId;
+
+      // 삭제: 본인의 임시저장만 삭제 가능
+      allow delete: if isSignedIn() && request.auth.uid == resource.data.ownerId;
     }
 
     // --- Job Posting Templates Collection ---
@@ -853,171 +876,9 @@ service cloud.firestore {
       allow update, delete: if request.auth.token.role == 'admin';
     }
 
-    // ================= 결제 시스템 (v0.2.4) =================
-
-    // --- Chip Balance (칩 잔액 - 루트 레벨) ---
-    match /chipBalance/{userId} {
-      // 읽기: 본인만 가능
-      allow read: if isSignedIn() && isOwner(userId);
-
-      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create, update: if false;
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- User Chip Balance (사용자 칩 잔액 - 서브컬렉션, 하위 호환성) ---
-    match /users/{userId}/chipBalance/{balanceId} {
-      // 읽기: 본인만 가능
-      allow read: if isSignedIn() && isOwner(userId);
-
-      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create, update: if false;
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- Chip Transactions (칩 트랜잭션 기록 - 루트 레벨) ---
-    match /chipTransactions/{transactionId} {
-      // 읽기: 본인의 트랜잭션만 가능
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // 생성: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create: if false;
-
-      // 수정/삭제: 불가 (감사 추적 보존)
-      allow update, delete: if false;
-    }
-
-    // --- Chip Transactions (칩 트랜잭션 기록 - 서브컬렉션, 하위 호환성) ---
-    match /users/{userId}/chipTransactions/{transactionId} {
-      // 읽기: 본인만 가능
-      allow read: if isSignedIn() && isOwner(userId);
-
-      // 생성: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create: if false;
-
-      // 수정/삭제: 불가 (감사 추적 보존)
-      allow update, delete: if false;
-    }
-
-    // --- Subscriptions (구독 정보 - 루트 레벨) ---
-    match /subscriptions/{subscriptionId} {
-      // 읽기: 본인의 구독만 가능
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create, update: if false;
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- User Subscriptions (사용자 구독 정보 - 서브컬렉션, 하위 호환성) ---
-    match /users/{userId}/subscription/{subscriptionId} {
-      // 읽기: 본인과 관리자만
-      allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
-
-      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create, update: if false;
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- Payment Transactions (결제 트랜잭션) ---
-    match /paymentTransactions/{transactionId} {
-      // 읽기: 본인의 결제만 조회 가능
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // 생성: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create: if false;
-
-      // 수정/삭제: 불가 (결제 기록 보존)
-      allow update, delete: if false;
-    }
-
-    // --- Refund Requests (환불 요청) ---
-    match /refundRequests/{requestId} {
-      // 읽기: 본인의 환불 요청과 관리자만
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.userId ||
-        isPrivileged()
-      );
-
-      // 생성: 본인만 가능 (필수 필드 검증)
-      allow create: if isSignedIn() &&
-        request.auth.uid == request.resource.data.userId &&
-        request.resource.data.keys().hasAll(['userId', 'transactionId', 'packageId', 'reason', 'reasonDetail', 'status']) &&
-        request.resource.data.status == 'pending' &&
-        request.resource.data.reason in ['unused', 'partial_use', 'dissatisfaction', 'error', 'other'];
-
-      // 수정: 관리자만 가능 (상태 변경)
-      allow update: if isPrivileged();
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- Refund Blacklist (환불 블랙리스트) ---
-    match /refundBlacklist/{blacklistId} {
-      // 읽기: 본인과 관리자만
-      allow read: if isSignedIn() && (
-        request.auth.uid == resource.data.userId ||
-        isPrivileged()
-      );
-
-      // 생성/수정/삭제: 관리자만 가능
-      allow create, update, delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- Chip Packages (충전 패키지 설정) ---
-    match /chipPackages/{packageId} {
-      // 읽기: 모든 인증된 사용자
-      allow read: if isSignedIn();
-
-      // 생성/수정/삭제: 관리자만 가능
-      allow create, update, delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- Subscription Plans (구독 플랜 설정) ---
-    match /subscriptionPlans/{planId} {
-      // 읽기: 모든 인증된 사용자
-      allow read: if isSignedIn();
-
-      // 생성/수정/삭제: 관리자만 가능
-      allow create, update, delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- Receipts (영수증) ---
-    match /receipts/{receiptId} {
-      // 읽기: 본인의 영수증만 가능
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create, update: if false;
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
     // --- Phone Verifications (전화번호 인증) ---
     match /phoneVerifications/{verificationId} {
       // 읽기: 본인의 인증만 가능
-      allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
-
-      // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)
-      allow create, update: if false;
-
-      // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
-    }
-
-    // --- User Subscriptions (사용자 구독 - 루트 레벨) ---
-    match /userSubscriptions/{subscriptionId} {
-      // 읽기: 본인의 구독만 가능
       allow read: if isSignedIn() && request.auth.uid == resource.data.userId;
 
       // 생성/수정: 클라이언트 차단 (Cloud Functions만 가능)

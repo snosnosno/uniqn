@@ -15,18 +15,8 @@ initSentry();
 // CORS handler
 const corsHandler = cors({ origin: true });
 
-// --- Payment Functions ---
-export { confirmPayment } from './payment/confirmPayment';
-export { manualGrantChips } from './payment/grantChips';
-export { refundPayment, approveRefund, rejectRefund } from './payment/refundPayment';
-
 // --- Scheduled Functions ---
-export { expireChips } from './scheduled/expireChips';
-export { chipExpiryNotification, sendManualChipExpiryNotification } from './notifications/chipExpiryNotification';
 export { cleanupRateLimitsScheduled } from './scheduled/cleanupRateLimits';
-
-// --- Subscription Functions ---
-export { grantMonthlyBlueChips, manualGrantSubscriptionChips } from './subscription/grantBlueChips';
 
 // --- Email Functions ---
 export { sendReceiptEmail } from './email/sendReceipt';

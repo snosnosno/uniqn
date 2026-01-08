@@ -11,7 +11,6 @@ export type PostingType = 'regular' | 'fixed' | 'tournament' | 'urgent';
  */
 export interface FixedConfig {
   durationDays: 7 | 30 | 90; // 노출 기간
-  chipCost: 3 | 5 | 10; // 칩 비용 (기간에 따라)
   expiresAt: Timestamp; // 만료일
   createdAt: Timestamp; // 생성일
 }
@@ -108,7 +107,6 @@ export interface TournamentConfig {
  * 긴급 공고 설정
  */
 export interface UrgentConfig {
-  chipCost: 5; // 고정 5칩
   createdAt: Timestamp; // 생성일
   priority: 'high'; // 우선순위 (향후 확장 대비)
 }
@@ -244,8 +242,6 @@ export interface JobPosting {
   fixedConfig?: FixedConfig; // 고정 공고 설정 (postingType === 'fixed'일 때)
   tournamentConfig?: TournamentConfig; // 대회 공고 설정 (postingType === 'tournament'일 때)
   urgentConfig?: UrgentConfig; // 긴급 공고 설정 (postingType === 'urgent'일 때)
-  chipCost?: number; // 칩 비용 (fixed/urgent 타입)
-  isChipDeducted: boolean; // 칩 차감 여부 (기본값: false)
 
   // ========== 고정공고 근무일정 필드 ==========
   workSchedule?: WorkSchedule; // 근무 일정 (고정공고용)
@@ -274,7 +270,6 @@ export interface JobPosting {
  *   postingType: 'fixed',  // 리터럴 타입
  *   fixedConfig: {
  *     durationDays: 30,
- *     chipCost: 5,
  *     expiresAt: Timestamp.now(),
  *     createdAt: Timestamp.now()
  *   },
@@ -305,7 +300,6 @@ export interface FixedJobPosting extends Omit<JobPosting, 'postingType' | 'fixed
    *
    * 고정공고에서는 항상 존재해야 하는 설정 정보입니다.
    * - durationDays: 노출 기간 (7/30/90일)
-   * - chipCost: 칩 비용
    * - expiresAt: 만료일
    * - createdAt: 생성일
    */

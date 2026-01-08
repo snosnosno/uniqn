@@ -152,18 +152,10 @@
     "support": "Support",
     "customerCenter": "Customer Center",
     "ceoDashboard": "CEO Dashboard",
-    "paymentAndChip": "Payment & Chip Management",
-    "chipRecharge": "Chip Recharge",
-    "paymentHistory": "Payment History",
-    "chipHistory": "Chip Usage History",
-    "subscription": "Subscription Plan",
     "tournamentManagement": "Tournament Management",
     "tournaments": "Tournaments",
     "participantManagement": "Participant Management",
-    "tournamentApprovals": "Tournament Approvals",
-    "paymentSystemManagement": "Payment System Management",
-    "chipManagement": "Chip Management",
-    "refundBlacklist": "Refund Blacklist"
+    "tournamentApprovals": "Tournament Approvals"
   },
   "layout": {
     "title": "UNIQN",
@@ -806,14 +798,10 @@
       "7days": "7 days",
       "30days": "30 days",
       "90days": "90 days",
-      "7daysWithChip": "7 days (3 chips)",
-      "30daysWithChip": "30 days (5 chips)",
-      "90daysWithChip": "90 days (10 chips)",
       "7daysDescription": "1 week exposure",
       "30daysDescription": "1 month exposure",
       "90daysDescription": "3 months exposure",
       "selectedDuration": "Selected duration",
-      "chipCostLabel": "Chip cost",
       "expiresIn": "Expires: D-{{days}}",
       "expired": "Expired",
       "expiresOn": "Expires on: {{date}}",
@@ -829,7 +817,6 @@
     },
     "urgent": {
       "label": "Urgent",
-      "chipCost": "5 chips (fixed)",
       "badge": "Urgent Hiring",
       "description": "Featured at the top as urgent posting"
     },
@@ -2216,20 +2203,6 @@
       "maxRolesPerTimeSlot": "Maximum 10 roles per time slot.",
       "countRange": "Please enter between 1 and 200 people."
     },
-    "payment": {
-      "refundReasonRequired": "Please enter refund reason.",
-      "freePlanCancelRequired": "Free plan requires cancellation",
-      "invalidInfo": "Invalid payment information",
-      "loginRequired": "Login required for payment",
-      "processError": "Payment process error",
-      "requestError": "Payment request error",
-      "subscriptionComingSoon": "Subscription coming soon",
-      "successWithChip": "Payment complete! {{chips}} chips charged",
-      "systemConfigError": "Payment system configuration error",
-      "systemInitError": "Payment system initialization error",
-      "systemNotInitialized": "Payment system not initialized",
-      "termsRequired": "Payment terms agreement required"
-    },
     "auth": {
       "loginRequired": "Login is required"
     },
@@ -2295,11 +2268,6 @@
       "noReadToDelete": "No read notifications.",
       "deletedCount": "{{count}} notifications deleted.",
       "noToDelete": "No notifications to delete."
-    },
-    "chip": {
-      "userIdRequired": "Please enter user ID.",
-      "amountMustBePositive": "Chip amount must be at least 1.",
-      "reasonRequired": "Please enter grant reason."
     },
     "template": {
       "saveError": "Error saving template.",
@@ -2542,36 +2510,6 @@
     "selectFirst": "Please select a tournament first.",
     "selectFirstDesc": "Select a tournament from the dropdown above or create a new one.",
     "cannotAddInAllView": "Cannot add in all view mode."
-  },
-  "chipHistory": {
-    "title": "Chip History",
-    "subtitle": "Check your chip purchase and usage history",
-    "back": "← Go Back",
-    "loginRequired": "Login required.",
-    "login": "Login",
-    "filter": {
-      "all": "All",
-      "grant": "Grant",
-      "purchase": "Purchase",
-      "use": "Use",
-      "expire": "Expire",
-      "refund": "Refund"
-    },
-    "refresh": "Refresh",
-    "loading": "Loading...",
-    "empty": "No transaction history",
-    "table": {
-      "date": "Date",
-      "type": "Type",
-      "description": "Description",
-      "chipType": "Chip Type",
-      "amount": "Amount",
-      "balance": "Balance"
-    },
-    "chipTypes": {
-      "red": "🔴 Red Chip",
-      "blue": "🔵 Blue Chip"
-    }
   },
   "participantsPage": {
     "bulkAdd": "Bulk Add",
@@ -2853,25 +2791,6 @@
     "region": "Location",
     "title": "스태프 프로필"
   },
-  "subscription": {
-    "chipsCount": "{{count}}칩",
-    "currentPlan": "Current plan",
-    "description": "매월 자동으로 파란칩이 지급됩니다.",
-    "faq": {
-      "cancelSubscription": "구독을 취소하면 어떻게 되나요?",
-      "changePlan": "플랜을 변경할 수 있나요?",
-      "chipsValidity": "파란칩 유효기간은 얼마나 되나요?",
-      "title": "자주 묻는 질문",
-      "whenChipsGranted": "파란칩은 언제 지급되나요?"
-    },
-    "free": "Free",
-    "monthlyAutoGrant": "매월 자동 지급",
-    "perMonth": "/ 월",
-    "priceAmount": "{{price}}원",
-    "selectPlan": "구독 플랜 선택",
-    "startFree": "무료 시작",
-    "subscribe": "Subscribe"
-  },
   "workInfo": {
     "endTime": "종료시간",
     "noWorkHistory": "근무 내역이 없습니다.",
@@ -2897,68 +2816,11 @@
     "summary": "근무 시간 요약",
     "untilNextDay": "(다음날 {{time}}까지)"
   },
-  "chipRecharge": {
-    "button": {
-      "charge": "Charge"
-    },
-    "package": {
-      "bonus": "Bonus",
-      "chips": "Chips",
-      "price": "Price"
-    },
-    "selectPackage": "Select package",
-    "title": "Chip Recharge"
-  },
-  "paymentHistory": {
-    "empty": "No payment history",
-    "error": {
-      "loadFailed": "Failed to load payment history"
-    },
-    "filter": {
-      "all": "All",
-      "failed": "Failed",
-      "pending": "Pending",
-      "success": "Success"
-    },
-    "table": {
-      "amount": "Amount",
-      "date": "Date",
-      "method": "Method",
-      "orderId": "Order ID",
-      "receipt": "Receipt",
-      "status": "Status"
-    },
-    "title": "Payment History",
-    "status": {
-      "success": "Success",
-      "failed": "Failed",
-      "pending": "Pending",
-      "cancelled": "Cancelled",
-      "refunded": "Refunded"
-    }
-  },
-  "paymentSuccess": {
-    "message": "Payment completed",
-    "orderInfo": {
-      "amount": "Amount",
-      "orderId": "Order ID",
-      "title": "Order Info"
-    },
-    "title": "Payment Success"
-  },
   "workLog": {
     "status": {
       "pending": "Pending",
       "confirmed": "Confirmed",
       "rejected": "Rejected"
-    }
-  },
-  "payment": {
-    "method": {
-      "card": "Card",
-      "bank": "Bank Transfer",
-      "virtual": "Virtual Account",
-      "phone": "Phone Payment"
     }
   },
   "confirm": {

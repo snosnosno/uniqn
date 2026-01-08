@@ -251,13 +251,11 @@ const JobPostingForm: React.FC<JobPostingFormProps> = React.memo(
         onFixedDurationChange: (durationDays: 7 | 30 | 90) => {
           const now = new Date();
           const expiresAt = new Date(now.getTime() + durationDays * 24 * 60 * 60 * 1000);
-          const chipCost = durationDays === 7 ? 3 : durationDays === 30 ? 5 : 10;
 
           setFormData((prev) => ({
             ...prev,
             fixedConfig: {
               durationDays,
-              chipCost: chipCost as 3 | 5 | 10,
               expiresAt: Timestamp.fromDate(expiresAt),
               createdAt: Timestamp.fromDate(now),
             },

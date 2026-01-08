@@ -13,8 +13,6 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // 번역 파일 import
 import koTranslation from '../locales/ko/translation.json';
 import enTranslation from '../locales/en/translation.json';
-import koPayment from '../locales/ko/payment.json';
-import enPayment from '../locales/en/payment.json';
 
 // i18n 초기화
 i18n
@@ -25,11 +23,9 @@ i18n
     resources: {
       ko: {
         translation: koTranslation,
-        payment: koPayment,
       },
       en: {
         translation: enTranslation,
-        payment: enPayment,
       },
     },
 
@@ -42,7 +38,7 @@ i18n
 
     // 네임스페이스
     defaultNS: 'translation',
-    ns: ['translation', 'payment'],
+    ns: ['translation'],
 
     // 언어 감지 설정
     detection: {

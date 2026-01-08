@@ -26,7 +26,6 @@ import { doc, getDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import { logger } from '../../utils/logger';
 import { extractNameFromDisplayName, extractNicknameFromDisplayName } from '../../utils/userUtils';
-import { formatChipCost } from '../../utils/jobPosting/chipCalculator';
 import { TournamentStatusBadge } from '../jobPosting/TournamentStatusBadge';
 import { RejectionReasonDisplay } from '../jobPosting/RejectionReasonDisplay';
 import { ResubmitButton } from '../jobPosting/ResubmitButton';
@@ -835,13 +834,6 @@ const JobPostingCard: React.FC<JobPostingCardProps> = ({
               >
                 {post.title}
               </h3>
-
-              {/* 칩 비용 배지 */}
-              {post.chipCost !== undefined && post.chipCost > 0 && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
-                  💰 {formatChipCost(post.chipCost)}
-                </span>
-              )}
 
               {/* 긴급 공고 깜빡이는 배지 */}
               {normalizePostingType(post) === 'urgent' && (
