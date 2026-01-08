@@ -476,10 +476,10 @@ const App: React.FC = () => {
                                   }
                                 />
 
-                                {/* Admin & Manager Routes */}
+                                {/* Admin & Employer Routes */}
                                 <Route
                                   path="admin"
-                                  element={<RoleBasedRoute allowedRoles={['admin', 'manager']} />}
+                                  element={<RoleBasedRoute allowedRoles={['admin', 'employer']} />}
                                 >
                                   <Route
                                     path="shift-schedule"
@@ -506,11 +506,11 @@ const App: React.FC = () => {
                                   />
                                 </Route>
 
-                                {/* Job Posting Management - Admin, Manager, Staff with permission */}
+                                {/* Job Posting Management - Admin, Employer, Staff with permission */}
                                 <Route
                                   path="admin"
                                   element={
-                                    <RoleBasedRoute allowedRoles={['admin', 'manager', 'staff']} />
+                                    <RoleBasedRoute allowedRoles={['admin', 'employer', 'staff']} />
                                   }
                                 >
                                   <Route

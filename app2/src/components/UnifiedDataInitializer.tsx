@@ -30,7 +30,7 @@ export const UnifiedDataInitializer: React.FC<{ children: React.ReactNode }> = (
     });
 
     // Zustand Store에서 Firebase 구독 시작
-    subscribeAll(currentUser.uid, role || 'user');
+    subscribeAll(currentUser.uid, role || 'staff');
 
     // Cleanup: 로그아웃 시 구독 정리
     return () => {

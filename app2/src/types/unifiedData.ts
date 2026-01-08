@@ -14,10 +14,21 @@ import { Application } from './application';
 // 🔐 사용자 권한 Enum (Case-insensitive validation)
 export enum UserRole {
   ADMIN = 'admin',
-  MANAGER = 'manager',
+  EMPLOYER = 'employer',
   STAFF = 'staff',
-  USER = 'user',
 }
+
+/**
+ * 역할 계층 구조 (숫자가 높을수록 상위 권한)
+ * - admin: 최고 관리자 (모든 기능)
+ * - employer: 구인자 (공고 관리, 지원자 관리)
+ * - staff: 스태프 (지원, 스케줄 확인)
+ */
+export const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRole.ADMIN]: 100,
+  [UserRole.EMPLOYER]: 50,
+  [UserRole.STAFF]: 10,
+};
 
 /**
  * 사용자 역할 정규화 함수 (대소문자 무관)
@@ -33,25 +44,45 @@ export function normalizeUserRole(role: string | undefined | null): UserRole | n
   switch (normalizedRole) {
     case 'admin':
       return UserRole.ADMIN;
+    case 'employer':
+      return UserRole.EMPLOYER;
     case 'manager':
-      return UserRole.MANAGER;
+      // 하위 호환성: 기존 'manager' → 'employer' 매핑
+      return UserRole.EMPLOYER;
     case 'staff':
       return UserRole.STAFF;
-    case 'user':
-      return UserRole.USER;
     default:
       return null;
   }
 }
 
 /**
- * 관리자 권한 확인 (admin + manager)
+ * 관리자 권한 확인 (admin + employer)
  * @param role - 사용자 역할
  * @returns 관리자 권한 여부
  */
 export function hasAdminPrivilege(role: string | UserRole | undefined | null): boolean {
   const normalized = typeof role === 'string' ? normalizeUserRole(role) : role;
-  return normalized === UserRole.ADMIN || normalized === UserRole.MANAGER;
+  return normalized === UserRole.ADMIN || normalized === UserRole.EMPLOYER;
+}
+
+/**
+ * 역할 계층 기반 권한 확인
+ * @param userRole - 사용자 역할
+ * @param requiredRole - 필요한 최소 역할
+ * @returns 권한 여부
+ */
+export function hasPermission(
+  userRole: UserRole | string | null | undefined,
+  requiredRole: UserRole
+): boolean {
+  if (!userRole) return false;
+  const normalized = typeof userRole === 'string' ? normalizeUserRole(userRole) : userRole;
+  if (!normalized) return false;
+
+  const userLevel = ROLE_HIERARCHY[normalized] ?? 0;
+  const requiredLevel = ROLE_HIERARCHY[requiredRole] ?? 0;
+  return userLevel >= requiredLevel;
 }
 
 /**
@@ -112,7 +143,7 @@ export interface WorkLog {
     name: string; // 사용자 이름
     email?: string; // 이메일
     phone?: string; // 전화번호
-    userRole?: string; // 사용자 권한 (staff, manager, admin)
+    userRole?: string; // 사용자 권한 (staff, employer, admin)
     jobRole?: string[]; // 직무 역할들 (['dealer', 'manager'])
     isActive?: boolean; // 활성 상태
     // 은행 정보

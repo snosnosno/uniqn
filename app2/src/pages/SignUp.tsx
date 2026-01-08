@@ -27,7 +27,7 @@ const SignUp: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const role = 'manager'; // 모든 사용자는 manager 역할로 가입
+  const role = 'employer'; // 모든 사용자는 employer 역할로 가입
   const [gender, setGender] = useState(''); // 'male' or 'female'
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);

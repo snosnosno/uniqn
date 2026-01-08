@@ -44,21 +44,21 @@ export const mockAdminToken: MockIdTokenResult = {
 };
 
 /**
- * Manager Token
+ * Employer Token
  *
- * 역할: manager
- * 권한 클레임: { role: 'manager' }
+ * 역할: employer
+ * 권한 클레임: { role: 'employer' }
  */
-export const mockManagerToken: MockIdTokenResult = {
-  token: 'mock-manager-token',
+export const mockEmployerToken: MockIdTokenResult = {
+  token: 'mock-employer-token',
   expirationTime: '2025-11-07T00:00:00.000Z',
   authTime: '2025-11-06T00:00:00.000Z',
   issuedAtTime: '2025-11-06T00:00:00.000Z',
   signInProvider: 'password',
   claims: {
-    role: 'manager',
+    role: 'employer',
     aud: 'test-project',
-    sub: 'test-manager-uid',
+    sub: 'test-employer-uid',
   },
 };
 
@@ -86,6 +86,6 @@ export const mockNoRoleToken: MockIdTokenResult = {
  */
 export const ALL_TEST_TOKENS = {
   admin: mockAdminToken,
-  manager: mockManagerToken,
+  employer: mockEmployerToken,
   noRole: mockNoRoleToken,
 } as const;

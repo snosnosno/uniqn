@@ -94,7 +94,7 @@ export const ConditionalRender: React.FC<PermissionGuardProps> = ({
  * 역할 기반 조건부 렌더링 컴포넌트
  */
 interface RoleGuardProps {
-  allowedRoles: ('admin' | 'manager' | 'staff')[];
+  allowedRoles: ('admin' | 'employer' | 'staff')[];
   children: React.ReactNode;
   fallback?: React.ReactNode;
 }

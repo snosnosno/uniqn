@@ -52,8 +52,8 @@ export const useJobPostingOperations = () => {
       return allJobPostings;
     }
 
-    // Manager와 Staff는 자신이 작성한 공고만 볼 수 있음
-    if (permissions.role === 'manager' || permissions.role === 'staff') {
+    // Employer와 Staff는 자신이 작성한 공고만 볼 수 있음
+    if (permissions.role === 'employer' || permissions.role === 'staff') {
       return allJobPostings.filter((posting) =>
         checkJobPostingPermission('view', posting.createdBy)
       );

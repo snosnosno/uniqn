@@ -48,13 +48,13 @@ const allTabs: TabConfig[] = [
     id: 'shifts',
     label: '시프트',
     component: ShiftManagementTab,
-    allowedRoles: ['admin', 'manager', 'staff'], // ✅ Staff 추가 - 본인 공고에서 시프트 관리 가능
+    allowedRoles: ['admin', 'employer', 'staff'], // ✅ Staff 추가 - 본인 공고에서 시프트 관리 가능
   },
   {
     id: 'payroll',
     label: '정산',
     component: EnhancedPayrollTab,
-    allowedRoles: ['admin', 'manager', 'staff'],
+    allowedRoles: ['admin', 'employer', 'staff'],
   },
 ];
 
@@ -84,8 +84,8 @@ const JobPostingDetailPageContent: React.FC = () => {
 
       // 세분화된 권한 확인
       if (tab.requiredPermission) {
-        // Manager와 Staff의 경우 자신이 작성한 공고인지 확인
-        if (permissions.role === 'manager' || permissions.role === 'staff') {
+        // Employer와 Staff의 경우 자신이 작성한 공고인지 확인
+        if (permissions.role === 'employer' || permissions.role === 'staff') {
           return checkJobPostingPermission(tab.requiredPermission.action, jobPosting.createdBy);
         }
 
@@ -197,8 +197,8 @@ const JobPostingDetailPageContent: React.FC = () => {
       return true;
     }
 
-    // Manager와 Staff는 자신이 작성한 공고만 접근 가능
-    if (permissions.role === 'manager' || permissions.role === 'staff') {
+    // Employer와 Staff는 자신이 작성한 공고만 접근 가능
+    if (permissions.role === 'employer' || permissions.role === 'staff') {
       return checkJobPostingPermission('view', jobPosting.createdBy);
     }
 
@@ -320,7 +320,7 @@ const JobPostingDetailPageContent: React.FC = () => {
             </span>
 
             {/* 공지 전송 버튼 - 항상 표시 */}
-            {(permissions?.role === 'admin' || permissions?.role === 'manager') && (
+            {(permissions?.role === 'admin' || permissions?.role === 'employer') && (
               <button
                 onClick={() => setIsAnnouncementModalOpen(true)}
                 className="inline-flex items-center justify-center py-1 px-2 sm:py-2 sm:px-3 border border-transparent shadow-sm text-xs sm:text-sm font-medium rounded-md text-white bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800 focus:outline-none focus:ring-2 focus:ring-green-500 dark:focus:ring-green-600 focus:ring-offset-2 transition-all duration-300 min-h-[30px] sm:min-h-[40px]"

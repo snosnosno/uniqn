@@ -100,7 +100,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
               email: user.email,
               role: userRole,
               allClaims: idTokenResult.claims,
-              isAdmin: userRole === 'admin' || userRole === 'manager',
+              isAdmin: userRole === 'admin' || userRole === 'employer',
             },
           });
 
@@ -297,7 +297,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const isAdmin = role === 'admin' || role === 'manager';
+  const isAdmin = role === 'admin' || role === 'employer';
 
   const value: AuthContextType = React.useMemo(
     () => ({

@@ -33,7 +33,7 @@ export interface MenuGroup {
   Icon?: React.ComponentType<{ className?: string }>;
   items?: MenuItem[];
   to?: string;
-  roles?: ('admin' | 'manager' | 'staff' | 'user')[];
+  roles?: ('admin' | 'employer' | 'staff')[];
   requireAuth?: boolean;
 }
 

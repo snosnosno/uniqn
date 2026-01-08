@@ -293,21 +293,21 @@ describe('승인 워크플로우 통합 테스트', () => {
     });
 
     it('Non-admin 권한 거부', () => {
-      const normalUser = {
-        uid: 'user-1',
-        role: 'user',
+      const staffUser = {
+        uid: 'staff-1',
+        role: 'staff',
       };
 
-      expect(normalUser.role).not.toBe('admin');
+      expect(staffUser.role).not.toBe('admin');
     });
 
-    it('Manager는 승인 불가', () => {
-      const managerUser = {
-        uid: 'manager-1',
-        role: 'manager',
+    it('Employer는 승인 불가', () => {
+      const employerUser = {
+        uid: 'employer-1',
+        role: 'employer',
       };
 
-      expect(managerUser.role).not.toBe('admin');
+      expect(employerUser.role).not.toBe('admin');
     });
   });
 

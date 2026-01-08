@@ -47,15 +47,15 @@ export const mockAdminUser: TestUser = {
 };
 
 /**
- * Manager User (매니저)
+ * Employer User (구인자)
  *
- * 역할: manager
+ * 역할: employer
  * 권한: 제한적 관리자 권한 (isAdmin=true)
  */
-export const mockManagerUser: TestUser = {
-  uid: 'test-manager-uid',
-  email: 'manager@test.com',
-  displayName: 'Test Manager',
+export const mockEmployerUser: TestUser = {
+  uid: 'test-employer-uid',
+  email: 'employer@test.com',
+  displayName: 'Test Employer',
   emailVerified: true,
   photoURL: null,
   phoneNumber: null,
@@ -111,7 +111,7 @@ export const mockUnverifiedUser: TestUser = {
  */
 export const ALL_TEST_USERS = {
   admin: mockAdminUser,
-  manager: mockManagerUser,
+  employer: mockEmployerUser,
   regular: mockRegularUser,
   unverified: mockUnverifiedUser,
 } as const;

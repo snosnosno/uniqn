@@ -97,7 +97,7 @@ describe('FormUtils', () => {
       expect(setState).toHaveBeenCalledWith(expect.any(Function));
 
       const updaterFn = setState.mock.calls[0][0];
-      const prevState = { role: 'user', username: 'john' };
+      const prevState = { role: 'staff', username: 'john' };
       const newState = updaterFn(prevState);
 
       expect(newState).toEqual({

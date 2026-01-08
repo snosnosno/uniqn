@@ -3,7 +3,7 @@ export type PermissionScope = 'none' | 'own' | 'team' | 'all';
 
 export interface ExtendedRolePermissions {
   // 기본 역할
-  role: 'admin' | 'manager' | 'staff';
+  role: 'admin' | 'employer' | 'staff';
 
   // 세분화된 권한
   permissions: {
@@ -90,8 +90,8 @@ export const DEFAULT_PERMISSIONS: Record<string, ExtendedRolePermissions> = {
     },
   },
 
-  manager: {
-    role: 'manager',
+  employer: {
+    role: 'employer',
     permissions: {
       jobPostings: {
         view: 'own', // ✅ 본인이 작성한 공고만 조회 가능

@@ -80,12 +80,12 @@ export const useUnifiedData = (_options?: UnifiedDataOptions) => {
         return []; // 유효하지 않은 role은 데이터 접근 차단
       }
 
-      // 🔐 관리자 권한 체크 (admin + manager)
+      // 🔐 관리자 권한 체크 (admin + employer)
       if (hasAdminPrivilege(normalizedRole)) {
         return items; // 관리자는 모든 데이터 접근 가능
       }
 
-      // staff/user role: 자신의 데이터만 접근
+      // staff role: 자신의 데이터만 접근
       switch (collection) {
         case 'staff':
           return items.filter((item) => item.userId === currentUser.uid);
@@ -634,7 +634,7 @@ export const useSmartUnifiedData = (customOptions?: Partial<UnifiedDataOptions>)
   );
 
   // 옵션 병합 (Enum 검증 적용) - useMemo로 래핑하여 안정적인 참조 유지
-  const normalizedRole = normalizeUserRole(role) || UserRole.USER;
+  const normalizedRole = normalizeUserRole(role) || UserRole.STAFF;
   const finalOptions = useMemo<UnifiedDataOptions>(() => {
     // 역할별 기본 구독 설정 (useMemo 내부에서 정의하여 안정적인 참조 보장)
     const defaultSubscriptionsByRole: Record<string, UnifiedDataOptions['subscriptions']> = {
@@ -646,7 +646,7 @@ export const useSmartUnifiedData = (customOptions?: Partial<UnifiedDataOptions>)
         attendance: true,
         tournaments: true,
       },
-      manager: {
+      employer: {
         staff: true,
         workLogs: true,
         applications: true,
@@ -662,21 +662,13 @@ export const useSmartUnifiedData = (customOptions?: Partial<UnifiedDataOptions>)
         attendance: 'myData', // 자신의 출석만
         tournaments: false, // 토너먼트는 필요 없음
       },
-      user: {
-        staff: false, // 스태프 정보 불필요
-        workLogs: false, // 근무 기록 불필요
-        applications: 'myData', // 자신의 지원만
-        jobPostings: true, // 구인공고는 모두 봐야 함
-        attendance: false, // 출석 불필요
-        tournaments: false, // 토너먼트 불필요
-      },
     };
 
     return {
       role: normalizedRole,
       userId: currentUser?.uid || '',
       subscriptions:
-        customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'user'] || {},
+        customOptions?.subscriptions || defaultSubscriptionsByRole[role || 'staff'] || {},
       cacheStrategy:
         customOptions?.cacheStrategy ||
         (hasAdminPrivilege(normalizedRole) ? 'minimal' : 'aggressive'),

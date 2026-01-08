@@ -119,9 +119,8 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ isOpen, onClose, user
     if (!role) return t('userDetail.noData');
     const roleMap: Record<string, string> = {
       admin: t('roles.admin', '관리자'),
-      manager: t('roles.manager', '매니저'),
+      employer: t('roles.employer', '구인자'),
       staff: t('roles.staff', '스태프'),
-      user: t('roles.user', '사용자'),
     };
     return roleMap[role] || role;
   };

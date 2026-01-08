@@ -4,7 +4,6 @@
  */
 
 // Mock firebase FIRST before any imports
-import React from 'react';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { useAuth, AuthProvider } from '../AuthContext';
 import * as firebaseAuth from 'firebase/auth';
@@ -16,11 +15,11 @@ const mockAdminUser = {
   emailVerified: true,
   displayName: 'Admin User',
 };
-const mockManagerUser = {
-  uid: 'manager-123',
-  email: 'manager@test.com',
+const mockEmployerUser = {
+  uid: 'employer-123',
+  email: 'employer@test.com',
   emailVerified: true,
-  displayName: 'Manager User',
+  displayName: 'Employer User',
 };
 const mockRegularUser = {
   uid: 'user-123',
@@ -29,7 +28,7 @@ const mockRegularUser = {
   displayName: 'Regular User',
 };
 const mockAdminToken = { claims: { role: 'admin' } };
-const mockManagerToken = { claims: { role: 'manager' } };
+const mockEmployerToken = { claims: { role: 'employer' } };
 const mockNoRoleToken = { claims: {} };
 
 const wrongPasswordError = new Error('Wrong password');
@@ -210,8 +209,8 @@ describe('AuthContext - User Story 1', () => {
 
     await waitFor(() => {
       expect(result.current.currentUser).not.toBeNull();
-      expect(result.current.currentUser?.uid).toBe('test-admin-uid');
     });
+    expect(result.current.currentUser?.uid).toBe('test-admin-uid');
   });
 
   test('onAuthStateChanged is called', async () => {
@@ -281,14 +280,14 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
 
     await waitFor(() => {
       expect(result.current.role).toBe('admin');
-      expect(result.current.isAdmin).toBe(true);
     });
+    expect(result.current.isAdmin).toBe(true);
   });
 
-  test('isAdmin returns true for manager role', async () => {
+  test('isAdmin returns true for employer role', async () => {
     const mockUser = {
-      ...mockManagerUser,
-      getIdTokenResult: jest.fn().mockResolvedValue(mockManagerToken),
+      ...mockEmployerUser,
+      getIdTokenResult: jest.fn().mockResolvedValue(mockEmployerToken),
     };
 
     mockOnAuthStateChanged.mockImplementation((auth, callback) => {
@@ -300,9 +299,9 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await waitFor(() => {
-      expect(result.current.role).toBe('manager');
-      expect(result.current.isAdmin).toBe(true); // manager도 isAdmin=true
+      expect(result.current.role).toBe('employer');
     });
+    expect(result.current.isAdmin).toBe(true); // employer도 isAdmin=true
   });
 
   test('isAdmin returns false for users without role', async () => {
@@ -320,9 +319,10 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await waitFor(() => {
-      expect(result.current.role).toBeNull();
-      expect(result.current.isAdmin).toBe(false);
+      expect(result.current.currentUser).not.toBeNull();
     });
+    expect(result.current.role).toBeNull();
+    expect(result.current.isAdmin).toBe(false);
   });
 
   test('isAdmin returns false for unauthenticated users', async () => {
@@ -358,10 +358,10 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
     });
   });
 
-  test('role returns "manager" for manager users', async () => {
+  test('role returns "employer" for employer users', async () => {
     const mockUser = {
-      ...mockManagerUser,
-      getIdTokenResult: jest.fn().mockResolvedValue(mockManagerToken),
+      ...mockEmployerUser,
+      getIdTokenResult: jest.fn().mockResolvedValue(mockEmployerToken),
     };
 
     mockOnAuthStateChanged.mockImplementation((auth, callback) => {
@@ -373,7 +373,7 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await waitFor(() => {
-      expect(result.current.role).toBe('manager');
+      expect(result.current.role).toBe('employer');
     });
   });
 
@@ -423,10 +423,10 @@ describe('AuthContext - User Story 2: 역할 기반 권한 검증', () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     await waitFor(() => {
-      expect(result.current.currentUser?.uid).toBe('test-admin-uid');
       expect(result.current.role).toBe('admin');
-      expect(result.current.isAdmin).toBe(true);
     });
+    expect(result.current.currentUser?.uid).toBe('test-admin-uid');
+    expect(result.current.isAdmin).toBe(true);
   });
 });
 
@@ -588,8 +588,8 @@ describe('AuthContext - User Story 3: 에러 및 엣지 케이스', () => {
 
     await waitFor(() => {
       expect(result.current.currentUser).not.toBeNull();
-      expect(result.current.role).toBeNull(); // 토큰 실패 시 role null
     });
+    expect(result.current.role).toBeNull(); // 토큰 실패 시 role null
   });
 
   test('handles empty email string', async () => {

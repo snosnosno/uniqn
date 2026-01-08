@@ -285,8 +285,8 @@ export interface User extends FirebaseDocument {
   /** 닉네임 */
   nickname?: string;
 
-  /** 사용자 역할 */
-  role: 'admin' | 'manager' | 'dealer' | 'staff' | 'user';
+  /** 사용자 역할 (계정 권한) */
+  role: 'admin' | 'employer' | 'staff';
 
   /** 전화번호 */
   phone?: string;

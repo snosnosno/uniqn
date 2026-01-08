@@ -125,7 +125,7 @@ export const mockWorkLogs: Map<string, WorkLog> = new Map([
         name: 'Jane Smith',
         email: 'jane@example.com',
         phone: '010-8765-4321',
-        userRole: 'manager',
+        userRole: 'employer',
         jobRole: ['manager'],
         isActive: true,
       },

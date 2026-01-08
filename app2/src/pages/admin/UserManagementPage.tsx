@@ -33,7 +33,7 @@ const UserManagementPage: React.FC = () => {
       return;
     }
 
-    const q = query(collection(db, 'users'), where('role', 'in', ['admin', 'staff', 'manager']));
+    const q = query(collection(db, 'users'), where('role', 'in', ['admin', 'staff', 'employer']));
 
     const unsubscribe = onSnapshot(
       q,

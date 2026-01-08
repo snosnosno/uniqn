@@ -201,7 +201,7 @@ export const HeaderMenu: React.FC = () => {
   // 토너먼트 메뉴 아이템 (역할에 따라 동적 생성)
   const tournamentItems = useMemo(() => {
     const items = [...TOURNAMENT_BASE_ITEMS];
-    if (role === 'admin' || role === 'manager') {
+    if (role === 'admin' || role === 'employer') {
       items.push(...TOURNAMENT_ADMIN_ITEMS);
     }
     return items;
