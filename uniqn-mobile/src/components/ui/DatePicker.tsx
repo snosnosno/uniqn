@@ -134,37 +134,43 @@ export const DatePicker = memo(function DatePicker({
         </Text>
       )}
 
-      {/* 트리거 버튼 */}
-      <Pressable
-        onPress={openModal}
-        disabled={disabled}
-        accessibilityRole="button"
-        accessibilityLabel={label ?? '날짜 선택'}
-        accessibilityState={{ disabled }}
-        accessibilityHint="탭하여 날짜를 선택하세요"
-        className={getInputStyle()}
-      >
-        <CalendarIcon
-          size={20}
-          color={disabled ? '#9CA3AF' : '#6B7280'}
-        />
-        <Text
-          className={`flex-1 ml-3 text-base ${
-            disabled
-              ? 'text-gray-400 dark:text-gray-500'
-              : value
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-400 dark:text-gray-500'
-          }`}
+      {/* 트리거 영역 - 버튼 중첩 방지를 위해 flex 구조 변경 */}
+      <View className={getInputStyle()}>
+        {/* 날짜 선택 영역 */}
+        <Pressable
+          onPress={openModal}
+          disabled={disabled}
+          accessibilityRole="button"
+          accessibilityLabel={label ?? '날짜 선택'}
+          accessibilityState={{ disabled }}
+          accessibilityHint="탭하여 날짜를 선택하세요"
+          className="flex-row items-center flex-1"
         >
-          {displayText}
-        </Text>
+          <CalendarIcon
+            size={20}
+            color={disabled ? '#9CA3AF' : '#6B7280'}
+          />
+          <Text
+            className={`flex-1 ml-3 text-base ${
+              disabled
+                ? 'text-gray-400 dark:text-gray-500'
+                : value
+                  ? 'text-gray-900 dark:text-white'
+                  : 'text-gray-400 dark:text-gray-500'
+            }`}
+          >
+            {displayText}
+          </Text>
+        </Pressable>
+
+        {/* 초기화/화살표 버튼 (별도 영역으로 분리) */}
         {value && !disabled ? (
           <Pressable
             onPress={handleClear}
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             accessibilityRole="button"
             accessibilityLabel="날짜 초기화"
+            className="ml-2"
           >
             <XMarkIcon size={20} color="#9CA3AF" />
           </Pressable>
@@ -174,7 +180,7 @@ export const DatePicker = memo(function DatePicker({
             color={disabled ? '#9CA3AF' : '#6B7280'}
           />
         )}
-      </Pressable>
+      </View>
 
       {/* 에러 메시지 */}
       {error && errorMessage && (

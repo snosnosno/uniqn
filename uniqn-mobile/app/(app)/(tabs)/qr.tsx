@@ -8,7 +8,7 @@ import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Button, EmptyState } from '@/components/ui';
 import { QRCodeScanner, QRCodeDisplay } from '@/components/qr';
-import { QrCodeIcon, ScanIcon, RefreshIcon, CalendarIcon } from '@/components/icons';
+import { QrCodeIcon, ScanIcon, CalendarIcon } from '@/components/icons';
 import {
   useCreateQRCode,
   useQRCodeScanner,
@@ -38,7 +38,7 @@ export default function QRScreen() {
   const { currentWorkLog, isWorking } = useCurrentWorkStatus();
 
   // 오늘의 스케줄 조회
-  const { schedules: todaySchedules, isLoading: isLoadingSchedules } = useTodaySchedules();
+  const { schedules: todaySchedules } = useTodaySchedules();
 
   // QR 코드 생성 훅
   const {
@@ -61,7 +61,7 @@ export default function QRScreen() {
   const confirmedSchedules = todaySchedules.filter((s) => s.type === 'confirmed');
 
   // QR 스캔 결과 핸들러
-  const { handleScanResult, isProcessing } = useQRCodeScanner({
+  const { handleScanResult } = useQRCodeScanner({
     workLogId: selectedSchedule?.workLogId || currentWorkLog?.id || '',
     expectedAction: selectedAction,
     onSuccess: () => {

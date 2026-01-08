@@ -3,7 +3,7 @@
  * 특정 공고의 스태프 근무 기록 및 정산
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -194,7 +194,7 @@ export default function SettlementsScreen() {
     );
   }
 
-  const isProcessing = isUpdating || isSettling || isBulkSettling;
+  const _isProcessing = isUpdating || isSettling || isBulkSettling;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>

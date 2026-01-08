@@ -13,8 +13,6 @@ export interface JobPosting {
   dateSpecificRequirements: DateSpecificRequirement[];
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  isChipDeducted: boolean;
-  chipCost?: number;
   contactPhone?: string;
   applicationCount?: number;
 }
@@ -47,7 +45,6 @@ export const createMockJobPosting = (overrides: Partial<JobPosting> = {}): JobPo
   dateSpecificRequirements: [],
   createdAt: Timestamp.now(),
   updatedAt: Timestamp.now(),
-  isChipDeducted: false,
   ...overrides,
 });
 
@@ -80,7 +77,6 @@ export const mockJobPostings = {
     description: '정규직 딜러를 상시 모집합니다.',
     postingType: 'fixed',
     status: 'open',
-    chipCost: 3,
     contactPhone: '010-1234-5678',
   }),
 
@@ -91,7 +87,6 @@ export const mockJobPostings = {
     description: '12월 대형 토너먼트 스태프 모집합니다.',
     postingType: 'tournament',
     status: 'open',
-    chipCost: 5,
     dateSpecificRequirements: [
       {
         date: '2025-12-01',

@@ -8,7 +8,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
-type BadgeVariant = 'default' | 'primary' | 'success' | 'warning' | 'error';
+type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
 type BadgeSize = 'sm' | 'md';
 
 export interface BadgeProps {
@@ -22,6 +22,7 @@ export interface BadgeProps {
 const variantStyles: Record<BadgeVariant, string> = {
   default: 'bg-gray-100 dark:bg-gray-700',
   primary: 'bg-primary-100 dark:bg-primary-900/30',
+  secondary: 'bg-gray-200 dark:bg-gray-600',
   success: 'bg-success-100 dark:bg-success-700/30',
   warning: 'bg-warning-100 dark:bg-warning-700/30',
   error: 'bg-error-100 dark:bg-error-700/30',
@@ -30,6 +31,7 @@ const variantStyles: Record<BadgeVariant, string> = {
 const textStyles: Record<BadgeVariant, string> = {
   default: 'text-gray-700 dark:text-gray-300',
   primary: 'text-primary-700 dark:text-primary-300',
+  secondary: 'text-gray-600 dark:text-gray-200',
   success: 'text-success-700 dark:text-success-500',
   warning: 'text-warning-700 dark:text-warning-500',
   error: 'text-error-700 dark:text-error-500',
@@ -38,6 +40,7 @@ const textStyles: Record<BadgeVariant, string> = {
 const dotStyles: Record<BadgeVariant, string> = {
   default: 'bg-gray-500',
   primary: 'bg-primary-500',
+  secondary: 'bg-gray-400',
   success: 'bg-success-500',
   warning: 'bg-warning-500',
   error: 'bg-error-500',

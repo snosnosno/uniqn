@@ -15,12 +15,12 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
-  writeBatch,
+  
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
-import type { Application, Assignment, Staff, JobPosting } from '@/types';
+import type { Application,  Staff, JobPosting } from '@/types';
 
 // ============================================================================
 // Constants
@@ -47,10 +47,10 @@ export interface BulkConversionResult {
   successCount: number;
   failedCount: number;
   results: ConversionResult[];
-  failedApplications: Array<{
+  failedApplications: {
     applicationId: string;
     error: string;
-  }>;
+  }[];
 }
 
 export interface ConversionOptions {

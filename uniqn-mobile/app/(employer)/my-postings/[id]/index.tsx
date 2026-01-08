@@ -8,13 +8,13 @@ import { View, Text, ScrollView, Pressable } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { Card, Badge, Button, Loading, ErrorState } from '@/components';
+import { Card, Badge, Loading, ErrorState } from '@/components';
 import {
   MapPinIcon,
   ClockIcon,
   CurrencyDollarIcon,
   UsersIcon,
-  BriefcaseIcon,
+  
   ChevronRightIcon,
   EditIcon,
   BanknotesIcon,

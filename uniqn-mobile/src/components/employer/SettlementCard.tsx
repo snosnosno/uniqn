@@ -11,8 +11,8 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import {
-  ClockIcon,
-  CurrencyDollarIcon,
+  
+  
   CheckCircleIcon,
   EditIcon,
   BanknotesIcon,

@@ -55,19 +55,19 @@ export interface JobPostingDraft extends CreateJobPostingInput {
   // 추가 필드 (6단계 폼용)
   postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
   startTime?: string;
-  tournamentDates?: Array<{ day: number; date: string; startTime: string }>;
+  tournamentDates?: { day: number; date: string; startTime: string }[];
   daysPerWeek?: number;
   workDays?: string[];
   useRoleSalary?: boolean;
   roleSalaries?: Record<string, SalaryInfo>;
   usesPreQuestions?: boolean;
-  preQuestions?: Array<{
+  preQuestions?: {
     id: string;
     question: string;
     required: boolean;
     type: 'text' | 'textarea' | 'select';
     options?: string[];
-  }>;
+  }[];
 }
 
 export interface CreateJobPostingResult {
@@ -106,7 +106,7 @@ const ROLE_NAME_TO_CODE: Record<string, StaffRole> = {
  * @description FormRoleWithCount 또는 RoleRequirement 형식을 통합 처리
  */
 function convertToRoleRequirements(
-  roles: Array<{ role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }>
+  roles: { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
 ): RoleRequirement[] {
   return roles.map((r) => {
     // 이미 RoleRequirement 형식인 경우
@@ -151,7 +151,7 @@ export async function createJobPosting(
 
     // 역할 변환 (FormRoleWithCount → RoleRequirement)
     const convertedRoles = convertToRoleRequirements(
-      input.roles as Array<{ role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }>
+      input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
     );
 
     // 총 모집 인원 계산
@@ -164,12 +164,23 @@ export async function createJobPosting(
       ...restInput
     } = input;
 
-    const jobPostingData: Omit<JobPosting, 'id'> = {
+    // undefined 필드 제거 함수 (Firebase는 undefined 값을 허용하지 않음)
+    const removeUndefined = <T extends Record<string, unknown>>(obj: T): T => {
+      return Object.fromEntries(
+        Object.entries(obj).filter(([, v]) => v !== undefined)
+      ) as T;
+    };
+
+    const jobPostingData: Omit<JobPosting, 'id'> = removeUndefined({
       ...restInput,
       roles: convertedRoles,
       status: 'active',
       ownerId,
       ownerName,
+      // Security Rules 필수 필드: createdBy (ownerId와 동일)
+      createdBy: ownerId,
+      // Security Rules 필수 필드: description (빈 문자열 허용)
+      description: restInput.description || '',
       totalPositions,
       filledPositions: 0,
       viewCount: 0,
@@ -177,12 +188,9 @@ export async function createJobPosting(
       // 필수 필드 기본값
       workDate: restInput.workDate || '',
       timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
-      // startTime은 Timestamp 타입이므로 undefined로 설정 (추후 변환 로직 추가)
-      startTime: undefined,
-      endTime: undefined,
       createdAt: now as Timestamp,
       updatedAt: now as Timestamp,
-    };
+    });
 
     await setDoc(newDocRef, jobPostingData);
 

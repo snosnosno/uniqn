@@ -6,14 +6,14 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { Assignment, JobPosting, DateSpecificRequirement, TimeSlot } from '@/types';
+import type { Assignment,  TimeSlot } from '@/types';
 import {
   createSimpleAssignment,
-  createGroupedAssignment,
-  getAssignmentRole,
+  
+  
   isValidAssignment,
-  getDateFromRequirement,
-  sortDateRequirements,
+  
+  
 } from '@/types';
 
 // ============================================================================

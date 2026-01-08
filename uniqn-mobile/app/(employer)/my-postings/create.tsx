@@ -44,8 +44,8 @@ const ROLE_LABELS: Record<string, string> = {
  * RoleRequirement[] 또는 FormRoleWithCount[]를 FormRoleWithCount[]로 변환
  */
 function convertToFormRoles(
-  roles: Array<{ role?: string; name?: string; count: number }>
-): Array<{ name: string; count: number; isCustom?: boolean }> {
+  roles: { role?: string; name?: string; count: number }[]
+): { name: string; count: number; isCustom?: boolean }[] {
   return roles.map((r) => ({
     name: r.name || ROLE_LABELS[r.role || ''] || r.role || '알 수 없음',
     count: r.count,
@@ -106,7 +106,7 @@ export default function CreateJobPostingScreen() {
                 daysPerWeek: existingDraft.daysPerWeek || 5,
                 workDays: existingDraft.workDays || [],
                 roles: existingDraft.roles
-                  ? convertToFormRoles(existingDraft.roles as Array<{ role?: string; name?: string; count: number }>)
+                  ? convertToFormRoles(existingDraft.roles as { role?: string; name?: string; count: number }[])
                   : INITIAL_JOB_POSTING_FORM_DATA.roles,
                 salary: existingDraft.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
                 allowances: existingDraft.allowances || {},
@@ -210,13 +210,16 @@ export default function CreateJobPostingScreen() {
     }
 
     try {
+      // Firebase는 undefined 값을 허용하지 않으므로 빈 문자열 또는 필드 제외 처리
       const input: CreateJobPostingInput = {
         postingType: formData.postingType,
         title: formData.title,
-        description: formData.description || undefined,
+        // description은 선택 필드 - 빈 문자열이면 제외
+        ...(formData.description ? { description: formData.description } : {}),
         location: formData.location,
-        detailedAddress: formData.detailedAddress || undefined,
-        contactPhone: formData.contactPhone || undefined,
+        // 선택 필드들 - 값이 있을 때만 포함
+        ...(formData.detailedAddress ? { detailedAddress: formData.detailedAddress } : {}),
+        ...(formData.contactPhone ? { contactPhone: formData.contactPhone } : {}),
         workDate: formData.workDate,
         startTime: formData.startTime,
         tournamentDates: formData.tournamentDates,

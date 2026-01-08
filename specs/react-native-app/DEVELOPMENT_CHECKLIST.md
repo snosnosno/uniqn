@@ -92,7 +92,7 @@ graph LR
 ### 1.3 코드 이전 (app2/ → uniqn-app/) [P0] ✅
 > ℹ️ **변경**: 복사 대신 새로 작성함 (RN 최적화)
 - [x] `types/` 새로 작성 (auth, jobPosting, application, common, notification, schedule)
-- [x] `schemas/` 새로 작성 (auth.schema, jobPosting.schema, application.schema)
+- [x] `schemas/` 새로 작성 (13개: auth, jobPosting, application, assignment, preQuestion, schedule, workLog, settlement, user, admin, notification, penalty)
 - [x] `constants/` 새로 작성 (colors, queryKeys, cachingPolicies)
 - [x] `utils/` 새로 작성 (logger, formatters, errorUtils)
 - [x] `services/` 새로 작성 (authService, jobService, applicationService, accountDeletionService)
@@ -1290,8 +1290,13 @@ graph LR
 ---
 
 *생성일: 2024-12*
-*업데이트: 2026-01-06*
-*버전: 5.16*
+*업데이트: 2026-01-09*
+*버전: 5.17*
+
+### 버전 5.17 변경사항 (2026-01-09)
+- [Phase 1] schemas/ 완성 - 13개 스키마 구현 완료 (schedule, workLog, settlement, user, admin, notification, penalty 추가)
+- [Phase 1] TypeScript 에러 78개 → 30개 수정 (핵심 타입 에러 0개, 미사용 변수 경고만 잔여)
+- [Phase 1] FlashList v2.0 API 호환, Avatar/Badge 컴포넌트 타입 수정
 
 ### 버전 5.16 변경사항 (2026-01-06)
 - [전체] UI/UX 워크플로우 연동 섹션 추가 - Mock 데이터 → 실제 훅/서비스 연동 현황 추적

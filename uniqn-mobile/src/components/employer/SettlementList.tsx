@@ -15,9 +15,9 @@ import { ErrorState } from '../ui/ErrorState';
 import { Card } from '../ui/Card';
 import {
   BanknotesIcon,
-  FilterIcon,
+  
   CheckIcon,
-  CurrencyDollarIcon,
+  
 } from '../icons';
 import type { WorkLog, PayrollStatus } from '@/types';
 

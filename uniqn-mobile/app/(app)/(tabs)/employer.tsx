@@ -317,7 +317,7 @@ function EmployerView() {
           data={filteredPostings}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          estimatedItemSize={160}
+          
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}

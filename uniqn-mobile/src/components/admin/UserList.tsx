@@ -45,7 +45,7 @@ export interface UserListProps {
 // Constants
 // ============================================================================
 
-const ROLE_FILTERS: Array<{ value: UserRole | 'all'; label: string }> = [
+const ROLE_FILTERS: { value: UserRole | 'all'; label: string }[] = [
   { value: 'all', label: '전체' },
   { value: 'admin', label: '관리자' },
   { value: 'employer', label: '구인자' },

@@ -6,12 +6,12 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
-import { Badge } from '../ui/Badge';
-import { CheckIcon, XMarkIcon, AlertCircleIcon } from '../icons';
+// import { Badge } from '../ui/Badge';
+import {  AlertCircleIcon } from '../icons';
 import type { ApplicantWithDetails } from '@/services';
 import type { StaffRole } from '@/types';
 

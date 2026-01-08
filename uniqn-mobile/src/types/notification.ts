@@ -239,6 +239,8 @@ export interface NotificationData extends FirebaseDocument {
  */
 export interface NotificationSettings {
   /** 전체 알림 활성화 */
+  /** 전체 푸시 알림 활성화 */
+  pushEnabled?: boolean;
   enabled: boolean;
   /** 카테고리별 설정 */
   categories: {

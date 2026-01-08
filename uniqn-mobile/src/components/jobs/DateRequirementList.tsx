@@ -8,7 +8,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import type { DateSpecificRequirement, TimeSlot, RoleRequirement } from '@/types';
+import type { DateSpecificRequirement, TimeSlot } from '@/types';
 import { getDateFromRequirement, sortDateRequirements } from '@/types';
 
 // ============================================================================

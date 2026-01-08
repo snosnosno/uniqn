@@ -18,7 +18,7 @@ import { Loading } from '../ui/Loading';
 import {
   UserIcon,
   PhoneIcon,
-  MailIcon,
+  
   ShieldIcon,
   CheckIcon,
 } from '../icons';
@@ -66,7 +66,7 @@ export interface UserEditFormProps {
 // Constants
 // ============================================================================
 
-const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
+const ROLE_OPTIONS: { value: UserRole; label: string }[] = [
   { value: 'admin', label: USER_ROLE_LABELS.admin },
   { value: 'employer', label: USER_ROLE_LABELS.employer },
   { value: 'staff', label: USER_ROLE_LABELS.staff },

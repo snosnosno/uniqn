@@ -6,11 +6,11 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { ClockIcon, EditIcon, AlertCircleIcon } from '../icons';
+import { ClockIcon,  AlertCircleIcon } from '../icons';
 import { formatTime, formatDate } from '@/utils/dateUtils';
 import type { WorkLog } from '@/types';
 

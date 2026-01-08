@@ -43,7 +43,6 @@ describe('승인 워크플로우 통합 테스트', () => {
     location: '서울',
     createdBy: 'organizer-1',
     createdAt: now,
-    isChipDeducted: false,
     status: 'open',
     postingType: 'tournament',
     dateSpecificRequirements: [],

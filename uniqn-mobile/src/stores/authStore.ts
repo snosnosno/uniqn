@@ -67,6 +67,35 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
   staff: 10,
 };
 
+/**
+ * 사용자 역할 정규화 함수 (대소문자 무관, 하위 호환성 지원)
+ * @param role - 입력된 역할 문자열
+ * @returns UserRole 값 또는 null (유효하지 않은 경우)
+ *
+ * @example
+ * normalizeUserRole('ADMIN') // 'admin'
+ * normalizeUserRole('Manager') // 'employer' (하위 호환성)
+ * normalizeUserRole('invalid') // null
+ */
+export function normalizeUserRole(role: string | null | undefined): UserRole | null {
+  if (!role) return null;
+  const normalized = role.toLowerCase().trim();
+
+  switch (normalized) {
+    case 'admin':
+      return 'admin';
+    case 'employer':
+      return 'employer';
+    case 'manager':
+      // 하위 호환성: 기존 'manager' → 'employer' 매핑
+      return 'employer';
+    case 'staff':
+      return 'staff';
+    default:
+      return null;
+  }
+}
+
 interface AuthState {
   // 상태
   user: AuthUser | null;
@@ -297,10 +326,31 @@ export const useHasRole = (requiredRole: UserRole) => {
 
 /**
  * 권한 확인 유틸리티 함수 (훅 외부에서 사용)
+ * 문자열 역할도 정규화하여 처리 (대소문자 무관, 하위 호환성)
+ *
+ * @param userRole - 사용자 역할 (UserRole 또는 문자열)
+ * @param requiredRole - 필요한 최소 역할
+ * @returns 권한 여부
+ *
+ * @example
+ * hasPermission('employer', 'staff') // true (employer > staff)
+ * hasPermission('Manager', 'employer') // true (manager = employer, 하위 호환성)
+ * hasPermission('staff', 'admin') // false (staff < admin)
  */
-export function hasPermission(userRole: UserRole | null, requiredRole: UserRole): boolean {
+export function hasPermission(
+  userRole: UserRole | string | null | undefined,
+  requiredRole: UserRole
+): boolean {
   if (!userRole) return false;
-  const userLevel = ROLE_HIERARCHY[userRole] ?? 0;
+
+  // 문자열인 경우 정규화
+  const normalized = typeof userRole === 'string'
+    ? normalizeUserRole(userRole)
+    : userRole;
+
+  if (!normalized) return false;
+
+  const userLevel = ROLE_HIERARCHY[normalized] ?? 0;
   const requiredLevel = ROLE_HIERARCHY[requiredRole] ?? 0;
   return userLevel >= requiredLevel;
 }

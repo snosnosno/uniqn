@@ -19,7 +19,7 @@ import { Badge, Skeleton, EmptyState } from '@/components/ui';
 import {
   CalendarIcon,
   ClockIcon,
-  MapPinIcon,
+  
   BriefcaseIcon,
   CurrencyDollarIcon,
   CheckCircleIcon,

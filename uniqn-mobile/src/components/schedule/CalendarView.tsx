@@ -6,11 +6,11 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
 import type { ScheduleEvent, ScheduleType } from '@/types';
-import { SCHEDULE_COLORS } from '@/types';
+// import { SCHEDULE_COLORS } from '@/types';
 
 // 한글 로케일 설정
 LocaleConfig.locales['ko'] = {

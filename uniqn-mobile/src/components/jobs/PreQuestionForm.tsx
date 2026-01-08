@@ -8,7 +8,7 @@
 import React, { memo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import type { PreQuestion, PreQuestionAnswer } from '@/types';
-import { PRE_QUESTION_TYPE_LABELS, updateAnswer, findUnansweredRequired } from '@/types';
+import { PRE_QUESTION_TYPE_LABELS, updateAnswer } from '@/types';
 
 // ============================================================================
 // Types

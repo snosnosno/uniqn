@@ -13,7 +13,7 @@ import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
 import { Badge } from '../ui/Badge';
-import { FilterIcon, CheckIcon, RefreshIcon } from '../icons';
+import { FilterIcon, CheckIcon } from '../icons';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';

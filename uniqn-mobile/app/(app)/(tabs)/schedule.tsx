@@ -22,7 +22,7 @@ import {
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useUnreadCountRealtime } from '@/hooks';
 import { Timestamp } from 'firebase/firestore';
-import type { ScheduleEvent, ScheduleType, AttendanceStatus, CalendarView as CalendarViewType, QRCodeScanResult, QRCodeAction } from '@/types';
+import type { ScheduleEvent, ScheduleType, AttendanceStatus, QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
 // Constants

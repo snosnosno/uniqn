@@ -9,7 +9,7 @@
 // Firebase Mock - Must be first to prevent initialization
 // ============================================================================
 
-import { renderHook, act, waitFor } from '@testing-library/react-native';
+import { renderHook, act } from '@testing-library/react-native';
 import {
   createMockWorkLog,
   createMockJobPosting,

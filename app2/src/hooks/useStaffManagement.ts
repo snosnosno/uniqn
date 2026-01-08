@@ -7,6 +7,12 @@
  * @see contexts/JobPostingContextAdapter.tsx - 실제 스태프/워크로그 데이터 관리
  */
 
+// 계정 권한 - types/unifiedData.ts에서 정의된 UserRole 사용
+// ⚠️ 중복 정의 제거됨 (2025-01-08)
+// @see types/unifiedData.ts - UserRole enum (SSOT)
+import { UserRole } from '@/types/unifiedData';
+export { UserRole };
+
 // 업무 역할 정의
 export type JobRole =
   | 'Dealer' // 딜러
@@ -17,9 +23,6 @@ export type JobRole =
   | 'Registration' // 레지
   | 'Security' // 보안요원
   | 'Cashier'; // 캐셔
-
-// 계정 권한
-export type UserRole = 'staff' | 'employer' | 'admin';
 
 export interface StaffData {
   id: string;

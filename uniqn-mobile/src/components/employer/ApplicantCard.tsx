@@ -10,7 +10,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import { UserIcon, PhoneIcon, ClockIcon, MessageIcon, CheckIcon, XMarkIcon } from '../icons';
+import {  PhoneIcon, ClockIcon, MessageIcon, CheckIcon, XMarkIcon } from '../icons';
 import { APPLICATION_STATUS_LABELS } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import type { ApplicantWithDetails } from '@/services';

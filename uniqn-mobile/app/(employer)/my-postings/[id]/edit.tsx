@@ -53,7 +53,7 @@ interface SectionErrors {
  * RoleRequirement[] → FormRoleWithCount[] 변환
  */
 function convertRolesToFormRoles(
-  roles: Array<{ role?: string; name?: string; count: number; filled?: number }>
+  roles: { role?: string; name?: string; count: number; filled?: number }[]
 ): FormRoleWithCount[] {
   const ROLE_LABELS: Record<string, string> = {
     dealer: '딜러',
@@ -245,7 +245,7 @@ export default function EditJobPostingScreen() {
         workDays: existingJob.workDays ?? [],
         // 역할
         roles: existingJob.roles
-          ? convertRolesToFormRoles(existingJob.roles as Array<{ role?: string; name?: string; count: number; filled?: number }>)
+          ? convertRolesToFormRoles(existingJob.roles as { role?: string; name?: string; count: number; filled?: number }[])
           : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
         // 급여
         salary: existingJob.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,

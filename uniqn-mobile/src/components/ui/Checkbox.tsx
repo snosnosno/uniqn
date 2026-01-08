@@ -181,12 +181,12 @@ export interface CheckboxGroupProps {
   /** 변경 콜백 */
   onChange: (values: string[]) => void;
   /** 옵션 목록 */
-  options: Array<{
+  options: {
     value: string;
     label: string;
     description?: string;
     disabled?: boolean;
-  }>;
+  }[];
   /** 그룹 레이블 */
   label?: string;
   /** 에러 상태 */

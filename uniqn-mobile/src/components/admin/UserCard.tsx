@@ -18,7 +18,7 @@ import {
   ChevronRightIcon,
 } from '../icons';
 import { USER_ROLE_LABELS, USER_ROLE_BADGE_VARIANT } from '@/types';
-import { formatRelativeTime, formatDate } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/dateUtils';
 import type { AdminUser } from '@/types';
 
 // ============================================================================

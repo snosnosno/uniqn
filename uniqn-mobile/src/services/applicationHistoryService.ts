@@ -20,7 +20,7 @@ import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES
 import type {
   Application,
   Assignment,
-  OriginalApplication,
+  
   ConfirmationHistoryEntry,
   JobPosting,
 } from '@/types';

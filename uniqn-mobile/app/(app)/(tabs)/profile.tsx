@@ -144,7 +144,7 @@ export default function ProfileScreen() {
             <Avatar
               name={profile?.name ?? user?.displayName ?? '사용자'}
               size="xl"
-              imageUrl={profile?.photoURL ?? user?.photoURL ?? undefined}
+              source={profile?.photoURL ?? user?.photoURL ?? undefined}
             />
             <View className="ml-4 flex-1">
               <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">

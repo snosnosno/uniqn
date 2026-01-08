@@ -1,3 +1,5 @@
+/* eslint-disable testing-library/no-container */
+/* eslint-disable testing-library/no-node-access */
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -32,7 +34,6 @@ jest.mock('firebase/firestore', () => ({
  * - 기본 렌더링 테스트 (regular/fixed/tournament/urgent 타입)
  * - 타입별 아이콘 및 스타일 테스트
  * - 상태 배지 테스트 (open/closed)
- * - 칩 비용 표시 테스트
  * - 다크모드 스타일 테스트
  */
 
@@ -49,7 +50,6 @@ describe('JobPostingCard', () => {
     dateSpecificRequirements: [],
     createdAt: Timestamp.now(),
     updatedAt: Timestamp.now(),
-    isChipDeducted: false,
   };
 
   describe('기본 렌더링', () => {
@@ -187,37 +187,6 @@ describe('JobPostingCard', () => {
     });
   });
 
-  describe('칩 비용 배지', () => {
-    it.skip('chipCost > 0: 칩 비용 배지 렌더링', () => {
-      const postingWithChip = { ...basePosting, chipCost: 5 };
-      render(<JobPostingCard post={postingWithChip} variant="user-card" />);
-
-      expect(screen.getByText(/💰/)).toBeInTheDocument();
-      expect(screen.getByText(/5 칩/)).toBeInTheDocument();
-    });
-
-    it('chipCost = 0: 칩 비용 배지 없음', () => {
-      const postingWithoutChip = { ...basePosting, chipCost: 0 };
-      render(<JobPostingCard post={postingWithoutChip} variant="user-card" />);
-
-      expect(screen.queryByText(/칩/)).not.toBeInTheDocument();
-    });
-
-    it('chipCost undefined: 칩 비용 배지 없음', () => {
-      render(<JobPostingCard post={basePosting} variant="user-card" />);
-
-      expect(screen.queryByText(/칩/)).not.toBeInTheDocument();
-    });
-
-    it.skip('칩 비용 배지: 노란색 배경', () => {
-      const postingWithChip = { ...basePosting, chipCost: 3 };
-      const { container } = render(<JobPostingCard post={postingWithChip} variant="user-card" />);
-
-      const badge = container.querySelector('.bg-yellow-100');
-      expect(badge).toBeInTheDocument();
-    });
-  });
-
   describe('다크모드 스타일', () => {
     it.skip('카드 배경: 다크모드 클래스 적용', () => {
       const { container } = render(<JobPostingCard post={basePosting} variant="user-card" />);
@@ -263,14 +232,6 @@ describe('JobPostingCard', () => {
       const { container } = render(<JobPostingCard post={urgentPosting} variant="user-card" />);
 
       const badge = container.querySelector('.dark\\:bg-red-900\\/30');
-      expect(badge).toBeInTheDocument();
-    });
-
-    it.skip('칩 배지: 다크모드 스타일 적용', () => {
-      const postingWithChip = { ...basePosting, chipCost: 5 };
-      const { container } = render(<JobPostingCard post={postingWithChip} variant="user-card" />);
-
-      const badge = container.querySelector('.dark\\:bg-yellow-900\\/30');
       expect(badge).toBeInTheDocument();
     });
 
@@ -466,7 +427,7 @@ describe('JobPostingCard', () => {
 
     it('키보드 네비게이션으로 카드 및 버튼에 포커스를 이동할 수 있어야 함', async () => {
       const user = userEvent.setup();
-      const mockRenderActions = (post: JobPosting) => (
+      const mockRenderActions = (_post: JobPosting) => (
         <div>
           <button data-testid="apply-button">지원하기</button>
         </div>
@@ -539,11 +500,9 @@ describe('JobPostingCard', () => {
     });
 
     it('role 속성이 적절하게 설정되어야 함', () => {
-      const mockRenderActions = (post: JobPosting) => (
+      const mockRenderActions = (_post: JobPosting) => (
         <div>
-          <button role="button" data-testid="apply-button">
-            지원하기
-          </button>
+          <button data-testid="apply-button">지원하기</button>
         </div>
       );
 
@@ -552,11 +511,12 @@ describe('JobPostingCard', () => {
       );
 
       const button = screen.getByTestId('apply-button');
-      expect(button).toHaveAttribute('role', 'button');
+      // button 요소는 기본적으로 role="button"을 가짐
+      expect(button.tagName).toBe('BUTTON');
     });
 
     it('액션 버튼에 접근성 레이블이 있어야 함', () => {
-      const mockRenderActions = (post: JobPosting) => (
+      const mockRenderActions = (_post: JobPosting) => (
         <div>
           <button aria-label="지원하기 버튼" data-testid="apply-button">
             지원
