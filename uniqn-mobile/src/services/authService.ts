@@ -30,6 +30,13 @@ import {
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { AuthError, ERROR_CODES, mapFirebaseError } from '@/errors';
+import {
+  trackLogin,
+  trackSignup,
+  trackLogout,
+  setUserId,
+  setUserProperties,
+} from './analyticsService';
 import type { UserRole } from '@/types';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 
@@ -104,6 +111,14 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     logger.info('로그인 성공', { uid: userCredential.user.uid });
 
+    // Analytics 이벤트
+    trackLogin('email');
+    setUserId(userCredential.user.uid);
+    setUserProperties({
+      user_role: profile.role,
+      has_verified_phone: !!profile.verifiedPhone,
+    });
+
     return {
       user: userCredential.user,
       profile,
@@ -162,6 +177,15 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
     logger.info('회원가입 성공', { uid: user.uid, role: data.role });
 
+    // Analytics 이벤트
+    trackSignup('email');
+    setUserId(user.uid);
+    setUserProperties({
+      user_role: data.role,
+      account_created_date: new Date().toISOString().split('T')[0],
+      has_verified_phone: data.identityVerified,
+    });
+
     return {
       user,
       profile,
@@ -179,6 +203,11 @@ export async function signOut(): Promise<void> {
   try {
     logger.info('로그아웃 시도');
     await firebaseSignOut(getFirebaseAuth());
+
+    // Analytics 이벤트
+    trackLogout();
+    setUserId(null);
+
     logger.info('로그아웃 성공');
   } catch (error) {
     logger.error('로그아웃 실패', error as Error);

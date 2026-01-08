@@ -15,6 +15,7 @@ import { ToastManager, ModalManager, ErrorState } from '@/components/ui';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
+import { useNotificationHandler } from '@/hooks/useNotificationHandler';
 
 /**
  * 메인 네비게이션 컴포넌트
@@ -29,6 +30,9 @@ function MainNavigator() {
 
   // 화면 전환 추적 (Analytics + Crashlytics)
   useNavigationTracking();
+
+  // 푸시 알림 수신 및 딥링크 처리
+  useNotificationHandler();
 
   return (
     <>

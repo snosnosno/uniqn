@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useCallback } from 'react';
+import { useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,6 +13,7 @@ import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications } from '@/hooks';
 import { useAuthStore, useThemeStore } from '@/stores';
+import { trackJobView } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -68,6 +69,13 @@ export default function JobDetailScreen() {
     error,
     refresh,
   } = useJobDetail(id ?? '');
+
+  // 공고 조회 추적
+  useEffect(() => {
+    if (job) {
+      trackJobView(job.id, job.title);
+    }
+  }, [job]);
 
   // 지원하기 버튼 핸들러
   const handleApply = useCallback(() => {

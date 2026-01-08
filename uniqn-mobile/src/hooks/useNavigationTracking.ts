@@ -16,6 +16,7 @@ import { usePathname, useSegments } from 'expo-router';
 import { logger } from '@/utils/logger';
 import { analyticsService } from '@/services/analyticsService';
 import { crashlyticsService } from '@/services/crashlyticsService';
+import { recordNavigationTime } from '@/services/performanceService';
 
 // ============================================================================
 // Types
@@ -180,6 +181,11 @@ export function useNavigationTracking(): void {
         duration: `${duration}ms`,
         transitionCount: navigationState.current.transitionCount,
       });
+
+      // 성능 추적: 네비게이션 시간 기록
+      if (from) {
+        recordNavigationTime(from, to, duration);
+      }
     },
     []
   );

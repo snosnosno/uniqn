@@ -30,6 +30,7 @@ import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
 } from '@/errors/BusinessErrors';
+import { trackCheckIn, trackCheckOut, trackSettlementComplete } from './analyticsService';
 import type { WorkLog, PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -297,6 +298,9 @@ export async function checkIn(
 
     logger.info('출근 체크 완료', { workLogId });
 
+    // Analytics 이벤트
+    trackCheckIn(formatDateString(result.checkInTime));
+
     return {
       success: true,
       workLogId: result.workLogId,
@@ -399,6 +403,9 @@ export async function checkOut(
     });
 
     logger.info('퇴근 체크 완료', { workLogId, workDuration: result.workDuration });
+
+    // Analytics 이벤트
+    trackCheckOut(formatDateString(result.checkOutTime), Math.round(result.workDuration / 60));
 
     return {
       success: true,
@@ -653,6 +660,11 @@ export async function updatePayrollStatus(
     await updateDoc(workLogRef, updateData);
 
     logger.info('정산 상태 업데이트 완료', { workLogId });
+
+    // Analytics 이벤트 (정산 완료 시)
+    if (status === 'completed' && amount !== undefined) {
+      trackSettlementComplete(amount, 1);
+    }
   } catch (error) {
     logger.error('정산 상태 업데이트 실패', error as Error, { workLogId });
     throw mapFirebaseError(error);

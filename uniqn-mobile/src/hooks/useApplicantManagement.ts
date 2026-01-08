@@ -17,11 +17,20 @@ import {
   getApplicantStatsByRole,
   type ApplicantWithDetails,
 } from '@/services';
+import {
+  confirmApplicationWithHistory,
+  cancelConfirmation,
+} from '@/services/applicationHistoryService';
+import {
+  convertApplicantToStaff,
+  batchConvertApplicants,
+  canConvertToStaff,
+} from '@/services/applicantConversionService';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
-import type { ConfirmApplicationInput, RejectApplicationInput, ApplicationStatus } from '@/types';
+import type { ConfirmApplicationInput, RejectApplicationInput, ApplicationStatus, Assignment } from '@/types';
 
 // ============================================================================
 // Types
@@ -325,6 +334,243 @@ export function useMarkAsRead() {
 }
 
 // ============================================================================
+// v2.0 히스토리 기반 확정/취소 훅
+// ============================================================================
+
+interface ConfirmWithHistoryInput {
+  applicationId: string;
+  selectedAssignments?: Assignment[];
+  notes?: string;
+}
+
+/**
+ * v2.0 지원 확정 뮤테이션 훅 (히스토리 기록 포함)
+ */
+export function useConfirmApplicationWithHistory() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (input: ConfirmWithHistoryInput) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return confirmApplicationWithHistory(
+        input.applicationId,
+        input.selectedAssignments,
+        user.uid,
+        input.notes
+      );
+    },
+    onSuccess: (result) => {
+      logger.info('지원 확정 (v2.0) 완료', {
+        applicationId: result.applicationId,
+        workLogIds: result.workLogIds,
+      });
+      addToast({
+        type: 'success',
+        message: result.message,
+      });
+
+      // 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applicantManagement.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workLogs.all,
+      });
+    },
+    onError: (error) => {
+      logger.error('지원 확정 (v2.0) 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '확정에 실패했습니다.',
+      });
+    },
+  });
+}
+
+/**
+ * 확정 취소 뮤테이션 훅
+ */
+export function useCancelConfirmation() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: ({ applicationId, reason }: { applicationId: string; reason?: string }) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return cancelConfirmation(applicationId, user.uid, reason);
+    },
+    onSuccess: (result) => {
+      logger.info('확정 취소 완료', { applicationId: result.applicationId });
+      addToast({
+        type: 'success',
+        message: '확정이 취소되었습니다.',
+      });
+
+      // 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applicantManagement.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.all,
+      });
+    },
+    onError: (error) => {
+      logger.error('확정 취소 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '확정 취소에 실패했습니다.',
+      });
+    },
+  });
+}
+
+// ============================================================================
+// 스태프 변환 훅
+// ============================================================================
+
+interface ConvertToStaffInput {
+  applicationId: string;
+  eventId: string;
+  notes?: string;
+}
+
+/**
+ * 지원자 → 스태프 변환 뮤테이션 훅
+ */
+export function useConvertToStaff() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (input: ConvertToStaffInput) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return convertApplicantToStaff(
+        input.applicationId,
+        input.eventId,
+        user.uid,
+        { notes: input.notes }
+      );
+    },
+    onSuccess: (result) => {
+      logger.info('스태프 변환 완료', {
+        applicationId: result.applicationId,
+        staffId: result.staffId,
+        isNewStaff: result.isNewStaff,
+      });
+      addToast({
+        type: 'success',
+        message: result.message,
+      });
+
+      // 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applicantManagement.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workLogs.all,
+      });
+    },
+    onError: (error) => {
+      logger.error('스태프 변환 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '스태프 변환에 실패했습니다.',
+      });
+    },
+  });
+}
+
+/**
+ * 일괄 스태프 변환 뮤테이션 훅
+ */
+export function useBatchConvertToStaff() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: ({ applicationIds, eventId }: { applicationIds: string[]; eventId: string }) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return batchConvertApplicants(applicationIds, eventId, user.uid);
+    },
+    onSuccess: (result) => {
+      logger.info('일괄 스태프 변환 완료', {
+        success: result.successCount,
+        failed: result.failedCount,
+      });
+
+      if (result.successCount > 0) {
+        addToast({
+          type: 'success',
+          message: `${result.successCount}명이 스태프로 변환되었습니다.`,
+        });
+      }
+
+      if (result.failedCount > 0) {
+        addToast({
+          type: 'warning',
+          message: `${result.failedCount}명 변환에 실패했습니다.`,
+        });
+      }
+
+      // 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applicantManagement.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.workLogs.all,
+      });
+    },
+    onError: (error) => {
+      logger.error('일괄 스태프 변환 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: '일괄 변환에 실패했습니다.',
+      });
+    },
+  });
+}
+
+/**
+ * 스태프 변환 가능 여부 확인 훅
+ */
+export function useCanConvertToStaff(applicationId: string) {
+  return useQuery({
+    queryKey: ['canConvertToStaff', applicationId],
+    queryFn: () => canConvertToStaff(applicationId),
+    enabled: !!applicationId,
+    staleTime: cachingPolicies.standard,
+  });
+}
+
+// ============================================================================
 // 통합 훅
 // ============================================================================
 
@@ -343,6 +589,14 @@ export function useApplicantManagement(jobPostingId: string) {
   const addToWaitlistMutation = useAddToWaitlist();
   const promoteFromWaitlistMutation = usePromoteFromWaitlist();
   const markAsReadMutation = useMarkAsRead();
+
+  // v2.0 히스토리 기반 확정/취소
+  const confirmWithHistoryMutation = useConfirmApplicationWithHistory();
+  const cancelConfirmationMutation = useCancelConfirmation();
+
+  // 스태프 변환
+  const convertToStaffMutation = useConvertToStaff();
+  const batchConvertToStaffMutation = useBatchConvertToStaff();
 
   // 지원자 목록 추출 (ApplicantListResult에서 applicants 배열 추출)
   const applicants = applicantsQuery.data?.applicants ?? [];
@@ -425,6 +679,23 @@ export function useApplicantManagement(jobPostingId: string) {
     // 읽음 처리
     markAsRead: markAsReadMutation.mutate,
 
+    // v2.0 히스토리 기반 확정/취소
+    confirmWithHistory: confirmWithHistoryMutation.mutate,
+    confirmWithHistoryAsync: confirmWithHistoryMutation.mutateAsync,
+    isConfirmingWithHistory: confirmWithHistoryMutation.isPending,
+
+    cancelConfirmation: cancelConfirmationMutation.mutate,
+    cancelConfirmationAsync: cancelConfirmationMutation.mutateAsync,
+    isCancellingConfirmation: cancelConfirmationMutation.isPending,
+
+    // 스태프 변환
+    convertToStaff: convertToStaffMutation.mutate,
+    convertToStaffAsync: convertToStaffMutation.mutateAsync,
+    isConvertingToStaff: convertToStaffMutation.isPending,
+
+    batchConvertToStaff: batchConvertToStaffMutation.mutate,
+    isBatchConvertingToStaff: batchConvertToStaffMutation.isPending,
+
     // 헬퍼
     filterApplicants,
     countByStatus,
@@ -434,6 +705,7 @@ export function useApplicantManagement(jobPostingId: string) {
     confirmedCount: countByStatus('confirmed'),
     rejectedCount: countByStatus('rejected'),
     waitlistCount: countByStatus('waitlisted'),
+    completedCount: countByStatus('completed'),
   };
 }
 

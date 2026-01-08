@@ -10,7 +10,8 @@ import { View, Text, Pressable } from 'react-native';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import {  PhoneIcon, ClockIcon, MessageIcon, CheckIcon, XMarkIcon } from '../icons';
+import { PhoneIcon, ClockIcon, MessageIcon, CheckIcon, XMarkIcon, UserPlusIcon } from '../icons';
+import { ConfirmationHistoryTimeline } from '../applicant/ConfirmationHistoryTimeline';
 import { APPLICATION_STATUS_LABELS } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import type { ApplicantWithDetails } from '@/services';
@@ -26,7 +27,13 @@ export interface ApplicantCardProps {
   onConfirm?: (applicant: ApplicantWithDetails) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
   onWaitlist?: (applicant: ApplicantWithDetails) => void;
+  /** 확정 취소 (confirmed 상태에서만 사용) */
+  onCancelConfirmation?: (applicant: ApplicantWithDetails) => void;
+  /** 스태프로 변환 (confirmed 상태에서만 사용) */
+  onConvertToStaff?: (applicant: ApplicantWithDetails) => void;
   showActions?: boolean;
+  /** 확정 이력 표시 여부 */
+  showConfirmationHistory?: boolean;
   isSelected?: boolean;
   selectionMode?: boolean;
   onSelect?: (applicant: ApplicantWithDetails) => void;
@@ -63,7 +70,10 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   onConfirm,
   onReject,
   onWaitlist,
+  onCancelConfirmation,
+  onConvertToStaff,
   showActions = true,
+  showConfirmationHistory = true,
   isSelected = false,
   selectionMode = false,
   onSelect,
@@ -104,6 +114,21 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const handleWaitlist = useCallback(() => {
     onWaitlist?.(applicant);
   }, [applicant, onWaitlist]);
+
+  // 확정 취소 핸들러
+  const handleCancelConfirmation = useCallback(() => {
+    onCancelConfirmation?.(applicant);
+  }, [applicant, onCancelConfirmation]);
+
+  // 스태프 변환 핸들러
+  const handleConvertToStaff = useCallback(() => {
+    onConvertToStaff?.(applicant);
+  }, [applicant, onConvertToStaff]);
+
+  // 확정 상태 액션 표시 여부
+  const canShowConfirmedActions = showActions &&
+    applicant.status === 'confirmed' &&
+    (onCancelConfirmation || onConvertToStaff);
 
   // 액션 버튼 표시 여부
   const canShowActions = showActions &&
@@ -208,6 +233,50 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           <Text className="text-sm text-red-700 dark:text-red-300">
             거절 사유: {applicant.rejectionReason}
           </Text>
+        </View>
+      )}
+
+      {/* 확정 이력 타임라인 (confirmed 상태일 때만) */}
+      {showConfirmationHistory &&
+        applicant.status === 'confirmed' &&
+        applicant.confirmationHistory &&
+        applicant.confirmationHistory.length > 0 && (
+          <View className="mb-3">
+            <ConfirmationHistoryTimeline
+              history={applicant.confirmationHistory}
+              showDetails={false}
+            />
+          </View>
+        )}
+
+      {/* 확정 상태 액션 버튼 */}
+      {canShowConfirmedActions && !selectionMode && (
+        <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          {/* 확정 취소 버튼 */}
+          {onCancelConfirmation && (
+            <Pressable
+              onPress={handleCancelConfirmation}
+              className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+            >
+              <XMarkIcon size={16} color="#EF4444" />
+              <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">
+                확정 취소
+              </Text>
+            </Pressable>
+          )}
+
+          {/* 스태프 변환 버튼 */}
+          {onConvertToStaff && (
+            <Pressable
+              onPress={handleConvertToStaff}
+              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-primary-500 active:opacity-70"
+            >
+              <UserPlusIcon size={16} color="#fff" />
+              <Text className="ml-1 text-sm font-medium text-white">
+                스태프 변환
+              </Text>
+            </Pressable>
+          )}
         </View>
       )}
 

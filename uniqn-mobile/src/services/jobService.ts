@@ -23,6 +23,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
+import { startApiTrace } from '@/services/performanceService';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 
 // ============================================================================
@@ -54,6 +55,10 @@ export async function getJobPostings(
   pageSize: number = DEFAULT_PAGE_SIZE,
   lastDocument?: QueryDocumentSnapshot<DocumentData>
 ): Promise<PaginatedJobPostings> {
+  const trace = startApiTrace('getJobPostings');
+  trace.putAttribute('pageSize', String(pageSize));
+  if (filters?.status) trace.putAttribute('filter_status', filters.status);
+
   try {
     logger.info('공고 목록 조회', { filters, pageSize });
 
@@ -122,8 +127,14 @@ export async function getJobPostings(
 
     logger.info('공고 목록 조회 완료', { count: items.length, hasMore });
 
+    trace.putMetric('result_count', items.length);
+    trace.putAttribute('status', 'success');
+    trace.stop();
+
     return { items, lastDoc, hasMore };
   } catch (error) {
+    trace.putAttribute('status', 'error');
+    trace.stop();
     logger.error('공고 목록 조회 실패', error as Error);
     throw mapFirebaseError(error);
   }
@@ -133,6 +144,9 @@ export async function getJobPostings(
  * 공고 상세 조회
  */
 export async function getJobPostingById(id: string): Promise<JobPosting | null> {
+  const trace = startApiTrace('getJobPostingById');
+  trace.putAttribute('jobId', id);
+
   try {
     logger.info('공고 상세 조회', { id });
 
@@ -141,6 +155,8 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
 
     if (!docSnap.exists()) {
       logger.warn('공고를 찾을 수 없음', { id });
+      trace.putAttribute('status', 'not_found');
+      trace.stop();
       return null;
     }
 
@@ -151,8 +167,13 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
 
     logger.info('공고 상세 조회 완료', { id, title: jobPosting.title });
 
+    trace.putAttribute('status', 'success');
+    trace.stop();
+
     return jobPosting;
   } catch (error) {
+    trace.putAttribute('status', 'error');
+    trace.stop();
     logger.error('공고 상세 조회 실패', error as Error, { id });
     throw mapFirebaseError(error);
   }

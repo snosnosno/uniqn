@@ -23,6 +23,7 @@ import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import { startTrace } from '@/services/performanceService';
 
 // ============================================================================
 // Types
@@ -63,6 +64,10 @@ export function useAppInitialize(): UseAppInitializeReturn {
       return;
     }
     isInitializing.current = true;
+
+    // 성능 추적: 앱 초기화 전체 시간 측정
+    const appInitTrace = startTrace('app_initialization');
+    appInitTrace.putAttribute('platform', 'react-native');
 
     logger.info('앱 초기화 시작', { component: 'useAppInitialize' });
 
@@ -175,10 +180,19 @@ export function useAppInitialize(): UseAppInitializeReturn {
         error: null,
       });
 
+      // 성능 추적: 초기화 성공
+      appInitTrace.putAttribute('status', 'success');
+      appInitTrace.stop();
+
       logger.info('앱 초기화 완료', { component: 'useAppInitialize' });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
       logger.error('앱 초기화 실패', err, { component: 'useAppInitialize' });
+
+      // 성능 추적: 초기화 실패
+      appInitTrace.putAttribute('status', 'error');
+      appInitTrace.putAttribute('error_message', err.message);
+      appInitTrace.stop();
 
       setState({
         isInitialized: false,

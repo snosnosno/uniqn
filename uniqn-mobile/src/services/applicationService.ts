@@ -28,6 +28,8 @@ import {
   ValidationError,
   ERROR_CODES,
 } from '@/errors';
+import { trackJobApply, trackEvent } from './analyticsService';
+import { startApiTrace } from './performanceService';
 import type {
   Application,
   ApplicationStatus,
@@ -168,6 +170,9 @@ export async function applyToJob(
       applicationId: result.id,
       jobPostingId: input.jobPostingId,
     });
+
+    // Analytics 이벤트
+    trackJobApply(input.jobPostingId, result.jobPostingTitle, input.appliedRole);
 
     return result;
   } catch (error) {
@@ -354,6 +359,9 @@ export async function cancelApplication(
     });
 
     logger.info('지원 취소 성공', { applicationId });
+
+    // Analytics 이벤트
+    trackEvent('application_cancel', { application_id: applicationId });
   } catch (error) {
     logger.error('지원 취소 실패', error as Error, { applicationId });
     throw mapFirebaseError(error);
@@ -440,6 +448,10 @@ export async function applyToJobV2(
   applicantPhone?: string,
   applicantEmail?: string
 ): Promise<Application> {
+  const trace = startApiTrace('applyToJobV2');
+  trace.putAttribute('jobPostingId', input.jobPostingId);
+  trace.putAttribute('assignmentCount', String(input.assignments.length));
+
   try {
     logger.info('지원하기 v2.0 시작', {
       jobPostingId: input.jobPostingId,
@@ -588,8 +600,19 @@ export async function applyToJobV2(
       assignmentCount: input.assignments.length,
     });
 
+    // 성능 추적: 지원 성공
+    trace.putAttribute('status', 'success');
+    trace.stop();
+
+    // Analytics 이벤트
+    trackJobApply(input.jobPostingId, result.jobPostingTitle, result.appliedRole);
+
     return result;
   } catch (error) {
+    // 성능 추적: 지원 실패
+    trace.putAttribute('status', 'error');
+    trace.stop();
+
     logger.error('지원하기 v2.0 실패', error as Error, {
       jobPostingId: input.jobPostingId,
       applicantId,
