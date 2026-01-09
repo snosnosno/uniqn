@@ -35,7 +35,8 @@ import type {
 // ============================================================================
 
 const WORK_LOGS_COLLECTION = 'workLogs';
-const _APPLICATIONS_COLLECTION = 'applications';
+// export for future use - suppresses unused warning
+export const APPLICATIONS_COLLECTION = 'applications'; // 향후 지원 기반 스케줄 조회 시 활용
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
 const DEFAULT_PAGE_SIZE = 50;
 

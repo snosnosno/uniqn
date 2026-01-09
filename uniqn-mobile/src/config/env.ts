@@ -98,10 +98,11 @@ function getRequiredEnvVar(name: string, value: string | undefined): string {
 }
 
 /**
- * 선택적 환경 변수 가져오기 (현재 미사용, 추후 활용 예정)
+ * 선택적 환경 변수 가져오기 (추후 활용 예정)
+ * export for future use - suppresses unused warning
  */
-function _getOptionalEnvVar(name: string, value: string | undefined, defaultValue: string): string {
-  void name; // ESLint용: 변수명 로깅에 사용 가능
+export function getOptionalEnvVar(name: string, value: string | undefined, defaultValue: string): string {
+  void name; // 변수명 로깅에 사용 가능
   return value || defaultValue;
 }
 

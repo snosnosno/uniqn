@@ -8,9 +8,11 @@
 import {
   createMockJobPosting,
   createMockWorkLog,
-  createMockEmployer,
   resetCounters,
 } from '../mocks/factories';
+
+// createMockEmployer is available for future tests
+void import('../mocks/factories').then(m => m.createMockEmployer);
 
 // Import after mocks
 import {

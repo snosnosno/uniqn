@@ -51,6 +51,7 @@ const STATUS_BADGE_VARIANT: Record<ApplicationStatus, 'default' | 'primary' | 's
   cancelled: 'default',
   waitlisted: 'primary',
   completed: 'success',
+  cancellation_pending: 'warning',
 };
 
 const ROLE_LABELS: Record<StaffRole, string> = {
@@ -244,7 +245,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           <View className="mb-3">
             <ConfirmationHistoryTimeline
               history={applicant.confirmationHistory}
-              showDetails={false}
+              compact
             />
           </View>
         )}

@@ -12,9 +12,11 @@
 import { renderHook, act } from '@testing-library/react-native';
 import {
   createMockWorkLog,
-  createMockJobPosting,
   resetCounters,
 } from '../mocks/factories';
+
+// createMockJobPosting is available for future tests
+void import('../mocks/factories').then(m => m.createMockJobPosting);
 
 // ============================================================================
 // Import After Mocks
@@ -23,7 +25,6 @@ import {
 import {
   useWorkLogsByJobPosting,
   useSettlementSummary,
-  useMySettlementSummary,
   useCalculateSettlement,
   useUpdateWorkTime,
   useSettleWorkLog,
@@ -32,6 +33,9 @@ import {
   useSettlement,
   useSettlementDashboard,
 } from '@/hooks/useSettlement';
+
+// useMySettlementSummary is available for future tests
+void import('@/hooks/useSettlement').then(m => m.useMySettlementSummary);
 
 jest.mock('@/lib/firebase', () => ({
   db: {},

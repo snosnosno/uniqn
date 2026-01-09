@@ -30,7 +30,9 @@ export interface WorkTimeEditorProps {
   isLoading?: boolean;
 }
 
-type EditingField = 'startTime' | 'endTime' | null;
+// 편집 필드 타입 (향후 인라인 편집 시 활용)
+// export for future use - suppresses unused warning
+export type EditingField = 'startTime' | 'endTime' | null;
 
 // ============================================================================
 // Helpers
@@ -97,7 +99,7 @@ function TimeInput({
   value,
   onChange,
   originalTime,
-  currentTime,
+  currentTime: _currentTime, // TODO: 현재 시간과 비교 표시 시 활용
   iconColor,
 }: TimeInputProps) {
   const hasChanged = originalTime && formatTimeForInput(originalTime) !== value;

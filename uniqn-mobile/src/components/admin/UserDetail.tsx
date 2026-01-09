@@ -31,7 +31,6 @@ import {
   PENALTY_TYPE_LABELS,
   getCountryByCode,
   type AdminUserProfile,
-  type UserRole,
 } from '@/types';
 import { formatDate, formatRelativeTime } from '@/utils/dateUtils';
 
@@ -107,7 +106,7 @@ export const UserDetail = React.memo(function UserDetail({
   isLoading = false,
   onEdit,
   onPenalty,
-  onClose,
+  onClose: _onClose, // TODO: 닫기 버튼 구현 시 활용
 }: UserDetailProps) {
   // 국적 표시
   const nationalityDisplay = useMemo(() => {

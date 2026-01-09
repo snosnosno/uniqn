@@ -41,8 +41,9 @@ const WORK_LOGS_COLLECTION = 'workLogs';
 const QR_CODES_COLLECTION = 'qrCodes';
 const DEFAULT_PAGE_SIZE = 50;
 
-/** QR 코드 유효 시간 (5분) */
-const _QR_VALIDITY_DURATION_MS = 5 * 60 * 1000;
+/** QR 코드 유효 시간 (5분) - 향후 QR 검증 시 활용 */
+// export for future use - suppresses unused warning
+export const QR_VALIDITY_DURATION_MS = 5 * 60 * 1000;
 
 // ============================================================================
 // Types

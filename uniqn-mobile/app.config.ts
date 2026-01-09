@@ -158,6 +158,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     environment,
     // 빌드 시간
     buildDate: new Date().toISOString(),
+    // 소셜 로그인 활성화 여부 (SDK 구현 전까지 개발 환경에서만 활성화)
+    socialLoginEnabled: environment === 'development',
   },
 
   // 업데이트 설정 (EAS Update)

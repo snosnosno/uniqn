@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 지원서 관련 타입 정의
  *
- * @version 2.0.0
- * @description Assignment v2.0 + confirmationHistory 이력 관리 지원
+ * @version 2.1.0
+ * @description Assignment v2.0 + confirmationHistory 이력 관리 + 취소 요청 시스템 지원
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -22,7 +22,34 @@ export type ApplicationStatus =
   | 'rejected' // 거절
   | 'cancelled' // 취소 (지원자가 취소)
   | 'waitlisted' // 대기자
-  | 'completed'; // 근무 완료
+  | 'completed' // 근무 완료
+  | 'cancellation_pending'; // 취소 요청 대기 중
+
+/**
+ * 취소 요청 상태
+ */
+export type CancellationRequestStatus = 'pending' | 'approved' | 'rejected';
+
+/**
+ * 취소 요청 정보
+ *
+ * @description 확정된 지원에 대해 스태프가 취소를 요청하고,
+ *              구인자가 승인/거절하는 워크플로우를 지원
+ */
+export interface CancellationRequest {
+  /** 요청 시간 */
+  requestedAt: string;
+  /** 취소 사유 (필수) */
+  reason: string;
+  /** 요청 상태 */
+  status: CancellationRequestStatus;
+  /** 검토 시간 */
+  reviewedAt?: string;
+  /** 검토자 ID */
+  reviewedBy?: string;
+  /** 거절 사유 (거절 시 필수) */
+  rejectionReason?: string;
+}
 
 /**
  * 모집 유형
@@ -102,6 +129,13 @@ export interface Application extends FirebaseDocument {
   // === 메타데이터 ===
   isRead?: boolean;
   notes?: string;
+
+  // === 취소 요청 (v2.1) ===
+  /**
+   * 취소 요청 정보
+   * @description 확정된 지원에 대한 취소 요청 (스태프 → 구인자 승인 필요)
+   */
+  cancellationRequest?: CancellationRequest;
 
   // === 공고 정보 (조회 시 조인) ===
   jobPosting?: Partial<JobPosting>;
@@ -196,6 +230,7 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   cancelled: '취소됨',
   waitlisted: '대기자',
   completed: '완료',
+  cancellation_pending: '취소 요청 중',
 };
 
 /**
@@ -227,4 +262,41 @@ export const APPLICATION_STATUS_COLORS: Record<
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-300',
   },
+  cancellation_pending: {
+    bg: 'bg-orange-100 dark:bg-orange-900/30',
+    text: 'text-orange-700 dark:text-orange-300',
+  },
+};
+
+// ============================================================================
+// 취소 요청 관련 타입
+// ============================================================================
+
+/**
+ * 취소 요청 입력
+ */
+export interface RequestCancellationInput {
+  applicationId: string;
+  /** 취소 사유 (필수) */
+  reason: string;
+}
+
+/**
+ * 취소 요청 검토 입력
+ */
+export interface ReviewCancellationInput {
+  applicationId: string;
+  /** 승인 여부 */
+  approved: boolean;
+  /** 거절 사유 (거절 시 필수) */
+  rejectionReason?: string;
+}
+
+/**
+ * 취소 요청 상태 라벨
+ */
+export const CANCELLATION_STATUS_LABELS: Record<CancellationRequestStatus, string> = {
+  pending: '검토 대기',
+  approved: '승인됨',
+  rejected: '거절됨',
 };

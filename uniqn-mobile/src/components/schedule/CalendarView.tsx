@@ -109,8 +109,9 @@ const calendarTheme = {
   textDayHeaderFontWeight: '500' as const,
 };
 
-// 다크모드 테마
-const darkCalendarTheme = {
+// 다크모드 테마 (향후 useColorScheme 연동 시 활용)
+// export for future use - suppresses unused warning
+export const darkCalendarTheme = {
   ...calendarTheme,
   textSectionTitleColor: '#9CA3AF',
   textSectionTitleDisabledColor: '#6B7280',

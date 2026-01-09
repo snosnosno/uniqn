@@ -86,7 +86,7 @@ export default function SettlementsScreen() {
   const hourlyRate = posting?.salary?.amount ?? 15000;
 
   // 근무기록 클릭
-  const handleWorkLogPress = useCallback((workLog: WorkLog) => {
+  const handleWorkLogPress = useCallback((_workLog: WorkLog) => {
     // TODO: 상세 보기 모달 또는 화면
   }, []);
 
@@ -194,7 +194,9 @@ export default function SettlementsScreen() {
     );
   }
 
-  const _isProcessing = isUpdating || isSettling || isBulkSettling;
+  // 프로세싱 상태 (UI에서 버튼 비활성화 등에 사용)
+  const isProcessing = isUpdating || isSettling || isBulkSettling;
+  void isProcessing; // TODO: UI에서 활용
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>

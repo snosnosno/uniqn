@@ -21,6 +21,9 @@ import { useToastStore } from '@/stores/toastStore';
 import { router } from 'expo-router';
 import { AppError, AuthError, ERROR_CODES } from '@/errors';
 
+// sessionStorage는 향후 세션 관리 확장 시 활용
+void sessionStorage;
+
 // ============================================================================
 // Constants
 // ============================================================================

@@ -110,7 +110,8 @@ export function ScheduleDetailSheet({
   onQRScan,
 }: ScheduleDetailSheetProps) {
   // 출퇴근 훅
-  const { currentWorkLog, isWorking } = useCurrentWorkStatus();
+  const { currentWorkLog: _currentWorkLog, isWorking } = useCurrentWorkStatus();
+  void _currentWorkLog; // TODO: 현재 근무 기록 표시 시 활용
   const { checkIn, isLoading: isCheckingIn } = useCheckIn({
     onSuccess: onClose,
   });

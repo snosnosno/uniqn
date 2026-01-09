@@ -205,7 +205,9 @@ export function useMonthlyPayroll(year: number, month: number, enabled = true) {
  */
 export function useCheckIn(options: UseCheckInOutOptions = {}) {
   const { onSuccess, onError } = options;
-  const _queryClient = useQueryClient();
+  const queryClient = useQueryClient();
+  // queryClient는 향후 캐시 무효화 시 활용
+  void queryClient;
   const addToast = useToastStore((state) => state.addToast);
 
   const mutation = useMutation({
@@ -259,7 +261,9 @@ export function useCheckIn(options: UseCheckInOutOptions = {}) {
  */
 export function useCheckOut(options: UseCheckInOutOptions = {}) {
   const { onSuccess, onError } = options;
-  const _queryClient = useQueryClient();
+  const queryClient = useQueryClient();
+  // queryClient는 향후 캐시 무효화 시 활용
+  void queryClient;
   const addToast = useToastStore((state) => state.addToast);
 
   const mutation = useMutation({

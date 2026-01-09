@@ -63,9 +63,14 @@ export type {
   ConfirmApplicationInput,
   RejectApplicationInput,
   ApplicationStats,
+  // 취소 요청 관련 타입
+  CancellationRequestStatus,
+  CancellationRequest,
+  RequestCancellationInput,
+  ReviewCancellationInput,
 } from './application';
 
-export { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS } from './application';
+export { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, CANCELLATION_STATUS_LABELS } from './application';
 
 // 지원서 v2.0 추가 타입
 export type {

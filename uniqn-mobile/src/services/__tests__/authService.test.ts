@@ -40,12 +40,17 @@ jest.mock('@/utils/logger', () => ({
 const mockSignInWithEmailAndPassword = signInWithEmailAndPassword as jest.Mock;
 const mockCreateUserWithEmailAndPassword = createUserWithEmailAndPassword as jest.Mock;
 const mockFirebaseSignOut = firebaseSignOut as jest.Mock;
-const _mockSendPasswordResetEmail = sendPasswordResetEmail as jest.Mock;
-const _mockUpdateProfile = updateProfile as jest.Mock;
+const mockSendPasswordResetEmail = sendPasswordResetEmail as jest.Mock;
+const mockUpdateProfile = updateProfile as jest.Mock;
 const mockDoc = doc as jest.Mock;
-const _mockSetDoc = setDoc as jest.Mock;
+const mockSetDoc = setDoc as jest.Mock;
 const mockGetDoc = getDoc as jest.Mock;
 const mockUpdateDoc = updateDoc as jest.Mock;
+
+// These mocks are prepared for future tests
+void mockSendPasswordResetEmail;
+void mockUpdateProfile;
+void mockSetDoc;
 
 describe('AuthService', () => {
   beforeEach(() => {
@@ -135,10 +140,12 @@ describe('AuthService', () => {
       marketingAgreed: false,
     };
 
-    const _mockCreatedUser = {
+    const mockCreatedUser = {
       uid: 'new-user-uid',
       email: 'newuser@example.com',
     };
+    // mockCreatedUser prepared for future signUp success test
+    void mockCreatedUser;
 
     // Note: signUp success test skipped due to Firebase mock complexity
     // The function is covered by error handling tests

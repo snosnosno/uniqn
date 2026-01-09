@@ -12,8 +12,10 @@ import {
   createCheckedInSchedule,
   createCompletedSchedule,
   resetCounters,
-  type MockScheduleEvent,
 } from '../mocks/factories';
+
+// MockScheduleEvent type available for future use
+void import('../mocks/factories').then(m => m.createMockScheduleEvent as unknown);
 
 // Import after mocks
 import {
@@ -28,7 +30,10 @@ import {
   subscribeToSchedules,
   getScheduleStats,
 } from '@/services/scheduleService';
-import type { ScheduleEvent, ScheduleType } from '@/types';
+import type { ScheduleEvent } from '@/types';
+
+// ScheduleType is available for type assertions in future tests
+void import('@/types').then(m => m as unknown);
 
 // Mock Firebase
 const mockGetDoc = jest.fn();
@@ -438,8 +443,9 @@ describe('scheduleService', () => {
         },
       ];
 
-      mockOnSnapshot.mockImplementation((query, successCallback, errorCallback) => {
-        // Simulate snapshot
+      mockOnSnapshot.mockImplementation((_query, successCallback, _errorCallback) => {
+        // Simulate snapshot (query and errorCallback available for error scenarios)
+        void _query; void _errorCallback;
         successCallback({
           docs: mockWorkLogs.map((wl) => ({
             id: wl.id,

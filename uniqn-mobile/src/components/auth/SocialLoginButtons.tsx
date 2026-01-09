@@ -2,11 +2,14 @@
  * UNIQN Mobile - 소셜 로그인 버튼 컴포넌트
  *
  * @description Apple, Google, Kakao 소셜 로그인 버튼
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * @note 소셜 로그인 SDK가 구현되기 전까지 프로덕션에서는 숨김 처리
  */
 
 import React from 'react';
 import { View, Text, Pressable, Platform, ActivityIndicator } from 'react-native';
+import Constants from 'expo-constants';
 
 // ============================================================================
 // Types
@@ -66,6 +69,20 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
 ];
 
 // ============================================================================
+// Feature Flag
+// ============================================================================
+
+/**
+ * 소셜 로그인 활성화 여부
+ * - 개발 환경(__DEV__): 항상 활성화 (Mock 로그인 사용)
+ * - 프로덕션: app.config.ts의 socialLoginEnabled 설정에 따름
+ *
+ * SDK 구현 완료 후 이 플래그를 true로 변경
+ */
+const SOCIAL_LOGIN_ENABLED =
+  __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -77,6 +94,11 @@ export function SocialLoginButtons({
   loadingProvider = null,
   disabled = false,
 }: SocialLoginButtonsProps) {
+  // 프로덕션에서 소셜 로그인 비활성화 시 렌더링하지 않음
+  if (!SOCIAL_LOGIN_ENABLED) {
+    return null;
+  }
+
   const currentPlatform = Platform.OS as 'ios' | 'android' | 'web';
 
   const getHandler = (provider: SocialProvider) => {

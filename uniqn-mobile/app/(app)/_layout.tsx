@@ -6,15 +6,14 @@
 import { Stack } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
-import { useAuthGuard } from '@/hooks/useAuthGuard';
 
 export default function AppLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { isLoading, isAuthenticated } = useAuthStore();
 
-  // 인증 가드 적용
-  useAuthGuard();
+  // 인증 가드는 루트 레이아웃(app/_layout.tsx)에서 전역으로 적용됨
+  // 여기서는 인증 상태만 확인하여 UI 렌더링 결정
 
   // 로딩 중이면 로딩 표시
   if (isLoading) {

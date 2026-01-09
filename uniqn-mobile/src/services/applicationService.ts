@@ -33,12 +33,13 @@ import { startApiTrace } from './performanceService';
 import type {
   Application,
   ApplicationStatus,
+  CancellationRequest,
   CreateApplicationInput,
   CreateApplicationInputV2,
-  
-  
   JobPosting,
   RecruitmentType,
+  RequestCancellationInput,
+  ReviewCancellationInput,
   StaffRole,
 } from '@/types';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
@@ -410,6 +411,7 @@ export async function getApplicationStats(
       cancelled: 0,
       waitlisted: 0,
       completed: 0,
+      cancellation_pending: 0,
     };
 
     applications.forEach((app) => {
@@ -642,7 +644,7 @@ export async function applyToJobLegacy(
   applicantName: string,
   applicantPhone?: string
 ): Promise<Application> {
-  // 레거시 입력을 v2 형식으로 변환
+  // 레거시 입력을 v2 형식으로 변환 (향후 v2 API 전환 시 활용)
   const v2Input: CreateApplicationInputV2 = {
     jobPostingId: input.jobPostingId,
     assignments: [
@@ -655,7 +657,297 @@ export async function applyToJobLegacy(
     ],
     message: input.message,
   };
+  // v2Input 준비 완료 - 향후 v2 API 전환 시 사용
+  void v2Input;
 
   // 기존 applyToJob 함수 호출 (레거시 형식 유지)
   return applyToJob(input, applicantId, applicantName, applicantPhone);
+}
+
+// ============================================================================
+// 취소 요청 시스템 (v2.1)
+// ============================================================================
+
+/**
+ * 취소 요청 제출 (스태프용)
+ *
+ * @description 확정된 지원에 대해 취소 요청을 제출합니다.
+ *              구인자가 승인하면 지원이 취소됩니다.
+ *
+ * 비즈니스 로직:
+ * 1. 본인 확인
+ * 2. 확정된 상태인지 확인
+ * 3. 이미 취소 요청이 있는지 확인
+ * 4. 취소 요청 생성 + 상태 변경 (원자적)
+ */
+export async function requestCancellation(
+  input: RequestCancellationInput,
+  applicantId: string
+): Promise<void> {
+  const trace = startApiTrace('requestCancellation');
+  trace.putAttribute('applicationId', input.applicationId);
+
+  try {
+    logger.info('취소 요청 제출 시작', {
+      applicationId: input.applicationId,
+      applicantId,
+    });
+
+    // 사유 검증
+    if (!input.reason || input.reason.trim().length < 5) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+        userMessage: '취소 사유를 5자 이상 입력해주세요',
+      });
+    }
+
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
+      const applicationDoc = await transaction.get(applicationRef);
+
+      if (!applicationDoc.exists()) {
+        throw new Error('지원 내역을 찾을 수 없습니다');
+      }
+
+      const applicationData = applicationDoc.data() as Application;
+
+      // 1. 본인 확인
+      if (applicationData.applicantId !== applicantId) {
+        throw new Error('본인의 지원만 취소 요청할 수 있습니다');
+      }
+
+      // 2. 확정된 상태인지 확인
+      if (applicationData.status !== 'confirmed') {
+        if (applicationData.status === 'applied' || applicationData.status === 'pending') {
+          throw new Error('아직 확정되지 않은 지원은 직접 취소할 수 있습니다');
+        }
+        throw new Error('취소 요청이 불가능한 상태입니다');
+      }
+
+      // 3. 이미 취소 요청이 있는지 확인
+      if (applicationData.cancellationRequest) {
+        if (applicationData.cancellationRequest.status === 'pending') {
+          throw new Error('이미 취소 요청이 진행 중입니다');
+        }
+        if (applicationData.cancellationRequest.status === 'rejected') {
+          throw new Error('이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.');
+        }
+      }
+
+      // 4. 취소 요청 생성
+      const cancellationRequest: CancellationRequest = {
+        requestedAt: new Date().toISOString(),
+        reason: input.reason.trim(),
+        status: 'pending',
+      };
+
+      // 5. 트랜잭션 쓰기 - 상태를 cancellation_pending으로 변경
+      transaction.update(applicationRef, {
+        status: 'cancellation_pending' as ApplicationStatus,
+        cancellationRequest,
+        updatedAt: serverTimestamp(),
+      });
+    });
+
+    logger.info('취소 요청 제출 성공', { applicationId: input.applicationId });
+
+    trace.putAttribute('status', 'success');
+    trace.stop();
+
+    // Analytics 이벤트
+    trackEvent('cancellation_request', { application_id: input.applicationId });
+  } catch (error) {
+    trace.putAttribute('status', 'error');
+    trace.stop();
+
+    logger.error('취소 요청 제출 실패', error as Error, {
+      applicationId: input.applicationId,
+      applicantId,
+    });
+
+    if (error instanceof ValidationError) {
+      throw error;
+    }
+
+    throw mapFirebaseError(error);
+  }
+}
+
+/**
+ * 취소 요청 검토 (구인자용)
+ *
+ * @description 스태프의 취소 요청을 승인하거나 거절합니다.
+ *
+ * 비즈니스 로직:
+ * 1. 공고 소유자 확인
+ * 2. 취소 요청 상태 확인
+ * 3. 승인 시: 지원 상태를 cancelled로 변경 + 지원자 수 감소
+ * 4. 거절 시: 지원 상태를 confirmed로 복원
+ */
+export async function reviewCancellationRequest(
+  input: ReviewCancellationInput,
+  reviewerId: string
+): Promise<void> {
+  const trace = startApiTrace('reviewCancellationRequest');
+  trace.putAttribute('applicationId', input.applicationId);
+  trace.putAttribute('approved', String(input.approved));
+
+  try {
+    logger.info('취소 요청 검토 시작', {
+      applicationId: input.applicationId,
+      approved: input.approved,
+      reviewerId,
+    });
+
+    // 거절 시 사유 필수
+    if (!input.approved && (!input.rejectionReason || input.rejectionReason.trim().length < 3)) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+        userMessage: '거절 사유를 3자 이상 입력해주세요',
+      });
+    }
+
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
+      const applicationDoc = await transaction.get(applicationRef);
+
+      if (!applicationDoc.exists()) {
+        throw new Error('지원 내역을 찾을 수 없습니다');
+      }
+
+      const applicationData = applicationDoc.data() as Application;
+
+      // 1. 공고 정보 조회 및 소유자 확인
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobDoc = await transaction.get(jobRef);
+
+      if (!jobDoc.exists()) {
+        throw new Error('공고를 찾을 수 없습니다');
+      }
+
+      const jobData = jobDoc.data() as JobPosting;
+
+      if (jobData.ownerId !== reviewerId) {
+        throw new Error('본인의 공고에 대한 요청만 검토할 수 있습니다');
+      }
+
+      // 2. 취소 요청 상태 확인
+      if (applicationData.status !== 'cancellation_pending') {
+        throw new Error('검토 대기 중인 취소 요청이 없습니다');
+      }
+
+      if (!applicationData.cancellationRequest || applicationData.cancellationRequest.status !== 'pending') {
+        throw new Error('유효한 취소 요청이 없습니다');
+      }
+
+      // 3. 취소 요청 업데이트
+      const updatedCancellationRequest: CancellationRequest = {
+        ...applicationData.cancellationRequest,
+        status: input.approved ? 'approved' : 'rejected',
+        reviewedAt: new Date().toISOString(),
+        reviewedBy: reviewerId,
+        rejectionReason: input.rejectionReason?.trim(),
+      };
+
+      if (input.approved) {
+        // 승인: 지원 상태를 cancelled로 변경 + 지원자 수 감소
+        transaction.update(applicationRef, {
+          status: 'cancelled' as ApplicationStatus,
+          cancellationRequest: updatedCancellationRequest,
+          cancelledAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+
+        transaction.update(jobRef, {
+          applicationCount: increment(-1),
+          updatedAt: serverTimestamp(),
+        });
+      } else {
+        // 거절: 지원 상태를 confirmed로 복원
+        transaction.update(applicationRef, {
+          status: 'confirmed' as ApplicationStatus,
+          cancellationRequest: updatedCancellationRequest,
+          updatedAt: serverTimestamp(),
+        });
+      }
+    });
+
+    logger.info('취소 요청 검토 성공', {
+      applicationId: input.applicationId,
+      approved: input.approved,
+    });
+
+    trace.putAttribute('status', 'success');
+    trace.stop();
+
+    // Analytics 이벤트
+    trackEvent('cancellation_reviewed', {
+      application_id: input.applicationId,
+      approved: input.approved,
+    });
+  } catch (error) {
+    trace.putAttribute('status', 'error');
+    trace.stop();
+
+    logger.error('취소 요청 검토 실패', error as Error, {
+      applicationId: input.applicationId,
+      reviewerId,
+    });
+
+    if (error instanceof ValidationError) {
+      throw error;
+    }
+
+    throw mapFirebaseError(error);
+  }
+}
+
+/**
+ * 취소 요청 목록 조회 (구인자용)
+ *
+ * @description 특정 공고의 대기 중인 취소 요청 목록을 조회합니다.
+ */
+export async function getCancellationRequests(
+  jobPostingId: string,
+  ownerId: string
+): Promise<ApplicationWithJob[]> {
+  try {
+    logger.info('취소 요청 목록 조회', { jobPostingId, ownerId });
+
+    // 먼저 공고 소유자 확인
+    const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId));
+    if (!jobDoc.exists()) {
+      throw new Error('공고를 찾을 수 없습니다');
+    }
+
+    const jobData = jobDoc.data() as JobPosting;
+    if (jobData.ownerId !== ownerId) {
+      throw new Error('본인의 공고만 조회할 수 있습니다');
+    }
+
+    // 취소 요청 대기 중인 지원서 조회
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+    const q = query(
+      applicationsRef,
+      where('jobPostingId', '==', jobPostingId),
+      where('status', '==', 'cancellation_pending'),
+      orderBy('updatedAt', 'desc')
+    );
+
+    const snapshot = await getDocs(q);
+
+    const applications: ApplicationWithJob[] = snapshot.docs.map((docSnapshot) => ({
+      ...docSnapshot.data(),
+      id: docSnapshot.id,
+      jobPosting: { ...jobData, id: jobDoc.id },
+    })) as ApplicationWithJob[];
+
+    logger.info('취소 요청 목록 조회 완료', {
+      jobPostingId,
+      count: applications.length,
+    });
+
+    return applications;
+  } catch (error) {
+    logger.error('취소 요청 목록 조회 실패', error as Error, { jobPostingId });
+    throw mapFirebaseError(error);
+  }
 }

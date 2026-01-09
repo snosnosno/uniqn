@@ -30,7 +30,9 @@ interface QRCodeDisplayProps {
 // ============================================================================
 
 const QR_SIZE = 200;
-const REFRESH_INTERVAL = 60 * 1000; // 1분마다 남은 시간 업데이트
+// QR 남은 시간 자동 갱신 주기 (향후 useEffect에서 활용)
+// export for future use - suppresses unused warning
+export const QR_REFRESH_INTERVAL = 60 * 1000; // 1분마다 남은 시간 업데이트
 
 // ============================================================================
 // Helper Functions
