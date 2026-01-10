@@ -767,7 +767,66 @@ graph LR
 - [x] SettlementService (정산 계산) - `services/settlementService.ts`
 - [ ] CalendarService (캘린더 이벤트) - scheduleService로 대체 가능
 
-### 4.4 Phase 4 테스트 [P0]
+### 4.4 취소 요청 시스템 [P1] ✅
+> 💡 **워크플로우**: 확정된 지원에 대해 스태프가 취소 요청 → 구인자가 승인/거절
+
+| 기능 | 체크 | 우선순위 |
+|------|:----:|:--------:|
+| 취소 요청 제출 (스태프) | [x] | P1 |
+| 취소 요청 검토 (구인자) | [x] | P1 |
+| 취소 요청 현황 조회 | [x] | P1 |
+
+#### 취소 요청 타입 정의 [P1] ✅
+- [x] CancellationRequest 인터페이스 - `types/application.ts`
+- [x] CancellationRequestStatus 타입 ('pending' | 'approved' | 'rejected')
+- [x] RequestCancellationInput, ReviewCancellationInput 타입
+- [x] CANCELLATION_STATUS_LABELS 상수
+- [x] ApplicationStatus에 'cancellation_pending' 추가
+
+#### 취소 요청 서비스 [P1] ✅
+- [x] requestCancellation (취소 요청 제출) - `services/applicationService.ts`
+  - [x] confirmed 상태 검증
+  - [x] 중복 요청 방지
+  - [x] 상태를 cancellation_pending으로 변경
+  - [x] cancellationRequest 객체 생성
+- [x] reviewCancellationRequest (취소 요청 검토) - `services/applicationService.ts`
+  - [x] cancellation_pending 상태 검증
+  - [x] 승인 시 cancelled 상태로 변경
+  - [x] 거절 시 confirmed 상태 복원
+  - [x] 검토 시간/검토자 기록
+- [x] getCancellationRequests (취소 요청 목록) - `services/applicationService.ts`
+
+#### 취소 요청 스키마 [P1] ✅
+- [x] cancellationRequestSchema (reason 필수, 5-500자) - `schemas/application.schema.ts`
+
+#### 취소 요청 훅 [P1] ✅
+- [x] useApplications 확장 - `hooks/useApplications.ts`
+  - [x] requestCancellationMutation
+  - [x] isRequestingCancellation
+- [x] useApplicantManagement 확장 - `hooks/useApplicantManagement.ts`
+  - [x] useCancellationRequests (취소 요청 목록 조회)
+  - [x] useReviewCancellation (취소 요청 검토)
+  - [x] cancellationPendingCount (상태별 카운트)
+
+#### 취소 요청 Query Keys [P1] ✅
+- [x] queryKeys.applicantManagement.cancellationRequests - `lib/queryClient.ts`
+
+#### 취소 요청 컴포넌트 [P1] ✅
+- [x] CancellationRequestForm (스태프용 취소 요청 폼) - `components/applications/`
+- [x] CancellationRequestCard (구인자용 요청 카드) - `components/employer/`
+
+#### 취소 요청 화면 [P1] ✅
+- [x] 스태프 취소 요청 - `app/(app)/applications/[id]/cancel.tsx`
+- [x] 구인자 취소 요청 관리 - `app/(employer)/my-postings/[id]/cancellation-requests.tsx`
+- [x] 공고 상세에 취소 요청 메뉴 추가 - `app/(employer)/my-postings/[id]/index.tsx`
+- [x] 스태프 공고 상세에 취소 요청 버튼 - `app/(app)/jobs/[id]/index.tsx`
+
+#### 취소 요청 UI 상태 [P1] ✅
+- [x] ApplicantCard에 cancellation_pending 배지 (warning)
+- [x] 취소 요청 통계 헤더 (pending/approved/rejected 카운트)
+- [x] 빈 상태 EmptyState 처리
+
+### 4.5 Phase 4 테스트 [P0]
 
 #### 단위 테스트 [P0] ✅
 - [x] settlementService 테스트 (19개) - `settlementService.test.ts`
@@ -1306,11 +1365,11 @@ graph LR
 | 1. 프로젝트 기반 | ✅ | 100% | P0 완료, P1/P2 일부 보류 |
 | 2. 인증 + 구인구직 | ✅ | 98% | P0 완료, UI/UX 연동 완료 |
 | 3. 스케줄 + 알림 | ✅ | 95% | P0 완료, UI/UX 연동 완료 |
-| 4. 구인자 기능 | ✅ | 92% | 서비스/훅/테스트/UI 완료, 취소 요청 시스템 추가 |
+| 4. 구인자 기능 | ✅ | 95% | 서비스/훅/테스트/UI 완료, 취소 요청 시스템 완성 |
 | 5. 최적화 + 배포준비 | 🟨 | 82% | 관리자 대시보드 완성, CI/CD 완료 |
 | 6. 앱스토어 출시 | 🟨 | 15% | EAS/GitHub Actions 기반 구축 |
 
-**전체 완성도**: **94%** (MVP 출시 준비 완료)
+**전체 완성도**: **95%** (MVP 출시 준비 완료)
 **테스트 현황**: **222개** 테스트 (커버리지 ~89%)
 
 **범례**: ⬜ 미시작 | 🟨 진행중 | ✅ 완료
