@@ -52,8 +52,6 @@ function validateBasicInfo(data: JobPostingFormData): Record<string, string> {
   }
   if (!data.title?.trim()) {
     errors.title = '제목을 입력해주세요';
-  } else if (data.title.length < 5) {
-    errors.title = '제목은 최소 5자 이상 입력해주세요';
   }
   if (!data.location) {
     errors.location = '근무지를 선택해주세요';
@@ -65,14 +63,31 @@ function validateBasicInfo(data: JobPostingFormData): Record<string, string> {
 function validateSchedule(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
+  // 날짜별 요구사항이 있는지 확인 (v2.0)
+  const hasDateRequirements =
+    data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0;
+
   switch (data.postingType) {
     case 'regular':
     case 'urgent':
-      if (!data.workDate) {
-        errors.workDate = '근무 날짜를 선택해주세요';
-      }
-      if (!data.startTime) {
-        errors.startTime = '출근 시간을 선택해주세요';
+      // v2.0: dateSpecificRequirements 기반 검증
+      if (hasDateRequirements) {
+        // 모든 날짜의 타임슬롯에 역할이 있는지 확인
+        const hasIncomplete = data.dateSpecificRequirements!.some(req => {
+          return !req.timeSlots || req.timeSlots.length === 0 ||
+            req.timeSlots.some(slot => !slot.roles || slot.roles.length === 0);
+        });
+        if (hasIncomplete) {
+          errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
+        }
+      } else {
+        // 하위호환성: 이전 필드 검증
+        if (!data.workDate) {
+          errors.workDate = '근무 날짜를 선택해주세요';
+        }
+        if (!data.startTime) {
+          errors.startTime = '출근 시간을 선택해주세요';
+        }
       }
       break;
     case 'fixed':
@@ -84,12 +99,25 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
       }
       break;
     case 'tournament':
-      if (!data.tournamentDates || data.tournamentDates.length === 0) {
-        errors.tournamentDates = '최소 1일 이상의 대회 일정을 추가해주세요';
-      } else {
-        const hasIncomplete = data.tournamentDates.some(d => !d.date || !d.startTime);
+      // v2.0: dateSpecificRequirements 기반 검증
+      if (hasDateRequirements) {
+        // 모든 날짜의 타임슬롯에 역할이 있는지 확인
+        const hasIncomplete = data.dateSpecificRequirements!.some(req => {
+          return !req.timeSlots || req.timeSlots.length === 0 ||
+            req.timeSlots.some(slot => !slot.roles || slot.roles.length === 0);
+        });
         if (hasIncomplete) {
-          errors.tournamentDates = '모든 대회 일정의 날짜와 시간을 입력해주세요';
+          errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
+        }
+      } else {
+        // 하위호환성: 이전 필드 검증
+        if (!data.tournamentDates || data.tournamentDates.length === 0) {
+          errors.tournamentDates = '최소 1일 이상의 대회 일정을 추가해주세요';
+        } else {
+          const hasIncomplete = data.tournamentDates.some(d => !d.date || !d.startTime);
+          if (hasIncomplete) {
+            errors.tournamentDates = '모든 대회 일정의 날짜와 시간을 입력해주세요';
+          }
         }
       }
       break;
@@ -123,18 +151,16 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
 function validateSalary(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (data.salary.type !== 'other' && data.salary.amount <= 0) {
-    errors.amount = '급여 금액을 입력해주세요';
-  }
+  // 역할별 급여가 기본이므로 모든 역할의 급여 검증
+  const rolesWithoutSalary = data.roles.filter((role) => {
+    const roleSalary = data.roleSalaries[role.name];
+    // 협의(other)가 아닌 경우 금액 필수
+    return roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0);
+  });
 
-  if (data.useRoleSalary && data.salary.type !== 'other') {
-    const hasZeroSalary = data.roles.some((role) => {
-      const roleSalary = data.roleSalaries[role.name];
-      return !roleSalary || roleSalary.amount <= 0;
-    });
-    if (hasZeroSalary) {
-      errors.roleSalary = '모든 역할의 급여를 입력해주세요';
-    }
+  if (rolesWithoutSalary.length > 0) {
+    const roleNames = rolesWithoutSalary.map(r => r.name).join(', ');
+    errors.roleSalary = `${roleNames}의 급여를 입력해주세요`;
   }
 
   return errors;

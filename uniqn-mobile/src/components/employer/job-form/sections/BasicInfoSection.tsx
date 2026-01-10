@@ -72,6 +72,28 @@ export const BasicInfoSection = memo(function BasicInfoSection({
     });
   }, [onUpdate]);
 
+  // 연락처 포맷팅 (숫자만 입력하면 자동으로 - 추가)
+  const formatPhoneNumber = useCallback((phoneNumber: string): string => {
+    const cleaned = phoneNumber.replace(/\D/g, ''); // 숫자만 추출
+
+    if (cleaned.length <= 3) {
+      return cleaned;
+    } else if (cleaned.length <= 7) {
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
+    } else if (cleaned.length <= 10) {
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
+    } else {
+      // 11자리 이상
+      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
+    }
+  }, []);
+
+  // 연락처 변경 핸들러
+  const handlePhoneChange = useCallback((phone: string) => {
+    const formatted = formatPhoneNumber(phone);
+    onUpdate({ contactPhone: formatted });
+  }, [formatPhoneNumber, onUpdate]);
+
   return (
     <View>
       {/* 공고 타입 선택 */}
@@ -129,7 +151,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
         <Input
           placeholder="010-0000-0000"
           value={data.contactPhone}
-          onChangeText={(contactPhone) => onUpdate({ contactPhone })}
+          onChangeText={handlePhoneChange}
           keyboardType="phone-pad"
           maxLength={25}
           leftIcon={<PhoneIcon size={20} color="#6B7280" />}

@@ -149,18 +149,16 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
 function validateSalary(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (data.salary.type !== 'other' && data.salary.amount <= 0) {
-    errors.amount = '급여 금액을 입력해주세요';
-  }
+  // 역할별 급여가 기본이므로 모든 역할의 급여 검증
+  const rolesWithoutSalary = data.roles.filter((role) => {
+    const roleSalary = data.roleSalaries[role.name];
+    // 협의(other)가 아닌 경우 금액 필수
+    return roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0);
+  });
 
-  if (data.useRoleSalary && data.salary.type !== 'other') {
-    const hasZeroSalary = data.roles.some((role) => {
-      const roleSalary = data.roleSalaries[role.name];
-      return !roleSalary || roleSalary.amount <= 0;
-    });
-    if (hasZeroSalary) {
-      errors.roleSalary = '모든 역할의 급여를 입력해주세요';
-    }
+  if (rolesWithoutSalary.length > 0) {
+    const roleNames = rolesWithoutSalary.map(r => r.name).join(', ');
+    errors.roleSalary = `${roleNames}의 급여를 입력해주세요`;
   }
 
   return errors;
@@ -249,7 +247,7 @@ export default function EditJobPostingScreen() {
         // 급여
         salary: existingJob.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
         allowances: existingJob.allowances || {},
-        useRoleSalary: existingJob.salary?.useRoleSalary || false,
+        useSameSalary: existingJob.salary?.useRoleSalary || false, // 레거시 호환
         roleSalaries: existingJob.salary?.roleSalaries || {},
         // 사전질문
         usesPreQuestions: existingJob.usesPreQuestions || false,

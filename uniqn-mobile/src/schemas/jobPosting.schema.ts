@@ -50,7 +50,8 @@ export const roleRequirementSchema = z.object({
 export const salaryInfoSchema = z.object({
   type: salaryTypeSchema,
   amount: z.number().min(0, { message: '급여는 0 이상이어야 합니다' }),
-  useRoleSalary: z.boolean().optional().default(false),
+  // 레거시 호환: useRoleSalary는 더 이상 사용하지 않음
+  useRoleSalary: z.boolean().optional(),
 });
 
 /**
@@ -71,7 +72,6 @@ export const basicInfoSchema = z.object({
   title: z
     .string()
     .min(1, { message: '공고 제목을 입력해주세요' })
-    .min(2, { message: '공고 제목은 최소 2자 이상이어야 합니다' })
     .max(25, { message: '공고 제목은 25자를 초과할 수 없습니다' })
     .trim()
     .refine(xssValidation, {

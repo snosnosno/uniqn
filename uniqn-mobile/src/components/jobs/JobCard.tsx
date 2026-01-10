@@ -2,14 +2,19 @@
  * UNIQN Mobile - 구인공고 카드 컴포넌트
  *
  * @description 공고 목록에서 사용하는 간략한 정보 카드
- * @version 1.1.0
+ * @version 2.0.0 - dateRequirements 지원
  */
 
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { PostingTypeBadge } from './PostingTypeBadge';
-import type { JobPostingCard, PostingType } from '@/types';
+import type {
+  JobPostingCard,
+  PostingType,
+  Allowances,
+  CardRole,
+} from '@/types';
 
 // ============================================================================
 // Types
@@ -39,42 +44,68 @@ const formatSalary = (type: string, amount: number): string => {
 };
 
 const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '-';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
   return `${month}/${day}(${dayOfWeek})`;
 };
 
-const getRoleBadgeColor = (role: string): 'primary' | 'success' | 'warning' | 'error' | 'default' => {
-  switch (role) {
-    case 'dealer':
-      return 'primary';
-    case 'manager':
-      return 'warning';
-    case 'chiprunner':
-      return 'success';
-    case 'admin':
-      return 'error';
-    default:
-      return 'default';
-  }
+const getRoleLabel = (role: string): string => {
+  const labels: Record<string, string> = {
+    dealer: '딜러',
+    manager: '매니저',
+    chiprunner: '칩러너',
+    admin: '관리자',
+    floor: '플로어',
+    serving: '서빙',
+    staff: '직원',
+  };
+  return labels[role] || role;
 };
 
-const getRoleLabel = (role: string): string => {
-  switch (role) {
-    case 'dealer':
-      return '딜러';
-    case 'manager':
-      return '매니저';
-    case 'chiprunner':
-      return '칩러너';
-    case 'admin':
-      return '관리자';
-    default:
-      return role;
+const formatAllowances = (allowances?: Allowances): string | null => {
+  if (!allowances) {
+    return null;
   }
+  const items: string[] = [];
+  if (allowances.meal) {
+    items.push(`식비: ${allowances.meal.toLocaleString()}원`);
+  }
+  if (allowances.transportation) {
+    items.push(`교통비: ${allowances.transportation.toLocaleString()}원`);
+  }
+  if (allowances.accommodation) {
+    items.push(`숙박비: ${allowances.accommodation.toLocaleString()}원`);
+  }
+  return items.length > 0 ? items.join('  ') : null;
 };
+
+// ============================================================================
+// Sub Components
+// ============================================================================
+
+/**
+ * 역할 라인 컴포넌트
+ */
+const RoleLine = memo(function RoleLine({
+  role,
+  showTime,
+  time,
+}: {
+  role: CardRole;
+  showTime: boolean;
+  time: string;
+}) {
+  return (
+    <Text className="text-xs text-gray-500 dark:text-gray-400">
+      {showTime ? `${time} ` : '       '}
+      {getRoleLabel(role.role)} {role.count}명 ({role.filled}/{role.count})
+    </Text>
+  );
+});
 
 // ============================================================================
 // Component
@@ -93,6 +124,8 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
   // 접근성을 위한 설명 텍스트 생성
   const accessibilityLabel = `${job.title}, ${job.location}, ${formatDate(job.workDate)}, ${formatSalary(job.salary.type, job.salary.amount)}`;
 
+  const allowancesText = formatAllowances(job.allowances);
+
   return (
     <Pressable
       onPress={handlePress}
@@ -106,7 +139,11 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
         <View className="flex-1 flex-row items-center flex-wrap">
           {/* 공고 타입 뱃지 (regular는 표시 안 함) */}
           {job.postingType && job.postingType !== 'regular' && (
-            <PostingTypeBadge type={job.postingType as PostingType} size="sm" className="mr-2" />
+            <PostingTypeBadge
+              type={job.postingType as PostingType}
+              size="sm"
+              className="mr-2"
+            />
           )}
           {job.isUrgent && (
             <Badge variant="error" size="sm" className="mr-2">
@@ -122,51 +159,61 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
         </View>
       </View>
 
-      {/* 역할 태그 */}
-      <View className="flex-row flex-wrap gap-1 mb-3">
-        {job.roles.slice(0, 3).map((role, index) => (
-          <Badge
-            key={index}
-            variant={getRoleBadgeColor(role)}
-            size="sm"
-          >
-            {getRoleLabel(role)}
-          </Badge>
-        ))}
-        {job.roles.length > 3 && (
-          <Badge variant="default" size="sm">
-            +{job.roles.length - 3}
-          </Badge>
+      {/* 장소 */}
+      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+        📍 {job.location}
+      </Text>
+
+      {/* 일정: 날짜 > 시간대 > 역할별 (확정/총인원) */}
+      <View className="mb-3">
+        {job.dateRequirements && job.dateRequirements.length > 0 ? (
+          job.dateRequirements.map((dateReq, dateIdx) => (
+            <View key={dateIdx} className="mb-2">
+              {/* 날짜 */}
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                📅 {formatDate(dateReq.date)}
+              </Text>
+
+              {/* 시간대별 */}
+              {dateReq.timeSlots.map((slot, slotIdx) => (
+                <View key={slotIdx} className="ml-5 mt-1">
+                  {slot.roles.map((role, roleIdx) => (
+                    <RoleLine
+                      key={roleIdx}
+                      role={role}
+                      showTime={roleIdx === 0}
+                      time={slot.startTime || '-'}
+                    />
+                  ))}
+                </View>
+              ))}
+            </View>
+          ))
+        ) : (
+          // 레거시 폴백
+          <View className="mb-2">
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              📅 {formatDate(job.workDate)}
+            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400 ml-5 mt-1">
+              🕐 {job.timeSlot || '-'}
+            </Text>
+          </View>
         )}
       </View>
 
-      {/* 중간: 위치 + 날짜 */}
-      <View className="flex-row items-center mb-2">
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mr-3">
-          📍 {job.location}
-        </Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          📅 {formatDate(job.workDate)}
-        </Text>
-      </View>
-
-      {/* 하단: 시간 + 급여 */}
-      <View className="flex-row items-center justify-between">
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          🕐 {job.timeSlot}
-        </Text>
+      {/* 하단: 급여 */}
+      <View className="flex-row items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-2">
         <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
-          {formatSalary(job.salary.type, job.salary.amount)}
+          💰 {formatSalary(job.salary.type, job.salary.amount)}
         </Text>
       </View>
 
-      {/* 지원자 수 */}
-      {job.applicationCount !== undefined && job.applicationCount > 0 && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
-            👤 {job.applicationCount}명 지원
-          </Text>
-        </View>
+      {/* 수당 */}
+      {allowancesText && (
+        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+          {allowancesText}
+        </Text>
       )}
     </Pressable>
   );

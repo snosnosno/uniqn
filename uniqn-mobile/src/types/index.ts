@@ -63,6 +63,10 @@ export type {
   JobPostingFilters,
   CreateJobPostingInput,
   UpdateJobPostingInput,
+  // 카드용 타입 (v2.0)
+  CardRole,
+  CardTimeSlot,
+  CardDateRequirement,
   JobPostingCard,
 } from './jobPosting';
 

@@ -164,8 +164,8 @@ export interface JobPostingFormData {
   /** 추가 수당 */
   allowances: Allowances;
 
-  /** 역할별 급여 설정 사용 여부 */
-  useRoleSalary: boolean;
+  /** 전체 동일 급여 사용 여부 (false = 역할별 급여가 기본) */
+  useSameSalary: boolean;
 
   /** 역할별 급여 (역할명 -> 급여 정보) */
   roleSalaries: Record<string, SalaryInfo>;
@@ -211,14 +211,13 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   // Step 3
   roles: [...DEFAULT_ROLES],
 
-  // Step 4
+  // Step 4: 역할별 급여가 기본 (시급 기본)
   salary: {
     type: 'hourly',
     amount: 0,
-    useRoleSalary: false,
   },
   allowances: {},
-  useRoleSalary: false,
+  useSameSalary: false, // false = 역할별 급여 (기본)
   roleSalaries: {},
 
   // Step 5
@@ -293,8 +292,14 @@ export function validateStep(
       });
       break;
 
-    case 4: // 급여
-      if (data.salary.amount < 0) errors.push('급여는 0 이상이어야 합니다');
+    case 4: // 급여 (역할별 급여가 기본)
+      data.roles.forEach((role) => {
+        const roleSalary = data.roleSalaries[role.name];
+        // 협의(other)가 아닌 경우 금액 필수
+        if (roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0)) {
+          errors.push(`${role.name}: 급여를 입력해주세요`);
+        }
+      });
       break;
 
     case 5: // 사전질문 (선택)

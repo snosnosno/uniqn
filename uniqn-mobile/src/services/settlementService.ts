@@ -279,12 +279,14 @@ export async function getWorkLogsByJobPosting(
 
 /**
  * 역할별 시급 조회 헬퍼
+ * v2.0: 역할별 급여가 기본이므로 roleSalaries 우선 확인
  */
 function getRoleHourlyRate(jobPosting: JobPosting, role: string): number {
-  // 역할별 급여 설정이 있는 경우
-  if (jobPosting.salary.useRoleSalary && jobPosting.salary.roleSalaries) {
-    const roleSalary = jobPosting.salary.roleSalaries[role];
-    if (roleSalary) {
+  // 1. 역할별 급여 확인 (기본)
+  const roleSalaries = jobPosting.roleSalaries || jobPosting.salary.roleSalaries;
+  if (roleSalaries) {
+    const roleSalary = roleSalaries[role];
+    if (roleSalary && roleSalary.type !== 'other') {
       // 역할별 타입에 따라 시급 환산
       if (roleSalary.type === 'hourly') {
         return roleSalary.amount;
@@ -299,17 +301,15 @@ function getRoleHourlyRate(jobPosting: JobPosting, role: string): number {
     }
   }
 
-  // 기본 급여가 시급인 경우
+  // 2. 기본 급여 fallback (레거시 호환)
   if (jobPosting.salary.type === 'hourly') {
     return jobPosting.salary.amount;
   }
 
-  // 일급인 경우 8시간 기준으로 시급 환산
   if (jobPosting.salary.type === 'daily') {
     return Math.round(jobPosting.salary.amount / 8);
   }
 
-  // 월급인 경우 월 22일, 일 8시간 기준으로 시급 환산
   if (jobPosting.salary.type === 'monthly') {
     return Math.round(jobPosting.salary.amount / 22 / 8);
   }

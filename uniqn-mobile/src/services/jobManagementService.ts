@@ -59,7 +59,10 @@ export interface JobPostingDraft extends CreateJobPostingInput {
   tournamentDates?: { day: number; date: string; startTime: string }[];
   daysPerWeek?: number;
   workDays?: string[];
+  /** @deprecated useSameSalary로 대체 */
   useRoleSalary?: boolean;
+  /** 전체 동일 급여 사용 여부 */
+  useSameSalary?: boolean;
   roleSalaries?: Record<string, SalaryInfo>;
   usesPreQuestions?: boolean;
   preQuestions?: {
@@ -172,9 +175,18 @@ export async function createJobPosting(
     } = input;
 
     // undefined 필드 제거 함수 (Firebase는 undefined 값을 허용하지 않음)
+    // 재귀적으로 중첩 객체도 정리
     const removeUndefined = <T extends Record<string, unknown>>(obj: T): T => {
       return Object.fromEntries(
-        Object.entries(obj).filter(([, v]) => v !== undefined)
+        Object.entries(obj)
+          .filter(([, v]) => v !== undefined)
+          .map(([k, v]) => {
+            // 객체 타입인 경우 재귀적으로 정리
+            if (v && typeof v === 'object' && !Array.isArray(v)) {
+              return [k, removeUndefined(v as Record<string, unknown>)];
+            }
+            return [k, v];
+          })
       ) as T;
     };
 

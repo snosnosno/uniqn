@@ -38,7 +38,9 @@ export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 export interface SalaryInfo {
   type: SalaryType;
   amount: number;
+  /** @deprecated 역할별 급여가 기본이므로 더 이상 사용하지 않음 */
   useRoleSalary?: boolean;
+  /** @deprecated useSameSalary로 대체 */
   roleSalaries?: Record<
     string,
     {
@@ -123,6 +125,10 @@ export interface JobPosting extends FirebaseDocument {
   salary: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
+  /** 전체 동일 급여 사용 여부 (false = 역할별 급여가 기본) */
+  useSameSalary?: boolean;
+  /** 역할별 급여 */
+  roleSalaries?: Record<string, SalaryInfo>;
 
   // === 소유자 정보 ===
   ownerId: string;
@@ -220,7 +226,10 @@ export interface CreateJobPostingInput {
   salary: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
+  /** @deprecated useSameSalary로 대체 */
   useRoleSalary?: boolean;
+  /** 전체 동일 급여 사용 여부 (false = 역할별 급여가 기본) */
+  useSameSalary?: boolean;
   roleSalaries?: Record<string, SalaryInfo>;
 
   // 사전질문
@@ -240,19 +249,48 @@ export type UpdateJobPostingInput = Partial<CreateJobPostingInput> & {
 };
 
 /**
+ * 카드용 역할 정보 (확정인원 포함)
+ */
+export interface CardRole {
+  role: string;
+  count: number;
+  filled: number;
+}
+
+/**
+ * 카드용 시간대 정보
+ */
+export interface CardTimeSlot {
+  startTime: string;
+  roles: CardRole[];
+}
+
+/**
+ * 카드용 날짜별 정보
+ */
+export interface CardDateRequirement {
+  date: string;
+  timeSlots: CardTimeSlot[];
+}
+
+/**
  * 공고 카드용 간소화 타입
  */
 export interface JobPostingCard {
   id: string;
   title: string;
   location: string;
+  // 레거시 호환
   workDate: string;
   timeSlot: string;
   roles: string[];
+  // 신규 필드 (v2.0)
+  dateRequirements: CardDateRequirement[];
   salary: {
     type: SalaryType;
     amount: number;
   };
+  allowances?: Allowances;
   status: JobPostingStatus;
   isUrgent?: boolean;
   applicationCount?: number;
@@ -263,19 +301,81 @@ export interface JobPostingCard {
 /**
  * JobPosting을 JobPostingCard로 변환
  */
-export const toJobPostingCard = (posting: JobPosting): JobPostingCard => ({
-  id: posting.id,
-  title: posting.title,
-  location: posting.location.name,
-  workDate: posting.workDate,
-  timeSlot: posting.timeSlot,
-  roles: posting.roles.map((r) => r.role),
-  salary: {
-    type: posting.salary.type,
-    amount: posting.salary.amount,
-  },
-  status: posting.status,
-  isUrgent: posting.isUrgent,
-  applicationCount: posting.applicationCount,
-  postingType: posting.postingType,
-});
+export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
+  // dateSpecificRequirements → CardDateRequirement 변환
+  const dateRequirements: CardDateRequirement[] = (
+    posting.dateSpecificRequirements ?? []
+  )
+    .map((req) => {
+      // 날짜 문자열 추출
+      let dateStr: string;
+      if (typeof req.date === 'string') {
+        dateStr = req.date;
+      } else if (req.date instanceof Timestamp) {
+        dateStr = req.date.toDate().toISOString().split('T')[0] ?? '';
+      } else if (req.date && 'seconds' in req.date) {
+        dateStr =
+          new Date(req.date.seconds * 1000).toISOString().split('T')[0] ?? '';
+      } else {
+        dateStr = '';
+      }
+
+      return {
+        date: dateStr,
+        timeSlots: (req.timeSlots ?? []).map((ts) => ({
+          startTime:
+            (ts as { startTime?: string; time?: string }).startTime ||
+            (ts as { startTime?: string; time?: string }).time ||
+            '',
+          roles: (ts.roles ?? []).map((r) => ({
+            role:
+              (r as { role?: string; name?: string }).role ||
+              (r as { role?: string; name?: string }).name ||
+              '',
+            count:
+              (r as { headcount?: number; count?: number }).headcount ||
+              (r as { headcount?: number; count?: number }).count ||
+              0,
+            filled: (r as { filled?: number }).filled ?? 0,
+          })),
+        })),
+      };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  // 레거시 데이터 폴백 (dateSpecificRequirements 없을 때)
+  if (dateRequirements.length === 0 && posting.workDate) {
+    dateRequirements.push({
+      date: posting.workDate,
+      timeSlots: [
+        {
+          startTime: posting.timeSlot?.split(/[-~]/)[0]?.trim() || '',
+          roles: posting.roles.map((r) => ({
+            role: r.role,
+            count: r.count,
+            filled: r.filled ?? 0,
+          })),
+        },
+      ],
+    });
+  }
+
+  return {
+    id: posting.id,
+    title: posting.title,
+    location: posting.location.name,
+    workDate: dateRequirements[0]?.date ?? posting.workDate ?? '',
+    timeSlot: posting.timeSlot,
+    roles: posting.roles.map((r) => r.role),
+    dateRequirements,
+    salary: {
+      type: posting.salary.type,
+      amount: posting.salary.amount,
+    },
+    allowances: posting.allowances,
+    status: posting.status,
+    isUrgent: posting.isUrgent,
+    applicationCount: posting.applicationCount,
+    postingType: posting.postingType,
+  };
+};

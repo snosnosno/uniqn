@@ -25,6 +25,7 @@ import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import { startApiTrace } from '@/services/performanceService';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
+import { toJobPostingCard } from '@/types';
 
 // ============================================================================
 // Constants
@@ -274,32 +275,9 @@ export async function getMyJobPostings(
 
 /**
  * JobPosting을 카드 형태로 변환
+ *
+ * @description toJobPostingCard 함수를 사용하여 변환
  */
 export function convertToCard(posting: JobPosting): JobPostingCard {
-  // location이 문자열일 수도 있고 객체일 수도 있음
-  const locationName = typeof posting.location === 'string'
-    ? posting.location
-    : (posting.location as { name?: string })?.name ?? '';
-
-  // roles가 RoleRequirement 또는 FormRoleWithCount 형식일 수 있음
-  const roleNames = posting.roles.map((r) => {
-    const roleReq = r as { role?: string; name?: string };
-    return roleReq.name || roleReq.role || '역할';
-  });
-
-  return {
-    id: posting.id,
-    title: posting.title,
-    location: locationName,
-    workDate: posting.workDate,
-    timeSlot: posting.timeSlot,
-    roles: roleNames,
-    salary: {
-      type: posting.salary.type,
-      amount: posting.salary.amount,
-    },
-    status: posting.status,
-    isUrgent: posting.isUrgent,
-    applicationCount: posting.applicationCount,
-  };
+  return toJobPostingCard(posting);
 }

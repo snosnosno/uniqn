@@ -1,14 +1,15 @@
 /**
- * UNIQN Mobile - 공고 작성 급여 섹션
+ * UNIQN Mobile - 공고 작성 급여 섹션 (v2.1)
  *
- * @description 급여 타입, 금액, 수당 설정 + 역할별 급여 옵션
- * @version 1.0.0
+ * @description 역할별 급여 설정이 기본, 전체 동일 급여 옵션
+ * @version 2.1.0 - dateSpecificRequirements에서 역할 자동 추출
  */
 
-import React, { useCallback, useMemo, memo } from 'react';
-import { View, Text, Pressable, Switch } from 'react-native';
+import React, { useCallback, useMemo, memo, useEffect } from 'react';
+import { View, Text, Pressable, Switch, TextInput } from 'react-native';
 import { Input, Card } from '@/components';
 import { GiftIcon } from '@/components/icons';
+import { STAFF_ROLES } from '@/constants';
 import type { JobPostingFormData, SalaryType, SalaryInfo } from '@/types';
 
 // ============================================================================
@@ -21,10 +22,17 @@ interface SalarySectionProps {
   errors?: Record<string, string>;
 }
 
+/** 역할 정보 (추출된) */
+interface ExtractedRole {
+  name: string;
+  count: number;
+}
+
 // ============================================================================
 // Constants
 // ============================================================================
 
+/** 역할별 급여 타입 (협의 포함) */
 const SALARY_TYPES: { value: SalaryType; label: string }[] = [
   { value: 'hourly', label: '시급' },
   { value: 'daily', label: '일급' },
@@ -50,6 +58,17 @@ const parseCurrency = (value: string): number => {
   return parseInt(value.replace(/[^0-9]/g, ''), 10) || 0;
 };
 
+/**
+ * 역할 코드를 한글 이름으로 변환
+ */
+const getRoleName = (role: string, customRole?: string): string => {
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
+  const staffRole = STAFF_ROLES.find((r) => r.key === role);
+  return staffRole?.name || role;
+};
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -59,264 +78,348 @@ export const SalarySection = memo(function SalarySection({
   onUpdate,
   errors = {},
 }: SalarySectionProps) {
-  // 급여 타입 변경
-  const handleSalaryTypeChange = useCallback((type: SalaryType) => {
-    onUpdate({
-      salary: {
-        ...data.salary,
-        type,
-      },
-    });
-  }, [data.salary, onUpdate]);
-
-  // 급여 금액 변경
-  const handleSalaryAmountChange = useCallback((value: string) => {
-    const amount = parseCurrency(value);
-    onUpdate({
-      salary: {
-        ...data.salary,
-        amount,
-      },
-    });
-  }, [data.salary, onUpdate]);
-
-  // 수당 변경
-  const handleAllowanceChange = useCallback((key: string, value: string) => {
-    const amount = parseCurrency(value);
-    onUpdate({
-      allowances: {
-        ...data.allowances,
-        [key]: amount > 0 ? amount : undefined,
-      },
-    });
-  }, [data.allowances, onUpdate]);
-
-  // 역할별 급여 토글
-  const handleUseRoleSalaryToggle = useCallback((value: boolean) => {
-    onUpdate({ useRoleSalary: value });
-    if (value && Object.keys(data.roleSalaries).length === 0) {
-      const initialRoleSalaries: Record<string, SalaryInfo> = {};
-      data.roles.forEach((role) => {
-        initialRoleSalaries[role.name] = {
-          type: data.salary.type,
-          amount: data.salary.amount,
-          useRoleSalary: false,
-        };
-      });
-      onUpdate({ roleSalaries: initialRoleSalaries });
+  // dateSpecificRequirements에서 역할 추출 (fixed 타입은 data.roles 사용)
+  const extractedRoles = useMemo<ExtractedRole[]>(() => {
+    // fixed 타입은 data.roles 사용
+    if (data.postingType === 'fixed') {
+      return data.roles.map((r) => ({ name: r.name, count: r.count }));
     }
-  }, [data.roles, data.salary, data.roleSalaries, onUpdate]);
 
-  // 역할별 급여 금액 변경
-  const handleRoleSalaryChange = useCallback((roleName: string, value: string) => {
-    const amount = parseCurrency(value);
-    const currentRoleSalary = data.roleSalaries[roleName];
-    onUpdate({
-      roleSalaries: {
-        ...data.roleSalaries,
-        [roleName]: {
-          ...currentRoleSalary,
-          type: currentRoleSalary?.type || data.salary.type,
-          amount,
-        },
-      },
+    // 다른 타입은 dateSpecificRequirements에서 추출
+    const roleMap = new Map<string, number>();
+
+    data.dateSpecificRequirements?.forEach((dateReq) => {
+      dateReq.timeSlots?.forEach((slot) => {
+        slot.roles?.forEach((roleReq) => {
+          const roleName = getRoleName(roleReq.role, roleReq.customRole);
+          const currentCount = roleMap.get(roleName) || 0;
+          // 같은 역할이면 인원 합산
+          roleMap.set(roleName, currentCount + roleReq.headcount);
+        });
+      });
     });
-  }, [data.salary.type, data.roleSalaries, onUpdate]);
+
+    return Array.from(roleMap.entries()).map(([name, count]) => ({
+      name,
+      count,
+    }));
+  }, [data.postingType, data.roles, data.dateSpecificRequirements]);
+
+  // 역할 변경 시 roleSalaries 동기화 (추가/삭제)
+  useEffect(() => {
+    const currentRoleNames = extractedRoles.map((r) => r.name);
+    const existingRoleNames = Object.keys(data.roleSalaries);
+
+    // 새로운 역할 찾기
+    const newRoles = currentRoleNames.filter(
+      (name) => !existingRoleNames.includes(name)
+    );
+    // 삭제된 역할 찾기
+    const deletedRoles = existingRoleNames.filter(
+      (name) => !currentRoleNames.includes(name)
+    );
+
+    // 변경이 있을 때만 업데이트
+    if (newRoles.length > 0 || deletedRoles.length > 0) {
+      const updatedRoleSalaries = { ...data.roleSalaries };
+
+      // 새로운 역할 추가 (시급 기본)
+      newRoles.forEach((name) => {
+        // 전체 동일 급여 모드면 첫 역할 급여 복사
+        if (data.useSameSalary && existingRoleNames.length > 0) {
+          const firstSalary = data.roleSalaries[existingRoleNames[0]];
+          updatedRoleSalaries[name] = firstSalary
+            ? { ...firstSalary }
+            : { type: 'hourly', amount: 0 };
+        } else {
+          updatedRoleSalaries[name] = { type: 'hourly', amount: 0 };
+        }
+      });
+
+      // 삭제된 역할 제거
+      deletedRoles.forEach((name) => {
+        delete updatedRoleSalaries[name];
+      });
+
+      onUpdate({ roleSalaries: updatedRoleSalaries });
+    }
+  }, [extractedRoles, data.useSameSalary]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 전체 동일 급여 토글
+  const handleUseSameSalaryToggle = useCallback(
+    (value: boolean) => {
+      onUpdate({ useSameSalary: value });
+
+      if (value && extractedRoles.length > 0) {
+        // ON: 첫 역할의 급여를 모든 역할에 복사
+        const firstRole = extractedRoles[0];
+        const firstSalary = data.roleSalaries[firstRole.name];
+        if (firstSalary) {
+          const newRoleSalaries: Record<string, SalaryInfo> = {};
+          extractedRoles.forEach((role) => {
+            newRoleSalaries[role.name] = { ...firstSalary };
+          });
+          onUpdate({ roleSalaries: newRoleSalaries });
+        }
+      }
+    },
+    [extractedRoles, data.roleSalaries, onUpdate]
+  );
 
   // 역할별 급여 타입 변경
-  const handleRoleSalaryTypeChange = useCallback((roleName: string, type: SalaryType) => {
-    const currentRoleSalary = data.roleSalaries[roleName];
-    onUpdate({
-      roleSalaries: {
-        ...data.roleSalaries,
-        [roleName]: {
-          ...currentRoleSalary,
-          type,
-          amount: currentRoleSalary?.amount || 0,
+  const handleRoleSalaryTypeChange = useCallback(
+    (roleName: string, type: SalaryType) => {
+      const newSalary: SalaryInfo = {
+        type,
+        amount: type === 'other' ? 0 : data.roleSalaries[roleName]?.amount || 0,
+      };
+
+      if (data.useSameSalary) {
+        // 전체 동일: 모든 역할에 적용
+        const newRoleSalaries: Record<string, SalaryInfo> = {};
+        extractedRoles.forEach((role) => {
+          newRoleSalaries[role.name] = { ...newSalary };
+        });
+        onUpdate({ roleSalaries: newRoleSalaries });
+      } else {
+        // 개별: 해당 역할만 변경
+        onUpdate({
+          roleSalaries: {
+            ...data.roleSalaries,
+            [roleName]: newSalary,
+          },
+        });
+      }
+    },
+    [data.useSameSalary, extractedRoles, data.roleSalaries, onUpdate]
+  );
+
+  // 역할별 급여 금액 변경
+  const handleRoleSalaryAmountChange = useCallback(
+    (roleName: string, value: string) => {
+      const amount = parseCurrency(value);
+      const currentSalary = data.roleSalaries[roleName];
+      const newSalary: SalaryInfo = {
+        type: currentSalary?.type || 'hourly',
+        amount,
+      };
+
+      if (data.useSameSalary) {
+        // 전체 동일: 모든 역할에 적용
+        const newRoleSalaries: Record<string, SalaryInfo> = {};
+        extractedRoles.forEach((role) => {
+          newRoleSalaries[role.name] = {
+            type: data.roleSalaries[role.name]?.type || 'hourly',
+            amount,
+          };
+        });
+        onUpdate({ roleSalaries: newRoleSalaries });
+      } else {
+        // 개별: 해당 역할만 변경
+        onUpdate({
+          roleSalaries: {
+            ...data.roleSalaries,
+            [roleName]: newSalary,
+          },
+        });
+      }
+    },
+    [data.useSameSalary, extractedRoles, data.roleSalaries, onUpdate]
+  );
+
+  // 수당 변경
+  const handleAllowanceChange = useCallback(
+    (key: string, value: string) => {
+      const amount = parseCurrency(value);
+      onUpdate({
+        allowances: {
+          ...data.allowances,
+          [key]: amount > 0 ? amount : undefined,
         },
-      },
-    });
-  }, [data.roleSalaries, onUpdate]);
+      });
+    },
+    [data.allowances, onUpdate]
+  );
 
   // 총 인원 계산
-  const totalCount = useMemo(() =>
-    data.roles.reduce((sum, r) => sum + r.count, 0),
-    [data.roles]
+  const totalCount = useMemo(
+    () => extractedRoles.reduce((sum, r) => sum + r.count, 0),
+    [extractedRoles]
   );
 
   // 예상 총 비용 계산
   const estimatedCost = useMemo(() => {
-    if (data.salary.type === 'other') return null;
-
     let total = 0;
-    if (data.useRoleSalary) {
-      // 역할별 급여 사용 시: 각 역할의 타입에 따라 계산
-      data.roles.forEach((role) => {
-        const roleSalary = data.roleSalaries[role.name];
-        if (roleSalary && roleSalary.amount > 0) {
-          let roleTotal = roleSalary.amount * role.count;
-          // 역할별 타입이 시급이면 8시간 곱하기
-          if (roleSalary.type === 'hourly') {
-            roleTotal *= 8;
-          }
-          total += roleTotal;
-        }
-      });
-    } else {
-      total = data.salary.amount * totalCount;
-      // 시급은 8시간 기준
-      if (data.salary.type === 'hourly') {
-        total *= 8;
-      }
-    }
+    let hasValidSalary = false;
 
-    return total;
-  }, [data.salary, data.useRoleSalary, data.roleSalaries, data.roles, totalCount]);
+    extractedRoles.forEach((role) => {
+      const roleSalary = data.roleSalaries[role.name];
+      if (roleSalary && roleSalary.type !== 'other' && roleSalary.amount > 0) {
+        hasValidSalary = true;
+        let roleTotal = roleSalary.amount * role.count;
+        if (roleSalary.type === 'hourly') {
+          roleTotal *= 8; // 시급 × 8시간
+        }
+        total += roleTotal;
+      }
+    });
+
+    return hasValidSalary ? total : null;
+  }, [extractedRoles, data.roleSalaries]);
 
   return (
     <View>
-      {/* 급여 타입 선택 */}
-      <View className="mb-4">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          급여 타입 <Text className="text-red-500">*</Text>
-        </Text>
-        <View className="flex-row gap-2">
-          {SALARY_TYPES.map((type) => {
-            const isSelected = data.salary.type === type.value;
-            return (
-              <Pressable
-                key={type.value}
-                onPress={() => handleSalaryTypeChange(type.value)}
-                className={`flex-1 py-2.5 rounded-lg border ${
-                  isSelected
-                    ? 'bg-primary-500 border-primary-500'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                }`}
-                accessibilityRole="radio"
-                accessibilityState={{ checked: isSelected }}
-              >
-                <Text className={`text-center text-sm font-medium ${
-                  isSelected
-                    ? 'text-white'
-                    : 'text-gray-700 dark:text-gray-300'
-                }`}>
-                  {type.label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </View>
-
-      {/* 급여 금액 */}
-      {data.salary.type !== 'other' && (
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            급여 금액 <Text className="text-red-500">*</Text>
-          </Text>
-          <View className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3">
-            <Text className="text-gray-500 dark:text-gray-400 text-base font-medium mr-1">₩</Text>
-            <Input
-              placeholder="0"
-              value={data.salary.amount > 0 ? formatCurrency(data.salary.amount) : ''}
-              onChangeText={handleSalaryAmountChange}
-              keyboardType="numeric"
-              className="flex-1 border-0"
-            />
-            <Text className="text-gray-600 dark:text-gray-400 w-8 text-right">원</Text>
-          </View>
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            {data.salary.type === 'hourly' && '시간당 급여를 입력해주세요'}
-            {data.salary.type === 'daily' && '일당 급여를 입력해주세요'}
-            {data.salary.type === 'monthly' && '월 급여를 입력해주세요'}
-          </Text>
-          {errors.amount && (
-            <Text className="mt-1 text-sm text-red-500">{errors.amount}</Text>
-          )}
-        </View>
-      )}
-
-      {/* 역할별 급여 설정 토글 */}
-      {data.salary.type !== 'other' && data.roles.length > 1 && (
+      {/* 전체 동일 급여 토글 (2개 이상 역할만) */}
+      {extractedRoles.length > 1 && (
         <View className="mb-4 flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
           <View>
             <Text className="text-gray-900 dark:text-white font-medium">
-              역할별 급여 설정
+              전체 동일 급여
             </Text>
             <Text className="text-xs text-gray-500 dark:text-gray-400">
-              각 역할마다 다른 급여를 설정합니다
+              모든 역할에 같은 급여를 적용합니다
             </Text>
           </View>
           <Switch
-            value={data.useRoleSalary}
-            onValueChange={handleUseRoleSalaryToggle}
+            value={data.useSameSalary}
+            onValueChange={handleUseSameSalaryToggle}
             trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
-            thumbColor={data.useRoleSalary ? '#4F46E5' : '#F3F4F6'}
+            thumbColor={data.useSameSalary ? '#4F46E5' : '#F3F4F6'}
           />
         </View>
       )}
 
       {/* 역할별 급여 입력 */}
-      {data.useRoleSalary && data.salary.type !== 'other' && (
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            역할별 급여 설정
-          </Text>
-          {errors.roleSalary && (
-            <Text className="text-sm text-red-500 mb-2">{errors.roleSalary}</Text>
-          )}
-          {data.roles.map((role) => {
-            const roleSalary = data.roleSalaries[role.name];
-            const roleType = roleSalary?.type || data.salary.type;
-            return (
-              <View
-                key={role.name}
-                className="mb-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
-              >
-                {/* 역할명 */}
-                <Text className="font-medium text-gray-900 dark:text-white text-sm mb-2">
+      <View className="mb-4">
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          역할별 급여 <Text className="text-red-500">*</Text>
+        </Text>
+
+        {errors.roleSalary && (
+          <Text className="text-sm text-red-500 mb-2">{errors.roleSalary}</Text>
+        )}
+
+        {extractedRoles.map((role, index) => {
+          const roleSalary = data.roleSalaries[role.name];
+          const roleType = roleSalary?.type || 'hourly';
+          const isOther = roleType === 'other';
+          // 전체 동일 모드에서 첫 번째가 아닌 역할은 읽기 전용으로 표시
+          const isReadOnly = data.useSameSalary && index > 0;
+
+          return (
+            <View
+              key={role.name}
+              className={`mb-3 p-3 border rounded-lg ${
+                isReadOnly
+                  ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+              }`}
+            >
+              {/* 역할명 + 인원 */}
+              <View className="flex-row items-center justify-between mb-2">
+                <Text className="font-medium text-gray-900 dark:text-white text-sm">
                   {role.name}
                 </Text>
-                {/* 급여 타입 선택 */}
-                <View className="flex-row gap-1 mb-2">
-                  {SALARY_TYPES.filter(t => t.value !== 'other').map((type) => {
-                    const isSelected = roleType === type.value;
-                    return (
-                      <Pressable
-                        key={type.value}
-                        onPress={() => handleRoleSalaryTypeChange(role.name, type.value)}
-                        className={`flex-1 py-1.5 rounded-md ${
-                          isSelected
-                            ? 'bg-primary-500'
+                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  {role.count}명
+                </Text>
+              </View>
+
+              {/* 급여 타입 선택 */}
+              <View className="flex-row gap-1 mb-2">
+                {SALARY_TYPES.map((type) => {
+                  const isSelected = roleType === type.value;
+                  return (
+                    <Pressable
+                      key={type.value}
+                      onPress={() =>
+                        !isReadOnly &&
+                        handleRoleSalaryTypeChange(role.name, type.value)
+                      }
+                      disabled={isReadOnly}
+                      className={`flex-1 py-1.5 rounded-md ${
+                        isSelected
+                          ? 'bg-primary-500'
+                          : isReadOnly
+                            ? 'bg-gray-100 dark:bg-gray-700/50'
                             : 'bg-gray-100 dark:bg-gray-700'
+                      }`}
+                      accessibilityRole="radio"
+                      accessibilityState={{ checked: isSelected, disabled: isReadOnly }}
+                    >
+                      <Text
+                        className={`text-center text-xs font-medium ${
+                          isSelected
+                            ? 'text-white'
+                            : isReadOnly
+                              ? 'text-gray-400 dark:text-gray-500'
+                              : 'text-gray-600 dark:text-gray-300'
                         }`}
                       >
-                        <Text className={`text-center text-xs font-medium ${
-                          isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                        }`}>
-                          {type.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-                {/* 금액 입력 */}
-                <View className="flex-row items-center">
-                  <Text className="text-gray-500 dark:text-gray-400 text-sm mr-1">₩</Text>
-                  <Input
-                    placeholder="0"
-                    value={roleSalary?.amount > 0 ? formatCurrency(roleSalary.amount) : ''}
-                    onChangeText={(v) => handleRoleSalaryChange(role.name, v)}
-                    keyboardType="numeric"
-                    className="flex-1 text-right border-0 bg-gray-50 dark:bg-gray-700 rounded-md"
-                  />
-                  <Text className="text-gray-600 dark:text-gray-400 ml-1 text-sm">원</Text>
-                </View>
+                        {type.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
               </View>
-            );
-          })}
-        </View>
-      )}
+
+              {/* 금액 입력 (협의가 아닐 때만) */}
+              {!isOther && (
+                <View className="flex-row items-center justify-end">
+                  <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">
+                    ₩
+                  </Text>
+                  <TextInput
+                    placeholder="0"
+                    placeholderTextColor="#9CA3AF"
+                    value={
+                      roleSalary?.amount > 0
+                        ? formatCurrency(roleSalary.amount)
+                        : ''
+                    }
+                    onChangeText={(v) =>
+                      handleRoleSalaryAmountChange(role.name, v)
+                    }
+                    keyboardType="numeric"
+                    editable={!isReadOnly}
+                    className={`w-32 py-2 px-2 text-right text-sm rounded-md ${
+                      isReadOnly
+                        ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-400'
+                        : 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'
+                    }`}
+                  />
+                  <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
+                    원
+                  </Text>
+                </View>
+              )}
+
+              {/* 협의 선택 시 안내 */}
+              {isOther && (
+                <Text className="text-xs text-gray-500 dark:text-gray-400 text-center py-2">
+                  급여는 개별 협의로 진행됩니다
+                </Text>
+              )}
+
+              {/* 전체 동일 모드 안내 */}
+              {isReadOnly && (
+                <Text className="text-xs text-primary-500 dark:text-primary-400 mt-1">
+                  첫 번째 역할과 동일하게 적용됩니다
+                </Text>
+              )}
+            </View>
+          );
+        })}
+
+        {/* 역할이 없을 때 */}
+        {extractedRoles.length === 0 && (
+          <View className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <Text className="text-center text-gray-500 dark:text-gray-400 text-sm">
+              일정에서 역할을 먼저 추가해주세요
+            </Text>
+          </View>
+        )}
+      </View>
 
       {/* 수당 설정 */}
       <View className="mb-4">
@@ -329,7 +432,8 @@ export const SalarySection = memo(function SalarySection({
 
         <Card variant="outlined" padding="md">
           {ALLOWANCE_TYPES.map((allowance, index) => {
-            const value = data.allowances?.[allowance.key as keyof typeof data.allowances];
+            const value =
+              data.allowances?.[allowance.key as keyof typeof data.allowances];
             return (
               <View
                 key={allowance.key}
@@ -369,8 +473,7 @@ export const SalarySection = memo(function SalarySection({
             {formatCurrency(estimatedCost)}원
           </Text>
           <Text className="text-xs text-primary-600 dark:text-primary-400 mt-1">
-            {totalCount}명 기준
-            {data.salary.type === 'hourly' && ' × 8시간'}
+            {totalCount}명 기준 (시급은 8시간 환산)
           </Text>
         </View>
       )}

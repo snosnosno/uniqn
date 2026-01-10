@@ -21,7 +21,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting, useSaveDraft, useDraft, useDeleteDraft } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import type { CreateJobPostingInput, JobPostingFormData } from '@/types';
+import type { CreateJobPostingInput, JobPostingFormData, DateSpecificRequirement } from '@/types';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
 
@@ -120,7 +120,7 @@ export default function CreateJobPostingScreen() {
                   : INITIAL_JOB_POSTING_FORM_DATA.roles,
                 salary: existingDraft.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
                 allowances: existingDraft.allowances || {},
-                useRoleSalary: existingDraft.useRoleSalary || false,
+                useSameSalary: existingDraft.useSameSalary || false,
                 roleSalaries: existingDraft.roleSalaries || {},
                 usesPreQuestions: existingDraft.usesPreQuestions || false,
                 preQuestions: existingDraft.preQuestions || [],
@@ -185,12 +185,14 @@ export default function CreateJobPostingScreen() {
         workDate: formData.workDate,
         startTime: formData.startTime,
         tournamentDates: formData.tournamentDates,
+        // v2.0: 날짜별 요구사항 (일정 데이터) - 새 형식을 레거시 형식으로 캐스팅
+        dateSpecificRequirements: formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],
         daysPerWeek: formData.daysPerWeek,
         workDays: formData.workDays,
         roles: formData.roles,
         salary: formData.salary,
         allowances: formData.allowances,
-        useRoleSalary: formData.useRoleSalary,
+        useSameSalary: formData.useSameSalary,
         roleSalaries: formData.roleSalaries,
         usesPreQuestions: formData.usesPreQuestions,
         preQuestions: formData.preQuestions,
@@ -233,12 +235,14 @@ export default function CreateJobPostingScreen() {
         workDate: formData.workDate,
         startTime: formData.startTime,
         tournamentDates: formData.tournamentDates,
+        // v2.0: 날짜별 요구사항 (일정 데이터) - 새 형식을 레거시 형식으로 캐스팅
+        dateSpecificRequirements: formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],
         daysPerWeek: formData.daysPerWeek,
         workDays: formData.workDays,
         roles: formData.roles,
         salary: formData.salary,
         allowances: formData.allowances,
-        useRoleSalary: formData.useRoleSalary,
+        useSameSalary: formData.useSameSalary,
         roleSalaries: formData.roleSalaries,
         usesPreQuestions: formData.usesPreQuestions,
         preQuestions: formData.preQuestions,

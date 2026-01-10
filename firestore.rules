@@ -313,7 +313,7 @@ service cloud.firestore {
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
         (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
-        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp) &&
+        // serverTimestamp()는 센티넬 값이므로 is timestamp 검증 불가 - 제거
         // 추가 필드 검증
         (!('applicants' in request.resource.data) || request.resource.data.applicants is list) &&
         // 타입별 config 검증
@@ -344,8 +344,8 @@ service cloud.firestore {
         (!('detailedAddress' in request.resource.data) || request.resource.data.detailedAddress is string) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
         (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
-        (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
-        (!('updatedAt' in request.resource.data) || request.resource.data.updatedAt is timestamp);
+        (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string);
+        // serverTimestamp()는 센티넬 값이므로 is timestamp 검증 불가 - updatedAt 검증 제거
 
       // Phase 4: 조회수 증가 권한 (로그인한 사용자는 누구나 조회수 증가 가능)
       // fixedData.viewCount 필드만 변경되는 경우 허용
