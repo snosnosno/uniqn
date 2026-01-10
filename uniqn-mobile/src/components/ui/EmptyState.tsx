@@ -13,7 +13,8 @@ import { Button } from './Button';
 export interface EmptyStateProps {
   title?: string;
   description?: string;
-  icon?: React.ReactNode;
+  /** 아이콘 (이모지 문자열 또는 React 컴포넌트) */
+  icon?: React.ReactNode | string;
   actionLabel?: string;
   onAction?: () => void;
   variant?: 'search' | 'content' | 'error';
@@ -38,9 +39,18 @@ export function EmptyState({
     }
   };
 
+  // icon이 문자열(이모지)인 경우 Text로 감싸기
+  const renderIcon = () => {
+    if (!icon) return getDefaultIcon();
+    if (typeof icon === 'string') {
+      return <Text className="text-5xl">{icon}</Text>;
+    }
+    return icon;
+  };
+
   return (
     <View className="flex-1 items-center justify-center px-6 py-12">
-      <View className="mb-4">{icon || getDefaultIcon()}</View>
+      <View className="mb-4">{renderIcon()}</View>
 
       <Text className="mb-2 text-center text-lg font-semibold text-gray-900 dark:text-gray-100">
         {title}

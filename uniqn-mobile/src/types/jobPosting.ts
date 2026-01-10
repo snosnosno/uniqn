@@ -198,6 +198,10 @@ export interface JobPostingFilters {
   searchTerm?: string;
   isUrgent?: boolean;
   ownerId?: string;
+  /** 공고 타입 필터 (regular, fixed, tournament, urgent) */
+  postingType?: PostingType;
+  /** 근무일 필터 (YYYY-MM-DD) - regular 타입에서 날짜 필터링용 */
+  workDate?: string;
 }
 
 /**

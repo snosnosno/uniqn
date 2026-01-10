@@ -96,6 +96,16 @@ export async function getJobPostings(
       constraints.push(where('workDate', '<=', filters.dateRange.end));
     }
 
+    // 공고 타입 필터
+    if (filters?.postingType) {
+      constraints.push(where('postingType', '==', filters.postingType));
+    }
+
+    // 단일 날짜 필터 (dateRange와 별개)
+    if (filters?.workDate && !filters?.dateRange) {
+      constraints.push(where('workDate', '==', filters.workDate));
+    }
+
     // 정렬: 날짜순 (최신순)
     constraints.push(orderBy('workDate', 'desc'));
     constraints.push(orderBy('createdAt', 'desc'));
