@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { nameSchema, phoneSchema } from './auth.schema';
+import { nameSchema, phoneSchema, passwordSchema, passwordConfirmSchema } from './auth.schema';
 
 // ============================================================================
 // 사용자 역할 스키마
@@ -127,3 +127,27 @@ export const searchUsersSchema = z.object({
 });
 
 export type SearchUsersData = z.infer<typeof searchUsersSchema>;
+
+// ============================================================================
+// 비밀번호 변경 스키마
+// ============================================================================
+
+/**
+ * 비밀번호 변경 스키마
+ */
+export const passwordChangeSchema = z
+  .object({
+    currentPassword: z.string().min(1, { message: '현재 비밀번호를 입력해주세요' }),
+    newPassword: passwordSchema,
+    confirmPassword: passwordConfirmSchema,
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: '비밀번호가 일치하지 않습니다',
+    path: ['confirmPassword'],
+  })
+  .refine((data) => data.currentPassword !== data.newPassword, {
+    message: '현재 비밀번호와 다른 비밀번호를 입력해주세요',
+    path: ['newPassword'],
+  });
+
+export type PasswordChangeData = z.infer<typeof passwordChangeSchema>;

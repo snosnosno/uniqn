@@ -14,6 +14,7 @@ import {
   signInWithEmailAndPassword,
   signOut as firebaseSignOut,
   sendPasswordResetEmail,
+  updatePassword,
   User as FirebaseUser,
   updateProfile,
   EmailAuthProvider,
@@ -499,4 +500,80 @@ export async function signInWithKakao(): Promise<AuthResult> {
   throw new Error(
     '카카오 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다.'
   );
+}
+
+// ============================================================================
+// Password & Profile Photo Management
+// ============================================================================
+
+/**
+ * 비밀번호 변경
+ *
+ * @param currentPassword 현재 비밀번호
+ * @param newPassword 새 비밀번호
+ */
+export async function changePassword(
+  currentPassword: string,
+  newPassword: string
+): Promise<void> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+
+    if (!user || !user.email) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '로그인이 필요합니다',
+      });
+    }
+
+    logger.info('비밀번호 변경 시도', { uid: user.uid });
+
+    // 1. 현재 비밀번호로 재인증
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+    await reauthenticateWithCredential(user, credential);
+
+    // 2. 새 비밀번호로 변경
+    await updatePassword(user, newPassword);
+
+    logger.info('비밀번호 변경 성공', { uid: user.uid });
+  } catch (error) {
+    logger.error('비밀번호 변경 실패', error as Error);
+    throw mapFirebaseError(error);
+  }
+}
+
+/**
+ * 프로필 사진 URL 업데이트
+ *
+ * @param uid 사용자 ID
+ * @param photoURL 새 프로필 사진 URL (null이면 삭제)
+ */
+export async function updateProfilePhotoURL(
+  uid: string,
+  photoURL: string | null
+): Promise<void> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+
+    if (!user) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '로그인이 필요합니다',
+      });
+    }
+
+    logger.info('프로필 사진 업데이트', { uid });
+
+    // 1. Firebase Auth 프로필 업데이트
+    await updateProfile(user, { photoURL });
+
+    // 2. Firestore 사용자 문서 업데이트
+    await updateDoc(doc(getFirebaseDb(), 'users', uid), {
+      photoURL: photoURL ?? null,
+      updatedAt: serverTimestamp(),
+    });
+
+    logger.info('프로필 사진 업데이트 성공', { uid });
+  } catch (error) {
+    logger.error('프로필 사진 업데이트 실패', error as Error, { uid });
+    throw mapFirebaseError(error);
+  }
 }

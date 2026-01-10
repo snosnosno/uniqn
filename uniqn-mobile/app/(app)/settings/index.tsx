@@ -5,7 +5,9 @@
 
 import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
+import { DangerZone } from '@/components/settings';
 import {
   BellIcon,
   LockIcon,
@@ -117,15 +119,13 @@ export default function SettingsScreen() {
           <SettingItem
             icon={<UserIcon size={22} color="#6B7280" />}
             label="프로필 수정"
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
-            onPress={() => {}} // TODO: 프로필 수정 화면 구현
+            onPress={() => router.push('/(app)/settings/profile')}
           />
           <Divider spacing="sm" />
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
-            onPress={() => {}} // TODO: 비밀번호 변경 화면 구현
+            onPress={() => router.push('/(app)/settings/change-password')}
           />
         </Card>
 
@@ -149,7 +149,7 @@ export default function SettingsScreen() {
         </Card>
 
         {/* 앱 정보 */}
-        <Card>
+        <Card className="mb-4">
           <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
             정보
           </Text>
@@ -173,6 +173,13 @@ export default function SettingsScreen() {
             onPress={() => {}} // TODO: 개인정보처리방침 화면 구현
           />
         </Card>
+
+        {/* 위험 영역 - 계정 삭제 */}
+        {isAuthenticated && (
+          <DangerZone
+            onDeleteAccount={() => router.push('/(app)/settings/delete-account')}
+          />
+        )}
       </ScrollView>
     </SafeAreaView>
   );

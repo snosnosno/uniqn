@@ -18,9 +18,19 @@ export {
   signInWithApple,
   signInWithGoogle,
   signInWithKakao,
+  changePassword,
+  updateProfilePhotoURL,
   type UserProfile,
   type AuthResult,
 } from './authService';
+
+// Storage Service
+export {
+  uploadProfileImage,
+  deleteProfileImage,
+  replaceProfileImage,
+  type UploadResult,
+} from './storageService';
 
 // Job Service
 export {
