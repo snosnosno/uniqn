@@ -120,9 +120,12 @@ export interface UrgentConfig {
 }
 
 /**
- * 역할별 모집 인원 (기본)
+ * 역할별 모집 인원 (레거시)
+ *
+ * @deprecated types/jobPosting/dateRequirement.ts의 RoleRequirement 사용 권장
+ * @description 레거시 호환성을 위해 유지. 새 코드에서는 사용하지 않음
  */
-export interface RoleRequirement {
+export interface LegacyRoleRequirement {
   /** 역할 이름 */
   name: string;
 
@@ -131,16 +134,22 @@ export interface RoleRequirement {
 }
 
 /**
- * 시간대 정보
- *
- * @description 각 시간대별 근무 정보를 정의합니다.
+ * @deprecated LegacyRoleRequirement로 대체됨
  */
-export interface TimeSlot {
+export type RoleRequirement = LegacyRoleRequirement;
+
+/**
+ * 시간대 정보 (레거시 - 확장형)
+ *
+ * @deprecated types/jobPosting/dateRequirement.ts의 TimeSlot 사용 권장
+ * @description 레거시 호환성을 위해 유지. 새 코드에서는 간소화된 버전 사용
+ */
+export interface LegacyTimeSlot {
   /** 시작 시간 (HH:mm 형식) */
   time: string;
 
   /** 역할별 필요 인원 */
-  roles: RoleRequirement[];
+  roles: LegacyRoleRequirement[];
 
   /** 특정 날짜에만 적용될 때 사용 (yyyy-MM-dd 형식) */
   date?: string;
@@ -173,16 +182,26 @@ export interface TimeSlot {
 }
 
 /**
- * 날짜별 요구사항
+ * 시간대 정보
  *
- * @description 각 날짜별 인원 요구사항과 시간대 정보를 정의합니다.
+ * @description
+ * - 레거시 필드 포함: time, endTime, isFullDay 등
+ * - 새 코드에서는 types/jobPosting/dateRequirement.ts의 TimeSlot 권장
  */
-export interface DateSpecificRequirement {
+export interface TimeSlot extends LegacyTimeSlot {}
+
+/**
+ * 날짜별 요구사항 (레거시 - 확장형)
+ *
+ * @deprecated types/jobPosting/dateRequirement.ts의 DateSpecificRequirement 사용 권장
+ * @description 레거시 호환성을 위해 유지. 새 코드에서는 간소화된 버전 사용
+ */
+export interface LegacyDateSpecificRequirement {
   /** 날짜 (yyyy-MM-dd 형식 또는 Firebase Timestamp) */
   date: string | Timestamp | { seconds: number };
 
   /** 해당 날짜의 시간대별 요구사항 */
-  timeSlots: TimeSlot[];
+  timeSlots: LegacyTimeSlot[];
 
   /** 메인 행사 날짜 여부 */
   isMainDate?: boolean;
@@ -193,6 +212,17 @@ export interface DateSpecificRequirement {
   /** 날짜 설명 (예: "Day 1", "예선전") */
   description?: string;
 }
+
+/**
+ * 날짜별 요구사항
+ *
+ * @description
+ * - 레거시 필드 포함: isMainDate, displayOrder, description
+ * - 간소화된 버전과 호환 (추가 필드만 선택적으로 사용)
+ *
+ * @see types/jobPosting/dateRequirement.ts (간소화된 정식 버전)
+ */
+export interface DateSpecificRequirement extends LegacyDateSpecificRequirement {}
 
 /**
  * 공고 타입별 라벨
@@ -239,6 +269,8 @@ export const POSTING_TYPE_BADGE_STYLES: Record<
 
 /**
  * 날짜별 요구사항에서 날짜 문자열 추출
+ *
+ * @description 간소화된 버전과 레거시 버전 모두 지원
  */
 export function getDateFromRequirement(req: DateSpecificRequirement): string {
   if (typeof req.date === 'string') {
@@ -255,14 +287,18 @@ export function getDateFromRequirement(req: DateSpecificRequirement): string {
 
 /**
  * 날짜별 요구사항 정렬
+ *
+ * @description 간소화된 버전과 레거시 버전 모두 지원
  */
 export function sortDateRequirements(
   requirements: DateSpecificRequirement[]
 ): DateSpecificRequirement[] {
   return [...requirements].sort((a, b) => {
-    // displayOrder가 있으면 우선
-    if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-      return a.displayOrder - b.displayOrder;
+    // displayOrder가 있으면 우선 (레거시 타입 지원)
+    const aOrder = 'displayOrder' in a ? a.displayOrder : undefined;
+    const bOrder = 'displayOrder' in b ? b.displayOrder : undefined;
+    if (aOrder !== undefined && bOrder !== undefined) {
+      return aOrder - bOrder;
     }
     // 날짜로 정렬
     const dateA = getDateFromRequirement(a);

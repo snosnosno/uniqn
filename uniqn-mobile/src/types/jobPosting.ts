@@ -67,13 +67,23 @@ export interface TaxSettings {
 }
 
 /**
- * 역할별 모집 인원
+ * 역할별 모집 통계 (공고에서 사용)
+ *
+ * @description 공고의 역할별 모집 인원 및 충원 현황
+ * @see RoleRequirement in types/jobPosting/dateRequirement.ts (폼 편집용)
  */
-export interface RoleRequirement {
+export interface JobRoleStats {
   role: StaffRole;
   count: number;
   filled: number;
 }
+
+/**
+ * 역할별 모집 인원
+ *
+ * @deprecated JobRoleStats 사용 권장. 폼 편집에는 types/jobPosting/dateRequirement.ts의 RoleRequirement 사용
+ */
+export type RoleRequirement = JobRoleStats;
 
 /**
  * 구인공고 타입

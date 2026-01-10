@@ -56,10 +56,32 @@ export const MAX_HEADCOUNT = 200;
 export const MIN_HEADCOUNT = 1;
 
 /**
+ * 스태프 역할 키 목록 (정규화된 단일 소스)
+ *
+ * @description
+ * - 전체 앱에서 역할 검증에 사용하는 유일한 키 목록
+ * - 스키마 검증, 타입 정의, UI 옵션 등에 공통 사용
+ * - 순서: 딜러 → 플로어 → 서빙 → 매니저 → 직원 → 기타
+ */
+export const STAFF_ROLE_KEYS = [
+  'dealer',
+  'floor',
+  'serving',
+  'manager',
+  'staff',
+  'other',
+] as const;
+
+/**
+ * 스태프 역할 키 타입
+ */
+export type StaffRoleKey = (typeof STAFF_ROLE_KEYS)[number];
+
+/**
  * 스태프 역할 옵션 인터페이스
  */
 export interface StaffRoleOption {
-  key: string;
+  key: StaffRoleKey;
   name: string;
   icon: string;
 }

@@ -2,7 +2,20 @@
  * UNIQN Mobile - 타입 정의 중앙 인덱스
  *
  * @description 프로젝트의 모든 타입들을 중앙에서 관리하고 export
- * @version 1.0.0
+ * @version 2.0.0
+ *
+ * ## 순환 의존성 방지 가이드
+ *
+ * 1. 타입 전용 import 사용: `import type { X } from '@/types'`
+ * 2. 함수 import는 해당 모듈에서 직접: `import { fn } from './someModule'`
+ * 3. 런타임 함수는 가급적 이 파일에서 re-export 하지 않음 (상수/유틸만 예외)
+ *
+ * ## 타입 명명 규칙
+ *
+ * - DateSpecificRequirement: dateRequirement.ts 정식 버전 사용
+ * - TimeSlot: dateRequirement.ts 정식 버전 사용
+ * - RoleRequirement: dateRequirement.ts 정식 버전 (폼용) / JobRoleStats (공고 통계용)
+ * - Legacy*: 하위 호환성을 위한 레거시 타입 (신규 코드에서 사용 금지)
  */
 
 // 공통 타입
@@ -44,6 +57,7 @@ export type {
   SalaryInfo,
   Allowances,
   TaxSettings,
+  JobRoleStats,
   RoleRequirement,
   JobPosting,
   JobPostingFilters,
@@ -53,6 +67,21 @@ export type {
 } from './jobPosting';
 
 export { toJobPostingCard } from './jobPosting';
+
+// 날짜별 요구사항 타입 (정식 버전 - 신규 코드에서 사용)
+export type {
+  RoleRequirement as FormRoleRequirement,
+  TimeSlot as FormTimeSlot,
+  DateSpecificRequirement as FormDateSpecificRequirement,
+  DateConstraint,
+} from './jobPosting/dateRequirement';
+
+export {
+  getDateString,
+  sortDateRequirements as sortFormDateRequirements,
+  createDefaultTimeSlot,
+  createDefaultRole,
+} from './jobPosting/dateRequirement';
 
 // 지원서 타입
 export type {
@@ -104,7 +133,10 @@ export type {
   RoleWithCount,
   TournamentConfig,
   UrgentConfig,
-  RoleRequirement as PostingRoleRequirement,
+  // 레거시 타입 (하위 호환성 - 신규 코드에서 사용 금지)
+  LegacyRoleRequirement,
+  LegacyTimeSlot,
+  LegacyDateSpecificRequirement,
   TimeSlot,
   DateSpecificRequirement,
 } from './postingConfig';

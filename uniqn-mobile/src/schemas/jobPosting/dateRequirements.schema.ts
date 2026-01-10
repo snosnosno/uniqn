@@ -17,6 +17,7 @@ import {
   MAX_HEADCOUNT,
   MIN_HEADCOUNT,
   DATE_REQUIREMENT_ERRORS,
+  STAFF_ROLE_KEYS,
 } from '@/constants';
 
 /**
@@ -31,9 +32,10 @@ export const roleRequirementSchema = z
 
     /**
      * 역할
-     * - dealer, floorman, supervisor, chip_runner, other
+     * - 통합 역할 키 사용: dealer, floor, serving, manager, staff, other
+     * @see STAFF_ROLE_KEYS in constants/jobPosting.ts
      */
-    role: z.enum(['dealer', 'floorman', 'supervisor', 'chip_runner', 'other']),
+    role: z.enum(STAFF_ROLE_KEYS),
 
     /**
      * 커스텀 역할명 (role이 'other'일 때만 필수)

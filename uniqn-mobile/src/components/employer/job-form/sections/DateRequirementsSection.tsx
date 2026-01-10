@@ -16,7 +16,7 @@ import { PlusIcon } from '@/components/icons';
 import { DATE_CONSTRAINTS } from '@/constants';
 import { DatePickerModal } from '../modals';
 import { DateRequirementCard } from '../cards';
-import { convertTournamentDatesToDateRequirements } from '@/utils/job-posting/dateUtils';
+import { migrateFormDataForRead } from '@/services/jobPostingMigration';
 import type { JobPostingFormData } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 
@@ -52,17 +52,13 @@ export function DateRequirementsSection({
 
   // 마이그레이션: tournamentDates → dateSpecificRequirements 자동 변환
   useEffect(() => {
-    // tournament 타입이고, tournamentDates가 있지만 dateSpecificRequirements가 없을 때
-    if (
-      postingType === 'tournament' &&
-      data.tournamentDates &&
-      data.tournamentDates.length > 0 &&
-      (!data.dateSpecificRequirements || data.dateSpecificRequirements.length === 0)
-    ) {
-      const converted = convertTournamentDatesToDateRequirements(data.tournamentDates);
-      onUpdate({ dateSpecificRequirements: converted });
+    const result = migrateFormDataForRead(data);
+    if (result.migrated && result.data.dateSpecificRequirements) {
+      onUpdate({
+        dateSpecificRequirements: result.data.dateSpecificRequirements as DateSpecificRequirement[],
+      });
     }
-  }, [postingType, data.tournamentDates, data.dateSpecificRequirements, onUpdate]);
+  }, [data.tournamentDates, data.dateSpecificRequirements, onUpdate]);
 
   // 현재 날짜 목록
   const dateRequirements = useMemo(() => {
