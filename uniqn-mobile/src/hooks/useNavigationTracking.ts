@@ -71,7 +71,7 @@ const ROUTE_NAMES: Record<string, string> = {
   '/(app)/settings/delete-account': '계정 삭제',
 
   // 구인자 기능
-  '/(employer)/my-postings': '내 공고',
+  '/(app)/(tabs)/employer': '내 공고',
   '/(employer)/my-postings/create': '공고 작성',
   '/(employer)/my-postings/[id]': '공고 상세',
   '/(employer)/my-postings/[id]/edit': '공고 수정',

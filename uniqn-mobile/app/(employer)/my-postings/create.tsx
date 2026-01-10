@@ -246,7 +246,7 @@ export default function CreateJobPostingScreen() {
         ? '공고가 등록되었습니다. 관리자 승인 후 게시됩니다.'
         : '공고가 등록되었습니다';
       addToast({ type: 'success', message: successMessage });
-      router.replace('/(employer)/my-postings');
+      router.replace('/(app)/(tabs)/employer');
     } catch (error) {
       logger.error('공고 등록 실패', error as Error);
       addToast({

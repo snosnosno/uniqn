@@ -197,7 +197,7 @@ function routeToExpoPath(route: DeepLinkRoute): string {
     case 'settings/notifications':
       return '/settings/notifications';
     case 'employer/my-postings':
-      return '/employer/my-postings';
+      return '/(app)/(tabs)/employer';
     case 'employer/posting':
       return `/employer/postings/${route.params.id}`;
     case 'employer/applicants':
@@ -600,7 +600,6 @@ export const linkingConfig = {
       },
       '(employer)': {
         screens: {
-          'my-postings': 'employer/my-postings',
           'postings/[id]': 'employer/postings/:id',
           'applicants/[jobId]': 'employer/applicants/:jobId',
           'settlement/[jobId]': 'employer/settlement/:jobId',

@@ -16,17 +16,15 @@ export default function TabLayout() {
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: '#3b82f6',
-        tabBarInactiveTintColor: isDark ? '#9CA3AF' : '#6B7280',
+        tabBarInactiveTintColor: isDark ? '#D1D5DB' : '#6B7280',
         tabBarStyle: {
-          backgroundColor: isDark ? '#111827' : '#ffffff',
+          backgroundColor: isDark ? '#1F2937' : '#ffffff',
           borderTopColor: isDark ? '#374151' : '#e5e7eb',
-          height: 60,
-          paddingBottom: 8,
-          paddingTop: 8,
+          height: 56,
         },
         tabBarLabelStyle: {
-          fontSize: 12,
-          fontWeight: '500',
+          fontSize: 11,
+          fontWeight: '600',
         },
       }}
     >
