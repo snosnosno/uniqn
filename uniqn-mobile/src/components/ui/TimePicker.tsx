@@ -14,7 +14,7 @@ import {
   FlatList,
   Platform,
 } from 'react-native';
-import { ClockIcon, XMarkIcon, CheckIcon, ChevronDownIcon } from '@/components/icons';
+import { XMarkIcon, CheckIcon, ChevronDownIcon } from '@/components/icons';
 
 // ============================================================================
 // Types
@@ -242,12 +242,8 @@ export const TimePicker = memo(function TimePicker({
         accessibilityHint="탭하여 시간을 선택하세요"
         className={getInputStyle()}
       >
-        <ClockIcon
-          size={20}
-          color={disabled ? '#9CA3AF' : '#6B7280'}
-        />
         <Text
-          className={`flex-1 ml-3 text-base ${
+          className={`flex-1 ${value ? 'text-base' : 'text-sm'} ${
             disabled
               ? 'text-gray-400 dark:text-gray-500'
               : value

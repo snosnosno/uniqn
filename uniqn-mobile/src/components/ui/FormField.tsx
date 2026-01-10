@@ -17,6 +17,7 @@ interface FormFieldProps extends ViewProps {
   error?: string | null;
   hint?: string;
   required?: boolean;
+  icon?: React.ReactNode;
   children: React.ReactNode;
 }
 
@@ -29,6 +30,7 @@ export function FormField({
   error,
   hint,
   required = false,
+  icon,
   children,
   className,
   ...props
@@ -37,7 +39,8 @@ export function FormField({
     <View className={`mb-4 ${className || ''}`} {...props}>
       {/* 레이블 */}
       {label && (
-        <View className="flex-row mb-2">
+        <View className="flex-row items-center mb-2">
+          {icon && <View className="mr-1.5">{icon}</View>}
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
             {label}
           </Text>

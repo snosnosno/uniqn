@@ -141,14 +141,16 @@ export async function applyToJob(
       const applicationData: Omit<Application, 'id'> = {
         applicantId,
         applicantName,
-        applicantPhone,
+        // undefined는 Firebase에 저장 불가 - 조건부 추가
+        ...(applicantPhone && { applicantPhone }),
         applicantRole: input.appliedRole,
         jobPostingId: input.jobPostingId,
         jobPostingTitle: jobData.title,
         jobPostingDate: jobData.workDate,
         status: 'applied',
         appliedRole: input.appliedRole,
-        message: input.message,
+        // message가 undefined일 수 있으므로 조건부 추가
+        ...(input.message && { message: input.message }),
         isRead: false,
         createdAt: now as Timestamp,
         updatedAt: now as Timestamp,
@@ -553,8 +555,9 @@ export async function applyToJobV2(
         // 지원자 정보
         applicantId,
         applicantName,
-        applicantPhone,
-        applicantEmail,
+        // undefined는 Firebase에 저장 불가 - 조건부 추가
+        ...(applicantPhone && { applicantPhone }),
+        ...(applicantEmail && { applicantEmail }),
         applicantRole: primaryRole,
 
         // 공고 정보 (레거시 호환)
@@ -575,7 +578,8 @@ export async function applyToJobV2(
 
         // v2.0 핵심 필드
         assignments: input.assignments,
-        preQuestionAnswers: input.preQuestionAnswers,
+        // undefined는 Firebase에 저장 불가 - 조건부 추가
+        ...(input.preQuestionAnswers && { preQuestionAnswers: input.preQuestionAnswers }),
 
         // 메타데이터
         isRead: false,

@@ -8,7 +8,7 @@
 import React, { useCallback, useMemo, memo } from 'react';
 import { View, Text, Pressable, Switch } from 'react-native';
 import { Input, Card } from '@/components';
-import { CurrencyDollarIcon, GiftIcon } from '@/components/icons';
+import { GiftIcon } from '@/components/icons';
 import type { JobPostingFormData, SalaryType, SalaryInfo } from '@/types';
 
 // ============================================================================
@@ -25,11 +25,11 @@ interface SalarySectionProps {
 // Constants
 // ============================================================================
 
-const SALARY_TYPES: { value: SalaryType; label: string; example: string }[] = [
-  { value: 'hourly', label: '시급', example: '15,000원/시간' },
-  { value: 'daily', label: '일급', example: '150,000원/일' },
-  { value: 'monthly', label: '월급', example: '3,000,000원/월' },
-  { value: 'other', label: '협의', example: '협의 가능' },
+const SALARY_TYPES: { value: SalaryType; label: string }[] = [
+  { value: 'hourly', label: '시급' },
+  { value: 'daily', label: '일급' },
+  { value: 'monthly', label: '월급' },
+  { value: 'other', label: '협의' },
 ];
 
 const ALLOWANCE_TYPES = [
@@ -110,17 +110,33 @@ export const SalarySection = memo(function SalarySection({
   // 역할별 급여 금액 변경
   const handleRoleSalaryChange = useCallback((roleName: string, value: string) => {
     const amount = parseCurrency(value);
+    const currentRoleSalary = data.roleSalaries[roleName];
     onUpdate({
       roleSalaries: {
         ...data.roleSalaries,
         [roleName]: {
-          ...data.roleSalaries[roleName],
-          type: data.salary.type,
+          ...currentRoleSalary,
+          type: currentRoleSalary?.type || data.salary.type,
           amount,
         },
       },
     });
   }, [data.salary.type, data.roleSalaries, onUpdate]);
+
+  // 역할별 급여 타입 변경
+  const handleRoleSalaryTypeChange = useCallback((roleName: string, type: SalaryType) => {
+    const currentRoleSalary = data.roleSalaries[roleName];
+    onUpdate({
+      roleSalaries: {
+        ...data.roleSalaries,
+        [roleName]: {
+          ...currentRoleSalary,
+          type,
+          amount: currentRoleSalary?.amount || 0,
+        },
+      },
+    });
+  }, [data.roleSalaries, onUpdate]);
 
   // 총 인원 계산
   const totalCount = useMemo(() =>
@@ -134,19 +150,24 @@ export const SalarySection = memo(function SalarySection({
 
     let total = 0;
     if (data.useRoleSalary) {
+      // 역할별 급여 사용 시: 각 역할의 타입에 따라 계산
       data.roles.forEach((role) => {
         const roleSalary = data.roleSalaries[role.name];
-        if (roleSalary) {
-          total += roleSalary.amount * role.count;
+        if (roleSalary && roleSalary.amount > 0) {
+          let roleTotal = roleSalary.amount * role.count;
+          // 역할별 타입이 시급이면 8시간 곱하기
+          if (roleSalary.type === 'hourly') {
+            roleTotal *= 8;
+          }
+          total += roleTotal;
         }
       });
     } else {
       total = data.salary.amount * totalCount;
-    }
-
-    // 시급은 8시간 기준
-    if (data.salary.type === 'hourly') {
-      total *= 8;
+      // 시급은 8시간 기준
+      if (data.salary.type === 'hourly') {
+        total *= 8;
+      }
     }
 
     return total;
@@ -159,34 +180,27 @@ export const SalarySection = memo(function SalarySection({
         <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           급여 타입 <Text className="text-red-500">*</Text>
         </Text>
-        <View className="flex-row flex-wrap gap-2">
+        <View className="flex-row gap-2">
           {SALARY_TYPES.map((type) => {
             const isSelected = data.salary.type === type.value;
             return (
               <Pressable
                 key={type.value}
                 onPress={() => handleSalaryTypeChange(type.value)}
-                className={`px-4 py-3 rounded-lg border-2 ${
+                className={`flex-1 py-2.5 rounded-lg border ${
                   isSelected
-                    ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
+                    ? 'bg-primary-500 border-primary-500'
                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
                 }`}
                 accessibilityRole="radio"
                 accessibilityState={{ checked: isSelected }}
               >
-                <Text className={`font-medium ${
+                <Text className={`text-center text-sm font-medium ${
                   isSelected
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-900 dark:text-white'
+                    ? 'text-white'
+                    : 'text-gray-700 dark:text-gray-300'
                 }`}>
                   {type.label}
-                </Text>
-                <Text className={`text-xs mt-0.5 ${
-                  isSelected
-                    ? 'text-primary-500 dark:text-primary-300'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}>
-                  {type.example}
                 </Text>
               </Pressable>
             );
@@ -201,7 +215,7 @@ export const SalarySection = memo(function SalarySection({
             급여 금액 <Text className="text-red-500">*</Text>
           </Text>
           <View className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg px-3">
-            <CurrencyDollarIcon size={20} color="#6B7280" />
+            <Text className="text-gray-500 dark:text-gray-400 text-base font-medium mr-1">₩</Text>
             <Input
               placeholder="0"
               value={data.salary.amount > 0 ? formatCurrency(data.salary.amount) : ''}
@@ -209,7 +223,7 @@ export const SalarySection = memo(function SalarySection({
               keyboardType="numeric"
               className="flex-1 border-0"
             />
-            <Text className="text-gray-600 dark:text-gray-400">원</Text>
+            <Text className="text-gray-600 dark:text-gray-400 w-8 text-right">원</Text>
           </View>
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {data.salary.type === 'hourly' && '시간당 급여를 입력해주세요'}
@@ -253,22 +267,51 @@ export const SalarySection = memo(function SalarySection({
           )}
           {data.roles.map((role) => {
             const roleSalary = data.roleSalaries[role.name];
+            const roleType = roleSalary?.type || data.salary.type;
             return (
               <View
                 key={role.name}
-                className="flex-row items-center mb-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
+                className="mb-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg"
               >
-                <Text className="flex-1 font-medium text-gray-900 dark:text-white">
-                  {role.name} ({role.count}명)
+                {/* 역할명 */}
+                <Text className="font-medium text-gray-900 dark:text-white text-sm mb-2">
+                  {role.name}
                 </Text>
-                <Input
-                  placeholder="0"
-                  value={roleSalary?.amount > 0 ? formatCurrency(roleSalary.amount) : ''}
-                  onChangeText={(v) => handleRoleSalaryChange(role.name, v)}
-                  keyboardType="numeric"
-                  className="w-28 text-right"
-                />
-                <Text className="ml-2 text-gray-600 dark:text-gray-400">원</Text>
+                {/* 급여 타입 선택 */}
+                <View className="flex-row gap-1 mb-2">
+                  {SALARY_TYPES.filter(t => t.value !== 'other').map((type) => {
+                    const isSelected = roleType === type.value;
+                    return (
+                      <Pressable
+                        key={type.value}
+                        onPress={() => handleRoleSalaryTypeChange(role.name, type.value)}
+                        className={`flex-1 py-1.5 rounded-md ${
+                          isSelected
+                            ? 'bg-primary-500'
+                            : 'bg-gray-100 dark:bg-gray-700'
+                        }`}
+                      >
+                        <Text className={`text-center text-xs font-medium ${
+                          isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-300'
+                        }`}>
+                          {type.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+                {/* 금액 입력 */}
+                <View className="flex-row items-center">
+                  <Text className="text-gray-500 dark:text-gray-400 text-sm mr-1">₩</Text>
+                  <Input
+                    placeholder="0"
+                    value={roleSalary?.amount > 0 ? formatCurrency(roleSalary.amount) : ''}
+                    onChangeText={(v) => handleRoleSalaryChange(role.name, v)}
+                    keyboardType="numeric"
+                    className="flex-1 text-right border-0 bg-gray-50 dark:bg-gray-700 rounded-md"
+                  />
+                  <Text className="text-gray-600 dark:text-gray-400 ml-1 text-sm">원</Text>
+                </View>
               </View>
             );
           })}
@@ -296,18 +339,20 @@ export const SalarySection = memo(function SalarySection({
                     : ''
                 }`}
               >
-                <Text className="text-xl mr-3">{allowance.icon}</Text>
-                <Text className="flex-1 text-gray-900 dark:text-white">
+                <Text className="text-xl mr-2">{allowance.icon}</Text>
+                <Text className="w-16 text-gray-900 dark:text-white text-sm">
                   {allowance.label}
                 </Text>
-                <Input
-                  placeholder={allowance.placeholder}
-                  value={value ? formatCurrency(value) : ''}
-                  onChangeText={(v) => handleAllowanceChange(allowance.key, v)}
-                  keyboardType="numeric"
-                  className="w-24 text-right"
-                />
-                <Text className="ml-2 text-gray-600 dark:text-gray-400 w-8">원</Text>
+                <View className="flex-1 flex-row items-center justify-end">
+                  <Input
+                    placeholder={allowance.placeholder}
+                    value={value ? formatCurrency(value) : ''}
+                    onChangeText={(v) => handleAllowanceChange(allowance.key, v)}
+                    keyboardType="numeric"
+                    className="w-28 text-right"
+                  />
+                  <Text className="text-gray-600 dark:text-gray-400 ml-1">원</Text>
+                </View>
               </View>
             );
           })}

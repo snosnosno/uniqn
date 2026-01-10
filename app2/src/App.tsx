@@ -10,7 +10,6 @@ import ForgotPassword from './pages/ForgotPassword';
 import Login from './pages/Login';
 import SignUp from './pages/SignUp';
 import ConsentPage from './pages/ConsentPage';
-import RequireEmailVerification from './components/auth/RequireEmailVerification';
 
 // Coming Soon page
 import ComingSoon from './components/ComingSoon';
@@ -228,14 +227,7 @@ const App: React.FC = () => {
 
                           {/* Authenticated Routes */}
                           <Route path="/app" element={<PrivateRoute />}>
-                            <Route
-                              path="/app"
-                              element={
-                                <RequireEmailVerification>
-                                  <Layout />
-                                </RequireEmailVerification>
-                              }
-                            >
+                            <Route path="/app" element={<Layout />}>
                               <Route index element={<AppRedirect />} />
                               <Route
                                 path="profile"

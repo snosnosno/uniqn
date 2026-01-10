@@ -91,24 +91,29 @@ export interface JobPostingStats {
 
 /**
  * 역할명 → StaffRole 코드 변환 맵
+ *
+ * @description 커스텀 역할은 원본 이름을 사용하므로 여기에 없어도 됨
  */
-const ROLE_NAME_TO_CODE: Record<string, StaffRole> = {
+const ROLE_NAME_TO_CODE: Record<string, string> = {
   '딜러': 'dealer',
   '매니저': 'manager',
   '칩러너': 'chiprunner',
   '관리자': 'admin',
-  // 플로어는 기본 StaffRole에 없으므로 dealer로 대체하거나 별도 처리
+  '플로어': 'floor',
+  '서빙': 'serving',
+  '직원': 'staff',
 };
 
 /**
  * 입력 roles를 RoleRequirement[] 형식으로 변환
  *
  * @description FormRoleWithCount 또는 RoleRequirement 형식을 통합 처리
+ * 커스텀 역할은 원본 이름을 코드로 사용 (중복 방지)
  */
 function convertToRoleRequirements(
   roles: { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
 ): RoleRequirement[] {
-  return roles.map((r) => {
+  return roles.map((r, index) => {
     // 이미 RoleRequirement 형식인 경우
     if ('role' in r && r.role) {
       return {
@@ -120,10 +125,11 @@ function convertToRoleRequirements(
 
     // FormRoleWithCount 형식인 경우
     const name = r.name || '';
-    const roleCode = ROLE_NAME_TO_CODE[name] || 'dealer'; // 매핑되지 않은 경우 기본값
+    // 매핑에 있으면 사용, 없으면 원본 이름 또는 인덱스 기반 고유 키 사용
+    const roleCode = ROLE_NAME_TO_CODE[name] || name || `custom_${index}`;
 
     return {
-      role: roleCode,
+      role: roleCode as StaffRole,
       count: r.count,
       filled: r.filled ?? 0,
     };
@@ -181,6 +187,8 @@ export async function createJobPosting(
       createdBy: ownerId,
       // Security Rules 필수 필드: description (빈 문자열 허용)
       description: restInput.description || '',
+      // Security Rules: postingType 기본값
+      postingType: restInput.postingType || 'regular',
       totalPositions,
       filledPositions: 0,
       viewCount: 0,
@@ -252,11 +260,18 @@ export async function updateJobPosting(
         totalPositions = input.roles.reduce((sum, role) => sum + role.count, 0);
       }
 
-      const updateData = {
+      // undefined 필드 제거 (Firebase는 undefined 값을 허용하지 않음)
+      const removeUndefined = <T extends Record<string, unknown>>(obj: T): T => {
+        return Object.fromEntries(
+          Object.entries(obj).filter(([, v]) => v !== undefined)
+        ) as T;
+      };
+
+      const updateData = removeUndefined({
         ...input,
         totalPositions,
         updatedAt: serverTimestamp(),
-      };
+      });
 
       transaction.update(jobRef, updateData);
 

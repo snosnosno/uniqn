@@ -91,6 +91,9 @@ export const Button = memo(function Button({
     return '#6B7280';
   };
 
+  const buttonClass = `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''}`.trim();
+  const textClass = `font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
+
   return (
     <Pressable
       {...props}
@@ -101,28 +104,14 @@ export const Button = memo(function Button({
         disabled: isDisabled,
         busy: loading,
       }}
-      className={`
-        flex-row items-center justify-center rounded-lg
-        ${variantStyles[variant]}
-        ${sizeStyles[size]}
-        ${fullWidth ? 'w-full' : ''}
-        ${isDisabled ? 'opacity-50' : ''}
-      `}
+      className={buttonClass}
     >
       {loading ? (
         <ActivityIndicator color={getLoaderColor()} size="small" />
       ) : (
         <>
           {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}
-          <Text
-            className={`
-              font-semibold
-              ${variantTextStyles[variant]}
-              ${sizeTextStyles[size]}
-            `}
-          >
-            {children}
-          </Text>
+          <Text className={textClass}>{children}</Text>
           {icon && iconPosition === 'right' && <View className="ml-2">{icon}</View>}
         </>
       )}

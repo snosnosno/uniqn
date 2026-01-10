@@ -14,7 +14,7 @@ import {
   Alert,
   BackHandler,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Loading, MobileHeader } from '@/components';
 import { useAuth } from '@/hooks/useAuth';
@@ -59,7 +59,17 @@ function convertToFormRoles(
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
+  const navigation = useNavigation();
   const { user } = useAuth();
+
+  // 안전한 뒤로가기 (히스토리 없으면 employer 탭으로 이동)
+  const safeGoBack = useCallback(() => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(app)/(tabs)/employer');
+    }
+  }, [navigation, router]);
   const { addToast } = useToastStore();
 
   // Form State
@@ -141,7 +151,7 @@ export default function CreateJobPostingScreen() {
             {
               text: '나가기',
               style: 'destructive',
-              onPress: () => router.back(),
+              onPress: safeGoBack,
             },
           ]
         );
@@ -152,7 +162,7 @@ export default function CreateJobPostingScreen() {
 
     const subscription = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
     return () => subscription.remove();
-  }, [hasUnsavedChanges, router]);
+  }, [hasUnsavedChanges, safeGoBack]);
 
   // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
@@ -287,18 +297,18 @@ export default function CreateJobPostingScreen() {
                   text: '임시저장',
                   onPress: async () => {
                     await handleSaveDraft();
-                    router.back();
+                    safeGoBack();
                   },
                 },
                 {
                   text: '나가기',
                   style: 'destructive',
-                  onPress: () => router.back(),
+                  onPress: safeGoBack,
                 },
               ]
             );
           } else {
-            router.back();
+            safeGoBack();
           }
         }}
       />

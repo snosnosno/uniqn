@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { CalendarIcon, XMarkIcon, ChevronDownIcon } from '@/components/icons';
+import { XMarkIcon, ChevronDownIcon } from '@/components/icons';
 import { CalendarPicker } from './CalendarPicker';
 
 // ============================================================================
@@ -64,7 +64,7 @@ export const DatePicker = memo(function DatePicker({
   disabled = false,
   error = false,
   errorMessage,
-  dateFormat = 'yyyy년 M월 d일 (EEE)',
+  dateFormat = 'MM월 dd일 (EEE)',
   mode = 'date',
   className = '',
   testID,
@@ -146,12 +146,8 @@ export const DatePicker = memo(function DatePicker({
           accessibilityHint="탭하여 날짜를 선택하세요"
           className="flex-row items-center flex-1"
         >
-          <CalendarIcon
-            size={20}
-            color={disabled ? '#9CA3AF' : '#6B7280'}
-          />
           <Text
-            className={`flex-1 ml-3 text-base ${
+            className={`flex-1 ${value ? 'text-base' : 'text-sm'} ${
               disabled
                 ? 'text-gray-400 dark:text-gray-500'
                 : value

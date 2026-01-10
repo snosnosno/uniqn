@@ -4,17 +4,14 @@ import { useTranslation } from 'react-i18next';
 import { FaGoogle } from '../components/Icons/ReactIconsReplacement';
 import { useNavigate, Link } from 'react-router-dom';
 import { FirebaseError } from 'firebase/app';
-import { sendEmailVerification } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 import AuthLayout from '../components/auth/AuthLayout';
 import FormField from '../components/FormField';
-import Modal from '../components/ui/Modal';
 import LoginBlockedModal from '../components/modals/LoginBlockedModal';
 import { useAuth, LoginBlockedError } from '../contexts/AuthContext';
 import type { Penalty } from '../types/penalty';
 import { secureStorage } from '../utils/secureStorage';
-import { toast } from '../utils/toast';
 
 const Login: React.FC = () => {
   const { t } = useTranslation();
@@ -22,12 +19,10 @@ const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
-  const [showEmailVerificationModal, setShowEmailVerificationModal] = useState(false);
-  const [isResendingEmail, setIsResendingEmail] = useState(false);
   const [blockedPenalty, setBlockedPenalty] = useState<Penalty | null>(null);
   const [showLoginBlockedModal, setShowLoginBlockedModal] = useState(false);
   const navigate = useNavigate();
-  const { signIn, signInWithGoogle, signOut, currentUser /* , signInWithKakao */ } = useAuth();
+  const { signIn, signInWithGoogle /* , signInWithKakao */ } = useAuth();
 
   // 🔍 디버깅: 환경 변수 확인 (개발 환경에서만)
   useEffect(() => {
@@ -70,18 +65,6 @@ const Login: React.FC = () => {
 
     try {
       const userCredential = await signIn(email, password, rememberMe);
-
-      // 이메일 인증 확인
-      if (userCredential?.user && !userCredential.user.emailVerified) {
-        // 미인증 사용자는 로그아웃 처리 (보안)
-        await signOut();
-        setShowEmailVerificationModal(true);
-        logger.warn('이메일 미인증 사용자 로그인 - 로그아웃 처리', {
-          component: 'Login',
-          data: { email },
-        });
-        return;
-      }
 
       // 약관 동의 여부 확인 (Google 로그인과 동일하게)
       const db = getFirestore();
@@ -155,16 +138,6 @@ const Login: React.FC = () => {
     try {
       const userCredential = await signInWithGoogle();
 
-      // 이메일 인증 확인 (구글은 자동 인증이지만 체크)
-      if (userCredential?.user && !userCredential.user.emailVerified) {
-        setShowEmailVerificationModal(true);
-        logger.warn('이메일 미인증 사용자 로그인 (Google)', {
-          component: 'Login',
-          data: { email: userCredential.user.email },
-        });
-        return;
-      }
-
       // 동의 여부 확인
       const db = getFirestore();
       const consentRef = doc(db, 'users', userCredential.user.uid, 'consents', 'current');
@@ -214,39 +187,6 @@ const Login: React.FC = () => {
           { component: 'Login' }
         );
       }
-    }
-  };
-
-  // 이메일 재발송 핸들러
-  const handleResendEmailVerification = async () => {
-    if (!currentUser) return;
-
-    setIsResendingEmail(true);
-    try {
-      await sendEmailVerification(currentUser);
-      logger.info('이메일 인증 재발송 성공', {
-        component: 'Login',
-        data: { email: currentUser.email },
-      });
-      toast.success(t('login.emailVerificationResent', '인증 이메일이 재발송되었습니다.'));
-      setShowEmailVerificationModal(false);
-    } catch (err: unknown) {
-      if (err instanceof FirebaseError) {
-        logger.error('이메일 인증 재발송 실패 (Firebase):', err, {
-          component: 'Login',
-          data: { code: err.code },
-        });
-        toast.error(t('login.emailVerificationResendFailed', '이메일 재발송에 실패했습니다.'));
-      } else {
-        logger.error(
-          '이메일 인증 재발송 실패 (Unknown):',
-          err instanceof Error ? err : new Error(String(err)),
-          { component: 'Login' }
-        );
-        toast.error(t('login.emailVerificationResendFailed', '이메일 재발송에 실패했습니다.'));
-      }
-    } finally {
-      setIsResendingEmail(false);
     }
   };
 
@@ -379,45 +319,6 @@ const Login: React.FC = () => {
           {t('login.noAccount')}
         </Link>
       </div>
-
-      {/* 이메일 인증 모달 */}
-      <Modal
-        isOpen={showEmailVerificationModal}
-        onClose={() => setShowEmailVerificationModal(false)}
-        title={t('login.emailVerificationRequired', '이메일 인증이 필요합니다')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            {t(
-              'login.emailVerificationMessage',
-              '계정을 사용하기 위해서는 이메일 인증이 필요합니다. 인증 이메일을 확인해주세요.'
-            )}
-          </p>
-          <p className="text-sm text-gray-600 dark:text-gray-300">
-            {t(
-              'login.emailVerificationCheck',
-              '이메일을 받지 못하셨나요? 스팸 폴더를 확인해주세요.'
-            )}
-          </p>
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => setShowEmailVerificationModal(false)}
-              className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600"
-            >
-              {t('common.close', '닫기')}
-            </button>
-            <button
-              onClick={handleResendEmailVerification}
-              disabled={isResendingEmail}
-              className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 dark:bg-indigo-700 rounded-md hover:bg-indigo-700 dark:hover:bg-indigo-600 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            >
-              {isResendingEmail
-                ? t('login.emailVerificationResending', '재발송 중...')
-                : t('login.emailVerificationResend', '인증 이메일 재발송')}
-            </button>
-          </div>
-        </div>
-      </Modal>
 
       {/* 로그인 차단 모달 */}
       {blockedPenalty && (

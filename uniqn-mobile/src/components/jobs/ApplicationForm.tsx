@@ -239,13 +239,13 @@ export function ApplicationForm({
                 </View>
               ) : (
                 <View className="space-y-2">
-                  {availableRoles.map((roleReq) => {
+                  {availableRoles.map((roleReq, index) => {
                     const isSelected = selectedRole === roleReq.role;
                     const remaining = roleReq.count - roleReq.filled;
 
                     return (
                       <Pressable
-                        key={roleReq.role}
+                        key={`${roleReq.role}-${index}`}
                         onPress={() => setSelectedRole(roleReq.role)}
                         disabled={isSubmitting}
                         className={`

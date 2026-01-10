@@ -172,9 +172,9 @@ const ApplicantHeader = memo(function ApplicantHeader({
 
         {/* 역할 뱃지 */}
         <View className="flex-row flex-wrap gap-1">
-          {roles.map((role) => (
+          {roles.map((role, index) => (
             <Badge
-              key={role}
+              key={`${role}-${index}`}
               variant={getRoleBadgeVariant(role)}
               size="sm"
             >

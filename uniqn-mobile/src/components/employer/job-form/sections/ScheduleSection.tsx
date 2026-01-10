@@ -12,6 +12,7 @@ import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
 import {
   CalendarIcon,
+  ClockIcon,
   PlusIcon,
   TrashIcon,
   StarIcon,
@@ -101,26 +102,42 @@ const SingleDateSchedule = memo(function SingleDateSchedule({
         </View>
       )}
 
-      <FormField label="근무 날짜" required error={errors?.workDate}>
-        <DatePicker
-          value={parseDate(data.workDate)}
-          onChange={(date) => onUpdate({ workDate: formatDate(date) })}
-          placeholder="날짜를 선택하세요"
-          minimumDate={minimumDate}
-          maximumDate={maximumDate}
-          mode="date"
-          error={!!errors?.workDate}
-        />
-      </FormField>
+      <View className="flex-row gap-3">
+        <View className="flex-1">
+          <FormField
+            label="근무 날짜"
+            required
+            error={errors?.workDate}
+            icon={<CalendarIcon size={16} color="#6B7280" />}
+          >
+            <DatePicker
+              value={parseDate(data.workDate)}
+              onChange={(date) => onUpdate({ workDate: formatDate(date) })}
+              placeholder="날짜를 선택하세요"
+              minimumDate={minimumDate}
+              maximumDate={maximumDate}
+              mode="date"
+              error={!!errors?.workDate}
+            />
+          </FormField>
+        </View>
 
-      <FormField label="출근 시간" required error={errors?.startTime} className="mt-4">
-        <TimePicker
-          value={data.startTime}
-          onChange={(time) => onUpdate({ startTime: time })}
-          placeholder="시간을 선택하세요"
-          error={!!errors?.startTime}
-        />
-      </FormField>
+        <View className="flex-1">
+          <FormField
+            label="출근 시간"
+            required
+            error={errors?.startTime}
+            icon={<ClockIcon size={16} color="#6B7280" />}
+          >
+            <TimePicker
+              value={data.startTime}
+              onChange={(time) => onUpdate({ startTime: time })}
+              placeholder="시간을 선택하세요"
+              error={!!errors?.startTime}
+            />
+          </FormField>
+        </View>
+      </View>
     </View>
   );
 });

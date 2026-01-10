@@ -12,11 +12,10 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Loading, MobileHeader } from '@/components';
+import { Button, Loading } from '@/components';
 import {
   SectionCard,
   BasicInfoSection,
@@ -396,26 +395,6 @@ export default function EditJobPostingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
-      {/* 헤더 */}
-      <MobileHeader
-        title="공고 수정"
-        showBack
-        onBack={() => {
-          Alert.alert(
-            '수정 취소',
-            '변경 사항이 저장되지 않습니다. 나가시겠습니까?',
-            [
-              { text: '계속 수정', style: 'cancel' },
-              {
-                text: '나가기',
-                style: 'destructive',
-                onPress: () => router.back(),
-              },
-            ]
-          );
-        }}
-      />
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

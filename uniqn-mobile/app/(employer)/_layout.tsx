@@ -3,9 +3,33 @@
  * 구인자 전용 레이아웃 (employer 권한 필요)
  */
 
-import { Stack, Redirect } from 'expo-router';
-import { useColorScheme, View, ActivityIndicator } from 'react-native';
+import { Stack, Redirect, useRouter, useNavigation } from 'expo-router';
+import { useColorScheme, View, ActivityIndicator, Pressable } from 'react-native';
 import { useAuthStore, useHasRole } from '@/stores/authStore';
+import { ChevronLeftIcon } from '@/components/icons';
+
+/**
+ * 커스텀 뒤로가기 버튼 (새로고침해도 작동)
+ */
+function HeaderBackButton({ tintColor }: { tintColor: string }) {
+  const router = useRouter();
+  const navigation = useNavigation();
+
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      router.back();
+    } else {
+      // 히스토리가 없으면 employer 탭으로 이동
+      router.replace('/(app)/(tabs)/employer');
+    }
+  };
+
+  return (
+    <Pressable onPress={handleBack} hitSlop={8} className="p-2 -ml-2">
+      <ChevronLeftIcon size={24} color={tintColor} />
+    </Pressable>
+  );
+}
 
 export default function EmployerLayout() {
   const colorScheme = useColorScheme();
@@ -53,30 +77,42 @@ export default function EmployerLayout() {
         name="my-postings/[id]/index"
         options={{
           title: '공고 상세',
+          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />
       <Stack.Screen
         name="my-postings/[id]/applicants"
         options={{
           title: '지원자 관리',
+          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />
       <Stack.Screen
         name="my-postings/[id]/settlements"
         options={{
           title: '정산 관리',
+          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />
       <Stack.Screen
         name="my-postings/create"
         options={{
           title: '공고 작성',
+          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />
       <Stack.Screen
         name="my-postings/[id]/edit"
         options={{
           title: '공고 수정',
+          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
+        }}
+      />
+      <Stack.Screen
+        name="my-postings/[id]/cancellation-requests"
+        options={{
+          title: '취소 요청 관리',
+          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />
     </Stack>

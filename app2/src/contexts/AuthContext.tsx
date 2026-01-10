@@ -9,8 +9,6 @@ import {
   setPersistence,
   browserSessionPersistence,
   browserLocalPersistence,
-  sendEmailVerification,
-  reload,
 } from 'firebase/auth';
 import { logger } from '../utils/logger';
 import { setSentryUser } from '../utils/sentry';
@@ -57,8 +55,6 @@ interface AuthContextType {
   sendPasswordReset: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<UserCredential>;
   signInWithKakao: (kakaoToken: string, userInfo: unknown) => Promise<UserCredential>;
-  sendEmailVerification: () => Promise<void>;
-  reloadUser: () => Promise<void>;
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -239,46 +235,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  const sendEmailVerificationToUser = useCallback(async () => {
-    if (auth.currentUser) {
-      try {
-        await sendEmailVerification(auth.currentUser);
-        logger.info('이메일 인증 발송 완료', {
-          component: 'AuthContext',
-          data: { email: auth.currentUser.email },
-        });
-      } catch (error) {
-        logger.error(
-          '이메일 인증 발송 실패:',
-          error instanceof Error ? error : new Error(String(error)),
-          { component: 'AuthContext' }
-        );
-        throw error;
-      }
-    } else {
-      throw new Error(i18n.t('errors.noLoggedInUser'));
-    }
-  }, []);
-
-  const reloadUser = useCallback(async () => {
-    if (auth.currentUser) {
-      try {
-        await reload(auth.currentUser);
-        logger.info('사용자 정보 새로고침 완료', {
-          component: 'AuthContext',
-          data: { emailVerified: auth.currentUser.emailVerified },
-        });
-      } catch (error) {
-        logger.error(
-          '사용자 정보 새로고침 실패:',
-          error instanceof Error ? error : new Error(String(error)),
-          { component: 'AuthContext' }
-        );
-        throw error;
-      }
-    }
-  }, []);
-
   const signOut = useCallback(async () => {
     try {
       // secureStorage 설정 정리 (signIn과 일관성 유지)
@@ -310,8 +266,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       sendPasswordReset,
       signInWithGoogle,
       signInWithKakao,
-      sendEmailVerification: sendEmailVerificationToUser,
-      reloadUser,
     }),
     [
       currentUser,
@@ -323,8 +277,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       sendPasswordReset,
       signInWithGoogle,
       signInWithKakao,
-      sendEmailVerificationToUser,
-      reloadUser,
     ]
   );
 

@@ -276,13 +276,24 @@ export async function getMyJobPostings(
  * JobPosting을 카드 형태로 변환
  */
 export function convertToCard(posting: JobPosting): JobPostingCard {
+  // location이 문자열일 수도 있고 객체일 수도 있음
+  const locationName = typeof posting.location === 'string'
+    ? posting.location
+    : (posting.location as { name?: string })?.name ?? '';
+
+  // roles가 RoleRequirement 또는 FormRoleWithCount 형식일 수 있음
+  const roleNames = posting.roles.map((r) => {
+    const roleReq = r as { role?: string; name?: string };
+    return roleReq.name || roleReq.role || '역할';
+  });
+
   return {
     id: posting.id,
     title: posting.title,
-    location: posting.location.name,
+    location: locationName,
     workDate: posting.workDate,
     timeSlot: posting.timeSlot,
-    roles: posting.roles.map((r) => r.role),
+    roles: roleNames,
     salary: {
       type: posting.salary.type,
       amount: posting.salary.amount,

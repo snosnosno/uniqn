@@ -134,10 +134,19 @@ export default function JobPostingDetailScreen() {
   const pendingCount = applicantCount - confirmedCount;
 
   // 급여 표시 (salary 객체에서 추출)
-  const salaryAmount = posting.salary?.amount || 0;
+  const salaryAmount = typeof posting.salary?.amount === 'number' ? posting.salary.amount : 0;
   const salaryTypeLabel = posting.salary?.type === 'hourly' ? '시급' :
                           posting.salary?.type === 'daily' ? '일급' :
                           posting.salary?.type === 'monthly' ? '월급' : '급여';
+
+  // 안전한 값 추출
+  const safeTitle = String(posting.title || '제목 없음');
+  const safeLocationName = typeof posting.location === 'string'
+    ? posting.location
+    : (posting.location?.name || '장소 미정');
+  const safeWorkDate = String(posting.workDate || '');
+  const safeTimeSlot = String(posting.timeSlot || '');
+  const safeWorkDateTime = `${safeWorkDate} ${safeTimeSlot}`.trim() || '일정 미정';
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
@@ -148,7 +157,7 @@ export default function JobPostingDetailScreen() {
             {/* 헤더 */}
             <View className="flex-row items-center justify-between mb-4">
               <Text className="flex-1 text-xl font-bold text-gray-900 dark:text-white" numberOfLines={2}>
-                {posting.title}
+                {safeTitle}
               </Text>
               <Badge variant={status.variant} size="md">
                 {status.label}
@@ -159,7 +168,7 @@ export default function JobPostingDetailScreen() {
             <View className="flex-row items-center mb-3">
               <MapPinIcon size={18} color="#2563EB" />
               <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                {posting.location.name}
+                {safeLocationName}
               </Text>
             </View>
 
@@ -167,7 +176,7 @@ export default function JobPostingDetailScreen() {
             <View className="flex-row items-center mb-3">
               <ClockIcon size={18} color="#2563EB" />
               <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                {posting.workDate} {posting.timeSlot}
+                {safeWorkDateTime}
               </Text>
             </View>
 
@@ -175,7 +184,7 @@ export default function JobPostingDetailScreen() {
             <View className="flex-row items-center mb-4">
               <CurrencyDollarIcon size={18} color="#2563EB" />
               <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                {salaryTypeLabel} {salaryAmount.toLocaleString()}원
+                {`${salaryTypeLabel} ${salaryAmount.toLocaleString()}원`}
               </Text>
             </View>
 
@@ -218,7 +227,7 @@ export default function JobPostingDetailScreen() {
             관리
           </Text>
 
-          <View className="space-y-3">
+          <View className="gap-3">
             {/* 지원자 관리 */}
             <ActionCard
               icon={<UsersIcon size={24} color="#2563EB" />}
@@ -256,14 +265,14 @@ export default function JobPostingDetailScreen() {
         </View>
 
         {/* 공고 설명 */}
-        {posting.description && (
+        {posting.description && String(posting.description).length > 0 && (
           <View className="px-4 pb-6">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
               공고 내용
             </Text>
             <Card variant="outlined" padding="md">
               <Text className="text-base text-gray-700 dark:text-gray-300 leading-6">
-                {posting.description}
+                {String(posting.description)}
               </Text>
             </Card>
           </View>

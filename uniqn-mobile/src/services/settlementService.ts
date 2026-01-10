@@ -284,8 +284,18 @@ function getRoleHourlyRate(jobPosting: JobPosting, role: string): number {
   // 역할별 급여 설정이 있는 경우
   if (jobPosting.salary.useRoleSalary && jobPosting.salary.roleSalaries) {
     const roleSalary = jobPosting.salary.roleSalaries[role];
-    if (roleSalary && roleSalary.type === 'hourly') {
-      return roleSalary.amount;
+    if (roleSalary) {
+      // 역할별 타입에 따라 시급 환산
+      if (roleSalary.type === 'hourly') {
+        return roleSalary.amount;
+      }
+      if (roleSalary.type === 'daily') {
+        return Math.round(roleSalary.amount / 8);
+      }
+      if (roleSalary.type === 'monthly') {
+        // 월급: 월 22일, 일 8시간 기준
+        return Math.round(roleSalary.amount / 22 / 8);
+      }
     }
   }
 
@@ -297,6 +307,11 @@ function getRoleHourlyRate(jobPosting: JobPosting, role: string): number {
   // 일급인 경우 8시간 기준으로 시급 환산
   if (jobPosting.salary.type === 'daily') {
     return Math.round(jobPosting.salary.amount / 8);
+  }
+
+  // 월급인 경우 월 22일, 일 8시간 기준으로 시급 환산
+  if (jobPosting.salary.type === 'monthly') {
+    return Math.round(jobPosting.salary.amount / 22 / 8);
   }
 
   return 0;

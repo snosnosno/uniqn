@@ -47,8 +47,8 @@ const dotStyles: Record<BadgeVariant, string> = {
 };
 
 const sizeStyles: Record<BadgeSize, string> = {
-  sm: 'px-2 py-0.5',
-  md: 'px-2.5 py-1',
+  sm: 'px-2 py-1',
+  md: 'px-3 py-1',
 };
 
 const textSizeStyles: Record<BadgeSize, string> = {
@@ -63,32 +63,14 @@ export function Badge({
   dot = false,
   className = '',
 }: BadgeProps) {
+  const containerClass = `flex-row items-center rounded-full ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
+  const dotClass = `mr-2 h-2 w-2 rounded-full ${dotStyles[variant]}`;
+  const textClass = `font-medium ${textStyles[variant]} ${textSizeStyles[size]}`;
+
   return (
-    <View
-      className={`
-        flex-row items-center rounded-full
-        ${variantStyles[variant]}
-        ${sizeStyles[size]}
-        ${className}
-      `}
-    >
-      {dot && (
-        <View
-          className={`
-            mr-1.5 h-1.5 w-1.5 rounded-full
-            ${dotStyles[variant]}
-          `}
-        />
-      )}
-      <Text
-        className={`
-          font-medium
-          ${textStyles[variant]}
-          ${textSizeStyles[size]}
-        `}
-      >
-        {children}
-      </Text>
+    <View className={containerClass}>
+      {dot && <View className={dotClass} />}
+      <Text className={textClass}>{children}</Text>
     </View>
   );
 }

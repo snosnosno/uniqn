@@ -97,11 +97,11 @@ const RoleSelector = memo(function RoleSelector({
       </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false}>
         <View className="flex-row gap-2">
-          {roles.map((role) => {
+          {roles.map((role, index) => {
             const isSelected = selectedRole === role;
             return (
               <Pressable
-                key={role}
+                key={`${role}-${index}`}
                 onPress={() => !disabled && onRoleSelect(role)}
                 disabled={disabled}
                 accessibilityRole="radio"

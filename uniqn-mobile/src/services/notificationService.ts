@@ -18,6 +18,7 @@ import {
   startAfter,
   getDocs,
   getDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   writeBatch,
@@ -387,35 +388,41 @@ export function subscribeToUnreadCount(
 
 /**
  * 알림 설정 조회
+ * @description Firestore 경로: users/{userId}/notificationSettings/default
  */
 export async function getNotificationSettings(userId: string): Promise<NotificationSettings> {
   return withErrorHandling(async () => {
-    const docRef = doc(getFirebaseDb(), 'userSettings', userId);
+    // Firestore 규칙에 맞는 경로 사용: users/{userId}/notificationSettings/{settingId}
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'notificationSettings', 'default');
     const docSnap = await getDoc(docRef);
 
-    if (!docSnap.exists() || !docSnap.data()?.notifications) {
+    if (!docSnap.exists()) {
       return createDefaultNotificationSettings();
     }
 
-    return docSnap.data().notifications as NotificationSettings;
+    return docSnap.data() as NotificationSettings;
   }, 'getNotificationSettings');
 }
 
 /**
  * 알림 설정 저장
+ * @description Firestore 경로: users/{userId}/notificationSettings/default
  */
 export async function saveNotificationSettings(
   userId: string,
   settings: NotificationSettings
 ): Promise<void> {
   return withErrorHandling(async () => {
-    const docRef = doc(getFirebaseDb(), 'userSettings', userId);
-    await updateDoc(docRef, {
-      notifications: {
+    // Firestore 규칙에 맞는 경로 사용: users/{userId}/notificationSettings/{settingId}
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'notificationSettings', 'default');
+    await setDoc(
+      docRef,
+      {
         ...settings,
         updatedAt: serverTimestamp(),
       },
-    });
+      { merge: true }
+    );
 
     logger.info('알림 설정 저장', { userId });
   }, 'saveNotificationSettings');

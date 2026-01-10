@@ -17,7 +17,6 @@ import { validatePhone, formatPhoneNumber } from '../utils/phoneValidator';
 import { validateEmail, validateEmailRealtime } from '../utils/emailValidator';
 import type { ConsentCreateInput } from '../types/consent';
 import { FirebaseError } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, sendEmailVerification } from 'firebase/auth';
 import { getFirestore, doc, getDoc } from 'firebase/firestore';
 
 const SignUp: React.FC = () => {
@@ -231,43 +230,10 @@ const SignUp: React.FC = () => {
         consents, // 동의 정보 추가
       });
 
-      // 이메일 인증 메일 발송
-      try {
-        const auth = getAuth();
-        const userCredential = await signInWithEmailAndPassword(auth, email, password);
-        await sendEmailVerification(userCredential.user);
-
-        logger.info('이메일 인증 발송 성공', {
-          component: 'SignUp',
-          data: { email },
-        });
-
-        // 로그아웃 (이메일 인증 완료 후 다시 로그인하도록)
-        await auth.signOut();
-      } catch (emailError) {
-        logger.error(
-          '이메일 인증 발송 실패',
-          emailError instanceof Error ? emailError : new Error(String(emailError)),
-          {
-            component: 'SignUp',
-            data: { email },
-          }
-        );
-        // 이메일 발송 실패해도 회원가입은 성공했으므로 계속 진행
-      }
-
       // 회원가입 성공 메시지
       setModalInfo({
         title: t('signUp.title'),
-        message:
-          t('signUp.successMessage', '회원가입이 완료되었습니다.') +
-          '\n\n' +
-          t('signUp.emailVerificationNote', '가입한 이메일로 인증 메일이 발송됩니다.') +
-          '\n\n' +
-          t(
-            'signUp.emailVerificationInstruction',
-            '이메일을 확인하여 인증을 완료한 후 로그인해주세요.'
-          ),
+        message: t('signUp.successMessage', '회원가입이 완료되었습니다.'),
         isOpen: true,
       });
 

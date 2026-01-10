@@ -37,7 +37,9 @@ const formatSalary = (type: string, amount: number): string => {
 };
 
 const formatDate = (dateStr: string): string => {
+  if (!dateStr) return '';
   const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr; // 유효하지 않은 날짜면 원본 반환
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -45,10 +47,13 @@ const formatDate = (dateStr: string): string => {
   return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
 };
 
-const getRoleLabel = (role: string): string => {
+const getRoleLabel = (role: string | undefined): string => {
+  if (!role) return '역할';
   switch (role) {
     case 'dealer':
       return '딜러';
+    case 'floor':
+      return '플로어';
     case 'manager':
       return '매니저';
     case 'chiprunner':
@@ -60,6 +65,17 @@ const getRoleLabel = (role: string): string => {
   }
 };
 
+/**
+ * 역할 정보에서 표시할 이름 추출
+ * RoleRequirement 또는 FormRoleWithCount 형식 모두 지원
+ */
+const getRoleDisplayName = (roleReq: { role?: string; name?: string; count: number; filled?: number }): string => {
+  // name이 있으면 사용 (FormRoleWithCount)
+  if (roleReq.name) return roleReq.name;
+  // role이 있으면 변환 (RoleRequirement)
+  return getRoleLabel(roleReq.role);
+};
+
 // ============================================================================
 // Sub Components
 // ============================================================================
@@ -69,7 +85,7 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon: s
     <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-gray-700">
       <Text className="text-lg mr-3">{icon}</Text>
       <View className="flex-1">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-0.5">
+        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
           {label}
         </Text>
         <Text className="text-sm text-gray-900 dark:text-white">
@@ -91,23 +107,50 @@ export function JobDetail({ job }: JobDetailProps) {
     }
   };
 
-  const allowanceItems = [];
-  if (job.allowances?.meal) {
+  // 수당 정보 안전하게 처리
+  const allowanceItems: string[] = [];
+  if (job.allowances?.meal && typeof job.allowances.meal === 'number') {
     allowanceItems.push(`식대 ${job.allowances.meal.toLocaleString()}원`);
   }
-  if (job.allowances?.transportation) {
+  if (job.allowances?.transportation && typeof job.allowances.transportation === 'number') {
     allowanceItems.push(`교통비 ${job.allowances.transportation.toLocaleString()}원`);
   }
-  if (job.allowances?.accommodation) {
+  if (job.allowances?.accommodation && typeof job.allowances.accommodation === 'number') {
     allowanceItems.push(`숙박비 ${job.allowances.accommodation.toLocaleString()}원`);
   }
+
+  // 안전한 값 추출
+  const safeTitle = String(job.title || '제목 없음');
+  const safeTimeSlot = String(job.timeSlot || '시간 미정');
+  const safeContactPhone = String(job.contactPhone || '');
+  const safeDescription = String(job.description || '');
+  const safeWorkDate = formatDate(job.workDate) || '날짜 미정';
+
+  // location 안전하게 처리
+  const getLocationValue = (): string => {
+    if (!job.location) return '정보 없음';
+    const locationName = typeof job.location === 'string'
+      ? job.location
+      : (job.location?.name || '');
+    const address = job.detailedAddress ? ` ${job.detailedAddress}` : '';
+    const result = `${locationName}${address}`.trim();
+    return result || '정보 없음';
+  };
+
+  // 급여 안전하게 처리
+  const getSalaryText = (): string => {
+    if (!job.salary) return '급여 정보 없음';
+    const type = job.salary.type || 'hourly';
+    const amount = typeof job.salary.amount === 'number' ? job.salary.amount : 0;
+    return formatSalary(type, amount);
+  };
 
   return (
     <View className="bg-white dark:bg-gray-900">
       {/* 헤더 영역 */}
       <View className="p-4 bg-gray-50 dark:bg-gray-800">
         <View className="flex-row items-center mb-2">
-          {job.isUrgent && (
+          {job.isUrgent === true && (
             <Badge variant="error" size="sm" className="mr-2">
               긴급
             </Badge>
@@ -120,21 +163,30 @@ export function JobDetail({ job }: JobDetailProps) {
           </Badge>
         </View>
         <Text className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-          {job.title}
+          {safeTitle}
         </Text>
 
         {/* 역할 태그 */}
-        <View className="flex-row flex-wrap gap-2 mb-3">
-          {job.roles.map((roleReq, index) => (
-            <Badge key={index} variant="primary" size="md">
-              {getRoleLabel(roleReq.role)} ({roleReq.filled}/{roleReq.count}명)
-            </Badge>
-          ))}
-        </View>
+        {Array.isArray(job.roles) && job.roles.length > 0 && (
+          <View className="flex-row flex-wrap mb-3">
+            {job.roles.map((roleReq, index) => {
+              const displayName = getRoleDisplayName(roleReq);
+              const filled = typeof roleReq.filled === 'number' ? roleReq.filled : 0;
+              const count = typeof roleReq.count === 'number' ? roleReq.count : 0;
+              return (
+                <View key={index} className="mr-2 mb-2">
+                  <Badge variant="primary" size="md">
+                    {`${displayName} (${filled}/${count}명)`}
+                  </Badge>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
         {/* 급여 */}
         <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-          {formatSalary(job.salary.type, job.salary.amount)}
+          {getSalaryText()}
         </Text>
       </View>
 
@@ -144,16 +196,12 @@ export function JobDetail({ job }: JobDetailProps) {
           근무 정보
         </Text>
 
-        <InfoRow
-          icon="📍"
-          label="근무지"
-          value={`${job.location.name}${job.detailedAddress ? ` ${job.detailedAddress}` : ''}`}
-        />
-        <InfoRow icon="📅" label="근무일" value={formatDate(job.workDate)} />
-        <InfoRow icon="🕐" label="근무시간" value={job.timeSlot} />
-        {job.contactPhone && (
+        <InfoRow icon="📍" label="근무지" value={getLocationValue()} />
+        <InfoRow icon="📅" label="근무일" value={safeWorkDate} />
+        <InfoRow icon="🕐" label="근무시간" value={safeTimeSlot} />
+        {safeContactPhone.length > 0 && (
           <Pressable onPress={handleCall}>
-            <InfoRow icon="📞" label="연락처" value={job.contactPhone} />
+            <InfoRow icon="📞" label="연락처" value={safeContactPhone} />
           </Pressable>
         )}
         {allowanceItems.length > 0 && (
@@ -162,32 +210,34 @@ export function JobDetail({ job }: JobDetailProps) {
       </View>
 
       {/* 상세 설명 */}
-      {job.description && (
+      {safeDescription.length > 0 && (
         <View className="p-4 border-t border-gray-100 dark:border-gray-700">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
             상세 설명
           </Text>
           <Text className="text-sm text-gray-600 dark:text-gray-300 leading-6">
-            {job.description}
+            {safeDescription}
           </Text>
         </View>
       )}
 
       {/* 통계 */}
-      <View className="p-4 border-t border-gray-100 dark:border-gray-700">
-        <View className="flex-row">
-          {job.viewCount !== undefined && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mr-4">
-              👁 조회 {job.viewCount}
-            </Text>
-          )}
-          {job.applicationCount !== undefined && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500">
-              👤 지원 {job.applicationCount}
-            </Text>
-          )}
+      {(typeof job.viewCount === 'number' || typeof job.applicationCount === 'number') && (
+        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
+          <View className="flex-row">
+            {typeof job.viewCount === 'number' && (
+              <Text className="text-xs text-gray-400 dark:text-gray-500 mr-4">
+                {`👁 조회 ${job.viewCount}`}
+              </Text>
+            )}
+            {typeof job.applicationCount === 'number' && (
+              <Text className="text-xs text-gray-400 dark:text-gray-500">
+                {`👤 지원 ${job.applicationCount}`}
+              </Text>
+            )}
+          </View>
         </View>
-      </View>
+      )}
     </View>
   );
 }

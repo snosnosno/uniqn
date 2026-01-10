@@ -212,22 +212,26 @@ export default function AuthenticatedJobDetailScreen() {
               <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
                 {getStatusMessage()}
               </Text>
-              <View className="flex-row gap-2 w-full">
-                <Button
-                  onPress={() => router.push('/(app)/(tabs)/schedule')}
-                  variant="outline"
-                  className="flex-1"
-                >
-                  내 지원 현황
-                </Button>
-                {canRequestCancel && (
+              <View className="flex-row w-full">
+                <View className="flex-1 mr-2">
                   <Button
-                    onPress={handleCancelRequest}
-                    variant="ghost"
-                    className="flex-1"
+                    onPress={() => router.push('/(app)/(tabs)/schedule')}
+                    variant="outline"
+                    fullWidth
                   >
-                    취소 요청
+                    내 지원 현황
                   </Button>
+                </View>
+                {canRequestCancel && (
+                  <View className="flex-1">
+                    <Button
+                      onPress={handleCancelRequest}
+                      variant="ghost"
+                      fullWidth
+                    >
+                      취소 요청
+                    </Button>
+                  </View>
                 )}
               </View>
             </View>

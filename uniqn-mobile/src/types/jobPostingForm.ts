@@ -207,7 +207,7 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
 
   // Step 4
   salary: {
-    type: 'daily',
+    type: 'hourly',
     amount: 0,
     useRoleSalary: false,
   },

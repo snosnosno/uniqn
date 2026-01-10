@@ -298,14 +298,16 @@ service cloud.firestore {
 
       // Admin can create/update any job posting
       // Manager and Staff can create job postings and update their own
+      // v2.0: 앱 타입 정의에 맞춘 status 허용 값 + location 객체 지원
       allow create: if hasValidRole() &&
-        request.resource.data.keys().hasAll(['title', 'description', 'location', 'status', 'createdBy', 'postingType']) &&
+        request.resource.data.keys().hasAll(['title', 'location', 'status', 'createdBy']) &&
         request.resource.data.createdBy == request.auth.uid &&
         isSafeText(request.resource.data.title, 200) &&
-        isSafeText(request.resource.data.description, 2000) &&
-        isSafeText(request.resource.data.location, 200) &&
-        request.resource.data.status in ['open', 'closed', 'in_progress', 'completed'] &&
-        request.resource.data.postingType in ['regular', 'fixed', 'tournament', 'urgent'] &&
+        (!('description' in request.resource.data) || request.resource.data.description is string) &&
+        request.resource.data.location is map &&
+        request.resource.data.location.keys().hasAny(['name', 'region', 'district']) &&
+        request.resource.data.status in ['draft', 'active', 'closed', 'cancelled', 'open', 'in_progress', 'completed'] &&
+        (!('postingType' in request.resource.data) || request.resource.data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
         (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
         (!('contactPhone' in request.resource.data) || isSafeText(request.resource.data.contactPhone, 25)) &&
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
@@ -419,20 +421,22 @@ service cloud.firestore {
       }
     }
 
-    // --- Applications Collection (표준 필드명 + 최적화 지원) ---
+    // --- Applications Collection (jobPostingId 통일) ---
     match /applications/{applicationId} {
       // 인증된 사용자가 읽기 가능 (역할별 필터링은 클라이언트에서 처리)
       allow read: if isSignedIn();
 
-      // 사용자는 본인 지원서 생성 가능 (표준 필드명 지원: eventId)
+      // 사용자는 본인 지원서 생성 가능
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
         request.resource.data.keys().hasAll(['applicantId', 'status']) &&
-        (request.resource.data.keys().hasAny(['postId', 'eventId'])) &&  // postId 또는 eventId 중 하나 필수
+        (request.resource.data.keys().hasAny(['jobPostingId', 'postId', 'eventId'])) &&  // jobPostingId 우선, 하위 호환성 유지
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
 
       // 관리자 및 구인공고 작성자가 지원서 수정 가능
       allow update: if isPrivileged() ||
         (hasValidRole() && (
+          (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid) ||
           (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
            get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
           (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
@@ -444,6 +448,8 @@ service cloud.firestore {
         request.auth.uid == resource.data.applicantId ||
         isPrivileged() ||
         (hasValidRole() && (
+          (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid) ||
           (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
            get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
           (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
