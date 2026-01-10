@@ -3,3 +3,4 @@
  */
 
 export { DatePickerModal } from './DatePickerModal';
+export { RoleSelectModal, type RoleSelectModalProps } from './RoleSelectModal';

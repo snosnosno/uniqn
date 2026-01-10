@@ -2,17 +2,32 @@
  * UNIQN Mobile - 시간대 카드
  *
  * @description 날짜별 요구사항의 시간대를 표시하고 편집하는 카드
- * @version 2.0.0
+ * @version 3.0.0 - TimePicker 통합, 역할 편집 기능 추가
  *
  * 주요 기능:
- * - 시작시간 입력 (종료시간 없음)
+ * - 시작시간 선택 (TimePicker 통합)
  * - 시간 미정 토글
- * - 역할별 인원 관리
+ * - 역할 추가/삭제/인원 조절
  */
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, Pressable, TextInput, Switch } from 'react-native';
-import { XCircleIcon } from '@/components/icons';
+import {
+  XCircleIcon,
+  PlusIcon,
+  MinusIcon,
+  TrashIcon,
+  ChevronDownIcon,
+  ChevronUpIcon,
+} from '@/components/icons';
+import { TimePicker } from '@/components/ui/TimePicker';
+import { RoleSelectModal } from '../modals';
+import {
+  ROLE_ICONS,
+  DEFAULT_ROLE_ICON,
+  STAFF_ROLES,
+  MAX_ROLES_PER_SLOT,
+} from '@/constants';
 import type { TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -33,6 +48,106 @@ export interface TimeSlotCardProps {
 }
 
 // ============================================================================
+// RoleCard Component (시간대 내 역할 카드)
+// ============================================================================
+
+interface RoleCardProps {
+  role: RoleRequirement;
+  roleIndex: number;
+  canRemove: boolean;
+  onCountChange: (roleIndex: number, delta: number) => void;
+  onRemove: (roleIndex: number) => void;
+  onCustomNameChange?: (roleIndex: number, name: string) => void;
+}
+
+const RoleCard = React.memo(function RoleCard({
+  role,
+  roleIndex,
+  canRemove,
+  onCountChange,
+  onRemove,
+  onCustomNameChange,
+}: RoleCardProps) {
+  // 역할명 가져오기
+  const roleName = role.role === 'other' && role.customRole
+    ? role.customRole
+    : STAFF_ROLES.find(r => r.key === role.role)?.name || role.role;
+
+  const icon = ROLE_ICONS[roleName] || DEFAULT_ROLE_ICON;
+  const isCustom = role.role === 'other';
+
+  return (
+    <View className="flex-row items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+      {/* 역할 아이콘 및 이름 */}
+      <View className="w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/30 items-center justify-center mr-2">
+        <Text className="text-base">{icon}</Text>
+      </View>
+
+      <View className="flex-1">
+        {isCustom && onCustomNameChange ? (
+          <TextInput
+            value={role.customRole || ''}
+            onChangeText={(text) => onCustomNameChange(roleIndex, text)}
+            placeholder="역할명 입력"
+            placeholderTextColor="#9CA3AF"
+            className="text-sm text-gray-900 dark:text-white py-1 px-0 border-b border-gray-300 dark:border-gray-600"
+          />
+        ) : (
+          <Text className="text-sm font-medium text-gray-900 dark:text-white">
+            {roleName}
+          </Text>
+        )}
+      </View>
+
+      {/* 인원 조절 */}
+      <View className="flex-row items-center">
+        <Pressable
+          onPress={() => onCountChange(roleIndex, -1)}
+          disabled={role.headcount <= 1}
+          className={`w-7 h-7 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-l-md ${
+            role.headcount <= 1 ? 'opacity-50' : ''
+          }`}
+          accessibilityRole="button"
+          accessibilityLabel="인원 감소"
+        >
+          <MinusIcon size={14} color="#6B7280" />
+        </Pressable>
+
+        <View className="w-8 h-7 items-center justify-center bg-white dark:bg-gray-800 border-y border-gray-200 dark:border-gray-600">
+          <Text className="font-bold text-sm text-gray-900 dark:text-white">
+            {role.headcount}
+          </Text>
+        </View>
+
+        <Pressable
+          onPress={() => onCountChange(roleIndex, 1)}
+          disabled={role.headcount >= 99}
+          className={`w-7 h-7 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-r-md ${
+            role.headcount >= 99 ? 'opacity-50' : ''
+          }`}
+          accessibilityRole="button"
+          accessibilityLabel="인원 증가"
+        >
+          <PlusIcon size={14} color="#6B7280" />
+        </Pressable>
+
+        {/* 삭제 버튼 */}
+        {canRemove && (
+          <Pressable
+            onPress={() => onRemove(roleIndex)}
+            className="ml-2 p-1.5 rounded-md bg-red-50 dark:bg-red-900/20"
+            accessibilityRole="button"
+            accessibilityLabel="역할 삭제"
+          >
+            <TrashIcon size={14} color="#EF4444" />
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+});
+
+// ============================================================================
 // Component
 // ============================================================================
 
@@ -44,11 +159,22 @@ export function TimeSlotCard({
   onRemove,
 }: TimeSlotCardProps) {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [showRoleModal, setShowRoleModal] = useState(false);
+
+  // 이미 추가된 역할명 목록 (중복 방지)
+  const existingRoleNames = useMemo(() => {
+    return timeSlot.roles.map((r) => {
+      if (r.role === 'other' && r.customRole) {
+        return r.customRole;
+      }
+      return STAFF_ROLES.find(sr => sr.key === r.role)?.name || r.role;
+    });
+  }, [timeSlot.roles]);
 
   // 시작시간 변경
   const handleStartTimeChange = useCallback(
-    (text: string) => {
-      onUpdate(index, { startTime: text });
+    (time: string) => {
+      onUpdate(index, { startTime: time });
     },
     [index, onUpdate]
   );
@@ -69,20 +195,96 @@ export function TimeSlotCard({
     [index, onUpdate]
   );
 
+  // 역할 추가
+  const handleAddRole = useCallback(
+    (roleKey: string, customName?: string) => {
+      if (timeSlot.roles.length >= MAX_ROLES_PER_SLOT) {
+        return;
+      }
+
+      const newRole: RoleRequirement = {
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        role: roleKey as RoleRequirement['role'],
+        headcount: 1,
+        ...(roleKey === 'other' && customName ? { customRole: customName } : {}),
+      };
+
+      onUpdate(index, { roles: [...timeSlot.roles, newRole] });
+    },
+    [index, timeSlot.roles, onUpdate]
+  );
+
+  // 역할 인원 변경
+  const handleRoleCountChange = useCallback(
+    (roleIndex: number, delta: number) => {
+      const updatedRoles = [...timeSlot.roles];
+      const role = updatedRoles[roleIndex];
+      if (role) {
+        const newCount = Math.max(1, Math.min(99, role.headcount + delta));
+        updatedRoles[roleIndex] = { ...role, headcount: newCount };
+        onUpdate(index, { roles: updatedRoles });
+      }
+    },
+    [index, timeSlot.roles, onUpdate]
+  );
+
+  // 역할 삭제
+  const handleRemoveRole = useCallback(
+    (roleIndex: number) => {
+      if (timeSlot.roles.length <= 1) {
+        return;
+      }
+      const updatedRoles = timeSlot.roles.filter((_, i) => i !== roleIndex);
+      onUpdate(index, { roles: updatedRoles });
+    },
+    [index, timeSlot.roles, onUpdate]
+  );
+
+  // 커스텀 역할명 변경
+  const handleCustomRoleNameChange = useCallback(
+    (roleIndex: number, name: string) => {
+      const updatedRoles = [...timeSlot.roles];
+      const role = updatedRoles[roleIndex];
+      if (role) {
+        updatedRoles[roleIndex] = { ...role, customRole: name };
+        onUpdate(index, { roles: updatedRoles });
+      }
+    },
+    [index, timeSlot.roles, onUpdate]
+  );
+
+  // 총 인원 계산
+  const totalHeadcount = useMemo(
+    () => timeSlot.roles.reduce((sum, r) => sum + r.headcount, 0),
+    [timeSlot.roles]
+  );
+
+  const canAddRole = timeSlot.roles.length < MAX_ROLES_PER_SLOT;
+
   return (
     <View className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200 dark:border-gray-600">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-3">
         <Pressable
           onPress={() => setIsExpanded(!isExpanded)}
-          className="flex-1"
+          className="flex-1 flex-row items-center"
           accessibilityRole="button"
           accessibilityLabel={isExpanded ? '접기' : '펼치기'}
         >
-          <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+          {isExpanded ? (
+            <ChevronUpIcon size={18} color="#6B7280" />
+          ) : (
+            <ChevronDownIcon size={18} color="#6B7280" />
+          )}
+          <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
             시간대 {index + 1}
-            {timeSlot.isTimeToBeAnnounced ? ' (시간 미정)' : ` (${timeSlot.startTime})`}
+            {timeSlot.isTimeToBeAnnounced ? ' (시간 미정)' : ` (${timeSlot.startTime || '미설정'})`}
           </Text>
+          <View className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 rounded-full">
+            <Text className="text-xs font-medium text-blue-700 dark:text-blue-300">
+              {totalHeadcount}명
+            </Text>
+          </View>
         </Pressable>
 
         {/* 삭제 버튼 */}
@@ -100,7 +302,7 @@ export function TimeSlotCard({
 
       {/* 내용 */}
       {isExpanded && (
-        <View className="gap-3">
+        <View className="gap-4">
           {/* 시간 미정 토글 */}
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-gray-700 dark:text-gray-300">
@@ -133,44 +335,68 @@ export function TimeSlotCard({
           ) : (
             <View>
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                시작 시간 (HH:mm)
+                시작 시간
               </Text>
-              <TextInput
+              <TimePicker
                 value={timeSlot.startTime}
-                onChangeText={handleStartTimeChange}
-                placeholder="09:00"
-                className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
-                placeholderTextColor="#9CA3AF"
-                keyboardType="numbers-and-punctuation"
-                maxLength={5}
+                onChange={handleStartTimeChange}
+                placeholder="시간을 선택하세요"
               />
             </View>
           )}
 
-          {/* 역할 목록 요약 */}
-          <View className="pt-2 border-t border-gray-200 dark:border-gray-600">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              필요 인원
-            </Text>
-            <View className="flex-row flex-wrap gap-2">
-              {timeSlot.roles.map((role: RoleRequirement, roleIndex: number) => (
-                <View
-                  key={role.id || roleIndex}
-                  className="px-3 py-1 bg-blue-100 dark:bg-blue-900/30 rounded-full"
+          {/* 역할 목록 */}
+          <View className="pt-3 border-t border-gray-200 dark:border-gray-600">
+            <View className="flex-row items-center justify-between mb-2">
+              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                필요 역할 ({timeSlot.roles.length}/{MAX_ROLES_PER_SLOT})
+              </Text>
+              {canAddRole && (
+                <Pressable
+                  onPress={() => setShowRoleModal(true)}
+                  className="flex-row items-center px-2 py-1 bg-blue-500 dark:bg-blue-600 rounded-md"
+                  accessibilityRole="button"
+                  accessibilityLabel="역할 추가"
                 >
-                  <Text className="text-sm text-blue-700 dark:text-blue-300">
-                    {role.role === 'other' && role.customRole
-                      ? role.customRole
-                      : role.role}{' '}
-                    {role.headcount}명
-                  </Text>
-                </View>
+                  <PlusIcon size={14} color="#FFFFFF" />
+                  <Text className="ml-1 text-xs font-medium text-white">추가</Text>
+                </Pressable>
+              )}
+            </View>
+
+            {/* 역할 카드 목록 */}
+            <View className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 px-3">
+              {timeSlot.roles.map((role, roleIndex) => (
+                <RoleCard
+                  key={role.id || roleIndex}
+                  role={role}
+                  roleIndex={roleIndex}
+                  canRemove={timeSlot.roles.length > 1}
+                  onCountChange={handleRoleCountChange}
+                  onRemove={handleRemoveRole}
+                  onCustomNameChange={role.role === 'other' ? handleCustomRoleNameChange : undefined}
+                />
               ))}
             </View>
-            {/* TODO: 역할 편집 기능은 RoleRequirementRow 완성 후 추가 */}
+
+            {/* 총 인원 표시 */}
+            <View className="mt-2 flex-row items-center justify-center py-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <Text className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                총 {totalHeadcount}명 필요
+              </Text>
+            </View>
           </View>
         </View>
       )}
+
+      {/* 역할 선택 모달 */}
+      <RoleSelectModal
+        visible={showRoleModal}
+        onClose={() => setShowRoleModal(false)}
+        onSelect={handleAddRole}
+        existingRoleNames={existingRoleNames}
+        title="역할 추가"
+      />
     </View>
   );
 }

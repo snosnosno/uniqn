@@ -1,21 +1,26 @@
 /**
  * UNIQN Mobile - 날짜 선택 모달
  *
- * @description 날짜별 요구사항 섹션에서 날짜를 선택하는 모달
- * @version 2.0.0
+ * @description 캘린더 UI를 통한 날짜 선택 모달
+ * @version 3.0.0 - CalendarPicker 통합
  *
  * 주요 기능:
+ * - CalendarPicker 캘린더 UI로 날짜 선택
  * - 타입별 제약사항 표시 (regular/urgent: 1개, tournament: 30개)
  * - 중복 날짜 검사
  * - 긴급 공고 7일 이내 제한
+ * - 과거 날짜 선택 불가
  */
 
-import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, Pressable } from 'react-native';
+import { format, addDays } from 'date-fns';
+import { ko } from 'date-fns/locale';
 import { Modal } from '@/components/ui/Modal';
+import { CalendarPicker } from '@/components/ui/CalendarPicker';
 import { useToastStore } from '@/stores/toastStore';
 import { DATE_CONSTRAINTS } from '@/constants';
-import { isDuplicateDate, isWithinUrgentDateLimit, getTodayDateString } from '@/utils/job-posting/dateUtils';
+import { isDuplicateDate } from '@/utils/job-posting/dateUtils';
 import type { PostingType } from '@/types';
 
 // ============================================================================
@@ -47,54 +52,51 @@ export function DatePickerModal({
   existingDates,
 }: DatePickerModalProps) {
   const { addToast } = useToastStore();
-  const [selectedDate, setSelectedDate] = useState<string>('');
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
 
   // 타입별 제약사항
   const constraints = DATE_CONSTRAINTS[postingType];
   const canAddMore = existingDates.length < constraints.maxDates;
 
-  // 날짜 형식 검증 (YYYY-MM-DD)
-  const isValidDateFormat = (date: string): boolean => {
-    const regex = /^\d{4}-\d{2}-\d{2}$/;
-    if (!regex.test(date)) return false;
+  // 최소/최대 날짜 계산
+  const { minimumDate, maximumDate } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const dateObj = new Date(date);
-    return !isNaN(dateObj.getTime());
-  };
+    // 최소 날짜: 오늘
+    const minDate = today;
 
-  // 날짜 선택 처리
+    // 최대 날짜: 긴급 공고는 7일 이내
+    let maxDate: Date | undefined;
+    if (postingType === 'urgent') {
+      maxDate = addDays(today, 7);
+    }
+
+    return { minimumDate: minDate, maximumDate: maxDate };
+  }, [postingType]);
+
+  // 캘린더에서 날짜 선택
+  const handleCalendarSelect = useCallback((date: Date) => {
+    setSelectedDate(date);
+  }, []);
+
+  // 확인 버튼
   const handleConfirm = useCallback(() => {
-    // 1. 형식 검증
     if (!selectedDate) {
-      addToast({ type: 'error', message: '날짜를 입력해주세요' });
+      addToast({ type: 'error', message: '날짜를 선택해주세요' });
       return;
     }
 
-    if (!isValidDateFormat(selectedDate)) {
-      addToast({ type: 'error', message: '올바른 날짜 형식이 아닙니다 (YYYY-MM-DD)' });
-      return;
-    }
+    // YYYY-MM-DD 형식으로 변환
+    const dateString = format(selectedDate, 'yyyy-MM-dd');
 
-    // 2. 과거 날짜 검증
-    const today = getTodayDateString();
-    if (selectedDate < today) {
-      addToast({ type: 'error', message: '과거 날짜는 선택할 수 없습니다' });
-      return;
-    }
-
-    // 3. 긴급 공고 7일 이내 제한
-    if (postingType === 'urgent' && !isWithinUrgentDateLimit(selectedDate)) {
-      addToast({ type: 'error', message: '긴급 공고는 오늘부터 7일 이내만 선택할 수 있습니다' });
-      return;
-    }
-
-    // 4. 중복 검사
-    if (isDuplicateDate(existingDates, selectedDate)) {
+    // 중복 검사
+    if (isDuplicateDate(existingDates, dateString)) {
       addToast({ type: 'error', message: '이미 추가된 날짜입니다' });
       return;
     }
 
-    // 5. 최대 개수 검사
+    // 최대 개수 검사
     if (!canAddMore) {
       addToast({
         type: 'error',
@@ -103,24 +105,29 @@ export function DatePickerModal({
       return;
     }
 
-    // 6. 선택 완료
-    onSelectDate(selectedDate);
-    setSelectedDate('');
+    // 선택 완료
+    onSelectDate(dateString);
+    setSelectedDate(null);
     onClose();
-  }, [selectedDate, existingDates, postingType, canAddMore, onSelectDate, onClose, addToast]);
+  }, [selectedDate, existingDates, canAddMore, constraints.maxDates, onSelectDate, onClose, addToast]);
 
   // 모달 닫기 처리
   const handleClose = useCallback(() => {
-    setSelectedDate('');
+    setSelectedDate(null);
     onClose();
   }, [onClose]);
+
+  // 선택된 날짜 표시 텍스트
+  const selectedDateText = selectedDate
+    ? format(selectedDate, 'yyyy년 M월 d일 (EEE)', { locale: ko })
+    : '캘린더에서 날짜를 선택하세요';
 
   return (
     <Modal
       visible={visible}
       onClose={handleClose}
       title="날짜 선택"
-      size="md"
+      size="lg"
     >
       {/* 제약사항 안내 */}
       <View className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -134,24 +141,42 @@ export function DatePickerModal({
         )}
       </View>
 
-      {/* 날짜 입력 */}
-      <View className="mb-6">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          날짜 (YYYY-MM-DD)
+      {/* 선택된 날짜 표시 */}
+      <View className="mb-4 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+          선택된 날짜
         </Text>
-        <TextInput
-          value={selectedDate}
-          onChangeText={setSelectedDate}
-          placeholder="예: 2025-01-15"
-          className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white"
-          placeholderTextColor="#9CA3AF"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-          오늘 이후 날짜만 선택할 수 있습니다
+        <Text className={`text-base font-medium ${
+          selectedDate
+            ? 'text-gray-900 dark:text-white'
+            : 'text-gray-400 dark:text-gray-500'
+        }`}>
+          {selectedDateText}
         </Text>
       </View>
+
+      {/* 캘린더 */}
+      <View className="mb-4">
+        <CalendarPicker
+          value={selectedDate}
+          onChange={handleCalendarSelect}
+          minimumDate={minimumDate}
+          maximumDate={maximumDate}
+        />
+      </View>
+
+      {/* 이미 선택된 날짜 안내 */}
+      {existingDates.length > 0 && (
+        <View className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+            이미 추가된 날짜 ({existingDates.length}개)
+          </Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-300">
+            {existingDates.slice(0, 5).join(', ')}
+            {existingDates.length > 5 && ` 외 ${existingDates.length - 5}개`}
+          </Text>
+        </View>
+      )}
 
       {/* 버튼 */}
       <View className="flex-row gap-3">
@@ -167,9 +192,9 @@ export function DatePickerModal({
         </Pressable>
         <Pressable
           onPress={handleConfirm}
-          disabled={!canAddMore}
+          disabled={!canAddMore || !selectedDate}
           className={`flex-1 py-3 rounded-xl ${
-            canAddMore
+            canAddMore && selectedDate
               ? 'bg-blue-600'
               : 'bg-gray-300 dark:bg-gray-600 opacity-50'
           }`}

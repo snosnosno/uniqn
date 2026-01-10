@@ -101,16 +101,19 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
 function validateRoles(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (!data.roles || data.roles.length === 0) {
-    errors.roles = '최소 1개 이상의 역할을 추가해주세요';
-  } else {
-    const totalCount = data.roles.reduce((sum, r) => sum + r.count, 0);
-    if (totalCount === 0) {
-      errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
-    }
-    const hasEmptyName = data.roles.some(r => r.isCustom && !r.name.trim());
-    if (hasEmptyName) {
-      errors.roles = '모든 역할의 이름을 입력해주세요';
+  // fixed 타입만 RolesSection 사용 (다른 타입은 TimeSlot 내 역할 관리)
+  if (data.postingType === 'fixed') {
+    if (!data.roles || data.roles.length === 0) {
+      errors.roles = '최소 1개 이상의 역할을 추가해주세요';
+    } else {
+      const totalCount = data.roles.reduce((sum, r) => sum + r.count, 0);
+      if (totalCount === 0) {
+        errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
+      }
+      const hasEmptyName = data.roles.some(r => r.isCustom && !r.name.trim());
+      if (hasEmptyName) {
+        errors.roles = '모든 역할의 이름을 입력해주세요';
+      }
     }
   }
 
@@ -281,23 +284,26 @@ export function JobPostingScrollForm({
           </SectionCard>
         </View>
 
-        {/* 역할/인원 섹션 */}
-        <View
-          onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}
-        >
-          <SectionCard
-            title="역할/인원"
-            required
-            hasError={getErrorCount(errors.roles) > 0}
-            errorCount={getErrorCount(errors.roles)}
+        {/* 역할/인원 섹션 (fixed 타입만 표시) */}
+        {/* regular/urgent/tournament는 DateRequirementsSection의 TimeSlot에서 역할 관리 */}
+        {data.postingType === 'fixed' && (
+          <View
+            onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}
           >
-            <RolesSection
-              data={data}
-              onUpdate={onUpdate}
-              errors={errors.roles}
-            />
-          </SectionCard>
-        </View>
+            <SectionCard
+              title="역할/인원"
+              required
+              hasError={getErrorCount(errors.roles) > 0}
+              errorCount={getErrorCount(errors.roles)}
+            >
+              <RolesSection
+                data={data}
+                onUpdate={onUpdate}
+                errors={errors.roles}
+              />
+            </SectionCard>
+          </View>
+        )}
 
         {/* 급여 섹션 */}
         <View

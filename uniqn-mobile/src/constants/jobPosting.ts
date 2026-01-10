@@ -56,9 +56,42 @@ export const MAX_HEADCOUNT = 200;
 export const MIN_HEADCOUNT = 1;
 
 /**
- * 스태프 역할 옵션 (한글 라벨)
+ * 스태프 역할 옵션 인터페이스
+ */
+export interface StaffRoleOption {
+  key: string;
+  name: string;
+  icon: string;
+}
+
+/**
+ * 스태프 역할 목록 (통합)
  *
- * @description DateRequirementsSection에서 사용하는 역할 옵션
+ * @description 전체 앱에서 사용하는 역할 옵션
+ */
+export const STAFF_ROLES: StaffRoleOption[] = [
+  { key: 'dealer', name: '딜러', icon: '🃏' },
+  { key: 'floor', name: '플로어', icon: '👔' },
+  { key: 'serving', name: '서빙', icon: '🍸' },
+  { key: 'manager', name: '매니저', icon: '👔' },
+  { key: 'staff', name: '직원', icon: '👤' },
+  { key: 'other', name: '기타', icon: '✏️' },
+];
+
+/**
+ * 역할명 → 아이콘 매핑
+ */
+export const ROLE_ICONS: Record<string, string> = Object.fromEntries(
+  STAFF_ROLES.map((r) => [r.name, r.icon])
+);
+
+/**
+ * 기본 역할 아이콘
+ */
+export const DEFAULT_ROLE_ICON = '👤';
+
+/**
+ * @deprecated STAFF_ROLES 사용 권장
  */
 export const STAFF_ROLE_OPTIONS = [
   { value: 'dealer', label: '딜러' },
