@@ -16,7 +16,7 @@ import {
 } from 'react-native';
 import { useRouter, useNavigation } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Loading, MobileHeader } from '@/components';
+import { Loading } from '@/components';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting, useSaveDraft, useDraft, useDeleteDraft } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
@@ -286,36 +286,6 @@ export default function CreateJobPostingScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
-      {/* 헤더 */}
-      <MobileHeader
-        title="새 공고 작성"
-        showBack
-        onBack={() => {
-          if (hasUnsavedChanges) {
-            Alert.alert(
-              '작성 취소',
-              '작성 중인 내용이 있습니다.',
-              [
-                { text: '계속 작성', style: 'cancel' },
-                {
-                  text: '임시저장',
-                  onPress: async () => {
-                    await handleSaveDraft();
-                    safeGoBack();
-                  },
-                },
-                {
-                  text: '나가기',
-                  style: 'destructive',
-                  onPress: safeGoBack,
-                },
-              ]
-            );
-          } else {
-            safeGoBack();
-          }
-        }}
-      />
 
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

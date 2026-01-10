@@ -174,10 +174,12 @@ export const DateSlider = memo(function DateSlider({
     if (scrollRef.current && todayIndex > 0) {
       // 칩 너비 약 68px (min-w-[60px] + gap) 기준으로 스크롤 위치 계산
       const chipWidth = 68;
+      const paddingLeft = 16; // px-4 = 16px
       const offset = todayIndex * chipWidth;
       // 약간의 딜레이 후 스크롤 (레이아웃 완료 후)
+      // Math.max(0, ...)로 왼쪽 패딩이 화면 밖으로 나가지 않도록 제한
       setTimeout(() => {
-        scrollRef.current?.scrollTo({ x: offset - 40, animated: true });
+        scrollRef.current?.scrollTo({ x: Math.max(0, offset - paddingLeft), animated: true });
       }, 100);
     }
   }, [todayIndex]);
