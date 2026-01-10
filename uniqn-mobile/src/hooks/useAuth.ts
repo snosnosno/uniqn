@@ -5,7 +5,13 @@
  * @version 1.0.0
  */
 
-import { useAuthStore, type AuthUser, type UserProfile, type AuthStatus } from '@/stores/authStore';
+import {
+  useAuthStore,
+  ROLE_HIERARCHY,
+  type AuthUser,
+  type UserProfile,
+  type AuthStatus,
+} from '@/stores/authStore';
 
 // ============================================================================
 // Types
@@ -55,6 +61,11 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const store = useAuthStore();
 
+  // ⚠️ 중요: store.isAdmin 등은 MMKV rehydration 후 업데이트가 지연될 수 있으므로
+  // profile.role에서 직접 계산하여 항상 정확한 값을 반환
+  const role = store.profile?.role ?? null;
+  const roleLevel = role ? (ROLE_HIERARCHY[role] ?? 0) : 0;
+
   return {
     // 사용자 정보
     user: store.user,
@@ -62,16 +73,16 @@ export function useAuth(): UseAuthReturn {
 
     // 상태
     status: store.status,
-    isAuthenticated: store.isAuthenticated,
+    isAuthenticated: store.isAuthenticated || !!store.user,
     isLoading: store.isLoading,
     isInitialized: store.isInitialized,
     error: store.error,
 
-    // 권한
-    role: store.profile?.role ?? null,
-    isAdmin: store.isAdmin,
-    isEmployer: store.isEmployer,
-    isStaff: store.isStaff,
+    // 권한 (profile.role에서 직접 계산)
+    role,
+    isAdmin: role === 'admin',
+    isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
+    isStaff: roleLevel >= ROLE_HIERARCHY.staff,
   };
 }
 

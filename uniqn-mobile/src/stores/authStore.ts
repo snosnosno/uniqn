@@ -268,10 +268,28 @@ export const useAuthStore = create<AuthState>()(
         profile: state.profile,
         isInitialized: state.isInitialized,
       }),
-      // AsyncStorage에서 데이터 복원 완료 시 호출
+      // MMKV에서 데이터 복원 완료 시 호출
       onRehydrateStorage: () => (state) => {
         // 복원 완료 시 _hasHydrated를 true로 설정
         state?.setHasHydrated(true);
+
+        // ⚠️ 중요: partialize에서 isAdmin/isEmployer/isStaff는 저장하지 않으므로
+        // 복원된 profile을 기반으로 역할 플래그 재계산 필요
+        if (state?.profile) {
+          const roleLevel = ROLE_HIERARCHY[state.profile.role] ?? 0;
+          useAuthStore.setState({
+            isAdmin: state.profile.role === 'admin',
+            isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
+            isStaff: roleLevel >= ROLE_HIERARCHY.staff,
+            isAuthenticated: !!state.user,
+          });
+          console.log('[AuthStore] Rehydration - 역할 플래그 재계산:', {
+            role: state.profile.role,
+            isAdmin: state.profile.role === 'admin',
+            isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
+            isStaff: roleLevel >= ROLE_HIERARCHY.staff,
+          });
+        }
       },
     }
   )

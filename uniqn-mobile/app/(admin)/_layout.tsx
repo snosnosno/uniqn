@@ -5,13 +5,13 @@
 
 import { Stack, Redirect } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
-import { useAuthStore, useHasRole } from '@/stores/authStore';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function AdminLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
-  const { isLoading, isAuthenticated } = useAuthStore();
-  const hasAdminRole = useHasRole('admin');
+  // useAuth()는 profile.role에서 직접 권한을 계산하므로 MMKV rehydration 문제 없음
+  const { isLoading, isAuthenticated, profile, isAdmin } = useAuth();
 
   // 로딩 중
   if (isLoading) {
@@ -28,7 +28,7 @@ export default function AdminLayout() {
   }
 
   // 관리자 권한 없음 - 홈으로 리다이렉트
-  if (!hasAdminRole) {
+  if (!isAdmin) {
     return <Redirect href="/(app)/(tabs)" />;
   }
 

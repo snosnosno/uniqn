@@ -15,6 +15,7 @@ import {
   MessageIcon,
   LogOutIcon,
   QrCodeIcon,
+  ShieldIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
@@ -59,7 +60,7 @@ function MenuItem({ icon, label, onPress, danger }: MenuItemProps) {
 }
 
 export default function ProfileScreen() {
-  const { profile, isLoading, user } = useAuth();
+  const { profile, isLoading, user, isAdmin } = useAuth();
   const reset = useAuthStore((state) => state.reset);
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -184,6 +185,16 @@ export default function ProfileScreen() {
             // eslint-disable-next-line @typescript-eslint/no-empty-function
             onPress={() => {}} // TODO: 고객센터 기능 구현
           />
+          {isAdmin && (
+            <>
+              <Divider spacing="sm" />
+              <MenuItem
+                icon={<ShieldIcon size={22} color="#DC2626" />}
+                label="관리자 대시보드"
+                onPress={() => router.push('/(admin)')}
+              />
+            </>
+          )}
         </Card>
 
         {/* 로그아웃 */}

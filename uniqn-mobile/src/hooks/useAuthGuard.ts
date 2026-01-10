@@ -10,7 +10,6 @@ import { useRouter, useSegments, usePathname } from 'expo-router';
 import {
   useAuthStore,
   hasPermission,
-  selectIsAuthenticated,
   selectIsLoading,
   selectProfile,
 } from '@/stores/authStore';
@@ -85,9 +84,13 @@ export function useAuthGuard(): void {
   const pathname = usePathname();
 
   // Selector를 사용하여 필요한 상태만 구독 (무한 루프 방지)
-  const isAuthenticated = useAuthStore(selectIsAuthenticated);
   const isLoading = useAuthStore(selectIsLoading);
   const profile = useAuthStore(selectProfile);
+  const user = useAuthStore((state) => state.user);
+
+  // ⚠️ 중요: store.isAuthenticated는 MMKV rehydration 후 업데이트가 지연될 수 있으므로
+  // user 존재 여부로 직접 판단
+  const isAuthenticated = !!user;
   const userRole = profile?.role ?? null;
 
   // router를 ref로 저장하여 의존성 배열에서 제외 (안정적인 참조)
@@ -100,20 +103,21 @@ export function useAuthGuard(): void {
 
     const routeGroup = extractRouteGroup(segments);
 
-    // 루트 경로 처리
-    if (pathname === '/' || pathname === '/index') {
-      if (isAuthenticated) {
-        logger.debug('인증됨 - 메인으로 이동', {
-          component: 'useAuthGuard',
-          pathname,
-        });
-        routerRef.current.replace('/(app)/(tabs)');
+    // 라우트 그룹이 있으면 해당 그룹의 권한 체크로 넘어감
+    // (pathname이 '/'여도 segments에 라우트 그룹이 있으면 그룹 내 index 페이지)
+    if (!routeGroup) {
+      // 라우트 그룹이 없고 루트 경로인 경우에만 리다이렉트
+      if (pathname === '/' || pathname === '/index') {
+        if (isAuthenticated) {
+          logger.debug('인증됨 - 메인으로 이동', {
+            component: 'useAuthGuard',
+            pathname,
+          });
+          routerRef.current.replace('/(app)/(tabs)');
+        }
       }
       return;
     }
-
-    // 라우트 그룹이 없으면 처리하지 않음
-    if (!routeGroup) return;
 
     const config = ROUTE_CONFIGS[routeGroup];
 
@@ -138,8 +142,11 @@ export function useAuthGuard(): void {
       return;
     }
 
-    // 권한 체크
-    if (config.requiredRole && !hasPermission(userRole, config.requiredRole)) {
+    // 권한 체크 (requiredRole이 없으면 권한 체크 생략)
+    const hasRequiredPermission = config.requiredRole
+      ? hasPermission(userRole, config.requiredRole)
+      : true;
+    if (config.requiredRole && !hasRequiredPermission) {
       logger.warn('권한 부족', {
         component: 'useAuthGuard',
         pathname,
@@ -156,8 +163,9 @@ export function useAuthGuard(): void {
       return;
     }
     // router를 의존성에서 제외하여 무한 루프 방지
+    // user 변경 시 isAuthenticated도 재계산됨
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, isLoading, userRole, segments, pathname]);
+  }, [user, isLoading, userRole, segments, pathname]);
 }
 
 // ============================================================================
