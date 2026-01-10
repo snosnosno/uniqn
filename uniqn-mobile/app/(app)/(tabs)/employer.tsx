@@ -127,37 +127,37 @@ const formatSalary = (type: string, amount: number): string => {
   }
 };
 
-const formatAllowances = (allowances?: Allowances): string | null => {
-  if (!allowances) return null;
+const getAllowanceItems = (allowances?: Allowances): string[] => {
+  if (!allowances) return [];
   const items: string[] = [];
 
   // 보장시간
   if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`보장 ${allowances.guaranteedHours}시간`);
+    items.push(`⏰ 보장 ${allowances.guaranteedHours}시간`);
   }
 
   // 식비
   if (allowances.meal === PROVIDED_FLAG) {
-    items.push('식사제공');
+    items.push('🍱 식사제공');
   } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
+    items.push(`🍱 식비 ${allowances.meal.toLocaleString()}원`);
   }
 
   // 교통비
   if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('교통비제공');
+    items.push('🚗 교통비제공');
   } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
+    items.push(`🚗 교통비 ${allowances.transportation.toLocaleString()}원`);
   }
 
   // 숙박비
   if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('숙박제공');
+    items.push('🏨 숙박제공');
   } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
+    items.push(`🏨 숙박비 ${allowances.accommodation.toLocaleString()}원`);
   }
 
-  return items.length > 0 ? items.join(' · ') : null;
+  return items;
 };
 
 const getDateString = (dateInput: string | Timestamp | { seconds: number }): string => {
@@ -197,7 +197,7 @@ const RoleLine = memo(function RoleLine({
   const filled = role.filled ?? 0;
 
   return (
-    <Text className="text-xs text-gray-500 dark:text-gray-400">
+    <Text className="text-sm text-gray-900 dark:text-gray-100">
       {showTime ? `${time} ` : '       '}
       {getRoleLabel(roleName)} {count}명 ({filled}/{count})
     </Text>
@@ -217,7 +217,7 @@ const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPos
   };
 
   const status = statusConfig[posting.status] || statusConfig.active;
-  const allowancesText = formatAllowances(posting.allowances);
+  const allowanceItems = getAllowanceItems(posting.allowances);
 
   // dateSpecificRequirements를 정렬된 형태로 변환
   const dateRequirements = useMemo(() => {
@@ -268,55 +268,58 @@ const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPos
         📍 {posting.location.name}
       </Text>
 
-      {/* 일정: 날짜 > 시간대 > 역할별 (확정/총인원) */}
-      <View className="mb-3">
-        {dateRequirements.length > 0 ? (
-          dateRequirements.map((dateReq, dateIdx) => (
-            <View key={dateIdx} className="mb-2">
-              {/* 날짜 */}
+      {/* 일정 + 급여/수당 그리드 */}
+      <View className="flex-row">
+        {/* 왼쪽: 일정 */}
+        <View className="flex-1 pr-3">
+          {dateRequirements.length > 0 ? (
+            dateRequirements.map((dateReq, dateIdx) => (
+              <View key={dateIdx} className="mb-2">
+                {/* 날짜 */}
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  📅 {formatDate(dateReq.date)}
+                </Text>
+
+                {/* 시간대별 */}
+                {dateReq.timeSlots.map((slot, slotIdx) => (
+                  <View key={slotIdx} className="ml-5 mt-1">
+                    {slot.roles.map((role, roleIdx) => (
+                      <RoleLine
+                        key={roleIdx}
+                        role={role}
+                        showTime={roleIdx === 0}
+                        time={slot.startTime || '-'}
+                      />
+                    ))}
+                  </View>
+                ))}
+              </View>
+            ))
+          ) : (
+            // 레거시 폴백
+            <View className="mb-2">
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                📅 {formatDate(dateReq.date)}
+                📅 {formatDate(posting.workDate)}
               </Text>
-
-              {/* 시간대별 */}
-              {dateReq.timeSlots.map((slot, slotIdx) => (
-                <View key={slotIdx} className="ml-5 mt-1">
-                  {slot.roles.map((role, roleIdx) => (
-                    <RoleLine
-                      key={roleIdx}
-                      role={role}
-                      showTime={roleIdx === 0}
-                      time={slot.startTime || '-'}
-                    />
-                  ))}
-                </View>
-              ))}
+              <Text className="text-sm text-gray-900 dark:text-gray-100 ml-5 mt-1">
+                🕐 {posting.timeSlot || '-'}
+              </Text>
             </View>
-          ))
-        ) : (
-          // 레거시 폴백
-          <View className="mb-2">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              📅 {formatDate(posting.workDate)}
-            </Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400 ml-5 mt-1">
-              🕐 {posting.timeSlot || '-'}
-            </Text>
-          </View>
-        )}
-      </View>
+          )}
+        </View>
 
-      {/* 하단: 급여 + 통계 */}
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1">
+        {/* 오른쪽: 급여 + 수당 */}
+        <View className="w-32 pl-3 border-l border-gray-100 dark:border-gray-700">
+          {/* 급여 */}
           {posting.roleSalaries &&
           Object.keys(posting.roleSalaries).length > 0 &&
           !posting.useSameSalary ? (
-            // 역할별 급여 표시 (줄바꿈)
+            // 역할별 급여 표시
             Object.entries(posting.roleSalaries).map(([role, salary], idx) => (
               <Text
                 key={idx}
-                className="text-sm font-medium text-gray-900 dark:text-white"
+                className="text-sm text-gray-900 dark:text-white"
+                numberOfLines={1}
               >
                 💰 {role}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
               </Text>
@@ -327,21 +330,27 @@ const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPos
               💰 {formatSalary(posting.salary.type, posting.salary.amount)}
             </Text>
           )}
-        </View>
-        <View className="flex-row items-center">
-          <UsersIcon size={14} color="#2563EB" />
-          <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
-            지원 {posting.applicationCount || 0}
-          </Text>
+
+          {/* 수당 */}
+          {allowanceItems.length > 0 && (
+            <View className="mt-1">
+              {allowanceItems.map((item, idx) => (
+                <Text key={idx} className="text-sm text-gray-500 dark:text-gray-400">
+                  {item}
+                </Text>
+              ))}
+            </View>
+          )}
         </View>
       </View>
 
-      {/* 수당 */}
-      {allowancesText && (
-        <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-          {allowancesText}
+      {/* 하단: 지원자 수 */}
+      <View className="flex-row items-center justify-end mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <UsersIcon size={14} color="#2563EB" />
+        <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
+          지원 {posting.applicationCount || 0}
         </Text>
-      )}
+      </View>
     </Card>
   );
 });

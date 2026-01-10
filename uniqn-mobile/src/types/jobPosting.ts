@@ -302,6 +302,8 @@ export interface JobPostingCard {
   applicationCount?: number;
   /** 공고 타입 (v2.0) */
   postingType?: PostingType;
+  /** 구인자 이름 */
+  ownerName?: string;
 }
 
 /**
@@ -385,5 +387,6 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
     isUrgent: posting.isUrgent,
     applicationCount: posting.applicationCount,
     postingType: posting.postingType,
+    ownerName: posting.ownerName,
   };
 };

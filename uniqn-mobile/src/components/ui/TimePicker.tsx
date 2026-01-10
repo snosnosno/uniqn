@@ -273,17 +273,18 @@ export const TimePicker = memo(function TimePicker({
         onDismiss={closeModal}
         accessibilityViewIsModal
       >
-        <Pressable
-          className="flex-1 justify-end bg-black/50"
-          onPress={closeModal}
-          accessibilityRole="button"
-          accessibilityLabel="모달 닫기"
-          accessibilityHint="탭하여 시간 선택을 취소하세요"
-        >
+        <View className="flex-1 justify-end">
+          {/* 백드롭 - 별도 레이어 (button 중첩 방지) */}
           <Pressable
-            className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70%]"
-            onPress={(e) => e.stopPropagation()}
-          >
+            onPress={closeModal}
+            className="absolute inset-0 bg-black/50"
+            accessibilityRole="button"
+            accessibilityLabel="모달 닫기"
+            accessibilityHint="탭하여 시간 선택을 취소하세요"
+          />
+
+          {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
+          <View className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70%]">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">
@@ -309,8 +310,8 @@ export const TimePicker = memo(function TimePicker({
               showsVerticalScrollIndicator={false}
               contentContainerStyle={{ paddingBottom: Platform.OS === 'ios' ? 34 : 16 }}
             />
-          </Pressable>
-        </Pressable>
+          </View>
+        </View>
       </Modal>
     </View>
   );
