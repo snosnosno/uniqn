@@ -109,7 +109,11 @@ const getRoleLabel = (role: string): string => {
   return labels[role] || role;
 };
 
+/** "제공" 상태를 나타내는 특별 값 */
+const PROVIDED_FLAG = -1;
+
 const formatSalary = (type: string, amount: number): string => {
+  if (type === 'other') return '협의';
   const formattedAmount = amount.toLocaleString('ko-KR');
   switch (type) {
     case 'hourly':
@@ -124,18 +128,36 @@ const formatSalary = (type: string, amount: number): string => {
 };
 
 const formatAllowances = (allowances?: Allowances): string | null => {
-  if (!allowances) { return null; }
+  if (!allowances) return null;
   const items: string[] = [];
-  if (allowances.meal) {
-    items.push(`식비: ${allowances.meal.toLocaleString()}원`);
+
+  // 보장시간
+  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
+    items.push(`보장 ${allowances.guaranteedHours}시간`);
   }
-  if (allowances.transportation) {
-    items.push(`교통비: ${allowances.transportation.toLocaleString()}원`);
+
+  // 식비
+  if (allowances.meal === PROVIDED_FLAG) {
+    items.push('식사제공');
+  } else if (allowances.meal && allowances.meal > 0) {
+    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
   }
-  if (allowances.accommodation) {
-    items.push(`숙박비: ${allowances.accommodation.toLocaleString()}원`);
+
+  // 교통비
+  if (allowances.transportation === PROVIDED_FLAG) {
+    items.push('교통비제공');
+  } else if (allowances.transportation && allowances.transportation > 0) {
+    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
   }
-  return items.length > 0 ? items.join('  ') : null;
+
+  // 숙박비
+  if (allowances.accommodation === PROVIDED_FLAG) {
+    items.push('숙박제공');
+  } else if (allowances.accommodation && allowances.accommodation > 0) {
+    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
+  }
+
+  return items.length > 0 ? items.join(' · ') : null;
 };
 
 const getDateString = (dateInput: string | Timestamp | { seconds: number }): string => {
@@ -285,10 +307,27 @@ const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPos
       </View>
 
       {/* 하단: 급여 + 통계 */}
-      <View className="flex-row items-center justify-between border-t border-gray-100 pt-2 dark:border-gray-700">
-        <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
-          💰 {formatSalary(posting.salary.type, posting.salary.amount)}
-        </Text>
+      <View className="flex-row items-start justify-between">
+        <View className="flex-1">
+          {posting.roleSalaries &&
+          Object.keys(posting.roleSalaries).length > 0 &&
+          !posting.useSameSalary ? (
+            // 역할별 급여 표시 (줄바꿈)
+            Object.entries(posting.roleSalaries).map(([role, salary], idx) => (
+              <Text
+                key={idx}
+                className="text-sm font-medium text-gray-900 dark:text-white"
+              >
+                💰 {role}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
+              </Text>
+            ))
+          ) : (
+            // 단일 급여 표시
+            <Text className="text-sm font-medium text-gray-900 dark:text-white">
+              💰 {formatSalary(posting.salary.type, posting.salary.amount)}
+            </Text>
+          )}
+        </View>
         <View className="flex-row items-center">
           <UsersIcon size={14} color="#2563EB" />
           <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">

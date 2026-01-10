@@ -7,7 +7,7 @@
 
 import React, { useCallback, useMemo, memo, useEffect } from 'react';
 import { View, Text, Pressable, Switch, TextInput } from 'react-native';
-import { Input, Card } from '@/components';
+import { Card } from '@/components';
 import { GiftIcon } from '@/components/icons';
 import { STAFF_ROLES } from '@/constants';
 import type { JobPostingFormData, SalaryType, SalaryInfo } from '@/types';
@@ -41,10 +41,13 @@ const SALARY_TYPES: { value: SalaryType; label: string }[] = [
 ];
 
 const ALLOWANCE_TYPES = [
-  { key: 'meal', label: '식대', placeholder: '10,000', icon: '🍱' },
-  { key: 'transportation', label: '교통비', placeholder: '10,000', icon: '🚗' },
-  { key: 'accommodation', label: '숙박비', placeholder: '50,000', icon: '🏨' },
+  { key: 'meal', label: '식비', providedLabel: '식사제공', placeholder: '0', icon: '🍱' },
+  { key: 'transportation', label: '교통비', providedLabel: '교통비제공', placeholder: '0', icon: '🚗' },
+  { key: 'accommodation', label: '숙박비', providedLabel: '숙박제공', placeholder: '0', icon: '🏨' },
 ];
+
+/** "제공" 상태를 나타내는 특별 값 */
+const PROVIDED_FLAG = -1;
 
 // ============================================================================
 // Helper Functions
@@ -227,7 +230,21 @@ export const SalarySection = memo(function SalarySection({
     [data.useSameSalary, extractedRoles, data.roleSalaries, onUpdate]
   );
 
-  // 수당 변경
+  // 보장시간 변경
+  const handleGuaranteedHoursChange = useCallback(
+    (value: string) => {
+      const hours = parseInt(value.replace(/[^0-9]/g, ''), 10) || 0;
+      onUpdate({
+        allowances: {
+          ...data.allowances,
+          guaranteedHours: hours > 0 ? hours : undefined,
+        },
+      });
+    },
+    [data.allowances, onUpdate]
+  );
+
+  // 수당 금액 변경
   const handleAllowanceChange = useCallback(
     (key: string, value: string) => {
       const amount = parseCurrency(value);
@@ -235,6 +252,19 @@ export const SalarySection = memo(function SalarySection({
         allowances: {
           ...data.allowances,
           [key]: amount > 0 ? amount : undefined,
+        },
+      });
+    },
+    [data.allowances, onUpdate]
+  );
+
+  // 수당 "제공" 토글
+  const handleAllowanceProvidedToggle = useCallback(
+    (key: string, isProvided: boolean) => {
+      onUpdate({
+        allowances: {
+          ...data.allowances,
+          [key]: isProvided ? PROVIDED_FLAG : undefined,
         },
       });
     },
@@ -431,32 +461,91 @@ export const SalarySection = memo(function SalarySection({
         </View>
 
         <Card variant="outlined" padding="md">
+          {/* 보장시간 */}
+          <View className="pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row items-center justify-between">
+              <View className="flex-row items-center flex-1">
+                <Text className="text-xl mr-2">⏰</Text>
+                <Text className="text-sm text-gray-900 dark:text-white">
+                  보장시간
+                </Text>
+              </View>
+              <View className="flex-row items-center">
+                <TextInput
+                  placeholder="0"
+                  placeholderTextColor="#9CA3AF"
+                  value={data.allowances?.guaranteedHours ? String(data.allowances.guaranteedHours) : ''}
+                  onChangeText={handleGuaranteedHoursChange}
+                  keyboardType="numeric"
+                  className="w-16 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                />
+                <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
+                  시간
+                </Text>
+              </View>
+            </View>
+          </View>
+
           {ALLOWANCE_TYPES.map((allowance, index) => {
             const value =
               data.allowances?.[allowance.key as keyof typeof data.allowances];
+            const isProvided = value === PROVIDED_FLAG;
+            const displayLabel = isProvided ? allowance.providedLabel : allowance.label;
+
             return (
               <View
                 key={allowance.key}
-                className={`flex-row items-center ${
+                className={`${
                   index < ALLOWANCE_TYPES.length - 1
                     ? 'pb-3 mb-3 border-b border-gray-100 dark:border-gray-700'
                     : ''
                 }`}
               >
-                <Text className="text-xl mr-2">{allowance.icon}</Text>
-                <Text className="w-16 text-gray-900 dark:text-white text-sm">
-                  {allowance.label}
-                </Text>
-                <View className="flex-1 flex-row items-center justify-end">
-                  <Input
-                    placeholder={allowance.placeholder}
-                    value={value ? formatCurrency(value) : ''}
-                    onChangeText={(v) => handleAllowanceChange(allowance.key, v)}
-                    keyboardType="numeric"
-                    className="w-28 text-right"
-                  />
-                  <Text className="text-gray-600 dark:text-gray-400 ml-1">원</Text>
+                <View className="flex-row items-center justify-between">
+                  <View className="flex-row items-center flex-1">
+                    <Text className="text-xl mr-2">{allowance.icon}</Text>
+                    <Text className={`text-sm ${
+                      isProvided
+                        ? 'text-primary-600 dark:text-primary-400 font-medium'
+                        : 'text-gray-900 dark:text-white'
+                    }`}>
+                      {displayLabel}
+                    </Text>
+                  </View>
+
+                  {/* 제공 토글 */}
+                  <View className="flex-row items-center">
+                    <Text className="text-xs text-gray-500 dark:text-gray-400 mr-2">
+                      제공
+                    </Text>
+                    <Switch
+                      value={isProvided}
+                      onValueChange={(v) => handleAllowanceProvidedToggle(allowance.key, v)}
+                      trackColor={{ false: '#D1D5DB', true: '#818CF8' }}
+                      thumbColor={isProvided ? '#4F46E5' : '#F3F4F6'}
+                    />
+                  </View>
                 </View>
+
+                {/* 금액 입력 (제공이 아닐 때만) */}
+                {!isProvided && (
+                  <View className="flex-row items-center justify-end mt-2">
+                    <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">
+                      ₩
+                    </Text>
+                    <TextInput
+                      placeholder={allowance.placeholder}
+                      placeholderTextColor="#9CA3AF"
+                      value={value && value > 0 ? formatCurrency(value) : ''}
+                      onChangeText={(v) => handleAllowanceChange(allowance.key, v)}
+                      keyboardType="numeric"
+                      className="w-32 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                    />
+                    <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
+                      원
+                    </Text>
+                  </View>
+                )}
               </View>
             );
           })}

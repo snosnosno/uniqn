@@ -54,6 +54,8 @@ export interface SalaryInfo {
  * 수당 정보
  */
 export interface Allowances {
+  /** 보장시간 */
+  guaranteedHours?: number;
   meal?: number;
   transportation?: number;
   accommodation?: number;
@@ -291,6 +293,10 @@ export interface JobPostingCard {
     amount: number;
   };
   allowances?: Allowances;
+  /** 전체 동일 급여 여부 */
+  useSameSalary?: boolean;
+  /** 역할별 급여 */
+  roleSalaries?: Record<string, SalaryInfo>;
   status: JobPostingStatus;
   isUrgent?: boolean;
   applicationCount?: number;
@@ -373,6 +379,8 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
       amount: posting.salary.amount,
     },
     allowances: posting.allowances,
+    useSameSalary: posting.useSameSalary,
+    roleSalaries: posting.roleSalaries,
     status: posting.status,
     isUrgent: posting.isUrgent,
     applicationCount: posting.applicationCount,

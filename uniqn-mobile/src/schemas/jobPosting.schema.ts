@@ -56,12 +56,15 @@ export const salaryInfoSchema = z.object({
 
 /**
  * 수당 정보 스키마
+ * - guaranteedHours: 보장시간
+ * - meal/transportation/accommodation: 금액 또는 -1 (제공 플래그)
  */
 export const allowancesSchema = z
   .object({
-    meal: z.number().min(0).optional(),
-    transportation: z.number().min(0).optional(),
-    accommodation: z.number().min(0).optional(),
+    guaranteedHours: z.number().min(0).optional(),
+    meal: z.number().optional(), // -1 = 제공
+    transportation: z.number().optional(), // -1 = 제공
+    accommodation: z.number().optional(), // -1 = 제공
   })
   .optional();
 

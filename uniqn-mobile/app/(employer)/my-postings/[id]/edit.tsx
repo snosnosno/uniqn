@@ -247,8 +247,8 @@ export default function EditJobPostingScreen() {
         // 급여
         salary: existingJob.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
         allowances: existingJob.allowances || {},
-        useSameSalary: existingJob.salary?.useRoleSalary || false, // 레거시 호환
-        roleSalaries: existingJob.salary?.roleSalaries || {},
+        useSameSalary: existingJob.useSameSalary ?? false,
+        roleSalaries: existingJob.roleSalaries ?? {},
         // 사전질문
         usesPreQuestions: existingJob.usesPreQuestions || false,
         preQuestions: existingJob.preQuestions || [],
