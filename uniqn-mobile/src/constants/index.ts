@@ -277,3 +277,18 @@ export {
   createNotificationMessage,
   type NotificationTemplate,
 } from './notificationTemplates';
+
+// ============================================================================
+// 구인공고 관련
+// ============================================================================
+
+export {
+  DATE_CONSTRAINTS,
+  MAX_TIME_SLOTS_PER_DATE,
+  MAX_ROLES_PER_SLOT,
+  MAX_HEADCOUNT,
+  MIN_HEADCOUNT,
+  STAFF_ROLE_OPTIONS,
+  DEFAULT_START_TIME,
+  DATE_REQUIREMENT_ERRORS,
+} from './jobPosting';

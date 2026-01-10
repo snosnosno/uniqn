@@ -8,3 +8,4 @@ export { ScheduleSection } from './ScheduleSection';
 export { RolesSection } from './RolesSection';
 export { SalarySection } from './SalarySection';
 export { PreQuestionsSection } from './PreQuestionsSection';
+export { DateRequirementsSection } from './DateRequirementsSection';

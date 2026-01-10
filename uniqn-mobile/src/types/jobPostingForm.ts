@@ -12,6 +12,7 @@ import type {
   PostingType,
   PreQuestion,
 } from './index';
+import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 
 // ============================================================================
 // 공고 타입별 설정
@@ -135,6 +136,10 @@ export interface JobPostingFormData {
   /** 대회 일정 (Day 1, 2, 3...) */
   tournamentDates: TournamentDay[];
 
+  // --- 날짜별 요구사항 (v2.0) ---
+  /** 날짜별 모집 정보 (regular/urgent/tournament 공통) */
+  dateSpecificRequirements?: DateSpecificRequirement[];
+
   // --- fixed: 주 출근일수 ---
   /** 주 출근일수 (1-7) */
   daysPerWeek: number;
@@ -199,6 +204,7 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   workDate: '',
   startTime: '',
   tournamentDates: [],
+  dateSpecificRequirements: [],
   daysPerWeek: 5,
   workDays: [],
 

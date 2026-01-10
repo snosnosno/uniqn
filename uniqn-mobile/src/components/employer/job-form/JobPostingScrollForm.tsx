@@ -12,6 +12,7 @@ import {
   SectionCard,
   BasicInfoSection,
   ScheduleSection,
+  DateRequirementsSection,
   RolesSection,
   SalarySection,
   PreQuestionsSection,
@@ -264,11 +265,19 @@ export function JobPostingScrollForm({
             hasError={getErrorCount(errors.schedule) > 0}
             errorCount={getErrorCount(errors.schedule)}
           >
-            <ScheduleSection
-              data={data}
-              onUpdate={onUpdate}
-              errors={errors.schedule}
-            />
+            {data.postingType === 'fixed' ? (
+              <ScheduleSection
+                data={data}
+                onUpdate={onUpdate}
+                errors={errors.schedule}
+              />
+            ) : (
+              <DateRequirementsSection
+                data={data}
+                onUpdate={onUpdate}
+                errors={errors.schedule}
+              />
+            )}
           </SectionCard>
         </View>
 

@@ -198,7 +198,8 @@ export interface CreateJobPostingInput {
   workDate?: string;              // regular/urgent
   timeSlot?: string;              // 기존 호환용 (deprecated)
   startTime?: string;             // 출근시간
-  tournamentDates?: TournamentDay[];  // tournament
+  tournamentDates?: TournamentDay[];  // tournament (deprecated, v2.0에서 dateSpecificRequirements로 대체)
+  dateSpecificRequirements?: DateSpecificRequirement[]; // v2.0: 날짜별 요구사항 (regular/urgent/tournament 공통)
   daysPerWeek?: number;           // fixed
   workDays?: string[];            // fixed
 

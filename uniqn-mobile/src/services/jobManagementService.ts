@@ -21,6 +21,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
+import { convertDateRequirementsToTournamentDates } from '@/utils/job-posting/dateUtils';
 import type {
   JobPosting,
   JobPostingStatus,
@@ -177,8 +178,22 @@ export async function createJobPosting(
       ) as T;
     };
 
+    // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
+    let legacyTournamentDates;
+    if (restInput.dateSpecificRequirements && restInput.dateSpecificRequirements.length > 0) {
+      try {
+        legacyTournamentDates = convertDateRequirementsToTournamentDates(
+          restInput.dateSpecificRequirements as unknown as Parameters<typeof convertDateRequirementsToTournamentDates>[0]
+        );
+      } catch (error) {
+        logger.warn('tournamentDates 변환 실패 (무시)', { error: (error as Error).message });
+      }
+    }
+
     const jobPostingData: Omit<JobPosting, 'id'> = removeUndefined({
       ...restInput,
+      // 하위 호환성: 양쪽 필드 모두 저장 (v1.0.0까지)
+      ...(legacyTournamentDates && { tournamentDates: legacyTournamentDates }),
       roles: convertedRoles,
       status: 'active',
       ownerId,
@@ -267,8 +282,22 @@ export async function updateJobPosting(
         ) as T;
       };
 
+      // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
+      let legacyTournamentDates;
+      if (input.dateSpecificRequirements && input.dateSpecificRequirements.length > 0) {
+        try {
+          legacyTournamentDates = convertDateRequirementsToTournamentDates(
+            input.dateSpecificRequirements as unknown as Parameters<typeof convertDateRequirementsToTournamentDates>[0]
+          );
+        } catch (error) {
+          logger.warn('tournamentDates 변환 실패 (무시)', { error: (error as Error).message });
+        }
+      }
+
       const updateData = removeUndefined({
         ...input,
+        // 하위 호환성: 양쪽 필드 모두 저장 (v1.0.0까지)
+        ...(legacyTournamentDates && { tournamentDates: legacyTournamentDates }),
         totalPositions,
         updatedAt: serverTimestamp(),
       });
