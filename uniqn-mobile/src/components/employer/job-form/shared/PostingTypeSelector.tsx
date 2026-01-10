@@ -1,8 +1,8 @@
 /**
  * PostingTypeSelector - 공고 타입 선택 컴포넌트
  *
- * @description 4가지 공고 타입(지원/고정/대회/긴급)을 선택하는 2x2 그리드 카드 UI
- * @version 1.0.0
+ * @description 4가지 공고 타입(지원/고정/대회/긴급)을 선택하는 칩 UI
+ * @version 1.1.0
  */
 
 import React, { memo, useCallback } from 'react';
@@ -50,10 +50,10 @@ const TypeCard = memo(function TypeCard({
       onPress={onPress}
       disabled={disabled}
       className={`
-        relative flex-1 min-h-[88px] p-3 rounded-xl border-2
+        flex-1 p-3 rounded-xl border
         ${
           isSelected
-            ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/20'
+            ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/30'
             : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
         }
         ${disabled ? 'opacity-50' : 'active:scale-[0.98]'}
@@ -62,44 +62,33 @@ const TypeCard = memo(function TypeCard({
       accessibilityState={{ checked: isSelected, disabled }}
       accessibilityLabel={`${info.label} 공고 타입`}
     >
-      {/* 선택 체크 표시 */}
-      {isSelected && (
-        <View className="absolute top-2 right-2">
-          <CheckCircleIcon size={20} color="#3B82F6" />
-        </View>
-      )}
+      <View className="flex-row items-center">
+        {/* 아이콘 */}
+        <Text className="text-xl mr-2">{info.icon}</Text>
 
-      {/* 아이콘 */}
-      <Text className="text-2xl mb-1">{info.icon}</Text>
-
-      {/* 라벨 */}
-      <Text
-        className={`
-          text-base font-semibold
-          ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}
-        `}
-      >
-        {info.label}
-      </Text>
-
-      {/* 설명 */}
-      <Text
-        className={`
-          text-xs mt-0.5
-          ${isSelected ? 'text-blue-500 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}
-        `}
-      >
-        {info.description}
-      </Text>
-
-      {/* 대회 타입 특별 안내 */}
-      {type === 'tournament' && isSelected && (
-        <View className="mt-2 px-2 py-1 bg-amber-100 dark:bg-amber-900/30 rounded">
-          <Text className="text-[10px] text-amber-700 dark:text-amber-300">
-            관리자 승인 후 게시
+        {/* 라벨 + 설명 */}
+        <View className="flex-1">
+          <Text
+            className={`
+              text-sm font-semibold
+              ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}
+            `}
+          >
+            {info.label}
+          </Text>
+          <Text
+            className={`
+              text-xs
+              ${isSelected ? 'text-blue-500 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}
+            `}
+          >
+            {info.description}
           </Text>
         </View>
-      )}
+
+        {/* 체크 */}
+        {isSelected && <CheckCircleIcon size={16} color="#3B82F6" />}
+      </View>
     </Pressable>
   );
 });
@@ -129,40 +118,49 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
       </Text>
 
       {/* 2x2 그리드 */}
-      <View className="flex-row gap-3 mb-2">
-        {/* 첫 번째 행: 지원, 고정 */}
-        <TypeCard
-          type="regular"
-          isSelected={value === 'regular'}
-          disabled={disabled}
-          onPress={() => handlePress('regular')}
-        />
-        <TypeCard
-          type="fixed"
-          isSelected={value === 'fixed'}
-          disabled={disabled}
-          onPress={() => handlePress('fixed')}
-        />
+      <View className="gap-2">
+        <View className="flex-row gap-2">
+          <TypeCard
+            type="regular"
+            isSelected={value === 'regular'}
+            disabled={disabled}
+            onPress={() => handlePress('regular')}
+          />
+          <TypeCard
+            type="fixed"
+            isSelected={value === 'fixed'}
+            disabled={disabled}
+            onPress={() => handlePress('fixed')}
+          />
+        </View>
+        <View className="flex-row gap-2">
+          <TypeCard
+            type="tournament"
+            isSelected={value === 'tournament'}
+            disabled={disabled}
+            onPress={() => handlePress('tournament')}
+          />
+          <TypeCard
+            type="urgent"
+            isSelected={value === 'urgent'}
+            disabled={disabled}
+            onPress={() => handlePress('urgent')}
+          />
+        </View>
       </View>
-      <View className="flex-row gap-3">
-        {/* 두 번째 행: 대회, 긴급 */}
-        <TypeCard
-          type="tournament"
-          isSelected={value === 'tournament'}
-          disabled={disabled}
-          onPress={() => handlePress('tournament')}
-        />
-        <TypeCard
-          type="urgent"
-          isSelected={value === 'urgent'}
-          disabled={disabled}
-          onPress={() => handlePress('urgent')}
-        />
-      </View>
+
+      {/* 대회 공고 안내 */}
+      {value === 'tournament' && (
+        <View className="mt-3 p-2.5 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+          <Text className="text-sm text-amber-700 dark:text-amber-300">
+            대회 공고는 관리자 승인 후 게시됩니다.
+          </Text>
+        </View>
+      )}
 
       {/* 긴급 공고 안내 */}
       {value === 'urgent' && (
-        <View className="mt-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+        <View className="mt-3 p-2.5 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
           <Text className="text-sm text-red-700 dark:text-red-300">
             긴급 공고는 오늘부터 7일 이내의 날짜만 선택할 수 있습니다.
           </Text>
