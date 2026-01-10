@@ -9,6 +9,7 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '@/lib/mmkvStorage';
 import { Appearance, ColorSchemeName } from 'react-native';
+import { colorScheme as nativeWindColorScheme } from 'nativewind';
 
 // ============================================================================
 // Types
@@ -39,6 +40,14 @@ const computeIsDarkMode = (mode: ThemeMode): boolean => {
   return mode === 'dark';
 };
 
+/**
+ * NativeWind colorScheme 설정
+ * dark: 클래스가 작동하도록 NativeWind의 colorScheme.set() 사용
+ */
+const applyColorScheme = (mode: ThemeMode): void => {
+  nativeWindColorScheme.set(mode);
+};
+
 // ============================================================================
 // Store
 // ============================================================================
@@ -50,6 +59,7 @@ export const useThemeStore = create<ThemeState>()(
       isDarkMode: getSystemDarkMode(),
 
       setTheme: (mode: ThemeMode) => {
+        applyColorScheme(mode);
         set({
           mode,
           isDarkMode: computeIsDarkMode(mode),
@@ -67,6 +77,7 @@ export const useThemeStore = create<ThemeState>()(
           newMode = currentMode === 'light' ? 'dark' : 'light';
         }
 
+        applyColorScheme(newMode);
         set({
           mode: newMode,
           isDarkMode: computeIsDarkMode(newMode),
@@ -79,8 +90,9 @@ export const useThemeStore = create<ThemeState>()(
       partialize: (state) => ({ mode: state.mode }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // 복원 후 isDarkMode 재계산
+          // 복원 후 isDarkMode 재계산 및 시스템 colorScheme 적용
           state.isDarkMode = computeIsDarkMode(state.mode);
+          applyColorScheme(state.mode);
         }
       },
     }

@@ -6,7 +6,7 @@
 import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, View, ActivityIndicator, Text, LogBox } from 'react-native';
+import { View, ActivityIndicator, Text, LogBox } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,6 +16,7 @@ import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
+import { useThemeStore } from '@/stores/themeStore';
 
 // LogBox 경고 억제 (써드파티 라이브러리 이슈)
 if (__DEV__) {
@@ -29,8 +30,8 @@ if (__DEV__) {
  * 초기화 완료 후 렌더링되므로 useAuthGuard 안전하게 호출 가능
  */
 function MainNavigator() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { isDarkMode } = useThemeStore();
+  const isDark = isDarkMode;
 
   // 앱 전역 인증 가드 - 초기화 완료 후에만 실행됨
   useAuthGuard();
