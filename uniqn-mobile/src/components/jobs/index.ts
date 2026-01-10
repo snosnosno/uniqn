@@ -44,3 +44,10 @@ export { DateSlider } from './DateSlider';
 // ============================================================================
 
 export { PreQuestionForm } from './PreQuestionForm';
+
+// ============================================================================
+// Display Components (v2.0)
+// ============================================================================
+
+export { DateRequirementDisplay } from './DateRequirementDisplay';
+export { RoleSalaryDisplay, SalarySummary } from './RoleSalaryDisplay';

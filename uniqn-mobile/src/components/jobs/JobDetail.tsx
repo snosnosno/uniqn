@@ -1,14 +1,17 @@
 /**
  * UNIQN Mobile - 구인공고 상세 컴포넌트
  *
- * @description 공고 상세 정보 표시
- * @version 1.0.0
+ * @description 공고 상세 정보 표시 (v2.0 - dateSpecificRequirements, roleSalaries 지원)
+ * @version 2.0.0
  */
 
-import React from 'react';
+import React, { useMemo } from 'react';
 import { View, Text, Linking, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import type { JobPosting } from '@/types';
+import { PostingTypeBadge } from './PostingTypeBadge';
+import { DateRequirementDisplay } from './DateRequirementDisplay';
+import { RoleSalaryDisplay } from './RoleSalaryDisplay';
+import type { JobPosting, PostingType, Allowances } from '@/types';
 
 // ============================================================================
 // Types
@@ -19,27 +22,20 @@ interface JobDetailProps {
 }
 
 // ============================================================================
-// Helpers
+// Constants
 // ============================================================================
 
-const formatSalary = (type: string, amount: number): string => {
-  const formattedAmount = amount.toLocaleString('ko-KR');
-  switch (type) {
-    case 'hourly':
-      return `시급 ${formattedAmount}원`;
-    case 'daily':
-      return `일급 ${formattedAmount}원`;
-    case 'monthly':
-      return `월급 ${formattedAmount}원`;
-    default:
-      return `${formattedAmount}원`;
-  }
-};
+/** "제공" 상태를 나타내는 특별 값 */
+const PROVIDED_FLAG = -1;
+
+// ============================================================================
+// Helpers
+// ============================================================================
 
 const formatDate = (dateStr: string): string => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr; // 유효하지 않은 날짜면 원본 반환
+  if (isNaN(date.getTime())) return dateStr;
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
@@ -49,38 +45,62 @@ const formatDate = (dateStr: string): string => {
 
 const getRoleLabel = (role: string | undefined): string => {
   if (!role) return '역할';
-  switch (role) {
-    case 'dealer':
-      return '딜러';
-    case 'floor':
-      return '플로어';
-    case 'manager':
-      return '매니저';
-    case 'chiprunner':
-      return '칩러너';
-    case 'admin':
-      return '관리자';
-    default:
-      return role;
-  }
+  const labels: Record<string, string> = {
+    dealer: '딜러',
+    floor: '플로어',
+    manager: '매니저',
+    chiprunner: '칩러너',
+    admin: '관리자',
+  };
+  return labels[role] || role;
+};
+
+const getRoleDisplayName = (roleReq: { role?: string; name?: string; count: number; filled?: number }): string => {
+  if (roleReq.name) return roleReq.name;
+  return getRoleLabel(roleReq.role);
 };
 
 /**
- * 역할 정보에서 표시할 이름 추출
- * RoleRequirement 또는 FormRoleWithCount 형식 모두 지원
+ * 수당 정보 문자열 배열 생성 (v2.0)
  */
-const getRoleDisplayName = (roleReq: { role?: string; name?: string; count: number; filled?: number }): string => {
-  // name이 있으면 사용 (FormRoleWithCount)
-  if (roleReq.name) return roleReq.name;
-  // role이 있으면 변환 (RoleRequirement)
-  return getRoleLabel(roleReq.role);
+const getAllowanceItems = (allowances?: Allowances): string[] => {
+  if (!allowances) return [];
+  const items: string[] = [];
+
+  // 보장시간
+  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
+    items.push(`⏰ 보장 ${allowances.guaranteedHours}시간`);
+  }
+
+  // 식비
+  if (allowances.meal === PROVIDED_FLAG) {
+    items.push('🍱 식사제공');
+  } else if (allowances.meal && allowances.meal > 0) {
+    items.push(`🍱 식비 ${allowances.meal.toLocaleString()}원`);
+  }
+
+  // 교통비
+  if (allowances.transportation === PROVIDED_FLAG) {
+    items.push('🚗 교통비제공');
+  } else if (allowances.transportation && allowances.transportation > 0) {
+    items.push(`🚗 교통비 ${allowances.transportation.toLocaleString()}원`);
+  }
+
+  // 숙박비
+  if (allowances.accommodation === PROVIDED_FLAG) {
+    items.push('🏨 숙박제공');
+  } else if (allowances.accommodation && allowances.accommodation > 0) {
+    items.push(`🏨 숙박비 ${allowances.accommodation.toLocaleString()}원`);
+  }
+
+  return items;
 };
 
 // ============================================================================
 // Sub Components
 // ============================================================================
 
-function InfoRow({ label, value, icon }: { label: string; value: string; icon: string }) {
+function InfoRow({ label, value, icon }: { label: string; value: string | React.ReactNode; icon: string }) {
   return (
     <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-gray-700">
       <Text className="text-lg mr-3">{icon}</Text>
@@ -88,9 +108,13 @@ function InfoRow({ label, value, icon }: { label: string; value: string; icon: s
         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
           {label}
         </Text>
-        <Text className="text-sm text-gray-900 dark:text-white">
-          {value}
-        </Text>
+        {typeof value === 'string' ? (
+          <Text className="text-sm text-gray-900 dark:text-white">
+            {value}
+          </Text>
+        ) : (
+          value
+        )}
       </View>
     </View>
   );
@@ -107,17 +131,8 @@ export function JobDetail({ job }: JobDetailProps) {
     }
   };
 
-  // 수당 정보 안전하게 처리
-  const allowanceItems: string[] = [];
-  if (job.allowances?.meal && typeof job.allowances.meal === 'number') {
-    allowanceItems.push(`식대 ${job.allowances.meal.toLocaleString()}원`);
-  }
-  if (job.allowances?.transportation && typeof job.allowances.transportation === 'number') {
-    allowanceItems.push(`교통비 ${job.allowances.transportation.toLocaleString()}원`);
-  }
-  if (job.allowances?.accommodation && typeof job.allowances.accommodation === 'number') {
-    allowanceItems.push(`숙박비 ${job.allowances.accommodation.toLocaleString()}원`);
-  }
+  // 수당 정보 (v2.0)
+  const allowanceItems = useMemo(() => getAllowanceItems(job.allowances), [job.allowances]);
 
   // 안전한 값 추출
   const safeTitle = String(job.title || '제목 없음');
@@ -125,6 +140,9 @@ export function JobDetail({ job }: JobDetailProps) {
   const safeContactPhone = String(job.contactPhone || '');
   const safeDescription = String(job.description || '');
   const safeWorkDate = formatDate(job.workDate) || '날짜 미정';
+
+  // dateSpecificRequirements 유무 확인
+  const hasDateRequirements = job.dateSpecificRequirements && job.dateSpecificRequirements.length > 0;
 
   // location 안전하게 처리
   const getLocationValue = (): string => {
@@ -137,20 +155,21 @@ export function JobDetail({ job }: JobDetailProps) {
     return result || '정보 없음';
   };
 
-  // 급여 안전하게 처리
-  const getSalaryText = (): string => {
-    if (!job.salary) return '급여 정보 없음';
-    const type = job.salary.type || 'hourly';
-    const amount = typeof job.salary.amount === 'number' ? job.salary.amount : 0;
-    return formatSalary(type, amount);
-  };
-
   return (
     <View className="bg-white dark:bg-gray-900">
       {/* 헤더 영역 */}
       <View className="p-4 bg-gray-50 dark:bg-gray-800">
-        <View className="flex-row items-center mb-2">
-          {job.isUrgent === true && (
+        {/* 뱃지 영역 */}
+        <View className="flex-row items-center flex-wrap mb-2">
+          {/* 공고 타입 뱃지 (regular 제외) */}
+          {job.postingType && job.postingType !== 'regular' && (
+            <PostingTypeBadge
+              type={job.postingType as PostingType}
+              size="sm"
+              className="mr-2"
+            />
+          )}
+          {job.isUrgent === true && !job.postingType && (
             <Badge variant="error" size="sm" className="mr-2">
               긴급
             </Badge>
@@ -162,12 +181,13 @@ export function JobDetail({ job }: JobDetailProps) {
             {job.status === 'active' ? '모집중' : '마감'}
           </Badge>
         </View>
+
         <Text className="text-xl font-bold text-gray-900 dark:text-white mb-3">
           {safeTitle}
         </Text>
 
-        {/* 역할 태그 */}
-        {Array.isArray(job.roles) && job.roles.length > 0 && (
+        {/* 역할 태그 (레거시 - dateSpecificRequirements 없을 때만) */}
+        {!hasDateRequirements && Array.isArray(job.roles) && job.roles.length > 0 && (
           <View className="flex-row flex-wrap mb-3">
             {job.roles.map((roleReq, index) => {
               const displayName = getRoleDisplayName(roleReq);
@@ -184,10 +204,12 @@ export function JobDetail({ job }: JobDetailProps) {
           </View>
         )}
 
-        {/* 급여 */}
-        <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-          {getSalaryText()}
-        </Text>
+        {/* 급여 (v2.0: 역할별 급여 지원) */}
+        <RoleSalaryDisplay
+          roleSalaries={job.roleSalaries}
+          useSameSalary={job.useSameSalary}
+          salary={job.salary}
+        />
       </View>
 
       {/* 상세 정보 */}
@@ -197,17 +219,85 @@ export function JobDetail({ job }: JobDetailProps) {
         </Text>
 
         <InfoRow icon="📍" label="근무지" value={getLocationValue()} />
-        <InfoRow icon="📅" label="근무일" value={safeWorkDate} />
-        <InfoRow icon="🕐" label="근무시간" value={safeTimeSlot} />
+
+        {/* 날짜별 요구사항 (v2.0) */}
+        {hasDateRequirements ? (
+          <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row items-start">
+              <Text className="text-lg mr-3">📅</Text>
+              <View className="flex-1">
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  근무 일정
+                </Text>
+                {job.dateSpecificRequirements!.map((req, idx) => (
+                  <DateRequirementDisplay
+                    key={idx}
+                    requirement={req}
+                    index={idx}
+                    showFilledCount={true}
+                  />
+                ))}
+              </View>
+            </View>
+          </View>
+        ) : (
+          <>
+            <InfoRow icon="📅" label="근무일" value={safeWorkDate} />
+            <InfoRow icon="🕐" label="근무시간" value={safeTimeSlot} />
+          </>
+        )}
+
         {safeContactPhone.length > 0 && (
           <Pressable onPress={handleCall}>
             <InfoRow icon="📞" label="연락처" value={safeContactPhone} />
           </Pressable>
         )}
+
+        {/* 수당 (v2.0: 개선된 표시) */}
         {allowanceItems.length > 0 && (
-          <InfoRow icon="💰" label="수당" value={allowanceItems.join(' / ')} />
+          <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row items-start">
+              <Text className="text-lg mr-3">💰</Text>
+              <View className="flex-1">
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                  추가 수당
+                </Text>
+                <View className="flex-row flex-wrap">
+                  {allowanceItems.map((item, idx) => (
+                    <Text key={idx} className="text-sm text-gray-900 dark:text-white mr-3 mb-1">
+                      {item}
+                    </Text>
+                  ))}
+                </View>
+              </View>
+            </View>
+          </View>
         )}
       </View>
+
+      {/* 사전질문 미리보기 (v2.0) */}
+      {job.usesPreQuestions && job.preQuestions && job.preQuestions.length > 0 && (
+        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+            📝 사전질문 ({job.preQuestions.length}개)
+          </Text>
+          <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+            {job.preQuestions.slice(0, 3).map((q, idx) => (
+              <View key={idx} className="mb-2">
+                <Text className="text-sm text-gray-700 dark:text-gray-300">
+                  {idx + 1}. {q.question}
+                  {q.required && <Text className="text-red-500"> *</Text>}
+                </Text>
+              </View>
+            ))}
+            {job.preQuestions.length > 3 && (
+              <Text className="text-xs text-gray-500 dark:text-gray-400">
+                외 {job.preQuestions.length - 3}개 질문
+              </Text>
+            )}
+          </View>
+        </View>
+      )}
 
       {/* 상세 설명 */}
       {safeDescription.length > 0 && (

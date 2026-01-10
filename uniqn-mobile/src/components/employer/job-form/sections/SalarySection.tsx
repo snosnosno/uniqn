@@ -94,10 +94,12 @@ export const SalarySection = memo(function SalarySection({
     data.dateSpecificRequirements?.forEach((dateReq) => {
       dateReq.timeSlots?.forEach((slot) => {
         slot.roles?.forEach((roleReq) => {
-          const roleName = getRoleName(roleReq.role, roleReq.customRole);
+          const roleKey = roleReq.role ?? roleReq.name ?? 'dealer';
+          const roleName = getRoleName(roleKey as string, roleReq.customRole);
           const currentCount = roleMap.get(roleName) || 0;
+          const headcount = roleReq.headcount ?? roleReq.count ?? 0;
           // 같은 역할이면 인원 합산
-          roleMap.set(roleName, currentCount + roleReq.headcount);
+          roleMap.set(roleName, currentCount + headcount);
         });
       });
     });

@@ -17,19 +17,30 @@ import { StaffRole } from '../common';
  * 역할 요구사항
  *
  * @description 시간대별 필요한 역할과 인원수
+ * @note 레거시 호환을 위해 일부 필드가 선택적입니다. 새 코드에서는 id, role, headcount를 사용하세요.
  */
 export interface RoleRequirement {
   /** 고유 ID (React Hook Form useFieldArray용) */
-  id: string;
+  id?: string;
 
   /** 역할 (dealer, floorman, supervisor, chip_runner, other) */
-  role: StaffRole | 'other';
+  role?: StaffRole | 'other';
 
   /** 커스텀 역할명 (role이 'other'일 때만 사용) */
   customRole?: string;
 
   /** 필요 인원 (1-200) */
-  headcount: number;
+  headcount?: number;
+
+  // === 레거시 호환 필드 ===
+  /** @deprecated role 사용 권장 - 역할 이름 (레거시 데이터 호환용) */
+  name?: StaffRole | string;
+
+  /** @deprecated headcount 사용 권장 - 필요 인원 (레거시 데이터 호환용) */
+  count?: number;
+
+  /** @deprecated 충원된 인원 (레거시 데이터 호환용) */
+  filled?: number;
 }
 
 /**
@@ -39,22 +50,33 @@ export interface RoleRequirement {
  * - 시작시간만 입력 (종료시간 제거)
  * - 시간 미정 지원
  * - 역할별 인원 관리
+ * @note 레거시 호환을 위해 일부 필드가 선택적입니다. 새 코드에서는 id, startTime을 사용하세요.
  */
 export interface TimeSlot {
   /** 고유 ID (React Hook Form useFieldArray용) */
-  id: string;
+  id?: string;
 
   /** 시작 시간 (HH:mm 형식) */
-  startTime: string;
+  startTime?: string;
 
   /** 시간 미정 여부 */
-  isTimeToBeAnnounced: boolean;
+  isTimeToBeAnnounced?: boolean;
 
   /** 미정일 때 설명 (예: "토너먼트 진행 상황에 따라 결정") */
   tentativeDescription?: string;
 
   /** 역할별 필요 인원 */
   roles: RoleRequirement[];
+
+  // === 레거시 호환 필드 ===
+  /** @deprecated startTime 사용 권장 - 레거시 데이터 호환용 */
+  time?: string;
+
+  /** @deprecated 종료 시간 (HH:mm 형식) - 레거시 데이터 호환용 */
+  endTime?: string;
+
+  /** @deprecated 종일 여부 - 레거시 데이터 호환용 */
+  isFullDay?: boolean;
 }
 
 /**
@@ -70,6 +92,16 @@ export interface DateSpecificRequirement {
 
   /** 해당 날짜의 시간대별 요구사항 */
   timeSlots: TimeSlot[];
+
+  // === 레거시 호환 필드 ===
+  /** @deprecated 메인 행사 날짜 여부 - 레거시 데이터 호환용 */
+  isMainDate?: boolean;
+
+  /** @deprecated 표시 순서 (정렬용) - 레거시 데이터 호환용 */
+  displayOrder?: number;
+
+  /** @deprecated 날짜 설명 (예: "Day 1", "예선전") - 레거시 데이터 호환용 */
+  description?: string;
 }
 
 /**

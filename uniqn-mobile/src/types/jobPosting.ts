@@ -12,10 +12,10 @@ import type {
   FixedConfig,
   TournamentConfig,
   UrgentConfig,
-  DateSpecificRequirement,
   WorkSchedule,
   RoleWithCount,
 } from './postingConfig';
+import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import type { PreQuestion } from './preQuestion';
 import type { FormRoleWithCount, TournamentDay } from './jobPostingForm';
 
@@ -268,6 +268,8 @@ export interface CardRole {
  */
 export interface CardTimeSlot {
   startTime: string;
+  /** 시간 미정 여부 */
+  isTimeToBeAnnounced?: boolean;
   roles: CardRole[];
 }
 
@@ -339,6 +341,9 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
             (ts as { startTime?: string; time?: string }).startTime ||
             (ts as { startTime?: string; time?: string }).time ||
             '',
+          isTimeToBeAnnounced:
+            (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ??
+            false,
           roles: (ts.roles ?? []).map((r) => ({
             role:
               (r as { role?: string; name?: string }).role ||

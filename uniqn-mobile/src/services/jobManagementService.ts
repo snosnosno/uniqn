@@ -145,88 +145,165 @@ function convertToRoleRequirements(
 // ============================================================================
 
 /**
+ * undefined 필드 제거 함수 (Firebase는 undefined 값을 허용하지 않음)
+ * 재귀적으로 중첩 객체도 정리
+ */
+function removeUndefined<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => {
+        // 객체 타입인 경우 재귀적으로 정리
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          return [k, removeUndefined(v as Record<string, unknown>)];
+        }
+        return [k, v];
+      })
+  ) as T;
+}
+
+/**
+ * 단일 공고 생성 (내부 함수)
+ */
+async function createSinglePosting(
+  input: CreateJobPostingInput,
+  ownerId: string,
+  ownerName: string
+): Promise<CreateJobPostingResult> {
+  const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+  const newDocRef = doc(jobsRef);
+  const now = serverTimestamp();
+
+  // 역할 변환 (FormRoleWithCount → RoleRequirement)
+  const convertedRoles = convertToRoleRequirements(
+    input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
+  );
+
+  // 총 모집 인원 계산
+  const totalPositions = convertedRoles.reduce((sum, role) => sum + role.count, 0);
+
+  // input에서 roles, startTime 분리 (startTime은 string → Timestamp 변환 필요)
+  const {
+    roles: _inputRoles,
+    startTime: inputStartTime,
+    ...restInput
+  } = input;
+
+  // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
+  const migrationResult = migrateJobPostingForWrite(restInput);
+  const migratedInput = migrationResult.data;
+
+  const jobPostingData: Omit<JobPosting, 'id'> = removeUndefined({
+    ...migratedInput,
+    roles: convertedRoles,
+    status: 'active',
+    ownerId,
+    ownerName,
+    // Security Rules 필수 필드: createdBy (ownerId와 동일)
+    createdBy: ownerId,
+    // Security Rules 필수 필드: description (빈 문자열 허용)
+    description: restInput.description || '',
+    // Security Rules: postingType 기본값
+    postingType: restInput.postingType || 'regular',
+    totalPositions,
+    filledPositions: 0,
+    viewCount: 0,
+    applicationCount: 0,
+    // 필수 필드 기본값
+    workDate: restInput.workDate || '',
+    timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
+    createdAt: now as Timestamp,
+    updatedAt: now as Timestamp,
+  });
+
+  await setDoc(newDocRef, jobPostingData);
+
+  const jobPosting: JobPosting = {
+    id: newDocRef.id,
+    ...jobPostingData,
+  };
+
+  return { id: newDocRef.id, jobPosting };
+}
+
+/**
+ * 날짜별 개별 공고 생성 (regular/urgent 다중 날짜용)
+ *
+ * @description dateSpecificRequirements의 각 날짜에 대해 개별 공고를 생성
+ */
+async function createMultiplePostingsByDate(
+  input: CreateJobPostingInput,
+  ownerId: string,
+  ownerName: string
+): Promise<CreateJobPostingResult[]> {
+  const results: CreateJobPostingResult[] = [];
+
+  for (const dateReq of input.dateSpecificRequirements!) {
+    // 날짜 문자열 추출
+    let dateStr: string;
+    if (typeof dateReq.date === 'string') {
+      dateStr = dateReq.date;
+    } else if (dateReq.date && 'toDate' in dateReq.date) {
+      // Timestamp 타입
+      dateStr = (dateReq.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
+    } else if (dateReq.date && 'seconds' in dateReq.date) {
+      // Firestore 직렬화된 타입
+      dateStr = new Date((dateReq.date as { seconds: number }).seconds * 1000)
+        .toISOString().split('T')[0] ?? '';
+    } else {
+      dateStr = '';
+    }
+
+    // 단일 날짜용 input 생성
+    const singleDateInput: CreateJobPostingInput = {
+      ...input,
+      dateSpecificRequirements: [dateReq],
+      workDate: dateStr,
+    };
+
+    const result = await createSinglePosting(singleDateInput, ownerId, ownerName);
+    results.push(result);
+
+    logger.info('날짜별 공고 생성', { id: result.id, date: dateStr });
+  }
+
+  return results;
+}
+
+/**
  * 공고 생성 (구인자 전용)
+ *
+ * @description
+ * - regular/urgent 타입에서 여러 날짜 선택 시 날짜별로 개별 공고 생성
+ * - tournament/fixed 타입은 기존처럼 단일 공고 생성
+ *
+ * @returns 단일 생성 시 CreateJobPostingResult, 다중 생성 시 CreateJobPostingResult[]
  */
 export async function createJobPosting(
   input: CreateJobPostingInput,
   ownerId: string,
   ownerName: string
-): Promise<CreateJobPostingResult> {
+): Promise<CreateJobPostingResult | CreateJobPostingResult[]> {
   try {
     logger.info('공고 생성 시작', { ownerId, title: input.title });
 
-    const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
-    const newDocRef = doc(jobsRef);
-    const now = serverTimestamp();
+    // regular/urgent 타입이고 다중 날짜인 경우 분리 생성
+    const isMultiDateType = input.postingType === 'regular' || input.postingType === 'urgent';
+    const hasMultipleDates = input.dateSpecificRequirements && input.dateSpecificRequirements.length > 1;
 
-    // 역할 변환 (FormRoleWithCount → RoleRequirement)
-    const convertedRoles = convertToRoleRequirements(
-      input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
-    );
+    if (isMultiDateType && hasMultipleDates) {
+      const results = await createMultiplePostingsByDate(input, ownerId, ownerName);
+      logger.info('다중 공고 생성 완료', {
+        count: results.length,
+        ids: results.map(r => r.id),
+      });
+      return results;
+    }
 
-    // 총 모집 인원 계산
-    const totalPositions = convertedRoles.reduce((sum, role) => sum + role.count, 0);
-
-    // input에서 roles, startTime 분리 (startTime은 string → Timestamp 변환 필요)
-    const {
-      roles: _inputRoles,
-      startTime: inputStartTime,
-      ...restInput
-    } = input;
-
-    // undefined 필드 제거 함수 (Firebase는 undefined 값을 허용하지 않음)
-    // 재귀적으로 중첩 객체도 정리
-    const removeUndefined = <T extends Record<string, unknown>>(obj: T): T => {
-      return Object.fromEntries(
-        Object.entries(obj)
-          .filter(([, v]) => v !== undefined)
-          .map(([k, v]) => {
-            // 객체 타입인 경우 재귀적으로 정리
-            if (v && typeof v === 'object' && !Array.isArray(v)) {
-              return [k, removeUndefined(v as Record<string, unknown>)];
-            }
-            return [k, v];
-          })
-      ) as T;
-    };
-
-    // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
-    const migrationResult = migrateJobPostingForWrite(restInput);
-    const migratedInput = migrationResult.data;
-
-    const jobPostingData: Omit<JobPosting, 'id'> = removeUndefined({
-      ...migratedInput,
-      roles: convertedRoles,
-      status: 'active',
-      ownerId,
-      ownerName,
-      // Security Rules 필수 필드: createdBy (ownerId와 동일)
-      createdBy: ownerId,
-      // Security Rules 필수 필드: description (빈 문자열 허용)
-      description: restInput.description || '',
-      // Security Rules: postingType 기본값
-      postingType: restInput.postingType || 'regular',
-      totalPositions,
-      filledPositions: 0,
-      viewCount: 0,
-      applicationCount: 0,
-      // 필수 필드 기본값
-      workDate: restInput.workDate || '',
-      timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
-      createdAt: now as Timestamp,
-      updatedAt: now as Timestamp,
-    });
-
-    await setDoc(newDocRef, jobPostingData);
-
-    const jobPosting: JobPosting = {
-      id: newDocRef.id,
-      ...jobPostingData,
-    };
-
-    logger.info('공고 생성 완료', { id: newDocRef.id, title: input.title });
-
-    return { id: newDocRef.id, jobPosting };
+    // 단일 공고 생성
+    const result = await createSinglePosting(input, ownerId, ownerName);
+    logger.info('공고 생성 완료', { id: result.id, title: input.title });
+    return result;
   } catch (error) {
     logger.error('공고 생성 실패', error as Error, { ownerId });
     throw mapFirebaseError(error);

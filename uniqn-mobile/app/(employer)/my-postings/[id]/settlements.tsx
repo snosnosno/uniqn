@@ -1,9 +1,12 @@
 /**
  * UNIQN Mobile - 정산 관리 화면
  * 특정 공고의 스태프 근무 기록 및 정산
+ *
+ * @description v2.0 - 역할별 급여, 수당 반영
+ * @version 2.0.0
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Alert } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,7 +14,7 @@ import { SettlementList, WorkTimeEditor } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
 import { useSettlement } from '@/hooks/useSettlement';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import type { WorkLog } from '@/types';
+import type { WorkLog, SalaryInfo, Allowances } from '@/types';
 
 // ============================================================================
 // Constants
@@ -19,6 +22,19 @@ import type { WorkLog } from '@/types';
 
 const REGULAR_HOURS = 8;
 const OVERTIME_RATE = 1.5;
+/** "제공" 상태를 나타내는 특별 값 */
+const PROVIDED_FLAG = -1;
+
+// ============================================================================
+// Types
+// ============================================================================
+
+interface SalaryConfig {
+  useSameSalary?: boolean;
+  salary?: SalaryInfo;
+  roleSalaries?: Record<string, SalaryInfo>;
+  allowances?: Allowances;
+}
 
 // ============================================================================
 // Helpers
@@ -34,24 +50,92 @@ function parseTimestamp(value: unknown): Date | null {
   return null;
 }
 
-function calculateWorkLogAmount(workLog: WorkLog, hourlyRate: number): number {
+/**
+ * 역할별 시급 가져오기 (v2.0)
+ */
+function getHourlyRateForRole(role: string, config: SalaryConfig): number {
+  // useSameSalary가 true이거나 roleSalaries가 없으면 단일 급여 사용
+  if (config.useSameSalary !== false || !config.roleSalaries) {
+    return config.salary?.amount ?? 15000;
+  }
+
+  // 역할별 급여 사용
+  const roleSalary = config.roleSalaries[role];
+  if (roleSalary?.amount) {
+    return roleSalary.amount;
+  }
+
+  // 역할 급여가 없으면 기본 급여 사용
+  return config.salary?.amount ?? 15000;
+}
+
+/**
+ * 수당 계산 (v2.0)
+ * 보장시간만 금액 계산에 포함 (식비/교통비/숙박비는 별도 표시)
+ */
+function calculateAllowanceAmount(
+  actualHours: number,
+  hourlyRate: number,
+  allowances?: Allowances
+): number {
+  if (!allowances) return 0;
+
+  let amount = 0;
+
+  // 보장시간: 실제 근무시간이 보장시간보다 적으면 보장시간으로 계산
+  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
+    if (actualHours < allowances.guaranteedHours) {
+      // 부족분을 추가 수당으로 계산
+      const extraHours = allowances.guaranteedHours - actualHours;
+      amount += Math.round(extraHours * hourlyRate);
+    }
+  }
+
+  // 식비 (금액이 있는 경우만)
+  if (allowances.meal && allowances.meal !== PROVIDED_FLAG && allowances.meal > 0) {
+    amount += allowances.meal;
+  }
+
+  // 교통비 (금액이 있는 경우만)
+  if (allowances.transportation && allowances.transportation !== PROVIDED_FLAG && allowances.transportation > 0) {
+    amount += allowances.transportation;
+  }
+
+  // 숙박비 (금액이 있는 경우만)
+  if (allowances.accommodation && allowances.accommodation !== PROVIDED_FLAG && allowances.accommodation > 0) {
+    amount += allowances.accommodation;
+  }
+
+  return amount;
+}
+
+/**
+ * 근무 기록 금액 계산 (v2.0 - 역할별 급여, 수당 반영)
+ */
+function calculateWorkLogAmount(workLog: WorkLog, config: SalaryConfig): number {
   const startTime = parseTimestamp(workLog.actualStartTime);
   const endTime = parseTimestamp(workLog.actualEndTime);
 
-  if (!startTime || !endTime) {
-    // 실제 시간이 없으면 기본 8시간으로 계산
-    return REGULAR_HOURS * hourlyRate;
+  // 역할에 따른 시급 결정
+  const hourlyRate = getHourlyRateForRole(workLog.role || 'dealer', config);
+
+  let totalHours = REGULAR_HOURS; // 기본값
+
+  if (startTime && endTime) {
+    const totalMinutes = Math.max(0, (endTime.getTime() - startTime.getTime()) / (1000 * 60));
+    totalHours = totalMinutes / 60;
   }
 
-  const totalMinutes = Math.max(0, (endTime.getTime() - startTime.getTime()) / (1000 * 60));
-  const totalHours = totalMinutes / 60;
   const regularHours = Math.min(totalHours, REGULAR_HOURS);
   const overtimeHours = Math.max(0, totalHours - REGULAR_HOURS);
 
   const regularPay = Math.round(regularHours * hourlyRate);
   const overtimePay = Math.round(overtimeHours * hourlyRate * OVERTIME_RATE);
 
-  return regularPay + overtimePay;
+  // 수당 계산
+  const allowanceAmount = calculateAllowanceAmount(totalHours, hourlyRate, config.allowances);
+
+  return regularPay + overtimePay + allowanceAmount;
 }
 
 // ============================================================================
@@ -82,7 +166,15 @@ export default function SettlementsScreen() {
   const [selectedWorkLog, setSelectedWorkLog] = useState<WorkLog | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
-  // 시급 (공고의 salary.amount에서 가져오거나 기본값)
+  // 급여 설정 (v2.0 - 역할별 급여, 수당 포함)
+  const salaryConfig = useMemo<SalaryConfig>(() => ({
+    useSameSalary: posting?.useSameSalary,
+    salary: posting?.salary,
+    roleSalaries: posting?.roleSalaries,
+    allowances: posting?.allowances,
+  }), [posting?.useSameSalary, posting?.salary, posting?.roleSalaries, posting?.allowances]);
+
+  // 기본 시급 (SettlementList에 전달용)
   const hourlyRate = posting?.salary?.amount ?? 15000;
 
   // 근무기록 클릭
@@ -96,9 +188,9 @@ export default function SettlementsScreen() {
     setIsEditModalVisible(true);
   }, []);
 
-  // 개별 정산 클릭
+  // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleSettle = useCallback((workLog: WorkLog) => {
-    const amount = calculateWorkLogAmount(workLog, hourlyRate);
+    const amount = calculateWorkLogAmount(workLog, salaryConfig);
 
     Alert.alert(
       '정산 처리',
@@ -116,14 +208,14 @@ export default function SettlementsScreen() {
         },
       ]
     );
-  }, [settleWorkLog, hourlyRate]);
+  }, [settleWorkLog, salaryConfig]);
 
-  // 일괄 정산 클릭
+  // 일괄 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleBulkSettle = useCallback((selectedWorkLogs: WorkLog[]) => {
     if (selectedWorkLogs.length === 0) return;
 
     const totalAmount = selectedWorkLogs.reduce((sum, log) => {
-      return sum + calculateWorkLogAmount(log, hourlyRate);
+      return sum + calculateWorkLogAmount(log, salaryConfig);
     }, 0);
 
     Alert.alert(
@@ -140,7 +232,7 @@ export default function SettlementsScreen() {
         },
       ]
     );
-  }, [hourlyRate, bulkSettle]);
+  }, [salaryConfig, bulkSettle]);
 
   // 시간 수정 저장
   const handleSaveTimeEdit = useCallback((data: {

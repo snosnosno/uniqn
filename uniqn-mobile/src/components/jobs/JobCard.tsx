@@ -203,18 +203,25 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
                 </Text>
 
                 {/* 시간대별 */}
-                {dateReq.timeSlots.map((slot, slotIdx) => (
-                  <View key={slotIdx} className="ml-5 mt-1">
-                    {slot.roles.map((role, roleIdx) => (
-                      <RoleLine
-                        key={roleIdx}
-                        role={role}
-                        showTime={roleIdx === 0}
-                        time={slot.startTime || '-'}
-                      />
-                    ))}
-                  </View>
-                ))}
+                {dateReq.timeSlots.map((slot, slotIdx) => {
+                  // 시간 미정 여부 확인
+                  const displayTime = slot.isTimeToBeAnnounced
+                    ? '시간 미정'
+                    : slot.startTime || '-';
+
+                  return (
+                    <View key={slotIdx} className="ml-5 mt-1">
+                      {slot.roles.map((role, roleIdx) => (
+                        <RoleLine
+                          key={roleIdx}
+                          role={role}
+                          showTime={roleIdx === 0}
+                          time={displayTime}
+                        />
+                      ))}
+                    </View>
+                  );
+                })}
               </View>
             ))
           ) : (

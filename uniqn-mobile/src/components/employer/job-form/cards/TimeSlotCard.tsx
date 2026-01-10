@@ -68,13 +68,16 @@ const RoleCard = React.memo(function RoleCard({
   onRemove,
   onCustomNameChange,
 }: RoleCardProps) {
-  // 역할명 가져오기
-  const roleName = role.role === 'other' && role.customRole
+  // 역할명 가져오기 (v2.0: role, 레거시: name 지원)
+  const roleKey = role.role ?? role.name ?? 'dealer';
+  const roleName = roleKey === 'other' && role.customRole
     ? role.customRole
-    : STAFF_ROLES.find(r => r.key === role.role)?.name || role.role;
+    : STAFF_ROLES.find(r => r.key === roleKey)?.name || roleKey;
 
   const icon = ROLE_ICONS[roleName] || DEFAULT_ROLE_ICON;
-  const isCustom = role.role === 'other';
+  // 인원수 (v2.0: headcount, 레거시: count 지원)
+  const headcount = role.headcount ?? role.count ?? 1;
+  const isCustom = roleKey === 'other';
 
   return (
     <View className="flex-row items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
@@ -103,9 +106,9 @@ const RoleCard = React.memo(function RoleCard({
       <View className="flex-row items-center">
         <Pressable
           onPress={() => onCountChange(roleIndex, -1)}
-          disabled={role.headcount <= 1}
+          disabled={headcount <= 1}
           className={`w-7 h-7 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-l-md ${
-            role.headcount <= 1 ? 'opacity-50' : ''
+            headcount <= 1 ? 'opacity-50' : ''
           }`}
           accessibilityRole="button"
           accessibilityLabel="인원 감소"
@@ -115,15 +118,15 @@ const RoleCard = React.memo(function RoleCard({
 
         <View className="w-8 h-7 items-center justify-center bg-white dark:bg-gray-800 border-y border-gray-200 dark:border-gray-600">
           <Text className="font-bold text-sm text-gray-900 dark:text-white">
-            {role.headcount}
+            {headcount}
           </Text>
         </View>
 
         <Pressable
           onPress={() => onCountChange(roleIndex, 1)}
-          disabled={role.headcount >= 99}
+          disabled={headcount >= 99}
           className={`w-7 h-7 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-r-md ${
-            role.headcount >= 99 ? 'opacity-50' : ''
+            headcount >= 99 ? 'opacity-50' : ''
           }`}
           accessibilityRole="button"
           accessibilityLabel="인원 증가"
@@ -164,10 +167,11 @@ export function TimeSlotCard({
   // 이미 추가된 역할명 목록 (중복 방지)
   const existingRoleNames = useMemo(() => {
     return timeSlot.roles.map((r) => {
-      if (r.role === 'other' && r.customRole) {
+      const roleKey = r.role ?? r.name ?? 'dealer';
+      if (roleKey === 'other' && r.customRole) {
         return r.customRole;
       }
-      return STAFF_ROLES.find(sr => sr.key === r.role)?.name || r.role;
+      return STAFF_ROLES.find(sr => sr.key === roleKey)?.name || roleKey;
     });
   }, [timeSlot.roles]);
 
@@ -220,7 +224,8 @@ export function TimeSlotCard({
       const updatedRoles = [...timeSlot.roles];
       const role = updatedRoles[roleIndex];
       if (role) {
-        const newCount = Math.max(1, Math.min(99, role.headcount + delta));
+        const currentCount = role.headcount ?? role.count ?? 1;
+        const newCount = Math.max(1, Math.min(99, currentCount + delta));
         updatedRoles[roleIndex] = { ...role, headcount: newCount };
         onUpdate(index, { roles: updatedRoles });
       }
@@ -255,7 +260,7 @@ export function TimeSlotCard({
 
   // 총 인원 계산
   const totalHeadcount = useMemo(
-    () => timeSlot.roles.reduce((sum, r) => sum + r.headcount, 0),
+    () => timeSlot.roles.reduce((sum, r) => sum + (r.headcount ?? r.count ?? 0), 0),
     [timeSlot.roles]
   );
 
@@ -338,7 +343,7 @@ export function TimeSlotCard({
                 시작 시간
               </Text>
               <TimePicker
-                value={timeSlot.startTime}
+                value={timeSlot.startTime ?? timeSlot.time ?? '09:00'}
                 onChange={handleStartTimeChange}
                 placeholder="시간을 선택하세요"
               />

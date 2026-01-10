@@ -118,9 +118,17 @@ export interface Application extends FirebaseDocument {
   status: ApplicationStatus;
   /** 레거시: 단일 역할 */
   appliedRole: StaffRole;
+  /** 커스텀 역할명 (role이 'other'일 때) */
+  customRole?: string;
   message?: string;
   /** 모집 유형 구분 */
   recruitmentType?: RecruitmentType;
+
+  // === v2.0 지원 날짜/시간대 (단일 선택 시) ===
+  /** 지원한 날짜 (dateSpecificRequirements에서 선택한 날짜) */
+  appliedDate?: string;
+  /** 지원한 시간대 */
+  appliedTimeSlot?: string;
 
   // === Assignment v2.0 (Single Source of Truth) ===
   /**

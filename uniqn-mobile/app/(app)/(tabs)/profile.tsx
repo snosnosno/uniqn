@@ -3,7 +3,7 @@
  * 프로필 화면
  */
 
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Avatar, Divider } from '@/components/ui';
@@ -68,29 +68,39 @@ export default function ProfileScreen() {
   const unreadCount = useUnreadCountRealtime();
 
   const handleLogout = () => {
-    Alert.alert(
-      '로그아웃',
-      '정말 로그아웃 하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '로그아웃',
-          style: 'destructive',
-          onPress: async () => {
-            setIsLoggingOut(true);
-            try {
-              await signOut();
-              reset();
-              router.replace('/(auth)/login');
-            } catch {
-              addToast({ type: 'error', message: '로그아웃에 실패했습니다' });
-            } finally {
-              setIsLoggingOut(false);
-            }
+    const performLogout = async () => {
+      setIsLoggingOut(true);
+      try {
+        await signOut();
+        reset();
+        router.replace('/(auth)/login');
+      } catch {
+        addToast({ type: 'error', message: '로그아웃에 실패했습니다' });
+      } finally {
+        setIsLoggingOut(false);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      // 웹에서는 window.confirm 사용
+      if (window.confirm('정말 로그아웃 하시겠습니까?')) {
+        performLogout();
+      }
+    } else {
+      // 네이티브에서는 Alert.alert 사용
+      Alert.alert(
+        '로그아웃',
+        '정말 로그아웃 하시겠습니까?',
+        [
+          { text: '취소', style: 'cancel' },
+          {
+            text: '로그아웃',
+            style: 'destructive',
+            onPress: performLogout,
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
   };
 
   // 로딩 상태

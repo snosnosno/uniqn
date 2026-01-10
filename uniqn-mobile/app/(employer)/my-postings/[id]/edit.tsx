@@ -20,6 +20,7 @@ import {
   SectionCard,
   BasicInfoSection,
   ScheduleSection,
+  DateRequirementsSection,
   RolesSection,
   SalarySection,
   PreQuestionsSection,
@@ -94,14 +95,32 @@ function validateBasicInfo(data: JobPostingFormData): Record<string, string> {
 function validateSchedule(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
+  // v2.0: dateSpecificRequirements 기반 검증
+  const hasDateRequirements =
+    data.dateSpecificRequirements && data.dateSpecificRequirements.length > 0;
+
   switch (data.postingType) {
     case 'regular':
     case 'urgent':
-      if (!data.workDate) {
-        errors.workDate = '근무 날짜를 선택해주세요';
-      }
-      if (!data.startTime) {
-        errors.startTime = '출근 시간을 선택해주세요';
+    case 'tournament':
+      // v2.0: dateSpecificRequirements 기반 검증
+      if (hasDateRequirements) {
+        // 모든 날짜의 타임슬롯에 역할이 있는지 확인
+        const hasIncomplete = data.dateSpecificRequirements!.some(req => {
+          return !req.timeSlots || req.timeSlots.length === 0 ||
+            req.timeSlots.some(slot => !slot.roles || slot.roles.length === 0);
+        });
+        if (hasIncomplete) {
+          errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
+        }
+      } else {
+        // 하위호환성: 이전 필드 검증
+        if (!data.workDate) {
+          errors.workDate = '근무 날짜를 선택해주세요';
+        }
+        if (!data.startTime) {
+          errors.startTime = '출근 시간을 선택해주세요';
+        }
       }
       break;
     case 'fixed':
@@ -112,16 +131,6 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
         errors.startTime = '출근 시간을 선택해주세요';
       }
       break;
-    case 'tournament':
-      if (!data.tournamentDates || data.tournamentDates.length === 0) {
-        errors.tournamentDates = '최소 1일 이상의 대회 일정을 추가해주세요';
-      } else {
-        const hasIncomplete = data.tournamentDates.some(d => !d.date || !d.startTime);
-        if (hasIncomplete) {
-          errors.tournamentDates = '모든 대회 일정의 날짜와 시간을 입력해주세요';
-        }
-      }
-      break;
   }
 
   return errors;
@@ -130,16 +139,19 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
 function validateRoles(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  if (!data.roles || data.roles.length === 0) {
-    errors.roles = '최소 1개 이상의 역할을 추가해주세요';
-  } else {
-    const totalCount = data.roles.reduce((sum, r) => sum + r.count, 0);
-    if (totalCount === 0) {
-      errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
-    }
-    const hasEmptyName = data.roles.some(r => r.isCustom && !r.name.trim());
-    if (hasEmptyName) {
-      errors.roles = '모든 역할의 이름을 입력해주세요';
+  // fixed 타입만 RolesSection 사용 (다른 타입은 TimeSlot 내 역할 관리)
+  if (data.postingType === 'fixed') {
+    if (!data.roles || data.roles.length === 0) {
+      errors.roles = '최소 1개 이상의 역할을 추가해주세요';
+    } else {
+      const totalCount = data.roles.reduce((sum, r) => sum + r.count, 0);
+      if (totalCount === 0) {
+        errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
+      }
+      const hasEmptyName = data.roles.some(r => r.isCustom && !r.name.trim());
+      if (hasEmptyName) {
+        errors.roles = '모든 역할의 이름을 입력해주세요';
+      }
     }
   }
 
@@ -149,16 +161,45 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
 function validateSalary(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  // 역할별 급여가 기본이므로 모든 역할의 급여 검증
-  const rolesWithoutSalary = data.roles.filter((role) => {
-    const roleSalary = data.roleSalaries[role.name];
+  // SalarySection과 동일한 로직으로 역할 추출
+  let roleNames: string[] = [];
+
+  if (data.postingType === 'fixed') {
+    // fixed 타입: data.roles 사용
+    roleNames = data.roles.map((r) => r.name);
+  } else {
+    // 다른 타입: dateSpecificRequirements에서 역할 추출
+    const roleSet = new Set<string>();
+    data.dateSpecificRequirements?.forEach((dateReq) => {
+      dateReq.timeSlots?.forEach((slot) => {
+        slot.roles?.forEach((roleReq) => {
+          const roleKey = roleReq.role ?? roleReq.name ?? 'dealer';
+          // 역할 코드를 한글 이름으로 변환
+          if (roleKey === 'other' && roleReq.customRole) {
+            roleSet.add(roleReq.customRole);
+          } else {
+            const staffRole = [
+              { key: 'dealer', name: '딜러' },
+              { key: 'floor', name: '플로어' },
+              { key: 'other', name: '기타' },
+            ].find((r) => r.key === roleKey);
+            roleSet.add(staffRole?.name || roleKey);
+          }
+        });
+      });
+    });
+    roleNames = Array.from(roleSet);
+  }
+
+  // 역할별 급여 검증
+  const rolesWithoutSalary = roleNames.filter((name) => {
+    const roleSalary = data.roleSalaries[name];
     // 협의(other)가 아닌 경우 금액 필수
     return roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0);
   });
 
   if (rolesWithoutSalary.length > 0) {
-    const roleNames = rolesWithoutSalary.map(r => r.name).join(', ');
-    errors.roleSalary = `${roleNames}의 급여를 입력해주세요`;
+    errors.roleSalary = `${rolesWithoutSalary.join(', ')}의 급여를 입력해주세요`;
   }
 
   return errors;
@@ -238,6 +279,7 @@ export default function EditJobPostingScreen() {
         workDate: existingJob.workDate || '',
         startTime: extractStartTime(existingJob.timeSlot),
         tournamentDates: [],
+        dateSpecificRequirements: existingJob.dateSpecificRequirements || [],
         daysPerWeek: existingJob.daysPerWeek ?? 5,
         workDays: existingJob.workDays ?? [],
         // 역할
@@ -443,8 +485,14 @@ export default function EditJobPostingScreen() {
                     확정된 지원자가 있어 일정을 수정할 수 없습니다.
                   </Text>
                 </View>
-              ) : (
+              ) : formData.postingType === 'fixed' ? (
                 <ScheduleSection
+                  data={formData}
+                  onUpdate={updateFormData}
+                  errors={errors.schedule}
+                />
+              ) : (
+                <DateRequirementsSection
                   data={formData}
                   onUpdate={updateFormData}
                   errors={errors.schedule}
@@ -453,29 +501,31 @@ export default function EditJobPostingScreen() {
             </SectionCard>
           </View>
 
-          {/* 역할/인원 섹션 */}
-          <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
-            <SectionCard
-              title="역할/인원"
-              required
-              hasError={getErrorCount(errors.roles) > 0}
-              errorCount={getErrorCount(errors.roles)}
-            >
-              {hasConfirmedApplicants ? (
-                <View className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                  <Text className="text-gray-500 dark:text-gray-400 text-center">
-                    확정된 지원자가 있어 역할을 수정할 수 없습니다.
-                  </Text>
-                </View>
-              ) : (
-                <RolesSection
-                  data={formData}
-                  onUpdate={updateFormData}
-                  errors={errors.roles}
-                />
-              )}
-            </SectionCard>
-          </View>
+          {/* 역할/인원 섹션 - fixed 타입만 표시 (다른 타입은 DateRequirements 내 역할 관리) */}
+          {formData.postingType === 'fixed' && (
+            <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
+              <SectionCard
+                title="역할/인원"
+                required
+                hasError={getErrorCount(errors.roles) > 0}
+                errorCount={getErrorCount(errors.roles)}
+              >
+                {hasConfirmedApplicants ? (
+                  <View className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                    <Text className="text-gray-500 dark:text-gray-400 text-center">
+                      확정된 지원자가 있어 역할을 수정할 수 없습니다.
+                    </Text>
+                  </View>
+                ) : (
+                  <RolesSection
+                    data={formData}
+                    onUpdate={updateFormData}
+                    errors={errors.roles}
+                  />
+                )}
+              </SectionCard>
+            </View>
+          )}
 
           {/* 급여 섹션 */}
           <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>

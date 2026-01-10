@@ -151,16 +151,46 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
 function validateSalary(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  // 역할별 급여가 기본이므로 모든 역할의 급여 검증
-  const rolesWithoutSalary = data.roles.filter((role) => {
-    const roleSalary = data.roleSalaries[role.name];
+  // SalarySection과 동일한 로직으로 역할 추출
+  let roleNames: string[] = [];
+
+  if (data.postingType === 'fixed') {
+    // fixed 타입: data.roles 사용
+    roleNames = data.roles.map((r) => r.name);
+  } else {
+    // 다른 타입: dateSpecificRequirements에서 역할 추출
+    const roleSet = new Set<string>();
+    data.dateSpecificRequirements?.forEach((dateReq) => {
+      dateReq.timeSlots?.forEach((slot) => {
+        slot.roles?.forEach((roleReq) => {
+          const roleKey = roleReq.role ?? roleReq.name ?? 'dealer';
+          // 역할 코드를 한글 이름으로 변환
+          if (roleKey === 'other' && roleReq.customRole) {
+            roleSet.add(roleReq.customRole);
+          } else {
+            // STAFF_ROLES에서 이름 찾기 (SalarySection과 동일)
+            const staffRole = [
+              { key: 'dealer', name: '딜러' },
+              { key: 'floor', name: '플로어' },
+              { key: 'other', name: '기타' },
+            ].find((r) => r.key === roleKey);
+            roleSet.add(staffRole?.name || roleKey);
+          }
+        });
+      });
+    });
+    roleNames = Array.from(roleSet);
+  }
+
+  // 역할별 급여 검증
+  const rolesWithoutSalary = roleNames.filter((name) => {
+    const roleSalary = data.roleSalaries[name];
     // 협의(other)가 아닌 경우 금액 필수
     return roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0);
   });
 
   if (rolesWithoutSalary.length > 0) {
-    const roleNames = rolesWithoutSalary.map(r => r.name).join(', ');
-    errors.roleSalary = `${roleNames}의 급여를 입력해주세요`;
+    errors.roleSalary = `${rolesWithoutSalary.join(', ')}의 급여를 입력해주세요`;
   }
 
   return errors;

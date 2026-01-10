@@ -9,6 +9,10 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
+import type {
+  DateSpecificRequirement as DateSpecificRequirementV2,
+  TimeSlot as TimeSlotV2,
+} from './jobPosting/dateRequirement';
 
 /**
  * 공고 타입 (4가지)
@@ -182,13 +186,12 @@ export interface LegacyTimeSlot {
 }
 
 /**
- * 시간대 정보
+ * 시간대 정보 (v2.0)
  *
- * @description
- * - 레거시 필드 포함: time, endTime, isFullDay 등
- * - 새 코드에서는 types/jobPosting/dateRequirement.ts의 TimeSlot 권장
+ * @description v2.0 타입을 사용. 레거시 호환을 위해 LegacyTimeSlot도 유지
+ * @see types/jobPosting/dateRequirement.ts
  */
-export interface TimeSlot extends LegacyTimeSlot {}
+export type TimeSlot = TimeSlotV2;
 
 /**
  * 날짜별 요구사항 (레거시 - 확장형)
@@ -214,15 +217,12 @@ export interface LegacyDateSpecificRequirement {
 }
 
 /**
- * 날짜별 요구사항
+ * 날짜별 요구사항 (v2.0)
  *
- * @description
- * - 레거시 필드 포함: isMainDate, displayOrder, description
- * - 간소화된 버전과 호환 (추가 필드만 선택적으로 사용)
- *
- * @see types/jobPosting/dateRequirement.ts (간소화된 정식 버전)
+ * @description v2.0 타입을 사용. 레거시 호환을 위해 LegacyDateSpecificRequirement도 유지
+ * @see types/jobPosting/dateRequirement.ts
  */
-export interface DateSpecificRequirement extends LegacyDateSpecificRequirement {}
+export type DateSpecificRequirement = DateSpecificRequirementV2;
 
 /**
  * 공고 타입별 라벨

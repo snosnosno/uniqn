@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 지원자 카드 컴포넌트
  *
- * @description 구인자가 지원자 정보를 확인하는 카드
- * @version 1.0.0
+ * @description 구인자가 지원자 정보를 확인하는 카드 (v2.0 - 사전질문 답변, 날짜/시간대 표시)
+ * @version 2.0.0
  */
 
 import React, { useMemo, useCallback } from 'react';
@@ -10,12 +10,21 @@ import { View, Text, Pressable } from 'react-native';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import { PhoneIcon, ClockIcon, MessageIcon, CheckIcon, XMarkIcon, UserPlusIcon } from '../icons';
+import {
+  PhoneIcon,
+  ClockIcon,
+  MessageIcon,
+  CheckIcon,
+  XMarkIcon,
+  UserPlusIcon,
+  CalendarIcon,
+  DocumentIcon,
+} from '../icons';
 import { ConfirmationHistoryTimeline } from '../applicant/ConfirmationHistoryTimeline';
 import { APPLICATION_STATUS_LABELS } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import type { ApplicantWithDetails } from '@/services';
-import type { ApplicationStatus, StaffRole } from '@/types';
+import type { ApplicationStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -54,11 +63,35 @@ const STATUS_BADGE_VARIANT: Record<ApplicationStatus, 'default' | 'primary' | 's
   cancellation_pending: 'warning',
 };
 
-const ROLE_LABELS: Record<StaffRole, string> = {
+const ROLE_LABELS: Record<string, string> = {
   dealer: '딜러',
+  floor: '플로어',
   manager: '매니저',
   chiprunner: '칩러너',
   admin: '관리자',
+};
+
+/**
+ * 역할 라벨 가져오기 (커스텀 역할 지원)
+ */
+const getRoleLabel = (role: string, customRole?: string): string => {
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
+  return ROLE_LABELS[role] || role;
+};
+
+/**
+ * 지원 날짜 포맷 (M/D 형식)
+ */
+const formatAppliedDate = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+  return `${month}/${day}(${dayOfWeek})`;
 };
 
 // ============================================================================
@@ -177,10 +210,21 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             </Badge>
           </View>
           <Text className="text-sm text-gray-500 dark:text-gray-400">
-            {ROLE_LABELS[applicant.appliedRole] || applicant.appliedRole} 지원
+            {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원
           </Text>
         </View>
       </View>
+
+      {/* 지원 날짜/시간대 표시 (v2.0) */}
+      {(applicant.appliedDate || applicant.appliedTimeSlot) && (
+        <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-lg px-3 py-2 mb-3">
+          <CalendarIcon size={14} color="#2563EB" />
+          <Text className="ml-2 text-sm text-blue-700 dark:text-blue-300">
+            {formatAppliedDate(applicant.appliedDate)}
+            {applicant.appliedTimeSlot && ` ${applicant.appliedTimeSlot}`}
+          </Text>
+        </View>
+      )}
 
       {/* 정보 섹션 */}
       <View className="space-y-2 mb-3">
@@ -218,6 +262,33 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           </View>
         )}
       </View>
+
+      {/* 사전질문 답변 (v2.0) */}
+      {applicant.preQuestionAnswers && applicant.preQuestionAnswers.length > 0 && (
+        <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-3">
+          <View className="flex-row items-center mb-2">
+            <DocumentIcon size={14} color="#6B7280" />
+            <Text className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+              사전질문 답변
+            </Text>
+          </View>
+          {applicant.preQuestionAnswers.slice(0, 2).map((answer, idx) => (
+            <View key={idx} className="mb-2">
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                Q{idx + 1}. {answer.question}
+              </Text>
+              <Text className="text-sm text-gray-700 dark:text-gray-300" numberOfLines={2}>
+                {answer.answer}
+              </Text>
+            </View>
+          ))}
+          {applicant.preQuestionAnswers.length > 2 && (
+            <Text className="text-xs text-primary-600 dark:text-primary-400">
+              +{applicant.preQuestionAnswers.length - 2}개 더보기
+            </Text>
+          )}
+        </View>
+      )}
 
       {/* 대기자 순번 */}
       {applicant.status === 'waitlisted' && applicant.waitlistOrder && (

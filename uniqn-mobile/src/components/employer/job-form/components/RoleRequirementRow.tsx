@@ -98,9 +98,9 @@ export function RoleRequirementRow({
       <View className="flex-1">
         <View className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2">
           <Text className="text-sm text-gray-900 dark:text-white">
-            {role.role === 'other' && role.customRole
+            {(role.role ?? role.name) === 'other' && role.customRole
               ? role.customRole
-              : ROLE_LABELS[role.role]}
+              : ROLE_LABELS[role.role ?? role.name ?? 'dealer']}
           </Text>
         </View>
         {/* TODO: 역할 선택 모달/드롭다운 추가 */}

@@ -168,11 +168,15 @@ describe('jobManagementService', () => {
 
       const result = await createJobPosting(input, 'employer-1', '테스트 구인자');
 
-      expect(result.id).toBe('test-doc-id');
-      expect(result.jobPosting.title).toBe(input.title);
-      expect(result.jobPosting.status).toBe('active');
-      expect(result.jobPosting.ownerId).toBe('employer-1');
-      expect(result.jobPosting.totalPositions).toBe(4); // 3 dealers + 1 manager
+      // 단일 생성 결과 확인 (배열이 아님)
+      expect(Array.isArray(result)).toBe(false);
+      if (!Array.isArray(result)) {
+        expect(result.id).toBe('test-doc-id');
+        expect(result.jobPosting.title).toBe(input.title);
+        expect(result.jobPosting.status).toBe('active');
+        expect(result.jobPosting.ownerId).toBe('employer-1');
+        expect(result.jobPosting.totalPositions).toBe(4); // 3 dealers + 1 manager
+      }
     });
 
     it('should calculate total positions from roles', async () => {
@@ -186,7 +190,10 @@ describe('jobManagementService', () => {
 
       const result = await createJobPosting(input, 'employer-1', '테스트 구인자');
 
-      expect(result.jobPosting.totalPositions).toBe(10);
+      expect(Array.isArray(result)).toBe(false);
+      if (!Array.isArray(result)) {
+        expect(result.jobPosting.totalPositions).toBe(10);
+      }
     });
 
     it('should initialize counts to zero', async () => {
@@ -195,9 +202,12 @@ describe('jobManagementService', () => {
 
       const result = await createJobPosting(input, 'employer-1', '테스트 구인자');
 
-      expect(result.jobPosting.filledPositions).toBe(0);
-      expect(result.jobPosting.viewCount).toBe(0);
-      expect(result.jobPosting.applicationCount).toBe(0);
+      expect(Array.isArray(result)).toBe(false);
+      if (!Array.isArray(result)) {
+        expect(result.jobPosting.filledPositions).toBe(0);
+        expect(result.jobPosting.viewCount).toBe(0);
+        expect(result.jobPosting.applicationCount).toBe(0);
+      }
     });
 
     it('should throw error on Firebase failure', async () => {

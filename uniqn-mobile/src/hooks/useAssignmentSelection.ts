@@ -179,7 +179,10 @@ export function useAssignmentSelection({
     (date: string, timeSlots: TimeSlot[]): boolean => {
       const selectedSlots = selectionMap.get(date);
       if (!selectedSlots) return false;
-      return timeSlots.every((slot) => selectedSlots.has(slot.time));
+      return timeSlots.every((slot) => {
+        const slotTime = slot.startTime ?? slot.time ?? '';
+        return selectedSlots.has(slotTime);
+      });
     },
     [selectionMap]
   );
@@ -221,7 +224,10 @@ export function useAssignmentSelection({
           (a) => !a.dates.includes(date)
         );
         const currentSlots = selectionMap.get(date) ?? new Set();
-        const newSlots = timeSlots.filter((slot) => !currentSlots.has(slot.time));
+        const newSlots = timeSlots.filter((slot) => {
+          const slotTime = slot.startTime ?? slot.time ?? '';
+          return !currentSlots.has(slotTime);
+        });
 
         // 최대 선택 수 확인
         const remainingSlots = maxSelections
@@ -229,9 +235,12 @@ export function useAssignmentSelection({
           : newSlots.length;
         const slotsToAdd = newSlots.slice(0, remainingSlots);
 
-        const newAssignments = slotsToAdd.map((slot) =>
-          createSimpleAssignment(selectedRole, slot.time, date)
-        );
+        const newAssignments = slotsToAdd
+          .map((slot) => {
+            const slotTime = slot.startTime ?? slot.time ?? '';
+            return slotTime ? createSimpleAssignment(selectedRole, slotTime, date) : null;
+          })
+          .filter((a): a is NonNullable<typeof a> => a !== null);
 
         updateAssignments([...existingOtherDates, ...newAssignments]);
       }

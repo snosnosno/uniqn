@@ -55,10 +55,11 @@ const formatTimeRange = (slot: TimeSlot): string => {
   if (slot.isTimeToBeAnnounced) {
     return slot.tentativeDescription ?? '시간 미정';
   }
+  const startTime = slot.startTime ?? slot.time ?? '-';
   if (slot.endTime) {
-    return `${slot.time} - ${slot.endTime}`;
+    return `${startTime} - ${slot.endTime}`;
   }
-  return slot.time;
+  return startTime;
 };
 
 const getRoleLabel = (role: string): string => {
@@ -73,7 +74,7 @@ const getRoleLabel = (role: string): string => {
 
 const getTotalPositions = (slots: TimeSlot[]): number => {
   return slots.reduce((total, slot) => {
-    return total + slot.roles.reduce((sum, r) => sum + r.count, 0);
+    return total + slot.roles.reduce((sum, r) => sum + (r.headcount ?? r.count ?? 0), 0);
   }, 0);
 };
 
@@ -101,7 +102,7 @@ const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemP
       <View className="flex-row flex-wrap gap-1">
         {slot.roles.map((role, index) => (
           <Badge key={index} variant="default" size="sm">
-            {getRoleLabel(role.name)} {role.count}명
+            {getRoleLabel(role.role ?? role.name ?? 'dealer')} {role.headcount ?? role.count ?? 0}명
           </Badge>
         ))}
       </View>

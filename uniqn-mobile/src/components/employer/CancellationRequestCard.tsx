@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 취소 요청 카드 컴포넌트
  *
- * @description 구인자가 스태프의 취소 요청을 검토하는 카드
- * @version 1.0.0
+ * @description 구인자가 스태프의 취소 요청을 검토하는 카드 (v2.0 - 날짜/시간대 표시)
+ * @version 2.0.0
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
@@ -11,9 +11,9 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
-import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon } from '../icons';
+import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../icons';
 import { formatRelativeTime } from '@/utils/dateUtils';
-import type { Application, StaffRole, CancellationRequestStatus } from '@/types';
+import type { Application, CancellationRequestStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -34,12 +34,36 @@ export interface CancellationRequestCardProps {
 // Constants
 // ============================================================================
 
-const ROLE_LABELS: Record<StaffRole, string> = {
+const ROLE_LABELS: Record<string, string> = {
   dealer: '딜러',
+  floor: '플로어',
   manager: '매니저',
   chiprunner: '칩러너',
   admin: '관리자',
 };
+
+/**
+ * 역할 라벨 가져오기 (커스텀 역할 지원 v2.0)
+ */
+function getRoleLabel(role: string, customRole?: string): string {
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
+  return ROLE_LABELS[role] || role;
+}
+
+/**
+ * 지원 날짜 포맷 (M/D 형식 v2.0)
+ */
+function formatAppliedDate(dateStr?: string): string {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return dateStr;
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
+  return `${month}/${day}(${dayOfWeek})`;
+}
 
 const STATUS_COLORS: Record<CancellationRequestStatus, { bg: string; text: string }> = {
   pending: { bg: 'bg-warning-100 dark:bg-warning-900/30', text: 'text-warning-700 dark:text-warning-300' },
@@ -130,10 +154,21 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {ROLE_LABELS[application.appliedRole] || application.appliedRole} 역할
+              {getRoleLabel(application.appliedRole, application.customRole)} 역할
             </Text>
           </View>
         </View>
+
+        {/* 취소 대상 일정 표시 (v2.0) */}
+        {(application.appliedDate || application.appliedTimeSlot) && (
+          <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-3">
+            <CalendarIcon size={14} color="#DC2626" />
+            <Text className="ml-2 text-sm text-red-700 dark:text-red-300">
+              취소 대상: {formatAppliedDate(application.appliedDate)}
+              {application.appliedTimeSlot && ` ${application.appliedTimeSlot}`}
+            </Text>
+          </View>
+        )}
 
         {/* 공고 정보 */}
         <View className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 mb-3">

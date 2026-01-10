@@ -2,7 +2,8 @@
  * UNIQN Mobile - Job Apply Screen
  * 지원하기 화면 (로그인 필요)
  *
- * @version 1.0.0
+ * @description v2.0 - Assignment + PreQuestion 지원
+ * @version 2.0.0
  */
 
 import { useState, useCallback } from 'react';
@@ -14,7 +15,7 @@ import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { logger } from '@/utils/logger';
-import type { StaffRole } from '@/types';
+import type { StaffRole, Assignment, PreQuestionAnswer } from '@/types';
 
 // ============================================================================
 // Loading Component
@@ -103,15 +104,22 @@ export default function ApplyScreen() {
 
   const {
     submitApplication,
+    submitApplicationV2,
     isSubmitting,
+    isSubmittingV2,
     hasApplied,
   } = useApplications();
 
-  // 지원 제출 핸들러
+  // v2.0 모드 판단
+  const isV2Mode = Boolean(
+    job?.dateSpecificRequirements && job.dateSpecificRequirements.length > 0
+  );
+
+  // 지원 제출 핸들러 (v1.0 레거시)
   const handleSubmit = useCallback((roleId: string, message?: string) => {
     if (!job) return;
 
-    logger.info('지원 제출', { jobId: job.id, roleId });
+    logger.info('지원 제출 (v1.0)', { jobId: job.id, roleId });
 
     submitApplication(
       {
@@ -130,6 +138,39 @@ export default function ApplyScreen() {
       }
     );
   }, [job, submitApplication]);
+
+  // 지원 제출 핸들러 (v2.0 Assignment + PreQuestion)
+  const handleSubmitV2 = useCallback((
+    assignments: Assignment[],
+    message?: string,
+    preQuestionAnswers?: PreQuestionAnswer[]
+  ) => {
+    if (!job) return;
+
+    logger.info('지원 제출 (v2.0)', {
+      jobId: job.id,
+      assignmentsCount: assignments.length,
+      hasPreQuestions: !!preQuestionAnswers,
+    });
+
+    submitApplicationV2(
+      {
+        jobPostingId: job.id,
+        assignments,
+        message,
+        preQuestionAnswers,
+      },
+      {
+        onSuccess: () => {
+          setShowForm(false);
+          // 성공 후 약간의 딜레이 후 이동
+          setTimeout(() => {
+            router.replace('/(app)/(tabs)/schedule');
+          }, 1500);
+        },
+      }
+    );
+  }, [job, submitApplicationV2]);
 
   // 폼 닫기 핸들러
   const handleClose = useCallback(() => {
@@ -233,8 +274,9 @@ export default function ApplyScreen() {
       <ApplicationForm
         job={job}
         visible={showForm}
-        isSubmitting={isSubmitting}
+        isSubmitting={isV2Mode ? isSubmittingV2 : isSubmitting}
         onSubmit={handleSubmit}
+        onSubmitV2={handleSubmitV2}
         onClose={handleClose}
       />
     </SafeAreaView>

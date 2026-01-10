@@ -11,11 +11,15 @@ import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { AssignmentSelector } from './AssignmentSelector';
 import { PreQuestionForm } from './PreQuestionForm';
+import { PostingTypeBadge } from './PostingTypeBadge';
+import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import type {
   JobPosting,
   StaffRole,
   Assignment,
   PreQuestionAnswer,
+  PostingType,
+  Allowances,
 } from '@/types';
 import { initializePreQuestionAnswers, findUnansweredRequired } from '@/types';
 
@@ -57,16 +61,43 @@ const getRoleLabel = (role: StaffRole): string => {
   }
 };
 
-const formatSalary = (type: string, amount: number): string => {
-  const formattedAmount = amount.toLocaleString('ko-KR');
-  switch (type) {
-    case 'hourly':
-      return `시급 ${formattedAmount}원`;
-    case 'daily':
-      return `일급 ${formattedAmount}원`;
-    default:
-      return `${formattedAmount}원`;
+/** "제공" 상태를 나타내는 특별 값 */
+const PROVIDED_FLAG = -1;
+
+/**
+ * 수당 정보 문자열 배열 생성
+ */
+const getAllowanceItems = (allowances?: Allowances): string[] => {
+  if (!allowances) return [];
+  const items: string[] = [];
+
+  // 보장시간
+  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
+    items.push(`보장 ${allowances.guaranteedHours}시간`);
   }
+
+  // 식비
+  if (allowances.meal === PROVIDED_FLAG) {
+    items.push('식사제공');
+  } else if (allowances.meal && allowances.meal > 0) {
+    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
+  }
+
+  // 교통비
+  if (allowances.transportation === PROVIDED_FLAG) {
+    items.push('교통비제공');
+  } else if (allowances.transportation && allowances.transportation > 0) {
+    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
+  }
+
+  // 숙박비
+  if (allowances.accommodation === PROVIDED_FLAG) {
+    items.push('숙박제공');
+  } else if (allowances.accommodation && allowances.accommodation > 0) {
+    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
+  }
+
+  return items;
 };
 
 // ============================================================================
@@ -200,18 +231,47 @@ export function ApplicationForm({
         <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
           {/* 공고 정보 */}
           <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+            {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
+            {job.postingType && job.postingType !== 'regular' && (
+              <View className="mb-2">
+                <PostingTypeBadge
+                  type={job.postingType as PostingType}
+                  size="sm"
+                />
+              </View>
+            )}
+
             <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
               {job.title}
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
               📍 {job.location.name}
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-              📅 {job.workDate} {job.timeSlot}
-            </Text>
-            <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
-              {formatSalary(job.salary.type, job.salary.amount)}
-            </Text>
+
+            {/* 급여 표시 (v2.0: 역할별 급여) - 크게 표시 */}
+            <View className="mb-2">
+              <RoleSalaryDisplay
+                roleSalaries={job.roleSalaries}
+                useSameSalary={job.useSameSalary}
+                salary={job.salary}
+                compact={false}
+              />
+            </View>
+
+            {/* 수당 표시 (v2.0) */}
+            {(() => {
+              const allowanceItems = getAllowanceItems(job.allowances);
+              if (allowanceItems.length === 0) return null;
+              return (
+                <View className="flex-row flex-wrap mt-1">
+                  {allowanceItems.map((item, idx) => (
+                    <Badge key={idx} variant="default" size="sm" className="mr-1 mb-1">
+                      {item}
+                    </Badge>
+                  ))}
+                </View>
+              );
+            })()}
           </View>
 
           {/* v2.0: AssignmentSelector (다중 날짜/시간/역할 선택) */}

@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 정산 카드 컴포넌트
  *
- * @description 스태프 근무 기록 및 정산 정보 표시
- * @version 1.0.0
+ * @description 스태프 근무 기록 및 정산 정보 표시 (v2.0 - 역할별 급여, 수당 표시)
+ * @version 2.0.0
  */
 
 import React, { useMemo, useCallback } from 'react';
@@ -11,14 +11,12 @@ import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import {
-  
-  
   CheckCircleIcon,
   EditIcon,
   BanknotesIcon,
 } from '../icons';
 import { formatTime, formatDate } from '@/utils/dateUtils';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog, PayrollStatus, Allowances } from '@/types';
 
 // ============================================================================
 // Types
@@ -27,6 +25,8 @@ import type { WorkLog, PayrollStatus } from '@/types';
 export interface SettlementCardProps {
   workLog: WorkLog;
   hourlyRate: number;
+  /** 수당 정보 (v2.0) */
+  allowances?: Allowances;
   onPress?: (workLog: WorkLog) => void;
   onEditTime?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
@@ -56,6 +56,17 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
 
 const REGULAR_HOURS = 8; // 기본 근무시간
 const OVERTIME_RATE = 1.5; // 초과근무 수당 배율
+/** "제공" 상태를 나타내는 특별 값 */
+const PROVIDED_FLAG = -1;
+
+/** 역할 라벨 (v2.0 - floor 추가) */
+const ROLE_LABELS: Record<string, string> = {
+  dealer: '딜러',
+  floor: '플로어',
+  manager: '매니저',
+  chiprunner: '칩러너',
+  admin: '관리자',
+};
 
 // ============================================================================
 // Helpers
@@ -116,6 +127,50 @@ function formatCurrency(amount: number): string {
   return amount.toLocaleString('ko-KR') + '원';
 }
 
+/**
+ * 역할 라벨 가져오기 (v2.0)
+ */
+function getRoleLabel(role: string | undefined): string {
+  if (!role) return '역할 없음';
+  return ROLE_LABELS[role] || role;
+}
+
+/**
+ * 수당 정보 문자열 배열 생성 (v2.0)
+ */
+function getAllowanceItems(allowances?: Allowances): string[] {
+  if (!allowances) return [];
+  const items: string[] = [];
+
+  // 보장시간
+  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
+    items.push(`보장 ${allowances.guaranteedHours}시간`);
+  }
+
+  // 식비
+  if (allowances.meal === PROVIDED_FLAG) {
+    items.push('식사제공');
+  } else if (allowances.meal && allowances.meal > 0) {
+    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
+  }
+
+  // 교통비
+  if (allowances.transportation === PROVIDED_FLAG) {
+    items.push('교통비제공');
+  } else if (allowances.transportation && allowances.transportation > 0) {
+    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
+  }
+
+  // 숙박비
+  if (allowances.accommodation === PROVIDED_FLAG) {
+    items.push('숙박제공');
+  } else if (allowances.accommodation && allowances.accommodation > 0) {
+    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
+  }
+
+  return items;
+}
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -123,6 +178,7 @@ function formatCurrency(amount: number): string {
 export const SettlementCard = React.memo(function SettlementCard({
   workLog,
   hourlyRate,
+  allowances,
   onPress,
   onEditTime,
   onSettle,
@@ -136,6 +192,9 @@ export const SettlementCard = React.memo(function SettlementCard({
     calculateSettlement(workLog, hourlyRate),
     [workLog, hourlyRate]
   );
+
+  // 수당 정보 (v2.0)
+  const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
 
   const payrollStatus = (workLog.payrollStatus || 'pending') as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
@@ -170,7 +229,7 @@ export const SettlementCard = React.memo(function SettlementCard({
               스태프 {workLog.staffId?.slice(-4) || '알 수 없음'}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {workLog.role || '역할 없음'} • {workDate ? formatDate(workDate) : '날짜 없음'}
+              {getRoleLabel(workLog.role)} • {workDate ? formatDate(workDate) : '날짜 없음'}
             </Text>
           </View>
         </View>
@@ -248,6 +307,17 @@ export const SettlementCard = React.memo(function SettlementCard({
               {formatCurrency(settlement.totalPay)}
             </Text>
           </View>
+        </View>
+      )}
+
+      {/* 수당 정보 (v2.0) */}
+      {allowanceItems.length > 0 && (
+        <View className="flex-row flex-wrap mb-3">
+          {allowanceItems.map((item, idx) => (
+            <Badge key={idx} variant="default" size="sm" className="mr-2 mb-1">
+              {item}
+            </Badge>
+          ))}
         </View>
       )}
 
