@@ -6,7 +6,10 @@
  */
 
 import React, { useEffect, useRef } from 'react';
-import { View, Animated, type ViewStyle, type DimensionValue } from 'react-native';
+import { View, Animated, Platform, type ViewStyle, type DimensionValue } from 'react-native';
+
+// react-native-web에서는 native driver를 지원하지 않음
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // ============================================================================
 // Types
@@ -50,12 +53,12 @@ export function Skeleton({
         Animated.timing(shimmerAnim, {
           toValue: 1,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(shimmerAnim, {
           toValue: 0,
           duration: 1000,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ])
     );

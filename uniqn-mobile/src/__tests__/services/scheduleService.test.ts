@@ -14,9 +14,6 @@ import {
   resetCounters,
 } from '../mocks/factories';
 
-// MockScheduleEvent type available for future use
-void import('../mocks/factories').then(m => m.createMockScheduleEvent as unknown);
-
 // Import after mocks
 import {
   groupSchedulesByDate,
@@ -31,6 +28,9 @@ import {
   getScheduleStats,
 } from '@/services/scheduleService';
 import type { ScheduleEvent } from '@/types';
+
+// MockScheduleEvent type available for future use
+void import('../mocks/factories').then(m => m.createMockScheduleEvent as unknown);
 
 // ScheduleType is available for type assertions in future tests
 void import('@/types').then(m => m as unknown);

@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,9 @@ import {
   Platform,
   ScrollView,
 } from 'react-native';
+
+// react-native-web에서는 native driver를 지원하지 않음
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // ============================================================================
 // Types
@@ -61,25 +64,40 @@ export function Modal({
   const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
   const slideAnim = React.useRef(new Animated.Value(100)).current;
 
+  // 초기 렌더링 시 불필요한 애니메이션 방지
+  const isFirstRender = useRef(true);
+
   useEffect(() => {
+    // 초기 렌더링 시에는 애니메이션 건너뛰기
+    if (isFirstRender.current) {
+      isFirstRender.current = false;
+      if (!visible) {
+        // 초기 상태가 닫힌 상태면 애니메이션 값만 설정
+        fadeAnim.setValue(0);
+        scaleAnim.setValue(0.9);
+        slideAnim.setValue(100);
+        return;
+      }
+    }
+
     if (visible) {
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
           duration: 200,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         position === 'center'
           ? Animated.spring(scaleAnim, {
               toValue: 1,
               tension: 65,
               friction: 10,
-              useNativeDriver: true,
+              useNativeDriver: USE_NATIVE_DRIVER,
             })
           : Animated.timing(slideAnim, {
               toValue: 0,
               duration: 300,
-              useNativeDriver: true,
+              useNativeDriver: USE_NATIVE_DRIVER,
             }),
       ]).start();
     } else {
@@ -87,18 +105,18 @@ export function Modal({
         Animated.timing(fadeAnim, {
           toValue: 0,
           duration: 150,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         position === 'center'
           ? Animated.timing(scaleAnim, {
               toValue: 0.9,
               duration: 150,
-              useNativeDriver: true,
+              useNativeDriver: USE_NATIVE_DRIVER,
             })
           : Animated.timing(slideAnim, {
               toValue: 100,
               duration: 200,
-              useNativeDriver: true,
+              useNativeDriver: USE_NATIVE_DRIVER,
             }),
       ]).start();
     }
@@ -138,22 +156,23 @@ export function Modal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <Pressable
-          onPress={handleBackdropPress}
-          className={`flex-1 ${containerStyle}`}
-          accessibilityRole="button"
-          accessibilityLabel="모달 닫기"
-        >
-          <Animated.View
-            style={{ opacity: fadeAnim }}
-            className="absolute inset-0 bg-black/50"
-          />
+        <View className={`flex-1 ${containerStyle}`}>
+          {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
+          <Pressable
+            onPress={handleBackdropPress}
+            className="absolute inset-0"
+            accessibilityRole="button"
+            accessibilityLabel="모달 닫기"
+          >
+            <Animated.View
+              style={{ opacity: fadeAnim }}
+              className="flex-1 bg-black/50"
+            />
+          </Pressable>
 
-          <Animated.View style={modalStyle}>
-            <Pressable
-              onPress={(e) => e.stopPropagation()}
-              className={modalClassName}
-            >
+          {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
+          <Animated.View style={modalStyle} pointerEvents="box-none">
+            <View className={modalClassName}>
               {/* Header */}
               {(title || showCloseButton) && (
                 <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -182,9 +201,9 @@ export function Modal({
               >
                 <View className="p-5">{children}</View>
               </ScrollView>
-            </Pressable>
+            </View>
           </Animated.View>
-        </Pressable>
+        </View>
       </KeyboardAvoidingView>
     </RNModal>
   );

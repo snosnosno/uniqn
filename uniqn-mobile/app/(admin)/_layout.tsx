@@ -11,7 +11,7 @@ export default function AdminLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   // useAuth()는 profile.role에서 직접 권한을 계산하므로 MMKV rehydration 문제 없음
-  const { isLoading, isAuthenticated, profile, isAdmin } = useAuth();
+  const { isLoading, isAuthenticated, isAdmin } = useAuth();
 
   // 로딩 중
   if (isLoading) {

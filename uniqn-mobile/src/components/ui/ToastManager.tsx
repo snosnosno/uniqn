@@ -26,8 +26,7 @@ export function ToastManager() {
   return (
     <View
       className="absolute left-0 right-0 z-50 px-4"
-      style={{ top: insets.top + 10 }}
-      pointerEvents="box-none"
+      style={{ top: insets.top + 10, pointerEvents: 'box-none' }}
     >
       {toasts.map((toast) => (
         <Toast key={toast.id} toast={toast} onDismiss={removeToast} />

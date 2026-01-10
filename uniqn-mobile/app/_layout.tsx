@@ -6,7 +6,7 @@
 import '../global.css';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { useColorScheme, View, ActivityIndicator, Text } from 'react-native';
+import { useColorScheme, View, ActivityIndicator, Text, LogBox } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -16,6 +16,13 @@ import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
+
+// LogBox 경고 억제 (써드파티 라이브러리 이슈)
+if (__DEV__) {
+  LogBox.ignoreLogs([
+    'props.pointerEvents is deprecated', // expo-router 내부 이슈
+  ]);
+}
 
 /**
  * 메인 네비게이션 컴포넌트

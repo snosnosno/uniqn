@@ -6,8 +6,11 @@
  */
 
 import React, { useEffect } from 'react';
-import { Text, Pressable, Animated } from 'react-native';
+import { Text, Pressable, Animated, Platform } from 'react-native';
 import type { Toast as ToastType } from '@/stores/toastStore';
+
+// react-native-web에서는 native driver를 지원하지 않음
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 // ============================================================================
 // Types
@@ -57,12 +60,12 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(translateY, {
         toValue: 0,
         duration: 200,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start();
 
@@ -81,12 +84,12 @@ export function Toast({ toast, onDismiss }: ToastProps) {
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
       Animated.timing(translateY, {
         toValue: -20,
         duration: 150,
-        useNativeDriver: true,
+        useNativeDriver: USE_NATIVE_DRIVER,
       }),
     ]).start(() => {
       onDismiss(toast.id);

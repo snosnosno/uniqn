@@ -15,9 +15,6 @@ import {
   resetCounters,
 } from '../mocks/factories';
 
-// createMockJobPosting is available for future tests
-void import('../mocks/factories').then(m => m.createMockJobPosting);
-
 // ============================================================================
 // Import After Mocks
 // ============================================================================
@@ -33,6 +30,9 @@ import {
   useMarkAsRead,
   useApplicantManagement,
 } from '@/hooks/useApplicantManagement';
+
+// createMockJobPosting is available for future tests
+void import('../mocks/factories').then(m => m.createMockJobPosting);
 
 jest.mock('@/lib/firebase', () => ({
   db: {},

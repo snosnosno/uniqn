@@ -11,9 +11,6 @@ import {
   resetCounters,
 } from '../mocks/factories';
 
-// createMockEmployer is available for future tests
-void import('../mocks/factories').then(m => m.createMockEmployer);
-
 // Import after mocks
 import {
   getWorkLogsByJobPosting,
@@ -26,6 +23,9 @@ import {
 
 // Import Timestamp from mocked module for use in test utilities
 import { Timestamp } from 'firebase/firestore';
+
+// createMockEmployer is available for future tests
+void import('../mocks/factories').then(m => m.createMockEmployer);
 
 // ============================================================================
 // Firebase Mocks
