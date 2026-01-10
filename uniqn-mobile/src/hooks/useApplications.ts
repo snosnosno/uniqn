@@ -11,6 +11,7 @@ import {
   applyToJob,
   applyToJobV2,
   cancelApplication as cancelApplicationService,
+  requestCancellation as requestCancellationService,
 } from '@/services';
 import { queryKeys } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
@@ -35,6 +36,12 @@ interface SubmitApplicationV2Params {
   assignments: Assignment[];
   preQuestionAnswers?: PreQuestionAnswer[];
   message?: string;
+}
+
+/** 취소 요청 파라미터 */
+interface RequestCancellationParams {
+  applicationId: string;
+  reason: string;
 }
 
 // ============================================================================
@@ -199,6 +206,71 @@ export function useApplications() {
     },
   });
 
+  // 취소 요청 (확정된 지원에 대해 취소 요청, Optimistic Update 적용)
+  const requestCancellationMutation = useMutation({
+    mutationFn: (params: RequestCancellationParams) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return requestCancellationService(
+        { applicationId: params.applicationId, reason: params.reason },
+        user.uid
+      );
+    },
+    // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
+    onMutate: async ({ applicationId }) => {
+      // 진행 중인 refetch 취소 (낙관적 업데이트와 충돌 방지)
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.applications.mine(),
+      });
+
+      // 이전 데이터 스냅샷 저장 (롤백용)
+      const previousApplications = queryClient.getQueryData<Application[]>(
+        queryKeys.applications.mine()
+      );
+
+      // 낙관적으로 UI 업데이트 (취소 요청 중으로 표시)
+      if (previousApplications) {
+        queryClient.setQueryData<Application[]>(
+          queryKeys.applications.mine(),
+          previousApplications.map(app =>
+            app.id === applicationId
+              ? { ...app, status: 'cancellation_pending' as const }
+              : app
+          )
+        );
+      }
+
+      // 컨텍스트 반환 (롤백에 사용)
+      return { previousApplications };
+    },
+    onSuccess: (_, { applicationId }) => {
+      logger.info('취소 요청 완료', { applicationId });
+      addToast({ type: 'success', message: '취소 요청이 제출되었습니다.' });
+    },
+    onError: (error, _, context) => {
+      logger.error('취소 요청 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '취소 요청에 실패했습니다.',
+      });
+
+      // 롤백: 이전 데이터로 복원
+      if (context?.previousApplications) {
+        queryClient.setQueryData(
+          queryKeys.applications.mine(),
+          context.previousApplications
+        );
+      }
+    },
+    // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.mine(),
+      });
+    },
+  });
+
   // 특정 공고 지원 여부 확인
   const hasApplied = (jobPostingId: string): boolean => {
     const applications: Application[] = myApplicationsQuery.data ?? [];
@@ -235,6 +307,10 @@ export function useApplications() {
     // 지원 취소
     cancelApplication: cancelMutation.mutate,
     isCancelling: cancelMutation.isPending,
+
+    // 취소 요청 (확정된 지원)
+    requestCancellation: requestCancellationMutation.mutate,
+    isRequestingCancellation: requestCancellationMutation.isPending,
 
     // 유틸리티
     hasApplied,

@@ -12,7 +12,7 @@ import { xssValidation } from '@/utils/security';
  * 지원 상태 스키마
  */
 export const applicationStatusSchema = z.enum(
-  ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'waitlisted', 'completed'],
+  ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'waitlisted', 'completed', 'cancellation_pending'],
   {
     error: '올바른 지원 상태가 아닙니다',
   }
@@ -100,3 +100,37 @@ export const cancelApplicationSchema = z.object({
 });
 
 export type CancelApplicationData = z.infer<typeof cancelApplicationSchema>;
+
+/**
+ * 취소 요청 스키마 (확정된 지원 취소 요청용)
+ *
+ * @description 확정된 지원에 대해 스태프가 취소를 요청할 때 사용
+ */
+export const cancellationRequestSchema = z.object({
+  applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
+  reason: z
+    .string()
+    .min(5, { message: '취소 사유는 최소 5자 이상 입력해주세요' })
+    .max(500, { message: '취소 사유는 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+});
+
+export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;
+
+/**
+ * 취소 요청 검토 스키마 (구인자용)
+ *
+ * @description 구인자가 취소 요청을 승인/거절할 때 사용
+ */
+export const reviewCancellationSchema = z.object({
+  applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
+  approved: z.boolean(),
+  rejectionReason: z
+    .string()
+    .min(3, { message: '거절 사유는 최소 3자 이상 입력해주세요' })
+    .max(200, { message: '거절 사유는 200자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
+});
+
+export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;

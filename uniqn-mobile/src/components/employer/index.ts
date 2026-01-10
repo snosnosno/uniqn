@@ -25,3 +25,7 @@ export type { SettlementListProps } from './SettlementList';
 // 시간 수정
 export { WorkTimeEditor } from './WorkTimeEditor';
 export type { WorkTimeEditorProps } from './WorkTimeEditor';
+
+// 취소 요청 관리
+export { CancellationRequestCard } from './CancellationRequestCard';
+export type { CancellationRequestCardProps } from './CancellationRequestCard';

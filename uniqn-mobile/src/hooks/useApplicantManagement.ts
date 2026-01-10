@@ -15,6 +15,8 @@ import {
   promoteFromWaitlist,
   markApplicationAsRead,
   getApplicantStatsByRole,
+  reviewCancellationRequest,
+  getCancellationRequests,
   type ApplicantWithDetails,
 } from '@/services';
 import {
@@ -334,6 +336,74 @@ export function useMarkAsRead() {
 }
 
 // ============================================================================
+// 취소 요청 관리 훅
+// ============================================================================
+
+/**
+ * 공고별 취소 요청 조회 훅
+ */
+export function useCancellationRequests(jobPostingId: string) {
+  const { user } = useAuthStore();
+
+  return useQuery({
+    queryKey: queryKeys.applicantManagement.cancellationRequests(jobPostingId),
+    queryFn: () => getCancellationRequests(jobPostingId, user!.uid),
+    enabled: !!user && !!jobPostingId,
+    staleTime: cachingPolicies.frequent,
+  });
+}
+
+interface ReviewCancellationInput {
+  applicationId: string;
+  approved: boolean;
+  rejectionReason?: string;
+}
+
+/**
+ * 취소 요청 검토 뮤테이션 훅
+ */
+export function useReviewCancellation() {
+  const queryClient = useQueryClient();
+  const { addToast } = useToastStore();
+  const { user } = useAuthStore();
+
+  return useMutation({
+    mutationFn: (input: ReviewCancellationInput) => {
+      if (!user) {
+        throw new Error('로그인이 필요합니다');
+      }
+      return reviewCancellationRequest(
+        { applicationId: input.applicationId, approved: input.approved, rejectionReason: input.rejectionReason },
+        user.uid
+      );
+    },
+    onSuccess: (_, variables) => {
+      const action = variables.approved ? '승인' : '거절';
+      logger.info(`취소 요청 ${action} 완료`, { applicationId: variables.applicationId });
+      addToast({
+        type: 'success',
+        message: `취소 요청이 ${action}되었습니다.`,
+      });
+
+      // 캐시 무효화
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applicantManagement.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.applications.all,
+      });
+    },
+    onError: (error) => {
+      logger.error('취소 요청 검토 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : '취소 요청 검토에 실패했습니다.',
+      });
+    },
+  });
+}
+
+// ============================================================================
 // v2.0 히스토리 기반 확정/취소 훅
 // ============================================================================
 
@@ -594,6 +664,10 @@ export function useApplicantManagement(jobPostingId: string) {
   const confirmWithHistoryMutation = useConfirmApplicationWithHistory();
   const cancelConfirmationMutation = useCancelConfirmation();
 
+  // 취소 요청 관리
+  const cancellationRequestsQuery = useCancellationRequests(jobPostingId);
+  const reviewCancellationMutation = useReviewCancellation();
+
   // 스태프 변환
   const convertToStaffMutation = useConvertToStaff();
   const batchConvertToStaffMutation = useBatchConvertToStaff();
@@ -696,6 +770,15 @@ export function useApplicantManagement(jobPostingId: string) {
     batchConvertToStaff: batchConvertToStaffMutation.mutate,
     isBatchConvertingToStaff: batchConvertToStaffMutation.isPending,
 
+    // 취소 요청 관리
+    cancellationRequests: cancellationRequestsQuery.data ?? [],
+    isLoadingCancellationRequests: cancellationRequestsQuery.isLoading,
+    refreshCancellationRequests: cancellationRequestsQuery.refetch,
+
+    reviewCancellation: reviewCancellationMutation.mutate,
+    reviewCancellationAsync: reviewCancellationMutation.mutateAsync,
+    isReviewingCancellation: reviewCancellationMutation.isPending,
+
     // 헬퍼
     filterApplicants,
     countByStatus,
@@ -706,6 +789,7 @@ export function useApplicantManagement(jobPostingId: string) {
     rejectedCount: countByStatus('rejected'),
     waitlistCount: countByStatus('waitlisted'),
     completedCount: countByStatus('completed'),
+    cancellationPendingCount: countByStatus('cancellation_pending'),
   };
 }
 

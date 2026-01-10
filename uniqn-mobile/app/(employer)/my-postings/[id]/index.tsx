@@ -14,11 +14,12 @@ import {
   ClockIcon,
   CurrencyDollarIcon,
   UsersIcon,
-  
   ChevronRightIcon,
   EditIcon,
   BanknotesIcon,
+  XCircleIcon,
 } from '@/components/icons';
+import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 
 // ============================================================================
 // Types
@@ -72,6 +73,7 @@ export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { job: posting, isLoading, error, refresh } = useJobDetail(id || '');
+  const { cancellationPendingCount } = useApplicantManagement(id || '');
 
   // 지원자 관리로 이동
   const handleApplicants = useCallback(() => {
@@ -87,6 +89,11 @@ export default function JobPostingDetailScreen() {
   const handleEdit = useCallback(() => {
     // TODO: 공고 수정 화면으로 이동
     router.push(`/(employer)/my-postings/${id}/edit`);
+  }, [router, id]);
+
+  // 취소 요청 관리로 이동
+  const handleCancellationRequests = useCallback(() => {
+    router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
   }, [router, id]);
 
   // 로딩 상태
@@ -219,6 +226,15 @@ export default function JobPostingDetailScreen() {
               description={`${pendingCount > 0 ? pendingCount : 0}명의 지원자가 대기중입니다`}
               badge={pendingCount > 0 ? { label: `${pendingCount}명`, variant: 'warning' } : undefined}
               onPress={handleApplicants}
+            />
+
+            {/* 취소 요청 관리 */}
+            <ActionCard
+              icon={<XCircleIcon size={24} color="#EF4444" />}
+              title="취소 요청 관리"
+              description="스태프의 취소 요청 검토"
+              badge={cancellationPendingCount > 0 ? { label: `${cancellationPendingCount}건`, variant: 'error' } : undefined}
+              onPress={handleCancellationRequests}
             />
 
             {/* 정산 관리 */}

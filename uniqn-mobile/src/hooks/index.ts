@@ -190,3 +190,17 @@ export {
   useRealtimeCollection,
   useRealtimeDocument,
 } from './useRealtimeQuery';
+
+// ============================================================================
+// Admin Dashboard Hooks
+// ============================================================================
+
+export {
+  useAdminDashboard,
+  useAdminDashboardStats,
+  useAdminUsers,
+  useAdminUserDetail,
+  useUpdateUserRole,
+  useSetUserActive,
+  useSystemMetrics,
+} from './useAdminDashboard';

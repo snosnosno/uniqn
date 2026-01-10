@@ -307,3 +307,12 @@ export const ShieldIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconP
 export const CreditCardIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <Feather name="credit-card" size={size} color={color} />
 );
+
+// Inbox
+export const InboxIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="inbox" size={size} color={color} />
+);
+
+// Aliases for heroicons compatibility
+export const MagnifyingGlassIcon = SearchIcon;
+export const EnvelopeIcon = MailIcon;

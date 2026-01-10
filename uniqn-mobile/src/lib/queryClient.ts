@@ -237,6 +237,8 @@ export const queryKeys = {
       [...queryKeys.applicantManagement.all, 'byJobPosting', jobPostingId] as const,
     stats: (jobPostingId: string) =>
       [...queryKeys.applicantManagement.all, 'stats', jobPostingId] as const,
+    cancellationRequests: (jobPostingId: string) =>
+      [...queryKeys.applicantManagement.all, 'cancellationRequests', jobPostingId] as const,
   },
 
   // 정산 관리 (구인자)
@@ -249,6 +251,21 @@ export const queryKeys = {
     mySummary: () => [...queryKeys.settlement.all, 'mySummary'] as const,
     calculation: (workLogId: string) =>
       [...queryKeys.settlement.all, 'calculation', workLogId] as const,
+  },
+
+  // ============================================================================
+  // 관리자용 Query Keys (Admin)
+  // ============================================================================
+
+  // 관리자 대시보드
+  admin: {
+    all: ['admin'] as const,
+    dashboard: () => [...queryKeys.admin.all, 'dashboard'] as const,
+    users: (filters: Record<string, unknown>) =>
+      [...queryKeys.admin.all, 'users', filters] as const,
+    userDetail: (userId: string) =>
+      [...queryKeys.admin.all, 'userDetail', userId] as const,
+    metrics: () => [...queryKeys.admin.all, 'metrics'] as const,
   },
 } as const;
 
@@ -270,6 +287,7 @@ export const cachingPolicies = {
   stable: 30 * 60 * 1000,
   /** 오프라인 우선 - 무제한 */
   offlineFirst: Infinity,
+
 } as const;
 
 // ============================================================================

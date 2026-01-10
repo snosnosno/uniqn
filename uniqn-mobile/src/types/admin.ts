@@ -215,3 +215,69 @@ export const COUNTRIES = [
 export function getCountryByCode(code: string) {
   return COUNTRIES.find((c) => c.code === code);
 }
+
+// ============================================================================
+// Dashboard Types
+// ============================================================================
+
+/**
+ * 대시보드 통계
+ */
+export interface DashboardStats {
+  /** 총 사용자 수 */
+  totalUsers: number;
+  /** 오늘 신규 가입자 수 */
+  newUsersToday: number;
+  /** 활성 공고 수 */
+  activeJobPostings: number;
+  /** 오늘 지원 수 */
+  applicationsToday: number;
+  /** 미처리 신고 수 */
+  pendingReports: number;
+  /** 역할별 사용자 수 */
+  usersByRole: {
+    admin: number;
+    employer: number;
+    staff: number;
+  };
+  /** 최근 가입자 목록 (최대 5명) */
+  recentUsers: AdminUser[];
+  /** 데이터 조회 시점 */
+  fetchedAt: Date;
+}
+
+/**
+ * 페이지네이션된 사용자 목록
+ */
+export interface PaginatedUsers {
+  /** 사용자 목록 */
+  users: AdminUser[];
+  /** 전체 개수 */
+  total: number;
+  /** 현재 페이지 (1부터 시작) */
+  page: number;
+  /** 페이지당 개수 */
+  pageSize: number;
+  /** 전체 페이지 수 */
+  totalPages: number;
+  /** 다음 페이지 존재 여부 */
+  hasNextPage: boolean;
+  /** 이전 페이지 존재 여부 */
+  hasPrevPage: boolean;
+}
+
+/**
+ * 시스템 메트릭스
+ */
+export interface SystemMetrics {
+  /** 일별 활성 사용자 (최근 7일) */
+  dailyActiveUsers: { date: string; count: number }[];
+  /** 일별 신규 가입자 (최근 7일) */
+  dailySignups: { date: string; count: number }[];
+  /** 일별 지원 수 (최근 7일) */
+  dailyApplications: { date: string; count: number }[];
+  /** 시스템 상태 */
+  systemStatus: 'healthy' | 'degraded' | 'down';
+  /** 조회 시점 */
+  fetchedAt: Date;
+}

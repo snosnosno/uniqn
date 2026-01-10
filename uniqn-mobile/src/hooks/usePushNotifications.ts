@@ -297,6 +297,25 @@ export function usePushNotifications(
   }, [autoRegisterToken, isInitialized, userId, permissionStatus, registerToken]);
 
   /**
+   * 토큰 주기적 갱신 (24시간마다)
+   * FCM 토큰은 만료될 수 있으므로 주기적으로 재등록
+   */
+  useEffect(() => {
+    if (!isTokenRegistered || !userId) return;
+
+    const TOKEN_REFRESH_INTERVAL = 24 * 60 * 60 * 1000; // 24시간
+
+    const refreshInterval = setInterval(() => {
+      logger.info('FCM 토큰 주기적 갱신 시작');
+      registerToken().catch((error) => {
+        logger.error('토큰 갱신 실패', error as Error);
+      });
+    }, TOKEN_REFRESH_INTERVAL);
+
+    return () => clearInterval(refreshInterval);
+  }, [isTokenRegistered, userId, registerToken]);
+
+  /**
    * 로그아웃 시 토큰 해제
    */
   useEffect(() => {

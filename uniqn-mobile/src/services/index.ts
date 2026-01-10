@@ -44,6 +44,9 @@ export {
   cancelApplication,
   hasAppliedToJob,
   getApplicationStats,
+  requestCancellation,
+  reviewCancellationRequest,
+  getCancellationRequests,
   type ApplicationWithJob,
 } from './applicationService';
 
@@ -353,3 +356,19 @@ export {
   type PerformanceTrace,
   type PerformanceMetrics,
 } from './performanceService';
+
+// ============================================================================
+// 관리자 서비스 (Admin Services)
+// ============================================================================
+
+// Admin Service (관리자 대시보드 및 사용자 관리)
+export {
+  adminService,
+  getDashboardStats,
+  getUsers,
+  getUserById,
+  updateUserRole,
+  setUserActive,
+  getSystemMetrics,
+} from "./adminService";
+

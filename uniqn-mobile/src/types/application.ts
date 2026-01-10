@@ -1,8 +1,20 @@
 /**
  * UNIQN Mobile - 지원서 관련 타입 정의
  *
- * @version 2.1.0
+ * @version 2.2.0
  * @description Assignment v2.0 + confirmationHistory 이력 관리 + 취소 요청 시스템 지원
+ *
+ * ## 공고 ID 필드 마이그레이션 안내
+ *
+ * ### Primary (필수)
+ * - `jobPostingId`: 모든 새 지원서에서 사용하는 공식 필드
+ *
+ * ### Deprecated (2025 Q3 제거 예정)
+ * - `eventId`: v2.0 초기 표준 → jobPostingId로 통일
+ * - `postId`: 레거시 호환용 → jobPostingId로 통일
+ * - `postTitle`: 레거시 호환용 → jobPostingTitle로 통일
+ *
+ * 신규 코드에서는 반드시 `jobPostingId`만 사용하세요.
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -69,17 +81,37 @@ export interface Application extends FirebaseDocument {
   applicantEmail?: string;
   applicantRole?: StaffRole;
 
-  // === 공고 정보 (레거시 호환) ===
+  // === 공고 정보 (Primary) ===
+  /**
+   * @primary 공고 ID - 모든 새 지원서에서 사용하는 필수 필드
+   * @description JobPosting 컬렉션의 문서 ID를 참조
+   * @example "abc123xyz"
+   */
   jobPostingId: string;
+  /** 공고 제목 (조회 편의를 위한 비정규화) */
   jobPostingTitle?: string;
+  /** 공고 근무일 (조회 편의를 위한 비정규화) */
   jobPostingDate?: string;
 
-  // === 공고 정보 (v2.0 표준 필드) ===
-  /** 표준 이벤트 ID (CLAUDE.md 준수) */
+  // === 레거시 필드 (하위 호환용) ===
+  /**
+   * @deprecated jobPostingId 사용 권장
+   * @description v2.0 초기 표준 필드였으나 jobPostingId로 통일됨
+   * @migration 신규 지원서에서는 jobPostingId만 사용
+   * @removal 2025년 Q3 제거 예정
+   */
   eventId?: string;
-  /** 공고 ID (하위 호환) */
+  /**
+   * @deprecated jobPostingId 사용 권장
+   * @description 레거시 시스템 호환용 필드
+   * @migration 신규 지원서에서는 jobPostingId만 사용
+   * @removal 2025년 Q3 제거 예정
+   */
   postId?: string;
-  /** 공고 제목 */
+  /**
+   * @deprecated jobPostingTitle 사용 권장
+   * @description 레거시 시스템 호환용 필드
+   */
   postTitle?: string;
 
   // === 지원 정보 ===
