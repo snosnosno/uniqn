@@ -11,7 +11,6 @@ import { DangerZone } from '@/components/settings';
 import {
   BellIcon,
   LockIcon,
-  UserIcon,
   ChevronRightIcon,
 } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
@@ -116,12 +115,6 @@ export default function SettingsScreen() {
           <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
             계정
           </Text>
-          <SettingItem
-            icon={<UserIcon size={22} color="#6B7280" />}
-            label="프로필 수정"
-            onPress={() => router.push('/(app)/settings/profile')}
-          />
-          <Divider spacing="sm" />
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"

@@ -31,6 +31,13 @@ export type UserStatusSchema = z.infer<typeof userStatusSchema>;
 // ============================================================================
 
 /**
+ * 성별 스키마
+ */
+export const genderSchema = z.enum(['male', 'female', 'other']);
+
+export type GenderSchema = z.infer<typeof genderSchema>;
+
+/**
  * 프로필 업데이트 스키마
  */
 export const updateProfileSchema = z.object({
@@ -44,6 +51,21 @@ export const updateProfileSchema = z.object({
   phone: phoneSchema.optional(),
   photoURL: z.string().url({ message: '올바른 URL 형식이 아닙니다' }).optional(),
   bio: z.string().max(200, { message: '자기소개는 200자를 초과할 수 없습니다' }).optional(),
+  // 추가 정보
+  gender: genderSchema.optional(),
+  birthYear: z
+    .number()
+    .min(1950, { message: '올바른 출생년도를 입력해주세요' })
+    .max(new Date().getFullYear() - 18, { message: '만 18세 이상만 가입 가능합니다' })
+    .optional(),
+  region: z.string().max(50, { message: '지역은 50자를 초과할 수 없습니다' }).optional(),
+  experienceYears: z
+    .number()
+    .min(0, { message: '경력은 0년 이상이어야 합니다' })
+    .max(50, { message: '경력은 50년을 초과할 수 없습니다' })
+    .optional(),
+  career: z.string().max(500, { message: '이력은 500자를 초과할 수 없습니다' }).optional(),
+  note: z.string().max(300, { message: '기타사항은 300자를 초과할 수 없습니다' }).optional(),
 });
 
 export type UpdateProfileData = z.infer<typeof updateProfileSchema>;

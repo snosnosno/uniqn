@@ -46,6 +46,14 @@ export interface UserProfile {
   phone?: string;
   role: UserRole;
   photoURL?: string;
+  // 추가 정보
+  gender?: 'male' | 'female' | 'other';
+  birthYear?: number;
+  region?: string;
+  experienceYears?: number;
+  career?: string;
+  note?: string;
+  // 타임스탬프
   createdAt: Date;
   updatedAt: Date;
 }

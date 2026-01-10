@@ -53,6 +53,13 @@ export interface UserProfile {
   phone?: string;
   role: UserRole;
   photoURL?: string;
+  // 추가 정보
+  gender?: 'male' | 'female' | 'other';
+  birthYear?: number;
+  region?: string;
+  experienceYears?: number;
+  career?: string;
+  note?: string;
   // 본인인증 정보
   identityVerified: boolean;
   identityProvider?: 'pass' | 'kakao';
@@ -253,7 +260,20 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
  */
 export async function updateUserProfile(
   uid: string,
-  updates: Partial<Pick<UserProfile, 'nickname' | 'phone' | 'photoURL' | 'marketingAgreed'>>
+  updates: Partial<
+    Pick<
+      UserProfile,
+      | 'nickname'
+      | 'phone'
+      | 'photoURL'
+      | 'gender'
+      | 'birthYear'
+      | 'region'
+      | 'experienceYears'
+      | 'career'
+      | 'note'
+    >
+  >
 ): Promise<void> {
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });

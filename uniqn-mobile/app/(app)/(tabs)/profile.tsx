@@ -16,6 +16,7 @@ import {
   LogOutIcon,
   QrCodeIcon,
   ShieldIcon,
+  EditIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
@@ -141,7 +142,10 @@ export default function ProfileScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 프로필 정보 */}
         <Card className="mb-4">
-          <View className="flex-row items-center">
+          <Pressable
+            onPress={() => router.push('/(app)/settings/profile')}
+            className="flex-row items-center active:opacity-70"
+          >
             <Avatar
               name={profile?.name ?? user?.displayName ?? '사용자'}
               size="xl"
@@ -162,7 +166,8 @@ export default function ProfileScreen() {
                 </View>
               </View>
             </View>
-          </View>
+            <EditIcon size={20} color="#9CA3AF" />
+          </Pressable>
         </Card>
 
         {/* 메뉴 */}

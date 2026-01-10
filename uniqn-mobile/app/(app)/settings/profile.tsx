@@ -21,6 +21,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Card } from '@/components/ui';
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
@@ -28,6 +29,7 @@ import { logger } from '@/utils/logger';
 
 export default function ProfileEditScreen() {
   const { profile, user } = useAuth();
+  const setProfile = useAuthStore((state) => state.setProfile);
   const addToast = useToastStore((state) => state.addToast);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -38,9 +40,13 @@ export default function ProfileEditScreen() {
   } = useForm<UpdateProfileData>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
-      name: profile?.name ?? '',
       nickname: profile?.nickname ?? '',
-      phone: profile?.phone ?? '',
+      gender: profile?.gender ?? undefined,
+      birthYear: profile?.birthYear ?? undefined,
+      region: profile?.region ?? '',
+      experienceYears: profile?.experienceYears ?? undefined,
+      career: profile?.career ?? '',
+      note: profile?.note ?? '',
     },
   });
 
@@ -59,18 +65,40 @@ export default function ProfileEditScreen() {
       // 변경된 필드만 업데이트
       const updates: Partial<UpdateProfileData> = {};
 
-      if (data.name && data.name !== profile?.name) {
-        updates.name = data.name;
-      }
       if (data.nickname !== profile?.nickname) {
         updates.nickname = data.nickname;
       }
-      if (data.phone !== profile?.phone) {
-        updates.phone = data.phone;
+      if (data.gender !== profile?.gender) {
+        updates.gender = data.gender;
+      }
+      if (data.birthYear !== profile?.birthYear) {
+        updates.birthYear = data.birthYear;
+      }
+      if (data.region !== profile?.region) {
+        updates.region = data.region;
+      }
+      if (data.experienceYears !== profile?.experienceYears) {
+        updates.experienceYears = data.experienceYears;
+      }
+      if (data.career !== profile?.career) {
+        updates.career = data.career;
+      }
+      if (data.note !== profile?.note) {
+        updates.note = data.note;
       }
 
       if (Object.keys(updates).length > 0) {
         await updateUserProfile(user.uid, updates);
+
+        // authStore의 profile 업데이트 (로컬 상태 동기화)
+        if (profile) {
+          setProfile({
+            ...profile,
+            ...updates,
+            updatedAt: new Date(),
+          });
+        }
+
         addToast({ type: 'success', message: '프로필이 저장되었습니다' });
         router.back();
       } else {
@@ -108,11 +136,29 @@ export default function ProfileEditScreen() {
             </Text>
           </Card>
 
-          {/* 읽기 전용 정보 */}
+          {/* 기본 정보 (본인인증 후 자동 입력) */}
           <Card className="mb-4">
-            <Text className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">
-              기본 정보
-            </Text>
+            <View className="mb-3 flex-row items-center justify-between">
+              <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                기본 정보
+              </Text>
+              {/* TODO: 본인인증 활성화 시 인증 버튼 추가 */}
+              {/* <Pressable className="rounded-full bg-primary-100 px-3 py-1 dark:bg-primary-900/30">
+                <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                  본인인증
+                </Text>
+              </Pressable> */}
+            </View>
+
+            {/* 이름 (읽기 전용 - 본인인증 정보) */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {profile?.name ?? user?.displayName ?? '본인인증 후 자동 입력'}
+                </Text>
+              </View>
+            </View>
 
             {/* 이메일 (읽기 전용) */}
             <View className="mb-4">
@@ -124,55 +170,22 @@ export default function ProfileEditScreen() {
               </View>
             </View>
 
-            {/* 역할 (읽기 전용) */}
+            {/* 전화번호 (읽기 전용 - 본인인증 정보) */}
             <View>
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">역할</Text>
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.role === 'admin'
-                    ? '관리자'
-                    : profile?.role === 'employer'
-                      ? '구인자'
-                      : profile?.role === 'staff'
-                        ? '스태프'
-                        : '-'}
+                  {profile?.phone ?? '본인인증 후 자동 입력'}
                 </Text>
               </View>
             </View>
           </Card>
 
-          {/* 수정 가능 정보 */}
+          {/* 추가 정보 */}
           <Card className="mb-4">
             <Text className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">
-              수정 가능 정보
+              추가 정보
             </Text>
-
-            {/* 이름 */}
-            <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
-              <Controller
-                control={control}
-                name="name"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
-                      errors.name
-                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
-                    }`}
-                    value={value}
-                    onChangeText={onChange}
-                    onBlur={onBlur}
-                    placeholder="이름을 입력해주세요"
-                    placeholderTextColor="#9CA3AF"
-                    autoCapitalize="none"
-                  />
-                )}
-              />
-              {errors.name && (
-                <Text className="mt-1 text-sm text-error-500">{errors.name.message}</Text>
-              )}
-            </View>
 
             {/* 닉네임 */}
             <View className="mb-4">
@@ -202,32 +215,212 @@ export default function ProfileEditScreen() {
               )}
             </View>
 
-            {/* 전화번호 */}
-            <View>
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
+            {/* 성별 */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
               <Controller
                 control={control}
-                name="phone"
+                name="gender"
+                render={({ field: { onChange, value } }) => (
+                  <View className="flex-row gap-2">
+                    {[
+                      { key: 'male', label: '남성' },
+                      { key: 'female', label: '여성' },
+                      { key: 'other', label: '기타' },
+                    ].map((option) => (
+                      <Pressable
+                        key={option.key}
+                        onPress={() => onChange(option.key as 'male' | 'female' | 'other')}
+                        className={`flex-1 rounded-lg border px-4 py-3 ${
+                          value === option.key
+                            ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
+                            : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                        }`}
+                      >
+                        <Text
+                          className={`text-center ${
+                            value === option.key
+                              ? 'font-medium text-primary-600 dark:text-primary-400'
+                              : 'text-gray-700 dark:text-gray-300'
+                          }`}
+                        >
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              />
+            </View>
+
+            {/* 나이 (출생년도) */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">출생년도</Text>
+              <Controller
+                control={control}
+                name="birthYear"
                 render={({ field: { onChange, onBlur, value } }) => (
                   <TextInput
                     className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
-                      errors.phone
+                      errors.birthYear
+                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
+                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                    }`}
+                    value={value?.toString() ?? ''}
+                    onChangeText={(text) => {
+                      const num = parseInt(text, 10);
+                      onChange(isNaN(num) ? undefined : num);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="예: 1990"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="number-pad"
+                    maxLength={4}
+                  />
+                )}
+              />
+              {errors.birthYear && (
+                <Text className="mt-1 text-sm text-error-500">{errors.birthYear.message}</Text>
+              )}
+            </View>
+
+            {/* 지역 */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">지역</Text>
+              <Controller
+                control={control}
+                name="region"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                      errors.region
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
                         : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
                     }`}
                     value={value}
                     onChangeText={onChange}
                     onBlur={onBlur}
-                    placeholder="010-1234-5678"
+                    placeholder="예: 서울 강남구"
                     placeholderTextColor="#9CA3AF"
-                    keyboardType="phone-pad"
                     autoCapitalize="none"
+                    maxLength={50}
                   />
                 )}
               />
-              {errors.phone && (
-                <Text className="mt-1 text-sm text-error-500">{errors.phone.message}</Text>
+              {errors.region && (
+                <Text className="mt-1 text-sm text-error-500">{errors.region.message}</Text>
               )}
+            </View>
+
+            {/* 경력 */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">경력 (년)</Text>
+              <Controller
+                control={control}
+                name="experienceYears"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                      errors.experienceYears
+                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
+                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                    }`}
+                    value={value?.toString() ?? ''}
+                    onChangeText={(text) => {
+                      const num = parseInt(text, 10);
+                      onChange(isNaN(num) ? undefined : num);
+                    }}
+                    onBlur={onBlur}
+                    placeholder="예: 3"
+                    placeholderTextColor="#9CA3AF"
+                    keyboardType="number-pad"
+                    maxLength={2}
+                  />
+                )}
+              />
+              {errors.experienceYears && (
+                <Text className="mt-1 text-sm text-error-500">
+                  {errors.experienceYears.message}
+                </Text>
+              )}
+            </View>
+
+            {/* 이력 */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이력</Text>
+              <Controller
+                control={control}
+                name="career"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                      errors.career
+                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
+                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                    }`}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="경력 및 이력을 입력해주세요"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={4}
+                    textAlignVertical="top"
+                    style={{ minHeight: 100 }}
+                    maxLength={500}
+                  />
+                )}
+              />
+              {errors.career && (
+                <Text className="mt-1 text-sm text-error-500">{errors.career.message}</Text>
+              )}
+            </View>
+
+            {/* 기타사항 */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">기타사항</Text>
+              <Controller
+                control={control}
+                name="note"
+                render={({ field: { onChange, onBlur, value } }) => (
+                  <TextInput
+                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
+                      errors.note
+                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
+                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                    }`}
+                    value={value}
+                    onChangeText={onChange}
+                    onBlur={onBlur}
+                    placeholder="기타 참고사항을 입력해주세요"
+                    placeholderTextColor="#9CA3AF"
+                    multiline
+                    numberOfLines={3}
+                    textAlignVertical="top"
+                    style={{ minHeight: 80 }}
+                    maxLength={300}
+                  />
+                )}
+              />
+              {errors.note && (
+                <Text className="mt-1 text-sm text-error-500">{errors.note.message}</Text>
+              )}
+            </View>
+
+            {/* 역할 (읽기 전용) */}
+            <View>
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">역할</Text>
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {profile?.role === 'admin'
+                    ? '관리자'
+                    : profile?.role === 'employer'
+                      ? '구인자'
+                      : profile?.role === 'staff'
+                        ? '스태프'
+                        : '-'}
+                </Text>
+              </View>
             </View>
           </Card>
 
