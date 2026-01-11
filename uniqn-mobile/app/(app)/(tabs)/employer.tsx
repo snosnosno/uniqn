@@ -591,14 +591,24 @@ function EmployerView() {
   // 공고 마감 확인
   const handleCloseConfirm = useCallback(() => {
     if (closeTargetId) {
-      closeMutation.mutate(closeTargetId);
+      closeMutation.mutate(closeTargetId, {
+        onSuccess: () => {
+          // 마감 완료 후 '마감' 필터로 이동
+          setFilter('closed');
+        },
+      });
       setCloseTargetId(null);
     }
   }, [closeTargetId, closeMutation]);
 
   // 공고 재오픈
   const handleReopenPosting = useCallback((postingId: string) => {
-    reopenMutation.mutate(postingId);
+    reopenMutation.mutate(postingId, {
+      onSuccess: () => {
+        // 재오픈 완료 후 '모집중' 필터로 이동
+        setFilter('active');
+      },
+    });
   }, [reopenMutation]);
 
   // 새 공고 작성

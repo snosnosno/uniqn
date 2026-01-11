@@ -259,9 +259,9 @@ export function ApplicantProfileModal({
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
           {/* 프로필 헤더 */}
-          <View className="items-center py-6 bg-gray-50 dark:bg-gray-800">
+          <View className="items-center py-4 bg-gray-50 dark:bg-gray-800">
             {isProfileLoading ? (
-              <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mb-3">
+              <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mb-2">
                 <ActivityIndicator size="small" color="#6B7280" />
               </View>
             ) : (
@@ -269,20 +269,23 @@ export function ApplicantProfileModal({
                 source={profilePhotoURL}
                 name={displayName}
                 size="xl"
-                className="mb-3"
+                className="mb-2"
               />
             )}
-            <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-              {displayName}
-            </Text>
-            <Badge
-              variant={STATUS_BADGE_VARIANT[applicant.status]}
-              size="md"
-              dot
-            >
-              {APPLICATION_STATUS_LABELS[applicant.status]}
-            </Badge>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+            {/* 이름 + 상태 뱃지 (같은 행) */}
+            <View className="flex-row items-center gap-2 mb-1">
+              <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                {displayName}
+              </Text>
+              <Badge
+                variant={STATUS_BADGE_VARIANT[applicant.status]}
+                size="sm"
+                dot
+              >
+                {APPLICATION_STATUS_LABELS[applicant.status]}
+              </Badge>
+            </View>
+            <Text className="text-sm text-gray-500 dark:text-gray-400">
               {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
             </Text>
           </View>

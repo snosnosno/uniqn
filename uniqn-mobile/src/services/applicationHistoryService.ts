@@ -189,8 +189,8 @@ export async function confirmApplicationWithHistory(
             workDuration: null,
             payrollAmount: null,
             isSettled: false,
-            // v2.0 추가 필드
-            assignmentGroupId: assignment.groupId,
+            // v2.0 추가 필드 (undefined 방지)
+            assignmentGroupId: assignment.groupId ?? null,
             checkMethod: assignment.checkMethod ?? 'individual',
             createdAt: now,
             updatedAt: now,
@@ -210,7 +210,7 @@ export async function confirmApplicationWithHistory(
         confirmedAt: serverTimestamp(),
         processedBy: ownerId,
         processedAt: serverTimestamp(),
-        notes,
+        notes: notes ?? null,
         updatedAt: serverTimestamp(),
       });
 

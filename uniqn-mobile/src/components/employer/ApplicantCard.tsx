@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Pressable, LayoutAnimation, Platform, UIManager, useColorScheme } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -176,6 +176,18 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   onSelect,
   initialExpanded = true,
 }: ApplicantCardProps) {
+  // 다크모드 감지
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  // 아이콘 색상 (다크모드 대응)
+  const iconColors = useMemo(() => ({
+    // 선택된 항목: 라이트-파란색, 다크-하늘색
+    checked: isDark ? '#93C5FD' : '#1D4ED8',
+    // 선택 안 된 항목: 라이트-회색, 다크-밝은회색
+    unchecked: isDark ? '#D1D5DB' : '#374151',
+  }), [isDark]);
+
   // 펼침/접힘 상태
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
 
@@ -450,47 +462,40 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               </View>
 
               {/* 일정 목록 */}
-              <View className="gap-1">
+              <View className="gap-1.5">
                 {assignmentDisplays.map((display) => {
                   const key = `${display.date}_${display.timeSlot}`;
                   const isChecked = selectedKeys.has(key);
+
+                  // 배경색 (isDark와 isChecked 조합)
+                  const bgClass = isChecked
+                    ? (isDark ? 'bg-blue-900 border-blue-700' : 'bg-blue-100 border-blue-300')
+                    : (isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200');
+
                   return (
                     <Pressable
                       key={key}
                       onPress={() => toggleAssignment(key)}
-                      className={`
-                        flex-row items-center rounded-md px-2 py-2 active:opacity-70
-                        ${isChecked
-                          ? 'bg-blue-50 dark:bg-blue-900/30'
-                          : 'bg-gray-50 dark:bg-gray-800'}
-                      `}
+                      className={`flex-row items-center rounded-lg px-3 py-2.5 border active:opacity-70 ${bgClass}`}
                     >
                       {/* 체크박스 */}
                       <View className={`
-                        h-5 w-5 rounded border-2 items-center justify-center mr-2
+                        h-5 w-5 rounded border-2 items-center justify-center mr-3
                         ${isChecked
                           ? 'bg-primary-500 border-primary-500'
-                          : 'border-gray-300 dark:border-gray-600'}
+                          : (isDark ? 'border-gray-500' : 'border-gray-400')}
                       `}>
                         {isChecked && <CheckIcon size={12} color="#fff" />}
                       </View>
 
                       {/* 일정 정보 */}
-                      <CalendarIcon size={14} color={isChecked ? '#2563EB' : '#9CA3AF'} />
-                      <Text className={`ml-1 text-sm ${
-                        isChecked
-                          ? 'text-blue-700 dark:text-blue-300'
-                          : 'text-gray-500 dark:text-gray-400'
-                      }`}>
+                      <CalendarIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
+                      <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {display.formattedDate} {display.timeSlot}
                       </Text>
-                      <View className="mx-1.5 h-3 w-px bg-gray-300 dark:bg-gray-600" />
-                      <BriefcaseIcon size={14} color={isChecked ? '#2563EB' : '#9CA3AF'} />
-                      <Text className={`ml-1 text-sm ${
-                        isChecked
-                          ? 'text-blue-700 dark:text-blue-300'
-                          : 'text-gray-500 dark:text-gray-400'
-                      }`}>
+                      <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
+                      <BriefcaseIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
+                      <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                         {display.roleLabels.join(', ')}
                       </Text>
                     </Pressable>
@@ -502,20 +507,21 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
           {/* 확정된/거절된 상태에서는 체크박스 없이 표시 */}
           {assignmentDisplays.length > 0 && !canShowActions && (
-            <View className="flex-row flex-wrap gap-1 mb-3">
+            <View className="gap-1.5 mb-3">
               {assignmentDisplays.map((display, idx) => (
                 <View
                   key={idx}
-                  className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1"
+                  className={`flex-row items-center rounded-lg px-3 py-2 border ${
+                    isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
+                  }`}
                 >
-                  <CalendarIcon size={12} color="#2563EB" />
-                  <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
+                  <CalendarIcon size={16} color={iconColors.unchecked} />
+                  <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {display.formattedDate} {display.timeSlot}
                   </Text>
-                  <View className="ml-1">
-                    <BriefcaseIcon size={12} color="#2563EB" />
-                  </View>
-                  <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
+                  <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
+                  <BriefcaseIcon size={16} color={iconColors.unchecked} />
+                  <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {display.roleLabels.join(', ')}
                   </Text>
                 </View>
@@ -525,9 +531,11 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
           {/* 레거시 지원 날짜/시간대 (assignments가 없을 때) */}
           {assignmentDisplays.length === 0 && (applicant.appliedDate || applicant.appliedTimeSlot) && (
-            <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1 self-start mb-3">
-              <CalendarIcon size={12} color="#2563EB" />
-              <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
+            <View className={`flex-row items-center rounded-lg px-3 py-2 self-start mb-3 border ${
+              isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
+            }`}>
+              <CalendarIcon size={16} color={iconColors.unchecked} />
+              <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 {formatAppliedDate(applicant.appliedDate)}
                 {applicant.appliedTimeSlot && ` ${applicant.appliedTimeSlot}`}
               </Text>

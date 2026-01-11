@@ -253,6 +253,7 @@ export default function ApplicantsScreen() {
         onReject={handleModalReject}
         onWaitlist={handleModalWaitlist}
         isLoading={isProcessing}
+        selectedAssignments={selectedAssignmentsForConfirm}
       />
 
       {/* 프로필 상세보기 모달 */}

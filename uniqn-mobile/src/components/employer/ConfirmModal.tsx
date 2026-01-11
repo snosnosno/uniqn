@@ -2,18 +2,21 @@
  * UNIQN Mobile - 확인/거절 모달 컴포넌트
  *
  * @description 지원자 확정 또는 거절 시 사용하는 모달
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import React, { useState, useCallback, useMemo } from 'react';
+import { View, Text, TextInput, ScrollView, useColorScheme } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
-// import { Badge } from '../ui/Badge';
-import {  AlertCircleIcon } from '../icons';
+import { AlertCircleIcon, CalendarIcon, ClockIcon, BriefcaseIcon } from '../icons';
+import { getUserProfile } from '@/services';
+import { formatDateShort } from '@/utils/dateUtils';
+import { getAssignmentRoles } from '@/types/assignment';
 import type { ApplicantWithDetails } from '@/services';
-import type { StaffRole } from '@/types';
+import type { StaffRole, Assignment } from '@/types';
 
 // ============================================================================
 // Types
@@ -30,6 +33,8 @@ export interface ApplicantConfirmModalProps {
   onReject: (reason?: string) => void;
   onWaitlist: () => void;
   isLoading?: boolean;
+  /** 선택된 일정 (확정 시 표시) */
+  selectedAssignments?: Assignment[];
 }
 
 // ============================================================================
@@ -94,9 +99,55 @@ export function ApplicantConfirmModal({
   onReject,
   onWaitlist,
   isLoading = false,
+  selectedAssignments,
 }: ApplicantConfirmModalProps) {
   const [inputValue, setInputValue] = useState('');
   const config = ACTION_CONFIG[action];
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+
+  // 지원자 프로필 사진 조회
+  const { data: userProfile } = useQuery({
+    queryKey: ['userProfile', applicant?.applicantId],
+    queryFn: () => getUserProfile(applicant!.applicantId),
+    enabled: !!applicant?.applicantId && visible,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  // 선택된 일정 포맷팅
+  const formattedAssignments = useMemo(() => {
+    if (!selectedAssignments || selectedAssignments.length === 0) {
+      return [];
+    }
+
+    return selectedAssignments.map((assignment, idx) => {
+      const roleList = getAssignmentRoles(assignment);
+      const roles = roleList.map(r => ROLE_LABELS[r as StaffRole] || r).join(', ');
+      // dates 배열에서 첫 번째 날짜 사용 (또는 날짜 범위 표시)
+      const dateStr = assignment.dates?.length > 0
+        ? assignment.dates.length === 1
+          ? formatDateShort(assignment.dates[0]!)
+          : `${formatDateShort(assignment.dates[0]!)} ~ ${formatDateShort(assignment.dates[assignment.dates.length - 1]!)}`
+        : '';
+      const timeSlot = assignment.timeSlot || '';
+
+      return {
+        id: `${idx}-${assignment.dates?.join('-')}-${assignment.timeSlot}-${roleList.join('-')}`,
+        date: dateStr,
+        timeSlot,
+        roles,
+      };
+    });
+  }, [selectedAssignments]);
+
+  // 표시 이름: 프로필 이름 우선, 닉네임이 있으면 "이름(닉네임)" 형식
+  const displayName = useMemo(() => {
+    const baseName = userProfile?.name || applicant?.applicantName || '';
+    if (userProfile?.nickname && userProfile.nickname !== baseName) {
+      return `${baseName}(${userProfile.nickname})`;
+    }
+    return baseName;
+  }, [userProfile, applicant?.applicantName]);
 
   // 모달 닫기 시 입력값 초기화
   const handleClose = useCallback(() => {
@@ -133,13 +184,14 @@ export function ApplicantConfirmModal({
         {/* 지원자 정보 */}
         <View className="flex-row items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl mb-4">
           <Avatar
-            name={applicant.applicantName}
+            source={userProfile?.photoURL}
+            name={displayName}
             size="lg"
             className="mr-4"
           />
           <View className="flex-1">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-              {applicant.applicantName}
+              {displayName}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
               {ROLE_LABELS[applicant.appliedRole] || applicant.appliedRole} 지원
@@ -151,6 +203,59 @@ export function ApplicantConfirmModal({
             )}
           </View>
         </View>
+
+        {/* 선택된 일정 표시 (확정 시) */}
+        {action === 'confirm' && formattedAssignments.length > 0 && (
+          <View className="mb-4">
+            <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+              확정할 일정 ({formattedAssignments.length}건)
+            </Text>
+            <ScrollView
+              className="max-h-32"
+              showsVerticalScrollIndicator={true}
+              nestedScrollEnabled={true}
+            >
+              {formattedAssignments.map((item) => (
+                <View
+                  key={item.id}
+                  className={`flex-row items-center p-3 rounded-lg mb-2 ${
+                    isDark ? 'bg-blue-900 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+                  }`}
+                >
+                  <CalendarIcon
+                    size={16}
+                    color={isDark ? '#93C5FD' : '#2563EB'}
+                  />
+                  <Text className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {item.date}
+                  </Text>
+                  {item.timeSlot && (
+                    <View className="flex-row items-center ml-3">
+                      <ClockIcon
+                        size={14}
+                        color={isDark ? '#9CA3AF' : '#6B7280'}
+                      />
+                      <Text className={`ml-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {item.timeSlot}
+                      </Text>
+                    </View>
+                  )}
+                  {item.roles && (
+                    <View className="flex-row items-center ml-3">
+                      <BriefcaseIcon
+                        size={14}
+                        color={isDark ? '#9CA3AF' : '#6B7280'}
+                      />
+                      <Text className={`ml-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                        {item.roles}
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* 지원 메시지 */}
         {applicant.message && (
@@ -175,14 +280,6 @@ export function ApplicantConfirmModal({
           </Text>
         </View>
 
-        {/* 확정 시 안내 */}
-        {action === 'confirm' && (
-          <View className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg mb-4">
-            <Text className="text-sm text-green-700 dark:text-green-300">
-              확정 시 해당 지원자의 근무 일지(WorkLog)가 자동 생성됩니다.
-            </Text>
-          </View>
-        )}
 
         {/* 대기열 안내 */}
         {action === 'waitlist' && (
