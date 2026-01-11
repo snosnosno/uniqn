@@ -10,9 +10,9 @@ import { Timestamp } from 'firebase/firestore';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyJobPostings } from '@/hooks/useJobManagement';
+import { useMyJobPostings, useCloseJobPosting, useReopenJobPosting } from '@/hooks/useJobManagement';
 import { useUnreadCountRealtime } from '@/hooks/useNotifications';
-import { Card, Badge, Button, Loading, EmptyState, ErrorState } from '@/components';
+import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } from '@/components';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import {
   PlusIcon,
@@ -80,6 +80,10 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
 interface JobPostingCardProps {
   posting: JobPosting;
   onPress: (posting: JobPosting) => void;
+  onClose: (postingId: string) => void;
+  onReopen: (postingId: string) => void;
+  isClosing: boolean;
+  isReopening: boolean;
 }
 
 // ============================================================================
@@ -208,7 +212,14 @@ const RoleLine = memo(function RoleLine({
 // JobPostingCard Component
 // ============================================================================
 
-const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPostingCardProps) {
+const JobPostingCard = memo(function JobPostingCard({
+  posting,
+  onPress,
+  onClose,
+  onReopen,
+  isClosing,
+  isReopening,
+}: JobPostingCardProps) {
   const statusConfig = {
     active: { label: '모집중', variant: 'success' as const },
     closed: { label: '마감', variant: 'default' as const },
@@ -373,12 +384,40 @@ const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPos
         </View>
       </View>
 
-      {/* 하단: 지원자 수 */}
-      <View className="flex-row items-center justify-end mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-        <UsersIcon size={14} color="#2563EB" />
-        <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
-          지원 {posting.applicationCount || 0}
-        </Text>
+      {/* 하단: 지원자 수 + 마감/재오픈 버튼 */}
+      <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <View className="flex-row items-center">
+          <UsersIcon size={14} color="#2563EB" />
+          <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
+            지원 {posting.applicationCount || 0}
+          </Text>
+        </View>
+
+        {/* 마감/재오픈 버튼 (draft, cancelled 제외) */}
+        <View onStartShouldSetResponder={() => true}>
+          {posting.status === 'active' && (
+            <Pressable
+              onPress={() => onClose(posting.id)}
+              disabled={isClosing}
+              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md active:opacity-70"
+            >
+              <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">
+                {isClosing ? '처리중...' : '마감하기'}
+              </Text>
+            </Pressable>
+          )}
+          {posting.status === 'closed' && (
+            <Pressable
+              onPress={() => onReopen(posting.id)}
+              disabled={isReopening}
+              className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 rounded-md active:opacity-70"
+            >
+              <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                {isReopening ? '처리중...' : '재오픈'}
+              </Text>
+            </Pressable>
+          )}
+        </View>
       </View>
     </Card>
   );
@@ -453,7 +492,10 @@ function NonEmployerView() {
 
 function EmployerView() {
   const { data: postings, isLoading, error, refetch, isRefetching } = useMyJobPostings();
+  const closeMutation = useCloseJobPosting();
+  const reopenMutation = useReopenJobPosting();
   const [filter, setFilter] = useState<FilterStatus>('all');
+  const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
 
   // 필터링된 목록 + 정렬
   const filteredPostings = useMemo(() => {
@@ -541,6 +583,24 @@ function EmployerView() {
     router.push(`/(employer)/my-postings/${posting.id}`);
   }, []);
 
+  // 공고 마감 - 모달 열기
+  const handleClosePosting = useCallback((postingId: string) => {
+    setCloseTargetId(postingId);
+  }, []);
+
+  // 공고 마감 확인
+  const handleCloseConfirm = useCallback(() => {
+    if (closeTargetId) {
+      closeMutation.mutate(closeTargetId);
+      setCloseTargetId(null);
+    }
+  }, [closeTargetId, closeMutation]);
+
+  // 공고 재오픈
+  const handleReopenPosting = useCallback((postingId: string) => {
+    reopenMutation.mutate(postingId);
+  }, [reopenMutation]);
+
   // 새 공고 작성
   const handleCreatePosting = useCallback(() => {
     router.push('/(employer)/my-postings/create');
@@ -549,9 +609,16 @@ function EmployerView() {
   // 렌더 아이템
   const renderItem = useCallback(
     ({ item }: { item: JobPosting }) => (
-      <JobPostingCard posting={item} onPress={handlePostingPress} />
+      <JobPostingCard
+        posting={item}
+        onPress={handlePostingPress}
+        onClose={handleClosePosting}
+        onReopen={handleReopenPosting}
+        isClosing={closeMutation.isPending}
+        isReopening={reopenMutation.isPending}
+      />
     ),
-    [handlePostingPress]
+    [handlePostingPress, handleClosePosting, handleReopenPosting, closeMutation.isPending, reopenMutation.isPending]
   );
 
   const keyExtractor = useCallback((item: JobPosting) => item.id, []);
@@ -620,12 +687,23 @@ function EmployerView() {
           data={filteredPostings}
           renderItem={renderItem}
           keyExtractor={keyExtractor}
-          
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={{ paddingBottom: 20 }}
         />
       )}
+
+      {/* 마감 확인 모달 */}
+      <ConfirmModal
+        visible={!!closeTargetId}
+        onClose={() => setCloseTargetId(null)}
+        onConfirm={handleCloseConfirm}
+        title="공고 마감"
+        message="이 공고를 마감하시겠습니까? 마감된 공고는 구직자에게 더 이상 노출되지 않습니다."
+        confirmText="마감하기"
+        cancelText="취소"
+        isDestructive
+      />
     </SafeAreaView>
   );
 }
