@@ -118,51 +118,73 @@ const formatAppliedDate = (dateStr?: string): string => {
 };
 
 /**
- * Assignment 정보를 그룹화하여 표시용 형태로 변환
+ * 시간대 표시 포맷 (미정 시간 사유 포함)
+ */
+const formatTimeSlotDisplay = (
+  timeSlot: string,
+  isTimeToBeAnnounced?: boolean,
+  tentativeDescription?: string
+): string => {
+  if (isTimeToBeAnnounced || !timeSlot || timeSlot.trim() === '') {
+    return tentativeDescription ? `미정 (${tentativeDescription})` : '미정';
+  }
+  return timeSlot;
+};
+
+/**
+ * Assignment 정보를 역할별로 분리하여 표시용 형태로 변환
  */
 interface AssignmentDisplay {
   date: string;
   formattedDate: string;
-  timeSlot: string;
-  roles: string[];
-  roleLabels: string[];
+  timeSlot: string;        // 원본 값 (key 생성용)
+  timeSlotDisplay: string; // 표시용 ("미정" 포함)
+  role: string;            // 단일 역할
+  roleLabel: string;       // 단일 역할 라벨
 }
 
 const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay[] => {
   if (!assignments || assignments.length === 0) return [];
 
-  const grouped: Map<string, AssignmentDisplay> = new Map();
+  const result: AssignmentDisplay[] = [];
+  const seen = new Set<string>(); // 중복 방지
 
   for (const assignment of assignments) {
     const roles = getAssignmentRoles(assignment);
-    const roleLabels = roles.map((r) => getRoleLabel(r, undefined));
 
     for (const date of assignment.dates) {
-      const key = `${date}_${assignment.timeSlot}`;
-      const existing = grouped.get(key);
+      for (const role of roles) {
+        const key = `${date}_${assignment.timeSlot}_${role}`;
+        if (seen.has(key)) continue; // 중복 스킵
+        seen.add(key);
 
-      if (existing) {
-        // 같은 날짜/시간대에 다른 역할 추가
-        for (let i = 0; i < roles.length; i++) {
-          if (!existing.roles.includes(roles[i] ?? '')) {
-            existing.roles.push(roles[i] ?? '');
-            existing.roleLabels.push(roleLabels[i] ?? '');
-          }
-        }
-      } else {
-        grouped.set(key, {
+        result.push({
           date,
           formattedDate: formatAppliedDate(date),
           timeSlot: assignment.timeSlot,
-          roles: [...roles],
-          roleLabels: [...roleLabels],
+          timeSlotDisplay: formatTimeSlotDisplay(
+            assignment.timeSlot,
+            assignment.isTimeToBeAnnounced,
+            assignment.tentativeDescription
+          ),
+          role,
+          roleLabel: getRoleLabel(role, undefined),
         });
       }
     }
   }
 
-  // 날짜순 정렬
-  return Array.from(grouped.values()).sort((a, b) => a.date.localeCompare(b.date));
+  // 날짜순 → 시간순 → 역할순 정렬 (미정은 맨 뒤로)
+  return result.sort((a, b) => {
+    const dateCompare = a.date.localeCompare(b.date);
+    if (dateCompare !== 0) return dateCompare;
+    // 시간 미정은 맨 뒤로
+    if (!a.timeSlot && b.timeSlot) return 1;
+    if (a.timeSlot && !b.timeSlot) return -1;
+    const timeCompare = a.timeSlot.localeCompare(b.timeSlot);
+    if (timeCompare !== 0) return timeCompare;
+    return a.role.localeCompare(b.role);
+  });
 };
 
 // ============================================================================
@@ -207,18 +229,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
 
   // 일정 선택 상태 (key: "date_timeSlot")
-  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => {
-    // 초기값: 모든 일정 선택
-    const keys = new Set<string>();
-    if (applicant.assignments) {
-      for (const assignment of applicant.assignments) {
-        for (const date of assignment.dates) {
-          keys.add(`${date}_${assignment.timeSlot}`);
-        }
-      }
-    }
-    return keys;
-  });
+  // 초기값: 빈 상태 (체크 안 됨)
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   // 사용자 프로필 조회
   const { data: userProfile } = useQuery<UserProfile | null>({
@@ -256,11 +268,11 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     [applicant.assignments]
   );
 
-  // 모든 일정 키 목록
+  // 모든 일정 키 목록 (역할별로 분리)
   const allAssignmentKeys = useMemo(() => {
     const keys: string[] = [];
     for (const display of assignmentDisplays) {
-      keys.push(`${display.date}_${display.timeSlot}`);
+      keys.push(`${display.date}_${display.timeSlot}_${display.role}`);
     }
     return keys;
   }, [assignmentDisplays]);
@@ -293,20 +305,26 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     setSelectedKeys(new Set());
   }, []);
 
-  // 선택된 일정으로 Assignment 배열 생성
+  // 선택된 일정으로 Assignment 배열 생성 (역할별로 분리)
   const getSelectedAssignments = useCallback((): Assignment[] => {
     if (!applicant.assignments) return [];
 
     const result: Assignment[] = [];
     for (const assignment of applicant.assignments) {
-      const selectedDates = assignment.dates.filter((date) =>
-        selectedKeys.has(`${date}_${assignment.timeSlot}`)
-      );
-      if (selectedDates.length > 0) {
-        result.push({
-          ...assignment,
-          dates: selectedDates,
-        });
+      const roles = getAssignmentRoles(assignment);
+
+      for (const role of roles) {
+        const selectedDates = assignment.dates.filter((date) =>
+          selectedKeys.has(`${date}_${assignment.timeSlot}_${role}`)
+        );
+        if (selectedDates.length > 0) {
+          result.push({
+            ...assignment,
+            role, // 단일 역할로 설정
+            roles: undefined, // 배열 역할 제거
+            dates: selectedDates,
+          });
+        }
       }
     }
     return result;
@@ -499,10 +517,10 @@ export const ApplicantCard = React.memo(function ApplicantCard({
                 </Text>
               </View>
 
-              {/* 일정 목록 */}
+              {/* 일정 목록 (역할별로 분리) */}
               <View className="gap-1.5">
                 {assignmentDisplays.map((display) => {
-                  const key = `${display.date}_${display.timeSlot}`;
+                  const key = `${display.date}_${display.timeSlot}_${display.role}`;
                   const isChecked = selectedKeys.has(key);
 
                   // 배경색 (isDark와 isChecked 조합)
@@ -529,12 +547,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
                       {/* 일정 정보 */}
                       <CalendarIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
                       <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {display.formattedDate} {display.timeSlot}
+                        {display.formattedDate} {display.timeSlotDisplay}
                       </Text>
                       <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
                       <BriefcaseIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
                       <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                        {display.roleLabels.join(', ')}
+                        {display.roleLabel}
                       </Text>
                     </Pressable>
                   );
@@ -546,24 +564,27 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           {/* 확정된/거절된 상태에서는 체크박스 없이 표시 (고정공고 제외) */}
           {!isFixedMode && assignmentDisplays.length > 0 && !canShowActions && (
             <View className="gap-1.5 mb-3">
-              {assignmentDisplays.map((display, idx) => (
-                <View
-                  key={idx}
-                  className={`flex-row items-center rounded-lg px-3 py-2 border ${
-                    isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
-                  }`}
-                >
-                  <CalendarIcon size={16} color={iconColors.unchecked} />
-                  <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {display.formattedDate} {display.timeSlot}
-                  </Text>
-                  <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
-                  <BriefcaseIcon size={16} color={iconColors.unchecked} />
-                  <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                    {display.roleLabels.join(', ')}
-                  </Text>
-                </View>
-              ))}
+              {assignmentDisplays.map((display) => {
+                const key = `${display.date}_${display.timeSlot}_${display.role}`;
+                return (
+                  <View
+                    key={key}
+                    className={`flex-row items-center rounded-lg px-3 py-2 border ${
+                      isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
+                    }`}
+                  >
+                    <CalendarIcon size={16} color={iconColors.unchecked} />
+                    <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {display.formattedDate} {display.timeSlotDisplay}
+                    </Text>
+                    <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
+                    <BriefcaseIcon size={16} color={iconColors.unchecked} />
+                    <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                      {display.roleLabel}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           )}
 

@@ -324,7 +324,7 @@ const JobPostingCard = memo(function JobPostingCard({
                 {dateReq.timeSlots.map((slot, slotIdx) => {
                   // 시간 미정 여부 확인
                   const displayTime = slot.isTimeToBeAnnounced
-                    ? '시간 미정'
+                    ? '미정'
                     : slot.startTime || '-';
 
                   return (

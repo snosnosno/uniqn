@@ -101,9 +101,9 @@ export async function getJobPostings(
       constraints.push(where('postingType', '==', filters.postingType));
     }
 
-    // 단일 날짜 필터 (dateRange와 별개)
+    // 단일 날짜 필터 (workDates 배열에서 array-contains 쿼리)
     if (filters?.workDate && !filters?.dateRange) {
-      constraints.push(where('workDate', '==', filters.workDate));
+      constraints.push(where('workDates', 'array-contains', filters.workDate));
     }
 
     // 정렬: 날짜순 (최신순)

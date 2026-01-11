@@ -177,62 +177,43 @@ export async function convertApplicantToStaff(
         const assignments = applicationData.assignments ?? [];
         const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
-        if (assignments.length > 0) {
-          // v2.0: Assignment별 WorkLog 생성
-          for (const assignment of assignments) {
-            const role = assignment.role ?? assignment.roles?.[0] ?? applicationData.appliedRole;
+        if (assignments.length === 0) {
+          throw new Error('변환할 일정(assignments)이 없습니다');
+        }
 
-            for (const date of assignment.dates) {
-              const workLogRef = doc(workLogsRef);
-              const workLogData = {
-                staffId: applicationData.applicantId,
-                staffName: applicationData.applicantName,
-                eventId,
-                eventName: jobData.title,
-                role,
-                date,
-                timeSlot: assignment.timeSlot,
-                status: 'scheduled',
-                attendanceStatus: 'not_started',
-                checkInTime: null,
-                checkOutTime: null,
-                workDuration: null,
-                payrollAmount: null,
-                isSettled: false,
-                assignmentGroupId: assignment.groupId,
-                checkMethod: assignment.checkMethod ?? 'individual',
-                createdAt: now,
-                updatedAt: now,
-              };
+        // Assignment별 WorkLog 생성
+        for (const assignment of assignments) {
+          const role = assignment.role ?? assignment.roles?.[0] ?? applicationData.appliedRole;
 
-              transaction.set(workLogRef, workLogData);
-              workLogIds.push(workLogRef.id);
-            }
+          for (const date of assignment.dates) {
+            const workLogRef = doc(workLogsRef);
+            const workLogData = {
+              staffId: applicationData.applicantId,
+              staffName: applicationData.applicantName,
+              eventId,
+              eventName: jobData.title,
+              role,
+              date,
+              timeSlot: assignment.timeSlot,
+              // 미정 시간 정보
+              isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
+              tentativeDescription: assignment.tentativeDescription ?? null,
+              status: 'scheduled',
+              attendanceStatus: 'not_started',
+              checkInTime: null,
+              checkOutTime: null,
+              workDuration: null,
+              payrollAmount: null,
+              isSettled: false,
+              assignmentGroupId: assignment.groupId,
+              checkMethod: assignment.checkMethod ?? 'individual',
+              createdAt: now,
+              updatedAt: now,
+            };
+
+            transaction.set(workLogRef, workLogData);
+            workLogIds.push(workLogRef.id);
           }
-        } else {
-          // 레거시: 단일 WorkLog 생성
-          const workLogRef = doc(workLogsRef);
-          const workLogData = {
-            staffId: applicationData.applicantId,
-            staffName: applicationData.applicantName,
-            eventId,
-            eventName: jobData.title,
-            role: applicationData.appliedRole,
-            date: jobData.workDate,
-            timeSlot: jobData.timeSlot,
-            status: 'scheduled',
-            attendanceStatus: 'not_started',
-            checkInTime: null,
-            checkOutTime: null,
-            workDuration: null,
-            payrollAmount: null,
-            isSettled: false,
-            createdAt: now,
-            updatedAt: now,
-          };
-
-          transaction.set(workLogRef, workLogData);
-          workLogIds.push(workLogRef.id);
         }
       }
 

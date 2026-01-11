@@ -163,9 +163,9 @@ const TimeSlotDisplay = memo(function TimeSlotDisplay({
 }: TimeSlotDisplayProps) {
   // startTime 또는 time 필드 사용 (호환성)
   const timeValue = timeSlot.startTime || timeSlot.time || '-';
-  // 시간 미정인 경우: "시간 미정" + 사유(있으면) 표시
+  // 시간 미정인 경우: "미정" + 사유(있으면) 표시
   const timeDisplay = timeSlot.isTimeToBeAnnounced
-    ? `시간 미정${timeSlot.tentativeDescription ? ` (${timeSlot.tentativeDescription})` : ''}`
+    ? `미정${timeSlot.tentativeDescription ? ` (${timeSlot.tentativeDescription})` : ''}`
     : timeValue;
 
   if (compact) {

@@ -39,7 +39,12 @@ interface DateSelectionProps {
   isMainDate?: boolean;
   description?: string;
   selectedKeys: Set<SelectionKey>;
-  onRoleToggle: (date: string, slotTime: string, role: string) => void;
+  onRoleToggle: (
+    date: string,
+    slotTime: string,
+    role: string,
+    timeOptions?: { isTimeToBeAnnounced?: boolean; tentativeDescription?: string }
+  ) => void;
   disabled?: boolean;
 }
 
@@ -70,7 +75,7 @@ const getRoleLabel = (role: string): string => {
 const formatTimeDisplay = (slot: TimeSlot): string => {
   if (slot.isFullDay) return '종일';
   if (slot.isTimeToBeAnnounced) {
-    return slot.tentativeDescription ? `시간 미정 (${slot.tentativeDescription})` : '시간 미정';
+    return slot.tentativeDescription ? `미정 (${slot.tentativeDescription})` : '미정';
   }
   return slot.startTime ?? slot.time ?? '-';
 };
@@ -187,7 +192,8 @@ const DateSelection = memo(function DateSelection({
       {/* 시간대별 역할 선택 */}
       <View className="space-y-3">
         {timeSlots.map((slot, slotIndex) => {
-          const slotTime = slot.startTime ?? slot.time ?? '';
+          // 시간 미정이면 빈 문자열, 아니면 startTime 사용
+          const slotTime = slot.isTimeToBeAnnounced ? '' : (slot.startTime ?? slot.time ?? '');
           const timeDisplay = formatTimeDisplay(slot);
 
           return (
@@ -220,7 +226,10 @@ const DateSelection = memo(function DateSelection({
                       headcount={headcount}
                       isSelected={isSelected}
                       isFilled={isFilled}
-                      onToggle={() => onRoleToggle(date, slotTime, roleName)}
+                      onToggle={() => onRoleToggle(date, slotTime, roleName, {
+                        isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+                        tentativeDescription: slot.tentativeDescription,
+                      })}
                       disabled={disabled}
                     />
                   );
@@ -297,7 +306,12 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
   // 역할 토글 핸들러
   const handleRoleToggle = useCallback(
-    (date: string, slotTime: string, role: string) => {
+    (
+      date: string,
+      slotTime: string,
+      role: string,
+      timeOptions?: { isTimeToBeAnnounced?: boolean; tentativeDescription?: string }
+    ) => {
       const selectionKey = makeSelectionKey(date, slotTime, role);
       const isSelected = selectedKeys.has(selectionKey);
 
@@ -314,7 +328,11 @@ export const AssignmentSelector = memo(function AssignmentSelector({
         if (maxSelections && selectedAssignments.length >= maxSelections) {
           return; // 최대 선택 수 초과
         }
-        const newAssignment = createSimpleAssignment(role, slotTime, date);
+        // 미정 시간 정보를 포함하여 Assignment 생성
+        const newAssignment = createSimpleAssignment(role, slotTime, date, {
+          isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
+          tentativeDescription: timeOptions?.tentativeDescription,
+        });
         newAssignments = [...selectedAssignments, newAssignment];
       }
 

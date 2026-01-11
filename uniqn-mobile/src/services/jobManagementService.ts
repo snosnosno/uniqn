@@ -157,6 +157,21 @@ async function createSinglePosting(
   const migrationResult = migrateJobPostingForWrite(restInput);
   const migratedInput = migrationResult.data;
 
+  // dateSpecificRequirements에서 날짜만 추출하여 workDates 배열 생성 (array-contains 쿼리용)
+  const workDates = (restInput.dateSpecificRequirements ?? [])
+    .map((req) => {
+      if (typeof req.date === 'string') return req.date;
+      if (req.date && 'toDate' in req.date) {
+        return (req.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
+      }
+      if (req.date && 'seconds' in req.date) {
+        return new Date((req.date as { seconds: number }).seconds * 1000)
+          .toISOString().split('T')[0] ?? '';
+      }
+      return '';
+    })
+    .filter(Boolean);
+
   const jobPostingData: Omit<JobPosting, 'id'> = removeUndefined({
     ...migratedInput,
     roles: convertedRoles,
@@ -176,6 +191,8 @@ async function createSinglePosting(
     // 필수 필드 기본값
     workDate: restInput.workDate || '',
     timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
+    // 날짜 필터용 배열 (array-contains 쿼리용)
+    workDates: workDates.length > 0 ? workDates : undefined,
     createdAt: now as Timestamp,
     updatedAt: now as Timestamp,
   });

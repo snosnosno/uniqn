@@ -186,7 +186,12 @@ export function TimeSlotCard({
   // 시간 미정 토글
   const handleTimeToBeAnnouncedToggle = useCallback(
     (value: boolean) => {
-      onUpdate(index, { isTimeToBeAnnounced: value });
+      // 미정 체크 시 startTime 초기화
+      if (value) {
+        onUpdate(index, { isTimeToBeAnnounced: value, startTime: '' });
+      } else {
+        onUpdate(index, { isTimeToBeAnnounced: value });
+      }
     },
     [index, onUpdate]
   );

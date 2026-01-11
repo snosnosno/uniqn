@@ -53,7 +53,7 @@ const formatTimeRange = (slot: TimeSlot): string => {
     return '종일';
   }
   if (slot.isTimeToBeAnnounced) {
-    return slot.tentativeDescription ?? '시간 미정';
+    return slot.tentativeDescription ?? '미정';
   }
   const startTime = slot.startTime ?? slot.time ?? '-';
   if (slot.endTime) {

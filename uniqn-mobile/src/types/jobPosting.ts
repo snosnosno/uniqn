@@ -117,6 +117,11 @@ export interface JobPosting extends FirebaseDocument {
    * @description 여러 날짜에 각각 다른 시간대/역할 모집 가능
    */
   dateSpecificRequirements?: DateSpecificRequirement[];
+  /**
+   * 날짜 필터용 배열
+   * @description dateSpecificRequirements에서 날짜만 추출한 배열 (array-contains 쿼리용)
+   */
+  workDates?: string[];
 
   // === 모집 정보 ===
   roles: RoleRequirement[];

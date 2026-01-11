@@ -15,13 +15,11 @@ import {
   orderBy,
   runTransaction,
   serverTimestamp,
-  increment,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError } from '@/errors';
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import { confirmApplicationWithHistory, updateDateSpecificRequirementsFilled } from './applicationHistoryService';
+import { confirmApplicationWithHistory } from './applicationHistoryService';
 import type {
   Application,
   ApplicationStatus,
@@ -39,7 +37,6 @@ import type {
 
 const APPLICATIONS_COLLECTION = 'applications';
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
-const WORK_LOGS_COLLECTION = 'workLogs';
 
 // ============================================================================
 // Types
@@ -167,7 +164,9 @@ export async function getApplicantsByJobPosting(
 }
 
 /**
- * 지원 확정 (트랜잭션)
+ * 지원 확정
+ *
+ * @description 모든 확정은 confirmApplicationWithHistory를 통해 처리됩니다.
  *
  * 비즈니스 로직:
  * 1. 공고 소유자 확인
@@ -183,7 +182,6 @@ export async function confirmApplication(
   try {
     logger.info('지원 확정 시작', { applicationId: input.applicationId, ownerId });
 
-    // v2.0 지원서 확인: selectedAssignments가 있거나 application에 assignments가 있으면 v2.0 처리
     const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
     const applicationDoc = await getDoc(applicationRef);
 
@@ -192,176 +190,27 @@ export async function confirmApplication(
     }
 
     const applicationData = applicationDoc.data() as Application;
+    const v2Input = input as ConfirmApplicationInputV2;
+    const selectedAssignments = v2Input.selectedAssignments ?? applicationData.assignments;
 
-    // v2.0 모드: assignments가 있는 지원서
-    if (applicationData.assignments?.length) {
-      const v2Input = input as ConfirmApplicationInputV2;
-      const selectedAssignments = v2Input.selectedAssignments ?? applicationData.assignments;
-
-      logger.info('v2.0 확정 모드 - confirmApplicationWithHistory로 위임', {
-        applicationId: input.applicationId,
-        assignmentCount: selectedAssignments.length,
-      });
-
-      const historyResult = await confirmApplicationWithHistory(
-        input.applicationId,
-        selectedAssignments,
-        ownerId
-      );
-
-      return {
-        applicationId: historyResult.applicationId,
-        workLogId: historyResult.workLogIds[0] ?? '',
-        message: `${applicationData.applicantName}님의 지원이 확정되었습니다 (${historyResult.workLogIds.length}개 근무 기록 생성)`,
-      };
-    }
-
-    // v1.0 레거시 모드: 단일 역할 지원서
-    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 지원서 다시 읽기 (트랜잭션 내)
-      const appDoc = await transaction.get(applicationRef);
-
-      if (!appDoc.exists()) {
-        throw new Error('존재하지 않는 지원입니다');
-      }
-
-      const appData = appDoc.data() as Application;
-
-      // 이미 처리된 경우
-      if (appData.status !== 'applied' && appData.status !== 'pending') {
-        throw new Error(`이미 ${appData.status === 'confirmed' ? '확정' : '처리'}된 지원입니다`);
-      }
-
-      // 2. 공고 읽기
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, appData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
-      }
-
-      const jobData = jobDoc.data() as JobPosting;
-
-      // 공고 소유자 확인
-      if (jobData.ownerId !== ownerId) {
-        throw new Error('본인의 공고만 관리할 수 있습니다');
-      }
-
-      // 3. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
-      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
-
-      if (totalPositions > 0 && currentFilled >= totalPositions) {
-        throw new MaxCapacityReachedError({
-          userMessage: '모집 인원이 마감되었습니다. 대기자로 등록하시겠습니까?',
-          jobPostingId: appData.jobPostingId,
-          maxCapacity: totalPositions,
-          currentCount: currentFilled,
-        });
-      }
-
-      // 역할별 정원 확인
-      const appliedRole = appData.appliedRole;
-      const roleReq = jobData.roles.find((r) => r.role === appliedRole);
-      if (roleReq && roleReq.filled >= roleReq.count) {
-        throw new MaxCapacityReachedError({
-          userMessage: `${appliedRole} 역할의 모집 인원이 마감되었습니다`,
-          jobPostingId: appData.jobPostingId,
-          maxCapacity: roleReq.count,
-          currentCount: roleReq.filled,
-        });
-      }
-
-      // 4. 근무 기록(WorkLog) 생성
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-      const workLogRef = doc(workLogsRef);
-      const now = serverTimestamp();
-
-      const workLogData = {
-        staffId: appData.applicantId,
-        staffName: appData.applicantName,
-        eventId: appData.jobPostingId,
-        eventName: jobData.title,
-        role: appData.appliedRole,
-        date: jobData.workDate,
-        timeSlot: jobData.timeSlot || null,  // 근무 시간대 (출근시간 파싱용)
-        status: 'scheduled', // not_started → scheduled
-        attendanceStatus: 'not_started',
-        checkInTime: null,
-        checkOutTime: null,
-        workDuration: null,
-        payrollAmount: null,
-        isSettled: false,
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      transaction.set(workLogRef, workLogData);
-
-      // 5. 지원 상태 변경
-      transaction.update(applicationRef, {
-        status: 'confirmed',
-        processedBy: ownerId,
-        processedAt: serverTimestamp(),
-        notes: input.notes,
-        updatedAt: serverTimestamp(),
-      });
-
-      // 6. 공고 filledPositions 증가 + 역할별 filled 증가
-      const updatedRoles = jobData.roles.map((r) => {
-        if (r.role === appliedRole) {
-          return { ...r, filled: r.filled + 1 };
-        }
-        return r;
-      });
-
-      // 7. dateSpecificRequirements filled 업데이트 (레거시 호환)
-      const legacyAssignment = {
-        role: appliedRole,
-        timeSlot: jobData.timeSlot,
-        dates: [jobData.workDate],
-        isGrouped: false,
-      };
-      const updatedDateReqs = updateDateSpecificRequirementsFilled(
-        jobData.dateSpecificRequirements,
-        [legacyAssignment],
-        'increment'
-      );
-
-      // 8. 전체 마감 여부 확인 및 상태 변경
-      const newFilledPositions = currentFilled + 1;
-      const shouldClose = totalPositions > 0 && newFilledPositions >= totalPositions;
-
-      const jobUpdateData: Record<string, unknown> = {
-        filledPositions: increment(1),
-        roles: updatedRoles,
-        updatedAt: serverTimestamp(),
-      };
-
-      // dateSpecificRequirements가 있을 때만 업데이트
-      if (updatedDateReqs) {
-        jobUpdateData.dateSpecificRequirements = updatedDateReqs;
-      }
-
-      // 전체 마감 시 status를 closed로 변경
-      if (shouldClose && jobData.status !== 'closed') {
-        jobUpdateData.status = 'closed';
-      }
-
-      transaction.update(jobRef, jobUpdateData);
-
-      return {
-        applicationId: input.applicationId,
-        workLogId: workLogRef.id,
-        message: `${appData.applicantName}님의 지원이 확정되었습니다`,
-      };
-    });
+    // 항상 confirmApplicationWithHistory로 처리
+    const historyResult = await confirmApplicationWithHistory(
+      input.applicationId,
+      selectedAssignments,
+      ownerId,
+      input.notes
+    );
 
     logger.info('지원 확정 완료', {
       applicationId: input.applicationId,
-      workLogId: result.workLogId,
+      workLogIds: historyResult.workLogIds,
     });
 
-    return result;
+    return {
+      applicationId: historyResult.applicationId,
+      workLogId: historyResult.workLogIds[0] ?? '',
+      message: historyResult.message,
+    };
   } catch (error) {
     logger.error('지원 확정 실패', error as Error, { applicationId: input.applicationId });
     throw error instanceof Error || error instanceof MaxCapacityReachedError
@@ -418,7 +267,7 @@ export async function rejectApplication(
         status: 'rejected',
         processedBy: ownerId,
         processedAt: serverTimestamp(),
-        rejectionReason: input.reason,
+        ...(input.reason && { rejectionReason: input.reason }),
         updatedAt: serverTimestamp(),
       });
     });

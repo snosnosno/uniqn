@@ -137,7 +137,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
   // 안전한 값 추출
   const safeTitle = String(job.title || '제목 없음');
-  const safeTimeSlot = String(job.timeSlot || '시간 미정');
+  const safeTimeSlot = String(job.timeSlot || '미정');
   const safeContactPhone = String(job.contactPhone || '');
   const safeDescription = String(job.description || '');
   const safeWorkDate = formatDate(job.workDate) || '날짜 미정';

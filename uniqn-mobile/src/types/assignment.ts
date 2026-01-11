@@ -123,6 +123,18 @@ export interface Assignment {
    * - multi: 다중 날짜 (비연속 포함)
    */
   duration?: AssignmentDuration;
+
+  /**
+   * 시간 미정 여부
+   * TimeSlot의 isTimeToBeAnnounced 값을 전달받아 저장
+   */
+  isTimeToBeAnnounced?: boolean;
+
+  /**
+   * 미정 사유 (예: "토너먼트 진행 상황에 따라 결정")
+   * TimeSlot의 tentativeDescription 값을 전달받아 저장
+   */
+  tentativeDescription?: string;
 }
 
 /**
@@ -194,20 +206,38 @@ export function isValidAssignment(obj: unknown): obj is Assignment {
 }
 
 /**
+ * 간단한 Assignment 생성 옵션
+ */
+export interface CreateSimpleAssignmentOptions {
+  /** 시간 미정 여부 */
+  isTimeToBeAnnounced?: boolean;
+  /** 미정 사유 */
+  tentativeDescription?: string;
+}
+
+/**
  * 간단한 Assignment 생성 헬퍼
  *
  * @param role - 역할
  * @param timeSlot - 시간대
  * @param date - 단일 날짜
+ * @param options - 추가 옵션 (미정 시간 정보 등)
  * @returns Assignment 객체
  */
-export function createSimpleAssignment(role: string, timeSlot: string, date: string): Assignment {
+export function createSimpleAssignment(
+  role: string,
+  timeSlot: string,
+  date: string,
+  options?: CreateSimpleAssignmentOptions
+): Assignment {
   return {
     role,
     timeSlot,
     dates: [date],
     isGrouped: false,
     checkMethod: 'individual',
+    ...(options?.isTimeToBeAnnounced && { isTimeToBeAnnounced: true }),
+    ...(options?.tentativeDescription && { tentativeDescription: options.tentativeDescription }),
   };
 }
 

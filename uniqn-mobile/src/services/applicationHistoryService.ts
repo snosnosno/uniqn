@@ -259,14 +259,9 @@ export async function confirmApplicationWithHistory(
       const assignmentsToConfirm = selectedAssignments ?? applicationData.assignments ?? [];
 
       if (assignmentsToConfirm.length === 0) {
-        // 레거시 호환: assignments가 없으면 단일 역할/날짜로 처리
-        const legacyAssignment: Assignment = {
-          role: applicationData.appliedRole,
-          timeSlot: jobData.timeSlot,
-          dates: [jobData.workDate],
-          isGrouped: false,
-        };
-        assignmentsToConfirm.push(legacyAssignment);
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          userMessage: '확정할 일정을 선택해주세요',
+        });
       }
 
       // 4. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
@@ -319,6 +314,9 @@ export async function confirmApplicationWithHistory(
             role,
             date,
             timeSlot: assignment.timeSlot,
+            // 미정 시간 정보
+            isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
+            tentativeDescription: assignment.tentativeDescription ?? null,
             status: 'scheduled',
             attendanceStatus: 'not_started',
             checkInTime: null,
@@ -575,15 +573,8 @@ export function getOriginalApplicationData(application: Application): Assignment
     return application.assignments;
   }
 
-  // 레거시 호환
-  return [
-    {
-      role: application.appliedRole,
-      timeSlot: '',
-      dates: [],
-      isGrouped: false,
-    },
-  ];
+  // assignments가 없으면 빈 배열 반환
+  return [];
 }
 
 /**
