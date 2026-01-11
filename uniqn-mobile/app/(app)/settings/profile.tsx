@@ -3,7 +3,7 @@
  * 프로필 수정 화면
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -36,19 +36,35 @@ export default function ProfileEditScreen() {
   const {
     control,
     handleSubmit,
+    reset,
     formState: { errors, isDirty },
   } = useForm<UpdateProfileData>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
-      nickname: profile?.nickname ?? '',
-      gender: profile?.gender ?? undefined,
-      birthYear: profile?.birthYear ?? undefined,
-      region: profile?.region ?? '',
-      experienceYears: profile?.experienceYears ?? undefined,
-      career: profile?.career ?? '',
-      note: profile?.note ?? '',
+      nickname: '',
+      gender: undefined,
+      birthYear: undefined,
+      region: '',
+      experienceYears: undefined,
+      career: '',
+      note: '',
     },
   });
+
+  // profile이 로드되면 form 값을 업데이트
+  useEffect(() => {
+    if (profile) {
+      reset({
+        nickname: profile.nickname ?? '',
+        gender: profile.gender ?? undefined,
+        birthYear: profile.birthYear ?? undefined,
+        region: profile.region ?? '',
+        experienceYears: profile.experienceYears ?? undefined,
+        career: profile.career ?? '',
+        note: profile.note ?? '',
+      });
+    }
+  }, [profile, reset]);
 
   // 프로필 이미지 변경 핸들러 (ProfileImagePicker가 내부적으로 처리)
   const handleImageUpdated = (imageUrl: string | null) => {

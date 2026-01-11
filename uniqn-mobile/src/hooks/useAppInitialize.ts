@@ -24,6 +24,7 @@ import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
+import { getUserProfile } from '@/services/authService';
 
 // ============================================================================
 // Types
@@ -156,6 +157,23 @@ export function useAppInitialize(): UseAppInitializeReturn {
             logger.warn('Custom Claims에 role이 없습니다! Firestore Rules에서 거부될 수 있습니다.', {
               component: 'useAppInitialize',
               uid: authUser.uid,
+            });
+          }
+
+          // Firestore에서 최신 프로필 가져오기
+          logger.debug('Firestore에서 최신 프로필 가져오는 중...', { component: 'useAppInitialize' });
+          const freshProfile = await getUserProfile(authUser.uid);
+          if (freshProfile) {
+            // Timestamp를 Date로 변환하여 authStore에 저장
+            useAuthStore.getState().setProfile({
+              ...freshProfile,
+              createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
+              updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
+            });
+            logger.info('최신 프로필 로드 완료', {
+              component: 'useAppInitialize',
+              uid: authUser.uid,
+              nickname: freshProfile.nickname,
             });
           }
         } catch (tokenError) {
