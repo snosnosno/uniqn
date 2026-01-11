@@ -8,6 +8,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import type { SalaryInfo } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -30,19 +31,6 @@ interface RoleSalaryDisplayProps {
 // Constants
 // ============================================================================
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-  '딜러': '딜러',
-  '플로어': '플로어',
-  '매니저': '매니저',
-  '칩러너': '칩러너',
-  '관리자': '관리자',
-};
-
 const SALARY_TYPE_LABELS: Record<string, string> = {
   hourly: '시급',
   daily: '일급',
@@ -53,13 +41,6 @@ const SALARY_TYPE_LABELS: Record<string, string> = {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/**
- * 역할 라벨 가져오기
- */
-function getRoleLabel(role: string): string {
-  return ROLE_LABELS[role] || role;
-}
 
 /**
  * 급여 포맷
@@ -95,7 +76,7 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
   salary: SalaryInfo;
   compact?: boolean;
 }) {
-  const label = getRoleLabel(role);
+  const label = getRoleDisplayName(role);
   const salaryText = compact
     ? formatSalaryShort(salary.type, salary.amount)
     : formatSalary(salary.type, salary.amount);
@@ -139,10 +120,20 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
 
   // 동일 급여인 경우 단순 표시
   if (useSameSalary || !roleSalaries || Object.keys(roleSalaries).length === 0) {
+    // salary.amount가 0이고 roleSalaries가 있으면 첫 번째 값 사용 (폴백)
+    const hasValidSalary = salary.amount > 0 || salary.type === 'other';
+    const roleSalaryEntries = roleSalaries ? Object.entries(roleSalaries) : [];
+
+    let displaySalary = salary;
+    if (!hasValidSalary && roleSalaryEntries.length > 0) {
+      const [, firstSalary] = roleSalaryEntries[0];
+      displaySalary = firstSalary;
+    }
+
     return (
       <View className={compact ? '' : 'py-1'}>
         <Text className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-primary-600 dark:text-primary-400`}>
-          💰 {formatSalary(salary.type, salary.amount)}
+          💰 {formatSalary(displaySalary.type, displaySalary.amount)}
         </Text>
       </View>
     );
@@ -182,9 +173,19 @@ export const SalarySummary = memo(function SalarySummary({
 }: Pick<RoleSalaryDisplayProps, 'roleSalaries' | 'useSameSalary' | 'salary'>) {
   // 동일 급여
   if (useSameSalary || !roleSalaries || Object.keys(roleSalaries).length === 0) {
+    // salary.amount가 0이고 roleSalaries가 있으면 첫 번째 값 사용 (폴백)
+    const hasValidSalary = salary.amount > 0 || salary.type === 'other';
+    const roleSalaryEntries = roleSalaries ? Object.entries(roleSalaries) : [];
+
+    let displaySalary = salary;
+    if (!hasValidSalary && roleSalaryEntries.length > 0) {
+      const [, firstSalary] = roleSalaryEntries[0];
+      displaySalary = firstSalary;
+    }
+
     return (
       <Text className="text-sm font-medium text-gray-900 dark:text-white">
-        💰 {formatSalary(salary.type, salary.amount)}
+        💰 {formatSalary(displaySalary.type, displaySalary.amount)}
       </Text>
     );
   }

@@ -24,6 +24,7 @@ import {
   type ConfirmedStaff,
   type ConfirmedStaffStatus,
 } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
 
 // ============================================================================
@@ -60,24 +61,9 @@ const STATUS_BADGE_VARIANT: Record<ConfirmedStaffStatus, 'default' | 'primary' |
   no_show: 'warning',
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-};
-
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/**
- * 역할 라벨 가져오기
- */
-const getRoleLabel = (role: string): string => {
-  return ROLE_LABELS[role] || role;
-};
 
 /**
  * Timestamp를 Date로 변환
@@ -222,7 +208,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             <View className="flex-row items-center mt-0.5">
               <BriefcaseIcon size={12} color="#6B7280" />
               <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                {getRoleLabel(staff.role)}
+                {getRoleDisplayName(staff.role, staff.customRole)}
               </Text>
             </View>
           </View>

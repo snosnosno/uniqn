@@ -54,6 +54,33 @@ function extractStartTime(timeSlot: string): string {
 }
 
 /**
+ * 날짜와 시간 문자열을 Timestamp로 변환
+ * @param date "2024-01-15" 형식
+ * @param time "09:00" 형식
+ * @returns Timestamp 또는 null (파싱 실패 시)
+ */
+function createTimestampFromDateTime(date: string, time: string): Timestamp | null {
+  if (!date || !time) return null;
+
+  // 시간 형식 검증 (HH:mm)
+  const timeMatch = time.match(/^(\d{1,2}):(\d{2})$/);
+  if (!timeMatch) return null;
+
+  const hours = parseInt(timeMatch[1], 10);
+  const minutes = parseInt(timeMatch[2], 10);
+
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+
+  try {
+    const dateTime = new Date(`${date}T${time.padStart(5, '0')}:00`);
+    if (isNaN(dateTime.getTime())) return null;
+    return Timestamp.fromDate(dateTime);
+  } catch {
+    return null;
+  }
+}
+
+/**
  * dateSpecificRequirements의 filled 값 업데이트
  *
  * @param requirements 현재 dateSpecificRequirements
@@ -305,8 +332,13 @@ export async function confirmApplicationWithHistory(
       for (const assignment of assignmentsToConfirm) {
         // v3.0: roleIds 사용
         const role = assignment.roleIds[0] ?? applicationData.appliedRole;
+        // timeSlot에서 시작 시간 추출
+        const startTime = extractStartTime(assignment.timeSlot);
 
         for (const date of assignment.dates) {
+          // 날짜 + 시작시간 → checkInTime (예정 출근 시간)
+          const checkInTime = createTimestampFromDateTime(date, startTime);
+
           const workLogRef = doc(workLogsRef);
           const workLogData = {
             staffId: applicationData.applicantId,
@@ -321,8 +353,8 @@ export async function confirmApplicationWithHistory(
             tentativeDescription: assignment.tentativeDescription ?? null,
             status: 'scheduled',
             attendanceStatus: 'not_started',
-            checkInTime: null,
-            checkOutTime: null,
+            checkInTime, // timeSlot 파싱하여 설정 (예정 출근 시간)
+            checkOutTime: null, // 퇴근 시간은 미정
             workDuration: null,
             payrollAmount: null,
             isSettled: false,

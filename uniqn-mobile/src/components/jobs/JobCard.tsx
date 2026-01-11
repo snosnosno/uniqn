@@ -264,7 +264,7 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
           {job.roleSalaries &&
           Object.keys(job.roleSalaries).length > 0 &&
           !job.useSameSalary ? (
-            // 역할별 급여 표시
+            // 역할별 급여 표시 (useSameSalary === false)
             Object.entries(job.roleSalaries).map(([role, salary], idx) => (
               <Text
                 key={idx}
@@ -274,10 +274,34 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
               </Text>
             ))
           ) : (
-            // 단일 급여 표시
-            <Text className="text-sm font-medium text-gray-900 dark:text-white">
-              💰 {formatSalary(job.salary.type, job.salary.amount)}
-            </Text>
+            // 단일 급여 표시 (useSameSalary === true 또는 roleSalaries 없음)
+            // salary.amount가 0이고 roleSalaries가 있으면 첫 번째 roleSalary 사용 (폴백)
+            (() => {
+              const hasValidSalary = job.salary.amount > 0 || job.salary.type === 'other';
+              const roleSalaryEntries = job.roleSalaries ? Object.entries(job.roleSalaries) : [];
+
+              if (hasValidSalary) {
+                return (
+                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                    💰 {formatSalary(job.salary.type, job.salary.amount)}
+                  </Text>
+                );
+              } else if (roleSalaryEntries.length > 0) {
+                // salary가 0이지만 roleSalaries가 있는 경우 (기존 데이터 호환)
+                const [, firstSalary] = roleSalaryEntries[0];
+                return (
+                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                    💰 {firstSalary.type === 'other' ? '협의' : formatSalary(firstSalary.type, firstSalary.amount)}
+                  </Text>
+                );
+              } else {
+                return (
+                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                    💰 {formatSalary(job.salary.type, job.salary.amount)}
+                  </Text>
+                );
+              }
+            })()
           )}
 
           {/* 수당 */}

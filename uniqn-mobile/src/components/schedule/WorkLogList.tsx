@@ -26,6 +26,7 @@ import {
   ClockIcon as PendingIcon,
 } from '@/components/icons';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -80,13 +81,6 @@ const PAYROLL_STATUS_CONFIG: Record<
   completed: { label: '정산 완료', color: 'text-green-700 dark:text-green-300', bgColor: 'bg-green-100 dark:bg-green-900/30' },
 };
 
-/** 역할 한글 매핑 */
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '어드민',
-};
 
 // ============================================================================
 // Helper Functions
@@ -190,7 +184,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   const payrollConfig = workLog.payrollStatus
     ? PAYROLL_STATUS_CONFIG[workLog.payrollStatus]
     : null;
-  const roleLabel = ROLE_LABELS[workLog.role] || workLog.role;
+  const roleLabel = getRoleDisplayName(workLog.role, workLog.customRole);
 
   // 실제 근무 시간 (있으면 사용, 없으면 예정 시간)
   const startTime = workLog.actualStartTime || workLog.scheduledStartTime;

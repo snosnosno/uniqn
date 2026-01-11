@@ -155,6 +155,8 @@ export interface WorkLog extends FirebaseDocument {
   // 상태
   status: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
   role: string;
+  /** 커스텀 역할명 (role이 'other'일 때) */
+  customRole?: string;
 
   // 정산
   payrollStatus?: PayrollStatus;

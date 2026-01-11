@@ -18,6 +18,8 @@ import {
   EditIcon,
 } from '../icons';
 import type { ConfirmedStaff, JobPosting } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
+import { STAFF_ROLES } from '@/constants';
 
 // ============================================================================
 // Types
@@ -37,7 +39,8 @@ export interface RoleChangeModalProps {
 // Constants
 // ============================================================================
 
-const DEFAULT_ROLES = ['딜러', '플로어', '러너', '칩필', '매니저', '기타'];
+/** 기본 역할 목록 (STAFF_ROLES에서 추출) */
+const DEFAULT_ROLES = STAFF_ROLES.map((r) => r.key);
 
 // ============================================================================
 // Sub-components
@@ -51,6 +54,9 @@ interface RoleOptionProps {
 }
 
 function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionProps) {
+  // 역할 키를 한글로 변환
+  const roleDisplayName = getRoleDisplayName(role);
+
   return (
     <Pressable
       onPress={onSelect}
@@ -86,7 +92,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             }
           `}
         >
-          {role}
+          {roleDisplayName}
         </Text>
         {isCurrentRole && (
           <Badge variant="default" size="sm" className="ml-2">
@@ -203,7 +209,7 @@ export function RoleChangeModal({
               </Text>
               <View className="flex-row items-center mt-1">
                 <Badge variant="default" size="sm">
-                  {currentRole}
+                  {getRoleDisplayName(currentRole, staff?.customRole)}
                 </Badge>
                 <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                   {staff.date}

@@ -93,6 +93,9 @@ export interface ConfirmedStaff {
   /** 담당 역할 */
   role: string;
 
+  /** 커스텀 역할명 (role이 'other'일 때) */
+  customRole?: string;
+
   /** 근무 날짜 (YYYY-MM-DD) */
   date: string;
 
@@ -256,7 +259,7 @@ export interface ConfirmedStaffStats {
  * WorkLog에서 ConfirmedStaff로 변환
  */
 export function workLogToConfirmedStaff(
-  workLog: WorkLog & { timeSlot?: string; checkInTime?: unknown; checkOutTime?: unknown },
+  workLog: WorkLog & { timeSlot?: string; checkInTime?: unknown; checkOutTime?: unknown; customRole?: string },
   staffName?: string
 ): ConfirmedStaff {
   return {
@@ -264,6 +267,7 @@ export function workLogToConfirmedStaff(
     staffId: workLog.staffId,
     staffName: staffName || workLog.staffId.slice(-4),
     role: workLog.role,
+    customRole: workLog.customRole,
     date: workLog.date,
     status: workLog.status as ConfirmedStaffStatus,
     timeSlot: workLog.timeSlot,
