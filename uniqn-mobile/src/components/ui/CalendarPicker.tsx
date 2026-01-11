@@ -30,14 +30,24 @@ import { ChevronLeftIcon, ChevronRightIcon } from '@/components/icons';
 // ============================================================================
 
 export interface CalendarPickerProps {
-  /** 현재 선택된 날짜 */
-  value: Date | null;
-  /** 날짜 변경 콜백 */
-  onChange: (date: Date) => void;
+  /** 현재 선택된 날짜 (단일 선택 모드) */
+  value?: Date | null;
+  /** 날짜 변경 콜백 (단일 선택 모드) */
+  onChange?: (date: Date) => void;
+  /** 다중 선택 모드 여부 */
+  multiSelect?: boolean;
+  /** 선택된 날짜 목록 (다중 선택 모드) */
+  selectedDates?: Date[];
+  /** 날짜 선택/해제 콜백 (다중 선택 모드) */
+  onMultiSelectChange?: (dates: Date[]) => void;
+  /** 선택 불가능한 날짜 목록 (이미 추가된 날짜 등) */
+  disabledDates?: string[];
   /** 최소 선택 가능 날짜 */
   minimumDate?: Date;
   /** 최대 선택 가능 날짜 */
   maximumDate?: Date;
+  /** 최대 선택 가능 개수 (다중 선택 모드) */
+  maxSelections?: number;
   /** 테스트 ID */
   testID?: string;
 }
@@ -48,6 +58,7 @@ interface CalendarDay {
   isToday: boolean;
   isSelected: boolean;
   isDisabled: boolean;
+  isAlreadyAdded: boolean;
 }
 
 // ============================================================================
@@ -63,6 +74,9 @@ const WEEKDAYS = ['일', '월', '화', '수', '목', '금', '토'];
 function getCalendarDays(
   currentMonth: Date,
   selectedDate: Date | null,
+  selectedDates: Date[],
+  multiSelect: boolean,
+  disabledDates: string[],
   minimumDate?: Date,
   maximumDate?: Date
 ): CalendarDay[] {
@@ -77,7 +91,15 @@ function getCalendarDays(
   while (day <= calendarEnd) {
     const isCurrentMonth = isSameMonth(day, currentMonth);
     const dayIsToday = isToday(day);
-    const isSelected = selectedDate ? isSameDay(day, selectedDate) : false;
+
+    // 선택 여부 확인 (다중 선택 모드 vs 단일 선택 모드)
+    const isSelected = multiSelect
+      ? selectedDates.some(d => isSameDay(d, day))
+      : (selectedDate ? isSameDay(day, selectedDate) : false);
+
+    // 이미 추가된 날짜인지 확인
+    const dateString = format(day, 'yyyy-MM-dd');
+    const isAlreadyAdded = disabledDates.includes(dateString);
 
     // 비활성화 조건
     let isDisabled = false;
@@ -105,6 +127,7 @@ function getCalendarDays(
       isToday: dayIsToday,
       isSelected,
       isDisabled,
+      isAlreadyAdded,
     });
 
     day = addDays(day, 1);
@@ -125,15 +148,20 @@ const CalendarDayCell = memo(function CalendarDayCell({
   onSelect: (date: Date) => void;
 }) {
   const handlePress = useCallback(() => {
-    if (!day.isDisabled) {
+    // 이미 추가된 날짜나 비활성화된 날짜는 선택 불가
+    if (!day.isDisabled && !day.isAlreadyAdded) {
       onSelect(day.date);
     }
-  }, [day.date, day.isDisabled, onSelect]);
+  }, [day.date, day.isDisabled, day.isAlreadyAdded, onSelect]);
 
   // 스타일 결정
   const getContainerStyle = () => {
     const base = 'w-10 h-10 items-center justify-center rounded-full mx-auto';
 
+    // 이미 추가된 날짜
+    if (day.isAlreadyAdded) {
+      return `${base} bg-gray-300 dark:bg-gray-600`;
+    }
     if (day.isSelected) {
       return `${base} bg-indigo-500`;
     }
@@ -144,6 +172,10 @@ const CalendarDayCell = memo(function CalendarDayCell({
   };
 
   const getTextStyle = () => {
+    // 이미 추가된 날짜
+    if (day.isAlreadyAdded) {
+      return 'text-gray-500 dark:text-gray-400 line-through';
+    }
     if (day.isDisabled) {
       return 'text-gray-300 dark:text-gray-600';
     }
@@ -166,14 +198,15 @@ const CalendarDayCell = memo(function CalendarDayCell({
 
   const dayNumber = day.date.getDate();
   const accessibilityLabel = format(day.date, 'yyyy년 M월 d일 EEEE', { locale: ko });
+  const isInteractable = !day.isDisabled && !day.isAlreadyAdded;
 
   return (
     <Pressable
       onPress={handlePress}
-      disabled={day.isDisabled}
+      disabled={!isInteractable}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
-      accessibilityState={{ disabled: day.isDisabled, selected: day.isSelected }}
+      accessibilityState={{ disabled: !isInteractable, selected: day.isSelected }}
       className="flex-1 py-1"
     >
       <View className={getContainerStyle()}>
@@ -190,8 +223,13 @@ const CalendarDayCell = memo(function CalendarDayCell({
 export const CalendarPicker = memo(function CalendarPicker({
   value,
   onChange,
+  multiSelect = false,
+  selectedDates = [],
+  onMultiSelectChange,
+  disabledDates = [],
   minimumDate,
   maximumDate,
+  maxSelections,
   testID,
 }: CalendarPickerProps) {
   // 현재 표시 중인 월 (선택된 날짜 또는 오늘 기준)
@@ -199,8 +237,16 @@ export const CalendarPicker = memo(function CalendarPicker({
 
   // 캘린더 날짜 계산
   const calendarDays = useMemo(
-    () => getCalendarDays(currentMonth, value, minimumDate, maximumDate),
-    [currentMonth, value, minimumDate, maximumDate]
+    () => getCalendarDays(
+      currentMonth,
+      value ?? null,
+      selectedDates,
+      multiSelect,
+      disabledDates,
+      minimumDate,
+      maximumDate
+    ),
+    [currentMonth, value, selectedDates, multiSelect, disabledDates, minimumDate, maximumDate]
   );
 
   // 이전/다음 달 이동 가능 여부
@@ -234,9 +280,27 @@ export const CalendarPicker = memo(function CalendarPicker({
   // 날짜 선택
   const handleDaySelect = useCallback(
     (date: Date) => {
-      onChange(date);
+      if (multiSelect && onMultiSelectChange) {
+        // 다중 선택 모드
+        const isAlreadySelected = selectedDates.some(d => isSameDay(d, date));
+
+        if (isAlreadySelected) {
+          // 이미 선택된 날짜면 제거
+          onMultiSelectChange(selectedDates.filter(d => !isSameDay(d, date)));
+        } else {
+          // 최대 선택 개수 확인
+          if (maxSelections && selectedDates.length >= maxSelections) {
+            return; // 최대 개수 초과 시 추가 안함
+          }
+          // 새 날짜 추가
+          onMultiSelectChange([...selectedDates, date]);
+        }
+      } else if (onChange) {
+        // 단일 선택 모드
+        onChange(date);
+      }
     },
-    [onChange]
+    [multiSelect, onChange, onMultiSelectChange, selectedDates, maxSelections]
   );
 
   // 주 단위로 분할

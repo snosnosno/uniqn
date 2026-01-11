@@ -85,10 +85,10 @@ export function DateRequirementsSection({
     return dateRequirements.length < constraints.maxDates;
   }, [dateRequirements.length, constraints.maxDates]);
 
-  // 날짜 선택 처리
-  const handleSelectDate = useCallback((date: string) => {
-    // 기본 날짜 요구사항 생성
-    const newRequirement: DateSpecificRequirement = {
+  // 날짜 선택 처리 (다중 날짜 지원)
+  const handleSelectDates = useCallback((dates: string[]) => {
+    // 여러 날짜에 대해 기본 날짜 요구사항 생성
+    const newRequirements: DateSpecificRequirement[] = dates.map(date => ({
       date,
       timeSlots: [
         {
@@ -104,9 +104,9 @@ export function DateRequirementsSection({
           ],
         },
       ],
-    };
+    }));
 
-    const updated = [...dateRequirements, newRequirement];
+    const updated = [...dateRequirements, ...newRequirements];
     onUpdate({ dateSpecificRequirements: updated });
   }, [dateRequirements, onUpdate]);
 
@@ -205,7 +205,7 @@ export function DateRequirementsSection({
       <DatePickerModal
         visible={showDatePicker}
         onClose={() => setShowDatePicker(false)}
-        onSelectDate={handleSelectDate}
+        onSelectDates={handleSelectDates}
         postingType={postingType ?? 'regular'}
         existingDates={existingDates}
       />
