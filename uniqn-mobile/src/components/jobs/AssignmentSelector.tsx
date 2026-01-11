@@ -10,7 +10,12 @@ import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { useJobSchedule } from '@/hooks';
 import type { Assignment, JobPosting } from '@/types';
-import { createSimpleAssignment } from '@/types';
+import {
+  createSimpleAssignment,
+  FIXED_DATE_MARKER,
+  FIXED_TIME_MARKER,
+  TBA_TIME_MARKER,
+} from '@/types';
 import type { TimeSlotInfo, RoleInfo } from '@/types/unified';
 import {
   getRoleDisplayName,
@@ -178,8 +183,10 @@ const DateSelection = memo(function DateSelection({
       {/* 시간대별 역할 선택 */}
       <View className="space-y-3">
         {timeSlots.map((slot, slotIndex) => {
-          // 시간 미정이면 빈 문자열, 아니면 startTime 사용
-          const slotTime = slot.isTimeToBeAnnounced ? '' : (slot.startTime ?? '');
+          // 시간 미정이면 TBA_TIME_MARKER, 아니면 startTime 사용
+          const slotTime = slot.isTimeToBeAnnounced
+            ? TBA_TIME_MARKER
+            : (slot.startTime ?? '');
           const timeDisplay = formatTimeSlotDisplay(slot);
 
           return (
@@ -327,7 +334,11 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
         <View className="flex-row flex-wrap">
           {fixedSchedule.roles.map((role, index) => {
-            const selectionKey = makeSelectionKey('fixed', '', role.roleId);
+            const selectionKey = makeSelectionKey(
+              FIXED_DATE_MARKER,
+              FIXED_TIME_MARKER,
+              role.roleId
+            );
             const isSelected = selectedKeys.has(selectionKey);
 
             return (
@@ -335,7 +346,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
                 key={role.roleId || index}
                 role={role}
                 isSelected={isSelected}
-                onToggle={() => handleRoleToggle('fixed', '', role.roleId)}
+                onToggle={() => handleRoleToggle(FIXED_DATE_MARKER, FIXED_TIME_MARKER, role.roleId)}
                 disabled={disabled}
               />
             );

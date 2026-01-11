@@ -20,7 +20,8 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
-import type { Application,  Staff, JobPosting } from '@/types';
+import type { Application, Staff, JobPosting } from '@/types';
+import { FIXED_DATE_MARKER } from '@/types/assignment';
 
 // ============================================================================
 // Constants
@@ -177,43 +178,73 @@ export async function convertApplicantToStaff(
         const assignments = applicationData.assignments ?? [];
         const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
-        if (assignments.length === 0) {
-          throw new Error('변환할 일정(assignments)이 없습니다');
-        }
+        // 고정공고 또는 레거시: assignments가 없거나 dates가 FIXED_DATE_MARKER인 경우
+        const isFixedOrLegacy =
+          assignments.length === 0 ||
+          (assignments.length === 1 && assignments[0].dates[0] === FIXED_DATE_MARKER);
 
-        // Assignment별 WorkLog 생성
-        for (const assignment of assignments) {
-          // v3.0: roleIds 사용
-          const role = assignment.roleIds[0] ?? applicationData.appliedRole;
+        if (isFixedOrLegacy) {
+          // 단일 WorkLog 생성 (고정공고/레거시)
+          const role = assignments[0]?.roleIds?.[0] ?? applicationData.appliedRole;
+          const workLogRef = doc(workLogsRef);
+          const workLogData = {
+            staffId: applicationData.applicantId,
+            staffName: applicationData.applicantName,
+            eventId,
+            eventName: jobData.title,
+            role,
+            date: null, // 고정공고는 날짜 없음
+            timeSlot: null, // 고정공고는 시간 협의
+            isFixedPosting: true, // 고정공고 플래그
+            status: 'scheduled',
+            attendanceStatus: 'not_started',
+            checkInTime: null,
+            checkOutTime: null,
+            workDuration: null,
+            payrollAmount: null,
+            isSettled: false,
+            checkMethod: 'individual',
+            createdAt: now,
+            updatedAt: now,
+          };
 
-          for (const date of assignment.dates) {
-            const workLogRef = doc(workLogsRef);
-            const workLogData = {
-              staffId: applicationData.applicantId,
-              staffName: applicationData.applicantName,
-              eventId,
-              eventName: jobData.title,
-              role,
-              date,
-              timeSlot: assignment.timeSlot,
-              // 미정 시간 정보
-              isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
-              tentativeDescription: assignment.tentativeDescription ?? null,
-              status: 'scheduled',
-              attendanceStatus: 'not_started',
-              checkInTime: null,
-              checkOutTime: null,
-              workDuration: null,
-              payrollAmount: null,
-              isSettled: false,
-              assignmentGroupId: assignment.groupId,
-              checkMethod: assignment.checkMethod ?? 'individual',
-              createdAt: now,
-              updatedAt: now,
-            };
+          transaction.set(workLogRef, workLogData);
+          workLogIds.push(workLogRef.id);
+        } else {
+          // Assignment별 WorkLog 생성 (일반 공고)
+          for (const assignment of assignments) {
+            // v3.0: roleIds 사용
+            const role = assignment.roleIds[0] ?? applicationData.appliedRole;
 
-            transaction.set(workLogRef, workLogData);
-            workLogIds.push(workLogRef.id);
+            for (const date of assignment.dates) {
+              const workLogRef = doc(workLogsRef);
+              const workLogData = {
+                staffId: applicationData.applicantId,
+                staffName: applicationData.applicantName,
+                eventId,
+                eventName: jobData.title,
+                role,
+                date,
+                timeSlot: assignment.timeSlot,
+                // 미정 시간 정보
+                isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
+                tentativeDescription: assignment.tentativeDescription ?? null,
+                status: 'scheduled',
+                attendanceStatus: 'not_started',
+                checkInTime: null,
+                checkOutTime: null,
+                workDuration: null,
+                payrollAmount: null,
+                isSettled: false,
+                assignmentGroupId: assignment.groupId,
+                checkMethod: assignment.checkMethod ?? 'individual',
+                createdAt: now,
+                updatedAt: now,
+              };
+
+              transaction.set(workLogRef, workLogData);
+              workLogIds.push(workLogRef.id);
+            }
           }
         }
       }

@@ -5,8 +5,22 @@
  * 다중 역할/시간/날짜 조합을 지원하는 지원 선택사항 타입
  *
  * @version 3.0.0 - role/roles를 roleIds 배열로 통합
+ * @version 3.0.1 - 고정공고/시간미정 상수 추가
  * @see app2/src/types/application.ts
  */
+
+// ============================================================================
+// Constants - 고정공고 및 시간 미정 마커
+// ============================================================================
+
+/** 고정공고 날짜 마커 (dates 배열에 사용) */
+export const FIXED_DATE_MARKER = 'FIXED_SCHEDULE';
+
+/** 고정공고 시간 마커 (협의 가능) */
+export const FIXED_TIME_MARKER = 'NEGOTIABLE';
+
+/** 시간 미정 마커 (추후 공지) */
+export const TBA_TIME_MARKER = 'TBA';
 
 /**
  * 기간 타입
@@ -183,7 +197,8 @@ export function isValidAssignment(obj: unknown): obj is Assignment {
     candidate.roleIds.length > 0 &&
     candidate.roleIds.every((r) => typeof r === 'string');
 
-  const hasValidTimeSlot = typeof candidate.timeSlot === 'string' && candidate.timeSlot.length > 0;
+  // 고정공고는 timeSlot이 빈 문자열 또는 FIXED_TIME_MARKER, TBA_TIME_MARKER 허용
+  const hasValidTimeSlot = typeof candidate.timeSlot === 'string';
 
   const hasValidDates =
     Array.isArray(candidate.dates) &&

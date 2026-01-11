@@ -61,6 +61,57 @@ export interface ApplicationWithJob extends Application {
 }
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * 특정 역할의 정원 확인
+ *
+ * @description dateSpecificRequirements 또는 roles 배열에서 역할별 마감 상태 확인
+ * 기존 getClosingStatus는 전체 정원만 확인하므로, 역할별 세부 확인 필요 시 사용
+ *
+ * @param jobData - 공고 데이터
+ * @param appliedRole - 지원 역할
+ * @returns 해당 역할의 모집 가능 여부 및 사유
+ */
+function checkRoleCapacity(
+  jobData: JobPosting,
+  appliedRole: string
+): { available: boolean; reason?: string } {
+  // dateSpecificRequirements가 있으면 역할별 마감 확인
+  if (jobData.dateSpecificRequirements?.length) {
+    for (const req of jobData.dateSpecificRequirements) {
+      for (const slot of req.timeSlots || []) {
+        const roleReq = slot.roles?.find((r) => r.role === appliedRole);
+        if (roleReq) {
+          const total = roleReq.headcount ?? roleReq.count ?? 0;
+          const filled = roleReq.filled ?? 0;
+          if (total > 0 && filled < total) {
+            return { available: true };
+          }
+        }
+      }
+    }
+    return { available: false, reason: '해당 역할의 모집이 마감되었습니다' };
+  }
+
+  // 레거시: roles 배열 확인
+  if (jobData.roles?.length) {
+    const roleReq = jobData.roles.find((r) => r.role === appliedRole);
+    if (roleReq) {
+      const filled = roleReq.filled ?? 0;
+      if (filled < roleReq.count) {
+        return { available: true };
+      }
+    }
+    return { available: false, reason: '해당 역할의 모집이 마감되었습니다' };
+  }
+
+  // 역할 정보 없으면 통과 (레거시 호환)
+  return { available: true };
+}
+
+// ============================================================================
 // Application Service
 // ============================================================================
 
@@ -145,8 +196,9 @@ export async function applyToJob(
         ...(applicantPhone && { applicantPhone }),
         applicantRole: input.appliedRole,
         jobPostingId: input.jobPostingId,
-        jobPostingTitle: jobData.title,
-        jobPostingDate: jobData.workDate,
+        jobPostingTitle: jobData.title || '',
+        // 레거시 필드: workDate가 있는 경우에만 포함
+        ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
         status: 'applied',
         appliedRole: input.appliedRole,
         // message가 undefined일 수 있으므로 조건부 추가
@@ -522,6 +574,18 @@ export async function applyToJobV2(
         });
       }
 
+      // 5-1. 역할별 정원 확인 (Assignment의 첫 번째 역할 기준)
+      const firstAssignmentRole = input.assignments[0]?.roleIds[0];
+      if (firstAssignmentRole) {
+        const roleCapacity = checkRoleCapacity(jobData, firstAssignmentRole);
+        if (!roleCapacity.available) {
+          throw new MaxCapacityReachedError({
+            userMessage: roleCapacity.reason ?? '해당 역할의 모집이 마감되었습니다',
+            jobPostingId: input.jobPostingId,
+          });
+        }
+      }
+
       // 6. 중복 지원 검사 (복합 키)
       const applicationId = `${input.jobPostingId}_${applicantId}`;
       const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
@@ -562,8 +626,9 @@ export async function applyToJobV2(
 
         // 공고 정보 (레거시 호환)
         jobPostingId: input.jobPostingId,
-        jobPostingTitle: jobData.title,
-        jobPostingDate: jobData.workDate,
+        jobPostingTitle: jobData.title || '',
+        // 레거시 필드: workDate가 있는 경우에만 포함
+        ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
 
         // 공고 정보 (v2.0 표준)
         eventId: input.jobPostingId,

@@ -21,7 +21,12 @@ import type {
   PostingType,
   Allowances,
 } from '@/types';
-import { initializePreQuestionAnswers, findUnansweredRequired } from '@/types';
+import {
+  initializePreQuestionAnswers,
+  findUnansweredRequired,
+  FIXED_DATE_MARKER,
+  FIXED_TIME_MARKER,
+} from '@/types';
 
 // ============================================================================
 // Types
@@ -227,7 +232,7 @@ export function ApplicationForm({
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
-    // 고정공고: 역할만 제출 (v1.0과 동일)
+    // 고정공고: 역할만 제출 (v2.0 핸들러 우선 사용)
     if (isFixedMode && selectedRole) {
       // 사전질문 필수 답변 검증
       if (hasPreQuestions) {
@@ -238,20 +243,23 @@ export function ApplicationForm({
         }
       }
 
-      // 고정공고도 사전질문 답변을 함께 전달할 수 있도록 v2 핸들러 사용 (역할을 Assignment로 변환)
-      if (onSubmitV2 && hasPreQuestions) {
-        const fixedAssignment: Assignment = {
-          dates: [], // 고정공고는 날짜 없음
-          timeSlot: job.workSchedule?.timeSlots?.[0] || '',
-          roleIds: [selectedRole], // v3.0: roleIds 배열로 설정
-          isGrouped: false,
-        };
+      // 고정공고 Assignment 생성 (FIXED_DATE_MARKER 사용)
+      const fixedAssignment: Assignment = {
+        dates: [FIXED_DATE_MARKER], // 고정공고 마커 사용
+        timeSlot: job.workSchedule?.timeSlots?.[0] || FIXED_TIME_MARKER,
+        roleIds: [selectedRole], // v3.0: roleIds 배열로 설정
+        isGrouped: false,
+      };
+
+      // v2 핸들러 우선 사용 (사전질문 답변 전달 가능)
+      if (onSubmitV2) {
         onSubmitV2(
           [fixedAssignment],
           message.trim() || undefined,
-          preQuestionAnswers
+          hasPreQuestions ? preQuestionAnswers : undefined
         );
       } else {
+        // v1 폴백 (레거시 호환)
         onSubmit(selectedRole, message.trim() || undefined);
       }
       return;
@@ -387,9 +395,12 @@ export function ApplicationForm({
               </Text>
 
               {availableRoles.length === 0 ? (
-                <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-                  <Text className="text-gray-500 dark:text-gray-400 text-center">
-                    모집 역할이 없습니다
+                <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4 border border-error-200 dark:border-error-800">
+                  <Text className="text-error-600 dark:text-error-400 text-center font-medium">
+                    현재 모집 중인 역할이 없습니다
+                  </Text>
+                  <Text className="text-error-500 dark:text-error-500 text-center text-xs mt-1">
+                    다른 공고를 확인해주세요
                   </Text>
                 </View>
               ) : (

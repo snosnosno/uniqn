@@ -131,6 +131,11 @@ export type {
 } from './assignment';
 
 export {
+  // 상수
+  FIXED_DATE_MARKER,
+  FIXED_TIME_MARKER,
+  TBA_TIME_MARKER,
+  // 함수
   getAssignmentRole,
   getAssignmentRoles,
   isValidAssignment,

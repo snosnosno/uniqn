@@ -180,8 +180,8 @@ export function JobDetail({ job }: JobDetailProps) {
           {safeTitle}
         </Text>
 
-        {/* 역할 태그 (v3.0: allRoles에서 통합 표시) */}
-        {!hasDateRequirements && allRoles.length > 0 && (
+        {/* 역할 태그 (v3.0: allRoles에서 통합 표시 - 항상 표시) */}
+        {allRoles.length > 0 && (
           <View className="flex-row flex-wrap mb-3">
             {allRoles.map((role, index) => (
               <View key={role.roleId || index} className="mr-2 mb-2">
