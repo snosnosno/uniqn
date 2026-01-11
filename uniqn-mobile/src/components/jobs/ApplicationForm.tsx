@@ -243,7 +243,7 @@ export function ApplicationForm({
         const fixedAssignment: Assignment = {
           dates: [], // 고정공고는 날짜 없음
           timeSlot: job.workSchedule?.timeSlots?.[0] || '',
-          role: selectedRole,
+          roleIds: [selectedRole], // v3.0: roleIds 배열로 설정
           isGrouped: false,
         };
         onSubmitV2(
@@ -371,7 +371,6 @@ export function ApplicationForm({
                 </Text>
                 <FixedScheduleDisplay
                   daysPerWeek={job.daysPerWeek}
-                  workDays={job.workDays}
                   startTime={job.workSchedule?.timeSlots?.[0] || job.timeSlot?.split(/[-~]/)[0]?.trim()}
                   isStartTimeNegotiable={job.isStartTimeNegotiable}
                   compact={true}

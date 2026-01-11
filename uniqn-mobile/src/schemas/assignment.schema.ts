@@ -1,21 +1,16 @@
 /**
- * UNIQN Mobile - Assignment v2.0 Zod 스키마
+ * UNIQN Mobile - Assignment v3.0 Zod 스키마
  *
- * @version 1.0.0
- * @description Assignment 유효성 검증 스키마
+ * @version 3.0.0
+ * @description Assignment 유효성 검증 스키마 (role/roles → roleIds 통합)
  */
 
 import { z } from 'zod';
 
 /**
- * 역할 스키마 (단일)
+ * 역할 ID 배열 스키마 (v3.0: roleIds 필수)
  */
-export const roleSchema = z.string().min(1, { message: '역할을 선택해주세요' });
-
-/**
- * 역할 배열 스키마 (다중)
- */
-export const rolesArraySchema = z
+export const roleIdsSchema = z
   .array(z.string().min(1))
   .min(1, { message: '최소 1개 이상의 역할을 선택해주세요' });
 
@@ -62,35 +57,32 @@ export const checkMethodSchema = z.enum(['group', 'individual'], {
 });
 
 /**
- * Assignment 스키마 (v2.0)
+ * Assignment 스키마 (v3.0)
  *
- * @description 다중 역할/시간/날짜 조합 검증
+ * @description 역할 필드 통합 (role/roles → roleIds)
  */
-export const assignmentSchema = z
-  .object({
-    /** 단일 역할 (일반 공고) */
-    role: roleSchema.optional(),
-    /** 다중 역할 (고정 공고) */
-    roles: rolesArraySchema.optional(),
-    /** 시간대 (필수) */
-    timeSlot: timeSlotSchema,
-    /** 날짜 배열 (필수) */
-    dates: datesArraySchema,
-    /** 연속 날짜 그룹 여부 */
-    isGrouped: z.boolean(),
-    /** 그룹 ID */
-    groupId: z.string().optional(),
-    /** 출퇴근 체크 방식 */
-    checkMethod: checkMethodSchema.optional(),
-    /** 요구사항 ID */
-    requirementId: z.string().optional(),
-    /** 기간 설정 */
-    duration: durationSchema.optional(),
-  })
-  .refine((data) => data.role !== undefined || data.roles !== undefined, {
-    message: 'role 또는 roles 중 하나는 필수입니다',
-    path: ['role'],
-  });
+export const assignmentSchema = z.object({
+  /** 역할 ID 배열 (v3.0: 필수, 단일 역할도 배열로) */
+  roleIds: roleIdsSchema,
+  /** 시간대 (필수) */
+  timeSlot: timeSlotSchema,
+  /** 날짜 배열 (필수) */
+  dates: datesArraySchema,
+  /** 연속 날짜 그룹 여부 */
+  isGrouped: z.boolean(),
+  /** 그룹 ID */
+  groupId: z.string().optional(),
+  /** 출퇴근 체크 방식 */
+  checkMethod: checkMethodSchema.optional(),
+  /** 요구사항 ID */
+  requirementId: z.string().optional(),
+  /** 기간 설정 */
+  duration: durationSchema.optional(),
+  /** 시간 미정 여부 */
+  isTimeToBeAnnounced: z.boolean().optional(),
+  /** 미정 사유 */
+  tentativeDescription: z.string().optional(),
+});
 
 export type AssignmentFormData = z.infer<typeof assignmentSchema>;
 

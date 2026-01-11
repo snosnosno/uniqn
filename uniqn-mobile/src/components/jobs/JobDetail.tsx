@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 구인공고 상세 컴포넌트
  *
- * @description 공고 상세 정보 표시 (v2.0 - dateSpecificRequirements, roleSalaries 지원)
- * @version 2.0.0
+ * @description 공고 상세 정보 표시 (v3.0 - useJobSchedule Hook 적용)
+ * @version 3.0.0
  */
 
 import React, { useMemo } from 'react';
@@ -12,7 +12,9 @@ import { PostingTypeBadge } from './PostingTypeBadge';
 import { DateRequirementDisplay } from './DateRequirementDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
+import { useJobSchedule } from '@/hooks';
 import type { JobPosting, PostingType, Allowances } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -42,23 +44,6 @@ const formatDate = (dateStr: string): string => {
   const day = date.getDate();
   const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
   return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
-};
-
-const getRoleLabel = (role: string | undefined): string => {
-  if (!role) return '역할';
-  const labels: Record<string, string> = {
-    dealer: '딜러',
-    floor: '플로어',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-  };
-  return labels[role] || role;
-};
-
-const getRoleDisplayName = (roleReq: { role?: string; name?: string; count: number; filled?: number }): string => {
-  if (roleReq.name) return roleReq.name;
-  return getRoleLabel(roleReq.role);
 };
 
 /**
@@ -126,6 +111,14 @@ function InfoRow({ label, value, icon }: { label: string; value: string | React.
 // ============================================================================
 
 export function JobDetail({ job }: JobDetailProps) {
+  // v3.0: 통합 타입 Hook 사용
+  const {
+    isFixed,
+    isDated,
+    fixedSchedule,
+    allRoles,
+  } = useJobSchedule(job);
+
   const handleCall = () => {
     if (job.contactPhone) {
       Linking.openURL(`tel:${job.contactPhone}`);
@@ -142,8 +135,8 @@ export function JobDetail({ job }: JobDetailProps) {
   const safeDescription = String(job.description || '');
   const safeWorkDate = formatDate(job.workDate) || '날짜 미정';
 
-  // dateSpecificRequirements 유무 확인
-  const hasDateRequirements = job.dateSpecificRequirements && job.dateSpecificRequirements.length > 0;
+  // v3.0: isDated로 dateRequirements 유무 확인 (레거시 폴백 포함)
+  const hasDateRequirements = isDated && (job.dateSpecificRequirements?.length ?? 0) > 0;
 
   // location 안전하게 처리
   const getLocationValue = (): string => {
@@ -187,21 +180,16 @@ export function JobDetail({ job }: JobDetailProps) {
           {safeTitle}
         </Text>
 
-        {/* 역할 태그 (레거시 - dateSpecificRequirements 없을 때만) */}
-        {!hasDateRequirements && Array.isArray(job.roles) && job.roles.length > 0 && (
+        {/* 역할 태그 (v3.0: allRoles에서 통합 표시) */}
+        {!hasDateRequirements && allRoles.length > 0 && (
           <View className="flex-row flex-wrap mb-3">
-            {job.roles.map((roleReq, index) => {
-              const displayName = getRoleDisplayName(roleReq);
-              const filled = typeof roleReq.filled === 'number' ? roleReq.filled : 0;
-              const count = typeof roleReq.count === 'number' ? roleReq.count : 0;
-              return (
-                <View key={index} className="mr-2 mb-2">
-                  <Badge variant="primary" size="md">
-                    {`${displayName} (${filled}/${count}명)`}
-                  </Badge>
-                </View>
-              );
-            })}
+            {allRoles.map((role, index) => (
+              <View key={role.roleId || index} className="mr-2 mb-2">
+                <Badge variant="primary" size="md">
+                  {`${getRoleDisplayName(role.roleId, role.customName)} (${role.filledCount}/${role.requiredCount}명)`}
+                </Badge>
+              </View>
+            ))}
           </View>
         )}
 
@@ -221,9 +209,9 @@ export function JobDetail({ job }: JobDetailProps) {
 
         <InfoRow icon="📍" label="근무지" value={getLocationValue()} />
 
-        {/* 날짜별 요구사항 (v2.0) 또는 고정공고 일정 */}
-        {job.postingType === 'fixed' ? (
-          // 고정공고: FixedScheduleDisplay 사용
+        {/* 날짜별 요구사항 (v3.0) 또는 고정공고 일정 */}
+        {isFixed && fixedSchedule ? (
+          // 고정공고: FixedScheduleDisplay 사용 (v3.0: fixedSchedule에서 데이터 추출)
           <View className="py-3 border-b border-gray-100 dark:border-gray-700">
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">📅</Text>
@@ -232,13 +220,14 @@ export function JobDetail({ job }: JobDetailProps) {
                   근무 일정
                 </Text>
                 <FixedScheduleDisplay
-                  daysPerWeek={job.daysPerWeek}
-                  workDays={job.workDays}
-                  startTime={job.workSchedule?.timeSlots?.[0] || job.timeSlot?.split(/[-~]/)[0]?.trim()}
-                  isStartTimeNegotiable={job.isStartTimeNegotiable}
-                  roles={job.requiredRolesWithCount?.map((r) => ({
-                    role: r.role,
-                    count: r.count,
+                  daysPerWeek={fixedSchedule.daysPerWeek}
+                  startTime={fixedSchedule.startTime ?? undefined}
+                  isStartTimeNegotiable={fixedSchedule.isStartTimeNegotiable}
+                  roles={fixedSchedule.roles.map((r) => ({
+                    role: r.roleId,
+                    name: r.displayName,
+                    count: r.requiredCount,
+                    filled: r.filledCount,
                   }))}
                   showRoles={true}
                   showFilledCount={true}

@@ -86,7 +86,8 @@ export function updateDateSpecificRequirementsFilled(
   // 각 assignment에 대해 해당하는 slot 찾아서 업데이트
   for (const assignment of assignments) {
     const assignmentStartTime = extractStartTime(assignment.timeSlot);
-    const assignmentRole = assignment.role ?? assignment.roles?.[0];
+    // v3.0: roleIds 사용
+    const assignmentRole = assignment.roleIds[0];
 
     if (!assignmentRole) {
       logger.warn('Assignment에 역할 정보 없음', { assignment });
@@ -302,7 +303,8 @@ export async function confirmApplicationWithHistory(
       const now = serverTimestamp();
 
       for (const assignment of assignmentsToConfirm) {
-        const role = assignment.role ?? assignment.roles?.[0] ?? applicationData.appliedRole;
+        // v3.0: roleIds 사용
+        const role = assignment.roleIds[0] ?? applicationData.appliedRole;
 
         for (const date of assignment.dates) {
           const workLogRef = doc(workLogsRef);
@@ -351,8 +353,9 @@ export async function confirmApplicationWithHistory(
 
       // 9. 공고 filledPositions 업데이트
       const updatedRoles = jobData.roles.map((r) => {
+        // v3.0: roleIds 사용
         const roleAssignments = assignmentsToConfirm.filter(
-          (a) => a.role === r.role || a.roles?.includes(r.role)
+          (a) => a.roleIds.includes(r.role)
         );
         const addedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: r.filled + addedCount };
@@ -494,8 +497,9 @@ export async function cancelConfirmation(
 
       // 5. 공고 filledPositions 감소
       const updatedRoles = jobData.roles.map((r) => {
+        // v3.0: roleIds 사용
         const roleAssignments = cancelledAssignments.filter(
-          (a) => a.role === r.role || a.roles?.includes(r.role)
+          (a) => a.roleIds.includes(r.role)
         );
         const removedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: Math.max(0, r.filled - removedCount) };

@@ -544,8 +544,9 @@ export async function applyToJobV2(
 
       // 8. 대표 역할 결정 (레거시 호환)
       const firstAssignment = input.assignments[0];
+      // v3.0: roleIds 사용
       const primaryRole = (
-        firstAssignment?.role ?? firstAssignment?.roles?.[0] ?? 'dealer'
+        firstAssignment?.roleIds[0] ?? 'dealer'
       ) as StaffRole;
 
       // 9. 지원서 데이터 생성 (v2.0)

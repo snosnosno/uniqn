@@ -1,15 +1,23 @@
 /**
  * UNIQN Mobile - Assignment 선택 컴포넌트
  *
- * @description 다중 역할/시간/날짜 선택 UI (Assignment v2.0)
- * @version 2.0.0 - 시간대별 역할 직접 선택 UI로 개선
+ * @description 다중 역할/시간/날짜 선택 UI (v3.0 - useJobSchedule Hook 적용)
+ * @version 3.0.0 - 통합 타입 기반으로 리팩토링
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import type { Assignment, DateSpecificRequirement, TimeSlot, JobPosting } from '@/types';
-import { getDateFromRequirement, sortDateRequirements, createSimpleAssignment } from '@/types';
+import { useJobSchedule } from '@/hooks';
+import type { Assignment, JobPosting } from '@/types';
+import { createSimpleAssignment } from '@/types';
+import type { TimeSlotInfo, RoleInfo } from '@/types/unified';
+import {
+  getRoleDisplayName,
+  formatDateDisplay,
+  formatTimeSlotDisplay,
+  isRoleFilled,
+} from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -34,51 +42,30 @@ interface AssignmentSelectorProps {
 type SelectionKey = string;
 
 interface DateSelectionProps {
+  /** 날짜 (YYYY-MM-DD) */
   date: string;
-  timeSlots: TimeSlot[];
+  /** 시간대 정보 배열 (v3.0: TimeSlotInfo[]) */
+  timeSlots: TimeSlotInfo[];
+  /** 메인 날짜 여부 */
   isMainDate?: boolean;
+  /** 설명 */
   description?: string;
+  /** 선택된 키 Set */
   selectedKeys: Set<SelectionKey>;
+  /** 역할 토글 콜백 */
   onRoleToggle: (
     date: string,
     slotTime: string,
     role: string,
     timeOptions?: { isTimeToBeAnnounced?: boolean; tentativeDescription?: string }
   ) => void;
+  /** 비활성화 여부 */
   disabled?: boolean;
 }
 
 // ============================================================================
 // Helpers
 // ============================================================================
-
-const formatDate = (dateStr: string): string => {
-  const date = new Date(dateStr);
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
-};
-
-const getRoleLabel = (role: string): string => {
-  const roleMap: Record<string, string> = {
-    dealer: '딜러',
-    floor: '플로어',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-    other: '기타',
-  };
-  return roleMap[role] ?? role;
-};
-
-const formatTimeDisplay = (slot: TimeSlot): string => {
-  if (slot.isFullDay) return '종일';
-  if (slot.isTimeToBeAnnounced) {
-    return slot.tentativeDescription ? `미정 (${slot.tentativeDescription})` : '미정';
-  }
-  return slot.startTime ?? slot.time ?? '-';
-};
 
 /** 선택 키 생성 (date|slot|role) */
 const makeSelectionKey = (date: string, slotTime: string, role: string): SelectionKey => {
@@ -93,25 +80,24 @@ const makeSelectionKey = (date: string, slotTime: string, role: string): Selecti
  * 역할 체크박스 컴포넌트
  */
 interface RoleCheckboxProps {
-  roleName: string;
-  filled: number;
-  headcount: number;
+  /** 역할 정보 (v3.0: RoleInfo) */
+  role: RoleInfo;
+  /** 선택 여부 */
   isSelected: boolean;
-  isFilled: boolean;
+  /** 토글 콜백 */
   onToggle: () => void;
+  /** 비활성화 여부 */
   disabled?: boolean;
 }
 
 const RoleCheckbox = memo(function RoleCheckbox({
-  roleName,
-  filled,
-  headcount,
+  role,
   isSelected,
-  isFilled,
   onToggle,
   disabled,
 }: RoleCheckboxProps) {
-  const roleLabel = getRoleLabel(roleName);
+  const roleLabel = getRoleDisplayName(role.roleId, role.customName);
+  const isFilled = isRoleFilled(role);
   const isDisabled = disabled || isFilled;
 
   return (
@@ -144,7 +130,7 @@ const RoleCheckbox = memo(function RoleCheckbox({
             : 'text-gray-700 dark:text-gray-300'
         }`}
       >
-        {roleLabel}({filled}/{headcount})
+        {roleLabel}({role.filledCount}/{role.requiredCount})
       </Text>
       {isFilled && (
         <Badge variant="default" size="sm" className="ml-1">
@@ -167,7 +153,7 @@ const DateSelection = memo(function DateSelection({
   onRoleToggle,
   disabled,
 }: DateSelectionProps) {
-  const formattedDate = formatDate(date);
+  const formattedDate = formatDateDisplay(date);
 
   return (
     <View className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
@@ -193,11 +179,11 @@ const DateSelection = memo(function DateSelection({
       <View className="space-y-3">
         {timeSlots.map((slot, slotIndex) => {
           // 시간 미정이면 빈 문자열, 아니면 startTime 사용
-          const slotTime = slot.isTimeToBeAnnounced ? '' : (slot.startTime ?? slot.time ?? '');
-          const timeDisplay = formatTimeDisplay(slot);
+          const slotTime = slot.isTimeToBeAnnounced ? '' : (slot.startTime ?? '');
+          const timeDisplay = formatTimeSlotDisplay(slot);
 
           return (
-            <View key={slotIndex} className="pl-2">
+            <View key={slot.id || slotIndex} className="pl-2">
               {/* 시간 표시 */}
               <Text className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
                 🕐 {timeDisplay}
@@ -205,28 +191,15 @@ const DateSelection = memo(function DateSelection({
               {/* 역할 체크박스들 */}
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
-                  // RoleRequirement 타입에서 역할 이름 추출
-                  const roleName = (role as { role?: string; name?: string }).role
-                    ?? (role as { name?: string }).name
-                    ?? 'dealer';
-                  const selectionKey = makeSelectionKey(date, slotTime, roleName);
+                  const selectionKey = makeSelectionKey(date, slotTime, role.roleId);
                   const isSelected = selectedKeys.has(selectionKey);
-                  // filled, headcount 또는 count 추출
-                  const filled = (role as { filled?: number }).filled ?? 0;
-                  const headcount = (role as { headcount?: number; count?: number }).headcount
-                    ?? (role as { count?: number }).count
-                    ?? 0;
-                  const isFilled = filled >= headcount;
 
                   return (
                     <RoleCheckbox
-                      key={roleIndex}
-                      roleName={roleName}
-                      filled={filled}
-                      headcount={headcount}
+                      key={role.roleId || roleIndex}
+                      role={role}
                       isSelected={isSelected}
-                      isFilled={isFilled}
-                      onToggle={() => onRoleToggle(date, slotTime, roleName, {
+                      onToggle={() => onRoleToggle(date, slotTime, role.roleId, {
                         isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
                         tentativeDescription: slot.tentativeDescription,
                       })}
@@ -250,8 +223,8 @@ const DateSelection = memo(function DateSelection({
 /**
  * Assignment 선택 컴포넌트
  *
- * @description 시간대별 역할 직접 선택 UI (v2.0)
- * 각 시간대 옆에 역할 체크박스가 표시되며, 마감된 역할은 비활성화됨
+ * @description 시간대별 역할 직접 선택 UI (v3.0)
+ * useJobSchedule Hook을 사용하여 통합 타입 기반으로 데이터 처리
  *
  * @example
  * <AssignmentSelector
@@ -268,36 +241,16 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   disabled = false,
   error,
 }: AssignmentSelectorProps) {
-  // 날짜별 요구사항 (정렬됨)
-  const dateRequirements = useMemo(() => {
-    if (jobPosting.dateSpecificRequirements?.length) {
-      return sortDateRequirements(jobPosting.dateSpecificRequirements);
-    }
-    // 레거시: 단일 날짜
-    return [
-      {
-        date: jobPosting.workDate,
-        timeSlots: [
-          {
-            time: jobPosting.timeSlot?.split(' - ')[0] || jobPosting.timeSlot || '',
-            endTime: jobPosting.timeSlot?.split(' - ')[1],
-            roles: jobPosting.roles.map((r) => ({
-              name: r.role,
-              count: r.count,
-              filled: r.filled,
-            })),
-          },
-        ],
-      },
-    ] as DateSpecificRequirement[];
-  }, [jobPosting]);
+  // v3.0: useJobSchedule Hook으로 정규화된 데이터 사용
+  const { datedSchedules, isFixed, fixedSchedule } = useJobSchedule(jobPosting);
 
   // 선택된 키 Set (date|slot|role 조합)
   const selectedKeys = useMemo(() => {
     const keys = new Set<SelectionKey>();
     selectedAssignments.forEach((assignment) => {
       assignment.dates.forEach((date) => {
-        const key = makeSelectionKey(date, assignment.timeSlot, assignment.role ?? '');
+        // v3.0: roleIds[0] 사용 (단일 역할 선택 기준)
+        const key = makeSelectionKey(date, assignment.timeSlot, assignment.roleIds[0] ?? '');
         keys.add(key);
       });
     });
@@ -320,7 +273,8 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       if (isSelected) {
         // 해제: 해당 조합의 assignment 제거
         newAssignments = selectedAssignments.filter((a) => {
-          const aKey = makeSelectionKey(a.dates[0] ?? '', a.timeSlot, a.role ?? '');
+          // v3.0: roleIds[0] 사용
+          const aKey = makeSelectionKey(a.dates[0] ?? '', a.timeSlot, a.roleIds[0] ?? '');
           return aKey !== selectionKey;
         });
       } else {
@@ -347,7 +301,8 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
     const roleCount = new Map<string, number>();
     selectedAssignments.forEach((a) => {
-      const label = getRoleLabel(a.role ?? 'unknown');
+      // v3.0: roleIds[0] 사용
+      const label = getRoleDisplayName(a.roleIds[0] ?? 'unknown');
       roleCount.set(label, (roleCount.get(label) ?? 0) + 1);
     });
 
@@ -355,6 +310,55 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       .map(([role, count]) => `${role} ${count}건`)
       .join(', ');
   }, [selectedAssignments]);
+
+  // 고정공고: 역할만 선택 (날짜/시간 없음)
+  if (isFixed && fixedSchedule) {
+    return (
+      <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+        <View className="mb-3">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
+            역할 선택 <Text className="text-error-500">*</Text>
+          </Text>
+          <Text className="text-xs text-gray-500 dark:text-gray-400">
+            원하는 역할을 선택하세요
+            {maxSelections && ` (최대 ${maxSelections}개)`}
+          </Text>
+        </View>
+
+        <View className="flex-row flex-wrap">
+          {fixedSchedule.roles.map((role, index) => {
+            const selectionKey = makeSelectionKey('fixed', '', role.roleId);
+            const isSelected = selectedKeys.has(selectionKey);
+
+            return (
+              <RoleCheckbox
+                key={role.roleId || index}
+                role={role}
+                isSelected={isSelected}
+                onToggle={() => handleRoleToggle('fixed', '', role.roleId)}
+                disabled={disabled}
+              />
+            );
+          })}
+        </View>
+
+        {/* 선택 요약 */}
+        {selectedAssignments.length > 0 && (
+          <View className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+            <Text className="text-sm text-primary-600 dark:text-primary-400 font-medium">
+              ✓ 선택됨: {selectionSummary}
+            </Text>
+          </View>
+        )}
+
+        {error && (
+          <Text className="text-sm text-red-500 dark:text-red-400 mt-2">
+            {error}
+          </Text>
+        )}
+      </View>
+    );
+  }
 
   return (
     <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
@@ -369,24 +373,20 @@ export const AssignmentSelector = memo(function AssignmentSelector({
         </Text>
       </View>
 
-      {/* 날짜별 시간대/역할 선택 */}
+      {/* 날짜별 시간대/역할 선택 (v3.0: datedSchedules 직접 사용) */}
       <View>
-        {dateRequirements.map((req, index) => {
-          const dateStr = getDateFromRequirement(req);
-
-          return (
-            <DateSelection
-              key={index}
-              date={dateStr}
-              timeSlots={req.timeSlots}
-              isMainDate={req.isMainDate}
-              description={req.description}
-              selectedKeys={selectedKeys}
-              onRoleToggle={handleRoleToggle}
-              disabled={disabled}
-            />
-          );
-        })}
+        {datedSchedules.map((schedule, index) => (
+          <DateSelection
+            key={schedule.date || index}
+            date={schedule.date}
+            timeSlots={schedule.timeSlots}
+            isMainDate={schedule.isMainDate}
+            description={schedule.description}
+            selectedKeys={selectedKeys}
+            onRoleToggle={handleRoleToggle}
+            disabled={disabled}
+          />
+        ))}
       </View>
 
       {/* 선택 요약 */}

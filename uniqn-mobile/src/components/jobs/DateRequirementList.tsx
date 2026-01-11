@@ -10,6 +10,7 @@ import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { DateSpecificRequirement, TimeSlot } from '@/types';
 import { getDateFromRequirement, sortDateRequirements } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -63,13 +64,7 @@ const formatTimeRange = (slot: TimeSlot): string => {
 };
 
 const getRoleLabel = (role: string): string => {
-  const roleMap: Record<string, string> = {
-    dealer: '딜러',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-  };
-  return roleMap[role] ?? role;
+  return getRoleDisplayName(role);
 };
 
 const getTotalPositions = (slots: TimeSlot[]): number => {

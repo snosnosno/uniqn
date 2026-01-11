@@ -224,3 +224,17 @@ export {
   useSetUserActive,
   useSystemMetrics,
 } from './useAdminDashboard';
+
+// ============================================================================
+// 공고 데이터 정규화 Hooks
+// ============================================================================
+
+export {
+  useJobSchedule,
+  type UseJobScheduleResult,
+} from './useJobSchedule';
+
+export {
+  useJobRoles,
+  type UseJobRolesResult,
+} from './useJobRoles';

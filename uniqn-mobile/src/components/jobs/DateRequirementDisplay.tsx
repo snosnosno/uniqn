@@ -9,6 +9,7 @@ import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Timestamp } from 'firebase/firestore';
+import { getRoleDisplayName } from '@/types/unified';
 
 // 역할 요구사항 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
 interface RoleRequirementCompat {
@@ -67,15 +68,6 @@ interface RoleDisplayProps {
 // Constants
 // ============================================================================
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-  other: '기타',
-};
-
 // ============================================================================
 // Helpers
 // ============================================================================
@@ -110,19 +102,16 @@ function formatDate(dateStr: string): string {
 }
 
 /**
- * 역할 라벨 가져오기 (v2.0 role 또는 레거시 name 지원)
+ * 역할 라벨 가져오기 (v3.0: 통합 타입의 getRoleDisplayName 사용)
  */
 function getRoleLabel(role?: string, name?: string, customRole?: string): string {
   // v2.0: role 필드 사용
   if (role) {
-    if (role === 'other' && customRole) {
-      return customRole;
-    }
-    return ROLE_LABELS[role] || role;
+    return getRoleDisplayName(role, customRole);
   }
-  // 레거시: name 필드 사용 (이미 역할 이름이 저장됨)
+  // 레거시: name 필드 사용
   if (name) {
-    return ROLE_LABELS[name] || name;
+    return getRoleDisplayName(name);
   }
   return '-';
 }

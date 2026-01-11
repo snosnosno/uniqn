@@ -67,7 +67,8 @@ const formatAssignmentsSummary = (assignments: Assignment[]): string => {
   if (!assignments.length) return '정보 없음';
 
   const dateCount = assignments.reduce((sum, a) => sum + a.dates.length, 0);
-  const roles = [...new Set(assignments.map((a) => a.role ?? a.roles?.[0] ?? ''))];
+  // v3.0: roleIds 사용
+  const roles = [...new Set(assignments.map((a) => a.roleIds[0] ?? ''))];
   const roleLabels = roles
     .filter(Boolean)
     .map((r) => getRoleLabel(r))

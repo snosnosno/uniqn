@@ -308,7 +308,6 @@ const JobPostingCard = memo(function JobPostingCard({
             // 고정공고: FixedScheduleDisplay 사용
             <FixedScheduleDisplay
               daysPerWeek={posting.daysPerWeek}
-              workDays={posting.workDays}
               startTime={posting.workSchedule?.timeSlots?.[0] || posting.timeSlot?.split(/[-~]/)[0]?.trim()}
               compact={true}
             />

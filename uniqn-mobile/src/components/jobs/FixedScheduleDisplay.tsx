@@ -8,6 +8,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -35,37 +36,25 @@ interface FixedScheduleDisplayProps {
   showFilledCount?: boolean;
   /** 컴팩트 모드 (한 줄 표시) */
   compact?: boolean;
-  /** @deprecated workDays는 더 이상 사용되지 않음 */
-  workDays?: string[];
 }
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  staff: '직원',
-  serving: '서빙',
-  chiprunner: '칩러너',
-  other: '기타',
-};
-
 // ============================================================================
 // Helpers
 // ============================================================================
 
 /**
- * 역할 라벨 가져오기
+ * 역할 라벨 가져오기 (v3.0: 통합 타입의 getRoleDisplayName 사용)
  */
 function getRoleLabel(role?: string, name?: string): string {
   if (role) {
-    return ROLE_LABELS[role] || role;
+    return getRoleDisplayName(role);
   }
   if (name) {
-    return ROLE_LABELS[name] || name;
+    return getRoleDisplayName(name);
   }
   return '-';
 }
@@ -133,8 +122,6 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
   showRoles = false,
   showFilledCount = false,
   compact = false,
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  workDays: _workDays, // deprecated, 무시됨
 }: FixedScheduleDisplayProps) {
   // 표시 문자열 계산
   const daysText = useMemo(() => formatDaysPerWeek(daysPerWeek), [daysPerWeek]);

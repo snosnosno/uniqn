@@ -284,7 +284,6 @@ export default function EditJobPostingScreen() {
         dateSpecificRequirements: existingJob.dateSpecificRequirements || [],
         daysPerWeek: existingJob.daysPerWeek ?? 5,
         isStartTimeNegotiable: existingJob.isStartTimeNegotiable ?? false,
-        workDays: existingJob.workDays ?? [],
         // 역할
         roles: existingJob.roles
           ? convertRolesToFormRoles(existingJob.roles as { role?: string; name?: string; count: number; filled?: number }[])

@@ -183,7 +183,8 @@ export async function convertApplicantToStaff(
 
         // Assignment별 WorkLog 생성
         for (const assignment of assignments) {
-          const role = assignment.role ?? assignment.roles?.[0] ?? applicationData.appliedRole;
+          // v3.0: roleIds 사용
+          const role = assignment.roleIds[0] ?? applicationData.appliedRole;
 
           for (const date of assignment.dates) {
             const workLogRef = doc(workLogsRef);

@@ -84,7 +84,6 @@ export default function CreateJobPostingScreen() {
         dateSpecificRequirements: formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],
         daysPerWeek: formData.daysPerWeek,
         isStartTimeNegotiable: formData.isStartTimeNegotiable,
-        workDays: formData.workDays,
         roles: formData.roles,
         salary: formData.salary,
         allowances: formData.allowances,

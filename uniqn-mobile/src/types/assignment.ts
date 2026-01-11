@@ -1,10 +1,10 @@
 /**
- * UNIQN Mobile - Assignment v2.0 타입 정의
+ * UNIQN Mobile - Assignment v3.0 타입 정의
  *
- * @description 웹앱(app2/)과 100% 호환되는 Assignment 구조
+ * @description 역할 필드 통합 버전 (role/roles → roleIds)
  * 다중 역할/시간/날짜 조합을 지원하는 지원 선택사항 타입
  *
- * @version 2.0.0
+ * @version 3.0.0 - role/roles를 roleIds 배열로 통합
  * @see app2/src/types/application.ts
  */
 
@@ -35,31 +35,24 @@ export interface AssignmentDuration {
  * @description
  * Assignment는 구인공고 지원 시 선택한 시간대, 역할, 날짜 조합을 나타냅니다.
  *
- * ## 역할(role) 사용 패턴
- *
- * **패턴 1: 단일 역할 (role 사용)**
- * - 일반적인 지원 시 사용
- * - 예: `{ role: 'dealer', timeSlot: '19:00', dates: ['2025-01-09'] }`
- *
- * **패턴 2: 다중 역할 (roles 사용)**
- * - 고정공고 등에서 여러 역할을 동시에 지원할 때 사용
- * - 예: `{ roles: ['dealer', 'floor'], timeSlot: '19:00', dates: ['2025-01-09'] }`
- *
- * @note role과 roles 중 하나만 사용해야 합니다. 둘 다 있으면 role이 우선합니다.
+ * ## v3.0 변경사항
+ * - `role?: string`과 `roles?: string[]`를 `roleIds: string[]`로 통합
+ * - 단일 역할도 배열로 표현: `roleIds: ['dealer']`
+ * - 다중 역할: `roleIds: ['dealer', 'floor']`
  *
  * @example
  * // 단일 날짜, 단일 역할
  * const singleAssignment: Assignment = {
- *   role: 'dealer',
+ *   roleIds: ['dealer'],
  *   timeSlot: '19:00',
  *   dates: ['2025-01-09'],
  *   isGrouped: false,
  *   checkMethod: 'individual'
  * };
  *
- * // 연속 날짜 그룹
+ * // 연속 날짜 그룹, 다중 역할
  * const groupAssignment: Assignment = {
- *   role: 'dealer',
+ *   roleIds: ['dealer', 'floor'],
  *   timeSlot: '19:00',
  *   dates: ['2025-01-09', '2025-01-10', '2025-01-11'],
  *   isGrouped: true,
@@ -70,16 +63,12 @@ export interface AssignmentDuration {
  */
 export interface Assignment {
   /**
-   * 단일 역할 (개별 선택 시 사용)
-   * @example 'dealer', 'floor', 'chip_runner'
+   * 역할 ID 배열 (v3.0: role/roles 통합)
+   * - 단일 역할: ['dealer']
+   * - 다중 역할: ['dealer', 'floor']
+   * @example ['dealer'], ['dealer', 'floor']
    */
-  role?: string;
-
-  /**
-   * 다중 역할 (고정공고 등에서 여러 역할 동시 지원 시 사용)
-   * @example ['dealer', 'floor']
-   */
-  roles?: string[];
+  roleIds: string[];
 
   /**
    * 시간대 (예: '19:00', '14:00~22:00')
@@ -138,31 +127,31 @@ export interface Assignment {
 }
 
 /**
- * Assignment에서 역할 이름을 안전하게 추출
+ * Assignment에서 첫 번째 역할 이름을 추출
  *
  * @description
- * role 또는 roles에서 역할 이름을 추출합니다.
- * role이 있으면 role 반환, 없으면 roles의 첫 번째 값 반환
+ * roleIds 배열에서 첫 번째 역할을 반환합니다.
+ * 단일 역할 사용 시 편의를 위한 헬퍼입니다.
  *
  * @param assignment - Assignment 객체
- * @returns 역할 이름 또는 빈 문자열
+ * @returns 첫 번째 역할 이름 또는 빈 문자열
  */
 export function getAssignmentRole(assignment: Assignment): string {
-  if (assignment.role) return assignment.role;
-  if (assignment.roles && assignment.roles.length > 0) return assignment.roles[0] ?? '';
-  return '';
+  return assignment.roleIds[0] ?? '';
 }
 
 /**
  * Assignment에서 모든 역할 이름을 배열로 추출
  *
+ * @description
+ * v3.0에서는 roleIds를 그대로 반환합니다.
+ * 기존 코드와의 호환성을 위해 유지됩니다.
+ *
  * @param assignment - Assignment 객체
  * @returns 역할 이름 배열
  */
 export function getAssignmentRoles(assignment: Assignment): string[] {
-  if (assignment.roles && assignment.roles.length > 0) return assignment.roles;
-  if (assignment.role) return [assignment.role];
-  return [];
+  return assignment.roleIds;
 }
 
 /**
@@ -170,7 +159,7 @@ export function getAssignmentRoles(assignment: Assignment): string[] {
  *
  * @description
  * Assignment 객체가 유효한지 검증합니다.
- * - role 또는 roles 중 하나는 반드시 있어야 함
+ * - roleIds는 필수 배열 (최소 1개 이상)
  * - timeSlot은 필수 문자열
  * - dates는 필수 배열 (최소 1개 이상)
  * - isGrouped는 필수 boolean
@@ -189,9 +178,10 @@ export function isValidAssignment(obj: unknown): obj is Assignment {
   const candidate = obj as Record<string, unknown>;
 
   // 필수 필드 검증
-  const hasValidRole =
-    typeof candidate.role === 'string' ||
-    (Array.isArray(candidate.roles) && candidate.roles.length > 0);
+  const hasValidRoleIds =
+    Array.isArray(candidate.roleIds) &&
+    candidate.roleIds.length > 0 &&
+    candidate.roleIds.every((r) => typeof r === 'string');
 
   const hasValidTimeSlot = typeof candidate.timeSlot === 'string' && candidate.timeSlot.length > 0;
 
@@ -202,7 +192,7 @@ export function isValidAssignment(obj: unknown): obj is Assignment {
 
   const hasValidIsGrouped = typeof candidate.isGrouped === 'boolean';
 
-  return hasValidRole && hasValidTimeSlot && hasValidDates && hasValidIsGrouped;
+  return hasValidRoleIds && hasValidTimeSlot && hasValidDates && hasValidIsGrouped;
 }
 
 /**
@@ -218,7 +208,7 @@ export interface CreateSimpleAssignmentOptions {
 /**
  * 간단한 Assignment 생성 헬퍼
  *
- * @param role - 역할
+ * @param role - 역할 (단일 문자열, 내부에서 배열로 변환)
  * @param timeSlot - 시간대
  * @param date - 단일 날짜
  * @param options - 추가 옵션 (미정 시간 정보 등)
@@ -231,7 +221,7 @@ export function createSimpleAssignment(
   options?: CreateSimpleAssignmentOptions
 ): Assignment {
   return {
-    role,
+    roleIds: [role],
     timeSlot,
     dates: [date],
     isGrouped: false,
@@ -244,7 +234,7 @@ export function createSimpleAssignment(
 /**
  * 연속 날짜 Assignment 생성 헬퍼
  *
- * @param role - 역할
+ * @param role - 역할 (단일 문자열, 내부에서 배열로 변환)
  * @param timeSlot - 시간대
  * @param dates - 날짜 배열
  * @returns Assignment 객체
@@ -263,7 +253,7 @@ export function createGroupedAssignment(
   const endDate = sortedDates[sortedDates.length - 1]!;
 
   return {
-    role,
+    roleIds: [role],
     timeSlot,
     dates: sortedDates,
     isGrouped: dates.length > 1,
@@ -274,5 +264,35 @@ export function createGroupedAssignment(
       startDate,
       endDate: dates.length > 1 ? endDate : undefined,
     },
+  };
+}
+
+/**
+ * 다중 역할 Assignment 생성 헬퍼
+ *
+ * @param roleIds - 역할 ID 배열
+ * @param timeSlot - 시간대
+ * @param date - 단일 날짜
+ * @param options - 추가 옵션
+ * @returns Assignment 객체
+ */
+export function createMultiRoleAssignment(
+  roleIds: string[],
+  timeSlot: string,
+  date: string,
+  options?: CreateSimpleAssignmentOptions
+): Assignment {
+  if (roleIds.length === 0) {
+    throw new Error('roleIds 배열은 최소 1개 이상이어야 합니다');
+  }
+
+  return {
+    roleIds,
+    timeSlot,
+    dates: [date],
+    isGrouped: false,
+    checkMethod: 'individual',
+    ...(options?.isTimeToBeAnnounced && { isTimeToBeAnnounced: true }),
+    ...(options?.tentativeDescription && { tentativeDescription: options.tentativeDescription }),
   };
 }

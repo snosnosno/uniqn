@@ -79,10 +79,9 @@ export type {
   CancelApplicationData,
 } from './application.schema';
 
-// Assignment v2.0 스키마
+// Assignment v3.0 스키마
 export {
-  roleSchema as assignmentRoleSchema,
-  rolesArraySchema,
+  roleIdsSchema,
   timeSlotSchema,
   dateSchema,
   datesArraySchema,

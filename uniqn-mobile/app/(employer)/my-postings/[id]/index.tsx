@@ -286,7 +286,6 @@ export default function JobPostingDetailScreen() {
                 <View className="ml-6">
                   <FixedScheduleDisplay
                     daysPerWeek={posting.daysPerWeek}
-                    workDays={posting.workDays}
                     startTime={posting.workSchedule?.timeSlots?.[0] || posting.timeSlot?.split(/[-~]/)[0]?.trim()}
                     roles={posting.requiredRolesWithCount?.map((r) => ({
                       role: r.role,

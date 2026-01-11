@@ -112,12 +112,13 @@ export type {
   ConfirmApplicationInputV2,
 } from './application';
 
-// Assignment v2.0 타입
+// Assignment v3.0 타입 (role/roles → roleIds 통합)
 export type {
   DurationType,
   AssignmentDuration,
   CheckMethod,
   Assignment,
+  CreateSimpleAssignmentOptions,
 } from './assignment';
 
 export {
@@ -126,6 +127,7 @@ export {
   isValidAssignment,
   createSimpleAssignment,
   createGroupedAssignment,
+  createMultiRoleAssignment,
 } from './assignment';
 
 // 공고 타입별 설정
@@ -316,3 +318,51 @@ export {
   getReportTypeInfo,
   getReportSeverity,
 } from './report';
+
+// ============================================================================
+// 통합 타입 (Unified Types)
+// ============================================================================
+
+// 역할 통합 타입
+export type { RoleInfo } from './unified';
+export {
+  ROLE_DISPLAY_NAMES,
+  getRoleDisplayName,
+  createRoleInfo,
+  isRoleFilled,
+  getRemainingCount,
+  findRoleById,
+  filterAvailableRoles,
+  getTotalRequiredCount,
+  getTotalFilledCount,
+  isAllRolesFilled,
+} from './unified';
+
+// 시간대 통합 타입
+export type { TimeSlotInfo } from './unified';
+export {
+  createTimeSlotInfo,
+  formatTimeSlotDisplay,
+  getSlotTotalRequired,
+  getSlotTotalFilled,
+  isSlotFilled,
+} from './unified';
+
+// 일정 통합 타입 (Discriminated Union)
+export type {
+  JobScheduleType,
+  DatedScheduleInfo,
+  FixedScheduleInfo,
+  NormalizedSchedule,
+  NormalizedScheduleList,
+} from './unified';
+export {
+  isDatedSchedule,
+  isFixedSchedule,
+  createDatedSchedule,
+  createFixedSchedule,
+  extractAllDates,
+  extractAllRoles,
+  formatFixedScheduleDisplay,
+  formatDateDisplay,
+} from './unified';

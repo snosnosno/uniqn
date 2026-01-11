@@ -30,6 +30,7 @@ import { formatRelativeTime } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import type { ApplicantWithDetails, UserProfile } from '@/services';
 import type { ApplicationStatus, Assignment, PostingType } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // Android LayoutAnimation 활성화
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -65,8 +66,6 @@ export interface ApplicantCardProps {
   postingType?: PostingType;
   /** 고정공고: 주 출근일수 */
   daysPerWeek?: number;
-  /** 고정공고: 출근 요일 */
-  workDays?: string[];
   /** 고정공고: 출근 시간 */
   startTime?: string;
 }
@@ -86,22 +85,11 @@ const STATUS_BADGE_VARIANT: Record<ApplicationStatus, 'default' | 'primary' | 's
   cancellation_pending: 'warning',
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-};
-
 /**
- * 역할 라벨 가져오기 (커스텀 역할 지원)
+ * 역할 라벨 가져오기 (v3.0: 통합 타입의 getRoleDisplayName 사용)
  */
 const getRoleLabel = (role: string, customRole?: string): string => {
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_LABELS[role] || role;
+  return getRoleDisplayName(role, customRole);
 };
 
 /**
@@ -208,7 +196,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   initialExpanded = true,
   postingType,
   daysPerWeek,
-  workDays,
   startTime,
 }: ApplicantCardProps) {
   // 고정공고 모드 판단
@@ -320,8 +307,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         if (selectedDates.length > 0) {
           result.push({
             ...assignment,
-            role, // 단일 역할로 설정
-            roles: undefined, // 배열 역할 제거
+            roleIds: [role], // v3.0: roleIds 배열로 설정
             dates: selectedDates,
           });
         }
@@ -484,7 +470,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               </Text>
               <FixedScheduleDisplay
                 daysPerWeek={daysPerWeek}
-                workDays={workDays}
                 startTime={startTime}
                 compact={true}
               />

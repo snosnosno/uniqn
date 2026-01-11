@@ -6,14 +6,11 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import type { Assignment,  TimeSlot } from '@/types';
+import type { Assignment, TimeSlot } from '@/types';
 import {
   createSimpleAssignment,
-  
-  
   isValidAssignment,
-  
-  
+  getAssignmentRole,
 } from '@/types';
 
 // ============================================================================
@@ -90,7 +87,7 @@ export function useAssignmentSelection({
   // 상태
   const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
   const [selectedRole, setSelectedRole] = useState<string | null>(
-    initialAssignments[0]?.role ?? null
+    initialAssignments[0] ? getAssignmentRole(initialAssignments[0]) : null
   );
 
   // 선택 맵 (date -> Set<timeSlot>)

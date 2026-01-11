@@ -207,7 +207,6 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
             // 고정공고: FixedScheduleDisplay 사용
             <FixedScheduleDisplay
               daysPerWeek={job.daysPerWeek}
-              workDays={job.workDays}
               startTime={job.startTime || job.timeSlot?.split(/[-~]/)[0]?.trim()}
               compact={true}
             />

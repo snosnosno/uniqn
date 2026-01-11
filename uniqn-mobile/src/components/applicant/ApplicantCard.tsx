@@ -113,8 +113,9 @@ const getAssignmentsSummary = (assignments: Assignment[]): string => {
   const uniqueDates = new Set<string>();
   assignments.forEach((a) => a.dates.forEach((d) => uniqueDates.add(d)));
 
+  // v3.0: roleIds 사용
   const roles = [
-    ...new Set(assignments.map((a) => a.role ?? a.roles?.[0] ?? '').filter(Boolean)),
+    ...new Set(assignments.map((a) => a.roleIds[0] ?? '').filter(Boolean)),
   ];
   const roleLabels = roles.map(getRoleLabel).join(', ');
 
@@ -123,9 +124,9 @@ const getAssignmentsSummary = (assignments: Assignment[]): string => {
 
 const getUniqueRolesFromAssignments = (assignments: Assignment[]): string[] => {
   const roles = new Set<string>();
+  // v3.0: roleIds 사용
   assignments.forEach((a) => {
-    if (a.role) roles.add(a.role);
-    if (a.roles) a.roles.forEach((r) => roles.add(r));
+    a.roleIds.forEach((r) => roles.add(r));
   });
   return [...roles];
 };
@@ -216,8 +217,8 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
           groups.set(date, { roles: new Set(), timeSlots: new Set() });
         }
         const group = groups.get(date)!;
-        if (a.role) group.roles.add(a.role);
-        if (a.roles) a.roles.forEach((r) => group.roles.add(r));
+        // v3.0: roleIds 사용
+        a.roleIds.forEach((r) => group.roles.add(r));
         if (a.timeSlot) group.timeSlots.add(a.timeSlot);
       });
     });

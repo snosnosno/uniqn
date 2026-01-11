@@ -713,7 +713,61 @@ graph LR
 - [x] ConfirmationHistoryTimeline 컴포넌트 - `components/applicant/ConfirmationHistoryTimeline.tsx`
 - [x] 취소 시 cancelledAt + 사유 기록 - `cancelConfirmation()` 함수
 
-### 4.3 출퇴근/정산 [P0] ✅
+### 4.3 확정 스태프 관리 [P0] ✅
+| 기능 | 체크 | 우선순위 |
+|------|:----:|:--------:|
+| 확정 스태프 목록 조회 | [x] | P0 |
+| 역할별 필터링 | [x] | P0 |
+| 출퇴근 상태 조회 | [x] | P0 |
+| 역할 변경 | [x] | P1 |
+| 확정 취소 | [x] | P1 |
+
+#### 확정 스태프 서비스 [P0] ✅
+- [x] confirmedStaffService.ts - `services/confirmedStaffService.ts`
+  - [x] getConfirmedStaffByJobPosting (확정 스태프 목록)
+  - [x] getConfirmedStaffByDate (날짜별 조회)
+  - [x] updateStaffRole (역할 변경)
+  - [x] cancelConfirmation (확정 취소)
+  - [x] getWorkLogStatus (출퇴근 상태)
+
+#### 확정 스태프 훅 [P0] ✅
+- [x] useConfirmedStaff.ts - `hooks/useConfirmedStaff.ts`
+  - [x] useConfirmedStaffByJobPosting
+  - [x] useConfirmedStaffByDate
+  - [x] useUpdateStaffRole
+  - [x] useCancelConfirmation
+
+#### 확정 스태프 컴포넌트 [P0] ✅
+- [x] ConfirmedStaffCard - `components/employer/ConfirmedStaffCard.tsx`
+- [x] ConfirmedStaffList - `components/employer/ConfirmedStaffList.tsx`
+- [x] StaffManagementTab - `components/employer/StaffManagementTab.tsx`
+- [x] RoleChangeModal - `components/employer/RoleChangeModal.tsx`
+
+### 4.4 현장 QR (Event QR) [P0] ✅
+| 기능 | 체크 | 우선순위 |
+|------|:----:|:--------:|
+| 현장 QR 코드 생성 | [x] | P0 |
+| QR 코드 유효시간 관리 | [x] | P0 |
+| 스캔 검증 | [x] | P0 |
+| QR 모달 UI | [x] | P0 |
+
+#### 현장 QR 서비스 [P0] ✅
+- [x] eventQRService.ts - `services/eventQRService.ts`
+  - [x] generateEventQR (이벤트용 QR 생성)
+  - [x] validateEventQR (QR 검증)
+  - [x] getActiveQRByJobPosting (활성 QR 조회)
+  - [x] refreshEventQR (QR 갱신)
+
+#### 현장 QR 훅 [P0] ✅
+- [x] useEventQR.ts - `hooks/useEventQR.ts`
+  - [x] useEventQRGeneration
+  - [x] useEventQRValidation
+  - [x] useActiveEventQR
+
+#### 현장 QR 컴포넌트 [P0] ✅
+- [x] EventQRModal - `components/employer/EventQRModal.tsx`
+
+### 4.5 출퇴근/정산 [P0] ✅
 | 기능 | 체크 | 우선순위 |
 |------|:----:|:--------:|
 | 출퇴근 현황 | [x] | P0 |
@@ -767,7 +821,7 @@ graph LR
 - [x] SettlementService (정산 계산) - `services/settlementService.ts`
 - [ ] CalendarService (캘린더 이벤트) - scheduleService로 대체 가능
 
-### 4.4 취소 요청 시스템 [P1] ✅
+### 4.6 취소 요청 시스템 [P1] ✅
 > 💡 **워크플로우**: 확정된 지원에 대해 스태프가 취소 요청 → 구인자가 승인/거절
 
 | 기능 | 체크 | 우선순위 |
@@ -826,7 +880,7 @@ graph LR
 - [x] 취소 요청 통계 헤더 (pending/approved/rejected 카운트)
 - [x] 빈 상태 EmptyState 처리
 
-### 4.5 Phase 4 테스트 [P0]
+### 4.7 Phase 4 테스트 [P0]
 
 #### 단위 테스트 [P0] ✅
 - [x] settlementService 테스트 (19개) - `settlementService.test.ts`
@@ -1365,20 +1419,44 @@ graph LR
 | 1. 프로젝트 기반 | ✅ | 100% | P0 완료, P1/P2 일부 보류 |
 | 2. 인증 + 구인구직 | ✅ | 98% | P0 완료, UI/UX 연동 완료 |
 | 3. 스케줄 + 알림 | ✅ | 95% | P0 완료, UI/UX 연동 완료 |
-| 4. 구인자 기능 | ✅ | 95% | 서비스/훅/테스트/UI 완료, 취소 요청 시스템 완성 |
-| 5. 최적화 + 배포준비 | 🟨 | 82% | 관리자 대시보드 완성, CI/CD 완료 |
+| 4. 구인자 기능 | ✅ | 98% | 확정 스태프 관리, EventQR, 정산 완성 |
+| 5. 최적화 + 배포준비 | 🟨 | 85% | 관리자 대시보드 완성, CI/CD 완료 |
 | 6. 앱스토어 출시 | 🟨 | 15% | EAS/GitHub Actions 기반 구축 |
 
-**전체 완성도**: **95%** (MVP 출시 준비 완료)
-**테스트 현황**: **222개** 테스트 (커버리지 ~89%)
+**전체 완성도**: **96%** (MVP 출시 준비 완료)
+**테스트 현황**: **280+개** 소스 파일 (커버리지 ~89%)
 
 **범례**: ⬜ 미시작 | 🟨 진행중 | ✅ 완료
 
 ---
 
 *생성일: 2024-12*
-*업데이트: 2026-01-10*
-*버전: 5.18*
+*업데이트: 2026-01-12*
+*버전: 5.19*
+
+### 버전 5.19 변경사항 (2026-01-12)
+- [Phase 4] 확정 스태프 관리 시스템 완성
+  - confirmedStaffService.ts 구현 (목록 조회, 역할 변경, 확정 취소)
+  - useConfirmedStaff.ts 훅 구현 (4개 훅)
+  - ConfirmedStaffCard, ConfirmedStaffList, StaffManagementTab 컴포넌트
+  - RoleChangeModal (역할 변경 모달)
+- [Phase 4] 현장 QR(Event QR) 시스템 완성
+  - eventQRService.ts 구현 (QR 생성/검증/갱신)
+  - useEventQR.ts 훅 구현 (3개 훅)
+  - EventQRModal 컴포넌트
+- [Phase 4] 지원자 배정 표시 및 서비스 로직 개선
+  - AssignmentSelector 다중 역할/날짜 지원 강화
+  - applicantConversionService 최적화
+  - ConfirmationHistoryTimeline 확장
+- [Phase 4] 고정공고 일정 표시 개선 (FixedScheduleDisplay)
+- [Phase 4] dateSpecificRequirements 기반 마감 계산 로직 통합
+- [리팩토링] 임시저장(draft) 기능 완전 제거
+- [추가] useJobRoles.ts, useJobSchedule.ts 훅 추가
+- [추가] types/unified/, utils/normalizers/ 디렉토리 추가
+- [추가] reportService.ts, templateService.ts 추가
+- 진행 상태 요약: Phase 4(95% → 98%), Phase 5(82% → 85%) 업데이트
+- 전체 완성도 95% → 96% 업데이트
+- 소스 파일 수: 280+개
 
 ### 버전 5.18 변경사항 (2026-01-10)
 - [Phase 5] 관리자 대시보드 완성 (40% → 100%)
