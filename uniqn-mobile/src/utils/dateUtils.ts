@@ -203,6 +203,37 @@ export const parseTimeSlot = (
 };
 
 /**
+ * timeSlot 문자열에서 시작/종료 시간을 Date 객체로 추출
+ *
+ * @param timeSlot "09:00-18:00" 또는 "09:00 - 18:00" 형식
+ * @param dateStr 날짜 (YYYY-MM-DD)
+ * @returns { startTime: Date | null, endTime: Date | null }
+ */
+export const parseTimeSlotToDate = (
+  timeSlot: string | null | undefined,
+  dateStr: string
+): { startTime: Date | null; endTime: Date | null } => {
+  if (!timeSlot || !dateStr) return { startTime: null, endTime: null };
+
+  const parsed = parseTimeSlot(timeSlot);
+  if (!parsed) return { startTime: null, endTime: null };
+
+  const startTime = new Date(`${dateStr}T${parsed.start}:00`);
+  let endTime = new Date(`${dateStr}T${parsed.end}:00`);
+
+  // 자정을 넘어가는 경우 (예: 18:00-02:00)
+  if (endTime < startTime) {
+    endTime = addDays(endTime, 1);
+  }
+
+  // 유효하지 않은 날짜 체크
+  if (isNaN(startTime.getTime())) return { startTime: null, endTime: null };
+  if (isNaN(endTime.getTime())) return { startTime, endTime: null };
+
+  return { startTime, endTime };
+};
+
+/**
  * 근무 시간 계산 (분 단위)
  */
 export const calculateWorkDuration = (startTime: string, endTime: string): number => {

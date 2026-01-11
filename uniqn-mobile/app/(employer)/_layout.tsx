@@ -90,7 +90,7 @@ export default function EmployerLayout() {
       <Stack.Screen
         name="my-postings/[id]/settlements"
         options={{
-          title: '정산 관리',
+          title: '스태프 / 정산 관리',
           headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />

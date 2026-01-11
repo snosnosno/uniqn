@@ -159,15 +159,14 @@ export function ApplicationForm({
   const availableRoles: RoleDisplayItem[] = useMemo(() => {
     if (isFixedMode) {
       // 고정공고: requiredRolesWithCount 사용
+      // 고정공고는 장기 채용이므로 마감 필터링 없이 모든 역할 표시
       const roles = job.requiredRolesWithCount || [];
-      return roles
-        .filter((r) => (r.filled ?? 0) < r.count)
-        .map((r, idx): RoleDisplayItem => ({
-          key: r.name || r.role || `role-${idx}`,
-          displayName: r.name || getRoleLabel(r.role || ''),
-          count: r.count,
-          filled: r.filled ?? 0,
-        }));
+      return roles.map((r, idx): RoleDisplayItem => ({
+        key: r.name || r.role || `role-${idx}`,
+        displayName: r.name || getRoleLabel(r.role || ''),
+        count: r.count,
+        filled: r.filled ?? 0,
+      }));
     }
     // 일반공고: roles 사용
     const roles = job.roles || [];
@@ -374,6 +373,7 @@ export function ApplicationForm({
                   daysPerWeek={job.daysPerWeek}
                   workDays={job.workDays}
                   startTime={job.workSchedule?.timeSlots?.[0] || job.timeSlot?.split(/[-~]/)[0]?.trim()}
+                  isStartTimeNegotiable={job.isStartTimeNegotiable}
                   compact={true}
                 />
               </View>
@@ -388,16 +388,15 @@ export function ApplicationForm({
               </Text>
 
               {availableRoles.length === 0 ? (
-                <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4">
-                  <Text className="text-error-600 dark:text-error-400 text-center">
-                    모든 역할이 마감되었습니다
+                <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
+                  <Text className="text-gray-500 dark:text-gray-400 text-center">
+                    모집 역할이 없습니다
                   </Text>
                 </View>
               ) : (
                 <View className="space-y-2">
                   {availableRoles.map((roleItem, index) => {
                     const isSelected = selectedRole === roleItem.key;
-                    const remaining = roleItem.count - roleItem.filled;
 
                     return (
                       <Pressable
@@ -437,11 +436,8 @@ export function ApplicationForm({
                             {roleItem.displayName}
                           </Text>
                         </View>
-                        <Badge
-                          variant={remaining <= 2 ? 'warning' : 'default'}
-                          size="sm"
-                        >
-                          {remaining}자리 남음
+                        <Badge variant="primary" size="sm">
+                          {roleItem.count}명 모집
                         </Badge>
                       </Pressable>
                     );

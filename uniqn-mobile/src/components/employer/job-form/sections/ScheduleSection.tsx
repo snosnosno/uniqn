@@ -16,6 +16,7 @@ import {
   PlusIcon,
   TrashIcon,
   StarIcon,
+  CheckIcon,
 } from '@/components/icons';
 import type { JobPostingFormData, TournamentDay } from '@/types';
 
@@ -153,6 +154,16 @@ const FixedSchedule = memo(function FixedSchedule({
   onUpdate: (data: Partial<JobPostingFormData>) => void;
   errors?: Record<string, string>;
 }) {
+  const isNegotiable = data.isStartTimeNegotiable ?? false;
+
+  const handleNegotiableToggle = () => {
+    onUpdate({
+      isStartTimeNegotiable: !isNegotiable,
+      // 협의로 변경 시 시간 초기화
+      ...(isNegotiable ? {} : { startTime: '' }),
+    });
+  };
+
   return (
     <View>
       <View className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
@@ -188,14 +199,52 @@ const FixedSchedule = memo(function FixedSchedule({
       </FormField>
 
       {/* 출근 시간 */}
-      <FormField label="출근 시간" required error={errors?.startTime} className="mt-4">
-        <TimePicker
-          value={data.startTime}
-          onChange={(time) => onUpdate({ startTime: time })}
-          placeholder="시간을 선택하세요"
-          error={!!errors?.startTime}
-        />
-      </FormField>
+      <View className="mt-4">
+        <View className="flex-row items-center justify-between mb-2">
+          <View className="flex-row items-center">
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              출근 시간
+            </Text>
+            {!isNegotiable && (
+              <Text className="text-sm text-red-500 ml-1">*</Text>
+            )}
+          </View>
+          {/* 협의 체크박스 */}
+          <Pressable
+            onPress={handleNegotiableToggle}
+            className="flex-row items-center"
+          >
+            <View
+              className={`w-5 h-5 rounded border items-center justify-center mr-1.5
+                ${isNegotiable
+                  ? 'bg-indigo-600 border-indigo-600'
+                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                }`}
+            >
+              {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}
+            </View>
+            <Text className="text-sm text-gray-600 dark:text-gray-400">협의</Text>
+          </Pressable>
+        </View>
+
+        {isNegotiable ? (
+          <View className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <Text className="text-gray-500 dark:text-gray-400 text-center">
+              출근 시간은 협의 후 결정됩니다
+            </Text>
+          </View>
+        ) : (
+          <TimePicker
+            value={data.startTime}
+            onChange={(time) => onUpdate({ startTime: time })}
+            placeholder="시간을 선택하세요"
+            error={!!errors?.startTime}
+          />
+        )}
+        {errors?.startTime && (
+          <Text className="mt-1 text-sm text-red-500">{errors.startTime}</Text>
+        )}
+      </View>
     </View>
   );
 });

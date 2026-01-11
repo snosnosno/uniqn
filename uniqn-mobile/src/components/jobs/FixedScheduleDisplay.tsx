@@ -25,6 +25,8 @@ interface FixedScheduleDisplayProps {
   daysPerWeek?: number;
   /** 출근 시간 (HH:mm) */
   startTime?: string;
+  /** 출근 시간 협의 여부 */
+  isStartTimeNegotiable?: boolean;
   /** 역할별 모집 인원 */
   roles?: RoleWithCount[];
   /** 역할 표시 여부 */
@@ -82,8 +84,8 @@ function formatDaysPerWeek(daysPerWeek?: number): string {
 /**
  * 출근 시간 포맷
  */
-function formatStartTime(startTime?: string): string {
-  if (!startTime) {
+function formatStartTime(startTime?: string, isNegotiable?: boolean): string {
+  if (isNegotiable || !startTime) {
     return '협의';
   }
   return startTime;
@@ -126,6 +128,7 @@ const RoleDisplay = memo(function RoleDisplay({
 export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
   daysPerWeek,
   startTime,
+  isStartTimeNegotiable,
   roles,
   showRoles = false,
   showFilledCount = false,
@@ -135,7 +138,7 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
 }: FixedScheduleDisplayProps) {
   // 표시 문자열 계산
   const daysText = useMemo(() => formatDaysPerWeek(daysPerWeek), [daysPerWeek]);
-  const timeText = useMemo(() => formatStartTime(startTime), [startTime]);
+  const timeText = useMemo(() => formatStartTime(startTime, isStartTimeNegotiable), [startTime, isStartTimeNegotiable]);
 
   // 역할 요약 텍스트
   const rolesText = useMemo(() => {

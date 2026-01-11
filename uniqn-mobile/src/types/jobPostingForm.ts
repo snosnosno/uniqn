@@ -132,6 +132,9 @@ export interface JobPostingFormData {
   /** 출근 시간 (HH:mm) - 종료시간 없음 */
   startTime: string;
 
+  /** 출근 시간 협의 여부 (fixed 공고용) */
+  isStartTimeNegotiable?: boolean;
+
   // --- tournament: 여러 날짜 ---
   /** 대회 일정 (Day 1, 2, 3...) */
   tournamentDates: TournamentDay[];
@@ -203,6 +206,7 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   // Step 2
   workDate: '',
   startTime: '',
+  isStartTimeNegotiable: false,
   tournamentDates: [],
   dateSpecificRequirements: [],
   daysPerWeek: 0, // 0 = 협의 (기본값)
@@ -278,7 +282,10 @@ export function validateStep(
         if (data.daysPerWeek < 0 || data.daysPerWeek > 7) {
           errors.push('주 출근일수를 선택해주세요');
         }
-        if (!data.startTime) errors.push('출근 시간을 선택해주세요');
+        // 출근 시간: 협의가 아닌 경우에만 필수
+        if (!data.isStartTimeNegotiable && !data.startTime) {
+          errors.push('출근 시간을 선택해주세요');
+        }
       }
       break;
 

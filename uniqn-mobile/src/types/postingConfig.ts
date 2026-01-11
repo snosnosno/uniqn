@@ -72,8 +72,14 @@ export interface WorkSchedule {
  * 역할별 모집 인원
  */
 export interface RoleWithCount {
-  role: string;
+  /** 역할 ID (dealer, manager 등) */
+  role?: string;
+  /** 역할 이름 (직원, 매니저 등 - FormRoleWithCount 호환) */
+  name?: string;
+  /** 필요 인원 */
   count: number;
+  /** 충원된 인원 */
+  filled?: number;
 }
 
 /**

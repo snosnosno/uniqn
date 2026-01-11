@@ -316,3 +316,14 @@ export const InboxIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconPr
 // Aliases for heroicons compatibility
 export const MagnifyingGlassIcon = SearchIcon;
 export const EnvelopeIcon = MailIcon;
+
+// QR Icon Alias (대소문자 호환성)
+export const QRCodeIcon = QrCodeIcon;
+
+// Alert/Warning Icon Alias
+export const AlertTriangleIcon = ExclamationTriangleIcon;
+
+// Currency Icon (CurrencyDollarIcon의 엔화 버전)
+export const CurrencyYenIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <MaterialIcons name="currency-yen" size={size} color={color} />
+);

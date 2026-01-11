@@ -235,6 +235,7 @@ export function JobDetail({ job }: JobDetailProps) {
                   daysPerWeek={job.daysPerWeek}
                   workDays={job.workDays}
                   startTime={job.workSchedule?.timeSlots?.[0] || job.timeSlot?.split(/[-~]/)[0]?.trim()}
+                  isStartTimeNegotiable={job.isStartTimeNegotiable}
                   roles={job.requiredRolesWithCount?.map((r) => ({
                     role: r.role,
                     count: r.count,

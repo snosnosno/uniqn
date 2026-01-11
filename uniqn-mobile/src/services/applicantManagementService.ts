@@ -283,6 +283,7 @@ export async function confirmApplication(
         eventName: jobData.title,
         role: appData.appliedRole,
         date: jobData.workDate,
+        timeSlot: jobData.timeSlot || null,  // 근무 시간대 (출근시간 파싱용)
         status: 'scheduled', // not_started → scheduled
         attendanceStatus: 'not_started',
         checkInTime: null,

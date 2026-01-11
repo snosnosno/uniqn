@@ -259,6 +259,40 @@ export const queryKeys = {
       [...queryKeys.settlement.all, 'calculation', workLogId] as const,
   },
 
+  // 확정 스태프 관리 (구인자)
+  confirmedStaff: {
+    all: ['confirmedStaff'] as const,
+    byJobPosting: (jobPostingId: string) =>
+      [...queryKeys.confirmedStaff.all, 'byJobPosting', jobPostingId] as const,
+    byDate: (jobPostingId: string, date: string) =>
+      [...queryKeys.confirmedStaff.all, 'byDate', jobPostingId, date] as const,
+    detail: (workLogId: string) =>
+      [...queryKeys.confirmedStaff.all, 'detail', workLogId] as const,
+    grouped: (jobPostingId: string) =>
+      [...queryKeys.confirmedStaff.all, 'grouped', jobPostingId] as const,
+  },
+
+  // 이벤트 QR (구인자 - 현장 출퇴근)
+  eventQR: {
+    all: ['eventQR'] as const,
+    current: (jobPostingId: string, date: string, action: 'checkIn' | 'checkOut') =>
+      [...queryKeys.eventQR.all, 'current', jobPostingId, date, action] as const,
+    history: (jobPostingId: string) =>
+      [...queryKeys.eventQR.all, 'history', jobPostingId] as const,
+  },
+
+  // 신고 관리 (구인자)
+  reports: {
+    all: ['reports'] as const,
+    byJobPosting: (jobPostingId: string) =>
+      [...queryKeys.reports.all, 'byJobPosting', jobPostingId] as const,
+    byStaff: (staffId: string) =>
+      [...queryKeys.reports.all, 'byStaff', staffId] as const,
+    detail: (reportId: string) =>
+      [...queryKeys.reports.all, 'detail', reportId] as const,
+    myReports: () => [...queryKeys.reports.all, 'myReports'] as const,
+  },
+
   // ============================================================================
   // 관리자용 Query Keys (Admin)
   // ============================================================================
@@ -310,6 +344,16 @@ export const invalidateQueries = {
   workLogs: () => queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all }),
   notifications: () => queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all }),
   user: () => queryClient.invalidateQueries({ queryKey: queryKeys.user.all }),
+  confirmedStaff: () => queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.all }),
+  eventQR: () => queryClient.invalidateQueries({ queryKey: queryKeys.eventQR.all }),
+  reports: () => queryClient.invalidateQueries({ queryKey: queryKeys.reports.all }),
+  settlement: () => queryClient.invalidateQueries({ queryKey: queryKeys.settlement.all }),
+  /** 스태프 관리 관련 모든 쿼리 무효화 (스태프 + 정산 + 근무기록) */
+  staffManagement: (jobPostingId: string) => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.byJobPosting(jobPostingId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.settlement.byJobPosting(jobPostingId) });
+    queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
+  },
   all: () => queryClient.invalidateQueries(),
 };
 

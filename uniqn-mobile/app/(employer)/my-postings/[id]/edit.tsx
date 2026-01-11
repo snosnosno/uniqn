@@ -124,10 +124,12 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
       }
       break;
     case 'fixed':
-      if (!data.daysPerWeek || data.daysPerWeek < 1 || data.daysPerWeek > 7) {
-        errors.daysPerWeek = '주 출근일수를 선택해주세요 (1-7일)';
+      // daysPerWeek: 0 = 협의, 1-7 = 일수 (모두 유효)
+      if (data.daysPerWeek === undefined || data.daysPerWeek < 0 || data.daysPerWeek > 7) {
+        errors.daysPerWeek = '주 출근일수를 선택해주세요';
       }
-      if (!data.startTime) {
+      // 출근 시간: 협의가 아닌 경우에만 필수
+      if (!data.isStartTimeNegotiable && !data.startTime) {
         errors.startTime = '출근 시간을 선택해주세요';
       }
       break;
@@ -281,6 +283,7 @@ export default function EditJobPostingScreen() {
         tournamentDates: [],
         dateSpecificRequirements: existingJob.dateSpecificRequirements || [],
         daysPerWeek: existingJob.daysPerWeek ?? 5,
+        isStartTimeNegotiable: existingJob.isStartTimeNegotiable ?? false,
         workDays: existingJob.workDays ?? [],
         // 역할
         roles: existingJob.roles
@@ -370,6 +373,8 @@ export default function EditJobPostingScreen() {
         ...(hasConfirmedApplicants ? {} : {
           workDate: formData.workDate,
           startTime: formData.startTime,
+          daysPerWeek: formData.daysPerWeek,
+          isStartTimeNegotiable: formData.isStartTimeNegotiable,
           roles: formData.roles,
         }),
         salary: formData.salary,

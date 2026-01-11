@@ -135,8 +135,10 @@ export interface JobPostingSettlementSummary {
  */
 export interface UpdateWorkTimeInput {
   workLogId: string;
-  actualStartTime?: Date;
-  actualEndTime?: Date;
+  /** 출근 시간 (null = 미정) */
+  checkInTime?: Date | null;
+  /** 퇴근 시간 (null = 미정) */
+  checkOutTime?: Date | null;
   notes?: string;
   reason?: string; // 수정 사유
 }
@@ -436,30 +438,50 @@ export async function updateWorkTime(
         throw new Error('이미 정산 완료된 근무 기록은 수정할 수 없습니다');
       }
 
-      // 4. 수정 데이터 준비
+      // 4. 수정 데이터 준비 (checkInTime/checkOutTime 사용, null = 미정)
+      const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; checkOutTime?: unknown };
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),
       };
 
-      if (input.actualStartTime) {
-        updateData.actualStartTime = Timestamp.fromDate(input.actualStartTime);
+      // checkInTime 설정 (undefined면 건드리지 않음, null이면 미정으로 저장)
+      if (input.checkInTime !== undefined) {
+        updateData.checkInTime = input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null;
+        // 레거시 호환
+        if (input.checkInTime) {
+          updateData.actualStartTime = Timestamp.fromDate(input.checkInTime);
+        }
       }
 
-      if (input.actualEndTime) {
-        updateData.actualEndTime = Timestamp.fromDate(input.actualEndTime);
+      // checkOutTime 설정
+      if (input.checkOutTime !== undefined) {
+        updateData.checkOutTime = input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null;
+        // 레거시 호환
+        if (input.checkOutTime) {
+          updateData.actualEndTime = Timestamp.fromDate(input.checkOutTime);
+        }
       }
 
       if (input.notes !== undefined) {
         updateData.notes = input.notes;
       }
 
-      // 수정 이력 기록
+      // 수정 이력 기록 (기존 시간 우선: checkInTime/checkOutTime)
+      const prevCheckIn = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
+      const prevCheckOut = workLogWithCheck.checkOutTime ?? workLog.actualEndTime;
+
       const modificationLog = {
         modifiedAt: new Date().toISOString(),
         modifiedBy: ownerId,
         reason: input.reason || '시간 수정',
-        previousStartTime: workLog.actualStartTime,
-        previousEndTime: workLog.actualEndTime,
+        previousStartTime: prevCheckIn ?? null,
+        previousEndTime: prevCheckOut ?? null,
+        newStartTime: input.checkInTime !== undefined
+          ? (input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null)
+          : undefined,
+        newEndTime: input.checkOutTime !== undefined
+          ? (input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null)
+          : undefined,
       };
 
       updateData.modificationHistory = [

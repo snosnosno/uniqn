@@ -170,6 +170,9 @@ export interface JobPosting extends FirebaseDocument {
   /** 주 출근일수 (0 = 협의, 1-7 = 일수) - fixed 타입용 */
   daysPerWeek?: number;
 
+  /** 출근 시간 협의 여부 - fixed 타입용 */
+  isStartTimeNegotiable?: boolean;
+
   /** @deprecated 근무 요일 - 더 이상 사용되지 않음 */
   workDays?: string[];
 
@@ -223,6 +226,7 @@ export interface CreateJobPostingInput {
   tournamentDates?: TournamentDay[];  // tournament (deprecated, v2.0에서 dateSpecificRequirements로 대체)
   dateSpecificRequirements?: DateSpecificRequirement[]; // v2.0: 날짜별 요구사항 (regular/urgent/tournament 공통)
   daysPerWeek?: number;           // fixed (0 = 협의, 1-7 = 일수)
+  isStartTimeNegotiable?: boolean; // fixed: 출근시간 협의 여부
   /** @deprecated workDays는 더 이상 사용되지 않음 */
   workDays?: string[];
 

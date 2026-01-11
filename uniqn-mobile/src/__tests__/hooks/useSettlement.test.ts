@@ -345,8 +345,8 @@ describe('useSettlement Hooks', () => {
       await act(async () => {
         result.current.mutate({
           workLogId: 'worklog-1',
-          actualStartTime: new Date('2024-01-15T09:00:00'),
-          actualEndTime: new Date('2024-01-15T17:00:00'),
+          checkInTime: new Date('2024-01-15T09:00:00'),
+          checkOutTime: new Date('2024-01-15T17:00:00'),
           reason: '시간 수정',
         });
       });

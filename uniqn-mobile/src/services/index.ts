@@ -371,6 +371,39 @@ export {
   type PerformanceMetrics,
 } from './performanceService';
 
+// Confirmed Staff Service (구인자용 확정 스태프 관리)
+export {
+  getConfirmedStaff,
+  getConfirmedStaffByDate,
+  updateStaffRole,
+  updateWorkTime as updateConfirmedStaffWorkTime,
+  deleteConfirmedStaff,
+  markAsNoShow,
+  updateStaffStatus,
+  subscribeToConfirmedStaff,
+  type GetConfirmedStaffResult,
+  type RoleChangeHistoryEntry,
+} from './confirmedStaffService';
+
+// Event QR Service (구인자용 현장 출퇴근 QR)
+export {
+  generateEventQR,
+  validateEventQR,
+  processEventQRCheckIn,
+  getActiveEventQR,
+  deactivateEventQR,
+  cleanupExpiredQRCodes,
+  getQRRemainingSeconds,
+  stringifyQRData,
+  QR_REFRESH_INTERVAL_MS,
+  type QRAction,
+  type EventQRCode,
+  type EventQRDisplayData,
+  type GenerateEventQRInput,
+  type EventQRScanResult,
+  type EventQRValidationResult,
+} from './eventQRService';
+
 // ============================================================================
 // 관리자 서비스 (Admin Services)
 // ============================================================================
@@ -385,4 +418,16 @@ export {
   setUserActive,
   getSystemMetrics,
 } from "./adminService";
+
+// Report Service (스태프 신고 관리)
+export {
+  reportService,
+  createReport,
+  getReportsByJobPosting,
+  getReportsByStaff,
+  getMyReports,
+  getReportById,
+  reviewReport,
+  getReportCountByStaff,
+} from './reportService';
 

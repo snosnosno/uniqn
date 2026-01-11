@@ -212,6 +212,7 @@ export type {
   AttendanceRequest,
   WorkLog,
   WorkTimeModification,
+  RoleChangeHistory,
   // QR 코드 타입
   QRCodeAction,
   QRCodeData,
@@ -273,3 +274,45 @@ export type {
 } from './jobTemplate';
 
 export { extractTemplateData, templateToFormData } from './jobTemplate';
+
+// 확정 스태프 타입 (v2.0 - 스태프 관리 탭)
+export type {
+  ConfirmedStaffStatus,
+  ConfirmedStaff,
+  ConfirmedStaffGroup,
+  GroupedConfirmedStaff,
+  ConfirmedStaffFilters,
+  UpdateStaffRoleInput,
+  UpdateWorkTimeInput,
+  DeleteConfirmedStaffInput,
+  ConfirmedStaffStats,
+} from './confirmedStaff';
+
+export {
+  CONFIRMED_STAFF_STATUS_LABELS,
+  CONFIRMED_STAFF_STATUS_COLORS,
+  groupStaffByDate,
+  sortStaffByStatus,
+  workLogToConfirmedStaff,
+  calculateStaffStats,
+} from './confirmedStaff';
+
+// 신고 타입 (구인자 → 스태프)
+export type {
+  EmployeeReportType,
+  ReportTypeInfo,
+  ReportStatus,
+  Report,
+  CreateReportInput,
+  ReviewReportInput,
+} from './report';
+
+export {
+  EMPLOYEE_REPORT_TYPES,
+  EMPLOYEE_REPORT_TYPE_LABELS,
+  REPORT_SEVERITY_COLORS,
+  REPORT_STATUS_LABELS,
+  REPORT_STATUS_COLORS,
+  getReportTypeInfo,
+  getReportSeverity,
+} from './report';

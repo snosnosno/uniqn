@@ -32,3 +32,25 @@ export type { WorkTimeEditorProps } from './WorkTimeEditor';
 // 취소 요청 관리
 export { CancellationRequestCard } from './CancellationRequestCard';
 export type { CancellationRequestCardProps } from './CancellationRequestCard';
+
+// 확정 스태프 관리 (v2.0)
+export { ConfirmedStaffCard } from './ConfirmedStaffCard';
+export type { ConfirmedStaffCardProps } from './ConfirmedStaffCard';
+
+export { ConfirmedStaffList } from './ConfirmedStaffList';
+export type { ConfirmedStaffListProps } from './ConfirmedStaffList';
+
+export { StaffManagementTab } from './StaffManagementTab';
+export type { StaffManagementTabProps } from './StaffManagementTab';
+
+// 현장 QR 코드
+export { EventQRModal } from './EventQRModal';
+export type { EventQRModalProps } from './EventQRModal';
+
+// 역할 변경
+export { RoleChangeModal } from './RoleChangeModal';
+export type { RoleChangeModalProps } from './RoleChangeModal';
+
+// 신고
+export { ReportModal } from './ReportModal';
+export type { ReportModalProps } from './ReportModal';

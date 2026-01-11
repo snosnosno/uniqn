@@ -164,6 +164,20 @@ export {
   useUpdateSettlementStatus,
 } from './useSettlement';
 
+// Confirmed Staff (확정 스태프 관리)
+export {
+  useConfirmedStaff,
+  type UseConfirmedStaffOptions,
+  type UseConfirmedStaffReturn,
+} from './useConfirmedStaff';
+
+// Event QR (현장 출퇴근 QR)
+export {
+  useEventQR,
+  type UseEventQROptions,
+  type UseEventQRReturn,
+} from './useEventQR';
+
 // ============================================================================
 // Feature Flag Hooks
 // ============================================================================

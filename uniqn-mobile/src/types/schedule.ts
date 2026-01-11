@@ -114,11 +114,26 @@ export interface AttendanceRequest {
  * 근무 시간 수정 이력
  */
 export interface WorkTimeModification {
-  modifiedAt: string;
+  modifiedAt: string | Timestamp;
   modifiedBy: string;
   reason: string;
-  previousStartTime?: string | Timestamp;
-  previousEndTime?: string | Timestamp;
+  previousStartTime?: string | Timestamp | null;
+  previousEndTime?: string | Timestamp | null;
+  /** 새 출근 시간 (null = 미정) */
+  newStartTime?: string | Timestamp | null;
+  /** 새 퇴근 시간 (null = 미정) */
+  newEndTime?: string | Timestamp | null;
+}
+
+/**
+ * 역할 변경 이력
+ */
+export interface RoleChangeHistory {
+  changedAt: string | Timestamp;
+  changedBy: string;
+  reason: string;
+  previousRole: string;
+  newRole: string;
 }
 
 /**
@@ -149,6 +164,9 @@ export interface WorkLog extends FirebaseDocument {
 
   // 수정 이력 (구인자에 의한 시간 수정)
   modificationHistory?: WorkTimeModification[];
+
+  // 역할 변경 이력
+  roleChangeHistory?: RoleChangeHistory[];
 
   notes?: string;
 }
