@@ -219,20 +219,41 @@ const JobPostingCard = memo(function JobPostingCard({ posting, onPress }: JobPos
   const status = statusConfig[posting.status] || statusConfig.active;
   const allowanceItems = getAllowanceItems(posting.allowances);
 
-  // dateSpecificRequirements를 정렬된 형태로 변환
+  // dateSpecificRequirements를 정렬된 형태로 변환 (오늘 기준)
   const dateRequirements = useMemo(() => {
     const reqs = posting.dateSpecificRequirements ?? [];
+    const today = new Date().toISOString().split('T')[0] ?? '';
+
     return reqs
       .map((req) => ({
         date: getDateString(req.date),
-        timeSlots: (req.timeSlots ?? []).map((ts) => ({
-          startTime: (ts as { startTime?: string; time?: string }).startTime ||
-                     (ts as { startTime?: string; time?: string }).time || '',
-          isTimeToBeAnnounced: (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
-          roles: ts.roles ?? [],
-        })),
+        timeSlots: (req.timeSlots ?? [])
+          .map((ts) => ({
+            startTime: (ts as { startTime?: string; time?: string }).startTime ||
+                       (ts as { startTime?: string; time?: string }).time || '',
+            isTimeToBeAnnounced: (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
+            roles: ts.roles ?? [],
+          }))
+          // 시간대 정렬: 시간 미정 → 맨 뒤, 그 외 시간 순
+          .sort((a, b) => {
+            if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
+            if (!a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return -1;
+            return a.startTime.localeCompare(b.startTime);
+          }),
       }))
-      .sort((a, b) => a.date.localeCompare(b.date));
+      // 날짜 정렬: 오늘 이후 먼저 (가까운 순), 과거는 뒤로 (최근 순)
+      .sort((a, b) => {
+        const aIsFuture = a.date >= today;
+        const bIsFuture = b.date >= today;
+
+        if (aIsFuture && !bIsFuture) return -1;
+        if (!aIsFuture && bIsFuture) return 1;
+
+        if (aIsFuture && bIsFuture) {
+          return a.date.localeCompare(b.date);
+        }
+        return b.date.localeCompare(a.date);
+      });
   }, [posting.dateSpecificRequirements]);
 
   return (
@@ -434,11 +455,72 @@ function EmployerView() {
   const { data: postings, isLoading, error, refetch, isRefetching } = useMyJobPostings();
   const [filter, setFilter] = useState<FilterStatus>('all');
 
-  // 필터링된 목록
+  // 필터링된 목록 + 정렬
   const filteredPostings = useMemo(() => {
     if (!postings) return [];
-    if (filter === 'all') return postings;
-    return postings.filter((p: JobPosting) => p.status === filter);
+
+    const today = new Date().toISOString().split('T')[0] ?? '';
+
+    // 공고별 가장 빠른 미래 날짜+시간 계산
+    const getEarliestDateTime = (posting: JobPosting): string => {
+      const reqs = posting.dateSpecificRequirements ?? [];
+      if (reqs.length > 0) {
+        const futureDateTimes: string[] = [];
+        const pastDateTimes: string[] = [];
+
+        for (const req of reqs) {
+          const dateStr = getDateString(req.date);
+          const times = (req.timeSlots ?? [])
+            .filter((ts) => !(ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced)
+            .map((ts) => (ts as { startTime?: string; time?: string }).startTime ||
+                         (ts as { startTime?: string; time?: string }).time || '99:99')
+            .sort();
+          const earliestTime = times[0] ?? '99:99';
+          const dateTime = `${dateStr} ${earliestTime}`;
+
+          if (dateStr >= today) {
+            futureDateTimes.push(dateTime);
+          } else {
+            pastDateTimes.push(dateTime);
+          }
+        }
+
+        if (futureDateTimes.length > 0) {
+          return futureDateTimes.sort()[0] ?? '9999-99-99 99:99';
+        }
+        if (pastDateTimes.length > 0) {
+          return pastDateTimes.sort().reverse()[0] ?? '9999-99-99 99:99';
+        }
+      }
+      // 레거시: workDate
+      return `${posting.workDate || '9999-99-99'} 99:99`;
+    };
+
+    // 필터링
+    const filtered = filter === 'all'
+      ? postings
+      : postings.filter((p: JobPosting) => p.status === filter);
+
+    // 정렬: 오늘 이후 날짜 먼저 (가까운 순), 그 다음 과거 날짜 (최근 순)
+    return [...filtered].sort((a, b) => {
+      const dateTimeA = getEarliestDateTime(a);
+      const dateTimeB = getEarliestDateTime(b);
+
+      const dateA = dateTimeA.split(' ')[0] ?? '';
+      const dateB = dateTimeB.split(' ')[0] ?? '';
+
+      const aIsFuture = dateA >= today;
+      const bIsFuture = dateB >= today;
+
+      if (aIsFuture && !bIsFuture) return -1;
+      if (!aIsFuture && bIsFuture) return 1;
+
+      if (aIsFuture && bIsFuture) {
+        return dateTimeA.localeCompare(dateTimeB);
+      }
+
+      return dateTimeB.localeCompare(dateTimeA);
+    });
   }, [postings, filter]);
 
   // 필터별 카운트

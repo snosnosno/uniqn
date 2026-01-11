@@ -137,16 +137,62 @@ export function getDateString(dateInput: string | Timestamp | { seconds: number 
 }
 
 /**
- * 날짜별 요구사항 정렬 (날짜 오름차순)
+ * 시간대 정렬 (빠른 시간 순서)
+ */
+function sortTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
+  return [...timeSlots].sort((a, b) => {
+    // 시간 미정인 경우 맨 뒤로
+    if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
+    if (!a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return -1;
+    if (a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return 0;
+
+    // 시작 시간 비교 (HH:mm 형식)
+    const timeA = a.startTime ?? a.time ?? '99:99';
+    const timeB = b.startTime ?? b.time ?? '99:99';
+    return timeA.localeCompare(timeB);
+  });
+}
+
+/**
+ * 날짜별 요구사항 정렬
+ *
+ * @description 오늘 기준으로 가까운 미래 날짜 순, 같은 날짜 내에서는 빠른 시간 순
  */
 export function sortDateRequirements(
   requirements: DateSpecificRequirement[]
 ): DateSpecificRequirement[] {
-  return [...requirements].sort((a, b) => {
-    const dateA = getDateString(a.date);
-    const dateB = getDateString(b.date);
-    return dateA.localeCompare(dateB);
-  });
+  const today = new Date().toISOString().split('T')[0] ?? '';
+
+  return [...requirements]
+    .map((req) => ({
+      ...req,
+      timeSlots: sortTimeSlots(req.timeSlots),
+    }))
+    .sort((a, b) => {
+      // displayOrder가 있으면 우선 (레거시)
+      if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
+        return a.displayOrder - b.displayOrder;
+      }
+
+      const dateA = getDateString(a.date);
+      const dateB = getDateString(b.date);
+
+      // 오늘 기준 분류
+      const aIsFuture = dateA >= today;
+      const bIsFuture = dateB >= today;
+
+      // 미래 날짜가 과거 날짜보다 먼저
+      if (aIsFuture && !bIsFuture) return -1;
+      if (!aIsFuture && bIsFuture) return 1;
+
+      // 둘 다 미래: 가까운 날짜 먼저
+      if (aIsFuture && bIsFuture) {
+        return dateA.localeCompare(dateB);
+      }
+
+      // 둘 다 과거: 최근 날짜 먼저
+      return dateB.localeCompare(dateA);
+    });
 }
 
 /**

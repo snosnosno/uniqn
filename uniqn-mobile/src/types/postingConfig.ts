@@ -286,23 +286,69 @@ export function getDateFromRequirement(req: DateSpecificRequirement): string {
 }
 
 /**
+ * 시간대 정렬 (빠른 시간 순서)
+ *
+ * @description 시작 시간 기준으로 오름차순 정렬
+ */
+function sortTimeSlots(timeSlots: TimeSlotV2[]): TimeSlotV2[] {
+  return [...timeSlots].sort((a, b) => {
+    // 시간 미정인 경우 맨 뒤로
+    if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
+    if (!a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return -1;
+    if (a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return 0;
+
+    // 시작 시간 비교 (HH:mm 형식)
+    const timeA = a.startTime ?? a.time ?? '99:99';
+    const timeB = b.startTime ?? b.time ?? '99:99';
+    return timeA.localeCompare(timeB);
+  });
+}
+
+/**
  * 날짜별 요구사항 정렬
  *
- * @description 간소화된 버전과 레거시 버전 모두 지원
+ * @description 오늘 기준으로 가까운 미래 날짜 순, 같은 날짜 내에서는 빠른 시간 순
+ * - 오늘 이후 날짜: 가까운 날짜부터 (오름차순)
+ * - 오늘 이전 날짜: 맨 뒤로 (최근 날짜부터)
+ * - 같은 날짜 내 시간대: 빠른 시간 순
  */
 export function sortDateRequirements(
   requirements: DateSpecificRequirement[]
 ): DateSpecificRequirement[] {
-  return [...requirements].sort((a, b) => {
-    // displayOrder가 있으면 우선 (레거시 타입 지원)
-    const aOrder = 'displayOrder' in a ? a.displayOrder : undefined;
-    const bOrder = 'displayOrder' in b ? b.displayOrder : undefined;
-    if (aOrder !== undefined && bOrder !== undefined) {
-      return aOrder - bOrder;
-    }
-    // 날짜로 정렬
-    const dateA = getDateFromRequirement(a);
-    const dateB = getDateFromRequirement(b);
-    return dateA.localeCompare(dateB);
-  });
+  const today = new Date().toISOString().split('T')[0] ?? '';
+
+  return [...requirements]
+    .map((req) => ({
+      ...req,
+      // 시간대도 정렬
+      timeSlots: sortTimeSlots(req.timeSlots),
+    }))
+    .sort((a, b) => {
+      // displayOrder가 있으면 우선 (레거시 타입 지원)
+      const aOrder = 'displayOrder' in a ? a.displayOrder : undefined;
+      const bOrder = 'displayOrder' in b ? b.displayOrder : undefined;
+      if (aOrder !== undefined && bOrder !== undefined) {
+        return aOrder - bOrder;
+      }
+
+      // 날짜 추출
+      const dateA = getDateFromRequirement(a);
+      const dateB = getDateFromRequirement(b);
+
+      // 오늘 기준 분류
+      const aIsFuture = dateA >= today;
+      const bIsFuture = dateB >= today;
+
+      // 미래 날짜가 과거 날짜보다 먼저
+      if (aIsFuture && !bIsFuture) return -1;
+      if (!aIsFuture && bIsFuture) return 1;
+
+      // 둘 다 미래: 가까운 날짜 먼저 (오름차순)
+      if (aIsFuture && bIsFuture) {
+        return dateA.localeCompare(dateB);
+      }
+
+      // 둘 다 과거: 최근 날짜 먼저 (내림차순)
+      return dateB.localeCompare(dateA);
+    });
 }
