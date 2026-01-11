@@ -7,18 +7,12 @@
 
 import * as firestoreModule from 'firebase/firestore';
 import {
-  applyToJob,
   getMyApplications,
   getApplicationById,
   cancelApplication,
   hasAppliedToJob,
   getApplicationStats,
 } from '../applicationService';
-import {
-  AlreadyAppliedError,
-  ApplicationClosedError,
-  MaxCapacityReachedError,
-} from '@/errors';
 
 // Mock Firebase modules
 jest.mock('firebase/firestore', () => ({
@@ -56,137 +50,6 @@ describe('ApplicationService', () => {
     jest.clearAllMocks();
     mockDoc.mockReturnValue({});
     mockCollection.mockReturnValue({});
-  });
-
-  describe('applyToJob', () => {
-    const validInput = {
-      jobPostingId: 'job-1',
-      appliedRole: 'dealer' as const,
-      message: '지원합니다',
-    };
-    const applicantId = 'user-1';
-    const applicantName = '테스트 유저';
-    const applicantPhone = '010-1234-5678';
-
-    const mockJobData = {
-      id: 'job-1',
-      title: '테스트 공고',
-      status: 'active',
-      applicationCount: 0,
-      totalPositions: 10,
-      workDate: '2025-01-01',
-    };
-
-    it('should create application successfully', async () => {
-      const mockTransactionGet = jest.fn()
-        .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => mockJobData,
-        })
-        .mockResolvedValueOnce({
-          exists: () => false,
-        });
-
-      const mockTransactionSet = jest.fn();
-      const mockTransactionUpdate = jest.fn();
-
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: mockTransactionGet,
-          set: mockTransactionSet,
-          update: mockTransactionUpdate,
-        };
-        return callback(transaction);
-      });
-
-      const result = await applyToJob(
-        validInput,
-        applicantId,
-        applicantName,
-        applicantPhone
-      );
-
-      expect(result).toBeDefined();
-      expect(result.applicantId).toBe(applicantId);
-      expect(result.status).toBe('applied');
-      expect(mockTransactionSet).toHaveBeenCalled();
-      expect(mockTransactionUpdate).toHaveBeenCalled();
-    });
-
-    it('should throw ApplicationClosedError when job posting does not exist', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => false,
-          }),
-        };
-        return callback(transaction);
-      });
-
-      await expect(
-        applyToJob(validInput, applicantId, applicantName)
-      ).rejects.toThrow(ApplicationClosedError);
-    });
-
-    it('should throw ApplicationClosedError when job is not active', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => true,
-            data: () => ({ ...mockJobData, status: 'closed' }),
-          }),
-        };
-        return callback(transaction);
-      });
-
-      await expect(
-        applyToJob(validInput, applicantId, applicantName)
-      ).rejects.toThrow(ApplicationClosedError);
-    });
-
-    it('should throw MaxCapacityReachedError when job is full', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => true,
-            data: () => ({
-              ...mockJobData,
-              applicationCount: 10,
-              totalPositions: 10,
-            }),
-          }),
-        };
-        return callback(transaction);
-      });
-
-      await expect(
-        applyToJob(validInput, applicantId, applicantName)
-      ).rejects.toThrow(MaxCapacityReachedError);
-    });
-
-    it('should throw AlreadyAppliedError when already applied', async () => {
-      const mockTransactionGet = jest.fn()
-        .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => mockJobData,
-        })
-        .mockResolvedValueOnce({
-          exists: () => true,
-          id: 'job-1_user-1',
-          data: () => ({ status: 'applied' }),
-        });
-
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: mockTransactionGet,
-        };
-        return callback(transaction);
-      });
-
-      await expect(
-        applyToJob(validInput, applicantId, applicantName)
-      ).rejects.toThrow(AlreadyAppliedError);
-    });
   });
 
   describe('getMyApplications', () => {

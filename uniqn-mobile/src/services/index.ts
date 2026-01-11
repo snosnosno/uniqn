@@ -46,7 +46,6 @@ export {
 
 // Application Service
 export {
-  applyToJob,
   applyToJobV2,
   getMyApplications,
   getApplicationById,

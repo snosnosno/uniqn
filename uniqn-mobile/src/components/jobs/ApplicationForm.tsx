@@ -36,10 +36,8 @@ interface ApplicationFormProps {
   job: JobPosting;
   visible: boolean;
   isSubmitting: boolean;
-  /** 레거시: 단일 역할 선택 */
-  onSubmit: (roleId: string, message?: string) => void;
   /** v2.0: Assignment 배열 + 사전질문 답변 */
-  onSubmitV2?: (
+  onSubmit: (
     assignments: Assignment[],
     message?: string,
     preQuestionAnswers?: PreQuestionAnswer[]
@@ -132,23 +130,16 @@ export function ApplicationForm({
   visible,
   isSubmitting,
   onSubmit,
-  onSubmitV2,
   onClose,
 }: ApplicationFormProps) {
   // 고정공고 모드 판단: postingType === 'fixed'이면 고정공고
   const isFixedMode = job.postingType === 'fixed';
 
-  // v2.0 모드 판단: dateSpecificRequirements가 있으면 v2.0 (고정공고 제외)
-  const isV2Mode = Boolean(
-    !isFixedMode &&
-    job.dateSpecificRequirements && job.dateSpecificRequirements.length > 0
-  );
-
-  // v1.0 상태 (레거시)
+  // 고정공고용 상태
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
-  // v2.0 상태
+  // 다중 날짜 모드 상태
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
   const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(
     () => initializePreQuestionAnswers(job.preQuestions ?? [])
@@ -202,25 +193,19 @@ export function ApplicationForm({
       return true;
     }
 
-    if (isV2Mode) {
-      // v2.0: Assignment가 1개 이상 선택되어야 함
-      if (selectedAssignments.length === 0) return false;
+    // 다중 날짜 모드: Assignment가 1개 이상 선택되어야 함
+    if (selectedAssignments.length === 0) return false;
 
-      // 사전질문이 있으면 필수 답변 확인
-      if (hasPreQuestions) {
-        const unanswered = findUnansweredRequired(preQuestionAnswers);
-        if (unanswered.length > 0) return false;
-      }
-
-      return true;
+    // 사전질문이 있으면 필수 답변 확인
+    if (hasPreQuestions) {
+      const unanswered = findUnansweredRequired(preQuestionAnswers);
+      if (unanswered.length > 0) return false;
     }
 
-    // v1.0: 역할이 선택되어야 함
-    return selectedRole !== null && availableRoles.length > 0;
+    return true;
   }, [
     isSubmitting,
     isFixedMode,
-    isV2Mode,
     selectedAssignments,
     hasPreQuestions,
     preQuestionAnswers,
@@ -232,62 +217,41 @@ export function ApplicationForm({
   const handleSubmit = useCallback(() => {
     if (!canSubmit) return;
 
-    // 고정공고: 역할만 제출 (v2.0 핸들러 우선 사용)
-    if (isFixedMode && selectedRole) {
-      // 사전질문 필수 답변 검증
-      if (hasPreQuestions) {
-        const unanswered = findUnansweredRequired(preQuestionAnswers);
-        if (unanswered.length > 0) {
-          setErrorQuestionIds(unanswered);
-          return;
-        }
+    // 사전질문 필수 답변 검증
+    if (hasPreQuestions) {
+      const unanswered = findUnansweredRequired(preQuestionAnswers);
+      if (unanswered.length > 0) {
+        setErrorQuestionIds(unanswered);
+        return;
       }
+    }
 
-      // 고정공고 Assignment 생성 (FIXED_DATE_MARKER 사용)
+    // 고정공고: 역할 선택을 Assignment로 변환
+    if (isFixedMode && selectedRole) {
       const fixedAssignment: Assignment = {
-        dates: [FIXED_DATE_MARKER], // 고정공고 마커 사용
+        dates: [FIXED_DATE_MARKER],
         timeSlot: job.workSchedule?.timeSlots?.[0] || FIXED_TIME_MARKER,
-        roleIds: [selectedRole], // v3.0: roleIds 배열로 설정
+        roleIds: [selectedRole],
         isGrouped: false,
       };
 
-      // v2 핸들러 우선 사용 (사전질문 답변 전달 가능)
-      if (onSubmitV2) {
-        onSubmitV2(
-          [fixedAssignment],
-          message.trim() || undefined,
-          hasPreQuestions ? preQuestionAnswers : undefined
-        );
-      } else {
-        // v1 폴백 (레거시 호환)
-        onSubmit(selectedRole, message.trim() || undefined);
-      }
-      return;
-    }
-
-    if (isV2Mode && onSubmitV2) {
-      // 사전질문 필수 답변 검증
-      if (hasPreQuestions) {
-        const unanswered = findUnansweredRequired(preQuestionAnswers);
-        if (unanswered.length > 0) {
-          setErrorQuestionIds(unanswered);
-          return;
-        }
-      }
-
-      onSubmitV2(
-        selectedAssignments,
+      onSubmit(
+        [fixedAssignment],
         message.trim() || undefined,
         hasPreQuestions ? preQuestionAnswers : undefined
       );
-    } else if (selectedRole) {
-      onSubmit(selectedRole, message.trim() || undefined);
+      return;
     }
+
+    // 다중 날짜 모드: Assignment 배열 제출
+    onSubmit(
+      selectedAssignments,
+      message.trim() || undefined,
+      hasPreQuestions ? preQuestionAnswers : undefined
+    );
   }, [
     canSubmit,
     isFixedMode,
-    isV2Mode,
-    onSubmitV2,
     selectedAssignments,
     message,
     hasPreQuestions,
@@ -455,8 +419,8 @@ export function ApplicationForm({
                 </View>
               )}
             </View>
-          ) : isV2Mode ? (
-            /* v2.0: AssignmentSelector (다중 날짜/시간/역할 선택) */
+          ) : (
+            /* 다중 날짜 모드: AssignmentSelector */
             <View className="mb-6">
               <AssignmentSelector
                 jobPosting={job}
@@ -464,75 +428,6 @@ export function ApplicationForm({
                 onSelectionChange={setSelectedAssignments}
                 disabled={isSubmitting}
               />
-            </View>
-          ) : (
-            /* v1.0: 레거시 역할 선택 */
-            <View className="mb-6">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-                지원할 역할 선택 <Text className="text-error-500">*</Text>
-              </Text>
-
-              {availableRoles.length === 0 ? (
-                <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4">
-                  <Text className="text-error-600 dark:text-error-400 text-center">
-                    모든 역할이 마감되었습니다
-                  </Text>
-                </View>
-              ) : (
-                <View className="space-y-2">
-                  {availableRoles.map((roleItem, index) => {
-                    const isSelected = selectedRole === roleItem.key;
-                    const remaining = roleItem.count - roleItem.filled;
-
-                    return (
-                      <Pressable
-                        key={`${roleItem.key}-${index}`}
-                        onPress={() => setSelectedRole(roleItem.key)}
-                        disabled={isSubmitting}
-                        className={`
-                          flex-row items-center justify-between p-4 rounded-lg border-2
-                          ${isSelected
-                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
-                          }
-                          ${isSubmitting ? 'opacity-50' : ''}
-                        `}
-                      >
-                        <View className="flex-row items-center">
-                          <View
-                            className={`
-                              w-5 h-5 rounded-full border-2 mr-3 items-center justify-center
-                              ${isSelected
-                                ? 'border-primary-500 bg-primary-500'
-                                : 'border-gray-300 dark:border-gray-600'
-                              }
-                            `}
-                          >
-                            {isSelected && (
-                              <View className="w-2 h-2 rounded-full bg-white" />
-                            )}
-                          </View>
-                          <Text
-                            className={`text-base font-medium ${
-                              isSelected
-                                ? 'text-primary-700 dark:text-primary-300'
-                                : 'text-gray-900 dark:text-white'
-                            }`}
-                          >
-                            {roleItem.displayName}
-                          </Text>
-                        </View>
-                        <Badge
-                          variant={remaining <= 2 ? 'warning' : 'default'}
-                          size="sm"
-                        >
-                          {remaining}자리 남음
-                        </Badge>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
             </View>
           )}
 

@@ -8,7 +8,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getMyApplications,
-  applyToJob,
   applyToJobV2,
   cancelApplication as cancelApplicationService,
   requestCancellation as requestCancellationService,
@@ -17,18 +16,11 @@ import { queryKeys } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
-import type { Application, StaffRole, Assignment, PreQuestionAnswer } from '@/types';
+import type { Application, Assignment, PreQuestionAnswer } from '@/types';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-/** v1.0 레거시 지원 파라미터 */
-interface SubmitApplicationParams {
-  jobPostingId: string;
-  role: StaffRole;
-  message?: string;
-}
 
 /** v2.0 지원 파라미터 (Assignment + PreQuestion) */
 interface SubmitApplicationV2Params {
@@ -61,52 +53,7 @@ export function useApplications() {
     staleTime: 2 * 60 * 1000, // 2분
   });
 
-  // 지원 제출
-  const submitMutation = useMutation({
-    mutationFn: (params: SubmitApplicationParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
-      // Firestore profile 우선, Auth displayName 폴백
-      const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
-      const applicantPhone = profile?.phone || user.phoneNumber || undefined;
-      const applicantNickname = profile?.nickname || undefined;
-      const applicantPhotoURL = profile?.photoURL || user.photoURL || undefined;
-      return applyToJob(
-        {
-          jobPostingId: params.jobPostingId,
-          appliedRole: params.role,
-          message: params.message,
-        },
-        user.uid,
-        applicantName,
-        applicantPhone,
-        applicantNickname,
-        applicantPhotoURL
-      );
-    },
-    onSuccess: (data) => {
-      logger.info('지원 완료', { applicationId: data.id });
-      addToast({ type: 'success', message: '지원이 완료되었습니다.' });
-
-      // 캐시 무효화
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applications.mine(),
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.all,
-      });
-    },
-    onError: (error) => {
-      logger.error('지원 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '지원에 실패했습니다.',
-      });
-    },
-  });
-
-  // v2.0 지원 제출 (Assignment + PreQuestion)
+  // 지원 제출 (v2.0: Assignment + PreQuestion)
   const submitV2Mutation = useMutation({
     mutationFn: (params: SubmitApplicationV2Params) => {
       if (!user) {
@@ -311,13 +258,9 @@ export function useApplications() {
     isRefreshing: myApplicationsQuery.isRefetching,
     error: myApplicationsQuery.error,
 
-    // 지원 제출 (v1.0 레거시)
-    submitApplication: submitMutation.mutate,
-    isSubmitting: submitMutation.isPending,
-
-    // 지원 제출 (v2.0 Assignment + PreQuestion)
-    submitApplicationV2: submitV2Mutation.mutate,
-    isSubmittingV2: submitV2Mutation.isPending,
+    // 지원 제출 (v2.0: Assignment + PreQuestion)
+    submitApplication: submitV2Mutation.mutate,
+    isSubmitting: submitV2Mutation.isPending,
 
     // 지원 취소
     cancelApplication: cancelMutation.mutate,
