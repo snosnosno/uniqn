@@ -573,7 +573,8 @@ export async function applyToJobV2(
         // 지원 정보
         status: 'applied',
         appliedRole: primaryRole,
-        message: input.message,
+        // undefined는 Firebase에 저장 불가 - 조건부 추가
+        ...(input.message && { message: input.message }),
         recruitmentType,
 
         // v2.0 핵심 필드

@@ -10,6 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   ApplicantList,
   ApplicantConfirmModal,
+  ApplicantProfileModal,
   type ConfirmModalAction,
 } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
@@ -82,13 +83,31 @@ export default function ApplicantsScreen() {
   const [modalAction, setModalAction] = useState<ConfirmModalAction>('confirm');
   const [isModalVisible, setIsModalVisible] = useState(false);
 
+  // 프로필 모달 상태
+  const [profileApplicant, setProfileApplicant] = useState<ApplicantWithDetails | null>(null);
+  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+
   // 지원자 클릭 - 상세 보기 (읽음 처리)
   const handleApplicantPress = useCallback((applicant: ApplicantWithDetails) => {
     if (!applicant.isRead) {
       markAsRead(applicant.id);
     }
-    // TODO: 지원자 상세 모달 또는 화면
   }, [markAsRead]);
+
+  // 프로필 상세보기
+  const handleViewProfile = useCallback((applicant: ApplicantWithDetails) => {
+    if (!applicant.isRead) {
+      markAsRead(applicant.id);
+    }
+    setProfileApplicant(applicant);
+    setIsProfileModalVisible(true);
+  }, [markAsRead]);
+
+  // 프로필 모달 닫기
+  const handleCloseProfileModal = useCallback(() => {
+    setIsProfileModalVisible(false);
+    setProfileApplicant(null);
+  }, []);
 
   // 확정 버튼 클릭
   const handleConfirm = useCallback((applicant: ApplicantWithDetails) => {
@@ -214,6 +233,7 @@ export default function ApplicantsScreen() {
         onReject={handleReject}
         onWaitlist={handleWaitlist}
         onBulkConfirm={handleBulkConfirm}
+        onViewProfile={handleViewProfile}
         showBulkActions={true}
       />
 
@@ -227,6 +247,13 @@ export default function ApplicantsScreen() {
         onReject={handleModalReject}
         onWaitlist={handleModalWaitlist}
         isLoading={isProcessing}
+      />
+
+      {/* 프로필 상세보기 모달 */}
+      <ApplicantProfileModal
+        visible={isProfileModalVisible}
+        onClose={handleCloseProfileModal}
+        applicant={profileApplicant}
       />
     </SafeAreaView>
   );

@@ -230,6 +230,13 @@ export const queryKeys = {
     draft: () => [...queryKeys.jobManagement.all, 'draft'] as const,
   },
 
+  // 공고 템플릿 (구인자)
+  templates: {
+    all: ['templates'] as const,
+    list: () => [...queryKeys.templates.all, 'list'] as const,
+    detail: (id: string) => [...queryKeys.templates.all, 'detail', id] as const,
+  },
+
   // 지원자 관리 (구인자)
   applicantManagement: {
     all: ['applicantManagement'] as const,

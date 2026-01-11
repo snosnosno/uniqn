@@ -183,6 +183,15 @@ export {
   type JobPostingStats,
 } from './jobManagementService';
 
+// Template Service (공고 템플릿 관리)
+export {
+  getTemplates,
+  saveTemplate,
+  loadTemplate,
+  deleteTemplate,
+  updateTemplate,
+} from './templateService';
+
 // Applicant Management Service (구인자용 지원자 관리)
 export {
   getApplicantsByJobPosting,

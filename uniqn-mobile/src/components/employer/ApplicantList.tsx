@@ -34,6 +34,8 @@ export interface ApplicantListProps {
   onReject?: (applicant: ApplicantWithDetails) => void;
   onWaitlist?: (applicant: ApplicantWithDetails) => void;
   onBulkConfirm?: (applicants: ApplicantWithDetails[]) => void;
+  /** 프로필 상세보기 */
+  onViewProfile?: (applicant: ApplicantWithDetails) => void;
   showBulkActions?: boolean;
 }
 
@@ -214,6 +216,7 @@ export function ApplicantList({
   onReject,
   onWaitlist,
   onBulkConfirm,
+  onViewProfile,
   showBulkActions = false,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -294,6 +297,7 @@ export function ApplicantList({
           onConfirm={onConfirm}
           onReject={onReject}
           onWaitlist={onWaitlist}
+          onViewProfile={onViewProfile}
           showActions={!selectionMode}
           selectionMode={selectionMode}
           isSelected={selectedIds.has(item.id)}
@@ -301,7 +305,7 @@ export function ApplicantList({
         />
       </View>
     ),
-    [onApplicantPress, onConfirm, onReject, onWaitlist, selectionMode, selectedIds, handleSelect]
+    [onApplicantPress, onConfirm, onReject, onWaitlist, onViewProfile, selectionMode, selectedIds, handleSelect]
   );
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);

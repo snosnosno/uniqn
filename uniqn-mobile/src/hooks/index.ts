@@ -131,6 +131,15 @@ export {
   useBulkUpdateStatus,
 } from './useJobManagement';
 
+// Template Management (템플릿 관리)
+export {
+  useTemplateManager,
+  useTemplates,
+  useSaveTemplate,
+  useLoadTemplate,
+  useDeleteTemplate,
+} from './useTemplateManager';
+
 // Applicant Management (지원자 관리)
 export {
   useApplicantManagement,

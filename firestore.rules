@@ -554,12 +554,12 @@ service cloud.firestore {
     match /jobPostingTemplates/{templateId} {
       // Users can read their own templates, privileged users can read all
       allow read: if isSignedIn() && (
-        isPrivileged() || 
+        isPrivileged() ||
         (resource != null && isOwner(resource.data.createdBy))
       );
-      
+
       // Users can create templates for themselves, privileged users can create for anyone
-      allow create: if isSignedIn() && 
+      allow create: if isSignedIn() &&
         request.resource.data.keys().hasAll(['name', 'templateData', 'createdBy', 'createdAt']) &&
         (isPrivileged() || isOwner(request.resource.data.createdBy)) &&
         request.resource.data.name is string &&
@@ -570,20 +570,54 @@ service cloud.firestore {
         request.resource.data.createdBy is string &&
         (!('usageCount' in request.resource.data) || request.resource.data.usageCount is number) &&
         (!('isPublic' in request.resource.data) || request.resource.data.isPublic is bool);
-      
+
       // Users can update their own templates, privileged users can update all
       allow update: if isSignedIn() && (
-        isPrivileged() || 
+        isPrivileged() ||
         (resource != null && isOwner(resource.data.createdBy))
       );
-      
+
       // Users can delete their own templates, privileged users can delete all
       allow delete: if isSignedIn() && (
-        isPrivileged() || 
+        isPrivileged() ||
         (resource != null && isOwner(resource.data.createdBy))
       );
     }
-    
+
+    // --- Mobile Job Posting Templates Collection (모바일 앱 전용) ---
+    match /mobileJobPostingTemplates/{templateId} {
+      // 읽기: 본인의 템플릿만 가능, 관리자는 전체 조회 가능
+      allow read: if isSignedIn() && (
+        isPrivileged() ||
+        (resource != null && isOwner(resource.data.createdBy))
+      );
+
+      // 생성: 본인 이름으로만 생성 가능 (공고 관리 권한 필요)
+      allow create: if isSignedIn() && hasValidRole() &&
+        request.resource.data.keys().hasAll(['name', 'templateData', 'createdBy', 'createdAt']) &&
+        isOwner(request.resource.data.createdBy) &&
+        request.resource.data.name is string &&
+        request.resource.data.name.size() >= 2 &&
+        request.resource.data.name.size() <= 50 &&
+        (!('description' in request.resource.data) || request.resource.data.description is string) &&
+        request.resource.data.templateData is map &&
+        request.resource.data.createdBy is string &&
+        (!('usageCount' in request.resource.data) || request.resource.data.usageCount is number) &&
+        (!('lastUsedAt' in request.resource.data) || request.resource.data.lastUsedAt is timestamp);
+
+      // 수정: 본인의 템플릿만 수정 가능 (usageCount 증가 등)
+      allow update: if isSignedIn() && (
+        isPrivileged() ||
+        (resource != null && isOwner(resource.data.createdBy))
+      );
+
+      // 삭제: 본인의 템플릿만 삭제 가능
+      allow delete: if isSignedIn() && (
+        isPrivileged() ||
+        (resource != null && isOwner(resource.data.createdBy))
+      );
+    }
+
     // --- Tournaments Collection ---
     match /tournaments/{tournamentId} {
       allow read: if isSignedIn();

@@ -2,56 +2,23 @@
  * UNIQN Mobile - 공고 작성 화면 (스크롤 폼)
  *
  * @description 구인자가 새 공고를 작성하는 한 페이지 스크롤 폼
- * @version 3.0.0 - 스크롤 폼으로 변경 (웹앱과 동일한 UX)
+ * @version 4.0.0 - 임시저장 → 템플릿 기능으로 변경
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  BackHandler,
-} from 'react-native';
-import { useRouter, useNavigation } from 'expo-router';
+import React, { useState, useCallback } from 'react';
+import { KeyboardAvoidingView, Platform } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Loading } from '@/components';
 import { useAuth } from '@/hooks/useAuth';
-import { useCreateJobPosting, useSaveDraft, useDraft, useDeleteDraft } from '@/hooks/useJobManagement';
+import { useCreateJobPosting } from '@/hooks/useJobManagement';
+import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type { CreateJobPostingInput, JobPostingFormData, DateSpecificRequirement } from '@/types';
 import { INITIAL_JOB_POSTING_FORM_DATA } from '@/types/jobPostingForm';
 import { JobPostingScrollForm } from '@/components/employer/job-form';
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 역할 라벨 매핑 (StaffRole -> 한글)
- */
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-};
-
-/**
- * RoleRequirement[] 또는 FormRoleWithCount[]를 FormRoleWithCount[]로 변환
- */
-function convertToFormRoles(
-  roles: { role?: string; name?: string; count: number }[]
-): { name: string; count: number; isCustom?: boolean }[] {
-  return roles.map((r) => ({
-    name: r.name || ROLE_LABELS[r.role || ''] || r.role || '알 수 없음',
-    count: r.count,
-    isCustom: !!(r.name && !ROLE_LABELS[r.name]),
-  }));
-}
+import { TemplateModal } from '@/components/employer/job-form/modals/TemplateModal';
+import { LoadTemplateModal } from '@/components/employer/job-form/modals/LoadTemplateModal';
 
 // ============================================================================
 // Main Component
@@ -59,160 +26,38 @@ function convertToFormRoles(
 
 export default function CreateJobPostingScreen() {
   const router = useRouter();
-  const navigation = useNavigation();
   const { user } = useAuth();
-
-  // 안전한 뒤로가기 (히스토리 없으면 employer 탭으로 이동)
-  const safeGoBack = useCallback(() => {
-    if (navigation.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(app)/(tabs)/employer');
-    }
-  }, [navigation, router]);
   const { addToast } = useToastStore();
 
   // Form State
   const [formData, setFormData] = useState<JobPostingFormData>(INITIAL_JOB_POSTING_FORM_DATA);
-  const [draftId, setDraftId] = useState<string | null>(null);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Mutations
   const createJobPosting = useCreateJobPosting();
-  const saveDraft = useSaveDraft();
-  const deleteDraft = useDeleteDraft();
-  const { data: existingDraft, isLoading: isDraftLoading } = useDraft();
 
-  // 임시저장 불러오기
-  useEffect(() => {
-    if (existingDraft) {
-      Alert.alert(
-        '임시저장 불러오기',
-        '작성 중이던 공고가 있습니다. 이어서 작성하시겠습니까?',
-        [
-          {
-            text: '새로 작성',
-            style: 'destructive',
-            onPress: () => {
-              if (existingDraft.id) {
-                deleteDraft.mutate(existingDraft.id);
-              }
-            },
-          },
-          {
-            text: '이어서 작성',
-            onPress: () => {
-              const loadedData: JobPostingFormData = {
-                ...INITIAL_JOB_POSTING_FORM_DATA,
-                postingType: existingDraft.postingType || 'regular',
-                title: existingDraft.title || '',
-                location: existingDraft.location || null,
-                detailedAddress: existingDraft.detailedAddress || '',
-                contactPhone: existingDraft.contactPhone || '',
-                description: existingDraft.description || '',
-                workDate: existingDraft.workDate || '',
-                startTime: existingDraft.startTime || '',
-                tournamentDates: existingDraft.tournamentDates || [],
-                daysPerWeek: existingDraft.daysPerWeek || 5,
-                workDays: existingDraft.workDays || [],
-                roles: existingDraft.roles
-                  ? convertToFormRoles(existingDraft.roles as { role?: string; name?: string; count: number }[])
-                  : INITIAL_JOB_POSTING_FORM_DATA.roles,
-                salary: existingDraft.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
-                allowances: existingDraft.allowances || {},
-                useSameSalary: existingDraft.useSameSalary || false,
-                roleSalaries: existingDraft.roleSalaries || {},
-                usesPreQuestions: existingDraft.usesPreQuestions || false,
-                preQuestions: existingDraft.preQuestions || [],
-                tags: existingDraft.tags || [],
-              };
-              setFormData(loadedData);
-              setDraftId(existingDraft.id || null);
-            },
-          },
-        ]
-      );
-    }
-  }, [existingDraft]);
-
-  // 뒤로가기 처리
-  useEffect(() => {
-    const handleBackPress = () => {
-      if (hasUnsavedChanges) {
-        Alert.alert(
-          '작성 취소',
-          '작성 중인 내용이 있습니다. 나가시겠습니까?',
-          [
-            { text: '계속 작성', style: 'cancel' },
-            {
-              text: '임시저장',
-              onPress: handleSaveDraft,
-            },
-            {
-              text: '나가기',
-              style: 'destructive',
-              onPress: safeGoBack,
-            },
-          ]
-        );
-        return true;
-      }
-      return false;
-    };
-
-    const subscription = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-    return () => subscription.remove();
-  }, [hasUnsavedChanges, safeGoBack]);
+  // Template Manager
+  const templateManager = useTemplateManager();
 
   // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
     setFormData((prev) => ({ ...prev, ...data }));
-    setHasUnsavedChanges(true);
   }, []);
 
-  // 임시저장
-  const handleSaveDraft = useCallback(async () => {
-    if (!user?.uid) return;
+  // 템플릿 저장
+  const handleSaveTemplate = useCallback(async () => {
+    await templateManager.handleSaveTemplate(formData);
+  }, [templateManager, formData]);
 
-    try {
-      const draftData: Partial<CreateJobPostingInput> & Record<string, unknown> = {
-        postingType: formData.postingType,
-        title: formData.title,
-        description: formData.description,
-        location: formData.location || undefined,
-        detailedAddress: formData.detailedAddress,
-        contactPhone: formData.contactPhone,
-        workDate: formData.workDate,
-        startTime: formData.startTime,
-        tournamentDates: formData.tournamentDates,
-        // v2.0: 날짜별 요구사항 (일정 데이터) - 새 형식을 레거시 형식으로 캐스팅
-        dateSpecificRequirements: formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],
-        daysPerWeek: formData.daysPerWeek,
-        workDays: formData.workDays,
-        roles: formData.roles,
-        salary: formData.salary,
-        allowances: formData.allowances,
-        useSameSalary: formData.useSameSalary,
-        roleSalaries: formData.roleSalaries,
-        usesPreQuestions: formData.usesPreQuestions,
-        preQuestions: formData.preQuestions,
-        tags: formData.tags,
-      };
-
-      const newDraftId = await saveDraft.mutateAsync({
-        draft: draftData,
-        step: 1, // 스크롤 폼에서는 step이 의미없지만 호환성 유지
-        draftId: draftId || undefined,
-      });
-
-      setDraftId(newDraftId);
-      setHasUnsavedChanges(false);
-      addToast({ type: 'success', message: '임시저장되었습니다' });
-    } catch (error) {
-      logger.error('임시저장 실패', error as Error);
-      addToast({ type: 'error', message: '임시저장에 실패했습니다' });
-    }
-  }, [user, formData, draftId, saveDraft, addToast]);
+  // 템플릿 불러오기
+  const handleLoadTemplateFromModal = useCallback(async (template: Parameters<typeof templateManager.handleLoadTemplate>[0]) => {
+    const loadedData = await templateManager.handleLoadTemplate(template);
+    // 불러온 템플릿 데이터를 폼에 병합
+    setFormData((prev) => ({
+      ...prev,
+      ...loadedData,
+    }));
+    return loadedData;
+  }, [templateManager]);
 
   // 공고 등록
   const handleSubmit = useCallback(async () => {
@@ -251,11 +96,6 @@ export default function CreateJobPostingScreen() {
 
       await createJobPosting.mutateAsync({ input });
 
-      // 임시저장 삭제
-      if (draftId) {
-        await deleteDraft.mutateAsync(draftId);
-      }
-
       const successMessage = formData.postingType === 'tournament'
         ? '공고가 등록되었습니다. 관리자 승인 후 게시됩니다.'
         : '공고가 등록되었습니다';
@@ -268,21 +108,7 @@ export default function CreateJobPostingScreen() {
         message: error instanceof Error ? error.message : '공고 등록에 실패했습니다'
       });
     }
-  }, [user, formData, draftId, createJobPosting, deleteDraft, addToast, router]);
-
-  // 로딩 상태
-  if (isDraftLoading) {
-    return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-        <View className="flex-1 items-center justify-center">
-          <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">
-            임시저장 확인 중...
-          </Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
+  }, [user, formData, createJobPosting, addToast, router]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
@@ -296,11 +122,36 @@ export default function CreateJobPostingScreen() {
           data={formData}
           onUpdate={updateFormData}
           onSubmit={handleSubmit}
-          onSaveDraft={handleSaveDraft}
+          onSaveTemplate={templateManager.openTemplateModal}
+          onLoadTemplate={templateManager.openLoadTemplateModal}
           isSubmitting={createJobPosting.isPending}
-          isSavingDraft={saveDraft.isPending}
+          isSavingTemplate={templateManager.isSavingTemplate}
         />
       </KeyboardAvoidingView>
+
+      {/* 템플릿 저장 모달 */}
+      <TemplateModal
+        visible={templateManager.isTemplateModalOpen}
+        onClose={templateManager.closeTemplateModal}
+        templateName={templateManager.templateName}
+        templateDescription={templateManager.templateDescription}
+        onTemplateNameChange={templateManager.setTemplateName}
+        onTemplateDescriptionChange={templateManager.setTemplateDescription}
+        onSave={handleSaveTemplate}
+        isSaving={templateManager.isSavingTemplate}
+      />
+
+      {/* 템플릿 불러오기 모달 */}
+      <LoadTemplateModal
+        visible={templateManager.isLoadTemplateModalOpen}
+        onClose={templateManager.closeLoadTemplateModal}
+        templates={templateManager.templates}
+        templatesLoading={templateManager.templatesLoading}
+        onLoadTemplate={handleLoadTemplateFromModal}
+        onDeleteTemplate={templateManager.handleDeleteTemplate}
+        isLoadingTemplate={templateManager.isLoadingTemplate}
+        isDeletingTemplate={templateManager.isDeletingTemplate}
+      />
     </SafeAreaView>
   );
 }

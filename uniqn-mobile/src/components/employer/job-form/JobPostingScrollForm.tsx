@@ -27,9 +27,10 @@ interface JobPostingScrollFormProps {
   data: JobPostingFormData;
   onUpdate: (data: Partial<JobPostingFormData>) => void;
   onSubmit: () => void;
-  onSaveDraft?: () => void;
+  onSaveTemplate?: () => void;
+  onLoadTemplate?: () => void;
   isSubmitting?: boolean;
-  isSavingDraft?: boolean;
+  isSavingTemplate?: boolean;
 }
 
 interface SectionErrors {
@@ -224,9 +225,10 @@ export function JobPostingScrollForm({
   data,
   onUpdate,
   onSubmit,
-  onSaveDraft,
+  onSaveTemplate,
+  onLoadTemplate,
   isSubmitting = false,
-  isSavingDraft = false,
+  isSavingTemplate = false,
 }: JobPostingScrollFormProps) {
   const scrollViewRef = useRef<ScrollView>(null);
   const [errors, setErrors] = useState<SectionErrors>({
@@ -413,35 +415,53 @@ export function JobPostingScrollForm({
 
       {/* 하단 버튼 영역 (고정) */}
       <View className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-        <View className="flex-row gap-3">
-          {onSaveDraft && (
-            <View className="flex-1">
-              <Button
-                variant="outline"
-                size="lg"
-                onPress={onSaveDraft}
-                disabled={isSavingDraft}
-                fullWidth
-              >
-                <Text className="text-gray-700 dark:text-gray-300">
-                  {isSavingDraft ? '저장 중...' : '임시저장'}
-                </Text>
-              </Button>
-            </View>
-          )}
-          <View className={onSaveDraft ? 'flex-1' : 'flex-1'}>
-            <Button
-              variant="primary"
-              size="lg"
-              onPress={handleSubmit}
-              disabled={isSubmitting}
-              fullWidth
-            >
-              <Text className="text-white font-semibold">
-                {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
-              </Text>
-            </Button>
+        {/* 템플릿 버튼 영역 */}
+        {(onSaveTemplate || onLoadTemplate) && (
+          <View className="flex-row gap-2 mb-3">
+            {onLoadTemplate && (
+              <View className="flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={onLoadTemplate}
+                  fullWidth
+                >
+                  <Text className="text-blue-600 dark:text-blue-400">
+                    템플릿 불러오기
+                  </Text>
+                </Button>
+              </View>
+            )}
+            {onSaveTemplate && (
+              <View className="flex-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onPress={onSaveTemplate}
+                  disabled={isSavingTemplate}
+                  fullWidth
+                >
+                  <Text className="text-blue-600 dark:text-blue-400">
+                    {isSavingTemplate ? '저장 중...' : '템플릿 저장'}
+                  </Text>
+                </Button>
+              </View>
+            )}
           </View>
+        )}
+        {/* 등록 버튼 */}
+        <View>
+          <Button
+            variant="primary"
+            size="lg"
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            fullWidth
+          >
+            <Text className="text-white font-semibold">
+              {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
+            </Text>
+          </Button>
         </View>
       </View>
     </View>

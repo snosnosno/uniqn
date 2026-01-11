@@ -262,3 +262,14 @@ export {
   COUNTRIES,
   getCountryByCode,
 } from './admin';
+
+// 공고 템플릿 타입
+export type {
+  TemplateFormData,
+  TemplateExcludedFields,
+  JobPostingTemplate,
+  CreateTemplateInput,
+  TemplateListResult,
+} from './jobTemplate';
+
+export { extractTemplateData, templateToFormData } from './jobTemplate';

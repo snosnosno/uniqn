@@ -15,6 +15,9 @@ export type { ApplicantListProps } from './ApplicantList';
 export { ApplicantConfirmModal } from './ConfirmModal';
 export type { ApplicantConfirmModalProps, ConfirmModalAction } from './ConfirmModal';
 
+export { ApplicantProfileModal } from './ApplicantProfileModal';
+export type { ApplicantProfileModalProps } from './ApplicantProfileModal';
+
 // 정산 관리
 export { SettlementCard } from './SettlementCard';
 export type { SettlementCardProps } from './SettlementCard';
