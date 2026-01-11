@@ -264,6 +264,7 @@ export type UpdateJobPostingInput = Partial<CreateJobPostingInput> & {
  */
 export interface CardRole {
   role: string;
+  customRole?: string;
   count: number;
   filled: number;
 }
@@ -362,6 +363,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
               (r as { role?: string; name?: string }).role ||
               (r as { role?: string; name?: string }).name ||
               '',
+            customRole: (r as { customRole?: string }).customRole,
             count:
               (r as { headcount?: number; count?: number }).headcount ||
               (r as { headcount?: number; count?: number }).count ||
@@ -382,6 +384,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
           startTime: posting.timeSlot?.split(/[-~]/)[0]?.trim() || '',
           roles: posting.roles.map((r) => ({
             role: r.role,
+            customRole: (r as { customRole?: string }).customRole,
             count: r.count,
             filled: r.filled ?? 0,
           })),

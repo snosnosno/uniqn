@@ -26,6 +26,7 @@ import {
   PreQuestionsSection,
 } from '@/components/employer/job-form';
 import { useAuth } from '@/hooks/useAuth';
+import { STAFF_ROLES } from '@/constants';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
 import { useToastStore } from '@/stores/toastStore';
@@ -180,11 +181,7 @@ function validateSalary(data: JobPostingFormData): Record<string, string> {
           if (roleKey === 'other' && roleReq.customRole) {
             roleSet.add(roleReq.customRole);
           } else {
-            const staffRole = [
-              { key: 'dealer', name: '딜러' },
-              { key: 'floor', name: '플로어' },
-              { key: 'other', name: '기타' },
-            ].find((r) => r.key === roleKey);
+            const staffRole = STAFF_ROLES.find((r) => r.key === roleKey);
             roleSet.add(staffRole?.name || roleKey);
           }
         });

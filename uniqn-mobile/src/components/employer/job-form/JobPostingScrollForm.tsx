@@ -18,6 +18,7 @@ import {
   PreQuestionsSection,
 } from './sections';
 import type { JobPostingFormData } from '@/types';
+import { STAFF_ROLES } from '@/constants';
 
 // ============================================================================
 // Types
@@ -172,11 +173,7 @@ function validateSalary(data: JobPostingFormData): Record<string, string> {
             roleSet.add(roleReq.customRole);
           } else {
             // STAFF_ROLES에서 이름 찾기 (SalarySection과 동일)
-            const staffRole = [
-              { key: 'dealer', name: '딜러' },
-              { key: 'floor', name: '플로어' },
-              { key: 'other', name: '기타' },
-            ].find((r) => r.key === roleKey);
+            const staffRole = STAFF_ROLES.find((r) => r.key === roleKey);
             roleSet.add(staffRole?.name || roleKey);
           }
         });

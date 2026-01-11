@@ -62,7 +62,10 @@ const formatDate = (dateStr: string): string => {
   return `${month}/${day}(${dayOfWeek})`;
 };
 
-const getRoleLabel = (role: string): string => {
+const getRoleLabel = (role: string, customRole?: string): string => {
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
   const labels: Record<string, string> = {
     dealer: '딜러',
     manager: '매니저',
@@ -71,6 +74,7 @@ const getRoleLabel = (role: string): string => {
     floor: '플로어',
     serving: '서빙',
     staff: '직원',
+    other: '기타',
   };
   return labels[role] || role;
 };
@@ -137,7 +141,8 @@ const RoleLine = memo(function RoleLine({
       }`}
     >
       {showTime ? `${time} ` : '       '}
-      {getRoleLabel(role.role)} {role.count}명 ({role.filled}/{role.count})
+      {getRoleLabel(role.role, role.customRole)} {role.count}명 ({role.filled}/
+      {role.count})
     </Text>
   );
 });
