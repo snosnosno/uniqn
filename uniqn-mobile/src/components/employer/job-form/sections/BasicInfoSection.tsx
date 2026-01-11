@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React, { useState, useCallback, memo } from 'react';
+import React, { useState, useCallback, useEffect, memo } from 'react';
 import { View, Text, TextInput } from 'react-native';
 import { Input, FormField } from '@/components';
 import { MapPinIcon, PhoneIcon } from '@/components/icons';
@@ -33,6 +33,12 @@ export const BasicInfoSection = memo(function BasicInfoSection({
 }: BasicInfoSectionProps) {
   const [locationName, setLocationName] = useState(data.location?.name || '');
   const [locationAddress, setLocationAddress] = useState(data.location?.address || '');
+
+  // 외부에서 data.location이 변경되면 (템플릿 불러오기 등) 로컬 상태 동기화
+  useEffect(() => {
+    setLocationName(data.location?.name || '');
+    setLocationAddress(data.location?.address || '');
+  }, [data.location]);
 
   // 장소 정보 업데이트
   const updateLocation = useCallback((name: string, address: string) => {

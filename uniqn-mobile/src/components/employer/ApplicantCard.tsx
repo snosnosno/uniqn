@@ -19,9 +19,9 @@ import {
   UserPlusIcon,
   CalendarIcon,
   DocumentIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
   BriefcaseIcon,
+  ChevronUpIcon,
+  ChevronDownIcon,
 } from '../icons';
 import { ConfirmationHistoryTimeline } from '../applicant/ConfirmationHistoryTimeline';
 import { APPLICATION_STATUS_LABELS, getAssignmentRoles } from '@/types';
@@ -42,7 +42,8 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export interface ApplicantCardProps {
   applicant: ApplicantWithDetails;
   onPress?: (applicant: ApplicantWithDetails) => void;
-  onConfirm?: (applicant: ApplicantWithDetails) => void;
+  /** 확정 콜백 - selectedAssignments가 전달되면 해당 일정만 확정 */
+  onConfirm?: (applicant: ApplicantWithDetails, selectedAssignments?: Assignment[]) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
   onWaitlist?: (applicant: ApplicantWithDetails) => void;
   /** 확정 취소 (confirmed 상태에서만 사용) */
@@ -173,10 +174,24 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   isSelected = false,
   selectionMode = false,
   onSelect,
-  initialExpanded = false,
+  initialExpanded = true,
 }: ApplicantCardProps) {
   // 펼침/접힘 상태
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
+
+  // 일정 선택 상태 (key: "date_timeSlot")
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(() => {
+    // 초기값: 모든 일정 선택
+    const keys = new Set<string>();
+    if (applicant.assignments) {
+      for (const assignment of applicant.assignments) {
+        for (const date of assignment.dates) {
+          keys.add(`${date}_${assignment.timeSlot}`);
+        }
+      }
+    }
+    return keys;
+  });
 
   // 사용자 프로필 조회
   const { data: userProfile } = useQuery<UserProfile | null>({
@@ -214,6 +229,62 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     [applicant.assignments]
   );
 
+  // 모든 일정 키 목록
+  const allAssignmentKeys = useMemo(() => {
+    const keys: string[] = [];
+    for (const display of assignmentDisplays) {
+      keys.push(`${display.date}_${display.timeSlot}`);
+    }
+    return keys;
+  }, [assignmentDisplays]);
+
+  // 선택된 일정 개수
+  const selectedCount = selectedKeys.size;
+  const totalCount = allAssignmentKeys.length;
+  const isAllSelected = selectedCount === totalCount && totalCount > 0;
+
+  // 일정 토글
+  const toggleAssignment = useCallback((key: string) => {
+    setSelectedKeys((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }, []);
+
+  // 전체 선택
+  const selectAll = useCallback(() => {
+    setSelectedKeys(new Set(allAssignmentKeys));
+  }, [allAssignmentKeys]);
+
+  // 전체 해제
+  const deselectAll = useCallback(() => {
+    setSelectedKeys(new Set());
+  }, []);
+
+  // 선택된 일정으로 Assignment 배열 생성
+  const getSelectedAssignments = useCallback((): Assignment[] => {
+    if (!applicant.assignments) return [];
+
+    const result: Assignment[] = [];
+    for (const assignment of applicant.assignments) {
+      const selectedDates = assignment.dates.filter((date) =>
+        selectedKeys.has(`${date}_${assignment.timeSlot}`)
+      );
+      if (selectedDates.length > 0) {
+        result.push({
+          ...assignment,
+          dates: selectedDates,
+        });
+      }
+    }
+    return result;
+  }, [applicant.assignments, selectedKeys]);
+
   // 펼침/접힘 토글
   const toggleExpand = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -236,8 +307,14 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 확정 핸들러
   const handleConfirm = useCallback(() => {
-    onConfirm?.(applicant);
-  }, [applicant, onConfirm]);
+    const selectedAssignments = getSelectedAssignments();
+    // 선택된 일정이 있으면 해당 일정만, 없거나 레거시면 전체 확정
+    if (selectedAssignments.length > 0) {
+      onConfirm?.(applicant, selectedAssignments);
+    } else {
+      onConfirm?.(applicant);
+    }
+  }, [applicant, onConfirm, getSelectedAssignments]);
 
   // 거절 핸들러
   const handleReject = useCallback(() => {
@@ -288,96 +365,175 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         </Pressable>
       )}
 
-      {/* 헤더: 접기/열기 토글 영역 */}
-      <Pressable onPress={toggleExpand} className="active:opacity-80">
-        <View className="flex-row items-center">
-          {/* 아바타 - 프로필 보기 */}
-          <Pressable onPress={handleViewProfile} disabled={!onViewProfile}>
-            <Avatar
-              source={profilePhotoURL}
-              name={displayName}
-              size="md"
-              className="mr-3"
-            />
-          </Pressable>
+      {/* 헤더: 카드 클릭 시 프로필 모달 열기 */}
+      <View className="flex-row items-center">
+        {/* 메인 영역 - 프로필 모달 열기 */}
+        <Pressable
+          onPress={handleViewProfile}
+          disabled={!onViewProfile}
+          className="flex-1 flex-row items-center active:opacity-80"
+        >
+          <Avatar
+            source={profilePhotoURL}
+            name={displayName}
+            size="md"
+            className="mr-3"
+          />
           <View className="flex-1">
-            <View className="flex-row items-center justify-between">
-              <View className="flex-row items-center flex-1">
-                <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                  {displayName}
-                </Text>
-                {!applicant.isRead && (
-                  <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />
-                )}
-              </View>
-              <Badge
-                variant={STATUS_BADGE_VARIANT[applicant.status]}
-                size="sm"
-                dot
-              >
-                {APPLICATION_STATUS_LABELS[applicant.status]}
-              </Badge>
+            <View className="flex-row items-center">
+              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                {displayName}
+              </Text>
+              {!applicant.isRead && (
+                <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />
+              )}
             </View>
-            {/* 지원 역할 & 시간 요약 (항상 표시) */}
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
-            </Text>
           </View>
-          {/* 펼침/접힘 아이콘 */}
-          <View className="ml-2">
-            {isExpanded ? (
-              <ChevronUpIcon size={20} color="#9CA3AF" />
-            ) : (
-              <ChevronDownIcon size={20} color="#9CA3AF" />
-            )}
-          </View>
-        </View>
+          <Badge
+            variant={STATUS_BADGE_VARIANT[applicant.status]}
+            size="sm"
+            dot
+          >
+            {APPLICATION_STATUS_LABELS[applicant.status]}
+          </Badge>
+        </Pressable>
 
-        {/* 선택한 날짜/시간/역할 요약 (접힌 상태에서도 표시) */}
-        {assignmentDisplays.length > 0 && (
-          <View className="mt-2 flex-row flex-wrap gap-1">
-            {assignmentDisplays.slice(0, isExpanded ? assignmentDisplays.length : 2).map((display, idx) => (
-              <View
-                key={idx}
-                className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1"
-              >
-                <CalendarIcon size={12} color="#2563EB" />
-                <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
-                  {display.formattedDate} {display.timeSlot}
-                </Text>
-                <View className="ml-1">
-                  <BriefcaseIcon size={12} color="#2563EB" />
-                </View>
-                <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
-                  {display.roleLabels.join(', ')}
-                </Text>
-              </View>
-            ))}
-            {!isExpanded && assignmentDisplays.length > 2 && (
-              <View className="bg-gray-100 dark:bg-gray-700 rounded-md px-2 py-1">
-                <Text className="text-xs text-gray-600 dark:text-gray-400">
-                  +{assignmentDisplays.length - 2}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-
-        {/* 레거시 지원 날짜/시간대 (assignments가 없을 때) */}
-        {assignmentDisplays.length === 0 && (applicant.appliedDate || applicant.appliedTimeSlot) && (
-          <View className="mt-2 flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1 self-start">
-            <CalendarIcon size={12} color="#2563EB" />
-            <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
-              {formatAppliedDate(applicant.appliedDate)}
-              {applicant.appliedTimeSlot && ` ${applicant.appliedTimeSlot}`}
-            </Text>
-          </View>
-        )}
-      </Pressable>
+        {/* 펼침/접힘 버튼 */}
+        <Pressable
+          onPress={toggleExpand}
+          className="ml-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 active:opacity-60 flex-row items-center"
+          hitSlop={8}
+        >
+          <Text className="text-xs font-medium text-gray-600 dark:text-gray-300">
+            {isExpanded ? '접기' : '열기'}
+          </Text>
+          {isExpanded ? (
+            <ChevronUpIcon size={14} color="#6B7280" />
+          ) : (
+            <ChevronDownIcon size={14} color="#6B7280" />
+          )}
+        </Pressable>
+      </View>
 
       {/* === 펼침 영역 === */}
       {isExpanded && (
         <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          {/* 지원 역할 & 시간 요약 */}
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+            {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
+          </Text>
+
+          {/* 선택한 날짜/시간/역할 - 체크박스 */}
+          {assignmentDisplays.length > 0 && canShowActions && (
+            <View className="mb-3">
+              {/* 전체 선택/해제 버튼 */}
+              <View className="flex-row items-center mb-2">
+                <Pressable
+                  onPress={isAllSelected ? deselectAll : selectAll}
+                  className="flex-row items-center px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 active:opacity-70"
+                >
+                  <View className={`
+                    h-4 w-4 rounded border items-center justify-center mr-1.5
+                    ${isAllSelected
+                      ? 'bg-primary-500 border-primary-500'
+                      : 'border-gray-400 dark:border-gray-500'}
+                  `}>
+                    {isAllSelected && <CheckIcon size={10} color="#fff" />}
+                  </View>
+                  <Text className="text-xs text-gray-600 dark:text-gray-300">
+                    {isAllSelected ? '전체 해제' : '전체 선택'}
+                  </Text>
+                </Pressable>
+                <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  {selectedCount}/{totalCount}개 선택
+                </Text>
+              </View>
+
+              {/* 일정 목록 */}
+              <View className="gap-1">
+                {assignmentDisplays.map((display) => {
+                  const key = `${display.date}_${display.timeSlot}`;
+                  const isChecked = selectedKeys.has(key);
+                  return (
+                    <Pressable
+                      key={key}
+                      onPress={() => toggleAssignment(key)}
+                      className={`
+                        flex-row items-center rounded-md px-2 py-2 active:opacity-70
+                        ${isChecked
+                          ? 'bg-blue-50 dark:bg-blue-900/30'
+                          : 'bg-gray-50 dark:bg-gray-800'}
+                      `}
+                    >
+                      {/* 체크박스 */}
+                      <View className={`
+                        h-5 w-5 rounded border-2 items-center justify-center mr-2
+                        ${isChecked
+                          ? 'bg-primary-500 border-primary-500'
+                          : 'border-gray-300 dark:border-gray-600'}
+                      `}>
+                        {isChecked && <CheckIcon size={12} color="#fff" />}
+                      </View>
+
+                      {/* 일정 정보 */}
+                      <CalendarIcon size={14} color={isChecked ? '#2563EB' : '#9CA3AF'} />
+                      <Text className={`ml-1 text-sm ${
+                        isChecked
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {display.formattedDate} {display.timeSlot}
+                      </Text>
+                      <View className="mx-1.5 h-3 w-px bg-gray-300 dark:bg-gray-600" />
+                      <BriefcaseIcon size={14} color={isChecked ? '#2563EB' : '#9CA3AF'} />
+                      <Text className={`ml-1 text-sm ${
+                        isChecked
+                          ? 'text-blue-700 dark:text-blue-300'
+                          : 'text-gray-500 dark:text-gray-400'
+                      }`}>
+                        {display.roleLabels.join(', ')}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* 확정된/거절된 상태에서는 체크박스 없이 표시 */}
+          {assignmentDisplays.length > 0 && !canShowActions && (
+            <View className="flex-row flex-wrap gap-1 mb-3">
+              {assignmentDisplays.map((display, idx) => (
+                <View
+                  key={idx}
+                  className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1"
+                >
+                  <CalendarIcon size={12} color="#2563EB" />
+                  <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
+                    {display.formattedDate} {display.timeSlot}
+                  </Text>
+                  <View className="ml-1">
+                    <BriefcaseIcon size={12} color="#2563EB" />
+                  </View>
+                  <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
+                    {display.roleLabels.join(', ')}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* 레거시 지원 날짜/시간대 (assignments가 없을 때) */}
+          {assignmentDisplays.length === 0 && (applicant.appliedDate || applicant.appliedTimeSlot) && (
+            <View className="flex-row items-center bg-blue-50 dark:bg-blue-900/20 rounded-md px-2 py-1 self-start mb-3">
+              <CalendarIcon size={12} color="#2563EB" />
+              <Text className="ml-1 text-xs text-blue-700 dark:text-blue-300">
+                {formatAppliedDate(applicant.appliedDate)}
+                {applicant.appliedTimeSlot && ` ${applicant.appliedTimeSlot}`}
+              </Text>
+            </View>
+          )}
+
           {/* 연락처 */}
           {(userProfile?.phone || applicant.applicantPhone) && (
             <View className="flex-row items-center mb-2">
@@ -454,17 +610,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               </View>
             )}
 
-          {/* 프로필 보기 버튼 */}
-          {onViewProfile && (
-            <Pressable
-              onPress={handleViewProfile}
-              className="flex-row items-center justify-center py-2 mb-2 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
-            >
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                프로필 상세보기
-              </Text>
-            </Pressable>
-          )}
         </View>
       )}
 
@@ -528,11 +673,18 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           {/* 확정 버튼 */}
           <Pressable
             onPress={handleConfirm}
-            className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-primary-500 active:opacity-70"
+            disabled={totalCount > 0 && selectedCount === 0}
+            className={`flex-1 flex-row items-center justify-center py-2 rounded-lg active:opacity-70 ${
+              totalCount > 0 && selectedCount === 0
+                ? 'bg-gray-300 dark:bg-gray-600'
+                : 'bg-primary-500'
+            }`}
           >
             <CheckIcon size={16} color="#fff" />
             <Text className="ml-1 text-sm font-medium text-white">
-              확정
+              {totalCount > 0 && selectedCount < totalCount
+                ? `${selectedCount}개 확정`
+                : '확정'}
             </Text>
           </Pressable>
         </View>

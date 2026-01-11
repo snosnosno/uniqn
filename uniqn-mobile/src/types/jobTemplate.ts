@@ -96,6 +96,33 @@ export interface TemplateListResult {
 // ============================================================================
 
 /**
+ * 객체에서 undefined 값을 재귀적으로 제거
+ *
+ * @description Firebase는 undefined 값을 허용하지 않음
+ */
+function removeUndefinedValues<T>(obj: T): T {
+  if (obj === null || obj === undefined) {
+    return obj;
+  }
+
+  if (Array.isArray(obj)) {
+    return obj.map(removeUndefinedValues) as T;
+  }
+
+  if (typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (value !== undefined) {
+        result[key] = removeUndefinedValues(value);
+      }
+    }
+    return result as T;
+  }
+
+  return obj;
+}
+
+/**
  * 폼 데이터에서 템플릿 저장용 데이터 추출
  *
  * @description 날짜/일정 관련 필드를 제외한 데이터 반환
@@ -105,7 +132,8 @@ export function extractTemplateData(formData: JobPostingFormData): TemplateFormD
   const { workDate, tournamentDates, dateSpecificRequirements, workDays, ...templateData } =
     formData;
 
-  return templateData;
+  // Firebase는 undefined 값을 허용하지 않으므로 제거
+  return removeUndefinedValues(templateData);
 }
 
 /**

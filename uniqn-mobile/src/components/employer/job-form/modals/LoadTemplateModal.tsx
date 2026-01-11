@@ -6,9 +6,10 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { logger } from '@/utils/logger';
 import { FlashList } from '@shopify/flash-list';
-import { Modal } from '@/components/ui/Modal';
+import { Modal, ConfirmModal } from '@/components/ui/Modal';
 import { TrashIcon } from '@/components/icons';
 import type { JobPostingTemplate, JobPostingFormData } from '@/types';
 
@@ -65,16 +66,9 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
     return `${typeLabel} ${amount.toLocaleString()}원`;
   })();
 
-  // 삭제 확인
+  // 삭제 버튼 클릭
   const handleDeletePress = () => {
-    Alert.alert(
-      '템플릿 삭제',
-      `'${name}' 템플릿을 삭제하시겠습니까?`,
-      [
-        { text: '취소', style: 'cancel' },
-        { text: '삭제', style: 'destructive', onPress: onDelete },
-      ]
-    );
+    onDelete();
   };
 
   return (
@@ -91,13 +85,14 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
             </Text>
           )}
         </View>
-        <Pressable
+        <TouchableOpacity
           onPress={handleDeletePress}
           disabled={isDeleting}
+          activeOpacity={0.7}
           hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           style={{
-            width: 36,
-            height: 36,
+            width: 44,
+            height: 44,
             alignItems: 'center',
             justifyContent: 'center',
             borderRadius: 8,
@@ -107,8 +102,8 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
           accessibilityRole="button"
           accessibilityLabel="템플릿 삭제"
         >
-          <TrashIcon size={16} color="#EF4444" />
-        </Pressable>
+          <TrashIcon size={18} color="#EF4444" />
+        </TouchableOpacity>
       </View>
 
       {/* 태그 */}
@@ -197,6 +192,7 @@ export function LoadTemplateModal({
   isDeletingTemplate = false,
 }: LoadTemplateModalProps) {
   const [loadingId, setLoadingId] = React.useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<{ id: string; name: string } | null>(null);
 
   const handleLoad = async (template: JobPostingTemplate) => {
     setLoadingId(template.id);
@@ -207,55 +203,83 @@ export function LoadTemplateModal({
     }
   };
 
+  // 삭제 클릭 시 확인 모달 열기
+  const handleDeleteClick = (id: string, name: string) => {
+    logger.info('삭제 확인 모달 열기', { templateId: id, templateName: name });
+    setDeleteTarget({ id, name });
+  };
+
+  // 삭제 확인
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+    await onDeleteTemplate(deleteTarget.id, deleteTarget.name);
+    setDeleteTarget(null);
+  };
+
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      title="템플릿 불러오기"
-      size="lg"
-    >
-      {/* 로딩 상태 */}
-      {templatesLoading && (
-        <View className="items-center justify-center py-12">
-          <ActivityIndicator size="large" color="#3B82F6" />
-          <Text className="text-gray-500 dark:text-gray-400 mt-3">
-            템플릿 불러오는 중...
-          </Text>
-        </View>
-      )}
-
-      {/* 빈 상태 */}
-      {!templatesLoading && templates.length === 0 && <EmptyState />}
-
-      {/* 템플릿 목록 */}
-      {!templatesLoading && templates.length > 0 && (
-        <View style={{ height: 400 }}>
-          <FlashList
-            data={templates}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TemplateCard
-                template={item}
-                onLoad={() => handleLoad(item)}
-                onDelete={() => onDeleteTemplate(item.id, item.name)}
-                isLoading={loadingId === item.id || isLoadingTemplate}
-                isDeleting={isDeletingTemplate}
-              />
-            )}
-            // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
-            estimatedItemSize={140}
-            showsVerticalScrollIndicator={false}
-          />
-
-          {/* 안내 문구 */}
-          <View className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3 mt-3">
-            <Text className="text-amber-700 dark:text-amber-300 text-xs text-center">
-              템플릿을 불러온 후 날짜를 설정해주세요
+    <>
+      <Modal
+        visible={visible}
+        onClose={onClose}
+        title="템플릿 불러오기"
+        size="lg"
+      >
+        {/* 로딩 상태 */}
+        {templatesLoading && (
+          <View className="items-center justify-center py-12">
+            <ActivityIndicator size="large" color="#3B82F6" />
+            <Text className="text-gray-500 dark:text-gray-400 mt-3">
+              템플릿 불러오는 중...
             </Text>
           </View>
-        </View>
-      )}
-    </Modal>
+        )}
+
+        {/* 빈 상태 */}
+        {!templatesLoading && templates.length === 0 && <EmptyState />}
+
+        {/* 템플릿 목록 */}
+        {!templatesLoading && templates.length > 0 && (
+          <View style={{ height: 400 }}>
+            <FlashList
+              data={templates}
+              keyExtractor={(item) => item.id}
+              renderItem={({ item }) => (
+                <TemplateCard
+                  template={item}
+                  onLoad={() => handleLoad(item)}
+                  onDelete={() => handleDeleteClick(item.id, item.name)}
+                  isLoading={loadingId === item.id || isLoadingTemplate}
+                  isDeleting={isDeletingTemplate}
+                />
+              )}
+              // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+              estimatedItemSize={140}
+              showsVerticalScrollIndicator={false}
+              nestedScrollEnabled={true}
+            />
+
+            {/* 안내 문구 */}
+            <View className="bg-amber-50 dark:bg-amber-900/30 rounded-lg p-3 mt-3">
+              <Text className="text-amber-700 dark:text-amber-300 text-xs text-center">
+                템플릿을 불러온 후 날짜를 설정해주세요
+              </Text>
+            </View>
+          </View>
+        )}
+      </Modal>
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        visible={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeleteConfirm}
+        title="템플릿 삭제"
+        message={`'${deleteTarget?.name ?? ''}' 템플릿을 삭제하시겠습니까?`}
+        confirmText="삭제"
+        cancelText="취소"
+        isDestructive
+      />
+    </>
   );
 }
 

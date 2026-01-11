@@ -16,7 +16,7 @@ import {
 import { Loading, ErrorState } from '@/components';
 import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 import type { ApplicantWithDetails } from '@/services';
-import type { ApplicationStats } from '@/types';
+import type { ApplicationStats, Assignment } from '@/types';
 
 // ============================================================================
 // Main Component
@@ -31,11 +31,11 @@ export default function ApplicantsScreen() {
     isLoading,
     error,
     refresh,
-    confirmApplication,
+    confirmWithHistory,
     rejectApplication,
     bulkConfirm,
     addToWaitlist,
-    isConfirming,
+    isConfirmingWithHistory,
     isRejecting,
     isBulkConfirming,
     isAddingToWaitlist,
@@ -82,6 +82,8 @@ export default function ApplicantsScreen() {
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantWithDetails | null>(null);
   const [modalAction, setModalAction] = useState<ConfirmModalAction>('confirm');
   const [isModalVisible, setIsModalVisible] = useState(false);
+  // 선택된 일정 (확정 시 전달)
+  const [selectedAssignmentsForConfirm, setSelectedAssignmentsForConfirm] = useState<Assignment[] | undefined>(undefined);
 
   // 프로필 모달 상태
   const [profileApplicant, setProfileApplicant] = useState<ApplicantWithDetails | null>(null);
@@ -110,8 +112,9 @@ export default function ApplicantsScreen() {
   }, []);
 
   // 확정 버튼 클릭
-  const handleConfirm = useCallback((applicant: ApplicantWithDetails) => {
+  const handleConfirm = useCallback((applicant: ApplicantWithDetails, selectedAssignments?: Assignment[]) => {
     setSelectedApplicant(applicant);
+    setSelectedAssignmentsForConfirm(selectedAssignments);
     setModalAction('confirm');
     setIsModalVisible(true);
   }, []);
@@ -134,13 +137,15 @@ export default function ApplicantsScreen() {
   const handleModalConfirm = useCallback((notes?: string) => {
     if (!selectedApplicant) return;
 
-    confirmApplication({
+    confirmWithHistory({
       applicationId: selectedApplicant.id,
+      selectedAssignments: selectedAssignmentsForConfirm,
       notes,
     });
     setIsModalVisible(false);
     setSelectedApplicant(null);
-  }, [selectedApplicant, confirmApplication]);
+    setSelectedAssignmentsForConfirm(undefined);
+  }, [selectedApplicant, selectedAssignmentsForConfirm, confirmWithHistory]);
 
   // 모달에서 거절 처리
   const handleModalReject = useCallback((reason?: string) => {
@@ -187,6 +192,7 @@ export default function ApplicantsScreen() {
   const handleCloseModal = useCallback(() => {
     setIsModalVisible(false);
     setSelectedApplicant(null);
+    setSelectedAssignmentsForConfirm(undefined);
   }, []);
 
   // 로딩 상태
@@ -216,7 +222,7 @@ export default function ApplicantsScreen() {
     );
   }
 
-  const isProcessing = isConfirming || isRejecting || isBulkConfirming || isAddingToWaitlist;
+  const isProcessing = isConfirmingWithHistory || isRejecting || isBulkConfirming || isAddingToWaitlist;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>

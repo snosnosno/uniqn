@@ -48,7 +48,6 @@ export {
 export {
   applyToJob,
   applyToJobV2,
-  applyToJobLegacy,
   getMyApplications,
   getApplicationById,
   cancelApplication,

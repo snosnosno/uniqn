@@ -14,7 +14,6 @@ import {
   deleteDoc,
   updateDoc,
   serverTimestamp,
-  Timestamp,
   query,
   where,
   orderBy,
@@ -99,14 +98,27 @@ export async function saveTemplate(
     // 날짜/일정 관련 필드 제외한 템플릿 데이터 추출
     const templateData = extractTemplateData(input.formData);
 
-    const template: Omit<JobPostingTemplate, 'id'> = {
+    // 디버깅: 저장될 데이터 확인
+    logger.info('템플릿 데이터 확인', {
+      location: templateData.location,
+      detailedAddress: templateData.detailedAddress,
+      postingType: templateData.postingType,
+      title: templateData.title,
+    });
+
+    // Firebase는 undefined 값을 허용하지 않으므로 조건부로 필드 추가
+    const template: Record<string, unknown> = {
       name: input.name,
-      description: input.description,
       createdBy: userId,
-      createdAt: serverTimestamp() as Timestamp,
+      createdAt: serverTimestamp(),
       templateData,
       usageCount: 0,
     };
+
+    // description이 있을 때만 추가
+    if (input.description) {
+      template.description = input.description;
+    }
 
     await setDoc(newDocRef, template);
 

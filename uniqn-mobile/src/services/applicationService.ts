@@ -638,37 +638,6 @@ export async function applyToJobV2(
   }
 }
 
-/**
- * 레거시 지원 함수 래퍼
- *
- * @description 기존 applyToJob을 내부적으로 v2 형식으로 변환하여 처리
- */
-export async function applyToJobLegacy(
-  input: CreateApplicationInput,
-  applicantId: string,
-  applicantName: string,
-  applicantPhone?: string
-): Promise<Application> {
-  // 레거시 입력을 v2 형식으로 변환 (향후 v2 API 전환 시 활용)
-  const v2Input: CreateApplicationInputV2 = {
-    jobPostingId: input.jobPostingId,
-    assignments: [
-      {
-        role: input.appliedRole,
-        timeSlot: '',
-        dates: [],
-        isGrouped: false,
-      },
-    ],
-    message: input.message,
-  };
-  // v2Input 준비 완료 - 향후 v2 API 전환 시 사용
-  void v2Input;
-
-  // 기존 applyToJob 함수 호출 (레거시 형식 유지)
-  return applyToJob(input, applicantId, applicantName, applicantPhone);
-}
-
 // ============================================================================
 // 취소 요청 시스템 (v2.1)
 // ============================================================================
