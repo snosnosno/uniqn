@@ -379,8 +379,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     (onCancelConfirmation || onConvertToStaff);
 
   // 액션 버튼 표시 여부
-  const canShowActions = showActions &&
-    (applicant.status === 'applied' || applicant.status === 'pending');
+  const canShowActions = showActions && applicant.status === 'applied';
 
   return (
     <Card

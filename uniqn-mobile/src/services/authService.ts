@@ -233,6 +233,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
 /**
  * 사용자 프로필 업데이트
+ * Firestore와 Firebase Auth를 동시에 업데이트
  */
 export async function updateUserProfile(
   uid: string,
@@ -241,10 +242,32 @@ export async function updateUserProfile(
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });
 
+    // 1. Firestore 업데이트
     await updateDoc(doc(getFirebaseDb(), 'users', uid), {
       ...updates,
       updatedAt: serverTimestamp(),
     });
+
+    // 2. Firebase Auth 업데이트 (name, photoURL 변경 시)
+    const currentUser = getFirebaseAuth().currentUser;
+    if (currentUser && currentUser.uid === uid) {
+      const authUpdates: { displayName?: string; photoURL?: string } = {};
+
+      // name(본명)이 변경되면 displayName 업데이트
+      if (updates.name) {
+        authUpdates.displayName = updates.name;
+      }
+
+      // photoURL이 변경되면 Firebase Auth도 업데이트
+      if ('photoURL' in updates) {
+        authUpdates.photoURL = updates.photoURL || null;
+      }
+
+      if (Object.keys(authUpdates).length > 0) {
+        await updateProfile(currentUser, authUpdates);
+        logger.info('Firebase Auth 프로필 업데이트', { uid, fields: Object.keys(authUpdates) });
+      }
+    }
 
     logger.info('프로필 업데이트 성공', { uid });
   } catch (error) {

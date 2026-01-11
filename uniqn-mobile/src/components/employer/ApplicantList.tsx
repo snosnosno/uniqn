@@ -48,7 +48,6 @@ type FilterStatus = 'all' | ApplicationStatus;
 const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
   { value: 'all', label: '전체' },
   { value: 'applied', label: '신규' },
-  { value: 'pending', label: '검토중' },
   { value: 'confirmed', label: '확정' },
   { value: 'waitlisted', label: '대기' },
   { value: 'rejected', label: '거절' },
@@ -229,11 +228,9 @@ export function ApplicantList({
     return applicants.filter((a) => a.status === selectedFilter);
   }, [applicants, selectedFilter]);
 
-  // 선택 가능한 지원자 (신규/검토중만)
+  // 선택 가능한 지원자 (신규만)
   const selectableApplicants = useMemo(() => {
-    return filteredApplicants.filter(
-      (a) => a.status === 'applied' || a.status === 'pending'
-    );
+    return filteredApplicants.filter((a) => a.status === 'applied');
   }, [filteredApplicants]);
 
   // 필터별 카운트

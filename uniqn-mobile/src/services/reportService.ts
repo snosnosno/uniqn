@@ -53,10 +53,15 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   });
 
   try {
+    // Firestore에서 프로필 조회하여 이름 가져오기
+    const userDoc = await getDoc(doc(db, 'users', user.uid));
+    const userProfile = userDoc.exists() ? userDoc.data() : null;
+    const reporterName = userProfile?.name || userProfile?.nickname || '익명';
+
     const reportData = {
       type: input.type,
       reporterId: user.uid,
-      reporterName: user.displayName || '익명',
+      reporterName,
       targetId: input.targetId,
       targetName: input.targetName,
       jobPostingId: input.jobPostingId,

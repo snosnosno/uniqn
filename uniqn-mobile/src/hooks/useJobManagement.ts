@@ -94,17 +94,19 @@ export function useJobPostingStats() {
 export function useCreateJobPosting() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
 
   return useMutation({
     mutationFn: (params: CreateJobParams) => {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
+      // Firestore profile의 name/nickname 우선 사용, 없으면 Firebase Auth displayName
+      const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
       return createJobPosting(
         params.input,
         user.uid,
-        user.displayName ?? '익명'
+        ownerName
       );
     },
     onSuccess: (data) => {

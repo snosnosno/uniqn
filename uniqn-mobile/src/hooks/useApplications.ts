@@ -51,7 +51,7 @@ interface RequestCancellationParams {
 export function useApplications() {
   const queryClient = useQueryClient();
   const { addToast } = useToastStore();
-  const { user } = useAuthStore();
+  const { user, profile } = useAuthStore();
 
   // 내 지원 내역 조회
   const myApplicationsQuery = useQuery({
@@ -67,6 +67,9 @@ export function useApplications() {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
+      // Firestore profile 우선, Auth displayName 폴백
+      const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
+      const applicantPhone = profile?.phone || user.phoneNumber || undefined;
       return applyToJob(
         {
           jobPostingId: params.jobPostingId,
@@ -74,8 +77,8 @@ export function useApplications() {
           message: params.message,
         },
         user.uid,
-        user.displayName ?? '익명',
-        user.phoneNumber ?? undefined
+        applicantName,
+        applicantPhone
       );
     },
     onSuccess: (data) => {
@@ -105,6 +108,9 @@ export function useApplications() {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
+      // Firestore profile 우선, Auth displayName 폴백
+      const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
+      const applicantPhone = profile?.phone || user.phoneNumber || undefined;
       return applyToJobV2(
         {
           jobPostingId: params.jobPostingId,
@@ -113,8 +119,8 @@ export function useApplications() {
           message: params.message,
         },
         user.uid,
-        user.displayName ?? '익명',
-        user.phoneNumber ?? undefined
+        applicantName,
+        applicantPhone
       );
     },
     onSuccess: (data) => {
