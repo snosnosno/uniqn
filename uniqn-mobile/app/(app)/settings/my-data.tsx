@@ -14,7 +14,8 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
-import { getMyData, updateMyData, exportMyData, type UserData } from '@/services';
+import { getMyData, updateMyData, exportMyData } from '@/services';
+import type { FirestoreUserProfile } from '@/types';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -55,11 +56,11 @@ export default function MyDataScreen() {
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
 
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<FirestoreUserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editField, setEditField] = useState<'displayName' | 'phoneNumber' | null>(null);
+  const [editField, setEditField] = useState<'nickname' | null>(null);
   const [editValue, setEditValue] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -83,8 +84,8 @@ export default function MyDataScreen() {
     loadData();
   }, [loadData]);
 
-  // 수정 모달 열기
-  const handleEdit = useCallback((field: 'displayName' | 'phoneNumber') => {
+  // 수정 모달 열기 (닉네임만 수정 가능)
+  const handleEdit = useCallback((field: 'nickname') => {
     setEditField(field);
     setEditValue(userData?.[field] ?? '');
     setShowEditModal(true);
@@ -96,7 +97,7 @@ export default function MyDataScreen() {
 
     try {
       setIsSaving(true);
-      await updateMyData(user.uid, { [editField]: editValue || null });
+      await updateMyData(user.uid, { [editField]: editValue || undefined });
       addToast({ type: 'success', message: '정보가 수정되었습니다' });
       setShowEditModal(false);
       loadData(); // 새로고침
@@ -218,21 +219,17 @@ export default function MyDataScreen() {
           </Text>
 
           <DataRow label="이메일" value={userData?.email ?? null} />
+          <DataRow label="이름" value={userData?.name ?? null} />
+          <DataRow label="연락처" value={userData?.phone ?? null} />
           <DataRow
-            label="이름"
-            value={userData?.displayName ?? null}
+            label="닉네임"
+            value={userData?.nickname ?? null}
             editable
-            onEdit={() => handleEdit('displayName')}
-          />
-          <DataRow
-            label="연락처"
-            value={userData?.phoneNumber ?? null}
-            editable
-            onEdit={() => handleEdit('phoneNumber')}
+            onEdit={() => handleEdit('nickname')}
           />
           <DataRow label="회원 유형" value={getRoleLabel(userData?.role ?? '')} />
           <DataRow label="가입일" value={formatDate(userData?.createdAt)} />
-          <DataRow label="최근 로그인" value={formatDate(userData?.lastLoginAt)} />
+          <DataRow label="수정일" value={formatDate(userData?.updatedAt)} />
         </Card>
 
         {/* 데이터 내보내기 */}
@@ -279,15 +276,14 @@ export default function MyDataScreen() {
       <Modal
         visible={showEditModal}
         onClose={() => setShowEditModal(false)}
-        title={editField === 'displayName' ? '이름 수정' : '연락처 수정'}
+        title="닉네임 수정"
       >
         <View className="p-4">
           <Input
-            label={editField === 'displayName' ? '이름' : '연락처'}
+            label="닉네임"
             value={editValue}
             onChangeText={setEditValue}
-            placeholder={editField === 'displayName' ? '이름을 입력하세요' : '010-0000-0000'}
-            keyboardType={editField === 'phoneNumber' ? 'phone-pad' : 'default'}
+            placeholder="닉네임을 입력하세요"
             autoFocus
           />
 

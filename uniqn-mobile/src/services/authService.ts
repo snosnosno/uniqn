@@ -38,42 +38,18 @@ import {
   setUserId,
   setUserProperties,
 } from './analyticsService';
-import type { UserRole } from '@/types';
+import type { FirestoreUserProfile, EditableProfileFields } from '@/types';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-export interface UserProfile {
-  uid: string;
-  email: string;
-  name: string;
-  nickname?: string;
-  phone?: string;
-  role: UserRole;
-  photoURL?: string;
-  // 추가 정보
-  gender?: 'male' | 'female' | 'other';
-  birthYear?: number;
-  region?: string;
-  experienceYears?: number;
-  career?: string;
-  note?: string;
-  // 본인인증 정보
-  identityVerified: boolean;
-  identityProvider?: 'pass' | 'kakao';
-  verifiedName?: string;
-  verifiedPhone?: string;
-  // 동의 정보
-  termsAgreed: boolean;
-  privacyAgreed: boolean;
-  marketingAgreed: boolean;
-  // 메타데이터
-  isActive: boolean;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
+/**
+ * UserProfile 타입 (하위 호환성을 위해 re-export)
+ * @see FirestoreUserProfile from '@/types/user'
+ */
+export type UserProfile = FirestoreUserProfile;
 
 export interface AuthResult {
   user: FirebaseUser;
@@ -260,20 +236,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
  */
 export async function updateUserProfile(
   uid: string,
-  updates: Partial<
-    Pick<
-      UserProfile,
-      | 'nickname'
-      | 'phone'
-      | 'photoURL'
-      | 'gender'
-      | 'birthYear'
-      | 'region'
-      | 'experienceYears'
-      | 'career'
-      | 'note'
-    >
-  >
+  updates: Partial<EditableProfileFields>
 ): Promise<void> {
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });

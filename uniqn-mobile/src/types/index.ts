@@ -35,6 +35,15 @@ export type {
 
 export { toDate } from './common';
 
+// 사용자 프로필 타입 (통합)
+export type {
+  UserProfile,
+  FirestoreUserProfile,
+  EditableProfileFields,
+  ProfileViewFields,
+  MyDataEditableFields,
+} from './user';
+
 // 인증 타입
 export type {
   AuthStatus,

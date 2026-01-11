@@ -94,7 +94,7 @@ export {
   DELETION_REASONS,
   type DeletionReason,
   type DeletionRequest,
-  type UserData,
+  type UserData,  // @deprecated - FirestoreUserProfile 사용 권장
   type UserDataExport,
 } from './accountDeletionService';
 

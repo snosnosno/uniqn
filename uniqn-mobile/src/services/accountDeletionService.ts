@@ -26,6 +26,7 @@ import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, AuthError } from '@/errors';
+import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
 // Constants
@@ -60,18 +61,14 @@ export interface DeletionRequest {
   status: 'pending' | 'cancelled' | 'completed';
 }
 
-export interface UserData {
-  uid: string;
-  email: string;
-  displayName: string | null;
-  phoneNumber: string | null;
-  role: string;
-  createdAt: Timestamp;
-  lastLoginAt?: Timestamp;
-}
+/**
+ * @deprecated UserData는 FirestoreUserProfile로 대체됨
+ * @see FirestoreUserProfile from '@/types/user'
+ */
+export type UserData = FirestoreUserProfile;
 
 export interface UserDataExport {
-  profile: UserData;
+  profile: FirestoreUserProfile;
   applications: {
     id: string;
     jobPostingTitle: string;
@@ -221,7 +218,7 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
 /**
  * 내 개인정보 조회
  */
-export async function getMyData(userId: string): Promise<UserData | null> {
+export async function getMyData(userId: string): Promise<FirestoreUserProfile | null> {
   try {
     logger.info('개인정보 조회', { userId });
 
@@ -232,16 +229,7 @@ export async function getMyData(userId: string): Promise<UserData | null> {
       return null;
     }
 
-    const data = userDoc.data();
-    return {
-      uid: userDoc.id,
-      email: data.email,
-      displayName: data.displayName,
-      phoneNumber: data.phoneNumber,
-      role: data.role,
-      createdAt: data.createdAt,
-      lastLoginAt: data.lastLoginAt,
-    };
+    return userDoc.data() as FirestoreUserProfile;
   } catch (error) {
     logger.error('개인정보 조회 실패', error as Error, { userId });
     throw mapFirebaseError(error);
@@ -250,10 +238,13 @@ export async function getMyData(userId: string): Promise<UserData | null> {
 
 /**
  * 개인정보 수정
+ *
+ * @description my-data 화면에서 닉네임만 수정 가능
+ * name, phone은 본인인증 정보라 수정 불가 (profile.tsx에서도 읽기 전용)
  */
 export async function updateMyData(
   userId: string,
-  updates: Partial<Pick<UserData, 'displayName' | 'phoneNumber'>>
+  updates: Partial<MyDataEditableFields>
 ): Promise<void> {
   try {
     logger.info('개인정보 수정', { userId, fields: Object.keys(updates) });

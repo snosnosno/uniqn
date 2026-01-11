@@ -20,10 +20,10 @@ import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '@/lib/mmkvStorage';
 import { User as FirebaseUser } from 'firebase/auth';
-import type { UserRole } from '@/types';
+import type { UserRole, UserProfile } from '@/types';
 
-// Re-export UserRole for convenience
-export type { UserRole };
+// Re-export for convenience (하위 호환성)
+export type { UserRole, UserProfile };
 
 // ============================================================================
 // Types
@@ -36,26 +36,6 @@ export interface AuthUser {
   photoURL: string | null;
   emailVerified: boolean;
   phoneNumber: string | null;
-}
-
-export interface UserProfile {
-  uid: string;
-  email: string;
-  name: string;
-  nickname?: string;
-  phone?: string;
-  role: UserRole;
-  photoURL?: string;
-  // 추가 정보
-  gender?: 'male' | 'female' | 'other';
-  birthYear?: number;
-  region?: string;
-  experienceYears?: number;
-  career?: string;
-  note?: string;
-  // 타임스탬프
-  createdAt: Date;
-  updatedAt: Date;
 }
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
