@@ -35,10 +35,10 @@ export interface TournamentDay {
 /**
  * 역할 + 인원 정보
  *
- * @description 기본 역할: 딜러, 플로어 / 추가 역할 가능
+ * @description 기본 역할: 직원, 매니저 / 추가 역할 가능
  */
 export interface FormRoleWithCount {
-  /** 역할 이름 (딜러, 플로어, 또는 직접 입력) */
+  /** 역할 이름 (직원, 매니저, 또는 직접 입력) */
   name: string;
   /** 필요 인원 */
   count: number;
@@ -50,8 +50,8 @@ export interface FormRoleWithCount {
  * 기본 역할 목록
  */
 export const DEFAULT_ROLES: FormRoleWithCount[] = [
-  { name: '딜러', count: 1, isCustom: false },
-  { name: '플로어', count: 1, isCustom: false },
+  { name: '직원', count: 1, isCustom: false },
+  { name: '매니저', count: 1, isCustom: false },
 ];
 
 /**
@@ -141,17 +141,17 @@ export interface JobPostingFormData {
   dateSpecificRequirements?: DateSpecificRequirement[];
 
   // --- fixed: 주 출근일수 ---
-  /** 주 출근일수 (1-7) */
+  /** 주 출근일수 (0 = 협의, 1-7 = 일수) */
   daysPerWeek: number;
 
-  /** 근무 요일 (월, 화, 수...) */
-  workDays: string[];
+  /** @deprecated 근무 요일 - 더 이상 사용되지 않음 */
+  workDays?: string[];
 
   // ============================================================
   // Step 3: 역할/인원
   // ============================================================
 
-  /** 역할별 모집 인원 (기본: 딜러, 플로어) */
+  /** 역할별 모집 인원 (기본: 직원, 매니저) */
   roles: FormRoleWithCount[];
 
   // ============================================================
@@ -205,8 +205,7 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   startTime: '',
   tournamentDates: [],
   dateSpecificRequirements: [],
-  daysPerWeek: 5,
-  workDays: [],
+  daysPerWeek: 0, // 0 = 협의 (기본값)
 
   // Step 3
   roles: [...DEFAULT_ROLES],
@@ -275,8 +274,9 @@ export function validateStep(
           if (!day.startTime) errors.push(`Day ${idx + 1}: 출근 시간을 선택해주세요`);
         });
       } else if (data.postingType === 'fixed') {
-        if (data.daysPerWeek < 1 || data.daysPerWeek > 7) {
-          errors.push('주 출근일수는 1~7일 사이로 입력해주세요');
+        // daysPerWeek: 0 = 협의, 1-7 = 일수 (모두 유효)
+        if (data.daysPerWeek < 0 || data.daysPerWeek > 7) {
+          errors.push('주 출근일수를 선택해주세요');
         }
         if (!data.startTime) errors.push('출근 시간을 선택해주세요');
       }

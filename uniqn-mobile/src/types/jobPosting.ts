@@ -167,10 +167,10 @@ export interface JobPosting extends FirebaseDocument {
   /** 근무 스케줄 */
   workSchedule?: WorkSchedule;
 
-  /** 주 출근일수 (1-7) - fixed 타입용 */
+  /** 주 출근일수 (0 = 협의, 1-7 = 일수) - fixed 타입용 */
   daysPerWeek?: number;
 
-  /** 근무 요일 - fixed 타입용 */
+  /** @deprecated 근무 요일 - 더 이상 사용되지 않음 */
   workDays?: string[];
 
   /** 역할별 모집 인원 (상세) */
@@ -222,8 +222,9 @@ export interface CreateJobPostingInput {
   startTime?: string;             // 출근시간
   tournamentDates?: TournamentDay[];  // tournament (deprecated, v2.0에서 dateSpecificRequirements로 대체)
   dateSpecificRequirements?: DateSpecificRequirement[]; // v2.0: 날짜별 요구사항 (regular/urgent/tournament 공통)
-  daysPerWeek?: number;           // fixed
-  workDays?: string[];            // fixed
+  daysPerWeek?: number;           // fixed (0 = 협의, 1-7 = 일수)
+  /** @deprecated workDays는 더 이상 사용되지 않음 */
+  workDays?: string[];
 
   // 역할
   roles: RoleRequirement[] | FormRoleWithCount[];
@@ -310,6 +311,16 @@ export interface JobPostingCard {
   postingType?: PostingType;
   /** 구인자 이름 */
   ownerName?: string;
+
+  // === 고정공고 전용 필드 ===
+  /** 주 출근일수 (0 = 협의, 1-7 = 일수) */
+  daysPerWeek?: number;
+  /** @deprecated 근무 요일 - 더 이상 사용되지 않음 */
+  workDays?: string[];
+  /** 출근 시간 (HH:mm) */
+  startTime?: string;
+  /** 역할별 모집 인원 */
+  requiredRolesWithCount?: RoleWithCount[];
 }
 
 /**
@@ -397,5 +408,13 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
     applicationCount: posting.applicationCount,
     postingType: posting.postingType,
     ownerName: posting.ownerName,
+
+    // 고정공고 전용 필드
+    daysPerWeek: posting.daysPerWeek,
+    workDays: posting.workDays,
+    startTime:
+      posting.workSchedule?.timeSlots?.[0] ||
+      posting.timeSlot?.split(/[-~]/)[0]?.trim(),
+    requiredRolesWithCount: posting.requiredRolesWithCount,
   };
 };

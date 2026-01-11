@@ -14,6 +14,7 @@ import { useMyJobPostings, useCloseJobPosting, useReopenJobPosting } from '@/hoo
 import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } from '@/components';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
+import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
 import {
   PlusIcon,
   UsersIcon,
@@ -303,7 +304,15 @@ const JobPostingCard = memo(function JobPostingCard({
       <View className="flex-row">
         {/* 왼쪽: 일정 */}
         <View className="flex-1 pr-3">
-          {dateRequirements.length > 0 ? (
+          {posting.postingType === 'fixed' ? (
+            // 고정공고: FixedScheduleDisplay 사용
+            <FixedScheduleDisplay
+              daysPerWeek={posting.daysPerWeek}
+              workDays={posting.workDays}
+              startTime={posting.workSchedule?.timeSlots?.[0] || posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+              compact={true}
+            />
+          ) : dateRequirements.length > 0 ? (
             dateRequirements.map((dateReq, dateIdx) => (
               <View key={dateIdx} className="mb-2">
                 {/* 날짜 */}
@@ -347,7 +356,7 @@ const JobPostingCard = memo(function JobPostingCard({
         </View>
 
         {/* 오른쪽: 급여 + 수당 */}
-        <View className="w-32 pl-3 border-l border-gray-100 dark:border-gray-700">
+        <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
           {/* 급여 */}
           {posting.roleSalaries &&
           Object.keys(posting.roleSalaries).length > 0 &&
@@ -357,7 +366,6 @@ const JobPostingCard = memo(function JobPostingCard({
               <Text
                 key={idx}
                 className="text-sm text-gray-900 dark:text-white"
-                numberOfLines={1}
               >
                 💰 {role}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
               </Text>

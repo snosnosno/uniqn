@@ -51,3 +51,4 @@ export { PreQuestionForm } from './PreQuestionForm';
 
 export { DateRequirementDisplay } from './DateRequirementDisplay';
 export { RoleSalaryDisplay, SalarySummary } from './RoleSalaryDisplay';
+export { FixedScheduleDisplay } from './FixedScheduleDisplay';

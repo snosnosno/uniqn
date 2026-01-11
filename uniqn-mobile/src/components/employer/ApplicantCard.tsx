@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 지원자 카드 컴포넌트
  *
- * @description 구인자가 지원자 정보를 확인하는 카드 (v2.2 - 프로필 정보 연동)
- * @version 2.2.0
+ * @description 구인자가 지원자 정보를 확인하는 카드 (v2.3 - 고정공고 지원)
+ * @version 2.3.0
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
@@ -24,11 +24,12 @@ import {
   ChevronDownIcon,
 } from '../icons';
 import { ConfirmationHistoryTimeline } from '../applicant/ConfirmationHistoryTimeline';
+import { FixedScheduleDisplay } from '../jobs/FixedScheduleDisplay';
 import { APPLICATION_STATUS_LABELS, getAssignmentRoles } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import type { ApplicantWithDetails, UserProfile } from '@/services';
-import type { ApplicationStatus, Assignment } from '@/types';
+import type { ApplicationStatus, Assignment, PostingType } from '@/types';
 
 // Android LayoutAnimation 활성화
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -60,6 +61,14 @@ export interface ApplicantCardProps {
   onSelect?: (applicant: ApplicantWithDetails) => void;
   /** 초기 펼침 상태 */
   initialExpanded?: boolean;
+  /** 공고 타입 (고정공고 여부 판단) */
+  postingType?: PostingType;
+  /** 고정공고: 주 출근일수 */
+  daysPerWeek?: number;
+  /** 고정공고: 출근 요일 */
+  workDays?: string[];
+  /** 고정공고: 출근 시간 */
+  startTime?: string;
 }
 
 // ============================================================================
@@ -175,7 +184,13 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   selectionMode = false,
   onSelect,
   initialExpanded = true,
+  postingType,
+  daysPerWeek,
+  workDays,
+  startTime,
 }: ApplicantCardProps) {
+  // 고정공고 모드 판단
+  const isFixedMode = postingType === 'fixed';
   // 다크모드 감지
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
@@ -319,6 +334,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 확정 핸들러
   const handleConfirm = useCallback(() => {
+    // 고정공고: 역할만 확정 (날짜 선택 없음)
+    if (isFixedMode) {
+      onConfirm?.(applicant);
+      return;
+    }
+
     const selectedAssignments = getSelectedAssignments();
     // 선택된 일정이 있으면 해당 일정만, 없거나 레거시면 전체 확정
     if (selectedAssignments.length > 0) {
@@ -326,7 +347,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     } else {
       onConfirm?.(applicant);
     }
-  }, [applicant, onConfirm, getSelectedAssignments]);
+  }, [applicant, onConfirm, getSelectedAssignments, isFixedMode]);
 
   // 거절 핸들러
   const handleReject = useCallback(() => {
@@ -435,8 +456,25 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
           </Text>
 
-          {/* 선택한 날짜/시간/역할 - 체크박스 */}
-          {assignmentDisplays.length > 0 && canShowActions && (
+          {/* 고정공고: 근무 조건 표시 (날짜 선택 없음) */}
+          {isFixedMode && (
+            <View className={`mb-3 p-3 rounded-lg border ${
+              isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+            }`}>
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                근무 조건
+              </Text>
+              <FixedScheduleDisplay
+                daysPerWeek={daysPerWeek}
+                workDays={workDays}
+                startTime={startTime}
+                compact={true}
+              />
+            </View>
+          )}
+
+          {/* 선택한 날짜/시간/역할 - 체크박스 (고정공고 제외) */}
+          {!isFixedMode && assignmentDisplays.length > 0 && canShowActions && (
             <View className="mb-3">
               {/* 전체 선택/해제 버튼 */}
               <View className="flex-row items-center mb-2">
@@ -505,8 +543,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             </View>
           )}
 
-          {/* 확정된/거절된 상태에서는 체크박스 없이 표시 */}
-          {assignmentDisplays.length > 0 && !canShowActions && (
+          {/* 확정된/거절된 상태에서는 체크박스 없이 표시 (고정공고 제외) */}
+          {!isFixedMode && assignmentDisplays.length > 0 && !canShowActions && (
             <View className="gap-1.5 mb-3">
               {assignmentDisplays.map((display, idx) => (
                 <View
@@ -529,8 +567,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             </View>
           )}
 
-          {/* 레거시 지원 날짜/시간대 (assignments가 없을 때) */}
-          {assignmentDisplays.length === 0 && (applicant.appliedDate || applicant.appliedTimeSlot) && (
+          {/* 레거시 지원 날짜/시간대 (assignments가 없을 때, 고정공고 제외) */}
+          {!isFixedMode && assignmentDisplays.length === 0 && (applicant.appliedDate || applicant.appliedTimeSlot) && (
             <View className={`flex-row items-center rounded-lg px-3 py-2 self-start mb-3 border ${
               isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200'
             }`}>
@@ -681,18 +719,20 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           {/* 확정 버튼 */}
           <Pressable
             onPress={handleConfirm}
-            disabled={totalCount > 0 && selectedCount === 0}
+            disabled={!isFixedMode && totalCount > 0 && selectedCount === 0}
             className={`flex-1 flex-row items-center justify-center py-2 rounded-lg active:opacity-70 ${
-              totalCount > 0 && selectedCount === 0
+              !isFixedMode && totalCount > 0 && selectedCount === 0
                 ? 'bg-gray-300 dark:bg-gray-600'
                 : 'bg-primary-500'
             }`}
           >
             <CheckIcon size={16} color="#fff" />
             <Text className="ml-1 text-sm font-medium text-white">
-              {totalCount > 0 && selectedCount < totalCount
-                ? `${selectedCount}개 확정`
-                : '확정'}
+              {isFixedMode
+                ? '역할 확정'
+                : totalCount > 0 && selectedCount < totalCount
+                  ? `${selectedCount}개 확정`
+                  : '확정'}
             </Text>
           </Pressable>
         </View>

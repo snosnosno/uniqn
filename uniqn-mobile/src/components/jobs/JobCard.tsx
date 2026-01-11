@@ -9,6 +9,7 @@ import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { PostingTypeBadge } from './PostingTypeBadge';
+import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import type {
   JobPostingCard,
   PostingType,
@@ -125,8 +126,16 @@ const RoleLine = memo(function RoleLine({
   showTime: boolean;
   time: string;
 }) {
+  const isFilled = role.filled >= role.count && role.count > 0;
+
   return (
-    <Text className="text-sm text-gray-900 dark:text-gray-100">
+    <Text
+      className={`text-sm ${
+        isFilled
+          ? 'text-gray-400 dark:text-gray-500 line-through'
+          : 'text-gray-900 dark:text-gray-100'
+      }`}
+    >
       {showTime ? `${time} ` : '       '}
       {getRoleLabel(role.role)} {role.count}명 ({role.filled}/{role.count})
     </Text>
@@ -194,7 +203,15 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
       <View className="flex-row">
         {/* 왼쪽: 일정 */}
         <View className="flex-1 pr-3">
-          {job.dateRequirements && job.dateRequirements.length > 0 ? (
+          {job.postingType === 'fixed' ? (
+            // 고정공고: FixedScheduleDisplay 사용
+            <FixedScheduleDisplay
+              daysPerWeek={job.daysPerWeek}
+              workDays={job.workDays}
+              startTime={job.startTime || job.timeSlot?.split(/[-~]/)[0]?.trim()}
+              compact={true}
+            />
+          ) : job.dateRequirements && job.dateRequirements.length > 0 ? (
             job.dateRequirements.map((dateReq, dateIdx) => (
               <View key={dateIdx} className="mb-2">
                 {/* 날짜 */}
@@ -238,7 +255,7 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
         </View>
 
         {/* 오른쪽: 급여 + 수당 */}
-        <View className="w-32 pl-3 border-l border-gray-100 dark:border-gray-700">
+        <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
           {/* 급여 */}
           {job.roleSalaries &&
           Object.keys(job.roleSalaries).length > 0 &&
@@ -248,7 +265,6 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
               <Text
                 key={idx}
                 className="text-sm text-gray-900 dark:text-white"
-                numberOfLines={1}
               >
                 💰 {role}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
               </Text>

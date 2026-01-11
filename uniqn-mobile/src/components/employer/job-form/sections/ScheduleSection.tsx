@@ -51,17 +51,18 @@ function formatDate(date: Date | null): string {
 // Constants
 // ============================================================================
 
-const WEEKDAYS = [
-  { key: '월', label: '월' },
-  { key: '화', label: '화' },
-  { key: '수', label: '수' },
-  { key: '목', label: '목' },
-  { key: '금', label: '금' },
-  { key: '토', label: '토' },
-  { key: '일', label: '일' },
-];
 
-const DAYS_OPTIONS = [1, 2, 3, 4, 5, 6, 7];
+/** 주 출근일수 옵션 (0 = 협의) */
+const DAYS_OPTIONS = [
+  { value: 0, label: '협의' },
+  { value: 1, label: '1일' },
+  { value: 2, label: '2일' },
+  { value: 3, label: '3일' },
+  { value: 4, label: '4일' },
+  { value: 5, label: '5일' },
+  { value: 6, label: '6일' },
+  { value: 7, label: '7일' },
+];
 
 // ============================================================================
 // Sub Components
@@ -152,14 +153,6 @@ const FixedSchedule = memo(function FixedSchedule({
   onUpdate: (data: Partial<JobPostingFormData>) => void;
   errors?: Record<string, string>;
 }) {
-  const handleWeekdayToggle = useCallback((day: string) => {
-    const currentDays = data.workDays || [];
-    const newDays = currentDays.includes(day)
-      ? currentDays.filter((d) => d !== day)
-      : [...currentDays, day];
-    onUpdate({ workDays: newDays });
-  }, [data.workDays, onUpdate]);
-
   return (
     <View>
       <View className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
@@ -171,12 +164,12 @@ const FixedSchedule = memo(function FixedSchedule({
       {/* 주 출근일수 */}
       <FormField label="주 출근일수" required error={errors?.daysPerWeek}>
         <View className="flex-row flex-wrap gap-2">
-          {DAYS_OPTIONS.map((days) => {
-            const isSelected = data.daysPerWeek === days;
+          {DAYS_OPTIONS.map((option) => {
+            const isSelected = data.daysPerWeek === option.value;
             return (
               <Pressable
-                key={days}
-                onPress={() => onUpdate({ daysPerWeek: days })}
+                key={option.value}
+                onPress={() => onUpdate({ daysPerWeek: option.value })}
                 className={`
                   px-4 py-2 rounded-lg border-2
                   ${isSelected
@@ -186,41 +179,7 @@ const FixedSchedule = memo(function FixedSchedule({
                 `}
               >
                 <Text className={`font-medium ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-white'}`}>
-                  {days}일
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      </FormField>
-
-      {/* 출근 요일 */}
-      <FormField label="출근 요일" className="mt-4">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-          협의 가능한 요일을 선택해주세요 (선택사항)
-        </Text>
-        <View className="flex-row gap-2">
-          {WEEKDAYS.map((weekday) => {
-            const isSelected = data.workDays?.includes(weekday.key);
-            const isWeekend = weekday.key === '토' || weekday.key === '일';
-            return (
-              <Pressable
-                key={weekday.key}
-                onPress={() => handleWeekdayToggle(weekday.key)}
-                className={`
-                  flex-1 py-3 rounded-lg border-2 items-center
-                  ${isSelected
-                    ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
-                    : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
-                  }
-                `}
-              >
-                <Text className={`font-medium text-sm ${
-                  isSelected ? 'text-indigo-600 dark:text-indigo-400'
-                    : isWeekend ? 'text-red-500 dark:text-red-400'
-                    : 'text-gray-900 dark:text-white'
-                }`}>
-                  {weekday.label}
+                  {option.label}
                 </Text>
               </Pressable>
             );

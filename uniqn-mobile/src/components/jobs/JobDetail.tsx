@@ -10,6 +10,7 @@ import { View, Text, Linking, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { DateRequirementDisplay } from './DateRequirementDisplay';
+import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import type { JobPosting, PostingType, Allowances } from '@/types';
 
@@ -220,8 +221,31 @@ export function JobDetail({ job }: JobDetailProps) {
 
         <InfoRow icon="📍" label="근무지" value={getLocationValue()} />
 
-        {/* 날짜별 요구사항 (v2.0) */}
-        {hasDateRequirements ? (
+        {/* 날짜별 요구사항 (v2.0) 또는 고정공고 일정 */}
+        {job.postingType === 'fixed' ? (
+          // 고정공고: FixedScheduleDisplay 사용
+          <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row items-start">
+              <Text className="text-lg mr-3">📅</Text>
+              <View className="flex-1">
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                  근무 일정
+                </Text>
+                <FixedScheduleDisplay
+                  daysPerWeek={job.daysPerWeek}
+                  workDays={job.workDays}
+                  startTime={job.workSchedule?.timeSlots?.[0] || job.timeSlot?.split(/[-~]/)[0]?.trim()}
+                  roles={job.requiredRolesWithCount?.map((r) => ({
+                    role: r.role,
+                    count: r.count,
+                  }))}
+                  showRoles={true}
+                  showFilledCount={true}
+                />
+              </View>
+            </View>
+          </View>
+        ) : hasDateRequirements ? (
           <View className="py-3 border-b border-gray-100 dark:border-gray-700">
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">📅</Text>

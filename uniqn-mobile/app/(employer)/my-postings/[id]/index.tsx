@@ -29,6 +29,7 @@ import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 import {
   PostingTypeBadge,
   DateRequirementDisplay,
+  FixedScheduleDisplay,
   RoleSalaryDisplay,
 } from '@/components/jobs';
 import type { PostingType, Allowances } from '@/types';
@@ -272,8 +273,31 @@ export default function JobPostingDetailScreen() {
               </Text>
             </View>
 
-            {/* 날짜/시간 (v2.0: 날짜별 요구사항) */}
-            {hasDateRequirements ? (
+            {/* 날짜/시간 (v2.0: 날짜별 요구사항 또는 고정공고 일정) */}
+            {posting.postingType === 'fixed' ? (
+              // 고정공고: FixedScheduleDisplay 사용
+              <View className="mb-4">
+                <View className="flex-row items-center mb-2">
+                  <ClockIcon size={18} color="#2563EB" />
+                  <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
+                    근무 일정
+                  </Text>
+                </View>
+                <View className="ml-6">
+                  <FixedScheduleDisplay
+                    daysPerWeek={posting.daysPerWeek}
+                    workDays={posting.workDays}
+                    startTime={posting.workSchedule?.timeSlots?.[0] || posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+                    roles={posting.requiredRolesWithCount?.map((r) => ({
+                      role: r.role,
+                      count: r.count,
+                    }))}
+                    showRoles={true}
+                    showFilledCount={true}
+                  />
+                </View>
+              </View>
+            ) : hasDateRequirements ? (
               <View className="mb-4">
                 <View className="flex-row items-center mb-2">
                   <ClockIcon size={18} color="#2563EB" />
@@ -400,11 +424,12 @@ export default function JobPostingDetailScreen() {
               onPress={handleCancellationRequests}
             />
 
-            {/* 정산 관리 */}
+            {/* 스태프/정산 관리 */}
             <ActionCard
               icon={<BanknotesIcon size={24} color="#10B981" />}
-              title="정산 관리"
-              description="스태프 근무 기록 및 정산"
+              title="스태프/정산 관리"
+              description="확정 스태프 관리 및 정산"
+              badge={confirmedCount > 0 ? { label: `${confirmedCount}명`, variant: 'success' } : undefined}
               onPress={handleSettlements}
             />
 
