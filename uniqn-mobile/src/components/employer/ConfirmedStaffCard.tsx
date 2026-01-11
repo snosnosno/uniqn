@@ -199,7 +199,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           <View className="flex-1">
             <View className="flex-row items-center">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {staff.staffName}
+                {staff.staffName}{staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
               {staff.isRead === false && (
                 <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />

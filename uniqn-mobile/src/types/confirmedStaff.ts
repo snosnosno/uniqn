@@ -87,6 +87,12 @@ export interface ConfirmedStaff {
   /** 스태프 이름 */
   staffName: string;
 
+  /** 스태프 닉네임 */
+  staffNickname?: string;
+
+  /** 스태프 프로필 사진 URL */
+  staffPhotoURL?: string;
+
   /** 스태프 연락처 */
   phone?: string;
 

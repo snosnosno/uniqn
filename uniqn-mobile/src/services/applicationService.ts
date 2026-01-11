@@ -128,7 +128,9 @@ export async function applyToJob(
   input: CreateApplicationInput,
   applicantId: string,
   applicantName: string,
-  applicantPhone?: string
+  applicantPhone?: string,
+  applicantNickname?: string,
+  applicantPhotoURL?: string
 ): Promise<Application> {
   try {
     logger.info('지원하기 시작', { jobPostingId: input.jobPostingId, applicantId });
@@ -194,6 +196,8 @@ export async function applyToJob(
         applicantName,
         // undefined는 Firebase에 저장 불가 - 조건부 추가
         ...(applicantPhone && { applicantPhone }),
+        ...(applicantNickname && { applicantNickname }),
+        ...(applicantPhotoURL && { applicantPhotoURL }),
         applicantRole: input.appliedRole,
         jobPostingId: input.jobPostingId,
         jobPostingTitle: jobData.title || '',
@@ -502,7 +506,9 @@ export async function applyToJobV2(
   applicantId: string,
   applicantName: string,
   applicantPhone?: string,
-  applicantEmail?: string
+  applicantEmail?: string,
+  applicantNickname?: string,
+  applicantPhotoURL?: string
 ): Promise<Application> {
   const trace = startApiTrace('applyToJobV2');
   trace.putAttribute('jobPostingId', input.jobPostingId);
@@ -622,6 +628,8 @@ export async function applyToJobV2(
         // undefined는 Firebase에 저장 불가 - 조건부 추가
         ...(applicantPhone && { applicantPhone }),
         ...(applicantEmail && { applicantEmail }),
+        ...(applicantNickname && { applicantNickname }),
+        ...(applicantPhotoURL && { applicantPhotoURL }),
         applicantRole: primaryRole,
 
         // 공고 정보 (레거시 호환)

@@ -205,7 +205,7 @@ export function RoleChangeModal({
             </View>
             <View className="ml-3 flex-1">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {staff.staffName}
+                {staff.staffName}{staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
               <View className="flex-row items-center mt-1">
                 <Badge variant="default" size="sm">

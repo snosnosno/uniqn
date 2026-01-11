@@ -70,6 +70,8 @@ export function useApplications() {
       // Firestore profile 우선, Auth displayName 폴백
       const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
+      const applicantNickname = profile?.nickname || undefined;
+      const applicantPhotoURL = profile?.photoURL || user.photoURL || undefined;
       return applyToJob(
         {
           jobPostingId: params.jobPostingId,
@@ -78,7 +80,9 @@ export function useApplications() {
         },
         user.uid,
         applicantName,
-        applicantPhone
+        applicantPhone,
+        applicantNickname,
+        applicantPhotoURL
       );
     },
     onSuccess: (data) => {
@@ -111,6 +115,8 @@ export function useApplications() {
       // Firestore profile 우선, Auth displayName 폴백
       const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
+      const applicantNickname = profile?.nickname || undefined;
+      const applicantPhotoURL = profile?.photoURL || user.photoURL || undefined;
       return applyToJobV2(
         {
           jobPostingId: params.jobPostingId,
@@ -120,7 +126,10 @@ export function useApplications() {
         },
         user.uid,
         applicantName,
-        applicantPhone
+        applicantPhone,
+        undefined, // applicantEmail은 나중에 추가
+        applicantNickname,
+        applicantPhotoURL
       );
     },
     onSuccess: (data) => {

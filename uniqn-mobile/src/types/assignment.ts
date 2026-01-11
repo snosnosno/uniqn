@@ -20,7 +20,7 @@ export const FIXED_DATE_MARKER = 'FIXED_SCHEDULE';
 export const FIXED_TIME_MARKER = 'NEGOTIABLE';
 
 /** 시간 미정 마커 (추후 공지) */
-export const TBA_TIME_MARKER = 'TBA';
+export const TBA_TIME_MARKER = '미정';
 
 /**
  * 기간 타입

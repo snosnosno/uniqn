@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Alert } from 'react-native';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -33,11 +33,9 @@ export default function ApplicantsScreen() {
     refresh,
     confirmWithHistory,
     rejectApplication,
-    bulkConfirm,
     addToWaitlist,
     isConfirmingWithHistory,
     isRejecting,
-    isBulkConfirming,
     isAddingToWaitlist,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '');
@@ -168,26 +166,6 @@ export default function ApplicantsScreen() {
     setSelectedApplicant(null);
   }, [selectedApplicant, addToWaitlist]);
 
-  // 일괄 확정
-  const handleBulkConfirm = useCallback((selectedApplicants: ApplicantWithDetails[]) => {
-    if (selectedApplicants.length === 0) return;
-
-    Alert.alert(
-      '일괄 확정',
-      `${selectedApplicants.length}명의 지원자를 확정하시겠습니까?`,
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '확정',
-          onPress: () => {
-            const ids = selectedApplicants.map((a) => a.id);
-            bulkConfirm(ids);
-          },
-        },
-      ]
-    );
-  }, [bulkConfirm]);
-
   // 모달 닫기
   const handleCloseModal = useCallback(() => {
     setIsModalVisible(false);
@@ -222,7 +200,7 @@ export default function ApplicantsScreen() {
     );
   }
 
-  const isProcessing = isConfirmingWithHistory || isRejecting || isBulkConfirming || isAddingToWaitlist;
+  const isProcessing = isConfirmingWithHistory || isRejecting || isAddingToWaitlist;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
@@ -238,9 +216,7 @@ export default function ApplicantsScreen() {
         onConfirm={handleConfirm}
         onReject={handleReject}
         onWaitlist={handleWaitlist}
-        onBulkConfirm={handleBulkConfirm}
         onViewProfile={handleViewProfile}
-        showBulkActions={true}
       />
 
       {/* 확정/거절 모달 */}

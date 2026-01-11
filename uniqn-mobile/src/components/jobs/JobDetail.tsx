@@ -14,7 +14,6 @@ import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import { useJobSchedule } from '@/hooks';
 import type { JobPosting, PostingType, Allowances } from '@/types';
-import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -116,7 +115,6 @@ export function JobDetail({ job }: JobDetailProps) {
     isFixed,
     isDated,
     fixedSchedule,
-    allRoles,
   } = useJobSchedule(job);
 
   const handleCall = () => {
@@ -179,19 +177,6 @@ export function JobDetail({ job }: JobDetailProps) {
         <Text className="text-xl font-bold text-gray-900 dark:text-white mb-3">
           {safeTitle}
         </Text>
-
-        {/* 역할 태그 (v3.0: allRoles에서 통합 표시 - 항상 표시) */}
-        {allRoles.length > 0 && (
-          <View className="flex-row flex-wrap mb-3">
-            {allRoles.map((role, index) => (
-              <View key={role.roleId || index} className="mr-2 mb-2">
-                <Badge variant="primary" size="md">
-                  {`${getRoleDisplayName(role.roleId, role.customName)} (${role.filledCount}/${role.requiredCount}명)`}
-                </Badge>
-              </View>
-            ))}
-          </View>
-        )}
 
         {/* 급여 (v2.0: 역할별 급여 지원) */}
         <RoleSalaryDisplay

@@ -80,6 +80,10 @@ export interface Application extends FirebaseDocument {
   applicantPhone?: string;
   applicantEmail?: string;
   applicantRole?: StaffRole;
+  /** 지원자 닉네임 */
+  applicantNickname?: string;
+  /** 지원자 프로필 사진 URL */
+  applicantPhotoURL?: string;
 
   // === 공고 정보 (Primary) ===
   /**

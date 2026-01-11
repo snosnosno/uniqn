@@ -220,13 +220,15 @@ export const SettlementCard = React.memo(function SettlementCard({
       <View className="flex-row items-center justify-between mb-3">
         <View className="flex-row items-center flex-1">
           <Avatar
-            name={workLog.staffId?.charAt(0)?.toUpperCase() || 'U'}
+            name={(workLog as WorkLog & { staffName?: string }).staffName?.charAt(0)?.toUpperCase() || 'U'}
             size="sm"
             className="mr-3"
           />
           <View className="flex-1">
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              스태프 {workLog.staffId?.slice(-4) || '알 수 없음'}
+              {(workLog as WorkLog & { staffName?: string; staffNickname?: string }).staffName
+                ? `${(workLog as WorkLog & { staffName?: string }).staffName}${(workLog as WorkLog & { staffNickname?: string }).staffNickname ? ` (${(workLog as WorkLog & { staffNickname?: string }).staffNickname})` : ''}`
+                : `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}`}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
               {getRoleLabel(workLog.role)} • {workDate ? formatDate(workDate) : '날짜 없음'}

@@ -190,6 +190,8 @@ export async function convertApplicantToStaff(
           const workLogData = {
             staffId: applicationData.applicantId,
             staffName: applicationData.applicantName,
+            staffNickname: applicationData.applicantNickname ?? null,
+            staffPhotoURL: applicationData.applicantPhotoURL ?? null,
             eventId,
             eventName: jobData.title,
             role,
@@ -221,6 +223,8 @@ export async function convertApplicantToStaff(
               const workLogData = {
                 staffId: applicationData.applicantId,
                 staffName: applicationData.applicantName,
+                staffNickname: applicationData.applicantNickname ?? null,
+                staffPhotoURL: applicationData.applicantPhotoURL ?? null,
                 eventId,
                 eventName: jobData.title,
                 role,

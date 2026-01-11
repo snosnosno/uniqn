@@ -144,6 +144,14 @@ export interface WorkLog extends FirebaseDocument {
   eventId: string;
   date: string;
 
+  // 스태프 프로필 정보 (비정규화 - 조회 편의)
+  /** 스태프 이름 */
+  staffName?: string;
+  /** 스태프 닉네임 */
+  staffNickname?: string;
+  /** 스태프 프로필 사진 URL */
+  staffPhotoURL?: string;
+
   // 예정 시간
   scheduledStartTime?: string | Timestamp;
   scheduledEndTime?: string | Timestamp;

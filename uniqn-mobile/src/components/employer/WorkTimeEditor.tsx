@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
@@ -51,7 +52,11 @@ function parseTimestamp(value: unknown): Date {
 
 function calculateDuration(start: Date, end: Date): string {
   const diffMs = end.getTime() - start.getTime();
-  if (diffMs <= 0) return '0시간 0분';
+
+  // 퇴근이 출근보다 빠르면 계산 불가
+  if (diffMs <= 0) {
+    return '시간 오류';
+  }
 
   const hours = Math.floor(diffMs / (1000 * 60 * 60));
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
@@ -67,6 +72,25 @@ function formatTimeForInput(date: Date): string {
   return `${hours}:${minutes}`;
 }
 
+/**
+ * 퇴근 시간을 24+ 형식으로 변환 (다음날인 경우)
+ */
+function formatEndTimeForInput(endDate: Date, baseDate: Date): string {
+  const baseDateOnly = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
+  const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
+
+  // 퇴근 날짜가 기준 날짜보다 하루 뒤면 24+ 형식
+  const dayDiff = Math.round((endDateOnly.getTime() - baseDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+
+  if (dayDiff === 1) {
+    const hours = (endDate.getHours() + 24).toString().padStart(2, '0');
+    const minutes = endDate.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
+  return formatTimeForInput(endDate);
+}
+
 function parseTimeInput(timeStr: string, baseDate: Date): Date | null {
   const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
   if (!match) return null;
@@ -74,11 +98,51 @@ function parseTimeInput(timeStr: string, baseDate: Date): Date | null {
   const hours = parseInt(match[1], 10);
   const minutes = parseInt(match[2], 10);
 
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  // 0-47시까지 허용 (24시 이상은 다음날)
+  if (hours < 0 || hours > 47 || minutes < 0 || minutes > 59) return null;
 
   const result = new Date(baseDate);
-  result.setHours(hours, minutes, 0, 0);
+
+  if (hours >= 24) {
+    // 24시 이상이면 다음날로 설정
+    result.setDate(result.getDate() + 1);
+    result.setHours(hours - 24, minutes, 0, 0);
+  } else {
+    result.setHours(hours, minutes, 0, 0);
+  }
+
   return result;
+}
+
+/**
+ * 숫자만 입력 시 HH:MM 형식으로 자동 변환
+ * 4자리 입력 시에만 자동 포맷팅: "1000" → "10:00"
+ */
+function autoFormatTimeInput(input: string): string {
+  // 이미 콜론이 있으면 그대로 반환 (HH:MM 형식 유지)
+  if (input.includes(':')) {
+    return input;
+  }
+
+  // 숫자만 추출
+  const digits = input.replace(/\D/g, '');
+
+  if (digits.length === 0) return '';
+
+  // 4자리 초과 방지
+  if (digits.length > 4) {
+    return digits.slice(0, 4);
+  }
+
+  // 4자리: 1000 → 10:00 (4자리일 때만 자동 포맷팅)
+  if (digits.length === 4) {
+    const hours = digits.slice(0, 2);
+    const minutes = digits.slice(2, 4);
+    return `${hours}:${minutes}`;
+  }
+
+  // 3자리 이하: 그대로 반환 (입력 중)
+  return digits;
 }
 
 // ============================================================================
@@ -109,6 +173,12 @@ function TimeInput({
   onUndefinedChange,
 }: TimeInputProps) {
   const hasChanged = originalTime && !isUndefined && formatTimeForInput(originalTime) !== value;
+
+  // 숫자만 입력 시 자동 HH:MM 포맷팅
+  const handleChangeText = useCallback((text: string) => {
+    const formatted = autoFormatTimeInput(text);
+    onChange(formatted);
+  }, [onChange]);
 
   return (
     <View className="mb-4">
@@ -150,10 +220,10 @@ function TimeInput({
         ) : (
           <TextInput
             value={value}
-            onChangeText={onChange}
+            onChangeText={handleChangeText}
             placeholder="HH:MM"
             placeholderTextColor="#9CA3AF"
-            keyboardType="numbers-and-punctuation"
+            keyboardType="number-pad"
             maxLength={5}
             className="ml-2 flex-1 text-lg font-semibold text-gray-900 dark:text-white"
           />
@@ -222,7 +292,9 @@ export function WorkTimeEditor({
         setIsEndTimeUndefined(true);
       } else {
         const end = parseTimestamp(checkOutSource);
-        setEndTimeStr(formatTimeForInput(end));
+        // 기준 날짜 (workLog.date)와 비교하여 다음날이면 24+ 형식으로 표시
+        const base = workLog.date ? new Date(workLog.date) : new Date();
+        setEndTimeStr(formatEndTimeForInput(end, base));
         setIsEndTimeUndefined(false);
       }
 
@@ -320,7 +392,7 @@ export function WorkTimeEditor({
     return startValid && endValid;
   }, [startTimeStr, endTimeStr, baseDate, isStartTimeUndefined, isEndTimeUndefined]);
 
-  // 시간 순서 유효성 (둘 다 설정된 경우만 검사)
+  // 시간 순서 유효성 (퇴근 > 출근, 새벽은 25:00 형식으로 입력)
   const isValidTimeOrder = useMemo(() => {
     if (isStartTimeUndefined || isEndTimeUndefined) return true;
     if (!startTime || !endTime) return true;
@@ -331,11 +403,10 @@ export function WorkTimeEditor({
   const isValid = useMemo(() => {
     return (
       hasChanges &&
-      reason.trim().length > 0 &&
       isValidTimeFormat &&
       isValidTimeOrder
     );
-  }, [hasChanges, reason, isValidTimeFormat, isValidTimeOrder]);
+  }, [hasChanges, isValidTimeFormat, isValidTimeOrder]);
 
   // 저장
   const handleSave = useCallback(() => {
@@ -367,14 +438,25 @@ export function WorkTimeEditor({
       <View className="p-4">
         {/* 스태프 정보 */}
         <View className="flex-row items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
-          <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
-            <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-              {workLog.staffId?.charAt(0)?.toUpperCase() || 'U'}
-            </Text>
-          </View>
+          {/* 프로필 이미지 */}
+          {workLog.staffPhotoURL ? (
+            <Image
+              source={{ uri: workLog.staffPhotoURL }}
+              className="h-10 w-10 rounded-full"
+              contentFit="cover"
+              transition={200}
+            />
+          ) : (
+            <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
+              <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+                {workLog.staffName?.charAt(0)?.toUpperCase() || 'U'}
+              </Text>
+            </View>
+          )}
           <View className="ml-3 flex-1">
+            {/* 이름(닉네임) */}
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              스태프 {workLog.staffId?.slice(-4) || '알 수 없음'}
+              {workLog.staffName || '이름 없음'}{workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
               {workDate ? formatDate(workDate) : '날짜 없음'}
@@ -408,6 +490,26 @@ export function WorkTimeEditor({
             onUndefinedChange={setIsEndTimeUndefined}
           />
 
+          {/* 시간 형식 안내 */}
+          <View className="flex-row items-start p-3 bg-gray-100 dark:bg-gray-900 rounded-lg mb-4">
+            <View className="mt-0.5">
+              <AlertCircleIcon size={16} color="#6B7280" />
+            </View>
+            <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+              숫자 4자리 입력{'\n'}(예: 0900, 다음날 새벽은 2500)
+            </Text>
+          </View>
+
+          {/* 시간 순서 경고 */}
+          {isValidTimeFormat && !isValidTimeOrder && (
+            <View className="flex-row items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
+              <AlertCircleIcon size={16} color="#EF4444" />
+              <Text className="ml-2 text-sm text-red-600 dark:text-red-400">
+                퇴근 시간이 출근보다 빨라요. 새벽은 25:00 형식으로 입력하세요.
+              </Text>
+            </View>
+          )}
+
           {/* 근무 시간 */}
           <View className="flex-row items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
             <Text className="text-sm text-gray-600 dark:text-gray-400">
@@ -419,35 +521,15 @@ export function WorkTimeEditor({
           </View>
         </Card>
 
-        {/* 시간 형식 안내 */}
-        {!isValidTimeFormat && (startTimeStr.length > 0 || endTimeStr.length > 0) && (
-          <View className="flex-row items-center p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
-            <AlertCircleIcon size={16} color="#D97706" />
-            <Text className="ml-2 text-sm text-yellow-700 dark:text-yellow-300">
-              시간은 HH:MM 형식으로 입력하세요 (예: 09:00)
-            </Text>
-          </View>
-        )}
-
-        {/* 시간 유효성 경고 */}
-        {isValidTimeFormat && !isValidTimeOrder && (
-          <View className="flex-row items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
-            <AlertCircleIcon size={16} color="#EF4444" />
-            <Text className="ml-2 text-sm text-red-600 dark:text-red-400">
-              퇴근 시간은 출근 시간보다 늦어야 합니다.
-            </Text>
-          </View>
-        )}
-
-        {/* 수정 사유 (필수) */}
+        {/* 수정 사유 (선택) */}
         <View className="mb-4">
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            수정 사유 <Text className="text-red-500">*</Text>
+            수정 사유
           </Text>
           <TextInput
             value={reason}
             onChangeText={setReason}
-            placeholder="수정 사유를 입력하세요 (필수)"
+            placeholder="수정 사유를 입력하세요 (선택)"
             placeholderTextColor="#9CA3AF"
             multiline
             numberOfLines={2}

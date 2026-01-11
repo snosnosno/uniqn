@@ -2,7 +2,7 @@
  * UNIQN Mobile - 지원자 목록 컴포넌트
  *
  * @description FlashList 기반 지원자 목록 (무한 스크롤)
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -12,8 +12,7 @@ import { ApplicantCard } from './ApplicantCard';
 import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
-import { Badge } from '../ui/Badge';
-import { FilterIcon, CheckIcon } from '../icons';
+import { FilterIcon } from '../icons';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';
@@ -33,10 +32,8 @@ export interface ApplicantListProps {
   onConfirm?: (applicant: ApplicantWithDetails) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
   onWaitlist?: (applicant: ApplicantWithDetails) => void;
-  onBulkConfirm?: (applicants: ApplicantWithDetails[]) => void;
   /** 프로필 상세보기 */
   onViewProfile?: (applicant: ApplicantWithDetails) => void;
-  showBulkActions?: boolean;
 }
 
 type FilterStatus = 'all' | ApplicationStatus;
@@ -56,45 +53,6 @@ const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
 // ============================================================================
 // Sub-components
 // ============================================================================
-
-interface StatsHeaderProps {
-  stats?: ApplicationStats;
-}
-
-function StatsHeader({ stats }: StatsHeaderProps) {
-  if (!stats) return null;
-
-  return (
-    <View className="flex-row flex-wrap gap-2 mb-4 px-4">
-      <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
-        <Text className="text-sm text-gray-600 dark:text-gray-400">총</Text>
-        <Text className="ml-1 text-sm font-semibold text-gray-900 dark:text-white">
-          {stats.total}명
-        </Text>
-      </View>
-      {stats.applied > 0 && (
-        <Badge variant="primary" size="sm" dot>
-          신규 {stats.applied}
-        </Badge>
-      )}
-      {stats.confirmed > 0 && (
-        <Badge variant="success" size="sm">
-          확정 {stats.confirmed}
-        </Badge>
-      )}
-      {stats.waitlisted > 0 && (
-        <Badge variant="primary" size="sm">
-          대기 {stats.waitlisted}
-        </Badge>
-      )}
-      {stats.rejected > 0 && (
-        <Badge variant="error" size="sm">
-          거절 {stats.rejected}
-        </Badge>
-      )}
-    </View>
-  );
-}
 
 interface FilterTabsProps {
   selectedFilter: FilterStatus;
@@ -140,72 +98,12 @@ function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps)
   );
 }
 
-interface BulkActionsBarProps {
-  selectedCount: number;
-  onSelectAll: () => void;
-  onClearSelection: () => void;
-  onBulkConfirm: () => void;
-  isAllSelected: boolean;
-}
-
-function BulkActionsBar({
-  selectedCount,
-  onSelectAll,
-  onClearSelection,
-  onBulkConfirm,
-  isAllSelected,
-}: BulkActionsBarProps) {
-  return (
-    <View className="flex-row items-center justify-between px-4 py-3 bg-primary-50 dark:bg-primary-900/20">
-      <View className="flex-row items-center">
-        <Pressable
-          onPress={isAllSelected ? onClearSelection : onSelectAll}
-          className="flex-row items-center mr-4"
-        >
-          <View className={`
-            h-5 w-5 rounded border-2 items-center justify-center mr-2
-            ${isAllSelected
-              ? 'bg-primary-500 border-primary-500'
-              : 'border-gray-400 dark:border-gray-500'}
-          `}>
-            {isAllSelected && <CheckIcon size={12} color="#fff" />}
-          </View>
-          <Text className="text-sm text-gray-700 dark:text-gray-300">
-            {isAllSelected ? '전체 해제' : '전체 선택'}
-          </Text>
-        </Pressable>
-        <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
-          {selectedCount}명 선택됨
-        </Text>
-      </View>
-      <Pressable
-        onPress={onBulkConfirm}
-        disabled={selectedCount === 0}
-        className={`
-          px-4 py-2 rounded-lg
-          ${selectedCount > 0
-            ? 'bg-primary-500 active:opacity-70'
-            : 'bg-gray-300 dark:bg-gray-700'}
-        `}
-      >
-        <Text className={`
-          text-sm font-medium
-          ${selectedCount > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}
-        `}>
-          일괄 확정
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
 
 export function ApplicantList({
   applicants,
-  stats,
   isLoading,
   error,
   onRefresh,
@@ -214,24 +112,15 @@ export function ApplicantList({
   onConfirm,
   onReject,
   onWaitlist,
-  onBulkConfirm,
   onViewProfile,
-  showBulkActions = false,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // 필터링된 지원자 목록
   const filteredApplicants = useMemo(() => {
     if (selectedFilter === 'all') return applicants;
     return applicants.filter((a) => a.status === selectedFilter);
   }, [applicants, selectedFilter]);
-
-  // 선택 가능한 지원자 (신규만)
-  const selectableApplicants = useMemo(() => {
-    return filteredApplicants.filter((a) => a.status === 'applied');
-  }, [filteredApplicants]);
 
   // 필터별 카운트
   const filterCounts = useMemo(() => {
@@ -245,45 +134,6 @@ export function ApplicantList({
     return counts;
   }, [applicants]);
 
-  // 지원자 선택 핸들러
-  const handleSelect = useCallback((applicant: ApplicantWithDetails) => {
-    setSelectedIds((prev) => {
-      const next = new Set(prev);
-      if (next.has(applicant.id)) {
-        next.delete(applicant.id);
-      } else {
-        next.add(applicant.id);
-      }
-      return next;
-    });
-  }, []);
-
-  // 전체 선택
-  const handleSelectAll = useCallback(() => {
-    setSelectedIds(new Set(selectableApplicants.map((a) => a.id)));
-  }, [selectableApplicants]);
-
-  // 선택 해제
-  const handleClearSelection = useCallback(() => {
-    setSelectedIds(new Set());
-  }, []);
-
-  // 일괄 확정
-  const handleBulkConfirm = useCallback(() => {
-    const selectedApplicants = applicants.filter((a) => selectedIds.has(a.id));
-    onBulkConfirm?.(selectedApplicants);
-    setSelectedIds(new Set());
-    setSelectionMode(false);
-  }, [applicants, selectedIds, onBulkConfirm]);
-
-  // 선택 모드 토글
-  const toggleSelectionMode = useCallback(() => {
-    setSelectionMode((prev) => !prev);
-    if (selectionMode) {
-      setSelectedIds(new Set());
-    }
-  }, [selectionMode]);
-
   // 렌더 아이템
   const renderItem = useCallback(
     ({ item }: { item: ApplicantWithDetails }) => (
@@ -295,14 +145,10 @@ export function ApplicantList({
           onReject={onReject}
           onWaitlist={onWaitlist}
           onViewProfile={onViewProfile}
-          showActions={!selectionMode}
-          selectionMode={selectionMode}
-          isSelected={selectedIds.has(item.id)}
-          onSelect={handleSelect}
         />
       </View>
     ),
-    [onApplicantPress, onConfirm, onReject, onWaitlist, onViewProfile, selectionMode, selectedIds, handleSelect]
+    [onApplicantPress, onConfirm, onReject, onWaitlist, onViewProfile]
   );
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);
@@ -341,51 +187,14 @@ export function ApplicantList({
     );
   }
 
-  const isAllSelected = selectedIds.size === selectableApplicants.length &&
-    selectableApplicants.length > 0;
-
   return (
     <View className="flex-1">
-      {/* 통계 헤더 */}
-      <StatsHeader stats={stats} />
-
       {/* 필터 탭 */}
       <FilterTabs
         selectedFilter={selectedFilter}
         onFilterChange={setSelectedFilter}
         counts={filterCounts}
       />
-
-      {/* 일괄 선택 버튼 */}
-      {showBulkActions && selectableApplicants.length > 0 && (
-        <View className="px-4 mb-3">
-          <Pressable
-            onPress={toggleSelectionMode}
-            className="flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
-          >
-            <CheckIcon size={16} color={selectionMode ? '#2563EB' : '#6B7280'} />
-            <Text className={`
-              ml-2 text-sm font-medium
-              ${selectionMode
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400'}
-            `}>
-              {selectionMode ? '선택 취소' : '일괄 선택'}
-            </Text>
-          </Pressable>
-        </View>
-      )}
-
-      {/* 선택 모드 액션 바 */}
-      {selectionMode && (
-        <BulkActionsBar
-          selectedCount={selectedIds.size}
-          onSelectAll={handleSelectAll}
-          onClearSelection={handleClearSelection}
-          onBulkConfirm={handleBulkConfirm}
-          isAllSelected={isAllSelected}
-        />
-      )}
 
       {/* 지원자 목록 */}
       {filteredApplicants.length === 0 ? (

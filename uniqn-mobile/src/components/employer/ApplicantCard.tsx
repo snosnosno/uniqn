@@ -57,9 +57,6 @@ export interface ApplicantCardProps {
   showActions?: boolean;
   /** 확정 이력 표시 여부 */
   showConfirmationHistory?: boolean;
-  isSelected?: boolean;
-  selectionMode?: boolean;
-  onSelect?: (applicant: ApplicantWithDetails) => void;
   /** 초기 펼침 상태 */
   initialExpanded?: boolean;
   /** 공고 타입 (고정공고 여부 판단) */
@@ -190,9 +187,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   onViewProfile,
   showActions = true,
   showConfirmationHistory = true,
-  isSelected = false,
-  selectionMode = false,
-  onSelect,
   initialExpanded = true,
   postingType,
   daysPerWeek,
@@ -322,15 +316,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     setIsExpanded((prev) => !prev);
   }, []);
 
-  // 카드 클릭 핸들러
-  const handlePress = useCallback(() => {
-    if (selectionMode && onSelect) {
-      onSelect(applicant);
-    } else if (onPress) {
-      onPress(applicant);
-    }
-  }, [applicant, onPress, onSelect, selectionMode]);
-
   // 프로필 보기 핸들러
   const handleViewProfile = useCallback(() => {
     onViewProfile?.(applicant);
@@ -383,24 +368,9 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   return (
     <Card
-      variant={isSelected ? 'outlined' : 'elevated'}
+      variant="elevated"
       padding="md"
-      className={isSelected ? 'border-primary-500' : ''}
     >
-      {/* 선택 모드 체크박스 */}
-      {selectionMode && (
-        <Pressable onPress={handlePress} className="absolute right-3 top-3 z-10">
-          <View className={`
-            h-5 w-5 rounded-full border-2 items-center justify-center
-            ${isSelected
-              ? 'bg-primary-500 border-primary-500'
-              : 'border-gray-300 dark:border-gray-600'}
-          `}>
-            {isSelected && <CheckIcon size={12} color="#fff" />}
-          </View>
-        </Pressable>
-      )}
-
       {/* 헤더: 카드 클릭 시 프로필 모달 열기 */}
       <View className="flex-row items-center">
         {/* 메인 영역 - 프로필 모달 열기 */}
@@ -610,24 +580,24 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
           {/* 사전질문 답변 (v2.0) */}
           {applicant.preQuestionAnswers && applicant.preQuestionAnswers.length > 0 && (
-            <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 mb-2">
-              <View className="flex-row items-center mb-2">
-                <DocumentIcon size={14} color="#6B7280" />
-                <Text className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-                  사전질문 답변
-                </Text>
-              </View>
+            <>
               {applicant.preQuestionAnswers.map((answer, idx) => (
                 <View key={idx} className="mb-2">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                    Q{idx + 1}. {answer.question}
-                  </Text>
-                  <Text className="text-sm text-gray-700 dark:text-gray-300">
-                    {answer.answer}
-                  </Text>
+                  <View className="flex-row items-center">
+                    <DocumentIcon size={14} color="#9CA3AF" />
+                    <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                      Q{idx + 1}. {answer.question}
+                    </Text>
+                  </View>
+                  <View className="flex-row items-start ml-5">
+                    <Text className="text-gray-400 dark:text-gray-500 mr-1">↳</Text>
+                    <Text className="text-sm text-gray-600 dark:text-gray-400 flex-1">
+                      {answer.answer}
+                    </Text>
+                  </View>
                 </View>
               ))}
-            </View>
+            </>
           )}
 
           {/* 대기자 순번 */}
@@ -665,7 +635,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
       )}
 
       {/* 확정 상태 액션 버튼 */}
-      {canShowConfirmedActions && !selectionMode && (
+      {canShowConfirmedActions && (
         <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           {/* 확정 취소 버튼 */}
           {onCancelConfirmation && (
@@ -696,7 +666,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
       )}
 
       {/* 액션 버튼 */}
-      {canShowActions && !selectionMode && (
+      {canShowActions && (
         <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           {/* 거절 버튼 */}
           <Pressable
