@@ -27,13 +27,12 @@ import type { JobPosting, PostingType, Allowances } from '@/types';
 // Types
 // ============================================================================
 
-type FilterStatus = 'all' | 'active' | 'closed' | 'draft';
+type FilterStatus = 'all' | 'active' | 'closed';
 
 const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
   { value: 'all', label: '전체' },
   { value: 'active', label: '모집중' },
   { value: 'closed', label: '마감' },
-  { value: 'draft', label: '임시저장' },
 ];
 
 // ============================================================================
@@ -496,6 +495,7 @@ function EmployerView() {
   const reopenMutation = useReopenJobPosting();
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
+  const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
 
   // 필터링된 목록 + 정렬
   const filteredPostings = useMemo(() => {
@@ -592,24 +592,34 @@ function EmployerView() {
   const handleCloseConfirm = useCallback(() => {
     if (closeTargetId) {
       closeMutation.mutate(closeTargetId, {
-        onSuccess: () => {
-          // 마감 완료 후 '마감' 필터로 이동
+        onSettled: async () => {
+          // 데이터 리페치 완료 후 '마감' 필터로 이동
+          await refetch();
           setFilter('closed');
         },
       });
       setCloseTargetId(null);
     }
-  }, [closeTargetId, closeMutation]);
+  }, [closeTargetId, closeMutation, refetch]);
 
-  // 공고 재오픈
+  // 공고 재오픈 - 모달 열기
   const handleReopenPosting = useCallback((postingId: string) => {
-    reopenMutation.mutate(postingId, {
-      onSuccess: () => {
-        // 재오픈 완료 후 '모집중' 필터로 이동
-        setFilter('active');
-      },
-    });
-  }, [reopenMutation]);
+    setReopenTargetId(postingId);
+  }, []);
+
+  // 공고 재오픈 확인
+  const handleReopenConfirm = useCallback(() => {
+    if (reopenTargetId) {
+      reopenMutation.mutate(reopenTargetId, {
+        onSettled: async () => {
+          // 데이터 리페치 완료 후 '모집중' 필터로 이동
+          await refetch();
+          setFilter('active');
+        },
+      });
+      setReopenTargetId(null);
+    }
+  }, [reopenTargetId, reopenMutation, refetch]);
 
   // 새 공고 작성
   const handleCreatePosting = useCallback(() => {
@@ -713,6 +723,17 @@ function EmployerView() {
         confirmText="마감하기"
         cancelText="취소"
         isDestructive
+      />
+
+      {/* 재오픈 확인 모달 */}
+      <ConfirmModal
+        visible={!!reopenTargetId}
+        onClose={() => setReopenTargetId(null)}
+        onConfirm={handleReopenConfirm}
+        title="공고 재오픈"
+        message="이 공고를 다시 활성화하시겠습니까? 재오픈된 공고는 구직자에게 다시 노출됩니다."
+        confirmText="재오픈"
+        cancelText="취소"
       />
     </SafeAreaView>
   );
