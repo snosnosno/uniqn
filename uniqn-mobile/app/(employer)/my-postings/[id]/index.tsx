@@ -196,7 +196,6 @@ export default function JobPostingDetailScreen() {
   const statusConfig = {
     active: { label: '모집중', variant: 'success' as const },
     closed: { label: '마감', variant: 'default' as const },
-    draft: { label: '임시저장', variant: 'warning' as const },
     cancelled: { label: '취소됨', variant: 'error' as const },
   };
 

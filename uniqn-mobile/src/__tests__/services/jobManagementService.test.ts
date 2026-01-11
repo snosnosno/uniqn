@@ -18,9 +18,6 @@ import {
   deleteJobPosting,
   closeJobPosting,
   reopenJobPosting,
-  saveDraft,
-  getDraft,
-  deleteDraft,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
 } from '@/services/jobManagementService';
@@ -633,84 +630,6 @@ describe('jobManagementService', () => {
       await expect(
         reopenJobPosting('job-1', 'employer-1')
       ).rejects.toThrow('삭제된 공고는 재오픈할 수 없습니다');
-    });
-  });
-
-  // ==========================================================================
-  // saveDraft / getDraft / deleteDraft
-  // ==========================================================================
-
-  describe('saveDraft', () => {
-    it('should save draft successfully', async () => {
-      const draftInput = {
-        title: '임시저장 공고',
-        description: '설명',
-      };
-      mockSetDoc.mockResolvedValueOnce(undefined);
-
-      const draftId = await saveDraft(draftInput, 1, 'employer-1');
-
-      expect(draftId).toBe('test-doc-id');
-      expect(mockSetDoc).toHaveBeenCalled();
-    });
-
-    it('should update existing draft with draftId', async () => {
-      const draftInput = {
-        title: '수정된 임시저장',
-      };
-      mockSetDoc.mockResolvedValueOnce(undefined);
-      mockDoc.mockReturnValueOnce({ id: 'existing-draft-id' });
-
-      const draftId = await saveDraft(draftInput, 2, 'employer-1', 'existing-draft-id');
-
-      expect(draftId).toBe('existing-draft-id');
-    });
-  });
-
-  describe('getDraft', () => {
-    it('should return null if no draft exists', async () => {
-      mockGetDocs.mockResolvedValueOnce({
-        empty: true,
-        docs: [],
-      });
-
-      const result = await getDraft('employer-1');
-
-      expect(result).toBeNull();
-    });
-
-    it('should return the most recent draft', async () => {
-      const draftData = {
-        title: '임시저장 공고',
-        step: 3,
-        lastSavedAt: { toDate: () => new Date() },
-      };
-
-      mockGetDocs.mockResolvedValueOnce({
-        empty: false,
-        docs: [
-          {
-            id: 'draft-1',
-            data: () => draftData,
-          },
-        ],
-      });
-
-      const result = await getDraft('employer-1');
-
-      expect(result).not.toBeNull();
-      expect(result?.id).toBe('draft-1');
-      expect(result?.title).toBe('임시저장 공고');
-      expect(result?.step).toBe(3);
-    });
-  });
-
-  describe('deleteDraft', () => {
-    it('should delete draft successfully', async () => {
-      mockDeleteDoc.mockResolvedValueOnce(undefined);
-
-      await expect(deleteDraft('draft-1')).resolves.not.toThrow();
-      expect(mockDeleteDoc).toHaveBeenCalled();
     });
   });
 

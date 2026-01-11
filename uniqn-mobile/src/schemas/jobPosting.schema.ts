@@ -165,7 +165,7 @@ export type CreateJobPostingFormData = z.infer<typeof createJobPostingSchema>;
  * 공고 필터 스키마
  */
 export const jobFilterSchema = z.object({
-  status: z.enum(['draft', 'active', 'closed', 'cancelled']).optional(),
+  status: z.enum(['active', 'closed', 'cancelled']).optional(),
   roles: z.array(roleSchema).optional(),
   district: z.string().optional(),
   dateRange: z

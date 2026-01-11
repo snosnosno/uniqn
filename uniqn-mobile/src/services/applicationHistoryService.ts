@@ -20,9 +20,9 @@ import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES
 import type {
   Application,
   Assignment,
-  
   ConfirmationHistoryEntry,
   JobPosting,
+  DateSpecificRequirement,
 } from '@/types';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
 

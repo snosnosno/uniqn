@@ -25,7 +25,7 @@ export type { PostingType } from './postingConfig';
 /**
  * 공고 상태
  */
-export type JobPostingStatus = 'draft' | 'active' | 'closed' | 'cancelled';
+export type JobPostingStatus = 'active' | 'closed' | 'cancelled';
 
 /**
  * 급여 타입

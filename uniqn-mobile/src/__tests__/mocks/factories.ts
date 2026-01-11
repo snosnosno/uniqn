@@ -42,7 +42,7 @@ export interface MockJobPosting {
   date: string;
   startTime: string;
   endTime: string;
-  status: 'draft' | 'active' | 'closed' | 'cancelled';
+  status: 'active' | 'closed' | 'cancelled';
   applicantCount: number;
   maxApplicants: number;
   employerId: string;

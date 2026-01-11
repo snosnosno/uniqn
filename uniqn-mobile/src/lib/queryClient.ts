@@ -227,7 +227,6 @@ export const queryKeys = {
     all: ['jobManagement'] as const,
     myPostings: () => [...queryKeys.jobManagement.all, 'myPostings'] as const,
     stats: () => [...queryKeys.jobManagement.all, 'stats'] as const,
-    draft: () => [...queryKeys.jobManagement.all, 'draft'] as const,
   },
 
   // 공고 템플릿 (구인자)

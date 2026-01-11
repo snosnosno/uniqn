@@ -172,12 +172,8 @@ export {
   deleteJobPosting,
   closeJobPosting,
   reopenJobPosting,
-  saveDraft,
-  getDraft,
-  deleteDraft,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
-  type JobPostingDraft,
   type CreateJobPostingResult,
   type JobPostingStats,
 } from './jobManagementService';

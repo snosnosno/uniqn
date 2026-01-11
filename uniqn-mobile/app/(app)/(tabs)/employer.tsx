@@ -222,7 +222,6 @@ const JobPostingCard = memo(function JobPostingCard({
   const statusConfig = {
     active: { label: '모집중', variant: 'success' as const },
     closed: { label: '마감', variant: 'default' as const },
-    draft: { label: '임시저장', variant: 'warning' as const },
     cancelled: { label: '취소됨', variant: 'error' as const },
   };
 
@@ -392,7 +391,7 @@ const JobPostingCard = memo(function JobPostingCard({
           </Text>
         </View>
 
-        {/* 마감/재오픈 버튼 (draft, cancelled 제외) */}
+        {/* 마감/재오픈 버튼 (cancelled 제외) */}
         <View onStartShouldSetResponder={() => true}>
           {posting.status === 'active' && (
             <Pressable

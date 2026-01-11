@@ -12,9 +12,6 @@ import {
   deleteJobPosting,
   closeJobPosting,
   reopenJobPosting,
-  saveDraft,
-  getDraft,
-  deleteDraft,
   getMyJobPostingStats,
   bulkUpdateJobPostingStatus,
   getMyJobPostings,
@@ -40,12 +37,6 @@ interface CreateJobParams {
 interface UpdateJobParams {
   jobPostingId: string;
   input: UpdateJobPostingInput;
-}
-
-interface SaveDraftParams {
-  draft: Partial<CreateJobPostingInput>;
-  step: number;
-  draftId?: string;
 }
 
 interface BulkStatusParams {
@@ -86,81 +77,6 @@ export function useJobPostingStats() {
     queryFn: () => getMyJobPostingStats(user!.uid),
     enabled: !!user,
     staleTime: cachingPolicies.frequent,
-  });
-}
-
-// ============================================================================
-// 임시저장 관련 훅
-// ============================================================================
-
-/**
- * 임시저장 불러오기 훅
- */
-export function useDraft() {
-  const { user } = useAuthStore();
-
-  return useQuery({
-    queryKey: queryKeys.jobManagement.draft(),
-    queryFn: () => getDraft(user!.uid),
-    enabled: !!user,
-    staleTime: cachingPolicies.stable,
-  });
-}
-
-/**
- * 임시저장 뮤테이션 훅
- */
-export function useSaveDraft() {
-  const queryClient = useQueryClient();
-  const { addToast } = useToastStore();
-  const { user } = useAuthStore();
-
-  return useMutation({
-    mutationFn: (params: SaveDraftParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
-      return saveDraft(params.draft, params.step, user.uid, params.draftId);
-    },
-    onSuccess: () => {
-      logger.info('임시저장 완료');
-      addToast({ type: 'success', message: '임시저장되었습니다.' });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.jobManagement.draft(),
-      });
-    },
-    onError: (error) => {
-      logger.error('임시저장 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '임시저장에 실패했습니다.',
-      });
-    },
-  });
-}
-
-/**
- * 임시저장 삭제 뮤테이션 훅
- */
-export function useDeleteDraft() {
-  const queryClient = useQueryClient();
-  const { addToast } = useToastStore();
-
-  return useMutation({
-    mutationFn: (draftId: string) => deleteDraft(draftId),
-    onSuccess: () => {
-      logger.info('임시저장 삭제');
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.jobManagement.draft(),
-      });
-    },
-    onError: (error) => {
-      logger.error('임시저장 삭제 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: '임시저장 삭제에 실패했습니다.',
-      });
-    },
   });
 }
 
@@ -433,7 +349,6 @@ export function useBulkUpdateStatus() {
 export function useJobManagement() {
   const myPostingsQuery = useMyJobPostings();
   const statsQuery = useJobPostingStats();
-  const draftQuery = useDraft();
 
   const createMutation = useCreateJobPosting();
   const updateMutation = useUpdateJobPosting();
@@ -441,8 +356,6 @@ export function useJobManagement() {
   const closeMutation = useCloseJobPosting();
   const reopenMutation = useReopenJobPosting();
   const bulkStatusMutation = useBulkUpdateStatus();
-  const saveDraftMutation = useSaveDraft();
-  const deleteDraftMutation = useDeleteDraft();
 
   return {
     // 내 공고 목록
@@ -454,13 +367,6 @@ export function useJobManagement() {
     // 통계
     stats: statsQuery.data,
     isLoadingStats: statsQuery.isLoading,
-
-    // 임시저장
-    draft: draftQuery.data,
-    isLoadingDraft: draftQuery.isLoading,
-    saveDraft: saveDraftMutation.mutate,
-    isSavingDraft: saveDraftMutation.isPending,
-    deleteDraft: deleteDraftMutation.mutate,
 
     // 공고 CRUD
     createJobPosting: createMutation.mutate,

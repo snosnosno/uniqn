@@ -96,7 +96,7 @@ export interface JobPostingDoc {
   location: string;
   eventDate: admin.firestore.Timestamp;
   startTime: string;
-  status: 'draft' | 'open' | 'closed' | 'cancelled';
+  status: 'open' | 'closed' | 'cancelled';
 }
 
 export interface WorkLogDoc {

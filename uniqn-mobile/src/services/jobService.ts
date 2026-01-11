@@ -269,14 +269,13 @@ export async function getMyJobPostings(
     const { status, includeAll = true } = options || {};
     logger.info('내 공고 목록 조회', { ownerId, status, includeAll });
 
-    // includeAll이 true면 모든 상태의 공고 조회 (active, closed, draft)
+    // includeAll이 true면 모든 상태의 공고 조회 (active, closed)
     if (includeAll && !status) {
       const results = await Promise.all([
         getJobPostings({ ownerId, status: 'active' }, 100),
         getJobPostings({ ownerId, status: 'closed' }, 100),
-        getJobPostings({ ownerId, status: 'draft' }, 100),
       ]);
-      return [...results[0].items, ...results[1].items, ...results[2].items];
+      return [...results[0].items, ...results[1].items];
     }
 
     const { items } = await getJobPostings(

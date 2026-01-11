@@ -9,14 +9,12 @@ import {
   collection,
   doc,
   setDoc,
-  deleteDoc,
   serverTimestamp,
   Timestamp,
   runTransaction,
   query,
   where,
   getDocs,
-  orderBy,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -27,7 +25,6 @@ import type {
   JobPostingStatus,
   CreateJobPostingInput,
   UpdateJobPostingInput,
-  SalaryInfo,
   RoleRequirement,
   StaffRole,
 } from '@/types';
@@ -37,42 +34,10 @@ import type {
 // ============================================================================
 
 const COLLECTION_NAME = 'jobPostings';
-const DRAFTS_COLLECTION = 'jobPostingDrafts';
 
 // ============================================================================
 // Types
 // ============================================================================
-
-/**
- * 공고 작성 임시저장 데이터
- *
- * @description CreateJobPostingInput을 확장하여 6단계 폼에 필요한 추가 필드 포함
- */
-export interface JobPostingDraft extends CreateJobPostingInput {
-  id?: string;
-  step: number;
-  lastSavedAt: Timestamp;
-
-  // 추가 필드 (6단계 폼용)
-  postingType?: 'regular' | 'fixed' | 'tournament' | 'urgent';
-  startTime?: string;
-  tournamentDates?: { day: number; date: string; startTime: string }[];
-  daysPerWeek?: number;
-  workDays?: string[];
-  /** @deprecated useSameSalary로 대체 */
-  useRoleSalary?: boolean;
-  /** 전체 동일 급여 사용 여부 */
-  useSameSalary?: boolean;
-  roleSalaries?: Record<string, SalaryInfo>;
-  usesPreQuestions?: boolean;
-  preQuestions?: {
-    id: string;
-    question: string;
-    required: boolean;
-    type: 'text' | 'textarea' | 'select';
-    options?: string[];
-  }[];
-}
 
 export interface CreateJobPostingResult {
   id: string;
@@ -82,7 +47,6 @@ export interface CreateJobPostingResult {
 export interface JobPostingStats {
   total: number;
   active: number;
-  draft: number;
   closed: number;
   cancelled: number;
   totalApplications: number;
@@ -530,98 +494,6 @@ export async function reopenJobPosting(
 }
 
 /**
- * 임시저장 (드래프트)
- */
-export async function saveDraft(
-  draft: Partial<CreateJobPostingInput>,
-  step: number,
-  ownerId: string,
-  draftId?: string
-): Promise<string> {
-  try {
-    logger.info('임시저장 시작', { ownerId, step, draftId });
-
-    const draftsRef = collection(getFirebaseDb(), DRAFTS_COLLECTION);
-    const docRef = draftId ? doc(draftsRef, draftId) : doc(draftsRef);
-
-    const draftData: JobPostingDraft = {
-      ...(draft as CreateJobPostingInput),
-      id: docRef.id,
-      step,
-      lastSavedAt: serverTimestamp() as Timestamp,
-    };
-
-    await setDoc(docRef, {
-      ...draftData,
-      ownerId,
-    });
-
-    logger.info('임시저장 완료', { draftId: docRef.id });
-
-    return docRef.id;
-  } catch (error) {
-    logger.error('임시저장 실패', error as Error, { ownerId });
-    throw mapFirebaseError(error);
-  }
-}
-
-/**
- * 임시저장 불러오기
- */
-export async function getDraft(
-  ownerId: string
-): Promise<JobPostingDraft | null> {
-  try {
-    logger.info('임시저장 불러오기', { ownerId });
-
-    const draftsRef = collection(getFirebaseDb(), DRAFTS_COLLECTION);
-    const q = query(
-      draftsRef,
-      where('ownerId', '==', ownerId),
-      orderBy('lastSavedAt', 'desc')
-    );
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return null;
-    }
-
-    const draftDoc = snapshot.docs[0];
-    return {
-      id: draftDoc.id,
-      ...draftDoc.data(),
-    } as JobPostingDraft;
-  } catch (error) {
-    // 권한 에러는 임시저장이 없는 것으로 처리 (사용자 경험 개선)
-    const firebaseError = error as { code?: string };
-    if (firebaseError.code === 'permission-denied') {
-      logger.info('임시저장 조회 권한 없음 (새 사용자이거나 역할 미설정)', { ownerId });
-      return null;
-    }
-    logger.error('임시저장 불러오기 실패', error as Error, { ownerId });
-    throw mapFirebaseError(error);
-  }
-}
-
-/**
- * 임시저장 삭제
- */
-export async function deleteDraft(draftId: string): Promise<void> {
-  try {
-    logger.info('임시저장 삭제', { draftId });
-
-    const docRef = doc(getFirebaseDb(), DRAFTS_COLLECTION, draftId);
-    await deleteDoc(docRef);
-
-    logger.info('임시저장 삭제 완료', { draftId });
-  } catch (error) {
-    logger.error('임시저장 삭제 실패', error as Error, { draftId });
-    throw mapFirebaseError(error);
-  }
-}
-
-/**
  * 내 공고 통계 조회
  */
 export async function getMyJobPostingStats(
@@ -638,7 +510,6 @@ export async function getMyJobPostingStats(
     const stats: JobPostingStats = {
       total: 0,
       active: 0,
-      draft: 0,
       closed: 0,
       cancelled: 0,
       totalApplications: 0,
@@ -654,9 +525,6 @@ export async function getMyJobPostingStats(
       switch (data.status) {
         case 'active':
           stats.active++;
-          break;
-        case 'draft':
-          stats.draft++;
           break;
         case 'closed':
           stats.closed++;

@@ -262,7 +262,6 @@ export const SALARY_TYPE_LABELS = {
 // ============================================================================
 
 export const JOB_STATUS_LABELS = {
-  draft: '임시저장',
   active: '모집중',
   closed: '마감',
   cancelled: '취소됨',
