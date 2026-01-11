@@ -20,7 +20,8 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError } from '@/errors';
-import { confirmApplicationWithHistory } from './applicationHistoryService';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { confirmApplicationWithHistory, updateDateSpecificRequirementsFilled } from './applicationHistoryService';
 import type {
   Application,
   ApplicationStatus,
@@ -246,9 +247,8 @@ export async function confirmApplication(
         throw new Error('본인의 공고만 관리할 수 있습니다');
       }
 
-      // 3. 정원 확인
-      const currentFilled = jobData.filledPositions ?? 0;
-      const totalPositions = jobData.totalPositions ?? 0;
+      // 3. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
+      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
 
       if (totalPositions > 0 && currentFilled >= totalPositions) {
         throw new MaxCapacityReachedError({
@@ -313,11 +313,40 @@ export async function confirmApplication(
         return r;
       });
 
-      transaction.update(jobRef, {
+      // 7. dateSpecificRequirements filled 업데이트 (레거시 호환)
+      const legacyAssignment = {
+        role: appliedRole,
+        timeSlot: jobData.timeSlot,
+        dates: [jobData.workDate],
+        isGrouped: false,
+      };
+      const updatedDateReqs = updateDateSpecificRequirementsFilled(
+        jobData.dateSpecificRequirements,
+        [legacyAssignment],
+        'increment'
+      );
+
+      // 8. 전체 마감 여부 확인 및 상태 변경
+      const newFilledPositions = currentFilled + 1;
+      const shouldClose = totalPositions > 0 && newFilledPositions >= totalPositions;
+
+      const jobUpdateData: Record<string, unknown> = {
         filledPositions: increment(1),
         roles: updatedRoles,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // dateSpecificRequirements가 있을 때만 업데이트
+      if (updatedDateReqs) {
+        jobUpdateData.dateSpecificRequirements = updatedDateReqs;
+      }
+
+      // 전체 마감 시 status를 closed로 변경
+      if (shouldClose && jobData.status !== 'closed') {
+        jobUpdateData.status = 'closed';
+      }
+
+      transaction.update(jobRef, jobUpdateData);
 
       return {
         applicationId: input.applicationId,

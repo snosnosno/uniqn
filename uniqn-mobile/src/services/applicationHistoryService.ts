@@ -17,6 +17,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import type {
   Application,
   Assignment,
@@ -33,6 +34,143 @@ import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } fr
 const APPLICATIONS_COLLECTION = 'applications';
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
 const WORK_LOGS_COLLECTION = 'workLogs';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * Assignment의 timeSlot에서 시작 시간 추출
+ * @example "09:00" → "09:00"
+ * @example "09:00~18:00" → "09:00"
+ * @example "09:00 - 18:00" → "09:00"
+ */
+function extractStartTime(timeSlot: string): string {
+  if (!timeSlot) return '';
+  // "~" 또는 " - " 로 분리하여 첫 번째 시간 추출
+  const separators = /[-~]/;
+  const parts = timeSlot.split(separators);
+  return parts[0]?.trim() ?? '';
+}
+
+/**
+ * dateSpecificRequirements의 filled 값 업데이트
+ *
+ * @param requirements 현재 dateSpecificRequirements
+ * @param assignments 확정/취소할 assignments
+ * @param operation 'increment' | 'decrement'
+ * @returns 업데이트된 dateSpecificRequirements
+ */
+export function updateDateSpecificRequirementsFilled(
+  requirements: DateSpecificRequirement[] | undefined,
+  assignments: Assignment[],
+  operation: 'increment' | 'decrement'
+): DateSpecificRequirement[] | undefined {
+  if (!requirements || requirements.length === 0) {
+    return requirements;
+  }
+
+  // Deep copy to avoid mutation
+  const updatedRequirements = requirements.map((req) => ({
+    ...req,
+    timeSlots: req.timeSlots.map((ts) => ({
+      ...ts,
+      roles: ts.roles.map((r) => ({ ...r })),
+    })),
+  }));
+
+  // 매칭 통계
+  let expectedUpdates = 0;
+  let successfulUpdates = 0;
+
+  // 각 assignment에 대해 해당하는 slot 찾아서 업데이트
+  for (const assignment of assignments) {
+    const assignmentStartTime = extractStartTime(assignment.timeSlot);
+    const assignmentRole = assignment.role ?? assignment.roles?.[0];
+
+    if (!assignmentRole) {
+      logger.warn('Assignment에 역할 정보 없음', { assignment });
+      continue;
+    }
+
+    for (const date of assignment.dates) {
+      expectedUpdates++;
+
+      // 해당 날짜의 requirement 찾기
+      const dateReq = updatedRequirements.find((req) => {
+        // date가 string, Timestamp, {seconds: number} 형태일 수 있음
+        let reqDateStr: string;
+        if (typeof req.date === 'string') {
+          reqDateStr = req.date;
+        } else if (req.date && 'toDate' in req.date) {
+          reqDateStr = (req.date as { toDate: () => Date }).toDate().toISOString().split('T')[0] ?? '';
+        } else if (req.date && 'seconds' in req.date) {
+          reqDateStr = new Date((req.date as { seconds: number }).seconds * 1000).toISOString().split('T')[0] ?? '';
+        } else {
+          reqDateStr = '';
+        }
+        return reqDateStr === date;
+      });
+
+      if (!dateReq) {
+        logger.warn('dateSpecificRequirements에서 날짜 매칭 실패', {
+          targetDate: date,
+          availableDates: updatedRequirements.map((r) => r.date),
+        });
+        continue;
+      }
+
+      // 해당 시간대의 timeSlot 찾기
+      const timeSlot = dateReq.timeSlots.find((ts) => {
+        const slotStartTime = ts.startTime ?? (ts as { time?: string }).time ?? '';
+        return slotStartTime === assignmentStartTime;
+      });
+
+      if (!timeSlot) {
+        logger.warn('dateSpecificRequirements에서 시간대 매칭 실패', {
+          targetTime: assignmentStartTime,
+          availableTimes: dateReq.timeSlots.map((ts) => ts.startTime ?? (ts as { time?: string }).time),
+        });
+        continue;
+      }
+
+      // 해당 역할 찾기
+      const roleReq = timeSlot.roles.find((r) => {
+        const roleName = r.role ?? (r as { name?: string }).name;
+        return roleName === assignmentRole;
+      });
+
+      if (!roleReq) {
+        logger.warn('dateSpecificRequirements에서 역할 매칭 실패', {
+          targetRole: assignmentRole,
+          availableRoles: timeSlot.roles.map((r) => r.role ?? (r as { name?: string }).name),
+        });
+        continue;
+      }
+
+      // filled 값 업데이트
+      const currentFilled = roleReq.filled ?? (roleReq as { filled?: number }).filled ?? 0;
+      if (operation === 'increment') {
+        roleReq.filled = currentFilled + 1;
+      } else {
+        roleReq.filled = Math.max(0, currentFilled - 1);
+      }
+      successfulUpdates++;
+    }
+  }
+
+  // 매칭 결과 로깅
+  if (expectedUpdates > 0 && successfulUpdates < expectedUpdates) {
+    logger.warn('dateSpecificRequirements filled 업데이트 일부 실패', {
+      operation,
+      expectedUpdates,
+      successfulUpdates,
+      failedUpdates: expectedUpdates - successfulUpdates,
+    });
+  }
+
+  return updatedRequirements;
+}
 
 // ============================================================================
 // Types
@@ -131,9 +269,8 @@ export async function confirmApplicationWithHistory(
         assignmentsToConfirm.push(legacyAssignment);
       }
 
-      // 4. 정원 확인
-      const currentFilled = jobData.filledPositions ?? 0;
-      const totalPositions = jobData.totalPositions ?? 0;
+      // 4. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
+      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
       const assignmentCount = assignmentsToConfirm.reduce(
         (sum, a) => sum + a.dates.length,
         0
@@ -223,11 +360,35 @@ export async function confirmApplicationWithHistory(
         return { ...r, filled: r.filled + addedCount };
       });
 
-      transaction.update(jobRef, {
+      // 10. dateSpecificRequirements filled 업데이트
+      const updatedDateReqs = updateDateSpecificRequirementsFilled(
+        jobData.dateSpecificRequirements,
+        assignmentsToConfirm,
+        'increment'
+      );
+
+      // 11. 전체 마감 여부 확인 및 상태 변경
+      const newFilledPositions = currentFilled + assignmentCount;
+      const shouldClose = totalPositions > 0 && newFilledPositions >= totalPositions;
+      const newStatus = shouldClose ? 'closed' : jobData.status;
+
+      const jobUpdateData: Record<string, unknown> = {
         filledPositions: increment(assignmentCount),
         roles: updatedRoles,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // dateSpecificRequirements가 있을 때만 업데이트
+      if (updatedDateReqs) {
+        jobUpdateData.dateSpecificRequirements = updatedDateReqs;
+      }
+
+      // 상태가 변경될 때만 status 업데이트
+      if (shouldClose && jobData.status !== 'closed') {
+        jobUpdateData.status = newStatus;
+      }
+
+      transaction.update(jobRef, jobUpdateData);
 
       return {
         applicationId,
@@ -342,13 +503,37 @@ export async function cancelConfirmation(
         return { ...r, filled: Math.max(0, r.filled - removedCount) };
       });
 
-      transaction.update(jobRef, {
+      // 6. dateSpecificRequirements filled 감소
+      const updatedDateReqs = updateDateSpecificRequirementsFilled(
+        jobData.dateSpecificRequirements,
+        cancelledAssignments,
+        'decrement'
+      );
+
+      // 7. 마감 해제 여부 확인 (closed → active 복원)
+      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
+      const newFilledPositions = Math.max(0, currentFilled - decrementCount);
+      const shouldReopen = jobData.status === 'closed' && newFilledPositions < totalPositions;
+
+      const jobUpdateData: Record<string, unknown> = {
         filledPositions: increment(-decrementCount),
         roles: updatedRoles,
         updatedAt: serverTimestamp(),
-      });
+      };
 
-      // 6. 지원서 상태 복원 (originalApplication 기반)
+      // dateSpecificRequirements가 있을 때만 업데이트
+      if (updatedDateReqs) {
+        jobUpdateData.dateSpecificRequirements = updatedDateReqs;
+      }
+
+      // 마감 상태에서 인원이 줄어들면 active로 복원
+      if (shouldReopen) {
+        jobUpdateData.status = 'active';
+      }
+
+      transaction.update(jobRef, jobUpdateData);
+
+      // 8. 지원서 상태 복원 (originalApplication 기반)
       const restoredAssignments = applicationData.originalApplication?.assignments;
       const restoredStatus = 'applied' as const;
 

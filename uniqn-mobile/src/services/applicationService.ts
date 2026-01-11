@@ -20,6 +20,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import {
   mapFirebaseError,
   AlreadyAppliedError,
@@ -103,16 +104,15 @@ export async function applyToJob(
         });
       }
 
-      // 3. 정원 확인
-      const currentApplications = jobData.applicationCount || 0;
-      const totalPositions = jobData.totalPositions || 0;
+      // 3. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
+      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
 
-      if (totalPositions > 0 && currentApplications >= totalPositions) {
+      if (totalPositions > 0 && currentFilled >= totalPositions) {
         throw new MaxCapacityReachedError({
           userMessage: '모집 인원이 마감되었습니다',
           jobPostingId: input.jobPostingId,
           maxCapacity: totalPositions,
-          currentCount: currentApplications,
+          currentCount: currentFilled,
         });
       }
 
@@ -510,16 +510,15 @@ export async function applyToJobV2(
         }
       }
 
-      // 5. 정원 확인
-      const currentApplications = jobData.applicationCount ?? 0;
-      const totalPositions = jobData.totalPositions ?? 0;
+      // 5. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
+      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
 
-      if (totalPositions > 0 && currentApplications >= totalPositions) {
+      if (totalPositions > 0 && currentFilled >= totalPositions) {
         throw new MaxCapacityReachedError({
           userMessage: '모집 인원이 마감되었습니다',
           jobPostingId: input.jobPostingId,
           maxCapacity: totalPositions,
-          currentCount: currentApplications,
+          currentCount: currentFilled,
         });
       }
 

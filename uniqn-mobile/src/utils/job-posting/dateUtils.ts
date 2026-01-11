@@ -385,3 +385,134 @@ export function convertDateRequirementsToTournamentDates(
     };
   });
 }
+
+// ============================================================================
+// dateSpecificRequirements 기반 마감 계산 유틸리티
+// ============================================================================
+
+/**
+ * Role 타입 (headcount 또는 count 지원)
+ */
+interface RoleWithCount {
+  role?: string;
+  name?: string;
+  headcount?: number;
+  count?: number;
+  filled?: number;
+}
+
+/**
+ * TimeSlot 타입
+ */
+interface TimeSlotWithRoles {
+  startTime?: string;
+  time?: string;
+  roles: RoleWithCount[];
+}
+
+/**
+ * DateSpecificRequirement 타입
+ */
+interface DateRequirementWithSlots {
+  date: string | { seconds: number } | { toDate: () => Date };
+  timeSlots: TimeSlotWithRoles[];
+}
+
+/**
+ * dateSpecificRequirements에서 총 모집 인원 계산
+ *
+ * @description 모든 날짜/시간대/역할의 headcount(또는 count)를 합산
+ * @param requirements dateSpecificRequirements 배열
+ * @returns 총 모집 인원 수
+ */
+export function calculateTotalFromDateReqs(
+  requirements: DateRequirementWithSlots[] | undefined
+): number {
+  if (!requirements || requirements.length === 0) return 0;
+
+  return requirements.reduce(
+    (total, req) =>
+      total +
+      req.timeSlots.reduce(
+        (slotTotal, slot) =>
+          slotTotal +
+          slot.roles.reduce(
+            (roleTotal, role) => roleTotal + (role.headcount ?? role.count ?? 0),
+            0
+          ),
+        0
+      ),
+    0
+  );
+}
+
+/**
+ * dateSpecificRequirements에서 확정된 인원 계산
+ *
+ * @description 모든 날짜/시간대/역할의 filled 값을 합산
+ * @param requirements dateSpecificRequirements 배열
+ * @returns 확정된 인원 수
+ */
+export function calculateFilledFromDateReqs(
+  requirements: DateRequirementWithSlots[] | undefined
+): number {
+  if (!requirements || requirements.length === 0) return 0;
+
+  return requirements.reduce(
+    (total, req) =>
+      total +
+      req.timeSlots.reduce(
+        (slotTotal, slot) =>
+          slotTotal +
+          slot.roles.reduce((roleTotal, role) => roleTotal + (role.filled ?? 0), 0),
+        0
+      ),
+    0
+  );
+}
+
+/**
+ * 전체 마감 여부 확인
+ *
+ * @description 총 모집 인원과 확정 인원을 비교하여 마감 여부 판단
+ * @param requirements dateSpecificRequirements 배열
+ * @returns 전체 마감 여부
+ */
+export function isFullyClosed(requirements: DateRequirementWithSlots[] | undefined): boolean {
+  const total = calculateTotalFromDateReqs(requirements);
+  const filled = calculateFilledFromDateReqs(requirements);
+  return total > 0 && filled >= total;
+}
+
+/**
+ * 마감 여부 계산 (레거시 폴백 포함)
+ *
+ * @description dateSpecificRequirements 우선, 없으면 totalPositions/filledPositions 사용
+ * @param jobData 공고 데이터
+ * @returns { total, filled, isClosed }
+ */
+export function getClosingStatus(jobData: {
+  dateSpecificRequirements?: DateRequirementWithSlots[];
+  totalPositions?: number;
+  filledPositions?: number;
+}): { total: number; filled: number; isClosed: boolean } {
+  // dateSpecificRequirements가 있으면 계산
+  if (jobData.dateSpecificRequirements && jobData.dateSpecificRequirements.length > 0) {
+    const total = calculateTotalFromDateReqs(jobData.dateSpecificRequirements);
+    const filled = calculateFilledFromDateReqs(jobData.dateSpecificRequirements);
+    return {
+      total,
+      filled,
+      isClosed: total > 0 && filled >= total,
+    };
+  }
+
+  // 레거시 폴백: totalPositions/filledPositions 사용
+  const total = jobData.totalPositions ?? 0;
+  const filled = jobData.filledPositions ?? 0;
+  return {
+    total,
+    filled,
+    isClosed: total > 0 && filled >= total,
+  };
+}
