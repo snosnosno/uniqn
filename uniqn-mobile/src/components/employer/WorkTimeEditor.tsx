@@ -318,12 +318,20 @@ export function WorkTimeEditor({
     return parseTimeInput(endTimeStr, baseDate);
   }, [endTimeStr, baseDate, isEndTimeUndefined]);
 
-  // 원래 시간 (checkInTime/checkOutTime 우선)
+  // 원래 시간 (checkInTime/checkOutTime 우선, 없으면 timeSlot에서 파싱)
   const originalStartTime = useMemo(() => {
     if (!workLog) return null;
-    const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown };
+    const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; timeSlot?: string };
     const source = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
-    return source ? parseTimestamp(source) : null;
+    if (source) {
+      return parseTimestamp(source);
+    }
+    // timeSlot에서 파싱 (초기화 로직과 일치)
+    if (workLogWithCheck.timeSlot && workLog.date) {
+      const { startTime } = parseTimeSlotToDate(workLogWithCheck.timeSlot, workLog.date);
+      return startTime;
+    }
+    return null;
   }, [workLog]);
 
   const originalEndTime = useMemo(() => {
@@ -333,16 +341,18 @@ export function WorkTimeEditor({
     return source ? parseTimestamp(source) : null;
   }, [workLog]);
 
-  // 원래 미정 상태 확인
+  // 원래 미정 상태 확인 (초기화 로직과 일치해야 함)
   const wasStartTimeUndefined = useMemo(() => {
     if (!workLog) return false;
     const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; timeSlot?: string };
     const source = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
-    // timeSlot이 있으면 미정이 아니었음
-    if (source === null || source === undefined) {
-      return !(workLogWithCheck.timeSlot && workLog.date);
+    if (source) return false; // 출근 시간이 있으면 미정 아님
+    // timeSlot에서 파싱 시도 (초기화 로직과 일치)
+    if (workLogWithCheck.timeSlot && workLog.date) {
+      const { startTime } = parseTimeSlotToDate(workLogWithCheck.timeSlot, workLog.date);
+      return !startTime; // 파싱 실패하면 미정
     }
-    return false;
+    return true; // source도 없고 timeSlot도 없으면 미정
   }, [workLog]);
 
   const wasEndTimeUndefined = useMemo(() => {

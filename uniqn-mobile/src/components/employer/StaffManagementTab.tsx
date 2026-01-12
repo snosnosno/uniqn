@@ -141,35 +141,23 @@ export function StaffManagementTab({
 
   // 시간 저장
   const handleSaveTime = useCallback(
-    async (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
+    (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
       if (!selectedStaff) return;
 
       setIsSaving(true);
-      try {
-        updateWorkTime({
-          workLogId: selectedStaff.id,
-          checkInTime: data.startTime,
-          checkOutTime: data.endTime,
-          reason: data.reason,
-        });
+      // mutation 호출 (토스트는 useConfirmedStaff.onSuccess/onError에서 표시)
+      updateWorkTime({
+        workLogId: selectedStaff.id,
+        checkInTime: data.startTime,
+        checkOutTime: data.endTime,
+        reason: data.reason,
+      });
 
-        addToast({
-          type: 'success',
-          message: '근무 시간이 수정되었습니다.',
-        });
-
-        setShowTimeEditor(false);
-        setSelectedStaff(null);
-      } catch (err) {
-        addToast({
-          type: 'error',
-          message: '시간 수정에 실패했습니다. 다시 시도해주세요.',
-        });
-      } finally {
-        setIsSaving(false);
-      }
+      setShowTimeEditor(false);
+      setSelectedStaff(null);
+      setIsSaving(false);
     },
-    [selectedStaff, updateWorkTime, addToast]
+    [selectedStaff, updateWorkTime]
   );
 
   // 역할 변경

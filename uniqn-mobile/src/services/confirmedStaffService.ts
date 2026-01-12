@@ -329,19 +329,22 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
         updatedAt: serverTimestamp(),
       };
 
-      // 퇴근시간이 설정되면 → checked_out 자동 변경
-      // (출근시간만 설정은 상태 변경 안 함 - QR 스캔이나 상태 뱃지로만 변경)
+      // 시간에 따른 상태 자동 변경
       if (input.checkOutTime) {
-        updateData.status = 'checked_out';
+        updateData.status = 'checked_out';  // 퇴근 완료
+      } else if (input.checkInTime) {
+        updateData.status = 'checked_in';   // 근무 중
+      } else {
+        updateData.status = 'scheduled';    // 출근 예정
       }
 
-      // 레거시 호환: actualStartTime/actualEndTime도 함께 업데이트
-      if (input.checkInTime) {
-        updateData.actualStartTime = Timestamp.fromDate(input.checkInTime);
-      }
-      if (input.checkOutTime) {
-        updateData.actualEndTime = Timestamp.fromDate(input.checkOutTime);
-      }
+      // 레거시 호환: actualStartTime/actualEndTime도 함께 업데이트 (null 포함)
+      updateData.actualStartTime = input.checkInTime
+        ? Timestamp.fromDate(input.checkInTime)
+        : null;
+      updateData.actualEndTime = input.checkOutTime
+        ? Timestamp.fromDate(input.checkOutTime)
+        : null;
 
       transaction.update(workLogRef, updateData);
     });
