@@ -50,6 +50,7 @@ export {
 export { Toast } from './Toast';
 export { ToastManager } from './ToastManager';
 export { Modal, AlertModal, ConfirmModal, type ModalProps } from './Modal';
+export { ActionSheet, type ActionSheetProps, type ActionSheetOption } from './ActionSheet';
 export { ModalManager } from './ModalManager';
 
 // ============================================================================

@@ -39,6 +39,8 @@ export interface ConfirmedStaffListProps {
   /** 신고 (노쇼 포함) */
   onReport?: (staff: ConfirmedStaff) => void;
   onDelete?: (staff: ConfirmedStaff) => void;
+  /** 상태 변경 (뱃지 클릭) */
+  onStatusChange?: (staff: ConfirmedStaff) => void;
   showActions?: boolean;
 }
 
@@ -181,6 +183,7 @@ export function ConfirmedStaffList({
   onChangeRole,
   onReport,
   onDelete,
+  onStatusChange,
   showActions = true,
 }: ConfirmedStaffListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -254,11 +257,12 @@ export function ConfirmedStaffList({
           onChangeRole={onChangeRole}
           onReport={onReport}
           onDelete={onDelete}
+          onStatusChange={onStatusChange}
           showActions={showActions}
         />
       </View>
     ),
-    [onStaffPress, onViewProfile, onEditTime, onChangeRole, onReport, onDelete, showActions]
+    [onStaffPress, onViewProfile, onEditTime, onChangeRole, onReport, onDelete, onStatusChange, showActions]
   );
 
   // 섹션 헤더 렌더

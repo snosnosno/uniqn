@@ -47,6 +47,8 @@ export interface ConfirmedStaffCardProps {
   onReport?: (staff: ConfirmedStaff) => void;
   /** 삭제 */
   onDelete?: (staff: ConfirmedStaff) => void;
+  /** 상태 변경 (뱃지 클릭) */
+  onStatusChange?: (staff: ConfirmedStaff) => void;
   /** 액션 버튼 표시 여부 */
   showActions?: boolean;
   /** 컴팩트 모드 */
@@ -114,6 +116,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   onChangeRole,
   onReport,
   onDelete,
+  onStatusChange,
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
@@ -213,6 +216,13 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     onDelete?.(staff);
   }, [staff, onDelete]);
 
+  const handleStatusChange = useCallback(() => {
+    onStatusChange?.(staff);
+  }, [staff, onStatusChange]);
+
+  // 상태 변경 가능 여부 (scheduled, checked_in, checked_out 간 자유 전환)
+  const canChangeStatus = staff.status === 'scheduled' || staff.status === 'checked_in' || staff.status === 'checked_out';
+
   return (
     <Card variant="elevated" padding={compact ? 'sm' : 'md'}>
       <Pressable onPress={handlePress} disabled={!onPress}>
@@ -247,12 +257,18 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               </View>
             </View>
           </Pressable>
-          <Badge
-            variant={STATUS_BADGE_VARIANT[staff.status]}
-            size="sm"
+          <Pressable
+            onPress={handleStatusChange}
+            disabled={!canChangeStatus || !onStatusChange}
+            className={canChangeStatus && onStatusChange ? 'active:opacity-70' : ''}
           >
-            {CONFIRMED_STAFF_STATUS_LABELS[staff.status]}
-          </Badge>
+            <Badge
+              variant={STATUS_BADGE_VARIANT[staff.status]}
+              size="sm"
+            >
+              {CONFIRMED_STAFF_STATUS_LABELS[staff.status]}
+            </Badge>
+          </Pressable>
           {onPress && (
             <ChevronRightIcon size={20} color="#9CA3AF" />
           )}

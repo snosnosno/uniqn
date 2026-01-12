@@ -14,7 +14,7 @@ import { Loading } from '../ui/Loading';
 import { ErrorState } from '../ui/ErrorState';
 import { ConfirmModal } from '../ui/Modal';
 import { ActionSheet, type ActionSheetOption } from '../ui/ActionSheet';
-import { QRCodeIcon, RefreshIcon, CheckCircleIcon, ClockIcon } from '../icons';
+import { QRCodeIcon, RefreshIcon, CheckCircleIcon, ClockIcon, CalendarIcon } from '../icons';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -249,14 +249,19 @@ export function StaffManagementTab({
       if (!statusSheetTarget) return;
 
       try {
-        changeStatus(statusSheetTarget.id, value as 'checked_in' | 'checked_out');
+        changeStatus(statusSheetTarget.id, value as 'scheduled' | 'checked_in' | 'checked_out');
 
-        const statusLabel = value === 'checked_in' ? '출근' : '퇴근';
+        const statusLabels: Record<string, string> = {
+          scheduled: '출근 예정',
+          checked_in: '출근',
+          checked_out: '퇴근',
+        };
+        const statusLabel = statusLabels[value] || value;
         addToast({
           type: 'success',
           message: `${statusSheetTarget.staffName}님이 ${statusLabel} 처리되었습니다.`,
         });
-      } catch (err) {
+      } catch {
         addToast({
           type: 'error',
           message: '상태 변경에 실패했습니다. 다시 시도해주세요.',
@@ -266,31 +271,41 @@ export function StaffManagementTab({
     [statusSheetTarget, changeStatus, addToast]
   );
 
-  // 상태 변경 옵션 생성
+  // 상태 변경 옵션 생성 (현재 상태 제외한 3가지 옵션)
   const getStatusOptions = useCallback((): ActionSheetOption[] => {
     if (!statusSheetTarget) return [];
 
-    if (statusSheetTarget.status === 'scheduled') {
-      return [
-        {
-          label: '출근 처리',
-          value: 'checked_in',
-          icon: <CheckCircleIcon size={20} color="#22C55E" />,
-        },
-      ];
+    const currentStatus = statusSheetTarget.status;
+    const options: ActionSheetOption[] = [];
+
+    // 출근 예정 옵션 (현재 상태가 아닐 때만)
+    if (currentStatus !== 'scheduled') {
+      options.push({
+        label: '출근 예정으로 변경',
+        value: 'scheduled',
+        icon: <CalendarIcon size={20} color="#6B7280" />,
+      });
     }
 
-    if (statusSheetTarget.status === 'checked_in') {
-      return [
-        {
-          label: '퇴근 처리',
-          value: 'checked_out',
-          icon: <ClockIcon size={20} color="#3B82F6" />,
-        },
-      ];
+    // 출근 처리 옵션 (현재 상태가 아닐 때만)
+    if (currentStatus !== 'checked_in') {
+      options.push({
+        label: '출근 처리',
+        value: 'checked_in',
+        icon: <CheckCircleIcon size={20} color="#22C55E" />,
+      });
     }
 
-    return [];
+    // 퇴근 처리 옵션 (현재 상태가 아닐 때만)
+    if (currentStatus !== 'checked_out') {
+      options.push({
+        label: '퇴근 처리',
+        value: 'checked_out',
+        icon: <ClockIcon size={20} color="#3B82F6" />,
+      });
+    }
+
+    return options;
   }, [statusSheetTarget]);
 
   // ============================================================================

@@ -329,6 +329,12 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
         updatedAt: serverTimestamp(),
       };
 
+      // 퇴근시간이 설정되면 → checked_out 자동 변경
+      // (출근시간만 설정은 상태 변경 안 함 - QR 스캔이나 상태 뱃지로만 변경)
+      if (input.checkOutTime) {
+        updateData.status = 'checked_out';
+      }
+
       // 레거시 호환: actualStartTime/actualEndTime도 함께 업데이트
       if (input.checkInTime) {
         updateData.actualStartTime = Timestamp.fromDate(input.checkInTime);
