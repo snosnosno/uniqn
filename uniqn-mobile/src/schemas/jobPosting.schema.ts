@@ -50,8 +50,6 @@ export const roleRequirementSchema = z.object({
 export const salaryInfoSchema = z.object({
   type: salaryTypeSchema,
   amount: z.number().min(0, { message: '급여는 0 이상이어야 합니다' }),
-  // 레거시 호환: useRoleSalary는 더 이상 사용하지 않음
-  useRoleSalary: z.boolean().optional(),
 });
 
 /**

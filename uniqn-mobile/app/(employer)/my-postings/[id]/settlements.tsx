@@ -268,35 +268,15 @@ export default function StaffSettlementsScreen() {
     return salaryConfig.roles || [];
   }, [salaryConfig.roles]);
 
-  // 역할 목록 (공고에서 추출)
+  // RoleChangeModal용 역할 키 목록
   const availableRoles = useMemo((): string[] => {
-    if (posting?.roles) {
-      // 커스텀 역할은 customRole을 사용하여 고유 키 생성
-      return posting.roles.map((r) => {
-        const roleStr = r.role as string;
-        const customRole = (r as { customRole?: string }).customRole;
-        if (roleStr === 'other' && customRole) {
-          return customRole;
-        }
-        return roleStr;
-      }).filter(Boolean) as string[];
-    }
-    return [];
-  }, [posting?.roles]);
-
-  // SettlementSettingsModal용 RoleSalaries 변환 (Record<string, SalaryInfo>)
-  const roleSalariesForSettings = useMemo(() => {
-    const result: Record<string, SalaryInfo> = {};
-    rolesForList.forEach((r) => {
-      // 커스텀 역할은 customRole을 키로 사용 (availableRoles와 동일한 키 형식)
+    return rolesForList.map((r) => {
       const roleStr = (r.role || r.name) as string;
-      const customRole = (r as { customRole?: string }).customRole;
-      const key = roleStr === 'other' && customRole ? customRole : roleStr;
-      if (key && r.salary) {
-        result[key] = r.salary;
+      if (roleStr === 'other' && r.customRole) {
+        return r.customRole;
       }
-    });
-    return result;
+      return roleStr;
+    }).filter(Boolean) as string[];
   }, [rolesForList]);
 
   // ============================================================================
@@ -534,13 +514,13 @@ export default function StaffSettlementsScreen() {
     }
   }, [selectedWorkLogForEdit, addToast, refresh]);
 
-  // 정산 설정 저장
+  // 정산 설정 저장 (v2.0 - roles[] 구조)
   const handleSaveSettings = useCallback(async (_data: SettlementSettingsData) => {
     try {
-      // TODO: Firebase에 저장 - jobPosting에 roleSalaries, allowances, taxSettings 저장
-      // const { roleSalaries, allowances, taxSettings } = _data;
+      // TODO: Firebase에 저장 - jobPosting에 roles[].salary, allowances, taxSettings 저장
+      // const { roles, allowances, taxSettings } = _data;
       // await updateDoc(doc(db, 'jobPostings', id), {
-      //   roleSalaries,
+      //   roles: roles.map(r => ({ ...r })), // 역할별 급여 포함
       //   allowances,
       //   taxSettings,
       // });
@@ -725,9 +705,8 @@ export default function StaffSettlementsScreen() {
       <SettlementSettingsModal
         visible={isSettingsModalVisible}
         onClose={() => setIsSettingsModalVisible(false)}
-        roleSalaries={roleSalariesForSettings}
+        roles={rolesForList}
         allowances={salaryConfig.allowances || {}}
-        roles={availableRoles}
         onSave={handleSaveSettings}
       />
     </SafeAreaView>

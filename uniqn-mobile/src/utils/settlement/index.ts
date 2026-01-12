@@ -16,14 +16,6 @@ export interface SalaryInfo {
   amount: number;
 }
 
-/**
- * 역할별 급여 정보 (레거시)
- * @deprecated roles[].salary 사용 권장. 새 코드에서는 getRoleSalaryFromRoles 사용
- */
-export interface RoleSalaries {
-  [role: string]: SalaryInfo;
-}
-
 export interface SettlementResult {
   hoursWorked: number;
   basePay: number;      // 기본 급여
@@ -56,7 +48,7 @@ export const SALARY_TYPE_LABELS: Record<SalaryType, string> = {
   hourly: '시급',
   daily: '일급',
   monthly: '월급',
-  other: '기타',
+  other: '협의',
 };
 
 /** "제공" 상태를 나타내는 특별 값 */
@@ -121,33 +113,7 @@ export function calculatePayByType(
 }
 
 /**
- * 역할에 맞는 급여 정보 가져오기 (레거시)
- *
- * @deprecated getRoleSalaryFromRoles 사용 권장
- * @param role - 역할 코드 (dealer, floor, other 등)
- * @param roleSalaries - 역할별 급여 정보
- * @param defaultSalary - 기본 급여 (없으면 DEFAULT_SALARY_INFO)
- * @param customRole - 커스텀 역할명 (role이 'other'일 때 사용)
- */
-export function getRoleSalaryInfo(
-  role: string | undefined,
-  roleSalaries: RoleSalaries | undefined,
-  defaultSalary?: SalaryInfo,
-  customRole?: string
-): SalaryInfo {
-  const fallback = defaultSalary ?? DEFAULT_SALARY_INFO;
-
-  if (!role) return fallback;
-  if (!roleSalaries) return fallback;
-
-  // 커스텀 역할이면 customRole을 키로 사용
-  const effectiveRole = role === 'other' && customRole ? customRole : role;
-
-  return roleSalaries[effectiveRole] ?? fallback;
-}
-
-/**
- * roles 배열에서 역할별 급여 조회 (신규)
+ * roles 배열에서 역할별 급여 조회
  *
  * @description roles[].salary 구조에서 급여 정보를 조회
  * @param roles - 역할 배열 (salary 포함)
@@ -275,34 +241,7 @@ export function calculateSettlementFromWorkLog(
 }
 
 /**
- * 여러 근무 기록의 총 금액 계산 (레거시)
- *
- * @deprecated calculateTotalSettlementFromRoles 사용 권장
- */
-export function calculateTotalSettlement(
-  workLogs: Array<{
-    actualStartTime?: unknown;
-    actualEndTime?: unknown;
-    role?: string;
-    customRole?: string;
-  }>,
-  roleSalaries: RoleSalaries,
-  allowances?: Allowances
-): number {
-  return workLogs.reduce((total, log) => {
-    const salaryInfo = getRoleSalaryInfo(log.role, roleSalaries, undefined, log.customRole);
-    const { totalPay } = calculateSettlement(
-      log.actualStartTime,
-      log.actualEndTime,
-      salaryInfo,
-      allowances
-    );
-    return total + totalPay;
-  }, 0);
-}
-
-/**
- * 여러 근무 기록의 총 금액 계산 (roles 배열 버전)
+ * 여러 근무 기록의 총 금액 계산
  *
  * @description roles[].salary 구조에서 급여 정보를 조회하여 정산
  * @param workLogs - 근무 기록 배열
@@ -384,7 +323,7 @@ export function formatDate(date: Date | null): string {
  * 급여 타입 라벨 가져오기
  */
 export function getSalaryTypeLabel(type: SalaryType): string {
-  return SALARY_TYPE_LABELS[type] || '기타';
+  return SALARY_TYPE_LABELS[type] || '협의';
 }
 
 // ============================================================================
@@ -443,27 +382,7 @@ interface WorkLogWithOverrides {
 }
 
 /**
- * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환 (레거시)
- * - workLog에 customSalaryInfo가 있으면 그것을 사용
- * - 없으면 역할별 급여 정보를 사용
- *
- * @deprecated getEffectiveSalaryInfoFromRoles 사용 권장
- */
-export function getEffectiveSalaryInfo(
-  workLog: WorkLogWithOverrides,
-  roleSalaries: RoleSalaries | undefined,
-  defaultSalary?: SalaryInfo
-): SalaryInfo {
-  // 개별 오버라이드가 있으면 우선 사용
-  if (workLog.customSalaryInfo) {
-    return workLog.customSalaryInfo;
-  }
-  // 역할별 급여 정보 사용 (커스텀 역할 지원)
-  return getRoleSalaryInfo(workLog.role, roleSalaries, defaultSalary, workLog.customRole);
-}
-
-/**
- * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환 (roles 배열 버전)
+ * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환
  * - workLog에 customSalaryInfo가 있으면 그것을 사용
  * - 없으면 roles 배열에서 해당 역할의 급여 정보를 사용
  *
@@ -554,22 +473,25 @@ export function calculateSettlementWithTax(
 
 /**
  * WorkLog 객체로 세금 포함 정산 금액 계산
+ *
+ * @param workLog - 근무 기록 (오버라이드 포함)
+ * @param roles - 역할 배열 (salary 포함)
+ * @param defaultSalary - 기본 급여
+ * @param defaultAllowances - 기본 수당
+ * @param defaultTaxSettings - 기본 세금 설정
  */
 export function calculateSettlementFromWorkLogWithTax(
-  workLog: {
+  workLog: WorkLogWithOverrides & {
     actualStartTime?: unknown;
     actualEndTime?: unknown;
-    role?: string;
-    customSalaryInfo?: SalaryInfo;
-    customAllowances?: Allowances;
-    customTaxSettings?: TaxSettings;
   },
-  roleSalaries: RoleSalaries | undefined,
+  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }> | undefined,
+  defaultSalary?: SalaryInfo,
   defaultAllowances?: Allowances,
   defaultTaxSettings?: TaxSettings
 ): ExtendedSettlementResult {
-  // 실제 적용될 값들 결정
-  const salaryInfo = getEffectiveSalaryInfo(workLog, roleSalaries);
+  // 실제 적용될 값들 결정 (roles 배열 사용)
+  const salaryInfo = getEffectiveSalaryInfoFromRoles(workLog, roles, defaultSalary);
   const allowances = getEffectiveAllowances(workLog, defaultAllowances);
   const taxSettings = getEffectiveTaxSettings(workLog, defaultTaxSettings);
 

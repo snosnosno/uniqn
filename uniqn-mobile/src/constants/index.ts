@@ -277,7 +277,7 @@ export const SALARY_TYPE_LABELS = {
   hourly: '시급',
   daily: '일급',
   monthly: '월급',
-  other: '기타',
+  other: '협의',
 } as const;
 
 // ============================================================================

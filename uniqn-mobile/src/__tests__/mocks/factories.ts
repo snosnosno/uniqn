@@ -32,13 +32,31 @@ export interface MockStaff {
   updatedAt: string;
 }
 
+/** 급여 정보 */
+export interface MockSalaryInfo {
+  type: 'hourly' | 'daily' | 'monthly' | 'other';
+  amount: number;
+}
+
+/** 역할 + 급여 정보 */
+export interface MockRoleWithSalary {
+  role: string;
+  customRole?: string;
+  count: number;
+  filled?: number;
+  salary?: MockSalaryInfo;
+}
+
 export interface MockJobPosting {
   id: string;
   title: string;
   description: string;
   location: string;
   address: string;
-  salary: number;
+  /** 기본 급여 (v2.0 - useSameSalary=true일 때 사용) */
+  defaultSalary?: MockSalaryInfo;
+  /** 역할 목록 (급여 포함) */
+  roles?: MockRoleWithSalary[];
   date: string;
   startTime: string;
   endTime: string;
@@ -148,13 +166,19 @@ export function createMockJobPosting(
   const tomorrow = new Date();
   tomorrow.setDate(tomorrow.getDate() + 1);
 
+  const baseSalary = 150000 + jobCounter * 10000;
+
   return {
     id: `job-${jobCounter}`,
     title: `테스트 구인공고 ${jobCounter}`,
     description: `이것은 테스트 구인공고 ${jobCounter}의 상세 설명입니다.`,
     location: '서울 강남구',
     address: '서울시 강남구 테헤란로 123',
-    salary: 150000 + jobCounter * 10000,
+    defaultSalary: { type: 'daily', amount: baseSalary },
+    roles: [
+      { role: 'dealer', count: 2, filled: 0, salary: { type: 'daily', amount: baseSalary } },
+      { role: 'floor', count: 1, filled: 0, salary: { type: 'daily', amount: baseSalary - 20000 } },
+    ],
     date: tomorrow.toISOString().split('T')[0],
     startTime: '18:00',
     endTime: '02:00',

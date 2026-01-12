@@ -2,7 +2,7 @@
  * UNIQN Mobile - 정산 설정 모달
  *
  * @description 역할별 급여, 수당, 세금 일괄 설정
- * @version 1.0.0
+ * @version 2.0.0 - roles[].salary 구조 사용
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
@@ -15,7 +15,6 @@ import {
 } from '../icons';
 import {
   type SalaryInfo,
-  type RoleSalaries,
   type Allowances,
   DEFAULT_SALARY_INFO,
 } from '@/utils/settlement';
@@ -35,23 +34,30 @@ import { ROLE_LABELS } from '@/constants';
 // Types
 // ============================================================================
 
+/** 역할 + 급여 정보 */
+export interface RoleWithSalary {
+  role?: string;
+  name?: string;
+  customRole?: string;
+  salary?: SalaryInfo;
+}
+
 export interface SettlementSettingsModalProps {
   visible: boolean;
   onClose: () => void;
-  /** 현재 역할별 급여 설정 */
-  roleSalaries: RoleSalaries;
+  /** 역할 목록 (급여 포함) - v2.0 */
+  roles: RoleWithSalary[];
   /** 현재 수당 설정 */
   allowances: Allowances;
   /** 현재 세금 설정 */
   taxSettings?: TaxSettings;
-  /** 사용 중인 역할 목록 */
-  roles: string[];
   /** 저장 콜백 */
   onSave: (data: SettlementSettingsData) => Promise<void>;
 }
 
 export interface SettlementSettingsData {
-  roleSalaries: RoleSalaries;
+  /** 역할 목록 (급여 포함) - v2.0 */
+  roles: RoleWithSalary[];
   allowances: Allowances;
   taxSettings: TaxSettings;
 }
@@ -69,8 +75,22 @@ const DEFAULT_TAX_SETTINGS: TaxSettings = {
 // Helpers
 // ============================================================================
 
-function getRoleLabel(role: string): string {
-  return ROLE_LABELS[role] || role;
+/**
+ * 역할 키 추출 (customRole 우선)
+ */
+function getRoleKey(role: RoleWithSalary): string {
+  const roleStr = (role.role || role.name) as string;
+  if (roleStr === 'other' && role.customRole) {
+    return role.customRole;
+  }
+  return roleStr || '';
+}
+
+/**
+ * 역할 라벨 가져오기
+ */
+function getRoleLabel(roleKey: string): string {
+  return ROLE_LABELS[roleKey] || roleKey;
 }
 
 // ============================================================================
@@ -172,14 +192,13 @@ function RoleSalaryItem({
 export function SettlementSettingsModal({
   visible,
   onClose,
-  roleSalaries: initialRoleSalaries,
+  roles: initialRoles,
   allowances: initialAllowances,
   taxSettings: initialTaxSettings,
-  roles,
   onSave,
 }: SettlementSettingsModalProps) {
-  // 로컬 상태
-  const [roleSalaries, setRoleSalaries] = useState<RoleSalaries>(initialRoleSalaries);
+  // 로컬 상태 - roles[] 구조 사용
+  const [roles, setRoles] = useState<RoleWithSalary[]>(initialRoles);
   const [allowances, setAllowances] = useState<Allowances>(initialAllowances);
   const [taxSettings, setTaxSettings] = useState<TaxSettings>(
     initialTaxSettings || DEFAULT_TAX_SETTINGS
@@ -188,7 +207,7 @@ export function SettlementSettingsModal({
 
   // 아코디언 상태 (모두 접힌 상태가 기본)
   const [expandedSections, setExpandedSections] = useState({
-    roleSalaries: false,
+    roles: false,
     allowances: false,
     tax: false,
   });
@@ -196,19 +215,22 @@ export function SettlementSettingsModal({
   // 초기값 동기화
   useEffect(() => {
     if (visible) {
-      setRoleSalaries(initialRoleSalaries);
+      setRoles(initialRoles);
       setAllowances(initialAllowances);
       setTaxSettings(initialTaxSettings || DEFAULT_TAX_SETTINGS);
       // 모든 섹션을 접힌 상태로 초기화
-      setExpandedSections({ roleSalaries: false, allowances: false, tax: false });
+      setExpandedSections({ roles: false, allowances: false, tax: false });
     }
-  }, [visible, initialRoleSalaries, initialAllowances, initialTaxSettings]);
+  }, [visible, initialRoles, initialAllowances, initialTaxSettings]);
 
-  // 표시할 역할 목록 (이 공고에서 실제 사용 중인 역할만)
-  const displayRoles = useMemo(() => {
+  // 표시할 역할 목록 (v2.0 - 급여 포함)
+  const displayRoles = useMemo<RoleWithSalary[]>(() => {
     // roles가 비어있으면 기본 역할 표시
     if (!roles || roles.length === 0) {
-      return ['dealer', 'floor'];
+      return [
+        { role: 'dealer', salary: DEFAULT_SALARY_INFO },
+        { role: 'floor', salary: DEFAULT_SALARY_INFO },
+      ];
     }
     return roles;
   }, [roles]);
@@ -221,20 +243,22 @@ export function SettlementSettingsModal({
     }));
   }, []);
 
-  const handleRoleSalaryChange = useCallback((role: string, salaryInfo: SalaryInfo) => {
-    setRoleSalaries(prev => ({
-      ...prev,
-      [role]: salaryInfo,
-    }));
+  // 역할별 급여 변경 핸들러 (v2.0 - roles[] 구조)
+  const handleRoleSalaryChange = useCallback((roleIndex: number, salaryInfo: SalaryInfo) => {
+    setRoles(prev => {
+      const updated = [...prev];
+      updated[roleIndex] = { ...updated[roleIndex], salary: salaryInfo };
+      return updated;
+    });
   }, []);
 
+  // 모든 역할에 급여 적용 (v2.0)
   const handleApplyToAllRoles = useCallback((sourceSalaryInfo: SalaryInfo) => {
-    const newRoleSalaries: RoleSalaries = {};
-    displayRoles.forEach(role => {
-      newRoleSalaries[role] = { ...sourceSalaryInfo };
-    });
-    setRoleSalaries(newRoleSalaries);
-  }, [displayRoles]);
+    setRoles(prev => prev.map(role => ({
+      ...role,
+      salary: { ...sourceSalaryInfo },
+    })));
+  }, []);
 
   const handleSave = useCallback(async () => {
     if (isSaving) return;
@@ -242,7 +266,7 @@ export function SettlementSettingsModal({
     setIsSaving(true);
     try {
       await onSave({
-        roleSalaries,
+        roles,
         allowances,
         taxSettings,
       });
@@ -252,7 +276,7 @@ export function SettlementSettingsModal({
     } finally {
       setIsSaving(false);
     }
-  }, [roleSalaries, allowances, taxSettings, isSaving, onSave, onClose]);
+  }, [roles, allowances, taxSettings, isSaving, onSave, onClose]);
 
   return (
     <Modal
@@ -281,19 +305,22 @@ export function SettlementSettingsModal({
           <AccordionSection
             title="역할별 급여 설정"
             subtitle="역할에 따른 급여 유형과 금액을 설정합니다"
-            expanded={expandedSections.roleSalaries}
-            onToggle={() => toggleSection('roleSalaries')}
+            expanded={expandedSections.roles}
+            onToggle={() => toggleSection('roles')}
           >
-            {displayRoles.map((role, index) => (
-              <RoleSalaryItem
-                key={role}
-                role={role}
-                salaryInfo={roleSalaries[role] || DEFAULT_SALARY_INFO}
-                onChange={(info) => handleRoleSalaryChange(role, info)}
-                onApplyToAll={() => handleApplyToAllRoles(roleSalaries[role] || DEFAULT_SALARY_INFO)}
-                showApplyButton={index === 0 && displayRoles.length > 1}
-              />
-            ))}
+            {displayRoles.map((roleData, index) => {
+              const roleKey = getRoleKey(roleData);
+              return (
+                <RoleSalaryItem
+                  key={`${roleKey}-${index}`}
+                  role={roleKey}
+                  salaryInfo={roleData.salary || DEFAULT_SALARY_INFO}
+                  onChange={(info) => handleRoleSalaryChange(index, info)}
+                  onApplyToAll={() => handleApplyToAllRoles(roleData.salary || DEFAULT_SALARY_INFO)}
+                  showApplyButton={index === 0 && displayRoles.length > 1}
+                />
+              );
+            })}
           </AccordionSection>
 
           {/* 수당 설정 섹션 */}

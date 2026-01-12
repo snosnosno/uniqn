@@ -33,10 +33,13 @@ describe('Jest Setup', () => {
   });
 
   it('should create mock job posting correctly', () => {
-    const mockJob = global.testUtils.createMockJobPosting({ salary: 200000 });
+    const mockJob = global.testUtils.createMockJobPosting({
+      defaultSalary: { type: 'daily', amount: 200000 },
+    });
 
     expect(mockJob.id).toBe('job-id-1');
-    expect(mockJob.salary).toBe(200000);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((mockJob as any).defaultSalary.amount).toBe(200000);
     expect(mockJob.status).toBe('active');
   });
 });

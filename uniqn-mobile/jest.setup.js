@@ -220,13 +220,16 @@ global.testUtils = {
     ...overrides,
   }),
 
-  // Create mock job posting
+  // Create mock job posting (v2.0 - roles[].salary 구조)
   createMockJobPosting: (overrides = {}) => ({
     id: 'job-id-1',
     title: '테스트 공고',
     description: '테스트 설명',
     location: '서울',
-    salary: 150000,
+    defaultSalary: { type: 'daily', amount: 150000 },
+    roles: [
+      { role: 'dealer', count: 2, salary: { type: 'daily', amount: 150000 } },
+    ],
     date: new Date().toISOString(),
     status: 'active',
     createdAt: new Date().toISOString(),

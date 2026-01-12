@@ -89,7 +89,8 @@ describe('Mock Factories', () => {
       expect(job.status).toBe('active');
       expect(job.applicantCount).toBe(0);
       expect(job.maxApplicants).toBe(10);
-      expect(job.salary).toBeGreaterThan(0);
+      expect(job.defaultSalary?.amount).toBeGreaterThan(0);
+      expect(job.roles?.length).toBeGreaterThan(0);
     });
 
     it('should allow overriding status', () => {

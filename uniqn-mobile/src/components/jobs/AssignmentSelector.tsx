@@ -198,7 +198,7 @@ const DateSelection = memo(function DateSelection({
               {/* 역할 체크박스들 */}
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
-                  // 커스텀 역할이면 customName을 키로 사용 (roleSalaries 키와 일치)
+                  // 커스텀 역할이면 customName을 키로 사용 (roles[].salary 구조와 일치)
                   const effectiveRoleId = role.roleId === 'other' && role.customName
                     ? role.customName
                     : role.roleId;
