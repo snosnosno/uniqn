@@ -13,7 +13,8 @@ import { WorkTimeEditor } from './WorkTimeEditor';
 import { Loading } from '../ui/Loading';
 import { ErrorState } from '../ui/ErrorState';
 import { ConfirmModal } from '../ui/Modal';
-import { QRCodeIcon, RefreshIcon } from '../icons';
+import { ActionSheet, type ActionSheetOption } from '../ui/ActionSheet';
+import { QRCodeIcon, RefreshIcon, CheckCircleIcon, ClockIcon } from '../icons';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -95,6 +96,7 @@ export function StaffManagementTab({
     refresh: refetch,
     updateWorkTime,
     removeStaff,
+    changeStatus,
   } = useConfirmedStaff(jobPostingId);
 
   // 모달 상태
@@ -105,6 +107,9 @@ export function StaffManagementTab({
   // 프로필 모달 상태
   const [profileStaff, setProfileStaff] = useState<ConfirmedStaff | null>(null);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
+  // 상태 변경 ActionSheet 상태
+  const [statusSheetTarget, setStatusSheetTarget] = useState<ConfirmedStaff | null>(null);
+  const [showStatusSheet, setShowStatusSheet] = useState(false);
 
   // ============================================================================
   // Handlers
@@ -232,6 +237,62 @@ export function StaffManagementTab({
     refetch();
   }, [refetch]);
 
+  // 상태 변경 ActionSheet 열기
+  const handleStatusChange = useCallback((staff: ConfirmedStaff) => {
+    setStatusSheetTarget(staff);
+    setShowStatusSheet(true);
+  }, []);
+
+  // 상태 변경 ActionSheet에서 옵션 선택
+  const handleStatusSelect = useCallback(
+    async (value: string) => {
+      if (!statusSheetTarget) return;
+
+      try {
+        changeStatus(statusSheetTarget.id, value as 'checked_in' | 'checked_out');
+
+        const statusLabel = value === 'checked_in' ? '출근' : '퇴근';
+        addToast({
+          type: 'success',
+          message: `${statusSheetTarget.staffName}님이 ${statusLabel} 처리되었습니다.`,
+        });
+      } catch (err) {
+        addToast({
+          type: 'error',
+          message: '상태 변경에 실패했습니다. 다시 시도해주세요.',
+        });
+      }
+    },
+    [statusSheetTarget, changeStatus, addToast]
+  );
+
+  // 상태 변경 옵션 생성
+  const getStatusOptions = useCallback((): ActionSheetOption[] => {
+    if (!statusSheetTarget) return [];
+
+    if (statusSheetTarget.status === 'scheduled') {
+      return [
+        {
+          label: '출근 처리',
+          value: 'checked_in',
+          icon: <CheckCircleIcon size={20} color="#22C55E" />,
+        },
+      ];
+    }
+
+    if (statusSheetTarget.status === 'checked_in') {
+      return [
+        {
+          label: '퇴근 처리',
+          value: 'checked_out',
+          icon: <ClockIcon size={20} color="#3B82F6" />,
+        },
+      ];
+    }
+
+    return [];
+  }, [statusSheetTarget]);
+
   // ============================================================================
   // Render
   // ============================================================================
@@ -259,8 +320,15 @@ export function StaffManagementTab({
     );
   }
 
-  // WorkLog로 변환 (WorkTimeEditor용)
-  const selectedWorkLog: WorkLog | null = selectedStaff?.workLog ?? null;
+  // WorkLog로 변환 (WorkTimeEditor용) - ConfirmedStaff의 프로필 정보 병합
+  const selectedWorkLog: WorkLog | null = selectedStaff?.workLog
+    ? {
+        ...selectedStaff.workLog,
+        staffName: selectedStaff.staffName,
+        staffNickname: selectedStaff.staffNickname,
+        staffPhotoURL: selectedStaff.staffPhotoURL,
+      }
+    : null;
 
   return (
     <View className="flex-1 bg-gray-50 dark:bg-gray-900">
@@ -286,6 +354,7 @@ export function StaffManagementTab({
           onChangeRole={handleChangeRole}
           onReport={handleReport}
           onDelete={handleDelete}
+          onStatusChange={handleStatusChange}
           showActions={true}
         />
       </View>
@@ -319,6 +388,19 @@ export function StaffManagementTab({
         visible={isProfileModalVisible}
         onClose={handleCloseProfileModal}
         staff={profileStaff}
+      />
+
+      {/* 상태 변경 ActionSheet */}
+      <ActionSheet
+        visible={showStatusSheet}
+        onClose={() => {
+          setShowStatusSheet(false);
+          setStatusSheetTarget(null);
+        }}
+        title="상태 변경"
+        description={statusSheetTarget ? `${statusSheetTarget.staffName}님의 근무 상태를 변경합니다.` : undefined}
+        options={getStatusOptions()}
+        onSelect={handleStatusSelect}
       />
     </View>
   );

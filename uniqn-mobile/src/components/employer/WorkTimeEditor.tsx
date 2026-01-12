@@ -435,9 +435,9 @@ export function WorkTimeEditor({
       title="근무 시간 수정"
       position="center"
     >
-      <View className="p-4">
+      <View className="px-4 pb-4 -mt-2">
         {/* 스태프 정보 */}
-        <View className="flex-row items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
+        <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-2">
           {/* 프로필 이미지 */}
           {workLog.staffPhotoURL ? (
             <Image
