@@ -43,7 +43,6 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 
 export interface ApplicantCardProps {
   applicant: ApplicantWithDetails;
-  onPress?: (applicant: ApplicantWithDetails) => void;
   /** 확정 콜백 - selectedAssignments가 전달되면 해당 일정만 확정 */
   onConfirm?: (applicant: ApplicantWithDetails, selectedAssignments?: Assignment[]) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
@@ -178,7 +177,6 @@ const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay[] => {
 
 export const ApplicantCard = React.memo(function ApplicantCard({
   applicant,
-  onPress,
   onConfirm,
   onReject,
   onWaitlist,
@@ -261,30 +259,30 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   // 선택된 일정 개수
   const selectedCount = selectedKeys.size;
   const totalCount = allAssignmentKeys.length;
-  const isAllSelected = selectedCount === totalCount && totalCount > 0;
 
-  // 일정 토글
+  // 일정 토글 (같은 날짜에는 하나만 선택 가능)
   const toggleAssignment = useCallback((key: string) => {
     setSelectedKeys((prev) => {
       const next = new Set(prev);
       if (next.has(key)) {
+        // 이미 선택된 항목 클릭 시 해제
         next.delete(key);
       } else {
+        // 새로 선택 시, 같은 날짜의 다른 항목들 제거
+        const selectedDate = key.split('_')[0]; // key 형식: "date_timeSlot_role"
+        // 같은 날짜의 기존 선택 항목 제거
+        for (const existingKey of prev) {
+          const existingDate = existingKey.split('_')[0];
+          if (existingDate === selectedDate) {
+            next.delete(existingKey);
+          }
+        }
         next.add(key);
       }
       return next;
     });
   }, []);
 
-  // 전체 선택
-  const selectAll = useCallback(() => {
-    setSelectedKeys(new Set(allAssignmentKeys));
-  }, [allAssignmentKeys]);
-
-  // 전체 해제
-  const deselectAll = useCallback(() => {
-    setSelectedKeys(new Set());
-  }, []);
 
   // 선택된 일정으로 Assignment 배열 생성 (역할별로 분리)
   const getSelectedAssignments = useCallback((): Assignment[] => {
@@ -448,26 +446,13 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           {/* 선택한 날짜/시간/역할 - 체크박스 (고정공고 제외) */}
           {!isFixedMode && assignmentDisplays.length > 0 && canShowActions && (
             <View className="mb-3">
-              {/* 전체 선택/해제 버튼 */}
+              {/* 안내 문구 */}
               <View className="flex-row items-center mb-2">
-                <Pressable
-                  onPress={isAllSelected ? deselectAll : selectAll}
-                  className="flex-row items-center px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 active:opacity-70"
-                >
-                  <View className={`
-                    h-4 w-4 rounded border items-center justify-center mr-1.5
-                    ${isAllSelected
-                      ? 'bg-primary-500 border-primary-500'
-                      : 'border-gray-400 dark:border-gray-500'}
-                  `}>
-                    {isAllSelected && <CheckIcon size={10} color="#fff" />}
-                  </View>
-                  <Text className="text-xs text-gray-600 dark:text-gray-300">
-                    {isAllSelected ? '전체 해제' : '전체 선택'}
-                  </Text>
-                </Pressable>
-                <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                  {selectedCount}/{totalCount}개 선택
+                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  같은 날짜에는 하나의 역할/시간만 선택 가능합니다
+                </Text>
+                <Text className="ml-auto text-xs text-primary-500 dark:text-primary-400 font-medium">
+                  {selectedCount}개 선택
                 </Text>
               </View>
 
