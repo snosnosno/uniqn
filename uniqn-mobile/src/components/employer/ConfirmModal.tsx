@@ -17,6 +17,7 @@ import { formatDateShort } from '@/utils/dateUtils';
 import { getAssignmentRoles } from '@/types/assignment';
 import type { ApplicantWithDetails } from '@/services';
 import type { StaffRole, Assignment } from '@/types';
+import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -77,13 +78,6 @@ const ACTION_CONFIG: Record<ConfirmModalAction, {
     inputLabel: '',
     inputPlaceholder: '',
   },
-};
-
-const ROLE_LABELS: Record<StaffRole, string> = {
-  dealer: '딜러',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
 };
 
 // ============================================================================
@@ -194,7 +188,7 @@ export function ApplicantConfirmModal({
               {displayName}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {ROLE_LABELS[applicant.appliedRole] || applicant.appliedRole} 지원
+              {(applicant.appliedRole as string) === 'other' && applicant.customRole ? applicant.customRole : (ROLE_LABELS[applicant.appliedRole] || applicant.appliedRole)} 지원
             </Text>
             {applicant.applicantPhone && (
               <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">

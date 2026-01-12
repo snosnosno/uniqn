@@ -109,7 +109,7 @@ export const maskEmail = (email: string | undefined | null): string => {
  */
 export const formatRole = (role: StaffRole | UserRole | string | undefined): string => {
   if (!role) return '';
-  return ROLE_LABELS[role as keyof typeof ROLE_LABELS] || role;
+  return ROLE_LABELS[role] || role;
 };
 
 /**

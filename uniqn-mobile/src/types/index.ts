@@ -229,6 +229,7 @@ export type {
   WorkLog,
   WorkTimeModification,
   RoleChangeHistory,
+  SettlementModification,
   // QR 코드 타입
   QRCodeAction,
   QRCodeData,
@@ -340,7 +341,6 @@ export {
 // 역할 통합 타입
 export type { RoleInfo } from './unified';
 export {
-  ROLE_DISPLAY_NAMES,
   getRoleDisplayName,
   createRoleInfo,
   isRoleFilled,

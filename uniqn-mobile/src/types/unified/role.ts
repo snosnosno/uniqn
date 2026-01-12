@@ -2,10 +2,11 @@
  * UNIQN Mobile - 통합 역할 타입
  *
  * @description 모든 공고 타입에서 사용하는 단일 역할 표현
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import type { StaffRole } from '../common';
+import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -35,41 +36,6 @@ export interface RoleInfo {
 }
 
 // ============================================================================
-// Constants
-// ============================================================================
-
-/**
- * 역할 ID → 표시명 매핑
- *
- * @description 모든 역할 표시명의 단일 소스 (Single Source of Truth)
- * - 영문 키와 한글 키 모두 지원 (역호환성)
- * - 새 역할 추가 시 이 매핑만 수정하면 전체 앱에 반영
- */
-export const ROLE_DISPLAY_NAMES: Record<string, string> = {
-  // 영문 키 (기본)
-  dealer: '딜러',
-  floor: '플로어',
-  serving: '서빙',
-  manager: '매니저',
-  staff: '직원',
-  chiprunner: '칩러너',
-  supervisor: '슈퍼바이저',
-  admin: '관리자',
-  other: '기타',
-  // 한글 키 (역호환성 - 기존 데이터 지원)
-  '딜러': '딜러',
-  '플로어': '플로어',
-  '서빙': '서빙',
-  '매니저': '매니저',
-  '직원': '직원',
-  '칩러너': '칩러너',
-  '슈퍼바이저': '슈퍼바이저',
-  '관리자': '관리자',
-  '어드민': '관리자',
-  '기타': '기타',
-};
-
-// ============================================================================
 // Factory Functions
 // ============================================================================
 
@@ -87,7 +53,7 @@ export function getRoleDisplayName(
   if (roleId === 'other' && customName) {
     return customName;
   }
-  return ROLE_DISPLAY_NAMES[roleId] ?? roleId;
+  return ROLE_LABELS[roleId] ?? roleId;
 }
 
 /**

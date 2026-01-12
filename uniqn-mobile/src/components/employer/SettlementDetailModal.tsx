@@ -34,6 +34,7 @@ import {
 } from '@/utils/settlement';
 import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus, Allowances } from '@/types';
+import { ROLE_LABELS } from '@/constants';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -49,6 +50,7 @@ export interface SettlementDetailModalProps {
   salaryInfo: SalaryInfo;
   allowances?: Allowances;
   onEditTime?: (workLog: WorkLog) => void;
+  onEditAmount?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
 }
 
@@ -67,20 +69,16 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
 
 const PROVIDED_FLAG = -1;
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-};
-
 // ============================================================================
 // Helpers
 // ============================================================================
 
-function getRoleLabel(role: string | undefined): string {
+function getRoleLabel(role: string | undefined, customRole?: string): string {
   if (!role) return '역할 없음';
+  // 커스텀 역할이면 customRole 사용
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
   return ROLE_LABELS[role] || role;
 }
 
@@ -242,6 +240,7 @@ export function SettlementDetailModal({
   salaryInfo,
   allowances,
   onEditTime,
+  onEditAmount,
   onSettle,
 }: SettlementDetailModalProps) {
   // 사용자 프로필 조회
@@ -252,13 +251,14 @@ export function SettlementDetailModal({
     staleTime: 5 * 60 * 1000,
   });
 
-  // 시간 수정 이력 접기/펼치기 상태 (기본: 접힘)
-  const [isHistoryExpanded, setIsHistoryExpanded] = useState(false);
+  // 수정 이력 접기/펼치기 상태 (기본: 접힘)
+  const [isTimeHistoryExpanded, setIsTimeHistoryExpanded] = useState(false);
+  const [isAmountHistoryExpanded, setIsAmountHistoryExpanded] = useState(false);
 
   // 계산된 값들
-  const startTime = useMemo(() => workLog ? parseTimestamp(workLog.actualStartTime) : null, [workLog?.actualStartTime]);
-  const endTime = useMemo(() => workLog ? parseTimestamp(workLog.actualEndTime) : null, [workLog?.actualEndTime]);
-  const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog?.date]);
+  const startTime = useMemo(() => workLog ? parseTimestamp(workLog.actualStartTime) : null, [workLog]);
+  const endTime = useMemo(() => workLog ? parseTimestamp(workLog.actualEndTime) : null, [workLog]);
+  const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog]);
 
   const settlement = useMemo(() =>
     workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances) : null,
@@ -276,7 +276,7 @@ export function SettlementDetailModal({
     return nickname && nickname !== baseName
       ? `${baseName}(${nickname})`
       : baseName;
-  }, [baseName, userProfile?.nickname, workLog?.staffId]);
+  }, [baseName, userProfile?.nickname, workLog]);
 
   const payrollStatus = (workLog?.payrollStatus || 'pending') as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
@@ -294,6 +294,12 @@ export function SettlementDetailModal({
       onSettle(workLog);
     }
   }, [workLog, onSettle]);
+
+  const handleEditAmount = useCallback(() => {
+    if (workLog && onEditAmount) {
+      onEditAmount(workLog);
+    }
+  }, [workLog, onEditAmount]);
 
   if (!workLog) return null;
 
@@ -333,7 +339,7 @@ export function SettlementDetailModal({
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleLabel(workLog.role)} • {workDate ? formatDate(workDate) : '날짜 없음'}
+              {getRoleLabel(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole)} • {workDate ? formatDate(workDate) : '날짜 없음'}
             </Text>
           </View>
 
@@ -437,7 +443,7 @@ export function SettlementDetailModal({
           {workLog.modificationHistory && workLog.modificationHistory.length > 0 && (
             <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
               <Pressable
-                onPress={() => setIsHistoryExpanded(!isHistoryExpanded)}
+                onPress={() => setIsTimeHistoryExpanded(!isTimeHistoryExpanded)}
                 className="flex-row items-center justify-between active:opacity-70"
               >
                 <View className="flex-row items-center">
@@ -451,14 +457,14 @@ export function SettlementDetailModal({
                     </Text>
                   </View>
                 </View>
-                {isHistoryExpanded ? (
+                {isTimeHistoryExpanded ? (
                   <ChevronUpIcon size={20} color="#6B7280" />
                 ) : (
                   <ChevronDownIcon size={20} color="#6B7280" />
                 )}
               </Pressable>
 
-              {isHistoryExpanded && (
+              {isTimeHistoryExpanded && (
                 <View className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
                   {workLog.modificationHistory.map((mod, idx) => (
                     <ModificationHistoryItem
@@ -467,6 +473,79 @@ export function SettlementDetailModal({
                       index={idx}
                     />
                   ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* 금액 수정 이력 섹션 (접기/펼치기) */}
+          {workLog.settlementModificationHistory && workLog.settlementModificationHistory.length > 0 && (
+            <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+              <Pressable
+                onPress={() => setIsAmountHistoryExpanded(!isAmountHistoryExpanded)}
+                className="flex-row items-center justify-between active:opacity-70"
+              >
+                <View className="flex-row items-center">
+                  <BanknotesIcon size={18} color="#6B7280" />
+                  <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
+                    금액 수정 이력
+                  </Text>
+                  <View className="ml-2 px-2 py-0.5 bg-indigo-100 dark:bg-indigo-900/30 rounded-full">
+                    <Text className="text-xs text-indigo-700 dark:text-indigo-300">
+                      {workLog.settlementModificationHistory.length}회
+                    </Text>
+                  </View>
+                </View>
+                {isAmountHistoryExpanded ? (
+                  <ChevronUpIcon size={20} color="#6B7280" />
+                ) : (
+                  <ChevronDownIcon size={20} color="#6B7280" />
+                )}
+              </Pressable>
+
+              {isAmountHistoryExpanded && (
+                <View className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                  {workLog.settlementModificationHistory.map((mod, idx) => {
+                    const modifiedAt = parseTimestamp(mod.modifiedAt);
+                    return (
+                      <View
+                        key={idx}
+                        className="flex-row items-start py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                      >
+                        <View className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 items-center justify-center mr-2">
+                          <Text className="text-xs text-indigo-600 dark:text-indigo-400">{idx + 1}</Text>
+                        </View>
+                        <View className="flex-1">
+                          <Text className="text-sm text-gray-900 dark:text-white">
+                            {mod.reason || '금액 수정'}
+                          </Text>
+                          {modifiedAt && (
+                            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                              {formatDate(modifiedAt)} {formatTime(modifiedAt)}
+                            </Text>
+                          )}
+                          {/* 변경 내용 표시 */}
+                          <View className="mt-1.5 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1.5">
+                            {mod.newSalaryInfo && (
+                              <Text className="text-xs text-gray-600 dark:text-gray-300">
+                                • 급여: {mod.previousSalaryInfo?.amount?.toLocaleString() || '-'}원 → {mod.newSalaryInfo.amount.toLocaleString()}원
+                              </Text>
+                            )}
+                            {mod.newAllowances && (
+                              <Text className="text-xs text-gray-600 dark:text-gray-300">
+                                • 수당 변경
+                              </Text>
+                            )}
+                            {mod.newTaxSettings && (
+                              <Text className="text-xs text-gray-600 dark:text-gray-300">
+                                • 세금: {mod.previousTaxSettings?.type || 'none'} → {mod.newTaxSettings.type}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
@@ -489,31 +568,45 @@ export function SettlementDetailModal({
           {/* 액션 버튼 (미정산일 때만) */}
           {payrollStatus === 'pending' && hasValidTimes && (
             <View className="px-4 py-4">
-              <View className="flex-row gap-3">
+              {/* 첫 번째 줄: 시간 수정, 금액 수정 */}
+              <View className="flex-row gap-3 mb-3">
                 {onEditTime && (
                   <Pressable
                     onPress={handleEditTime}
                     className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
                   >
-                    <EditIcon size={18} color="#6B7280" />
+                    <ClockIcon size={18} color="#6B7280" />
                     <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                       시간 수정
                     </Text>
                   </Pressable>
                 )}
 
-                {onSettle && (
+                {onEditAmount && (
                   <Pressable
-                    onPress={handleSettle}
-                    className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-primary-500 active:opacity-70"
+                    onPress={handleEditAmount}
+                    className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
                   >
-                    <BanknotesIcon size={18} color="#fff" />
-                    <Text className="ml-2 text-base font-medium text-white">
-                      정산하기
+                    <EditIcon size={18} color="#6B7280" />
+                    <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
+                      금액 수정
                     </Text>
                   </Pressable>
                 )}
               </View>
+
+              {/* 두 번째 줄: 정산하기 버튼 */}
+              {onSettle && (
+                <Pressable
+                  onPress={handleSettle}
+                  className="flex-row items-center justify-center py-3.5 rounded-lg bg-primary-500 active:opacity-70"
+                >
+                  <BanknotesIcon size={18} color="#fff" />
+                  <Text className="ml-2 text-base font-semibold text-white">
+                    정산하기
+                  </Text>
+                </Pressable>
+              )}
             </View>
           )}
 

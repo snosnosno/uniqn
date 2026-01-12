@@ -26,6 +26,7 @@ import {
 } from '@/utils/settlement';
 import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { ROLE_LABELS } from '@/constants';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -55,20 +56,16 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
   completed: { label: '정산완료', variant: 'success' },
 };
 
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-};
-
 // ============================================================================
 // Helpers
 // ============================================================================
 
-function getRoleLabel(role: string | undefined): string {
+function getRoleLabel(role: string | undefined, customRole?: string): string {
   if (!role) return '역할 없음';
+  // 커스텀 역할이면 customRole 사용
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
   return ROLE_LABELS[role] || role;
 }
 
@@ -100,7 +97,7 @@ export const SettlementCard = React.memo(function SettlementCard({
     return nickname && nickname !== baseName
       ? `${baseName}(${nickname})`
       : baseName;
-  }, [baseName, userProfile?.nickname, workLog.staffId, (workLog as WorkLog & { staffNickname?: string }).staffNickname]);
+  }, [baseName, userProfile?.nickname, workLog]);
 
   // 정산 계산 (수당 포함)
   const settlement = useMemo(() =>
@@ -142,7 +139,7 @@ export const SettlementCard = React.memo(function SettlementCard({
                 {displayName}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {getRoleLabel(workLog.role)}
+                {getRoleLabel(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole)}
               </Text>
             </View>
           </View>

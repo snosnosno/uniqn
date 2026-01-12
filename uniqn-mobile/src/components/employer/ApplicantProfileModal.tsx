@@ -27,6 +27,7 @@ import {
   StarIcon,
 } from '../icons';
 import { APPLICATION_STATUS_LABELS, getAssignmentRoles } from '@/types';
+import { ROLE_LABELS } from '@/constants';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import type { ApplicantWithDetails, UserProfile } from '@/services';
@@ -55,16 +56,6 @@ const STATUS_BADGE_VARIANT: Record<ApplicationStatus, 'default' | 'primary' | 's
   waitlisted: 'primary',
   completed: 'success',
   cancellation_pending: 'warning',
-};
-
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-  serving: '서빙',
-  staff: '스태프',
 };
 
 const GENDER_LABELS: Record<string, string> = {

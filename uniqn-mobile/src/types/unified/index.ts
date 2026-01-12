@@ -12,7 +12,6 @@
 export type { RoleInfo } from './role';
 
 export {
-  ROLE_DISPLAY_NAMES,
   getRoleDisplayName,
   createRoleInfo,
   isRoleFilled,

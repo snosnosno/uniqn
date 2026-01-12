@@ -14,6 +14,7 @@ import { Button } from '../ui/Button';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../icons';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import type { Application, CancellationRequestStatus } from '@/types';
+import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -33,14 +34,6 @@ export interface CancellationRequestCardProps {
 // ============================================================================
 // Constants
 // ============================================================================
-
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  floor: '플로어',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-};
 
 /**
  * 역할 라벨 가져오기 (커스텀 역할 지원 v2.0)

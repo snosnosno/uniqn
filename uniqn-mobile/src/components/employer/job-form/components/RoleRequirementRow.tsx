@@ -17,6 +17,7 @@ import { XCircleIcon } from '@/components/icons';
 import { clampHeadcount } from '@/utils/job-posting/dateUtils';
 import type { RoleRequirement } from '@/types/jobPosting/dateRequirement';
 import type { StaffRole } from '@/types/common';
+import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -30,25 +31,12 @@ export interface RoleRequirementRowProps {
   /** 삭제 가능 여부 (최소 1개 유지) */
   canRemove: boolean;
   /** 이미 선택된 역할 목록 (중복 방지) */
-  usedRoles: Array<StaffRole | 'other'>;
+  usedRoles: (StaffRole | 'other')[];
   /** 역할 업데이트 콜백 */
   onUpdate: (index: number, role: Partial<RoleRequirement>) => void;
   /** 역할 삭제 콜백 */
   onRemove: (index: number) => void;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-// 역할 라벨 (DateRequirementsSection 전용)
-const ROLE_LABELS: Record<string, string> = {
-  dealer: '딜러',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-  other: '기타',
-};
 
 // ============================================================================
 // Component
