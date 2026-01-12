@@ -22,6 +22,7 @@ import {
   QrCodeIcon,
 } from '@/components/icons';
 import { useCheckIn, useCheckOut, useCurrentWorkStatus } from '@/hooks/useWorkLogs';
+import { formatCurrency } from '@/utils/settlement';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
 
 // ============================================================================
@@ -55,10 +56,6 @@ const attendanceConfig: Record<AttendanceStatus, { label: string; color: string;
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('ko-KR').format(amount) + '원';
-}
 
 function formatTime(timestamp: Timestamp | null): string {
   if (!timestamp) return '--:--';

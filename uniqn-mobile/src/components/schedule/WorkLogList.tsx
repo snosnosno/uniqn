@@ -27,6 +27,7 @@ import {
 } from '@/components/icons';
 import type { WorkLog, PayrollStatus } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
+import { formatCurrency } from '@/utils/settlement';
 
 // ============================================================================
 // Types
@@ -114,13 +115,6 @@ function formatDate(dateString: string): string {
     weekday: 'short',
   };
   return date.toLocaleDateString('ko-KR', options);
-}
-
-/**
- * 금액 포맷
- */
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('ko-KR').format(amount) + '원';
 }
 
 /**

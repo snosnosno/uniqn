@@ -2,12 +2,16 @@
  * UNIQN Mobile - 포맷팅 유틸리티
  *
  * @description 숫자, 통화, 전화번호 등 포맷팅 함수들
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { ROLE_LABELS, SALARY_TYPE_LABELS, JOB_STATUS_LABELS } from '@/constants';
 import type { StaffRole, UserRole } from '@/types';
 import type { JobPostingStatus, SalaryType } from '@/types/jobPosting';
+
+// 정산 유틸리티에서 통화 포맷 함수 import 및 re-export
+import { formatCurrency } from '@/utils/settlement';
+export { formatCurrency };
 
 /**
  * 숫자에 천 단위 콤마 추가
@@ -15,14 +19,6 @@ import type { JobPostingStatus, SalaryType } from '@/types/jobPosting';
 export const formatNumber = (value: number | undefined | null): string => {
   if (value === undefined || value === null) return '0';
   return value.toLocaleString('ko-KR');
-};
-
-/**
- * 금액 포맷 (₩ 포함)
- */
-export const formatCurrency = (value: number | undefined | null): string => {
-  if (value === undefined || value === null) return '₩0';
-  return `₩${formatNumber(value)}`;
 };
 
 /**
