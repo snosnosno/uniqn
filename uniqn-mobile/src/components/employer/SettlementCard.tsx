@@ -1,22 +1,23 @@
 /**
- * UNIQN Mobile - 정산 카드 컴포넌트
+ * UNIQN Mobile - 정산 카드 컴포넌트 (간소화 버전)
  *
- * @description 스태프 근무 기록 및 정산 정보 표시 (v2.0 - 역할별 급여, 수당 표시)
- * @version 2.0.0
+ * @description 스태프 프로필 + 정산 상태 + 총 금액 표시
+ * @version 3.0.0
  */
 
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import {
-  CheckCircleIcon,
-  EditIcon,
   BanknotesIcon,
+  ChevronRightIcon,
 } from '../icons';
-import { formatTime, formatDate } from '@/utils/dateUtils';
-import type { WorkLog, PayrollStatus, Allowances } from '@/types';
+import { getUserProfile } from '@/services';
+import type { UserProfile } from '@/services';
+import type { WorkLog, PayrollStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -25,12 +26,8 @@ import type { WorkLog, PayrollStatus, Allowances } from '@/types';
 export interface SettlementCardProps {
   workLog: WorkLog;
   hourlyRate: number;
-  /** 수당 정보 (v2.0) */
-  allowances?: Allowances;
   onPress?: (workLog: WorkLog) => void;
-  onEditTime?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
-  showActions?: boolean;
 }
 
 interface SettlementCalculation {
@@ -54,12 +51,9 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
   completed: { label: '정산완료', variant: 'success' },
 };
 
-const REGULAR_HOURS = 8; // 기본 근무시간
-const OVERTIME_RATE = 1.5; // 초과근무 수당 배율
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
+const REGULAR_HOURS = 8;
+const OVERTIME_RATE = 1.5;
 
-/** 역할 라벨 (v2.0 - floor 추가) */
 const ROLE_LABELS: Record<string, string> = {
   dealer: '딜러',
   floor: '플로어',
@@ -114,61 +108,13 @@ function calculateSettlement(workLog: WorkLog, hourlyRate: number): SettlementCa
   };
 }
 
-function formatDuration(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-
-  if (h === 0) return `${m}분`;
-  if (m === 0) return `${h}시간`;
-  return `${h}시간 ${m}분`;
-}
-
 function formatCurrency(amount: number): string {
   return amount.toLocaleString('ko-KR') + '원';
 }
 
-/**
- * 역할 라벨 가져오기 (v2.0)
- */
 function getRoleLabel(role: string | undefined): string {
   if (!role) return '역할 없음';
   return ROLE_LABELS[role] || role;
-}
-
-/**
- * 수당 정보 문자열 배열 생성 (v2.0)
- */
-function getAllowanceItems(allowances?: Allowances): string[] {
-  if (!allowances) return [];
-  const items: string[] = [];
-
-  // 보장시간
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`보장 ${allowances.guaranteedHours}시간`);
-  }
-
-  // 식비
-  if (allowances.meal === PROVIDED_FLAG) {
-    items.push('식사제공');
-  } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
-  }
-
-  // 교통비
-  if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('교통비제공');
-  } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
-  }
-
-  // 숙박비
-  if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('숙박제공');
-  } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
-  }
-
-  return items;
 }
 
 // ============================================================================
@@ -178,199 +124,120 @@ function getAllowanceItems(allowances?: Allowances): string[] {
 export const SettlementCard = React.memo(function SettlementCard({
   workLog,
   hourlyRate,
-  allowances,
   onPress,
-  onEditTime,
   onSettle,
-  showActions = true,
 }: SettlementCardProps) {
-  const startTime = useMemo(() => parseTimestamp(workLog.actualStartTime), [workLog.actualStartTime]);
-  const endTime = useMemo(() => parseTimestamp(workLog.actualEndTime), [workLog.actualEndTime]);
-  const workDate = useMemo(() => parseTimestamp(workLog.date), [workLog.date]);
+  // 사용자 프로필 조회 (프로필 사진, 닉네임)
+  const { data: userProfile } = useQuery<UserProfile | null>({
+    queryKey: ['userProfile', workLog.staffId],
+    queryFn: () => getUserProfile(workLog.staffId),
+    enabled: !!workLog.staffId,
+    staleTime: 5 * 60 * 1000,
+  });
 
+  // 프로필 정보
+  const profilePhotoURL = userProfile?.photoURL;
+  const baseName = userProfile?.name || (workLog as WorkLog & { staffName?: string }).staffName;
+  const displayName = useMemo(() => {
+    if (!baseName) return `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}`;
+    const nickname = userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string }).staffNickname;
+    return nickname && nickname !== baseName
+      ? `${baseName}(${nickname})`
+      : baseName;
+  }, [baseName, userProfile?.nickname, workLog.staffId, (workLog as WorkLog & { staffNickname?: string }).staffNickname]);
+
+  // 정산 계산
   const settlement = useMemo(() =>
     calculateSettlement(workLog, hourlyRate),
     [workLog, hourlyRate]
   );
 
-  // 수당 정보 (v2.0)
-  const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
-
   const payrollStatus = (workLog.payrollStatus || 'pending') as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 
+  // 출퇴근 시간 유효 여부
+  const startTime = parseTimestamp(workLog.actualStartTime);
+  const endTime = parseTimestamp(workLog.actualEndTime);
+  const hasValidTimes = startTime && endTime;
+
+  // 핸들러
   const handlePress = useCallback(() => {
     onPress?.(workLog);
   }, [workLog, onPress]);
-
-  const handleEditTime = useCallback(() => {
-    onEditTime?.(workLog);
-  }, [workLog, onEditTime]);
 
   const handleSettle = useCallback(() => {
     onSettle?.(workLog);
   }, [workLog, onSettle]);
 
-  // 출퇴근 시간이 없는 경우
-  const hasValidTimes = startTime && endTime;
-
   return (
-    <Card variant="elevated" padding="md" onPress={handlePress}>
-      {/* 헤더: 스태프 정보 + 날짜 + 상태 */}
-      <View className="flex-row items-center justify-between mb-3">
-        <View className="flex-row items-center flex-1">
-          <Avatar
-            name={(workLog as WorkLog & { staffName?: string }).staffName?.charAt(0)?.toUpperCase() || 'U'}
-            size="sm"
-            className="mr-3"
-          />
-          <View className="flex-1">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              {(workLog as WorkLog & { staffName?: string; staffNickname?: string }).staffName
-                ? `${(workLog as WorkLog & { staffName?: string }).staffName}${(workLog as WorkLog & { staffNickname?: string }).staffNickname ? ` (${(workLog as WorkLog & { staffNickname?: string }).staffNickname})` : ''}`
-                : `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}`}
-            </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleLabel(workLog.role)} • {workDate ? formatDate(workDate) : '날짜 없음'}
-            </Text>
-          </View>
-        </View>
-        <Badge variant={statusConfig.variant} size="sm" dot>
-          {statusConfig.label}
-        </Badge>
-      </View>
-
-      {/* 시간 정보 */}
-      {hasValidTimes ? (
-        <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-3">
-          <View className="items-center">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">출근</Text>
-            <Text className="text-lg font-semibold text-green-600 dark:text-green-400">
-              {formatTime(startTime)}
-            </Text>
-          </View>
-          <View className="h-0.5 flex-1 mx-4 bg-gray-200 dark:bg-gray-700" />
-          <View className="items-center">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">퇴근</Text>
-            <Text className="text-lg font-semibold text-red-600 dark:text-red-400">
-              {formatTime(endTime)}
-            </Text>
-          </View>
-          <View className="h-0.5 flex-1 mx-4 bg-gray-200 dark:bg-gray-700" />
-          <View className="items-center">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">근무</Text>
-            <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-              {formatDuration(settlement.regularHours + settlement.overtimeHours)}
-            </Text>
-          </View>
-        </View>
-      ) : (
-        <View className="p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-3">
-          <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
-            출퇴근 기록이 완료되지 않았습니다
-          </Text>
-        </View>
-      )}
-
-      {/* 정산 정보 */}
-      {hasValidTimes && (
-        <View className="space-y-2 mb-3">
-          {/* 기본 근무 */}
-          <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-gray-600 dark:text-gray-400">
-              기본 근무 ({formatDuration(settlement.regularHours)})
-            </Text>
-            <Text className="text-sm font-medium text-gray-900 dark:text-white">
-              {formatCurrency(settlement.regularPay)}
-            </Text>
-          </View>
-
-          {/* 초과 근무 */}
-          {settlement.overtimeHours > 0 && (
-            <View className="flex-row items-center justify-between">
-              <Text className="text-sm text-gray-600 dark:text-gray-400">
-                초과 근무 ({formatDuration(settlement.overtimeHours)}) × 1.5
+    <Card variant="elevated" padding="md">
+      {/* 상단: 프로필 + 금액/상태 */}
+      <Pressable onPress={handlePress} className="active:opacity-80">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center flex-1">
+            <Avatar
+              source={profilePhotoURL}
+              name={displayName}
+              size="sm"
+              className="mr-3"
+            />
+            <View className="flex-1">
+              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                {displayName}
               </Text>
-              <Text className="text-sm font-medium text-orange-600 dark:text-orange-400">
-                +{formatCurrency(settlement.overtimePay)}
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                {getRoleLabel(workLog.role)}
               </Text>
             </View>
-          )}
-
-          {/* 구분선 */}
-          <View className="h-px bg-gray-200 dark:bg-gray-700 my-1" />
-
-          {/* 총 금액 */}
-          <View className="flex-row items-center justify-between">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              정산 금액
-            </Text>
-            <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
-              {formatCurrency(settlement.totalPay)}
-            </Text>
+          </View>
+          <View className="items-end">
+            <Badge variant={statusConfig.variant} size="sm" dot>
+              {statusConfig.label}
+            </Badge>
+            {hasValidTimes && (
+              <Text className="text-base font-bold text-primary-600 dark:text-primary-400 mt-1">
+                {formatCurrency(settlement.totalPay)}
+              </Text>
+            )}
           </View>
         </View>
-      )}
+      </Pressable>
 
-      {/* 수당 정보 (v2.0) */}
-      {allowanceItems.length > 0 && (
-        <View className="flex-row flex-wrap mb-3">
-          {allowanceItems.map((item, idx) => (
-            <Badge key={idx} variant="default" size="sm" className="mr-2 mb-1">
-              {item}
-            </Badge>
-          ))}
-        </View>
-      )}
-
-      {/* 수정 이력 표시 */}
-      {workLog.modificationHistory && workLog.modificationHistory.length > 0 && (
-        <View className="flex-row items-center p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-3">
-          <EditIcon size={14} color="#D97706" />
-          <Text className="ml-2 text-xs text-yellow-700 dark:text-yellow-300">
-            시간 수정됨 ({workLog.modificationHistory.length}회)
+      {/* 출퇴근 미완료 표시 */}
+      {!hasValidTimes && (
+        <View className="mt-3 p-2 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+          <Text className="text-xs text-yellow-700 dark:text-yellow-300 text-center">
+            출퇴근 기록 미완료
           </Text>
         </View>
       )}
 
-      {/* 액션 버튼 */}
-      {showActions && payrollStatus === 'pending' && hasValidTimes && (
-        <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          {/* 시간 수정 */}
-          <Pressable
-            onPress={handleEditTime}
-            className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
-          >
-            <EditIcon size={16} color="#6B7280" />
-            <Text className="ml-1 text-sm font-medium text-gray-600 dark:text-gray-400">
-              시간 수정
-            </Text>
-          </Pressable>
+      {/* 하단: 상세보기 + 정산하기 버튼 */}
+      <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
+        {/* 상세보기 */}
+        <Pressable
+          onPress={handlePress}
+          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+        >
+          <ChevronRightIcon size={16} color="#6B7280" />
+          <Text className="ml-1 text-sm font-medium text-gray-600 dark:text-gray-400">
+            상세보기
+          </Text>
+        </Pressable>
 
-          {/* 정산하기 */}
+        {/* 정산하기 (미정산 + 출퇴근 완료일 때만) */}
+        {payrollStatus === 'pending' && hasValidTimes && onSettle && (
           <Pressable
             onPress={handleSettle}
-            className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-primary-500 active:opacity-70"
+            className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
           >
             <BanknotesIcon size={16} color="#fff" />
             <Text className="ml-1 text-sm font-medium text-white">
               정산하기
             </Text>
           </Pressable>
-        </View>
-      )}
-
-      {/* 정산 완료 표시 */}
-      {payrollStatus === 'completed' && (
-        <View className="flex-row items-center justify-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
-          <CheckCircleIcon size={16} color="#10B981" />
-          <Text className="ml-2 text-sm font-medium text-green-600 dark:text-green-400">
-            {workLog.payrollDate
-              ? `${formatDate(parseTimestamp(workLog.payrollDate)!)} 정산 완료`
-              : '정산 완료'}
-          </Text>
-        </View>
-      )}
+        )}
+      </View>
     </Card>
   );
 });

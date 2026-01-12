@@ -33,7 +33,6 @@ export interface SettlementListProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onWorkLogPress?: (workLog: WorkLog) => void;
-  onEditTime?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
   onBulkSettle?: (workLogs: WorkLog[]) => void;
   showBulkActions?: boolean;
@@ -273,7 +272,6 @@ export function SettlementList({
   onRefresh,
   isRefreshing,
   onWorkLogPress,
-  onEditTime,
   onSettle,
   onBulkSettle,
   showBulkActions = false,
@@ -371,13 +369,11 @@ export function SettlementList({
           workLog={item}
           hourlyRate={hourlyRate}
           onPress={selectionMode ? handleSelect : onWorkLogPress}
-          onEditTime={onEditTime}
-          onSettle={onSettle}
-          showActions={!selectionMode}
+          onSettle={selectionMode ? undefined : onSettle}
         />
       </View>
     ),
-    [hourlyRate, selectionMode, handleSelect, onWorkLogPress, onEditTime, onSettle]
+    [hourlyRate, selectionMode, handleSelect, onWorkLogPress, onSettle]
   );
 
   const keyExtractor = useCallback((item: WorkLog) => item.id, []);

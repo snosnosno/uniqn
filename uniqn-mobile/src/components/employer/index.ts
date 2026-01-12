@@ -25,6 +25,9 @@ export type { SettlementCardProps } from './SettlementCard';
 export { SettlementList } from './SettlementList';
 export type { SettlementListProps } from './SettlementList';
 
+export { SettlementDetailModal } from './SettlementDetailModal';
+export type { SettlementDetailModalProps } from './SettlementDetailModal';
+
 // 시간 수정
 export { WorkTimeEditor } from './WorkTimeEditor';
 export type { WorkTimeEditorProps } from './WorkTimeEditor';

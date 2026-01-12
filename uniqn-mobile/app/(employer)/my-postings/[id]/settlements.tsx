@@ -17,6 +17,7 @@ import {
   EventQRModal,
   RoleChangeModal,
   ReportModal,
+  SettlementDetailModal,
 } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
 import { useSettlement } from '@/hooks/useSettlement';
@@ -279,6 +280,10 @@ export default function StaffSettlementsScreen() {
   const [selectedWorkLog, setSelectedWorkLog] = useState<WorkLog | null>(null);
   const [isEditModalVisible, setIsEditModalVisible] = useState(false);
 
+  // 정산 상세 모달 상태
+  const [selectedWorkLogForDetail, setSelectedWorkLogForDetail] = useState<WorkLog | null>(null);
+  const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
+
   // 모달 상태 (스태프 관리)
   const [showEventQRModal, setShowEventQRModal] = useState(false);
   const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
@@ -380,16 +385,47 @@ export default function StaffSettlementsScreen() {
   // 정산 관리 핸들러
   // ============================================================================
 
-  // 근무기록 클릭
-  const handleWorkLogPress = useCallback((_workLog: WorkLog) => {
-    // TODO: 상세 보기 모달 또는 화면
+  // 근무기록 클릭 → 상세 모달 열기
+  const handleWorkLogPress = useCallback((workLog: WorkLog) => {
+    setSelectedWorkLogForDetail(workLog);
+    setIsDetailModalVisible(true);
   }, []);
 
-  // 시간 수정 클릭
-  const handleEditTime = useCallback((workLog: WorkLog) => {
+  // 시간 수정 클릭 (상세 모달에서)
+  const handleEditTimeFromDetail = useCallback((workLog: WorkLog) => {
+    // 상세 모달 닫기
+    setIsDetailModalVisible(false);
+    setSelectedWorkLogForDetail(null);
+    // 시간 수정 모달 열기
     setSelectedWorkLog(workLog);
     setIsEditModalVisible(true);
   }, []);
+
+  // 정산하기 클릭 (상세 모달에서)
+  const handleSettleFromDetail = useCallback((workLog: WorkLog) => {
+    // 상세 모달 닫기
+    setIsDetailModalVisible(false);
+    setSelectedWorkLogForDetail(null);
+    // 기존 handleSettle 호출
+    const amount = calculateWorkLogAmount(workLog, salaryConfig);
+
+    Alert.alert(
+      '정산 처리',
+      `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${amount.toLocaleString()}원`,
+      [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '정산하기',
+          onPress: () => {
+            settleWorkLog({
+              workLogId: workLog.id,
+              amount,
+            });
+          },
+        },
+      ]
+    );
+  }, [salaryConfig, settleWorkLog]);
 
   // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleSettle = useCallback((workLog: WorkLog) => {
@@ -527,7 +563,6 @@ export default function StaffSettlementsScreen() {
           onRefresh={() => refresh()}
           isRefreshing={false}
           onWorkLogPress={handleWorkLogPress}
-          onEditTime={handleEditTime}
           onSettle={handleSettle}
           onBulkSettle={handleBulkSettle}
           showBulkActions={true}
@@ -569,6 +604,20 @@ export default function StaffSettlementsScreen() {
         jobPostingTitle={posting?.title}
         onSubmit={handleReportSubmit}
         isLoading={isSubmittingReport}
+      />
+
+      {/* 정산 상세 모달 */}
+      <SettlementDetailModal
+        visible={isDetailModalVisible}
+        onClose={() => {
+          setIsDetailModalVisible(false);
+          setSelectedWorkLogForDetail(null);
+        }}
+        workLog={selectedWorkLogForDetail}
+        hourlyRate={hourlyRate}
+        allowances={salaryConfig.allowances}
+        onEditTime={handleEditTimeFromDetail}
+        onSettle={handleSettleFromDetail}
       />
 
       {/* 시간 수정 모달 (정산 탭용) */}
