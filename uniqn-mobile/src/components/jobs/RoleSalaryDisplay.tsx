@@ -2,7 +2,7 @@
  * UNIQN Mobile - 역할별 급여 표시 컴포넌트
  *
  * @description 역할별 급여를 통일된 형식으로 표시
- * @version 1.0.0
+ * @version 2.0.0 - roles[].salary 통합 구조
  */
 
 import React, { memo, useMemo } from 'react';
@@ -14,17 +14,23 @@ import { getRoleDisplayName } from '@/types/unified';
 // Types
 // ============================================================================
 
+/** 역할 정보 (급여 포함) */
+interface RoleWithSalary {
+  role?: string;
+  name?: string;
+  customRole?: string;
+  salary?: SalaryInfo;
+}
+
 interface RoleSalaryDisplayProps {
-  /** 역할별 급여 */
-  roleSalaries?: Record<string, SalaryInfo>;
+  /** 역할 목록 (salary 포함) */
+  roles?: RoleWithSalary[];
   /** 전체 동일 급여 여부 */
   useSameSalary?: boolean;
   /** 기본 급여 (동일 급여 시 사용) */
-  salary: SalaryInfo;
+  defaultSalary?: SalaryInfo;
   /** 컴팩트 모드 (한 줄 표시) */
   compact?: boolean;
-  /** 표시할 역할 목록 (없으면 roleSalaries의 모든 역할) */
-  roles?: string[];
 }
 
 // ============================================================================
@@ -58,6 +64,16 @@ function formatSalary(type: string, amount: number): string {
 function formatSalaryShort(type: string, amount: number): string {
   if (type === 'other') return '협의';
   return `${amount.toLocaleString('ko-KR')}원`;
+}
+
+/**
+ * 역할 키 가져오기
+ */
+function getRoleKey(role: RoleWithSalary): string {
+  if ((role.role === 'other' || role.name === 'other') && role.customRole) {
+    return role.customRole;
+  }
+  return role.role || role.name || 'unknown';
 }
 
 // ============================================================================
@@ -101,33 +117,40 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
  * 역할별 급여 표시 컴포넌트
  */
 export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
-  roleSalaries,
-  useSameSalary = false,
-  salary,
-  compact = false,
   roles,
+  useSameSalary = false,
+  defaultSalary,
+  compact = false,
 }: RoleSalaryDisplayProps) {
-  // 표시할 역할 목록 계산
-  const displayRoles = useMemo(() => {
-    if (roles && roles.length > 0) {
-      return roles;
-    }
-    if (roleSalaries && Object.keys(roleSalaries).length > 0) {
-      return Object.keys(roleSalaries);
-    }
-    return [];
-  }, [roles, roleSalaries]);
+  // 유효한 역할 목록 (급여 정보가 있는 것만)
+  const rolesWithSalary = useMemo(() => {
+    if (!roles || roles.length === 0) return [];
+    return roles.filter((r) => r.salary);
+  }, [roles]);
 
-  // 동일 급여인 경우 단순 표시
-  if (useSameSalary || !roleSalaries || Object.keys(roleSalaries).length === 0) {
-    // salary.amount가 0이고 roleSalaries가 있으면 첫 번째 값 사용 (폴백)
-    const hasValidSalary = salary.amount > 0 || salary.type === 'other';
-    const roleSalaryEntries = roleSalaries ? Object.entries(roleSalaries) : [];
+  // 표시할 급여 결정
+  const displaySalary = useMemo<SalaryInfo | null>(() => {
+    // defaultSalary가 있으면 사용
+    if (defaultSalary && (defaultSalary.amount > 0 || defaultSalary.type === 'other')) {
+      return defaultSalary;
+    }
+    // 첫 번째 역할 급여 사용
+    if (rolesWithSalary.length > 0 && rolesWithSalary[0].salary) {
+      return rolesWithSalary[0].salary;
+    }
+    return null;
+  }, [defaultSalary, rolesWithSalary]);
 
-    let displaySalary = salary;
-    if (!hasValidSalary && roleSalaryEntries.length > 0) {
-      const [, firstSalary] = roleSalaryEntries[0];
-      displaySalary = firstSalary;
+  // 동일 급여인 경우 또는 역할이 없는 경우 단순 표시
+  if (useSameSalary || rolesWithSalary.length === 0) {
+    if (!displaySalary) {
+      return (
+        <View className={compact ? '' : 'py-1'}>
+          <Text className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-gray-500 dark:text-gray-400`}>
+            💰 급여 미설정
+          </Text>
+        </View>
+      );
     }
 
     return (
@@ -146,14 +169,14 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
         💰 역할별 급여
       </Text>
       <View className={`${compact ? '' : 'pl-4'}`}>
-        {displayRoles.map((role) => {
-          const roleSalary = roleSalaries[role];
-          if (!roleSalary) return null;
+        {rolesWithSalary.map((role, index) => {
+          const roleKey = getRoleKey(role);
+          const salary = role.salary!;
           return (
             <RoleSalaryRow
-              key={role}
-              role={role}
-              salary={roleSalary}
+              key={`${roleKey}-${index}`}
+              role={roleKey}
+              salary={salary}
               compact={compact}
             />
           );
@@ -167,20 +190,35 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
  * 급여 요약 표시 (카드용)
  */
 export const SalarySummary = memo(function SalarySummary({
-  roleSalaries,
+  roles,
   useSameSalary = false,
-  salary,
-}: Pick<RoleSalaryDisplayProps, 'roleSalaries' | 'useSameSalary' | 'salary'>) {
-  // 동일 급여
-  if (useSameSalary || !roleSalaries || Object.keys(roleSalaries).length === 0) {
-    // salary.amount가 0이고 roleSalaries가 있으면 첫 번째 값 사용 (폴백)
-    const hasValidSalary = salary.amount > 0 || salary.type === 'other';
-    const roleSalaryEntries = roleSalaries ? Object.entries(roleSalaries) : [];
+  defaultSalary,
+}: Pick<RoleSalaryDisplayProps, 'roles' | 'useSameSalary' | 'defaultSalary'>) {
+  // 유효한 역할 목록
+  const rolesWithSalary = useMemo(() => {
+    if (!roles || roles.length === 0) return [];
+    return roles.filter((r) => r.salary);
+  }, [roles]);
 
-    let displaySalary = salary;
-    if (!hasValidSalary && roleSalaryEntries.length > 0) {
-      const [, firstSalary] = roleSalaryEntries[0];
-      displaySalary = firstSalary;
+  // 표시할 급여 결정
+  const displaySalary = useMemo<SalaryInfo | null>(() => {
+    if (defaultSalary && (defaultSalary.amount > 0 || defaultSalary.type === 'other')) {
+      return defaultSalary;
+    }
+    if (rolesWithSalary.length > 0 && rolesWithSalary[0].salary) {
+      return rolesWithSalary[0].salary;
+    }
+    return null;
+  }, [defaultSalary, rolesWithSalary]);
+
+  // 동일 급여
+  if (useSameSalary || rolesWithSalary.length === 0) {
+    if (!displaySalary) {
+      return (
+        <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">
+          💰 급여 미설정
+        </Text>
+      );
     }
 
     return (
@@ -191,9 +229,9 @@ export const SalarySummary = memo(function SalarySummary({
   }
 
   // 역할별 급여 요약 (최저~최고)
-  const amounts = Object.values(roleSalaries)
-    .filter(s => s.type !== 'other')
-    .map(s => s.amount);
+  const amounts = rolesWithSalary
+    .filter((r) => r.salary && r.salary.type !== 'other')
+    .map((r) => r.salary!.amount);
 
   if (amounts.length === 0) {
     return (
@@ -205,18 +243,19 @@ export const SalarySummary = memo(function SalarySummary({
 
   const min = Math.min(...amounts);
   const max = Math.max(...amounts);
+  const firstType = rolesWithSalary.find((r) => r.salary && r.salary.type !== 'other')?.salary?.type || 'hourly';
 
   if (min === max) {
     return (
       <Text className="text-sm font-medium text-gray-900 dark:text-white">
-        💰 {formatSalaryShort(salary.type, min)}
+        💰 {formatSalaryShort(firstType, min)}
       </Text>
     );
   }
 
   return (
     <Text className="text-sm font-medium text-gray-900 dark:text-white">
-      💰 {formatSalaryShort(salary.type, min)} ~ {formatSalaryShort(salary.type, max)}
+      💰 {formatSalaryShort(firstType, min)} ~ {formatSalaryShort(firstType, max)}
     </Text>
   );
 });

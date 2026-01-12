@@ -13,6 +13,7 @@ import type {
   DateSpecificRequirement as DateSpecificRequirementV2,
   TimeSlot as TimeSlotV2,
 } from './jobPosting/dateRequirement';
+import type { SalaryInfo } from './jobPosting';
 
 /**
  * 공고 타입 (4가지)
@@ -80,6 +81,8 @@ export interface RoleWithCount {
   count: number;
   /** 충원된 인원 */
   filled?: number;
+  /** 역할별 급여 */
+  salary?: SalaryInfo;
 }
 
 /**

@@ -324,9 +324,9 @@ export function ApplicationForm({
             {/* 급여 표시 (v2.0: 역할별 급여) - 크게 표시 */}
             <View className="mb-2">
               <RoleSalaryDisplay
-                roleSalaries={job.roleSalaries}
+                roles={job.roles}
                 useSameSalary={job.useSameSalary}
-                salary={job.salary}
+                defaultSalary={job.defaultSalary}
                 compact={false}
               />
             </View>

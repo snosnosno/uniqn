@@ -21,16 +21,23 @@ import {
 import {
   type SalaryType,
   type SalaryInfo,
-  type RoleSalaries,
   type Allowances,
-  getRoleSalaryInfo,
-  calculateTotalSettlement,
+  getRoleSalaryFromRoles,
+  calculateTotalSettlementFromRoles,
   formatCurrency,
 } from '@/utils/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 
 // Re-export types for backward compatibility
-export type { SalaryType, SalaryInfo, RoleSalaries };
+export type { SalaryType, SalaryInfo };
+
+/** 역할 + 급여 정보 타입 */
+export interface RoleWithSalary {
+  role?: string;
+  name?: string;
+  customRole?: string;
+  salary?: SalaryInfo;
+}
 
 // ============================================================================
 // Types
@@ -38,8 +45,10 @@ export type { SalaryType, SalaryInfo, RoleSalaries };
 
 export interface SettlementListProps {
   workLogs: WorkLog[];
-  /** 역할별 급여 설정 */
-  roleSalaries: RoleSalaries;
+  /** 역할 목록 (급여 포함) */
+  roles: RoleWithSalary[];
+  /** 기본 급여 (useSameSalary=true일 때) */
+  defaultSalary?: SalaryInfo;
   /** 수당 정보 */
   allowances?: Allowances;
   isLoading?: boolean;
@@ -257,7 +266,8 @@ function BulkActionsBar({
 
 export function SettlementList({
   workLogs,
-  roleSalaries,
+  roles,
+  defaultSalary,
   allowances,
   isLoading,
   error,
@@ -308,16 +318,16 @@ export function SettlementList({
       totalCount: workLogs.length,
       pendingCount: pendingLogs.length,
       completedCount: completedLogs.length,
-      totalAmount: calculateTotalSettlement(workLogs, roleSalaries, allowances),
-      pendingAmount: calculateTotalSettlement(pendingLogs, roleSalaries, allowances),
+      totalAmount: calculateTotalSettlementFromRoles(workLogs, roles, defaultSalary, allowances),
+      pendingAmount: calculateTotalSettlementFromRoles(pendingLogs, roles, defaultSalary, allowances),
     };
-  }, [workLogs, roleSalaries, allowances]);
+  }, [workLogs, roles, defaultSalary, allowances]);
 
   // 선택된 항목 금액
   const selectedAmount = useMemo(() => {
     const selectedLogs = workLogs.filter((log) => selectedIds.has(log.id));
-    return calculateTotalSettlement(selectedLogs, roleSalaries, allowances);
-  }, [workLogs, selectedIds, roleSalaries, allowances]);
+    return calculateTotalSettlementFromRoles(selectedLogs, roles, defaultSalary, allowances);
+  }, [workLogs, selectedIds, roles, defaultSalary, allowances]);
 
   // 선택 핸들러
   const handleSelect = useCallback((workLog: WorkLog) => {
@@ -357,7 +367,7 @@ export function SettlementList({
   // 렌더 아이템
   const renderItem = useCallback(
     ({ item }: { item: WorkLog & { customRole?: string } }) => {
-      const salaryInfo = getRoleSalaryInfo(item.role, roleSalaries, undefined, item.customRole);
+      const salaryInfo = getRoleSalaryFromRoles(roles, item.role, item.customRole, defaultSalary);
       return (
         <View className="px-4 mb-3">
           <SettlementCard
@@ -370,7 +380,7 @@ export function SettlementList({
         </View>
       );
     },
-    [roleSalaries, allowances, selectionMode, handleSelect, onWorkLogPress, onSettle]
+    [roles, defaultSalary, allowances, selectionMode, handleSelect, onWorkLogPress, onSettle]
   );
 
   const keyExtractor = useCallback((item: WorkLog) => item.id, []);

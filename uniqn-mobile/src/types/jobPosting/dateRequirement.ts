@@ -12,6 +12,7 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { StaffRole } from '../common';
+import type { SalaryInfo } from '../jobPosting';
 
 /**
  * 역할 요구사항
@@ -31,6 +32,9 @@ export interface RoleRequirement {
 
   /** 필요 인원 (1-200) */
   headcount?: number;
+
+  /** 역할별 급여 */
+  salary?: SalaryInfo;
 
   // === 레거시 호환 필드 ===
   /** @deprecated role 사용 권장 - 역할 이름 (레거시 데이터 호환용) */

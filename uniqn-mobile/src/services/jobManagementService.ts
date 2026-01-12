@@ -74,6 +74,25 @@ const ROLE_NAME_TO_CODE: Record<string, string> = {
 };
 
 /**
+ * FormRoleWithCount의 name을 role key로 변환
+ *
+ * @description extractRoleKeysFromDateReq와 동일한 키 형식으로 변환
+ * - 일반 역할: 한글명 → 영어 코드 (딜러 → dealer)
+ * - 커스텀 역할: 이름 그대로 사용
+ */
+function getRoleKeyFromFormRole(
+  role: { name?: string; isCustom?: boolean }
+): string {
+  const name = role.name || '';
+  // 커스텀 역할이면 이름 그대로 반환
+  if (role.isCustom) {
+    return name;
+  }
+  // 일반 역할이면 영어 코드로 변환
+  return ROLE_NAME_TO_CODE[name] || name;
+}
+
+/**
  * dateSpecificRequirements에서 역할 키 Set 추출
  *
  * @description 특정 날짜의 요구사항에서 역할 키를 추출
@@ -101,58 +120,61 @@ function extractRoleKeysFromDateReq(
 }
 
 /**
- * roleSalaries에서 특정 역할만 필터링
- *
- * @description 해당 날짜에 필요한 역할의 급여만 추출
- * roleKeys는 영어 코드 Set (예: 'dealer', 'floor')
- */
-function filterRoleSalaries(
-  roleSalaries: Record<string, SalaryInfo> | undefined,
-  roleKeys: Set<string>
-): Record<string, SalaryInfo> | undefined {
-  if (!roleSalaries || roleKeys.size === 0) {
-    return undefined;
-  }
-
-  const filtered: Record<string, SalaryInfo> = {};
-
-  for (const [roleKey, salary] of Object.entries(roleSalaries)) {
-    if (roleKeys.has(roleKey)) {
-      filtered[roleKey] = salary;
-    }
-  }
-
-  return Object.keys(filtered).length > 0 ? filtered : undefined;
-}
-
-/**
  * 입력 roles를 RoleRequirement[] 형식으로 변환
  *
  * @description FormRoleWithCount 또는 RoleRequirement 형식을 통합 처리
  * 커스텀 역할은 원본 이름을 코드로 사용 (중복 방지)
+ * salary 정보도 함께 포함
  */
 function convertToRoleRequirements(
-  roles: { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
+  roles: { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo; customRole?: string }[]
 ): RoleRequirement[] {
-  return roles.map((r, index) => {
-    // 이미 RoleRequirement 형식인 경우
+  return roles.map((r) => {
+    // 이미 RoleRequirement 형식인 경우 (role 필드가 있음)
     if ('role' in r && r.role) {
+      // role이 'other'가 아니면서 customRole이 있으면 커스텀 역할로 변환
+      if (r.role !== 'other' && r.customRole) {
+        return {
+          role: 'other' as StaffRole,
+          customRole: r.customRole,
+          count: r.count,
+          filled: r.filled ?? 0,
+          salary: r.salary,
+        };
+      }
       return {
         role: r.role as StaffRole,
+        customRole: r.customRole,
         count: r.count,
         filled: r.filled ?? 0,
+        salary: r.salary,
       };
     }
 
-    // FormRoleWithCount 형식인 경우
+    // FormRoleWithCount 형식인 경우 (name 필드 사용)
     const name = r.name || '';
-    // 매핑에 있으면 사용, 없으면 원본 이름 또는 인덱스 기반 고유 키 사용
-    const roleCode = ROLE_NAME_TO_CODE[name] || name || `custom_${index}`;
 
+    // 커스텀 역할 여부 확인: isCustom 플래그 또는 매핑에 없는 경우
+    const isCustomRole = r.isCustom || !ROLE_NAME_TO_CODE[name];
+
+    if (isCustomRole) {
+      // 커스텀 역할: role='other', customRole=이름
+      return {
+        role: 'other' as StaffRole,
+        customRole: name,
+        count: r.count,
+        filled: r.filled ?? 0,
+        salary: r.salary,
+      };
+    }
+
+    // 일반 역할: 한글명 → 영어 코드 변환
+    const roleCode = ROLE_NAME_TO_CODE[name];
     return {
       role: roleCode as StaffRole,
       count: r.count,
       filled: r.filled ?? 0,
+      salary: r.salary,
     };
   });
 }
@@ -191,9 +213,9 @@ async function createSinglePosting(
   const newDocRef = doc(jobsRef);
   const now = serverTimestamp();
 
-  // 역할 변환 (FormRoleWithCount → RoleRequirement)
+  // 역할 변환 (FormRoleWithCount → RoleRequirement) - salary 포함
   const convertedRoles = convertToRoleRequirements(
-    input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean }[]
+    input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
   );
 
   // 총 모집 인원 계산
@@ -264,7 +286,7 @@ async function createSinglePosting(
  * 날짜별 개별 공고 생성 (regular/urgent 다중 날짜용)
  *
  * @description dateSpecificRequirements의 각 날짜에 대해 개별 공고를 생성
- * 각 공고에는 해당 날짜의 역할 급여만 포함 (독립적인 roleSalaries)
+ * 급여 정보는 roles[].salary에 포함되어 있음
  */
 async function createMultiplePostingsByDate(
   input: CreateJobPostingInput,
@@ -289,18 +311,21 @@ async function createMultiplePostingsByDate(
       dateStr = '';
     }
 
-    // 해당 날짜의 역할 키 추출 (영어 코드)
+    // 해당 날짜의 역할 키 추출
     const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);
 
-    // 해당 날짜의 역할만 roleSalaries에서 필터링
-    const filteredRoleSalaries = filterRoleSalaries(input.roleSalaries, dateRoleKeys);
+    // 해당 날짜에 사용되는 역할만 필터링 (급여 정보 포함)
+    const filteredRoles = input.roles.filter((role) => {
+      const roleKey = getRoleKeyFromFormRole(role as { name?: string; isCustom?: boolean });
+      return dateRoleKeys.has(roleKey);
+    }) as typeof input.roles;
 
-    // 단일 날짜용 input 생성 (해당 날짜의 roleSalaries만 포함)
+    // 단일 날짜용 input 생성 (해당 날짜의 역할만 포함)
     const singleDateInput: CreateJobPostingInput = {
       ...input,
+      roles: filteredRoles,
       dateSpecificRequirements: [dateReq],
       workDate: dateStr,
-      roleSalaries: filteredRoleSalaries,
     };
 
     const result = await createSinglePosting(singleDateInput, ownerId, ownerName);
@@ -394,25 +419,37 @@ export async function updateJobPosting(
         }
       }
 
+      // 역할 변환 (FormRoleWithCount → RoleRequirement) - 일관된 형식 유지
+      let convertedRoles: RoleRequirement[] | undefined;
+      if (input.roles) {
+        convertedRoles = convertToRoleRequirements(
+          input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
+        );
+      }
+
       // 총 모집 인원 재계산 (역할이 변경된 경우)
       let totalPositions = currentData.totalPositions;
-      if (input.roles) {
-        totalPositions = input.roles.reduce((sum, role) => sum + role.count, 0);
+      if (convertedRoles) {
+        totalPositions = convertedRoles.reduce((sum, role) => sum + role.count, 0);
       }
 
       // undefined 필드 제거 (Firebase는 undefined 값을 허용하지 않음)
-      const removeUndefined = <T extends Record<string, unknown>>(obj: T): T => {
+      const removeUndefinedLocal = <T extends Record<string, unknown>>(obj: T): T => {
         return Object.fromEntries(
           Object.entries(obj).filter(([, v]) => v !== undefined)
         ) as T;
       };
 
+      // input에서 roles를 분리 (변환된 roles 사용을 위해)
+      const { roles: _inputRoles, ...restInput } = input;
+
       // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
-      const migrationResult = migrateJobPostingForWrite(input);
+      const migrationResult = migrateJobPostingForWrite(restInput);
       const migratedInput = migrationResult.data;
 
-      const updateData = removeUndefined({
+      const updateData = removeUndefinedLocal({
         ...migratedInput,
+        ...(convertedRoles ? { roles: convertedRoles } : {}),
         totalPositions,
         updatedAt: serverTimestamp(),
       });

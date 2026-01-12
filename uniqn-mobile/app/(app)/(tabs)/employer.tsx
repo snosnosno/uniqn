@@ -23,7 +23,6 @@ import {
   BellIcon,
 } from '@/components/icons';
 import type { JobPosting, PostingType, Allowances } from '@/types';
-import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -362,23 +361,27 @@ const JobPostingCard = memo(function JobPostingCard({
 
         {/* 오른쪽: 급여 + 수당 */}
         <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
-          {/* 급여 */}
-          {posting.roleSalaries &&
-          Object.keys(posting.roleSalaries).length > 0 &&
-          !posting.useSameSalary ? (
+          {/* 급여 - v2.0: roles[].salary 구조 */}
+          {!posting.useSameSalary &&
+          posting.roles?.some((r) => r.salary) ? (
             // 역할별 급여 표시
-            Object.entries(posting.roleSalaries).map(([role, salary], idx) => (
-              <Text
-                key={idx}
-                className="text-sm text-gray-900 dark:text-white"
-              >
-                💰 {getRoleDisplayName(role)}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
-              </Text>
-            ))
+            posting.roles
+              .filter((r) => r.salary)
+              .map((r, idx) => (
+                <Text
+                  key={idx}
+                  className="text-sm text-gray-900 dark:text-white"
+                >
+                  💰 {getRoleLabel(r.role, (r as { customRole?: string }).customRole)}: {r.salary?.type === 'other' ? '협의' : formatSalary(r.salary?.type || 'hourly', r.salary?.amount || 0)}
+                </Text>
+              ))
           ) : (
-            // 단일 급여 표시
+            // 단일 급여 표시 (useSameSalary 또는 defaultSalary)
             <Text className="text-sm font-medium text-gray-900 dark:text-white">
-              💰 {formatSalary(posting.salary.type, posting.salary.amount)}
+              💰 {formatSalary(
+                posting.defaultSalary?.type || posting.roles?.[0]?.salary?.type || 'hourly',
+                posting.defaultSalary?.amount || posting.roles?.[0]?.salary?.amount || 0
+              )}
             </Text>
           )}
 

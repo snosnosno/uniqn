@@ -16,6 +16,10 @@ export interface SalaryInfo {
   amount: number;
 }
 
+/**
+ * 역할별 급여 정보 (레거시)
+ * @deprecated roles[].salary 사용 권장. 새 코드에서는 getRoleSalaryFromRoles 사용
+ */
 export interface RoleSalaries {
   [role: string]: SalaryInfo;
 }
@@ -117,8 +121,9 @@ export function calculatePayByType(
 }
 
 /**
- * 역할에 맞는 급여 정보 가져오기
+ * 역할에 맞는 급여 정보 가져오기 (레거시)
  *
+ * @deprecated getRoleSalaryFromRoles 사용 권장
  * @param role - 역할 코드 (dealer, floor, other 등)
  * @param roleSalaries - 역할별 급여 정보
  * @param defaultSalary - 기본 급여 (없으면 DEFAULT_SALARY_INFO)
@@ -139,6 +144,44 @@ export function getRoleSalaryInfo(
   const effectiveRole = role === 'other' && customRole ? customRole : role;
 
   return roleSalaries[effectiveRole] ?? fallback;
+}
+
+/**
+ * roles 배열에서 역할별 급여 조회 (신규)
+ *
+ * @description roles[].salary 구조에서 급여 정보를 조회
+ * @param roles - 역할 배열 (salary 포함)
+ * @param targetRole - 찾을 역할 코드
+ * @param customRole - 커스텀 역할명 (targetRole이 'other'일 때 사용)
+ * @param defaultSalary - 기본 급여 (없으면 DEFAULT_SALARY_INFO)
+ */
+export function getRoleSalaryFromRoles(
+  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }> | undefined,
+  targetRole: string | undefined,
+  customRole?: string,
+  defaultSalary?: SalaryInfo
+): SalaryInfo {
+  const fallback = defaultSalary ?? DEFAULT_SALARY_INFO;
+
+  if (!targetRole || !roles?.length) return fallback;
+
+  // 커스텀 역할이면 customRole을 키로 사용
+  const effectiveRole = targetRole === 'other' && customRole ? customRole : targetRole;
+
+  // roles 배열에서 해당 역할 찾기
+  const roleData = roles.find(r => {
+    // role 또는 name 필드 확인 (FormRoleWithCount와 RoleRequirement 호환)
+    const roleKey = r.role || r.name;
+
+    // 커스텀 역할 매칭
+    if (roleKey === 'other' && r.customRole) {
+      return r.customRole === effectiveRole;
+    }
+
+    return roleKey === effectiveRole;
+  });
+
+  return roleData?.salary ?? fallback;
 }
 
 /**
@@ -232,7 +275,9 @@ export function calculateSettlementFromWorkLog(
 }
 
 /**
- * 여러 근무 기록의 총 금액 계산
+ * 여러 근무 기록의 총 금액 계산 (레거시)
+ *
+ * @deprecated calculateTotalSettlementFromRoles 사용 권장
  */
 export function calculateTotalSettlement(
   workLogs: Array<{
@@ -246,6 +291,38 @@ export function calculateTotalSettlement(
 ): number {
   return workLogs.reduce((total, log) => {
     const salaryInfo = getRoleSalaryInfo(log.role, roleSalaries, undefined, log.customRole);
+    const { totalPay } = calculateSettlement(
+      log.actualStartTime,
+      log.actualEndTime,
+      salaryInfo,
+      allowances
+    );
+    return total + totalPay;
+  }, 0);
+}
+
+/**
+ * 여러 근무 기록의 총 금액 계산 (roles 배열 버전)
+ *
+ * @description roles[].salary 구조에서 급여 정보를 조회하여 정산
+ * @param workLogs - 근무 기록 배열
+ * @param roles - 역할 배열 (salary 포함)
+ * @param defaultSalary - 기본 급여 (역할별 급여가 없을 때 사용)
+ * @param allowances - 수당 정보
+ */
+export function calculateTotalSettlementFromRoles(
+  workLogs: Array<{
+    actualStartTime?: unknown;
+    actualEndTime?: unknown;
+    role?: string;
+    customRole?: string;
+  }>,
+  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }>,
+  defaultSalary?: SalaryInfo,
+  allowances?: Allowances
+): number {
+  return workLogs.reduce((total, log) => {
+    const salaryInfo = getRoleSalaryFromRoles(roles, log.role, log.customRole, defaultSalary);
     const { totalPay } = calculateSettlement(
       log.actualStartTime,
       log.actualEndTime,
@@ -366,9 +443,11 @@ interface WorkLogWithOverrides {
 }
 
 /**
- * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환
+ * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환 (레거시)
  * - workLog에 customSalaryInfo가 있으면 그것을 사용
  * - 없으면 역할별 급여 정보를 사용
+ *
+ * @deprecated getEffectiveSalaryInfoFromRoles 사용 권장
  */
 export function getEffectiveSalaryInfo(
   workLog: WorkLogWithOverrides,
@@ -381,6 +460,28 @@ export function getEffectiveSalaryInfo(
   }
   // 역할별 급여 정보 사용 (커스텀 역할 지원)
   return getRoleSalaryInfo(workLog.role, roleSalaries, defaultSalary, workLog.customRole);
+}
+
+/**
+ * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환 (roles 배열 버전)
+ * - workLog에 customSalaryInfo가 있으면 그것을 사용
+ * - 없으면 roles 배열에서 해당 역할의 급여 정보를 사용
+ *
+ * @param workLog - 근무 기록 (오버라이드 포함)
+ * @param roles - 역할 배열 (salary 포함)
+ * @param defaultSalary - 기본 급여 (역할별 급여가 없을 때 사용)
+ */
+export function getEffectiveSalaryInfoFromRoles(
+  workLog: WorkLogWithOverrides,
+  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }> | undefined,
+  defaultSalary?: SalaryInfo
+): SalaryInfo {
+  // 개별 오버라이드가 있으면 우선 사용
+  if (workLog.customSalaryInfo) {
+    return workLog.customSalaryInfo;
+  }
+  // roles 배열에서 급여 정보 조회 (커스텀 역할 지원)
+  return getRoleSalaryFromRoles(roles, workLog.role, workLog.customRole, defaultSalary);
 }
 
 /**

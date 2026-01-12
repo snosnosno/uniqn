@@ -117,12 +117,16 @@ function createMockJobPostingWithSalary(overrides = {}) {
     id: baseJob.id,
     title: baseJob.title,
     ownerId: 'employer-1',
-    salary: {
+    // v2.0: 역할별 급여가 roles 배열에 포함
+    roles: [
+      { role: 'dealer', count: 3, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
+      { role: 'manager', count: 1, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
+    ],
+    defaultSalary: {
       type: 'hourly' as const,
       amount: 15000,
-      useRoleSalary: false,
-      roleSalaries: undefined,
     },
+    useSameSalary: true,
     ...overrides,
   };
 }

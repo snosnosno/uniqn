@@ -51,10 +51,10 @@ interface SectionErrors {
 // ============================================================================
 
 /**
- * RoleRequirement[] → FormRoleWithCount[] 변환
+ * RoleRequirement[] → FormRoleWithCount[] 변환 (급여 포함)
  */
-function convertRolesToFormRoles(
-  roles: { role?: string; name?: string; count: number; filled?: number }[]
+function convertRolesToFormRolesWithSalary(
+  roles: { role?: string; name?: string; count: number; filled?: number; salary?: { type: string; amount: number } }[]
 ): FormRoleWithCount[] {
   const ROLE_LABELS: Record<string, string> = {
     dealer: '딜러',
@@ -68,6 +68,7 @@ function convertRolesToFormRoles(
     name: r.name || ROLE_LABELS[r.role || ''] || r.role || '알 수 없음',
     count: r.count,
     isCustom: !!(r.name && !['딜러', '플로어'].includes(r.name)),
+    salary: r.salary ? { type: r.salary.type as 'hourly' | 'daily' | 'monthly' | 'other', amount: r.salary.amount } : undefined,
   }));
 }
 
@@ -164,40 +165,15 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
 function validateSalary(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
-  // SalarySection과 동일한 로직으로 역할 추출
-  // key: 영어 코드 (roleSalaries 조회용), displayName: 한글명 (에러 표시용)
-  const roleInfoMap = new Map<string, string>();
-
-  if (data.postingType === 'fixed') {
-    // fixed 타입: data.roles 사용
-    data.roles.forEach((r) => {
-      const staffRole = STAFF_ROLES.find((sr) => sr.name === r.name || sr.key === r.name);
-      const key = staffRole?.key || r.name;
-      const displayName = staffRole?.name || r.name;
-      roleInfoMap.set(key, displayName);
-    });
-  } else {
-    // 다른 타입: dateSpecificRequirements에서 역할 추출
-    data.dateSpecificRequirements?.forEach((dateReq) => {
-      dateReq.timeSlots?.forEach((slot) => {
-        slot.roles?.forEach((roleReq) => {
-          const rawRole = roleReq.role ?? roleReq.name ?? 'dealer';
-          // 커스텀 역할이면 customRole을 키로 사용
-          if (rawRole === 'other' && roleReq.customRole) {
-            roleInfoMap.set(roleReq.customRole, roleReq.customRole);
-          } else {
-            const staffRole = STAFF_ROLES.find((r) => r.key === rawRole);
-            roleInfoMap.set(rawRole, staffRole?.name || rawRole);
-          }
-        });
-      });
-    });
-  }
-
-  // 역할별 급여 검증 (영어 key로 조회, 한글 displayName으로 에러 표시)
+  // v2.0: roles[].salary 기반 검증
+  // 역할별 급여 검증 (한글 displayName으로 에러 표시)
   const rolesWithoutSalary: string[] = [];
-  roleInfoMap.forEach((displayName, key) => {
-    const roleSalary = data.roleSalaries[key];
+
+  data.roles.forEach((role) => {
+    const staffRole = STAFF_ROLES.find((sr) => sr.name === role.name || sr.key === role.name);
+    const displayName = staffRole?.name || role.name;
+    const roleSalary = role.salary;
+
     // 협의(other)가 아닌 경우 금액 필수
     if (roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0)) {
       rolesWithoutSalary.push(displayName);
@@ -288,15 +264,14 @@ export default function EditJobPostingScreen() {
         dateSpecificRequirements: existingJob.dateSpecificRequirements || [],
         daysPerWeek: existingJob.daysPerWeek ?? 5,
         isStartTimeNegotiable: existingJob.isStartTimeNegotiable ?? false,
-        // 역할
+        // 역할 (급여 정보 포함)
         roles: existingJob.roles
-          ? convertRolesToFormRoles(existingJob.roles as { role?: string; name?: string; count: number; filled?: number }[])
+          ? convertRolesToFormRolesWithSalary(existingJob.roles as { role?: string; name?: string; count: number; filled?: number; salary?: { type: string; amount: number } }[])
           : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
         // 급여
-        salary: existingJob.salary || INITIAL_JOB_POSTING_FORM_DATA.salary,
+        defaultSalary: existingJob.defaultSalary,
         allowances: existingJob.allowances || {},
         useSameSalary: existingJob.useSameSalary ?? false,
-        roleSalaries: existingJob.roleSalaries ?? {},
         // 사전질문
         usesPreQuestions: existingJob.usesPreQuestions || false,
         preQuestions: existingJob.preQuestions || [],
@@ -380,7 +355,8 @@ export default function EditJobPostingScreen() {
           isStartTimeNegotiable: formData.isStartTimeNegotiable,
           roles: formData.roles,
         }),
-        salary: formData.salary,
+        defaultSalary: formData.defaultSalary,
+        useSameSalary: formData.useSameSalary,
         allowances: formData.allowances,
         tags: formData.tags,
       };

@@ -33,13 +33,12 @@ import { reportService, markAsNoShow } from '@/services';
 import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
 import {
   type SalaryInfo,
-  getRoleSalaryInfo,
+  getRoleSalaryFromRoles,
   calculateSettlementFromWorkLog,
-  getEffectiveSalaryInfo,
+  getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
 } from '@/utils/settlement';
 import type { WorkLog, Allowances, ConfirmedStaff, CreateReportInput } from '@/types';
-import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Constants
@@ -51,10 +50,18 @@ type TabType = 'staff' | 'settlement';
 // Types
 // ============================================================================
 
+/** 역할 + 급여 정보 (SettlementList에 전달) */
+interface RoleWithSalary {
+  role?: string;
+  name?: string;
+  customRole?: string;
+  salary?: SalaryInfo;
+}
+
 interface SalaryConfig {
   useSameSalary?: boolean;
-  salary?: SalaryInfo;
-  roleSalaries?: Record<string, SalaryInfo>;
+  defaultSalary?: SalaryInfo;
+  roles?: RoleWithSalary[];
   allowances?: Allowances;
 }
 
@@ -70,11 +77,12 @@ interface SalaryConfig {
  */
 function calculateWorkLogAmount(
   workLog: WorkLog & { customRole?: string },
-  roleSalaries: Record<string, SalaryInfo>,
+  roles: RoleWithSalary[],
+  defaultSalary?: SalaryInfo,
   allowances?: Allowances
 ): number {
   // 역할에 따른 급여 정보 결정 (커스텀 역할 지원)
-  const salaryInfo = getRoleSalaryInfo(workLog.role, roleSalaries, undefined, workLog.customRole);
+  const salaryInfo = getRoleSalaryFromRoles(roles, workLog.role, workLog.customRole, defaultSalary);
 
   // 통합 유틸리티로 정산 금액 계산 (수당 포함)
   const { totalPay } = calculateSettlementFromWorkLog(workLog, salaryInfo, allowances);
@@ -246,40 +254,50 @@ export default function StaffSettlementsScreen() {
   // 급여 설정 (v2.0 - 역할별 급여, 수당 포함)
   const salaryConfig = useMemo<SalaryConfig>(() => ({
     useSameSalary: posting?.useSameSalary,
-    salary: posting?.salary ? { type: posting.salary.type, amount: posting.salary.amount } : undefined,
-    roleSalaries: posting?.roleSalaries,
+    defaultSalary: posting?.defaultSalary,
+    roles: posting?.roles?.map((r) => ({
+      role: r.role,
+      customRole: r.customRole,
+      salary: r.salary,
+    })) || [],
     allowances: posting?.allowances,
-  }), [posting?.useSameSalary, posting?.salary, posting?.roleSalaries, posting?.allowances]);
+  }), [posting?.useSameSalary, posting?.defaultSalary, posting?.roles, posting?.allowances]);
 
-  // SettlementList용 역할별 급여 정보
-  const roleSalariesForList = useMemo(() => {
-    // 기본 급여 (공고에서 설정한 급여, 없으면 15,000원 시급)
-    const defaultSalary: SalaryInfo = posting?.salary
-      ? { type: posting.salary.type, amount: posting.salary.amount }
-      : { type: 'hourly', amount: 15000 };
-
-    const roleSalaries = salaryConfig.roleSalaries;
-
-    // 역할별 급여가 있고, useSameSalary가 명시적으로 true가 아니면 역할별 급여 사용
-    // 커스텀 역할(칩스 등)도 포함됨
-    if (roleSalaries && Object.keys(roleSalaries).length > 0 && salaryConfig.useSameSalary !== true) {
-      return { ...roleSalaries };
-    }
-
-    // 그 외에는 기본 급여를 모든 역할에 적용
-    return Object.keys(ROLE_LABELS).reduce((acc, role) => {
-      acc[role] = defaultSalary;
-      return acc;
-    }, {} as Record<string, SalaryInfo>);
-  }, [salaryConfig.useSameSalary, salaryConfig.roleSalaries, posting?.salary]);
+  // SettlementList용 역할 목록 (급여 포함)
+  const rolesForList = useMemo<RoleWithSalary[]>(() => {
+    return salaryConfig.roles || [];
+  }, [salaryConfig.roles]);
 
   // 역할 목록 (공고에서 추출)
-  const availableRoles = useMemo(() => {
+  const availableRoles = useMemo((): string[] => {
     if (posting?.roles) {
-      return posting.roles.map((r) => r.role);
+      // 커스텀 역할은 customRole을 사용하여 고유 키 생성
+      return posting.roles.map((r) => {
+        const roleStr = r.role as string;
+        const customRole = (r as { customRole?: string }).customRole;
+        if (roleStr === 'other' && customRole) {
+          return customRole;
+        }
+        return roleStr;
+      }).filter(Boolean) as string[];
     }
     return [];
   }, [posting?.roles]);
+
+  // SettlementSettingsModal용 RoleSalaries 변환 (Record<string, SalaryInfo>)
+  const roleSalariesForSettings = useMemo(() => {
+    const result: Record<string, SalaryInfo> = {};
+    rolesForList.forEach((r) => {
+      // 커스텀 역할은 customRole을 키로 사용 (availableRoles와 동일한 키 형식)
+      const roleStr = (r.role || r.name) as string;
+      const customRole = (r as { customRole?: string }).customRole;
+      const key = roleStr === 'other' && customRole ? customRole : roleStr;
+      if (key && r.salary) {
+        result[key] = r.salary;
+      }
+    });
+    return result;
+  }, [rolesForList]);
 
   // ============================================================================
   // 스태프 관리 핸들러
@@ -378,7 +396,7 @@ export default function StaffSettlementsScreen() {
     setIsDetailModalVisible(false);
     setSelectedWorkLogForDetail(null);
     // 정산 확인 모달 열기
-    const amount = calculateWorkLogAmount(workLog, roleSalariesForList, salaryConfig.allowances);
+    const amount = calculateWorkLogAmount(workLog, rolesForList, salaryConfig.defaultSalary, salaryConfig.allowances);
     setSettleConfirm({
       visible: true,
       workLog,
@@ -386,11 +404,11 @@ export default function StaffSettlementsScreen() {
       amount,
       isBulk: false,
     });
-  }, [salaryConfig, roleSalariesForList]);
+  }, [salaryConfig, rolesForList]);
 
   // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleSettle = useCallback((workLog: WorkLog) => {
-    const amount = calculateWorkLogAmount(workLog, roleSalariesForList, salaryConfig.allowances);
+    const amount = calculateWorkLogAmount(workLog, rolesForList, salaryConfig.defaultSalary, salaryConfig.allowances);
     setSettleConfirm({
       visible: true,
       workLog,
@@ -398,14 +416,14 @@ export default function StaffSettlementsScreen() {
       amount,
       isBulk: false,
     });
-  }, [salaryConfig, roleSalariesForList]);
+  }, [salaryConfig, rolesForList]);
 
   // 일괄 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleBulkSettle = useCallback((selectedWorkLogs: WorkLog[]) => {
     if (selectedWorkLogs.length === 0) return;
 
     const totalAmount = selectedWorkLogs.reduce((sum, log) => {
-      return sum + calculateWorkLogAmount(log, roleSalariesForList, salaryConfig.allowances);
+      return sum + calculateWorkLogAmount(log, rolesForList, salaryConfig.defaultSalary, salaryConfig.allowances);
     }, 0);
 
     setSettleConfirm({
@@ -415,7 +433,7 @@ export default function StaffSettlementsScreen() {
       amount: totalAmount,
       isBulk: true,
     });
-  }, [salaryConfig, roleSalariesForList]);
+  }, [salaryConfig, rolesForList]);
 
   // 정산 확인 모달 닫기
   const handleCloseSettleConfirm = useCallback(() => {
@@ -599,7 +617,8 @@ export default function StaffSettlementsScreen() {
       ) : (
         <SettlementList
           workLogs={workLogs}
-          roleSalaries={roleSalariesForList}
+          roles={rolesForList}
+          defaultSalary={salaryConfig.defaultSalary}
           allowances={salaryConfig.allowances}
           isLoading={isLoading}
           error={error}
@@ -658,7 +677,7 @@ export default function StaffSettlementsScreen() {
           setSelectedWorkLogForDetail(null);
         }}
         workLog={selectedWorkLogForDetail}
-        salaryInfo={getEffectiveSalaryInfo(selectedWorkLogForDetail || {}, roleSalariesForList)}
+        salaryInfo={getEffectiveSalaryInfoFromRoles(selectedWorkLogForDetail || {}, rolesForList, salaryConfig.defaultSalary)}
         allowances={getEffectiveAllowances(selectedWorkLogForDetail || {}, salaryConfig.allowances)}
         onEditTime={handleEditTimeFromDetail}
         onEditAmount={handleEditAmountFromDetail}
@@ -697,7 +716,7 @@ export default function StaffSettlementsScreen() {
           setSelectedWorkLogForEdit(null);
         }}
         workLog={selectedWorkLogForEdit}
-        salaryInfo={getEffectiveSalaryInfo(selectedWorkLogForEdit || {}, roleSalariesForList)}
+        salaryInfo={getEffectiveSalaryInfoFromRoles(selectedWorkLogForEdit || {}, rolesForList, salaryConfig.defaultSalary)}
         allowances={getEffectiveAllowances(selectedWorkLogForEdit || {}, salaryConfig.allowances)}
         onSave={handleSaveAmountEdit}
       />
@@ -706,7 +725,7 @@ export default function StaffSettlementsScreen() {
       <SettlementSettingsModal
         visible={isSettingsModalVisible}
         onClose={() => setIsSettingsModalVisible(false)}
-        roleSalaries={roleSalariesForList}
+        roleSalaries={roleSalariesForSettings}
         allowances={salaryConfig.allowances || {}}
         roles={availableRoles}
         onSave={handleSaveSettings}

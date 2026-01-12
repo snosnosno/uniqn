@@ -356,9 +356,9 @@ export default function JobPostingDetailScreen() {
               </View>
               <View className="ml-6">
                 <RoleSalaryDisplay
-                  roleSalaries={posting.roleSalaries}
+                  roles={posting.roles}
                   useSameSalary={posting.useSameSalary}
-                  salary={posting.salary}
+                  defaultSalary={posting.defaultSalary}
                   compact={false}
                 />
               </View>

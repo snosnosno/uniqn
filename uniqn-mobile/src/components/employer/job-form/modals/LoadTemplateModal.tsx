@@ -57,10 +57,11 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       : templateData.location.name || '미지정'
     : '미지정';
 
-  // 급여 정보 추출
+  // 급여 정보 추출 (v2.0: defaultSalary 또는 roles[0].salary)
   const salaryText = (() => {
-    if (!templateData?.salary) return null;
-    const { type, amount } = templateData.salary;
+    const salary = templateData?.defaultSalary || templateData?.roles?.[0]?.salary;
+    if (!salary) return null;
+    const { type, amount } = salary;
     if (!amount) return null;
     const typeLabel = type === 'hourly' ? '시급' : type === 'daily' ? '일급' : '월급';
     return `${typeLabel} ${amount.toLocaleString()}원`;

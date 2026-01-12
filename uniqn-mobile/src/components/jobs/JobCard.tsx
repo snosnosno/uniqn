@@ -15,6 +15,7 @@ import type {
   PostingType,
   Allowances,
   CardRole,
+  SalaryInfo,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 
@@ -162,8 +163,38 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
     onPress(job.id);
   }, [job.id, onPress]);
 
+  // 역할에서 급여 정보 추출
+  const getRolesWithSalary = (): Array<{ role: string; customRole?: string; salary: SalaryInfo }> => {
+    if (job.useSameSalary) return [];
+
+    // dateRequirements에서 역할별 급여 추출
+    const rolesMap = new Map<string, { role: string; customRole?: string; salary: SalaryInfo }>();
+
+    job.dateRequirements?.forEach((dateReq) => {
+      dateReq.timeSlots?.forEach((slot) => {
+        slot.roles?.forEach((r) => {
+          if (r.salary) {
+            const key = r.role === 'other' && r.customRole ? r.customRole : r.role;
+            if (!rolesMap.has(key)) {
+              rolesMap.set(key, { role: r.role, customRole: r.customRole, salary: r.salary });
+            }
+          }
+        });
+      });
+    });
+
+    return Array.from(rolesMap.values());
+  };
+
+  const rolesWithSalary = getRolesWithSalary();
+
+  // 표시할 급여 결정
+  const displaySalary: SalaryInfo = job.defaultSalary ??
+    rolesWithSalary[0]?.salary ??
+    { type: 'hourly', amount: 0 };
+
   // 접근성을 위한 설명 텍스트 생성
-  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDate(job.workDate)}, ${formatSalary(job.salary.type, job.salary.amount)}`;
+  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDate(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
 
   const allowanceItems = getAllowanceItems(job.allowances);
 
@@ -262,47 +293,26 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
         {/* 오른쪽: 급여 + 수당 */}
         <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
           {/* 급여 */}
-          {job.roleSalaries &&
-          Object.keys(job.roleSalaries).length > 0 &&
-          !job.useSameSalary ? (
-            // 역할별 급여 표시 (useSameSalary === false)
-            Object.entries(job.roleSalaries).map(([role, salary], idx) => (
-              <Text
-                key={idx}
-                className="text-sm text-gray-900 dark:text-white"
-              >
-                💰 {getRoleDisplayName(role)}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
-              </Text>
-            ))
+          {!job.useSameSalary && rolesWithSalary.length > 0 ? (
+            // 역할별 급여 표시 (useSameSalary === false && 역할별 급여 존재)
+            rolesWithSalary.slice(0, 3).map((roleData, idx) => {
+              const roleLabel = roleData.role === 'other' && roleData.customRole
+                ? roleData.customRole
+                : getRoleDisplayName(roleData.role);
+              return (
+                <Text
+                  key={idx}
+                  className="text-sm text-gray-900 dark:text-white"
+                >
+                  💰 {roleLabel}: {roleData.salary.type === 'other' ? '협의' : formatSalary(roleData.salary.type, roleData.salary.amount)}
+                </Text>
+              );
+            })
           ) : (
-            // 단일 급여 표시 (useSameSalary === true 또는 roleSalaries 없음)
-            // salary.amount가 0이고 roleSalaries가 있으면 첫 번째 roleSalary 사용 (폴백)
-            (() => {
-              const hasValidSalary = job.salary.amount > 0 || job.salary.type === 'other';
-              const roleSalaryEntries = job.roleSalaries ? Object.entries(job.roleSalaries) : [];
-
-              if (hasValidSalary) {
-                return (
-                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                    💰 {formatSalary(job.salary.type, job.salary.amount)}
-                  </Text>
-                );
-              } else if (roleSalaryEntries.length > 0) {
-                // salary가 0이지만 roleSalaries가 있는 경우 (기존 데이터 호환)
-                const [, firstSalary] = roleSalaryEntries[0];
-                return (
-                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                    💰 {firstSalary.type === 'other' ? '협의' : formatSalary(firstSalary.type, firstSalary.amount)}
-                  </Text>
-                );
-              } else {
-                return (
-                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                    💰 {formatSalary(job.salary.type, job.salary.amount)}
-                  </Text>
-                );
-              }
-            })()
+            // 단일 급여 표시 (useSameSalary === true 또는 역할별 급여 없음)
+            <Text className="text-sm font-medium text-gray-900 dark:text-white">
+              💰 {displaySalary.type === 'other' ? '협의' : formatSalary(displaySalary.type, displaySalary.amount)}
+            </Text>
           )}
 
           {/* 수당 */}

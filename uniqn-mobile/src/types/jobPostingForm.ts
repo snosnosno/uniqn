@@ -34,7 +34,7 @@ export interface TournamentDay {
 }
 
 /**
- * 역할 + 인원 정보
+ * 역할 + 인원 + 급여 정보
  *
  * @description 기본 역할: 직원, 매니저 / 추가 역할 가능
  */
@@ -45,6 +45,8 @@ export interface FormRoleWithCount {
   count: number;
   /** 사용자가 직접 추가한 역할인지 */
   isCustom?: boolean;
+  /** 역할별 급여 */
+  salary?: SalaryInfo;
 }
 
 /**
@@ -156,20 +158,18 @@ export interface JobPostingFormData {
   roles: FormRoleWithCount[];
 
   // ============================================================
-  // Step 4: 급여
+  // Step 4: 급여 (roles[].salary에 통합)
   // ============================================================
 
-  /** 급여 정보 */
-  salary: SalaryInfo;
+  /** 기본 급여 (useSameSalary=true일 때 사용) */
+  defaultSalary?: SalaryInfo;
 
   /** 추가 수당 */
   allowances: Allowances;
 
   /** 전체 동일 급여 사용 여부 (false = 역할별 급여가 기본) */
   useSameSalary: boolean;
-
-  /** 역할별 급여 (역할명 -> 급여 정보) */
-  roleSalaries: Record<string, SalaryInfo>;
+  // 역할별 급여는 roles[].salary에 통합됨
 
   // ============================================================
   // Step 5: 사전질문 (선택)
@@ -212,14 +212,10 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   // Step 3
   roles: [...DEFAULT_ROLES],
 
-  // Step 4: 역할별 급여가 기본 (시급 기본)
-  salary: {
-    type: 'hourly',
-    amount: 0,
-  },
+  // Step 4: 역할별 급여가 기본 (roles[].salary에 저장)
+  defaultSalary: undefined,  // useSameSalary=true일 때만 사용
   allowances: {},
   useSameSalary: false, // false = 역할별 급여 (기본)
-  roleSalaries: {},
 
   // Step 5
   usesPreQuestions: false,
@@ -297,13 +293,11 @@ export function validateStep(
       });
       break;
 
-    case 4: // 급여 (역할별 급여가 기본)
+    case 4: // 급여 (역할별 급여가 기본, roles[].salary에 저장)
       data.roles.forEach((role) => {
-        // 한글명을 영어 코드로 변환해서 조회
         const staffRole = STAFF_ROLES.find((sr) => sr.name === role.name || sr.key === role.name);
-        const roleKey = staffRole?.key || role.name;
         const displayName = staffRole?.name || role.name;
-        const roleSalary = data.roleSalaries[roleKey];
+        const roleSalary = role.salary;
         // 협의(other)가 아닌 경우 금액 필수
         if (roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0)) {
           errors.push(`${displayName}: 급여를 입력해주세요`);

@@ -180,9 +180,9 @@ export function JobDetail({ job }: JobDetailProps) {
 
         {/* 급여 (v2.0: 역할별 급여 지원) */}
         <RoleSalaryDisplay
-          roleSalaries={job.roleSalaries}
+          roles={job.roles}
           useSameSalary={job.useSameSalary}
-          salary={job.salary}
+          defaultSalary={job.defaultSalary}
         />
       </View>
 

@@ -57,17 +57,18 @@ describe('JobCard', () => {
           {
             startTime: '18:00',
             roles: [
-              { role: 'dealer', count: 3, filled: 1 },
-              { role: 'manager', count: 2, filled: 0 },
+              { role: 'dealer', count: 3, filled: 1, salary: { type: 'daily', amount: 150000 } },
+              { role: 'manager', count: 2, filled: 0, salary: { type: 'daily', amount: 150000 } },
             ],
           },
         ],
       },
     ],
-    salary: {
+    defaultSalary: {
       type: 'daily',
       amount: 150000,
     },
+    useSameSalary: true,
     status: 'active',
     isUrgent: false,
     applicationCount: 5,
@@ -122,7 +123,7 @@ describe('JobCard', () => {
   it('should render salary correctly for hourly type', () => {
     const hourlyJob: JobPostingCard = {
       ...mockJob,
-      salary: {
+      defaultSalary: {
         type: 'hourly',
         amount: 15000,
       },
@@ -138,7 +139,7 @@ describe('JobCard', () => {
   it('should render salary correctly for monthly type', () => {
     const monthlyJob: JobPostingCard = {
       ...mockJob,
-      salary: {
+      defaultSalary: {
         type: 'monthly',
         amount: 3000000,
       },
@@ -273,12 +274,13 @@ describe('JobCard role labels', () => {
         timeSlots: [
           {
             startTime: '18:00',
-            roles: [{ role, count: 1, filled: 0 }],
+            roles: [{ role, count: 1, filled: 0, salary: { type: 'daily', amount: 150000 } }],
           },
         ],
       },
     ],
-    salary: { type: 'daily', amount: 150000 },
+    defaultSalary: { type: 'daily', amount: 150000 },
+    useSameSalary: true,
     status: 'active',
     isUrgent: false,
   });
@@ -335,12 +337,13 @@ describe('JobCard accessibility', () => {
         timeSlots: [
           {
             startTime: '18:00',
-            roles: [{ role: 'dealer', count: 1, filled: 0 }],
+            roles: [{ role: 'dealer', count: 1, filled: 0, salary: { type: 'daily', amount: 150000 } }],
           },
         ],
       },
     ],
-    salary: { type: 'daily', amount: 150000 },
+    defaultSalary: { type: 'daily', amount: 150000 },
+    useSameSalary: true,
     status: 'active',
     isUrgent: false,
   };

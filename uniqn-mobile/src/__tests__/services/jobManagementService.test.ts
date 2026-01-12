@@ -113,13 +113,14 @@ function createTestJobPostingInput(): CreateJobPostingInput {
     workDate: '2024-02-01',
     timeSlot: '09:00-18:00',
     roles: [
-      { role: 'dealer' as StaffRole, count: 3, filled: 0 },
-      { role: 'manager' as StaffRole, count: 1, filled: 0 },
+      { role: 'dealer' as StaffRole, count: 3, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
+      { role: 'manager' as StaffRole, count: 1, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
     ],
-    salary: {
+    defaultSalary: {
       type: 'hourly' as const,
       amount: 15000,
     },
+    useSameSalary: true,
   };
 }
 

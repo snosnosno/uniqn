@@ -67,20 +67,12 @@ export default function CreateJobPostingScreen() {
     }
 
     try {
-      // useSameSalary일 때 salary 필드를 roleSalaries의 첫 번째 값으로 동기화
-      // (JobCard에서 useSameSalary일 때 salary 필드를 사용하므로)
-      let finalSalary = formData.salary;
-      const roleSalaryEntries = Object.entries(formData.roleSalaries);
-      if (roleSalaryEntries.length > 0) {
-        // roleSalaries가 있으면 첫 번째 값을 salary로 사용
-        // useSameSalary === true일 때 모든 역할이 같은 급여이므로 첫 번째 값 사용
-        // useSameSalary === false일 때도 대표 급여로 첫 번째 값 사용 (표시용)
-        const [, firstSalary] = roleSalaryEntries[0];
-        finalSalary = {
-          type: firstSalary.type,
-          amount: firstSalary.amount,
-        };
-      }
+      // useSameSalary일 때 defaultSalary 결정
+      // roles[].salary에서 첫 번째 역할의 급여를 defaultSalary로 사용
+      const firstRoleWithSalary = formData.roles.find((r) => r.salary);
+      const defaultSalary = formData.useSameSalary && firstRoleWithSalary?.salary
+        ? firstRoleWithSalary.salary
+        : formData.defaultSalary;
 
       // Firebase는 undefined 값을 허용하지 않으므로 빈 문자열 또는 필드 제외 처리
       const input: CreateJobPostingInput = {
@@ -100,10 +92,9 @@ export default function CreateJobPostingScreen() {
         daysPerWeek: formData.daysPerWeek,
         isStartTimeNegotiable: formData.isStartTimeNegotiable,
         roles: formData.roles,
-        salary: finalSalary,
+        defaultSalary,
         allowances: formData.allowances,
         useSameSalary: formData.useSameSalary,
-        roleSalaries: formData.roleSalaries,
         usesPreQuestions: formData.usesPreQuestions,
         preQuestions: formData.preQuestions,
         tags: formData.tags,

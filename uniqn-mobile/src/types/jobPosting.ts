@@ -63,13 +63,17 @@ export interface TaxSettings {
 /**
  * 역할별 모집 통계 (공고에서 사용)
  *
- * @description 공고의 역할별 모집 인원 및 충원 현황
+ * @description 공고의 역할별 모집 인원 및 충원 현황 + 급여 정보
  * @see RoleRequirement in types/jobPosting/dateRequirement.ts (폼 편집용)
  */
 export interface JobRoleStats {
   role: StaffRole;
+  /** 커스텀 역할명 (role이 'other'일 때 사용) */
+  customRole?: string;
   count: number;
   filled: number;
+  /** 역할별 급여 */
+  salary?: SalaryInfo;
 }
 
 /**
@@ -119,13 +123,13 @@ export interface JobPosting extends FirebaseDocument {
   filledPositions: number;
 
   // === 급여 정보 ===
-  salary: SalaryInfo;
+  /** 기본 급여 (useSameSalary=true일 때 사용, 또는 폴백용) */
+  defaultSalary?: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
   /** 전체 동일 급여 사용 여부 (false = 역할별 급여가 기본) */
   useSameSalary?: boolean;
-  /** 역할별 급여 */
-  roleSalaries?: Record<string, SalaryInfo>;
+  // 역할별 급여는 roles[].salary에 통합됨
 
   // === 소유자 정보 ===
   ownerId: string;
@@ -220,18 +224,17 @@ export interface CreateJobPostingInput {
   daysPerWeek?: number;           // fixed (0 = 협의, 1-7 = 일수)
   isStartTimeNegotiable?: boolean; // fixed: 출근시간 협의 여부
 
-  // 역할
+  // 역할 (급여 정보 포함)
   roles: RoleRequirement[] | FormRoleWithCount[];
 
   // 급여
-  salary: SalaryInfo;
+  /** 기본 급여 (useSameSalary=true일 때 사용) */
+  defaultSalary?: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
-  /** @deprecated useSameSalary로 대체 */
-  useRoleSalary?: boolean;
   /** 전체 동일 급여 사용 여부 (false = 역할별 급여가 기본) */
   useSameSalary?: boolean;
-  roleSalaries?: Record<string, SalaryInfo>;
+  // 역할별 급여는 roles[].salary에 통합됨
 
   // 사전질문
   usesPreQuestions?: boolean;
@@ -250,13 +253,15 @@ export type UpdateJobPostingInput = Partial<CreateJobPostingInput> & {
 };
 
 /**
- * 카드용 역할 정보 (확정인원 포함)
+ * 카드용 역할 정보 (확정인원 + 급여 포함)
  */
 export interface CardRole {
   role: string;
   customRole?: string;
   count: number;
   filled: number;
+  /** 역할별 급여 */
+  salary?: SalaryInfo;
 }
 
 /**
@@ -290,15 +295,12 @@ export interface JobPostingCard {
   roles: string[];
   // 신규 필드 (v2.0)
   dateRequirements: CardDateRequirement[];
-  salary: {
-    type: SalaryType;
-    amount: number;
-  };
+  /** 기본 급여 (useSameSalary=true일 때 사용) */
+  defaultSalary?: SalaryInfo;
   allowances?: Allowances;
   /** 전체 동일 급여 여부 */
   useSameSalary?: boolean;
-  /** 역할별 급여 */
-  roleSalaries?: Record<string, SalaryInfo>;
+  // 역할별 급여는 roles 정보에서 참조 (dateRequirements.timeSlots.roles)
   status: JobPostingStatus;
   isUrgent?: boolean;
   applicationCount?: number;
@@ -320,6 +322,20 @@ export interface JobPostingCard {
  * JobPosting을 JobPostingCard로 변환
  */
 export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
+  // posting.roles에서 역할별 급여 조회 헬퍼
+  const getRoleSalary = (roleId: string, customRole?: string): SalaryInfo | undefined => {
+    // customRole이 있는 경우 (기타 역할)
+    if (roleId === 'other' && customRole) {
+      const found = posting.roles.find(
+        (r) => (r.role as string) === 'other' && (r as { customRole?: string }).customRole === customRole
+      );
+      return (found as { salary?: SalaryInfo } | undefined)?.salary;
+    }
+    // 일반 역할
+    const found = posting.roles.find((r) => (r.role as string) === roleId);
+    return (found as { salary?: SalaryInfo } | undefined)?.salary;
+  };
+
   // dateSpecificRequirements → CardDateRequirement 변환
   const dateRequirements: CardDateRequirement[] = (
     posting.dateSpecificRequirements ?? []
@@ -348,18 +364,27 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
           isTimeToBeAnnounced:
             (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ??
             false,
-          roles: (ts.roles ?? []).map((r) => ({
-            role:
+          roles: (ts.roles ?? []).map((r) => {
+            const roleId =
               (r as { role?: string; name?: string }).role ||
               (r as { role?: string; name?: string }).name ||
-              '',
-            customRole: (r as { customRole?: string }).customRole,
-            count:
-              (r as { headcount?: number; count?: number }).headcount ||
-              (r as { headcount?: number; count?: number }).count ||
-              0,
-            filled: (r as { filled?: number }).filled ?? 0,
-          })),
+              '';
+            const customRole = (r as { customRole?: string }).customRole;
+            // dateSpecificRequirements의 salary가 없으면 posting.roles에서 조회
+            const directSalary = (r as { salary?: SalaryInfo }).salary;
+            const resolvedSalary = directSalary ?? getRoleSalary(roleId, customRole);
+
+            return {
+              role: roleId,
+              customRole,
+              count:
+                (r as { headcount?: number; count?: number }).headcount ||
+                (r as { headcount?: number; count?: number }).count ||
+                0,
+              filled: (r as { filled?: number }).filled ?? 0,
+              salary: resolvedSalary,
+            };
+          }),
         })),
       };
     })
@@ -377,11 +402,17 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
             customRole: (r as { customRole?: string }).customRole,
             count: r.count,
             filled: r.filled ?? 0,
+            salary: (r as { salary?: SalaryInfo }).salary,
           })),
         },
       ],
     });
   }
+
+  // defaultSalary 결정: 명시적 defaultSalary 또는 첫 번째 역할의 급여
+  const resolvedDefaultSalary: SalaryInfo | undefined =
+    posting.defaultSalary ??
+    posting.roles.find((r) => (r as { salary?: SalaryInfo }).salary)?.salary as SalaryInfo | undefined;
 
   return {
     id: posting.id,
@@ -391,13 +422,9 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
     timeSlot: posting.timeSlot,
     roles: posting.roles.map((r) => r.role),
     dateRequirements,
-    salary: {
-      type: posting.salary.type,
-      amount: posting.salary.amount,
-    },
+    defaultSalary: resolvedDefaultSalary,
     allowances: posting.allowances,
     useSameSalary: posting.useSameSalary,
-    roleSalaries: posting.roleSalaries,
     status: posting.status,
     isUrgent: posting.isUrgent,
     applicationCount: posting.applicationCount,

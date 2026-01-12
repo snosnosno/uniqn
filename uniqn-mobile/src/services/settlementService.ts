@@ -289,23 +289,47 @@ export async function getWorkLogsByJobPosting(
  * @returns 급여 타입과 금액
  */
 function getRoleSalaryInfo(jobPosting: JobPosting, role: string, customRole?: string): UtilitySalaryInfo {
-  // 역할별 급여 확인
-  if (jobPosting.roleSalaries) {
-    // 커스텀 역할이면 customRole을 키로 사용
-    const effectiveRole = role === 'other' && customRole ? customRole : role;
-    const roleSalary = jobPosting.roleSalaries[effectiveRole];
-    if (roleSalary && roleSalary.type !== 'other') {
-      return {
-        type: roleSalary.type,
-        amount: roleSalary.amount,
-      };
+  // useSameSalary=true이고 defaultSalary가 있으면 사용
+  if (jobPosting.useSameSalary && jobPosting.defaultSalary) {
+    return {
+      type: jobPosting.defaultSalary.type as UtilitySalaryInfo['type'],
+      amount: jobPosting.defaultSalary.amount,
+    };
+  }
+
+  // roles 배열에서 역할별 급여 조회
+  const effectiveRole = role === 'other' && customRole ? customRole : role;
+
+  const roleData = jobPosting.roles?.find(r => {
+    // customRole 필드가 있는 역할 매칭
+    const roleWithCustom = r as { role: string; customRole?: string; salary?: UtilitySalaryInfo };
+    if (roleWithCustom.role === 'other' && roleWithCustom.customRole) {
+      return roleWithCustom.customRole === effectiveRole;
     }
+    return roleWithCustom.role === effectiveRole;
+  });
+
+  // 역할에서 급여 정보 추출
+  const roleWithSalary = roleData as { salary?: UtilitySalaryInfo } | undefined;
+  if (roleWithSalary?.salary && roleWithSalary.salary.type !== 'other') {
+    return {
+      type: roleWithSalary.salary.type,
+      amount: roleWithSalary.salary.amount,
+    };
   }
 
   // 기본 급여 fallback
+  if (jobPosting.defaultSalary) {
+    return {
+      type: jobPosting.defaultSalary.type as UtilitySalaryInfo['type'],
+      amount: jobPosting.defaultSalary.amount,
+    };
+  }
+
+  // 최종 fallback
   return {
-    type: jobPosting.salary.type as UtilitySalaryInfo['type'],
-    amount: jobPosting.salary.amount,
+    type: 'hourly',
+    amount: 0,
   };
 }
 
