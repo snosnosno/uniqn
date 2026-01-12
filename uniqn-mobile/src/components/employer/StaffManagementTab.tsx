@@ -5,30 +5,18 @@
  * @version 1.0.0
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
 import { WorkTimeEditor } from './WorkTimeEditor';
 import { Loading } from '../ui/Loading';
 import { ErrorState } from '../ui/ErrorState';
-import { Badge } from '../ui/Badge';
-import { Card } from '../ui/Card';
 import { ConfirmModal } from '../ui/Modal';
-import {
-  QRCodeIcon,
-  CalendarIcon,
-  RefreshIcon,
-  ClockIcon,
-} from '../icons';
+import { QRCodeIcon, RefreshIcon } from '../icons';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import type {
-  ConfirmedStaff,
-  ConfirmedStaffGroup,
-  JobPosting,
-  WorkLog,
-} from '@/types';
+import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
 
 // ============================================================================
 // Types
@@ -83,66 +71,6 @@ function QuickActions({
   );
 }
 
-interface TodayHighlightProps {
-  todayGroup?: ConfirmedStaffGroup;
-}
-
-function TodayHighlight({ todayGroup }: TodayHighlightProps) {
-  if (!todayGroup) return null;
-
-  const { stats } = todayGroup;
-
-  return (
-    <View className="px-4 mb-4">
-      <Card
-        variant="outlined"
-        padding="md"
-        className="border-primary-200 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20"
-      >
-        <View className="flex-row items-center mb-3">
-          <CalendarIcon size={18} color="#2563EB" />
-          <Text className="ml-2 text-base font-semibold text-primary-600 dark:text-primary-400">
-            오늘 근무 현황
-          </Text>
-        </View>
-
-        <View className="flex-row flex-wrap gap-2">
-          <View className="flex-row items-center bg-white dark:bg-gray-800 rounded-lg px-3 py-2">
-            <ClockIcon size={14} color="#6B7280" />
-            <Text className="ml-1 text-sm text-gray-600 dark:text-gray-300">
-              총 {stats.total}명
-            </Text>
-          </View>
-
-          {stats.checkedIn > 0 && (
-            <Badge variant="success" size="sm">
-              근무중 {stats.checkedIn}
-            </Badge>
-          )}
-
-          {(stats.total - stats.checkedIn - stats.completed - stats.noShow) > 0 && (
-            <Badge variant="default" size="sm">
-              예정 {stats.total - stats.checkedIn - stats.completed - stats.noShow}
-            </Badge>
-          )}
-
-          {stats.completed > 0 && (
-            <Badge variant="primary" size="sm">
-              완료 {stats.completed}
-            </Badge>
-          )}
-
-          {stats.noShow > 0 && (
-            <Badge variant="warning" size="sm">
-              노쇼 {stats.noShow}
-            </Badge>
-          )}
-        </View>
-      </Card>
-    </View>
-  );
-}
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -173,12 +101,6 @@ export function StaffManagementTab({
   const [showTimeEditor, setShowTimeEditor] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ConfirmedStaff | null>(null);
-
-  // 오늘 날짜 그룹 찾기
-  const todayGroup = useMemo(() => {
-    const today = new Date().toISOString().split('T')[0];
-    return grouped.find((g) => g.date === today);
-  }, [grouped]);
 
   // ============================================================================
   // Handlers
@@ -332,9 +254,6 @@ export function StaffManagementTab({
         onRefresh={handleRefresh}
         isRefreshing={isRefetching}
       />
-
-      {/* 오늘 하이라이트 */}
-      <TodayHighlight todayGroup={todayGroup} />
 
       {/* 스태프 목록 */}
       <View className="flex-1">
