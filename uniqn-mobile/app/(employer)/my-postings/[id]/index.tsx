@@ -7,11 +7,12 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { Card, Badge, Loading, ErrorState } from '@/components';
+import { Card, Badge, Loading, ErrorState, ConfirmModal } from '@/components';
 import {
   MapPinIcon,
   ClockIcon,
@@ -24,6 +25,7 @@ import {
   BanknotesIcon,
   XCircleIcon,
   DocumentIcon,
+  TrashIcon,
 } from '@/components/icons';
 import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 import {
@@ -134,6 +136,10 @@ export default function JobPostingDetailScreen() {
   const router = useRouter();
   const { job: posting, isLoading, error, refresh } = useJobDetail(id || '');
   const { cancellationPendingCount } = useApplicantManagement(id || '');
+  const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
+
+  // 삭제 확인 모달 상태
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   // 지원자 관리로 이동
   const handleApplicants = useCallback(() => {
@@ -155,6 +161,22 @@ export default function JobPostingDetailScreen() {
   const handleCancellationRequests = useCallback(() => {
     router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
   }, [router, id]);
+
+  // 삭제 확인 모달 열기
+  const handleDeletePress = useCallback(() => {
+    setShowDeleteModal(true);
+  }, []);
+
+  // 공고 삭제 실행
+  const handleDeleteConfirm = useCallback(() => {
+    if (!id) return;
+    deleteJobPosting(id, {
+      onSuccess: () => {
+        setShowDeleteModal(false);
+        router.back();
+      },
+    });
+  }, [id, deleteJobPosting, router]);
 
   // 정보 섹션 펼치기/접기 상태 (기본: 접힌 상태)
   const [isInfoExpanded, setIsInfoExpanded] = useState(false);
@@ -455,7 +477,42 @@ export default function JobPostingDetailScreen() {
             </Card>
           </View>
         )}
+
+        {/* 공고 삭제 버튼 */}
+        <View className="px-4 pb-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <Pressable
+            onPress={handleDeletePress}
+            disabled={isDeleting}
+            className="flex-row items-center justify-center py-4 rounded-xl bg-red-50 dark:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30"
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color="#EF4444" />
+            ) : (
+              <>
+                <TrashIcon size={20} color="#EF4444" />
+                <Text className="ml-2 text-base font-medium text-red-600 dark:text-red-400">
+                  공고 삭제
+                </Text>
+              </>
+            )}
+          </Pressable>
+          <Text className="text-center text-xs text-gray-400 dark:text-gray-500 mt-2">
+            확정된 지원자가 있는 공고는 삭제할 수 없습니다
+          </Text>
+        </View>
       </ScrollView>
+
+      {/* 삭제 확인 모달 */}
+      <ConfirmModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteConfirm}
+        title="공고 삭제"
+        message="정말 이 공고를 삭제하시겠습니까? 삭제된 공고는 복구할 수 없습니다."
+        confirmText="삭제"
+        cancelText="취소"
+        isDestructive
+      />
     </SafeAreaView>
   );
 }
