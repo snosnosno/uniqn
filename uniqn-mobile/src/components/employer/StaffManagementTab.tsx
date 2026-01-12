@@ -8,6 +8,7 @@
 import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ConfirmedStaffList } from './ConfirmedStaffList';
+import { StaffProfileModal } from './StaffProfileModal';
 import { WorkTimeEditor } from './WorkTimeEditor';
 import { Loading } from '../ui/Loading';
 import { ErrorState } from '../ui/ErrorState';
@@ -101,6 +102,9 @@ export function StaffManagementTab({
   const [showTimeEditor, setShowTimeEditor] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ConfirmedStaff | null>(null);
+  // 프로필 모달 상태
+  const [profileStaff, setProfileStaff] = useState<ConfirmedStaff | null>(null);
+  const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
   // ============================================================================
   // Handlers
@@ -110,6 +114,18 @@ export function StaffManagementTab({
   const handleStaffPress = useCallback((staff: ConfirmedStaff) => {
     // 상세 정보 표시 또는 액션 시트 표시 (추후 구현)
     logger.debug('Staff pressed', { staffId: staff.id });
+  }, []);
+
+  // 프로필 보기
+  const handleViewProfile = useCallback((staff: ConfirmedStaff) => {
+    setProfileStaff(staff);
+    setIsProfileModalVisible(true);
+  }, []);
+
+  // 프로필 모달 닫기
+  const handleCloseProfileModal = useCallback(() => {
+    setIsProfileModalVisible(false);
+    setProfileStaff(null);
   }, []);
 
   // 시간 수정
@@ -265,6 +281,7 @@ export function StaffManagementTab({
           onRefresh={handleRefresh}
           isRefreshing={isRefetching}
           onStaffPress={handleStaffPress}
+          onViewProfile={handleViewProfile}
           onEditTime={handleEditTime}
           onChangeRole={handleChangeRole}
           onReport={handleReport}
@@ -295,6 +312,13 @@ export function StaffManagementTab({
         confirmText="삭제"
         cancelText="취소"
         isDestructive
+      />
+
+      {/* 프로필 모달 */}
+      <StaffProfileModal
+        visible={isProfileModalVisible}
+        onClose={handleCloseProfileModal}
+        staff={profileStaff}
       />
     </View>
   );

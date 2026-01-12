@@ -7,6 +7,7 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable, useColorScheme } from 'react-native';
+import { useQuery } from '@tanstack/react-query';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
@@ -26,6 +27,8 @@ import {
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
+import { getUserProfile } from '@/services';
+import type { UserProfile } from '@/services';
 
 // ============================================================================
 // Types
@@ -34,6 +37,8 @@ import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
 export interface ConfirmedStaffCardProps {
   staff: ConfirmedStaff;
   onPress?: (staff: ConfirmedStaff) => void;
+  /** 프로필 상세보기 */
+  onViewProfile?: (staff: ConfirmedStaff) => void;
   /** 시간 수정 */
   onEditTime?: (staff: ConfirmedStaff) => void;
   /** 역할 변경 */
@@ -104,6 +109,7 @@ const calculateWorkDuration = (startTime: unknown, endTime: unknown): string | n
 export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   staff,
   onPress,
+  onViewProfile,
   onEditTime,
   onChangeRole,
   onReport,
@@ -113,6 +119,23 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 }: ConfirmedStaffCardProps) {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+
+  // 사용자 프로필 조회 (프로필 사진, 닉네임)
+  const { data: userProfile } = useQuery<UserProfile | null>({
+    queryKey: ['userProfile', staff.staffId],
+    queryFn: () => getUserProfile(staff.staffId),
+    enabled: !!staff.staffId,
+    staleTime: 5 * 60 * 1000, // 5분 캐싱
+  });
+
+  // 프로필 사진 URL
+  const profilePhotoURL = userProfile?.photoURL;
+  // 표시 이름: Firestore 프로필 우선, 기존 staffName 폴백
+  const baseName = userProfile?.name || staff.staffName;
+  // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
+  const displayName = userProfile?.nickname && userProfile.nickname !== baseName
+    ? `${baseName}(${userProfile.nickname})`
+    : baseName;
 
   // 출석 체크 여부 (QR 출근 찍었는지)
   const isCheckedIn = staff.status === 'checked_in' ||
@@ -170,6 +193,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     onPress?.(staff);
   }, [staff, onPress]);
 
+  const handleViewProfile = useCallback(() => {
+    onViewProfile?.(staff);
+  }, [staff, onViewProfile]);
+
   const handleEditTime = useCallback(() => {
     onEditTime?.(staff);
   }, [staff, onEditTime]);
@@ -191,27 +218,35 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
       <Pressable onPress={handlePress} disabled={!onPress}>
         {/* 헤더 */}
         <View className="flex-row items-center">
-          <Avatar
-            name={staff.staffName}
-            size={compact ? 'sm' : 'md'}
-            className="mr-3"
-          />
-          <View className="flex-1">
-            <View className="flex-row items-center">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {staff.staffName}{staff.staffNickname ? ` (${staff.staffNickname})` : ''}
-              </Text>
-              {staff.isRead === false && (
-                <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />
-              )}
+          {/* 프로필 영역 (이름/사진 클릭 시 프로필 모달) */}
+          <Pressable
+            onPress={handleViewProfile}
+            disabled={!onViewProfile}
+            className="flex-row items-center flex-1 active:opacity-80"
+          >
+            <Avatar
+              source={profilePhotoURL}
+              name={displayName}
+              size={compact ? 'sm' : 'md'}
+              className="mr-3"
+            />
+            <View className="flex-1">
+              <View className="flex-row items-center">
+                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                  {displayName}
+                </Text>
+                {staff.isRead === false && (
+                  <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />
+                )}
+              </View>
+              <View className="flex-row items-center mt-0.5">
+                <BriefcaseIcon size={12} color="#6B7280" />
+                <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
+                  {getRoleDisplayName(staff.role, staff.customRole)}
+                </Text>
+              </View>
             </View>
-            <View className="flex-row items-center mt-0.5">
-              <BriefcaseIcon size={12} color="#6B7280" />
-              <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                {getRoleDisplayName(staff.role, staff.customRole)}
-              </Text>
-            </View>
-          </View>
+          </Pressable>
           <Badge
             variant={STATUS_BADGE_VARIANT[staff.status]}
             size="sm"

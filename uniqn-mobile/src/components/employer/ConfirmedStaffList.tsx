@@ -32,6 +32,8 @@ export interface ConfirmedStaffListProps {
   onRefresh?: () => void;
   isRefreshing?: boolean;
   onStaffPress?: (staff: ConfirmedStaff) => void;
+  /** 프로필 상세보기 */
+  onViewProfile?: (staff: ConfirmedStaff) => void;
   onEditTime?: (staff: ConfirmedStaff) => void;
   onChangeRole?: (staff: ConfirmedStaff) => void;
   /** 신고 (노쇼 포함) */
@@ -174,6 +176,7 @@ export function ConfirmedStaffList({
   onRefresh,
   isRefreshing,
   onStaffPress,
+  onViewProfile,
   onEditTime,
   onChangeRole,
   onReport,
@@ -246,6 +249,7 @@ export function ConfirmedStaffList({
         <ConfirmedStaffCard
           staff={item}
           onPress={onStaffPress}
+          onViewProfile={onViewProfile}
           onEditTime={onEditTime}
           onChangeRole={onChangeRole}
           onReport={onReport}
@@ -254,7 +258,7 @@ export function ConfirmedStaffList({
         />
       </View>
     ),
-    [onStaffPress, onEditTime, onChangeRole, onReport, onDelete, showActions]
+    [onStaffPress, onViewProfile, onEditTime, onChangeRole, onReport, onDelete, showActions]
   );
 
   // 섹션 헤더 렌더
