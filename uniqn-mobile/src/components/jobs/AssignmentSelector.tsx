@@ -198,7 +198,11 @@ const DateSelection = memo(function DateSelection({
               {/* 역할 체크박스들 */}
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
-                  const selectionKey = makeSelectionKey(date, slotTime, role.roleId);
+                  // 커스텀 역할이면 customName을 키로 사용 (roleSalaries 키와 일치)
+                  const effectiveRoleId = role.roleId === 'other' && role.customName
+                    ? role.customName
+                    : role.roleId;
+                  const selectionKey = makeSelectionKey(date, slotTime, effectiveRoleId);
                   const isSelected = selectedKeys.has(selectionKey);
 
                   return (
@@ -206,7 +210,7 @@ const DateSelection = memo(function DateSelection({
                       key={role.roleId || roleIndex}
                       role={role}
                       isSelected={isSelected}
-                      onToggle={() => onRoleToggle(date, slotTime, role.roleId, {
+                      onToggle={() => onRoleToggle(date, slotTime, effectiveRoleId, {
                         isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
                         tentativeDescription: slot.tentativeDescription,
                       })}
@@ -334,10 +338,14 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
         <View className="flex-row flex-wrap">
           {fixedSchedule.roles.map((role, index) => {
+            // 커스텀 역할이면 customName을 키로 사용 (roleSalaries 키와 일치)
+            const effectiveRoleId = role.roleId === 'other' && role.customName
+              ? role.customName
+              : role.roleId;
             const selectionKey = makeSelectionKey(
               FIXED_DATE_MARKER,
               FIXED_TIME_MARKER,
-              role.roleId
+              effectiveRoleId
             );
             const isSelected = selectedKeys.has(selectionKey);
 
@@ -346,7 +354,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
                 key={role.roleId || index}
                 role={role}
                 isSelected={isSelected}
-                onToggle={() => handleRoleToggle(FIXED_DATE_MARKER, FIXED_TIME_MARKER, role.roleId)}
+                onToggle={() => handleRoleToggle(FIXED_DATE_MARKER, FIXED_TIME_MARKER, effectiveRoleId)}
                 disabled={disabled}
               />
             );

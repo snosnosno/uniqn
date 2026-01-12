@@ -44,6 +44,8 @@ export interface ScheduleEvent extends FirebaseDocument {
 
   // 역할 정보
   role: string;
+  /** 커스텀 역할명 (role이 'other'일 때) */
+  customRole?: string;
   status: AttendanceStatus;
 
   // 정산 정보
@@ -137,6 +139,39 @@ export interface RoleChangeHistory {
 }
 
 /**
+ * 정산 금액 수정 이력
+ */
+export interface SettlementModification {
+  modifiedAt: string | Timestamp;
+  modifiedBy: string;
+  reason?: string;
+  /** 이전 급여 정보 */
+  previousSalaryInfo?: {
+    type: 'hourly' | 'daily' | 'monthly' | 'other';
+    amount: number;
+  };
+  /** 새 급여 정보 */
+  newSalaryInfo?: {
+    type: 'hourly' | 'daily' | 'monthly' | 'other';
+    amount: number;
+  };
+  /** 이전 수당 정보 */
+  previousAllowances?: Record<string, number>;
+  /** 새 수당 정보 */
+  newAllowances?: Record<string, number>;
+  /** 이전 세금 설정 */
+  previousTaxSettings?: {
+    type: 'none' | 'rate' | 'fixed';
+    value: number;
+  };
+  /** 새 세금 설정 */
+  newTaxSettings?: {
+    type: 'none' | 'rate' | 'fixed';
+    value: number;
+  };
+}
+
+/**
  * 근무 기록 (WorkLog)
  */
 export interface WorkLog extends FirebaseDocument {
@@ -177,6 +212,20 @@ export interface WorkLog extends FirebaseDocument {
 
   // 역할 변경 이력
   roleChangeHistory?: RoleChangeHistory[];
+
+  // 정산 금액 수정 이력
+  settlementModificationHistory?: SettlementModification[];
+
+  // 개별 오버라이드 설정 (구인자가 수정한 경우)
+  customSalaryInfo?: {
+    type: 'hourly' | 'daily' | 'monthly' | 'other';
+    amount: number;
+  };
+  customAllowances?: Record<string, number>;
+  customTaxSettings?: {
+    type: 'none' | 'rate' | 'fixed';
+    value: number;
+  };
 
   notes?: string;
 }

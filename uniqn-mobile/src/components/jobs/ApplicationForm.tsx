@@ -63,7 +63,11 @@ interface RoleDisplayItem {
 // Helpers
 // ============================================================================
 
-const getRoleLabel = (role: string): string => {
+const getRoleLabel = (role: string, customRole?: string): string => {
+  // 커스텀 역할이면 customRole 사용
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
   switch (role) {
     case 'dealer':
       return '딜러';
@@ -168,12 +172,19 @@ export function ApplicationForm({
     const roles = job.roles || [];
     return roles
       .filter((r) => (r.filled ?? 0) < r.count)
-      .map((r, idx): RoleDisplayItem => ({
-        key: r.role || `role-${idx}`,
-        displayName: getRoleLabel(r.role || ''),
-        count: r.count ?? 0,
-        filled: r.filled ?? 0,
-      }));
+      .map((r, idx): RoleDisplayItem => {
+        // 커스텀 역할이면 customRole을 키로 사용
+        const roleWithCustom = r as typeof r & { customRole?: string };
+        const effectiveKey = (r.role as string) === 'other' && roleWithCustom.customRole
+          ? roleWithCustom.customRole
+          : r.role || `role-${idx}`;
+        return {
+          key: effectiveKey,
+          displayName: getRoleLabel(r.role || '', roleWithCustom.customRole),
+          count: r.count ?? 0,
+          filled: r.filled ?? 0,
+        };
+      });
   }, [isFixedMode, job.requiredRolesWithCount, job.roles]);
 
   // 제출 가능 여부 판단

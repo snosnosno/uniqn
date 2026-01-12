@@ -77,11 +77,23 @@ function checkRoleCapacity(
   jobData: JobPosting,
   appliedRole: string
 ): { available: boolean; reason?: string } {
+  /**
+   * 역할 매칭 헬퍼
+   * - 표준 역할: r.role === appliedRole
+   * - 커스텀 역할: r.role === 'other' && r.customRole === appliedRole
+   */
+  const matchesRole = (r: { role?: string; name?: string; customRole?: string }) => {
+    if (r.role === appliedRole || r.name === appliedRole) return true;
+    // 커스텀 역할 체크: role이 'other'이고 customRole이 appliedRole과 일치
+    if (r.role === 'other' && r.customRole === appliedRole) return true;
+    return false;
+  };
+
   // dateSpecificRequirements가 있으면 역할별 마감 확인
   if (jobData.dateSpecificRequirements?.length) {
     for (const req of jobData.dateSpecificRequirements) {
       for (const slot of req.timeSlots || []) {
-        const roleReq = slot.roles?.find((r) => r.role === appliedRole);
+        const roleReq = slot.roles?.find(matchesRole);
         if (roleReq) {
           const total = roleReq.headcount ?? roleReq.count ?? 0;
           const filled = roleReq.filled ?? 0;
@@ -96,7 +108,7 @@ function checkRoleCapacity(
 
   // 레거시: roles 배열 확인
   if (jobData.roles?.length) {
-    const roleReq = jobData.roles.find((r) => r.role === appliedRole);
+    const roleReq = jobData.roles.find(matchesRole);
     if (roleReq) {
       const filled = roleReq.filled ?? 0;
       if (filled < roleReq.count) {

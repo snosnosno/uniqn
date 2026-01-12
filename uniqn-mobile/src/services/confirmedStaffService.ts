@@ -44,6 +44,10 @@ import {
   type ConfirmedStaffStatus,
 } from '@/types/confirmedStaff';
 import type { WorkLog, WorkTimeModification, RoleChangeHistory } from '@/types';
+import { STAFF_ROLES } from '@/constants';
+
+// 표준 역할 키 목록 (other 제외)
+const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
 
 // ============================================================================
 // Constants
@@ -261,8 +265,14 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
         changedAt: Timestamp.now(),
       });
 
+      // 커스텀 역할 처리: 표준 역할이 아니면 role: 'other', customRole: newRole
+      const isStandardRole = STANDARD_ROLE_KEYS.includes(input.newRole);
+      const roleUpdate = isStandardRole
+        ? { role: input.newRole, customRole: null }
+        : { role: 'other', customRole: input.newRole };
+
       transaction.update(workLogRef, {
-        role: input.newRole,
+        ...roleUpdate,
         roleChangeHistory,
         updatedAt: serverTimestamp(),
       });

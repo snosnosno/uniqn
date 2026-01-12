@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+/* eslint-disable @typescript-eslint/no-require-imports, no-console */
 /**
  * Bundle Size Checker for UNIQN Mobile
  *

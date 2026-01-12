@@ -39,6 +39,11 @@ export {
 export { useJobPostings } from './useJobPostings';
 export { useJobDetail } from './useJobDetail';
 export { useApplications } from './useApplications';
+export {
+  usePostingTypeCounts,
+  AUTO_SELECT_PRIORITY,
+  type PostingTypeAvailability,
+} from './usePostingTypeCounts';
 
 // ============================================================================
 // Schedule Hooks

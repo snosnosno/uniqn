@@ -3,13 +3,28 @@
  * 하단 탭 네비게이션 레이아웃
  */
 
-import { Tabs } from 'expo-router';
-import { useColorScheme } from 'react-native';
+import { useEffect } from 'react';
+import { Tabs, useNavigation } from 'expo-router';
+import { useColorScheme, Platform } from 'react-native';
 import { HomeIcon, CalendarIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const navigation = useNavigation();
+
+  // 웹에서 탭 전환 시 aria-hidden 포커스 충돌 방지
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+
+    const unsubscribe = navigation.addListener('state', () => {
+      if (document.activeElement instanceof HTMLElement) {
+        document.activeElement.blur();
+      }
+    });
+
+    return unsubscribe;
+  }, [navigation]);
 
   return (
     <Tabs

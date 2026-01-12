@@ -73,69 +73,52 @@ const ROLE_NAME_TO_CODE: Record<string, string> = {
   '직원': 'staff',
 };
 
-/** 역할 코드 → 한글 이름 역변환 맵 */
-const ROLE_CODE_TO_NAME: Record<string, string> = {
-  dealer: '딜러',
-  manager: '매니저',
-  chiprunner: '칩러너',
-  admin: '관리자',
-  floor: '플로어',
-  serving: '서빙',
-  staff: '직원',
-};
-
 /**
- * 역할 코드/이름을 한글 이름으로 변환
- */
-function getRoleName(roleKey: string, customRole?: string): string {
-  if (roleKey === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_CODE_TO_NAME[roleKey] || roleKey;
-}
-
-/**
- * dateSpecificRequirements에서 역할 이름 Set 추출
+ * dateSpecificRequirements에서 역할 키 Set 추출
  *
- * @description 특정 날짜의 요구사항에서 역할 이름들을 추출
+ * @description 특정 날짜의 요구사항에서 역할 키를 추출
+ * 커스텀 역할(other)인 경우 customRole 값을 키로 사용
  */
-function extractRoleNamesFromDateReq(
+function extractRoleKeysFromDateReq(
   dateReqs: CreateJobPostingInput['dateSpecificRequirements']
 ): Set<string> {
-  const roleNames = new Set<string>();
+  const roleKeys = new Set<string>();
 
   dateReqs?.forEach((dateReq) => {
     dateReq.timeSlots?.forEach((slot) => {
       slot.roles?.forEach((roleReq) => {
-        // role 또는 name 필드에서 역할 키 추출
-        const roleKey = roleReq.role ?? roleReq.name ?? 'dealer';
-        const roleName = getRoleName(roleKey as string, roleReq.customRole);
-        roleNames.add(roleName);
+        const rawRole = roleReq.role ?? roleReq.name ?? 'dealer';
+        // 커스텀 역할이면 customRole을 키로 사용
+        const roleKey = rawRole === 'other' && roleReq.customRole
+          ? roleReq.customRole
+          : rawRole;
+        roleKeys.add(roleKey as string);
       });
     });
   });
 
-  return roleNames;
+  return roleKeys;
 }
 
 /**
  * roleSalaries에서 특정 역할만 필터링
  *
  * @description 해당 날짜에 필요한 역할의 급여만 추출
+ * roleKeys는 영어 코드 Set (예: 'dealer', 'floor')
  */
 function filterRoleSalaries(
   roleSalaries: Record<string, SalaryInfo> | undefined,
-  roleNames: Set<string>
+  roleKeys: Set<string>
 ): Record<string, SalaryInfo> | undefined {
-  if (!roleSalaries || roleNames.size === 0) {
+  if (!roleSalaries || roleKeys.size === 0) {
     return undefined;
   }
 
   const filtered: Record<string, SalaryInfo> = {};
 
-  for (const [roleName, salary] of Object.entries(roleSalaries)) {
-    if (roleNames.has(roleName)) {
-      filtered[roleName] = salary;
+  for (const [roleKey, salary] of Object.entries(roleSalaries)) {
+    if (roleKeys.has(roleKey)) {
+      filtered[roleKey] = salary;
     }
   }
 
@@ -306,11 +289,11 @@ async function createMultiplePostingsByDate(
       dateStr = '';
     }
 
-    // 해당 날짜의 역할 이름 추출
-    const dateRoleNames = extractRoleNamesFromDateReq([dateReq]);
+    // 해당 날짜의 역할 키 추출 (영어 코드)
+    const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);
 
     // 해당 날짜의 역할만 roleSalaries에서 필터링
-    const filteredRoleSalaries = filterRoleSalaries(input.roleSalaries, dateRoleNames);
+    const filteredRoleSalaries = filterRoleSalaries(input.roleSalaries, dateRoleKeys);
 
     // 단일 날짜용 input 생성 (해당 날짜의 roleSalaries만 포함)
     const singleDateInput: CreateJobPostingInput = {
@@ -326,7 +309,7 @@ async function createMultiplePostingsByDate(
     logger.info('날짜별 공고 생성', {
       id: result.id,
       date: dateStr,
-      roles: Array.from(dateRoleNames),
+      roles: Array.from(dateRoleKeys),
     });
   }
 

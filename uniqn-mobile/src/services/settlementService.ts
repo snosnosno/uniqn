@@ -242,15 +242,24 @@ export async function getWorkLogsByJobPosting(
     }
 
     if (filters?.role) {
-      workLogs = workLogs.filter((wl) => wl.role === filters.role);
+      // 커스텀 역할 지원: role이 'other'이면 customRole로 매칭
+      workLogs = workLogs.filter((wl) => {
+        const wlWithCustomRole = wl as SettlementWorkLog & { customRole?: string };
+        // 표준 역할 매칭
+        if (wl.role === filters.role) return true;
+        // 커스텀 역할 매칭: wl.role이 'other'이고 customRole이 filters.role과 일치
+        if (wl.role === 'other' && wlWithCustomRole.customRole === filters.role) return true;
+        return false;
+      });
     }
 
     // 4. 근무 시간 및 예상 정산액 계산
     workLogs = workLogs.map((wl) => {
       const hoursWorked = calculateHoursWorked(wl.actualStartTime, wl.actualEndTime);
 
-      // 급여 타입별 계산
-      const salaryInfo = getRoleSalaryInfo(jobPosting, wl.role);
+      // 급여 타입별 계산 (커스텀 역할 지원)
+      const wlWithCustomRole = wl as SettlementWorkLog & { customRole?: string };
+      const salaryInfo = getRoleSalaryInfo(jobPosting, wl.role, wlWithCustomRole.customRole);
       const calculatedAmount = calculatePayByType(salaryInfo, hoursWorked);
 
       return {
@@ -274,12 +283,17 @@ export async function getWorkLogsByJobPosting(
 
 /**
  * 역할별 급여 정보 조회 헬퍼
+ * @param jobPosting - 공고 정보
+ * @param role - 역할 코드
+ * @param customRole - 커스텀 역할명 (role이 'other'일 때)
  * @returns 급여 타입과 금액
  */
-function getRoleSalaryInfo(jobPosting: JobPosting, role: string): UtilitySalaryInfo {
+function getRoleSalaryInfo(jobPosting: JobPosting, role: string, customRole?: string): UtilitySalaryInfo {
   // 역할별 급여 확인
   if (jobPosting.roleSalaries) {
-    const roleSalary = jobPosting.roleSalaries[role];
+    // 커스텀 역할이면 customRole을 키로 사용
+    const effectiveRole = role === 'other' && customRole ? customRole : role;
+    const roleSalary = jobPosting.roleSalaries[effectiveRole];
     if (roleSalary && roleSalary.type !== 'other') {
       return {
         type: roleSalary.type,
@@ -325,7 +339,7 @@ export async function calculateSettlement(
       throw new Error('근무 기록을 찾을 수 없습니다');
     }
 
-    const workLog = workLogDoc.data() as WorkLog;
+    const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
 
     // 2. 공고 조회 및 소유권 확인
     const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
@@ -344,8 +358,8 @@ export async function calculateSettlement(
     // 3. 근무 시간 계산
     const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
 
-    // 4. 급여 정보 조회
-    const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role);
+    // 4. 급여 정보 조회 (커스텀 역할 지원)
+    const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role, workLog.customRole);
 
     // 5. 타입별 금액 계산
     const grossPay = calculatePayByType(salaryInfo, hoursWorked);
@@ -521,13 +535,19 @@ export async function settleWorkLog(
       }
 
       // 5. 정산 처리
-      transaction.update(workLogRef, {
+      const updateData: Record<string, unknown> = {
         payrollStatus: 'completed',
         payrollAmount: input.amount,
         payrollDate: serverTimestamp(),
-        payrollNotes: input.notes,
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      // notes가 있을 때만 포함 (undefined는 Firebase에서 허용되지 않음)
+      if (input.notes !== undefined) {
+        updateData.payrollNotes = input.notes;
+      }
+
+      transaction.update(workLogRef, updateData);
     });
 
     logger.info('개별 정산 처리 완료', { workLogId: input.workLogId, amount: input.amount });
@@ -617,7 +637,7 @@ export async function bulkSettlement(
             continue;
           }
 
-          const workLog = workLogDoc.data() as WorkLog;
+          const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
           const jobPosting = jobPostings.get(workLog.eventId);
 
           // 소유권 확인
@@ -656,19 +676,24 @@ export async function bulkSettlement(
             continue;
           }
 
-          // 정산 금액 계산 (급여 타입별)
+          // 정산 금액 계산 (급여 타입별, 커스텀 역할 지원)
           const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role);
+          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role, workLog.customRole);
           const amount = calculatePayByType(salaryInfo, hoursWorked);
 
           // 정산 처리
-          transaction.update(ref, {
+          const updateData: Record<string, unknown> = {
             payrollStatus: 'completed',
             payrollAmount: amount,
             payrollDate: serverTimestamp(),
-            payrollNotes: input.notes,
             updatedAt: serverTimestamp(),
-          });
+          };
+
+          if (input.notes !== undefined) {
+            updateData.payrollNotes = input.notes;
+          }
+
+          transaction.update(ref, updateData);
 
           results.push({
             success: true,
@@ -814,16 +839,22 @@ export async function getJobPostingSettlementSummary(
     }> = {};
 
     workLogs.forEach((workLog) => {
+      // 커스텀 역할 지원: role이 'other'이면 customRole을 키로 사용
+      const workLogWithCustomRole = workLog as WorkLog & { customRole?: string };
+      const effectiveRole = workLog.role === 'other' && workLogWithCustomRole.customRole
+        ? workLogWithCustomRole.customRole
+        : workLog.role;
+
       // 역할별 초기화
-      if (!workLogsByRole[workLog.role]) {
-        workLogsByRole[workLog.role] = {
+      if (!workLogsByRole[effectiveRole]) {
+        workLogsByRole[effectiveRole] = {
           count: 0,
           pendingAmount: 0,
           completedAmount: 0,
         };
       }
 
-      workLogsByRole[workLog.role].count++;
+      workLogsByRole[effectiveRole].count++;
 
       // 완료된 근무 기록
       if (workLog.status === 'checked_out' || workLog.status === 'completed') {
@@ -835,16 +866,16 @@ export async function getJobPostingSettlementSummary(
         if (workLog.payrollStatus === 'completed') {
           completedSettlement++;
           totalCompletedAmount += amount;
-          workLogsByRole[workLog.role].completedAmount += amount;
+          workLogsByRole[effectiveRole].completedAmount += amount;
         } else {
           pendingSettlement++;
-          // 미정산인 경우 예상 금액 계산 (급여 타입별)
+          // 미정산인 경우 예상 금액 계산 (급여 타입별, 커스텀 역할 지원)
           const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role);
+          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role, workLogWithCustomRole.customRole);
           const estimatedAmount = calculatePayByType(salaryInfo, hoursWorked);
 
           totalPendingAmount += amount > 0 ? amount : estimatedAmount;
-          workLogsByRole[workLog.role].pendingAmount += amount > 0 ? amount : estimatedAmount;
+          workLogsByRole[effectiveRole].pendingAmount += amount > 0 ? amount : estimatedAmount;
         }
       }
     });

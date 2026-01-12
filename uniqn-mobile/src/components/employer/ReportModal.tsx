@@ -25,6 +25,7 @@ import {
   type ReportTypeInfo,
   type CreateReportInput,
 } from '@/types/report';
+import { getRoleDisplayName } from '@/types/unified';
 import type { ConfirmedStaff } from '@/types';
 
 // ============================================================================
@@ -229,7 +230,7 @@ export function ReportModal({
               </Text>
               <View className="flex-row items-center mt-1">
                 <Badge variant="default" size="sm">
-                  {staff.role}
+                  {getRoleDisplayName(staff.role, staff.customRole)}
                 </Badge>
                 <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
                   {staff.date}

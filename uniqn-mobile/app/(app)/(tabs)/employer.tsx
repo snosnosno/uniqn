@@ -23,6 +23,7 @@ import {
   BellIcon,
 } from '@/components/icons';
 import type { JobPosting, PostingType, Allowances } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -371,7 +372,7 @@ const JobPostingCard = memo(function JobPostingCard({
                 key={idx}
                 className="text-sm text-gray-900 dark:text-white"
               >
-                💰 {role}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
+                💰 {getRoleDisplayName(role)}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
               </Text>
             ))
           ) : (

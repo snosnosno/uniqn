@@ -33,6 +33,8 @@ export interface Allowances {
   meal?: number;
   transportation?: number;
   accommodation?: number;
+  /** 추가 수당 (금액만 입력) */
+  additional?: number;
 }
 
 // ============================================================================
@@ -116,18 +118,27 @@ export function calculatePayByType(
 
 /**
  * 역할에 맞는 급여 정보 가져오기
+ *
+ * @param role - 역할 코드 (dealer, floor, other 등)
+ * @param roleSalaries - 역할별 급여 정보
+ * @param defaultSalary - 기본 급여 (없으면 DEFAULT_SALARY_INFO)
+ * @param customRole - 커스텀 역할명 (role이 'other'일 때 사용)
  */
 export function getRoleSalaryInfo(
   role: string | undefined,
   roleSalaries: RoleSalaries | undefined,
-  defaultSalary?: SalaryInfo
+  defaultSalary?: SalaryInfo,
+  customRole?: string
 ): SalaryInfo {
   const fallback = defaultSalary ?? DEFAULT_SALARY_INFO;
 
   if (!role) return fallback;
   if (!roleSalaries) return fallback;
 
-  return roleSalaries[role] ?? fallback;
+  // 커스텀 역할이면 customRole을 키로 사용
+  const effectiveRole = role === 'other' && customRole ? customRole : role;
+
+  return roleSalaries[effectiveRole] ?? fallback;
 }
 
 /**
@@ -228,12 +239,13 @@ export function calculateTotalSettlement(
     actualStartTime?: unknown;
     actualEndTime?: unknown;
     role?: string;
+    customRole?: string;
   }>,
   roleSalaries: RoleSalaries,
   allowances?: Allowances
 ): number {
   return workLogs.reduce((total, log) => {
-    const salaryInfo = getRoleSalaryInfo(log.role, roleSalaries);
+    const salaryInfo = getRoleSalaryInfo(log.role, roleSalaries, undefined, log.customRole);
     const { totalPay } = calculateSettlement(
       log.actualStartTime,
       log.actualEndTime,
@@ -296,4 +308,175 @@ export function formatDate(date: Date | null): string {
  */
 export function getSalaryTypeLabel(type: SalaryType): string {
   return SALARY_TYPE_LABELS[type] || '기타';
+}
+
+// ============================================================================
+// Tax Calculation Functions
+// ============================================================================
+
+export type TaxType = 'none' | 'rate' | 'fixed';
+
+export interface TaxSettings {
+  /** 세금 유형 */
+  type: TaxType;
+  /** 세율(%) 또는 고정 금액 */
+  value: number;
+}
+
+/** 기본 세금 설정 (없음) */
+export const DEFAULT_TAX_SETTINGS: TaxSettings = {
+  type: 'none',
+  value: 0,
+};
+
+/**
+ * 세금 금액 계산
+ */
+export function calculateTaxAmount(
+  taxSettings: TaxSettings,
+  totalAmount: number
+): number {
+  if (taxSettings.type === 'none') return 0;
+  if (taxSettings.type === 'fixed') return taxSettings.value;
+  // rate
+  return Math.round(totalAmount * (taxSettings.value / 100));
+}
+
+/**
+ * 세후 금액 계산
+ */
+export function calculateAfterTaxAmount(
+  taxSettings: TaxSettings,
+  totalAmount: number
+): number {
+  const taxAmount = calculateTaxAmount(taxSettings, totalAmount);
+  return totalAmount - taxAmount;
+}
+
+// ============================================================================
+// Effective Value Functions (with individual overrides)
+// ============================================================================
+
+interface WorkLogWithOverrides {
+  role?: string;
+  customRole?: string;
+  customSalaryInfo?: SalaryInfo;
+  customAllowances?: Allowances;
+  customTaxSettings?: TaxSettings;
+}
+
+/**
+ * 개별 오버라이드를 고려한 실제 적용 급여 정보 반환
+ * - workLog에 customSalaryInfo가 있으면 그것을 사용
+ * - 없으면 역할별 급여 정보를 사용
+ */
+export function getEffectiveSalaryInfo(
+  workLog: WorkLogWithOverrides,
+  roleSalaries: RoleSalaries | undefined,
+  defaultSalary?: SalaryInfo
+): SalaryInfo {
+  // 개별 오버라이드가 있으면 우선 사용
+  if (workLog.customSalaryInfo) {
+    return workLog.customSalaryInfo;
+  }
+  // 역할별 급여 정보 사용 (커스텀 역할 지원)
+  return getRoleSalaryInfo(workLog.role, roleSalaries, defaultSalary, workLog.customRole);
+}
+
+/**
+ * 개별 오버라이드를 고려한 실제 적용 수당 정보 반환
+ * - workLog에 customAllowances가 있으면 그것을 사용
+ * - 없으면 기본 수당 정보를 사용
+ */
+export function getEffectiveAllowances(
+  workLog: WorkLogWithOverrides,
+  defaultAllowances?: Allowances
+): Allowances {
+  // 개별 오버라이드가 있으면 우선 사용
+  if (workLog.customAllowances) {
+    return workLog.customAllowances;
+  }
+  // 기본 수당 정보 사용
+  return defaultAllowances || {};
+}
+
+/**
+ * 개별 오버라이드를 고려한 실제 적용 세금 설정 반환
+ * - workLog에 customTaxSettings가 있으면 그것을 사용
+ * - 없으면 기본 세금 설정을 사용
+ */
+export function getEffectiveTaxSettings(
+  workLog: WorkLogWithOverrides,
+  defaultTaxSettings?: TaxSettings
+): TaxSettings {
+  // 개별 오버라이드가 있으면 우선 사용
+  if (workLog.customTaxSettings) {
+    return workLog.customTaxSettings;
+  }
+  // 기본 세금 설정 사용
+  return defaultTaxSettings || DEFAULT_TAX_SETTINGS;
+}
+
+// ============================================================================
+// Extended Settlement Result (with tax)
+// ============================================================================
+
+export interface ExtendedSettlementResult extends SettlementResult {
+  taxAmount: number;      // 세금 금액
+  afterTaxPay: number;    // 세후 금액
+}
+
+/**
+ * 세금을 포함한 정산 금액 계산
+ */
+export function calculateSettlementWithTax(
+  startTime: unknown,
+  endTime: unknown,
+  salaryInfo: SalaryInfo,
+  allowances?: Allowances,
+  taxSettings?: TaxSettings
+): ExtendedSettlementResult {
+  // 기본 정산 계산
+  const baseResult = calculateSettlement(startTime, endTime, salaryInfo, allowances);
+
+  // 세금 계산
+  const effectiveTaxSettings = taxSettings || DEFAULT_TAX_SETTINGS;
+  const taxAmount = calculateTaxAmount(effectiveTaxSettings, baseResult.totalPay);
+  const afterTaxPay = baseResult.totalPay - taxAmount;
+
+  return {
+    ...baseResult,
+    taxAmount,
+    afterTaxPay,
+  };
+}
+
+/**
+ * WorkLog 객체로 세금 포함 정산 금액 계산
+ */
+export function calculateSettlementFromWorkLogWithTax(
+  workLog: {
+    actualStartTime?: unknown;
+    actualEndTime?: unknown;
+    role?: string;
+    customSalaryInfo?: SalaryInfo;
+    customAllowances?: Allowances;
+    customTaxSettings?: TaxSettings;
+  },
+  roleSalaries: RoleSalaries | undefined,
+  defaultAllowances?: Allowances,
+  defaultTaxSettings?: TaxSettings
+): ExtendedSettlementResult {
+  // 실제 적용될 값들 결정
+  const salaryInfo = getEffectiveSalaryInfo(workLog, roleSalaries);
+  const allowances = getEffectiveAllowances(workLog, defaultAllowances);
+  const taxSettings = getEffectiveTaxSettings(workLog, defaultTaxSettings);
+
+  return calculateSettlementWithTax(
+    workLog.actualStartTime,
+    workLog.actualEndTime,
+    salaryInfo,
+    allowances,
+    taxSettings
+  );
 }

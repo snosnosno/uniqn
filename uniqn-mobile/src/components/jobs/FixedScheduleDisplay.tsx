@@ -17,6 +17,8 @@ import { getRoleDisplayName } from '@/types/unified';
 interface RoleWithCount {
   role?: string;
   name?: string;
+  /** 커스텀 역할명 (role이 'other'일 때) */
+  customRole?: string;
   count: number;
   filled?: number;
 }
@@ -49,12 +51,12 @@ interface FixedScheduleDisplayProps {
 /**
  * 역할 라벨 가져오기 (v3.0: 통합 타입의 getRoleDisplayName 사용)
  */
-function getRoleLabel(role?: string, name?: string): string {
+function getRoleLabel(role?: string, name?: string, customRole?: string): string {
   if (role) {
-    return getRoleDisplayName(role);
+    return getRoleDisplayName(role, customRole);
   }
   if (name) {
-    return getRoleDisplayName(name);
+    return getRoleDisplayName(name, customRole);
   }
   return '-';
 }
@@ -94,7 +96,7 @@ const RoleDisplay = memo(function RoleDisplay({
   role: RoleWithCount;
   showFilledCount?: boolean;
 }) {
-  const label = getRoleLabel(role.role, role.name);
+  const label = getRoleLabel(role.role, role.name, role.customRole);
   const filled = role.filled ?? 0;
   const count = role.count ?? 0;
 
@@ -132,7 +134,7 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
     if (!roles || roles.length === 0) return '';
     return roles
       .map((r) => {
-        const label = getRoleLabel(r.role, r.name);
+        const label = getRoleLabel(r.role, r.name, r.customRole);
         return showFilledCount
           ? `${label} ${r.filled ?? 0}/${r.count}명`
           : `${label} ${r.count}명`;

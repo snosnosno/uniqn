@@ -178,17 +178,21 @@ export function sortDates(dates: string[]): string[] {
 }
 
 /**
- * 중복 역할 검사
+ * 중복 역할 검사 (커스텀 역할 지원)
  */
 export function isDuplicateRole(
-  existingRoles: Array<{ role: string }>,
+  existingRoles: { role: string; customRole?: string }[],
   newRole: string,
   currentIndex?: number
 ): boolean {
   return existingRoles.some((r, i) => {
     // 현재 인덱스는 제외
     if (currentIndex !== undefined && i === currentIndex) return false;
-    return r.role === newRole;
+    // 표준 역할 매칭
+    if (r.role === newRole) return true;
+    // 커스텀 역할 매칭: r.role이 'other'이고 customRole이 newRole과 일치
+    if (r.role === 'other' && r.customRole === newRole) return true;
+    return false;
   });
 }
 
@@ -297,26 +301,26 @@ export function generateId(): string {
  * ]
  */
 export function convertTournamentDatesToDateRequirements(
-  tournamentDates: Array<{
+  tournamentDates: {
     day: number;
     date: string;
     startTime: string;
-  }>
-): Array<{
+  }[]
+): {
   date: string;
-  timeSlots: Array<{
+  timeSlots: {
     id: string;
     startTime: string;
     isTimeToBeAnnounced: boolean;
     tentativeDescription?: string;
-    roles: Array<{
+    roles: {
       id: string;
       role: 'dealer';
       customRole?: string;
       headcount: number;
-    }>;
-  }>;
-}> {
+    }[];
+  }[];
+}[] {
   return tournamentDates.map((td) => ({
     date: td.date,
     timeSlots: [
@@ -348,17 +352,17 @@ export function convertTournamentDatesToDateRequirements(
  * - roles 정보는 유실됨 (레거시 필드에는 역할 정보 없음)
  */
 export function convertDateRequirementsToTournamentDates(
-  dateRequirements: Array<{
+  dateRequirements: {
     date: string | { seconds: number } | { toDate: () => Date };
-    timeSlots: Array<{
+    timeSlots: {
       startTime: string;
-    }>;
-  }>
-): Array<{
+    }[];
+  }[]
+): {
   day: number;
   date: string;
   startTime: string;
-}> {
+}[] {
   return dateRequirements.map((dr, index) => {
     // date 필드를 문자열로 변환
     let dateString: string;

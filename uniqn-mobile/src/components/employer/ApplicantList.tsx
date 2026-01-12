@@ -28,7 +28,6 @@ export interface ApplicantListProps {
   error?: Error | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  onApplicantPress?: (applicant: ApplicantWithDetails) => void;
   onConfirm?: (applicant: ApplicantWithDetails) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
   onWaitlist?: (applicant: ApplicantWithDetails) => void;
@@ -108,7 +107,6 @@ export function ApplicantList({
   error,
   onRefresh,
   isRefreshing,
-  onApplicantPress,
   onConfirm,
   onReject,
   onWaitlist,
@@ -140,7 +138,6 @@ export function ApplicantList({
       <View className="px-4 mb-3">
         <ApplicantCard
           applicant={item}
-          onPress={onApplicantPress}
           onConfirm={onConfirm}
           onReject={onReject}
           onWaitlist={onWaitlist}
@@ -148,7 +145,7 @@ export function ApplicantList({
         />
       </View>
     ),
-    [onApplicantPress, onConfirm, onReject, onWaitlist, onViewProfile]
+    [onConfirm, onReject, onWaitlist, onViewProfile]
   );
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);

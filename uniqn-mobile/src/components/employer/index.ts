@@ -28,6 +28,22 @@ export type { SettlementListProps } from './SettlementList';
 export { SettlementDetailModal } from './SettlementDetailModal';
 export type { SettlementDetailModalProps } from './SettlementDetailModal';
 
+export { SettlementEditModal } from './SettlementEditModal';
+export type { SettlementEditModalProps, SettlementEditData } from './SettlementEditModal';
+
+export { SettlementSettingsModal } from './SettlementSettingsModal';
+export type { SettlementSettingsModalProps, SettlementSettingsData } from './SettlementSettingsModal';
+
+// 정산 서브 컴포넌트
+export { SalaryTypeSelector } from './SalaryTypeSelector';
+export type { SalaryTypeSelectorProps } from './SalaryTypeSelector';
+
+export { AllowanceEditor } from './AllowanceEditor';
+export type { AllowanceEditorProps } from './AllowanceEditor';
+
+export { TaxSettingsEditor } from './TaxSettingsEditor';
+export type { TaxSettingsEditorProps, TaxSettings, TaxType } from './TaxSettingsEditor';
+
 // 시간 수정
 export { WorkTimeEditor } from './WorkTimeEditor';
 export type { WorkTimeEditorProps } from './WorkTimeEditor';

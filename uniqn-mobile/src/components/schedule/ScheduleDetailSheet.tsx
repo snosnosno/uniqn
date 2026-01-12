@@ -23,6 +23,7 @@ import {
 } from '@/components/icons';
 import { useCheckIn, useCheckOut, useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { formatCurrency } from '@/utils/settlement';
+import { getRoleDisplayName } from '@/types/unified';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
 
 // ============================================================================
@@ -203,7 +204,7 @@ export function ScheduleDetailSheet({
         <DetailRow
           icon={<BriefcaseIcon size={18} color="#6B7280" />}
           label="역할"
-          value={schedule.role}
+          value={getRoleDisplayName(schedule.role, schedule.customRole)}
         />
         {schedule.payrollAmount && schedule.payrollAmount > 0 && (
           <DetailRow

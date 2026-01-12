@@ -131,7 +131,11 @@ export function RoleChangeModal({
     if (availableRoles && availableRoles.length > 0) {
       return availableRoles;
     }
-    // 공고의 역할 정보에서 추출
+    // roleSalaries의 키 사용 (커스텀 역할명 포함)
+    if (jobPosting?.roleSalaries && Object.keys(jobPosting.roleSalaries).length > 0) {
+      return Object.keys(jobPosting.roleSalaries);
+    }
+    // 레거시: 공고의 역할 정보에서 추출
     if (jobPosting?.roles) {
       return jobPosting.roles.map((r) => r.role);
     }

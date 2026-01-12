@@ -52,7 +52,11 @@ interface ApplicantCardProps {
 // Helpers
 // ============================================================================
 
-const getRoleLabel = (role: string): string => {
+const getRoleLabel = (role: string, customRole?: string): string => {
+  // 커스텀 역할이면 customRole 사용
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
   const roleMap: Record<string, string> = {
     dealer: '딜러',
     manager: '매니저',
@@ -117,7 +121,7 @@ const getAssignmentsSummary = (assignments: Assignment[]): string => {
   const roles = [
     ...new Set(assignments.map((a) => a.roleIds[0] ?? '').filter(Boolean)),
   ];
-  const roleLabels = roles.map(getRoleLabel).join(', ');
+  const roleLabels = roles.map((r) => getRoleLabel(r)).join(', ');
 
   return `${roleLabels} / ${uniqueDates.size}일`;
 };
@@ -252,7 +256,7 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
             {formatDate(date)}
           </Text>
           <Text className="text-sm text-gray-500 dark:text-gray-400 flex-1">
-            {[...roles].map(getRoleLabel).join(', ')}
+            {[...roles].map((r) => getRoleLabel(r)).join(', ')}
           </Text>
           <Text className="text-xs text-gray-400 dark:text-gray-500">
             {[...timeSlots].join(', ')}
@@ -435,7 +439,7 @@ export const ApplicantCard = memo(function ApplicantCard({
   // 접근성 라벨
   const accessibilityLabel = `${application.applicantName}, ${
     APPLICATION_STATUS_LABELS[application.status]
-  }, ${getRoleLabel(application.appliedRole)}`;
+  }, ${getRoleLabel(application.appliedRole, application.customRole)}`;
 
   const CardContent = (
     <>

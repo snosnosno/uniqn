@@ -684,7 +684,14 @@ export function useApplicantManagement(jobPostingId: string) {
     }
 
     if (filters.role) {
-      result = result.filter((a) => a.appliedRole === filters.role);
+      // 커스텀 역할 지원: appliedRole이 'other'이면 customRole로 매칭
+      result = result.filter((a) => {
+        // 표준 역할 매칭
+        if (a.appliedRole === filters.role) return true;
+        // 커스텀 역할 매칭: appliedRole이 'other'이고 customRole이 filters.role과 일치
+        if ((a.appliedRole as string) === 'other' && a.customRole === filters.role) return true;
+        return false;
+      });
     }
 
     if (filters.sortBy) {

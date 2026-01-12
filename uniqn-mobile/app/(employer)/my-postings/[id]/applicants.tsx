@@ -87,13 +87,6 @@ export default function ApplicantsScreen() {
   const [profileApplicant, setProfileApplicant] = useState<ApplicantWithDetails | null>(null);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
-  // 지원자 클릭 - 상세 보기 (읽음 처리)
-  const handleApplicantPress = useCallback((applicant: ApplicantWithDetails) => {
-    if (!applicant.isRead) {
-      markAsRead(applicant.id);
-    }
-  }, [markAsRead]);
-
   // 프로필 상세보기
   const handleViewProfile = useCallback((applicant: ApplicantWithDetails) => {
     if (!applicant.isRead) {
@@ -212,7 +205,6 @@ export default function ApplicantsScreen() {
         error={error}
         onRefresh={() => refresh()}
         isRefreshing={false}
-        onApplicantPress={handleApplicantPress}
         onConfirm={handleConfirm}
         onReject={handleReject}
         onWaitlist={handleWaitlist}

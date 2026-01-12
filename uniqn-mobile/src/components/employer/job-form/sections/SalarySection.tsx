@@ -24,7 +24,10 @@ interface SalarySectionProps {
 
 /** 역할 정보 (추출된) */
 interface ExtractedRole {
-  name: string;
+  /** 역할 코드 (영어: 'dealer', 'floor' 등) - roleSalaries 키로 사용 */
+  key: string;
+  /** 표시용 이름 (한글: '딜러', '플로어' 등) - UI에 표시 */
+  displayName: string;
   count: number;
 }
 
@@ -68,8 +71,27 @@ const getRoleName = (role: string, customRole?: string): string => {
   if (role === 'other' && customRole) {
     return customRole;
   }
-  const staffRole = STAFF_ROLES.find((r) => r.key === role);
-  return staffRole?.name || role;
+  // 영어 코드로 찾기
+  const staffRoleByKey = STAFF_ROLES.find((r) => r.key === role);
+  if (staffRoleByKey) return staffRoleByKey.name;
+  // 한글명으로 찾기 (이미 한글인 경우)
+  const staffRoleByName = STAFF_ROLES.find((r) => r.name === role);
+  if (staffRoleByName) return staffRoleByName.name;
+  return role;
+};
+
+/**
+ * 한글 역할명 또는 영어 코드를 영어 코드로 변환
+ */
+const getRoleKey = (role: string): string => {
+  // 이미 영어 코드인 경우
+  const staffRoleByKey = STAFF_ROLES.find((r) => r.key === role);
+  if (staffRoleByKey) return staffRoleByKey.key;
+  // 한글명인 경우 영어 코드로 변환
+  const staffRoleByName = STAFF_ROLES.find((r) => r.name === role);
+  if (staffRoleByName) return staffRoleByName.key;
+  // 찾지 못하면 원래 값 반환 (커스텀 역할)
+  return role;
 };
 
 // ============================================================================
@@ -85,43 +107,57 @@ export const SalarySection = memo(function SalarySection({
   const extractedRoles = useMemo<ExtractedRole[]>(() => {
     // fixed 타입은 data.roles 사용
     if (data.postingType === 'fixed') {
-      return data.roles.map((r) => ({ name: r.name, count: r.count }));
+      return data.roles.map((r) => ({
+        key: getRoleKey(r.name), // 영어 코드 (저장용) - 한글명도 변환됨
+        displayName: getRoleName(r.name), // 한글명 (표시용)
+        count: r.count,
+      }));
     }
 
     // 다른 타입은 dateSpecificRequirements에서 추출
-    const roleMap = new Map<string, number>();
+    // key: 영어 코드, value: { displayName, count }
+    const roleMap = new Map<string, { displayName: string; count: number }>();
 
     data.dateSpecificRequirements?.forEach((dateReq) => {
       dateReq.timeSlots?.forEach((slot) => {
         slot.roles?.forEach((roleReq) => {
-          const roleKey = roleReq.role ?? roleReq.name ?? 'dealer';
-          const roleName = getRoleName(roleKey as string, roleReq.customRole);
-          const currentCount = roleMap.get(roleName) || 0;
+          const rawRole = (roleReq.role ?? roleReq.name ?? 'dealer') as string;
+          // 커스텀 역할이면 customRole을 키로 사용 (그래야 표시 시 올바른 이름이 나옴)
+          const roleKey = rawRole === 'other' && roleReq.customRole
+            ? roleReq.customRole
+            : rawRole;
+          // 한글 표시명
+          const displayName = getRoleName(rawRole, roleReq.customRole);
+          const existing = roleMap.get(roleKey);
           const headcount = roleReq.headcount ?? roleReq.count ?? 0;
           // 같은 역할이면 인원 합산
-          roleMap.set(roleName, currentCount + headcount);
+          roleMap.set(roleKey, {
+            displayName,
+            count: (existing?.count || 0) + headcount,
+          });
         });
       });
     });
 
-    return Array.from(roleMap.entries()).map(([name, count]) => ({
-      name,
+    return Array.from(roleMap.entries()).map(([key, { displayName, count }]) => ({
+      key,
+      displayName,
       count,
     }));
   }, [data.postingType, data.roles, data.dateSpecificRequirements]);
 
   // 역할 변경 시 roleSalaries 동기화 (추가/삭제)
   useEffect(() => {
-    const currentRoleNames = extractedRoles.map((r) => r.name);
-    const existingRoleNames = Object.keys(data.roleSalaries);
+    const currentRoleKeys = extractedRoles.map((r) => r.key);
+    const existingRoleKeys = Object.keys(data.roleSalaries);
 
     // 새로운 역할 찾기
-    const newRoles = currentRoleNames.filter(
-      (name) => !existingRoleNames.includes(name)
+    const newRoles = currentRoleKeys.filter(
+      (key) => !existingRoleKeys.includes(key)
     );
     // 삭제된 역할 찾기
-    const deletedRoles = existingRoleNames.filter(
-      (name) => !currentRoleNames.includes(name)
+    const deletedRoles = existingRoleKeys.filter(
+      (key) => !currentRoleKeys.includes(key)
     );
 
     // 변경이 있을 때만 업데이트
@@ -129,21 +165,21 @@ export const SalarySection = memo(function SalarySection({
       const updatedRoleSalaries = { ...data.roleSalaries };
 
       // 새로운 역할 추가 (시급 기본)
-      newRoles.forEach((name) => {
+      newRoles.forEach((key) => {
         // 전체 동일 급여 모드면 첫 역할 급여 복사
-        if (data.useSameSalary && existingRoleNames.length > 0) {
-          const firstSalary = data.roleSalaries[existingRoleNames[0]];
-          updatedRoleSalaries[name] = firstSalary
+        if (data.useSameSalary && existingRoleKeys.length > 0) {
+          const firstSalary = data.roleSalaries[existingRoleKeys[0]];
+          updatedRoleSalaries[key] = firstSalary
             ? { ...firstSalary }
             : { type: 'hourly', amount: 0 };
         } else {
-          updatedRoleSalaries[name] = { type: 'hourly', amount: 0 };
+          updatedRoleSalaries[key] = { type: 'hourly', amount: 0 };
         }
       });
 
       // 삭제된 역할 제거
-      deletedRoles.forEach((name) => {
-        delete updatedRoleSalaries[name];
+      deletedRoles.forEach((key) => {
+        delete updatedRoleSalaries[key];
       });
 
       onUpdate({ roleSalaries: updatedRoleSalaries });
@@ -158,11 +194,11 @@ export const SalarySection = memo(function SalarySection({
       if (value && extractedRoles.length > 0) {
         // ON: 첫 역할의 급여를 모든 역할에 복사
         const firstRole = extractedRoles[0];
-        const firstSalary = data.roleSalaries[firstRole.name];
+        const firstSalary = data.roleSalaries[firstRole.key];
         if (firstSalary) {
           const newRoleSalaries: Record<string, SalaryInfo> = {};
           extractedRoles.forEach((role) => {
-            newRoleSalaries[role.name] = { ...firstSalary };
+            newRoleSalaries[role.key] = { ...firstSalary };
           });
           onUpdate({ roleSalaries: newRoleSalaries });
         }
@@ -173,17 +209,17 @@ export const SalarySection = memo(function SalarySection({
 
   // 역할별 급여 타입 변경
   const handleRoleSalaryTypeChange = useCallback(
-    (roleName: string, type: SalaryType) => {
+    (roleKey: string, type: SalaryType) => {
       const newSalary: SalaryInfo = {
         type,
-        amount: type === 'other' ? 0 : data.roleSalaries[roleName]?.amount || 0,
+        amount: type === 'other' ? 0 : data.roleSalaries[roleKey]?.amount || 0,
       };
 
       if (data.useSameSalary) {
         // 전체 동일: 모든 역할에 적용
         const newRoleSalaries: Record<string, SalaryInfo> = {};
         extractedRoles.forEach((role) => {
-          newRoleSalaries[role.name] = { ...newSalary };
+          newRoleSalaries[role.key] = { ...newSalary };
         });
         onUpdate({ roleSalaries: newRoleSalaries });
       } else {
@@ -191,7 +227,7 @@ export const SalarySection = memo(function SalarySection({
         onUpdate({
           roleSalaries: {
             ...data.roleSalaries,
-            [roleName]: newSalary,
+            [roleKey]: newSalary,
           },
         });
       }
@@ -201,9 +237,9 @@ export const SalarySection = memo(function SalarySection({
 
   // 역할별 급여 금액 변경
   const handleRoleSalaryAmountChange = useCallback(
-    (roleName: string, value: string) => {
+    (roleKey: string, value: string) => {
       const amount = parseCurrency(value);
-      const currentSalary = data.roleSalaries[roleName];
+      const currentSalary = data.roleSalaries[roleKey];
       const newSalary: SalaryInfo = {
         type: currentSalary?.type || 'hourly',
         amount,
@@ -213,8 +249,8 @@ export const SalarySection = memo(function SalarySection({
         // 전체 동일: 모든 역할에 적용
         const newRoleSalaries: Record<string, SalaryInfo> = {};
         extractedRoles.forEach((role) => {
-          newRoleSalaries[role.name] = {
-            type: data.roleSalaries[role.name]?.type || 'hourly',
+          newRoleSalaries[role.key] = {
+            type: data.roleSalaries[role.key]?.type || 'hourly',
             amount,
           };
         });
@@ -224,7 +260,7 @@ export const SalarySection = memo(function SalarySection({
         onUpdate({
           roleSalaries: {
             ...data.roleSalaries,
-            [roleName]: newSalary,
+            [roleKey]: newSalary,
           },
         });
       }
@@ -285,7 +321,7 @@ export const SalarySection = memo(function SalarySection({
     let hasValidSalary = false;
 
     extractedRoles.forEach((role) => {
-      const roleSalary = data.roleSalaries[role.name];
+      const roleSalary = data.roleSalaries[role.key];
       if (roleSalary && roleSalary.type !== 'other' && roleSalary.amount > 0) {
         hasValidSalary = true;
         let roleTotal = roleSalary.amount * role.count;
@@ -332,7 +368,7 @@ export const SalarySection = memo(function SalarySection({
         )}
 
         {extractedRoles.map((role, index) => {
-          const roleSalary = data.roleSalaries[role.name];
+          const roleSalary = data.roleSalaries[role.key];
           const roleType = roleSalary?.type || 'hourly';
           const isOther = roleType === 'other';
           // 전체 동일 모드에서 첫 번째가 아닌 역할은 읽기 전용으로 표시
@@ -340,7 +376,7 @@ export const SalarySection = memo(function SalarySection({
 
           return (
             <View
-              key={role.name}
+              key={role.key}
               className={`mb-3 p-3 border rounded-lg ${
                 isReadOnly
                   ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50'
@@ -350,7 +386,7 @@ export const SalarySection = memo(function SalarySection({
               {/* 역할명 + 인원 */}
               <View className="flex-row items-center justify-between mb-2">
                 <Text className="font-medium text-gray-900 dark:text-white text-sm">
-                  {role.name}
+                  {role.displayName}
                 </Text>
                 <Text className="text-xs text-gray-500 dark:text-gray-400">
                   {role.count}명
@@ -366,7 +402,7 @@ export const SalarySection = memo(function SalarySection({
                       key={type.value}
                       onPress={() =>
                         !isReadOnly &&
-                        handleRoleSalaryTypeChange(role.name, type.value)
+                        handleRoleSalaryTypeChange(role.key, type.value)
                       }
                       disabled={isReadOnly}
                       className={`flex-1 py-1.5 rounded-md ${
@@ -410,7 +446,7 @@ export const SalarySection = memo(function SalarySection({
                         : ''
                     }
                     onChangeText={(v) =>
-                      handleRoleSalaryAmountChange(role.name, v)
+                      handleRoleSalaryAmountChange(role.key, v)
                     }
                     keyboardType="numeric"
                     editable={!isReadOnly}

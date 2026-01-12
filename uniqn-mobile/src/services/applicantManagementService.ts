@@ -463,10 +463,13 @@ export async function getApplicantStatsByRole(
     const statsByRole: Record<string, ApplicationStats> = {};
 
     applicants.forEach((app) => {
-      const role = app.appliedRole;
+      // 커스텀 역할 지원: appliedRole이 'other'이면 customRole을 키로 사용
+      const effectiveRole = (app.appliedRole as string) === 'other' && app.customRole
+        ? app.customRole
+        : app.appliedRole;
 
-      if (!statsByRole[role]) {
-        statsByRole[role] = {
+      if (!statsByRole[effectiveRole]) {
+        statsByRole[effectiveRole] = {
           total: 0,
           applied: 0,
           pending: 0,
@@ -477,10 +480,10 @@ export async function getApplicantStatsByRole(
         };
       }
 
-      statsByRole[role].total++;
+      statsByRole[effectiveRole].total++;
       const statusKey = app.status as keyof ApplicationStats;
-      if (statusKey in statsByRole[role] && statusKey !== 'total') {
-        statsByRole[role][statusKey]++;
+      if (statusKey in statsByRole[effectiveRole] && statusKey !== 'total') {
+        statsByRole[effectiveRole][statusKey]++;
       }
     });
 

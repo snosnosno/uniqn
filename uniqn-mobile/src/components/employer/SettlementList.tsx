@@ -16,6 +16,7 @@ import { Card } from '../ui/Card';
 import {
   BanknotesIcon,
   CheckIcon,
+  SettingsIcon,
 } from '../icons';
 import {
   type SalaryType,
@@ -49,6 +50,8 @@ export interface SettlementListProps {
   onSettle?: (workLog: WorkLog) => void;
   onBulkSettle?: (workLogs: WorkLog[]) => void;
   showBulkActions?: boolean;
+  /** 설정 모달 열기 콜백 */
+  onOpenSettings?: () => void;
 }
 
 type FilterStatus = 'all' | PayrollStatus;
@@ -73,6 +76,7 @@ interface SummaryCardProps {
   completedCount: number;
   totalAmount: number;
   pendingAmount: number;
+  onOpenSettings?: () => void;
 }
 
 function SummaryCard({
@@ -81,6 +85,7 @@ function SummaryCard({
   completedCount,
   totalAmount,
   pendingAmount,
+  onOpenSettings,
 }: SummaryCardProps) {
   return (
     <Card variant="filled" padding="md" className="mb-4 mx-4">
@@ -88,9 +93,22 @@ function SummaryCard({
         <Text className="text-base font-semibold text-gray-900 dark:text-white">
           정산 현황
         </Text>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          총 {totalCount}건
-        </Text>
+        <View className="flex-row items-center">
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">
+            총 {totalCount}건
+          </Text>
+          {onOpenSettings && (
+            <Pressable
+              onPress={onOpenSettings}
+              hitSlop={8}
+              className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+              accessibilityLabel="정산 설정"
+              accessibilityRole="button"
+            >
+              <SettingsIcon size={18} color="#6B7280" />
+            </Pressable>
+          )}
+        </View>
       </View>
 
       <View className="flex-row justify-between mb-2">
@@ -249,6 +267,7 @@ export function SettlementList({
   onSettle,
   onBulkSettle,
   showBulkActions = false,
+  onOpenSettings,
 }: SettlementListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [selectionMode, setSelectionMode] = useState(false);
@@ -337,8 +356,8 @@ export function SettlementList({
 
   // 렌더 아이템
   const renderItem = useCallback(
-    ({ item }: { item: WorkLog }) => {
-      const salaryInfo = getRoleSalaryInfo(item.role, roleSalaries);
+    ({ item }: { item: WorkLog & { customRole?: string } }) => {
+      const salaryInfo = getRoleSalaryInfo(item.role, roleSalaries, undefined, item.customRole);
       return (
         <View className="px-4 mb-3">
           <SettlementCard
@@ -396,7 +415,7 @@ export function SettlementList({
   return (
     <View className="flex-1">
       {/* 요약 카드 */}
-      <SummaryCard {...summaryInfo} />
+      <SummaryCard {...summaryInfo} onOpenSettings={onOpenSettings} />
 
       {/* 필터 탭 */}
       <FilterTabs

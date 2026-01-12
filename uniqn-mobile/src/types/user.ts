@@ -103,11 +103,12 @@ export type FirestoreUserProfile = UserProfile<Timestamp>;
  * 프로필 수정 가능 필드
  *
  * @description profile.tsx에서 수정 가능한 필드
- * @note name, phone은 본인인증 정보라 수정 불가
+ * @note name은 Firebase Auth displayName 동기화용 (특수 케이스에서만 사용)
+ * @note phone은 본인인증 정보라 수정 불가
  */
 export type EditableProfileFields = Pick<
   UserProfile,
-  'nickname' | 'photoURL' | 'gender' | 'birthYear' | 'region' | 'experienceYears' | 'career' | 'note'
+  'name' | 'nickname' | 'photoURL' | 'gender' | 'birthYear' | 'region' | 'experienceYears' | 'career' | 'note'
 >;
 
 /**

@@ -260,7 +260,7 @@ export async function updateUserProfile(
 
       // photoURL이 변경되면 Firebase Auth도 업데이트
       if ('photoURL' in updates) {
-        authUpdates.photoURL = updates.photoURL || null;
+        authUpdates.photoURL = updates.photoURL ?? undefined;
       }
 
       if (Object.keys(authUpdates).length > 0) {

@@ -33,7 +33,11 @@ interface CancellationRequestFormProps {
 // Helpers
 // ============================================================================
 
-const getRoleLabel = (role: string): string => {
+const getRoleLabel = (role: string, customRole?: string): string => {
+  // 커스텀 역할이면 customRole 사용
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
   switch (role) {
     case 'dealer':
       return '딜러';
@@ -130,7 +134,7 @@ export function CancellationRequestForm({
             </View>
             <View className="flex-row items-center">
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                👤 {getRoleLabel(application.appliedRole)} 역할
+                👤 {getRoleLabel(application.appliedRole, application.customRole)} 역할
               </Text>
             </View>
           </View>

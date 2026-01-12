@@ -118,6 +118,7 @@ function workLogToScheduleEvent(
     eventName: jobPosting?.title || '이벤트',
     location: jobPosting?.location || '',
     role: workLog.role,
+    customRole: workLog.customRole,
     status:
       workLog.status === 'checked_in'
         ? 'checked_in'

@@ -16,6 +16,7 @@ import type {
   Allowances,
   CardRole,
 } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -270,7 +271,7 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
                 key={idx}
                 className="text-sm text-gray-900 dark:text-white"
               >
-                💰 {role}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
+                💰 {getRoleDisplayName(role)}: {salary.type === 'other' ? '협의' : formatSalary(salary.type, salary.amount)}
               </Text>
             ))
           ) : (

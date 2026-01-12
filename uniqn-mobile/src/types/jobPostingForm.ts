@@ -13,6 +13,7 @@ import type {
   PreQuestion,
 } from './index';
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
+import { STAFF_ROLES } from '@/constants';
 
 // ============================================================================
 // 공고 타입별 설정
@@ -298,10 +299,14 @@ export function validateStep(
 
     case 4: // 급여 (역할별 급여가 기본)
       data.roles.forEach((role) => {
-        const roleSalary = data.roleSalaries[role.name];
+        // 한글명을 영어 코드로 변환해서 조회
+        const staffRole = STAFF_ROLES.find((sr) => sr.name === role.name || sr.key === role.name);
+        const roleKey = staffRole?.key || role.name;
+        const displayName = staffRole?.name || role.name;
+        const roleSalary = data.roleSalaries[roleKey];
         // 협의(other)가 아닌 경우 금액 필수
         if (roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0)) {
-          errors.push(`${role.name}: 급여를 입력해주세요`);
+          errors.push(`${displayName}: 급여를 입력해주세요`);
         }
       });
       break;

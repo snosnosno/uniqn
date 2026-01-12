@@ -2,10 +2,10 @@
  * UNIQN Mobile - Jobs Screen
  * 구인구직 메인 화면 (탭 홈)
  *
- * @version 2.1.0 - 공고 타입 칩 필터 + 날짜 슬라이더 추가
+ * @version 2.2.0 - 공고가 있는 탭으로 자동 이동 기능 추가
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -13,13 +13,33 @@ import { format } from 'date-fns';
 import { BellIcon, QrCodeIcon } from '@/components/icons';
 import { JobList, PostingTypeChips, DateSlider } from '@/components/jobs';
 import { useJobPostings } from '@/hooks/useJobPostings';
+import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
 import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import type { PostingType, JobPostingFilters } from '@/types';
 
 export default function JobsScreen() {
-  // 필터 상태 (기본: 긴급)
-  const [selectedType, setSelectedType] = useState<PostingType | null>('urgent');
+  // 필터 상태 (기본: null, 자동 선택 후 설정됨)
+  const [selectedType, setSelectedType] = useState<PostingType | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
+
+  // 자동 탭 선택이 완료되었는지 추적
+  const hasAutoSelected = useRef(false);
+
+  // 타입별 공고 존재 여부 확인
+  const { firstAvailableType, isLoading: isLoadingTypeCounts } = usePostingTypeCounts();
+
+  // 첫 로드 시 공고가 있는 탭으로 자동 이동
+  // 우선순위: 긴급 → 대회 → 지원 → 고정
+  useEffect(() => {
+    if (!hasAutoSelected.current && !isLoadingTypeCounts && firstAvailableType) {
+      setSelectedType(firstAvailableType);
+      hasAutoSelected.current = true;
+    } else if (!hasAutoSelected.current && !isLoadingTypeCounts && !firstAvailableType) {
+      // 모든 타입에 공고가 없으면 기본값 'urgent' 설정
+      setSelectedType('urgent');
+      hasAutoSelected.current = true;
+    }
+  }, [firstAvailableType, isLoadingTypeCounts]);
 
   // 필터 조건 구성
   const filters = useMemo<JobPostingFilters>(() => {
@@ -37,7 +57,7 @@ export default function JobsScreen() {
     return result;
   }, [selectedType, selectedDate]);
 
-  // 구인공고 목록 훅 (필터 적용)
+  // 구인공고 목록 훅 (필터 적용, 타입 선택 전까지 비활성화)
   const {
     jobs,
     isLoading,
@@ -46,7 +66,10 @@ export default function JobsScreen() {
     hasMore,
     refresh,
     loadMore,
-  } = useJobPostings({ filters });
+  } = useJobPostings({
+    filters,
+    enabled: selectedType !== null, // 타입 선택 전까지 쿼리 비활성화
+  });
 
   // 읽지 않은 알림 수 (실시간)
   const unreadCount = useUnreadCountRealtime();
@@ -113,7 +136,7 @@ export default function JobsScreen() {
       {/* 공고 목록 - JobCard 사용 */}
       <JobList
         jobs={jobs}
-        isLoading={isLoading}
+        isLoading={isLoading || isLoadingTypeCounts || selectedType === null}
         isRefreshing={isRefreshing}
         isFetchingMore={isFetchingMore}
         hasMore={hasMore}

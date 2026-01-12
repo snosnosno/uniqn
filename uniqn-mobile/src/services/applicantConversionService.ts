@@ -22,6 +22,21 @@ import { logger } from '@/utils/logger';
 import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
 import type { Application, Staff, JobPosting } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
+import { STAFF_ROLES } from '@/constants';
+
+// 표준 역할 키 목록 (other 제외)
+const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
+
+/**
+ * 역할이 표준 역할인지 확인하고, 커스텀 역할이면 { role: 'other', customRole } 반환
+ */
+function normalizeRole(roleValue: string): { role: string; customRole?: string } {
+  if (STANDARD_ROLE_KEYS.includes(roleValue)) {
+    return { role: roleValue };
+  }
+  // 커스텀 역할
+  return { role: 'other', customRole: roleValue };
+}
 
 // ============================================================================
 // Constants
@@ -185,7 +200,8 @@ export async function convertApplicantToStaff(
 
         if (isFixedOrLegacy) {
           // 단일 WorkLog 생성 (고정공고/레거시)
-          const role = assignments[0]?.roleIds?.[0] ?? applicationData.appliedRole;
+          const rawRole = assignments[0]?.roleIds?.[0] ?? applicationData.appliedRole;
+          const { role, customRole } = normalizeRole(rawRole);
           const workLogRef = doc(workLogsRef);
           const workLogData = {
             staffId: applicationData.applicantId,
@@ -195,6 +211,7 @@ export async function convertApplicantToStaff(
             eventId,
             eventName: jobData.title,
             role,
+            customRole: customRole ?? null,
             date: null, // 고정공고는 날짜 없음
             timeSlot: null, // 고정공고는 시간 협의
             isFixedPosting: true, // 고정공고 플래그
@@ -215,8 +232,9 @@ export async function convertApplicantToStaff(
         } else {
           // Assignment별 WorkLog 생성 (일반 공고)
           for (const assignment of assignments) {
-            // v3.0: roleIds 사용
-            const role = assignment.roleIds[0] ?? applicationData.appliedRole;
+            // v3.0: roleIds 사용 (커스텀 역할 지원)
+            const rawRole = assignment.roleIds[0] ?? applicationData.appliedRole;
+            const { role, customRole } = normalizeRole(rawRole);
 
             for (const date of assignment.dates) {
               const workLogRef = doc(workLogsRef);
@@ -228,6 +246,7 @@ export async function convertApplicantToStaff(
                 eventId,
                 eventName: jobData.title,
                 role,
+                customRole: customRole ?? null,
                 date,
                 timeSlot: assignment.timeSlot,
                 // 미정 시간 정보

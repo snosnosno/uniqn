@@ -165,36 +165,43 @@ function validateSalary(data: JobPostingFormData): Record<string, string> {
   const errors: Record<string, string> = {};
 
   // SalarySection과 동일한 로직으로 역할 추출
-  let roleNames: string[] = [];
+  // key: 영어 코드 (roleSalaries 조회용), displayName: 한글명 (에러 표시용)
+  const roleInfoMap = new Map<string, string>();
 
   if (data.postingType === 'fixed') {
     // fixed 타입: data.roles 사용
-    roleNames = data.roles.map((r) => r.name);
+    data.roles.forEach((r) => {
+      const staffRole = STAFF_ROLES.find((sr) => sr.name === r.name || sr.key === r.name);
+      const key = staffRole?.key || r.name;
+      const displayName = staffRole?.name || r.name;
+      roleInfoMap.set(key, displayName);
+    });
   } else {
     // 다른 타입: dateSpecificRequirements에서 역할 추출
-    const roleSet = new Set<string>();
     data.dateSpecificRequirements?.forEach((dateReq) => {
       dateReq.timeSlots?.forEach((slot) => {
         slot.roles?.forEach((roleReq) => {
-          const roleKey = roleReq.role ?? roleReq.name ?? 'dealer';
-          // 역할 코드를 한글 이름으로 변환
-          if (roleKey === 'other' && roleReq.customRole) {
-            roleSet.add(roleReq.customRole);
+          const rawRole = roleReq.role ?? roleReq.name ?? 'dealer';
+          // 커스텀 역할이면 customRole을 키로 사용
+          if (rawRole === 'other' && roleReq.customRole) {
+            roleInfoMap.set(roleReq.customRole, roleReq.customRole);
           } else {
-            const staffRole = STAFF_ROLES.find((r) => r.key === roleKey);
-            roleSet.add(staffRole?.name || roleKey);
+            const staffRole = STAFF_ROLES.find((r) => r.key === rawRole);
+            roleInfoMap.set(rawRole, staffRole?.name || rawRole);
           }
         });
       });
     });
-    roleNames = Array.from(roleSet);
   }
 
-  // 역할별 급여 검증
-  const rolesWithoutSalary = roleNames.filter((name) => {
-    const roleSalary = data.roleSalaries[name];
+  // 역할별 급여 검증 (영어 key로 조회, 한글 displayName으로 에러 표시)
+  const rolesWithoutSalary: string[] = [];
+  roleInfoMap.forEach((displayName, key) => {
+    const roleSalary = data.roleSalaries[key];
     // 협의(other)가 아닌 경우 금액 필수
-    return roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0);
+    if (roleSalary?.type !== 'other' && (!roleSalary || roleSalary.amount <= 0)) {
+      rolesWithoutSalary.push(displayName);
+    }
   });
 
   if (rolesWithoutSalary.length > 0) {

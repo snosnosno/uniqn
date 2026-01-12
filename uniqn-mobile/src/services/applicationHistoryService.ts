@@ -162,10 +162,13 @@ export function updateDateSpecificRequirementsFilled(
         continue;
       }
 
-      // 해당 역할 찾기
+      // 해당 역할 찾기 (커스텀 역할 지원)
       const roleReq = timeSlot.roles.find((r) => {
         const roleName = r.role ?? (r as { name?: string }).name;
-        return roleName === assignmentRole;
+        if (roleName === assignmentRole) return true;
+        // 커스텀 역할 체크: role이 'other'이고 customRole이 assignmentRole과 일치
+        if (r.role === 'other' && r.customRole === assignmentRole) return true;
+        return false;
       });
 
       if (!roleReq) {
@@ -385,9 +388,14 @@ export async function confirmApplicationWithHistory(
 
       // 9. 공고 filledPositions 업데이트
       const updatedRoles = jobData.roles.map((r) => {
-        // v3.0: roleIds 사용
+        // v3.0: roleIds 사용 (커스텀 역할 지원)
+        // r.role이 'other'이면 customRole로 매칭
+        const roleWithCustom = r as typeof r & { customRole?: string };
+        const effectiveRole = (r.role as string) === 'other' && roleWithCustom.customRole
+          ? roleWithCustom.customRole
+          : r.role;
         const roleAssignments = assignmentsToConfirm.filter(
-          (a) => a.roleIds.includes(r.role)
+          (a) => a.roleIds.includes(effectiveRole)
         );
         const addedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: r.filled + addedCount };
@@ -529,9 +537,14 @@ export async function cancelConfirmation(
 
       // 5. 공고 filledPositions 감소
       const updatedRoles = jobData.roles.map((r) => {
-        // v3.0: roleIds 사용
+        // v3.0: roleIds 사용 (커스텀 역할 지원)
+        // r.role이 'other'이면 customRole로 매칭
+        const roleWithCustom = r as typeof r & { customRole?: string };
+        const effectiveRole = (r.role as string) === 'other' && roleWithCustom.customRole
+          ? roleWithCustom.customRole
+          : r.role;
         const roleAssignments = cancelledAssignments.filter(
-          (a) => a.roleIds.includes(r.role)
+          (a) => a.roleIds.includes(effectiveRole)
         );
         const removedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: Math.max(0, r.filled - removedCount) };
