@@ -2,7 +2,7 @@
  * UNIQN Mobile - 정산 관리 서비스 (구인자용)
  *
  * @description 근무 기록 조회, 시간 수정, 정산 처리 서비스
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import {
@@ -20,6 +20,11 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
+import {
+  type SalaryInfo as UtilitySalaryInfo,
+  calculateHoursWorked as utilCalculateHoursWorked,
+  calculatePayByType as utilCalculatePayByType,
+} from '@/utils/settlement';
 import type {
   WorkLog,
   PayrollStatus,
@@ -52,9 +57,6 @@ export interface SettlementWorkLog extends WorkLog {
  */
 export interface CalculateSettlementInput {
   workLogId: string;
-  hourlyRate?: number; // 시급 (미입력 시 역할 기본 시급 사용)
-  overtimeRate?: number; // 초과근무 배율 (기본 1.5)
-  overtimeThreshold?: number; // 초과근무 기준 시간 (기본 8시간)
   deductions?: number; // 공제액
 }
 
@@ -63,10 +65,8 @@ export interface CalculateSettlementInput {
  */
 export interface SettlementCalculation {
   workLogId: string;
-  regularHours: number;
-  overtimeHours: number;
-  regularPay: number;
-  overtimePay: number;
+  salaryType: 'hourly' | 'daily' | 'monthly' | 'other';
+  hoursWorked: number;
   grossPay: number;
   deductions: number;
   netPay: number;
@@ -161,23 +161,16 @@ export interface SettlementFilters {
 // ============================================================================
 
 /**
- * 근무 시간 계산 (시간 단위)
+ * 근무 시간 계산 (시간 단위) - 유틸리티 래퍼
  */
 function calculateHoursWorked(
   startTime: Timestamp | string | Date | null | undefined,
   endTime: Timestamp | string | Date | null | undefined
 ): number {
-  if (!startTime || !endTime) return 0;
-
-  const start = startTime instanceof Timestamp
-    ? startTime.toDate()
-    : new Date(startTime);
-  const end = endTime instanceof Timestamp
-    ? endTime.toDate()
-    : new Date(endTime);
-
-  const diffMs = end.getTime() - start.getTime();
-  return Math.max(0, diffMs / (1000 * 60 * 60));
+  // Timestamp를 Date로 변환
+  const start = startTime instanceof Timestamp ? startTime.toDate() : startTime;
+  const end = endTime instanceof Timestamp ? endTime.toDate() : endTime;
+  return utilCalculateHoursWorked(start, end);
 }
 
 /**
@@ -256,9 +249,9 @@ export async function getWorkLogsByJobPosting(
     workLogs = workLogs.map((wl) => {
       const hoursWorked = calculateHoursWorked(wl.actualStartTime, wl.actualEndTime);
 
-      // 역할별 시급 찾기
-      const hourlyRate = getRoleHourlyRate(jobPosting, wl.role);
-      const calculatedAmount = Math.round(hoursWorked * hourlyRate);
+      // 급여 타입별 계산
+      const salaryInfo = getRoleSalaryInfo(jobPosting, wl.role);
+      const calculatedAmount = calculatePayByType(salaryInfo, hoursWorked);
 
       return {
         ...wl,
@@ -280,49 +273,42 @@ export async function getWorkLogsByJobPosting(
 }
 
 /**
- * 역할별 시급 조회 헬퍼
- * v2.0: 역할별 급여가 기본이므로 roleSalaries 우선 확인
+ * 역할별 급여 정보 조회 헬퍼
+ * @returns 급여 타입과 금액
  */
-function getRoleHourlyRate(jobPosting: JobPosting, role: string): number {
-  // 1. 역할별 급여 확인 (기본)
-  const roleSalaries = jobPosting.roleSalaries || jobPosting.salary.roleSalaries;
-  if (roleSalaries) {
-    const roleSalary = roleSalaries[role];
+function getRoleSalaryInfo(jobPosting: JobPosting, role: string): UtilitySalaryInfo {
+  // 역할별 급여 확인
+  if (jobPosting.roleSalaries) {
+    const roleSalary = jobPosting.roleSalaries[role];
     if (roleSalary && roleSalary.type !== 'other') {
-      // 역할별 타입에 따라 시급 환산
-      if (roleSalary.type === 'hourly') {
-        return roleSalary.amount;
-      }
-      if (roleSalary.type === 'daily') {
-        return Math.round(roleSalary.amount / 8);
-      }
-      if (roleSalary.type === 'monthly') {
-        // 월급: 월 22일, 일 8시간 기준
-        return Math.round(roleSalary.amount / 22 / 8);
-      }
+      return {
+        type: roleSalary.type,
+        amount: roleSalary.amount,
+      };
     }
   }
 
-  // 2. 기본 급여 fallback (레거시 호환)
-  if (jobPosting.salary.type === 'hourly') {
-    return jobPosting.salary.amount;
-  }
+  // 기본 급여 fallback
+  return {
+    type: jobPosting.salary.type as UtilitySalaryInfo['type'],
+    amount: jobPosting.salary.amount,
+  };
+}
 
-  if (jobPosting.salary.type === 'daily') {
-    return Math.round(jobPosting.salary.amount / 8);
-  }
-
-  if (jobPosting.salary.type === 'monthly') {
-    return Math.round(jobPosting.salary.amount / 22 / 8);
-  }
-
-  return 0;
+/**
+ * 급여 타입별 정산 금액 계산 - 유틸리티 래퍼
+ */
+function calculatePayByType(salaryInfo: UtilitySalaryInfo, hoursWorked: number): number {
+  return utilCalculatePayByType(salaryInfo, hoursWorked);
 }
 
 /**
  * 정산 금액 계산
  *
- * @description 근무 시간 기반 정산 금액 계산 (초과근무 포함)
+ * @description 급여 타입별 정산 금액 계산
+ * - 시급: 근무시간 × 시급
+ * - 일급: 일급 전액 (출근 시)
+ * - 월급: 월급 ÷ 22일 (일할 계산)
  */
 export async function calculateSettlement(
   input: CalculateSettlementInput,
@@ -356,38 +342,26 @@ export async function calculateSettlement(
     }
 
     // 3. 근무 시간 계산
-    const totalHours = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-    const overtimeThreshold = input.overtimeThreshold ?? 8;
-    const overtimeRate = input.overtimeRate ?? 1.5;
+    const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
 
-    const regularHours = Math.min(totalHours, overtimeThreshold);
-    const overtimeHours = Math.max(0, totalHours - overtimeThreshold);
+    // 4. 급여 정보 조회
+    const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role);
 
-    // 4. 시급 결정
-    let hourlyRate = input.hourlyRate;
-    if (!hourlyRate) {
-      hourlyRate = getRoleHourlyRate(jobPosting, workLog.role);
-    }
-
-    // 5. 금액 계산
-    const regularPay = Math.round(regularHours * hourlyRate);
-    const overtimePay = Math.round(overtimeHours * hourlyRate * overtimeRate);
-    const grossPay = regularPay + overtimePay;
+    // 5. 타입별 금액 계산
+    const grossPay = calculatePayByType(salaryInfo, hoursWorked);
     const deductions = input.deductions ?? 0;
     const netPay = grossPay - deductions;
 
     const result: SettlementCalculation = {
       workLogId: input.workLogId,
-      regularHours: Math.round(regularHours * 100) / 100,
-      overtimeHours: Math.round(overtimeHours * 100) / 100,
-      regularPay,
-      overtimePay,
+      salaryType: salaryInfo.type,
+      hoursWorked: Math.round(hoursWorked * 100) / 100,
       grossPay,
       deductions,
       netPay,
     };
 
-    logger.info('정산 금액 계산 완료', { workLogId: input.workLogId, netPay });
+    logger.info('정산 금액 계산 완료', { workLogId: input.workLogId, netPay, salaryType: salaryInfo.type });
 
     return result;
   } catch (error) {
@@ -682,10 +656,10 @@ export async function bulkSettlement(
             continue;
           }
 
-          // 정산 금액 계산
+          // 정산 금액 계산 (급여 타입별)
           const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-          const hourlyRate = getRoleHourlyRate(jobPosting, workLog.role);
-          const amount = Math.round(hoursWorked * hourlyRate);
+          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role);
+          const amount = calculatePayByType(salaryInfo, hoursWorked);
 
           // 정산 처리
           transaction.update(ref, {
@@ -864,10 +838,10 @@ export async function getJobPostingSettlementSummary(
           workLogsByRole[workLog.role].completedAmount += amount;
         } else {
           pendingSettlement++;
-          // 미정산인 경우 예상 금액 계산
+          // 미정산인 경우 예상 금액 계산 (급여 타입별)
           const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-          const hourlyRate = getRoleHourlyRate(jobPosting, workLog.role);
-          const estimatedAmount = Math.round(hoursWorked * hourlyRate);
+          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role);
+          const estimatedAmount = calculatePayByType(salaryInfo, hoursWorked);
 
           totalPendingAmount += amount > 0 ? amount : estimatedAmount;
           workLogsByRole[workLog.role].pendingAmount += amount > 0 ? amount : estimatedAmount;

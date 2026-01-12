@@ -2,7 +2,7 @@
  * UNIQN Mobile - 정산 카드 컴포넌트 (간소화 버전)
  *
  * @description 스태프 프로필 + 정산 상태 + 총 금액 표시
- * @version 3.0.0
+ * @version 3.1.0
  */
 
 import React, { useMemo, useCallback } from 'react';
@@ -16,8 +16,19 @@ import {
   ChevronRightIcon,
 } from '../icons';
 import { getUserProfile } from '@/services';
+import {
+  type SalaryType,
+  type SalaryInfo,
+  type Allowances,
+  parseTimestamp,
+  calculateSettlementFromWorkLog,
+  formatCurrency,
+} from '@/utils/settlement';
 import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus } from '@/types';
+
+// Re-export types for backward compatibility
+export type { SalaryType, SalaryInfo };
 
 // ============================================================================
 // Types
@@ -25,17 +36,10 @@ import type { WorkLog, PayrollStatus } from '@/types';
 
 export interface SettlementCardProps {
   workLog: WorkLog;
-  hourlyRate: number;
+  salaryInfo: SalaryInfo;
+  allowances?: Allowances;
   onPress?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
-}
-
-interface SettlementCalculation {
-  regularHours: number;
-  overtimeHours: number;
-  regularPay: number;
-  overtimePay: number;
-  totalPay: number;
 }
 
 // ============================================================================
@@ -51,9 +55,6 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
   completed: { label: '정산완료', variant: 'success' },
 };
 
-const REGULAR_HOURS = 8;
-const OVERTIME_RATE = 1.5;
-
 const ROLE_LABELS: Record<string, string> = {
   dealer: '딜러',
   floor: '플로어',
@@ -66,52 +67,6 @@ const ROLE_LABELS: Record<string, string> = {
 // Helpers
 // ============================================================================
 
-function parseTimestamp(value: unknown): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
-}
-
-function calculateSettlement(workLog: WorkLog, hourlyRate: number): SettlementCalculation {
-  const startTime = parseTimestamp(workLog.actualStartTime);
-  const endTime = parseTimestamp(workLog.actualEndTime);
-
-  if (!startTime || !endTime) {
-    return {
-      regularHours: 0,
-      overtimeHours: 0,
-      regularPay: 0,
-      overtimePay: 0,
-      totalPay: 0,
-    };
-  }
-
-  const totalMinutes = Math.max(0, (endTime.getTime() - startTime.getTime()) / (1000 * 60));
-  const totalHours = totalMinutes / 60;
-
-  const regularHours = Math.min(totalHours, REGULAR_HOURS);
-  const overtimeHours = Math.max(0, totalHours - REGULAR_HOURS);
-
-  const regularPay = Math.round(regularHours * hourlyRate);
-  const overtimePay = Math.round(overtimeHours * hourlyRate * OVERTIME_RATE);
-
-  return {
-    regularHours: Math.round(regularHours * 100) / 100,
-    overtimeHours: Math.round(overtimeHours * 100) / 100,
-    regularPay,
-    overtimePay,
-    totalPay: regularPay + overtimePay,
-  };
-}
-
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString('ko-KR') + '원';
-}
-
 function getRoleLabel(role: string | undefined): string {
   if (!role) return '역할 없음';
   return ROLE_LABELS[role] || role;
@@ -123,7 +78,8 @@ function getRoleLabel(role: string | undefined): string {
 
 export const SettlementCard = React.memo(function SettlementCard({
   workLog,
-  hourlyRate,
+  salaryInfo,
+  allowances,
   onPress,
   onSettle,
 }: SettlementCardProps) {
@@ -146,10 +102,10 @@ export const SettlementCard = React.memo(function SettlementCard({
       : baseName;
   }, [baseName, userProfile?.nickname, workLog.staffId, (workLog as WorkLog & { staffNickname?: string }).staffNickname]);
 
-  // 정산 계산
+  // 정산 계산 (수당 포함)
   const settlement = useMemo(() =>
-    calculateSettlement(workLog, hourlyRate),
-    [workLog, hourlyRate]
+    calculateSettlementFromWorkLog(workLog, salaryInfo, allowances),
+    [workLog, salaryInfo, allowances]
   );
 
   const payrollStatus = (workLog.payrollStatus || 'pending') as PayrollStatus;

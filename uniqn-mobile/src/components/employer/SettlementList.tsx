@@ -2,7 +2,7 @@
  * UNIQN Mobile - 정산 목록 컴포넌트
  *
  * @description FlashList 기반 정산 목록 (필터링, 일괄 정산)
- * @version 1.0.0
+ * @version 2.1.0
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
@@ -15,11 +15,21 @@ import { ErrorState } from '../ui/ErrorState';
 import { Card } from '../ui/Card';
 import {
   BanknotesIcon,
-  
   CheckIcon,
-  
 } from '../icons';
+import {
+  type SalaryType,
+  type SalaryInfo,
+  type RoleSalaries,
+  type Allowances,
+  getRoleSalaryInfo,
+  calculateTotalSettlement,
+  formatCurrency,
+} from '@/utils/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
+
+// Re-export types for backward compatibility
+export type { SalaryType, SalaryInfo, RoleSalaries };
 
 // ============================================================================
 // Types
@@ -27,7 +37,10 @@ import type { WorkLog, PayrollStatus } from '@/types';
 
 export interface SettlementListProps {
   workLogs: WorkLog[];
-  hourlyRate: number;
+  /** 역할별 급여 설정 */
+  roleSalaries: RoleSalaries;
+  /** 수당 정보 */
+  allowances?: Allowances;
   isLoading?: boolean;
   error?: Error | null;
   onRefresh?: () => void;
@@ -49,46 +62,6 @@ const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
   { value: 'pending', label: '미정산' },
   { value: 'completed', label: '완료' },
 ];
-
-const REGULAR_HOURS = 8;
-const OVERTIME_RATE = 1.5;
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function parseTimestamp(value: unknown): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
-}
-
-function calculateTotalAmount(workLogs: WorkLog[], hourlyRate: number): number {
-  return workLogs.reduce((total, log) => {
-    const startTime = parseTimestamp(log.actualStartTime);
-    const endTime = parseTimestamp(log.actualEndTime);
-
-    if (!startTime || !endTime) return total;
-
-    const totalMinutes = Math.max(0, (endTime.getTime() - startTime.getTime()) / (1000 * 60));
-    const totalHours = totalMinutes / 60;
-    const regularHours = Math.min(totalHours, REGULAR_HOURS);
-    const overtimeHours = Math.max(0, totalHours - REGULAR_HOURS);
-
-    const regularPay = Math.round(regularHours * hourlyRate);
-    const overtimePay = Math.round(overtimeHours * hourlyRate * OVERTIME_RATE);
-
-    return total + regularPay + overtimePay;
-  }, 0);
-}
-
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString('ko-KR') + '원';
-}
 
 // ============================================================================
 // Sub-components
@@ -266,7 +239,8 @@ function BulkActionsBar({
 
 export function SettlementList({
   workLogs,
-  hourlyRate,
+  roleSalaries,
+  allowances,
   isLoading,
   error,
   onRefresh,
@@ -315,16 +289,16 @@ export function SettlementList({
       totalCount: workLogs.length,
       pendingCount: pendingLogs.length,
       completedCount: completedLogs.length,
-      totalAmount: calculateTotalAmount(workLogs, hourlyRate),
-      pendingAmount: calculateTotalAmount(pendingLogs, hourlyRate),
+      totalAmount: calculateTotalSettlement(workLogs, roleSalaries, allowances),
+      pendingAmount: calculateTotalSettlement(pendingLogs, roleSalaries, allowances),
     };
-  }, [workLogs, hourlyRate]);
+  }, [workLogs, roleSalaries, allowances]);
 
   // 선택된 항목 금액
   const selectedAmount = useMemo(() => {
     const selectedLogs = workLogs.filter((log) => selectedIds.has(log.id));
-    return calculateTotalAmount(selectedLogs, hourlyRate);
-  }, [workLogs, selectedIds, hourlyRate]);
+    return calculateTotalSettlement(selectedLogs, roleSalaries, allowances);
+  }, [workLogs, selectedIds, roleSalaries, allowances]);
 
   // 선택 핸들러
   const handleSelect = useCallback((workLog: WorkLog) => {
@@ -363,17 +337,21 @@ export function SettlementList({
 
   // 렌더 아이템
   const renderItem = useCallback(
-    ({ item }: { item: WorkLog }) => (
-      <View className="px-4 mb-3">
-        <SettlementCard
-          workLog={item}
-          hourlyRate={hourlyRate}
-          onPress={selectionMode ? handleSelect : onWorkLogPress}
-          onSettle={selectionMode ? undefined : onSettle}
-        />
-      </View>
-    ),
-    [hourlyRate, selectionMode, handleSelect, onWorkLogPress, onSettle]
+    ({ item }: { item: WorkLog }) => {
+      const salaryInfo = getRoleSalaryInfo(item.role, roleSalaries);
+      return (
+        <View className="px-4 mb-3">
+          <SettlementCard
+            workLog={item}
+            salaryInfo={salaryInfo}
+            allowances={allowances}
+            onPress={selectionMode ? handleSelect : onWorkLogPress}
+            onSettle={selectionMode ? undefined : onSettle}
+          />
+        </View>
+      );
+    },
+    [roleSalaries, allowances, selectionMode, handleSelect, onWorkLogPress, onSettle]
   );
 
   const keyExtractor = useCallback((item: WorkLog) => item.id, []);

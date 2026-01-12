@@ -3,11 +3,11 @@
  * 특정 공고의 스태프 관리 및 정산
  *
  * @description v2.0 - 탭 구조 (스태프 관리 / 정산)
- * @version 2.0.0
+ * @version 2.1.0
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, Alert } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
@@ -19,6 +19,7 @@ import {
   ReportModal,
   SettlementDetailModal,
 } from '@/components/employer';
+import { ConfirmModal } from '@/components/ui/Modal';
 import { Loading, ErrorState } from '@/components';
 import { useSettlement } from '@/hooks/useSettlement';
 import { useJobDetail } from '@/hooks/useJobDetail';
@@ -26,16 +27,16 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
 import { reportService, markAsNoShow } from '@/services';
 import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
-import type { WorkLog, SalaryInfo, Allowances, ConfirmedStaff, CreateReportInput } from '@/types';
+import {
+  type SalaryInfo,
+  getRoleSalaryInfo,
+  calculateSettlementFromWorkLog,
+} from '@/utils/settlement';
+import type { WorkLog, Allowances, ConfirmedStaff, CreateReportInput } from '@/types';
 
 // ============================================================================
 // Constants
 // ============================================================================
-
-const REGULAR_HOURS = 8;
-const OVERTIME_RATE = 1.5;
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
 
 type TabType = 'staff' | 'settlement';
 
@@ -54,102 +55,24 @@ interface SalaryConfig {
 // Helpers
 // ============================================================================
 
-function parseTimestamp(value: unknown): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
-}
-
 /**
- * 역할별 시급 가져오기 (v2.0)
+ * 근무 기록 금액 계산 (통합 유틸리티 사용)
+ * - 시급: 근무시간 × 시급
+ * - 일급/월급: 전액
+ * - 수당 포함
  */
-function getHourlyRateForRole(role: string, config: SalaryConfig): number {
-  // useSameSalary가 true이거나 roleSalaries가 없으면 단일 급여 사용
-  if (config.useSameSalary !== false || !config.roleSalaries) {
-    return config.salary?.amount ?? 15000;
-  }
-
-  // 역할별 급여 사용
-  const roleSalary = config.roleSalaries[role];
-  if (roleSalary?.amount) {
-    return roleSalary.amount;
-  }
-
-  // 역할 급여가 없으면 기본 급여 사용
-  return config.salary?.amount ?? 15000;
-}
-
-/**
- * 수당 계산 (v2.0)
- * 보장시간만 금액 계산에 포함 (식비/교통비/숙박비는 별도 표시)
- */
-function calculateAllowanceAmount(
-  actualHours: number,
-  hourlyRate: number,
+function calculateWorkLogAmount(
+  workLog: WorkLog,
+  roleSalaries: Record<string, SalaryInfo>,
   allowances?: Allowances
 ): number {
-  if (!allowances) return 0;
+  // 역할에 따른 급여 정보 결정 (통합 유틸리티 사용)
+  const salaryInfo = getRoleSalaryInfo(workLog.role, roleSalaries);
 
-  let amount = 0;
+  // 통합 유틸리티로 정산 금액 계산 (수당 포함)
+  const { totalPay } = calculateSettlementFromWorkLog(workLog, salaryInfo, allowances);
 
-  // 보장시간: 실제 근무시간이 보장시간보다 적으면 보장시간으로 계산
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    if (actualHours < allowances.guaranteedHours) {
-      // 부족분을 추가 수당으로 계산
-      const extraHours = allowances.guaranteedHours - actualHours;
-      amount += Math.round(extraHours * hourlyRate);
-    }
-  }
-
-  // 식비 (금액이 있는 경우만)
-  if (allowances.meal && allowances.meal !== PROVIDED_FLAG && allowances.meal > 0) {
-    amount += allowances.meal;
-  }
-
-  // 교통비 (금액이 있는 경우만)
-  if (allowances.transportation && allowances.transportation !== PROVIDED_FLAG && allowances.transportation > 0) {
-    amount += allowances.transportation;
-  }
-
-  // 숙박비 (금액이 있는 경우만)
-  if (allowances.accommodation && allowances.accommodation !== PROVIDED_FLAG && allowances.accommodation > 0) {
-    amount += allowances.accommodation;
-  }
-
-  return amount;
-}
-
-/**
- * 근무 기록 금액 계산 (v2.0 - 역할별 급여, 수당 반영)
- */
-function calculateWorkLogAmount(workLog: WorkLog, config: SalaryConfig): number {
-  const startTime = parseTimestamp(workLog.actualStartTime);
-  const endTime = parseTimestamp(workLog.actualEndTime);
-
-  // 역할에 따른 시급 결정
-  const hourlyRate = getHourlyRateForRole(workLog.role || 'dealer', config);
-
-  let totalHours = REGULAR_HOURS; // 기본값
-
-  if (startTime && endTime) {
-    const totalMinutes = Math.max(0, (endTime.getTime() - startTime.getTime()) / (1000 * 60));
-    totalHours = totalMinutes / 60;
-  }
-
-  const regularHours = Math.min(totalHours, REGULAR_HOURS);
-  const overtimeHours = Math.max(0, totalHours - REGULAR_HOURS);
-
-  const regularPay = Math.round(regularHours * hourlyRate);
-  const overtimePay = Math.round(overtimeHours * hourlyRate * OVERTIME_RATE);
-
-  // 수당 계산
-  const allowanceAmount = calculateAllowanceAmount(totalHours, hourlyRate, config.allowances);
-
-  return regularPay + overtimePay + allowanceAmount;
+  return totalPay;
 }
 
 // ============================================================================
@@ -284,6 +207,21 @@ export default function StaffSettlementsScreen() {
   const [selectedWorkLogForDetail, setSelectedWorkLogForDetail] = useState<WorkLog | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
 
+  // 정산 확인 모달 상태
+  const [settleConfirm, setSettleConfirm] = useState<{
+    visible: boolean;
+    workLog: WorkLog | null;
+    workLogs: WorkLog[];
+    amount: number;
+    isBulk: boolean;
+  }>({
+    visible: false,
+    workLog: null,
+    workLogs: [],
+    amount: 0,
+    isBulk: false,
+  });
+
   // 모달 상태 (스태프 관리)
   const [showEventQRModal, setShowEventQRModal] = useState(false);
   const [showRoleChangeModal, setShowRoleChangeModal] = useState(false);
@@ -294,13 +232,36 @@ export default function StaffSettlementsScreen() {
   // 급여 설정 (v2.0 - 역할별 급여, 수당 포함)
   const salaryConfig = useMemo<SalaryConfig>(() => ({
     useSameSalary: posting?.useSameSalary,
-    salary: posting?.salary,
+    salary: posting?.salary ? { type: posting.salary.type, amount: posting.salary.amount } : undefined,
     roleSalaries: posting?.roleSalaries,
     allowances: posting?.allowances,
   }), [posting?.useSameSalary, posting?.salary, posting?.roleSalaries, posting?.allowances]);
 
-  // 기본 시급 (SettlementList에 전달용)
-  const hourlyRate = posting?.salary?.amount ?? 15000;
+  // SettlementList용 역할별 급여 정보
+  const roleSalariesForList = useMemo(() => {
+    // 기본 급여 (공고에서 설정한 급여, 없으면 15,000원 시급)
+    const defaultSalary: SalaryInfo = posting?.salary
+      ? { type: posting.salary.type, amount: posting.salary.amount }
+      : { type: 'hourly', amount: 15000 };
+
+    const roles = ['dealer', 'floor', 'manager', 'chiprunner', 'admin'];
+    const roleSalaries = salaryConfig.roleSalaries;
+
+    // 역할별 급여가 있고, useSameSalary가 명시적으로 true가 아니면 역할별 급여 사용
+    if (roleSalaries && Object.keys(roleSalaries).length > 0 && salaryConfig.useSameSalary !== true) {
+      // 누락된 역할은 기본 급여로 채움
+      return roles.reduce((acc, role) => {
+        acc[role] = roleSalaries[role] ?? defaultSalary;
+        return acc;
+      }, {} as Record<string, SalaryInfo>);
+    }
+
+    // 그 외에는 기본 급여를 모든 역할에 적용
+    return roles.reduce((acc, role) => {
+      acc[role] = defaultSalary;
+      return acc;
+    }, {} as Record<string, SalaryInfo>);
+  }, [salaryConfig.useSameSalary, salaryConfig.roleSalaries, posting?.salary]);
 
   // 역할 목록 (공고에서 추출)
   const availableRoles = useMemo(() => {
@@ -406,72 +367,72 @@ export default function StaffSettlementsScreen() {
     // 상세 모달 닫기
     setIsDetailModalVisible(false);
     setSelectedWorkLogForDetail(null);
-    // 기존 handleSettle 호출
-    const amount = calculateWorkLogAmount(workLog, salaryConfig);
-
-    Alert.alert(
-      '정산 처리',
-      `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${amount.toLocaleString()}원`,
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '정산하기',
-          onPress: () => {
-            settleWorkLog({
-              workLogId: workLog.id,
-              amount,
-            });
-          },
-        },
-      ]
-    );
-  }, [salaryConfig, settleWorkLog]);
+    // 정산 확인 모달 열기
+    const amount = calculateWorkLogAmount(workLog, roleSalariesForList, salaryConfig.allowances);
+    setSettleConfirm({
+      visible: true,
+      workLog,
+      workLogs: [],
+      amount,
+      isBulk: false,
+    });
+  }, [salaryConfig]);
 
   // 개별 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleSettle = useCallback((workLog: WorkLog) => {
-    const amount = calculateWorkLogAmount(workLog, salaryConfig);
-
-    Alert.alert(
-      '정산 처리',
-      `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${amount.toLocaleString()}원`,
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '정산하기',
-          onPress: () => {
-            settleWorkLog({
-              workLogId: workLog.id,
-              amount,
-            });
-          },
-        },
-      ]
-    );
-  }, [settleWorkLog, salaryConfig]);
+    const amount = calculateWorkLogAmount(workLog, roleSalariesForList, salaryConfig.allowances);
+    setSettleConfirm({
+      visible: true,
+      workLog,
+      workLogs: [],
+      amount,
+      isBulk: false,
+    });
+  }, [salaryConfig]);
 
   // 일괄 정산 클릭 (v2.0 - 역할별 급여, 수당 적용)
   const handleBulkSettle = useCallback((selectedWorkLogs: WorkLog[]) => {
     if (selectedWorkLogs.length === 0) return;
 
     const totalAmount = selectedWorkLogs.reduce((sum, log) => {
-      return sum + calculateWorkLogAmount(log, salaryConfig);
+      return sum + calculateWorkLogAmount(log, roleSalariesForList, salaryConfig.allowances);
     }, 0);
 
-    Alert.alert(
-      '일괄 정산',
-      `${selectedWorkLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${totalAmount.toLocaleString()}원`,
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '정산하기',
-          onPress: () => {
-            const workLogIds = selectedWorkLogs.map((log) => log.id);
-            bulkSettle({ workLogIds });
-          },
-        },
-      ]
-    );
-  }, [salaryConfig, bulkSettle]);
+    setSettleConfirm({
+      visible: true,
+      workLog: null,
+      workLogs: selectedWorkLogs,
+      amount: totalAmount,
+      isBulk: true,
+    });
+  }, [salaryConfig]);
+
+  // 정산 확인 모달 닫기
+  const handleCloseSettleConfirm = useCallback(() => {
+    setSettleConfirm({
+      visible: false,
+      workLog: null,
+      workLogs: [],
+      amount: 0,
+      isBulk: false,
+    });
+  }, []);
+
+  // 정산 확인 모달에서 확인 클릭
+  const handleConfirmSettle = useCallback(() => {
+    if (settleConfirm.isBulk) {
+      // 일괄 정산
+      const workLogIds = settleConfirm.workLogs.map((log) => log.id);
+      bulkSettle({ workLogIds });
+    } else if (settleConfirm.workLog) {
+      // 개별 정산
+      settleWorkLog({
+        workLogId: settleConfirm.workLog.id,
+        amount: settleConfirm.amount,
+      });
+    }
+    handleCloseSettleConfirm();
+  }, [settleConfirm, bulkSettle, settleWorkLog, handleCloseSettleConfirm]);
 
   // 시간 수정 저장
   const handleSaveTimeEdit = useCallback((data: {
@@ -557,7 +518,8 @@ export default function StaffSettlementsScreen() {
       ) : (
         <SettlementList
           workLogs={workLogs}
-          hourlyRate={hourlyRate}
+          roleSalaries={roleSalariesForList}
+          allowances={salaryConfig.allowances}
           isLoading={isLoading}
           error={error}
           onRefresh={() => refresh()}
@@ -614,7 +576,7 @@ export default function StaffSettlementsScreen() {
           setSelectedWorkLogForDetail(null);
         }}
         workLog={selectedWorkLogForDetail}
-        hourlyRate={hourlyRate}
+        salaryInfo={getRoleSalaryInfo(selectedWorkLogForDetail?.role, roleSalariesForList)}
         allowances={salaryConfig.allowances}
         onEditTime={handleEditTimeFromDetail}
         onSettle={handleSettleFromDetail}
@@ -627,6 +589,21 @@ export default function StaffSettlementsScreen() {
         onClose={handleCloseEditModal}
         onSave={handleSaveTimeEdit}
         isLoading={isUpdating}
+      />
+
+      {/* 정산 확인 모달 */}
+      <ConfirmModal
+        visible={settleConfirm.visible}
+        onClose={handleCloseSettleConfirm}
+        onConfirm={handleConfirmSettle}
+        title={settleConfirm.isBulk ? '일괄 정산' : '정산 처리'}
+        message={
+          settleConfirm.isBulk
+            ? `${settleConfirm.workLogs.length}건의 근무를 정산하시겠습니까?\n예상 금액: ${settleConfirm.amount.toLocaleString()}원`
+            : `이 스태프의 근무를 정산하시겠습니까?\n정산 금액: ${settleConfirm.amount.toLocaleString()}원`
+        }
+        confirmText="정산하기"
+        cancelText="취소"
       />
     </SafeAreaView>
   );

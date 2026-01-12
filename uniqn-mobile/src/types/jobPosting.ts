@@ -38,16 +38,6 @@ export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 export interface SalaryInfo {
   type: SalaryType;
   amount: number;
-  /** @deprecated 역할별 급여가 기본이므로 더 이상 사용하지 않음 */
-  useRoleSalary?: boolean;
-  /** @deprecated useSameSalary로 대체 */
-  roleSalaries?: Record<
-    string,
-    {
-      type: SalaryType;
-      amount: number;
-    }
-  >;
 }
 
 /**

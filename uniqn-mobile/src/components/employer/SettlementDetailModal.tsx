@@ -2,7 +2,7 @@
  * UNIQN Mobile - 정산 상세 모달
  *
  * @description 근무 기록 상세 정보 및 정산 관리 모달
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
@@ -23,8 +23,20 @@ import {
 } from '../icons';
 import { formatTime, formatDate } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
+import {
+  type SalaryType,
+  type SalaryInfo,
+  parseTimestamp,
+  calculateSettlementFromWorkLog,
+  formatCurrency,
+  formatDuration,
+  SALARY_TYPE_LABELS,
+} from '@/utils/settlement';
 import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus, Allowances } from '@/types';
+
+// Re-export types for backward compatibility
+export type { SalaryType, SalaryInfo };
 
 // ============================================================================
 // Types
@@ -34,18 +46,10 @@ export interface SettlementDetailModalProps {
   visible: boolean;
   onClose: () => void;
   workLog: WorkLog | null;
-  hourlyRate: number;
+  salaryInfo: SalaryInfo;
   allowances?: Allowances;
   onEditTime?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
-}
-
-interface SettlementCalculation {
-  regularHours: number;
-  overtimeHours: number;
-  regularPay: number;
-  overtimePay: number;
-  totalPay: number;
 }
 
 // ============================================================================
@@ -61,8 +65,6 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
   completed: { label: '정산완료', variant: 'success' },
 };
 
-const REGULAR_HOURS = 8;
-const OVERTIME_RATE = 1.5;
 const PROVIDED_FLAG = -1;
 
 const ROLE_LABELS: Record<string, string> = {
@@ -76,61 +78,6 @@ const ROLE_LABELS: Record<string, string> = {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function parseTimestamp(value: unknown): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
-}
-
-function calculateSettlement(workLog: WorkLog, hourlyRate: number): SettlementCalculation {
-  const startTime = parseTimestamp(workLog.actualStartTime);
-  const endTime = parseTimestamp(workLog.actualEndTime);
-
-  if (!startTime || !endTime) {
-    return {
-      regularHours: 0,
-      overtimeHours: 0,
-      regularPay: 0,
-      overtimePay: 0,
-      totalPay: 0,
-    };
-  }
-
-  const totalMinutes = Math.max(0, (endTime.getTime() - startTime.getTime()) / (1000 * 60));
-  const totalHours = totalMinutes / 60;
-
-  const regularHours = Math.min(totalHours, REGULAR_HOURS);
-  const overtimeHours = Math.max(0, totalHours - REGULAR_HOURS);
-
-  const regularPay = Math.round(regularHours * hourlyRate);
-  const overtimePay = Math.round(overtimeHours * hourlyRate * OVERTIME_RATE);
-
-  return {
-    regularHours: Math.round(regularHours * 100) / 100,
-    overtimeHours: Math.round(overtimeHours * 100) / 100,
-    regularPay,
-    overtimePay,
-    totalPay: regularPay + overtimePay,
-  };
-}
-
-function formatDuration(hours: number): string {
-  const h = Math.floor(hours);
-  const m = Math.round((hours - h) * 60);
-
-  if (h === 0) return `${m}분`;
-  if (m === 0) return `${h}시간`;
-  return `${h}시간 ${m}분`;
-}
-
-function formatCurrency(amount: number): string {
-  return amount.toLocaleString('ko-KR') + '원';
-}
 
 function getRoleLabel(role: string | undefined): string {
   if (!role) return '역할 없음';
@@ -292,7 +239,7 @@ export function SettlementDetailModal({
   visible,
   onClose,
   workLog,
-  hourlyRate,
+  salaryInfo,
   allowances,
   onEditTime,
   onSettle,
@@ -314,8 +261,8 @@ export function SettlementDetailModal({
   const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog?.date]);
 
   const settlement = useMemo(() =>
-    workLog ? calculateSettlement(workLog, hourlyRate) : null,
-    [workLog, hourlyRate]
+    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances) : null,
+    [workLog, salaryInfo, allowances]
   );
 
   const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
@@ -418,7 +365,7 @@ export function SettlementDetailModal({
                 <View className="items-center">
                   <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">근무</Text>
                   <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-                    {settlement ? formatDuration(settlement.regularHours + settlement.overtimeHours) : '-'}
+                    {settlement ? formatDuration(settlement.hoursWorked) : '-'}
                   </Text>
                 </View>
               </View>
@@ -442,20 +389,29 @@ export function SettlementDetailModal({
               </View>
 
               <View className="space-y-1">
-                <InfoRow
-                  label={`기본 근무 (${formatDuration(settlement.regularHours)})`}
-                  value={formatCurrency(settlement.regularPay)}
-                />
-
-                {settlement.overtimeHours > 0 && (
+                {/* 급여 타입에 따른 계산 내역 */}
+                {salaryInfo.type === 'hourly' ? (
                   <InfoRow
-                    label={`초과 근무 (${formatDuration(settlement.overtimeHours)}) × 1.5`}
-                    value={`+${formatCurrency(settlement.overtimePay)}`}
-                    valueColor="text-orange-600 dark:text-orange-400"
+                    label={`${SALARY_TYPE_LABELS[salaryInfo.type]} ${formatCurrency(salaryInfo.amount)} × ${formatDuration(settlement.hoursWorked)}`}
+                    value={formatCurrency(settlement.basePay)}
+                  />
+                ) : (
+                  <InfoRow
+                    label={`${SALARY_TYPE_LABELS[salaryInfo.type]}`}
+                    value={formatCurrency(settlement.basePay)}
                   />
                 )}
 
-                {/* 수당 정보 */}
+                {/* 수당 금액 (금액이 있는 경우만 표시) */}
+                {settlement.allowancePay > 0 && (
+                  <InfoRow
+                    label="수당"
+                    value={`+${formatCurrency(settlement.allowancePay)}`}
+                    valueColor="text-green-600 dark:text-green-400"
+                  />
+                )}
+
+                {/* 수당 정보 뱃지 (제공 항목 포함) */}
                 {allowanceItems.length > 0 && (
                   <View className="flex-row flex-wrap py-2">
                     {allowanceItems.map((item, idx) => (

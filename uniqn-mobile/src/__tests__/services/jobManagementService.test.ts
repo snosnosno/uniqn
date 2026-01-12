@@ -119,7 +119,6 @@ function createTestJobPostingInput(): CreateJobPostingInput {
     salary: {
       type: 'hourly' as const,
       amount: 15000,
-      useRoleSalary: false,
     },
   };
 }

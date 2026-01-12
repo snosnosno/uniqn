@@ -278,7 +278,7 @@ describe('settlementService', () => {
   // ==========================================================================
 
   describe('calculateSettlement', () => {
-    it('should calculate settlement for a work log', async () => {
+    it('should calculate settlement for hourly wage', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
 
@@ -298,21 +298,18 @@ describe('settlementService', () => {
       );
 
       expect(result.workLogId).toBe('worklog-1');
-      expect(result.regularHours).toBeGreaterThan(0);
-      expect(result.regularPay).toBeGreaterThan(0);
+      expect(result.salaryType).toBe('hourly');
+      expect(result.hoursWorked).toBeGreaterThan(0);
       expect(result.netPay).toBeGreaterThan(0);
     });
 
-    it('should calculate overtime correctly', async () => {
-      // 10시간 근무 (2시간 초과)
-      const checkIn = new Date('2024-01-15T08:00:00');
-      const checkOut = new Date('2024-01-15T18:00:00'); // 10 hours
-      const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
-      const workLog = createMockWorkLogWithTimes({
-        eventId: 'job-1',
-        actualStartTime: Timestamp.fromDate(checkIn),
-        actualEndTime: Timestamp.fromDate(checkOut),
+    it('should calculate daily wage as full amount', async () => {
+      // 일급 테스트 - 출근하면 일급 전액
+      const jobPosting = createMockJobPostingWithSalary({
+        id: 'job-1',
+        salary: { type: 'daily', amount: 150000 },
       });
+      const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
 
       mockGetDoc
         .mockResolvedValueOnce({
@@ -329,13 +326,16 @@ describe('settlementService', () => {
         'employer-1'
       );
 
-      expect(result.regularHours).toBe(8);
-      expect(result.overtimeHours).toBe(2);
-      expect(result.overtimePay).toBeGreaterThan(0);
+      expect(result.salaryType).toBe('daily');
+      expect(result.grossPay).toBe(150000); // 일급 전액
     });
 
-    it('should apply custom hourly rate', async () => {
-      const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
+    it('should calculate monthly wage as full amount', async () => {
+      // 월급 테스트 - 출근하면 월급 전액
+      const jobPosting = createMockJobPostingWithSalary({
+        id: 'job-1',
+        salary: { type: 'monthly', amount: 3300000 },
+      });
       const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
 
       mockGetDoc
@@ -349,12 +349,12 @@ describe('settlementService', () => {
         });
 
       const result = await calculateSettlement(
-        { workLogId: 'worklog-1', hourlyRate: 20000 },
+        { workLogId: 'worklog-1' },
         'employer-1'
       );
 
-      // 8시간 * 20000원 = 160000원
-      expect(result.regularPay).toBe(160000);
+      expect(result.salaryType).toBe('monthly');
+      expect(result.grossPay).toBe(3300000); // 월급 전액
     });
 
     it('should apply deductions', async () => {
