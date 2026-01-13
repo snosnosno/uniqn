@@ -22,8 +22,13 @@ import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import {
   type SalaryInfo as UtilitySalaryInfo,
+  type Allowances as UtilityAllowances,
+  type TaxSettings as UtilityTaxSettings,
   calculateHoursWorked as utilCalculateHoursWorked,
-  calculatePayByType as utilCalculatePayByType,
+  calculateSettlementFromWorkLog,
+  getEffectiveSalaryInfoFromRoles,
+  getEffectiveAllowances,
+  getEffectiveTaxSettings,
 } from '@/utils/settlement';
 import type {
   WorkLog,
@@ -41,6 +46,14 @@ const JOB_POSTINGS_COLLECTION = 'jobPostings';
 // ============================================================================
 // Types
 // ============================================================================
+
+/** 오버라이드 필드를 포함한 WorkLog 타입 (내부용) */
+type WorkLogWithOverrides = WorkLog & {
+  customRole?: string;
+  customSalaryInfo?: UtilitySalaryInfo;
+  customAllowances?: UtilityAllowances;
+  customTaxSettings?: UtilityTaxSettings;
+};
 
 /**
  * 정산 대상 근무 기록 (확장된 정보 포함)
@@ -253,14 +266,18 @@ export async function getWorkLogsByJobPosting(
       });
     }
 
-    // 4. 근무 시간 및 예상 정산액 계산
+    // 4. 근무 시간 및 예상 정산액 계산 (수당/세금 포함)
     workLogs = workLogs.map((wl) => {
       const hoursWorked = calculateHoursWorked(wl.actualStartTime, wl.actualEndTime);
 
-      // 급여 타입별 계산 (커스텀 역할 지원)
-      const wlWithCustomRole = wl as SettlementWorkLog & { customRole?: string };
-      const salaryInfo = getRoleSalaryInfo(jobPosting, wl.role, wlWithCustomRole.customRole);
-      const calculatedAmount = calculatePayByType(salaryInfo, hoursWorked);
+      // 유틸리티 함수를 사용하여 수당/세금 포함 정산 금액 계산
+      const wlWithOverrides = wl as WorkLogWithOverrides;
+      const salaryInfo = getEffectiveSalaryInfoFromRoles(wlWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
+      const allowances = getEffectiveAllowances(wlWithOverrides, jobPosting.allowances);
+      const taxSettings = getEffectiveTaxSettings(wlWithOverrides, jobPosting.taxSettings);
+
+      const settlement = calculateSettlementFromWorkLog(wlWithOverrides, salaryInfo, allowances, taxSettings);
+      const calculatedAmount = settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay;
 
       return {
         ...wl,
@@ -279,65 +296,6 @@ export async function getWorkLogsByJobPosting(
     logger.error('공고별 근무 기록 조회 실패', error as Error, { jobPostingId });
     throw error instanceof Error ? error : mapFirebaseError(error);
   }
-}
-
-/**
- * 역할별 급여 정보 조회 헬퍼
- * @param jobPosting - 공고 정보
- * @param role - 역할 코드
- * @param customRole - 커스텀 역할명 (role이 'other'일 때)
- * @returns 급여 타입과 금액
- */
-function getRoleSalaryInfo(jobPosting: JobPosting, role: string, customRole?: string): UtilitySalaryInfo {
-  // useSameSalary=true이고 defaultSalary가 있으면 사용
-  if (jobPosting.useSameSalary && jobPosting.defaultSalary) {
-    return {
-      type: jobPosting.defaultSalary.type as UtilitySalaryInfo['type'],
-      amount: jobPosting.defaultSalary.amount,
-    };
-  }
-
-  // roles 배열에서 역할별 급여 조회
-  const effectiveRole = role === 'other' && customRole ? customRole : role;
-
-  const roleData = jobPosting.roles?.find(r => {
-    // customRole 필드가 있는 역할 매칭
-    const roleWithCustom = r as { role: string; customRole?: string; salary?: UtilitySalaryInfo };
-    if (roleWithCustom.role === 'other' && roleWithCustom.customRole) {
-      return roleWithCustom.customRole === effectiveRole;
-    }
-    return roleWithCustom.role === effectiveRole;
-  });
-
-  // 역할에서 급여 정보 추출
-  const roleWithSalary = roleData as { salary?: UtilitySalaryInfo } | undefined;
-  if (roleWithSalary?.salary && roleWithSalary.salary.type !== 'other') {
-    return {
-      type: roleWithSalary.salary.type,
-      amount: roleWithSalary.salary.amount,
-    };
-  }
-
-  // 기본 급여 fallback
-  if (jobPosting.defaultSalary) {
-    return {
-      type: jobPosting.defaultSalary.type as UtilitySalaryInfo['type'],
-      amount: jobPosting.defaultSalary.amount,
-    };
-  }
-
-  // 최종 fallback
-  return {
-    type: 'hourly',
-    amount: 0,
-  };
-}
-
-/**
- * 급여 타입별 정산 금액 계산 - 유틸리티 래퍼
- */
-function calculatePayByType(salaryInfo: UtilitySalaryInfo, hoursWorked: number): number {
-  return utilCalculatePayByType(salaryInfo, hoursWorked);
 }
 
 /**
@@ -382,13 +340,17 @@ export async function calculateSettlement(
     // 3. 근무 시간 계산
     const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
 
-    // 4. 급여 정보 조회 (커스텀 역할 지원)
-    const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role, workLog.customRole);
+    // 4. 급여/수당/세금 정보 조회 (개별 오버라이드 우선)
+    const workLogWithOverrides = workLog as WorkLogWithOverrides;
+    const salaryInfo = getEffectiveSalaryInfoFromRoles(workLogWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
+    const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
+    const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
 
-    // 5. 타입별 금액 계산
-    const grossPay = calculatePayByType(salaryInfo, hoursWorked);
+    // 5. 정산 금액 계산 (수당/세금 포함)
+    const settlement = calculateSettlementFromWorkLog(workLogWithOverrides, salaryInfo, allowances, taxSettings);
+    const grossPay = settlement.totalPay;
     const deductions = input.deductions ?? 0;
-    const netPay = grossPay - deductions;
+    const netPay = (settlement.taxAmount > 0 ? settlement.afterTaxPay : grossPay) - deductions;
 
     const result: SettlementCalculation = {
       workLogId: input.workLogId,
@@ -700,10 +662,14 @@ export async function bulkSettlement(
             continue;
           }
 
-          // 정산 금액 계산 (급여 타입별, 커스텀 역할 지원)
-          const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role, workLog.customRole);
-          const amount = calculatePayByType(salaryInfo, hoursWorked);
+          // 정산 금액 계산 (수당/세금 포함)
+          const workLogWithOverrides = workLog as WorkLogWithOverrides;
+          const salaryInfo = getEffectiveSalaryInfoFromRoles(workLogWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
+          const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
+          const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
+
+          const settlement = calculateSettlementFromWorkLog(workLogWithOverrides, salaryInfo, allowances, taxSettings);
+          const amount = settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay;
 
           // 정산 처리
           const updateData: Record<string, unknown> = {
@@ -893,10 +859,14 @@ export async function getJobPostingSettlementSummary(
           workLogsByRole[effectiveRole].completedAmount += amount;
         } else {
           pendingSettlement++;
-          // 미정산인 경우 예상 금액 계산 (급여 타입별, 커스텀 역할 지원)
-          const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-          const salaryInfo = getRoleSalaryInfo(jobPosting, workLog.role, workLogWithCustomRole.customRole);
-          const estimatedAmount = calculatePayByType(salaryInfo, hoursWorked);
+          // 미정산인 경우 예상 금액 계산 (수당/세금 포함)
+          const workLogWithOverrides = workLog as WorkLogWithOverrides;
+          const salaryInfo = getEffectiveSalaryInfoFromRoles(workLogWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
+          const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
+          const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
+
+          const settlement = calculateSettlementFromWorkLog(workLogWithOverrides, salaryInfo, allowances, taxSettings);
+          const estimatedAmount = settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay;
 
           totalPendingAmount += amount > 0 ? amount : estimatedAmount;
           workLogsByRole[effectiveRole].pendingAmount += amount > 0 ? amount : estimatedAmount;

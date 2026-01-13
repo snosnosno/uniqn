@@ -24,9 +24,6 @@ import {
 // Import Timestamp from mocked module for use in test utilities
 import { Timestamp } from 'firebase/firestore';
 
-// createMockEmployer is available for future tests
-void import('../mocks/factories').then(m => m.createMockEmployer);
-
 // ============================================================================
 // Firebase Mocks
 // ============================================================================
@@ -91,6 +88,7 @@ jest.mock('firebase/firestore', () => {
 
 jest.mock('@/lib/firebase', () => ({
   db: {},
+  getFirebaseDb: () => ({}),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -311,7 +309,11 @@ describe('settlementService', () => {
       // 일급 테스트 - 출근하면 일급 전액
       const jobPosting = createMockJobPostingWithSalary({
         id: 'job-1',
-        salary: { type: 'daily', amount: 150000 },
+        roles: [
+          { role: 'dealer', count: 3, filled: 0, salary: { type: 'daily' as const, amount: 150000 } },
+        ],
+        defaultSalary: { type: 'daily', amount: 150000 },
+        useSameSalary: true,
       });
       const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
 
@@ -338,7 +340,11 @@ describe('settlementService', () => {
       // 월급 테스트 - 출근하면 월급 전액
       const jobPosting = createMockJobPostingWithSalary({
         id: 'job-1',
-        salary: { type: 'monthly', amount: 3300000 },
+        roles: [
+          { role: 'dealer', count: 3, filled: 0, salary: { type: 'monthly' as const, amount: 3300000 } },
+        ],
+        defaultSalary: { type: 'monthly', amount: 3300000 },
+        useSameSalary: true,
       });
       const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
 
