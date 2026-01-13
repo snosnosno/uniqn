@@ -195,7 +195,7 @@ export default function JobPostingDetailScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
         </View>
@@ -206,7 +206,7 @@ export default function JobPostingDetailScreen() {
   // 에러 상태
   if (error || !posting) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <ErrorState
           title="공고를 불러올 수 없습니다"
           message={error?.message || '공고 정보를 찾을 수 없습니다.'}

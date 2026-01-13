@@ -7,7 +7,7 @@
 
 import React, { useCallback, useState, useMemo } from 'react';
 import { View, Text, RefreshControl, Alert } from 'react-native';
-import { useLocalSearchParams, Stack } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { CancellationRequestCard } from '@/components/employer';
@@ -145,17 +145,7 @@ export default function CancellationRequestsScreen() {
   // 로딩 상태
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '취소 요청 관리',
-            headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
-            },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -169,17 +159,7 @@ export default function CancellationRequestsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '취소 요청 관리',
-            headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
-            },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <ErrorState
           title="취소 요청을 불러올 수 없습니다"
           message={error.message}
@@ -191,17 +171,6 @@ export default function CancellationRequestsScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: '취소 요청 관리',
-          headerStyle: {
-            backgroundColor: isDarkMode ? '#111827' : '#ffffff',
-          },
-          headerTintColor: isDarkMode ? '#ffffff' : '#111827',
-        }}
-      />
-
       {/* 통계 헤더 */}
       <StatsHeader
         pendingCount={stats.pending}

@@ -387,7 +387,7 @@ export default function EditJobPostingScreen() {
   // 로딩 상태
   if (isJobLoading || !formData) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -401,7 +401,7 @@ export default function EditJobPostingScreen() {
   // 에러 상태
   if (jobError || !existingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-4">
           <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             공고를 불러올 수 없습니다

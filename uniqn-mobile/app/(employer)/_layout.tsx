@@ -71,48 +71,19 @@ export default function EmployerLayout() {
         contentStyle: {
           backgroundColor: isDark ? '#111827' : '#f9fafb',
         },
+        headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
       }}
     >
-      <Stack.Screen
-        name="my-postings/[id]/index"
-        options={{
-          title: '공고 상세',
-          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
-        }}
-      />
-      <Stack.Screen
-        name="my-postings/[id]/applicants"
-        options={{
-          title: '지원자 관리',
-          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
-        }}
-      />
-      <Stack.Screen
-        name="my-postings/[id]/settlements"
-        options={{
-          title: '스태프 / 정산 관리',
-          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
-        }}
-      />
       <Stack.Screen
         name="my-postings/create"
         options={{
           title: '공고 작성',
-          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
         }}
       />
       <Stack.Screen
-        name="my-postings/[id]/edit"
+        name="my-postings/[id]"
         options={{
-          title: '공고 수정',
-          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
-        }}
-      />
-      <Stack.Screen
-        name="my-postings/[id]/cancellation-requests"
-        options={{
-          title: '취소 요청 관리',
-          headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
+          headerShown: false,
         }}
       />
     </Stack>

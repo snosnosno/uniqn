@@ -169,7 +169,7 @@ export default function ApplicantsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -183,7 +183,7 @@ export default function ApplicantsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
         <ErrorState
           title="지원자 목록을 불러올 수 없습니다"
           message={error.message}
