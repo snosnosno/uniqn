@@ -22,6 +22,7 @@ import {
   type SalaryType,
   type SalaryInfo,
   type Allowances,
+  type TaxSettings,
   getRoleSalaryFromRoles,
   calculateTotalSettlementFromRoles,
   formatCurrency,
@@ -51,6 +52,8 @@ export interface SettlementListProps {
   defaultSalary?: SalaryInfo;
   /** 수당 정보 */
   allowances?: Allowances;
+  /** 세금 설정 */
+  taxSettings?: TaxSettings;
   isLoading?: boolean;
   error?: Error | null;
   onRefresh?: () => void;
@@ -269,6 +272,7 @@ export function SettlementList({
   roles,
   defaultSalary,
   allowances,
+  taxSettings,
   isLoading,
   error,
   onRefresh,
@@ -309,7 +313,7 @@ export function SettlementList({
     return counts;
   }, [workLogs]);
 
-  // 요약 정보
+  // 요약 정보 (세후 금액 기준)
   const summaryInfo = useMemo(() => {
     const pendingLogs = workLogs.filter((log) => (log.payrollStatus || 'pending') === 'pending');
     const completedLogs = workLogs.filter((log) => log.payrollStatus === 'completed');
@@ -318,15 +322,15 @@ export function SettlementList({
       totalCount: workLogs.length,
       pendingCount: pendingLogs.length,
       completedCount: completedLogs.length,
-      totalAmount: calculateTotalSettlementFromRoles(workLogs, roles, defaultSalary, allowances),
-      pendingAmount: calculateTotalSettlementFromRoles(pendingLogs, roles, defaultSalary, allowances),
+      totalAmount: calculateTotalSettlementFromRoles(workLogs, roles, defaultSalary, allowances, undefined, true),
+      pendingAmount: calculateTotalSettlementFromRoles(pendingLogs, roles, defaultSalary, allowances, undefined, true),
     };
   }, [workLogs, roles, defaultSalary, allowances]);
 
-  // 선택된 항목 금액
+  // 선택된 항목 금액 (세후 금액 기준)
   const selectedAmount = useMemo(() => {
     const selectedLogs = workLogs.filter((log) => selectedIds.has(log.id));
-    return calculateTotalSettlementFromRoles(selectedLogs, roles, defaultSalary, allowances);
+    return calculateTotalSettlementFromRoles(selectedLogs, roles, defaultSalary, allowances, undefined, true);
   }, [workLogs, selectedIds, roles, defaultSalary, allowances]);
 
   // 선택 핸들러
@@ -374,13 +378,14 @@ export function SettlementList({
             workLog={item}
             salaryInfo={salaryInfo}
             allowances={allowances}
+            taxSettings={taxSettings}
             onPress={selectionMode ? handleSelect : onWorkLogPress}
             onSettle={selectionMode ? undefined : onSettle}
           />
         </View>
       );
     },
-    [roles, defaultSalary, allowances, selectionMode, handleSelect, onWorkLogPress, onSettle]
+    [roles, defaultSalary, allowances, taxSettings, selectionMode, handleSelect, onWorkLogPress, onSettle]
   );
 
   const keyExtractor = useCallback((item: WorkLog) => item.id, []);

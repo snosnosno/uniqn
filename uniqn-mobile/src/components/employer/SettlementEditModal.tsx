@@ -34,8 +34,6 @@ import {
 import {
   TaxSettingsEditor,
   type TaxSettings,
-  calculateTaxAmount,
-  calculateAfterTaxAmount,
 } from './TaxSettingsEditor';
 import type { UserProfile } from '@/services';
 import type { WorkLog } from '@/types';
@@ -195,22 +193,15 @@ export function SettlementEditModal({
 
   const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog]);
 
-  // 정산 계산
+  // 정산 계산 (taxSettings 포함하여 세금도 함께 계산)
   const settlement = useMemo(() =>
-    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances) : null,
-    [workLog, salaryInfo, allowances]
+    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
+    [workLog, salaryInfo, allowances, taxSettings]
   );
 
-  // 세금 및 세후 금액 계산
-  const taxAmount = useMemo(() => {
-    if (!settlement) return 0;
-    return calculateTaxAmount(taxSettings, settlement.totalPay);
-  }, [settlement, taxSettings]);
-
-  const afterTaxAmount = useMemo(() => {
-    if (!settlement) return 0;
-    return calculateAfterTaxAmount(taxSettings, settlement.totalPay);
-  }, [settlement, taxSettings]);
+  // 세금 및 세후 금액 (settlement에서 가져옴 - taxableItems 적용됨)
+  const taxAmount = useMemo(() => settlement?.taxAmount ?? 0, [settlement]);
+  const afterTaxAmount = useMemo(() => settlement?.afterTaxPay ?? 0, [settlement]);
 
   // 핸들러
   const toggleSection = useCallback((section: keyof typeof expandedSections) => {

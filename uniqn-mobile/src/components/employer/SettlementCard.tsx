@@ -20,6 +20,7 @@ import {
   type SalaryType,
   type SalaryInfo,
   type Allowances,
+  type TaxSettings,
   parseTimestamp,
   calculateSettlementFromWorkLog,
   formatCurrency,
@@ -39,6 +40,8 @@ export interface SettlementCardProps {
   workLog: WorkLog;
   salaryInfo: SalaryInfo;
   allowances?: Allowances;
+  /** 세금 설정 (공고 전체에 적용) */
+  taxSettings?: TaxSettings;
   onPress?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
 }
@@ -77,6 +80,7 @@ export const SettlementCard = React.memo(function SettlementCard({
   workLog,
   salaryInfo,
   allowances,
+  taxSettings,
   onPress,
   onSettle,
 }: SettlementCardProps) {
@@ -99,10 +103,10 @@ export const SettlementCard = React.memo(function SettlementCard({
       : baseName;
   }, [baseName, userProfile?.nickname, workLog]);
 
-  // 정산 계산 (수당 포함)
+  // 정산 계산 (수당 + 세금 포함)
   const settlement = useMemo(() =>
-    calculateSettlementFromWorkLog(workLog, salaryInfo, allowances),
-    [workLog, salaryInfo, allowances]
+    calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings),
+    [workLog, salaryInfo, allowances, taxSettings]
   );
 
   const payrollStatus = (workLog.payrollStatus || 'pending') as PayrollStatus;
@@ -149,7 +153,7 @@ export const SettlementCard = React.memo(function SettlementCard({
             </Badge>
             {hasValidTimes && (
               <Text className="text-base font-bold text-primary-600 dark:text-primary-400 mt-1">
-                {formatCurrency(settlement.totalPay)}
+                {formatCurrency(settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay)}
               </Text>
             )}
           </View>

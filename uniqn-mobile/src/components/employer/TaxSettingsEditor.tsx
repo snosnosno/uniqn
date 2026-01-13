@@ -1,26 +1,26 @@
 /**
  * UNIQN Mobile - 세금 설정 컴포넌트
  *
- * @description 세금 설정 (없음/세율/고정 금액)
- * @version 1.0.0
+ * @description 세금 설정 (없음/세율/고정 금액) + 적용 대상 선택
+ * @version 2.0.0
  */
 
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
-import { formatCurrency } from '@/utils/settlement';
+import { Ionicons } from '@expo/vector-icons';
+import {
+  formatCurrency,
+  calculateTaxAmount,
+  calculateAfterTaxAmount,
+  type TaxType,
+  type TaxSettings,
+  type TaxableItems,
+  DEFAULT_TAXABLE_ITEMS,
+} from '@/utils/settlement';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type TaxType = 'none' | 'rate' | 'fixed';
-
-export interface TaxSettings {
-  /** 세금 유형 */
-  type: TaxType;
-  /** 세율(%) 또는 고정 금액 */
-  value: number;
-}
+// Re-export types and functions for backward compatibility
+export type { TaxType, TaxSettings, TaxableItems };
+export { DEFAULT_TAXABLE_ITEMS, calculateTaxAmount, calculateAfterTaxAmount };
 
 export interface TaxSettingsEditorProps {
   /** 현재 세금 설정 */
@@ -55,33 +55,13 @@ const COMMON_TAX_RATES = [
   { rate: -1, label: '기타' }, // 기타는 직접 입력을 위한 마커
 ];
 
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 세금 금액 계산
- */
-export function calculateTaxAmount(
-  taxSettings: TaxSettings,
-  totalAmount: number
-): number {
-  if (taxSettings.type === 'none') return 0;
-  if (taxSettings.type === 'fixed') return taxSettings.value;
-  // rate
-  return Math.round(totalAmount * (taxSettings.value / 100));
-}
-
-/**
- * 세후 금액 계산
- */
-export function calculateAfterTaxAmount(
-  taxSettings: TaxSettings,
-  totalAmount: number
-): number {
-  const taxAmount = calculateTaxAmount(taxSettings, totalAmount);
-  return totalAmount - taxAmount;
-}
+/** 세금 적용 대상 항목 설정 (기본급은 항상 적용되므로 제외) */
+const TAXABLE_ITEM_OPTIONS: { key: keyof TaxableItems; label: string }[] = [
+  { key: 'meal', label: '식비' },
+  { key: 'transportation', label: '교통비' },
+  { key: 'accommodation', label: '숙박비' },
+  { key: 'additional', label: '추가수당' },
+];
 
 // ============================================================================
 // Component
@@ -96,6 +76,12 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
   showPreview = true,
   className = '',
 }: TaxSettingsEditorProps) {
+  // 현재 taxableItems (기본값 적용)
+  const currentTaxableItems = useMemo(
+    () => taxSettings.taxableItems || DEFAULT_TAXABLE_ITEMS,
+    [taxSettings.taxableItems]
+  );
+
   // 세금 타입 변경 핸들러
   const handleTypeChange = useCallback(
     (type: TaxType) => {
@@ -108,9 +94,14 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
         value = 10000; // 기본 고정 금액
       }
 
-      onChange({ type, value });
+      // 기존 taxableItems 유지, 없으면 기본값 설정
+      onChange({
+        type,
+        value,
+        taxableItems: taxSettings.taxableItems || DEFAULT_TAXABLE_ITEMS,
+      });
     },
-    [disabled, onChange]
+    [disabled, onChange, taxSettings.taxableItems]
   );
 
   // 세율 변경 핸들러
@@ -120,9 +111,13 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
       const numericValue = text.replace(/[^0-9.]/g, '');
       const rate = parseFloat(numericValue) || 0;
       // 최대 100%로 제한
-      onChange({ type: 'rate', value: Math.min(rate, 100) });
+      onChange({
+        ...taxSettings,
+        type: 'rate',
+        value: Math.min(rate, 100),
+      });
     },
-    [disabled, onChange]
+    [disabled, onChange, taxSettings]
   );
 
   // 고정 금액 변경 핸들러
@@ -131,18 +126,42 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
       if (disabled) return;
       const numericValue = text.replace(/[^0-9]/g, '');
       const amount = parseInt(numericValue, 10) || 0;
-      onChange({ type: 'fixed', value: amount });
+      onChange({
+        ...taxSettings,
+        type: 'fixed',
+        value: amount,
+      });
     },
-    [disabled, onChange]
+    [disabled, onChange, taxSettings]
   );
 
   // 빠른 세율 선택
   const handleQuickRateSelect = useCallback(
     (rate: number) => {
       if (disabled) return;
-      onChange({ type: 'rate', value: rate });
+      onChange({
+        ...taxSettings,
+        type: 'rate',
+        value: rate,
+      });
     },
-    [disabled, onChange]
+    [disabled, onChange, taxSettings]
+  );
+
+  // 적용 대상 항목 토글 핸들러
+  const handleTaxableItemToggle = useCallback(
+    (key: keyof TaxableItems) => {
+      if (disabled) return;
+      const newTaxableItems = {
+        ...currentTaxableItems,
+        [key]: !currentTaxableItems[key],
+      };
+      onChange({
+        ...taxSettings,
+        taxableItems: newTaxableItems,
+      });
+    },
+    [disabled, onChange, taxSettings, currentTaxableItems]
   );
 
   // 포맷된 값
@@ -310,6 +329,64 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
               원
             </Text>
           </View>
+        </View>
+      )}
+
+      {/* 적용 대상 (세금 타입이 none이 아닐 때만) */}
+      {taxSettings.type !== 'none' && (
+        <View className="mb-3">
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            적용 대상
+          </Text>
+          <View className="flex-row flex-wrap gap-2">
+            {TAXABLE_ITEM_OPTIONS.map(({ key, label }) => {
+              const isChecked = currentTaxableItems[key] !== false;
+              return (
+                <Pressable
+                  key={key}
+                  onPress={() => handleTaxableItemToggle(key)}
+                  disabled={disabled}
+                  accessibilityRole="checkbox"
+                  accessibilityState={{ checked: isChecked, disabled }}
+                  accessibilityLabel={`${label} 세금 적용`}
+                  className={`
+                    flex-row items-center px-3 py-2 rounded-lg border
+                    ${isChecked
+                      ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700'
+                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                    }
+                    ${disabled ? 'opacity-50' : 'active:opacity-70'}
+                  `}
+                >
+                  <View
+                    className={`
+                      h-4 w-4 rounded border items-center justify-center mr-2
+                      ${isChecked
+                        ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
+                        : 'bg-transparent border-gray-400 dark:border-gray-500'
+                      }
+                    `}
+                  >
+                    {isChecked && (
+                      <Ionicons name="checkmark" size={12} color="white" />
+                    )}
+                  </View>
+                  <Text
+                    className={`text-sm ${
+                      isChecked
+                        ? 'text-indigo-700 dark:text-indigo-300 font-medium'
+                        : 'text-gray-600 dark:text-gray-400'
+                    }`}
+                  >
+                    {label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+          <Text className="text-xs text-gray-400 dark:text-gray-500 mt-2">
+            체크된 항목에만 세금이 적용됩니다
+          </Text>
         </View>
       )}
 

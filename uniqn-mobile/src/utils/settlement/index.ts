@@ -221,33 +221,65 @@ export function calculateSettlement(
 }
 
 /**
- * WorkLog 객체로 정산 금액 계산
+ * WorkLog 객체로 정산 금액 계산 (세금 포함)
+ *
+ * @description 개별 오버라이드(customSalaryInfo, customAllowances, customTaxSettings)가 있으면 우선 적용
+ *              taxableItems에 따라 항목별로 세금 적용 여부를 결정
  */
 export function calculateSettlementFromWorkLog(
   workLog: {
     actualStartTime?: unknown;
     actualEndTime?: unknown;
     role?: string;
+    customSalaryInfo?: SalaryInfo;
+    customAllowances?: Allowances;
+    customTaxSettings?: TaxSettings;
   },
   salaryInfo: SalaryInfo,
-  allowances?: Allowances
-): SettlementResult {
-  return calculateSettlement(
+  allowances?: Allowances,
+  taxSettings?: TaxSettings
+): ExtendedSettlementResult {
+  // 개별 오버라이드가 있으면 우선 사용
+  const effectiveSalary = workLog.customSalaryInfo || salaryInfo;
+  const effectiveAllowances = workLog.customAllowances || allowances;
+  const effectiveTaxSettings = workLog.customTaxSettings || taxSettings || DEFAULT_TAX_SETTINGS;
+
+  const baseResult = calculateSettlement(
     workLog.actualStartTime,
     workLog.actualEndTime,
-    salaryInfo,
-    allowances
+    effectiveSalary,
+    effectiveAllowances
   );
+
+  // 세금 계산 (항목별 적용 여부 고려)
+  const taxAmount = calculateTaxAmountByItems(effectiveTaxSettings, {
+    basePay: baseResult.basePay,
+    meal: effectiveAllowances?.meal,
+    transportation: effectiveAllowances?.transportation,
+    accommodation: effectiveAllowances?.accommodation,
+    additional: effectiveAllowances?.additional,
+  });
+  const afterTaxPay = baseResult.totalPay - taxAmount;
+
+  return {
+    ...baseResult,
+    taxAmount,
+    afterTaxPay,
+  };
 }
 
 /**
  * 여러 근무 기록의 총 금액 계산
  *
  * @description roles[].salary 구조에서 급여 정보를 조회하여 정산
+ *              개별 오버라이드(customSalaryInfo, customAllowances, customTaxSettings)가 있으면 우선 적용
+ *              taxableItems에 따라 항목별로 세금 적용 여부를 결정
  * @param workLogs - 근무 기록 배열
  * @param roles - 역할 배열 (salary 포함)
  * @param defaultSalary - 기본 급여 (역할별 급여가 없을 때 사용)
  * @param allowances - 수당 정보
+ * @param taxSettings - 세금 설정 (선택)
+ * @param returnAfterTax - true면 세후 금액 합산, false면 세전 금액 합산 (기본: false)
  */
 export function calculateTotalSettlementFromRoles(
   workLogs: Array<{
@@ -255,20 +287,40 @@ export function calculateTotalSettlementFromRoles(
     actualEndTime?: unknown;
     role?: string;
     customRole?: string;
+    customSalaryInfo?: SalaryInfo;
+    customAllowances?: Allowances;
+    customTaxSettings?: TaxSettings;
   }>,
   roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }>,
   defaultSalary?: SalaryInfo,
-  allowances?: Allowances
+  allowances?: Allowances,
+  taxSettings?: TaxSettings,
+  returnAfterTax: boolean = false
 ): number {
   return workLogs.reduce((total, log) => {
-    const salaryInfo = getRoleSalaryFromRoles(roles, log.role, log.customRole, defaultSalary);
-    const { totalPay } = calculateSettlement(
+    // 개별 오버라이드가 있으면 우선 사용
+    const salaryInfo = log.customSalaryInfo || getRoleSalaryFromRoles(roles, log.role, log.customRole, defaultSalary);
+    const effectiveAllowances = log.customAllowances || allowances;
+    const effectiveTaxSettings = log.customTaxSettings || taxSettings || DEFAULT_TAX_SETTINGS;
+
+    const baseResult = calculateSettlement(
       log.actualStartTime,
       log.actualEndTime,
       salaryInfo,
-      allowances
+      effectiveAllowances
     );
-    return total + totalPay;
+
+    // 세금 계산 (항목별 적용 여부 고려)
+    const taxAmount = calculateTaxAmountByItems(effectiveTaxSettings, {
+      basePay: baseResult.basePay,
+      meal: effectiveAllowances?.meal,
+      transportation: effectiveAllowances?.transportation,
+      accommodation: effectiveAllowances?.accommodation,
+      additional: effectiveAllowances?.additional,
+    });
+    const afterTaxPay = baseResult.totalPay - taxAmount;
+
+    return total + (returnAfterTax ? afterTaxPay : baseResult.totalPay);
   }, 0);
 }
 
@@ -332,11 +384,36 @@ export function getSalaryTypeLabel(type: SalaryType): string {
 
 export type TaxType = 'none' | 'rate' | 'fixed';
 
+/** 세금 적용 대상 항목 */
+export interface TaxableItems {
+  /** 기본급 */
+  basePay?: boolean;
+  /** 식비 */
+  meal?: boolean;
+  /** 교통비 */
+  transportation?: boolean;
+  /** 숙박비 */
+  accommodation?: boolean;
+  /** 추가수당 */
+  additional?: boolean;
+}
+
+/** 기본 세금 적용 대상 (모두 적용) */
+export const DEFAULT_TAXABLE_ITEMS: TaxableItems = {
+  basePay: true,
+  meal: true,
+  transportation: true,
+  accommodation: true,
+  additional: true,
+};
+
 export interface TaxSettings {
   /** 세금 유형 */
   type: TaxType;
   /** 세율(%) 또는 고정 금액 */
   value: number;
+  /** 세금 적용 대상 항목 */
+  taxableItems?: TaxableItems;
 }
 
 /** 기본 세금 설정 (없음) */
@@ -346,7 +423,7 @@ export const DEFAULT_TAX_SETTINGS: TaxSettings = {
 };
 
 /**
- * 세금 금액 계산
+ * 세금 금액 계산 (기본 - 전체 금액에 적용)
  */
 export function calculateTaxAmount(
   taxSettings: TaxSettings,
@@ -356,6 +433,64 @@ export function calculateTaxAmount(
   if (taxSettings.type === 'fixed') return taxSettings.value;
   // rate
   return Math.round(totalAmount * (taxSettings.value / 100));
+}
+
+/** 세금 계산용 상세 금액 */
+export interface TaxableAmounts {
+  basePay: number;
+  meal?: number;
+  transportation?: number;
+  accommodation?: number;
+  additional?: number;
+}
+
+/**
+ * 항목별 세금 적용 여부를 고려한 세금 금액 계산
+ *
+ * @description taxableItems에 따라 각 항목별로 세금 적용 여부를 결정
+ */
+export function calculateTaxAmountByItems(
+  taxSettings: TaxSettings,
+  amounts: TaxableAmounts
+): number {
+  if (taxSettings.type === 'none') return 0;
+
+  // 고정 금액인 경우 그대로 반환
+  if (taxSettings.type === 'fixed') return taxSettings.value;
+
+  // taxableItems 기본값 적용
+  const taxableItems = taxSettings.taxableItems || DEFAULT_TAXABLE_ITEMS;
+
+  // 세금 적용 대상 금액 합산
+  let taxableAmount = 0;
+
+  // 기본급
+  if (taxableItems.basePay !== false) {
+    taxableAmount += amounts.basePay;
+  }
+
+  // 식비 (PROVIDED_FLAG 제외)
+  if (taxableItems.meal !== false && amounts.meal && amounts.meal !== PROVIDED_FLAG && amounts.meal > 0) {
+    taxableAmount += amounts.meal;
+  }
+
+  // 교통비 (PROVIDED_FLAG 제외)
+  if (taxableItems.transportation !== false && amounts.transportation && amounts.transportation !== PROVIDED_FLAG && amounts.transportation > 0) {
+    taxableAmount += amounts.transportation;
+  }
+
+  // 숙박비 (PROVIDED_FLAG 제외)
+  if (taxableItems.accommodation !== false && amounts.accommodation && amounts.accommodation !== PROVIDED_FLAG && amounts.accommodation > 0) {
+    taxableAmount += amounts.accommodation;
+  }
+
+  // 추가수당
+  if (taxableItems.additional !== false && amounts.additional && amounts.additional > 0) {
+    taxableAmount += amounts.additional;
+  }
+
+  // 세율 적용
+  return Math.round(taxableAmount * (taxSettings.value / 100));
 }
 
 /**
@@ -448,6 +583,8 @@ export interface ExtendedSettlementResult extends SettlementResult {
 
 /**
  * 세금을 포함한 정산 금액 계산
+ *
+ * @description taxableItems에 따라 항목별로 세금 적용 여부를 결정
  */
 export function calculateSettlementWithTax(
   startTime: unknown,
@@ -459,9 +596,15 @@ export function calculateSettlementWithTax(
   // 기본 정산 계산
   const baseResult = calculateSettlement(startTime, endTime, salaryInfo, allowances);
 
-  // 세금 계산
+  // 세금 계산 (항목별 적용 여부 고려)
   const effectiveTaxSettings = taxSettings || DEFAULT_TAX_SETTINGS;
-  const taxAmount = calculateTaxAmount(effectiveTaxSettings, baseResult.totalPay);
+  const taxAmount = calculateTaxAmountByItems(effectiveTaxSettings, {
+    basePay: baseResult.basePay,
+    meal: allowances?.meal,
+    transportation: allowances?.transportation,
+    accommodation: allowances?.accommodation,
+    additional: allowances?.additional,
+  });
   const afterTaxPay = baseResult.totalPay - taxAmount;
 
   return {

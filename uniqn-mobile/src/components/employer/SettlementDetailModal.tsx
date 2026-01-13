@@ -26,6 +26,7 @@ import { getUserProfile } from '@/services';
 import {
   type SalaryType,
   type SalaryInfo,
+  type TaxSettings,
   parseTimestamp,
   calculateSettlementFromWorkLog,
   formatCurrency,
@@ -49,6 +50,8 @@ export interface SettlementDetailModalProps {
   workLog: WorkLog | null;
   salaryInfo: SalaryInfo;
   allowances?: Allowances;
+  /** 세금 설정 */
+  taxSettings?: TaxSettings;
   onEditTime?: (workLog: WorkLog) => void;
   onEditAmount?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
@@ -239,6 +242,7 @@ export function SettlementDetailModal({
   workLog,
   salaryInfo,
   allowances,
+  taxSettings,
   onEditTime,
   onEditAmount,
   onSettle,
@@ -261,8 +265,8 @@ export function SettlementDetailModal({
   const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog]);
 
   const settlement = useMemo(() =>
-    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances) : null,
-    [workLog, salaryInfo, allowances]
+    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
+    [workLog, salaryInfo, allowances, taxSettings]
   );
 
   const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
@@ -428,11 +432,20 @@ export function SettlementDetailModal({
                   </View>
                 )}
 
+                {/* 세금 공제 (세금이 있는 경우만 표시) */}
+                {settlement.taxAmount > 0 && (
+                  <InfoRow
+                    label="세금 공제"
+                    value={`-${formatCurrency(settlement.taxAmount)}`}
+                    valueColor="text-red-600 dark:text-red-400"
+                  />
+                )}
+
                 <View className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
 
                 <InfoRow
                   label="총 정산 금액"
-                  value={formatCurrency(settlement.totalPay)}
+                  value={formatCurrency(settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay)}
                   highlight
                 />
               </View>

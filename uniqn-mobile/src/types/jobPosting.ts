@@ -18,6 +18,7 @@ import type {
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import type { PreQuestion } from './preQuestion';
 import type { FormRoleWithCount, TournamentDay } from './jobPostingForm';
+import type { TaxSettings as SettlementTaxSettings, TaxType, TaxableItems } from '@/utils/settlement';
 
 // Re-export for convenience
 export type { PostingType } from './postingConfig';
@@ -53,12 +54,10 @@ export interface Allowances {
 
 /**
  * 세금 설정
+ * @description settlement 유틸리티와 동일한 타입 사용
  */
-export interface TaxSettings {
-  enabled: boolean;
-  taxRate?: number;
-  taxAmount?: number;
-}
+export type TaxSettings = SettlementTaxSettings;
+export type { TaxType, TaxableItems };
 
 /**
  * 역할별 모집 통계 (공고에서 사용)
