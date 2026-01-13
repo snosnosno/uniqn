@@ -132,6 +132,8 @@ export interface JobPosting extends FirebaseDocument {
 
   // === 소유자 정보 ===
   ownerId: string;
+  /** 공고 생성자 ID (하위 호환성 - ownerId로 통일 권장) */
+  createdBy?: string;
   ownerName?: string;
 
   // === 통계 ===

@@ -88,7 +88,9 @@ export async function getApplicantsByJobPosting(
     }
 
     const jobData = jobDoc.data() as JobPosting;
-    if (jobData.ownerId !== ownerId) {
+    // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
+    const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+    if (postingOwnerId !== ownerId) {
       throw new Error('본인의 공고만 조회할 수 있습니다');
     }
 
@@ -258,7 +260,9 @@ export async function rejectApplication(
       }
 
       const jobData = jobDoc.data() as JobPosting;
-      if (jobData.ownerId !== ownerId) {
+      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
+      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+      if (postingOwnerId !== ownerId) {
         throw new Error('본인의 공고만 관리할 수 있습니다');
       }
 
@@ -350,7 +354,9 @@ export async function addToWaitlist(
       }
 
       const jobData = jobDoc.data() as JobPosting;
-      if (jobData.ownerId !== ownerId) {
+      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
+      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+      if (postingOwnerId !== ownerId) {
         throw new Error('본인의 공고만 관리할 수 있습니다');
       }
 
