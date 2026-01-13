@@ -8,7 +8,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { createQRCode, validateQRCode } from '@/services/qrCodeService';
-import { checkIn, checkOut } from '@/services/workLogService';
+import { processEventQRCheckIn } from '@/services/eventQRService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -36,7 +36,7 @@ interface UseQRCodeOptions {
 }
 
 interface UseQRCodeScannerOptions extends UseQRCodeOptions {
-  workLogId: string;
+  workLogId?: string; // deprecated: processEventQRCheckIn이 내부에서 처리
   expectedAction?: QRCodeAction;
 }
 
@@ -82,14 +82,18 @@ export function useCreateQRCode(options: UseQRCodeOptions = {}) {
 
 /**
  * QR 코드 스캔 및 출퇴근 처리 훅
+ *
+ * @description Event QR 시스템을 통해 출퇴근 처리
+ * - processEventQRCheckIn()이 eventQRCodes 컬렉션 검증 및 workLogs 업데이트 수행
  */
 export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
-  const { workLogId, expectedAction, onSuccess, onError } = options;
+  const { onSuccess, onError } = options;
+  const user = useAuthStore((state) => state.user);
   const addToast = useToastStore((state) => state.addToast);
 
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // QR 스캔 결과 처리
+  // QR 스캔 결과 처리 (Event QR 시스템 통합)
   const handleScanResult = useCallback(
     async (result: QRCodeScanResult) => {
       if (!result.success) {
@@ -100,10 +104,21 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         return;
       }
 
-      if (!result.qrCodeId) {
+      // 원본 QR 문자열 확인
+      const qrString = result.qrString;
+
+      if (!qrString) {
         addToast({
           type: 'error',
-          message: 'QR 코드 정보를 읽을 수 없습니다.',
+          message: 'QR 코드를 읽을 수 없습니다.',
+        });
+        return;
+      }
+
+      if (!user?.uid) {
+        addToast({
+          type: 'error',
+          message: '로그인이 필요합니다.',
         });
         return;
       }
@@ -111,35 +126,21 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
       try {
         setIsProcessing(true);
 
-        // QR 코드 검증
-        const validation = await validateQRCode(result.qrCodeId, expectedAction);
+        // Event QR 처리 (eventQRCodes 검증 + workLogs 업데이트)
+        const scanResult = await processEventQRCheckIn(qrString, user.uid);
 
-        if (!validation.isValid) {
+        if (scanResult.success) {
+          addToast({
+            type: 'success',
+            message: scanResult.message,
+          });
+          onSuccess?.();
+        } else {
           addToast({
             type: 'error',
-            message: validation.error || 'QR 코드 검증에 실패했습니다.',
-          });
-          return;
-        }
-
-        // 출퇴근 처리
-        const action = result.action || expectedAction;
-
-        if (action === 'checkIn') {
-          await checkIn(workLogId, result.qrCodeId);
-          addToast({
-            type: 'success',
-            message: '출근이 완료되었습니다.',
-          });
-        } else if (action === 'checkOut') {
-          await checkOut(workLogId, result.qrCodeId);
-          addToast({
-            type: 'success',
-            message: '퇴근이 완료되었습니다.',
+            message: '처리에 실패했습니다.',
           });
         }
-
-        onSuccess?.();
       } catch (error) {
         logger.error('QR 스캔 처리 실패', error as Error);
         addToast({
@@ -151,7 +152,7 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         setIsProcessing(false);
       }
     },
-    [workLogId, expectedAction, addToast, onSuccess, onError]
+    [user?.uid, addToast, onSuccess, onError]
   );
 
   return {

@@ -1086,6 +1086,37 @@ service cloud.firestore {
       allow update: if false;
     }
 
+    // --- Event QR Codes (현장 출퇴근 QR 코드) ---
+    match /eventQRCodes/{qrId} {
+      // 읽기: 인증된 사용자 (QR 검증용)
+      allow read: if isSignedIn();
+
+      // 생성: 구인자/관리자 + 공고 소유자 확인
+      allow create: if isSignedIn() && isPrivileged() &&
+        request.resource.data.keys().hasAll(['eventId', 'date', 'action', 'securityCode', 'createdBy', 'createdAt', 'expiresAt', 'isActive']) &&
+        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.eventId is string &&
+        request.resource.data.date is string &&
+        request.resource.data.action in ['checkIn', 'checkOut'] &&
+        request.resource.data.securityCode is string &&
+        request.resource.data.createdAt is timestamp &&
+        request.resource.data.expiresAt is timestamp &&
+        request.resource.data.isActive is bool &&
+        exists(/databases/$(database)/documents/jobPostings/$(request.resource.data.eventId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(request.resource.data.eventId)).data.createdBy == request.auth.uid;
+
+      // 수정: 공고 작성자 또는 관리자 (isActive 변경만)
+      allow update: if isSignedIn() && (
+        request.auth.token.role == 'admin' ||
+        (isPrivileged() &&
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+      ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isActive']);
+
+      // 삭제: 관리자만
+      allow delete: if request.auth.token.role == 'admin';
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;

@@ -31,7 +31,7 @@ import {
   ExpiredQRCodeError,
 } from '@/errors/BusinessErrors';
 import { trackCheckIn, trackCheckOut, trackSettlementComplete } from './analyticsService';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog, PayrollStatus, QRCodeData } from '@/types';
 
 // ============================================================================
 // Constants
@@ -64,15 +64,7 @@ export interface CheckOutResult {
   message: string;
 }
 
-export interface QRCodeData {
-  id: string;
-  eventId: string;
-  staffId: string;
-  createdAt: Timestamp;
-  expiresAt: Timestamp;
-  action: 'checkIn' | 'checkOut';
-  isUsed: boolean;
-}
+// QRCodeData는 @/types에서 import됨 (중복 제거)
 
 export interface WorkLogStats {
   totalWorkLogs: number;

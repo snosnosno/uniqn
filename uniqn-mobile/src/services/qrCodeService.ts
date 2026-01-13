@@ -3,6 +3,11 @@
  *
  * @description QR 코드 생성 및 검증 서비스
  * @version 1.0.0
+ *
+ * @deprecated 이 서비스는 eventQRService로 대체되었습니다.
+ * - 신규 개발에서는 eventQRService.ts의 generateEventQR(), processEventQRCheckIn() 사용
+ * - 이 서비스는 하위 호환성을 위해 유지되며, 향후 제거 예정
+ * @see eventQRService.ts
  */
 
 import {
@@ -45,6 +50,7 @@ function generateQRCodeId(): string {
 
 /**
  * QR 코드 생성 (관리자/구인자용)
+ * @deprecated eventQRService.generateEventQR() 사용 권장
  */
 export async function createQRCode(
   staffId: string,
@@ -85,6 +91,7 @@ export async function createQRCode(
 
 /**
  * QR 코드 검증
+ * @deprecated eventQRService.validateEventQR() 사용 권장
  */
 export async function validateQRCode(
   qrCodeId: string,

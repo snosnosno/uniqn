@@ -327,6 +327,7 @@ export interface CreateQRCodeRequest {
  */
 export interface QRCodeScanResult {
   success: boolean;
+  qrString?: string; // 원본 QR 문자열 (processEventQRCheckIn용)
   qrCodeId?: string;
   eventId?: string;
   action?: QRCodeAction;

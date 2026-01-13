@@ -127,9 +127,9 @@ export {
   updatePayrollStatus,
   type CheckInResult,
   type CheckOutResult,
-  type QRCodeData as WorkLogQRCodeData,
   type WorkLogStats,
 } from './workLogService';
+// QRCodeData는 @/types에서 직접 import하세요
 
 // QR Code Service
 export {

@@ -99,6 +99,7 @@ export function QRCodeScanner({
 
         onScan({
           success: true,
+          qrString: result.data, // 원본 QR 문자열 전달 (processEventQRCheckIn용)
           qrCodeId: qrData.qrCodeId,
           eventId: qrData.eventId,
           action: qrData.action as QRCodeAction | undefined,
