@@ -99,6 +99,7 @@ export const ERROR_CODES = {
   BUSINESS_QR_SECURITY_MISMATCH: 'E6011',
   BUSINESS_QR_WRONG_EVENT: 'E6012',
   BUSINESS_QR_WRONG_DATE: 'E6013',
+  BUSINESS_PARTIAL_SCHEDULE_FETCH: 'E6020',
 
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
@@ -161,6 +162,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_QR_SECURITY_MISMATCH]: 'QR 코드 보안 검증에 실패했습니다',
   [ERROR_CODES.BUSINESS_QR_WRONG_EVENT]: '해당 공고의 QR 코드가 아닙니다',
   [ERROR_CODES.BUSINESS_QR_WRONG_DATE]: '오늘 날짜의 QR 코드가 아닙니다',
+  [ERROR_CODES.BUSINESS_PARTIAL_SCHEDULE_FETCH]: '일부 스케줄 정보를 불러오지 못했습니다',
 
   // 알 수 없는 에러
   [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',

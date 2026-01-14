@@ -20,7 +20,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import { mapFirebaseError, NetworkError, ERROR_CODES } from '@/errors';
 import type {
   ScheduleEvent,
   ScheduleFilters,
@@ -28,7 +28,10 @@ import type {
   ScheduleGroup,
   ScheduleType,
   WorkLog,
+  Application,
+  ApplicationStatus,
 } from '@/types';
+import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 
 // ============================================================================
 // Constants
@@ -137,6 +140,261 @@ function workLogToScheduleEvent(
 }
 
 /**
+ * 시간대 문자열을 Timestamp로 변환
+ * @param timeSlot - "19:00" 또는 "19:00~22:00" 형식
+ * @param date - YYYY-MM-DD
+ * @param type - 'start' | 'end'
+ */
+function parseTimeSlotToTimestamp(
+  timeSlot: string,
+  date: string,
+  type: 'start' | 'end'
+): Timestamp | null {
+  if (
+    !timeSlot ||
+    timeSlot === FIXED_TIME_MARKER ||
+    timeSlot === TBA_TIME_MARKER ||
+    timeSlot === '미정'
+  ) {
+    return null;
+  }
+
+  // "19:00~22:00" 형식 처리
+  const parts = timeSlot.split('~').map((p) => p.trim());
+  const timeStr = type === 'start' ? parts[0] : parts[1] || parts[0];
+
+  if (!timeStr) return null;
+
+  const timeParts = timeStr.split(':');
+  if (timeParts.length < 2) return null;
+
+  const hours = parseInt(timeParts[0], 10);
+  const minutes = parseInt(timeParts[1], 10);
+  if (isNaN(hours) || isNaN(minutes)) return null;
+
+  const dateParts = date.split('-');
+  if (dateParts.length !== 3) return null;
+
+  const year = parseInt(dateParts[0], 10);
+  const month = parseInt(dateParts[1], 10);
+  const day = parseInt(dateParts[2], 10);
+
+  const dateObj = new Date(year, month - 1, day, hours, minutes);
+  return Timestamp.fromDate(dateObj);
+}
+
+/**
+ * Application status를 ScheduleType으로 매핑
+ */
+function mapApplicationStatusToScheduleType(status: ApplicationStatus): ScheduleType | null {
+  const typeMapping: Record<ApplicationStatus, ScheduleType | null> = {
+    applied: 'applied',
+    pending: 'applied', // pending도 "지원 중"으로 표시
+    confirmed: 'confirmed', // 확정 (workLogs와 중복될 수 있음)
+    rejected: null, // 스케줄에 표시 안 함
+    cancelled: 'cancelled',
+    waitlisted: 'applied', // 대기자도 지원 중으로 표시
+    completed: 'completed',
+    cancellation_pending: 'confirmed', // 취소 요청 중이지만 아직 확정 상태
+  };
+
+  return typeMapping[status] ?? null;
+}
+
+/**
+ * Application의 Assignment를 ScheduleEvent 배열로 변환
+ * @description 하나의 Application이 여러 날짜에 지원했을 수 있으므로 배열 반환
+ */
+function applicationToScheduleEvents(
+  application: Application,
+  jobPosting?: { title: string; location: string }
+): ScheduleEvent[] {
+  const events: ScheduleEvent[] = [];
+
+  const scheduleType = mapApplicationStatusToScheduleType(application.status);
+
+  // 표시하지 않을 상태인 경우 빈 배열 반환
+  if (!scheduleType) {
+    return events;
+  }
+
+  // assignments가 있는 경우 (v2.0 지원서)
+  if (application.assignments && application.assignments.length > 0) {
+    for (const assignment of application.assignments) {
+      // 각 날짜별로 ScheduleEvent 생성
+      for (const date of assignment.dates) {
+        // 고정공고 마커는 스킵
+        if (date === FIXED_DATE_MARKER) continue;
+
+        const event: ScheduleEvent = {
+          id: `${application.id}_${date}_${assignment.timeSlot}`,
+          type: scheduleType,
+          date,
+          startTime: parseTimeSlotToTimestamp(assignment.timeSlot, date, 'start'),
+          endTime: parseTimeSlotToTimestamp(assignment.timeSlot, date, 'end'),
+          actualStartTime: null,
+          actualEndTime: null,
+          eventId: application.jobPostingId,
+          eventName: jobPosting?.title || application.jobPostingTitle || '공고',
+          location: jobPosting?.location || '',
+          role: assignment.roleIds[0] || application.appliedRole,
+          customRole: application.customRole,
+          status: 'not_started', // applications에는 출퇴근 데이터 없음
+          payrollStatus: undefined,
+          payrollAmount: undefined,
+          notes: application.message,
+          sourceCollection: 'applications',
+          sourceId: application.id,
+          applicationId: application.id,
+          createdAt: application.createdAt,
+          updatedAt: application.updatedAt,
+        };
+        events.push(event);
+      }
+    }
+  } else if (application.appliedDate) {
+    // 레거시 지원서 (assignments 없음) - appliedDate 사용
+    const event: ScheduleEvent = {
+      id: `${application.id}_${application.appliedDate}`,
+      type: scheduleType,
+      date: application.appliedDate,
+      startTime: application.appliedTimeSlot
+        ? parseTimeSlotToTimestamp(application.appliedTimeSlot, application.appliedDate, 'start')
+        : null,
+      endTime: application.appliedTimeSlot
+        ? parseTimeSlotToTimestamp(application.appliedTimeSlot, application.appliedDate, 'end')
+        : null,
+      actualStartTime: null,
+      actualEndTime: null,
+      eventId: application.jobPostingId,
+      eventName: jobPosting?.title || application.jobPostingTitle || '공고',
+      location: jobPosting?.location || '',
+      role: application.appliedRole,
+      customRole: application.customRole,
+      status: 'not_started',
+      payrollStatus: undefined,
+      payrollAmount: undefined,
+      notes: application.message,
+      sourceCollection: 'applications',
+      sourceId: application.id,
+      applicationId: application.id,
+      createdAt: application.createdAt,
+      updatedAt: application.updatedAt,
+    };
+    events.push(event);
+  }
+
+  return events;
+}
+
+/**
+ * 이벤트 정보 일괄 조회 (부분 실패 허용)
+ */
+interface EventInfo {
+  title: string;
+  location: string;
+}
+
+async function fetchEventInfoBatch(eventIds: string[]): Promise<Map<string, EventInfo>> {
+  const eventInfoMap = new Map<string, EventInfo>();
+
+  if (eventIds.length === 0) {
+    return eventInfoMap;
+  }
+
+  // 병렬 조회 with 개별 에러 처리
+  const results = await Promise.allSettled(
+    eventIds.map(async (eventId) => {
+      const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
+
+      if (eventDoc.exists()) {
+        const data = eventDoc.data();
+        return {
+          eventId,
+          info: {
+            title: data.title || '이벤트',
+            location: data.location?.name || data.location || '',
+          },
+        };
+      }
+      return { eventId, info: null };
+    })
+  );
+
+  // 결과 처리
+  let failedCount = 0;
+  for (const result of results) {
+    if (result.status === 'fulfilled' && result.value.info) {
+      eventInfoMap.set(result.value.eventId, result.value.info);
+    } else if (result.status === 'rejected') {
+      failedCount++;
+    }
+  }
+
+  // 실패한 ID가 있으면 경고 로깅
+  if (failedCount > 0) {
+    logger.warn('일부 이벤트 정보 조회 실패', {
+      failedCount,
+      totalCount: eventIds.length,
+    });
+  }
+
+  return eventInfoMap;
+}
+
+/**
+ * 스케줄 중복 체크용 키 생성
+ */
+function generateScheduleKey(schedule: ScheduleEvent): string {
+  // eventId + date 조합으로 고유 키 생성
+  return `${schedule.eventId}_${schedule.date}`;
+}
+
+/**
+ * WorkLogs와 Applications 스케줄을 병합하고 중복 제거
+ *
+ * 중복 판별 기준: 같은 eventId + 같은 date
+ * 우선순위: workLogs > applications (확정된 WorkLog가 있으면 Application은 제외)
+ */
+function mergeAndDeduplicateSchedules(
+  workLogSchedules: ScheduleEvent[],
+  applicationSchedules: ScheduleEvent[],
+  dateRange?: { start: string; end: string }
+): ScheduleEvent[] {
+  // 1. WorkLogs로 중복 체크 맵 생성
+  const existingKeys = new Set<string>();
+
+  for (const schedule of workLogSchedules) {
+    const key = generateScheduleKey(schedule);
+    existingKeys.add(key);
+  }
+
+  // 2. Applications에서 중복 제거
+  const filteredApplicationSchedules = applicationSchedules.filter((schedule) => {
+    const key = generateScheduleKey(schedule);
+    // 이미 WorkLog로 존재하면 제외
+    if (existingKeys.has(key)) {
+      return false;
+    }
+
+    // 날짜 범위 필터 (applications은 Firestore에서 필터링 못함)
+    if (dateRange) {
+      if (schedule.date < dateRange.start || schedule.date > dateRange.end) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  // 3. 병합 후 날짜순 정렬 (내림차순)
+  const merged = [...workLogSchedules, ...filteredApplicationSchedules];
+  merged.sort((a, b) => b.date.localeCompare(a.date));
+
+  return merged;
+}
+
+/**
  * 스케줄 통계 계산
  */
 function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
@@ -184,8 +442,8 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
       }
     }
 
-    // 예정된 스케줄
-    if (schedule.date >= today && schedule.type === 'confirmed') {
+    // 예정된 스케줄 (confirmed + applied 포함)
+    if (schedule.date >= today && (schedule.type === 'confirmed' || schedule.type === 'applied')) {
       upcomingSchedules++;
     }
   });
@@ -256,28 +514,31 @@ export function groupSchedulesByDate(schedules: ScheduleEvent[]): ScheduleGroup[
 
 /**
  * 내 스케줄 목록 조회
+ * @description WorkLogs와 Applications를 병합하여 조회
  */
 export async function getMySchedules(
   staffId: string,
   filters?: ScheduleFilters,
   pageSize: number = DEFAULT_PAGE_SIZE
 ): Promise<ScheduleQueryResult> {
+  const startTime = Date.now();
+
   try {
-    logger.info('스케줄 목록 조회', { staffId, filters });
+    logger.info('스케줄 목록 조회 시작', { staffId, filters });
 
+    // ========================================
+    // 1. WorkLogs 쿼리 구성
+    // ========================================
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const constraints: Parameters<typeof query>[1][] = [];
+    const workLogsConstraints: Parameters<typeof query>[1][] = [
+      where('staffId', '==', staffId),
+    ];
 
-    // 스태프 ID 필터 (필수)
-    constraints.push(where('staffId', '==', staffId));
-
-    // 날짜 범위 필터
     if (filters?.dateRange) {
-      constraints.push(where('date', '>=', filters.dateRange.start));
-      constraints.push(where('date', '<=', filters.dateRange.end));
+      workLogsConstraints.push(where('date', '>=', filters.dateRange.start));
+      workLogsConstraints.push(where('date', '<=', filters.dateRange.end));
     }
 
-    // 상태 필터
     if (filters?.status) {
       const statusMapping: Record<string, string[]> = {
         not_started: ['scheduled'],
@@ -286,55 +547,123 @@ export async function getMySchedules(
       };
       const firestoreStatuses = statusMapping[filters.status] || [filters.status];
       if (firestoreStatuses.length === 1) {
-        constraints.push(where('status', '==', firestoreStatuses[0]));
+        workLogsConstraints.push(where('status', '==', firestoreStatuses[0]));
       }
     }
 
-    // 정렬
-    constraints.push(orderBy('date', 'desc'));
-    constraints.push(limit(pageSize));
+    workLogsConstraints.push(orderBy('date', 'desc'));
+    workLogsConstraints.push(limit(pageSize));
 
-    const q = query(workLogsRef, ...constraints);
-    const snapshot = await getDocs(q);
+    const workLogsQuery = query(workLogsRef, ...workLogsConstraints);
 
-    // WorkLog 데이터 수집
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    // ========================================
+    // 2. Applications 쿼리 구성
+    // ========================================
+    // 복합 인덱스: applicantId + status + createdAt (firestore.indexes.json 참조)
+    // 인덱스 생성 완료 후 orderBy('createdAt', 'desc') 추가 가능
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+    const applicationsConstraints: Parameters<typeof query>[1][] = [
+      where('applicantId', '==', staffId),
+      // 스케줄에 표시할 상태만 필터링
+      where('status', 'in', ['applied', 'pending', 'waitlisted']),
+    ];
 
-    // 이벤트 정보 조회 (일괄)
-    const eventIds = [...new Set(workLogs.map((wl) => wl.eventId))];
-    const eventInfoMap = new Map<string, { title: string; location: string }>();
+    applicationsConstraints.push(orderBy('createdAt', 'desc'));
+    applicationsConstraints.push(limit(pageSize));
 
-    // 이벤트 정보 조회 (병렬)
-    await Promise.all(
-      eventIds.map(async (eventId) => {
-        try {
-          const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
-          if (eventDoc.exists()) {
-            const data = eventDoc.data();
-            eventInfoMap.set(eventId, {
-              title: data.title || '이벤트',
-              location: data.location?.name || data.location || '',
-            });
-          }
-        } catch {
-          // 이벤트 정보 조회 실패 시 무시
-        }
-      })
-    );
+    const applicationsQuery = query(applicationsRef, ...applicationsConstraints);
 
-    // ScheduleEvent로 변환
-    const schedules: ScheduleEvent[] = workLogs.map((workLog) =>
+    // ========================================
+    // 3. 병렬 조회 (부분 실패 허용)
+    // ========================================
+    const [workLogsResult, applicationsResult] = await Promise.allSettled([
+      getDocs(workLogsQuery),
+      getDocs(applicationsQuery),
+    ]);
+
+    // 둘 다 실패한 경우에만 에러 throw
+    if (workLogsResult.status === 'rejected' && applicationsResult.status === 'rejected') {
+      logger.error('WorkLogs, Applications 모두 조회 실패', workLogsResult.reason as Error, {
+        staffId,
+      });
+      throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
+        userMessage: '스케줄을 불러올 수 없습니다. 네트워크 연결을 확인해주세요.',
+      });
+    }
+
+    // 부분 실패 로깅
+    if (workLogsResult.status === 'rejected') {
+      logger.warn('WorkLogs 조회 실패 (Applications는 성공)', {
+        error: workLogsResult.reason,
+        staffId,
+      });
+    }
+    if (applicationsResult.status === 'rejected') {
+      logger.warn('Applications 조회 실패 (WorkLogs는 성공)', {
+        error: applicationsResult.reason,
+        staffId,
+      });
+    }
+
+    // ========================================
+    // 4. 데이터 파싱
+    // ========================================
+    const workLogs: WorkLog[] =
+      workLogsResult.status === 'fulfilled'
+        ? workLogsResult.value.docs.map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data(),
+          })) as WorkLog[]
+        : [];
+
+    const applications: Application[] =
+      applicationsResult.status === 'fulfilled'
+        ? applicationsResult.value.docs.map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data(),
+          })) as Application[]
+        : [];
+
+    // ========================================
+    // 5. 이벤트 정보 일괄 조회
+    // ========================================
+    const workLogEventIds = workLogs.map((wl) => wl.eventId);
+    const applicationEventIds = applications.map((app) => app.jobPostingId);
+    const allEventIds = [...new Set([...workLogEventIds, ...applicationEventIds])];
+
+    const eventInfoMap = await fetchEventInfoBatch(allEventIds);
+
+    // ========================================
+    // 6. ScheduleEvent 변환
+    // ========================================
+    // WorkLogs → ScheduleEvent
+    const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) =>
       workLogToScheduleEvent(workLog, eventInfoMap.get(workLog.eventId))
     );
 
-    // 검색어 필터 (클라이언트 사이드)
-    let filteredSchedules = schedules;
+    // Applications → ScheduleEvent[] (다중 날짜 지원)
+    const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) =>
+      applicationToScheduleEvents(app, eventInfoMap.get(app.jobPostingId))
+    );
+
+    // ========================================
+    // 7. 병합 및 중복 제거
+    // ========================================
+    const mergedSchedules = mergeAndDeduplicateSchedules(
+      workLogSchedules,
+      applicationSchedules,
+      filters?.dateRange
+    );
+
+    // ========================================
+    // 8. 클라이언트 사이드 필터링
+    // ========================================
+    let filteredSchedules = mergedSchedules;
+
+    // 검색어 필터
     if (filters?.searchTerm) {
       const term = filters.searchTerm.toLowerCase();
-      filteredSchedules = schedules.filter(
+      filteredSchedules = filteredSchedules.filter(
         (s) =>
           s.eventName.toLowerCase().includes(term) ||
           s.location.toLowerCase().includes(term) ||
@@ -342,20 +671,29 @@ export async function getMySchedules(
       );
     }
 
-    // 타입 필터 (클라이언트 사이드)
+    // 타입 필터
     if (filters?.type) {
       filteredSchedules = filteredSchedules.filter((s) => s.type === filters.type);
     }
 
-    // 통계 계산
+    // ========================================
+    // 9. 통계 계산
+    // ========================================
     const stats = calculateStats(filteredSchedules);
 
-    logger.info('스케줄 목록 조회 완료', { count: filteredSchedules.length });
+    const duration = Date.now() - startTime;
+    logger.info('스케줄 목록 조회 완료', {
+      count: filteredSchedules.length,
+      workLogsCount: workLogSchedules.length,
+      applicationsCount: applicationSchedules.length,
+      durationMs: duration,
+    });
 
     return { schedules: filteredSchedules, stats };
   } catch (error) {
-    logger.error('스케줄 목록 조회 실패', error as Error, { staffId });
-    throw mapFirebaseError(error);
+    const appError = mapFirebaseError(error);
+    logger.error('스케줄 목록 조회 실패', appError, { staffId });
+    throw appError;
   }
 }
 
