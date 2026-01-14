@@ -341,59 +341,12 @@ export interface QRCodeScanResult {
   success: boolean;
   /** 원본 QR 문자열 (processEventQRCheckIn용 - 필수) */
   qrString?: string;
-  /** @deprecated Event QR 시스템에서는 사용 안 함 */
-  qrCodeId?: string;
-  /** @deprecated Event QR 시스템에서는 qrString에서 파싱 */
-  eventId?: string;
-  /** @deprecated Event QR 시스템에서는 qrString에서 파싱 */
-  action?: QRCodeAction;
   error?: string;
 }
 
-// ============================================================================
-// Legacy QR Types (향후 제거 예정)
-// ============================================================================
-
-/**
- * QR 코드 데이터 (Firestore 문서)
- * @deprecated v3.0에서 제거 예정. EventQRCode 타입 사용
- * @see EventQRCode
- */
-export interface QRCodeData {
-  id: string;
-  eventId: string;
-  staffId: string;
-  action: QRCodeAction;
-  createdAt: Timestamp;
-  expiresAt: Timestamp;
-  isUsed: boolean;
-  usedAt?: Timestamp;
-}
-
-/**
- * QR 코드 생성 요청
- * @deprecated v3.0에서 제거 예정. GenerateEventQRInput 타입 사용
- * @see GenerateEventQRInput
- */
-export interface CreateQRCodeRequest {
-  eventId: string;
-  action: QRCodeAction;
-}
-
-/**
- * QR 코드 검증 결과
- * @deprecated v3.0에서 제거 예정. EventQRValidationResult 타입 사용
- * @see EventQRValidationResult
- */
-export interface QRCodeValidationResult {
-  isValid: boolean;
-  qrData?: QRCodeData;
-  error?: string;
-  errorCode?: 'EXPIRED' | 'INVALID' | 'USED' | 'WRONG_ACTION';
-}
 
 // ============================================================================
-// Event QR Types (현행 시스템 - eventQRCodes 컬렉션)
+// Event QR Types (eventQRCodes 컬렉션)
 // ============================================================================
 
 /**

@@ -15,6 +15,7 @@ import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } from '@/components';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
+import { EventQRModal } from '@/components/employer/EventQRModal';
 import {
   PlusIcon,
   UsersIcon,
@@ -82,6 +83,7 @@ interface JobPostingCardProps {
   onPress: (posting: JobPosting) => void;
   onClose: (postingId: string) => void;
   onReopen: (postingId: string) => void;
+  onShowQR: (posting: JobPosting) => void;
   isClosing: boolean;
   isReopening: boolean;
 }
@@ -222,6 +224,7 @@ const JobPostingCard = memo(function JobPostingCard({
   onPress,
   onClose,
   onReopen,
+  onShowQR,
   isClosing,
   isReopening,
 }: JobPostingCardProps) {
@@ -295,9 +298,15 @@ const JobPostingCard = memo(function JobPostingCard({
             {posting.title}
           </Text>
         </View>
-        <Badge variant={status.variant} size="sm" className="ml-2">
-          {status.label}
-        </Badge>
+        {/* QR 버튼 */}
+        <Pressable
+          onPress={() => onShowQR(posting)}
+          className="p-1.5 ml-2 active:opacity-70"
+          accessibilityLabel="현장 QR 표시"
+          onStartShouldSetResponder={() => true}
+        >
+          <QrCodeIcon size={18} color="#2563EB" />
+        </Pressable>
       </View>
 
       {/* 장소 */}
@@ -398,7 +407,7 @@ const JobPostingCard = memo(function JobPostingCard({
         </View>
       </View>
 
-      {/* 하단: 지원자 수 + 마감/재오픈 버튼 */}
+      {/* 하단: 지원자 수 + 상태뱃지 + 마감/재오픈 버튼 */}
       <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         <View className="flex-row items-center">
           <UsersIcon size={14} color="#2563EB" />
@@ -407,8 +416,11 @@ const JobPostingCard = memo(function JobPostingCard({
           </Text>
         </View>
 
-        {/* 마감/재오픈 버튼 (cancelled 제외) */}
-        <View onStartShouldSetResponder={() => true}>
+        {/* 상태 뱃지 + 마감/재오픈 버튼 */}
+        <View onStartShouldSetResponder={() => true} className="flex-row items-center gap-2">
+          <Badge variant={status.variant} size="sm">
+            {status.label}
+          </Badge>
           {posting.status === 'active' && (
             <Pressable
               onPress={() => onClose(posting.id)}
@@ -511,6 +523,8 @@ function EmployerView() {
   const [filter, setFilter] = useState<FilterStatus>('all');
   const [closeTargetId, setCloseTargetId] = useState<string | null>(null);
   const [reopenTargetId, setReopenTargetId] = useState<string | null>(null);
+  // QR 모달 상태
+  const [qrTargetPosting, setQrTargetPosting] = useState<JobPosting | null>(null);
 
   // 필터링된 목록 + 정렬
   const filteredPostings = useMemo(() => {
@@ -598,6 +612,11 @@ function EmployerView() {
     router.push(`/(employer)/my-postings/${posting.id}`);
   }, []);
 
+  // QR 모달 열기
+  const handleShowQR = useCallback((posting: JobPosting) => {
+    setQrTargetPosting(posting);
+  }, []);
+
   // 공고 마감 - 모달 열기
   const handleClosePosting = useCallback((postingId: string) => {
     setCloseTargetId(postingId);
@@ -649,11 +668,12 @@ function EmployerView() {
         onPress={handlePostingPress}
         onClose={handleClosePosting}
         onReopen={handleReopenPosting}
+        onShowQR={handleShowQR}
         isClosing={closeMutation.isPending}
         isReopening={reopenMutation.isPending}
       />
     ),
-    [handlePostingPress, handleClosePosting, handleReopenPosting, closeMutation.isPending, reopenMutation.isPending]
+    [handlePostingPress, handleClosePosting, handleReopenPosting, handleShowQR, closeMutation.isPending, reopenMutation.isPending]
   );
 
   const keyExtractor = useCallback((item: JobPosting) => item.id, []);
@@ -749,6 +769,14 @@ function EmployerView() {
         message="이 공고를 다시 활성화하시겠습니까? 재오픈된 공고는 구직자에게 다시 노출됩니다."
         confirmText="재오픈"
         cancelText="취소"
+      />
+
+      {/* 현장 QR 모달 */}
+      <EventQRModal
+        visible={!!qrTargetPosting}
+        onClose={() => setQrTargetPosting(null)}
+        jobPostingId={qrTargetPosting?.id || ''}
+        jobTitle={qrTargetPosting?.title}
       />
     </SafeAreaView>
   );

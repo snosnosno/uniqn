@@ -3,13 +3,15 @@
  * 모든 공고 상세 하위 화면에 공고 제목 배너 표시
  *
  * @description 헤더 아래에 공고 제목을 표시하여 현재 어떤 공고를 보고 있는지 명확히 함
- * @version 1.0.0
+ * @version 1.1.0
  */
 
+import { useState, useCallback } from 'react';
 import { Stack, useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
 import { View, Text, Pressable, useColorScheme } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { ChevronLeftIcon } from '@/components/icons';
+import { ChevronLeftIcon, QRCodeIcon } from '@/components/icons';
+import { EventQRModal } from '@/components/employer/EventQRModal';
 
 /**
  * 커스텀 뒤로가기 버튼
@@ -49,11 +51,33 @@ function PostingTitleBanner({ title }: { title?: string }) {
   );
 }
 
+/**
+ * 헤더 QR 버튼
+ */
+function HeaderQRButton({ tintColor, onPress }: { tintColor: string; onPress: () => void }) {
+  return (
+    <Pressable onPress={onPress} hitSlop={8} className="p-2 -mr-2">
+      <QRCodeIcon size={22} color={tintColor} />
+    </Pressable>
+  );
+}
+
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { job, isLoading } = useJobDetail(id || '');
+
+  // QR 모달 상태
+  const [showQRModal, setShowQRModal] = useState(false);
+
+  const handleShowQR = useCallback(() => {
+    setShowQRModal(true);
+  }, []);
+
+  const handleCloseQR = useCallback(() => {
+    setShowQRModal(false);
+  }, []);
 
   return (
     <View className="flex-1 bg-gray-50 dark:bg-gray-900">
@@ -77,6 +101,12 @@ export default function JobPostingDetailLayout() {
               backgroundColor: isDark ? '#111827' : '#f9fafb',
             },
             headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
+            headerRight: () => (
+              <HeaderQRButton
+                tintColor={isDark ? '#ffffff' : '#111827'}
+                onPress={handleShowQR}
+              />
+            ),
           }}
         >
           <Stack.Screen
@@ -111,6 +141,14 @@ export default function JobPostingDetailLayout() {
           />
         </Stack>
       </View>
+
+      {/* 현장 QR 모달 */}
+      <EventQRModal
+        visible={showQRModal}
+        onClose={handleCloseQR}
+        jobPostingId={id || ''}
+        jobTitle={job?.title}
+      />
     </View>
   );
 }

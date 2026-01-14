@@ -77,24 +77,3 @@ export type ScheduleFiltersData = z.infer<typeof scheduleFiltersSchema>;
 export const qrCodeActionSchema = z.enum(['checkIn', 'checkOut']);
 
 export type QRCodeActionSchema = z.infer<typeof qrCodeActionSchema>;
-
-/**
- * QR 코드 생성 요청 스키마
- */
-export const createQRCodeRequestSchema = z.object({
-  eventId: z.string().min(1, { message: '이벤트 ID는 필수입니다' }),
-  action: qrCodeActionSchema,
-});
-
-export type CreateQRCodeRequestData = z.infer<typeof createQRCodeRequestSchema>;
-
-/**
- * 출퇴근 요청 스키마
- */
-export const attendanceRequestSchema = z.object({
-  scheduleId: z.string().min(1, { message: '스케줄 ID는 필수입니다' }),
-  action: qrCodeActionSchema,
-  qrCodeId: z.string().optional(),
-});
-
-export type AttendanceRequestData = z.infer<typeof attendanceRequestSchema>;

@@ -110,7 +110,6 @@ let jobCounter = 0;
 let applicationCounter = 0;
 let workLogCounter = 0;
 let notificationCounter = 0;
-let qrCodeCounter = 0;
 let scheduleCounter = 0;
 
 export function resetCounters(): void {
@@ -120,7 +119,6 @@ export function resetCounters(): void {
   applicationCounter = 0;
   workLogCounter = 0;
   notificationCounter = 0;
-  qrCodeCounter = 0;
   scheduleCounter = 0;
 }
 
@@ -347,75 +345,6 @@ export function createReadNotification(): MockNotification {
 }
 
 // ============================================================================
-// QR Code Factories
-// ============================================================================
-
-export interface MockQRCodeData {
-  id: string;
-  eventId: string;
-  staffId: string;
-  action: 'checkIn' | 'checkOut';
-  createdAt: { toMillis: () => number; toDate: () => Date };
-  expiresAt: { toMillis: () => number; toDate: () => Date };
-  isUsed: boolean;
-  usedAt?: { toMillis: () => number; toDate: () => Date };
-}
-
-export function createMockQRCodeData(
-  overrides: Partial<Omit<MockQRCodeData, 'createdAt' | 'expiresAt' | 'usedAt'>> & {
-    createdAt?: Date;
-    expiresAt?: Date;
-    usedAt?: Date;
-  } = {}
-): MockQRCodeData {
-  qrCodeCounter++;
-  const now = new Date();
-  const defaultExpiresAt = new Date(now.getTime() + 5 * 60 * 1000); // 5분 후
-
-  const createTimestamp = (date: Date) => ({
-    toMillis: () => date.getTime(),
-    toDate: () => date,
-  });
-
-  // Extract non-timestamp overrides
-  const { createdAt, expiresAt, usedAt, ...restOverrides } = overrides;
-
-  return {
-    id: `qr_${Date.now().toString(36)}_${qrCodeCounter}`,
-    eventId: `event-${qrCodeCounter}`,
-    staffId: `staff-${qrCodeCounter}`,
-    action: 'checkIn',
-    isUsed: false,
-    ...restOverrides,
-    createdAt: createTimestamp(createdAt ?? now),
-    expiresAt: createTimestamp(expiresAt ?? defaultExpiresAt),
-    ...(usedAt && { usedAt: createTimestamp(usedAt) }),
-  };
-}
-
-export function createExpiredQRCode(): MockQRCodeData {
-  const expired = new Date(Date.now() - 10 * 60 * 1000); // 10분 전 (이미 만료)
-  return createMockQRCodeData({
-    createdAt: new Date(expired.getTime() - 5 * 60 * 1000),
-    expiresAt: expired,
-  });
-}
-
-export function createUsedQRCode(): MockQRCodeData {
-  return createMockQRCodeData({
-    isUsed: true,
-    usedAt: new Date(),
-  });
-}
-
-export function createCheckInQRCode(): MockQRCodeData {
-  return createMockQRCodeData({ action: 'checkIn' });
-}
-
-export function createCheckOutQRCode(): MockQRCodeData {
-  return createMockQRCodeData({ action: 'checkOut' });
-}
-
 export interface MockScheduleEvent {
   id: string;
   type: 'applied' | 'confirmed' | 'completed' | 'cancelled';

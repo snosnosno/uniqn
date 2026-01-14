@@ -131,8 +131,6 @@ export {
   createScheduleEventSchema,
   scheduleFiltersSchema,
   qrCodeActionSchema,
-  createQRCodeRequestSchema,
-  attendanceRequestSchema,
 } from './schedule.schema';
 
 export type {
@@ -142,8 +140,6 @@ export type {
   CreateScheduleEventData,
   ScheduleFiltersData,
   QRCodeActionSchema,
-  CreateQRCodeRequestData,
-  AttendanceRequestData,
 } from './schedule.schema';
 
 // 근무 기록 스키마

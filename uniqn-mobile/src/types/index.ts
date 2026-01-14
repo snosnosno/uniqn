@@ -231,13 +231,10 @@ export type {
   WorkTimeModification,
   RoleChangeHistory,
   SettlementModification,
-  // QR 코드 타입 (레거시 - deprecated)
+  // QR 코드 타입
   QRCodeAction,
-  QRCodeData,
-  CreateQRCodeRequest,
   QRCodeScanResult,
-  QRCodeValidationResult,
-  // Event QR 타입 (현행 시스템)
+  // Event QR 타입 (eventQRCodes 컬렉션)
   EventQRCode,
   EventQRDisplayData,
   GenerateEventQRInput,

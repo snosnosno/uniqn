@@ -2,7 +2,7 @@
  * UNIQN Mobile - QRCodeScanner 컴포넌트
  *
  * @description 출퇴근용 QR 코드 스캐너
- * @version 1.0.0
+ * @version 2.0.0 - Event QR 시스템 전용
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -26,6 +26,7 @@ interface QRCodeScannerProps {
   visible: boolean;
   onClose: () => void;
   onScan: (result: QRCodeScanResult) => void;
+  /** UI 표시용 (실제 검증은 processEventQRCheckIn에서 수행) */
   expectedAction?: QRCodeAction;
   title?: string;
 }
@@ -76,43 +77,20 @@ export function QRCodeScanner({
       try {
         logger.info('QR 코드 스캔됨', { data: result.data });
 
-        // QR 코드 데이터 파싱 시도
-        let qrData: { qrCodeId?: string; eventId?: string; action?: string };
-
-        try {
-          qrData = JSON.parse(result.data);
-        } catch {
-          // JSON이 아닌 경우 ID로 간주
-          qrData = { qrCodeId: result.data };
-        }
-
-        // 액션 검증 (expectedAction이 있는 경우)
-        if (expectedAction && qrData.action && qrData.action !== expectedAction) {
-          onScan({
-            success: false,
-            error: expectedAction === 'checkIn'
-              ? '출근용 QR 코드가 아닙니다.'
-              : '퇴근용 QR 코드가 아닙니다.',
-          });
-          return;
-        }
-
+        // Event QR 시스템: qrString만 전달 (processEventQRCheckIn에서 파싱 및 검증)
         onScan({
           success: true,
-          qrString: result.data, // 원본 QR 문자열 전달 (processEventQRCheckIn용)
-          qrCodeId: qrData.qrCodeId,
-          eventId: qrData.eventId,
-          action: qrData.action as QRCodeAction | undefined,
+          qrString: result.data,
         });
       } catch (error) {
-        logger.error('QR 코드 파싱 실패', error as Error);
+        logger.error('QR 코드 처리 실패', error as Error);
         onScan({
           success: false,
           error: '유효하지 않은 QR 코드입니다.',
         });
       }
     },
-    [scanned, expectedAction, onScan]
+    [scanned, onScan]
   );
 
   // 다시 스캔

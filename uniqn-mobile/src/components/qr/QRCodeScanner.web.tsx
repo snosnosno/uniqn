@@ -164,50 +164,26 @@ export function QRCodeScanner({
     }
   }, [scanned]);
 
-  // QR 코드 감지 처리
+  // QR 코드 감지 처리 (Event QR 시스템: qrString만 전달)
   const handleQRCodeDetected = useCallback(
     (data: string) => {
       try {
         logger.info('QR 코드 스캔됨 (웹)', { data });
 
-        // QR 코드 데이터 파싱 시도
-        let qrData: { qrCodeId?: string; eventId?: string; action?: string };
-
-        try {
-          qrData = JSON.parse(data);
-        } catch {
-          // JSON이 아닌 경우 ID로 간주
-          qrData = { qrCodeId: data };
-        }
-
-        // 액션 검증 (expectedAction이 있는 경우)
-        if (expectedAction && qrData.action && qrData.action !== expectedAction) {
-          onScan({
-            success: false,
-            error:
-              expectedAction === 'checkIn'
-                ? '출근용 QR 코드가 아닙니다.'
-                : '퇴근용 QR 코드가 아닙니다.',
-          });
-          return;
-        }
-
+        // Event QR 시스템: qrString만 전달 (processEventQRCheckIn에서 파싱 및 검증)
         onScan({
           success: true,
-          qrString: data, // 원본 QR 문자열 추가 (processEventQRCheckIn 필수)
-          qrCodeId: qrData.qrCodeId,
-          eventId: qrData.eventId,
-          action: qrData.action as QRCodeAction | undefined,
+          qrString: data,
         });
       } catch (err) {
-        logger.error('QR 코드 파싱 실패 (웹)', err as Error);
+        logger.error('QR 코드 처리 실패 (웹)', err as Error);
         onScan({
           success: false,
           error: '유효하지 않은 QR 코드입니다.',
         });
       }
     },
-    [expectedAction, onScan]
+    [onScan]
   );
 
   // 다시 스캔
