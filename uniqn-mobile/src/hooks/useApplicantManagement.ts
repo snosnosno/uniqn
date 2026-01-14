@@ -734,9 +734,12 @@ export function useApplicantManagement(jobPostingId: string) {
     error: applicantsQuery.error,
     refresh: applicantsQuery.refetch,
 
-    // 통계 (ApplicantListResult에서도 stats 제공)
-    stats: applicantsQuery.data?.stats ?? statsQuery.data,
-    isLoadingStats: statsQuery.isLoading,
+    // 전체 통계 (ApplicationStats)
+    stats: applicantsQuery.data?.stats,
+
+    // 역할별 통계 (Record<StaffRole, ApplicationStats>)
+    statsByRole: statsQuery.data,
+    isLoadingStatsByRole: statsQuery.isLoading,
 
     // 확정/거절
     confirmApplication: confirmMutation.mutate,

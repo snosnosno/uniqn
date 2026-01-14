@@ -38,6 +38,23 @@ import type {
 const APPLICATIONS_COLLECTION = 'applications';
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
 
+/**
+ * ApplicationStatus → ApplicationStats 필드명 매핑
+ *
+ * @description ApplicationStatus는 snake_case (cancellation_pending)
+ *              ApplicationStats 필드는 camelCase (cancellationPending)
+ */
+const STATUS_TO_STATS_KEY: Record<ApplicationStatus, keyof ApplicationStats | null> = {
+  applied: 'applied',
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+  cancelled: 'cancelled',
+  waitlisted: 'waitlisted',
+  completed: 'completed',
+  cancellation_pending: 'cancellationPending',
+};
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -124,8 +141,10 @@ export async function getApplicantsByJobPosting(
       pending: 0,
       confirmed: 0,
       rejected: 0,
+      cancelled: 0,
       waitlisted: 0,
       completed: 0,
+      cancellationPending: 0,
     };
 
     snapshot.docs.forEach((docSnapshot) => {
@@ -144,11 +163,11 @@ export async function getApplicantsByJobPosting(
 
       applicants.push(application);
 
-      // 통계 집계
+      // 통계 집계 (STATUS_TO_STATS_KEY 매핑 사용)
       stats.total++;
-      const statusKey = application.status as keyof typeof stats;
-      if (statusKey in stats && statusKey !== 'total') {
-        stats[statusKey]++;
+      const statsKey = STATUS_TO_STATS_KEY[application.status];
+      if (statsKey && statsKey !== 'total') {
+        stats[statsKey]++;
       }
     });
 
@@ -481,15 +500,18 @@ export async function getApplicantStatsByRole(
           pending: 0,
           confirmed: 0,
           rejected: 0,
+          cancelled: 0,
           waitlisted: 0,
           completed: 0,
+          cancellationPending: 0,
         };
       }
 
+      // 통계 집계 (STATUS_TO_STATS_KEY 매핑 사용)
       statsByRole[effectiveRole].total++;
-      const statusKey = app.status as keyof ApplicationStats;
-      if (statusKey in statsByRole[effectiveRole] && statusKey !== 'total') {
-        statsByRole[effectiveRole][statusKey]++;
+      const statsKey = STATUS_TO_STATS_KEY[app.status];
+      if (statsKey && statsKey !== 'total') {
+        statsByRole[effectiveRole][statsKey]++;
       }
     });
 

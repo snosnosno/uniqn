@@ -252,6 +252,9 @@ export interface RejectApplicationInput {
 
 /**
  * 지원서 통계
+ *
+ * @description ApplicationStatus의 모든 상태에 대응하는 카운트 필드 포함
+ * @note cancelled, cancellation_pending 상태도 포함
  */
 export interface ApplicationStats {
   total: number;
@@ -259,8 +262,11 @@ export interface ApplicationStats {
   pending: number;
   confirmed: number;
   rejected: number;
+  cancelled: number;
   waitlisted: number;
   completed: number;
+  /** 취소 요청 대기 중 (status: cancellation_pending) */
+  cancellationPending: number;
 }
 
 /**

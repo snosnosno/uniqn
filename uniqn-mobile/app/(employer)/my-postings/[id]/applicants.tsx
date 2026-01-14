@@ -3,7 +3,7 @@
  * 특정 공고의 지원자 목록 및 관리
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +16,7 @@ import {
 import { Loading, ErrorState } from '@/components';
 import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 import type { ApplicantWithDetails } from '@/services';
-import type { ApplicationStats, Assignment } from '@/types';
+import type { Assignment } from '@/types';
 
 // ============================================================================
 // Main Component
@@ -27,7 +27,7 @@ export default function ApplicantsScreen() {
 
   const {
     applicants,
-    stats: rawStats,
+    stats,
     isLoading,
     error,
     refresh,
@@ -39,42 +39,6 @@ export default function ApplicantsScreen() {
     isAddingToWaitlist,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '');
-
-  // stats 타입 변환 (ApplicationStats | Record<StaffRole, ApplicationStats> → ApplicationStats)
-  const stats = useMemo((): ApplicationStats | undefined => {
-    if (!rawStats) return undefined;
-
-    // ApplicationStats인 경우 (total 필드가 있으면 ApplicationStats)
-    if ('total' in rawStats && typeof rawStats.total === 'number') {
-      return rawStats as ApplicationStats;
-    }
-
-    // Record<StaffRole, ApplicationStats>인 경우 - 집계
-    const aggregated: ApplicationStats = {
-      total: 0,
-      applied: 0,
-      pending: 0,
-      confirmed: 0,
-      rejected: 0,
-      waitlisted: 0,
-      completed: 0,
-    };
-
-    Object.values(rawStats).forEach((roleStats) => {
-      if (roleStats && typeof roleStats === 'object' && 'total' in roleStats) {
-        const rs = roleStats as ApplicationStats;
-        aggregated.total += rs.total;
-        aggregated.applied += rs.applied;
-        aggregated.pending += rs.pending;
-        aggregated.confirmed += rs.confirmed;
-        aggregated.rejected += rs.rejected;
-        aggregated.waitlisted += rs.waitlisted;
-        aggregated.completed += rs.completed;
-      }
-    });
-
-    return aggregated;
-  }, [rawStats]);
 
   // 모달 상태
   const [selectedApplicant, setSelectedApplicant] = useState<ApplicantWithDetails | null>(null);

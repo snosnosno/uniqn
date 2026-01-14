@@ -7,7 +7,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getJobPostingById } from '@/services';
-import { queryKeys } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 
 // ============================================================================
 // Types
@@ -29,8 +29,8 @@ export function useJobDetail(jobId: string, options: UseJobDetailOptions = {}) {
     queryKey: queryKeys.jobPostings.detail(jobId),
     queryFn: () => getJobPostingById(jobId),
     enabled: enabled && !!jobId,
-    staleTime: 5 * 60 * 1000, // 5분
-    gcTime: 30 * 60 * 1000, // 30분
+    staleTime: cachingPolicies.standard,
+    gcTime: cachingPolicies.stable,
   });
 
   // 리프레시 함수
