@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
 import {
   getMyWorkLogs,
@@ -15,14 +15,9 @@ import {
   isCurrentlyWorking,
   getWorkLogStats,
   getMonthlyPayroll,
-  checkIn,
-  checkOut,
 } from '@/services/workLogService';
 import { useAuthStore } from '@/stores/authStore';
-import { useToastStore } from '@/stores/toastStore';
-import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
-import { logger } from '@/utils/logger';
-// WorkLog type is used by the service functions
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 
 // ============================================================================
 // Types
@@ -31,11 +26,6 @@ import { logger } from '@/utils/logger';
 interface UseWorkLogsOptions {
   limit?: number;
   enabled?: boolean;
-}
-
-interface UseCheckInOutOptions {
-  onSuccess?: () => void;
-  onError?: (error: Error) => void;
 }
 
 // ============================================================================
@@ -200,156 +190,7 @@ export function useMonthlyPayroll(year: number, month: number, enabled = true) {
   };
 }
 
-/**
- * 출근 체크 훅
- */
-export function useCheckIn(options: UseCheckInOutOptions = {}) {
-  const { onSuccess, onError } = options;
-  const queryClient = useQueryClient();
-  // queryClient는 향후 캐시 무효화 시 활용
-  void queryClient;
-  const addToast = useToastStore((state) => state.addToast);
-
-  const mutation = useMutation({
-    mutationFn: async ({
-      workLogId,
-      qrCodeId,
-    }: {
-      workLogId: string;
-      qrCodeId?: string;
-    }) => {
-      return checkIn(workLogId, qrCodeId);
-    },
-    onSuccess: (result) => {
-      logger.info('출근 체크 성공', { workLogId: result.workLogId });
-
-      // 캐시 무효화
-      invalidateQueries.workLogs();
-      invalidateQueries.schedules();
-
-      addToast({
-        type: 'success',
-        message: result.message,
-      });
-
-      onSuccess?.();
-    },
-    onError: (error: Error) => {
-      logger.error('출근 체크 실패', error);
-
-      addToast({
-        type: 'error',
-        message: error.message || '출근 처리에 실패했습니다.',
-      });
-
-      onError?.(error);
-    },
-  });
-
-  return {
-    checkIn: mutation.mutate,
-    checkInAsync: mutation.mutateAsync,
-    isLoading: mutation.isPending,
-    error: mutation.error,
-    isSuccess: mutation.isSuccess,
-    reset: mutation.reset,
-  };
-}
-
-/**
- * 퇴근 체크 훅
- */
-export function useCheckOut(options: UseCheckInOutOptions = {}) {
-  const { onSuccess, onError } = options;
-  const queryClient = useQueryClient();
-  // queryClient는 향후 캐시 무효화 시 활용
-  void queryClient;
-  const addToast = useToastStore((state) => state.addToast);
-
-  const mutation = useMutation({
-    mutationFn: async ({
-      workLogId,
-      qrCodeId,
-    }: {
-      workLogId: string;
-      qrCodeId?: string;
-    }) => {
-      return checkOut(workLogId, qrCodeId);
-    },
-    onSuccess: (result) => {
-      logger.info('퇴근 체크 성공', {
-        workLogId: result.workLogId,
-        workDuration: result.workDuration,
-      });
-
-      // 캐시 무효화
-      invalidateQueries.workLogs();
-      invalidateQueries.schedules();
-
-      const hours = Math.floor(result.workDuration / 60);
-      const minutes = result.workDuration % 60;
-      const durationText =
-        hours > 0 ? `${hours}시간 ${minutes}분` : `${minutes}분`;
-
-      addToast({
-        type: 'success',
-        message: `${result.message} (근무시간: ${durationText})`,
-      });
-
-      onSuccess?.();
-    },
-    onError: (error: Error) => {
-      logger.error('퇴근 체크 실패', error);
-
-      addToast({
-        type: 'error',
-        message: error.message || '퇴근 처리에 실패했습니다.',
-      });
-
-      onError?.(error);
-    },
-  });
-
-  return {
-    checkOut: mutation.mutate,
-    checkOutAsync: mutation.mutateAsync,
-    isLoading: mutation.isPending,
-    error: mutation.error,
-    isSuccess: mutation.isSuccess,
-    reset: mutation.reset,
-  };
-}
-
-/**
- * 출퇴근 통합 훅
- */
-export function useAttendance(options: UseCheckInOutOptions = {}) {
-  const { currentWorkLog, isWorking, isLoading: isLoadingStatus, refetch } = useCurrentWorkStatus();
-  const { checkIn, isLoading: isCheckingIn } = useCheckIn(options);
-  const { checkOut, isLoading: isCheckingOut } = useCheckOut(options);
-
-  const handleAttendance = useCallback(
-    (workLogId: string, qrCodeId?: string) => {
-      if (isWorking) {
-        checkOut({ workLogId, qrCodeId });
-      } else {
-        checkIn({ workLogId, qrCodeId });
-      }
-    },
-    [isWorking, checkIn, checkOut]
-  );
-
-  return {
-    currentWorkLog,
-    isWorking,
-    isLoading: isLoadingStatus || isCheckingIn || isCheckingOut,
-    isCheckingIn,
-    isCheckingOut,
-    checkIn,
-    checkOut,
-    handleAttendance,
-    refetch,
-  };
-}
+// @deprecated useCheckIn, useCheckOut, useAttendance 훅은 제거됨
+// 출퇴근은 QR 스캔으로만 가능: eventQRService.processEventQRCheckIn 사용
 
 export default useWorkLogs;

@@ -17,11 +17,19 @@ import {
   getQRRemainingSeconds,
   stringifyQRData,
   QR_REFRESH_INTERVAL_MS,
-  type QRAction,
-  type EventQRDisplayData,
 } from '@/services';
 import { logger } from '@/utils/logger';
 import { useToastStore } from '@/stores/toastStore';
+import type { QRCodeAction, EventQRDisplayData } from '@/types';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/** 재시도 대기 시간 (10초) */
+const RETRY_DELAY_MS = 10 * 1000;
+/** 최대 재시도 횟수 */
+const MAX_RETRY_COUNT = 3;
 
 // ============================================================================
 // Types
@@ -42,7 +50,7 @@ export interface UseEventQRReturn {
   /** QR 활성화 여부 */
   isActive: boolean;
   /** 현재 액션 (출근/퇴근) */
-  currentAction: QRAction;
+  currentAction: QRCodeAction;
   /** 로딩 상태 */
   isLoading: boolean;
   /** 에러 */
@@ -50,7 +58,7 @@ export interface UseEventQRReturn {
 
   // Actions
   /** QR 생성 */
-  generate: (action: QRAction) => Promise<void>;
+  generate: (action: QRCodeAction) => Promise<void>;
   /** QR 갱신 */
   refresh: () => Promise<void>;
   /** QR 비활성화 */
@@ -77,7 +85,7 @@ export function useEventQR(
   const [displayData, setDisplayData] = useState<EventQRDisplayData | null>(null);
   const [remainingSeconds, setRemainingSeconds] = useState(0);
   const [isActive, setIsActive] = useState(false);
-  const [currentAction, setCurrentAction] = useState<QRAction>('checkIn');
+  const [currentAction, setCurrentAction] = useState<QRCodeAction>('checkIn');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
@@ -85,6 +93,7 @@ export function useEventQR(
   const qrIdRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const retryCountRef = useRef<number>(0);
 
   // ============================================================================
   // 타이머 정리
@@ -127,7 +136,10 @@ export function useEventQR(
   // QR 생성
   // ============================================================================
 
-  const generate = useCallback(async (action: QRAction) => {
+  const generate = useCallback(async (action: QRCodeAction) => {
+    // 기존 타이머 먼저 정리 (race condition 방지)
+    clearTimers();
+
     try {
       setIsLoading(true);
       setError(null);
@@ -150,15 +162,56 @@ export function useEventQR(
       // 카운트다운 시작
       startCountdown(result.displayData.expiresAt);
 
+      // 성공 시 재시도 카운트 초기화
+      retryCountRef.current = 0;
+
       // 자동 갱신 설정
       if (autoRefresh) {
-        refreshTimerRef.current = setTimeout(async () => {
+        const currentTimerId = setTimeout(async () => {
+          // 타이머 ID 일치 확인 (race condition 방지)
+          if (refreshTimerRef.current !== currentTimerId) {
+            logger.info('QR 자동 갱신 스킵 (타이머 변경됨)');
+            return;
+          }
+
           try {
             await generate(action);
           } catch (err) {
             logger.error('QR 자동 갱신 실패', err as Error);
+
+            // 재시도 로직
+            if (retryCountRef.current < MAX_RETRY_COUNT) {
+              retryCountRef.current++;
+              logger.info('QR 자동 갱신 재시도 예약', {
+                retryCount: retryCountRef.current,
+                maxRetry: MAX_RETRY_COUNT,
+                delayMs: RETRY_DELAY_MS,
+              });
+
+              const retryTimerId = setTimeout(() => {
+                // 재시도 타이머 ID 확인
+                if (refreshTimerRef.current !== retryTimerId) return;
+
+                generate(action).catch(() => {
+                  // 재시도 실패 시 사용자에게 알림
+                  if (retryCountRef.current >= MAX_RETRY_COUNT) {
+                    addToast({
+                      type: 'error',
+                      message: 'QR 코드 갱신에 실패했습니다. 수동으로 새로고침 해주세요.',
+                    });
+                  }
+                });
+              }, RETRY_DELAY_MS);
+              refreshTimerRef.current = retryTimerId;
+            } else {
+              addToast({
+                type: 'error',
+                message: 'QR 코드 갱신에 실패했습니다. 수동으로 새로고침 해주세요.',
+              });
+            }
           }
         }, QR_REFRESH_INTERVAL_MS);
+        refreshTimerRef.current = currentTimerId;
       }
 
       logger.info('이벤트 QR 생성 완료', { qrId: result.qrId });
@@ -170,7 +223,7 @@ export function useEventQR(
     } finally {
       setIsLoading(false);
     }
-  }, [jobPostingId, date, createdBy, autoRefresh, startCountdown, addToast]);
+  }, [jobPostingId, date, createdBy, autoRefresh, startCountdown, addToast, clearTimers]);
 
   // ============================================================================
   // QR 갱신
@@ -225,6 +278,13 @@ export function useEventQR(
   useEffect(() => {
     return () => {
       clearTimers();
+      // 언마운트 시 QR 비활성화 (에러 무시)
+      if (qrIdRef.current) {
+        deactivateEventQR(qrIdRef.current).catch((err) => {
+          logger.warn('언마운트 시 QR 비활성화 실패 (무시)', { error: err });
+        });
+        qrIdRef.current = null;
+      }
     };
   }, [clearTimers]);
 

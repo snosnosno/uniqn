@@ -54,7 +54,11 @@ interface ModeToggleProps {
 
 function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
   return (
-    <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6">
+    <View
+      className="flex-row bg-gray-100 dark:bg-gray-800 rounded-xl p-1 mb-6"
+      accessibilityRole="tablist"
+      accessibilityLabel="출퇴근 모드 선택"
+    >
       <Pressable
         onPress={() => onModeChange('checkIn')}
         className={`flex-1 items-center py-3 rounded-lg ${
@@ -62,6 +66,9 @@ function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
             ? 'bg-green-600 dark:bg-green-700'
             : 'bg-transparent'
         }`}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: mode === 'checkIn' }}
+        accessibilityLabel="출근 모드"
       >
         <Text
           className={`text-base font-semibold ${
@@ -81,6 +88,9 @@ function ModeToggle({ mode, onModeChange }: ModeToggleProps) {
             ? 'bg-blue-600 dark:bg-blue-700'
             : 'bg-transparent'
         }`}
+        accessibilityRole="tab"
+        accessibilityState={{ selected: mode === 'checkOut' }}
+        accessibilityLabel="퇴근 모드"
       >
         <Text
           className={`text-base font-semibold ${
@@ -244,7 +254,7 @@ export function EventQRModal({
           ) : isExpired || !hasQRData ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
-              className="items-center justify-center bg-gray-100 dark:bg-gray-200 rounded-xl"
+              className="items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-xl"
             >
               <AlertCircleIcon size={48} color="#9CA3AF" />
               <Text className="text-gray-400 text-center mt-4 mb-4">

@@ -326,8 +326,6 @@ export default function ScheduleScreen() {
 
   // QR 스캔 결과 처리 훅
   const { handleScanResult } = useQRCodeScanner({
-    workLogId: selectedSchedule?.workLogId || '',
-    expectedAction: qrScanAction,
     onSuccess: () => {
       setIsQRScannerVisible(false);
       handleCloseDetailSheet();

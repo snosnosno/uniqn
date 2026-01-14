@@ -17,11 +17,10 @@ import {
   MapIcon,
   BriefcaseIcon,
   CurrencyDollarIcon,
-  CheckCircleIcon,
   XMarkIcon,
   QrCodeIcon,
 } from '@/components/icons';
-import { useCheckIn, useCheckOut, useCurrentWorkStatus } from '@/hooks/useWorkLogs';
+import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
@@ -107,26 +106,8 @@ export function ScheduleDetailSheet({
   onClose,
   onQRScan,
 }: ScheduleDetailSheetProps) {
-  // 출퇴근 훅
-  const { currentWorkLog: _currentWorkLog, isWorking } = useCurrentWorkStatus();
-  void _currentWorkLog; // TODO: 현재 근무 기록 표시 시 활용
-  const { checkIn, isLoading: isCheckingIn } = useCheckIn({
-    onSuccess: onClose,
-  });
-  const { checkOut, isLoading: isCheckingOut } = useCheckOut({
-    onSuccess: onClose,
-  });
-
-  // 출퇴근 버튼 핸들러
-  const handleAttendance = useCallback(() => {
-    if (!schedule?.workLogId) return;
-
-    if (isWorking) {
-      checkOut({ workLogId: schedule.workLogId });
-    } else {
-      checkIn({ workLogId: schedule.workLogId });
-    }
-  }, [schedule, isWorking, checkIn, checkOut]);
+  // 현재 근무 상태 확인
+  const { isWorking } = useCurrentWorkStatus();
 
   // QR 스캔 핸들러
   const handleQRScan = useCallback(() => {
@@ -239,44 +220,18 @@ export function ScheduleDetailSheet({
         </View>
       )}
 
-      {/* Action Buttons */}
-      {canCheckInOut && (
-        <View className="gap-3">
-          {/* QR 스캔 버튼 */}
-          {onQRScan && (
-            <Button
-              variant="outline"
-              onPress={handleQRScan}
-              className="flex-row items-center justify-center"
-            >
-              <QrCodeIcon size={20} color="#3B82F6" />
-              <Text className="ml-2 text-blue-600 dark:text-blue-400 font-medium">
-                QR 코드로 {isWorking ? '퇴근' : '출근'}하기
-              </Text>
-            </Button>
-          )}
-
-          {/* 수동 출퇴근 버튼 */}
-          <Button
-            variant={isWorking ? 'secondary' : 'primary'}
-            onPress={handleAttendance}
-            loading={isCheckingIn || isCheckingOut}
-          >
-            <View className="flex-row items-center justify-center">
-              {isWorking ? (
-                <>
-                  <CheckCircleIcon size={20} color="#374151" />
-                  <Text className="ml-2 text-gray-900 dark:text-gray-100 font-semibold">퇴근하기</Text>
-                </>
-              ) : (
-                <>
-                  <CheckCircleIcon size={20} color="#FFFFFF" />
-                  <Text className="ml-2 text-white font-semibold">출근하기</Text>
-                </>
-              )}
-            </View>
-          </Button>
-        </View>
+      {/* QR 스캔 버튼 (출퇴근은 QR 스캔으로만 가능) */}
+      {canCheckInOut && onQRScan && (
+        <Button
+          variant={isWorking ? 'secondary' : 'primary'}
+          onPress={handleQRScan}
+          className="flex-row items-center justify-center"
+        >
+          <QrCodeIcon size={20} color={isWorking ? '#374151' : '#FFFFFF'} />
+          <Text className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}>
+            QR 코드로 {isWorking ? '퇴근' : '출근'}하기
+          </Text>
+        </Button>
       )}
 
       {/* 취소된 스케줄 안내 */}

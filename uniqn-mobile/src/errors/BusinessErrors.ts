@@ -239,6 +239,91 @@ export class ExpiredQRCodeError extends AppError {
   }
 }
 
+/**
+ * QR 코드 보안 코드 불일치 에러
+ */
+export class QRSecurityMismatchError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      eventId?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_QR_SECURITY_MISMATCH,
+      category: 'business',
+      severity: 'medium', // 보안 관련은 중간 심각도
+      isRetryable: true, // 새 QR 코드로 재시도 가능
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        eventId: options?.eventId,
+      },
+    });
+    this.name = 'QRSecurityMismatchError';
+    Object.setPrototypeOf(this, QRSecurityMismatchError.prototype);
+  }
+}
+
+/**
+ * 잘못된 공고의 QR 코드 에러
+ */
+export class QRWrongEventError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      expectedEventId?: string;
+      actualEventId?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_QR_WRONG_EVENT,
+      category: 'business',
+      severity: 'low',
+      isRetryable: true,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        expectedEventId: options?.expectedEventId,
+        actualEventId: options?.actualEventId,
+      },
+    });
+    this.name = 'QRWrongEventError';
+    Object.setPrototypeOf(this, QRWrongEventError.prototype);
+  }
+}
+
+/**
+ * 잘못된 날짜의 QR 코드 에러
+ */
+export class QRWrongDateError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      expectedDate?: string;
+      actualDate?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_QR_WRONG_DATE,
+      category: 'business',
+      severity: 'low',
+      isRetryable: true,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        expectedDate: options?.expectedDate,
+        actualDate: options?.actualDate,
+      },
+    });
+    this.name = 'QRWrongDateError';
+    Object.setPrototypeOf(this, QRWrongDateError.prototype);
+  }
+}
+
 // ============================================================================
 // 정산 관련 에러
 // ============================================================================
@@ -335,6 +420,18 @@ export const isInvalidQRCodeError = (error: unknown): error is InvalidQRCodeErro
 
 export const isExpiredQRCodeError = (error: unknown): error is ExpiredQRCodeError => {
   return error instanceof ExpiredQRCodeError;
+};
+
+export const isQRSecurityMismatchError = (error: unknown): error is QRSecurityMismatchError => {
+  return error instanceof QRSecurityMismatchError;
+};
+
+export const isQRWrongEventError = (error: unknown): error is QRWrongEventError => {
+  return error instanceof QRWrongEventError;
+};
+
+export const isQRWrongDateError = (error: unknown): error is QRWrongDateError => {
+  return error instanceof QRWrongDateError;
 };
 
 export const isAlreadySettledError = (error: unknown): error is AlreadySettledError => {

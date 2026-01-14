@@ -153,7 +153,7 @@ export function QRCodeScanner({
 
     const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
     const code = jsQR(imageData.data, imageData.width, imageData.height, {
-      inversionAttempts: 'dontInvert',
+      inversionAttempts: 'attemptBoth', // 반전된 QR 코드도 인식
     });
 
     if (code) {
@@ -194,6 +194,7 @@ export function QRCodeScanner({
 
         onScan({
           success: true,
+          qrString: data, // 원본 QR 문자열 추가 (processEventQRCheckIn 필수)
           qrCodeId: qrData.qrCodeId,
           eventId: qrData.eventId,
           action: qrData.action as QRCodeAction | undefined,
@@ -290,7 +291,11 @@ export function QRCodeScanner({
           <View style={styles.buttonContainer}>
             <Button onPress={handleRetryPermission}>다시 시도</Button>
           </View>
-          <Pressable onPress={onClose} style={styles.closeTextButton}>
+          <Pressable
+            onPress={onClose}
+            style={styles.closeTextButton}
+            accessibilityLabel="닫기"
+          >
             <Text style={styles.closeText}>닫기</Text>
           </Pressable>
         </View>

@@ -218,6 +218,7 @@ export {
 // 스케줄 타입
 export type {
   AttendanceStatus,
+  WorkLogStatus,
   ScheduleType,
   PayrollStatus,
   ScheduleEvent,
@@ -230,15 +231,22 @@ export type {
   WorkTimeModification,
   RoleChangeHistory,
   SettlementModification,
-  // QR 코드 타입
+  // QR 코드 타입 (레거시 - deprecated)
   QRCodeAction,
   QRCodeData,
   CreateQRCodeRequest,
   QRCodeScanResult,
   QRCodeValidationResult,
+  // Event QR 타입 (현행 시스템)
+  EventQRCode,
+  EventQRDisplayData,
+  GenerateEventQRInput,
+  EventQRScanResult,
+  EventQRValidationResult,
 } from './schedule';
 
 export {
+  toAttendanceStatus,
   SCHEDULE_COLORS,
   ATTENDANCE_STATUS_COLORS,
   SCHEDULE_TYPE_LABELS,

@@ -71,23 +71,17 @@ export {
   useCurrentWorkStatus,
   useWorkLogStats,
   useMonthlyPayroll,
-  useCheckIn,
-  useCheckOut,
-  useAttendance,
 } from './useWorkLogs';
+// @deprecated useCheckIn, useCheckOut, useAttendance 제거됨 - QR 스캔으로만 출퇴근
 
 // ============================================================================
 // QR Code Hooks
 // ============================================================================
 
-export {
-  useCreateQRCode,
-  useQRCodeScanner,
-  useValidateQRCode,
-  useQRScannerModal,
-  useQRDisplayModal,
-  useQRAutoRefresh,
-} from './useQRCode';
+// 스태프용 QR 스캔 훅
+export { useQRCodeScanner, useQRScannerModal, useQRDisplayModal } from './useQRCode';
+
+// 구인자용 QR 생성 훅 (useEventQR는 Employer Hooks 섹션에서 export)
 
 // ============================================================================
 // Notification Hooks

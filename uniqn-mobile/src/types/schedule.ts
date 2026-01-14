@@ -8,9 +8,43 @@ import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
 
 /**
- * 출석 상태
+ * 출석 상태 (UI 표시용)
  */
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
+
+/**
+ * WorkLog 상태 (전체 lifecycle)
+ */
+export type WorkLogStatus =
+  | 'scheduled' // 예정됨
+  | 'checked_in' // 출근 완료
+  | 'checked_out' // 퇴근 완료
+  | 'completed' // 정산 완료
+  | 'cancelled'; // 취소됨
+
+/**
+ * WorkLogStatus → AttendanceStatus 변환 유틸
+ *
+ * @example
+ * toAttendanceStatus('scheduled') // 'not_started'
+ * toAttendanceStatus('checked_in') // 'checked_in'
+ * toAttendanceStatus('completed') // 'checked_out'
+ */
+export function toAttendanceStatus(workLogStatus: WorkLogStatus): AttendanceStatus {
+  switch (workLogStatus) {
+    case 'scheduled':
+      return 'not_started';
+    case 'checked_in':
+      return 'checked_in';
+    case 'checked_out':
+    case 'completed':
+      return 'checked_out';
+    case 'cancelled':
+      return 'not_started';
+    default:
+      return 'not_started';
+  }
+}
 
 /**
  * 스케줄 타입
@@ -196,7 +230,7 @@ export interface WorkLog extends FirebaseDocument {
   actualEndTime?: string | Timestamp;
 
   // 상태
-  status: 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
+  status: WorkLogStatus;
   role: string;
   /** 커스텀 역할명 (role이 'other'일 때) */
   customRole?: string;
@@ -301,7 +335,29 @@ export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
 export type QRCodeAction = 'checkIn' | 'checkOut';
 
 /**
+ * QR 코드 스캔 결과 (QRCodeScanner 컴포넌트에서 사용)
+ */
+export interface QRCodeScanResult {
+  success: boolean;
+  /** 원본 QR 문자열 (processEventQRCheckIn용 - 필수) */
+  qrString?: string;
+  /** @deprecated Event QR 시스템에서는 사용 안 함 */
+  qrCodeId?: string;
+  /** @deprecated Event QR 시스템에서는 qrString에서 파싱 */
+  eventId?: string;
+  /** @deprecated Event QR 시스템에서는 qrString에서 파싱 */
+  action?: QRCodeAction;
+  error?: string;
+}
+
+// ============================================================================
+// Legacy QR Types (향후 제거 예정)
+// ============================================================================
+
+/**
  * QR 코드 데이터 (Firestore 문서)
+ * @deprecated v3.0에서 제거 예정. EventQRCode 타입 사용
+ * @see EventQRCode
  */
 export interface QRCodeData {
   id: string;
@@ -316,6 +372,8 @@ export interface QRCodeData {
 
 /**
  * QR 코드 생성 요청
+ * @deprecated v3.0에서 제거 예정. GenerateEventQRInput 타입 사용
+ * @see GenerateEventQRInput
  */
 export interface CreateQRCodeRequest {
   eventId: string;
@@ -323,23 +381,89 @@ export interface CreateQRCodeRequest {
 }
 
 /**
- * QR 코드 스캔 결과
- */
-export interface QRCodeScanResult {
-  success: boolean;
-  qrString?: string; // 원본 QR 문자열 (processEventQRCheckIn용)
-  qrCodeId?: string;
-  eventId?: string;
-  action?: QRCodeAction;
-  error?: string;
-}
-
-/**
  * QR 코드 검증 결과
+ * @deprecated v3.0에서 제거 예정. EventQRValidationResult 타입 사용
+ * @see EventQRValidationResult
  */
 export interface QRCodeValidationResult {
   isValid: boolean;
   qrData?: QRCodeData;
   error?: string;
   errorCode?: 'EXPIRED' | 'INVALID' | 'USED' | 'WRONG_ACTION';
+}
+
+// ============================================================================
+// Event QR Types (현행 시스템 - eventQRCodes 컬렉션)
+// ============================================================================
+
+/**
+ * 이벤트 QR 코드 데이터 (Firestore eventQRCodes 문서)
+ *
+ * 구인자가 현장에서 생성하는 출퇴근용 QR 코드
+ */
+export interface EventQRCode {
+  id: string;
+  /** 공고 ID */
+  eventId: string;
+  /** 근무 날짜 (YYYY-MM-DD) */
+  date: string;
+  /** 출근/퇴근 */
+  action: QRCodeAction;
+  /** 보안 코드 (UUID) */
+  securityCode: string;
+  /** 생성자 ID (구인자) */
+  createdBy: string;
+  /** 생성 시간 */
+  createdAt: Timestamp;
+  /** 만료 시간 */
+  expiresAt: Timestamp;
+  /** 활성화 여부 (만료 시간으로 관리, isUsed 대신 사용) */
+  isActive: boolean;
+}
+
+/**
+ * QR 코드 표시용 데이터 (JSON stringify하여 QR 코드로 인코딩)
+ */
+export interface EventQRDisplayData {
+  type: 'event';
+  eventId: string;
+  date: string;
+  action: QRCodeAction;
+  securityCode: string;
+  /** 생성 시간 (ms) */
+  createdAt: number;
+  /** 만료 시간 (ms) */
+  expiresAt: number;
+}
+
+/**
+ * QR 생성 입력
+ */
+export interface GenerateEventQRInput {
+  eventId: string;
+  date: string;
+  action: QRCodeAction;
+  createdBy: string;
+}
+
+/**
+ * QR 스캔 결과 (출퇴근 처리 후)
+ */
+export interface EventQRScanResult {
+  success: boolean;
+  workLogId: string;
+  action: QRCodeAction;
+  checkTime: Date;
+  message: string;
+}
+
+/**
+ * QR 검증 결과
+ */
+export interface EventQRValidationResult {
+  isValid: boolean;
+  eventId?: string;
+  date?: string;
+  action?: QRCodeAction;
+  errorMessage?: string;
 }

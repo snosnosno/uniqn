@@ -1087,8 +1087,11 @@ service cloud.firestore {
     }
 
     // --- Event QR Codes (현장 출퇴근 QR 코드) ---
+    // TODO: 보안 강화 - validateEventQR()를 Firebase Functions로 이전 후
+    //       읽기 권한을 isPrivileged()로 제한 권장
+    //       현재는 스태프가 QR 검증을 위해 클라이언트에서 읽기 필요
     match /eventQRCodes/{qrId} {
-      // 읽기: 인증된 사용자 (QR 검증용)
+      // 읽기: 인증된 사용자 (QR 검증용 - 스태프 포함)
       allow read: if isSignedIn();
 
       // 생성: 구인자/관리자 + 공고 소유자 확인

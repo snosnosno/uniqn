@@ -2,7 +2,9 @@
  * UNIQN Mobile - QRCodeDisplay 컴포넌트
  *
  * @description 출퇴근용 QR 코드 표시
- * @version 1.0.0
+ * @version 2.0.0 - EventQRDisplayData 타입으로 마이그레이션
+ *
+ * @note 구인자용 QR 표시는 EventQRModal 사용 권장
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -10,7 +12,8 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Modal, Button } from '@/components/ui';
 import { RefreshIcon, ClockIcon, CheckCircleIcon } from '@/components/icons';
-import type { QRCodeAction, QRCodeData } from '@/types';
+import { stringifyQRData } from '@/services/eventQRService';
+import type { QRCodeAction, EventQRDisplayData } from '@/types';
 
 // ============================================================================
 // Types
@@ -19,7 +22,8 @@ import type { QRCodeAction, QRCodeData } from '@/types';
 interface QRCodeDisplayProps {
   visible: boolean;
   onClose: () => void;
-  qrData: QRCodeData | null;
+  /** EventQRDisplayData 사용 (Event QR 시스템) */
+  displayData: EventQRDisplayData | null;
   isLoading?: boolean;
   onRefresh?: () => void;
   action?: QRCodeAction;
@@ -30,9 +34,7 @@ interface QRCodeDisplayProps {
 // ============================================================================
 
 const QR_SIZE = 200;
-// QR 남은 시간 자동 갱신 주기 (향후 useEffect에서 활용)
-// export for future use - suppresses unused warning
-export const QR_REFRESH_INTERVAL = 60 * 1000; // 1분마다 남은 시간 업데이트
+// QR 갱신 주기는 eventQRService.QR_REFRESH_INTERVAL_MS 사용
 
 // ============================================================================
 // Helper Functions
@@ -60,7 +62,7 @@ function formatRemainingTime(expiresAt: Date): string {
 export function QRCodeDisplay({
   visible,
   onClose,
-  qrData,
+  displayData,
   isLoading = false,
   onRefresh,
   action,
@@ -70,10 +72,10 @@ export function QRCodeDisplay({
 
   // 남은 시간 업데이트
   useEffect(() => {
-    if (!qrData?.expiresAt) return;
+    if (!displayData?.expiresAt) return;
 
     const updateTime = () => {
-      const expiresAt = qrData.expiresAt.toDate();
+      const expiresAt = new Date(displayData.expiresAt);
       const now = new Date();
 
       if (now.getTime() >= expiresAt.getTime()) {
@@ -89,16 +91,10 @@ export function QRCodeDisplay({
     const interval = setInterval(updateTime, 1000);
 
     return () => clearInterval(interval);
-  }, [qrData]);
+  }, [displayData]);
 
-  // QR 코드 값 생성
-  const qrValue = qrData
-    ? JSON.stringify({
-        qrCodeId: qrData.id,
-        eventId: qrData.eventId,
-        action: qrData.action,
-      })
-    : '';
+  // QR 코드 값 생성 (EventQRDisplayData → JSON 문자열)
+  const qrValue = displayData ? stringifyQRData(displayData) : '';
 
   // 새로고침 핸들러
   const handleRefresh = useCallback(() => {
@@ -129,8 +125,8 @@ export function QRCodeDisplay({
           QR 코드를 스캔하여 {actionLabel}을 완료하세요
         </Text>
 
-        {/* QR 코드 영역 */}
-        <View className="bg-white rounded-2xl p-6 shadow-lg">
+        {/* QR 코드 영역 - 다크모드에서도 QR 가독성을 위해 흰색 배경 유지 */}
+        <View className="bg-white dark:bg-gray-100 rounded-2xl p-6 shadow-lg dark:shadow-gray-800/50">
           {isLoading ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
@@ -139,7 +135,7 @@ export function QRCodeDisplay({
               <ActivityIndicator size="large" color="#3B82F6" />
               <Text className="text-gray-500 mt-4">QR 코드 생성 중...</Text>
             </View>
-          ) : isExpired || !qrData ? (
+          ) : isExpired || !displayData ? (
             <View
               style={{ width: QR_SIZE, height: QR_SIZE }}
               className="items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-xl"
@@ -169,7 +165,7 @@ export function QRCodeDisplay({
         </View>
 
         {/* 남은 시간 */}
-        {qrData && !isLoading && (
+        {displayData && !isLoading && (
           <View className="flex-row items-center mt-4">
             <ClockIcon size={16} color={isExpired ? '#EF4444' : '#6B7280'} />
             <Text
@@ -187,14 +183,14 @@ export function QRCodeDisplay({
         {/* 안내 문구 */}
         <View className="mt-6 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 w-full">
           <Text className="text-sm text-blue-700 dark:text-blue-300 text-center">
-            • QR 코드는 5분간 유효합니다{'\n'}
+            • QR 코드는 3분간 유효합니다{'\n'}
             • 만료 시 새로고침하여 재생성해주세요{'\n'}
-            • 한 번 사용된 QR 코드는 재사용 불가
+            • 스태프가 스캔하면 자동으로 출퇴근 처리
           </Text>
         </View>
 
         {/* 새로고침 버튼 */}
-        {onRefresh && qrData && !isExpired && (
+        {onRefresh && displayData && !isExpired && (
           <Pressable
             onPress={handleRefresh}
             className="flex-row items-center mt-4 p-2"

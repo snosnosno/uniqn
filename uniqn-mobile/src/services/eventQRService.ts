@@ -2,7 +2,7 @@
  * UNIQN Mobile - 이벤트 QR 서비스
  *
  * @description 현장 출퇴근용 QR 코드 생성/검증 서비스
- * @version 1.0.0
+ * @version 2.0.0
  *
  * 흐름:
  * 1. 구인자가 현장에서 QR 코드 생성 (출근/퇴근 모드 선택)
@@ -33,6 +33,7 @@ import {
   limit,
   Timestamp,
   serverTimestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -44,8 +45,16 @@ import {
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
 import { trackCheckIn, trackCheckOut } from './analyticsService';
-import { parseTimeSlotToDate } from '@/utils/dateUtils';
-import type { WorkLog } from '@/types';
+import { parseTimeSlotToDate, toISODateString } from '@/utils/dateUtils';
+import type {
+  WorkLog,
+  QRCodeAction,
+  EventQRCode,
+  EventQRDisplayData,
+  GenerateEventQRInput,
+  EventQRScanResult,
+  EventQRValidationResult,
+} from '@/types';
 
 // ============================================================================
 // Constants
@@ -61,80 +70,6 @@ const QR_VALIDITY_DURATION_MS = 3 * 60 * 1000;
 export const QR_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 
 // ============================================================================
-// Types
-// ============================================================================
-
-export type QRAction = 'checkIn' | 'checkOut';
-
-/**
- * 이벤트 QR 코드 데이터 (Firestore 문서)
- */
-export interface EventQRCode {
-  id: string;
-  /** 공고 ID */
-  eventId: string;
-  /** 근무 날짜 (YYYY-MM-DD) */
-  date: string;
-  /** 출근/퇴근 */
-  action: QRAction;
-  /** 보안 코드 (UUID) */
-  securityCode: string;
-  /** 생성자 ID (구인자) */
-  createdBy: string;
-  /** 생성 시간 */
-  createdAt: Timestamp;
-  /** 만료 시간 */
-  expiresAt: Timestamp;
-  /** 사용 여부 (일회용 아님, 만료 시간으로 관리) */
-  isActive: boolean;
-}
-
-/**
- * QR 코드 표시용 데이터 (JSON stringify)
- */
-export interface EventQRDisplayData {
-  type: 'event';
-  eventId: string;
-  date: string;
-  action: QRAction;
-  securityCode: string;
-  createdAt: number;
-  expiresAt: number;
-}
-
-/**
- * QR 생성 입력
- */
-export interface GenerateEventQRInput {
-  eventId: string;
-  date: string;
-  action: QRAction;
-  createdBy: string;
-}
-
-/**
- * QR 스캔 결과
- */
-export interface EventQRScanResult {
-  success: boolean;
-  workLogId: string;
-  action: QRAction;
-  checkTime: Date;
-  message: string;
-}
-
-/**
- * QR 검증 결과
- */
-export interface EventQRValidationResult {
-  isValid: boolean;
-  eventId?: string;
-  date?: string;
-  action?: QRAction;
-  errorMessage?: string;
-}
-
-// ============================================================================
 // Helper Functions
 // ============================================================================
 
@@ -147,16 +82,6 @@ function generateSecurityCode(): string {
     const v = c === 'x' ? r : (r & 0x3) | 0x8;
     return v.toString(16);
   });
-}
-
-/**
- * 날짜 문자열 반환 (YYYY-MM-DD)
- */
-function formatDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 /**
@@ -239,7 +164,7 @@ export async function generateEventQR(
 async function deactivateExistingQRCodes(
   eventId: string,
   date: string,
-  action: QRAction
+  action: QRCodeAction
 ): Promise<void> {
   try {
     const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
@@ -340,7 +265,7 @@ export async function validateEventQR(
 /**
  * QR 스캔으로 출퇴근 처리
  *
- * @description 스태프가 QR 스캔 시 출퇴근 처리
+ * @description 스태프가 QR 스캔 시 출퇴근 처리 (트랜잭션 적용)
  */
 export async function processEventQRCheckIn(
   qrString: string,
@@ -360,7 +285,7 @@ export async function processEventQRCheckIn(
 
     const { eventId, date, action } = validation;
 
-    // 2. 해당 스태프의 WorkLog 찾기
+    // 2. 해당 스태프의 WorkLog 찾기 (쿼리는 트랜잭션 외부에서)
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
@@ -378,93 +303,110 @@ export async function processEventQRCheckIn(
       });
     }
 
-    const workLogDoc = snapshot.docs[0];
-    const workLog = workLogDoc.data() as WorkLog;
-    const workLogId = workLogDoc.id;
-
-    // 3. 상태 확인 및 출퇴근 처리
+    const workLogId = snapshot.docs[0].id;
     const checkTime = new Date();
 
-    if (action === 'checkIn') {
-      // 출근 처리
-      if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
-        throw new AlreadyCheckedInError({
-          message: '이미 출근 처리되었습니다.',
-          userMessage: '이미 출근 처리가 완료되었습니다.',
-          workLogId,
+    // 3. 트랜잭션으로 상태 확인 및 업데이트 (원자적 처리)
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
+      // 3-1. WorkLog 읽기 (트랜잭션 내)
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+      const workLogDoc = await transaction.get(workLogRef);
+
+      if (!workLogDoc.exists()) {
+        throw new InvalidQRCodeError({
+          message: '근무 기록이 존재하지 않습니다.',
+          userMessage: '근무 기록을 찾을 수 없습니다.',
         });
       }
 
-      // 업데이트할 데이터 구성
-      const updateData: Record<string, unknown> = {
-        status: 'checked_in',
-        updatedAt: serverTimestamp(),
-      };
+      const workLog = workLogDoc.data() as WorkLog;
 
-      // checkInTime이 없으면 (관리자 수정 안 함) timeSlot에서 파싱해서 저장
-      const workLogWithTimeSlot = workLog as WorkLog & { timeSlot?: string; checkInTime?: unknown };
-      if (!workLogWithTimeSlot.checkInTime && workLogWithTimeSlot.timeSlot && date) {
-        const { startTime } = parseTimeSlotToDate(workLogWithTimeSlot.timeSlot, date);
-        if (startTime) {
-          updateData.checkInTime = Timestamp.fromDate(startTime);
+      // 3-2. 상태 확인 및 출퇴근 처리
+      if (action === 'checkIn') {
+        // 출근 처리
+        if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
+          throw new AlreadyCheckedInError({
+            message: '이미 출근 처리되었습니다.',
+            userMessage: '이미 출근 처리가 완료되었습니다.',
+            workLogId,
+          });
         }
-      }
-      // checkInTime이 이미 있으면 (관리자 수정됨) 건드리지 않음 → 출석 체크만
 
-      await updateDoc(doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId), updateData);
+        // 업데이트할 데이터 구성
+        const updateData: Record<string, unknown> = {
+          status: 'checked_in',
+          updatedAt: serverTimestamp(),
+        };
 
-      // Analytics
-      trackCheckIn(formatDateString(checkTime));
+        // checkInTime이 없으면 timeSlot에서 파싱해서 저장
+        const workLogWithTimeSlot = workLog as WorkLog & { timeSlot?: string; checkInTime?: unknown };
+        if (!workLogWithTimeSlot.checkInTime && workLogWithTimeSlot.timeSlot && date) {
+          const { startTime } = parseTimeSlotToDate(workLogWithTimeSlot.timeSlot, date);
+          if (startTime) {
+            updateData.checkInTime = Timestamp.fromDate(startTime);
+          }
+        }
 
-      logger.info('QR 출근 처리 완료', { workLogId, staffId, hasExistingCheckInTime: !!workLogWithTimeSlot.checkInTime });
+        // 3-3. 업데이트 (트랜잭션 내)
+        transaction.update(workLogRef, updateData);
 
-      return {
-        success: true,
-        workLogId,
-        action: 'checkIn',
-        checkTime,
-        message: '출근이 완료되었습니다.',
-      };
-    } else {
-      // 퇴근 처리
-      if (workLog.status !== 'checked_in') {
-        throw new NotCheckedInError({
-          message: '먼저 출근 처리가 필요합니다.',
-          userMessage: '출근 처리 후 퇴근할 수 있습니다.',
+        return {
+          action: 'checkIn' as const,
+          hasExistingCheckInTime: !!workLogWithTimeSlot.checkInTime,
+          workDuration: 0,
+        };
+      } else {
+        // 퇴근 처리
+        if (workLog.status !== 'checked_in') {
+          throw new NotCheckedInError({
+            message: '먼저 출근 처리가 필요합니다.',
+            userMessage: '출근 처리 후 퇴근할 수 있습니다.',
+          });
+        }
+
+        // 3-3. 업데이트 (트랜잭션 내)
+        transaction.update(workLogRef, {
+          status: 'checked_out',
+          checkOutTime: Timestamp.fromDate(checkTime),
+          updatedAt: serverTimestamp(),
         });
+
+        // 근무 시간 계산
+        const workLogWithCheckIn = workLog as WorkLog & { checkInTime?: unknown };
+        let workDuration = 0;
+        const checkInSource = workLogWithCheckIn.checkInTime || workLog.actualStartTime;
+        if (checkInSource) {
+          const startTime =
+            checkInSource instanceof Timestamp
+              ? checkInSource.toDate()
+              : new Date(checkInSource as string);
+          workDuration = Math.round((checkTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
+        }
+
+        return {
+          action: 'checkOut' as const,
+          hasExistingCheckInTime: false,
+          workDuration,
+        };
       }
+    });
 
-      await updateDoc(doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId), {
-        status: 'checked_out',
-        checkOutTime: Timestamp.fromDate(checkTime),
-        updatedAt: serverTimestamp(),
-      });
-
-      // 근무 시간 계산
-      const workLogWithCheckIn = workLog as WorkLog & { checkInTime?: unknown };
-      let workDuration = 0;
-      const checkInSource = workLogWithCheckIn.checkInTime || workLog.actualStartTime;
-      if (checkInSource) {
-        const startTime =
-          checkInSource instanceof Timestamp
-            ? checkInSource.toDate()
-            : new Date(checkInSource as string);
-        workDuration = Math.round((checkTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
-      }
-
-      // Analytics
-      trackCheckOut(formatDateString(checkTime), workDuration);
-
-      logger.info('QR 퇴근 처리 완료', { workLogId, staffId, workDuration });
-
-      return {
-        success: true,
-        workLogId,
-        action: 'checkOut',
-        checkTime,
-        message: '퇴근이 완료되었습니다.',
-      };
+    // 4. Analytics (트랜잭션 외부 - 실패해도 출퇴근은 성공)
+    if (result.action === 'checkIn') {
+      trackCheckIn(toISODateString(checkTime) || '');
+      logger.info('QR 출근 처리 완료', { workLogId, staffId, hasExistingCheckInTime: result.hasExistingCheckInTime });
+    } else {
+      trackCheckOut(toISODateString(checkTime) || '', result.workDuration);
+      logger.info('QR 퇴근 처리 완료', { workLogId, staffId, workDuration: result.workDuration });
     }
+
+    return {
+      success: true,
+      workLogId,
+      action: result.action,
+      checkTime,
+      message: result.action === 'checkIn' ? '출근이 완료되었습니다.' : '퇴근이 완료되었습니다.',
+    };
   } catch (error) {
     logger.error('QR 스캔 출퇴근 처리 실패', error as Error, { staffId });
 
@@ -487,7 +429,7 @@ export async function processEventQRCheckIn(
 export async function getActiveEventQR(
   eventId: string,
   date: string,
-  action: QRAction
+  action: QRCodeAction
 ): Promise<EventQRCode | null> {
   try {
     const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);

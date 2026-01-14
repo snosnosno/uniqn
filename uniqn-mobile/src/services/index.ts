@@ -121,22 +121,14 @@ export {
   isCurrentlyWorking,
   getWorkLogStats,
   getMonthlyPayroll,
-  checkIn,
-  checkOut,
   updateWorkTime,
   updatePayrollStatus,
-  type CheckInResult,
-  type CheckOutResult,
   type WorkLogStats,
 } from './workLogService';
-// QRCodeData는 @/types에서 직접 import하세요
-
-// QR Code Service
-export {
-  createQRCode,
-  validateQRCode,
-  getQRCodeById,
-} from './qrCodeService';
+// @deprecated checkIn, checkOut 함수 제거됨 - eventQRService.processEventQRCheckIn 사용
+// @deprecated QR Code Service가 삭제되었습니다.
+// Event QR 시스템을 사용하세요: eventQRService의 generateEventQR, validateEventQR 등
+// QR 관련 타입은 @/types에서 import: QRCodeAction, EventQRCode, EventQRDisplayData 등
 
 // Notification Service
 export {
@@ -385,6 +377,7 @@ export {
 } from './confirmedStaffService';
 
 // Event QR Service (구인자용 현장 출퇴근 QR)
+// 타입은 @/types에서 import하세요: EventQRCode, EventQRDisplayData, etc.
 export {
   generateEventQR,
   validateEventQR,
@@ -395,12 +388,6 @@ export {
   getQRRemainingSeconds,
   stringifyQRData,
   QR_REFRESH_INTERVAL_MS,
-  type QRAction,
-  type EventQRCode,
-  type EventQRDisplayData,
-  type GenerateEventQRInput,
-  type EventQRScanResult,
-  type EventQRValidationResult,
 } from './eventQRService';
 
 // ============================================================================

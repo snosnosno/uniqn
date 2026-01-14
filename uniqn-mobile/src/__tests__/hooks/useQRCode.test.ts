@@ -2,39 +2,24 @@
  * UNIQN Mobile - useQRCode Hooks Tests
  *
  * @description Unit tests for QR code hooks
- * @version 1.0.0
+ * @version 2.0.0 - Updated for EventQR system
  */
 
 import { renderHook, act } from '@testing-library/react-native';
-import {
-  createMockQRCodeData,
-  resetCounters,
-} from '../mocks/factories';
-import type { QRCodeScanResult, QRCodeValidationResult } from '@/types';
+import type { QRCodeScanResult, EventQRDisplayData, QRCodeAction } from '@/types';
 
 // Import after mocks
 import {
-  useCreateQRCode,
   useQRCodeScanner,
-  useValidateQRCode,
   useQRScannerModal,
   useQRDisplayModal,
 } from '@/hooks/useQRCode';
 
-// Mock services
-const mockCreateQRCode = jest.fn();
-const mockValidateQRCode = jest.fn();
-const mockCheckIn = jest.fn();
-const mockCheckOut = jest.fn();
+// Mock eventQRService
+const mockProcessEventQRCheckIn = jest.fn();
 
-jest.mock('@/services/qrCodeService', () => ({
-  createQRCode: (...args: unknown[]) => mockCreateQRCode(...args),
-  validateQRCode: (...args: unknown[]) => mockValidateQRCode(...args),
-}));
-
-jest.mock('@/services/workLogService', () => ({
-  checkIn: (...args: unknown[]) => mockCheckIn(...args),
-  checkOut: (...args: unknown[]) => mockCheckOut(...args),
+jest.mock('@/services/eventQRService', () => ({
+  processEventQRCheckIn: (...args: unknown[]) => mockProcessEventQRCheckIn(...args),
 }));
 
 // Mock stores
@@ -60,125 +45,37 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
-// Mock React Query
-const mockMutate = jest.fn();
-const mockMutateAsync = jest.fn();
-let mockIsPending = false;
-let mockData: unknown = undefined;
-let mockError: Error | null = null;
-
-jest.mock('@tanstack/react-query', () => ({
-  useMutation: jest.fn((options: {
-    mutationFn: (...args: unknown[]) => Promise<unknown>;
-    onSuccess?: (data: unknown) => void;
-    onError?: (error: Error) => void;
-  }) => {
-    mockMutate.mockImplementation(async (args: unknown) => {
-      try {
-        mockIsPending = true;
-        const result = await options.mutationFn(args);
-        mockData = result;
-        options.onSuccess?.(result);
-        mockIsPending = false;
-        return result;
-      } catch (error) {
-        mockError = error as Error;
-        options.onError?.(error as Error);
-        mockIsPending = false;
-        throw error;
-      }
-    });
-
-    return {
-      mutate: mockMutate,
-      mutateAsync: mockMutateAsync,
-      data: mockData,
-      isPending: mockIsPending,
-      error: mockError,
-      reset: jest.fn(),
-    };
-  }),
-}));
+// Helper function to create mock EventQRDisplayData
+function createMockEventQRDisplayData(
+  overrides: Partial<EventQRDisplayData> = {}
+): EventQRDisplayData {
+  return {
+    type: 'event',
+    eventId: 'event-123',
+    date: '2024-01-15',
+    action: 'checkIn',
+    securityCode: 'uuid-security-code',
+    createdAt: Date.now(),
+    expiresAt: Date.now() + 3 * 60 * 1000, // 3 minutes
+    ...overrides,
+  };
+}
 
 describe('useQRCode Hooks', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    resetCounters();
-    mockIsPending = false;
-    mockData = undefined;
-    mockError = null;
-  });
-
-  describe('useCreateQRCode', () => {
-    it('should return initial state correctly', () => {
-      const { result } = renderHook(() => useCreateQRCode());
-
-      expect(result.current.createQRCode).toBeDefined();
-      expect(result.current.qrData).toBeUndefined();
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.error).toBeNull();
-      expect(result.current.reset).toBeDefined();
-    });
-
-    it('should call createQRCode service with correct params', async () => {
-      const mockQRData = createMockQRCodeData();
-      mockCreateQRCode.mockResolvedValueOnce(mockQRData);
-
-      const onSuccess = jest.fn();
-      const { result } = renderHook(() => useCreateQRCode({ onSuccess }));
-
-      await act(async () => {
-        await result.current.createQRCode({
-          eventId: 'event-123',
-          action: 'checkIn',
-        });
-      });
-
-      expect(mockCreateQRCode).toHaveBeenCalledWith('test-user-id', {
-        eventId: 'event-123',
-        action: 'checkIn',
-      });
-    });
-
-    it('should show error toast on failure', async () => {
-      mockCreateQRCode.mockRejectedValueOnce(new Error('Failed'));
-
-      const onError = jest.fn();
-      const { result } = renderHook(() => useCreateQRCode({ onError }));
-
-      await act(async () => {
-        try {
-          await result.current.createQRCode({
-            eventId: 'event-123',
-            action: 'checkIn',
-          });
-        } catch {
-          // Expected to throw
-        }
-      });
-
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'error',
-        message: 'QR 코드 생성에 실패했습니다.',
-      });
-    });
   });
 
   describe('useQRCodeScanner', () => {
-    const defaultOptions = {
-      workLogId: 'worklog-123',
-      expectedAction: 'checkIn' as const,
-    };
-
     it('should return initial state correctly', () => {
-      const { result } = renderHook(() => useQRCodeScanner(defaultOptions));
+      const { result } = renderHook(() => useQRCodeScanner({}));
 
       expect(result.current.handleScanResult).toBeDefined();
       expect(result.current.isProcessing).toBe(false);
     });
 
     it('should show error toast when scan fails', async () => {
-      const { result } = renderHook(() => useQRCodeScanner(defaultOptions));
+      const { result } = renderHook(() => useQRCodeScanner({}));
 
       const failedResult: QRCodeScanResult = {
         success: false,
@@ -195,49 +92,52 @@ describe('useQRCode Hooks', () => {
       });
     });
 
-    it('should show error toast when qrCodeId is missing', async () => {
-      const { result } = renderHook(() => useQRCodeScanner(defaultOptions));
+    it('should show error toast when qrString is missing', async () => {
+      const { result } = renderHook(() => useQRCodeScanner({}));
 
-      const resultWithoutId: QRCodeScanResult = {
+      const resultWithoutString: QRCodeScanResult = {
         success: true,
-        qrCodeId: undefined,
+        qrString: undefined,
       };
 
       await act(async () => {
-        await result.current.handleScanResult(resultWithoutId);
+        await result.current.handleScanResult(resultWithoutString);
       });
 
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'error',
-        message: 'QR 코드 정보를 읽을 수 없습니다.',
+        message: 'QR 코드를 읽을 수 없습니다.',
       });
     });
 
-    it('should validate QR code and process checkIn', async () => {
-      const validationResult: QRCodeValidationResult = {
-        isValid: true,
-        qrData: createMockQRCodeData() as unknown as import('@/types').QRCodeData,
+    it('should process checkIn with EventQR system', async () => {
+      const mockScanResult = {
+        success: true,
+        workLogId: 'worklog-123',
+        action: 'checkIn' as QRCodeAction,
+        checkTime: new Date(),
+        message: '출근이 완료되었습니다.',
       };
-      mockValidateQRCode.mockResolvedValueOnce(validationResult);
-      mockCheckIn.mockResolvedValueOnce(undefined);
+      mockProcessEventQRCheckIn.mockResolvedValueOnce(mockScanResult);
 
       const onSuccess = jest.fn();
       const { result } = renderHook(() =>
-        useQRCodeScanner({ ...defaultOptions, onSuccess })
+        useQRCodeScanner({ onSuccess })
       );
 
       const scanResult: QRCodeScanResult = {
         success: true,
-        qrCodeId: 'qr-123',
-        action: 'checkIn',
+        qrString: JSON.stringify(createMockEventQRDisplayData()),
       };
 
       await act(async () => {
         await result.current.handleScanResult(scanResult);
       });
 
-      expect(mockValidateQRCode).toHaveBeenCalledWith('qr-123', 'checkIn');
-      expect(mockCheckIn).toHaveBeenCalledWith('worklog-123', 'qr-123');
+      expect(mockProcessEventQRCheckIn).toHaveBeenCalledWith(
+        scanResult.qrString,
+        'test-user-id'
+      );
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '출근이 완료되었습니다.',
@@ -245,50 +145,45 @@ describe('useQRCode Hooks', () => {
       expect(onSuccess).toHaveBeenCalled();
     });
 
-    it('should validate QR code and process checkOut', async () => {
-      const validationResult: QRCodeValidationResult = {
-        isValid: true,
-        qrData: createMockQRCodeData({ action: 'checkOut' }) as unknown as import('@/types').QRCodeData,
+    it('should process checkOut with EventQR system', async () => {
+      const mockScanResult = {
+        success: true,
+        workLogId: 'worklog-123',
+        action: 'checkOut' as QRCodeAction,
+        checkTime: new Date(),
+        message: '퇴근이 완료되었습니다.',
       };
-      mockValidateQRCode.mockResolvedValueOnce(validationResult);
-      mockCheckOut.mockResolvedValueOnce(undefined);
+      mockProcessEventQRCheckIn.mockResolvedValueOnce(mockScanResult);
 
-      const { result } = renderHook(() =>
-        useQRCodeScanner({
-          workLogId: 'worklog-123',
-          expectedAction: 'checkOut',
-        })
-      );
+      const { result } = renderHook(() => useQRCodeScanner({}));
 
+      const qrData = createMockEventQRDisplayData({ action: 'checkOut' });
       const scanResult: QRCodeScanResult = {
         success: true,
-        qrCodeId: 'qr-123',
-        action: 'checkOut',
+        qrString: JSON.stringify(qrData),
       };
 
       await act(async () => {
         await result.current.handleScanResult(scanResult);
       });
 
-      expect(mockCheckOut).toHaveBeenCalledWith('worklog-123', 'qr-123');
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '퇴근이 완료되었습니다.',
       });
     });
 
-    it('should show error when validation fails', async () => {
-      const validationResult: QRCodeValidationResult = {
-        isValid: false,
-        error: 'QR 코드가 만료되었습니다.',
-      };
-      mockValidateQRCode.mockResolvedValueOnce(validationResult);
+    it('should handle processing error', async () => {
+      mockProcessEventQRCheckIn.mockRejectedValueOnce(new Error('처리 실패'));
 
-      const { result } = renderHook(() => useQRCodeScanner(defaultOptions));
+      const onError = jest.fn();
+      const { result } = renderHook(() =>
+        useQRCodeScanner({ onError })
+      );
 
       const scanResult: QRCodeScanResult = {
         success: true,
-        qrCodeId: 'qr-123',
+        qrString: JSON.stringify(createMockEventQRDisplayData()),
       };
 
       await act(async () => {
@@ -297,9 +192,9 @@ describe('useQRCode Hooks', () => {
 
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'error',
-        message: 'QR 코드가 만료되었습니다.',
+        message: '처리 실패',
       });
-      expect(mockCheckIn).not.toHaveBeenCalled();
+      expect(onError).toHaveBeenCalled();
     });
   });
 
@@ -347,32 +242,32 @@ describe('useQRCode Hooks', () => {
       const { result } = renderHook(() => useQRDisplayModal());
 
       expect(result.current.isVisible).toBe(false);
-      expect(result.current.qrData).toBeNull();
+      expect(result.current.displayData).toBeNull();
       expect(result.current.action).toBeUndefined();
       expect(result.current.openDisplay).toBeDefined();
       expect(result.current.closeDisplay).toBeDefined();
-      expect(result.current.updateQRData).toBeDefined();
+      expect(result.current.updateDisplayData).toBeDefined();
     });
 
-    it('should open display with QR data', () => {
+    it('should open display with EventQRDisplayData', () => {
       const { result } = renderHook(() => useQRDisplayModal());
-      const mockQRData = createMockQRCodeData() as unknown as import('@/types').QRCodeData;
+      const mockDisplayData = createMockEventQRDisplayData();
 
       act(() => {
-        result.current.openDisplay(mockQRData, 'checkIn');
+        result.current.openDisplay(mockDisplayData, 'checkIn');
       });
 
       expect(result.current.isVisible).toBe(true);
-      expect(result.current.qrData).toBe(mockQRData);
+      expect(result.current.displayData).toBe(mockDisplayData);
       expect(result.current.action).toBe('checkIn');
     });
 
     it('should close display', () => {
       const { result } = renderHook(() => useQRDisplayModal());
-      const mockQRData = createMockQRCodeData() as unknown as import('@/types').QRCodeData;
+      const mockDisplayData = createMockEventQRDisplayData();
 
       act(() => {
-        result.current.openDisplay(mockQRData);
+        result.current.openDisplay(mockDisplayData);
       });
 
       act(() => {
@@ -380,43 +275,25 @@ describe('useQRCode Hooks', () => {
       });
 
       expect(result.current.isVisible).toBe(false);
-      // Note: qrData is cleared after timeout in actual implementation
+      // Note: displayData is cleared after timeout in actual implementation
     });
 
-    it('should update QR data', () => {
+    it('should update display data', () => {
       const { result } = renderHook(() => useQRDisplayModal());
-      const initialData = createMockQRCodeData() as unknown as import('@/types').QRCodeData;
-      const updatedData = createMockQRCodeData({
+      const initialData = createMockEventQRDisplayData();
+      const updatedData = createMockEventQRDisplayData({
         eventId: 'updated-event',
-      }) as unknown as import('@/types').QRCodeData;
+      });
 
       act(() => {
         result.current.openDisplay(initialData);
       });
 
       act(() => {
-        result.current.updateQRData(updatedData);
+        result.current.updateDisplayData(updatedData);
       });
 
-      expect(result.current.qrData).toBe(updatedData);
+      expect(result.current.displayData).toBe(updatedData);
     });
-  });
-});
-
-describe('useValidateQRCode', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockIsPending = false;
-    mockData = undefined;
-    mockError = null;
-  });
-
-  it('should return initial state correctly', () => {
-    const { result } = renderHook(() => useValidateQRCode());
-
-    expect(result.current.validateQRCode).toBeDefined();
-    expect(result.current.validationResult).toBeUndefined();
-    expect(result.current.isValidating).toBe(false);
-    expect(result.current.error).toBeNull();
   });
 });
