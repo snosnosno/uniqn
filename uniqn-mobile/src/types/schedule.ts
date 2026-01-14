@@ -6,6 +6,7 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
+import type { JobPostingCard } from './jobPosting';
 
 /**
  * 출석 상태 (UI 표시용)
@@ -93,6 +94,9 @@ export interface ScheduleEvent extends FirebaseDocument {
   sourceId: string;
   workLogId?: string;
   applicationId?: string;
+
+  // JobCard 렌더링용 데이터 (스케줄 탭에서 사용)
+  jobPostingCard?: JobPostingCard;
 }
 
 /**

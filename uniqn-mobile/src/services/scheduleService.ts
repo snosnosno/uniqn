@@ -30,7 +30,10 @@ import type {
   WorkLog,
   Application,
   ApplicationStatus,
+  JobPosting,
+  JobPostingCard,
 } from '@/types';
+import { toJobPostingCard } from '@/types/jobPosting';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 
 // ============================================================================
@@ -83,7 +86,7 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
  */
 function workLogToScheduleEvent(
   workLog: WorkLog,
-  jobPosting?: { title: string; location: string }
+  cardInfo?: JobPostingCardWithMeta
 ): ScheduleEvent {
   // status 매핑: WorkLog status → ScheduleType
   let type: ScheduleType = 'confirmed';
@@ -118,8 +121,8 @@ function workLogToScheduleEvent(
         : workLog.actualEndTime
       : null,
     eventId: workLog.eventId,
-    eventName: jobPosting?.title || '이벤트',
-    location: jobPosting?.location || '',
+    eventName: cardInfo?.title || '이벤트',
+    location: cardInfo?.location || '',
     role: workLog.role,
     customRole: workLog.customRole,
     status:
@@ -134,6 +137,7 @@ function workLogToScheduleEvent(
     sourceCollection: 'workLogs',
     sourceId: workLog.id,
     workLogId: workLog.id,
+    jobPostingCard: cardInfo?.card,
     createdAt: workLog.createdAt,
     updatedAt: workLog.updatedAt,
   };
@@ -207,7 +211,7 @@ function mapApplicationStatusToScheduleType(status: ApplicationStatus): Schedule
  */
 function applicationToScheduleEvents(
   application: Application,
-  jobPosting?: { title: string; location: string }
+  cardInfo?: JobPostingCardWithMeta
 ): ScheduleEvent[] {
   const events: ScheduleEvent[] = [];
 
@@ -235,8 +239,8 @@ function applicationToScheduleEvents(
           actualStartTime: null,
           actualEndTime: null,
           eventId: application.jobPostingId,
-          eventName: jobPosting?.title || application.jobPostingTitle || '공고',
-          location: jobPosting?.location || '',
+          eventName: cardInfo?.title || application.jobPostingTitle || '공고',
+          location: cardInfo?.location || '',
           role: assignment.roleIds[0] || application.appliedRole,
           customRole: application.customRole,
           status: 'not_started', // applications에는 출퇴근 데이터 없음
@@ -246,6 +250,7 @@ function applicationToScheduleEvents(
           sourceCollection: 'applications',
           sourceId: application.id,
           applicationId: application.id,
+          jobPostingCard: cardInfo?.card,
           createdAt: application.createdAt,
           updatedAt: application.updatedAt,
         };
@@ -267,8 +272,8 @@ function applicationToScheduleEvents(
       actualStartTime: null,
       actualEndTime: null,
       eventId: application.jobPostingId,
-      eventName: jobPosting?.title || application.jobPostingTitle || '공고',
-      location: jobPosting?.location || '',
+      eventName: cardInfo?.title || application.jobPostingTitle || '공고',
+      location: cardInfo?.location || '',
       role: application.appliedRole,
       customRole: application.customRole,
       status: 'not_started',
@@ -278,6 +283,7 @@ function applicationToScheduleEvents(
       sourceCollection: 'applications',
       sourceId: application.id,
       applicationId: application.id,
+      jobPostingCard: cardInfo?.card,
       createdAt: application.createdAt,
       updatedAt: application.updatedAt,
     };
@@ -289,17 +295,19 @@ function applicationToScheduleEvents(
 
 /**
  * 이벤트 정보 일괄 조회 (부분 실패 허용)
+ * @description JobPostingCard 전체 데이터를 반환하여 스케줄 탭에서 JobCard 사용 가능
  */
-interface EventInfo {
+interface JobPostingCardWithMeta {
+  card: JobPostingCard;
   title: string;
   location: string;
 }
 
-async function fetchEventInfoBatch(eventIds: string[]): Promise<Map<string, EventInfo>> {
-  const eventInfoMap = new Map<string, EventInfo>();
+async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string, JobPostingCardWithMeta>> {
+  const cardMap = new Map<string, JobPostingCardWithMeta>();
 
   if (eventIds.length === 0) {
-    return eventInfoMap;
+    return cardMap;
   }
 
   // 병렬 조회 with 개별 에러 처리
@@ -309,11 +317,14 @@ async function fetchEventInfoBatch(eventIds: string[]): Promise<Map<string, Even
 
       if (eventDoc.exists()) {
         const data = eventDoc.data();
+        const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
+        const card = toJobPostingCard(jobPosting);
         return {
           eventId,
           info: {
+            card,
             title: data.title || '이벤트',
-            location: data.location?.name || data.location || '',
+            location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
           },
         };
       }
@@ -325,7 +336,7 @@ async function fetchEventInfoBatch(eventIds: string[]): Promise<Map<string, Even
   let failedCount = 0;
   for (const result of results) {
     if (result.status === 'fulfilled' && result.value.info) {
-      eventInfoMap.set(result.value.eventId, result.value.info);
+      cardMap.set(result.value.eventId, result.value.info);
     } else if (result.status === 'rejected') {
       failedCount++;
     }
@@ -333,13 +344,13 @@ async function fetchEventInfoBatch(eventIds: string[]): Promise<Map<string, Even
 
   // 실패한 ID가 있으면 경고 로깅
   if (failedCount > 0) {
-    logger.warn('일부 이벤트 정보 조회 실패', {
+    logger.warn('일부 공고 정보 조회 실패', {
       failedCount,
       totalCount: eventIds.length,
     });
   }
 
-  return eventInfoMap;
+  return cardMap;
 }
 
 /**
@@ -625,26 +636,28 @@ export async function getMySchedules(
         : [];
 
     // ========================================
-    // 5. 이벤트 정보 일괄 조회
+    // 5. 공고 정보 일괄 조회 (JobPostingCard 포함)
     // ========================================
     const workLogEventIds = workLogs.map((wl) => wl.eventId);
     const applicationEventIds = applications.map((app) => app.jobPostingId);
     const allEventIds = [...new Set([...workLogEventIds, ...applicationEventIds])];
 
-    const eventInfoMap = await fetchEventInfoBatch(allEventIds);
+    const jobPostingCardMap = await fetchJobPostingCardBatch(allEventIds);
 
     // ========================================
     // 6. ScheduleEvent 변환
     // ========================================
     // WorkLogs → ScheduleEvent
-    const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) =>
-      workLogToScheduleEvent(workLog, eventInfoMap.get(workLog.eventId))
-    );
+    const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) => {
+      const cardInfo = jobPostingCardMap.get(workLog.eventId);
+      return workLogToScheduleEvent(workLog, cardInfo);
+    });
 
     // Applications → ScheduleEvent[] (다중 날짜 지원)
-    const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) =>
-      applicationToScheduleEvents(app, eventInfoMap.get(app.jobPostingId))
-    );
+    const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) => {
+      const cardInfo = jobPostingCardMap.get(app.jobPostingId);
+      return applicationToScheduleEvents(app, cardInfo);
+    });
 
     // ========================================
     // 7. 병합 및 중복 제거
@@ -755,22 +768,24 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
 
     const workLog = { id: workLogDoc.id, ...workLogDoc.data() } as WorkLog;
 
-    // 이벤트 정보 조회
-    let eventInfo: { title: string; location: string } | undefined;
+    // 공고 정보 조회 (JobPostingCard 포함)
+    let cardInfo: JobPostingCardWithMeta | undefined;
     try {
       const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId));
       if (eventDoc.exists()) {
         const data = eventDoc.data();
-        eventInfo = {
+        const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
+        cardInfo = {
+          card: toJobPostingCard(jobPosting),
           title: data.title || '이벤트',
-          location: data.location?.name || data.location || '',
+          location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
         };
       }
     } catch {
-      // 이벤트 정보 조회 실패 시 무시
+      // 공고 정보 조회 실패 시 무시
     }
 
-    return workLogToScheduleEvent(workLog, eventInfo);
+    return workLogToScheduleEvent(workLog, cardInfo);
   } catch (error) {
     logger.error('스케줄 상세 조회 실패', error as Error, { scheduleId });
     throw mapFirebaseError(error);
@@ -841,9 +856,9 @@ export function subscribeToSchedules(
           ...docSnap.data(),
         })) as WorkLog[];
 
-        // 이벤트 정보 조회
+        // 공고 정보 조회 (JobPostingCard 포함)
         const eventIds = [...new Set(workLogs.map((wl) => wl.eventId))];
-        const eventInfoMap = new Map<string, { title: string; location: string }>();
+        const cardInfoMap = new Map<string, JobPostingCardWithMeta>();
 
         await Promise.all(
           eventIds.map(async (eventId) => {
@@ -851,9 +866,11 @@ export function subscribeToSchedules(
               const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
               if (eventDoc.exists()) {
                 const data = eventDoc.data();
-                eventInfoMap.set(eventId, {
+                const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
+                cardInfoMap.set(eventId, {
+                  card: toJobPostingCard(jobPosting),
                   title: data.title || '이벤트',
-                  location: data.location?.name || data.location || '',
+                  location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
                 });
               }
             } catch {
@@ -863,7 +880,7 @@ export function subscribeToSchedules(
         );
 
         const schedules = workLogs.map((workLog) =>
-          workLogToScheduleEvent(workLog, eventInfoMap.get(workLog.eventId))
+          workLogToScheduleEvent(workLog, cardInfoMap.get(workLog.eventId))
         );
 
         onUpdate(schedules);

@@ -8,7 +8,7 @@
 // Core Components
 // ============================================================================
 
-export { JobCard } from './JobCard';
+export { JobCard, type ApplicationStatusType } from './JobCard';
 export { JobList } from './JobList';
 export { JobDetail } from './JobDetail';
 export { JobFilters } from './JobFilters';

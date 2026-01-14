@@ -8,6 +8,7 @@ import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Badge, EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import { CalendarView, ScheduleDetailSheet } from '@/components/schedule';
+import { JobCard, type ApplicationStatusType } from '@/components/jobs';
 import { QRCodeScanner } from '@/components/qr';
 import {
   CalendarIcon,
@@ -138,6 +139,35 @@ function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
       </Card>
     </Pressable>
   );
+}
+
+/**
+ * 스케줄 아이템 컴포넌트
+ * - jobPostingCard가 있으면 JobCard 사용 (Applications 데이터)
+ * - 없으면 기존 ScheduleCard 사용 (WorkLogs 폴백)
+ */
+interface ScheduleItemProps {
+  schedule: ScheduleEvent;
+  onFallbackPress: () => void;
+}
+
+function ScheduleItem({ schedule, onFallbackPress }: ScheduleItemProps) {
+  // jobPostingCard가 있으면 JobCard 사용
+  if (schedule.jobPostingCard) {
+    return (
+      <JobCard
+        job={schedule.jobPostingCard}
+        onPress={() => {
+          // 공고 상세 페이지로 이동
+          router.push(`/(app)/jobs/${schedule.eventId}`);
+        }}
+        applicationStatus={schedule.type as ApplicationStatusType}
+      />
+    );
+  }
+
+  // 폴백: 기존 ScheduleCard (workLogs 등)
+  return <ScheduleCard schedule={schedule} onPress={onFallbackPress} />;
 }
 
 interface MonthNavigatorProps {
@@ -459,10 +489,10 @@ export default function ScheduleScreen() {
                 {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
               </Text>
               {selectedDateSchedules.map((schedule) => (
-                <ScheduleCard
+                <ScheduleItem
                   key={schedule.id}
                   schedule={schedule}
-                  onPress={() => handleOpenDetailSheet(schedule)}
+                  onFallbackPress={() => handleOpenDetailSheet(schedule)}
                 />
               ))}
             </View>
@@ -529,10 +559,10 @@ export default function ScheduleScreen() {
 
                 {/* 해당 날짜의 스케줄들 */}
                 {group.events.map((schedule) => (
-                  <ScheduleCard
+                  <ScheduleItem
                     key={schedule.id}
                     schedule={schedule}
-                    onPress={() => handleOpenDetailSheet(schedule)}
+                    onFallbackPress={() => handleOpenDetailSheet(schedule)}
                   />
                 ))}
               </View>

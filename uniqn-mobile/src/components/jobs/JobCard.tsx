@@ -23,9 +23,14 @@ import { getRoleDisplayName } from '@/types/unified';
 // Types
 // ============================================================================
 
+/** 지원 상태 타입 (스케줄 탭에서 사용) */
+export type ApplicationStatusType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
+
 interface JobCardProps {
   job: JobPostingCard;
   onPress: (jobId: string) => void;
+  /** 지원 상태 (스케줄 탭에서만 전달, 구인구직 탭에서는 미사용) */
+  applicationStatus?: ApplicationStatusType;
 }
 
 // ============================================================================
@@ -34,6 +39,14 @@ interface JobCardProps {
 
 /** "제공" 상태를 나타내는 특별 값 */
 const PROVIDED_FLAG = -1;
+
+/** 지원 상태별 뱃지 설정 */
+const applicationStatusConfig: Record<ApplicationStatusType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
+  applied: { label: '지원 중', variant: 'warning' },
+  confirmed: { label: '확정', variant: 'success' },
+  completed: { label: '완료', variant: 'default' },
+  cancelled: { label: '취소', variant: 'error' },
+};
 
 // ============================================================================
 // Helpers
@@ -158,7 +171,7 @@ const RoleLine = memo(function RoleLine({
  *
  * FlashList 최적화를 위해 React.memo 적용
  */
-export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
+export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }: JobCardProps) {
   const handlePress = useCallback(() => {
     onPress(job.id);
   }, [job.id, onPress]);
@@ -206,6 +219,15 @@ export const JobCard = memo(function JobCard({ job, onPress }: JobCardProps) {
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
       className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700 active:opacity-80"
     >
+      {/* 지원 상태 뱃지 (스케줄 탭에서만 표시) */}
+      {applicationStatus && (
+        <View className="mb-2">
+          <Badge variant={applicationStatusConfig[applicationStatus].variant} dot>
+            {applicationStatusConfig[applicationStatus].label}
+          </Badge>
+        </View>
+      )}
+
       {/* 상단: 공고타입 + 긴급 + 제목 */}
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 flex-row items-center flex-wrap">

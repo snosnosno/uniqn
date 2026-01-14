@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, useColorScheme } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
 import type { ScheduleEvent, ScheduleType } from '@/types';
@@ -109,14 +109,13 @@ const calendarTheme = {
   textDayHeaderFontWeight: '500' as const,
 };
 
-// 다크모드 테마 (향후 useColorScheme 연동 시 활용)
-// export for future use - suppresses unused warning
-export const darkCalendarTheme = {
+// 다크모드 테마
+const darkCalendarTheme = {
   ...calendarTheme,
   textSectionTitleColor: '#9CA3AF',
   textSectionTitleDisabledColor: '#6B7280',
   dayTextColor: '#F3F4F6',
-  textDisabledColor: '#4B5563',
+  textDisabledColor: '#6B7280',
   monthTextColor: '#F3F4F6',
 };
 
@@ -219,6 +218,11 @@ export function CalendarView({
   onDateSelect,
   onMonthChange,
 }: CalendarViewProps) {
+  // 다크모드 감지
+  const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const theme = isDark ? darkCalendarTheme : calendarTheme;
+
   // 마킹된 날짜 계산
   const markedDates = useMemo(
     () => convertToMarkedDates(schedules, selectedDate),
@@ -254,14 +258,14 @@ export function CalendarView({
   return (
     <View className="bg-white dark:bg-gray-800 rounded-xl mx-4 overflow-hidden">
       <Calendar
-        key={currentMonthString}
+        key={`${currentMonthString}-${colorScheme}`}
         current={currentMonthString}
         onDayPress={handleDayPress}
         onMonthChange={handleMonthChange}
         markedDates={markedDates}
         markingType="multi-dot"
         enableSwipeMonths
-        theme={calendarTheme}
+        theme={theme}
         firstDay={0} // 일요일 시작
         hideExtraDays={false}
         showSixWeeks={false}
