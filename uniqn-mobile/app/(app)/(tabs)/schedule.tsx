@@ -183,8 +183,8 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 // ============================================================================
 
 export default function ScheduleScreen() {
-  // 뷰 모드 상태 (list | calendar)
-  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('list');
+  // 뷰 모드 상태 (list | calendar) - 캘린더가 기본
+  const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
   // 읽지 않은 알림 수 (실시간)
   const unreadCount = useUnreadCountRealtime();
@@ -390,32 +390,40 @@ export default function ScheduleScreen() {
 
       {/* 캘린더 뷰 */}
       {viewMode === 'calendar' && (
-        <View className="mt-4">
-          <CalendarView
-            schedules={schedules}
-            selectedDate={selectedDate}
-            currentMonth={currentMonth}
-            onDateSelect={handleDateSelect}
-            onMonthChange={handleMonthChange}
-          />
+        <ScrollView
+          className="flex-1"
+          contentContainerClassName="pb-20"
+          refreshControl={
+            <RefreshControl refreshing={isLoading} onRefresh={refresh} />
+          }
+        >
+          <View className="mt-4">
+            <CalendarView
+              schedules={schedules}
+              selectedDate={selectedDate}
+              currentMonth={currentMonth}
+              onDateSelect={handleDateSelect}
+              onMonthChange={handleMonthChange}
+            />
 
-          {/* 선택된 날짜의 스케줄 */}
-          {selectedDateSchedules.length > 0 && (
-            <View className="mt-4 px-4">
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
-              </Text>
-              {selectedDateSchedules.map((schedule) => (
-                <ScheduleItem
-                  key={schedule.id}
-                  schedule={schedule}
-                  onPress={() => handleOpenDetailSheet(schedule)}
-                  onCancelApplication={handleCancelApplication}
-                />
-              ))}
-            </View>
-          )}
-        </View>
+            {/* 선택된 날짜의 스케줄 */}
+            {selectedDateSchedules.length > 0 && (
+              <View className="mt-4 px-4">
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
+                </Text>
+                {selectedDateSchedules.map((schedule) => (
+                  <ScheduleItem
+                    key={schedule.id}
+                    schedule={schedule}
+                    onPress={() => handleOpenDetailSheet(schedule)}
+                    onCancelApplication={handleCancelApplication}
+                  />
+                ))}
+              </View>
+            )}
+          </View>
+        </ScrollView>
       )}
 
       {/* 리스트 뷰 */}

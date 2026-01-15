@@ -5,6 +5,9 @@
  * @version 1.0.0
  */
 
+import type { SettlementBreakdown, SalaryType as ScheduleSalaryType, TaxType as ScheduleTaxType } from '@/types/schedule';
+import type { JobPostingCard } from '@/types/jobPosting';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -645,4 +648,139 @@ export function calculateSettlementFromWorkLogWithTax(
     allowances,
     taxSettings
   );
+}
+
+// ============================================================================
+// Settlement Breakdown (Pre-calculated for caching)
+// ============================================================================
+
+/**
+ * JobPostingCard에서 역할별 급여 정보 조회
+ *
+ * @param jobPostingCard - 공고 카드 정보
+ * @param role - 역할 코드
+ * @param customRole - 커스텀 역할명 (role이 'other'일 때)
+ */
+export function getRoleSalaryFromJobPostingCard(
+  jobPostingCard: JobPostingCard | undefined,
+  role: string | undefined,
+  customRole?: string
+): SalaryInfo {
+  if (!jobPostingCard || !role) {
+    return DEFAULT_SALARY_INFO;
+  }
+
+  // useSameSalary가 true면 defaultSalary 사용
+  if (jobPostingCard.useSameSalary && jobPostingCard.defaultSalary) {
+    return jobPostingCard.defaultSalary;
+  }
+
+  // dateRequirements > timeSlots > roles 구조에서 역할별 급여 조회
+  if (jobPostingCard.dateRequirements) {
+    for (const dateReq of jobPostingCard.dateRequirements) {
+      for (const timeSlot of dateReq.timeSlots || []) {
+        for (const r of timeSlot.roles || []) {
+          // 역할 매칭
+          const isMatch =
+            (role === 'other' && customRole && r.customRole === customRole) ||
+            (r.role === role);
+
+          if (isMatch && r.salary) {
+            return r.salary;
+          }
+        }
+      }
+    }
+  }
+
+  // 역할별 급여 못 찾으면 defaultSalary 폴백
+  if (jobPostingCard.defaultSalary) {
+    return jobPostingCard.defaultSalary;
+  }
+
+  return DEFAULT_SALARY_INFO;
+}
+
+/**
+ * 정산 세부 내역 계산 (한 번만 호출하여 캐싱)
+ *
+ * scheduleService에서 WorkLog → ScheduleEvent 변환 시 호출
+ * SettlementTab에서는 이 결과를 그대로 사용하여 중복 계산 방지
+ *
+ * @param workLogData - 근무 기록 데이터
+ * @param jobPostingCard - 공고 카드 정보 (급여/수당/세금 기본값)
+ * @returns SettlementBreakdown 또는 null (시간 정보 없는 경우)
+ */
+export function calculateSettlementBreakdown(
+  workLogData: {
+    actualStartTime?: unknown;
+    actualEndTime?: unknown;
+    scheduledStartTime?: unknown;
+    scheduledEndTime?: unknown;
+    role?: string;
+    customRole?: string;
+    customSalaryInfo?: SalaryInfo;
+    customAllowances?: Allowances;
+    customTaxSettings?: TaxSettings;
+  },
+  jobPostingCard?: JobPostingCard
+): SettlementBreakdown | null {
+  // 1. 시간 결정 (actual 우선, 없으면 scheduled)
+  const startTime = workLogData.actualStartTime || workLogData.scheduledStartTime;
+  const endTime = workLogData.actualEndTime || workLogData.scheduledEndTime;
+  const isEstimate = !workLogData.actualStartTime || !workLogData.actualEndTime;
+
+  // 시간 정보가 없으면 계산 불가
+  if (!startTime || !endTime) {
+    return null;
+  }
+
+  // 2. 급여 정보 결정 (오버라이드 우선)
+  const salaryInfo: SalaryInfo = workLogData.customSalaryInfo ||
+    getRoleSalaryFromJobPostingCard(jobPostingCard, workLogData.role, workLogData.customRole);
+
+  // 3. 수당 정보 결정 (오버라이드 우선)
+  const allowances: Allowances | undefined = workLogData.customAllowances ||
+    jobPostingCard?.allowances;
+
+  // 4. 세금 설정 결정 (오버라이드 우선)
+  const taxSettings: TaxSettings = workLogData.customTaxSettings ||
+    jobPostingCard?.taxSettings ||
+    DEFAULT_TAX_SETTINGS;
+
+  // 5. 정산 계산
+  const result = calculateSettlementWithTax(
+    startTime,
+    endTime,
+    salaryInfo,
+    allowances,
+    taxSettings
+  );
+
+  // 6. SettlementBreakdown 구성
+  return {
+    hoursWorked: result.hoursWorked,
+    salaryInfo: {
+      type: salaryInfo.type as ScheduleSalaryType,
+      amount: salaryInfo.amount,
+    },
+    basePay: result.basePay,
+    allowances: allowances ? {
+      guaranteedHours: allowances.guaranteedHours,
+      meal: allowances.meal,
+      transportation: allowances.transportation,
+      accommodation: allowances.accommodation,
+      additional: allowances.additional,
+    } : undefined,
+    allowancePay: result.allowancePay,
+    taxSettings: taxSettings.type !== 'none' ? {
+      type: taxSettings.type as ScheduleTaxType,
+      value: taxSettings.value,
+    } : undefined,
+    taxAmount: result.taxAmount,
+    totalPay: result.totalPay,
+    afterTaxPay: result.afterTaxPay,
+    isEstimate,
+    calculatedAt: new Date().toISOString(),
+  };
 }

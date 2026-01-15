@@ -127,8 +127,15 @@ function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
 // ============================================================================
 
 export const SettlementTab = memo(function SettlementTab({ schedule }: SettlementTabProps) {
-  // 급여 정보: 개별 오버라이드 우선, 없으면 JobPostingCard에서 조회
+  // settlementBreakdown이 있으면 미리 계산된 값 사용 (성능 최적화)
+  const hasBreakdown = !!schedule.settlementBreakdown;
+
+  // 급여 정보: settlementBreakdown > 개별 오버라이드 > JobPostingCard
   const salaryInfo: SalaryInfo = useMemo(() => {
+    // 미리 계산된 값 우선
+    if (schedule.settlementBreakdown?.salaryInfo) {
+      return schedule.settlementBreakdown.salaryInfo;
+    }
     // 구인자가 개별 수정한 급여 정보가 있으면 우선 사용
     if (schedule.customSalaryInfo) {
       return schedule.customSalaryInfo;
@@ -139,18 +146,41 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       schedule.role,
       schedule.customRole
     );
-  }, [schedule.customSalaryInfo, schedule.jobPostingCard, schedule.role, schedule.customRole]);
+  }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, schedule.jobPostingCard, schedule.role, schedule.customRole]);
 
-  // 수당 정보: 개별 오버라이드 우선, 없으면 JobPostingCard 기본값
-  const allowances: Allowances | undefined = schedule.customAllowances || schedule.jobPostingCard?.allowances;
+  // 수당 정보: settlementBreakdown > 개별 오버라이드 > JobPostingCard 기본값
+  const allowances: Allowances | undefined = useMemo(() => {
+    if (schedule.settlementBreakdown?.allowances) {
+      return schedule.settlementBreakdown.allowances;
+    }
+    return schedule.customAllowances || schedule.jobPostingCard?.allowances;
+  }, [schedule.settlementBreakdown?.allowances, schedule.customAllowances, schedule.jobPostingCard?.allowances]);
 
-  // 세금 설정: 개별 오버라이드 우선, 없으면 JobPostingCard 기본값
-  const taxSettings: TaxSettings = schedule.customTaxSettings ||
-    schedule.jobPostingCard?.taxSettings ||
-    DEFAULT_TAX_SETTINGS;
+  // 세금 설정: settlementBreakdown > 개별 오버라이드 > JobPostingCard 기본값
+  const taxSettings: TaxSettings = useMemo(() => {
+    if (schedule.settlementBreakdown?.taxSettings) {
+      return schedule.settlementBreakdown.taxSettings;
+    }
+    return schedule.customTaxSettings ||
+      schedule.jobPostingCard?.taxSettings ||
+      DEFAULT_TAX_SETTINGS;
+  }, [schedule.settlementBreakdown?.taxSettings, schedule.customTaxSettings, schedule.jobPostingCard?.taxSettings]);
 
-  // 정산 계산 (세금 포함)
+  // 정산 계산 (세금 포함) - settlementBreakdown 우선 사용
   const settlement = useMemo(() => {
+    // 미리 계산된 settlementBreakdown이 있으면 그대로 사용 (중복 계산 방지)
+    if (schedule.settlementBreakdown) {
+      return {
+        hoursWorked: schedule.settlementBreakdown.hoursWorked,
+        basePay: schedule.settlementBreakdown.basePay,
+        allowancePay: schedule.settlementBreakdown.allowancePay,
+        totalPay: schedule.settlementBreakdown.totalPay,
+        taxAmount: schedule.settlementBreakdown.taxAmount,
+        afterTaxPay: schedule.settlementBreakdown.afterTaxPay,
+      };
+    }
+
+    // 폴백: 직접 계산 (하위 호환성)
     // 실제 출퇴근 시간이 있으면 실제 금액 계산
     if (schedule.actualStartTime && schedule.actualEndTime) {
       return calculateSettlementWithTax(
@@ -174,10 +204,15 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     }
 
     return null;
-  }, [schedule, salaryInfo, allowances, taxSettings]);
+  }, [schedule.settlementBreakdown, schedule.actualStartTime, schedule.actualEndTime, schedule.startTime, schedule.endTime, salaryInfo, allowances, taxSettings]);
 
-  // 근무 시간 계산
+  // 근무 시간: settlementBreakdown 우선 사용
   const hoursWorked = useMemo(() => {
+    // 미리 계산된 값 사용
+    if (schedule.settlementBreakdown?.hoursWorked !== undefined) {
+      return schedule.settlementBreakdown.hoursWorked;
+    }
+    // 폴백: 직접 계산
     if (schedule.actualStartTime && schedule.actualEndTime) {
       return calculateHoursWorked(schedule.actualStartTime, schedule.actualEndTime);
     }
@@ -185,9 +220,12 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       return calculateHoursWorked(schedule.startTime, schedule.endTime);
     }
     return 0;
-  }, [schedule]);
+  }, [schedule.settlementBreakdown?.hoursWorked, schedule.actualStartTime, schedule.actualEndTime, schedule.startTime, schedule.endTime]);
 
-  const isEstimate = !schedule.actualStartTime || !schedule.actualEndTime;
+  // 예상 금액 여부: settlementBreakdown 우선 사용
+  const isEstimate = hasBreakdown
+    ? schedule.settlementBreakdown!.isEstimate
+    : !schedule.actualStartTime || !schedule.actualEndTime;
   const payrollStatus = (schedule.payrollStatus || 'pending') as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 

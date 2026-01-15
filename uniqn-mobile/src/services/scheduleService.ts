@@ -21,6 +21,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, NetworkError, ERROR_CODES } from '@/errors';
+import { calculateSettlementBreakdown } from '@/utils/settlement';
 import type {
   ScheduleEvent,
   ScheduleFilters,
@@ -96,6 +97,22 @@ function workLogToScheduleEvent(
     type = 'cancelled';
   }
 
+  // 정산 세부 내역 미리 계산 (SettlementTab에서 중복 계산 방지)
+  const settlementBreakdown = calculateSettlementBreakdown(
+    {
+      actualStartTime: workLog.actualStartTime,
+      actualEndTime: workLog.actualEndTime,
+      scheduledStartTime: workLog.scheduledStartTime,
+      scheduledEndTime: workLog.scheduledEndTime,
+      role: workLog.role,
+      customRole: workLog.customRole,
+      customSalaryInfo: workLog.customSalaryInfo,
+      customAllowances: workLog.customAllowances,
+      customTaxSettings: workLog.customTaxSettings,
+    },
+    cardInfo?.card
+  );
+
   return {
     id: workLog.id,
     type,
@@ -146,6 +163,8 @@ function workLogToScheduleEvent(
     jobPostingCard: cardInfo?.card,
     // 시간대 문자열 (확정 상태 시간 표시 폴백용)
     timeSlot: workLog.timeSlot,
+    // 정산 세부 내역 (미리 계산됨)
+    settlementBreakdown: settlementBreakdown || undefined,
     createdAt: workLog.createdAt,
     updatedAt: workLog.updatedAt,
   };

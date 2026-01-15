@@ -58,6 +58,64 @@ export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
 export type PayrollStatus = 'pending' | 'processing' | 'completed';
 
 /**
+ * 급여 타입
+ */
+export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
+
+/**
+ * 세금 타입
+ */
+export type TaxType = 'none' | 'rate' | 'fixed';
+
+/**
+ * 정산 세부 내역 (미리 계산하여 캐싱)
+ *
+ * scheduleService에서 WorkLog → ScheduleEvent 변환 시 한 번만 계산
+ * SettlementTab에서는 이 데이터를 그대로 사용하여 중복 계산 방지
+ */
+export interface SettlementBreakdown {
+  /** 근무 시간 (시간 단위) */
+  hoursWorked: number;
+
+  /** 적용된 급여 정보 */
+  salaryInfo: {
+    type: SalaryType;
+    amount: number;
+  };
+  /** 기본급 */
+  basePay: number;
+
+  /** 적용된 수당 정보 (상세 내역) */
+  allowances?: {
+    guaranteedHours?: number;
+    meal?: number;
+    transportation?: number;
+    accommodation?: number;
+    additional?: number;
+  };
+  /** 수당 합계 */
+  allowancePay: number;
+
+  /** 적용된 세금 설정 */
+  taxSettings?: {
+    type: TaxType;
+    value: number;
+  };
+  /** 세금 금액 */
+  taxAmount: number;
+
+  /** 세전 총액 (basePay + allowancePay) */
+  totalPay: number;
+  /** 세후 총액 */
+  afterTaxPay: number;
+
+  /** 예상 금액 여부 (actualTime이 없을 때 true) */
+  isEstimate: boolean;
+  /** 계산 시점 (ISO 날짜 문자열) */
+  calculatedAt: string;
+}
+
+/**
  * 스케줄 이벤트
  */
 export interface ScheduleEvent extends FirebaseDocument {
@@ -87,6 +145,8 @@ export interface ScheduleEvent extends FirebaseDocument {
   payrollStatus?: PayrollStatus;
   payrollAmount?: number;
   payrollDate?: Timestamp;
+  /** 미리 계산된 정산 세부 내역 */
+  settlementBreakdown?: SettlementBreakdown;
 
   // 구인자 정보
   /** 구인자 연락처 */
