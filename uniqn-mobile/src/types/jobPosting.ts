@@ -299,6 +299,7 @@ export interface JobPostingCard {
   /** 기본 급여 (useSameSalary=true일 때 사용) */
   defaultSalary?: SalaryInfo;
   allowances?: Allowances;
+  taxSettings?: TaxSettings;
   /** 전체 동일 급여 여부 */
   useSameSalary?: boolean;
   // 역할별 급여는 roles 정보에서 참조 (dateRequirements.timeSlots.roles)
@@ -309,6 +310,10 @@ export interface JobPostingCard {
   postingType?: PostingType;
   /** 구인자 이름 */
   ownerName?: string;
+  /** 구인자 연락처 */
+  contactPhone?: string;
+  /** 구인자 ID */
+  ownerId?: string;
 
   // === 고정공고 전용 필드 ===
   /** 주 출근일수 (0 = 협의, 1-7 = 일수) */
@@ -425,12 +430,15 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
     dateRequirements,
     defaultSalary: resolvedDefaultSalary,
     allowances: posting.allowances,
+    taxSettings: posting.taxSettings,
     useSameSalary: posting.useSameSalary,
     status: posting.status,
     isUrgent: posting.isUrgent,
     applicationCount: posting.applicationCount,
     postingType: posting.postingType,
     ownerName: posting.ownerName,
+    contactPhone: posting.contactPhone,
+    ownerId: posting.ownerId,
 
     // 고정공고 전용 필드
     daysPerWeek: posting.daysPerWeek,

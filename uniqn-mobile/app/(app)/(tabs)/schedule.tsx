@@ -4,16 +4,13 @@
  */
 
 import { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, Badge, EmptyState, ErrorState, Skeleton } from '@/components/ui';
-import { CalendarView, ScheduleDetailSheet } from '@/components/schedule';
-import { JobCard, type ApplicationStatusType } from '@/components/jobs';
+import { Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { CalendarView, ScheduleCard, ScheduleDetailModal } from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
 import {
   CalendarIcon,
-  ClockIcon,
-  MapIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MenuIcon,
@@ -21,26 +18,14 @@ import {
   BellIcon,
 } from '@/components/icons';
 import { router } from 'expo-router';
-import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useUnreadCountRealtime } from '@/hooks';
-import { Timestamp } from 'firebase/firestore';
-import type { ScheduleEvent, ScheduleType, AttendanceStatus, QRCodeScanResult, QRCodeAction } from '@/types';
+import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useUnreadCountRealtime, useApplications } from '@/hooks';
+import type { ScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
-  applied: { label: '지원 중', variant: 'warning' },
-  confirmed: { label: '확정', variant: 'success' },
-  completed: { label: '완료', variant: 'default' },
-  cancelled: { label: '취소', variant: 'error' },
-};
-
-const attendanceConfig: Record<AttendanceStatus, { label: string; color: string }> = {
-  not_started: { label: '출근 전', color: 'text-gray-500' },
-  checked_in: { label: '근무 중', color: 'text-green-600' },
-  checked_out: { label: '퇴근 완료', color: 'text-blue-600' },
-};
+// statusConfig, attendanceConfig는 ScheduleCard 컴포넌트로 이동됨
 
 // ============================================================================
 // Helper Functions
@@ -48,16 +33,6 @@ const attendanceConfig: Record<AttendanceStatus, { label: string; color: string 
 
 function formatCurrency(amount: number): string {
   return new Intl.NumberFormat('ko-KR').format(amount) + '원';
-}
-
-function formatTime(timestamp: Timestamp | null): string {
-  if (!timestamp) return '--:--';
-  const date = timestamp.toDate();
-  return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
-function formatTimeRange(start: Timestamp | null, end: Timestamp | null): string {
-  return `${formatTime(start)} - ${formatTime(end)}`;
 }
 
 function formatMonthTitle(year: number, month: number): string {
@@ -68,106 +43,25 @@ function formatMonthTitle(year: number, month: number): string {
 // Sub Components
 // ============================================================================
 
-interface ScheduleCardProps {
-  schedule: ScheduleEvent;
-  onPress?: () => void;
-}
-
-function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
-  const status = statusConfig[schedule.type];
-  const attendance = attendanceConfig[schedule.status];
-
-  return (
-    <Pressable onPress={onPress}>
-      <Card className="mb-3">
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1">
-            {/* 상태 배지 + 제목 */}
-            <View className="flex-row items-center flex-wrap">
-              <Badge variant={status.variant} dot>
-                {status.label}
-              </Badge>
-              {schedule.type === 'confirmed' && (
-                <Text className={`ml-2 text-xs ${attendance.color}`}>
-                  ({attendance.label})
-                </Text>
-              )}
-            </View>
-
-            <Text className="mt-2 font-medium text-gray-900 dark:text-gray-100" numberOfLines={1}>
-              {schedule.eventName}
-            </Text>
-
-            {/* 날짜/시간 */}
-            <View className="mt-2 flex-row items-center">
-              <CalendarIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
-                {schedule.date}
-              </Text>
-              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-gray-600" />
-              <ClockIcon size={14} color="#6B7280" />
-              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
-                {formatTimeRange(schedule.startTime, schedule.endTime)}
-              </Text>
-            </View>
-
-            {/* 위치 */}
-            {schedule.location && (
-              <View className="mt-1.5 flex-row items-center">
-                <MapIcon size={14} color="#6B7280" />
-                <Text className="ml-1.5 text-sm text-gray-500 dark:text-gray-400" numberOfLines={1}>
-                  {schedule.location}
-                </Text>
-              </View>
-            )}
-
-            {/* 역할 */}
-            <View className="mt-2">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
-                역할: {schedule.role}
-              </Text>
-            </View>
-          </View>
-
-          {/* 급여 */}
-          {schedule.payrollAmount && schedule.payrollAmount > 0 && (
-            <Text className="font-semibold text-primary-600 dark:text-primary-400">
-              {formatCurrency(schedule.payrollAmount)}
-            </Text>
-          )}
-        </View>
-      </Card>
-    </Pressable>
-  );
-}
-
 /**
  * 스케줄 아이템 컴포넌트
- * - jobPostingCard가 있으면 JobCard 사용 (Applications 데이터)
- * - 없으면 기존 ScheduleCard 사용 (WorkLogs 폴백)
+ * - 상태별로 다른 정보를 표시하는 ScheduleCard 사용
+ * - 클릭 시 3탭 모달 오픈
  */
 interface ScheduleItemProps {
   schedule: ScheduleEvent;
-  onFallbackPress: () => void;
+  onPress: () => void;
+  onCancelApplication?: (applicationId: string) => void;
 }
 
-function ScheduleItem({ schedule, onFallbackPress }: ScheduleItemProps) {
-  // jobPostingCard가 있으면 JobCard 사용
-  if (schedule.jobPostingCard) {
-    return (
-      <JobCard
-        job={schedule.jobPostingCard}
-        onPress={() => {
-          // 공고 상세 페이지로 이동
-          router.push(`/(app)/jobs/${schedule.eventId}`);
-        }}
-        applicationStatus={schedule.type as ApplicationStatusType}
-      />
-    );
-  }
-
-  // 폴백: 기존 ScheduleCard (workLogs 등)
-  return <ScheduleCard schedule={schedule} onPress={onFallbackPress} />;
+function ScheduleItem({ schedule, onPress, onCancelApplication }: ScheduleItemProps) {
+  return (
+    <ScheduleCard
+      schedule={schedule}
+      onPress={onPress}
+      onCancelApplication={onCancelApplication}
+    />
+  );
 }
 
 interface MonthNavigatorProps {
@@ -306,6 +200,9 @@ export default function ScheduleScreen() {
   // 현재 근무 상태
   const { isWorking } = useCurrentWorkStatus();
 
+  // 지원 취소 훅
+  const { cancelApplication } = useApplications();
+
   const {
     schedules,
     groupedSchedules,
@@ -327,6 +224,26 @@ export default function ScheduleScreen() {
   const handleToggleView = useCallback(() => {
     setViewMode((prev) => (prev === 'list' ? 'calendar' : 'list'));
   }, []);
+
+  // 지원 취소 핸들러
+  const handleCancelApplication = useCallback((applicationId: string) => {
+    Alert.alert(
+      '지원 취소',
+      '정말 취소하시겠습니까?',
+      [
+        { text: '아니오', style: 'cancel' },
+        {
+          text: '예, 취소합니다',
+          style: 'destructive',
+          onPress: () => {
+            cancelApplication(applicationId);
+            // 목록 새로고침 (캐시 무효화로 자동 처리됨)
+            refresh();
+          },
+        },
+      ]
+    );
+  }, [cancelApplication, refresh]);
 
   // 스케줄 상세 시트 열기
   const handleOpenDetailSheet = useCallback((schedule: ScheduleEvent) => {
@@ -492,7 +409,8 @@ export default function ScheduleScreen() {
                 <ScheduleItem
                   key={schedule.id}
                   schedule={schedule}
-                  onFallbackPress={() => handleOpenDetailSheet(schedule)}
+                  onPress={() => handleOpenDetailSheet(schedule)}
+                  onCancelApplication={handleCancelApplication}
                 />
               ))}
             </View>
@@ -562,7 +480,8 @@ export default function ScheduleScreen() {
                   <ScheduleItem
                     key={schedule.id}
                     schedule={schedule}
-                    onFallbackPress={() => handleOpenDetailSheet(schedule)}
+                    onPress={() => handleOpenDetailSheet(schedule)}
+                    onCancelApplication={handleCancelApplication}
                   />
                 ))}
               </View>
@@ -571,8 +490,8 @@ export default function ScheduleScreen() {
         </ScrollView>
       )}
 
-      {/* 스케줄 상세 시트 */}
-      <ScheduleDetailSheet
+      {/* 스케줄 상세 모달 (3탭) */}
+      <ScheduleDetailModal
         schedule={selectedSchedule}
         visible={isDetailSheetVisible}
         onClose={handleCloseDetailSheet}

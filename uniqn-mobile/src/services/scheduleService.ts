@@ -133,11 +133,19 @@ function workLogToScheduleEvent(
           : 'not_started',
     payrollStatus: workLog.payrollStatus,
     payrollAmount: workLog.payrollAmount,
+    ownerPhone: cardInfo?.contactPhone,
+    ownerId: cardInfo?.ownerId,
     notes: workLog.notes,
     sourceCollection: 'workLogs',
     sourceId: workLog.id,
     workLogId: workLog.id,
+    // 개별 오버라이드 (구인자가 스태프별로 수정한 정산 정보)
+    customSalaryInfo: workLog.customSalaryInfo,
+    customAllowances: workLog.customAllowances,
+    customTaxSettings: workLog.customTaxSettings,
     jobPostingCard: cardInfo?.card,
+    // 시간대 문자열 (확정 상태 시간 표시 폴백용)
+    timeSlot: workLog.timeSlot,
     createdAt: workLog.createdAt,
     updatedAt: workLog.updatedAt,
   };
@@ -246,11 +254,14 @@ function applicationToScheduleEvents(
           status: 'not_started', // applications에는 출퇴근 데이터 없음
           payrollStatus: undefined,
           payrollAmount: undefined,
+          ownerPhone: cardInfo?.contactPhone,
+          ownerId: cardInfo?.ownerId,
           notes: application.message,
           sourceCollection: 'applications',
           sourceId: application.id,
           applicationId: application.id,
           jobPostingCard: cardInfo?.card,
+          timeSlot: assignment.timeSlot,
           createdAt: application.createdAt,
           updatedAt: application.updatedAt,
         };
@@ -279,11 +290,14 @@ function applicationToScheduleEvents(
       status: 'not_started',
       payrollStatus: undefined,
       payrollAmount: undefined,
+      ownerPhone: cardInfo?.contactPhone,
+      ownerId: cardInfo?.ownerId,
       notes: application.message,
       sourceCollection: 'applications',
       sourceId: application.id,
       applicationId: application.id,
       jobPostingCard: cardInfo?.card,
+      timeSlot: application.appliedTimeSlot,
       createdAt: application.createdAt,
       updatedAt: application.updatedAt,
     };
@@ -301,6 +315,8 @@ interface JobPostingCardWithMeta {
   card: JobPostingCard;
   title: string;
   location: string;
+  contactPhone?: string;
+  ownerId?: string;
 }
 
 async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string, JobPostingCardWithMeta>> {
@@ -325,6 +341,8 @@ async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string,
             card,
             title: data.title || '이벤트',
             location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+            contactPhone: data.contactPhone,
+            ownerId: data.ownerId,
           },
         };
       }
@@ -779,6 +797,8 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
           card: toJobPostingCard(jobPosting),
           title: data.title || '이벤트',
           location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+          contactPhone: data.contactPhone,
+          ownerId: data.ownerId,
         };
       }
     } catch {
@@ -871,6 +891,8 @@ export function subscribeToSchedules(
                   card: toJobPostingCard(jobPosting),
                   title: data.title || '이벤트',
                   location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+                  contactPhone: data.contactPhone,
+                  ownerId: data.ownerId,
                 });
               }
             } catch {

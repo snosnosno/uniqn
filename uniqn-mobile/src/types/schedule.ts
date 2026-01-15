@@ -88,6 +88,12 @@ export interface ScheduleEvent extends FirebaseDocument {
   payrollAmount?: number;
   payrollDate?: Timestamp;
 
+  // 구인자 정보
+  /** 구인자 연락처 */
+  ownerPhone?: string;
+  /** 구인자 ID */
+  ownerId?: string;
+
   // 메타데이터
   notes?: string;
   sourceCollection: 'workLogs' | 'applications';
@@ -95,8 +101,31 @@ export interface ScheduleEvent extends FirebaseDocument {
   workLogId?: string;
   applicationId?: string;
 
+  // 개별 오버라이드 (구인자가 스태프별로 수정한 정산 정보)
+  /** 개별 급여 정보 (오버라이드) */
+  customSalaryInfo?: {
+    type: 'hourly' | 'daily' | 'monthly' | 'other';
+    amount: number;
+  };
+  /** 개별 수당 정보 (오버라이드) */
+  customAllowances?: {
+    guaranteedHours?: number;
+    meal?: number;
+    transportation?: number;
+    accommodation?: number;
+    additional?: number;
+  };
+  /** 개별 세금 설정 (오버라이드) */
+  customTaxSettings?: {
+    type: 'none' | 'rate' | 'fixed';
+    value: number;
+  };
+
   // JobCard 렌더링용 데이터 (스케줄 탭에서 사용)
   jobPostingCard?: JobPostingCard;
+
+  /** 시간대 문자열 (예: "18:00~02:00") - 시간 표시 폴백용 */
+  timeSlot?: string;
 }
 
 /**
@@ -266,6 +295,9 @@ export interface WorkLog extends FirebaseDocument {
   };
 
   notes?: string;
+
+  /** 시간대 문자열 (예: "18:00~02:00") - Firestore 데이터 */
+  timeSlot?: string;
 }
 
 /**
