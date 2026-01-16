@@ -189,6 +189,18 @@ export const LogOutIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconP
   <Feather name="log-out" size={size} color={color} />
 );
 
+export const LogInIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="log-in" size={size} color={color} />
+);
+
+export const ArrowRightIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="arrow-right" size={size} color={color} />
+);
+
+export const ArrowLeftIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
+  <Feather name="arrow-left" size={size} color={color} />
+);
+
 // Social & Communication
 export const HeartIcon = ({ size = DEFAULT_SIZE, color = DEFAULT_COLOR }: IconProps) => (
   <Feather name="heart" size={size} color={color} />

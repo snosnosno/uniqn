@@ -207,6 +207,9 @@ export interface ScheduleFilters {
 export interface ScheduleStats {
   totalSchedules: number;
   completedSchedules: number;
+  /** 확정된 스케줄 (미래, type === 'confirmed') */
+  confirmedSchedules: number;
+  /** 지원 중인 스케줄 (미래, type === 'applied') */
   upcomingSchedules: number;
   totalEarnings: number;
   thisMonthEarnings: number;

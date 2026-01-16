@@ -51,8 +51,10 @@ export interface UseEventQRReturn {
   isActive: boolean;
   /** 현재 액션 (출근/퇴근) */
   currentAction: QRCodeAction;
-  /** 로딩 상태 */
+  /** 로딩 상태 (최초 생성) */
   isLoading: boolean;
+  /** 갱신 중 상태 (자동/수동 갱신) */
+  isRefreshing: boolean;
   /** 에러 */
   error: Error | null;
 
@@ -87,6 +89,7 @@ export function useEventQR(
   const [isActive, setIsActive] = useState(false);
   const [currentAction, setCurrentAction] = useState<QRCodeAction>('checkIn');
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
 
   // Refs
@@ -140,11 +143,18 @@ export function useEventQR(
     // 기존 타이머 먼저 정리 (race condition 방지)
     clearTimers();
 
+    // 최초 생성인지 갱신인지 구분
+    const isRefresh = isActive;
+
     try {
-      setIsLoading(true);
+      if (isRefresh) {
+        setIsRefreshing(true);
+      } else {
+        setIsLoading(true);
+      }
       setError(null);
 
-      logger.info('이벤트 QR 생성 시작', { jobPostingId, date, action });
+      logger.info('이벤트 QR 생성 시작', { jobPostingId, date, action, isRefresh });
 
       const result = await generateEventQR({
         eventId: jobPostingId,
@@ -222,8 +232,9 @@ export function useEventQR(
       logger.error('이벤트 QR 생성 실패', error, { jobPostingId, date, action });
     } finally {
       setIsLoading(false);
+      setIsRefreshing(false);
     }
-  }, [jobPostingId, date, createdBy, autoRefresh, startCountdown, addToast, clearTimers]);
+  }, [jobPostingId, date, createdBy, autoRefresh, isActive, startCountdown, addToast, clearTimers]);
 
   // ============================================================================
   // QR 갱신
@@ -299,6 +310,7 @@ export function useEventQR(
     isActive,
     currentAction,
     isLoading,
+    isRefreshing,
     error,
 
     // Actions

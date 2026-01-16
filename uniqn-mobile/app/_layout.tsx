@@ -24,6 +24,7 @@ import { useThemeStore } from '@/stores/themeStore';
 if (__DEV__) {
   LogBox.ignoreLogs([
     'props.pointerEvents is deprecated', // expo-router 내부 이슈
+    'Image: style.tintColor is deprecated', // react-navigation 내부 이슈
   ]);
 }
 

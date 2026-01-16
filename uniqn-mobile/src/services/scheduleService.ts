@@ -444,14 +444,15 @@ function mergeAndDeduplicateSchedules(
 
 /**
  * 스케줄 통계 계산
+ * @description 조회된 스케줄 데이터 기준으로 통계를 계산
+ * - thisMonthEarnings: 조회된 데이터(선택된 월)의 completed 수익 합계
+ * - 지원/확정 카운트: 미래 날짜 기준으로 계산
  */
 function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
-  const now = new Date();
-  const currentMonth = now.getMonth();
-  const currentYear = now.getFullYear();
-  const today = formatDateString(now);
+  const today = formatDateString(new Date());
 
   let completedSchedules = 0;
+  let confirmedSchedules = 0;
   let upcomingSchedules = 0;
   let totalEarnings = 0;
   let thisMonthEarnings = 0;
@@ -462,18 +463,24 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
     if (schedule.type === 'completed') {
       completedSchedules++;
 
-      // 총 수익
-      if (schedule.payrollAmount) {
-        totalEarnings += schedule.payrollAmount;
+      // 수익 계산 (payrollAmount 우선, 없으면 settlementBreakdown 사용)
+      let amount = 0;
 
-        // 이번 달 수익
-        const scheduleDate = new Date(schedule.date);
-        if (
-          scheduleDate.getMonth() === currentMonth &&
-          scheduleDate.getFullYear() === currentYear
-        ) {
-          thisMonthEarnings += schedule.payrollAmount;
-        }
+      if (schedule.payrollAmount && schedule.payrollAmount > 0) {
+        // 1순위: 구인자 확정 금액
+        amount = schedule.payrollAmount;
+      } else if (schedule.settlementBreakdown) {
+        // 2순위: 미리 계산된 정산 세부 내역
+        const breakdown = schedule.settlementBreakdown;
+        amount =
+          breakdown.taxSettings?.type !== 'none'
+            ? breakdown.afterTaxPay
+            : breakdown.totalPay;
+      }
+
+      if (amount > 0) {
+        totalEarnings += amount;
+        thisMonthEarnings += amount;
       }
 
       // 근무 시간 계산
@@ -490,8 +497,13 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
       }
     }
 
-    // 예정된 스케줄 (confirmed + applied 포함)
-    if (schedule.date >= today && (schedule.type === 'confirmed' || schedule.type === 'applied')) {
+    // 확정된 스케줄 (미래 날짜, confirmed)
+    if (schedule.date >= today && schedule.type === 'confirmed') {
+      confirmedSchedules++;
+    }
+
+    // 지원 중인 스케줄 (미래 날짜, applied)
+    if (schedule.date >= today && schedule.type === 'applied') {
       upcomingSchedules++;
     }
   });
@@ -499,6 +511,7 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
   return {
     totalSchedules: schedules.length,
     completedSchedules,
+    confirmedSchedules,
     upcomingSchedules,
     totalEarnings,
     thisMonthEarnings,

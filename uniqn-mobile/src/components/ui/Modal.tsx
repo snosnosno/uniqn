@@ -171,7 +171,7 @@ export function Modal({
           </Pressable>
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <Animated.View style={modalStyle} pointerEvents="box-none">
+          <Animated.View style={[modalStyle, { pointerEvents: 'box-none' }]}>
             <View className={modalClassName}>
               {/* Header */}
               {(title || showCloseButton) && (

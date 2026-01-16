@@ -126,6 +126,7 @@ function MonthNavigator({
 interface StatsCardProps {
   stats: {
     upcomingSchedules: number;
+    confirmedSchedules: number;
     completedSchedules: number;
     thisMonthEarnings: number;
   } | undefined;
@@ -136,13 +137,21 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
   if (isLoading) {
     return (
       <Card className="mx-4 mt-4">
+        {/* 1행: 지원/확정/완료 스켈레톤 */}
         <View className="flex-row justify-around">
           {[1, 2, 3].map((i) => (
             <View key={i} className="items-center">
-              <Skeleton width={40} height={24} />
-              <Skeleton width={60} height={16} className="mt-1" />
+              <Skeleton width={50} height={16} />
+              <Skeleton width={40} height={24} className="mt-1" />
             </View>
           ))}
+        </View>
+        {/* 구분선 */}
+        <View className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
+        {/* 2행: 수익 스켈레톤 */}
+        <View className="flex-row justify-between items-center px-2">
+          <Skeleton width={40} height={16} />
+          <Skeleton width={120} height={24} />
         </View>
       </Card>
     );
@@ -152,27 +161,40 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 
   return (
     <Card className="mx-4 mt-4">
+      {/* 1행: 지원/확정/완료 */}
       <View className="flex-row justify-around">
+        {/* 지원 (applied) */}
         <View className="items-center">
-          <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+          <Text className="text-xs text-gray-500 dark:text-gray-400">지원</Text>
+          <Text className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
             {stats.upcomingSchedules}
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">예정</Text>
         </View>
         <View className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+        {/* 확정 (confirmed) */}
         <View className="items-center">
+          <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
+          <Text className="text-2xl font-bold text-green-600 dark:text-green-400">
+            {stats.confirmedSchedules}
+          </Text>
+        </View>
+        <View className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+        {/* 완료 (completed) */}
+        <View className="items-center">
+          <Text className="text-xs text-gray-500 dark:text-gray-400">완료</Text>
           <Text className="text-2xl font-bold text-gray-900 dark:text-gray-100">
             {stats.completedSchedules}
           </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">완료</Text>
         </View>
-        <View className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
-        <View className="items-center">
-          <Text className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {formatCurrency(stats.thisMonthEarnings).replace('원', '')}
-          </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">이번달 수익</Text>
-        </View>
+      </View>
+      {/* 구분선 */}
+      <View className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
+      {/* 2행: 수익 */}
+      <View className="flex-row justify-between items-center px-2">
+        <Text className="text-sm text-gray-500 dark:text-gray-400">수익</Text>
+        <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
+          {formatCurrency(stats.thisMonthEarnings)}
+        </Text>
       </View>
     </Card>
   );
