@@ -44,6 +44,24 @@ export {
   minutesToHoursMinutes,
 } from './dateUtils';
 
+// 날짜 범위 유틸리티 (연속 날짜 그룹화)
+export {
+  toDateString,
+  areDatesConsecutive,
+  areAllDatesConsecutive,
+  groupConsecutiveDates,
+  formatDateRange,
+  getDayCount,
+  formatDateRangeWithCount,
+  groupRequirementsToDateRanges,
+  expandDateRangeToRequirements,
+  expandAllDateRangesToRequirements,
+  isSingleDate,
+  getDateListFromRange,
+} from './dateRangeUtils';
+
+export type { DateRangeGroup } from './dateRangeUtils';
+
 // 포맷터
 export {
   formatNumber,

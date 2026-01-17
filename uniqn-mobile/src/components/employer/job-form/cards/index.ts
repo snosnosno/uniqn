@@ -3,4 +3,5 @@
  */
 
 export { DateRequirementCard } from './DateRequirementCard';
+export { DateRangeCard } from './DateRangeCard';
 export { TimeSlotCard } from './TimeSlotCard';

@@ -2,15 +2,19 @@
  * UNIQN Mobile - 구인공고 카드 컴포넌트
  *
  * @description 공고 목록에서 사용하는 간략한 정보 카드
- * @version 2.0.0 - dateRequirements 지원
+ * @version 3.0.0 - 연속 날짜 그룹화 지원
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { TournamentStatusBadge } from './TournamentStatusBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+} from '@/utils/dateRangeUtils';
 import type {
   JobPostingCard,
   PostingType,
@@ -19,6 +23,7 @@ import type {
   SalaryInfo,
   TournamentApprovalStatus,
 } from '@/types';
+import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
@@ -136,6 +141,119 @@ const getAllowanceItems = (allowances?: Allowances): string[] => {
 // ============================================================================
 
 /**
+ * 날짜 요구사항 표시 컴포넌트 (연속 날짜 그룹화 지원)
+ * CardDateRequirement[]와 DateSpecificRequirement[] 모두 지원
+ */
+const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
+  dateRequirements,
+  postingType,
+}: {
+  dateRequirements: JobPostingCard['dateRequirements'];
+  postingType?: PostingType;
+}) {
+  // 대회 공고인 경우 연속 날짜 그룹화
+  const isTournament = postingType === 'tournament';
+  const dateGroups = useMemo(() => {
+    if (isTournament && dateRequirements) {
+      // CardDateRequirement를 DateSpecificRequirement로 변환
+      const normalized = dateRequirements.map((req) => ({
+        date: req.date,
+        timeSlots: req.timeSlots.map((slot) => ({
+          ...slot,
+          roles: slot.roles.map((r) => ({
+            role: r.role,
+            customRole: r.customRole,
+            headcount: r.count,
+            filled: r.filled,
+          })),
+        })),
+      })) as DateSpecificRequirement[];
+      return groupRequirementsToDateRanges(normalized);
+    }
+    return null;
+  }, [isTournament, dateRequirements]);
+
+  // 대회 공고: 그룹화된 날짜 표시
+  if (isTournament && dateGroups) {
+    return (
+      <>
+        {dateGroups.map((group, groupIdx) => (
+          <View key={group.id || groupIdx} className="mb-2">
+            {/* 날짜 범위 표시 */}
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              📅 {formatDateRangeWithCount(group.startDate, group.endDate)}
+            </Text>
+
+            {/* 시간대별 */}
+            {group.timeSlots.map((slot, slotIdx) => {
+              const displayTime = slot.isTimeToBeAnnounced
+                ? '미정'
+                : slot.startTime || '-';
+
+              return (
+                <View key={slot.id || slotIdx} className="ml-5 mt-1">
+                  {slot.roles.map((role, roleIdx) => {
+                    // RoleRequirement → CardRole-like 변환
+                    const cardRole: CardRole = {
+                      role: role.role ?? role.name ?? '',
+                      customRole: role.customRole,
+                      count: role.headcount ?? role.count ?? 0,
+                      filled: role.filled ?? 0,
+                    };
+                    return (
+                      <RoleLine
+                        key={role.id || roleIdx}
+                        role={cardRole}
+                        showTime={roleIdx === 0}
+                        time={displayTime}
+                      />
+                    );
+                  })}
+                </View>
+              );
+            })}
+          </View>
+        ))}
+      </>
+    );
+  }
+
+  // 일반/긴급 공고: 개별 날짜 표시
+  return (
+    <>
+      {dateRequirements?.map((dateReq, dateIdx) => (
+        <View key={dateIdx} className="mb-2">
+          {/* 날짜 */}
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            📅 {formatDate(typeof dateReq.date === 'string' ? dateReq.date : '')}
+          </Text>
+
+          {/* 시간대별 */}
+          {dateReq.timeSlots.map((slot, slotIdx) => {
+            const displayTime = slot.isTimeToBeAnnounced
+              ? '미정'
+              : slot.startTime || '-';
+
+            return (
+              <View key={slotIdx} className="ml-5 mt-1">
+                {slot.roles.map((role, roleIdx) => (
+                  <RoleLine
+                    key={roleIdx}
+                    role={role}
+                    showTime={roleIdx === 0}
+                    time={displayTime}
+                  />
+                ))}
+              </View>
+            );
+          })}
+        </View>
+      ))}
+    </>
+  );
+});
+
+/**
  * 역할 라인 컴포넌트
  */
 const RoleLine = memo(function RoleLine({
@@ -179,7 +297,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
   }, [job.id, onPress]);
 
   // 역할에서 급여 정보 추출
-  const getRolesWithSalary = (): Array<{ role: string; customRole?: string; salary: SalaryInfo }> => {
+  const getRolesWithSalary = (): { role: string; customRole?: string; salary: SalaryInfo }[] => {
     if (job.useSameSalary) return [];
 
     // dateRequirements에서 역할별 급여 추출
@@ -281,35 +399,10 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
               compact={true}
             />
           ) : job.dateRequirements && job.dateRequirements.length > 0 ? (
-            job.dateRequirements.map((dateReq, dateIdx) => (
-              <View key={dateIdx} className="mb-2">
-                {/* 날짜 */}
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  📅 {formatDate(dateReq.date)}
-                </Text>
-
-                {/* 시간대별 */}
-                {dateReq.timeSlots.map((slot, slotIdx) => {
-                  // 시간 미정 여부 확인
-                  const displayTime = slot.isTimeToBeAnnounced
-                    ? '미정'
-                    : slot.startTime || '-';
-
-                  return (
-                    <View key={slotIdx} className="ml-5 mt-1">
-                      {slot.roles.map((role, roleIdx) => (
-                        <RoleLine
-                          key={roleIdx}
-                          role={role}
-                          showTime={roleIdx === 0}
-                          time={displayTime}
-                        />
-                      ))}
-                    </View>
-                  );
-                })}
-              </View>
-            ))
+            <DateRequirementsDisplay
+              dateRequirements={job.dateRequirements}
+              postingType={job.postingType}
+            />
           ) : (
             // 레거시 폴백
             <View className="mb-2">

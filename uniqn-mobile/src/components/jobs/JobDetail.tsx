@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 구인공고 상세 컴포넌트
  *
- * @description 공고 상세 정보 표시 (v3.0 - useJobSchedule Hook 적용)
- * @version 3.0.0
+ * @description 공고 상세 정보 표시 (v4.0 - 연속 날짜 그룹화 지원)
+ * @version 4.0.0
  */
 
 import React, { useMemo } from 'react';
@@ -13,7 +13,12 @@ import { DateRequirementDisplay } from './DateRequirementDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import { useJobSchedule } from '@/hooks';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+} from '@/utils/dateRangeUtils';
 import type { JobPosting, PostingType, Allowances } from '@/types';
+import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types
@@ -103,6 +108,144 @@ function InfoRow({ label, value, icon }: { label: string; value: string | React.
       </View>
     </View>
   );
+}
+
+/**
+ * 날짜 요구사항 그룹화 표시 컴포넌트 (v4.0)
+ * - 대회 공고: 연속 날짜 그룹화
+ * - 일반/긴급 공고: 개별 표시
+ */
+function DateRequirementsGroupedDisplay({
+  dateRequirements,
+  postingType,
+}: {
+  dateRequirements: DateSpecificRequirement[];
+  postingType?: PostingType;
+}) {
+  const isTournament = postingType === 'tournament';
+
+  // 대회 공고: 연속 날짜 그룹화
+  const dateGroups = useMemo(() => {
+    if (isTournament) {
+      return groupRequirementsToDateRanges(dateRequirements);
+    }
+    return null;
+  }, [isTournament, dateRequirements]);
+
+  if (isTournament && dateGroups) {
+    return (
+      <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+        <View className="flex-row items-start">
+          <Text className="text-lg mr-3">📅</Text>
+          <View className="flex-1">
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              근무 일정
+            </Text>
+            {dateGroups.map((group, groupIdx) => (
+              <View
+                key={group.id || groupIdx}
+                className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+              >
+                {/* 날짜 범위 */}
+                <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
+                  {formatDateRangeWithCount(group.startDate, group.endDate)}
+                </Text>
+
+                {/* 시간대별 */}
+                {group.timeSlots.map((slot, slotIdx) => {
+                  const displayTime = slot.isTimeToBeAnnounced
+                    ? '시간 미정'
+                    : slot.startTime || '-';
+
+                  return (
+                    <View key={slot.id || slotIdx} className="ml-2 mb-2">
+                      <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
+                        {displayTime}
+                      </Text>
+                      <View className="flex-row flex-wrap">
+                        {slot.roles.map((role, roleIdx) => {
+                          const roleName = getRoleLabel(role.role ?? role.name ?? '', role.customRole);
+                          const headcount = role.headcount ?? role.count ?? 0;
+                          const filled = role.filled ?? 0;
+                          const isFilled = filled >= headcount && headcount > 0;
+
+                          return (
+                            <View
+                              key={role.id || roleIdx}
+                              className={`mr-2 mb-1 px-2 py-1 rounded-md ${
+                                isFilled
+                                  ? 'bg-gray-200 dark:bg-gray-700'
+                                  : 'bg-blue-100 dark:bg-blue-900/30'
+                              }`}
+                            >
+                              <Text
+                                className={`text-xs ${
+                                  isFilled
+                                    ? 'text-gray-500 dark:text-gray-400 line-through'
+                                    : 'text-blue-700 dark:text-blue-300'
+                                }`}
+                              >
+                                {roleName} {headcount}명 ({filled}/{headcount})
+                              </Text>
+                            </View>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  // 일반/긴급 공고: 개별 표시
+  return (
+    <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+      <View className="flex-row items-start">
+        <Text className="text-lg mr-3">📅</Text>
+        <View className="flex-1">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            근무 일정
+          </Text>
+          {dateRequirements.map((req, idx) => (
+            <DateRequirementDisplay
+              key={idx}
+              requirement={req}
+              index={idx}
+              showFilledCount={true}
+            />
+          ))}
+        </View>
+      </View>
+    </View>
+  );
+}
+
+/**
+ * 역할 라벨 변환
+ */
+function getRoleLabel(role: string, customRole?: string): string {
+  if (role === 'other' && customRole) {
+    return customRole;
+  }
+  const labels: Record<string, string> = {
+    dealer: '딜러',
+    manager: '매니저',
+    chiprunner: '칩러너',
+    admin: '관리자',
+    floor: '플로어',
+    floorman: '플로어맨',
+    serving: '서빙',
+    staff: '직원',
+    chip_runner: '칩러너',
+    supervisor: '슈퍼바이저',
+    other: '기타',
+  };
+  return labels[role] || role;
 }
 
 // ============================================================================
@@ -221,24 +364,10 @@ export function JobDetail({ job }: JobDetailProps) {
             </View>
           </View>
         ) : hasDateRequirements ? (
-          <View className="py-3 border-b border-gray-100 dark:border-gray-700">
-            <View className="flex-row items-start">
-              <Text className="text-lg mr-3">📅</Text>
-              <View className="flex-1">
-                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  근무 일정
-                </Text>
-                {job.dateSpecificRequirements!.map((req, idx) => (
-                  <DateRequirementDisplay
-                    key={idx}
-                    requirement={req}
-                    index={idx}
-                    showFilledCount={true}
-                  />
-                ))}
-              </View>
-            </View>
-          </View>
+          <DateRequirementsGroupedDisplay
+            dateRequirements={job.dateSpecificRequirements!}
+            postingType={job.postingType}
+          />
         ) : (
           <>
             <InfoRow icon="📅" label="근무일" value={safeWorkDate} />

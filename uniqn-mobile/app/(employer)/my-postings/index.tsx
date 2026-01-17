@@ -21,7 +21,12 @@ import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+} from '@/utils/dateRangeUtils';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
+import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types
@@ -114,17 +119,29 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
     }).format(date);
   };
 
-  // 날짜 범위 표시
+  // 날짜 범위 표시 (대회 공고: 그룹화)
   const getDateRange = useMemo(() => {
-    const dates = posting.dateSpecificRequirements?.map((d) => d.date as string) ?? [];
-    if (dates.length === 0) return posting.workDate ? formatDate(posting.workDate) : '-';
-    if (dates.length === 1) return formatDate(dates[0]);
+    const requirements = posting.dateSpecificRequirements;
+    if (!requirements || requirements.length === 0) {
+      return posting.workDate ? formatDate(posting.workDate) : '-';
+    }
 
-    const sortedDates = [...dates].sort();
-    return `${formatDate(sortedDates[0])} ~ ${formatDate(
-      sortedDates[sortedDates.length - 1]
-    )} (${dates.length}일)`;
-  }, [posting.dateSpecificRequirements, posting.workDate]);
+    // 대회 공고: 연속 날짜 그룹화
+    if (isTournament) {
+      const groups = groupRequirementsToDateRanges(requirements as DateSpecificRequirement[]);
+      if (groups.length === 1) {
+        return formatDateRangeWithCount(groups[0].startDate, groups[0].endDate);
+      }
+      // 여러 그룹이면 전체 기간 표시
+      const allDates = requirements.map((d) => d.date as string).sort();
+      return `${formatDate(allDates[0])} ~ ${formatDate(
+        allDates[allDates.length - 1]
+      )} (${groups.length}개 일정, ${requirements.length}일)`;
+    }
+
+    // 일반/긴급 공고: 단일 날짜 표시
+    return formatDate(requirements[0].date as string);
+  }, [posting.dateSpecificRequirements, posting.workDate, isTournament]);
 
   return (
     <Pressable

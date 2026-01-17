@@ -1,28 +1,32 @@
 /**
  * UNIQN Mobile - Assignment 선택 컴포넌트
  *
- * @description 다중 역할/시간/날짜 선택 UI (v3.0 - useJobSchedule Hook 적용)
- * @version 3.0.0 - 통합 타입 기반으로 리팩토링
+ * @description 다중 역할/시간/날짜 선택 UI (v3.1 - 대회 공고 연속 날짜 그룹화)
+ * @version 3.1.0 - 대회 공고 연속 날짜 그룹 단위 선택 지원
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { useJobSchedule } from '@/hooks';
-import type { Assignment, JobPosting } from '@/types';
+import type { Assignment, JobPosting, PostingType } from '@/types';
 import {
   createSimpleAssignment,
   FIXED_DATE_MARKER,
   FIXED_TIME_MARKER,
   TBA_TIME_MARKER,
 } from '@/types';
-import type { TimeSlotInfo, RoleInfo } from '@/types/unified';
+import type { TimeSlotInfo, RoleInfo, DatedScheduleInfo } from '@/types/unified';
 import {
   getRoleDisplayName,
   formatDateDisplay,
   formatTimeSlotDisplay,
   isRoleFilled,
 } from '@/types/unified';
+import {
+  areDatesConsecutive,
+  formatDateRangeWithCount,
+} from '@/utils/dateRangeUtils';
 
 // ============================================================================
 // Types
@@ -45,6 +49,26 @@ interface AssignmentSelectorProps {
 
 /** 역할 선택 키 (date-slot-role 조합) */
 type SelectionKey = string;
+
+/**
+ * 연속 날짜 그룹 (대회 공고용)
+ *
+ * @description 연속 날짜 + 동일 timeSlots를 가진 스케줄을 그룹화
+ */
+interface ScheduleGroup {
+  /** 고유 ID */
+  id: string;
+  /** 시작 날짜 (YYYY-MM-DD) */
+  startDate: string;
+  /** 종료 날짜 (YYYY-MM-DD) */
+  endDate: string;
+  /** 그룹 레이블 (예: "1/17(금) ~ 1/19(일) (3일간)") */
+  label: string;
+  /** 그룹에 속한 개별 날짜 스케줄 정보 */
+  dates: DatedScheduleInfo[];
+  /** 공유 시간대 정보 (첫 번째 날짜 기준) */
+  timeSlots: TimeSlotInfo[];
+}
 
 interface DateSelectionProps {
   /** 날짜 (YYYY-MM-DD) */
@@ -75,6 +99,120 @@ interface DateSelectionProps {
 /** 선택 키 생성 (date|slot|role) */
 const makeSelectionKey = (date: string, slotTime: string, role: string): SelectionKey => {
   return `${date}|${slotTime}|${role}`;
+};
+
+/**
+ * 시간대 비교 (동일 여부)
+ *
+ * @description 두 시간대 배열이 같은 구조인지 확인 (시작시간, 역할ID 기준)
+ */
+const areTimeSlotsStructureEqual = (
+  slots1: TimeSlotInfo[],
+  slots2: TimeSlotInfo[]
+): boolean => {
+  if (slots1.length !== slots2.length) return false;
+
+  // 시작시간 기준 정렬
+  const sort = (slots: TimeSlotInfo[]) =>
+    [...slots].sort((a, b) =>
+      (a.startTime ?? '').localeCompare(b.startTime ?? '')
+    );
+
+  const sorted1 = sort(slots1);
+  const sorted2 = sort(slots2);
+
+  for (let i = 0; i < sorted1.length; i++) {
+    const s1 = sorted1[i]!;
+    const s2 = sorted2[i]!;
+
+    // 시작 시간 비교
+    if (s1.startTime !== s2.startTime) return false;
+    if (!!s1.isTimeToBeAnnounced !== !!s2.isTimeToBeAnnounced) return false;
+
+    // 역할 수 비교
+    if (s1.roles.length !== s2.roles.length) return false;
+
+    // 역할 ID 비교 (정렬 후)
+    const roleIds1 = s1.roles.map((r) => r.roleId).sort();
+    const roleIds2 = s2.roles.map((r) => r.roleId).sort();
+    for (let j = 0; j < roleIds1.length; j++) {
+      if (roleIds1[j] !== roleIds2[j]) return false;
+    }
+  }
+
+  return true;
+};
+
+/**
+ * DatedScheduleInfo[] → ScheduleGroup[] 변환
+ *
+ * @description 대회 공고: 연속 날짜 + 동일 timeSlots 구조를 그룹화
+ *              일반/긴급/고정 공고: 개별 날짜를 각각 그룹으로
+ */
+const groupDatedSchedules = (
+  schedules: DatedScheduleInfo[],
+  postingType?: PostingType
+): ScheduleGroup[] => {
+  if (schedules.length === 0) return [];
+
+  // 대회 공고가 아니면 그룹화하지 않음 (개별 날짜 각각 그룹)
+  if (postingType !== 'tournament') {
+    return schedules.map((s) => ({
+      id: s.date,
+      startDate: s.date,
+      endDate: s.date,
+      label: formatDateDisplay(s.date),
+      dates: [s],
+      timeSlots: s.timeSlots,
+    }));
+  }
+
+  // 날짜 기준 정렬
+  const sorted = [...schedules].sort((a, b) => a.date.localeCompare(b.date));
+
+  const groups: ScheduleGroup[] = [];
+  let currentGroup: DatedScheduleInfo[] = [sorted[0]!];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prev = sorted[i - 1]!;
+    const curr = sorted[i]!;
+
+    // 연속 날짜이고 timeSlots 구조가 동일하면 같은 그룹
+    if (
+      areDatesConsecutive(prev.date, curr.date) &&
+      areTimeSlotsStructureEqual(prev.timeSlots, curr.timeSlots)
+    ) {
+      currentGroup.push(curr);
+    } else {
+      // 새 그룹 시작
+      groups.push(createGroupFromSchedules(currentGroup));
+      currentGroup = [curr];
+    }
+  }
+
+  // 마지막 그룹 추가
+  groups.push(createGroupFromSchedules(currentGroup));
+
+  return groups;
+};
+
+/**
+ * DatedScheduleInfo[] → ScheduleGroup 생성
+ */
+const createGroupFromSchedules = (schedules: DatedScheduleInfo[]): ScheduleGroup => {
+  const sortedDates = schedules.map((s) => s.date).sort();
+  const startDate = sortedDates[0]!;
+  const endDate = sortedDates[sortedDates.length - 1]!;
+  const label = formatDateRangeWithCount(startDate, endDate);
+
+  return {
+    id: `${startDate}-${endDate}`,
+    startDate,
+    endDate,
+    label,
+    dates: schedules,
+    timeSlots: schedules[0]!.timeSlots, // 첫 번째 날짜 기준
+  };
 };
 
 // ============================================================================
@@ -227,6 +365,120 @@ const DateSelection = memo(function DateSelection({
   );
 });
 
+/**
+ * 그룹 선택 Props (대회 공고용)
+ */
+interface DateGroupSelectionProps {
+  /** 스케줄 그룹 */
+  group: ScheduleGroup;
+  /** 선택된 키 Set */
+  selectedKeys: Set<SelectionKey>;
+  /** 그룹 역할 토글 콜백 (그룹 내 모든 날짜 동시 선택/해제) */
+  onGroupRoleToggle: (
+    group: ScheduleGroup,
+    slotTime: string,
+    role: string,
+    timeOptions?: { isTimeToBeAnnounced?: boolean; tentativeDescription?: string }
+  ) => void;
+  /** 비활성화 여부 */
+  disabled?: boolean;
+}
+
+/**
+ * 날짜 그룹 선택 항목 (대회 공고용)
+ *
+ * @description 연속 날짜 그룹을 하나의 카드로 표시
+ * 역할 선택 시 그룹 내 모든 날짜에 동시 적용
+ */
+const DateGroupSelection = memo(function DateGroupSelection({
+  group,
+  selectedKeys,
+  onGroupRoleToggle,
+  disabled,
+}: DateGroupSelectionProps) {
+  const isSingleDate = group.startDate === group.endDate;
+  const dayCount = group.dates.length;
+
+  // 그룹 내 역할 선택 상태 확인 (첫 번째 날짜 기준)
+  const isGroupRoleSelected = useCallback(
+    (slotTime: string, effectiveRoleId: string): boolean => {
+      const firstDate = group.startDate;
+      const key = makeSelectionKey(firstDate, slotTime, effectiveRoleId);
+      return selectedKeys.has(key);
+    },
+    [group.startDate, selectedKeys]
+  );
+
+  return (
+    <View className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
+      {/* 그룹 헤더 */}
+      <View className="flex-row items-center flex-wrap mb-3">
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">
+          📅 {group.label}
+        </Text>
+        {!isSingleDate && (
+          <Badge variant="primary" size="sm" className="ml-2">
+            {dayCount}일간 동시 선택
+          </Badge>
+        )}
+      </View>
+
+      {/* 시간대별 역할 선택 */}
+      <View className="flex-col gap-3">
+        {group.timeSlots.map((slot, slotIndex) => {
+          const slotTime = slot.isTimeToBeAnnounced
+            ? TBA_TIME_MARKER
+            : (slot.startTime ?? '');
+          const timeDisplay = formatTimeSlotDisplay(slot);
+
+          return (
+            <View key={slot.id || slotIndex} className="pl-2">
+              {/* 시간 표시 */}
+              <Text className="text-sm font-medium text-gray-600 dark:text-gray-400 mb-2">
+                🕐 {timeDisplay}
+              </Text>
+              {/* 역할 체크박스들 */}
+              <View className="flex-row flex-wrap pl-4">
+                {slot.roles.map((role, roleIndex) => {
+                  const effectiveRoleId =
+                    role.roleId === 'other' && role.customName
+                      ? role.customName
+                      : role.roleId;
+                  const isSelected = isGroupRoleSelected(slotTime, effectiveRoleId);
+
+                  return (
+                    <RoleCheckbox
+                      key={role.roleId || roleIndex}
+                      role={role}
+                      isSelected={isSelected}
+                      onToggle={() =>
+                        onGroupRoleToggle(group, slotTime, effectiveRoleId, {
+                          isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+                          tentativeDescription: slot.tentativeDescription,
+                        })
+                      }
+                      disabled={disabled}
+                    />
+                  );
+                })}
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      {/* 안내 문구 (여러 날짜인 경우) */}
+      {!isSingleDate && (
+        <View className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
+            ⓘ 선택 시 {dayCount}일 모두 지원됩니다
+          </Text>
+        </View>
+      )}
+    </View>
+  );
+});
+
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -234,8 +486,9 @@ const DateSelection = memo(function DateSelection({
 /**
  * Assignment 선택 컴포넌트
  *
- * @description 시간대별 역할 직접 선택 UI (v3.0)
+ * @description 시간대별 역할 직접 선택 UI (v3.1)
  * useJobSchedule Hook을 사용하여 통합 타입 기반으로 데이터 처리
+ * 대회 공고: 연속 날짜 그룹 단위 선택
  *
  * @example
  * <AssignmentSelector
@@ -322,6 +575,61 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       .join(', ');
   }, [selectedAssignments]);
 
+  // v3.1: 대회 공고 연속 날짜 그룹화
+  const isTournament = jobPosting.postingType === 'tournament';
+
+  const scheduleGroups = useMemo(() => {
+    return groupDatedSchedules(datedSchedules, jobPosting.postingType);
+  }, [datedSchedules, jobPosting.postingType]);
+
+  // v3.1: 그룹 역할 토글 핸들러 (그룹 내 모든 날짜 동시 선택/해제)
+  const handleGroupRoleToggle = useCallback(
+    (
+      group: ScheduleGroup,
+      slotTime: string,
+      role: string,
+      timeOptions?: { isTimeToBeAnnounced?: boolean; tentativeDescription?: string }
+    ) => {
+      // 그룹의 첫 번째 날짜 기준으로 선택 상태 확인
+      const firstKey = makeSelectionKey(group.startDate, slotTime, role);
+      const isSelected = selectedKeys.has(firstKey);
+
+      let newAssignments: Assignment[];
+
+      if (isSelected) {
+        // 해제: 그룹 내 모든 날짜의 해당 역할 제거
+        const groupDates = new Set(group.dates.map((d) => d.date));
+        newAssignments = selectedAssignments.filter((a) => {
+          const aDate = a.dates[0] ?? '';
+          const aRole = a.roleIds[0] ?? '';
+          // 그룹 내 날짜이고 같은 역할이면 제거
+          const isInGroup = groupDates.has(aDate);
+          const isSameRole = aRole === role && a.timeSlot === slotTime;
+          return !(isInGroup && isSameRole);
+        });
+      } else {
+        // 선택: 그룹 내 모든 날짜에 해당 역할 추가
+        // 최대 선택 수 확인 (그룹 전체 추가 가능 여부)
+        const newCount = group.dates.length;
+        if (maxSelections && selectedAssignments.length + newCount > maxSelections) {
+          return; // 최대 선택 수 초과
+        }
+
+        // 그룹 내 모든 날짜에 Assignment 생성
+        const groupAssignments = group.dates.map((schedule) =>
+          createSimpleAssignment(role, slotTime, schedule.date, {
+            isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
+            tentativeDescription: timeOptions?.tentativeDescription,
+          })
+        );
+        newAssignments = [...selectedAssignments, ...groupAssignments];
+      }
+
+      onSelectionChange(newAssignments);
+    },
+    [selectedKeys, selectedAssignments, maxSelections, onSelectionChange]
+  );
+
   // 고정공고: 역할만 선택 (날짜/시간 없음)
   if (isFixed && fixedSchedule) {
     return (
@@ -392,20 +700,34 @@ export const AssignmentSelector = memo(function AssignmentSelector({
         </Text>
       </View>
 
-      {/* 날짜별 시간대/역할 선택 (v3.0: datedSchedules 직접 사용) */}
+      {/* 날짜별 시간대/역할 선택 (v3.1: 대회 공고는 그룹 단위) */}
       <View>
-        {datedSchedules.map((schedule, index) => (
-          <DateSelection
-            key={schedule.date || index}
-            date={schedule.date}
-            timeSlots={schedule.timeSlots}
-            isMainDate={schedule.isMainDate}
-            description={schedule.description}
-            selectedKeys={selectedKeys}
-            onRoleToggle={handleRoleToggle}
-            disabled={disabled}
-          />
-        ))}
+        {isTournament ? (
+          // 대회 공고: 그룹 기반 렌더링 (연속 날짜 묶음)
+          scheduleGroups.map((group) => (
+            <DateGroupSelection
+              key={group.id}
+              group={group}
+              selectedKeys={selectedKeys}
+              onGroupRoleToggle={handleGroupRoleToggle}
+              disabled={disabled}
+            />
+          ))
+        ) : (
+          // 일반/긴급 공고: 개별 날짜 렌더링
+          datedSchedules.map((schedule, index) => (
+            <DateSelection
+              key={schedule.date || index}
+              date={schedule.date}
+              timeSlots={schedule.timeSlots}
+              isMainDate={schedule.isMainDate}
+              description={schedule.description}
+              selectedKeys={selectedKeys}
+              onRoleToggle={handleRoleToggle}
+              disabled={disabled}
+            />
+          ))
+        )}
       </View>
 
       {/* 선택 요약 */}
