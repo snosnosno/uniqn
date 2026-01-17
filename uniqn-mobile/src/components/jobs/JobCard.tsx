@@ -9,7 +9,6 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { PostingTypeBadge } from './PostingTypeBadge';
-import { TournamentStatusBadge } from './TournamentStatusBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import {
   groupRequirementsToDateRanges,
@@ -21,7 +20,6 @@ import type {
   Allowances,
   CardRole,
   SalaryInfo,
-  TournamentApprovalStatus,
 } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
@@ -355,15 +353,6 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           {job.postingType && job.postingType !== 'regular' && (
             <PostingTypeBadge
               type={job.postingType as PostingType}
-              size="sm"
-              className="mr-2"
-            />
-          )}
-          {/* 대회공고 승인 상태 뱃지 */}
-          {job.postingType === 'tournament' && job.tournamentConfig?.approvalStatus && (
-            <TournamentStatusBadge
-              status={job.tournamentConfig.approvalStatus as TournamentApprovalStatus}
-              rejectionReason={job.tournamentConfig.rejectionReason}
               size="sm"
               className="mr-2"
             />

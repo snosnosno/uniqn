@@ -21,7 +21,7 @@ import {
   ChevronUpIcon,
 } from '@/components/icons';
 import { TimePicker } from '@/components/ui/TimePicker';
-import { RoleSelectModal } from '../modals';
+import { RoleSelectModal, NumberPickerModal } from '../modals';
 import {
   ROLE_ICONS,
   DEFAULT_ROLE_ICON,
@@ -56,6 +56,7 @@ interface RoleCardProps {
   roleIndex: number;
   canRemove: boolean;
   onCountChange: (roleIndex: number, delta: number) => void;
+  onCountSet: (roleIndex: number, count: number) => void;
   onRemove: (roleIndex: number) => void;
   onCustomNameChange?: (roleIndex: number, name: string) => void;
 }
@@ -65,9 +66,12 @@ const RoleCard = React.memo(function RoleCard({
   roleIndex,
   canRemove,
   onCountChange,
+  onCountSet,
   onRemove,
   onCustomNameChange,
 }: RoleCardProps) {
+  const [showNumberPicker, setShowNumberPicker] = useState(false);
+
   // 역할명 가져오기 (v2.0: role, 레거시: name 지원)
   const roleKey = role.role ?? role.name ?? 'dealer';
   const roleName = roleKey === 'other' && role.customRole
@@ -78,6 +82,12 @@ const RoleCard = React.memo(function RoleCard({
   // 인원수 (v2.0: headcount, 레거시: count 지원)
   const headcount = role.headcount ?? role.count ?? 1;
   const isCustom = roleKey === 'other';
+
+  // 휠 피커 확인 핸들러
+  const handlePickerConfirm = useCallback((value: number) => {
+    onCountSet(roleIndex, value);
+    setShowNumberPicker(false);
+  }, [roleIndex, onCountSet]);
 
   return (
     <View className="flex-row items-center py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
@@ -116,17 +126,23 @@ const RoleCard = React.memo(function RoleCard({
           <MinusIcon size={14} color="#6B7280" />
         </Pressable>
 
-        <View className="w-8 h-7 items-center justify-center bg-white dark:bg-gray-800 border-y border-gray-200 dark:border-gray-600">
+        {/* 숫자 탭 → 휠 피커 */}
+        <Pressable
+          onPress={() => setShowNumberPicker(true)}
+          className="w-12 h-7 items-center justify-center bg-white dark:bg-gray-800 border-y border-gray-200 dark:border-gray-600"
+          accessibilityRole="button"
+          accessibilityLabel="인원 선택"
+        >
           <Text className="font-bold text-sm text-gray-900 dark:text-white">
             {headcount}
           </Text>
-        </View>
+        </Pressable>
 
         <Pressable
           onPress={() => onCountChange(roleIndex, 1)}
-          disabled={headcount >= 99}
+          disabled={headcount >= 200}
           className={`w-7 h-7 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-r-md ${
-            headcount >= 99 ? 'opacity-50' : ''
+            headcount >= 200 ? 'opacity-50' : ''
           }`}
           accessibilityRole="button"
           accessibilityLabel="인원 증가"
@@ -146,6 +162,17 @@ const RoleCard = React.memo(function RoleCard({
           </Pressable>
         )}
       </View>
+
+      {/* 숫자 휠 피커 모달 */}
+      <NumberPickerModal
+        visible={showNumberPicker}
+        value={headcount}
+        min={1}
+        max={200}
+        title={`${roleName} 인원`}
+        onConfirm={handlePickerConfirm}
+        onClose={() => setShowNumberPicker(false)}
+      />
     </View>
   );
 });
@@ -223,14 +250,28 @@ export function TimeSlotCard({
     [index, timeSlot.roles, onUpdate]
   );
 
-  // 역할 인원 변경
+  // 역할 인원 변경 (증감)
   const handleRoleCountChange = useCallback(
     (roleIndex: number, delta: number) => {
       const updatedRoles = [...timeSlot.roles];
       const role = updatedRoles[roleIndex];
       if (role) {
         const currentCount = role.headcount ?? role.count ?? 1;
-        const newCount = Math.max(1, Math.min(99, currentCount + delta));
+        const newCount = Math.max(1, Math.min(200, currentCount + delta));
+        updatedRoles[roleIndex] = { ...role, headcount: newCount };
+        onUpdate(index, { roles: updatedRoles });
+      }
+    },
+    [index, timeSlot.roles, onUpdate]
+  );
+
+  // 역할 인원 직접 설정
+  const handleRoleCountSet = useCallback(
+    (roleIndex: number, count: number) => {
+      const updatedRoles = [...timeSlot.roles];
+      const role = updatedRoles[roleIndex];
+      if (role) {
+        const newCount = Math.max(1, Math.min(200, count));
         updatedRoles[roleIndex] = { ...role, headcount: newCount };
         onUpdate(index, { roles: updatedRoles });
       }
@@ -383,6 +424,7 @@ export function TimeSlotCard({
                   roleIndex={roleIndex}
                   canRemove={timeSlot.roles.length > 1}
                   onCountChange={handleRoleCountChange}
+                  onCountSet={handleRoleCountSet}
                   onRemove={handleRemoveRole}
                   onCustomNameChange={role.role === 'other' ? handleCustomRoleNameChange : undefined}
                 />

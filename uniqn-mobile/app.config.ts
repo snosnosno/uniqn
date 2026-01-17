@@ -66,7 +66,7 @@ const envConfig = ENV_CONFIG[environment];
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: envConfig.appName,
-  slug: 'uniqn-mobile',
+  slug: 'uniqn',
   version: VERSION,
   orientation: 'portrait',
   icon: './assets/icon.png',

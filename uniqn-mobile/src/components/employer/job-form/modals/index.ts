@@ -5,3 +5,4 @@
 export { DatePickerModal } from './DatePickerModal';
 export { RoleSelectModal, type RoleSelectModalProps } from './RoleSelectModal';
 export { GroupingConfirmModal, type GroupingConfirmModalProps } from './GroupingConfirmModal';
+export { NumberPickerModal, type NumberPickerModalProps } from './NumberPickerModal';

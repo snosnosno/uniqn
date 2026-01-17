@@ -276,7 +276,7 @@ export function JobPostingScrollForm({
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
