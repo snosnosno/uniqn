@@ -84,8 +84,8 @@ function validateBasicInfo(data: JobPostingFormData): Record<string, string> {
   }
   if (!data.title?.trim()) {
     errors.title = '제목을 입력해주세요';
-  } else if (data.title.length < 5) {
-    errors.title = '제목은 최소 5자 이상 입력해주세요';
+  } else if (data.title.trim().length < 2) {
+    errors.title = '제목은 최소 2자 이상 입력해주세요';
   }
   if (!data.location) {
     errors.location = '근무지를 선택해주세요';
