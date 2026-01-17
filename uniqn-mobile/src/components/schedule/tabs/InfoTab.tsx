@@ -20,7 +20,14 @@ import {
   BanknotesIcon,
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatCurrency, SALARY_TYPE_LABELS } from '@/utils/settlement';
+import {
+  formatCurrency,
+  SALARY_TYPE_LABELS,
+  PROVIDED_FLAG,
+  DEFAULT_TAX_SETTINGS,
+  type Allowances,
+  type TaxSettings,
+} from '@/utils/settlement';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -160,6 +167,37 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     return null;
   }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, schedule.jobPostingCard?.defaultSalary]);
 
+  // 수당 정보 (settlementBreakdown > customAllowances > jobPostingCard)
+  const allowances: Allowances | undefined = useMemo(() => {
+    if (schedule.settlementBreakdown?.allowances) {
+      return schedule.settlementBreakdown.allowances;
+    }
+    return schedule.customAllowances || schedule.jobPostingCard?.allowances;
+  }, [schedule.settlementBreakdown?.allowances, schedule.customAllowances, schedule.jobPostingCard?.allowances]);
+
+  // 세금 설정 (settlementBreakdown > customTaxSettings > jobPostingCard)
+  const taxSettings: TaxSettings = useMemo(() => {
+    if (schedule.settlementBreakdown?.taxSettings) {
+      return schedule.settlementBreakdown.taxSettings;
+    }
+    return schedule.customTaxSettings ||
+      schedule.jobPostingCard?.taxSettings ||
+      DEFAULT_TAX_SETTINGS;
+  }, [schedule.settlementBreakdown?.taxSettings, schedule.customTaxSettings, schedule.jobPostingCard?.taxSettings]);
+
+  // 수당이 있는지 확인 (보장시간 제외)
+  const hasAllowances = useMemo(() => {
+    if (!allowances) return false;
+    return (
+      (allowances.meal !== undefined && allowances.meal !== 0) ||
+      (allowances.transportation !== undefined && allowances.transportation !== 0) ||
+      (allowances.accommodation !== undefined && allowances.accommodation !== 0)
+    );
+  }, [allowances]);
+
+  // 세금이 있는지 확인
+  const hasTax = taxSettings.type !== 'none';
+
   // 취소 상태면 별도 UI
   if (schedule.type === 'cancelled') {
     return (
@@ -193,41 +231,46 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     );
   }
 
+  // 공고 설명
+  const description = schedule.jobPostingCard?.description;
+
   return (
     <View className="py-2">
-      {/* 공고 정보 */}
-      <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="공고 정보">
-        <Text className="text-base text-gray-900 dark:text-white font-medium">
-          {schedule.eventName}
-        </Text>
-        {ownerName && (
-          <View className="flex-row items-center mt-1">
-            <UserIcon size={14} color="#9CA3AF" />
-            <Text className="ml-1.5 text-sm text-gray-500 dark:text-gray-400">
-              구인자: {ownerName}
-            </Text>
-          </View>
-        )}
-      </Section>
+      {/* 공고 설명 (있으면) */}
+      {description && (
+        <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="공고 설명">
+          <Text className="text-sm text-gray-700 dark:text-gray-300 leading-5">
+            {description}
+          </Text>
+        </Section>
+      )}
 
-      {/* 역할 정보 */}
-      <Section icon={<BriefcaseIcon size={18} color="#6B7280" />} title="역할">
-        <Text className="text-base text-gray-900 dark:text-white font-medium">
+      {/* 역할 정보 - 같은 행 */}
+      <View className="flex-row items-center mb-4">
+        <BriefcaseIcon size={18} color="#6B7280" />
+        <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">역할 :</Text>
+        <Text className="ml-2 text-base font-medium text-gray-900 dark:text-white">
           {getRoleDisplayName(schedule.role, schedule.customRole)}
         </Text>
-      </Section>
+      </View>
 
-      {/* 장소 */}
-      <Section icon={<MapIcon size={18} color="#6B7280" />} title="장소">
-        <Text className="text-base text-gray-900 dark:text-white">
-          {schedule.location || '-'}
-        </Text>
-        {schedule.detailedAddress && (
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {schedule.detailedAddress}
-          </Text>
-        )}
-      </Section>
+      {/* 장소 - 같은 행 (긴 텍스트는 들여쓰기 줄바꿈) */}
+      <View className="mb-4">
+        <View className="flex-row items-start">
+          <MapIcon size={18} color="#6B7280" />
+          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">장소 :</Text>
+          <View className="ml-2 flex-1">
+            <Text className="text-base font-medium text-gray-900 dark:text-white">
+              {schedule.location || '-'}
+            </Text>
+            {schedule.detailedAddress && (
+              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                {schedule.detailedAddress}
+              </Text>
+            )}
+          </View>
+        </View>
+      </View>
 
       {/* 일정 - 상태별 다르게 표시 */}
       <Section icon={<CalendarIcon size={18} color="#6B7280" />} title="일정">
@@ -275,43 +318,108 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         )}
       </Section>
 
-      {/* 구인자 연락처 */}
-      {schedule.ownerPhone && (
+      {/* 구인자 연락처 (구인자 정보 포함) */}
+      {(ownerName || schedule.ownerPhone) && (
         <Section icon={<PhoneIcon size={18} color="#6B7280" />} title="구인자 연락처">
-          <Pressable
-            onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
-            className="flex-row items-center py-2 px-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg active:bg-primary-100 dark:active:bg-primary-900/30"
-          >
-            <Text className="text-base text-primary-600 dark:text-primary-400 font-medium">
-              {formatPhoneNumber(schedule.ownerPhone!)}
-            </Text>
-            <View className="ml-auto flex-row items-center">
-              <PhoneIcon size={16} color="#2563EB" />
-              <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">
-                전화하기
+          {/* 구인자 이름 */}
+          {ownerName && (
+            <View className="flex-row items-center mb-2">
+              <UserIcon size={14} color="#9CA3AF" />
+              <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
+                구인자: {ownerName}
               </Text>
             </View>
-          </Pressable>
+          )}
+          {/* 전화번호 */}
+          {schedule.ownerPhone && (
+            <Pressable
+              onPress={() => Linking.openURL(`tel:${schedule.ownerPhone}`)}
+              className="flex-row items-center py-2 px-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg active:bg-primary-100 dark:active:bg-primary-900/30"
+            >
+              <Text className="text-base text-primary-600 dark:text-primary-400 font-medium">
+                {formatPhoneNumber(schedule.ownerPhone!)}
+              </Text>
+              <View className="ml-auto flex-row items-center">
+                <PhoneIcon size={16} color="#2563EB" />
+                <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">
+                  전화하기
+                </Text>
+              </View>
+            </Pressable>
+          )}
         </Section>
       )}
 
-      {/* 급여 정보 (지원중/확정 상태) */}
-      {(schedule.type === 'applied' || schedule.type === 'confirmed') && salaryInfo && (
-        <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="예상 급여">
+      {/* 급여 정보 (모든 상태) */}
+      {salaryInfo && (
+        <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="급여 정보">
           <View className="p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+            {/* 급여 타입 + 금액 */}
             <Text className="text-base text-gray-900 dark:text-white font-medium">
               {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
             </Text>
-            {schedule.settlementBreakdown && (
-              <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                예상 정산: {formatCurrency(schedule.settlementBreakdown.afterTaxPay)}
-              </Text>
+
+            {/* 수당 정보 (있는 것만 표시, 보장시간 제외) */}
+            {hasAllowances && (
+              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                {/* 식비 */}
+                {allowances?.meal !== undefined && allowances.meal !== 0 && (
+                  <View className="flex-row justify-between items-center py-1">
+                    <Text className="text-sm text-gray-600 dark:text-gray-400">식비</Text>
+                    <Text className={`text-sm font-medium ${
+                      allowances.meal === PROVIDED_FLAG
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-900 dark:text-white'
+                    }`}>
+                      {allowances.meal === PROVIDED_FLAG ? '제공' : `${allowances.meal.toLocaleString()}원`}
+                    </Text>
+                  </View>
+                )}
+                {/* 교통비 */}
+                {allowances?.transportation !== undefined && allowances.transportation !== 0 && (
+                  <View className="flex-row justify-between items-center py-1">
+                    <Text className="text-sm text-gray-600 dark:text-gray-400">교통비</Text>
+                    <Text className={`text-sm font-medium ${
+                      allowances.transportation === PROVIDED_FLAG
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-900 dark:text-white'
+                    }`}>
+                      {allowances.transportation === PROVIDED_FLAG ? '제공' : `${allowances.transportation.toLocaleString()}원`}
+                    </Text>
+                  </View>
+                )}
+                {/* 숙박비 */}
+                {allowances?.accommodation !== undefined && allowances.accommodation !== 0 && (
+                  <View className="flex-row justify-between items-center py-1">
+                    <Text className="text-sm text-gray-600 dark:text-gray-400">숙박비</Text>
+                    <Text className={`text-sm font-medium ${
+                      allowances.accommodation === PROVIDED_FLAG
+                        ? 'text-green-600 dark:text-green-400'
+                        : 'text-gray-900 dark:text-white'
+                    }`}>
+                      {allowances.accommodation === PROVIDED_FLAG ? '제공' : `${allowances.accommodation.toLocaleString()}원`}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* 세금 정보 (설정 있으면 표시) */}
+            {hasTax && (
+              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+                <View className="flex-row justify-between items-center py-1">
+                  <Text className="text-sm text-gray-600 dark:text-gray-400">세금</Text>
+                  <Text className="text-sm font-medium text-red-600 dark:text-red-400">
+                    {taxSettings.type === 'rate' ? `${taxSettings.value}%` : `${taxSettings.value.toLocaleString()}원`}
+                  </Text>
+                </View>
+              </View>
             )}
           </View>
         </Section>
       )}
 
-      {/* 정산 현황 (완료 상태) */}
+      {/* 정산 현황 (완료 상태만) */}
       {schedule.type === 'completed' && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="정산 현황">
           <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">

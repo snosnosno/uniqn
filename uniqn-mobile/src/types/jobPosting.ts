@@ -98,9 +98,20 @@ export interface JobPosting extends FirebaseDocument {
   detailedAddress?: string;
   contactPhone?: string;
 
-  // === 일정 정보 (레거시: 단일 날짜) ===
-  workDate: string; // YYYY-MM-DD
-  timeSlot: string; // "18:00 - 02:00" or "18:00~02:00"
+  // === 일정 정보 (쿼리용 필수 필드) ===
+  /**
+   * 대표 근무일 (YYYY-MM-DD)
+   * @important Firestore 범위 쿼리(>=, <=)에서 필수 사용 - 제거 불가
+   * @description dateSpecificRequirements[0].date와 동기화하여 저장
+   * @see jobManagementService에서 자동 설정
+   */
+  workDate: string;
+  /**
+   * @deprecated dateSpecificRequirements[].timeSlots 사용 권장
+   * @description 레거시 시간대 필드 (폴백용으로 유지)
+   * @format "18:00 - 02:00" or "18:00~02:00"
+   */
+  timeSlot: string;
   startTime?: Timestamp;
   endTime?: Timestamp;
 
@@ -289,6 +300,8 @@ export interface CardDateRequirement {
 export interface JobPostingCard {
   id: string;
   title: string;
+  /** 공고 설명 */
+  description?: string;
   location: string;
   // 레거시 호환
   workDate: string;
@@ -423,6 +436,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
   return {
     id: posting.id,
     title: posting.title,
+    description: posting.description,
     location: posting.location.name,
     workDate: dateRequirements[0]?.date ?? posting.workDate ?? '',
     timeSlot: posting.timeSlot,
