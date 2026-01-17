@@ -49,6 +49,10 @@ export default function ChangePasswordScreen() {
 
   const newPassword = watch('newPassword');
 
+  // 입력 필드 스타일
+  const getInputClassName = (hasError: boolean) =>
+    `rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'}`;
+
   // 비밀번호 변경 핸들러
   const onSubmit = async (data: PasswordChangeData) => {
     setIsSubmitting(true);
@@ -108,11 +112,7 @@ export default function ChangePasswordScreen() {
                   name="currentPassword"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${
-                        errors.currentPassword
-                          ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                          : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
-                      }`}
+                      className={getInputClassName(!!errors.currentPassword)}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -152,11 +152,7 @@ export default function ChangePasswordScreen() {
                   name="newPassword"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${
-                        errors.newPassword
-                          ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                          : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
-                      }`}
+                      className={getInputClassName(!!errors.newPassword)}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -199,11 +195,7 @@ export default function ChangePasswordScreen() {
                   name="confirmPassword"
                   render={({ field: { onChange, onBlur, value } }) => (
                     <TextInput
-                      className={`rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${
-                        errors.confirmPassword
-                          ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                          : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
-                      }`}
+                      className={getInputClassName(!!errors.confirmPassword)}
                       value={value}
                       onChangeText={onChange}
                       onBlur={onBlur}
@@ -240,7 +232,7 @@ export default function ChangePasswordScreen() {
             <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
               비밀번호 정책
             </Text>
-            <View className="space-y-1">
+            <View className="flex-col gap-1">
               <Text className="text-xs text-gray-500 dark:text-gray-400">
                 {'\u2022'} 최소 8자 이상
               </Text>
@@ -263,11 +255,7 @@ export default function ChangePasswordScreen() {
           <Pressable
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`rounded-lg py-4 ${
-              isSubmitting
-                ? 'bg-gray-300 dark:bg-gray-700'
-                : 'bg-primary-600 active:bg-primary-700'
-            }`}
+            className={`rounded-lg py-4 ${isSubmitting ? 'bg-gray-300 dark:bg-gray-700' : 'bg-primary-600 active:bg-primary-700'}`}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#ffffff" />
