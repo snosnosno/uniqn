@@ -66,6 +66,7 @@ export function DateRequirementsSection({
   }, [postingType]);
 
   // 마이그레이션: tournamentDates → dateSpecificRequirements 자동 변환
+  const { tournamentDates, dateSpecificRequirements } = data;
   useEffect(() => {
     const result = migrateFormDataForRead(data);
     if (result.migrated && result.data.dateSpecificRequirements) {
@@ -73,7 +74,8 @@ export function DateRequirementsSection({
         dateSpecificRequirements: result.data.dateSpecificRequirements as DateSpecificRequirement[],
       });
     }
-  }, [data.tournamentDates, data.dateSpecificRequirements, onUpdate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- data 전체가 아닌 특정 필드만 의존
+  }, [tournamentDates, dateSpecificRequirements, onUpdate]);
 
   // 현재 날짜 목록
   const dateRequirements = useMemo(() => {

@@ -260,7 +260,7 @@ const TournamentSchedule = memo(function TournamentSchedule({
   onUpdate: (data: Partial<JobPostingFormData>) => void;
   errors?: Record<string, string>;
 }) {
-  const tournamentDates = data.tournamentDates || [];
+  const tournamentDates = useMemo(() => data.tournamentDates || [], [data.tournamentDates]);
   const today = useMemo(() => {
     const d = new Date();
     d.setHours(0, 0, 0, 0);
@@ -329,7 +329,7 @@ const TournamentSchedule = memo(function TournamentSchedule({
         <View className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 items-center">
           <CalendarIcon size={40} color="#9CA3AF" />
           <Text className="mt-2 text-gray-500 dark:text-gray-400 text-center text-sm">
-            아직 추가된 일정이 없습니다.{'\n'}'Day 추가' 버튼을 눌러 일정을 추가해주세요.
+            아직 추가된 일정이 없습니다.{'\n'}{"'"}Day 추가{"'"} 버튼을 눌러 일정을 추가해주세요.
           </Text>
         </View>
       ) : (

@@ -290,16 +290,18 @@ class PerformanceService {
    * No-op trace (비활성화 시)
    */
   private createNoopTrace(): PerformanceTrace {
+    // eslint-disable-next-line @typescript-eslint/no-empty-function -- 의도적인 no-op 패턴
+    const noop = (): void => {};
     return {
       name: 'noop',
       startTime: 0,
       attributes: {},
       metrics: {},
-      start: () => {},
-      stop: () => {},
-      putAttribute: () => {},
-      putMetric: () => {},
-      incrementMetric: () => {},
+      start: noop,
+      stop: noop,
+      putAttribute: noop,
+      putMetric: noop,
+      incrementMetric: noop,
     };
   }
 

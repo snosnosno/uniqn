@@ -21,27 +21,23 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { signOut } from '@/services/authService';
 import { useToastStore } from '@/stores/toastStore';
+import { getRoleDisplayName } from '@/types/unified';
 import { useState } from 'react';
-
-// 역할 한글 변환
-const ROLE_LABELS: Record<string, string> = {
-  admin: '관리자',
-  employer: '구인자',
-  staff: '스태프',
-};
 
 interface MenuItemProps {
   icon: React.ReactNode;
   label: string;
   onPress: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }
 
-function MenuItem({ icon, label, onPress, danger }: MenuItemProps) {
+function MenuItem({ icon, label, onPress, danger, disabled }: MenuItemProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center justify-between py-3 active:opacity-70"
+      disabled={disabled}
+      className={`flex-row items-center justify-between py-3 ${disabled ? 'opacity-50' : 'active:opacity-70'}`}
     >
       <View className="flex-row items-center">
         <View className="mr-3">{icon}</View>
@@ -152,7 +148,7 @@ export default function ProfileScreen() {
               <View className="mt-1 flex-row items-center">
                 <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
                   <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
-                    {profile?.role ? ROLE_LABELS[profile.role] ?? profile.role : '미설정'}
+                    {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
                   </Text>
                 </View>
               </View>
@@ -203,7 +199,8 @@ export default function ProfileScreen() {
               )
             }
             label={isLoggingOut ? '로그아웃 중...' : '로그아웃'}
-            onPress={isLoggingOut ? () => {} : handleLogout}
+            onPress={handleLogout}
+            disabled={isLoggingOut}
             danger
           />
         </Card>

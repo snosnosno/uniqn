@@ -125,7 +125,7 @@ export function calculatePayByType(
  * @param defaultSalary - 기본 급여 (없으면 DEFAULT_SALARY_INFO)
  */
 export function getRoleSalaryFromRoles(
-  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }> | undefined,
+  roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
   targetRole: string | undefined,
   customRole?: string,
   defaultSalary?: SalaryInfo
@@ -285,7 +285,7 @@ export function calculateSettlementFromWorkLog(
  * @param returnAfterTax - true면 세후 금액 합산, false면 세전 금액 합산 (기본: false)
  */
 export function calculateTotalSettlementFromRoles(
-  workLogs: Array<{
+  workLogs: {
     actualStartTime?: unknown;
     actualEndTime?: unknown;
     role?: string;
@@ -293,8 +293,8 @@ export function calculateTotalSettlementFromRoles(
     customSalaryInfo?: SalaryInfo;
     customAllowances?: Allowances;
     customTaxSettings?: TaxSettings;
-  }>,
-  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }>,
+  }[],
+  roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[],
   defaultSalary?: SalaryInfo,
   allowances?: Allowances,
   taxSettings?: TaxSettings,
@@ -530,7 +530,7 @@ interface WorkLogWithOverrides {
  */
 export function getEffectiveSalaryInfoFromRoles(
   workLog: WorkLogWithOverrides,
-  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }> | undefined,
+  roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
   defaultSalary?: SalaryInfo
 ): SalaryInfo {
   // 개별 오버라이드가 있으면 우선 사용
@@ -631,7 +631,7 @@ export function calculateSettlementFromWorkLogWithTax(
     actualStartTime?: unknown;
     actualEndTime?: unknown;
   },
-  roles: Array<{ role?: string; name?: string; customRole?: string; salary?: SalaryInfo }> | undefined,
+  roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
   defaultSalary?: SalaryInfo,
   defaultAllowances?: Allowances,
   defaultTaxSettings?: TaxSettings

@@ -147,6 +147,9 @@ export function useFeatureFlagWithStatus(key: FeatureFlagKey): FeatureFlagStatus
 export function useFeatureFlags<K extends FeatureFlagKey>(
   keys: K[],
 ): Pick<FeatureFlags, K> {
+  // 키 배열을 문자열로 안정화 (참조 변경에도 내용이 같으면 동일)
+  const keysString = useMemo(() => keys.join(','), [keys]);
+
   const [flags, setFlags] = useState<Pick<FeatureFlags, K>>(() => {
     const result = {} as Pick<FeatureFlags, K>;
     keys.forEach((key) => {
@@ -166,7 +169,8 @@ export function useFeatureFlags<K extends FeatureFlagKey>(
     };
 
     initialize();
-  }, [keys.join(',')]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keysString이 keys의 내용을 대표
+  }, [keysString]);
 
   return flags;
 }

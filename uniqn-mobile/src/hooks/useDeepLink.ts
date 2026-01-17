@@ -199,7 +199,7 @@ export function useNotificationNavigation(): UseNotificationNavigationResult {
       if (!notification.isRead) {
         try {
           await markAsRead(notification.id);
-        } catch (_error) {
+        } catch {
           // 읽음 처리 실패해도 네비게이션은 진행
           logger.warn('알림 읽음 처리 실패', { notificationId: notification.id });
         }

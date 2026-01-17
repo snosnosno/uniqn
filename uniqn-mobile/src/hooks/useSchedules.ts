@@ -89,7 +89,10 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   }, [realtime, staffId]);
 
   // 스케줄 데이터 (실시간 또는 쿼리)
-  const schedules = realtime ? realtimeSchedules : query.data?.schedules ?? [];
+  const schedules = useMemo(
+    () => (realtime ? realtimeSchedules : query.data?.schedules ?? []),
+    [realtime, realtimeSchedules, query.data?.schedules]
+  );
   const stats = query.data?.stats;
 
   // 날짜별 그룹화
@@ -137,7 +140,10 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     staleTime: cachingPolicies.frequent,
   });
 
-  const schedules = query.data?.schedules ?? [];
+  const schedules = useMemo(
+    () => query.data?.schedules ?? [],
+    [query.data?.schedules]
+  );
   const stats = query.data?.stats;
 
   // 날짜별 그룹화

@@ -5,7 +5,8 @@
  * @version 1.1.0
  */
 
-import { ROLE_LABELS, SALARY_TYPE_LABELS, JOB_STATUS_LABELS } from '@/constants';
+import { SALARY_TYPE_LABELS, JOB_STATUS_LABELS } from '@/constants';
+import { getRoleDisplayName } from '@/types/unified';
 import type { StaffRole, UserRole } from '@/types';
 import type { JobPostingStatus, SalaryType } from '@/types/jobPosting';
 
@@ -106,10 +107,11 @@ export const maskEmail = (email: string | undefined | null): string => {
 
 /**
  * 역할 라벨 변환
+ * @description getRoleDisplayName을 래핑하여 기존 API 유지
  */
 export const formatRole = (role: StaffRole | UserRole | string | undefined): string => {
   if (!role) return '';
-  return ROLE_LABELS[role] || role;
+  return getRoleDisplayName(role);
 };
 
 /**

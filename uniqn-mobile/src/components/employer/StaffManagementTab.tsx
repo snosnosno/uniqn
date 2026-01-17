@@ -192,7 +192,12 @@ export function StaffManagementTab({
           type: 'success',
           message: `${staff.staffName}님이 삭제되었습니다.`,
         });
-      } catch (err) {
+      } catch (error) {
+        logger.error('스태프 삭제 실패', error as Error, {
+          component: 'StaffManagementTab',
+          staffId: staff.staffId,
+          jobPostingId,
+        });
         addToast({
           type: 'error',
           message: '삭제에 실패했습니다.',

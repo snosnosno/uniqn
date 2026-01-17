@@ -162,6 +162,7 @@ export function QRCodeScanner({
     } else {
       animationRef.current = requestAnimationFrame(scanQRCode);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- handleQRCodeDetected는 안정적 참조, 순서 문제 방지
   }, [scanned]);
 
   // QR 코드 감지 처리 (Event QR 시스템: qrString만 전달)

@@ -250,7 +250,7 @@ export async function log(message: string): Promise<void> {
       // TODO [출시 전]: 아래 주석 해제
       // crashlyticsInstance.log(message);
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }
@@ -268,7 +268,7 @@ export async function setAttribute(key: string, value: string): Promise<void> {
       // TODO [출시 전]: 아래 주석 해제
       // crashlyticsInstance.setAttribute(key, value);
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }
@@ -288,7 +288,7 @@ export async function setAttributes(attributes: CrashlyticsAttributes): Promise<
       // TODO [출시 전]: 아래 주석 해제
       // crashlyticsInstance.setAttributes(attributes);
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }
@@ -308,7 +308,7 @@ export async function setUserId(userId: string | null): Promise<void> {
     if (__DEV__) {
       logger.debug('Crashlytics User ID 설정', { userId: userId ?? undefined });
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }
@@ -332,7 +332,7 @@ export async function setUser(user: CrashlyticsUser): Promise<void> {
     if (__DEV__) {
       logger.debug('Crashlytics User 설정', { user });
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }
@@ -352,7 +352,7 @@ export async function clearUser(): Promise<void> {
     if (__DEV__) {
       logger.debug('Crashlytics User 초기화');
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }
@@ -525,7 +525,7 @@ export async function leaveBreadcrumb(
     if (__DEV__) {
       logger.debug('[Crashlytics Breadcrumb]', { event, data });
     }
-  } catch (_err) {
+  } catch {
     // 조용히 처리
   }
 }

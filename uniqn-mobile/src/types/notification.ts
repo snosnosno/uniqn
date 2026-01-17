@@ -77,6 +77,7 @@ export const NotificationType = {
   REPORT_RESOLVED: 'report_resolved',
 } as const;
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type NotificationType = (typeof NotificationType)[keyof typeof NotificationType];
 
 // ============================================================================
@@ -95,6 +96,7 @@ export const NotificationCategory = {
   ADMIN: 'admin', // 관리자
 } as const;
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type NotificationCategory =
   (typeof NotificationCategory)[keyof typeof NotificationCategory];
 
@@ -275,6 +277,7 @@ export const AndroidChannelId = {
   ANNOUNCEMENTS: 'announcements',
 } as const;
 
+// eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
 export type AndroidChannelId = (typeof AndroidChannelId)[keyof typeof AndroidChannelId];
 
 /**
