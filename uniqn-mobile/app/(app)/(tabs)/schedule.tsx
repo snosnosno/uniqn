@@ -9,16 +9,15 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
 import { CalendarView, ScheduleCard, ScheduleDetailModal } from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
+import { TabHeader } from '@/components/headers';
 import {
   CalendarIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MenuIcon,
-  QrCodeIcon,
-  BellIcon,
 } from '@/components/icons';
 import { router } from 'expo-router';
-import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useUnreadCountRealtime, useApplications } from '@/hooks';
+import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
 import type { ScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
@@ -52,14 +51,16 @@ interface ScheduleItemProps {
   schedule: ScheduleEvent;
   onPress: () => void;
   onCancelApplication?: (applicationId: string) => void;
+  onRequestCancellation?: (applicationId: string) => void;
 }
 
-function ScheduleItem({ schedule, onPress, onCancelApplication }: ScheduleItemProps) {
+function ScheduleItem({ schedule, onPress, onCancelApplication, onRequestCancellation }: ScheduleItemProps) {
   return (
     <ScheduleCard
       schedule={schedule}
       onPress={onPress}
       onCancelApplication={onCancelApplication}
+      onRequestCancellation={onRequestCancellation}
     />
   );
 }
@@ -208,9 +209,6 @@ export default function ScheduleScreen() {
   // 뷰 모드 상태 (list | calendar) - 캘린더가 기본
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
-  // 읽지 않은 알림 수 (실시간)
-  const unreadCount = useUnreadCountRealtime();
-
   // 스케줄 상세 시트 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
   const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
@@ -247,7 +245,7 @@ export default function ScheduleScreen() {
     setViewMode((prev) => (prev === 'list' ? 'calendar' : 'list'));
   }, []);
 
-  // 지원 취소 핸들러
+  // 지원 취소 핸들러 (applied 상태)
   const handleCancelApplication = useCallback((applicationId: string) => {
     Alert.alert(
       '지원 취소',
@@ -266,6 +264,11 @@ export default function ScheduleScreen() {
       ]
     );
   }, [cancelApplication, refresh]);
+
+  // 취소 요청 핸들러 (confirmed 상태)
+  const handleRequestCancellation = useCallback((applicationId: string) => {
+    router.push(`/(app)/applications/${applicationId}/cancel`);
+  }, []);
 
   // 스케줄 상세 시트 열기
   const handleOpenDetailSheet = useCallback((schedule: ScheduleEvent) => {
@@ -329,32 +332,7 @@ export default function ScheduleScreen() {
   if (error && !isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-        <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
-          <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">내 스케줄</Text>
-          <View className="flex-row items-center gap-2">
-            <Pressable
-              onPress={() => router.push('/(app)/(tabs)/qr')}
-              className="p-2"
-              hitSlop={8}
-            >
-              <QrCodeIcon size={24} color="#6B7280" />
-            </Pressable>
-            <Pressable
-              onPress={() => router.push('/(app)/notifications')}
-              className="p-2"
-              hitSlop={8}
-            >
-              <BellIcon size={24} color="#6B7280" />
-              {unreadCount > 0 && (
-                <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-                  <Text className="text-[10px] font-bold text-white">
-                    {unreadCount > 99 ? '99+' : unreadCount}
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          </View>
-        </View>
+        <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
             title="스케줄을 불러올 수 없습니다"
@@ -369,32 +347,7 @@ export default function ScheduleScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
-        <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">내 스케줄</Text>
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            onPress={() => router.push('/(app)/(tabs)/qr')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <QrCodeIcon size={24} color="#6B7280" />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(app)/notifications')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <BellIcon size={24} color="#6B7280" />
-            {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-                <Text className="text-[10px] font-bold text-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-      </View>
+      <TabHeader title="내 스케줄" />
 
       {/* 월 네비게이터 */}
       <MonthNavigator
@@ -440,6 +393,7 @@ export default function ScheduleScreen() {
                     schedule={schedule}
                     onPress={() => handleOpenDetailSheet(schedule)}
                     onCancelApplication={handleCancelApplication}
+                    onRequestCancellation={handleRequestCancellation}
                   />
                 ))}
               </View>
@@ -512,6 +466,7 @@ export default function ScheduleScreen() {
                     schedule={schedule}
                     onPress={() => handleOpenDetailSheet(schedule)}
                     onCancelApplication={handleCancelApplication}
+                    onRequestCancellation={handleRequestCancellation}
                   />
                 ))}
               </View>

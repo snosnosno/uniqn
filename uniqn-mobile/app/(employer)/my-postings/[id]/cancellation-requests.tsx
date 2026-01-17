@@ -2,17 +2,18 @@
  * UNIQN Mobile - 취소 요청 관리 화면
  *
  * @description 구인자가 스태프의 취소 요청을 검토하는 화면
- * @version 1.0.0
+ * @version 1.1.0 - 웹 호환성을 위해 Alert → Modal 변경
  */
 
 import React, { useCallback, useState, useMemo } from 'react';
-import { View, Text, RefreshControl, Alert } from 'react-native';
+import { View, Text, RefreshControl, Modal, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FlashList } from '@shopify/flash-list';
 import { CancellationRequestCard } from '@/components/employer';
 import { Loading, ErrorState, EmptyState } from '@/components';
 import { Badge } from '@/components/ui/Badge';
+import { Button } from '@/components/ui/Button';
 import { InboxIcon } from '@/components/icons';
 import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 import { useThemeStore } from '@/stores';
@@ -57,6 +58,10 @@ export default function CancellationRequestsScreen() {
   const { isDarkMode } = useThemeStore();
   const [refreshing, setRefreshing] = useState(false);
 
+  // 승인 확인 모달 상태 (웹 호환)
+  const [approveModalVisible, setApproveModalVisible] = useState(false);
+  const [pendingApproveId, setPendingApproveId] = useState<string | null>(null);
+
   const {
     cancellationRequests,
     isLoadingCancellationRequests,
@@ -88,29 +93,29 @@ export default function CancellationRequestsScreen() {
     setRefreshing(false);
   }, [refreshCancellationRequests]);
 
-  // 승인 핸들러
-  const handleApprove = useCallback(
-    (applicationId: string) => {
-      Alert.alert(
-        '취소 요청 승인',
-        '이 취소 요청을 승인하시겠습니까?\n승인 시 해당 스태프의 확정이 취소됩니다.',
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '승인',
-            style: 'destructive',
-            onPress: () => {
-              reviewCancellation({
-                applicationId,
-                approved: true,
-              });
-            },
-          },
-        ]
-      );
-    },
-    [reviewCancellation]
-  );
+  // 승인 핸들러 - 모달 열기
+  const handleApprove = useCallback((applicationId: string) => {
+    setPendingApproveId(applicationId);
+    setApproveModalVisible(true);
+  }, []);
+
+  // 승인 확정 핸들러
+  const handleConfirmApprove = useCallback(() => {
+    if (pendingApproveId) {
+      reviewCancellation({
+        applicationId: pendingApproveId,
+        approved: true,
+      });
+    }
+    setApproveModalVisible(false);
+    setPendingApproveId(null);
+  }, [pendingApproveId, reviewCancellation]);
+
+  // 승인 모달 닫기
+  const handleCancelApprove = useCallback(() => {
+    setApproveModalVisible(false);
+    setPendingApproveId(null);
+  }, []);
 
   // 거절 핸들러
   const handleReject = useCallback(
@@ -211,6 +216,52 @@ export default function CancellationRequestsScreen() {
           }
         />
       )}
+
+      {/* 승인 확인 모달 (웹 호환) */}
+      <Modal
+        visible={approveModalVisible}
+        animationType="fade"
+        transparent
+        onRequestClose={handleCancelApprove}
+      >
+        <Pressable
+          className="flex-1 bg-black/50 items-center justify-center p-4"
+          onPress={handleCancelApprove}
+        >
+          <Pressable
+            className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-5"
+            onPress={(e) => e.stopPropagation()}
+          >
+            {/* 모달 헤더 */}
+            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+              취소 요청 승인
+            </Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-6">
+              이 취소 요청을 승인하시겠습니까?{'\n'}
+              승인 시 해당 스태프의 확정이 취소됩니다.
+            </Text>
+
+            {/* 버튼 */}
+            <View className="flex-row gap-3">
+              <Button
+                onPress={handleCancelApprove}
+                variant="outline"
+                className="flex-1"
+              >
+                취소
+              </Button>
+              <Button
+                onPress={handleConfirmApprove}
+                variant="primary"
+                className="flex-1 bg-red-500"
+                disabled={isReviewingCancellation}
+              >
+                {isReviewingCancellation ? '처리 중...' : '승인'}
+              </Button>
+            </View>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </SafeAreaView>
   );
 }

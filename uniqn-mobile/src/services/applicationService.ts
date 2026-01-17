@@ -762,13 +762,14 @@ export async function reviewCancellationRequest(
         throw new Error('유효한 취소 요청이 없습니다');
       }
 
-      // 3. 취소 요청 업데이트
+      // 3. 취소 요청 업데이트 (undefined 값은 Firestore에서 허용되지 않음)
       const updatedCancellationRequest: CancellationRequest = {
         ...applicationData.cancellationRequest,
         status: input.approved ? 'approved' : 'rejected',
         reviewedAt: new Date().toISOString(),
         reviewedBy: reviewerId,
-        rejectionReason: input.rejectionReason?.trim(),
+        // rejectionReason은 거절 시에만 포함 (undefined는 Firestore 에러 발생)
+        ...(input.rejectionReason?.trim() ? { rejectionReason: input.rejectionReason.trim() } : {}),
       };
 
       if (input.approved) {

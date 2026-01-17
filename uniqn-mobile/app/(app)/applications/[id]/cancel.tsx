@@ -2,10 +2,10 @@
  * UNIQN Mobile - Application Cancel Request Screen
  * 지원 취소 요청 화면 (확정된 지원 취소 요청)
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/Button';
 import { useApplications } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { logger } from '@/utils/logger';
+import { getApplicationById } from '@/services/applicationService';
+import type { Application } from '@/types';
 
 // ============================================================================
 // Loading Component
@@ -114,32 +116,73 @@ export default function CancellationRequestScreen() {
   const [showForm, setShowForm] = useState(true);
   const [isSuccess, setIsSuccess] = useState(false);
 
+  // 직접 조회한 Application 상태
+  const [application, setApplication] = useState<Application | null>(null);
+  const [isLoadingApplication, setIsLoadingApplication] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
   const {
-    myApplications,
-    isLoading,
     requestCancellation,
     isRequestingCancellation,
   } = useApplications();
 
-  // ID로 지원서 찾기
-  const application = useMemo(() => {
-    return myApplications.find((app) => app.id === id) ?? null;
-  }, [myApplications, id]);
+  // Application 직접 조회 (캐시 대신 최신 데이터)
+  useEffect(() => {
+    async function fetchApplication() {
+      if (!id) {
+        setLoadError('지원서 ID가 없습니다');
+        setIsLoadingApplication(false);
+        return;
+      }
+
+      try {
+        setIsLoadingApplication(true);
+        setLoadError(null);
+
+        const result = await getApplicationById(id);
+
+        // 디버깅: Application 상태 로깅
+        logger.info('취소 요청 화면 - Application 조회 결과', {
+          applicationId: id,
+          found: !!result,
+          status: result?.status,
+          hasCancellationRequest: !!result?.cancellationRequest,
+          cancellationRequestStatus: result?.cancellationRequest?.status,
+        });
+
+        setApplication(result);
+      } catch (error) {
+        logger.error('지원서 조회 실패', error as Error, { applicationId: id });
+        setLoadError('지원서를 불러오는 중 오류가 발생했습니다');
+      } finally {
+        setIsLoadingApplication(false);
+      }
+    }
+
+    fetchApplication();
+  }, [id]);
 
   // 취소 요청 가능 여부
-  const canRequestCancel = useMemo(() => {
+  const canRequestCancel = (() => {
     if (!application) return { allowed: false, reason: '지원서를 찾을 수 없습니다' };
 
-    if (application.status !== 'confirmed') {
+    // 확정 또는 취소 요청 대기 중 상태 확인
+    if (application.status !== 'confirmed' && application.status !== 'cancellation_pending') {
       return { allowed: false, reason: '확정된 지원만 취소 요청이 가능합니다' };
     }
 
-    if (application.cancellationRequest) {
+    // 이미 취소 요청이 진행 중인 경우
+    if (application.status === 'cancellation_pending' || application.cancellationRequest?.status === 'pending') {
       return { allowed: false, reason: '이미 취소 요청이 진행 중입니다' };
     }
 
+    // 이전 취소 요청이 거절된 경우
+    if (application.cancellationRequest?.status === 'rejected') {
+      return { allowed: false, reason: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.' };
+    }
+
     return { allowed: true, reason: '' };
-  }, [application]);
+  })();
 
   // 취소 요청 제출 핸들러
   const handleSubmit = useCallback(
@@ -169,7 +212,7 @@ export default function CancellationRequestScreen() {
   }, []);
 
   // 로딩 상태
-  if (isLoading) {
+  if (isLoadingApplication) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
         <Stack.Screen
@@ -183,6 +226,28 @@ export default function CancellationRequestScreen() {
           }}
         />
         <LoadingState />
+      </SafeAreaView>
+    );
+  }
+
+  // 조회 에러
+  if (loadError) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <Stack.Screen
+          options={{
+            headerShown: true,
+            title: '취소 요청',
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+            },
+            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+          }}
+        />
+        <ErrorState
+          message={loadError}
+          onBack={handleClose}
+        />
       </SafeAreaView>
     );
   }

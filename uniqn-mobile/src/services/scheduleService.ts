@@ -156,6 +156,8 @@ function workLogToScheduleEvent(
     sourceCollection: 'workLogs',
     sourceId: workLog.id,
     workLogId: workLog.id,
+    // applicationId: 복합 키로 구성 (jobPostingId_staffId)
+    applicationId: `${workLog.eventId}_${workLog.staffId}`,
     // 개별 오버라이드 (구인자가 스태프별로 수정한 정산 정보)
     customSalaryInfo: workLog.customSalaryInfo,
     customAllowances: workLog.customAllowances,
