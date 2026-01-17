@@ -9,6 +9,7 @@ import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { ConfirmationHistoryEntry, OriginalApplication, Assignment } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 import { Timestamp } from 'firebase/firestore';
 
 // ============================================================================
@@ -71,20 +72,10 @@ const formatAssignmentsSummary = (assignments: Assignment[]): string => {
   const roles = [...new Set(assignments.map((a) => a.roleIds[0] ?? ''))];
   const roleLabels = roles
     .filter(Boolean)
-    .map((r) => getRoleLabel(r))
+    .map((r) => getRoleDisplayName(r))
     .join(', ');
 
   return `${roleLabels} / ${dateCount}일`;
-};
-
-const getRoleLabel = (role: string): string => {
-  const roleMap: Record<string, string> = {
-    dealer: '딜러',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-  };
-  return roleMap[role] ?? role;
 };
 
 // ============================================================================

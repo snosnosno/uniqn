@@ -17,8 +17,8 @@ import { getUserProfile } from '@/services';
 import { formatDateShort } from '@/utils/dateUtils';
 import { getAssignmentRoles } from '@/types/assignment';
 import type { ApplicantWithDetails } from '@/services';
-import type { StaffRole, Assignment } from '@/types';
-import { ROLE_LABELS } from '@/constants';
+import type { Assignment } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -117,7 +117,7 @@ export function ApplicantConfirmModal({
 
     return selectedAssignments.map((assignment, idx) => {
       const roleList = getAssignmentRoles(assignment);
-      const roles = roleList.map(r => ROLE_LABELS[r as StaffRole] || r).join(', ');
+      const roles = roleList.map(r => getRoleDisplayName(r)).join(', ');
       // dates 배열에서 첫 번째 날짜 사용 (또는 날짜 범위 표시)
       const dateStr = assignment.dates?.length > 0
         ? assignment.dates.length === 1
@@ -189,7 +189,7 @@ export function ApplicantConfirmModal({
               {displayName}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {(applicant.appliedRole as string) === 'other' && applicant.customRole ? applicant.customRole : (ROLE_LABELS[applicant.appliedRole] || applicant.appliedRole)} 지원
+              {getRoleDisplayName(applicant.appliedRole, applicant.customRole)} 지원
             </Text>
             {applicant.applicantPhone && (
               <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">

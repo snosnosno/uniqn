@@ -13,8 +13,8 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../icons';
 import { formatRelativeTime } from '@/utils/dateUtils';
+import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';
-import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -34,16 +34,6 @@ export interface CancellationRequestCardProps {
 // ============================================================================
 // Constants
 // ============================================================================
-
-/**
- * 역할 라벨 가져오기 (커스텀 역할 지원 v2.0)
- */
-function getRoleLabel(role: string, customRole?: string): string {
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_LABELS[role] || role;
-}
 
 /**
  * 지원 날짜 포맷 (M/D 형식 v2.0)
@@ -147,7 +137,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleLabel(application.appliedRole, application.customRole)} 역할
+              {getRoleDisplayName(application.appliedRole, application.customRole)} 역할
             </Text>
           </View>
         </View>

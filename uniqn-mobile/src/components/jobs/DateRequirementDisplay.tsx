@@ -102,14 +102,14 @@ function formatDate(dateStr: string): string {
 }
 
 /**
- * 역할 라벨 가져오기 (v3.0: 통합 타입의 getRoleDisplayName 사용)
+ * 역할 라벨 가져오기 (레거시 호환: role/name 필드 분기)
+ * - v2.0: role 필드 사용 (customRole과 함께)
+ * - 레거시: name 필드 사용 (customRole 무시 - name이 이미 표시명)
  */
 function getRoleLabel(role?: string, name?: string, customRole?: string): string {
-  // v2.0: role 필드 사용
   if (role) {
     return getRoleDisplayName(role, customRole);
   }
-  // 레거시: name 필드 사용
   if (name) {
     return getRoleDisplayName(name);
   }

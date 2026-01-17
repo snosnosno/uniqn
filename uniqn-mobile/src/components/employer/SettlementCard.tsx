@@ -25,9 +25,9 @@ import {
   calculateSettlementFromWorkLog,
   formatCurrency,
 } from '@/utils/settlement';
+import { getRoleDisplayName } from '@/types/unified';
 import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus } from '@/types';
-import { ROLE_LABELS } from '@/constants';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -58,19 +58,6 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
   processing: { label: '처리중', variant: 'primary' },
   completed: { label: '정산완료', variant: 'success' },
 };
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function getRoleLabel(role: string | undefined, customRole?: string): string {
-  if (!role) return '역할 없음';
-  // 커스텀 역할이면 customRole 사용
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_LABELS[role] || role;
-}
 
 // ============================================================================
 // Component
@@ -143,7 +130,7 @@ export const SettlementCard = React.memo(function SettlementCard({
                 {displayName}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {getRoleLabel(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole)}
+                {workLog.role ? getRoleDisplayName(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole) : '역할 없음'}
               </Text>
             </View>
           </View>

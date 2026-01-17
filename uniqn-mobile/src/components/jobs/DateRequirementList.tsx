@@ -63,10 +63,6 @@ const formatTimeRange = (slot: TimeSlot): string => {
   return startTime;
 };
 
-const getRoleLabel = (role: string, customRole?: string): string => {
-  return getRoleDisplayName(role, customRole);
-};
-
 const getTotalPositions = (slots: TimeSlot[]): number => {
   return slots.reduce((total, slot) => {
     return total + slot.roles.reduce((sum, r) => sum + (r.headcount ?? r.count ?? 0), 0);
@@ -97,7 +93,7 @@ const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemP
       <View className="flex-row flex-wrap gap-1">
         {slot.roles.map((role, index) => (
           <Badge key={index} variant="default" size="sm">
-            {getRoleLabel(role.role ?? role.name ?? 'dealer', role.customRole)} {role.headcount ?? role.count ?? 0}명
+            {getRoleDisplayName(role.role ?? role.name ?? 'dealer', role.customRole)} {role.headcount ?? role.count ?? 0}명
           </Badge>
         ))}
       </View>

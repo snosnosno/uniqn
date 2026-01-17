@@ -15,11 +15,10 @@ import type { AssignmentDisplay } from './types';
 // ============================================================================
 
 /**
- * 역할 라벨 가져오기 (v3.0: 통합 타입의 getRoleDisplayName 사용)
+ * 역할 라벨 가져오기 (v3.0: 통합 타입에서 직접 re-export)
+ * @deprecated getRoleDisplayName을 직접 사용하세요
  */
-export const getRoleLabel = (role: string, customRole?: string): string => {
-  return getRoleDisplayName(role, customRole);
-};
+export { getRoleDisplayName as getRoleLabel } from '@/types/unified';
 
 // ============================================================================
 // Date/Time Formatting
@@ -87,7 +86,7 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
             assignment.tentativeDescription
           ),
           role,
-          roleLabel: getRoleLabel(role, undefined),
+          roleLabel: getRoleDisplayName(role),
         });
       }
     }

@@ -10,6 +10,7 @@ import { View, Text, TextInput, Pressable, Modal, ScrollView } from 'react-nativ
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { cancellationRequestSchema } from '@/schemas/application.schema';
+import { getRoleDisplayName } from '@/types/unified';
 import type { Application } from '@/types';
 
 // ============================================================================
@@ -28,29 +29,6 @@ interface CancellationRequestFormProps {
   /** 닫기 */
   onClose: () => void;
 }
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-const getRoleLabel = (role: string, customRole?: string): string => {
-  // 커스텀 역할이면 customRole 사용
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  switch (role) {
-    case 'dealer':
-      return '딜러';
-    case 'manager':
-      return '매니저';
-    case 'chiprunner':
-      return '칩러너';
-    case 'admin':
-      return '관리자';
-    default:
-      return role;
-  }
-};
 
 // ============================================================================
 // Component
@@ -134,7 +112,7 @@ export function CancellationRequestForm({
             </View>
             <View className="flex-row items-center">
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                👤 {getRoleLabel(application.appliedRole, application.customRole)} 역할
+                👤 {getRoleDisplayName(application.appliedRole, application.customRole)} 역할
               </Text>
             </View>
           </View>

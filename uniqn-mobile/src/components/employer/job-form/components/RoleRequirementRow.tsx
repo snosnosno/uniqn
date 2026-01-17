@@ -17,7 +17,7 @@ import { XCircleIcon } from '@/components/icons';
 import { clampHeadcount } from '@/utils/job-posting/dateUtils';
 import type { RoleRequirement } from '@/types/jobPosting/dateRequirement';
 import type { StaffRole } from '@/types/common';
-import { ROLE_LABELS } from '@/constants';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -86,9 +86,7 @@ export function RoleRequirementRow({
       <View className="flex-1">
         <View className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2">
           <Text className="text-sm text-gray-900 dark:text-white">
-            {(role.role ?? role.name) === 'other' && role.customRole
-              ? role.customRole
-              : ROLE_LABELS[role.role ?? role.name ?? 'dealer']}
+            {getRoleDisplayName(role.role ?? role.name ?? 'dealer', role.customRole)}
           </Text>
         </View>
         {/* TODO: 역할 선택 모달/드롭다운 추가 */}

@@ -36,9 +36,9 @@ import {
   TaxSettingsEditor,
   type TaxSettings,
 } from './TaxSettingsEditor';
+import { getRoleDisplayName } from '@/types/unified';
 import type { UserProfile } from '@/services';
 import type { WorkLog } from '@/types';
-import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -73,19 +73,6 @@ const DEFAULT_TAX_SETTINGS: TaxSettings = {
   type: 'none',
   value: 0,
 };
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function getRoleLabel(role: string | undefined, customRole?: string): string {
-  if (!role) return '역할 없음';
-  // 커스텀 역할이면 customRole 사용
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_LABELS[role] || role;
-}
 
 // ============================================================================
 // Sub-components
@@ -270,7 +257,7 @@ export function SettlementEditModal({
                 {displayName}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {getRoleLabel(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole)} • {workDate ? formatDate(workDate) : '날짜 없음'}
+                {workLog.role ? getRoleDisplayName(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole) : '역할 없음'} • {workDate ? formatDate(workDate) : '날짜 없음'}
               </Text>
             </View>
           </View>

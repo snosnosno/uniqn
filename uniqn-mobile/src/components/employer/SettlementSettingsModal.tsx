@@ -29,7 +29,7 @@ import {
   type TaxSettings,
 } from './TaxSettingsEditor';
 import { logger } from '@/utils/logger';
-import { ROLE_LABELS } from '@/constants';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -89,9 +89,10 @@ function getRoleKey(role: RoleWithSalary): string {
 
 /**
  * 역할 라벨 가져오기
+ * - getRoleKey에서 이미 customRole 처리됨
  */
 function getRoleLabel(roleKey: string): string {
-  return ROLE_LABELS[roleKey] || roleKey;
+  return getRoleDisplayName(roleKey);
 }
 
 // ============================================================================

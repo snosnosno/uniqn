@@ -27,7 +27,7 @@ import {
   StarIcon,
 } from '../icons';
 import { APPLICATION_STATUS_LABELS, getAssignmentRoles } from '@/types';
-import { ROLE_LABELS } from '@/constants';
+import { getRoleDisplayName } from '@/types/unified';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import type { ApplicantWithDetails, UserProfile } from '@/services';
@@ -62,13 +62,6 @@ const GENDER_LABELS: Record<string, string> = {
   male: '남성',
   female: '여성',
   other: '기타',
-};
-
-const getRoleLabel = (role: string, customRole?: string): string => {
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_LABELS[role] || role;
 };
 
 const formatDate = (dateStr?: string): string => {
@@ -133,7 +126,7 @@ function AssignmentDisplay({ assignments }: AssignmentDisplayProps) {
     const grouped: Record<string, { timeSlot: string; roles: string[] }[]> = {};
 
     for (const assignment of assignments) {
-      const roles = getAssignmentRoles(assignment).map((r) => getRoleLabel(r, undefined));
+      const roles = getAssignmentRoles(assignment).map((r) => getRoleDisplayName(r, undefined));
 
       for (const date of assignment.dates) {
         if (!grouped[date]) {
@@ -277,7 +270,7 @@ export function ApplicantProfileModal({
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
+              {getRoleDisplayName(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
             </Text>
           </View>
 
