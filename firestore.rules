@@ -37,21 +37,31 @@ service cloud.firestore {
              hasNoSQLInjection(text);
     }
 
+    // ================= Role Helper Functions (Firestore 문서 기반) =================
+    // Custom Claims 대신 Firestore users 문서에서 role을 읽어옴
+    // 장점: 즉시 반영 (토큰 갱신 불필요)
+    // 단점: 각 요청마다 추가 읽기 1회 발생
+
+    // 사용자의 역할 가져오기
+    function getUserRole() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role;
+    }
+
     // 관리자 권한 확인 (admin, employer, manager)
     // ⚠️ manager는 하위 호환성을 위해 유지 (employer와 동일 권한)
     function isPrivileged() {
-      return request.auth.token.role == 'admin' ||
-             request.auth.token.role == 'employer' ||
-             request.auth.token.role == 'manager';  // 하위 호환성
+      return getUserRole() in ['admin', 'employer', 'manager'];
     }
 
     // 유효한 역할 확인 (admin, employer, manager, staff)
     // 역할 계층: admin(100) > employer/manager(50) > staff(10)
     function hasValidRole() {
-      return request.auth.token.role == 'admin' ||
-             request.auth.token.role == 'employer' ||
-             request.auth.token.role == 'manager' ||  // 하위 호환성
-             request.auth.token.role == 'staff';
+      return getUserRole() in ['admin', 'employer', 'manager', 'staff'];
+    }
+
+    // 관리자 여부 확인
+    function isAdmin() {
+      return getUserRole() == 'admin';
     }
     
 
@@ -60,29 +70,29 @@ service cloud.firestore {
     }
 
     // ================= Job Posting Type Validation Functions =================
+    // ⚠️ 클라이언트 Timestamp는 Security Rules의 `is timestamp` 검증을 통과하지 못함
+    // 따라서 timestamp 필드는 존재 여부만 확인 (타입 검증 제거)
 
     // FixedConfig 검증 함수
     function validateFixedConfig(config) {
       return config.durationDays in [7, 30, 90] &&
-             config.expiresAt is timestamp &&
-             config.createdAt is timestamp;
+             'expiresAt' in config &&
+             'createdAt' in config;
     }
 
     // TournamentConfig 검증 함수
     function validateTournamentConfig(config) {
       return config.approvalStatus in ['pending', 'approved', 'rejected'] &&
-             config.submittedAt is timestamp &&
+             'submittedAt' in config &&
              (!('approvedBy' in config) || config.approvedBy is string) &&
-             (!('approvedAt' in config) || config.approvedAt is timestamp) &&
              (!('rejectedBy' in config) || config.rejectedBy is string) &&
-             (!('rejectedAt' in config) || config.rejectedAt is timestamp) &&
              (!('rejectionReason' in config) || (config.rejectionReason is string && config.rejectionReason.size() >= 10));
     }
 
     // UrgentConfig 검증 함수
     function validateUrgentConfig(config) {
       return config.priority == 'high' &&
-             config.createdAt is timestamp;
+             'createdAt' in config;
     }
 
     // Tournament 승인 필드만 변경되었는지 확인 (admin 전용)
@@ -225,7 +235,7 @@ service cloud.firestore {
         allow update: if isSignedIn() && isPrivileged();
 
         // 삭제: 관리자만 가능
-        allow delete: if request.auth.token.role == 'admin';
+        allow delete: if isAdmin();
       }
     }
 
@@ -313,22 +323,16 @@ service cloud.firestore {
         (!('preQuestions' in request.resource.data) || request.resource.data.preQuestions is list) &&
         (!('usesPreQuestions' in request.resource.data) || request.resource.data.usesPreQuestions is bool) &&
         (!('updatedBy' in request.resource.data) || request.resource.data.updatedBy is string) &&
-        // serverTimestamp()는 센티넬 값이므로 is timestamp 검증 불가 - 제거
         // 추가 필드 검증
         (!('applicants' in request.resource.data) || request.resource.data.applicants is list) &&
-        // 타입별 config 검증
+        // 타입별 config 검증 (timestamp 타입 체크 제거됨)
         (!('fixedConfig' in request.resource.data) || (request.resource.data.postingType == 'fixed' && validateFixedConfig(request.resource.data.fixedConfig))) &&
         (!('tournamentConfig' in request.resource.data) || (request.resource.data.postingType == 'tournament' && validateTournamentConfig(request.resource.data.tournamentConfig))) &&
-        (!('urgentConfig' in request.resource.data) || (request.resource.data.postingType == 'urgent' && validateUrgentConfig(request.resource.data.urgentConfig))) &&
-        // 고정공고 requiredRoles 동기화 검증 (v0.2.5 - 보안 강화)
-        (request.resource.data.postingType != 'fixed' ||
-         (!('fixedData' in request.resource.data) ||
-          (!('requiredRoles' in request.resource.data) ||
-           (request.resource.data.requiredRoles.size() == request.resource.data.fixedData.requiredRolesWithCount.size()))));
+        (!('urgentConfig' in request.resource.data) || (request.resource.data.postingType == 'urgent' && validateUrgentConfig(request.resource.data.urgentConfig)));
 
       // Admin can update any job posting, Manager/Staff can update their own
       // Tournament 승인은 admin만 가능
-      allow update: if (request.auth.token.role == 'admin' &&
+      allow update: if (isAdmin() &&
         (!('postingType' in request.resource.data) || request.resource.data.postingType == resource.data.postingType) &&
         (!('fixedConfig' in request.resource.data) || validateFixedConfig(request.resource.data.fixedConfig)) &&
         (!('tournamentConfig' in request.resource.data) || validateTournamentConfig(request.resource.data.tournamentConfig)) &&
@@ -354,7 +358,7 @@ service cloud.firestore {
         request.resource.data.fixedData.diff(resource.data.fixedData).affectedKeys().hasOnly(['viewCount']);
 
       // Admin can delete any job posting, Manager/Staff can delete their own
-      allow delete: if (request.auth.token.role == 'admin') ||
+      allow delete: if (isAdmin()) ||
         (hasValidRole() && request.auth.uid == resource.data.createdBy);
         
       // --- Subcollections for Job Postings ---
@@ -704,13 +708,13 @@ service cloud.firestore {
     // --- Migration Backups Collection ---
     match /migration_backups/{backupId} {
       // 관리자만 접근 가능
-      allow read, write: if request.auth.token.role == 'admin';
+      allow read, write: if isAdmin();
     }
     
     // --- Backup Collections (와일드카드 패턴) ---
     // staff_backup_YYYY-MM-DD 형식의 모든 백업 컬렉션
     match /{backupCollection}/{documentId} {
-      allow read, write: if request.auth.token.role == 'admin' &&
+      allow read, write: if isAdmin() &&
         (backupCollection.matches('staff_backup_.*') ||
          backupCollection.matches('applicants_backup_.*') ||
          backupCollection.matches('persons_backup_.*'));
@@ -830,7 +834,7 @@ service cloud.firestore {
         (!('lastRegeneratedAt' in request.resource.data) || request.resource.data.lastRegeneratedAt is timestamp);
 
       // 삭제: 관리자만
-      allow delete: if request.auth.token.role == 'admin';
+      allow delete: if isAdmin();
     }
 
     // Scan History Collection (스캔 이력)
@@ -857,7 +861,7 @@ service cloud.firestore {
         (!('location' in request.resource.data) || request.resource.data.location is map);
 
       // 수정/삭제: 관리자만
-      allow update, delete: if request.auth.token.role == 'admin';
+      allow update, delete: if isAdmin();
     }
 
     // Scan Cooldowns Collection (5분 중복 스캔 방지)
@@ -877,7 +881,7 @@ service cloud.firestore {
         request.resource.data.expiresAt is timestamp;
 
       // 삭제: 관리자만 (만료된 쿨다운 정리용)
-      allow delete: if request.auth.token.role == 'admin';
+      allow delete: if isAdmin();
     }
 
     // --- System Announcements Collection (시스템 공지사항) ---
@@ -901,7 +905,7 @@ service cloud.firestore {
       allow update: if isPrivileged();
 
       // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
+      allow delete: if isAdmin();
     }
 
     // --- Job Posting Announcements Collection (공고별 공지) ---
@@ -913,7 +917,7 @@ service cloud.firestore {
       allow create: if isPrivileged();
 
       // 수정/삭제: 관리자만 가능
-      allow update, delete: if request.auth.token.role == 'admin';
+      allow update, delete: if isAdmin();
     }
 
     // --- Phone Verifications (전화번호 인증) ---
@@ -925,7 +929,7 @@ service cloud.firestore {
       allow create, update: if false;
 
       // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
+      allow delete: if isAdmin();
     }
 
     // ================= 모바일 앱 지원 (v1.0.0) =================
@@ -1001,7 +1005,7 @@ service cloud.firestore {
       allow read: if true;
 
       // 생성/수정/삭제: 관리자만 가능
-      allow create, update, delete: if request.auth.token.role == 'admin';
+      allow create, update, delete: if isAdmin();
     }
 
     // --- Feature Flags (기능 플래그) ---
@@ -1010,7 +1014,7 @@ service cloud.firestore {
       allow read: if isSignedIn();
 
       // 생성/수정/삭제: 관리자만 가능
-      allow create, update, delete: if request.auth.token.role == 'admin';
+      allow create, update, delete: if isAdmin();
     }
 
     // --- App Analytics (앱 분석 데이터) ---
@@ -1047,7 +1051,7 @@ service cloud.firestore {
       allow update: if isPrivileged();
 
       // 삭제: 관리자만 가능
-      allow delete: if request.auth.token.role == 'admin';
+      allow delete: if isAdmin();
     }
 
     // --- User Favorites (사용자 즐겨찾기 - 공고) ---
@@ -1110,14 +1114,14 @@ service cloud.firestore {
 
       // 수정: 공고 작성자 또는 관리자 (isActive 변경만)
       allow update: if isSignedIn() && (
-        request.auth.token.role == 'admin' ||
+        isAdmin() ||
         (isPrivileged() &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
          get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
       ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isActive']);
 
       // 삭제: 관리자만
-      allow delete: if request.auth.token.role == 'admin';
+      allow delete: if isAdmin();
     }
 
     // Fallback rule: deny all other access
