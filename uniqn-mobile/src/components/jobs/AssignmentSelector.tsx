@@ -181,7 +181,7 @@ const DateSelection = memo(function DateSelection({
       )}
 
       {/* 시간대별 역할 선택 */}
-      <View className="space-y-3">
+      <View className="flex-col gap-3">
         {timeSlots.map((slot, slotIndex) => {
           // 시간 미정이면 TBA_TIME_MARKER, 아니면 startTime 사용
           const slotTime = slot.isTimeToBeAnnounced

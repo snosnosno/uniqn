@@ -517,10 +517,8 @@ export async function applyToJobV2(
         // 레거시 필드: workDate가 있는 경우에만 포함
         ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
 
-        // 공고 정보 (v2.0 표준)
-        eventId: input.jobPostingId,
-        postId: input.jobPostingId,
-        postTitle: jobData.title,
+        // NOTE: eventId, postId, postTitle 레거시 필드는 더 이상 저장하지 않음
+        // 기존 데이터는 Application 타입에서 읽기 전용으로 지원
 
         // 지원 정보
         status: 'applied',

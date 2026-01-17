@@ -19,11 +19,16 @@ import type { SalaryInfo } from './jobPosting';
  * 공고 타입 (4가지)
  *
  * - regular: 일반 공고 (기본)
- * - fixed: 고정 공고 (기간제, 칩 소모)
+ * - fixed: 고정 공고 (기간제)
  * - tournament: 대회 공고 (관리자 승인 필요)
- * - urgent: 긴급 공고 (칩 소모, 우선 노출)
+ * - urgent: 긴급 공고 (우선 노출)
  */
 export type PostingType = 'regular' | 'fixed' | 'tournament' | 'urgent';
+
+/**
+ * 대회공고 승인 상태
+ */
+export type TournamentApprovalStatus = 'pending' | 'approved' | 'rejected';
 
 /**
  * 고정 공고 설정
@@ -31,11 +36,8 @@ export type PostingType = 'regular' | 'fixed' | 'tournament' | 'urgent';
  * @description 기간제 상시 채용 공고 설정
  */
 export interface FixedConfig {
-  /** 게시 기간 (일) */
-  durationDays: 7 | 30 | 90;
-
-  /** 칩 소모량 */
-  chipCost: 3 | 5 | 10;
+  /** 게시 기간 (일) - 고정 7일 */
+  durationDays: 7;
 
   /** 만료 시간 */
   expiresAt: Timestamp;
@@ -45,28 +47,11 @@ export interface FixedConfig {
 }
 
 /**
- * 고정 공고 데이터 (근무 스케줄 포함)
+ * 고정 공고 데이터
  */
 export interface FixedJobPostingData {
-  /** 근무 스케줄 */
-  workSchedule?: WorkSchedule;
-
   /** 역할별 모집 인원 */
   requiredRolesWithCount?: RoleWithCount[];
-}
-
-/**
- * 근무 스케줄 (고정공고용)
- */
-export interface WorkSchedule {
-  /** 근무 요일 */
-  weekdays?: string[];
-
-  /** 근무 시간대 */
-  timeSlots?: string[];
-
-  /** 추가 설명 */
-  description?: string;
 }
 
 /**
@@ -122,9 +107,6 @@ export interface TournamentConfig {
  * @description 급하게 인원이 필요한 경우의 공고 (우선 노출)
  */
 export interface UrgentConfig {
-  /** 칩 소모량 (고정) */
-  chipCost: 5;
-
   /** 생성 시간 */
   createdAt: Timestamp;
 

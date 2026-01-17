@@ -104,9 +104,9 @@ export function PasswordStrength({ password, showDetails = true }: PasswordStren
   }
 
   return (
-    <View className="mt-2 space-y-2">
+    <View className="mt-2 flex-col gap-2">
       {/* 강도 바 */}
-      <View className="flex-row items-center space-x-2">
+      <View className="flex-row items-center gap-2">
         <View className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
           <View className="flex-row h-full">
             {[0, 1, 2, 3].map((index) => {
@@ -129,7 +129,7 @@ export function PasswordStrength({ password, showDetails = true }: PasswordStren
 
       {/* 상세 체크리스트 */}
       {showDetails && (
-        <View className="space-y-1">
+        <View className="flex-col gap-1">
           {criteriaResults.map((criteria, index) => (
             <View key={index} className="flex-row items-center">
               <View

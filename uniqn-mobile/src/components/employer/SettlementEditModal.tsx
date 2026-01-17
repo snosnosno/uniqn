@@ -323,7 +323,7 @@ export function SettlementEditModal({
                 정산 금액 요약
               </Text>
 
-              <View className="bg-white dark:bg-gray-900 rounded-lg p-4 space-y-2">
+              <View className="bg-white dark:bg-gray-900 rounded-lg p-4 flex-col gap-2">
                 {/* 기본 급여 */}
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">

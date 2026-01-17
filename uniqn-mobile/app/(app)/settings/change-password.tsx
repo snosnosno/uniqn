@@ -181,7 +181,11 @@ export default function ChangePasswordScreen() {
               )}
 
               {/* 비밀번호 강도 표시 */}
-              {newPassword && <PasswordStrength password={newPassword} className="mt-2" />}
+              {newPassword && (
+                <View className="mt-2">
+                  <PasswordStrength password={newPassword} />
+                </View>
+              )}
             </View>
 
             {/* 비밀번호 확인 */}

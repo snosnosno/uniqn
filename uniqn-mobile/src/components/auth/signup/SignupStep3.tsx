@@ -78,7 +78,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
   };
 
   return (
-    <View className="w-full space-y-4">
+    <View className="w-full flex-col gap-4">
       {/* 닉네임 입력 */}
       <View>
         <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -111,7 +111,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
           역할 선택 <Text className="text-error-500">*</Text>
         </Text>
 
-        <View className="space-y-3">
+        <View className="flex-col gap-3">
           {ROLE_OPTIONS.map((option) => {
             const isSelected = selectedRole === option.value;
 
@@ -194,7 +194,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
       </View>
 
       {/* 버튼 영역 */}
-      <View className="mt-6 space-y-3">
+      <View className="mt-6 flex-col gap-3">
         <Button
           onPress={handleSubmit(onNext)}
           disabled={isLoading}

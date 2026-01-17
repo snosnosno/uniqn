@@ -197,8 +197,7 @@ export default function ProfileScreen() {
           <MenuItem
             icon={<MessageIcon size={22} color="#6B7280" />}
             label="고객센터"
-            // eslint-disable-next-line @typescript-eslint/no-empty-function
-            onPress={() => {}} // TODO: 고객센터 기능 구현
+            onPress={() => router.push('/(app)/support')}
           />
           {isAdmin && (
             <>

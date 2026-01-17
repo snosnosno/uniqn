@@ -33,8 +33,10 @@ import {
   DateRequirementDisplay,
   FixedScheduleDisplay,
   RoleSalaryDisplay,
+  TournamentStatusBadge,
+  ResubmitButton,
 } from '@/components/jobs';
-import type { PostingType, Allowances } from '@/types';
+import type { PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -248,11 +250,21 @@ export default function JobPostingDetailScreen() {
           <Card variant="elevated" padding="lg">
             {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
             {posting.postingType && posting.postingType !== 'regular' && (
-              <View className="mb-2">
+              <View className="flex-row items-center flex-wrap mb-2">
                 <PostingTypeBadge
                   type={posting.postingType as PostingType}
                   size="sm"
                 />
+                {/* 대회공고 승인 상태 뱃지 */}
+                {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus && (
+                  <View className="ml-2">
+                    <TournamentStatusBadge
+                      status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
+                      rejectionReason={posting.tournamentConfig.rejectionReason}
+                      size="sm"
+                    />
+                  </View>
+                )}
               </View>
             )}
 
@@ -308,7 +320,7 @@ export default function JobPostingDetailScreen() {
                 <View className="ml-6">
                   <FixedScheduleDisplay
                     daysPerWeek={posting.daysPerWeek}
-                    startTime={posting.workSchedule?.timeSlots?.[0] || posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+                    startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
                     roles={posting.requiredRolesWithCount?.map((r) => ({
                       role: r.role,
                       count: r.count,
@@ -474,6 +486,55 @@ export default function JobPostingDetailScreen() {
               <Text className="text-base text-gray-700 dark:text-gray-300 leading-6">
                 {String(posting.description)}
               </Text>
+            </Card>
+          </View>
+        )}
+
+        {/* 대회공고 거부 안내 및 재제출 (거부된 경우에만 표시) */}
+        {posting.postingType === 'tournament' &&
+         posting.tournamentConfig?.approvalStatus === 'rejected' && (
+          <View className="px-4 pb-4">
+            <Card variant="outlined" padding="md" className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
+              <View className="flex-row items-start mb-3">
+                <XCircleIcon size={20} color="#EF4444" />
+                <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
+                  승인이 거부되었습니다
+                </Text>
+              </View>
+
+              {posting.tournamentConfig.rejectionReason && (
+                <View className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                  <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                    거부 사유
+                  </Text>
+                  <Text className="text-base text-gray-700 dark:text-gray-300">
+                    {posting.tournamentConfig.rejectionReason}
+                  </Text>
+                </View>
+              )}
+
+              <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
+              </Text>
+
+              <View className="flex-row">
+                <Pressable
+                  onPress={handleEdit}
+                  className="flex-1 mr-2 py-3 rounded-xl border border-blue-600 dark:border-blue-500 items-center justify-center"
+                >
+                  <Text className="text-base font-medium text-blue-600 dark:text-blue-400">
+                    수정하기
+                  </Text>
+                </Pressable>
+                <View className="flex-1 ml-2">
+                  <ResubmitButton
+                    postingId={posting.id}
+                    size="md"
+                    fullWidth
+                    onSuccess={refresh}
+                  />
+                </View>
+              </View>
             </Card>
           </View>
         )}

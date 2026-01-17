@@ -12,35 +12,6 @@ import { AppError, ERROR_CODES } from './AppError';
 // ============================================================================
 
 /**
- * 칩 부족 에러
- */
-export class InsufficientChipsError extends AppError {
-  constructor(
-    options?: Partial<{
-      message: string;
-      userMessage: string;
-      requiredChips?: number;
-      currentChips?: number;
-    }>
-  ) {
-    super({
-      code: ERROR_CODES.BUSINESS_INSUFFICIENT_CHIPS,
-      category: 'business',
-      severity: 'low',
-      isRetryable: false,
-      message: options?.message,
-      userMessage: options?.userMessage,
-      metadata: {
-        requiredChips: options?.requiredChips,
-        currentChips: options?.currentChips,
-      },
-    });
-    this.name = 'InsufficientChipsError';
-    Object.setPrototypeOf(this, InsufficientChipsError.prototype);
-  }
-}
-
-/**
  * 중복 지원 에러
  */
 export class AlreadyAppliedError extends AppError {
@@ -389,10 +360,6 @@ export class InvalidWorkLogError extends AppError {
 // ============================================================================
 // Type Guards
 // ============================================================================
-
-export const isInsufficientChipsError = (error: unknown): error is InsufficientChipsError => {
-  return error instanceof InsufficientChipsError;
-};
 
 export const isAlreadyAppliedError = (error: unknown): error is AlreadyAppliedError => {
   return error instanceof AlreadyAppliedError;

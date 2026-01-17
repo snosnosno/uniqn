@@ -136,7 +136,7 @@ export const UserCard = React.memo(function UserCard({
       </View>
 
       {/* 정보 섹션 */}
-      <View className="space-y-2">
+      <View className="flex-col gap-2">
         {/* 연락처 */}
         {user.phone && (
           <View className="flex-row items-center">

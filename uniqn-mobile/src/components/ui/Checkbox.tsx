@@ -231,7 +231,7 @@ export const CheckboxGroup = memo(function CheckboxGroup({
         className={
           direction === 'horizontal'
             ? 'flex-row flex-wrap gap-4'
-            : 'space-y-3'
+            : 'flex-col gap-3'
         }
       >
         {options.map((option) => (

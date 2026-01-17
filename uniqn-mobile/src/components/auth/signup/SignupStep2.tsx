@@ -93,7 +93,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
   };
 
   return (
-    <View className="w-full space-y-4">
+    <View className="w-full flex-col gap-4">
       {/* 안내 문구 */}
       <View className="mb-4">
         <Text className="text-sm text-gray-600 dark:text-gray-400 text-center">
@@ -114,7 +114,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
             </Text>
           </View>
 
-          <View className="space-y-2 ml-11">
+          <View className="flex-col gap-2 ml-11">
             <View className="flex-row">
               <Text className="text-gray-500 dark:text-gray-400 w-16">이름</Text>
               <Text className="text-gray-900 dark:text-white font-medium">
@@ -146,7 +146,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
         </View>
       ) : (
         /* 본인인증 버튼 */
-        <View className="space-y-3">
+        <View className="flex-col gap-3">
           {/* PASS 본인인증 */}
           <Pressable
             onPress={() => handleVerification('pass')}
@@ -201,7 +201,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
       )}
 
       {/* 버튼 영역 */}
-      <View className="mt-6 space-y-3">
+      <View className="mt-6 flex-col gap-3">
         <Button
           onPress={handleNext}
           disabled={!verifiedData || isLoading}

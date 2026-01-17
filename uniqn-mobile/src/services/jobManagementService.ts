@@ -268,6 +268,22 @@ async function createSinglePosting(
     timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
     // 날짜 필터용 배열 (array-contains 쿼리용)
     workDates: workDates.length > 0 ? workDates : undefined,
+    // 대회공고인 경우 승인 대기 상태로 초기화
+    ...(restInput.postingType === 'tournament' && {
+      tournamentConfig: {
+        approvalStatus: 'pending' as const,
+        submittedAt: now as Timestamp,
+      },
+    }),
+    // 고정공고인 경우 fixedConfig 추가 (게시 기간 7일)
+    // Note: createdAt은 Timestamp.now() 사용 (serverTimestamp()는 Security Rules의 is timestamp 검사 실패)
+    ...(restInput.postingType === 'fixed' && {
+      fixedConfig: {
+        durationDays: 7 as const,
+        createdAt: Timestamp.now(),
+        expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+      },
+    }),
     createdAt: now as Timestamp,
     updatedAt: now as Timestamp,
   });
@@ -599,10 +615,21 @@ export async function reopenJobPosting(
         throw new Error('삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요.');
       }
 
-      transaction.update(jobRef, {
+      // 고정공고인 경우 expiresAt 갱신 (현재 + 7일)
+      const updateData: Record<string, unknown> = {
         status: 'active',
         updatedAt: serverTimestamp(),
-      });
+      };
+
+      if (currentData.postingType === 'fixed') {
+        updateData.fixedConfig = {
+          ...currentData.fixedConfig,
+          durationDays: 7,
+          expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
+        };
+      }
+
+      transaction.update(jobRef, updateData);
     });
 
     logger.info('공고 재오픈 완료', { jobPostingId });

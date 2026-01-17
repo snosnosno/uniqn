@@ -62,14 +62,6 @@ export const NotificationType = {
   /** 공고 취소됨 */
   JOB_CANCELLED: 'job_cancelled',
 
-  // === 칩 관련 ===
-  /** 칩 충전 완료 */
-  CHIPS_PURCHASED: 'chips_purchased',
-  /** 칩 잔액 부족 */
-  LOW_CHIPS_WARNING: 'low_chips_warning',
-  /** 칩 환불 완료 */
-  CHIPS_REFUNDED: 'chips_refunded',
-
   // === 시스템 ===
   /** 공지사항 */
   ANNOUNCEMENT: 'announcement',
@@ -99,7 +91,6 @@ export const NotificationCategory = {
   ATTENDANCE: 'attendance', // 출퇴근 관련
   SETTLEMENT: 'settlement', // 정산 관련
   JOB: 'job', // 공고 관련
-  CHIPS: 'chips', // 칩 관련
   SYSTEM: 'system', // 시스템
   ADMIN: 'admin', // 관리자
 } as const;
@@ -136,11 +127,6 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.NEW_JOB_IN_AREA]: NotificationCategory.JOB,
   [NotificationType.JOB_UPDATED]: NotificationCategory.JOB,
   [NotificationType.JOB_CANCELLED]: NotificationCategory.JOB,
-
-  // 칩 관련
-  [NotificationType.CHIPS_PURCHASED]: NotificationCategory.CHIPS,
-  [NotificationType.LOW_CHIPS_WARNING]: NotificationCategory.CHIPS,
-  [NotificationType.CHIPS_REFUNDED]: NotificationCategory.CHIPS,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: NotificationCategory.SYSTEM,
@@ -190,11 +176,6 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.NEW_JOB_IN_AREA]: 'low',
   [NotificationType.JOB_UPDATED]: 'low',
   [NotificationType.JOB_CANCELLED]: 'high',
-
-  // 칩 관련
-  [NotificationType.CHIPS_PURCHASED]: 'normal',
-  [NotificationType.LOW_CHIPS_WARNING]: 'high',
-  [NotificationType.CHIPS_REFUNDED]: 'normal',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: 'normal',
@@ -326,11 +307,6 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.JOB_UPDATED]: AndroidChannelId.DEFAULT,
   [NotificationType.JOB_CANCELLED]: AndroidChannelId.DEFAULT,
 
-  // 칩 관련
-  [NotificationType.CHIPS_PURCHASED]: AndroidChannelId.DEFAULT,
-  [NotificationType.LOW_CHIPS_WARNING]: AndroidChannelId.DEFAULT,
-  [NotificationType.CHIPS_REFUNDED]: AndroidChannelId.DEFAULT,
-
   // 시스템
   [NotificationType.ANNOUNCEMENT]: AndroidChannelId.ANNOUNCEMENTS,
   [NotificationType.MAINTENANCE]: AndroidChannelId.ANNOUNCEMENTS,
@@ -375,11 +351,6 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.JOB_UPDATED]: '공고 수정',
   [NotificationType.JOB_CANCELLED]: '공고 취소',
 
-  // 칩 관련
-  [NotificationType.CHIPS_PURCHASED]: '칩 충전 완료',
-  [NotificationType.LOW_CHIPS_WARNING]: '칩 잔액 부족',
-  [NotificationType.CHIPS_REFUNDED]: '칩 환불 완료',
-
   // 시스템
   [NotificationType.ANNOUNCEMENT]: '공지사항',
   [NotificationType.MAINTENANCE]: '시스템 점검',
@@ -398,7 +369,6 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> 
   [NotificationCategory.ATTENDANCE]: '출퇴근',
   [NotificationCategory.SETTLEMENT]: '정산',
   [NotificationCategory.JOB]: '공고',
-  [NotificationCategory.CHIPS]: '칩',
   [NotificationCategory.SYSTEM]: '시스템',
   [NotificationCategory.ADMIN]: '관리자',
 };

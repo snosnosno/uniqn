@@ -79,6 +79,24 @@ export default function AdminLayout() {
           title: '시스템 설정',
         }}
       />
+      <Stack.Screen
+        name="inquiries/index"
+        options={{
+          title: '문의 관리',
+        }}
+      />
+      <Stack.Screen
+        name="inquiries/[id]"
+        options={{
+          title: '문의 상세',
+        }}
+      />
+      <Stack.Screen
+        name="tournaments/index"
+        options={{
+          title: '대회공고 승인',
+        }}
+      />
     </Stack>
   );
 }

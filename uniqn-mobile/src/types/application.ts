@@ -97,30 +97,22 @@ export interface Application extends FirebaseDocument {
   /** 공고 근무일 (조회 편의를 위한 비정규화) */
   jobPostingDate?: string;
 
-  // === 레거시 필드 (하위 호환용) ===
+  // === 레거시 필드 (읽기 전용 - 신규 저장 안함) ===
   /**
-   * @deprecated jobPostingId 사용 권장
-   * @description v2.0 초기 표준 필드였으나 jobPostingId로 통일됨
-   * @migration 신규 지원서에서는 jobPostingId만 사용
-   * @removal 2025년 Q3 제거 예정
+   * @deprecated jobPostingId 사용 권장 - 신규 지원서에서는 저장하지 않음
+   * @description 기존 Firestore 데이터 읽기 전용 (하위 호환)
+   * @readonly 신규 지원서에서는 이 필드를 저장하지 않습니다
    */
   eventId?: string;
-  /**
-   * @deprecated jobPostingId 사용 권장
-   * @description 레거시 시스템 호환용 필드
-   * @migration 신규 지원서에서는 jobPostingId만 사용
-   * @removal 2025년 Q3 제거 예정
-   */
-  postId?: string;
-  /**
-   * @deprecated jobPostingTitle 사용 권장
-   * @description 레거시 시스템 호환용 필드
-   */
-  postTitle?: string;
 
   // === 지원 정보 ===
   status: ApplicationStatus;
-  /** 레거시: 단일 역할 */
+  /**
+   * @deprecated assignments[0].roleIds[0] 사용 권장
+   * @description 레거시 단일 역할 필드. v2.0에서는 assignments 배열 사용
+   * @readonly 기존 Firestore 데이터 읽기용으로 유지
+   * @see getPrimaryRole() 헬퍼 함수 사용 권장
+   */
   appliedRole: StaffRole;
   /** 커스텀 역할명 (role이 'other'일 때) */
   customRole?: string;
@@ -128,10 +120,18 @@ export interface Application extends FirebaseDocument {
   /** 모집 유형 구분 */
   recruitmentType?: RecruitmentType;
 
-  // === v2.0 지원 날짜/시간대 (단일 선택 시) ===
-  /** 지원한 날짜 (dateSpecificRequirements에서 선택한 날짜) */
+  // === 레거시 날짜/시간대 (읽기 전용) ===
+  /**
+   * @deprecated assignments[].dates 사용 권장
+   * @description 레거시 단일 날짜 필드
+   * @see getAppliedDateInfo() 헬퍼 함수 사용 권장
+   */
   appliedDate?: string;
-  /** 지원한 시간대 */
+  /**
+   * @deprecated assignments[].timeSlot 사용 권장
+   * @description 레거시 단일 시간대 필드
+   * @see getAppliedDateInfo() 헬퍼 함수 사용 권장
+   */
   appliedTimeSlot?: string;
 
   // === Assignment v2.0 (Single Source of Truth) ===

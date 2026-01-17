@@ -67,7 +67,7 @@ function AlreadyAppliedState() {
       <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">
         지원 현황은 스케줄 탭에서 확인할 수 있습니다
       </Text>
-      <View className="space-y-3 w-full max-w-xs">
+      <View className="flex-col gap-3 w-full max-w-xs">
         <Button
           onPress={() => router.push('/(app)/(tabs)/schedule')}
           fullWidth

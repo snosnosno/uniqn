@@ -42,12 +42,7 @@ export function Card({
 }: CardProps) {
   const cardContent = (
     <View
-      className={`
-        rounded-xl
-        ${variantStyles[variant]}
-        ${paddingStyles[padding]}
-        ${className}
-      `}
+      className={`rounded-xl ${variantStyles[variant]} ${paddingStyles[padding]} ${className}`}
       {...props}
     >
       {children}

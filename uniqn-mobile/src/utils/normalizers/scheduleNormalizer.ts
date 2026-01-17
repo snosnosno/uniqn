@@ -75,7 +75,6 @@ function normalizeFixedScheduleFromJob(job: JobPosting): FixedScheduleInfo {
 
   // 출근 시간 추출
   const startTime =
-    job.workSchedule?.timeSlots?.[0] ??
     job.timeSlot?.split(/[-~]/)[0]?.trim() ??
     null;
 

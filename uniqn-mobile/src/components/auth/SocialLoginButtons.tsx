@@ -123,7 +123,7 @@ export function SocialLoginButtons({
   }
 
   return (
-    <View className="w-full space-y-3">
+    <View className="w-full flex-col gap-3">
       {visibleButtons.map((button) => {
         const handler = getHandler(button.provider);
         const isButtonLoading = loadingProvider === button.provider;

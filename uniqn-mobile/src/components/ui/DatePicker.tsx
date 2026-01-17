@@ -300,7 +300,7 @@ export const DateRangePicker = memo(function DateRangePicker({
         </Text>
       )}
 
-      <View className="flex-row items-center space-x-2">
+      <View className="flex-row items-center gap-2">
         {/* 시작 날짜 */}
         <View className="flex-1">
           <DatePicker

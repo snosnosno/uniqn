@@ -57,10 +57,6 @@ const categoryInfo: Record<
     description: '새 공고, 마감 임박 알림',
     color: 'bg-blue-500',
   },
-  [NotificationCategory.CHIPS]: {
-    description: '칩 충전, 잔액 부족 알림',
-    color: 'bg-purple-500',
-  },
   [NotificationCategory.SYSTEM]: {
     description: '공지사항, 시스템 점검 알림',
     color: 'bg-gray-500',

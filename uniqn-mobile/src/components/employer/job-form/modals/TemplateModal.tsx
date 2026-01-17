@@ -102,7 +102,7 @@ export function TemplateModal({
         <Text className="text-blue-800 dark:text-blue-200 text-sm font-medium mb-2">
           저장되는 내용
         </Text>
-        <View className="space-y-1">
+        <View className="flex-col gap-1">
           <Text className="text-blue-700 dark:text-blue-300 text-xs">
             - 제목, 공고 타입, 지역 정보
           </Text>

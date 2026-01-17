@@ -15,6 +15,13 @@ export { Card, type CardProps } from './Card';
 export { Badge, type BadgeProps } from './Badge';
 export { Avatar, type AvatarProps } from './Avatar';
 export { Divider } from './Divider';
+export {
+  Accordion,
+  AccordionItem,
+  AccordionGroup,
+  type AccordionItemProps,
+  type AccordionGroupProps,
+} from './Accordion';
 
 // ============================================================================
 // State Components

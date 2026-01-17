@@ -35,8 +35,8 @@ interface ChipConfig {
 
 const CHIPS: ChipConfig[] = [
   { id: 'urgent', label: '긴급', icon: '🚨', value: 'urgent' },
-  { id: 'regular', label: '지원', icon: '📝', value: 'regular' },
   { id: 'tournament', label: '대회', icon: '🏆', value: 'tournament' },
+  { id: 'regular', label: '지원', icon: '📝', value: 'regular' },
   { id: 'fixed', label: '고정', icon: '📌', value: 'fixed' },
 ];
 

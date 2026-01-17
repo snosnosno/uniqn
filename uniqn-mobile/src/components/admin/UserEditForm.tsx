@@ -294,7 +294,7 @@ export const UserEditForm = React.memo(function UserEditForm({
         </View>
 
         {/* 액션 버튼 */}
-        <View className="flex-row space-x-3 mt-4">
+        <View className="flex-row gap-3 mt-4">
           <Pressable
             onPress={onCancel}
             className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-xl items-center active:opacity-70"

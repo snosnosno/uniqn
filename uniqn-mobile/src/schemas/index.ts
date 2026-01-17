@@ -279,3 +279,45 @@ export type {
   AppealPenaltyData,
   ProcessAppealData,
 } from './penalty.schema';
+
+// 문의 스키마
+export {
+  inquiryCategorySchema,
+  inquiryStatusSchema,
+  inquirySubjectSchema,
+  inquiryMessageSchema,
+  inquiryAttachmentSchema,
+  createInquirySchema,
+  inquiryResponseSchema,
+  respondInquirySchema,
+  inquiryFilterSchema,
+  faqItemSchema,
+} from './inquiry.schema';
+
+export type {
+  InquiryCategorySchema,
+  InquiryStatusSchema,
+  InquiryAttachmentData,
+  CreateInquiryFormData,
+  RespondInquiryFormData,
+  InquiryFilterData,
+  FAQItemData,
+} from './inquiry.schema';
+
+// 대회공고 승인 스키마
+export {
+  tournamentApprovalStatusSchema,
+  rejectionReasonSchema,
+  approveTournamentSchema,
+  rejectTournamentSchema,
+  resubmitTournamentSchema,
+  tournamentPostingFilterSchema,
+} from './tournament.schema';
+
+export type {
+  TournamentApprovalStatusSchema,
+  ApproveTournamentData,
+  RejectTournamentData,
+  ResubmitTournamentData,
+  TournamentPostingFilterData,
+} from './tournament.schema';

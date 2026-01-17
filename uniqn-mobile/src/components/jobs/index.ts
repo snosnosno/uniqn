@@ -32,6 +32,9 @@ export {
   FixedBadge,
 } from './PostingTypeBadge';
 
+export { TournamentStatusBadge } from './TournamentStatusBadge';
+export { ResubmitButton } from './ResubmitButton';
+
 // ============================================================================
 // Filter Components
 // ============================================================================

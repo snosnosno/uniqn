@@ -196,7 +196,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
               </View>
             </View>
 
-            <View className="bg-white dark:bg-gray-800 rounded-lg p-3 space-y-2">
+            <View className="bg-white dark:bg-gray-800 rounded-lg p-3 flex-col gap-2">
               <View className="flex-row justify-between">
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">이름</Text>
                 <Text className="text-gray-900 dark:text-white font-medium">
@@ -222,7 +222,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
           </View>
         ) : (
           /* 인증 버튼 */
-          <View className="space-y-3">
+          <View className="flex-col gap-3">
             {/* PASS 본인인증 */}
             <Pressable
               onPress={() => handleVerification('pass')}

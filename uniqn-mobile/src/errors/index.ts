@@ -102,7 +102,6 @@ export {
 
 export {
   // 지원 관련
-  InsufficientChipsError,
   AlreadyAppliedError,
   ApplicationClosedError,
   MaxCapacityReachedError,
@@ -114,7 +113,6 @@ export {
   // 정산 관련
   AlreadySettledError,
   // Type Guards
-  isInsufficientChipsError,
   isAlreadyAppliedError,
   isApplicationClosedError,
   isMaxCapacityReachedError,

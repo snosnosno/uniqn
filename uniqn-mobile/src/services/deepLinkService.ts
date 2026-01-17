@@ -267,11 +267,6 @@ const NOTIFICATION_DEEP_LINK_MAP: NotificationDeepLinkMap = {
   maintenance: () => ({ name: 'notifications' }),
   app_update: () => ({ name: 'notifications' }),
 
-  // 칩 관련 → 프로필
-  chips_purchased: () => ({ name: 'profile' }),
-  low_chips_warning: () => ({ name: 'profile' }),
-  chips_refunded: () => ({ name: 'profile' }),
-
   // 관리자 → 알림 목록
   inquiry_answered: () => ({ name: 'notifications' }),
   report_resolved: () => ({ name: 'notifications' }),

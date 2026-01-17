@@ -34,7 +34,7 @@ interface ReasonSelectProps {
 
 function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
   return (
-    <View className="space-y-2">
+    <View className="flex-col gap-2">
       <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
         탈퇴 사유를 선택해주세요
       </Text>
@@ -248,7 +248,7 @@ export default function DeleteAccountScreen() {
             모든 데이터가 영구 삭제됩니다.
           </Text>
 
-          <View className="space-y-3">
+          <View className="flex-col gap-3">
             <Button
               onPress={handleRequestDeletion}
               variant="outline"

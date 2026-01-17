@@ -12,7 +12,6 @@ import type {
   FixedConfig,
   TournamentConfig,
   UrgentConfig,
-  WorkSchedule,
   RoleWithCount,
 } from './postingConfig';
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
@@ -175,9 +174,6 @@ export interface JobPosting extends FirebaseDocument {
   urgentConfig?: UrgentConfig;
 
   // === 고정공고 전용 필드 ===
-  /** 근무 스케줄 */
-  workSchedule?: WorkSchedule;
-
   /** 주 출근일수 (0 = 협의, 1-7 = 일수) - fixed 타입용 */
   daysPerWeek?: number;
 
@@ -462,9 +458,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
 
     // 고정공고 전용 필드
     daysPerWeek: posting.daysPerWeek,
-    startTime:
-      posting.workSchedule?.timeSlots?.[0] ||
-      posting.timeSlot?.split(/[-~]/)[0]?.trim(),
+    startTime: posting.timeSlot?.split(/[-~]/)[0]?.trim(),
     requiredRolesWithCount: posting.requiredRolesWithCount,
 
     // 대회공고 전용 필드

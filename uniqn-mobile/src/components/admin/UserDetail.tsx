@@ -181,7 +181,7 @@ export const UserDetail = React.memo(function UserDetail({
             @{user.nickname}
           </Text>
         )}
-        <View className="flex-row items-center mt-2 space-x-2">
+        <View className="flex-row items-center mt-2 gap-2">
           <Badge
             variant={USER_ROLE_BADGE_VARIANT[user.role]}
             size="md"
@@ -356,7 +356,7 @@ export const UserDetail = React.memo(function UserDetail({
         )}
 
         {/* 액션 버튼 */}
-        <View className="flex-row mt-4 space-x-3">
+        <View className="flex-row mt-4 gap-3">
           {onEdit && (
             <Pressable
               onPress={() => onEdit(user)}

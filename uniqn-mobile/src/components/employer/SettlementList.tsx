@@ -113,11 +113,14 @@ function SummaryCard({
             <Pressable
               onPress={onOpenSettings}
               hitSlop={8}
-              className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+              className="flex-row items-center px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
               accessibilityLabel="정산 설정"
               accessibilityRole="button"
             >
-              <SettingsIcon size={18} color="#6B7280" />
+              <SettingsIcon size={16} color="#6B7280" />
+              <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
+                정산설정
+              </Text>
             </Pressable>
           )}
         </View>

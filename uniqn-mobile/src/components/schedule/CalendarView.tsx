@@ -6,8 +6,9 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, useColorScheme } from 'react-native';
+import { View, Text } from 'react-native';
 import { Calendar, LocaleConfig } from 'react-native-calendars';
+import { useThemeStore } from '@/stores/themeStore';
 import type { DateData, MarkedDates } from 'react-native-calendars/src/types';
 import type { ScheduleEvent, ScheduleType } from '@/types';
 // import { SCHEDULE_COLORS } from '@/types';
@@ -218,10 +219,9 @@ export function CalendarView({
   onDateSelect,
   onMonthChange,
 }: CalendarViewProps) {
-  // 다크모드 감지
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
-  const theme = isDark ? darkCalendarTheme : calendarTheme;
+  // 다크모드 감지 (앱 테마 스토어 사용)
+  const { isDarkMode, mode } = useThemeStore();
+  const theme = isDarkMode ? darkCalendarTheme : calendarTheme;
 
   // 마킹된 날짜 계산
   const markedDates = useMemo(
@@ -258,7 +258,7 @@ export function CalendarView({
   return (
     <View className="bg-white dark:bg-gray-800 rounded-xl mx-4 overflow-hidden">
       <Calendar
-        key={`${currentMonthString}-${colorScheme}`}
+        key={`${currentMonthString}-${mode}`}
         current={currentMonthString}
         onDayPress={handleDayPress}
         onMonthChange={handleMonthChange}

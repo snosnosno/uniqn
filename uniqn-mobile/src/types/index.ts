@@ -147,9 +147,9 @@ export {
 // 공고 타입별 설정
 export type {
   PostingType,
+  TournamentApprovalStatus,
   FixedConfig,
   FixedJobPostingData,
-  WorkSchedule,
   RoleWithCount,
   TournamentConfig,
   UrgentConfig,
@@ -385,3 +385,26 @@ export {
   formatFixedScheduleDisplay,
   formatDateDisplay,
 } from './unified';
+
+// 문의 타입
+export type {
+  InquiryCategory,
+  InquiryStatus,
+  Inquiry,
+  InquiryAttachment,
+  CreateInquiryInput,
+  RespondInquiryInput,
+  InquiryFilters,
+  FAQItem,
+  InquiryCategoryInfo,
+} from './inquiry';
+
+export {
+  INQUIRY_CATEGORIES,
+  INQUIRY_CATEGORY_LABELS,
+  INQUIRY_STATUS_CONFIG,
+  INQUIRY_STATUS_LABELS,
+  FAQ_DATA,
+  filterFAQByCategory,
+  getCategoryInfo,
+} from './inquiry';

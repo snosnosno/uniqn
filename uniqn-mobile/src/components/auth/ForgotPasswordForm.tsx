@@ -66,7 +66,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
           이메일을 확인해주세요.
         </Text>
 
-        <View className="w-full space-y-3">
+        <View className="w-full flex-col gap-3">
           <Button
             onPress={() => setIsSubmitted(false)}
             variant="outline"
@@ -89,7 +89,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
   // 입력 폼
   return (
-    <View className="w-full space-y-4">
+    <View className="w-full flex-col gap-4">
       {/* 안내 문구 */}
       <View className="mb-4">
         <Text className="text-sm text-gray-600 dark:text-gray-400 text-center">

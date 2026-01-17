@@ -193,7 +193,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
   };
 
   return (
-    <View className="w-full space-y-4">
+    <View className="w-full flex-col gap-4">
       {/* 전체 동의 */}
       <Pressable
         onPress={handleAllAgree}
@@ -254,7 +254,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
       )}
 
       {/* 버튼 영역 */}
-      <View className="mt-6 space-y-3">
+      <View className="mt-6 flex-col gap-3">
         <Button
           onPress={handleSubmit(onSubmit)}
           disabled={!requiredChecked || isLoading}

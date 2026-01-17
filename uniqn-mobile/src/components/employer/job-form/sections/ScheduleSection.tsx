@@ -168,7 +168,8 @@ const FixedSchedule = memo(function FixedSchedule({
     <View>
       <View className="mb-4 p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg border border-indigo-200 dark:border-indigo-800">
         <Text className="text-sm text-indigo-700 dark:text-indigo-300">
-          고정 공고는 장기 근무를 위한 공고입니다.
+          고정 공고는 장기 근무를 위한 공고입니다.{'\n'}
+          게시 기간은 7일이며, 만료 후 재등록할 수 있습니다.
         </Text>
       </View>
 

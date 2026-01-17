@@ -22,7 +22,6 @@ import {
   ArrowPathIcon,
   ChatBubbleLeftIcon,
   ShieldCheckIcon,
-  CurrencyDollarIcon,
   BellIcon,
 } from '@/components/icons';
 import { NotificationType, NotificationCategory, getNotificationCategory } from '@/types/notification';
@@ -68,11 +67,6 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   [NotificationType.JOB_UPDATED]: BriefcaseIcon,
   [NotificationType.JOB_CANCELLED]: XCircleIcon,
 
-  // 칩 관련
-  [NotificationType.CHIPS_PURCHASED]: CurrencyDollarIcon,
-  [NotificationType.LOW_CHIPS_WARNING]: ExclamationCircleIcon,
-  [NotificationType.CHIPS_REFUNDED]: CurrencyDollarIcon,
-
   // 시스템
   [NotificationType.ANNOUNCEMENT]: MegaphoneIcon,
   [NotificationType.MAINTENANCE]: WrenchScrewdriverIcon,
@@ -111,11 +105,6 @@ const typeEmojis: Record<NotificationType, string> = {
   [NotificationType.JOB_UPDATED]: '📋',
   [NotificationType.JOB_CANCELLED]: '❌',
 
-  // 칩 관련
-  [NotificationType.CHIPS_PURCHASED]: '💎',
-  [NotificationType.LOW_CHIPS_WARNING]: '⚠️',
-  [NotificationType.CHIPS_REFUNDED]: '💸',
-
   // 시스템
   [NotificationType.ANNOUNCEMENT]: '📢',
   [NotificationType.MAINTENANCE]: '🔧',
@@ -143,10 +132,6 @@ const categoryColors: Record<NotificationCategory, { bg: string; icon: string }>
   [NotificationCategory.JOB]: {
     bg: 'bg-blue-100 dark:bg-blue-900/30',
     icon: '#3b82f6', // blue-500
-  },
-  [NotificationCategory.CHIPS]: {
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    icon: '#a855f7', // purple-500
   },
   [NotificationCategory.SYSTEM]: {
     bg: 'bg-gray-100 dark:bg-gray-800',

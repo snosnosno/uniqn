@@ -6,7 +6,8 @@
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager, useColorScheme } from 'react-native';
+import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -190,11 +191,15 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   daysPerWeek,
   startTime,
 }: ApplicantCardProps) {
-  // 고정공고 모드 판단
-  const isFixedMode = postingType === 'fixed';
-  // 다크모드 감지
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  // 고정공고 모드 판단 (props 우선, 없으면 applicant.jobPosting에서 추출)
+  const effectivePostingType = postingType ?? applicant.jobPosting?.postingType;
+  const isFixedMode = effectivePostingType === 'fixed';
+  // 고정공고용 근무 정보 (props 우선, 없으면 jobPosting에서 추출)
+  const effectiveDaysPerWeek = daysPerWeek ?? applicant.jobPosting?.daysPerWeek;
+  const effectiveStartTime = startTime
+    ?? applicant.jobPosting?.timeSlot?.split(/[-~]/)[0]?.trim();
+  // 다크모드 감지 (앱 테마 스토어 사용)
+  const { isDarkMode: isDark } = useThemeStore();
 
   // 아이콘 색상 (다크모드 대응)
   const iconColors = useMemo(() => ({
@@ -436,8 +441,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
                 근무 조건
               </Text>
               <FixedScheduleDisplay
-                daysPerWeek={daysPerWeek}
-                startTime={startTime}
+                daysPerWeek={effectiveDaysPerWeek}
+                startTime={effectiveStartTime}
                 compact={true}
               />
             </View>

@@ -219,7 +219,7 @@ export const Radio = memo(function Radio({
         className={
           direction === 'horizontal'
             ? 'flex-row flex-wrap gap-4'
-            : 'space-y-3'
+            : 'flex-col gap-3'
         }
       >
         {options.map((option) => (

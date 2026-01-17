@@ -6,7 +6,8 @@
  */
 
 import React, { useMemo, useCallback } from 'react';
-import { View, Text, Pressable, useColorScheme } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
@@ -120,8 +121,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   showActions = true,
   compact = false,
 }: ConfirmedStaffCardProps) {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  // 다크모드 감지 (앱 테마 스토어 사용)
+  const { isDarkMode: isDark } = useThemeStore();
 
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
   const { data: userProfile } = useQuery<UserProfile | null>({

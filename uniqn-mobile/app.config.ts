@@ -150,7 +150,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     // EAS 설정
     eas: {
-      projectId: process.env.EAS_PROJECT_ID || 'your-eas-project-id',
+      projectId: process.env.EAS_PROJECT_ID || '9bca3314-2a12-4654-ad9c-3ae43f8cf125',
     },
     // 앱 버전 정보
     version: VERSION,
@@ -166,7 +166,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   updates: {
     enabled: true,
     fallbackToCacheTimeout: 0,
-    url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID || 'your-eas-project-id'}`,
+    url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID || '9bca3314-2a12-4654-ad9c-3ae43f8cf125'}`,
   },
 
   // 런타임 버전 (EAS Update 호환)

@@ -40,7 +40,19 @@ export default function CreateJobPostingScreen() {
 
   // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
-    setFormData((prev) => ({ ...prev, ...data }));
+    setFormData((prev) => {
+      const updated = { ...prev, ...data };
+
+      // 고정공고 선택 시 역할 초기화 (직원 1, 매니저 1)
+      if (data.postingType === 'fixed' && prev.postingType !== 'fixed') {
+        updated.roles = [
+          { name: '직원', count: 1, isCustom: false },
+          { name: '매니저', count: 1, isCustom: false },
+        ];
+      }
+
+      return updated;
+    });
   }, []);
 
   // 템플릿 저장

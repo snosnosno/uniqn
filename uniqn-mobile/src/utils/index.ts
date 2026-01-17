@@ -101,6 +101,17 @@ export {
   type RetryResult,
 } from './withRetry';
 
+// Application 헬퍼 (레거시 필드 호환)
+export {
+  getAppliedDateInfo,
+  getPrimaryRole,
+  getAllRoles,
+  getFirstAppliedDate,
+  getFirstTimeSlot,
+  isV2Application,
+  getFormattedSchedule,
+} from './applicationHelpers';
+
 // 보안 유틸리티
 export {
   XSS_PATTERNS,

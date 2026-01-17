@@ -42,7 +42,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
   const loading = isLoading || isSubmitting;
 
   return (
-    <View className="w-full space-y-4">
+    <View className="w-full flex-col gap-4">
       {/* 이메일 입력 */}
       <View>
         <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">

@@ -37,10 +37,6 @@ export const notificationTypeSchema = z.enum([
   'new_job_in_area',
   'job_updated',
   'job_cancelled',
-  // 칩 관련
-  'chips_purchased',
-  'low_chips_warning',
-  'chips_refunded',
   // 시스템
   'announcement',
   'maintenance',
@@ -60,7 +56,6 @@ export const notificationCategorySchema = z.enum([
   'attendance',
   'settlement',
   'job',
-  'chips',
   'system',
   'admin',
 ]);

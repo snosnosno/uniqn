@@ -14,6 +14,7 @@ import { useMyJobPostings, useCloseJobPosting, useReopenJobPosting } from '@/hoo
 import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } from '@/components';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
+import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
 import { EventQRModal } from '@/components/employer/EventQRModal';
 import {
@@ -23,7 +24,7 @@ import {
   QrCodeIcon,
   BellIcon,
 } from '@/components/icons';
-import type { JobPosting, PostingType, Allowances } from '@/types';
+import type { JobPosting, PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -322,7 +323,7 @@ const JobPostingCard = memo(function JobPostingCard({
             // 고정공고: FixedScheduleDisplay 사용
             <FixedScheduleDisplay
               daysPerWeek={posting.daysPerWeek}
-              startTime={posting.workSchedule?.timeSlots?.[0] || posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+              startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
               compact={true}
             />
           ) : dateRequirements.length > 0 ? (
@@ -418,6 +419,14 @@ const JobPostingCard = memo(function JobPostingCard({
 
         {/* 상태 뱃지 + 마감/재오픈 버튼 */}
         <View onStartShouldSetResponder={() => true} className="flex-row items-center gap-2">
+          {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus && (
+            <TournamentStatusBadge
+              status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
+              rejectionReason={posting.tournamentConfig.rejectionReason}
+              postingId={posting.id}
+              size="sm"
+            />
+          )}
           <Badge variant={status.variant} size="sm">
             {status.label}
           </Badge>

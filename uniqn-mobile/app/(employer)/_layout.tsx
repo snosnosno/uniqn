@@ -75,6 +75,12 @@ export default function EmployerLayout() {
       }}
     >
       <Stack.Screen
+        name="my-postings/index"
+        options={{
+          title: '내 공고 관리',
+        }}
+      />
+      <Stack.Screen
         name="my-postings/create"
         options={{
           title: '공고 작성',

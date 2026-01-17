@@ -158,15 +158,33 @@ export function ApplicationForm({
   // 사용 가능한 역할 (레거시 및 고정공고) - 통합 타입으로 변환
   const availableRoles: RoleDisplayItem[] = useMemo(() => {
     if (isFixedMode) {
-      // 고정공고: requiredRolesWithCount 사용
+      // 고정공고: requiredRolesWithCount 우선, 없으면 roles fallback
       // 고정공고는 장기 채용이므로 마감 필터링 없이 모든 역할 표시
-      const roles = job.requiredRolesWithCount || [];
-      return roles.map((r, idx): RoleDisplayItem => ({
-        key: r.name || r.role || `role-${idx}`,
-        displayName: r.name || getRoleLabel(r.role || ''),
-        count: r.count,
-        filled: r.filled ?? 0,
-      }));
+      const fixedRoles = job.requiredRolesWithCount || [];
+
+      if (fixedRoles.length > 0) {
+        return fixedRoles.map((r, idx): RoleDisplayItem => ({
+          key: r.name || r.role || `role-${idx}`,
+          displayName: r.name || getRoleLabel(r.role || ''),
+          count: r.count,
+          filled: r.filled ?? 0,
+        }));
+      }
+
+      // fallback: roles 필드 사용
+      const legacyRoles = job.roles || [];
+      return legacyRoles.map((r, idx): RoleDisplayItem => {
+        const roleWithCustom = r as typeof r & { customRole?: string };
+        const effectiveKey = (r.role as string) === 'other' && roleWithCustom.customRole
+          ? roleWithCustom.customRole
+          : r.role || `role-${idx}`;
+        return {
+          key: effectiveKey,
+          displayName: getRoleLabel(r.role || '', roleWithCustom.customRole),
+          count: r.count ?? 0,
+          filled: r.filled ?? 0,
+        };
+      });
     }
     // 일반공고: roles 사용
     const roles = job.roles || [];
@@ -241,7 +259,7 @@ export function ApplicationForm({
     if (isFixedMode && selectedRole) {
       const fixedAssignment: Assignment = {
         dates: [FIXED_DATE_MARKER],
-        timeSlot: job.workSchedule?.timeSlots?.[0] || FIXED_TIME_MARKER,
+        timeSlot: job.timeSlot?.split(/[-~]/)[0]?.trim() || FIXED_TIME_MARKER,
         roleIds: [selectedRole],
         isGrouped: false,
       };
@@ -269,7 +287,7 @@ export function ApplicationForm({
     preQuestionAnswers,
     selectedRole,
     onSubmit,
-    job.workSchedule,
+    job.timeSlot,
   ]);
 
   // 닫기 핸들러 (상태 초기화)
@@ -354,7 +372,7 @@ export function ApplicationForm({
                 </Text>
                 <FixedScheduleDisplay
                   daysPerWeek={job.daysPerWeek}
-                  startTime={job.workSchedule?.timeSlots?.[0] || job.timeSlot?.split(/[-~]/)[0]?.trim()}
+                  startTime={job.timeSlot?.split(/[-~]/)[0]?.trim()}
                   isStartTimeNegotiable={job.isStartTimeNegotiable}
                   compact={true}
                 />
@@ -379,7 +397,7 @@ export function ApplicationForm({
                   </Text>
                 </View>
               ) : (
-                <View className="space-y-2">
+                <View className="flex-col gap-2">
                   {availableRoles.map((roleItem, index) => {
                     const isSelected = selectedRole === roleItem.key;
 

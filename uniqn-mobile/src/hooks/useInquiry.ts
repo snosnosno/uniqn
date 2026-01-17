@@ -1,0 +1,300 @@
+/**
+ * UNIQN Mobile - Inquiry Hooks
+ *
+ * @description 문의 관련 커스텀 훅 (TanStack Query)
+ * @version 1.0.0
+ */
+
+import { useCallback, useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
+import {
+  fetchMyInquiries,
+  fetchAllInquiries,
+  getInquiry,
+  createInquiry,
+  respondToInquiry,
+  updateInquiryStatus,
+  getUnansweredCount,
+} from '@/services/inquiryService';
+import type {
+  Inquiry,
+  InquiryStatus,
+  CreateInquiryInput,
+  RespondInquiryInput,
+  InquiryFilters,
+  InquiryCategory,
+} from '@/types';
+import { FAQ_DATA, filterFAQByCategory } from '@/types';
+import type { QueryDocumentSnapshot } from 'firebase/firestore';
+
+// ============================================================================
+// Query Keys
+// ============================================================================
+
+export const inquiryKeys = {
+  all: ['inquiries'] as const,
+  mine: () => [...inquiryKeys.all, 'mine'] as const,
+  adminList: (filters?: InquiryFilters) => [...inquiryKeys.all, 'admin', filters] as const,
+  detail: (id: string) => [...inquiryKeys.all, 'detail', id] as const,
+  unansweredCount: () => [...inquiryKeys.all, 'unansweredCount'] as const,
+  faq: (category?: InquiryCategory | 'all') => ['faq', category] as const,
+};
+
+// ============================================================================
+// 내 문의 목록 (사용자)
+// ============================================================================
+
+interface UseMyInquiriesOptions {
+  enabled?: boolean;
+  pageSize?: number;
+}
+
+export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
+  const { enabled = true, pageSize = 20 } = options;
+  const user = useAuthStore((state) => state.user);
+  const [additionalInquiries, setAdditionalInquiries] = useState<Inquiry[]>([]);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+
+  const query = useQuery({
+    queryKey: [...inquiryKeys.mine(), user?.uid],
+    queryFn: async () => {
+      if (!user?.uid) return { inquiries: [], lastDoc: null, hasMore: false };
+      const result = await fetchMyInquiries({ userId: user.uid, pageSize });
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+      setAdditionalInquiries([]); // 새로고침 시 추가 데이터 초기화
+      return result;
+    },
+    enabled: enabled && !!user?.uid,
+    staleTime: 0, // 항상 최신 데이터 사용
+  });
+
+  const fetchNextPage = useCallback(async () => {
+    if (!hasMore || !user?.uid || !lastDoc) return;
+
+    const result = await fetchMyInquiries({
+      userId: user.uid,
+      pageSize,
+      lastDoc,
+    });
+
+    setAdditionalInquiries((prev) => [...prev, ...result.inquiries]);
+    setLastDoc(result.lastDoc);
+    setHasMore(result.hasMore);
+  }, [hasMore, user?.uid, lastDoc, pageSize]);
+
+  // 쿼리 결과와 추가 로드 데이터 합침
+  const allInquiries = [
+    ...(query.data?.inquiries || []),
+    ...additionalInquiries,
+  ];
+
+  return {
+    inquiries: allInquiries,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    hasMore,
+    fetchNextPage,
+    refetch: query.refetch,
+  };
+}
+
+// ============================================================================
+// 전체 문의 목록 (관리자)
+// ============================================================================
+
+interface UseAllInquiriesOptions {
+  enabled?: boolean;
+  pageSize?: number;
+  filters?: InquiryFilters;
+}
+
+export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
+  const { enabled = true, pageSize = 20, filters } = options;
+  const [allInquiries, setAllInquiries] = useState<Inquiry[]>([]);
+  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+
+  const query = useQuery({
+    queryKey: inquiryKeys.adminList(filters),
+    queryFn: async () => {
+      const result = await fetchAllInquiries({ filters, pageSize });
+      setAllInquiries(result.inquiries);
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+      return result;
+    },
+    enabled,
+    staleTime: 1000 * 60 * 2, // 2분
+  });
+
+  const fetchNextPage = useCallback(async () => {
+    if (!hasMore || !lastDoc) return;
+
+    const result = await fetchAllInquiries({
+      filters,
+      pageSize,
+      lastDoc,
+    });
+
+    setAllInquiries((prev) => [...prev, ...result.inquiries]);
+    setLastDoc(result.lastDoc);
+    setHasMore(result.hasMore);
+  }, [hasMore, lastDoc, filters, pageSize]);
+
+  return {
+    inquiries: allInquiries,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    hasMore,
+    fetchNextPage,
+    refetch: query.refetch,
+  };
+}
+
+// ============================================================================
+// 문의 상세 조회
+// ============================================================================
+
+export function useInquiryDetail(inquiryId: string | undefined) {
+  return useQuery({
+    queryKey: inquiryKeys.detail(inquiryId || ''),
+    queryFn: () => getInquiry(inquiryId!),
+    enabled: !!inquiryId,
+    staleTime: 1000 * 60 * 5, // 5분
+  });
+}
+
+// ============================================================================
+// 문의 생성 (사용자)
+// ============================================================================
+
+export function useCreateInquiry() {
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: async (input: CreateInquiryInput) => {
+      if (!user?.uid || !user?.email) {
+        throw new Error('로그인이 필요합니다');
+      }
+
+      const userName = profile?.name || user.displayName || '사용자';
+
+      return createInquiry(user.uid, user.email, userName, input);
+    },
+    onSuccess: () => {
+      // user.uid를 포함한 쿼리 키로 invalidate
+      queryClient.invalidateQueries({ queryKey: [...inquiryKeys.mine(), user?.uid] });
+      addToast({ type: 'success', message: '문의가 접수되었습니다' });
+    },
+    onError: () => {
+      addToast({ type: 'error', message: '문의 접수에 실패했습니다' });
+    },
+  });
+}
+
+// ============================================================================
+// 문의 응답 (관리자)
+// ============================================================================
+
+interface RespondInquiryParams {
+  inquiryId: string;
+  input: RespondInquiryInput;
+}
+
+export function useRespondInquiry() {
+  const queryClient = useQueryClient();
+  const user = useAuthStore((state) => state.user);
+  const profile = useAuthStore((state) => state.profile);
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: async ({ inquiryId, input }: RespondInquiryParams) => {
+      if (!user?.uid) {
+        throw new Error('로그인이 필요합니다');
+      }
+
+      const responderName = profile?.name || user.displayName || '관리자';
+
+      return respondToInquiry(inquiryId, user.uid, responderName, input);
+    },
+    onSuccess: (_, { inquiryId }) => {
+      queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+      queryClient.invalidateQueries({ queryKey: inquiryKeys.detail(inquiryId) });
+      addToast({ type: 'success', message: '답변이 등록되었습니다' });
+    },
+    onError: () => {
+      addToast({ type: 'error', message: '답변 등록에 실패했습니다' });
+    },
+  });
+}
+
+// ============================================================================
+// 문의 상태 변경 (관리자)
+// ============================================================================
+
+interface UpdateStatusParams {
+  inquiryId: string;
+  status: InquiryStatus;
+}
+
+export function useUpdateInquiryStatus() {
+  const queryClient = useQueryClient();
+  const addToast = useToastStore((state) => state.addToast);
+
+  return useMutation({
+    mutationFn: async ({ inquiryId, status }: UpdateStatusParams) => {
+      return updateInquiryStatus(inquiryId, status);
+    },
+    onSuccess: (_, { inquiryId }) => {
+      queryClient.invalidateQueries({ queryKey: inquiryKeys.all });
+      queryClient.invalidateQueries({ queryKey: inquiryKeys.detail(inquiryId) });
+      addToast({ type: 'success', message: '상태가 변경되었습니다' });
+    },
+    onError: () => {
+      addToast({ type: 'error', message: '상태 변경에 실패했습니다' });
+    },
+  });
+}
+
+// ============================================================================
+// 미답변 문의 수 (관리자)
+// ============================================================================
+
+export function useUnansweredCount() {
+  return useQuery({
+    queryKey: inquiryKeys.unansweredCount(),
+    queryFn: getUnansweredCount,
+    staleTime: 1000 * 60 * 5, // 5분
+  });
+}
+
+// ============================================================================
+// FAQ
+// ============================================================================
+
+interface UseFAQOptions {
+  category?: InquiryCategory | 'all';
+}
+
+export function useFAQ(options: UseFAQOptions = {}) {
+  const { category = 'all' } = options;
+
+  return useQuery({
+    queryKey: inquiryKeys.faq(category),
+    queryFn: () => {
+      // 하드코딩된 FAQ 데이터 사용
+      return filterFAQByCategory(FAQ_DATA, category);
+    },
+    staleTime: 1000 * 60 * 30, // 30분 (stable 정책)
+    gcTime: 1000 * 60 * 60, // 1시간
+  });
+}

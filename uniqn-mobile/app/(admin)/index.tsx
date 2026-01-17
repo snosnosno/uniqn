@@ -67,6 +67,14 @@ export default function AdminDashboard() {
 
   const menuItems: DashboardCardProps[] = [
     {
+      title: "대회공고 승인",
+      description: "대회공고 승인 요청 검토 및 처리",
+      iconName: "trophy-outline",
+      iconColor: "#eab308",
+      href: "/(admin)/tournaments",
+      bgColor: "bg-yellow-100 dark:bg-yellow-900/30",
+    },
+    {
       title: "사용자 관리",
       description: "회원 정보 조회 및 권한 관리",
       iconName: "people-outline",
@@ -81,6 +89,14 @@ export default function AdminDashboard() {
       iconColor: "#dc2626",
       href: "/(admin)/reports",
       bgColor: "bg-red-100 dark:bg-red-900/30",
+    },
+    {
+      title: "문의 관리",
+      description: "고객 문의 확인 및 답변",
+      iconName: "chatbubble-ellipses-outline",
+      iconColor: "#0891b2",
+      href: "/(admin)/inquiries",
+      bgColor: "bg-cyan-100 dark:bg-cyan-900/30",
     },
     {
       title: "시스템 설정",

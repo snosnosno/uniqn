@@ -398,7 +398,7 @@ export function SettlementDetailModal({
                 </Text>
               </View>
 
-              <View className="space-y-1">
+              <View className="flex-col gap-1">
                 {/* 급여 타입에 따른 계산 내역 */}
                 {salaryInfo.type === 'hourly' ? (
                   <InfoRow

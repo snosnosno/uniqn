@@ -98,9 +98,9 @@ export async function getJobPostings(
 
     // 공고 타입 필터
     // postingTypes 배열이 있으면 우선 적용 (in 쿼리)
+    // 대회공고 포함 시 클라이언트 필터링 필요 (미승인 제외)
+    const includesTournamentInArray = filters?.postingTypes?.includes('tournament') ?? false;
     if (filters?.postingTypes && filters.postingTypes.length > 0) {
-      // 대회 공고가 포함된 경우 별도 처리 필요 (승인된 것만)
-      // 현재는 단순 in 쿼리 적용
       constraints.push(where('postingType', 'in', filters.postingTypes));
     } else if (filters?.postingType === 'tournament') {
       // 대회 공고는 승인된(approved) 것만 일반 목록에 노출
@@ -145,13 +145,27 @@ export async function getJobPostings(
       }
     });
 
-    logger.info('공고 목록 조회 완료', { count: items.length, hasMore });
+    // 복수 타입 필터에 tournament 포함 시: 미승인 대회공고 제외 (클라이언트 필터링)
+    // Firestore에서 OR 조건 불가하므로 클라이언트에서 처리
+    const filteredItems = includesTournamentInArray
+      ? items.filter(
+          (item) =>
+            item.postingType !== 'tournament' ||
+            item.tournamentConfig?.approvalStatus === 'approved'
+        )
+      : items;
 
-    trace.putMetric('result_count', items.length);
+    logger.info('공고 목록 조회 완료', {
+      count: filteredItems.length,
+      hasMore,
+      tournamentFiltered: includesTournamentInArray ? items.length - filteredItems.length : 0,
+    });
+
+    trace.putMetric('result_count', filteredItems.length);
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    return { items, lastDoc, hasMore };
+    return { items: filteredItems, lastDoc, hasMore };
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();

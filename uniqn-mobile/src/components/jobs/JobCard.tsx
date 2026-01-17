@@ -9,6 +9,7 @@ import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { PostingTypeBadge } from './PostingTypeBadge';
+import { TournamentStatusBadge } from './TournamentStatusBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import type {
   JobPostingCard,
@@ -16,6 +17,7 @@ import type {
   Allowances,
   CardRole,
   SalaryInfo,
+  TournamentApprovalStatus,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 
@@ -228,13 +230,22 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         </View>
       )}
 
-      {/* 상단: 공고타입 + 긴급 + 제목 */}
+      {/* 상단: 공고타입 + 승인상태 + 긴급 + 제목 */}
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 flex-row items-center flex-wrap">
           {/* 공고 타입 뱃지 (regular는 표시 안 함) */}
           {job.postingType && job.postingType !== 'regular' && (
             <PostingTypeBadge
               type={job.postingType as PostingType}
+              size="sm"
+              className="mr-2"
+            />
+          )}
+          {/* 대회공고 승인 상태 뱃지 */}
+          {job.postingType === 'tournament' && job.tournamentConfig?.approvalStatus && (
+            <TournamentStatusBadge
+              status={job.tournamentConfig.approvalStatus as TournamentApprovalStatus}
+              rejectionReason={job.tournamentConfig.rejectionReason}
               size="sm"
               className="mr-2"
             />

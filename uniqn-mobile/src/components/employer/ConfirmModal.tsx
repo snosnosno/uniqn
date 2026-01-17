@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, ScrollView, useColorScheme } from 'react-native';
+import { View, Text, TextInput, ScrollView } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
 import { useQuery } from '@tanstack/react-query';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
@@ -97,8 +98,8 @@ export function ApplicantConfirmModal({
 }: ApplicantConfirmModalProps) {
   const [inputValue, setInputValue] = useState('');
   const config = ACTION_CONFIG[action];
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  // 다크모드 감지 (앱 테마 스토어 사용)
+  const { isDarkMode: isDark } = useThemeStore();
 
   // 지원자 프로필 사진 조회
   const { data: userProfile } = useQuery({

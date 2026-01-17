@@ -287,7 +287,7 @@ export default function MyDataScreen() {
             autoFocus
           />
 
-          <View className="flex-row space-x-3 mt-6">
+          <View className="flex-row gap-3 mt-6">
             <View className="flex-1">
               <Button
                 onPress={() => setShowEditModal(false)}

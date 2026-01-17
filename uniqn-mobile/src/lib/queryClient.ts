@@ -307,6 +307,16 @@ export const queryKeys = {
       [...queryKeys.admin.all, 'userDetail', userId] as const,
     metrics: () => [...queryKeys.admin.all, 'metrics'] as const,
   },
+
+  // 대회공고 승인 관리
+  tournaments: {
+    all: ['tournaments'] as const,
+    pending: () => [...queryKeys.tournaments.all, 'pending'] as const,
+    approved: () => [...queryKeys.tournaments.all, 'approved'] as const,
+    rejected: () => [...queryKeys.tournaments.all, 'rejected'] as const,
+    detail: (id: string) => [...queryKeys.tournaments.all, 'detail', id] as const,
+    myPending: () => [...queryKeys.tournaments.all, 'myPending'] as const,
+  },
 } as const;
 
 // ============================================================================
@@ -353,6 +363,13 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.byJobPosting(jobPostingId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.settlement.byJobPosting(jobPostingId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
+  },
+  /** 대회공고 승인 관련 모든 쿼리 무효화 */
+  tournaments: () => queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all }),
+  /** 대회공고 승인 후 관련 데이터 무효화 (대회공고 + 구인공고 목록) */
+  tournamentApproval: () => {
+    queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.jobPostings.all });
   },
   all: () => queryClient.invalidateQueries(),
 };
