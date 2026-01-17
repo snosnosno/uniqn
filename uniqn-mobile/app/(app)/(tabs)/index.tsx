@@ -46,7 +46,12 @@ export default function JobsScreen() {
     const result: JobPostingFilters = {};
 
     if (selectedType) {
-      result.postingType = selectedType;
+      // "지원" 탭은 regular + urgent 모두 표시
+      if (selectedType === 'regular') {
+        result.postingTypes = ['regular', 'urgent'];
+      } else {
+        result.postingType = selectedType;
+      }
     }
 
     // 날짜 필터는 regular 타입에서만 적용

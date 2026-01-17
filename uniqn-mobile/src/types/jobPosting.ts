@@ -209,8 +209,10 @@ export interface JobPostingFilters {
   searchTerm?: string;
   isUrgent?: boolean;
   ownerId?: string;
-  /** 공고 타입 필터 (regular, fixed, tournament, urgent) */
+  /** 공고 타입 필터 (단일) */
   postingType?: PostingType;
+  /** 공고 타입 필터 (복수) - postingType보다 우선 적용 */
+  postingTypes?: PostingType[];
   /** 근무일 필터 (YYYY-MM-DD) - regular 타입에서 날짜 필터링용 */
   workDate?: string;
 }
@@ -335,6 +337,10 @@ export interface JobPostingCard {
   startTime?: string;
   /** 역할별 모집 인원 */
   requiredRolesWithCount?: RoleWithCount[];
+
+  // === 대회공고 전용 필드 ===
+  /** 대회 공고 설정 (승인 상태 등) */
+  tournamentConfig?: TournamentConfig;
 }
 
 /**
@@ -460,5 +466,8 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
       posting.workSchedule?.timeSlots?.[0] ||
       posting.timeSlot?.split(/[-~]/)[0]?.trim(),
     requiredRolesWithCount: posting.requiredRolesWithCount,
+
+    // 대회공고 전용 필드
+    tournamentConfig: posting.tournamentConfig,
   };
 };

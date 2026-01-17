@@ -97,7 +97,16 @@ export async function getJobPostings(
     }
 
     // 공고 타입 필터
-    if (filters?.postingType) {
+    // postingTypes 배열이 있으면 우선 적용 (in 쿼리)
+    if (filters?.postingTypes && filters.postingTypes.length > 0) {
+      // 대회 공고가 포함된 경우 별도 처리 필요 (승인된 것만)
+      // 현재는 단순 in 쿼리 적용
+      constraints.push(where('postingType', 'in', filters.postingTypes));
+    } else if (filters?.postingType === 'tournament') {
+      // 대회 공고는 승인된(approved) 것만 일반 목록에 노출
+      constraints.push(where('postingType', '==', 'tournament'));
+      constraints.push(where('tournamentConfig.approvalStatus', '==', 'approved'));
+    } else if (filters?.postingType) {
       constraints.push(where('postingType', '==', filters.postingType));
     }
 
