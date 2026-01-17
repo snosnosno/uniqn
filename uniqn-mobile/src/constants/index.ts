@@ -49,6 +49,7 @@ export const COLLECTIONS = {
   APPLICATIONS: 'applications',
   NOTIFICATIONS: 'notifications',
   INQUIRIES: 'inquiries',
+  ANNOUNCEMENTS: 'announcements',
 } as const;
 
 // ============================================================================

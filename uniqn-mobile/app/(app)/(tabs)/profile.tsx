@@ -17,6 +17,7 @@ import {
   QrCodeIcon,
   ShieldIcon,
   EditIcon,
+  MegaphoneIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
@@ -198,6 +199,12 @@ export default function ProfileScreen() {
             icon={<MessageIcon size={22} color="#6B7280" />}
             label="고객센터"
             onPress={() => router.push('/(app)/support')}
+          />
+          <Divider spacing="sm" />
+          <MenuItem
+            icon={<MegaphoneIcon size={22} color="#6B7280" />}
+            label="공지사항"
+            onPress={() => router.push('/(app)/notices')}
           />
           {isAdmin && (
             <>

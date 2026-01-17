@@ -317,6 +317,21 @@ export const queryKeys = {
     detail: (id: string) => [...queryKeys.tournaments.all, 'detail', id] as const,
     myPending: () => [...queryKeys.tournaments.all, 'myPending'] as const,
   },
+
+  // 공지사항
+  announcements: {
+    all: ['announcements'] as const,
+    /** 발행된 공지 목록 (사용자용) */
+    published: (filters?: Record<string, unknown>) =>
+      [...queryKeys.announcements.all, 'published', filters] as const,
+    /** 전체 공지 목록 (관리자용) */
+    adminList: (filters?: Record<string, unknown>) =>
+      [...queryKeys.announcements.all, 'admin', filters] as const,
+    /** 공지 상세 */
+    detail: (id: string) => [...queryKeys.announcements.all, 'detail', id] as const,
+    /** 읽지 않은 공지 수 */
+    unreadCount: () => [...queryKeys.announcements.all, 'unreadCount'] as const,
+  },
 } as const;
 
 // ============================================================================
@@ -371,6 +386,8 @@ export const invalidateQueries = {
     queryClient.invalidateQueries({ queryKey: queryKeys.tournaments.all });
     queryClient.invalidateQueries({ queryKey: queryKeys.jobPostings.all });
   },
+  /** 공지사항 관련 모든 쿼리 무효화 */
+  announcements: () => queryClient.invalidateQueries({ queryKey: queryKeys.announcements.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

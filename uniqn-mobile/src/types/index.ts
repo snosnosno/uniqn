@@ -408,3 +408,29 @@ export {
   filterFAQByCategory,
   getCategoryInfo,
 } from './inquiry';
+
+// 공지사항 타입
+export type {
+  AnnouncementCategory,
+  AnnouncementStatus,
+  AnnouncementPriority,
+  TargetAudience,
+  Announcement,
+  CreateAnnouncementInput,
+  UpdateAnnouncementInput,
+  AnnouncementFilters,
+  AnnouncementCategoryInfo,
+} from './announcement';
+
+export {
+  ANNOUNCEMENT_CATEGORIES,
+  ANNOUNCEMENT_CATEGORY_LABELS,
+  ANNOUNCEMENT_STATUS_CONFIG,
+  ANNOUNCEMENT_STATUS_LABELS,
+  ANNOUNCEMENT_PRIORITY_CONFIG,
+  ANNOUNCEMENT_PRIORITY_LABELS,
+  TARGET_AUDIENCE_LABELS,
+  getCategoryInfo as getAnnouncementCategoryInfo,
+  isAnnouncementForRole,
+  sortAnnouncements,
+} from './announcement';

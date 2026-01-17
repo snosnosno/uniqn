@@ -1,15 +1,14 @@
 /**
  * UNIQN Mobile - Admin Dashboard
- * 관리자 대시보드 메인 페이지 (데이터 연동)
+ * 관리자 대시보드 메인 페이지
  */
 
-import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from "react-native";
-import { Link } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { useAdminDashboard } from "@/hooks/useAdminDashboard";
-import type { ComponentProps } from "react";
+import { View, Text, ScrollView, Pressable } from 'react-native';
+import { Link } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import type { ComponentProps } from 'react';
 
-type IoniconsName = ComponentProps<typeof Ionicons>["name"];
+type IoniconsName = ComponentProps<typeof Ionicons>['name'];
 
 interface DashboardCardProps {
   title: string;
@@ -38,33 +37,7 @@ function DashboardCard({ title, description, iconName, iconColor, href, bgColor 
   );
 }
 
-interface StatCardProps {
-  label: string;
-  value: number | undefined;
-  isLoading: boolean;
-  color?: string;
-}
-
-function StatCard({ label, value, isLoading, color = "text-gray-900 dark:text-white" }: StatCardProps) {
-  return (
-    <View className="flex-1 bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-        {label}
-      </Text>
-      {isLoading ? (
-        <ActivityIndicator size="small" className="mt-2" />
-      ) : (
-        <Text className={`text-2xl font-bold ${color}`}>
-          {value?.toLocaleString() ?? "--"}
-        </Text>
-      )}
-    </View>
-  );
-}
-
 export default function AdminDashboard() {
-  const { stats, isLoading, isRefreshing, refresh, error } = useAdminDashboard();
-
   const menuItems: DashboardCardProps[] = [
     {
       title: "대회공고 승인",
@@ -133,12 +106,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-gray-900"
-      refreshControl={
-        <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
-      }
-    >
+    <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
       <View className="p-4">
         {/* Header */}
         <View className="mb-6">
@@ -149,81 +117,6 @@ export default function AdminDashboard() {
             UNIQN 서비스 관리 및 모니터링
           </Text>
         </View>
-
-        {/* Error Message */}
-        {error && (
-          <View className="bg-red-50 dark:bg-red-900/30 rounded-xl p-4 mb-4">
-            <Text className="text-red-600 dark:text-red-400">
-              데이터를 불러오는데 실패했습니다. 새로고침 해주세요.
-            </Text>
-          </View>
-        )}
-
-        {/* Quick Stats */}
-        <View className="flex-row gap-3 mb-6">
-          <StatCard
-            label="총 사용자"
-            value={stats?.totalUsers}
-            isLoading={isLoading}
-          />
-          <StatCard
-            label="오늘 신규"
-            value={stats?.newUsersToday}
-            isLoading={isLoading}
-            color="text-green-600"
-          />
-          <StatCard
-            label="미처리 신고"
-            value={stats?.pendingReports}
-            isLoading={isLoading}
-            color="text-red-600"
-          />
-        </View>
-
-        {/* Secondary Stats */}
-        <View className="flex-row gap-3 mb-6">
-          <StatCard
-            label="활성 공고"
-            value={stats?.activeJobPostings}
-            isLoading={isLoading}
-            color="text-blue-600"
-          />
-          <StatCard
-            label="오늘 지원"
-            value={stats?.applicationsToday}
-            isLoading={isLoading}
-            color="text-purple-600"
-          />
-        </View>
-
-        {/* Role Distribution */}
-        {stats?.usersByRole && (
-          <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-6">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              역할별 사용자 분포
-            </Text>
-            <View className="flex-row justify-between">
-              <View className="items-center">
-                <Text className="text-xl font-bold text-red-600">
-                  {stats.usersByRole.admin.toLocaleString()}
-                </Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400">관리자</Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-xl font-bold text-blue-600">
-                  {stats.usersByRole.employer.toLocaleString()}
-                </Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400">구인자</Text>
-              </View>
-              <View className="items-center">
-                <Text className="text-xl font-bold text-green-600">
-                  {stats.usersByRole.staff.toLocaleString()}
-                </Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400">스태프</Text>
-              </View>
-            </View>
-          </View>
-        )}
 
         {/* Menu Grid */}
         <View className="flex-row flex-wrap gap-3">
