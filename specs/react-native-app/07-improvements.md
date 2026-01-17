@@ -119,7 +119,7 @@ app/
 ### 기존 문제점
 ```
 ❌ 3가지 상태 관리 혼용
-   - Context API (Auth, Theme, Chip)
+   - Context API (Auth, Theme)
    - Zustand (unified, toast, tournament, jobPosting, dateFilter)
    - React Query (서버 데이터)
 
@@ -134,7 +134,6 @@ app/
 // 클라이언트 상태 → Zustand
 // src/stores/authStore.ts     (기존 AuthContext 대체)
 // src/stores/themeStore.ts    (기존 ThemeContext 대체)
-// src/stores/chipStore.ts     (기존 ChipContext 대체)
 // src/stores/toastStore.ts    (유지)
 // src/stores/modalStore.ts    (신규 - 모달 중앙 관리)
 // src/stores/filterStore.ts   (기존 dateFilterStore 통합)
@@ -147,7 +146,7 @@ app/
 | 상태 유형 | 관리 방식 | 예시 |
 |----------|----------|------|
 | UI 상태 | Zustand | 모달, 토스트, 테마 |
-| 세션 데이터 | Zustand | 인증, 칩 잔액 |
+| 세션 데이터 | Zustand | 인증 정보 |
 | 필터/폼 | Zustand | 검색 필터, 임시 폼 |
 | 서버 데이터 | Query | 공고, 스케줄, 알림 |
 | 실시간 데이터 | Query + 구독 | 알림, 채팅 |

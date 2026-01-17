@@ -84,8 +84,7 @@ app/
     ├── _layout.tsx
     ├── users.tsx               # 사용자 관리
     ├── inquiries.tsx           # 문의 관리
-    ├── approvals.tsx           # 승인 관리
-    └── chips.tsx               # 칩 관리
+    └── approvals.tsx           # 승인 관리
 ```
 
 ---
@@ -506,7 +505,6 @@ export default function AdminLayout() {
       <Stack.Screen name="users" options={{ title: '사용자 관리' }} />
       <Stack.Screen name="inquiries" options={{ title: '문의 관리' }} />
       <Stack.Screen name="approvals" options={{ title: '승인 관리' }} />
-      <Stack.Screen name="chips" options={{ title: '칩 관리' }} />
     </Stack>
   );
 }

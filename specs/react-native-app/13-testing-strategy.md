@@ -83,7 +83,6 @@ import { applicationService } from '../applicationService';
 import { firestore } from '@/lib/firebase';
 import {
   AlreadyAppliedError,
-  InsufficientChipsError,
 } from '@/lib/errors/businessErrors';
 
 // Firebase 모킹
@@ -107,13 +106,9 @@ describe('applicationService', () => {
         status: 'published',
         currentApplicants: 5,
         maxApplicants: 10,
-        applicationChipCost: 100,
       };
 
-      const mockChipBalance = 500;
-
       mockFirestoreGet(mockJobPosting);
-      mockChipService.getBalance.mockResolvedValue(mockChipBalance);
       mockFirestoreTransaction();
 
       // Act
@@ -128,11 +123,6 @@ describe('applicationService', () => {
         jobPostingId: mockJobPostingId,
         status: 'pending',
       });
-      expect(mockChipService.deductChips).toHaveBeenCalledWith(
-        mockUserId,
-        100,
-        expect.any(Object)
-      );
     });
 
     it('이미 지원한 공고에 재지원 시 에러를 던져야 한다', async () => {
@@ -143,23 +133,6 @@ describe('applicationService', () => {
       await expect(
         applicationService.applyToJob(mockUserId, mockJobPostingId)
       ).rejects.toThrow(AlreadyAppliedError);
-    });
-
-    it('칩 잔액이 부족하면 에러를 던져야 한다', async () => {
-      // Arrange
-      const mockJobPosting = {
-        id: mockJobPostingId,
-        status: 'published',
-        applicationChipCost: 100,
-      };
-
-      mockFirestoreGet(mockJobPosting);
-      mockChipService.getBalance.mockResolvedValue(50); // 부족
-
-      // Act & Assert
-      await expect(
-        applicationService.applyToJob(mockUserId, mockJobPostingId)
-      ).rejects.toThrow(InsufficientChipsError);
     });
 
     it('마감된 공고에 지원 시 에러를 던져야 한다', async () => {
@@ -531,28 +504,6 @@ describe('useApplyJob', () => {
     });
 
     expect(result.current.data).toEqual(mockApplication);
-  });
-
-  it('칩 부족 에러 시 적절한 에러 상태를 반환해야 한다', async () => {
-    const chipError = new InsufficientChipsError(100, 50);
-    (applicationService.applyToJob as jest.Mock).mockRejectedValue(chipError);
-
-    const { result } = renderHook(() => useApplyJob(), {
-      wrapper: createWrapper(),
-    });
-
-    act(() => {
-      result.current.mutate({
-        userId: 'user-123',
-        jobPostingId: 'job-456',
-      });
-    });
-
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
-
-    expect(result.current.error).toBeInstanceOf(InsufficientChipsError);
   });
 });
 ```

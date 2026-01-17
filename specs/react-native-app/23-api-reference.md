@@ -28,7 +28,6 @@ Firebase Project: tholdem-ebc18
 │   ├── notifications/      # 알림
 │   ├── tournaments/        # 토너먼트 (비활성화)
 │   ├── payments/           # 결제 기록
-│   ├── chips/              # 칩 거래
 │   └── inquiries/          # 문의사항
 │
 ├── Authentication
@@ -171,7 +170,7 @@ export function isValidStaffRole(role: string): role is StaffRole {
 | **Role 의미** | 시스템 접근 권한 (UserRole) | 근무 직무 (StaffRole) |
 | **생성 시점** | 회원가입 시 자동 (staff 기본) | 스태프 등록 시 수동 |
 | **필수 여부** | 모든 사용자 | 스태프로 활동하는 사용자만 |
-| **주요 필드** | email, chipBalance, consents | bankName, experience, rating |
+| **주요 필드** | email, consents | bankName, experience, rating |
 
 ```
 Guest (비로그인)
@@ -270,9 +269,6 @@ interface User {
   // === 프로필 ===
   profileImage?: string         // Storage URL
   bio?: string                  // 자기소개
-
-  // === 칩 (앱 내 화폐) ===
-  chipBalance: number           // 현재 칩 잔액
 
   // === 알림 설정 ===
   notificationSettings: {
@@ -459,7 +455,6 @@ interface JobPosting {
   // === 고정 공고 설정 ===
   fixedConfig?: {
     durationDays: 7 | 30 | 90
-    chipCost: 3 | 5 | 10
     expiresAt: Timestamp
     createdAt: Timestamp
   }
@@ -490,14 +485,9 @@ interface JobPosting {
 
   // === 긴급 공고 설정 ===
   urgentConfig?: {
-    chipCost: 5
     createdAt: Timestamp
     priority: 'high'
   }
-
-  // === 칩 비용 ===
-  chipCost?: number
-  isChipDeducted: boolean
 
   // === 작성자 정보 ===
   createdBy: string             // userId
@@ -713,9 +703,8 @@ interface Payment {
   userId: string
 
   // === 결제 정보 ===
-  type: 'chip_purchase' | 'subscription' | 'refund'
+  type: 'subscription' | 'refund'
   amount: number                // 결제 금액 (원)
-  chipAmount?: number           // 충전 칩 수량
 
   // === 결제 수단 ===
   method: 'card' | 'transfer' | 'virtual_account' | 'phone'
@@ -743,31 +732,7 @@ interface Payment {
 }
 ```
 
-### 2.9 chips (칩 거래 내역)
-
-```typescript
-interface ChipTransaction {
-  // === 기본 정보 ===
-  id: string
-  userId: string
-
-  // === 거래 정보 ===
-  type: 'purchase' | 'spend' | 'refund' | 'bonus' | 'admin_grant'
-  amount: number                // 칩 수량 (양수: 획득, 음수: 사용)
-  balanceAfter: number          // 거래 후 잔액
-
-  // === 사유 ===
-  reason: string                // 거래 사유
-  referenceId?: string          // 관련 문서 ID (paymentId, jobPostingId 등)
-  referenceType?: 'payment' | 'jobPosting' | 'admin'
-
-  // === 메타데이터 ===
-  createdAt: Timestamp
-  createdBy?: string            // admin grant의 경우 admin userId
-}
-```
-
-### 2.10 inquiries (문의사항)
+### 2.9 inquiries (문의사항)
 
 ```typescript
 interface Inquiry {
@@ -1312,14 +1277,6 @@ service cloud.firestore {
       allow delete: if false; // 결제 기록은 삭제 불가
     }
 
-    // chips 컬렉션
-    match /chips/{chipId} {
-      allow read: if isAuthenticated() &&
-        (resource.data.userId == request.auth.uid || isAdmin());
-      allow create: if isAuthenticated();
-      allow update, delete: if false; // 칩 거래 기록은 수정/삭제 불가
-    }
-
     // inquiries 컬렉션
     match /inquiries/{inquiryId} {
       allow read: if isAuthenticated() &&
@@ -1423,23 +1380,6 @@ export const confirmTossPayment = functions.https.onCall(async (data, context) =
       completedAt: admin.firestore.FieldValue.serverTimestamp(),
     })
 
-    // 칩 충전
-    const payment = (await admin.firestore().collection('payments').doc(orderId).get()).data()
-    await admin.firestore().collection('users').doc(context.auth.uid).update({
-      chipBalance: admin.firestore.FieldValue.increment(payment.chipAmount),
-    })
-
-    // 칩 거래 기록
-    await admin.firestore().collection('chips').add({
-      userId: context.auth.uid,
-      type: 'purchase',
-      amount: payment.chipAmount,
-      reason: '칩 구매',
-      referenceId: orderId,
-      referenceType: 'payment',
-      createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    })
-
     return { success: true }
   } catch (error) {
     throw new functions.https.HttpsError('internal', '결제 처리 실패')
@@ -1501,7 +1441,6 @@ export const ErrorCodes = {
   VALIDATION_XSS_DETECTED: 'E2005',
 
   // === 비즈니스 로직 (3xxx) ===
-  BUSINESS_INSUFFICIENT_CHIPS: 'E3001',
   BUSINESS_ALREADY_APPLIED: 'E3002',
   BUSINESS_POSTING_CLOSED: 'E3003',
   BUSINESS_APPLICATION_NOT_FOUND: 'E3004',
@@ -1545,7 +1484,6 @@ export const ErrorMessages: Record<string, string> = {
   [ErrorCodes.VALIDATION_INVALID_FORMAT]: '올바른 형식으로 입력해주세요',
   [ErrorCodes.VALIDATION_XSS_DETECTED]: '허용되지 않는 문자가 포함되어 있습니다',
 
-  [ErrorCodes.BUSINESS_INSUFFICIENT_CHIPS]: '칩이 부족합니다',
   [ErrorCodes.BUSINESS_ALREADY_APPLIED]: '이미 지원한 공고입니다',
   [ErrorCodes.BUSINESS_POSTING_CLOSED]: '마감된 공고입니다',
   [ErrorCodes.BUSINESS_APPLICATION_NOT_FOUND]: '지원서를 찾을 수 없습니다',
@@ -1584,7 +1522,7 @@ users (1)
   │
   └─── notifications (N)
   │
-  └─── payments (N) ──── chips (N)
+  └─── payments (N)
   │
   └─── inquiries (N)
 ```

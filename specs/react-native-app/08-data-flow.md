@@ -87,10 +87,6 @@ interface JobPosting {
   applicantCount: number;
   confirmedCount: number;
 
-  // 칩 비용
-  chipCost: number;
-  chipDeducted: boolean;
-
   // 타임스탬프
   createdAt: Timestamp;
   updatedAt: Timestamp;
@@ -117,7 +113,6 @@ interface PreQuestion {
 // src/services/job/jobPostingCreateService.ts
 import firestore from '@react-native-firebase/firestore';
 import { notificationService } from '@/services/notification';
-import { chipService } from '@/services/chip';
 import { validateJobPosting } from '@/schemas/jobPosting.schema';
 
 export const jobPostingCreateService = {
@@ -134,7 +129,6 @@ export const jobPostingCreateService = {
       status: 'draft',
       applicantCount: 0,
       confirmedCount: 0,
-      chipDeducted: false,
       createdAt: firestore.FieldValue.serverTimestamp(),
       updatedAt: firestore.FieldValue.serverTimestamp(),
     });
@@ -155,16 +149,7 @@ export const jobPostingCreateService = {
       throw new ValidationError(validation.errors);
     }
 
-    // 2. 칩 비용 계산
-    const chipCost = this.calculateChipCost(data);
-
-    // 3. 칩 잔액 확인
-    const balance = await chipService.getBalance(data.creatorId);
-    if (balance < chipCost) {
-      throw new InsufficientChipsError(chipCost, balance);
-    }
-
-    // 4. 트랜잭션으로 업데이트
+    // 2. 트랜잭션으로 업데이트
     await firestore().runTransaction(async (transaction) => {
       const postingRef = firestore().collection('jobPostings').doc(postingId);
 
@@ -172,7 +157,6 @@ export const jobPostingCreateService = {
         ...data,
         status: 'pending_approval',
         approvalStatus: 'pending',
-        chipCost,
         updatedAt: firestore.FieldValue.serverTimestamp(),
       });
     });
@@ -194,19 +178,10 @@ export const jobPostingCreateService = {
     const posting = (await postingRef.get()).data() as JobPosting;
 
     await firestore().runTransaction(async (transaction) => {
-      // 1. 칩 차감
-      await chipService.deduct(
-        posting.creatorId,
-        posting.chipCost,
-        `공고 등록: ${posting.title}`,
-        transaction
-      );
-
-      // 2. 공고 활성화
+      // 공고 활성화
       transaction.update(postingRef, {
         status: 'active',
         approvalStatus: 'approved',
-        chipDeducted: true,
         publishedAt: firestore.FieldValue.serverTimestamp(),
         updatedAt: firestore.FieldValue.serverTimestamp(),
       });
@@ -219,20 +194,6 @@ export const jobPostingCreateService = {
       body: `${posting.title} 공고가 승인되어 게시되었습니다.`,
       data: { postingId },
     });
-  },
-
-  /**
-   * 칩 비용 계산
-   */
-  calculateChipCost(posting: JobPosting): number {
-    const baseCost = 10; // 기본 비용
-    const dayCount = posting.dates.length;
-    const roleCount = posting.roles.reduce((sum, r) => sum + r.count, 0);
-
-    // 긴급 공고 추가 비용
-    const urgentMultiplier = posting.postingType === 'urgent' ? 1.5 : 1;
-
-    return Math.ceil(baseCost * dayCount * roleCount * urgentMultiplier);
   },
 };
 ```
@@ -290,11 +251,7 @@ export default function CreateJobPostingScreen() {
       toast.success('공고가 제출되었습니다. 승인을 기다려주세요.');
       navigation.toMyJobPostings();
     } catch (error) {
-      if (error instanceof InsufficientChipsError) {
-        showChipRechargeModal(error.required, error.current);
-      } else {
-        toast.error(error.userMessage);
-      }
+      toast.error(error.userMessage);
     }
   };
 

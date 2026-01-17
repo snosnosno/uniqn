@@ -999,15 +999,6 @@ service cloud.firestore {
       allow delete: if isOwner(resource.data.recipientId);
     }
 
-    // 칩 거래 내역
-    match /chipTransactions/{transactionId} {
-      // 읽기: 소유자만
-      allow read: if isOwner(resource.data.userId);
-
-      // 생성/수정/삭제: 시스템만
-      allow create, update, delete: if false;
-    }
-
     // 문의 컬렉션
     match /inquiries/{inquiryId} {
       // 읽기: 작성자 또는 관리자
@@ -1658,10 +1649,6 @@ const PERMISSION_MATRIX: PermissionMatrix = {
     // 정산
     Permission.SETTLEMENT_VIEW_OWN,
     Permission.SETTLEMENT_COMPLETE,
-
-    // 칩
-    Permission.CHIP_PURCHASE,
-    Permission.CHIP_VIEW_OWN,
   ],
   staff: [
     // 공고 조회 (검색, 필터, 상세)
@@ -1686,9 +1673,6 @@ const PERMISSION_MATRIX: PermissionMatrix = {
     // 프로필
     Permission.PROFILE_VIEW_OWN,
     Permission.PROFILE_UPDATE_OWN,
-
-    // 칩
-    Permission.CHIP_VIEW_OWN,
   ],
 };
 

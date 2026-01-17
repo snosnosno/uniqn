@@ -5,7 +5,7 @@
 ### 기존 문제점
 ```
 ❌ 3가지 상태 관리 혼용
-   - Context API (AuthContext, ThemeContext, ChipContext)
+   - Context API (AuthContext, ThemeContext)
    - Zustand (unifiedDataStore, toastStore, tournamentStore)
    - React Query (서버 데이터)
 
@@ -28,8 +28,8 @@
 │  │ • themeStore            │  │ • applications          │  │
 │  │ • toastStore            │  │ • schedules             │  │
 │  │ • modalStore            │  │ • notifications         │  │
-│  │ • chipStore             │  │ • users (admin)         │  │
-│  │ • filterStore           │  │ • inquiries (admin)     │  │
+│  │ • filterStore           │  │ • users (admin)         │  │
+│  │                         │  │ • inquiries (admin)     │  │
 │  └─────────────────────────┘  └─────────────────────────┘  │
 │                                                             │
 │  책임 분리:                                                  │
@@ -380,54 +380,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
 }));
 ```
 
-### 5. chipStore - 칩 잔액
-```typescript
-// src/stores/chipStore.ts
-import { create } from 'zustand';
-
-interface ChipState {
-  balance: number;
-  isLoading: boolean;
-  lastUpdated: Date | null;
-
-  setBalance: (balance: number) => void;
-  setLoading: (loading: boolean) => void;
-  refresh: () => Promise<void>;
-}
-
-export const useChipStore = create<ChipState>((set, get) => ({
-  balance: 0,
-  isLoading: true,
-  lastUpdated: null,
-
-  setBalance: (balance) =>
-    set({
-      balance,
-      isLoading: false,
-      lastUpdated: new Date(),
-    }),
-
-  setLoading: (isLoading) => set({ isLoading }),
-
-  refresh: async () => {
-    set({ isLoading: true });
-    try {
-      // chipService에서 잔액 조회
-      const balance = await chipService.getBalance();
-      set({
-        balance,
-        isLoading: false,
-        lastUpdated: new Date(),
-      });
-    } catch (error) {
-      set({ isLoading: false });
-      throw error;
-    }
-  },
-}));
-```
-
-### 6. filterStore - 필터 상태
+### 5. filterStore - 필터 상태
 ```typescript
 // src/stores/filterStore.ts
 import { create } from 'zustand';

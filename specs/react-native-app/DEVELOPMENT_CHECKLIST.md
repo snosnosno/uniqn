@@ -13,7 +13,6 @@
 - 정산 계산 및 기록
 
 #### ❌ 제외 (별도 프로젝트)
-- **칩 충전/결제**: PG사 연동 필요, 별도 결제 모듈로 분리
 - **실제 송금**: 정산 기록만 관리, 실제 이체는 외부 처리
 - **본인인증 실제 연동**: Phase 6에서 PASS/카카오 연동 (MVP는 Mock)
 
@@ -391,7 +390,6 @@ graph LR
 - [x] JobFilters (필터 UI) - `components/jobs/JobFilters.tsx` (지역/날짜/역할/긴급)
 
 #### 비즈니스 에러 클래스 [P0] ✅
-- [x] InsufficientChipsError (칩 부족) - `errors/BusinessErrors.ts`
 - [x] AlreadyAppliedError (중복 지원) - `errors/BusinessErrors.ts`
 - [x] ApplicationClosedError (지원 마감) - `errors/BusinessErrors.ts`
 - [x] MaxCapacityReachedError (정원 초과) - `errors/BusinessErrors.ts`

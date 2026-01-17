@@ -102,14 +102,6 @@ export enum NotificationType {
   /** 공고 취소됨 */
   JOB_CANCELLED = 'job_cancelled',
 
-  // === 칩 관련 ===
-  /** 칩 충전 완료 */
-  CHIPS_PURCHASED = 'chips_purchased',
-  /** 칩 잔액 부족 */
-  LOW_CHIPS_WARNING = 'low_chips_warning',
-  /** 칩 환불 완료 */
-  CHIPS_REFUNDED = 'chips_refunded',
-
   // === 시스템 ===
   /** 공지사항 */
   ANNOUNCEMENT = 'announcement',
@@ -240,19 +232,6 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     title: '공고 취소',
     body: (d) => `"${d.jobTitle}" 공고가 취소되었습니다.`,
     link: () => `/job-board`,
-  },
-
-  // === 칩 관련 ===
-  [NotificationType.CHIPS_PURCHASED]: {
-    title: '칩 충전 완료',
-    body: (d) => `${d.amount}칩이 충전되었습니다. 잔액: ${d.balance}칩`,
-    link: () => `/chips`,
-  },
-
-  [NotificationType.LOW_CHIPS_WARNING]: {
-    title: '칩 잔액 부족',
-    body: (d) => `칩 잔액이 ${d.balance}칩입니다. 충전이 필요합니다.`,
-    link: () => `/chips/purchase`,
   },
 
   // === 시스템 ===
@@ -1221,8 +1200,6 @@ export interface NotificationSettings {
     settlement: boolean;
     /** 공고 알림 */
     jobs: boolean;
-    /** 칩 알림 */
-    chips: boolean;
     /** 공지사항 */
     announcements: boolean;
   };
@@ -1248,7 +1225,6 @@ export const DEFAULT_NOTIFICATION_SETTINGS: NotificationSettings = {
     attendance: true,
     settlement: true,
     jobs: true,
-    chips: true,
     announcements: true,
   },
   quietHours: {
@@ -1409,14 +1385,6 @@ export default function NotificationSettingsScreen() {
           description="새 공고, 마감 임박 알림"
           value={settings.types.jobs}
           onToggle={() => toggleType('jobs')}
-          disabled={!settings.enabled}
-        />
-
-        <SettingRow
-          title="칩 알림"
-          description="칩 충전/환불 알림"
-          value={settings.types.chips}
-          onToggle={() => toggleType('chips')}
           disabled={!settings.enabled}
         />
 
@@ -1886,6 +1854,4 @@ export function NotificationTabBarIcon({ focused, color, size }: TabBarIconProps
 | 정산 완료 | 스태프 | SETTLEMENT_COMPLETED |
 | 새 공고 | 관심지역 스태프 | NEW_JOB_IN_AREA |
 | 공고 마감 임박 | 지원자 | JOB_CLOSING_SOON |
-| 칩 충전 | 본인 | CHIPS_PURCHASED |
-| 칩 부족 | 본인 | LOW_CHIPS_WARNING |
 | 문의 답변 | 문의자 | INQUIRY_ANSWERED |

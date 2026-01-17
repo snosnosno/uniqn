@@ -938,9 +938,8 @@ export function isFeatureEnabled(
 // ❌ Context와 Zustand 혼용
 <AuthContext.Provider>
   <TournamentContextAdapter>  {/* Zustand 래퍼 */}
-    <ChipContext.Provider>
-      <JobPostingContextAdapter>  {/* Zustand 래퍼 */}
-        <App />
+    <JobPostingContextAdapter>  {/* Zustand 래퍼 */}
+      <App />
 ```
 
 #### 개선안 (Zustand 단일화)
@@ -1160,7 +1159,6 @@ export enum ErrorCode {
   SECURITY_CERTIFICATE_INVALID = 'SECURITY_CERTIFICATE_INVALID',
 
   // 비즈니스
-  BUSINESS_INSUFFICIENT_CHIPS = 'BUSINESS_INSUFFICIENT_CHIPS',
   BUSINESS_ALREADY_APPLIED = 'BUSINESS_ALREADY_APPLIED',
 }
 
@@ -1213,7 +1211,6 @@ export class AppError extends Error {
       [ErrorCode.FIREBASE_NOT_FOUND]: '요청한 데이터를 찾을 수 없습니다',
       [ErrorCode.SECURITY_INTEGRITY_FAILED]: '보안 검증에 실패했습니다',
       [ErrorCode.SECURITY_CERTIFICATE_INVALID]: '보안 연결에 실패했습니다',
-      [ErrorCode.BUSINESS_INSUFFICIENT_CHIPS]: '칩이 부족합니다',
       [ErrorCode.BUSINESS_ALREADY_APPLIED]: '이미 지원한 공고입니다',
     }
     return messages[code] || '문제가 발생했습니다'

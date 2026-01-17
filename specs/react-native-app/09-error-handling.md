@@ -76,7 +76,6 @@ export const ErrorCodes = {
   VALIDATION_OUT_OF_RANGE: 'E4003',
 
   // BUSINESS (5xxx)
-  BUSINESS_INSUFFICIENT_CHIPS: 'E5001',
   BUSINESS_ALREADY_APPLIED: 'E5002',
   BUSINESS_APPLICATION_CLOSED: 'E5003',
   BUSINESS_ALREADY_CONFIRMED: 'E5004',
@@ -223,7 +222,6 @@ export const ErrorMessages: Record<ErrorCode, string> = {
   E4003: '허용된 범위를 벗어났습니다.',
 
   // BUSINESS
-  E5001: '칩이 부족합니다. 충전 후 다시 시도해주세요.',
   E5002: '이미 지원한 공고입니다.',
   E5003: '지원이 마감되었습니다.',
   E5004: '이미 확정된 지원자입니다.',
@@ -405,19 +403,6 @@ export function mapFirebaseError(error: FirebaseError): AppError {
 // src/lib/errors/businessErrors.ts
 import { AppError, ErrorCodes, ErrorCategory } from '@/types/error';
 
-export class InsufficientChipsError extends AppError {
-  constructor(required: number, available: number) {
-    super({
-      code: ErrorCodes.BUSINESS_INSUFFICIENT_CHIPS,
-      message: `Insufficient chips: required ${required}, available ${available}`,
-      category: ErrorCategory.BUSINESS,
-      metadata: { required, available },
-      recoveryAction: { type: 'navigate', screen: '/chips/purchase' },
-    });
-    this.name = 'InsufficientChipsError';
-  }
-}
-
 export class AlreadyAppliedError extends AppError {
   constructor(jobPostingId: string) {
     super({
@@ -557,7 +542,6 @@ import { withErrorHandling } from '@/lib/errors/errorWrapper';
 import {
   AlreadyAppliedError,
   ApplicationClosedError,
-  InsufficientChipsError
 } from '@/lib/errors/businessErrors';
 
 export const applicationService = {
@@ -586,18 +570,8 @@ export const applicationService = {
           });
         }
 
-        // 4. 칩 잔액 체크
-        const chipBalance = await chipService.getBalance(userId);
-        const requiredChips = jobPosting.applicationChipCost;
-        if (chipBalance < requiredChips) {
-          throw new InsufficientChipsError(requiredChips, chipBalance);
-        }
-
-        // 5. 트랜잭션으로 지원 처리
+        // 4. 트랜잭션으로 지원 처리
         return await runTransaction(async (transaction) => {
-          // 칩 차감
-          await chipService.deductChips(userId, requiredChips, transaction);
-
           // 지원 생성
           const application = await this.createApplication(
             userId,
@@ -650,17 +624,6 @@ export function useApplyJob() {
       // 특정 에러에 대한 커스텀 처리
       if (error instanceof AppError) {
         switch (error.code) {
-          case ErrorCodes.BUSINESS_INSUFFICIENT_CHIPS:
-            addToast({
-              type: 'error',
-              message: error.userMessage,
-              action: {
-                label: '칩 충전',
-                onPress: () => router.push('/chips/purchase'),
-              },
-            });
-            break;
-
           case ErrorCodes.BUSINESS_ALREADY_APPLIED:
             addToast({
               type: 'warning',

@@ -210,17 +210,15 @@ import { JobCardSkeleton } from './JobCardSkeleton';
     <QueryClientProvider>
       <ThemeProvider>
         <AuthProvider>
-          <ChipProvider>
-            <MaintenanceModeCheck>
-              <CapacitorInitializer>
-                <UnifiedDataInitializer>
-                  <TournamentProvider>
-                    <App />
-                  </TournamentProvider>
-                </UnifiedDataInitializer>
-              </CapacitorInitializer>
-            </MaintenanceModeCheck>
-          </ChipProvider>
+          <MaintenanceModeCheck>
+            <CapacitorInitializer>
+              <UnifiedDataInitializer>
+                <TournamentProvider>
+                  <App />
+                </TournamentProvider>
+              </UnifiedDataInitializer>
+            </CapacitorInitializer>
+          </MaintenanceModeCheck>
         </AuthProvider>
       </ThemeProvider>
     </QueryClientProvider>
@@ -264,7 +262,6 @@ function AppContent() {
 |--------------|----------|
 | AuthProvider | `useAuthStore` (Zustand) |
 | ThemeProvider | `useThemeStore` (Zustand) |
-| ChipProvider | `useChipStore` (Zustand) |
 | TournamentProvider | 제외 (Phase 2) |
 | UnifiedDataInitializer | `useAppInitialize` 훅 |
 
