@@ -7,21 +7,18 @@ import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Platform }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Avatar, Divider } from '@/components/ui';
+import { TabHeader } from '@/components/headers';
 import {
   SettingsIcon,
   ChevronRightIcon,
-  BellIcon,
-  LockIcon,
   MessageIcon,
   LogOutIcon,
-  QrCodeIcon,
   ShieldIcon,
   EditIcon,
   MegaphoneIcon,
 } from '@/components/icons';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
-import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import { signOut } from '@/services/authService';
 import { useToastStore } from '@/stores/toastStore';
 import { useState } from 'react';
@@ -66,7 +63,6 @@ export default function ProfileScreen() {
   const reset = useAuthStore((state) => state.reset);
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const unreadCount = useUnreadCountRealtime();
 
   const handleLogout = () => {
     const performLogout = async () => {
@@ -116,39 +112,7 @@ export default function ProfileScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
-        <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">프로필</Text>
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            onPress={() => router.push('/(app)/(tabs)/qr')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <QrCodeIcon size={24} color="#6B7280" />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(app)/notifications')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <BellIcon size={24} color="#6B7280" />
-            {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-                <Text className="text-[10px] font-bold text-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(app)/settings')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <SettingsIcon size={24} color="#6B7280" />
-          </Pressable>
-        </View>
-      </View>
+      <TabHeader title="프로필" showSettings />
 
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 프로필 정보 */}
@@ -184,14 +148,14 @@ export default function ProfileScreen() {
         {/* 메뉴 */}
         <Card className="mb-4">
           <MenuItem
-            icon={<BellIcon size={22} color="#6B7280" />}
-            label="알림 설정"
-            onPress={() => router.push('/(app)/settings')}
+            icon={<MegaphoneIcon size={22} color="#6B7280" />}
+            label="공지사항"
+            onPress={() => router.push('/(app)/notices')}
           />
           <Divider spacing="sm" />
           <MenuItem
-            icon={<LockIcon size={22} color="#6B7280" />}
-            label="보안 설정"
+            icon={<SettingsIcon size={22} color="#6B7280" />}
+            label="설정센터"
             onPress={() => router.push('/(app)/settings')}
           />
           <Divider spacing="sm" />
@@ -199,12 +163,6 @@ export default function ProfileScreen() {
             icon={<MessageIcon size={22} color="#6B7280" />}
             label="고객센터"
             onPress={() => router.push('/(app)/support')}
-          />
-          <Divider spacing="sm" />
-          <MenuItem
-            icon={<MegaphoneIcon size={22} color="#6B7280" />}
-            label="공지사항"
-            onPress={() => router.push('/(app)/notices')}
           />
           {isAdmin && (
             <>

@@ -44,8 +44,19 @@ export default function AppLayout() {
         name="notifications"
         options={{
           presentation: 'card',
-          headerShown: true,
-          title: '알림',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="notices"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="support"
+        options={{
+          headerShown: false,
         }}
       />
       <Stack.Screen name="settings" />

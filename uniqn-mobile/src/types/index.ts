@@ -415,6 +415,7 @@ export type {
   AnnouncementStatus,
   AnnouncementPriority,
   TargetAudience,
+  AnnouncementImage,
   Announcement,
   CreateAnnouncementInput,
   UpdateAnnouncementInput,
@@ -423,6 +424,7 @@ export type {
 } from './announcement';
 
 export {
+  MAX_ANNOUNCEMENT_IMAGES,
   ANNOUNCEMENT_CATEGORIES,
   ANNOUNCEMENT_CATEGORY_LABELS,
   ANNOUNCEMENT_STATUS_CONFIG,
@@ -432,5 +434,6 @@ export {
   TARGET_AUDIENCE_LABELS,
   getCategoryInfo as getAnnouncementCategoryInfo,
   isAnnouncementForRole,
+  getAnnouncementImages,
   sortAnnouncements,
 } from './announcement';

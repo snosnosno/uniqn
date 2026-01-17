@@ -82,6 +82,9 @@ function docToAnnouncement(doc: QueryDocumentSnapshot): Announcement {
     publishedAt: data.publishedAt,
     createdAt: data.createdAt,
     updatedAt: data.updatedAt,
+    imageUrl: data.imageUrl ?? null,
+    imageStoragePath: data.imageStoragePath ?? null,
+    images: data.images ?? [],
   };
 }
 
@@ -256,6 +259,9 @@ export async function getAnnouncement(announcementId: string): Promise<Announcem
       publishedAt: data.publishedAt,
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
+      imageUrl: data.imageUrl ?? null,
+      imageStoragePath: data.imageStoragePath ?? null,
+      images: data.images ?? [],
     };
   }, 'getAnnouncement');
 }
@@ -286,6 +292,9 @@ export async function createAnnouncement(
       authorId,
       authorName,
       viewCount: 0,
+      imageUrl: input.imageUrl ?? null,
+      imageStoragePath: input.imageStoragePath ?? null,
+      images: input.images ?? [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
@@ -328,6 +337,9 @@ export async function updateAnnouncement(
     if (input.priority !== undefined) updateData.priority = input.priority;
     if (input.isPinned !== undefined) updateData.isPinned = input.isPinned;
     if (input.targetAudience !== undefined) updateData.targetAudience = input.targetAudience;
+    if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl;
+    if (input.imageStoragePath !== undefined) updateData.imageStoragePath = input.imageStoragePath;
+    if (input.images !== undefined) updateData.images = input.images;
 
     await updateDoc(docRef, updateData);
 

@@ -7,33 +7,12 @@
  */
 
 import { useState, useCallback } from 'react';
-import { Stack, useLocalSearchParams, useRouter, useNavigation } from 'expo-router';
+import { Stack, useLocalSearchParams } from 'expo-router';
 import { View, Text, Pressable, useColorScheme } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
-import { ChevronLeftIcon, QRCodeIcon } from '@/components/icons';
+import { QRCodeIcon } from '@/components/icons';
 import { EventQRModal } from '@/components/employer/EventQRModal';
-
-/**
- * 커스텀 뒤로가기 버튼
- */
-function HeaderBackButton({ tintColor }: { tintColor: string }) {
-  const router = useRouter();
-  const navigation = useNavigation();
-
-  const handleBack = () => {
-    if (navigation.canGoBack()) {
-      router.back();
-    } else {
-      router.replace('/(app)/(tabs)/employer');
-    }
-  };
-
-  return (
-    <Pressable onPress={handleBack} hitSlop={8} className="p-2 -ml-2">
-      <ChevronLeftIcon size={24} color={tintColor} />
-    </Pressable>
-  );
-}
+import { HeaderBackButton } from '@/components/navigation';
 
 /**
  * 공고 제목 배너 컴포넌트
@@ -100,7 +79,12 @@ export default function JobPostingDetailLayout() {
             contentStyle: {
               backgroundColor: isDark ? '#111827' : '#f9fafb',
             },
-            headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
+            headerLeft: () => (
+              <HeaderBackButton
+                tintColor={isDark ? '#ffffff' : '#111827'}
+                fallbackHref="/(app)/(tabs)/employer"
+              />
+            ),
             headerRight: () => (
               <HeaderQRButton
                 tintColor={isDark ? '#ffffff' : '#111827'}

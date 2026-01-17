@@ -98,6 +98,18 @@ export const announcementContentSchema = z
   .trim();
 
 /**
+ * 공지사항 이미지 스키마 (다중 이미지)
+ */
+export const announcementImageSchema = z.object({
+  id: z.string(),
+  url: z.string().url('올바른 이미지 URL이 아닙니다'),
+  storagePath: z.string(),
+  order: z.number().int().min(0),
+});
+
+export type AnnouncementImageSchema = z.infer<typeof announcementImageSchema>;
+
+/**
  * 공지사항 생성 스키마
  */
 export const createAnnouncementSchema = z.object({
@@ -107,6 +119,9 @@ export const createAnnouncementSchema = z.object({
   priority: announcementPrioritySchema.optional().default(0),
   isPinned: z.boolean().optional().default(false),
   targetAudience: targetAudienceSchema,
+  imageUrl: z.string().url('올바른 이미지 URL이 아닙니다').optional().nullable(),
+  imageStoragePath: z.string().optional().nullable(),
+  images: z.array(announcementImageSchema).max(10, '이미지는 최대 10장까지 첨부할 수 있습니다').optional(),
 });
 
 export type CreateAnnouncementFormData = z.infer<typeof createAnnouncementSchema>;
@@ -125,6 +140,9 @@ export const updateAnnouncementSchema = z.object({
   priority: announcementPrioritySchema.optional(),
   isPinned: z.boolean().optional(),
   targetAudience: targetAudienceSchema.optional(),
+  imageUrl: z.string().url('올바른 이미지 URL이 아닙니다').optional().nullable(),
+  imageStoragePath: z.string().optional().nullable(),
+  images: z.array(announcementImageSchema).max(10, '이미지는 최대 10장까지 첨부할 수 있습니다').optional(),
 });
 
 export type UpdateAnnouncementFormData = z.infer<typeof updateAnnouncementSchema>;

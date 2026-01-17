@@ -6,6 +6,7 @@
 import { Stack, Redirect } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+import { HeaderBackButton } from '@/components/navigation';
 
 export default function AdminLayout() {
   const colorScheme = useColorScheme();
@@ -43,6 +44,12 @@ export default function AdminLayout() {
         headerTitleStyle: {
           fontWeight: '600',
         },
+        headerLeft: () => (
+          <HeaderBackButton
+            tintColor={isDark ? '#ffffff' : '#111827'}
+            fallbackHref="/(app)/(tabs)"
+          />
+        ),
         animation: 'slide_from_right',
         contentStyle: {
           backgroundColor: isDark ? '#111827' : '#f9fafb',

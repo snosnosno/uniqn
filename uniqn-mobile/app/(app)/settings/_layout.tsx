@@ -5,6 +5,7 @@
 
 import { Stack } from 'expo-router';
 import { useColorScheme } from 'react-native';
+import { HeaderBackButton } from '@/components/navigation';
 
 export default function SettingsLayout() {
   const colorScheme = useColorScheme();
@@ -14,11 +15,16 @@ export default function SettingsLayout() {
     <Stack
       screenOptions={{
         headerShown: true,
-        headerBackTitle: '뒤로',
         headerStyle: {
           backgroundColor: isDark ? '#1f2937' : '#ffffff',
         },
         headerTintColor: isDark ? '#f9fafb' : '#111827',
+        headerLeft: () => (
+          <HeaderBackButton
+            tintColor={isDark ? '#f9fafb' : '#111827'}
+            fallbackHref="/(app)/(tabs)/profile"
+          />
+        ),
       }}
     >
       <Stack.Screen name="index" options={{ title: '설정' }} />

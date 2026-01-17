@@ -120,6 +120,7 @@ export default function AdminAnnouncementsPage() {
           horizontal
           showsHorizontalScrollIndicator={false}
           className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+          style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
           {STATUS_TABS.map((tab) => {
@@ -196,24 +197,26 @@ export default function AdminAnnouncementsPage() {
             </Pressable>
           </View>
         ) : (
-          <FlashList
-            data={announcements}
-            renderItem={renderItem}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
-            refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-            }
-            onEndReached={handleLoadMore}
-            onEndReachedThreshold={0.5}
-            ListFooterComponent={
-              isFetchingNextPage ? (
-                <View className="py-4 items-center">
-                  <ActivityIndicator size="small" />
-                </View>
-              ) : null
-            }
-          />
+          <View className="flex-1">
+            <FlashList
+              data={announcements}
+              renderItem={renderItem}
+              keyExtractor={(item) => item.id}
+              contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
+              refreshControl={
+                <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
+              }
+              onEndReached={handleLoadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={
+                isFetchingNextPage ? (
+                  <View className="py-4 items-center">
+                    <ActivityIndicator size="small" />
+                  </View>
+                ) : null
+              }
+            />
+          </View>
         )}
       </View>
     </>

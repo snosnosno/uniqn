@@ -5,9 +5,9 @@
 
 import { View, Text, ScrollView, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { Card, EmptyState } from '@/components/ui';
-import { ChevronLeftIcon, BellIcon } from '@/components/icons';
+import { BellIcon } from '@/components/icons';
+import { StackHeader } from '@/components/headers';
 import { useNotificationList, useMarkAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
 import { Timestamp } from 'firebase/firestore';
 import { useCallback } from 'react';
@@ -56,29 +56,24 @@ export default function NotificationsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between bg-white px-2 py-3 dark:bg-gray-800">
-        <View className="flex-row items-center">
-          <Pressable onPress={() => router.back()} className="p-2" hitSlop={8}>
-            <ChevronLeftIcon size={24} color="#6B7280" />
-          </Pressable>
-          <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-            알림
-            {unreadCount > 0 && (
-              <Text className="text-primary-600"> ({unreadCount})</Text>
-            )}
-          </Text>
-        </View>
-        {unreadCount > 0 && (
-          <Pressable
-            onPress={() => markAllAsRead()}
-            className="mr-2 px-3 py-1"
-          >
-            <Text className="text-sm text-primary-600 dark:text-primary-400">
-              모두 읽음
-            </Text>
-          </Pressable>
-        )}
-      </View>
+      <StackHeader
+        title="알림"
+        titleSuffix={
+          unreadCount > 0 ? (
+            <Text className="text-primary-600"> ({unreadCount})</Text>
+          ) : null
+        }
+        fallbackHref="/(app)/(tabs)"
+        rightAction={
+          unreadCount > 0 ? (
+            <Pressable onPress={() => markAllAsRead()} className="px-3 py-1">
+              <Text className="text-sm text-primary-600 dark:text-primary-400">
+                모두 읽음
+              </Text>
+            </Pressable>
+          ) : null
+        }
+      />
 
       {/* 알림 목록 */}
       <ScrollView

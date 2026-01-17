@@ -6,15 +6,13 @@
  */
 
 import { useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { View, Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { format } from 'date-fns';
-import { BellIcon, QrCodeIcon } from '@/components/icons';
 import { JobList, PostingTypeChips, DateSlider } from '@/components/jobs';
+import { TabHeader } from '@/components/headers';
 import { useJobPostings } from '@/hooks/useJobPostings';
 import { usePostingTypeCounts } from '@/hooks/usePostingTypeCounts';
-import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import type { PostingType, JobPostingFilters } from '@/types';
 
 export default function JobsScreen() {
@@ -76,9 +74,6 @@ export default function JobsScreen() {
     enabled: selectedType !== null, // 타입 선택 전까지 쿼리 비활성화
   });
 
-  // 읽지 않은 알림 수 (실시간)
-  const unreadCount = useUnreadCountRealtime();
-
   // 타입 변경 핸들러 (타입 변경 시 날짜 초기화)
   const handleTypeChange = useCallback((type: PostingType | null) => {
     setSelectedType(type);
@@ -96,33 +91,7 @@ export default function JobsScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
-        <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">구인구직</Text>
-        <View className="flex-row items-center gap-2">
-          <Pressable
-            onPress={() => router.push('/(app)/(tabs)/qr')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <QrCodeIcon size={24} color="#6B7280" />
-          </Pressable>
-          <Pressable
-            onPress={() => router.push('/(app)/notifications')}
-            className="p-2"
-            hitSlop={8}
-          >
-            <BellIcon size={24} color="#6B7280" />
-            {/* 알림 배지 (실시간) */}
-            {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-                <Text className="text-[10px] font-bold text-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
-          </Pressable>
-        </View>
-      </View>
+      <TabHeader title="구인구직" />
 
       {/* 공고 타입 칩 필터 */}
       <PostingTypeChips

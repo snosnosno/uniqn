@@ -19,10 +19,12 @@ import {
   incrementViewCount,
   getAnnouncementCountByStatus,
 } from '@/services/announcementService';
+import { deleteMultipleAnnouncementImages } from '@/services/storageService';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { getAnnouncementImages } from '@/types/announcement';
 import type {
   CreateAnnouncementInput,
   UpdateAnnouncementInput,
@@ -143,6 +145,8 @@ export function useCreateAnnouncement() {
 
 /**
  * 공지사항 수정 (관리자)
+ * - 삭제된 이미지는 Storage에서도 함께 삭제
+ * - 다중 이미지 지원
  */
 export function useUpdateAnnouncement() {
   const addToast = useToastStore((state) => state.addToast);
@@ -155,6 +159,33 @@ export function useUpdateAnnouncement() {
       announcementId: string;
       input: UpdateAnnouncementInput;
     }) => {
+      // 1. 기존 공지사항 조회
+      const existingAnnouncement = await getAnnouncement(announcementId);
+
+      if (existingAnnouncement) {
+        // 2. 기존 이미지 목록 가져오기 (다중 이미지 호환)
+        const existingImages = getAnnouncementImages(existingAnnouncement);
+
+        // 3. 새 이미지 목록에서 삭제된 이미지 찾기
+        const newImageIds = new Set((input.images ?? []).map((img) => img.id));
+        const deletedImages = existingImages.filter((img) => !newImageIds.has(img.id));
+
+        // 4. 삭제된 이미지 Storage에서 제거
+        if (deletedImages.length > 0) {
+          try {
+            await deleteMultipleAnnouncementImages(deletedImages);
+            logger.info('삭제된 공지사항 이미지 제거 완료', {
+              announcementId,
+              deletedCount: deletedImages.length,
+            });
+          } catch (error) {
+            // 이미지 삭제 실패해도 수정은 진행
+            logger.warn('삭제된 공지사항 이미지 제거 실패', { announcementId, error });
+          }
+        }
+      }
+
+      // 5. 공지사항 문서 수정
       return updateAnnouncement(announcementId, input);
     },
     onSuccess: (_, variables) => {
@@ -211,12 +242,37 @@ export function useArchiveAnnouncement() {
 
 /**
  * 공지사항 삭제 (관리자)
+ * - 첨부된 모든 이미지 Storage에서 함께 삭제
+ * - 다중 이미지 지원
  */
 export function useDeleteAnnouncement() {
   const addToast = useToastStore((state) => state.addToast);
 
   return useMutation({
-    mutationFn: (announcementId: string) => deleteAnnouncement(announcementId),
+    mutationFn: async (announcementId: string) => {
+      // 1. 공지사항 조회하여 이미지 목록 확인
+      const announcement = await getAnnouncement(announcementId);
+
+      // 2. 모든 이미지 Storage에서 삭제 (다중 이미지 호환)
+      if (announcement) {
+        const images = getAnnouncementImages(announcement);
+        if (images.length > 0) {
+          try {
+            await deleteMultipleAnnouncementImages(images);
+            logger.info('공지사항 이미지 삭제 성공', {
+              announcementId,
+              imageCount: images.length,
+            });
+          } catch (error) {
+            // 이미지 삭제 실패해도 공지사항 삭제는 진행
+            logger.warn('공지사항 이미지 삭제 실패', { announcementId, error });
+          }
+        }
+      }
+
+      // 3. 공지사항 문서 삭제
+      return deleteAnnouncement(announcementId);
+    },
     onSuccess: (_, announcementId) => {
       logger.info('공지사항 삭제 성공', { announcementId });
       invalidateQueries.announcements();

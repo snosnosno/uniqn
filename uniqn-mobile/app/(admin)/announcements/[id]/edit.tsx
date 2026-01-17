@@ -85,6 +85,9 @@ export default function EditAnnouncementPage() {
             priority: announcement.priority,
             isPinned: announcement.isPinned,
             targetAudience: announcement.targetAudience,
+            imageUrl: announcement.imageUrl,
+            imageStoragePath: announcement.imageStoragePath,
+            images: announcement.images,
           }}
           onSubmit={handleSubmit}
           onCancel={handleCancel}

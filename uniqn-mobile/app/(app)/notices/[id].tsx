@@ -4,17 +4,21 @@
  * @description 공지사항 상세 내용을 표시하는 페이지
  */
 
-import { useEffect } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Pressable } from 'react-native';
+import { useEffect, useState } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, Pressable, Dimensions, Modal, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Card, Badge } from '@/components/ui';
 import { MegaphoneIcon, GiftIcon, WrenchScrewdriverIcon, ArrowPathIcon } from '@/components/icons';
 import { useAnnouncementDetail, useIncrementViewCount } from '@/hooks/useAnnouncement';
 import type { AnnouncementCategory } from '@/types';
-import { toDate } from '@/types';
+import { toDate, getAnnouncementImages } from '@/types';
+import type { AnnouncementImage } from '@/types/announcement';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+
+const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // 카테고리별 아이콘
 const CATEGORY_ICONS: Record<AnnouncementCategory, React.ReactNode> = {
@@ -45,6 +49,10 @@ export default function NoticeDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { data: notice, isLoading, error } = useAnnouncementDetail(id ?? '');
   const { mutate: incrementView } = useIncrementViewCount();
+
+  // 이미지 뷰어 상태
+  const [imageViewerVisible, setImageViewerVisible] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   // 조회수 증가 (페이지 진입 시 1회)
   useEffect(() => {
@@ -164,8 +172,149 @@ export default function NoticeDetailPage() {
               {notice.content}
             </Text>
           </Card>
+
+          {/* 이미지 갤러리 (다중 이미지 지원) */}
+          {(() => {
+            const images = getAnnouncementImages(notice);
+            if (images.length === 0) return null;
+
+            return (
+              <Card className="mt-4">
+                {images.length === 1 ? (
+                  // 단일 이미지
+                  <Pressable
+                    onPress={() => {
+                      setSelectedImageIndex(0);
+                      setImageViewerVisible(true);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: images[0].url }}
+                      style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8 }}
+                      contentFit="cover"
+                      transition={200}
+                    />
+                  </Pressable>
+                ) : (
+                  // 다중 이미지 그리드
+                  <View>
+                    <View className="flex-row flex-wrap" style={{ margin: -4 }}>
+                      {images.map((image: AnnouncementImage, index: number) => (
+                        <Pressable
+                          key={image.id}
+                          onPress={() => {
+                            setSelectedImageIndex(index);
+                            setImageViewerVisible(true);
+                          }}
+                          style={{
+                            width: images.length === 2 ? '50%' : '33.33%',
+                            padding: 4,
+                          }}
+                        >
+                          <Image
+                            source={{ uri: image.url }}
+                            style={{
+                              width: '100%',
+                              aspectRatio: 1,
+                              borderRadius: 8,
+                            }}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                          {/* 이미지 번호 표시 */}
+                          <View className="absolute bottom-2 right-2 bg-black/60 rounded-full px-2 py-0.5">
+                            <Text className="text-white text-xs font-medium">
+                              {index + 1}/{images.length}
+                            </Text>
+                          </View>
+                        </Pressable>
+                      ))}
+                    </View>
+                    <Text className="text-xs text-gray-400 dark:text-gray-500 mt-2 text-center">
+                      이미지를 탭하면 크게 볼 수 있습니다
+                    </Text>
+                  </View>
+                )}
+              </Card>
+            );
+          })()}
         </View>
       </ScrollView>
+
+      {/* 이미지 뷰어 모달 */}
+      {(() => {
+        const images = notice ? getAnnouncementImages(notice) : [];
+        if (images.length === 0) return null;
+
+        return (
+          <Modal
+            visible={imageViewerVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={() => setImageViewerVisible(false)}
+          >
+            <View className="flex-1 bg-black">
+              {/* 헤더 */}
+              <View className="flex-row items-center justify-between px-4 pt-12 pb-4">
+                <Pressable
+                  onPress={() => setImageViewerVisible(false)}
+                  className="p-2"
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={28} color="white" />
+                </Pressable>
+                <Text className="text-white text-base font-medium">
+                  {selectedImageIndex + 1} / {images.length}
+                </Text>
+                <View className="w-10" />
+              </View>
+
+              {/* 이미지 */}
+              <ScrollView
+                horizontal
+                pagingEnabled
+                showsHorizontalScrollIndicator={false}
+                onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+                  const index = Math.round(e.nativeEvent.contentOffset.x / SCREEN_WIDTH);
+                  setSelectedImageIndex(index);
+                }}
+                contentOffset={{ x: selectedImageIndex * SCREEN_WIDTH, y: 0 }}
+              >
+                {images.map((image: AnnouncementImage) => (
+                  <View
+                    key={image.id}
+                    style={{ width: SCREEN_WIDTH }}
+                    className="items-center justify-center"
+                  >
+                    <Image
+                      source={{ uri: image.url }}
+                      style={{ width: SCREEN_WIDTH, height: SCREEN_WIDTH * 0.75 }}
+                      contentFit="contain"
+                      transition={200}
+                    />
+                  </View>
+                ))}
+              </ScrollView>
+
+              {/* 페이지 인디케이터 */}
+              {images.length > 1 && (
+                <View className="flex-row justify-center py-4 gap-2">
+                  {images.map((_: AnnouncementImage, index: number) => (
+                    <View
+                      key={index}
+                      className={`w-2 h-2 rounded-full ${
+                        index === selectedImageIndex
+                          ? 'bg-white'
+                          : 'bg-white/40'
+                      }`}
+                    />
+                  ))}
+                </View>
+              )}
+            </View>
+          </Modal>
+        );
+      })()}
     </>
   );
 }

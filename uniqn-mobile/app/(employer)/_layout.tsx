@@ -3,33 +3,10 @@
  * 구인자 전용 레이아웃 (employer 권한 필요)
  */
 
-import { Stack, Redirect, useRouter, useNavigation } from 'expo-router';
-import { useColorScheme, View, ActivityIndicator, Pressable } from 'react-native';
+import { Stack, Redirect } from 'expo-router';
+import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuthStore, useHasRole } from '@/stores/authStore';
-import { ChevronLeftIcon } from '@/components/icons';
-
-/**
- * 커스텀 뒤로가기 버튼 (새로고침해도 작동)
- */
-function HeaderBackButton({ tintColor }: { tintColor: string }) {
-  const router = useRouter();
-  const navigation = useNavigation();
-
-  const handleBack = () => {
-    if (navigation.canGoBack()) {
-      router.back();
-    } else {
-      // 히스토리가 없으면 employer 탭으로 이동
-      router.replace('/(app)/(tabs)/employer');
-    }
-  };
-
-  return (
-    <Pressable onPress={handleBack} hitSlop={8} className="p-2 -ml-2">
-      <ChevronLeftIcon size={24} color={tintColor} />
-    </Pressable>
-  );
-}
+import { HeaderBackButton } from '@/components/navigation';
 
 export default function EmployerLayout() {
   const colorScheme = useColorScheme();
@@ -71,7 +48,12 @@ export default function EmployerLayout() {
         contentStyle: {
           backgroundColor: isDark ? '#111827' : '#f9fafb',
         },
-        headerLeft: () => <HeaderBackButton tintColor={isDark ? '#ffffff' : '#111827'} />,
+        headerLeft: () => (
+          <HeaderBackButton
+            tintColor={isDark ? '#ffffff' : '#111827'}
+            fallbackHref="/(app)/(tabs)/employer"
+          />
+        ),
       }}
     >
       <Stack.Screen

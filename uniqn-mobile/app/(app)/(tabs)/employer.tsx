@@ -11,18 +11,17 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useMyJobPostings, useCloseJobPosting, useReopenJobPosting } from '@/hooks/useJobManagement';
-import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } from '@/components';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
 import { EventQRModal } from '@/components/employer/EventQRModal';
+import { TabHeader } from '@/components/headers';
 import {
   PlusIcon,
   UsersIcon,
   BriefcaseIcon,
   QrCodeIcon,
-  BellIcon,
 } from '@/components/icons';
 import type { JobPosting, PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
@@ -459,46 +458,13 @@ const JobPostingCard = memo(function JobPostingCard({
 });
 
 // ============================================================================
-// Header Component
-// ============================================================================
-
-interface HeaderProps {
-  title: string;
-}
-
-function Header({ title }: HeaderProps) {
-  const unreadCount = useUnreadCountRealtime();
-
-  return (
-    <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
-      <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">{title}</Text>
-      <View className="flex-row items-center gap-2">
-        <Pressable onPress={() => router.push('/(app)/(tabs)/qr')} className="p-2" hitSlop={8}>
-          <QrCodeIcon size={24} color="#6B7280" />
-        </Pressable>
-        <Pressable onPress={() => router.push('/(app)/notifications')} className="p-2" hitSlop={8}>
-          <BellIcon size={24} color="#6B7280" />
-          {unreadCount > 0 && (
-            <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-              <Text className="text-[10px] font-bold text-white">
-                {unreadCount > 99 ? '99+' : unreadCount}
-              </Text>
-            </View>
-          )}
-        </Pressable>
-      </View>
-    </View>
-  );
-}
-
-// ============================================================================
 // Non-Employer View
 // ============================================================================
 
 function NonEmployerView() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-      <Header title="내 공고" />
+      <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
         <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
           <BriefcaseIcon size={48} color="#9CA3AF" />
@@ -691,7 +657,7 @@ function EmployerView() {
   if (isLoading) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-        <Header title="내 공고" />
+        <TabHeader title="내 공고" />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -706,7 +672,7 @@ function EmployerView() {
   if (error) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-        <Header title="내 공고" />
+        <TabHeader title="내 공고" />
         <ErrorState
           title="공고 목록을 불러올 수 없습니다"
           message={error.message}
@@ -718,7 +684,7 @@ function EmployerView() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
-      <Header title="내 공고" />
+      <TabHeader title="내 공고" />
 
       {/* 새 공고 작성 버튼 */}
       <View className="px-4 py-3">

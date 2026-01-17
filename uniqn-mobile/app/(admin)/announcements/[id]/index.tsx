@@ -12,7 +12,9 @@ import {
   Pressable,
   ActivityIndicator,
   Alert,
+  Platform,
 } from 'react-native';
+import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import {
@@ -25,6 +27,7 @@ import {
   ANNOUNCEMENT_STATUS_CONFIG,
   ANNOUNCEMENT_CATEGORY_LABELS,
   ANNOUNCEMENT_PRIORITY_CONFIG,
+  getAnnouncementImages,
 } from '@/types/announcement';
 
 export default function AnnouncementDetailPage() {
@@ -64,58 +67,72 @@ export default function AnnouncementDetailPage() {
 
   // Handle publish
   const handlePublish = useCallback(() => {
-    Alert.alert('공지사항 발행', '이 공지사항을 발행하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '발행',
-        onPress: () => {
-          setActionLoading('publish');
-          publishAnnouncement(id!, {
-            onSettled: () => setActionLoading(null),
-          });
-        },
-      },
-    ]);
+    const doPublish = () => {
+      setActionLoading('publish');
+      publishAnnouncement(id!, {
+        onSettled: () => setActionLoading(null),
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('이 공지사항을 발행하시겠습니까?')) {
+        doPublish();
+      }
+    } else {
+      Alert.alert('공지사항 발행', '이 공지사항을 발행하시겠습니까?', [
+        { text: '취소', style: 'cancel' },
+        { text: '발행', onPress: doPublish },
+      ]);
+    }
   }, [id, publishAnnouncement]);
 
   // Handle archive
   const handleArchive = useCallback(() => {
-    Alert.alert('공지사항 보관', '이 공지사항을 보관하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '보관',
-        onPress: () => {
-          setActionLoading('archive');
-          archiveAnnouncement(id!, {
-            onSettled: () => setActionLoading(null),
-          });
-        },
-      },
-    ]);
+    const doArchive = () => {
+      setActionLoading('archive');
+      archiveAnnouncement(id!, {
+        onSettled: () => setActionLoading(null),
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('이 공지사항을 보관하시겠습니까?')) {
+        doArchive();
+      }
+    } else {
+      Alert.alert('공지사항 보관', '이 공지사항을 보관하시겠습니까?', [
+        { text: '취소', style: 'cancel' },
+        { text: '보관', onPress: doArchive },
+      ]);
+    }
   }, [id, archiveAnnouncement]);
 
   // Handle delete
   const handleDelete = useCallback(() => {
-    Alert.alert(
-      '공지사항 삭제',
-      '이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '삭제',
-          style: 'destructive',
-          onPress: () => {
-            setActionLoading('delete');
-            deleteAnnouncement(id!, {
-              onSuccess: () => {
-                router.back();
-              },
-              onSettled: () => setActionLoading(null),
-            });
-          },
+    const doDelete = () => {
+      setActionLoading('delete');
+      deleteAnnouncement(id!, {
+        onSuccess: () => {
+          router.back();
         },
-      ]
-    );
+        onSettled: () => setActionLoading(null),
+      });
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.')) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        '공지사항 삭제',
+        '이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.',
+        [
+          { text: '취소', style: 'cancel' },
+          { text: '삭제', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   }, [id, deleteAnnouncement, router]);
 
   if (isLoading) {
@@ -238,6 +255,60 @@ export default function AnnouncementDetailPage() {
               {announcement.content}
             </Text>
           </View>
+
+          {/* Image Card (다중 이미지 지원) */}
+          {(() => {
+            const images = getAnnouncementImages(announcement);
+            if (images.length === 0) return null;
+
+            return (
+              <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-4">
+                <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
+                  첨부 이미지 ({images.length}장)
+                </Text>
+                {images.length === 1 ? (
+                  // 단일 이미지
+                  <Image
+                    source={{ uri: images[0].url }}
+                    style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 8 }}
+                    contentFit="cover"
+                    transition={200}
+                  />
+                ) : (
+                  // 다중 이미지 그리드
+                  <View className="flex-row flex-wrap" style={{ margin: -4 }}>
+                    {images.map((image, index) => (
+                      <View
+                        key={image.id}
+                        style={{
+                          width: images.length === 2 ? '50%' : '33.33%',
+                          padding: 4,
+                        }}
+                      >
+                        <View className="relative">
+                          <Image
+                            source={{ uri: image.url }}
+                            style={{
+                              width: '100%',
+                              aspectRatio: 1,
+                              borderRadius: 8,
+                            }}
+                            contentFit="cover"
+                            transition={200}
+                          />
+                          <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-0.5">
+                            <Text className="text-white text-xs font-medium">
+                              {index + 1}
+                            </Text>
+                          </View>
+                        </View>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            );
+          })()}
 
           {/* Info Card */}
           <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-4">

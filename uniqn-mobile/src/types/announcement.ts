@@ -50,6 +50,27 @@ export interface TargetAudience {
 }
 
 // ============================================================================
+// 이미지 타입
+// ============================================================================
+
+/**
+ * 공지사항 이미지 (다중 이미지 지원)
+ */
+export interface AnnouncementImage {
+  /** 고유 ID (uuid) */
+  id: string;
+  /** 다운로드 URL */
+  url: string;
+  /** Storage 경로 */
+  storagePath: string;
+  /** 정렬 순서 */
+  order: number;
+}
+
+/** 최대 이미지 개수 */
+export const MAX_ANNOUNCEMENT_IMAGES = 10;
+
+// ============================================================================
 // 공지사항 인터페이스
 // ============================================================================
 
@@ -89,6 +110,15 @@ export interface Announcement extends FirebaseDocument {
 
   /** 발행일시 (선택) */
   publishedAt?: Timestamp;
+
+  /** 첨부 이미지 URL (선택, 단일 이미지 - 호환성 유지) */
+  imageUrl?: string | null;
+
+  /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
+  imageStoragePath?: string | null;
+
+  /** 첨부 이미지 배열 (다중 이미지) */
+  images?: AnnouncementImage[];
 }
 
 // ============================================================================
@@ -105,6 +135,12 @@ export interface CreateAnnouncementInput {
   priority?: AnnouncementPriority;
   isPinned?: boolean;
   targetAudience: TargetAudience;
+  /** 첨부 이미지 URL (선택, 단일 이미지 - 호환성 유지) */
+  imageUrl?: string | null;
+  /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
+  imageStoragePath?: string | null;
+  /** 첨부 이미지 배열 (다중 이미지) */
+  images?: AnnouncementImage[];
 }
 
 /**
@@ -117,6 +153,12 @@ export interface UpdateAnnouncementInput {
   priority?: AnnouncementPriority;
   isPinned?: boolean;
   targetAudience?: TargetAudience;
+  /** 첨부 이미지 URL (선택, 단일 이미지 - 호환성 유지) */
+  imageUrl?: string | null;
+  /** 첨부 이미지 Storage 경로 (선택, 단일 이미지 - 호환성 유지) */
+  imageStoragePath?: string | null;
+  /** 첨부 이미지 배열 (다중 이미지) */
+  images?: AnnouncementImage[];
 }
 
 /**
@@ -276,6 +318,32 @@ export function isAnnouncementForRole(
   }
 
   return false;
+}
+
+/**
+ * 공지사항 이미지 배열 조회 (호환성 유지)
+ * - images 배열이 있으면 사용
+ * - 없으면 기존 imageUrl/imageStoragePath로 변환
+ */
+export function getAnnouncementImages(announcement: Announcement): AnnouncementImage[] {
+  // 새로운 images 배열이 있으면 사용
+  if (announcement.images && announcement.images.length > 0) {
+    return [...announcement.images].sort((a, b) => a.order - b.order);
+  }
+
+  // 기존 단일 이미지가 있으면 배열로 변환
+  if (announcement.imageUrl) {
+    return [
+      {
+        id: 'legacy-0',
+        url: announcement.imageUrl,
+        storagePath: announcement.imageStoragePath ?? '',
+        order: 0,
+      },
+    ];
+  }
+
+  return [];
 }
 
 /**
