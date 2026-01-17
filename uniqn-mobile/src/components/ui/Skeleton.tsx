@@ -2,14 +2,19 @@
  * UNIQN Mobile - Skeleton 컴포넌트
  *
  * @description 로딩 스켈레톤 플레이스홀더
- * @version 1.0.0
+ * @version 2.0.0 - Reanimated 마이그레이션
  */
 
-import React, { useEffect, useRef } from 'react';
-import { View, Animated, Platform, type ViewStyle, type DimensionValue } from 'react-native';
-
-// react-native-web에서는 native driver를 지원하지 않음
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+import React, { useEffect } from 'react';
+import { View, type ViewStyle, type DimensionValue } from 'react-native';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withRepeat,
+  withSequence,
+  withTiming,
+  Easing,
+} from 'react-native-reanimated';
 
 // ============================================================================
 // Types
@@ -45,33 +50,23 @@ export function Skeleton({
   style,
   className,
 }: SkeletonProps) {
-  const shimmerAnim = useRef(new Animated.Value(0)).current;
+  const opacity = useSharedValue(0.3);
 
   useEffect(() => {
-    const shimmer = Animated.loop(
-      Animated.sequence([
-        Animated.timing(shimmerAnim, {
-          toValue: 1,
-          duration: 1000,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-        Animated.timing(shimmerAnim, {
-          toValue: 0,
-          duration: 1000,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-      ])
+    // Shimmer 애니메이션: 0.3 → 0.7 → 0.3 반복
+    opacity.value = withRepeat(
+      withSequence(
+        withTiming(0.7, { duration: 1000, easing: Easing.ease }),
+        withTiming(0.3, { duration: 1000, easing: Easing.ease })
+      ),
+      -1, // 무한 반복
+      false // reverse 없음
     );
+  }, [opacity]);
 
-    shimmer.start();
-
-    return () => shimmer.stop();
-  }, [shimmerAnim]);
-
-  const opacity = shimmerAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.3, 0.7],
-  });
+  const animatedStyle = useAnimatedStyle(() => ({
+    opacity: opacity.value,
+  }));
 
   return (
     <Animated.View
@@ -81,8 +76,8 @@ export function Skeleton({
           width,
           height,
           borderRadius,
-          opacity,
         },
+        animatedStyle,
         style,
       ]}
     />
@@ -244,6 +239,140 @@ export function SkeletonScheduleCard() {
       {/* Time slots */}
       <Skeleton width="80%" height={16} className="mb-2" />
       <Skeleton width="60%" height={14} />
+    </View>
+  );
+}
+
+// ============================================================================
+// Notification Item Skeleton (Phase 2A 추가)
+// ============================================================================
+
+export function SkeletonNotificationItem() {
+  return (
+    <View className="flex-row items-start py-4 px-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+      {/* Icon */}
+      <Skeleton
+        width={40}
+        height={40}
+        borderRadius={20}
+        style={{ marginRight: 12 }}
+      />
+
+      {/* Content */}
+      <View className="flex-1">
+        <Skeleton width="80%" height={16} className="mb-2" />
+        <Skeleton width="60%" height={14} className="mb-1" />
+        <Skeleton width="30%" height={12} />
+      </View>
+
+      {/* Unread dot placeholder */}
+      <Skeleton width={8} height={8} borderRadius={4} />
+    </View>
+  );
+}
+
+// ============================================================================
+// Applicant Card Skeleton (Phase 2A 추가)
+// ============================================================================
+
+export function SkeletonApplicantCard() {
+  return (
+    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3">
+      {/* Header */}
+      <View className="flex-row items-center mb-4">
+        <Skeleton width={56} height={56} borderRadius={28} />
+        <View className="flex-1 ml-3">
+          <Skeleton width="50%" height={18} className="mb-2" />
+          <Skeleton width="30%" height={14} />
+        </View>
+        <Skeleton width={60} height={28} borderRadius={14} />
+      </View>
+
+      {/* Schedule selection */}
+      <View className="mb-4">
+        <Skeleton width="40%" height={14} className="mb-2" />
+        <View className="flex-row gap-2">
+          <Skeleton width={80} height={32} borderRadius={16} />
+          <Skeleton width={80} height={32} borderRadius={16} />
+          <Skeleton width={80} height={32} borderRadius={16} />
+        </View>
+      </View>
+
+      {/* Action buttons */}
+      <View className="flex-row gap-3">
+        <Skeleton width="48%" height={44} borderRadius={8} />
+        <Skeleton width="48%" height={44} borderRadius={8} />
+      </View>
+    </View>
+  );
+}
+
+// ============================================================================
+// Profile Header Skeleton (Phase 2A 추가)
+// ============================================================================
+
+export function SkeletonProfileHeader() {
+  return (
+    <View className="items-center py-6">
+      {/* Avatar */}
+      <Skeleton width={80} height={80} borderRadius={40} className="mb-4" />
+
+      {/* Name */}
+      <Skeleton width={120} height={24} className="mb-2" />
+
+      {/* Email */}
+      <Skeleton width={180} height={16} className="mb-3" />
+
+      {/* Role badge */}
+      <Skeleton width={80} height={28} borderRadius={14} />
+    </View>
+  );
+}
+
+// ============================================================================
+// Stats Card Skeleton (Phase 2A 추가)
+// ============================================================================
+
+export function SkeletonStatsCard() {
+  return (
+    <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+      {/* Title */}
+      <Skeleton width="40%" height={16} className="mb-4" />
+
+      {/* Stats grid */}
+      <View className="flex-row flex-wrap">
+        {[1, 2, 3, 4].map((i) => (
+          <View key={i} className="w-1/2 p-2">
+            <Skeleton width="60%" height={28} className="mb-1" />
+            <Skeleton width="80%" height={14} />
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+// ============================================================================
+// Settlement Row Skeleton (Phase 2A 추가)
+// ============================================================================
+
+export function SkeletonSettlementRow() {
+  return (
+    <View className="flex-row items-center py-3 px-4 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+      {/* Date */}
+      <View className="w-20">
+        <Skeleton width={60} height={14} className="mb-1" />
+        <Skeleton width={40} height={12} />
+      </View>
+
+      {/* Info */}
+      <View className="flex-1 mx-3">
+        <Skeleton width="70%" height={16} className="mb-1" />
+        <Skeleton width="40%" height={14} />
+      </View>
+
+      {/* Amount */}
+      <Skeleton width={80} height={20} />
     </View>
   );
 }

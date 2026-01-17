@@ -26,6 +26,7 @@
 
 import React, { lazy, Suspense, ComponentType, ReactNode } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet } from 'react-native';
+import { logger } from '@/utils/logger';
 
 // =============================================================================
 // 기본 Fallback 컴포넌트
@@ -190,7 +191,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    console.error('LazyComponent Error:', error, errorInfo);
+    logger.error('LazyComponent 렌더링 오류', error, { component: 'LazyComponent', componentStack: errorInfo.componentStack });
   }
 
   render(): ReactNode {

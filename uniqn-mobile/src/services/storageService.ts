@@ -334,8 +334,6 @@ export async function replaceAnnouncementImage(
 // Multiple Announcement Images
 // ============================================================================
 
-import type { AnnouncementImage } from '@/types';
-
 /**
  * 공지사항 이미지 여러 개 업로드
  *

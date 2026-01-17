@@ -2,7 +2,7 @@
  * UNIQN Mobile - Modal 컴포넌트
  *
  * @description 재사용 가능한 모달 컴포넌트
- * @version 1.0.0
+ * @version 2.0.0 - Reanimated 마이그레이션
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -11,14 +11,17 @@ import {
   Text,
   Pressable,
   Modal as RNModal,
-  Animated,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
 } from 'react-native';
-
-// react-native-web에서는 native driver를 지원하지 않음
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  withSpring,
+  Easing,
+} from 'react-native-reanimated';
 
 // ============================================================================
 // Types
@@ -60,9 +63,9 @@ export function Modal({
   size = 'md',
   position = 'center',
 }: ModalProps) {
-  const fadeAnim = React.useRef(new Animated.Value(0)).current;
-  const scaleAnim = React.useRef(new Animated.Value(0.9)).current;
-  const slideAnim = React.useRef(new Animated.Value(100)).current;
+  const fadeOpacity = useSharedValue(0);
+  const scale = useSharedValue(0.9);
+  const translateY = useSharedValue(100);
 
   // 초기 렌더링 시 불필요한 애니메이션 방지
   const isFirstRender = useRef(true);
@@ -73,55 +76,42 @@ export function Modal({
       isFirstRender.current = false;
       if (!visible) {
         // 초기 상태가 닫힌 상태면 애니메이션 값만 설정
-        fadeAnim.setValue(0);
-        scaleAnim.setValue(0.9);
-        slideAnim.setValue(100);
+        fadeOpacity.value = 0;
+        scale.value = 0.9;
+        translateY.value = 100;
         return;
       }
     }
 
     if (visible) {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 200,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-        position === 'center'
-          ? Animated.spring(scaleAnim, {
-              toValue: 1,
-              tension: 65,
-              friction: 10,
-              useNativeDriver: USE_NATIVE_DRIVER,
-            })
-          : Animated.timing(slideAnim, {
-              toValue: 0,
-              duration: 300,
-              useNativeDriver: USE_NATIVE_DRIVER,
-            }),
-      ]).start();
+      // 열기 애니메이션
+      fadeOpacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
+
+      if (position === 'center') {
+        scale.value = withSpring(1, {
+          damping: 15,
+          stiffness: 150,
+        });
+      } else {
+        translateY.value = withTiming(0, {
+          duration: 300,
+          easing: Easing.out(Easing.ease),
+        });
+      }
     } else {
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 0,
-          duration: 150,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }),
-        position === 'center'
-          ? Animated.timing(scaleAnim, {
-              toValue: 0.9,
-              duration: 150,
-              useNativeDriver: USE_NATIVE_DRIVER,
-            })
-          : Animated.timing(slideAnim, {
-              toValue: 100,
-              duration: 200,
-              useNativeDriver: USE_NATIVE_DRIVER,
-            }),
-      ]).start();
+      // 닫기 애니메이션
+      fadeOpacity.value = withTiming(0, { duration: 150, easing: Easing.ease });
+
+      if (position === 'center') {
+        scale.value = withTiming(0.9, { duration: 150, easing: Easing.ease });
+      } else {
+        translateY.value = withTiming(100, {
+          duration: 200,
+          easing: Easing.in(Easing.ease),
+        });
+      }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [visible, position]); // Animated.Value refs는 의도적으로 제외
+  }, [visible, position, fadeOpacity, scale, translateY]);
 
   const handleBackdropPress = () => {
     if (closeOnBackdrop) {
@@ -129,15 +119,26 @@ export function Modal({
     }
   };
 
-  const containerStyle =
-    position === 'center'
-      ? 'justify-center items-center'
-      : 'justify-end';
+  // 백드롭 애니메이션 스타일
+  const backdropAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: fadeOpacity.value,
+  }));
 
-  const modalStyle =
-    position === 'center'
-      ? { transform: [{ scale: scaleAnim }] }
-      : { transform: [{ translateY: slideAnim }] };
+  // 모달 컨텐츠 애니메이션 스타일
+  const modalAnimatedStyle = useAnimatedStyle(() => {
+    if (position === 'center') {
+      return {
+        transform: [{ scale: scale.value }],
+      };
+    } else {
+      return {
+        transform: [{ translateY: translateY.value }],
+      };
+    }
+  });
+
+  const containerStyle =
+    position === 'center' ? 'justify-center items-center' : 'justify-end';
 
   const modalClassName =
     position === 'center'
@@ -165,13 +166,13 @@ export function Modal({
             accessibilityLabel="모달 닫기"
           >
             <Animated.View
-              style={{ opacity: fadeAnim }}
+              style={backdropAnimatedStyle}
               className="flex-1 bg-black/50"
             />
           </Pressable>
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <Animated.View style={[modalStyle, { pointerEvents: 'box-none' }]}>
+          <Animated.View style={[modalAnimatedStyle, { pointerEvents: 'box-none' }]}>
             <View className={modalClassName}>
               {/* Header */}
               {(title || showCloseButton) && (

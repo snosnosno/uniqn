@@ -6,6 +6,7 @@
 import { Stack } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
+import { NetworkErrorBoundary } from '@/components/ui';
 
 export default function AppLayout() {
   const colorScheme = useColorScheme();
@@ -30,36 +31,38 @@ export default function AppLayout() {
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        animation: 'slide_from_right',
-        contentStyle: {
-          backgroundColor: isDark ? '#111827' : '#f9fafb',
-        },
-      }}
-    >
-      <Stack.Screen name="(tabs)" />
-      <Stack.Screen
-        name="notifications"
-        options={{
-          presentation: 'card',
+    <NetworkErrorBoundary name="AppLayout">
+      <Stack
+        screenOptions={{
           headerShown: false,
+          animation: 'slide_from_right',
+          contentStyle: {
+            backgroundColor: isDark ? '#111827' : '#f9fafb',
+          },
         }}
-      />
-      <Stack.Screen
-        name="notices"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen
-        name="support"
-        options={{
-          headerShown: false,
-        }}
-      />
-      <Stack.Screen name="settings" />
-    </Stack>
+      >
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="notifications"
+          options={{
+            presentation: 'card',
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="notices"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="support"
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen name="settings" />
+      </Stack>
+    </NetworkErrorBoundary>
   );
 }

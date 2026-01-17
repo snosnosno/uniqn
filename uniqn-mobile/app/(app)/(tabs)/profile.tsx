@@ -6,7 +6,7 @@
 import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Card, Avatar, Divider } from '@/components/ui';
+import { Card, Avatar, Divider, SkeletonProfileHeader, SkeletonListItem } from '@/components/ui';
 import { TabHeader } from '@/components/headers';
 import {
   SettingsIcon,
@@ -100,11 +100,27 @@ export default function ProfileScreen() {
     }
   };
 
-  // 로딩 상태
+  // 로딩 상태 (스켈레톤 UI)
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+        <TabHeader title="프로필" showSettings />
+        <ScrollView className="flex-1" contentContainerClassName="p-4">
+          {/* 프로필 헤더 스켈레톤 */}
+          <Card className="mb-4">
+            <SkeletonProfileHeader />
+          </Card>
+          {/* 메뉴 스켈레톤 */}
+          <Card className="mb-4">
+            {[1, 2, 3].map((i) => (
+              <SkeletonListItem key={i} />
+            ))}
+          </Card>
+          {/* 로그아웃 버튼 스켈레톤 */}
+          <Card>
+            <SkeletonListItem />
+          </Card>
+        </ScrollView>
       </SafeAreaView>
     );
   }

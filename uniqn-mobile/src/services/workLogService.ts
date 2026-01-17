@@ -14,10 +14,10 @@ import {
   where,
   orderBy,
   limit,
-  updateDoc,
   onSnapshot,
   Timestamp,
   serverTimestamp,
+  runTransaction,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -325,7 +325,9 @@ export async function getMonthlyPayroll(
 }
 
 /**
- * 관리자: 근무 시간 수정
+ * 관리자: 근무 시간 수정 (트랜잭션 사용)
+ *
+ * @description 이미 정산 완료된 기록은 수정 불가
  */
 export async function updateWorkTime(
   workLogId: string,
@@ -338,35 +340,53 @@ export async function updateWorkTime(
   try {
     logger.info('근무 시간 수정', { workLogId, updates });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+    const db = getFirebaseDb();
 
-    const updateData: Record<string, unknown> = {
-      updatedAt: serverTimestamp(),
-    };
+    await runTransaction(db, async (transaction) => {
+      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogDoc = await transaction.get(workLogRef);
 
-    if (updates.actualStartTime) {
-      updateData.actualStartTime = Timestamp.fromDate(updates.actualStartTime);
-    }
+      if (!workLogDoc.exists()) {
+        throw new Error('근무 기록을 찾을 수 없습니다');
+      }
 
-    if (updates.actualEndTime) {
-      updateData.actualEndTime = Timestamp.fromDate(updates.actualEndTime);
-    }
+      const workLog = workLogDoc.data() as WorkLog;
 
-    if (updates.notes !== undefined) {
-      updateData.notes = updates.notes;
-    }
+      // 이미 정산 완료된 경우 수정 불가
+      if (workLog.payrollStatus === 'completed') {
+        throw new Error('이미 정산 완료된 근무 기록은 수정할 수 없습니다');
+      }
 
-    await updateDoc(workLogRef, updateData);
+      const updateData: Record<string, unknown> = {
+        updatedAt: serverTimestamp(),
+      };
+
+      if (updates.actualStartTime) {
+        updateData.actualStartTime = Timestamp.fromDate(updates.actualStartTime);
+      }
+
+      if (updates.actualEndTime) {
+        updateData.actualEndTime = Timestamp.fromDate(updates.actualEndTime);
+      }
+
+      if (updates.notes !== undefined) {
+        updateData.notes = updates.notes;
+      }
+
+      transaction.update(workLogRef, updateData);
+    });
 
     logger.info('근무 시간 수정 완료', { workLogId });
   } catch (error) {
     logger.error('근무 시간 수정 실패', error as Error, { workLogId });
-    throw mapFirebaseError(error);
+    throw error instanceof Error ? error : mapFirebaseError(error);
   }
 }
 
 /**
- * 정산 상태 업데이트
+ * 정산 상태 업데이트 (트랜잭션 사용)
+ *
+ * @description 중복 정산 방지 및 상태 검증 포함
  */
 export async function updatePayrollStatus(
   workLogId: string,
@@ -376,21 +396,38 @@ export async function updatePayrollStatus(
   try {
     logger.info('정산 상태 업데이트', { workLogId, status, amount });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
-    const updateData: Record<string, unknown> = {
-      payrollStatus: status,
-      updatedAt: serverTimestamp(),
-    };
+    const db = getFirebaseDb();
 
-    if (amount !== undefined) {
-      updateData.payrollAmount = amount;
-    }
+    await runTransaction(db, async (transaction) => {
+      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogDoc = await transaction.get(workLogRef);
 
-    if (status === 'completed') {
-      updateData.payrollDate = serverTimestamp();
-    }
+      if (!workLogDoc.exists()) {
+        throw new Error('근무 기록을 찾을 수 없습니다');
+      }
 
-    await updateDoc(workLogRef, updateData);
+      const workLog = workLogDoc.data() as WorkLog;
+
+      // 중복 정산 방지
+      if (status === 'completed' && workLog.payrollStatus === 'completed') {
+        throw new Error('이미 정산 완료된 근무 기록입니다');
+      }
+
+      const updateData: Record<string, unknown> = {
+        payrollStatus: status,
+        updatedAt: serverTimestamp(),
+      };
+
+      if (amount !== undefined) {
+        updateData.payrollAmount = amount;
+      }
+
+      if (status === 'completed') {
+        updateData.payrollDate = serverTimestamp();
+      }
+
+      transaction.update(workLogRef, updateData);
+    });
 
     logger.info('정산 상태 업데이트 완료', { workLogId });
 
@@ -400,7 +437,7 @@ export async function updatePayrollStatus(
     }
   } catch (error) {
     logger.error('정산 상태 업데이트 실패', error as Error, { workLogId });
-    throw mapFirebaseError(error);
+    throw error instanceof Error ? error : mapFirebaseError(error);
   }
 }
 

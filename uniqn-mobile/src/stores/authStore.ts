@@ -19,6 +19,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '@/lib/mmkvStorage';
+import { logger } from '@/utils/logger';
 import { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole, UserProfile } from '@/types';
 
@@ -271,7 +272,8 @@ export const useAuthStore = create<AuthState>()(
             isStaff: roleLevel >= ROLE_HIERARCHY.staff,
             isAuthenticated: !!state.user,
           });
-          console.log('[AuthStore] Rehydration - 역할 플래그 재계산:', {
+          logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
+            component: 'AuthStore',
             role: state.profile.role,
             isAdmin: state.profile.role === 'admin',
             isEmployer: roleLevel >= ROLE_HIERARCHY.employer,

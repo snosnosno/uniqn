@@ -17,12 +17,13 @@ import {
 import type {
   JobPostingCard,
   PostingType,
-  Allowances,
   CardRole,
   SalaryInfo,
 } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
+import { getAllowanceItems } from '@/utils/allowanceUtils';
+import { formatDateShortWithDay } from '@/utils/dateUtils';
 
 // ============================================================================
 // Types
@@ -37,13 +38,6 @@ interface JobCardProps {
   /** 지원 상태 (스케줄 탭에서만 전달, 구인구직 탭에서는 미사용) */
   applicationStatus?: ApplicationStatusType;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
 
 /** 지원 상태별 뱃지 설정 */
 const applicationStatusConfig: Record<ApplicationStatusType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
@@ -70,68 +64,6 @@ const formatSalary = (type: string, amount: number): string => {
     default:
       return `${formattedAmount}원`;
   }
-};
-
-const formatDate = (dateStr: string): string => {
-  if (!dateStr) return '-';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
-};
-
-const getRoleLabel = (role: string, customRole?: string): string => {
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  const labels: Record<string, string> = {
-    dealer: '딜러',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-    floor: '플로어',
-    serving: '서빙',
-    staff: '직원',
-    other: '기타',
-  };
-  return labels[role] || role;
-};
-
-const getAllowanceItems = (allowances?: Allowances): string[] => {
-  if (!allowances) {
-    return [];
-  }
-  const items: string[] = [];
-
-  // 보장시간
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`⏰ 보장 ${allowances.guaranteedHours}시간`);
-  }
-
-  // 식비
-  if (allowances.meal === PROVIDED_FLAG) {
-    items.push('🍱 식사제공');
-  } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`🍱 식비 ${allowances.meal.toLocaleString()}원`);
-  }
-
-  // 교통비
-  if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('🚗 교통비제공');
-  } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`🚗 교통비 ${allowances.transportation.toLocaleString()}원`);
-  }
-
-  // 숙박비
-  if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('🏨 숙박제공');
-  } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`🏨 숙박비 ${allowances.accommodation.toLocaleString()}원`);
-  }
-
-  return items;
 };
 
 // ============================================================================
@@ -223,7 +155,7 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
         <View key={dateIdx} className="mb-2">
           {/* 날짜 */}
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            📅 {formatDate(typeof dateReq.date === 'string' ? dateReq.date : '')}
+            📅 {formatDateShortWithDay(typeof dateReq.date === 'string' ? dateReq.date : '')}
           </Text>
 
           {/* 시간대별 */}
@@ -274,7 +206,7 @@ const RoleLine = memo(function RoleLine({
       }`}
     >
       {showTime ? `${time} ` : '       '}
-      {getRoleLabel(role.role, role.customRole)} {role.count}명 ({role.filled}/
+      {getRoleDisplayName(role.role, role.customRole)} {role.count}명 ({role.filled}/
       {role.count})
     </Text>
   );
@@ -325,9 +257,9 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     { type: 'hourly', amount: 0 };
 
   // 접근성을 위한 설명 텍스트 생성
-  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDate(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
+  const accessibilityLabel = `${job.title}, ${job.location}, ${formatDateShortWithDay(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
 
-  const allowanceItems = getAllowanceItems(job.allowances);
+  const allowanceItems = getAllowanceItems(job.allowances, { includeEmoji: true });
 
   return (
     <Pressable
@@ -396,7 +328,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             // 레거시 폴백
             <View className="mb-2">
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                📅 {formatDate(job.workDate)}
+                📅 {formatDateShortWithDay(job.workDate)}
               </Text>
               <Text className="text-sm text-gray-900 dark:text-gray-100 ml-5 mt-1">
                 🕐 {job.timeSlot || '-'}

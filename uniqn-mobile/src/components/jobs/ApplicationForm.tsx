@@ -19,7 +19,6 @@ import type {
   Assignment,
   PreQuestionAnswer,
   PostingType,
-  Allowances,
 } from '@/types';
 import {
   initializePreQuestionAnswers,
@@ -27,6 +26,8 @@ import {
   FIXED_DATE_MARKER,
   FIXED_TIME_MARKER,
 } from '@/types';
+import { getRoleDisplayName } from '@/types/unified';
+import { getAllowanceItems } from '@/utils/allowanceUtils';
 
 // ============================================================================
 // Types
@@ -58,72 +59,6 @@ interface RoleDisplayItem {
   /** 충원된 인원 */
   filled: number;
 }
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-const getRoleLabel = (role: string, customRole?: string): string => {
-  // 커스텀 역할이면 customRole 사용
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  switch (role) {
-    case 'dealer':
-      return '딜러';
-    case 'manager':
-      return '매니저';
-    case 'chiprunner':
-      return '칩러너';
-    case 'admin':
-      return '관리자';
-    case 'floor':
-      return '플로어';
-    case 'staff':
-      return '직원';
-    default:
-      return role;
-  }
-};
-
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
-
-/**
- * 수당 정보 문자열 배열 생성
- */
-const getAllowanceItems = (allowances?: Allowances): string[] => {
-  if (!allowances) return [];
-  const items: string[] = [];
-
-  // 보장시간
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`보장 ${allowances.guaranteedHours}시간`);
-  }
-
-  // 식비
-  if (allowances.meal === PROVIDED_FLAG) {
-    items.push('식사제공');
-  } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
-  }
-
-  // 교통비
-  if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('교통비제공');
-  } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
-  }
-
-  // 숙박비
-  if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('숙박제공');
-  } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
-  }
-
-  return items;
-};
 
 // ============================================================================
 // Component
@@ -165,7 +100,7 @@ export function ApplicationForm({
       if (fixedRoles.length > 0) {
         return fixedRoles.map((r, idx): RoleDisplayItem => ({
           key: r.name || r.role || `role-${idx}`,
-          displayName: r.name || getRoleLabel(r.role || ''),
+          displayName: r.name || getRoleDisplayName(r.role || ''),
           count: r.count,
           filled: r.filled ?? 0,
         }));
@@ -180,7 +115,7 @@ export function ApplicationForm({
           : r.role || `role-${idx}`;
         return {
           key: effectiveKey,
-          displayName: getRoleLabel(r.role || '', roleWithCustom.customRole),
+          displayName: getRoleDisplayName(r.role || '', roleWithCustom.customRole),
           count: r.count ?? 0,
           filled: r.filled ?? 0,
         };
@@ -198,7 +133,7 @@ export function ApplicationForm({
           : r.role || `role-${idx}`;
         return {
           key: effectiveKey,
-          displayName: getRoleLabel(r.role || '', roleWithCustom.customRole),
+          displayName: getRoleDisplayName(r.role || '', roleWithCustom.customRole),
           count: r.count ?? 0,
           filled: r.filled ?? 0,
         };

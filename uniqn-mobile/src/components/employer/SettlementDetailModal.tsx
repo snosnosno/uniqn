@@ -33,9 +33,10 @@ import {
   formatDuration,
   SALARY_TYPE_LABELS,
 } from '@/utils/settlement';
+import { getRoleDisplayName } from '@/types/unified';
+import { getAllowanceItems } from '@/utils/allowanceUtils';
 import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus, Allowances } from '@/types';
-import { ROLE_LABELS } from '@/constants';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -69,50 +70,6 @@ const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
   processing: { label: '처리중', variant: 'primary' },
   completed: { label: '정산완료', variant: 'success' },
 };
-
-const PROVIDED_FLAG = -1;
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function getRoleLabel(role: string | undefined, customRole?: string): string {
-  if (!role) return '역할 없음';
-  // 커스텀 역할이면 customRole 사용
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  return ROLE_LABELS[role] || role;
-}
-
-function getAllowanceItems(allowances?: Allowances): string[] {
-  if (!allowances) return [];
-  const items: string[] = [];
-
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`보장 ${allowances.guaranteedHours}시간`);
-  }
-
-  if (allowances.meal === PROVIDED_FLAG) {
-    items.push('식사제공');
-  } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`식비 ${allowances.meal.toLocaleString()}원`);
-  }
-
-  if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('교통비제공');
-  } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`교통비 ${allowances.transportation.toLocaleString()}원`);
-  }
-
-  if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('숙박제공');
-  } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`숙박비 ${allowances.accommodation.toLocaleString()}원`);
-  }
-
-  return items;
-}
 
 // ============================================================================
 // Sub-components
@@ -343,7 +300,7 @@ export function SettlementDetailModal({
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleLabel(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole)} • {workDate ? formatDate(workDate) : '날짜 없음'}
+              {workLog.role ? getRoleDisplayName(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole) : '역할 없음'} • {workDate ? formatDate(workDate) : '날짜 없음'}
             </Text>
           </View>
 

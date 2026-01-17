@@ -58,6 +58,13 @@ export { Toast } from './Toast';
 export { ToastManager } from './ToastManager';
 export { Modal, AlertModal, ConfirmModal, type ModalProps } from './Modal';
 export { ActionSheet, type ActionSheetProps, type ActionSheetOption } from './ActionSheet';
+export {
+  BottomSheet,
+  SelectBottomSheet,
+  type BottomSheetProps,
+  type BottomSheetRef,
+  type SelectBottomSheetProps,
+} from './BottomSheet';
 export { ModalManager } from './ModalManager';
 
 // ============================================================================
@@ -111,6 +118,12 @@ export {
   SkeletonButton,
   SkeletonJobCard,
   SkeletonScheduleCard,
+  // Phase 2A 추가 프리셋
+  SkeletonNotificationItem,
+  SkeletonApplicantCard,
+  SkeletonProfileHeader,
+  SkeletonStatsCard,
+  SkeletonSettlementRow,
 } from './Skeleton';
 
 // ============================================================================
@@ -132,3 +145,11 @@ export {
 // ============================================================================
 
 export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
+
+// ============================================================================
+// In-App Message Components
+// ============================================================================
+
+export { InAppBanner } from './InAppBanner';
+export { InAppModal } from './InAppModal';
+export { InAppMessageManager } from './InAppMessageManager';

@@ -15,6 +15,7 @@
 
 import { Platform } from 'react-native';
 import { StateStorage } from 'zustand/middleware';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // MMKV Instance (Conditional Import)
@@ -62,14 +63,14 @@ function createWebStorageWrapper(prefix = ''): MMKVInstance {
       try {
         localStorage.setItem(prefix + key, value);
       } catch (e) {
-        console.warn('[MMKV] localStorage set 실패:', e);
+        logger.warn('[MMKV] localStorage set 실패', { error: e });
       }
     },
     delete: (key: string) => {
       try {
         localStorage.removeItem(prefix + key);
       } catch (e) {
-        console.warn('[MMKV] localStorage delete 실패:', e);
+        logger.warn('[MMKV] localStorage delete 실패', { error: e });
       }
     },
     contains: (key: string) => {
@@ -91,7 +92,7 @@ function createWebStorageWrapper(prefix = ''): MMKVInstance {
         const keys = Object.keys(localStorage).filter((k) => k.startsWith(prefix));
         keys.forEach((k) => localStorage.removeItem(k));
       } catch (e) {
-        console.warn('[MMKV] localStorage clear 실패:', e);
+        logger.warn('[MMKV] localStorage clear 실패', { error: e });
       }
     },
   };
@@ -131,7 +132,7 @@ function initializeMMKV(): MMKVInstance {
       id: 'uniqn-storage',
     });
   } catch {
-    console.warn('[MMKV] react-native-mmkv 미설치. 메모리 스토리지 사용.');
+    logger.warn('[MMKV] react-native-mmkv 미설치. 메모리 스토리지 사용.');
     return createMemoryStorageFallback();
   }
 }
@@ -145,7 +146,7 @@ function initializeMMKV(): MMKVInstance {
 async function initializeSecureMMKV(): Promise<MMKVInstance> {
   if (Platform.OS === 'web') {
     // 웹: 별도 prefix로 localStorage 사용 (완전한 암호화 불가)
-    console.warn('[MMKV] 웹 환경에서는 암호화가 제한적입니다.');
+    logger.warn('[MMKV] 웹 환경에서는 암호화가 제한적입니다.');
     return createWebStorageWrapper('secure-');
   }
 
@@ -170,7 +171,7 @@ async function initializeSecureMMKV(): Promise<MMKVInstance> {
       encryptionKey,
     });
   } catch (error) {
-    console.warn('[MMKV] 암호화된 MMKV 초기화 실패, 일반 스토리지 사용:', error);
+    logger.warn('[MMKV] 암호화된 MMKV 초기화 실패, 일반 스토리지 사용', { error });
     return initializeMMKV();
   }
 }
@@ -304,7 +305,7 @@ export function getStorageItem<T>(key: StorageKey): T | null {
   try {
     return JSON.parse(value) as T;
   } catch {
-    console.warn(`[MMKV] JSON 파싱 실패: ${key}`);
+    logger.warn('[MMKV] JSON 파싱 실패', { key });
     return null;
   }
 }
@@ -317,7 +318,7 @@ export function setStorageItem<T>(key: StorageKey, value: T): void {
   try {
     storage.set(key, JSON.stringify(value));
   } catch (e) {
-    console.warn(`[MMKV] JSON 직렬화 실패: ${key}`, e);
+    logger.warn('[MMKV] JSON 직렬화 실패', { key, error: e });
   }
 }
 

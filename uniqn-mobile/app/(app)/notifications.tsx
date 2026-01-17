@@ -3,9 +3,9 @@
  * 알림 목록 화면
  */
 
-import { View, Text, ScrollView, RefreshControl, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, EmptyState } from '@/components/ui';
+import { Card, EmptyState, SkeletonNotificationItem } from '@/components/ui';
 import { BellIcon } from '@/components/icons';
 import { StackHeader } from '@/components/headers';
 import { useNotificationList, useMarkAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
@@ -84,11 +84,11 @@ export default function NotificationsScreen() {
         }
       >
         {isLoading && notifications.length === 0 ? (
-          <View className="flex-1 items-center justify-center py-20">
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text className="mt-4 text-gray-500 dark:text-gray-400">
-              알림을 불러오는 중...
-            </Text>
+          // 스켈레톤 로딩
+          <View>
+            {[1, 2, 3, 4, 5].map((i) => (
+              <SkeletonNotificationItem key={i} />
+            ))}
           </View>
         ) : notifications.length === 0 ? (
           <EmptyState

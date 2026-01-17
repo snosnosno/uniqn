@@ -28,6 +28,7 @@ import {
   TaxSettingsEditor,
   type TaxSettings,
 } from './TaxSettingsEditor';
+import { logger } from '@/utils/logger';
 import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================
@@ -272,7 +273,7 @@ export function SettlementSettingsModal({
       });
       onClose();
     } catch (error) {
-      console.error('정산 설정 저장 실패:', error);
+      logger.error('정산 설정 저장 실패', error instanceof Error ? error : undefined, { component: 'SettlementSettingsModal' });
     } finally {
       setIsSaving(false);
     }

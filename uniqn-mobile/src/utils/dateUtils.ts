@@ -304,3 +304,25 @@ export const formatRelativeTime = (date: Date | Timestamp | string | null): stri
 
   return formatDateKorean(d);
 };
+
+/**
+ * 짧은 날짜 + 요일 포맷 (1/28(화))
+ *
+ * @description JobCard 등에서 간략하게 날짜를 표시할 때 사용
+ */
+export const formatDateShortWithDay = (date: Date | string | null): string => {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  if (!d || isNaN(d.getTime())) return '-';
+  return format(d, 'M/d(E)', { locale: ko });
+};
+
+/**
+ * 전체 한글 날짜 + 요일 (2025년 1월 28일 (화))
+ *
+ * @description JobDetail 등에서 상세 날짜를 표시할 때 사용
+ */
+export const formatDateKoreanWithDay = (date: Date | string | null): string => {
+  const d = typeof date === 'string' ? parseISO(date) : date;
+  if (!d || isNaN(d.getTime())) return '';
+  return format(d, 'yyyy년 M월 d일 (E)', { locale: ko });
+};

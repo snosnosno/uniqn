@@ -16,6 +16,7 @@ import {
   ChevronUpIcon,
 } from '../icons';
 import { formatDate } from '@/utils/dateUtils';
+import { logger } from '@/utils/logger';
 import { getUserProfile } from '@/services';
 import {
   type SalaryInfo,
@@ -225,7 +226,7 @@ export function SettlementEditModal({
       onClose();
     } catch (error) {
       // 에러 처리는 상위 컴포넌트에서
-      console.error('정산 금액 수정 실패:', error);
+      logger.error('정산 금액 수정 실패', error instanceof Error ? error : undefined, { component: 'SettlementEditModal' });
     } finally {
       setIsSaving(false);
     }

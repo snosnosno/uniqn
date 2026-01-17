@@ -321,3 +321,14 @@ export {
   type StaffRoleKey,
   type StaffRoleOption,
 } from './jobPosting';
+
+// ============================================================================
+// 지역 상수
+// ============================================================================
+
+export {
+  SEOUL_DISTRICTS,
+  METRO_CITIES,
+  type SeoulDistrict,
+  type MetroCity,
+} from './location';

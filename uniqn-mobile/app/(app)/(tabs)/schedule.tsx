@@ -6,7 +6,7 @@
 import { useState, useCallback } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, EmptyState, ErrorState, Skeleton } from '@/components/ui';
+import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
 import { CalendarView, ScheduleCard, ScheduleDetailModal } from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
 import { TabHeader } from '@/components/headers';
@@ -412,20 +412,10 @@ export default function ScheduleScreen() {
           }
         >
           {isLoading && schedules.length === 0 ? (
-            // 스켈레톤 로딩
+            // 스켈레톤 로딩 (SkeletonScheduleCard 사용)
             <View>
               {[1, 2, 3].map((i) => (
-                <Card key={i} className="mb-3">
-                  <View className="flex-row items-start justify-between">
-                    <View className="flex-1">
-                      <Skeleton width={60} height={20} borderRadius={10} />
-                      <Skeleton width="70%" height={18} className="mt-2" />
-                      <Skeleton width="50%" height={14} className="mt-2" />
-                      <Skeleton width="40%" height={14} className="mt-1" />
-                    </View>
-                    <Skeleton width={80} height={18} />
-                  </View>
-                </Card>
+                <SkeletonScheduleCard key={i} />
               ))}
             </View>
           ) : schedules.length === 0 ? (

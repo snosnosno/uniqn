@@ -11,9 +11,16 @@ import { View, ActivityIndicator, Text, LogBox } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { colorScheme } from 'nativewind';
 import { queryClient } from '@/lib/queryClient';
-import { ToastManager, ModalManager, ErrorState } from '@/components/ui';
+import {
+  ToastManager,
+  ModalManager,
+  ErrorState,
+  ScreenErrorBoundary,
+  InAppMessageManager,
+} from '@/components/ui';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
@@ -69,6 +76,7 @@ function MainNavigator() {
         <Stack.Screen name="(employer)" />
         <Stack.Screen name="+not-found" />
       </Stack>
+      <InAppMessageManager />
       <ToastManager />
       <ModalManager />
     </>
@@ -105,8 +113,12 @@ function AppContent() {
     );
   }
 
-  // 초기화 완료 후 메인 네비게이터 렌더링
-  return <MainNavigator />;
+  // 초기화 완료 후 메인 네비게이터 렌더링 (전역 에러 바운더리 적용)
+  return (
+    <ScreenErrorBoundary name="RootLayout">
+      <MainNavigator />
+    </ScreenErrorBoundary>
+  );
 }
 
 export default function RootLayout() {
@@ -114,7 +126,9 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <AppContent />
+          <BottomSheetModalProvider>
+            <AppContent />
+          </BottomSheetModalProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

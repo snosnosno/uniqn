@@ -17,8 +17,11 @@ import {
   groupRequirementsToDateRanges,
   formatDateRangeWithCount,
 } from '@/utils/dateRangeUtils';
-import type { JobPosting, PostingType, Allowances } from '@/types';
+import type { JobPosting, PostingType } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
+import { getAllowanceItems } from '@/utils/allowanceUtils';
+import { formatDateKoreanWithDay } from '@/utils/dateUtils';
+import { getRoleDisplayName } from '@/types/unified';
 
 // ============================================================================
 // Types
@@ -27,64 +30,6 @@ import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement
 interface JobDetailProps {
   job: JobPosting;
 }
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-const formatDate = (dateStr: string): string => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${year}년 ${month}월 ${day}일 (${dayOfWeek})`;
-};
-
-/**
- * 수당 정보 문자열 배열 생성 (v2.0)
- */
-const getAllowanceItems = (allowances?: Allowances): string[] => {
-  if (!allowances) return [];
-  const items: string[] = [];
-
-  // 보장시간
-  if (allowances.guaranteedHours && allowances.guaranteedHours > 0) {
-    items.push(`⏰ 보장 ${allowances.guaranteedHours}시간`);
-  }
-
-  // 식비
-  if (allowances.meal === PROVIDED_FLAG) {
-    items.push('🍱 식사제공');
-  } else if (allowances.meal && allowances.meal > 0) {
-    items.push(`🍱 식비 ${allowances.meal.toLocaleString()}원`);
-  }
-
-  // 교통비
-  if (allowances.transportation === PROVIDED_FLAG) {
-    items.push('🚗 교통비제공');
-  } else if (allowances.transportation && allowances.transportation > 0) {
-    items.push(`🚗 교통비 ${allowances.transportation.toLocaleString()}원`);
-  }
-
-  // 숙박비
-  if (allowances.accommodation === PROVIDED_FLAG) {
-    items.push('🏨 숙박제공');
-  } else if (allowances.accommodation && allowances.accommodation > 0) {
-    items.push(`🏨 숙박비 ${allowances.accommodation.toLocaleString()}원`);
-  }
-
-  return items;
-};
 
 // ============================================================================
 // Sub Components
@@ -164,7 +109,7 @@ function DateRequirementsGroupedDisplay({
                       </Text>
                       <View className="flex-row flex-wrap">
                         {slot.roles.map((role, roleIdx) => {
-                          const roleName = getRoleLabel(role.role ?? role.name ?? '', role.customRole);
+                          const roleName = getRoleDisplayName(role.role ?? role.name ?? '', role.customRole);
                           const headcount = role.headcount ?? role.count ?? 0;
                           const filled = role.filled ?? 0;
                           const isFilled = filled >= headcount && headcount > 0;
@@ -225,29 +170,6 @@ function DateRequirementsGroupedDisplay({
   );
 }
 
-/**
- * 역할 라벨 변환
- */
-function getRoleLabel(role: string, customRole?: string): string {
-  if (role === 'other' && customRole) {
-    return customRole;
-  }
-  const labels: Record<string, string> = {
-    dealer: '딜러',
-    manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
-    floor: '플로어',
-    floorman: '플로어맨',
-    serving: '서빙',
-    staff: '직원',
-    chip_runner: '칩러너',
-    supervisor: '슈퍼바이저',
-    other: '기타',
-  };
-  return labels[role] || role;
-}
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -267,14 +189,14 @@ export function JobDetail({ job }: JobDetailProps) {
   };
 
   // 수당 정보 (v2.0)
-  const allowanceItems = useMemo(() => getAllowanceItems(job.allowances), [job.allowances]);
+  const allowanceItems = useMemo(() => getAllowanceItems(job.allowances, { includeEmoji: true }), [job.allowances]);
 
   // 안전한 값 추출
   const safeTitle = String(job.title || '제목 없음');
   const safeTimeSlot = String(job.timeSlot || '미정');
   const safeContactPhone = String(job.contactPhone || '');
   const safeDescription = String(job.description || '');
-  const safeWorkDate = formatDate(job.workDate) || '날짜 미정';
+  const safeWorkDate = formatDateKoreanWithDay(job.workDate) || '날짜 미정';
 
   // v3.0: isDated로 dateRequirements 유무 확인 (레거시 폴백 포함)
   const hasDateRequirements = isDated && (job.dateSpecificRequirements?.length ?? 0) > 0;

@@ -14,6 +14,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { FilterIcon, XMarkIcon, CalendarIcon, MapPinIcon, BriefcaseIcon } from '@/components/icons';
+import { SEOUL_DISTRICTS, STAFF_ROLES } from '@/constants';
 import type { JobPostingFilters, StaffRole } from '@/types';
 
 // ============================================================================
@@ -33,43 +34,10 @@ export interface JobFiltersProps {
 // Constants
 // ============================================================================
 
-/** 서울 주요 지역 목록 */
-const DISTRICTS = [
-  '전체',
-  '강남구',
-  '강동구',
-  '강북구',
-  '강서구',
-  '관악구',
-  '광진구',
-  '구로구',
-  '금천구',
-  '노원구',
-  '도봉구',
-  '동대문구',
-  '동작구',
-  '마포구',
-  '서대문구',
-  '서초구',
-  '성동구',
-  '성북구',
-  '송파구',
-  '양천구',
-  '영등포구',
-  '용산구',
-  '은평구',
-  '종로구',
-  '중구',
-  '중랑구',
-] as const;
-
-/** 역할 목록 */
-const ROLES: { value: StaffRole; label: string }[] = [
-  { value: 'dealer', label: '딜러' },
-  { value: 'manager', label: '매니저' },
-  { value: 'chiprunner', label: '칩러너' },
-  { value: 'admin', label: '어드민' },
-];
+/** 필터용 역할 목록 (STAFF_ROLES에서 생성) */
+const FILTER_ROLES: { value: StaffRole; label: string }[] = STAFF_ROLES
+  .filter((r) => r.key !== 'other')  // 기타 제외
+  .map((r) => ({ value: r.key as StaffRole, label: r.name }));
 
 /** 날짜 필터 옵션 */
 const DATE_OPTIONS = [
@@ -329,7 +297,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     </Text>
                   </View>
                   <View className="flex-row flex-wrap">
-                    {DISTRICTS.map((district) => (
+                    {SEOUL_DISTRICTS.map((district) => (
                       <FilterChip
                         key={district}
                         label={district}
@@ -373,7 +341,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     </Text>
                   </View>
                   <View className="flex-row flex-wrap">
-                    {ROLES.map((role) => (
+                    {FILTER_ROLES.map((role) => (
                       <FilterChip
                         key={role.value}
                         label={role.label}

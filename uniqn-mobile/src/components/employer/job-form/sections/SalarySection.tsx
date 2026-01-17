@@ -10,6 +10,7 @@ import { View, Text, Pressable, Switch, TextInput } from 'react-native';
 import { Card } from '@/components';
 import { GiftIcon } from '@/components/icons';
 import { STAFF_ROLES } from '@/constants';
+import { PROVIDED_FLAG } from '@/utils/settlement';
 import type { JobPostingFormData, SalaryType, SalaryInfo, FormRoleWithCount } from '@/types';
 
 // ============================================================================
@@ -39,9 +40,6 @@ const ALLOWANCE_TYPES = [
   { key: 'transportation', label: '교통비', providedLabel: '교통비제공', placeholder: '0', icon: '🚗' },
   { key: 'accommodation', label: '숙박비', providedLabel: '숙박제공', placeholder: '0', icon: '🏨' },
 ];
-
-/** "제공" 상태를 나타내는 특별 값 */
-const PROVIDED_FLAG = -1;
 
 // ============================================================================
 // Helper Functions
