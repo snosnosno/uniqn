@@ -12,6 +12,7 @@
  */
 
 import { useEffect, useRef, useCallback } from 'react';
+import { Platform } from 'react-native';
 import { usePathname, useSegments } from 'expo-router';
 import { logger } from '@/utils/logger';
 import { analyticsService } from '@/services/analyticsService';
@@ -223,6 +224,14 @@ export function useNavigationTracking(): void {
     // 같은 경로면 무시
     if (pathname === navigationState.current.currentPath) {
       return;
+    }
+
+    // 웹: 화면 전환 시 포커스 해제 (aria-hidden 충돌 방지)
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      const activeElement = document.activeElement;
+      if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+        activeElement.blur();
+      }
     }
 
     // 화면 정보 추출

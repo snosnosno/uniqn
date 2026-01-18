@@ -18,7 +18,8 @@ import {
   Platform,
   UIManager,
 } from 'react-native';
-import { Card, Badge, Avatar, Checkbox } from '@/components/ui';
+import { useQuery } from '@tanstack/react-query';
+import { Card, Avatar, Checkbox } from '@/components/ui';
 import {
   CalendarIcon,
   BanknotesIcon,
@@ -31,6 +32,7 @@ import {
 import { formatDateDisplay, formatGroupRolesDisplay } from '@/utils/settlementGrouping';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
+import { getUserProfile, type UserProfile } from '@/services';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 
@@ -67,15 +69,6 @@ export interface GroupedSettlementCardProps {
 // ============================================================================
 // Constants
 // ============================================================================
-
-const OVERALL_STATUS_CONFIG: Record<
-  GroupedSettlement['overallStatus'],
-  { label: string; variant: 'warning' | 'success' | 'primary' }
-> = {
-  all_pending: { label: '미정산', variant: 'warning' },
-  all_completed: { label: '정산완료', variant: 'success' },
-  partial: { label: '일부 정산', variant: 'primary' },
-};
 
 const PAYROLL_STATUS_CONFIG: Record<
   PayrollStatus,
@@ -209,15 +202,24 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 }: GroupedSettlementCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  const statusConfig = OVERALL_STATUS_CONFIG[group.overallStatus];
+  // 사용자 프로필 조회 (프로필 사진, 닉네임)
+  const { data: userProfile } = useQuery<UserProfile | null>({
+    queryKey: ['userProfile', group.staffId],
+    queryFn: () => getUserProfile(group.staffId),
+    enabled: !!group.staffId,
+    staleTime: 5 * 60 * 1000, // 5분 캐싱
+  });
 
-  // 프로필 정보
+  // 프로필 사진 URL
+  const profilePhotoURL = userProfile?.photoURL || group.staffProfile.photoURL;
+
+  // 표시 이름: Firestore 프로필 우선, 기존 staffProfile 폴백
+  const baseName = userProfile?.name || group.staffProfile.name;
   const displayName = useMemo(() => {
-    const name = group.staffProfile.name;
-    const nickname = group.staffProfile.nickname;
-    if (!name) return `스태프 ${group.staffId.slice(-4)}`;
-    return nickname && nickname !== name ? `${name}(${nickname})` : name;
-  }, [group.staffProfile, group.staffId]);
+    const nickname = userProfile?.nickname || group.staffProfile.nickname;
+    if (!baseName) return `스태프 ${group.staffId.slice(-4)}`;
+    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
+  }, [userProfile, group.staffProfile, group.staffId, baseName]);
 
   // 역할 표시 텍스트
   const rolesDisplay = useMemo(() => {
@@ -314,7 +316,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
           {/* 아바타 */}
           <Avatar
-            source={group.staffProfile.photoURL}
+            source={profilePhotoURL}
             name={displayName}
             size="md"
             className="mr-3"
@@ -330,12 +332,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
             </Text>
           </View>
 
-          {/* 상태 뱃지 + 금액/건수 */}
+          {/* 금액/건수 */}
           <View className="items-end">
-            <Badge variant={statusConfig.variant} size="sm" dot>
-              {statusConfig.label}
-            </Badge>
-            <Text className="text-base font-bold text-primary-600 dark:text-primary-400 mt-1">
+            <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(group.summary.totalAmount)}
             </Text>
             <Text className="text-xs text-gray-500 dark:text-gray-400">

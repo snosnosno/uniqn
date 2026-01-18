@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -169,8 +169,11 @@ export default function JobPostingDetailScreen() {
     router.push(`/(employer)/my-postings/${id}/cancellation-requests`);
   }, [router, id]);
 
-  // 삭제 확인 모달 열기
+  // 삭제 확인 모달 열기 (웹: aria-hidden 충돌 방지를 위해 포커스 해제)
   const handleDeletePress = useCallback(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      (document.activeElement as HTMLElement)?.blur?.();
+    }
     setShowDeleteModal(true);
   }, []);
 
