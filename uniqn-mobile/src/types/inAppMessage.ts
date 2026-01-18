@@ -164,6 +164,8 @@ export interface InAppMessageState {
   allMessages: InAppMessage[];
   /** 로딩 상태 */
   isLoading: boolean;
+  /** 세션 내 표시된 메시지 ID 목록 (비영구) */
+  sessionShownIds: string[];
 }
 
 /**
@@ -186,6 +188,12 @@ export interface InAppMessageActions {
   clearHistory: () => void;
   /** 로딩 상태 설정 */
   setLoading: (loading: boolean) => void;
+  /** 세션 표시 ID 추가 */
+  addSessionShownId: (messageId: string) => void;
+  /** 세션 표시 여부 확인 */
+  hasSessionShownId: (messageId: string) => boolean;
+  /** 세션 ID 목록 초기화 */
+  resetSessionIds: () => void;
 }
 
 // ============================================================================

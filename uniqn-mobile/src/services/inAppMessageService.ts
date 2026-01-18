@@ -119,7 +119,6 @@ function checkPlatformCondition(conditions: InAppMessageConditions): boolean {
 function checkFrequencyCondition(
   conditions: InAppMessageConditions,
   history: InAppMessageHistory | undefined,
-  sessionShownIds: Set<string>,
   messageId: string
 ): boolean {
   const frequency = conditions.frequency ?? 'always';
@@ -130,8 +129,8 @@ function checkFrequencyCondition(
       return !history || history.shownCount === 0;
 
     case 'once_per_session':
-      // 세션당 한 번만 표시
-      return !sessionShownIds.has(messageId);
+      // 세션당 한 번만 표시 (스토어에서 직접 확인)
+      return !useInAppMessageStore.getState().hasSessionShownId(messageId);
 
     case 'daily': {
       // 하루에 한 번만 표시
@@ -180,14 +179,11 @@ function checkAudienceCondition(audience: InAppMessageAudience): boolean {
 // Service Functions
 // ============================================================================
 
-// 세션 내 표시된 메시지 ID 추적
-let sessionShownMessageIds = new Set<string>();
-
 /**
  * 세션 초기화 (앱 시작 시 호출)
  */
 export function resetSession(): void {
-  sessionShownMessageIds = new Set<string>();
+  useInAppMessageStore.getState().resetSessionIds();
   logger.info('인앱 메시지 세션 초기화', LOG_CONTEXT);
 }
 
@@ -231,7 +227,7 @@ export function canShowMessage(message: InAppMessage): boolean {
     }
 
     // 빈도 조건
-    if (!checkFrequencyCondition(message.conditions, messageHistory, sessionShownMessageIds, message.id)) {
+    if (!checkFrequencyCondition(message.conditions, messageHistory, message.id)) {
       return false;
     }
   }
@@ -308,7 +304,7 @@ export function dismissCurrentMessage(): void {
 
   if (currentMessage) {
     // 세션 표시 기록
-    sessionShownMessageIds.add(currentMessage.id);
+    store.addSessionShownId(currentMessage.id);
   }
 
   store.dismissCurrentMessage();
@@ -322,7 +318,7 @@ export function dismissMessagePermanently(messageId: string): void {
   store.dismissMessagePermanently(messageId);
 
   // 세션 표시 기록
-  sessionShownMessageIds.add(messageId);
+  store.addSessionShownId(messageId);
 
   logger.info('메시지 영구 닫기', {
     ...LOG_CONTEXT,
@@ -344,7 +340,7 @@ export function getMessagesByType(type: InAppMessage['type']): InAppMessage[] {
 export function clearMessageHistory(): void {
   const store = useInAppMessageStore.getState();
   store.clearHistory();
-  sessionShownMessageIds = new Set<string>();
+  store.resetSessionIds();
 
   logger.info('메시지 이력 초기화', LOG_CONTEXT);
 }
