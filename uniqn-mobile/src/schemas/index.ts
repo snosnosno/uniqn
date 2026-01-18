@@ -321,3 +321,30 @@ export type {
   ResubmitTournamentData,
   TournamentPostingFilterData,
 } from './tournament.schema';
+
+// 신고 스키마
+export {
+  employeeReportTypeSchema,
+  employerReportTypeSchema,
+  reportTypeUnionSchema,
+  reporterTypeSchema,
+  reportStatusUnionSchema,
+  reportSeveritySchema,
+  createReportInputSchema,
+  reviewReportInputSchema,
+  reportDocumentSchema,
+  parseReportDocuments,
+  parseReportDocument,
+} from './report.schema';
+
+export type {
+  EmployeeReportTypeSchema,
+  EmployerReportTypeSchema,
+  ReportTypeUnionSchema,
+  ReporterTypeSchemaData,
+  ReportStatusUnionSchema,
+  ReportSeveritySchema,
+  CreateReportInputData,
+  ReviewReportInputData,
+  ReportDocumentData,
+} from './report.schema';

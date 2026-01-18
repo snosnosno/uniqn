@@ -1,8 +1,10 @@
 /**
  * UNIQN Mobile - 신고 관련 타입 정의
  *
- * @description 구인자 → 스태프 신고 기능에 사용되는 타입들
- * @version 1.0.0
+ * @description 양방향 신고 기능에 사용되는 타입들
+ *   - 구인자 → 스태프 (EmployeeReportType)
+ *   - 구직자 → 구인자 (EmployerReportType)
+ * @version 1.1.0
  */
 
 import type { Timestamp } from 'firebase/firestore';
@@ -26,19 +28,39 @@ export type EmployeeReportType =
   | 'other';              // 기타
 
 /**
- * 신고 유형 정보
+ * 구인자 신고 유형 (구직자 → 구인자)
  */
-export interface ReportTypeInfo {
-  key: EmployeeReportType;
+export type EmployerReportType =
+  | 'false_posting'           // 허위공고
+  | 'employer_negligence'     // 근무 관리 태만
+  | 'unfair_treatment'        // 부당한 대우
+  | 'inappropriate_behavior'  // 부적절한 행동
+  | 'other';                  // 기타
+
+/**
+ * 통합 신고 유형
+ */
+export type ReportType = EmployeeReportType | EmployerReportType;
+
+/**
+ * 신고자 유형
+ */
+export type ReporterType = 'employer' | 'employee';
+
+/**
+ * 신고 유형 정보 (제네릭)
+ */
+export interface ReportTypeInfo<T extends string = string> {
+  key: T;
   label: string;
   description: string;
   severity: 'low' | 'medium' | 'high' | 'critical';
 }
 
 /**
- * 신고 유형 목록
+ * 스태프 신고 유형 목록 (구인자 → 스태프)
  */
-export const EMPLOYEE_REPORT_TYPES: ReportTypeInfo[] = [
+export const EMPLOYEE_REPORT_TYPES: ReportTypeInfo<EmployeeReportType>[] = [
   {
     key: 'tardiness',
     label: '지각',
@@ -90,7 +112,43 @@ export const EMPLOYEE_REPORT_TYPES: ReportTypeInfo[] = [
 ];
 
 /**
- * 신고 유형 라벨 맵
+ * 구인자 신고 유형 목록 (구직자 → 구인자)
+ */
+export const EMPLOYER_REPORT_TYPES: ReportTypeInfo<EmployerReportType>[] = [
+  {
+    key: 'false_posting',
+    label: '허위 공고',
+    description: '실제와 다른 근무 조건, 허위 정보 게재',
+    severity: 'high',
+  },
+  {
+    key: 'employer_negligence',
+    label: '근무 관리 태만',
+    description: '근무 환경 관리 소홀, 약속 불이행',
+    severity: 'medium',
+  },
+  {
+    key: 'unfair_treatment',
+    label: '부당한 대우',
+    description: '임금 체불, 부당 해고, 차별 대우',
+    severity: 'high',
+  },
+  {
+    key: 'inappropriate_behavior',
+    label: '부적절한 행동',
+    description: '폭언, 성희롱 등 부적절한 언행',
+    severity: 'critical',
+  },
+  {
+    key: 'other',
+    label: '기타',
+    description: '기타 문제 상황',
+    severity: 'medium',
+  },
+];
+
+/**
+ * 스태프 신고 유형 라벨 맵
  */
 export const EMPLOYEE_REPORT_TYPE_LABELS: Record<EmployeeReportType, string> = {
   tardiness: '지각',
@@ -100,6 +158,17 @@ export const EMPLOYEE_REPORT_TYPE_LABELS: Record<EmployeeReportType, string> = {
   inappropriate: '부적절한 행동',
   dress_code: '복장 불량',
   communication: '소통 문제',
+  other: '기타',
+};
+
+/**
+ * 구인자 신고 유형 라벨 맵
+ */
+export const EMPLOYER_REPORT_TYPE_LABELS: Record<EmployerReportType, string> = {
+  false_posting: '허위 공고',
+  employer_negligence: '근무 관리 태만',
+  unfair_treatment: '부당한 대우',
+  inappropriate_behavior: '부적절한 행동',
   other: '기타',
 };
 
@@ -181,15 +250,18 @@ export const REPORT_STATUS_COLORS: Record<
  */
 export interface Report extends FirebaseDocument {
   /** 신고 유형 */
-  type: EmployeeReportType;
+  type: ReportType;
 
-  /** 신고자 ID (구인자) */
+  /** 신고자 유형 */
+  reporterType: ReporterType;
+
+  /** 신고자 ID */
   reporterId: string;
 
   /** 신고자 이름 */
   reporterName: string;
 
-  /** 피신고자 ID (스태프) */
+  /** 피신고자 ID */
   targetId: string;
 
   /** 피신고자 이름 */
@@ -201,11 +273,11 @@ export interface Report extends FirebaseDocument {
   /** 관련 공고 제목 */
   jobPostingTitle?: string;
 
-  /** 관련 근무 기록 ID */
-  workLogId: string;
+  /** 관련 근무 기록 ID (구인자→스태프 신고만) */
+  workLogId?: string;
 
-  /** 근무 날짜 */
-  workDate: string;
+  /** 근무 날짜 (구인자→스태프 신고만) */
+  workDate?: string;
 
   /** 신고 상세 설명 */
   description: string;
@@ -237,13 +309,16 @@ export interface Report extends FirebaseDocument {
  * 신고 생성 입력
  */
 export interface CreateReportInput {
-  type: EmployeeReportType;
+  type: ReportType;
+  reporterType: ReporterType;
   targetId: string;
   targetName: string;
   jobPostingId: string;
   jobPostingTitle?: string;
-  workLogId: string;
-  workDate: string;
+  /** 구인자→스태프 신고만 */
+  workLogId?: string;
+  /** 구인자→스태프 신고만 */
+  workDate?: string;
   description: string;
   evidenceUrls?: string[];
 }
@@ -262,9 +337,11 @@ export interface ReviewReportInput {
 // ============================================================================
 
 /**
- * 신고 유형 정보 조회
+ * 스태프 신고 유형 정보 조회
  */
-export function getReportTypeInfo(type: EmployeeReportType): ReportTypeInfo {
+export function getEmployeeReportTypeInfo(
+  type: EmployeeReportType
+): ReportTypeInfo<EmployeeReportType> {
   return (
     EMPLOYEE_REPORT_TYPES.find((t) => t.key === type) || {
       key: 'other',
@@ -276,10 +353,42 @@ export function getReportTypeInfo(type: EmployeeReportType): ReportTypeInfo {
 }
 
 /**
+ * 구인자 신고 유형 정보 조회
+ */
+export function getEmployerReportTypeInfo(
+  type: EmployerReportType
+): ReportTypeInfo<EmployerReportType> {
+  return (
+    EMPLOYER_REPORT_TYPES.find((t) => t.key === type) || {
+      key: 'other',
+      label: '기타',
+      description: '기타 문제 상황',
+      severity: 'medium',
+    }
+  );
+}
+
+/**
+ * 신고 유형 정보 조회 (통합)
+ * @deprecated 구체적인 함수 사용 권장: getEmployeeReportTypeInfo, getEmployerReportTypeInfo
+ */
+export function getReportTypeInfo(
+  type: ReportType,
+  reporterType?: ReporterType
+): ReportTypeInfo {
+  if (reporterType === 'employee') {
+    return getEmployerReportTypeInfo(type as EmployerReportType);
+  }
+  // 기본값: 구인자가 신고 (기존 동작 유지)
+  return getEmployeeReportTypeInfo(type as EmployeeReportType);
+}
+
+/**
  * 신고 유형에서 심각도 추출
  */
 export function getReportSeverity(
-  type: EmployeeReportType
+  type: ReportType,
+  reporterType?: ReporterType
 ): 'low' | 'medium' | 'high' | 'critical' {
-  return getReportTypeInfo(type).severity;
+  return getReportTypeInfo(type, reporterType).severity;
 }

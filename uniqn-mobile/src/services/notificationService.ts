@@ -33,7 +33,7 @@ import {
 import { Platform } from 'react-native';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { normalizeError } from '@/utils/errorUtils';
+import { normalizeError } from '@/errors';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { COLLECTIONS } from '@/constants';
 import type {
@@ -337,11 +337,11 @@ export function subscribeToNotifications(
       onNotifications(notifications);
     },
     (error) => {
-      const normalizedError = normalizeError(error);
-      logger.error('알림 구독 에러', normalizedError.originalError as Error, {
-        code: normalizedError.code,
+      const appError = normalizeError(error);
+      logger.error('알림 구독 에러', appError, {
+        code: appError.code,
       });
-      onError?.(new Error(normalizedError.message));
+      onError?.(appError);
     }
   );
 
@@ -370,11 +370,11 @@ export function subscribeToUnreadCount(
       onCount(snapshot.size);
     },
     (error) => {
-      const normalizedError = normalizeError(error);
-      logger.error('읽지 않은 알림 수 구독 에러', normalizedError.originalError as Error, {
-        code: normalizedError.code,
+      const appError = normalizeError(error);
+      logger.error('읽지 않은 알림 수 구독 에러', appError, {
+        code: appError.code,
       });
-      onError?.(new Error(normalizedError.message));
+      onError?.(appError);
     }
   );
 

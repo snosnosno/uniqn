@@ -16,6 +16,7 @@ import {
   limit,
   Timestamp,
   onSnapshot,
+  documentId,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -83,6 +84,28 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
 }
 
 /**
+ * Timestamp 또는 문자열을 Timestamp | null로 정규화
+ * @description 문자열 마커(FIXED_TIME_MARKER 등)는 null 반환
+ */
+function normalizeTimestamp(value: Timestamp | string | null | undefined): Timestamp | null {
+  if (!value) return null;
+  if (typeof value === 'string') return null; // 문자열 마커는 null 처리
+  return value;
+}
+
+/**
+ * Timestamp 또는 Date를 Date로 변환
+ * @description 안전한 타입 변환으로 as unknown as string 타입 단언 제거
+ */
+function timestampToDate(value: Timestamp | Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
+/**
  * WorkLog를 ScheduleEvent로 변환
  */
 function workLogToScheduleEvent(
@@ -117,26 +140,10 @@ function workLogToScheduleEvent(
     id: workLog.id,
     type,
     date: workLog.date,
-    startTime: workLog.scheduledStartTime
-      ? typeof workLog.scheduledStartTime === 'string'
-        ? null
-        : workLog.scheduledStartTime
-      : null,
-    endTime: workLog.scheduledEndTime
-      ? typeof workLog.scheduledEndTime === 'string'
-        ? null
-        : workLog.scheduledEndTime
-      : null,
-    actualStartTime: workLog.actualStartTime
-      ? typeof workLog.actualStartTime === 'string'
-        ? null
-        : workLog.actualStartTime
-      : null,
-    actualEndTime: workLog.actualEndTime
-      ? typeof workLog.actualEndTime === 'string'
-        ? null
-        : workLog.actualEndTime
-      : null,
+    startTime: normalizeTimestamp(workLog.scheduledStartTime),
+    endTime: normalizeTimestamp(workLog.scheduledEndTime),
+    actualStartTime: normalizeTimestamp(workLog.actualStartTime),
+    actualEndTime: normalizeTimestamp(workLog.actualEndTime),
     eventId: workLog.eventId,
     eventName: cardInfo?.title || '이벤트',
     location: cardInfo?.location || '',
@@ -253,14 +260,17 @@ function applicationToScheduleEvents(
 
   // assignments가 있는 경우 (v2.0 지원서)
   if (application.assignments && application.assignments.length > 0) {
-    for (const assignment of application.assignments) {
+    for (let assignmentIdx = 0; assignmentIdx < application.assignments.length; assignmentIdx++) {
+      const assignment = application.assignments[assignmentIdx];
       // 각 날짜별로 ScheduleEvent 생성
-      for (const date of assignment.dates) {
+      for (let dateIdx = 0; dateIdx < assignment.dates.length; dateIdx++) {
+        const date = assignment.dates[dateIdx];
         // 고정공고 마커는 스킵
         if (date === FIXED_DATE_MARKER) continue;
 
+        // 고유 ID 생성: applicationId_assignmentIdx_dateIdx (중복 방지)
         const event: ScheduleEvent = {
-          id: `${application.id}_${date}_${assignment.timeSlot}`,
+          id: `${application.id}_${assignmentIdx}_${dateIdx}`,
           type: scheduleType,
           date,
           startTime: parseTimeSlotToTimestamp(assignment.timeSlot, date, 'start'),
@@ -347,45 +357,51 @@ async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string,
     return cardMap;
   }
 
-  // 병렬 조회 with 개별 에러 처리
-  const results = await Promise.allSettled(
-    eventIds.map(async (eventId) => {
-      const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
+  // Firestore whereIn 최대 30개 제한 → 청크 분할
+  const CHUNK_SIZE = 30;
+  const uniqueIds = [...new Set(eventIds)]; // 중복 제거
+  const chunks: string[][] = [];
+  for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
+    chunks.push(uniqueIds.slice(i, i + CHUNK_SIZE));
+  }
 
-      if (eventDoc.exists()) {
-        const data = eventDoc.data();
-        const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
-        const card = toJobPostingCard(jobPosting);
-        return {
-          eventId,
-          info: {
-            card,
-            title: data.title || '이벤트',
-            location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
-            contactPhone: data.contactPhone,
-            ownerId: data.ownerId,
-          },
-        };
-      }
-      return { eventId, info: null };
+  // 청크별 배치 쿼리 (병렬 처리)
+  const results = await Promise.allSettled(
+    chunks.map(async (chunk) => {
+      const q = query(
+        collection(getFirebaseDb(), JOB_POSTINGS_COLLECTION),
+        where(documentId(), 'in', chunk)
+      );
+      return getDocs(q);
     })
   );
 
   // 결과 처리
-  let failedCount = 0;
   for (const result of results) {
-    if (result.status === 'fulfilled' && result.value.info) {
-      cardMap.set(result.value.eventId, result.value.info);
-    } else if (result.status === 'rejected') {
-      failedCount++;
+    if (result.status === 'fulfilled') {
+      for (const docSnap of result.value.docs) {
+        const data = docSnap.data();
+        const jobPosting = { id: docSnap.id, ...data } as JobPosting;
+        const card = toJobPostingCard(jobPosting);
+        cardMap.set(docSnap.id, {
+          card,
+          title: data.title || '이벤트',
+          location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+          contactPhone: data.contactPhone,
+          ownerId: data.ownerId,
+        });
+      }
+    } else {
+      logger.warn('공고 배치 조회 실패', { error: result.reason });
     }
   }
 
-  // 실패한 ID가 있으면 경고 로깅
-  if (failedCount > 0) {
-    logger.warn('일부 공고 정보 조회 실패', {
-      failedCount,
-      totalCount: eventIds.length,
+  // 조회되지 않은 ID 로깅 (삭제된 공고 등)
+  const missingIds = uniqueIds.filter((id) => !cardMap.has(id));
+  if (missingIds.length > 0) {
+    logger.debug('일부 공고 정보 없음 (삭제됨)', {
+      missingCount: missingIds.length,
+      totalCount: uniqueIds.length,
     });
   }
 
@@ -486,15 +502,9 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
       }
 
       // 근무 시간 계산
-      if (schedule.actualStartTime && schedule.actualEndTime) {
-        const start =
-          schedule.actualStartTime instanceof Timestamp
-            ? schedule.actualStartTime.toDate()
-            : new Date(schedule.actualStartTime as unknown as string);
-        const end =
-          schedule.actualEndTime instanceof Timestamp
-            ? schedule.actualEndTime.toDate()
-            : new Date(schedule.actualEndTime as unknown as string);
+      const start = timestampToDate(schedule.actualStartTime);
+      const end = timestampToDate(schedule.actualEndTime);
+      if (start && end) {
         hoursWorked += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       }
     }
@@ -835,8 +845,8 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
           ownerId: data.ownerId,
         };
       }
-    } catch {
-      // 공고 정보 조회 실패 시 무시
+    } catch (err) {
+      logger.debug('공고 정보 조회 실패 (상세)', { eventId: workLog.eventId, error: err });
     }
 
     return workLogToScheduleEvent(workLog, cardInfo);
@@ -910,30 +920,9 @@ export function subscribeToSchedules(
           ...docSnap.data(),
         })) as WorkLog[];
 
-        // 공고 정보 조회 (JobPostingCard 포함)
-        const eventIds = [...new Set(workLogs.map((wl) => wl.eventId))];
-        const cardInfoMap = new Map<string, JobPostingCardWithMeta>();
-
-        await Promise.all(
-          eventIds.map(async (eventId) => {
-            try {
-              const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, eventId));
-              if (eventDoc.exists()) {
-                const data = eventDoc.data();
-                const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
-                cardInfoMap.set(eventId, {
-                  card: toJobPostingCard(jobPosting),
-                  title: data.title || '이벤트',
-                  location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
-                  contactPhone: data.contactPhone,
-                  ownerId: data.ownerId,
-                });
-              }
-            } catch {
-              // 무시
-            }
-          })
-        );
+        // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
+        const eventIds = workLogs.map((wl) => wl.eventId);
+        const cardInfoMap = await fetchJobPostingCardBatch(eventIds);
 
         const schedules = workLogs.map((workLog) =>
           workLogToScheduleEvent(workLog, cardInfoMap.get(workLog.eventId))

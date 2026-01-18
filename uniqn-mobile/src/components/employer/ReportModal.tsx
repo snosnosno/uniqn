@@ -1,8 +1,10 @@
 /**
- * UNIQN Mobile - 스태프 신고 모달
+ * UNIQN Mobile - 신고 모달
  *
- * @description 구인자가 확정 스태프를 신고하는 모달
- * @version 1.0.0
+ * @description 양방향 신고 지원 모달
+ *   - mode='employer': 구인자 → 스태프 신고
+ *   - mode='employee': 구직자 → 구인자 신고
+ * @version 1.1.0
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
@@ -16,12 +18,15 @@ import {
   CheckIcon,
   AlertCircleIcon,
   UserIcon,
+  BriefcaseIcon,
 } from '../icons';
 import {
   EMPLOYEE_REPORT_TYPES,
+  EMPLOYER_REPORT_TYPES,
   REPORT_SEVERITY_COLORS,
   getReportSeverity,
-  type EmployeeReportType,
+  type ReportType,
+  type ReporterType,
   type ReportTypeInfo,
   type CreateReportInput,
 } from '@/types/report';
@@ -32,10 +37,23 @@ import type { ConfirmedStaff } from '@/types';
 // Types
 // ============================================================================
 
+/**
+ * 신고 대상 정보 (구직자→구인자 신고용)
+ */
+export interface ReportTarget {
+  id: string;
+  name: string;
+}
+
 export interface ReportModalProps {
   visible: boolean;
   onClose: () => void;
-  staff: ConfirmedStaff | null;
+  /** 신고 모드: 'employer'=구인자가 신고, 'employee'=구직자가 신고 */
+  mode?: ReporterType;
+  /** 스태프 정보 (mode='employer'일 때 사용) */
+  staff?: ConfirmedStaff | null;
+  /** 신고 대상 정보 (mode='employee'일 때 사용) */
+  target?: ReportTarget | null;
   jobPostingId: string;
   jobPostingTitle?: string;
   onSubmit: (input: CreateReportInput) => void;
@@ -58,10 +76,22 @@ function ReportTypeOption({
   onSelect,
 }: ReportTypeOptionProps) {
   const severityColors = REPORT_SEVERITY_COLORS[typeInfo.severity];
+  const severityLabel =
+    typeInfo.severity === 'critical'
+      ? '심각'
+      : typeInfo.severity === 'high'
+        ? '높음'
+        : typeInfo.severity === 'medium'
+          ? '보통'
+          : '낮음';
 
   return (
     <Pressable
       onPress={onSelect}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: isSelected }}
+      accessibilityLabel={`${typeInfo.label} - ${typeInfo.description}`}
+      accessibilityHint={`심각도: ${severityLabel}`}
       className={`
         p-4 rounded-xl mb-2
         ${isSelected
@@ -112,13 +142,14 @@ function ReportTypeOption({
 }
 
 interface SeverityIndicatorProps {
-  type: EmployeeReportType | null;
+  type: ReportType | null;
+  reporterType?: ReporterType;
 }
 
-function SeverityIndicator({ type }: SeverityIndicatorProps) {
+function SeverityIndicator({ type, reporterType }: SeverityIndicatorProps) {
   if (!type) return null;
 
-  const severity = getReportSeverity(type);
+  const severity = getReportSeverity(type, reporterType);
   const severityColors = REPORT_SEVERITY_COLORS[severity];
 
   const severityLabels = {
@@ -152,22 +183,43 @@ function SeverityIndicator({ type }: SeverityIndicatorProps) {
 export function ReportModal({
   visible,
   onClose,
+  mode = 'employer',
   staff,
+  target,
   jobPostingId,
   jobPostingTitle,
   onSubmit,
   isLoading = false,
 }: ReportModalProps) {
-  const [selectedType, setSelectedType] = useState<EmployeeReportType | null>(null);
+  const [selectedType, setSelectedType] = useState<ReportType | null>(null);
   const [description, setDescription] = useState('');
 
-  // staff 변경 시 초기화
+  // 모드에 따른 신고 유형 목록 (메모이제이션)
+  const reportTypes = useMemo(() => {
+    return mode === 'employee' ? EMPLOYER_REPORT_TYPES : EMPLOYEE_REPORT_TYPES;
+  }, [mode]);
+
+  // 모드에 따른 타이틀
+  const modalTitle = mode === 'employee' ? '구인자 신고' : '스태프 신고';
+
+  // 신고 대상 정보 통합
+  const reportTarget = useMemo(() => {
+    if (mode === 'employee' && target) {
+      return { id: target.id, name: target.name };
+    }
+    if (mode === 'employer' && staff) {
+      return { id: staff.staffId, name: staff.staffName };
+    }
+    return null;
+  }, [mode, staff, target]);
+
+  // staff 또는 target 변경 시 초기화
   useEffect(() => {
-    if (staff) {
+    if (staff || target) {
       setSelectedType(null);
       setDescription('');
     }
-  }, [staff]);
+  }, [staff, target]);
 
   // 유효성 검사
   const isValid = useMemo(() => {
@@ -175,27 +227,31 @@ export function ReportModal({
   }, [selectedType, description]);
 
   // 유형 선택
-  const handleSelectType = useCallback((type: EmployeeReportType) => {
+  const handleSelectType = useCallback((type: ReportType) => {
     setSelectedType(type);
   }, []);
 
   // 제출
   const handleSubmit = useCallback(() => {
-    if (!isValid || !staff || !selectedType) return;
+    if (!isValid || !reportTarget || !selectedType) return;
 
     const input: CreateReportInput = {
       type: selectedType,
-      targetId: staff.staffId,
-      targetName: staff.staffName,
+      reporterType: mode,
+      targetId: reportTarget.id,
+      targetName: reportTarget.name,
       jobPostingId,
       jobPostingTitle,
-      workLogId: staff.id,
-      workDate: staff.date,
+      // 구인자→스태프 신고만 workLog 정보 포함
+      ...(mode === 'employer' && staff && {
+        workLogId: staff.id,
+        workDate: staff.date,
+      }),
       description: description.trim(),
     };
 
     onSubmit(input);
-  }, [isValid, staff, selectedType, jobPostingId, jobPostingTitle, description, onSubmit]);
+  }, [isValid, reportTarget, selectedType, mode, staff, jobPostingId, jobPostingTitle, description, onSubmit]);
 
   // 닫기
   const handleClose = useCallback(() => {
@@ -204,17 +260,18 @@ export function ReportModal({
     onClose();
   }, [onClose]);
 
-  if (!staff) return null;
+  // 신고 대상이 없으면 렌더링하지 않음
+  if (!reportTarget) return null;
 
   return (
     <Modal
       visible={visible}
       onClose={handleClose}
-      title="스태프 신고"
+      title={modalTitle}
       position="bottom"
     >
       <View className="p-4">
-        {/* 스태프 정보 */}
+        {/* 신고 대상 정보 */}
         <Card
           variant="filled"
           padding="md"
@@ -222,20 +279,30 @@ export function ReportModal({
         >
           <View className="flex-row items-center">
             <View className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center">
-              <UserIcon size={24} color="#EF4444" />
+              {mode === 'employee' ? (
+                <BriefcaseIcon size={24} color="#EF4444" />
+              ) : (
+                <UserIcon size={24} color="#EF4444" />
+              )}
             </View>
             <View className="ml-3 flex-1">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {staff.staffName}
+                {reportTarget.name}
               </Text>
-              <View className="flex-row items-center mt-1">
-                <Badge variant="default" size="sm">
-                  {getRoleDisplayName(staff.role, staff.customRole)}
-                </Badge>
-                <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                  {staff.date}
+              {mode === 'employer' && staff ? (
+                <View className="flex-row items-center mt-1">
+                  <Badge variant="default" size="sm">
+                    {getRoleDisplayName(staff.role, staff.customRole)}
+                  </Badge>
+                  <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                    {staff.date}
+                  </Text>
+                </View>
+              ) : (
+                <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {jobPostingTitle || '구인자'}
                 </Text>
-              </View>
+              )}
             </View>
           </View>
         </Card>
@@ -248,8 +315,10 @@ export function ReportModal({
         <ScrollView
           className="max-h-56 mb-4"
           showsVerticalScrollIndicator={false}
+          accessibilityRole="radiogroup"
+          accessibilityLabel="신고 유형 선택"
         >
-          {EMPLOYEE_REPORT_TYPES.map((typeInfo) => (
+          {reportTypes.map((typeInfo) => (
             <ReportTypeOption
               key={typeInfo.key}
               typeInfo={typeInfo}
@@ -262,7 +331,7 @@ export function ReportModal({
         {/* 심각도 표시 */}
         {selectedType && (
           <View className="mb-4">
-            <SeverityIndicator type={selectedType} />
+            <SeverityIndicator type={selectedType} reporterType={mode} />
           </View>
         )}
 
@@ -279,6 +348,8 @@ export function ReportModal({
             multiline
             numberOfLines={4}
             textAlignVertical="top"
+            accessibilityLabel="신고 상세 설명"
+            accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
             className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[100px]"
           />
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -308,6 +379,8 @@ export function ReportModal({
             onPress={handleClose}
             disabled={isLoading}
             className="flex-1"
+            accessibilityLabel="신고 취소"
+            accessibilityHint="신고를 취소하고 모달을 닫습니다"
           >
             취소
           </Button>
@@ -318,6 +391,12 @@ export function ReportModal({
             disabled={!isValid}
             className="flex-1"
             icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
+            accessibilityLabel="신고 제출"
+            accessibilityHint={
+              isValid
+                ? '선택한 유형으로 신고를 제출합니다'
+                : '신고 유형과 설명을 모두 입력해주세요'
+            }
           >
             신고하기
           </Button>

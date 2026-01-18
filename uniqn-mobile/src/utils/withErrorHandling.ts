@@ -6,7 +6,7 @@
  */
 
 import { logger } from './logger';
-import { normalizeError, type NormalizedError } from './errorUtils';
+import { normalizeError, type AppError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -66,7 +66,7 @@ export async function withErrorHandling<T>(
     retryDelay = 1000,
   } = options;
 
-  let lastError: NormalizedError | null = null;
+  let lastError: AppError | null = null;
 
   for (let attempt = 0; attempt <= retryCount; attempt++) {
     try {
@@ -75,7 +75,7 @@ export async function withErrorHandling<T>(
       lastError = normalizeError(error);
 
       if (logError) {
-        logger.error(errorMessage || '작업 실패', lastError.originalError as Error, {
+        logger.error(errorMessage || '작업 실패', lastError, {
           ...context,
           attempt: attempt + 1,
           maxAttempts: retryCount + 1,
@@ -84,7 +84,7 @@ export async function withErrorHandling<T>(
       }
 
       // 재시도 가능한 에러인 경우에만 재시도
-      if (attempt < retryCount && lastError.isNetworkError) {
+      if (attempt < retryCount && lastError.category === 'network') {
         await sleep(retryDelay * (attempt + 1)); // 점진적 딜레이
         continue;
       }
@@ -99,7 +99,7 @@ export async function withErrorHandling<T>(
   }
 
   // 에러 던지기
-  throw lastError?.originalError || new Error(errorMessage || '알 수 없는 오류');
+  throw lastError || new Error(errorMessage || '알 수 없는 오류');
 }
 
 /**
@@ -117,7 +117,7 @@ export function withErrorHandlingSync<T>(
     const normalized = normalizeError(error);
 
     if (logError) {
-      logger.error(errorMessage || '작업 실패', normalized.originalError as Error, {
+      logger.error(errorMessage || '작업 실패', normalized, {
         ...context,
         errorCode: normalized.code,
       });

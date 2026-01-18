@@ -15,6 +15,74 @@ import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { crashlyticsService } from '@/services/crashlyticsService';
 import { logger } from '@/utils/logger';
+import { env } from '@/config/env';
+import { isAppError } from '@/errors';
+
+// ============================================================================
+// Error Type Detection Helpers (AppError 타입 기반 + 레거시 폴백)
+// ============================================================================
+
+/**
+ * 네트워크 관련 에러인지 확인
+ */
+function isNetworkRelatedError(error: Error): boolean {
+  // AppError 타입 체크 우선
+  if (isAppError(error)) {
+    return error.category === 'network';
+  }
+  // 레거시 폴백: 문자열 패턴 매칭
+  const patterns = ['network', 'fetch', 'timeout', 'connection', 'offline'];
+  const lowerMessage = error.message.toLowerCase();
+  return patterns.some((p) => lowerMessage.includes(p)) || error.name === 'NetworkError';
+}
+
+/**
+ * 인증 관련 에러인지 확인
+ */
+function isAuthRelatedError(error: Error): boolean {
+  if (isAppError(error)) {
+    return error.category === 'auth' || error.category === 'permission';
+  }
+  const patterns = ['auth', 'permission', 'unauthorized', '로그인', '권한', '만료', 'expired'];
+  const lowerMessage = error.message.toLowerCase();
+  return (
+    patterns.some((p) => lowerMessage.includes(p)) ||
+    error.name === 'AuthError' ||
+    error.name === 'PermissionError'
+  );
+}
+
+/**
+ * 폼/검증 관련 에러인지 확인
+ */
+function isFormRelatedError(error: Error): boolean {
+  if (isAppError(error)) {
+    return error.category === 'validation';
+  }
+  const patterns = ['form', 'validation', 'submit', '검증', '입력'];
+  const lowerMessage = error.message.toLowerCase();
+  return (
+    patterns.some((p) => lowerMessage.includes(p)) ||
+    error.name === 'ValidationError' ||
+    error.name === 'FormError'
+  );
+}
+
+/**
+ * 데이터 페칭 관련 에러인지 확인
+ */
+function isDataFetchRelatedError(error: Error): boolean {
+  if (isAppError(error)) {
+    return error.category === 'firebase' || error.code.includes('DOCUMENT_NOT_FOUND');
+  }
+  const patterns = ['fetch', 'data', 'load', 'not found', '404', '500'];
+  const lowerMessage = error.message.toLowerCase();
+  return (
+    patterns.some((p) => lowerMessage.includes(p)) ||
+    error.name === 'FetchError' ||
+    error.name === 'DataError'
+  );
+}
 
 // ============================================================================
 // Types
@@ -145,7 +213,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
    * 에러 UI 렌더링
    */
   renderError(): ReactNode {
-    const { fallback, fullScreen = false, showDetails = __DEV__, name } = this.props;
+    const { fallback, fullScreen = false, showDetails = env.isDevelopment, name } = this.props;
     const { error, errorInfo } = this.state;
 
     // 커스텀 fallback이 있으면 사용
@@ -303,7 +371,7 @@ export function ScreenErrorBoundary({
     <ErrorBoundary
       name={name}
       fullScreen
-      showDetails={__DEV__}
+      showDetails={env.isDevelopment}
       onError={onError}
       onReset={onReset}
     >
@@ -334,7 +402,7 @@ export function FeatureErrorBoundary({
     <ErrorBoundary
       name={name}
       fullScreen={false}
-      showDetails={__DEV__}
+      showDetails={env.isDevelopment}
       fallback={fallback}
       onError={onError}
       onReset={onReset}
@@ -380,7 +448,7 @@ function NetworkErrorFallback({
           : '서버에 연결할 수 없습니다. 잠시 후 다시 시도해주세요.'}
       </Text>
 
-      {__DEV__ && error && (
+      {env.isDevelopment && error && (
         <View className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6">
           <Text className="text-xs text-orange-600 dark:text-orange-400 font-mono">
             {error.message}
@@ -422,15 +490,8 @@ export class NetworkErrorBoundary extends Component<
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    // 네트워크 관련 에러인지 확인
-    const isNetworkError =
-      error.message.includes('Network') ||
-      error.message.includes('fetch') ||
-      error.message.includes('timeout') ||
-      error.message.includes('connection') ||
-      error.name === 'NetworkError';
-
-    if (isNetworkError) {
+    // 네트워크 관련 에러인지 확인 (AppError 타입 기반 + 레거시 폴백)
+    if (isNetworkRelatedError(error)) {
       return { hasError: true, error };
     }
 
@@ -529,7 +590,7 @@ function AuthErrorFallback({
           : '이 기능을 사용하려면 로그인이 필요합니다.'}
       </Text>
 
-      {__DEV__ && error && (
+      {env.isDevelopment && error && (
         <View className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6">
           <Text className="text-xs text-yellow-600 dark:text-yellow-400 font-mono">
             {error.message}
@@ -582,19 +643,8 @@ export class AuthErrorBoundary extends Component<
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    // 인증 관련 에러인지 확인
-    const isAuthError =
-      error.message.includes('auth') ||
-      error.message.includes('permission') ||
-      error.message.includes('unauthorized') ||
-      error.message.includes('로그인') ||
-      error.message.includes('권한') ||
-      error.message.includes('만료') ||
-      error.message.includes('expired') ||
-      error.name === 'AuthError' ||
-      error.name === 'PermissionError';
-
-    if (isAuthError) {
+    // 인증 관련 에러인지 확인 (AppError 타입 기반 + 레거시 폴백)
+    if (isAuthRelatedError(error)) {
       return { hasError: true, error };
     }
 
@@ -709,7 +759,7 @@ function FormErrorFallback({
       <View className="flex-row gap-2">
         <Pressable
           onPress={onRetry}
-          className="flex-1 bg-red-600 py-2.5 rounded-lg active:bg-red-700"
+          className="flex-1 bg-red-600 min-h-[44px] py-2.5 rounded-lg active:bg-red-700 items-center justify-center"
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
         >
@@ -718,7 +768,7 @@ function FormErrorFallback({
 
         <Pressable
           onPress={onReset}
-          className="flex-1 bg-gray-200 dark:bg-gray-700 py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600"
+          className="flex-1 bg-gray-200 dark:bg-gray-700 min-h-[44px] py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 items-center justify-center"
           accessibilityRole="button"
           accessibilityLabel="초기화"
         >
@@ -751,17 +801,8 @@ export class FormErrorBoundary extends Component<
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    // 폼 관련 에러인지 확인
-    const isFormError =
-      error.message.includes('form') ||
-      error.message.includes('validation') ||
-      error.message.includes('submit') ||
-      error.message.includes('검증') ||
-      error.message.includes('입력') ||
-      error.name === 'ValidationError' ||
-      error.name === 'FormError';
-
-    if (isFormError) {
+    // 폼 관련 에러인지 확인 (AppError 타입 기반 + 레거시 폴백)
+    if (isFormRelatedError(error)) {
       return { hasError: true, error };
     }
 
@@ -866,7 +907,7 @@ function DataFetchErrorFallback({
         잠시 후 다시 시도해주세요
       </Text>
 
-      {__DEV__ && error && (
+      {env.isDevelopment && error && (
         <Text className="text-xs text-gray-400 dark:text-gray-500 text-center mb-4 font-mono">
           {error.message}
         </Text>
@@ -874,7 +915,7 @@ function DataFetchErrorFallback({
 
       <Pressable
         onPress={onRetry}
-        className="bg-gray-200 dark:bg-gray-700 px-5 py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600"
+        className="bg-gray-200 dark:bg-gray-700 px-5 min-h-[44px] py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 items-center justify-center"
         accessibilityRole="button"
         accessibilityLabel="새로고침"
       >
@@ -906,18 +947,8 @@ export class DataFetchErrorBoundary extends Component<
   }
 
   static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
-    // 데이터 페칭 관련 에러인지 확인
-    const isFetchError =
-      error.message.includes('fetch') ||
-      error.message.includes('data') ||
-      error.message.includes('load') ||
-      error.message.includes('not found') ||
-      error.message.includes('404') ||
-      error.message.includes('500') ||
-      error.name === 'FetchError' ||
-      error.name === 'DataError';
-
-    if (isFetchError) {
+    // 데이터 페칭 관련 에러인지 확인 (AppError 타입 기반 + 레거시 폴백)
+    if (isDataFetchRelatedError(error)) {
       return { hasError: true, error };
     }
 

@@ -408,3 +408,134 @@ export const isAlreadySettledError = (error: unknown): error is AlreadySettledEr
 export const isInvalidWorkLogError = (error: unknown): error is InvalidWorkLogError => {
   return error instanceof InvalidWorkLogError;
 };
+
+// ============================================================================
+// 신고 관련 에러
+// ============================================================================
+
+/**
+ * 중복 신고 에러
+ */
+export class DuplicateReportError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      targetId?: string;
+      jobPostingId?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_DUPLICATE_REPORT,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        targetId: options?.targetId,
+        jobPostingId: options?.jobPostingId,
+      },
+    });
+    this.name = 'DuplicateReportError';
+    Object.setPrototypeOf(this, DuplicateReportError.prototype);
+  }
+}
+
+/**
+ * 신고 찾을 수 없음 에러
+ */
+export class ReportNotFoundError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      reportId?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_REPORT_NOT_FOUND,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        reportId: options?.reportId,
+      },
+    });
+    this.name = 'ReportNotFoundError';
+    Object.setPrototypeOf(this, ReportNotFoundError.prototype);
+  }
+}
+
+/**
+ * 이미 처리된 신고 에러
+ */
+export class ReportAlreadyReviewedError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      reportId?: string;
+      currentStatus?: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_REPORT_ALREADY_REVIEWED,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        reportId: options?.reportId,
+        currentStatus: options?.currentStatus,
+      },
+    });
+    this.name = 'ReportAlreadyReviewedError';
+    Object.setPrototypeOf(this, ReportAlreadyReviewedError.prototype);
+  }
+}
+
+/**
+ * 본인 신고 불가 에러
+ */
+export class CannotReportSelfError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_CANNOT_REPORT_SELF,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+    });
+    this.name = 'CannotReportSelfError';
+    Object.setPrototypeOf(this, CannotReportSelfError.prototype);
+  }
+}
+
+// Type Guards - 신고 관련
+export const isDuplicateReportError = (error: unknown): error is DuplicateReportError => {
+  return error instanceof DuplicateReportError;
+};
+
+export const isReportNotFoundError = (error: unknown): error is ReportNotFoundError => {
+  return error instanceof ReportNotFoundError;
+};
+
+export const isReportAlreadyReviewedError = (
+  error: unknown
+): error is ReportAlreadyReviewedError => {
+  return error instanceof ReportAlreadyReviewedError;
+};
+
+export const isCannotReportSelfError = (error: unknown): error is CannotReportSelfError => {
+  return error instanceof CannotReportSelfError;
+};

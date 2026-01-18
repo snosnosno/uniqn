@@ -1,11 +1,13 @@
 /**
  * UNIQN Mobile - 로깅 유틸리티
  *
- * @description 구조화된 로깅 시스템 (AppError 통합)
- * @version 1.1.0
+ * @description 구조화된 로깅 시스템 (AppError 통합 + Crashlytics 연동)
+ * @version 1.2.0
  */
 
 import { isAppError, type AppError } from '@/errors/AppError';
+import { crashlyticsService } from '@/services/crashlyticsService';
+import { env } from '@/config/env';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -25,9 +27,9 @@ interface LogEntry {
 }
 
 /**
- * 프로덕션 환경 여부
+ * 프로덕션 환경 여부 (env 모듈 사용)
  */
-const isProduction = process.env.NODE_ENV === 'production';
+const isProduction = env.isProduction;
 
 /**
  * 로그 레벨 우선순위
@@ -86,10 +88,38 @@ const output = (level: LogLevel, entry: LogEntry): void => {
       break;
   }
 
-  // TODO: 프로덕션에서는 Crashlytics 등으로 전송
-  // if (isProduction && level === 'error') {
-  //   crashlytics().recordError(entry.error || new Error(entry.message));
-  // }
+  // 프로덕션에서 error 레벨은 Crashlytics로 전송
+  if (isProduction && level === 'error' && entry.error) {
+    crashlyticsService.recordError(entry.error, {
+      logMessage: entry.message,
+      ...entry.context,
+    }).catch(() => {
+      // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+    });
+  }
+};
+
+/**
+ * LogContext를 CrashContext-호환 형식으로 변환
+ * unknown 타입을 string | number | boolean | undefined로 필터링
+ */
+const toCrashContext = (context: LogContext): Record<string, string | number | boolean | undefined> => {
+  const result: Record<string, string | number | boolean | undefined> = {};
+  for (const [key, value] of Object.entries(context)) {
+    if (value === undefined || value === null) {
+      result[key] = undefined;
+    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      result[key] = value;
+    } else {
+      // 복잡한 타입은 JSON 문자열로 변환
+      try {
+        result[key] = JSON.stringify(value);
+      } catch {
+        result[key] = String(value);
+      }
+    }
+  }
+  return result;
 };
 
 /**
@@ -235,9 +265,13 @@ export const logger = {
       output('error', entry);
 
       // 프로덕션에서는 심각도에 따라 Crashlytics로 전송
-      // if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
-      //   crashlytics().recordError(error);
-      // }
+      if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
+        // LogContext를 CrashContext-호환 형식으로 변환
+        const crashContext = context ? toCrashContext(context) : undefined;
+        crashlyticsService.recordAppError(error, crashContext).catch(() => {
+          // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+        });
+      }
     } else if (error instanceof Error) {
       logger.error(error.message, error, context);
     } else {

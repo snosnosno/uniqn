@@ -11,8 +11,7 @@
  */
 
 import { logger } from './logger';
-import { normalizeError } from './errorUtils';
-import { AppError, ErrorCategory } from '@/errors/AppError';
+import { normalizeError, AppError, type ErrorCategory } from '@/errors';
 
 // ============================================================================
 // Types
@@ -279,7 +278,7 @@ function defaultShouldRetry(error: Error | AppError, _attempt: number): boolean 
 
   // 네트워크 관련 에러
   const normalized = normalizeError(error);
-  if (normalized.isNetworkError) {
+  if (normalized.category === 'network') {
     return true;
   }
 

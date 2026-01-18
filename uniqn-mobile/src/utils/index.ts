@@ -88,16 +88,24 @@ export {
 export { logger } from './logger';
 export { default } from './logger';
 
-// 에러 처리
+// 에러 처리 (레거시 호환성 - @/errors에서 re-export)
 export {
   normalizeError,
-  getFirebaseErrorMessage,
   isFirebaseError,
   isNetworkError,
   isAuthError,
   isPermissionError,
-  type NormalizedError,
-} from './errorUtils';
+  getErrorMessage,
+  type AppError,
+} from '@/errors';
+
+// 레거시 타입 별칭 (하위 호환성)
+export type { AppError as NormalizedError } from '@/errors';
+
+/**
+ * @deprecated getErrorMessage 사용 권장
+ */
+export { getErrorMessage as getFirebaseErrorMessage } from '@/errors';
 
 export {
   withErrorHandling,

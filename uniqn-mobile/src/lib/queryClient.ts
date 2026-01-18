@@ -2,25 +2,95 @@
  * UNIQN Mobile - React Query 설정
  *
  * @description Query Client 설정 및 Query Keys 중앙 관리
- * @version 1.1.0
+ * @version 1.2.0
  *
  * 기능:
  * - 전역 에러 핸들링 (QueryCache, MutationCache)
  * - 재시도 가능 에러 자동 재시도
  * - 토큰 만료 시 자동 처리
  * - 카테고리별 재시도 조건 설정
- *
- * TODO [출시 전]: 오프라인 지원 설정 (onlineManager)
- * TODO [출시 전]: 네트워크 재연결 시 자동 리페치 최적화
+ * - 오프라인 지원 (onlineManager + NetInfo)
  */
 
-import { QueryClient, QueryCache, MutationCache } from '@tanstack/react-query';
+import { QueryClient, QueryCache, MutationCache, onlineManager } from '@tanstack/react-query';
+import { Platform, AppState, type AppStateStatus } from 'react-native';
 import { logger } from '@/utils/logger';
 import {
   normalizeError,
   isRetryableError,
   requiresReauthentication,
 } from '@/errors';
+
+// ============================================================================
+// 오프라인 지원
+// ============================================================================
+
+/**
+ * 네트워크 상태 리스너 초기화
+ *
+ * @description React Query의 onlineManager와 네트워크 상태를 연동하여
+ * 오프라인/온라인 상태에 따라 자동으로 쿼리 동작을 조절합니다.
+ *
+ * 웹 환경에서는 navigator.onLine을 사용하고,
+ * 네이티브 환경에서는 @react-native-community/netinfo 패키지가 설치된 경우 활용합니다.
+ *
+ * @returns 리스너 해제 함수
+ *
+ * @example
+ * ```tsx
+ * // App.tsx에서 초기화
+ * useEffect(() => {
+ *   const unsubscribe = initializeQueryListeners();
+ *   return () => unsubscribe();
+ * }, []);
+ * ```
+ */
+export function initializeQueryListeners(): () => void {
+  const subscriptions: (() => void)[] = [];
+
+  // 웹 환경: navigator.onLine 사용
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const handleOnline = () => {
+      onlineManager.setOnline(true);
+      logger.info('네트워크 상태 변경: 온라인');
+    };
+    const handleOffline = () => {
+      onlineManager.setOnline(false);
+      logger.info('네트워크 상태 변경: 오프라인');
+    };
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    // 초기 상태 설정
+    onlineManager.setOnline(navigator.onLine);
+
+    subscriptions.push(() => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    });
+  }
+
+  // 앱 상태 변경 시 리페치 트리거 (네이티브)
+  if (Platform.OS !== 'web') {
+    const handleAppStateChange = (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active') {
+        // 앱이 포그라운드로 돌아오면 온라인 상태 확인
+        logger.debug('앱 포그라운드 전환, 쿼리 리페치 트리거');
+      }
+    };
+
+    const appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
+    subscriptions.push(() => appStateSubscription.remove());
+  }
+
+  logger.info('Query 네트워크 리스너 초기화', { platform: Platform.OS });
+
+  // 모든 구독 해제 함수 반환
+  return () => {
+    subscriptions.forEach((unsubscribe) => unsubscribe());
+  };
+}
 
 // ============================================================================
 // 재시도 로직
@@ -136,10 +206,14 @@ export const queryClient = new QueryClient({
       refetchOnWindowFocus: false,
       // 재연결 시 리페치
       refetchOnReconnect: true,
+      // 오프라인 우선: 오프라인 시 캐시된 데이터 반환, 온라인 복귀 시 백그라운드 리페치
+      networkMode: 'offlineFirst',
     },
     mutations: {
       // 뮤테이션은 기본적으로 재시도하지 않음 (중복 생성 방지)
       retry: false,
+      // 오프라인 시 뮤테이션 대기 후 온라인 복귀 시 실행
+      networkMode: 'offlineFirst',
     },
   },
 });

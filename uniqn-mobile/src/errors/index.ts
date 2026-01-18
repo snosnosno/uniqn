@@ -112,6 +112,11 @@ export {
   ExpiredQRCodeError,
   // 정산 관련
   AlreadySettledError,
+  // 신고 관련
+  DuplicateReportError,
+  ReportNotFoundError,
+  ReportAlreadyReviewedError,
+  CannotReportSelfError,
   // Type Guards
   isAlreadyAppliedError,
   isApplicationClosedError,
@@ -121,4 +126,8 @@ export {
   isInvalidQRCodeError,
   isExpiredQRCodeError,
   isAlreadySettledError,
+  isDuplicateReportError,
+  isReportNotFoundError,
+  isReportAlreadyReviewedError,
+  isCannotReportSelfError,
 } from './BusinessErrors';

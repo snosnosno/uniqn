@@ -1,8 +1,10 @@
 /**
  * UNIQN Mobile - 신고 서비스
  *
- * @description 스태프 신고 관련 비즈니스 로직
- * @version 1.0.0
+ * @description 양방향 신고 비즈니스 로직
+ *   - 구인자 → 스태프 (employer)
+ *   - 구직자 → 구인자 (employee)
+ * @version 1.2.0 - Zod 스키마 검증 + BusinessError 적용
  */
 
 import {
@@ -19,6 +21,22 @@ import {
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import {
+  createReportInputSchema,
+  reviewReportInputSchema,
+  parseReportDocuments,
+  parseReportDocument,
+} from '@/schemas';
+import {
+  mapFirebaseError,
+  AuthError,
+  ValidationError,
+  DuplicateReportError,
+  ReportNotFoundError,
+  ReportAlreadyReviewedError,
+  CannotReportSelfError,
+  ERROR_CODES,
+} from '@/errors';
 import type {
   Report,
   CreateReportInput,
@@ -38,57 +56,117 @@ const REPORTS_COLLECTION = 'reports';
 // ============================================================================
 
 /**
- * 신고 생성 (구인자 → 스태프)
+ * 신고 생성 (양방향 지원)
  */
 export async function createReport(input: CreateReportInput): Promise<string> {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error('인증이 필요합니다.');
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '인증이 필요합니다.',
+    });
+  }
+
+  // 1. Zod 스키마 검증
+  const validationResult = createReportInputSchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '입력값을 확인해주세요',
+      errors: validationResult.error.flatten().fieldErrors as Record<string, string[]>,
+    });
+  }
+
+  const validatedInput = validationResult.data;
+
+  // 2. 본인 신고 방지
+  if (validatedInput.targetId === user.uid) {
+    throw new CannotReportSelfError({
+      userMessage: '본인을 신고할 수 없습니다',
+    });
   }
 
   logger.info('Creating report', {
-    type: input.type,
-    targetId: input.targetId,
-    jobPostingId: input.jobPostingId,
+    type: validatedInput.type,
+    reporterType: validatedInput.reporterType,
+    targetId: validatedInput.targetId,
+    jobPostingId: validatedInput.jobPostingId,
   });
 
   try {
-    // Firestore에서 프로필 조회하여 이름 가져오기
+    // 3. 중복 신고 검사 (같은 공고, 같은 대상, pending 상태)
+    const existingQuery = query(
+      collection(db, REPORTS_COLLECTION),
+      where('reporterId', '==', user.uid),
+      where('targetId', '==', validatedInput.targetId),
+      where('jobPostingId', '==', validatedInput.jobPostingId),
+      where('status', '==', 'pending')
+    );
+    const existingSnapshot = await getDocs(existingQuery);
+
+    if (!existingSnapshot.empty) {
+      throw new DuplicateReportError({
+        userMessage: '이미 해당 건에 대해 신고하셨습니다',
+        targetId: validatedInput.targetId,
+        jobPostingId: validatedInput.jobPostingId,
+      });
+    }
+
+    // 4. Firestore에서 프로필 조회하여 이름 가져오기
     const userDoc = await getDoc(doc(db, 'users', user.uid));
     const userProfile = userDoc.exists() ? userDoc.data() : null;
     const reporterName = userProfile?.name || userProfile?.nickname || '익명';
 
-    const reportData = {
-      type: input.type,
+    // 5. 문서 데이터 구성 (검증된 데이터 사용)
+    const reportData: Record<string, unknown> = {
+      type: validatedInput.type,
+      reporterType: validatedInput.reporterType,
       reporterId: user.uid,
       reporterName,
-      targetId: input.targetId,
-      targetName: input.targetName,
-      jobPostingId: input.jobPostingId,
-      jobPostingTitle: input.jobPostingTitle || '',
-      workLogId: input.workLogId,
-      workDate: input.workDate,
-      description: input.description,
-      evidenceUrls: input.evidenceUrls || [],
+      targetId: validatedInput.targetId,
+      targetName: validatedInput.targetName,
+      jobPostingId: validatedInput.jobPostingId,
+      jobPostingTitle: validatedInput.jobPostingTitle || '',
+      description: validatedInput.description,
+      evidenceUrls: validatedInput.evidenceUrls || [],
       status: 'pending' as ReportStatus,
-      severity: getReportSeverity(input.type),
+      severity: getReportSeverity(validatedInput.type, validatedInput.reporterType),
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     };
 
+    // 구인자→스태프 신고만 workLog 정보 포함
+    if (validatedInput.workLogId) {
+      reportData.workLogId = validatedInput.workLogId;
+    }
+    if (validatedInput.workDate) {
+      reportData.workDate = validatedInput.workDate;
+    }
+
     const docRef = await addDoc(collection(db, REPORTS_COLLECTION), reportData);
 
-    logger.info('Report created', { reportId: docRef.id });
+    logger.info('Report created', {
+      reportId: docRef.id,
+      reporterType: validatedInput.reporterType,
+    });
 
     return docRef.id;
   } catch (error) {
-    logger.error('Failed to create report', error as Error, { input });
-    throw error;
+    // 이미 처리된 비즈니스 에러는 그대로 throw
+    if (
+      error instanceof DuplicateReportError ||
+      error instanceof CannotReportSelfError ||
+      error instanceof ValidationError
+    ) {
+      throw error;
+    }
+
+    logger.error('Failed to create report', error as Error, { input: validatedInput });
+    throw mapFirebaseError(error);
   }
 }
 
 // ============================================================================
-// Get Reports
+// Get Reports (타입 안전성 개선)
 // ============================================================================
 
 /**
@@ -106,13 +184,27 @@ export async function getReportsByJobPosting(jobPostingId: string): Promise<Repo
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((docSnap) => ({
+    // 타입 안전 파싱 (as 단언 제거)
+    const rawData = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
-    })) as Report[];
+    }));
+
+    const reports = parseReportDocuments(rawData);
+
+    // 파싱 실패 건수 로깅
+    if (reports.length < rawData.length) {
+      logger.warn('Some reports failed validation', {
+        total: rawData.length,
+        valid: reports.length,
+        failed: rawData.length - reports.length,
+      });
+    }
+
+    return reports as Report[];
   } catch (error) {
     logger.error('Failed to get reports by job posting', error as Error, { jobPostingId });
-    throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -131,13 +223,25 @@ export async function getReportsByStaff(staffId: string): Promise<Report[]> {
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((docSnap) => ({
+    const rawData = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
-    })) as Report[];
+    }));
+
+    const reports = parseReportDocuments(rawData);
+
+    if (reports.length < rawData.length) {
+      logger.warn('Some reports failed validation', {
+        total: rawData.length,
+        valid: reports.length,
+        failed: rawData.length - reports.length,
+      });
+    }
+
+    return reports as Report[];
   } catch (error) {
     logger.error('Failed to get reports by staff', error as Error, { staffId });
-    throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -147,7 +251,9 @@ export async function getReportsByStaff(staffId: string): Promise<Report[]> {
 export async function getMyReports(): Promise<Report[]> {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error('인증이 필요합니다.');
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '인증이 필요합니다.',
+    });
   }
 
   logger.info('Getting my reports', { userId: user.uid });
@@ -161,13 +267,25 @@ export async function getMyReports(): Promise<Report[]> {
 
     const snapshot = await getDocs(q);
 
-    return snapshot.docs.map((docSnap) => ({
+    const rawData = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
-    })) as Report[];
+    }));
+
+    const reports = parseReportDocuments(rawData);
+
+    if (reports.length < rawData.length) {
+      logger.warn('Some reports failed validation', {
+        total: rawData.length,
+        valid: reports.length,
+        failed: rawData.length - reports.length,
+      });
+    }
+
+    return reports as Report[];
   } catch (error) {
     logger.error('Failed to get my reports', error as Error);
-    throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -185,13 +303,22 @@ export async function getReportById(reportId: string): Promise<Report | null> {
       return null;
     }
 
-    return {
+    const rawData = {
       id: docSnap.id,
       ...docSnap.data(),
-    } as Report;
+    };
+
+    const report = parseReportDocument(rawData);
+
+    if (!report) {
+      logger.warn('Report document failed validation', { reportId });
+      return null;
+    }
+
+    return report as Report;
   } catch (error) {
     logger.error('Failed to get report by id', error as Error, { reportId });
-    throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -205,26 +332,72 @@ export async function getReportById(reportId: string): Promise<Report | null> {
 export async function reviewReport(input: ReviewReportInput): Promise<void> {
   const user = auth.currentUser;
   if (!user) {
-    throw new Error('인증이 필요합니다.');
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '인증이 필요합니다.',
+    });
   }
 
-  logger.info('Reviewing report', { reportId: input.reportId, status: input.status });
+  // 1. Zod 스키마 검증
+  const validationResult = reviewReportInputSchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '입력값을 확인해주세요',
+    });
+  }
+
+  const validatedInput = validationResult.data;
+
+  logger.info('Reviewing report', {
+    reportId: validatedInput.reportId,
+    status: validatedInput.status,
+  });
 
   try {
-    const docRef = doc(db, REPORTS_COLLECTION, input.reportId);
+    // 2. 기존 신고 상태 확인
+    const docRef = doc(db, REPORTS_COLLECTION, validatedInput.reportId);
+    const docSnap = await getDoc(docRef);
 
+    if (!docSnap.exists()) {
+      throw new ReportNotFoundError({
+        userMessage: '신고 내역을 찾을 수 없습니다',
+        reportId: validatedInput.reportId,
+      });
+    }
+
+    const existingReport = docSnap.data();
+
+    // 이미 처리된 신고인지 확인
+    if (existingReport.status !== 'pending') {
+      throw new ReportAlreadyReviewedError({
+        userMessage: '이미 처리된 신고입니다',
+        reportId: validatedInput.reportId,
+        currentStatus: existingReport.status,
+      });
+    }
+
+    // 3. 업데이트
     await updateDoc(docRef, {
-      status: input.status,
+      status: validatedInput.status,
       reviewerId: user.uid,
-      reviewerNotes: input.reviewerNotes || '',
+      reviewerNotes: validatedInput.reviewerNotes || '',
       reviewedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
 
-    logger.info('Report reviewed', { reportId: input.reportId });
+    logger.info('Report reviewed', { reportId: validatedInput.reportId });
   } catch (error) {
-    logger.error('Failed to review report', error as Error, { input });
-    throw error;
+    // 이미 처리된 비즈니스 에러는 그대로 throw
+    if (
+      error instanceof ReportNotFoundError ||
+      error instanceof ReportAlreadyReviewedError ||
+      error instanceof ValidationError
+    ) {
+      throw error;
+    }
+
+    logger.error('Failed to review report', error as Error, { input: validatedInput });
+    throw mapFirebaseError(error);
   }
 }
 
