@@ -1,57 +1,119 @@
 /**
  * UNIQN Mobile - Notifications Screen
  * 알림 목록 화면
+ *
+ * @description 개선된 알림 화면
+ * - NotificationList 컴포넌트 활용 (FlashList 기반)
+ * - 무한 스크롤 지원
+ * - 삭제 기능 지원
+ * - 카테고리 필터 지원
+ * - 알림 그룹핑 지원
  */
 
-import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
+import { useState, useCallback } from 'react';
+import { Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, EmptyState, SkeletonNotificationItem } from '@/components/ui';
-import { BellIcon } from '@/components/icons';
 import { StackHeader } from '@/components/headers';
-import { useNotificationList, useMarkAsRead, useMarkAllAsRead } from '@/hooks/useNotifications';
-import { Timestamp } from 'firebase/firestore';
-import { useCallback } from 'react';
+import {
+  NotificationList,
+  NotificationCategoryTabs,
+  type NotificationCategoryFilter,
+} from '@/components/notifications';
+import {
+  useGroupedNotifications,
+  useMarkAsRead,
+  useMarkAllAsRead,
+  useDeleteNotification,
+} from '@/hooks/useNotifications';
+import { useNotificationStore } from '@/stores/notificationStore';
+import type {
+  NotificationData,
+  NotificationCategory,
+  GroupedNotificationData,
+} from '@/types/notification';
 
 export default function NotificationsScreen() {
-  // 알림 목록 훅
+  // 카테고리 필터 상태
+  const [selectedCategory, setSelectedCategory] = useState<NotificationCategoryFilter>('all');
+
+  // 그룹화된 알림 목록 훅 (무한스크롤 + 그룹핑 지원)
   const {
-    notifications,
+    groupedNotifications,
+    unreadCount,
     isLoading,
+    error,
+    hasMore,
+    fetchNextPage,
+    isFetchingNextPage,
     refetch,
-  } = useNotificationList();
+    markGroupAsRead,
+  } = useGroupedNotifications({
+    categoryFilter: selectedCategory === 'all' ? 'all' : selectedCategory,
+    groupingOptions: {
+      enabled: true,
+      minGroupSize: 2,
+      timeWindowMs: 24 * 60 * 60 * 1000, // 24시간
+    },
+  });
 
   // 읽음 처리 훅
   const { markAsRead, isMarking } = useMarkAsRead();
   const { markAllAsRead } = useMarkAllAsRead();
 
-  // 리프레시
-  const onRefresh = useCallback(async () => {
+  // 삭제 훅
+  const { deleteNotification } = useDeleteNotification();
+
+  // 스토어에서 카테고리별 읽지 않은 수
+  const unreadByCategory = useNotificationStore((state) => state.unreadByCategory);
+
+  // 리프레시 핸들러
+  const handleRefresh = useCallback(async () => {
     await refetch();
   }, [refetch]);
 
-  // 알림 클릭 시 읽음 처리
-  const handleNotificationPress = useCallback((id: string, isRead: boolean) => {
-    if (!isRead && !isMarking) {
-      markAsRead(id);
-    }
-  }, [markAsRead, isMarking]);
+  // 무한 스크롤 핸들러
+  const handleLoadMore = useCallback(async () => {
+    await fetchNextPage();
+  }, [fetchNextPage]);
 
-  // Timestamp 또는 Date를 문자열로 변환
-  const formatDate = (createdAt: Timestamp | Date | undefined): string => {
-    if (!createdAt) return '';
+  // 알림 클릭 핸들러
+  const handleNotificationPress = useCallback(
+    (notification: NotificationData) => {
+      if (!notification.isRead && !isMarking) {
+        markAsRead(notification.id);
+      }
+      // NotificationItem이 딥링크 네비게이션 자동 처리
+    },
+    [markAsRead, isMarking]
+  );
 
-    const date = createdAt instanceof Timestamp ? createdAt.toDate() : createdAt;
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  // 그룹 클릭 핸들러 (그룹 내 모든 알림 읽음 처리)
+  const handleGroupPress = useCallback(
+    (group: GroupedNotificationData) => {
+      if (group.unreadCount > 0) {
+        markGroupAsRead(group);
+      }
+    },
+    [markGroupAsRead]
+  );
 
-    if (days === 0) return '오늘';
-    if (days === 1) return '어제';
-    return `${days}일 전`;
-  };
+  // 삭제 핸들러
+  const handleDelete = useCallback(
+    (notificationId: string) => {
+      deleteNotification(notificationId);
+    },
+    [deleteNotification]
+  );
 
-  // 읽지 않은 알림 수
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // 모두 읽음 핸들러
+  const handleMarkAllAsRead = useCallback(() => {
+    markAllAsRead();
+  }, [markAllAsRead]);
+
+  // 카테고리 선택 핸들러
+  const handleCategoryChange = useCallback((category: NotificationCategoryFilter) => {
+    setSelectedCategory(category);
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
@@ -66,7 +128,7 @@ export default function NotificationsScreen() {
         fallbackHref="/(app)/(tabs)"
         rightAction={
           unreadCount > 0 ? (
-            <Pressable onPress={() => markAllAsRead()} className="px-3 py-1">
+            <Pressable onPress={handleMarkAllAsRead} className="px-3 py-1">
               <Text className="text-sm text-primary-600 dark:text-primary-400">
                 모두 읽음
               </Text>
@@ -75,61 +137,29 @@ export default function NotificationsScreen() {
         }
       />
 
-      {/* 알림 목록 */}
-      <ScrollView
-        className="flex-1"
-        contentContainerClassName="p-4"
-        refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={onRefresh} />
-        }
-      >
-        {isLoading && notifications.length === 0 ? (
-          // 스켈레톤 로딩
-          <View>
-            {[1, 2, 3, 4, 5].map((i) => (
-              <SkeletonNotificationItem key={i} />
-            ))}
-          </View>
-        ) : notifications.length === 0 ? (
-          <EmptyState
-            title="알림이 없습니다"
-            description="새로운 알림이 오면 여기에 표시됩니다"
-            icon={<BellIcon size={48} color="#9CA3AF" />}
-          />
-        ) : (
-          notifications.map((notification) => (
-            <Pressable
-              key={notification.id}
-              onPress={() => handleNotificationPress(notification.id, notification.isRead)}
-            >
-              <Card
-                className={`mb-2 ${!notification.isRead ? 'border-l-4 border-l-primary-500' : ''}`}
-                padding="sm"
-              >
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1">
-                    <Text
-                      className={`font-medium ${
-                        notification.isRead
-                          ? 'text-gray-700 dark:text-gray-300'
-                          : 'text-gray-900 dark:text-gray-100'
-                      }`}
-                    >
-                      {notification.title}
-                    </Text>
-                    <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                      {notification.body}
-                    </Text>
-                  </View>
-                  <Text className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-                    {formatDate(notification.createdAt)}
-                  </Text>
-                </View>
-              </Card>
-            </Pressable>
-          ))
-        )}
-      </ScrollView>
+      {/* 카테고리 필터 탭 */}
+      <NotificationCategoryTabs
+        selectedCategory={selectedCategory}
+        onSelectCategory={handleCategoryChange}
+        unreadByCategory={unreadByCategory as Partial<Record<NotificationCategory, number>>}
+      />
+
+      {/* 알림 목록 (무한스크롤 + 그룹핑 + 삭제) */}
+      <NotificationList
+        notifications={groupedNotifications}
+        isLoading={isLoading}
+        error={error}
+        hasMore={hasMore}
+        isFetchingNextPage={isFetchingNextPage}
+        onRefresh={handleRefresh}
+        onLoadMore={handleLoadMore}
+        onNotificationPress={handleNotificationPress}
+        onGroupPress={handleGroupPress}
+        onDeleteNotification={handleDelete}
+        onMarkAllAsRead={handleMarkAllAsRead}
+        showDelete={true}
+        showHeader={false}
+      />
     </SafeAreaView>
   );
 }

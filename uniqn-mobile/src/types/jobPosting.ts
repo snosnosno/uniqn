@@ -290,6 +290,8 @@ export interface CardTimeSlot {
 export interface CardDateRequirement {
   date: string;
   timeSlots: CardTimeSlot[];
+  /** 그룹화 여부 (연속 날짜 그룹 표시용) */
+  isGrouped?: boolean;
 }
 
 /**
@@ -377,6 +379,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
 
       return {
         date: dateStr,
+        isGrouped: (req as { isGrouped?: boolean }).isGrouped,
         timeSlots: (req.timeSlots ?? []).map((ts) => ({
           startTime:
             (ts as { startTime?: string; time?: string }).startTime ||

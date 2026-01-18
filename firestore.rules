@@ -790,6 +790,7 @@ service cloud.firestore {
     }
 
     // --- Reports Collection (신고) ---
+    // v1.2.0: 양방향 신고 지원 (구인자→스태프, 구직자→구인자)
     match /reports/{reportId} {
       // 읽기: 관리자는 모든 신고, 일반 사용자는 본인 신고만
       allow read: if isSignedIn() && (
@@ -798,15 +799,33 @@ service cloud.firestore {
       );
 
       // 생성: 로그인한 사용자가 신고 생성 가능
+      // 양방향 신고 타입 지원:
+      //   - 스태프 신고 (employer→employee): tardiness, negligence, no_show, early_leave, inappropriate, dress_code, communication, other
+      //   - 구인자 신고 (employee→employer): false_posting, employer_negligence, unfair_treatment, inappropriate_behavior, other
       allow create: if isSignedIn() &&
         request.auth.uid == request.resource.data.reporterId &&
-        request.resource.data.keys().hasAll(['reporterId', 'reporterName', 'targetId', 'targetName', 'eventId', 'eventTitle', 'type', 'description']) &&
+        request.resource.data.keys().hasAll(['reporterId', 'reporterName', 'targetId', 'targetName', 'jobPostingId', 'type', 'description', 'reporterType', 'severity', 'status']) &&
         isSafeText(request.resource.data.description, 2000) &&
-        request.resource.data.type in ['tardiness', 'negligence', 'no_show', 'inappropriate_behavior', 'other'] &&
+        request.resource.data.type in [
+          // 스태프 신고 유형
+          'tardiness', 'negligence', 'no_show', 'early_leave', 'inappropriate', 'dress_code', 'communication',
+          // 구인자 신고 유형
+          'false_posting', 'employer_negligence', 'unfair_treatment', 'inappropriate_behavior',
+          // 공통
+          'other'
+        ] &&
+        request.resource.data.reporterType in ['employer', 'employee'] &&
+        request.resource.data.severity in ['low', 'medium', 'high', 'critical'] &&
+        request.resource.data.status == 'pending' &&
         request.resource.data.reporterId is string &&
         request.resource.data.reporterName is string &&
         request.resource.data.targetId is string &&
-        request.resource.data.targetName is string;
+        request.resource.data.targetName is string &&
+        request.resource.data.jobPostingId is string &&
+        (!('jobPostingTitle' in request.resource.data) || request.resource.data.jobPostingTitle is string) &&
+        (!('workLogId' in request.resource.data) || request.resource.data.workLogId is string) &&
+        (!('workDate' in request.resource.data) || request.resource.data.workDate is string) &&
+        (!('evidenceUrls' in request.resource.data) || request.resource.data.evidenceUrls is list);
 
       // 수정: 관리자만 가능 (상태 변경 등)
       allow update: if isPrivileged();

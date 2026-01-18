@@ -309,8 +309,10 @@ export function groupRequirementsToDateRanges(
     const prevDate = toDateString(prev.date);
     const currDate = toDateString(curr.date);
 
-    // 연속 날짜이고 timeSlots가 동일하면 같은 그룹
+    // 연속 날짜이고 timeSlots가 동일하고 둘 다 그룹화 설정된 경우에만 같은 그룹
+    const bothGrouped = prev.isGrouped === true && curr.isGrouped === true;
     if (
+      bothGrouped &&
       areDatesConsecutive(prevDate, currDate) &&
       areTimeSlotsEqual(prev.timeSlots, curr.timeSlots)
     ) {

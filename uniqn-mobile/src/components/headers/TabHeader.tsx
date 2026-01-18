@@ -11,6 +11,7 @@ import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { BellIcon, QrCodeIcon, SettingsIcon } from '@/components/icons';
+import { NotificationBadge } from '@/components/notifications';
 import { useUnreadCountRealtime } from '@/hooks/useNotifications';
 
 interface TabHeaderProps {
@@ -82,13 +83,7 @@ export function TabHeader({
           >
             <BellIcon size={24} color="#6B7280" />
             {/* 알림 배지 (실시간) */}
-            {unreadCount > 0 && (
-              <View className="absolute -right-1 -top-1 min-w-[18px] items-center justify-center rounded-full bg-error-500 px-1">
-                <Text className="text-[10px] font-bold text-white">
-                  {unreadCount > 99 ? '99+' : unreadCount}
-                </Text>
-              </View>
-            )}
+            <NotificationBadge count={unreadCount} size="sm" />
           </Pressable>
         )}
 

@@ -270,12 +270,12 @@ export function ReportModal({
       title={modalTitle}
       position="bottom"
     >
-      <View className="p-4">
+      <View>
         {/* 신고 대상 정보 */}
         <Card
           variant="filled"
-          padding="md"
-          className="mb-4 bg-red-50 dark:bg-red-900/20"
+          padding="sm"
+          className="mb-3 bg-red-50 dark:bg-red-900/20"
         >
           <View className="flex-row items-center">
             <View className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center">
@@ -308,13 +308,13 @@ export function ReportModal({
         </Card>
 
         {/* 신고 유형 선택 */}
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           신고 유형 선택 <Text className="text-red-500">*</Text>
         </Text>
 
         <ScrollView
-          className="max-h-56 mb-4"
-          showsVerticalScrollIndicator={false}
+          className="max-h-52 mb-3"
+          showsVerticalScrollIndicator={true}
           accessibilityRole="radiogroup"
           accessibilityLabel="신고 유형 선택"
         >
@@ -330,14 +330,14 @@ export function ReportModal({
 
         {/* 심각도 표시 */}
         {selectedType && (
-          <View className="mb-4">
+          <View className="mb-3">
             <SeverityIndicator type={selectedType} reporterType={mode} />
           </View>
         )}
 
         {/* 상세 설명 */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <View className="mb-3">
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             상세 설명 <Text className="text-red-500">*</Text>
           </Text>
           <TextInput
@@ -346,11 +346,11 @@ export function ReportModal({
             placeholder="구체적인 상황을 설명해주세요 (최소 10자)"
             placeholderTextColor="#9CA3AF"
             multiline
-            numberOfLines={4}
+            numberOfLines={3}
             textAlignVertical="top"
             accessibilityLabel="신고 상세 설명"
             accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
-            className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[100px]"
+            className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[80px]"
           />
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {description.length}/500자 (최소 10자)
@@ -358,16 +358,15 @@ export function ReportModal({
         </View>
 
         {/* 안내 메시지 */}
-        <View className="flex-row items-start p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
-          <AlertCircleIcon size={16} color="#D97706" />
+        <View className="flex-row items-start p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-3">
+          <AlertCircleIcon size={14} color="#D97706" />
           <View className="ml-2 flex-1">
-            <Text className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-1">
+            <Text className="text-xs font-medium text-yellow-700 dark:text-yellow-300 mb-0.5">
               신고 시 유의사항
             </Text>
-            <Text className="text-xs text-yellow-600 dark:text-yellow-400">
+            <Text className="text-xs text-yellow-600 dark:text-yellow-400 leading-4">
               • 허위 신고는 제재의 대상이 될 수 있습니다{'\n'}
-              • 신고 내용은 관리자가 검토 후 처리됩니다{'\n'}
-              • 심각한 사안은 즉시 조치될 수 있습니다
+              • 신고 내용은 관리자가 검토 후 처리됩니다
             </Text>
           </View>
         </View>

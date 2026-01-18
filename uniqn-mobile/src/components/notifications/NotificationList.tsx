@@ -5,17 +5,23 @@
  * @version 1.0.0
  */
 
-import React, { memo, useCallback } from 'react';
+import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList, ListRenderItem } from '@shopify/flash-list';
 import { BellSlashIcon } from '@/components/icons';
 import { NotificationItem, NotificationItemSkeleton } from './NotificationItem';
-import { NotificationData } from '@/types/notification';
+import { NotificationGroupItem } from './NotificationGroupItem';
+import {
+  NotificationData,
+  NotificationListItem,
+  GroupedNotificationData,
+  isGroupedNotification,
+} from '@/types/notification';
 import { EmptyState } from '@/components/ui/EmptyState';
 
 export interface NotificationListProps {
-  /** 알림 목록 */
-  notifications: NotificationData[];
+  /** 알림 목록 (개별 또는 그룹화된) */
+  notifications: NotificationListItem[];
   /** 로딩 상태 */
   isLoading?: boolean;
   /** 에러 */
@@ -30,6 +36,8 @@ export interface NotificationListProps {
   onLoadMore?: () => void;
   /** 알림 클릭 핸들러 */
   onNotificationPress?: (notification: NotificationData) => void;
+  /** 그룹 클릭 핸들러 */
+  onGroupPress?: (group: GroupedNotificationData) => void;
   /** 알림 삭제 핸들러 */
   onDeleteNotification?: (notificationId: string) => void;
   /** 모두 읽음 처리 핸들러 */
@@ -55,6 +63,7 @@ export const NotificationList = memo(function NotificationList({
   onRefresh,
   onLoadMore,
   onNotificationPress,
+  onGroupPress,
   onDeleteNotification,
   onMarkAllAsRead,
   showDelete = false,
@@ -62,22 +71,36 @@ export const NotificationList = memo(function NotificationList({
   ListEmptyComponent,
   className = '',
 }: NotificationListProps) {
-  // 알림 항목 렌더링
-  const renderItem: ListRenderItem<NotificationData> = useCallback(
-    ({ item }) => (
-      <NotificationItem
-        notification={item}
-        onPress={onNotificationPress}
-        onDelete={onDeleteNotification}
-        showDelete={showDelete}
-      />
-    ),
-    [onNotificationPress, onDeleteNotification, showDelete]
+  // 알림 항목 렌더링 (개별 또는 그룹)
+  const renderItem: ListRenderItem<NotificationListItem> = useCallback(
+    ({ item }) => {
+      if (isGroupedNotification(item)) {
+        return (
+          <NotificationGroupItem
+            group={item}
+            onGroupPress={onGroupPress}
+            onNotificationPress={onNotificationPress}
+            onDeleteNotification={onDeleteNotification}
+            showDelete={showDelete}
+          />
+        );
+      }
+      return (
+        <NotificationItem
+          notification={item}
+          onPress={onNotificationPress}
+          onDelete={onDeleteNotification}
+          showDelete={showDelete}
+        />
+      );
+    },
+    [onNotificationPress, onGroupPress, onDeleteNotification, showDelete]
   );
 
-  // 키 추출
+  // 키 추출 (그룹 또는 개별)
   const keyExtractor = useCallback(
-    (item: NotificationData) => item.id,
+    (item: NotificationListItem) =>
+      isGroupedNotification(item) ? item.groupId : item.id,
     []
   );
 
@@ -88,8 +111,15 @@ export const NotificationList = memo(function NotificationList({
     }
   }, [hasMore, isFetchingNextPage, onLoadMore]);
 
-  // 읽지 않은 알림 수
-  const unreadCount = notifications.filter((n) => !n.isRead).length;
+  // 읽지 않은 알림 수 (그룹 포함)
+  const unreadCount = useMemo(() => {
+    return notifications.reduce((count, item) => {
+      if (isGroupedNotification(item)) {
+        return count + item.unreadCount;
+      }
+      return count + (item.isRead ? 0 : 1);
+    }, 0);
+  }, [notifications]);
 
   // 스켈레톤 렌더링
   if (isLoading && notifications.length === 0) {
@@ -155,7 +185,7 @@ export const NotificationList = memo(function NotificationList({
       )}
 
       {/* 알림 리스트 */}
-      <FlashList<NotificationData>
+      <FlashList<NotificationListItem>
         data={notifications}
         renderItem={renderItem}
         keyExtractor={keyExtractor}

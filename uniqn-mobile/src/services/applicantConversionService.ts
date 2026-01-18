@@ -210,6 +210,7 @@ export async function convertApplicantToStaff(
             staffPhotoURL: applicationData.applicantPhotoURL ?? null,
             eventId,
             eventName: jobData.title,
+            ownerId: jobData.ownerId, // 구인자 ID (신고 기능 등에서 사용)
             role,
             customRole: customRole ?? null,
             date: null, // 고정공고는 날짜 없음
@@ -245,6 +246,7 @@ export async function convertApplicantToStaff(
                 staffPhotoURL: applicationData.applicantPhotoURL ?? null,
                 eventId,
                 eventName: jobData.title,
+                ownerId: jobData.ownerId, // 구인자 ID (신고 기능 등에서 사용)
                 role,
                 customRole: customRole ?? null,
                 date,

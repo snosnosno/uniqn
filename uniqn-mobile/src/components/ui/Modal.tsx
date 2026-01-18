@@ -2,10 +2,10 @@
  * UNIQN Mobile - Modal 컴포넌트
  *
  * @description 재사용 가능한 모달 컴포넌트
- * @version 2.0.0 - Reanimated 마이그레이션
+ * @version 3.0.0 - 웹 호환성 추가
  */
 
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  StyleSheet,
+  useWindowDimensions,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -25,6 +27,9 @@ import Animated, {
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
+import { isWeb } from '@/utils/platform';
+// @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
+import { createPortal } from 'react-dom';
 
 // ============================================================================
 // Types
@@ -53,10 +58,20 @@ const MODAL_SIZES = {
 };
 
 // ============================================================================
-// Component
+// Web Modal Portal (DOM 최상위에 렌더링)
 // ============================================================================
 
-export function Modal({
+function WebModalPortal({ children }: { children: React.ReactNode }) {
+  // SSR 안전 체크 및 document.body에 Portal 렌더링
+  if (typeof document === 'undefined') return <>{children}</>;
+  return createPortal(children, document.body);
+}
+
+// ============================================================================
+// Web Modal Component
+// ============================================================================
+
+function WebModal({
   visible,
   onClose,
   title,
@@ -67,6 +82,172 @@ export function Modal({
   position = 'center',
 }: ModalProps) {
   const { isDarkMode } = useThemeStore();
+  const { height: windowHeight } = useWindowDimensions();
+  const [shouldRender, setShouldRender] = useState(visible);
+  const [isAnimating, setIsAnimating] = useState(false);
+  const previouslyFocusedRef = useRef<Element | null>(null);
+
+  useEffect(() => {
+    if (visible) {
+      // 현재 포커스된 요소 저장 후 blur (aria-hidden 충돌 방지)
+      if (typeof document !== 'undefined') {
+        previouslyFocusedRef.current = document.activeElement;
+        if (document.activeElement instanceof HTMLElement) {
+          document.activeElement.blur();
+        }
+      }
+      setShouldRender(true);
+      // 다음 프레임에서 애니메이션 시작
+      requestAnimationFrame(() => setIsAnimating(true));
+      // 배경 스크롤 잠금
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = 'hidden';
+      }
+    } else {
+      setIsAnimating(false);
+      // 애니메이션 완료 후 언마운트
+      const timer = setTimeout(() => setShouldRender(false), 250);
+      // 배경 스크롤 해제
+      if (typeof document !== 'undefined') {
+        document.body.style.overflow = '';
+        // 이전에 포커스된 요소로 복원
+        if (previouslyFocusedRef.current instanceof HTMLElement) {
+          previouslyFocusedRef.current.focus();
+          previouslyFocusedRef.current = null;
+        }
+      }
+      return () => clearTimeout(timer);
+    }
+  }, [visible]);
+
+  // ESC 키로 닫기
+  useEffect(() => {
+    if (!visible || !closeOnBackdrop) return;
+    if (typeof document === 'undefined') return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [visible, closeOnBackdrop, onClose]);
+
+  if (!shouldRender) return null;
+
+  const containerStyle =
+    position === 'center' ? 'justify-center items-center' : 'justify-end';
+
+  const modalClassName =
+    position === 'center'
+      ? `bg-white dark:bg-gray-800 rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
+      : 'bg-white dark:bg-gray-800 rounded-t-3xl w-full pb-8';
+
+  // 모달 최대 높이 스타일 (숫자값으로 계산)
+  const modalMaxHeightStyle = {
+    maxHeight: position === 'center' ? windowHeight * 0.85 : windowHeight * 0.9,
+  };
+
+  return (
+    <WebModalPortal>
+      <View
+        style={[
+          StyleSheet.absoluteFill,
+          // @ts-expect-error - 웹 전용 스타일
+          { position: 'fixed', zIndex: 9999 },
+        ]}
+      >
+      {/* Backdrop */}
+      <Pressable
+        onPress={closeOnBackdrop ? onClose : undefined}
+        style={[
+          StyleSheet.absoluteFill,
+          {
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            opacity: isAnimating ? 1 : 0,
+            // @ts-expect-error - 웹 전용 스타일
+            transition: 'opacity 200ms ease',
+          },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="모달 닫기"
+      />
+
+      {/* Modal Container */}
+      <View
+        className={`flex-1 ${containerStyle}`}
+        pointerEvents="box-none"
+      >
+        <View
+          style={[
+            modalMaxHeightStyle,
+            position === 'center'
+              ? {
+                  opacity: isAnimating ? 1 : 0,
+                  transform: [{ scale: isAnimating ? 1 : 0.9 }],
+                  // @ts-expect-error - 웹 전용 스타일
+                  transition:
+                    'opacity 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }
+              : {
+                  opacity: isAnimating ? 1 : 0,
+                  transform: [{ translateY: isAnimating ? 0 : 100 }],
+                  transition: 'opacity 200ms ease, transform 300ms ease-out',
+                },
+          ]}
+          className={modalClassName}
+          pointerEvents="auto"
+        >
+          {/* Header */}
+          {(title || showCloseButton) && (
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                {title || ''}
+              </Text>
+              {showCloseButton && (
+                <Pressable
+                  onPress={onClose}
+                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+                  accessibilityRole="button"
+                  accessibilityLabel="닫기"
+                >
+                  <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {/* Content */}
+          <ScrollView
+            style={{ flex: 1 }}
+            contentContainerStyle={{ flexGrow: 1 }}
+            showsVerticalScrollIndicator={false}
+          >
+            <View className="p-5">{children}</View>
+          </ScrollView>
+        </View>
+      </View>
+      </View>
+    </WebModalPortal>
+  );
+}
+
+// ============================================================================
+// Native Modal Component
+// ============================================================================
+
+function NativeModal({
+  visible,
+  onClose,
+  title,
+  children,
+  showCloseButton = true,
+  closeOnBackdrop = true,
+  size = 'md',
+  position = 'center',
+}: ModalProps) {
+  const { isDarkMode } = useThemeStore();
+  const { height: windowHeight } = useWindowDimensions();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -149,6 +330,11 @@ export function Modal({
       ? `bg-white dark:bg-gray-800 rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
       : 'bg-white dark:bg-gray-800 rounded-t-3xl w-full pb-8';
 
+  // 모달 최대 높이 스타일 (숫자값으로 계산)
+  const modalMaxHeightStyle = {
+    maxHeight: position === 'center' ? windowHeight * 0.85 : windowHeight * 0.9,
+  };
+
   return (
     <RNModal
       visible={visible}
@@ -176,8 +362,8 @@ export function Modal({
           </Pressable>
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <Animated.View style={[modalAnimatedStyle, { pointerEvents: 'box-none' }]}>
-            <View className={modalClassName}>
+          <Animated.View style={[modalAnimatedStyle, modalMaxHeightStyle]}>
+            <View className={modalClassName} style={{ maxHeight: '100%' }}>
               {/* Header */}
               {(title || showCloseButton) && (
                 <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -200,6 +386,7 @@ export function Modal({
 
               {/* Content */}
               <ScrollView
+                style={{ flex: 1 }}
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
               >
@@ -211,6 +398,17 @@ export function Modal({
       </KeyboardAvoidingView>
     </RNModal>
   );
+}
+
+// ============================================================================
+// Main Export - Platform 분기
+// ============================================================================
+
+export function Modal(props: ModalProps) {
+  if (isWeb) {
+    return <WebModal {...props} />;
+  }
+  return <NativeModal {...props} />;
 }
 
 // ============================================================================

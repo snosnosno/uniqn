@@ -339,13 +339,9 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
         updatedAt: serverTimestamp(),
       };
 
-      // 시간에 따른 상태 자동 변경
+      // 퇴근 시간 입력 시에만 상태 변경 (출근 시간만 변경 시에는 기존 상태 유지)
       if (input.checkOutTime) {
-        updateData.status = 'checked_out';  // 퇴근 완료
-      } else if (input.checkInTime) {
-        updateData.status = 'checked_in';   // 근무 중
-      } else {
-        updateData.status = 'scheduled';    // 출근 예정
+        updateData.status = 'checked_out';
       }
 
       // 레거시 호환: actualStartTime/actualEndTime도 함께 업데이트 (null 포함)

@@ -254,6 +254,15 @@ export {
   ATTENDANCE_STATUS_LABELS,
 } from './schedule';
 
+// 정산 그룹핑 타입
+export type {
+  DateSettlementStatus,
+  GroupedSettlement,
+  GroupSettlementOptions,
+} from './settlement';
+
+export { isGroupedSettlement } from './settlement';
+
 // 공고 작성 폼 타입 (v2.0)
 export type {
   JobPostingFormData,

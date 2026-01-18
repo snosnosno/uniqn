@@ -160,7 +160,18 @@ export async function createReport(input: CreateReportInput): Promise<string> {
       throw error;
     }
 
-    logger.error('Failed to create report', error as Error, { input: validatedInput });
+    const firebaseError = error as Error & { code?: string; message?: string };
+    logger.error('Failed to create report', firebaseError, {
+      input: validatedInput,
+      errorCode: firebaseError.code,
+      errorMessage: firebaseError.message,
+      reportData: {
+        type: validatedInput.type,
+        reporterType: validatedInput.reporterType,
+        targetId: validatedInput.targetId,
+        jobPostingId: validatedInput.jobPostingId,
+      },
+    });
     throw mapFirebaseError(error);
   }
 }

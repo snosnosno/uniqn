@@ -202,7 +202,12 @@ export function ScheduleDetailModal({
       addToast({ type: 'success', message: '신고가 접수되었습니다.' });
       handleCloseReportModal();
     } catch (error) {
-      logger.error('Failed to submit report', error as Error);
+      const err = error as Error & { code?: string; message?: string };
+      logger.error('Failed to submit report', err, {
+        input,
+        errorCode: err.code,
+        errorMessage: err.message,
+      });
       addToast({ type: 'error', message: '신고 접수에 실패했습니다. 다시 시도해주세요.' });
     } finally {
       setIsReportLoading(false);
@@ -358,19 +363,21 @@ export function ScheduleDetailModal({
         })}
       </View>
 
-      {/* Tab Content */}
-      <ScrollView
-        className="max-h-96"
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        {activeTab === 'info' && <InfoTab schedule={schedule} />}
-        {activeTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
-        {activeTab === 'settlement' && <SettlementTab schedule={schedule} />}
-      </ScrollView>
+      {/* 콘텐츠 + 버튼 영역 */}
+      <View className="flex-1 max-h-[65vh]">
+        {/* Tab Content */}
+        <ScrollView
+          className="flex-1"
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+        >
+          {activeTab === 'info' && <InfoTab schedule={schedule} />}
+          {activeTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
+          {activeTab === 'settlement' && <SettlementTab schedule={schedule} />}
+        </ScrollView>
 
-      {/* 하단 버튼 영역: 취소 + 신고 (2열) */}
-      <View className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3">
+        {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
+        <View className="pt-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3">
         {/* 지원 취소 버튼 (지원중 상태) */}
         {schedule.type === 'applied' && onCancelApplication && schedule.applicationId && (
           <View className="flex-1">
@@ -413,6 +420,7 @@ export function ScheduleDetailModal({
             </Button>
           </View>
         )}
+        </View>
       </View>
 
       {/* 신고 모달 */}

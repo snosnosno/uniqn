@@ -21,7 +21,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Card } from '@/components/ui';
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore } from '@/stores/authStore';
+import { useAuthStore, useHasHydrated } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
@@ -31,6 +31,7 @@ export default function ProfileEditScreen() {
   const { profile, user } = useAuth();
   const setProfile = useAuthStore((state) => state.setProfile);
   const addToast = useToastStore((state) => state.addToast);
+  const hasHydrated = useHasHydrated();
   const [isSaving, setIsSaving] = useState(false);
 
   const {
@@ -52,8 +53,9 @@ export default function ProfileEditScreen() {
   });
 
   // profile이 로드되면 form 값을 업데이트
+  // hasHydrated를 확인하여 MMKV rehydration 완료 후에만 초기화
   useEffect(() => {
-    if (profile) {
+    if (hasHydrated && profile) {
       reset({
         nickname: profile.nickname ?? '',
         gender: profile.gender ?? undefined,
@@ -64,7 +66,7 @@ export default function ProfileEditScreen() {
         note: profile.note ?? '',
       });
     }
-  }, [profile, reset]);
+  }, [hasHydrated, profile, reset]);
 
   // 프로필 이미지 변경 핸들러 (ProfileImagePicker가 내부적으로 처리)
   const handleImageUpdated = (imageUrl: string | null) => {

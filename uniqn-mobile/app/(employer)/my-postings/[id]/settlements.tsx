@@ -723,6 +723,7 @@ export default function StaffSettlementsScreen() {
           onBulkSettle={handleBulkSettle}
           showBulkActions={true}
           onOpenSettings={handleOpenSettings}
+          enableGrouping={true}
         />
       )}
 

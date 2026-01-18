@@ -473,6 +473,10 @@ export interface WorkLog extends FirebaseDocument {
 
   /** 시간대 문자열 (예: "18:00~02:00") - Firestore 데이터 */
   timeSlot?: string;
+
+  // 구인자 정보 (비정규화 - 신고 기능 등에서 사용)
+  /** 구인자 ID */
+  ownerId?: string;
 }
 
 /**

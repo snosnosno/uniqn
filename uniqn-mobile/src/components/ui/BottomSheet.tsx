@@ -2,11 +2,11 @@
  * UNIQN Mobile - BottomSheet 컴포넌트
  *
  * @description @gorhom/bottom-sheet 래퍼 컴포넌트
- * @version 1.0.0
+ * @version 2.0.0 - 웹 호환성 추가
  */
 
 import React, { useCallback, useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
-import { View, Text, Pressable, StyleSheet, Platform, Keyboard } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Platform, Keyboard, ScrollView } from 'react-native';
 import {
   BottomSheetModal,
   BottomSheetBackdrop,
@@ -17,6 +17,8 @@ import {
 import { XMarkIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { getIconColor } from '@/constants';
+import { isWeb } from '@/utils/platform';
+import { Modal } from './Modal';
 
 // ============================================================================
 // Constants
@@ -93,6 +95,59 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
   ) => {
     const bottomSheetRef = useRef<BottomSheetModal>(null);
     const { isDarkMode } = useThemeStore();
+
+    // ========================================================================
+    // 웹 환경: Modal(position="bottom") 사용
+    // ========================================================================
+    if (isWeb) {
+      // ref 메서드 웹 폴백
+      useImperativeHandle(ref, () => ({
+        snapToIndex: () => {},
+        close: onClose,
+        expand: () => {},
+        collapse: () => {},
+        present: () => {},
+      }));
+
+      return (
+        <Modal
+          visible={visible}
+          onClose={onClose}
+          position="bottom"
+          showCloseButton={showCloseButton}
+          closeOnBackdrop={closeOnBackdrop}
+        >
+          {/* Handle bar (시각적 요소만) */}
+          {showHandle && (
+            <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
+              <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+            </View>
+          )}
+
+          {/* Header */}
+          {title && (
+            <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-gray-700">
+              <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
+                {title}
+              </Text>
+            </View>
+          )}
+
+          {/* Content */}
+          {scrollable ? (
+            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+              <View className="py-4">{children}</View>
+            </ScrollView>
+          ) : (
+            <View className="py-4">{children}</View>
+          )}
+        </Modal>
+      );
+    }
+
+    // ========================================================================
+    // 네이티브 환경: @gorhom/bottom-sheet 사용
+    // ========================================================================
 
     // 스냅 포인트 메모이제이션
     const snapPoints = useMemo(

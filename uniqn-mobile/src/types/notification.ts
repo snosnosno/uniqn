@@ -432,3 +432,75 @@ export function createDefaultNotificationSettings(): NotificationSettings {
     },
   };
 }
+
+// ============================================================================
+// Notification Grouping Types
+// ============================================================================
+
+/**
+ * 그룹핑 가능한 알림 타입
+ *
+ * @description 같은 컨텍스트(jobId, eventId)에서 여러 번 발생할 수 있는 타입만 포함
+ */
+export const GROUPABLE_NOTIFICATION_TYPES: NotificationType[] = [
+  NotificationType.NEW_APPLICATION,
+  NotificationType.APPLICATION_CANCELLED,
+  NotificationType.STAFF_CHECKED_IN,
+  NotificationType.STAFF_CHECKED_OUT,
+  NotificationType.NO_SHOW_ALERT,
+];
+
+/**
+ * 그룹화된 알림 데이터
+ */
+export interface GroupedNotificationData {
+  /** 그룹 고유 ID (type + context key 조합) */
+  groupId: string;
+  /** 알림 타입 (그룹 내 동일) */
+  type: NotificationType;
+  /** 그룹핑 컨텍스트 */
+  context: {
+    jobId?: string;
+    eventId?: string;
+    jobTitle?: string;
+    eventName?: string;
+  };
+  /** 그룹 내 알림 목록 (최신순 정렬) */
+  notifications: NotificationData[];
+  /** 그룹 내 총 알림 수 */
+  count: number;
+  /** 읽지 않은 알림 수 */
+  unreadCount: number;
+  /** 가장 최근 알림 시간 (그룹 정렬용) */
+  latestCreatedAt: Timestamp;
+  /** 그룹 대표 제목 (예: "새 지원자 5명") */
+  groupTitle: string;
+  /** 그룹 대표 본문 (최근 알림 내용 요약) */
+  groupBody: string;
+}
+
+/**
+ * 알림 리스트 아이템 (개별 or 그룹)
+ */
+export type NotificationListItem = NotificationData | GroupedNotificationData;
+
+/**
+ * 그룹 여부 타입 가드
+ */
+export function isGroupedNotification(
+  item: NotificationListItem
+): item is GroupedNotificationData {
+  return 'groupId' in item && 'notifications' in item;
+}
+
+/**
+ * 그룹핑 옵션
+ */
+export interface NotificationGroupingOptions {
+  /** 그룹핑 활성화 여부 (기본: true) */
+  enabled?: boolean;
+  /** 최소 그룹 크기 (이 수 이상일 때만 그룹화, 기본: 2) */
+  minGroupSize?: number;
+  /** 그룹핑 시간 윈도우 (밀리초, 기본: 24시간) */
+  timeWindowMs?: number;
+}

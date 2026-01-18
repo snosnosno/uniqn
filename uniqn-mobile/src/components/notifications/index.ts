@@ -17,6 +17,10 @@ export type { NotificationIconProps } from './NotificationIcon';
 export { NotificationItem, NotificationItemSkeleton } from './NotificationItem';
 export type { NotificationItemProps } from './NotificationItem';
 
+// Group Item
+export { NotificationGroupItem } from './NotificationGroupItem';
+export type { NotificationGroupItemProps } from './NotificationGroupItem';
+
 // List
 export {
   NotificationList,
@@ -30,3 +34,10 @@ export type {
 // Settings
 export { NotificationSettings } from './NotificationSettings';
 export type { NotificationSettingsProps } from './NotificationSettings';
+
+// Category Tabs
+export { NotificationCategoryTabs } from './NotificationCategoryTabs';
+export type {
+  NotificationCategoryTabsProps,
+  NotificationCategoryFilter,
+} from './NotificationCategoryTabs';

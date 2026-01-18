@@ -14,6 +14,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { colorScheme } from 'nativewind';
 import { queryClient } from '@/lib/queryClient';
+import { isWeb } from '@/utils/platform';
 import {
   ToastManager,
   ModalManager,
@@ -121,14 +122,24 @@ function AppContent() {
   );
 }
 
+/**
+ * 웹용 빈 Provider (BottomSheetModalProvider 대체)
+ */
+function WebSheetProvider({ children }: { children: React.ReactNode }) {
+  return <>{children}</>;
+}
+
+// 플랫폼별 Provider 선택
+const SheetProvider = isWeb ? WebSheetProvider : BottomSheetModalProvider;
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
-          <BottomSheetModalProvider>
+          <SheetProvider>
             <AppContent />
-          </BottomSheetModalProvider>
+          </SheetProvider>
         </QueryClientProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

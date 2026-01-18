@@ -55,6 +55,8 @@ interface TimeSlotCompat {
 interface DateSpecificRequirementCompat {
   date: string | Timestamp | { seconds: number };
   timeSlots: TimeSlotCompat[];
+  /** 그룹화 여부 (연속 날짜 그룹 표시용) */
+  isGrouped?: boolean;
 }
 
 interface GroupedDateRequirementDisplayProps {
@@ -277,6 +279,7 @@ export const GroupedDateRequirementDisplay = memo(function GroupedDateRequiremen
     // DateSpecificRequirement로 변환 (타입 호환성)
     const converted = requirements.map(req => ({
       date: toDateString(req.date),
+      isGrouped: req.isGrouped,
       timeSlots: req.timeSlots.map(slot => ({
         ...slot,
         startTime: slot.startTime || slot.time,

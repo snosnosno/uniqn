@@ -1,14 +1,14 @@
 /**
  * UNIQN Mobile - 정산 목록 컴포넌트
  *
- * @description FlashList 기반 정산 목록 (필터링, 일괄 정산)
- * @version 2.1.0
+ * @description FlashList 기반 정산 목록 (필터링, 일괄 정산, 스태프별 그룹핑)
+ * @version 3.0.0
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { SettlementCard } from './SettlementCard';
+import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
@@ -23,10 +23,14 @@ import {
   type SalaryInfo,
   type Allowances,
   type TaxSettings,
-  getRoleSalaryFromRoles,
-  calculateTotalSettlementFromRoles,
   formatCurrency,
 } from '@/utils/settlement';
+import {
+  groupSettlementsByStaff,
+  calculateGroupedSettlementStats,
+  type SettlementGroupingContext,
+} from '@/utils/settlementGrouping';
+import type { GroupedSettlement } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 
 // Re-export types for backward compatibility
@@ -64,6 +68,10 @@ export interface SettlementListProps {
   showBulkActions?: boolean;
   /** 설정 모달 열기 콜백 */
   onOpenSettings?: () => void;
+  /** 스태프별 그룹핑 활성화 (기본: true) */
+  enableGrouping?: boolean;
+  /** 그룹 일괄 정산 핸들러 */
+  onGroupBulkSettle?: (workLogs: WorkLog[]) => void;
 }
 
 type FilterStatus = 'all' | PayrollStatus;
@@ -285,10 +293,20 @@ export function SettlementList({
   onBulkSettle,
   showBulkActions = false,
   onOpenSettings,
+  enableGrouping = true,
+  onGroupBulkSettle,
 }: SettlementListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // 그룹핑 컨텍스트
+  const groupingContext: SettlementGroupingContext = useMemo(() => ({
+    roles,
+    defaultSalary,
+    allowances,
+    taxSettings,
+  }), [roles, defaultSalary, allowances, taxSettings]);
 
   // 필터링된 목록
   const filteredWorkLogs = useMemo(() => {
@@ -296,13 +314,21 @@ export function SettlementList({
     return workLogs.filter((log) => (log.payrollStatus || 'pending') === selectedFilter);
   }, [workLogs, selectedFilter]);
 
-  // 선택 가능한 항목 (미정산만)
+  // 그룹화된 목록
+  const groupedSettlements = useMemo(() => {
+    return groupSettlementsByStaff(filteredWorkLogs, groupingContext, {
+      enabled: enableGrouping,
+      minGroupSize: 1, // 항상 그룹 카드 형태로 표시
+    });
+  }, [filteredWorkLogs, groupingContext, enableGrouping]);
+
+  // 선택 가능한 항목 (미정산 + 출퇴근 완료)
   const selectableWorkLogs = useMemo(() => {
-    return filteredWorkLogs.filter(
+    return workLogs.filter(
       (log) => (log.payrollStatus || 'pending') === 'pending' &&
         log.actualStartTime && log.actualEndTime
     );
-  }, [filteredWorkLogs]);
+  }, [workLogs]);
 
   // 필터별 카운트
   const filterCounts = useMemo(() => {
@@ -316,25 +342,37 @@ export function SettlementList({
     return counts;
   }, [workLogs]);
 
-  // 요약 정보 (세후 금액 기준)
+  // 요약 정보 (그룹 통계 사용)
   const summaryInfo = useMemo(() => {
-    const pendingLogs = workLogs.filter((log) => (log.payrollStatus || 'pending') === 'pending');
-    const completedLogs = workLogs.filter((log) => log.payrollStatus === 'completed');
+    // 전체 workLogs를 그룹화하여 통계 계산 (필터 무관하게)
+    const allGrouped = groupSettlementsByStaff(workLogs, groupingContext, {
+      enabled: true,
+      minGroupSize: 1,
+    });
+    const stats = calculateGroupedSettlementStats(allGrouped);
 
     return {
-      totalCount: workLogs.length,
-      pendingCount: pendingLogs.length,
-      completedCount: completedLogs.length,
-      totalAmount: calculateTotalSettlementFromRoles(workLogs, roles, defaultSalary, allowances, undefined, true),
-      pendingAmount: calculateTotalSettlementFromRoles(pendingLogs, roles, defaultSalary, allowances, undefined, true),
+      totalCount: stats.totalWorkLogs,
+      pendingCount: stats.totalPendingCount,
+      completedCount: stats.totalCompletedCount,
+      totalAmount: stats.totalAmount,
+      pendingAmount: stats.totalPendingAmount,
     };
-  }, [workLogs, roles, defaultSalary, allowances]);
+  }, [workLogs, groupingContext]);
 
-  // 선택된 항목 금액 (세후 금액 기준)
+  // 선택된 항목 금액
   const selectedAmount = useMemo(() => {
-    const selectedLogs = workLogs.filter((log) => selectedIds.has(log.id));
-    return calculateTotalSettlementFromRoles(selectedLogs, roles, defaultSalary, allowances, undefined, true);
-  }, [workLogs, selectedIds, roles, defaultSalary, allowances]);
+    // 그룹 내 선택된 WorkLog들의 금액 합산
+    let totalAmount = 0;
+    for (const group of groupedSettlements) {
+      for (const status of group.dateStatuses) {
+        if (selectedIds.has(status.workLogId)) {
+          totalAmount += status.amount;
+        }
+      }
+    }
+    return totalAmount;
+  }, [groupedSettlements, selectedIds]);
 
   // 선택 핸들러
   const handleSelect = useCallback((workLog: WorkLog) => {
@@ -371,27 +409,34 @@ export function SettlementList({
     }
   }, [selectionMode]);
 
-  // 렌더 아이템
+  // 그룹 일괄 정산 핸들러
+  const handleGroupBulkSettle = useCallback((settlableWorkLogs: WorkLog[]) => {
+    const handler = onGroupBulkSettle || onBulkSettle;
+    handler?.(settlableWorkLogs);
+  }, [onGroupBulkSettle, onBulkSettle]);
+
+  // 렌더 아이템 (그룹화된 카드)
   const renderItem = useCallback(
-    ({ item }: { item: WorkLog & { customRole?: string } }) => {
-      const salaryInfo = getRoleSalaryFromRoles(roles, item.role, item.customRole, defaultSalary);
+    ({ item }: { item: GroupedSettlement }) => {
       return (
-        <View className="px-4 mb-3">
-          <SettlementCard
-            workLog={item}
-            salaryInfo={salaryInfo}
-            allowances={allowances}
-            taxSettings={taxSettings}
-            onPress={selectionMode ? handleSelect : onWorkLogPress}
-            onSettle={selectionMode ? undefined : onSettle}
+        <View className="px-4">
+          <GroupedSettlementCard
+            group={item}
+            onPress={onWorkLogPress}
+            onDatePress={onWorkLogPress}
+            onBulkSettle={handleGroupBulkSettle}
+            onSettle={onSettle}
+            selectionMode={selectionMode}
+            selectedIds={selectedIds}
+            onToggleSelect={handleSelect}
           />
         </View>
       );
     },
-    [roles, defaultSalary, allowances, taxSettings, selectionMode, handleSelect, onWorkLogPress, onSettle]
+    [handleGroupBulkSettle, onWorkLogPress, onSettle, selectionMode, selectedIds, handleSelect]
   );
 
-  const keyExtractor = useCallback((item: WorkLog) => item.id, []);
+  const keyExtractor = useCallback((item: GroupedSettlement) => item.id, []);
 
   // 로딩 상태
   if (isLoading && !isRefreshing) {
@@ -476,11 +521,12 @@ export function SettlementList({
 
       {/* 목록 */}
       <FlashList
-        data={filteredWorkLogs}
+        data={groupedSettlements}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
-        estimatedItemSize={220}
+        // 그룹 카드는 펼침 가능하여 높이가 가변적 (기본 약 200, 펼침 시 최대 ~500)
+        estimatedItemSize={250}
         onRefresh={onRefresh}
         refreshing={isRefreshing}
         showsVerticalScrollIndicator={false}

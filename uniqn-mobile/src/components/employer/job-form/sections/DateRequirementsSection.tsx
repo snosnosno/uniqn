@@ -128,6 +128,7 @@ export function DateRequirementsSection({
           newRequirements.push({
             date,
             timeSlots: deepCloneTimeSlots(sharedTimeSlots),
+            isGrouped: true, // 그룹으로 표시
           });
         }
       }
@@ -158,6 +159,7 @@ export function DateRequirementsSection({
               ],
             },
           ],
+          isGrouped: false, // 개별로 표시
         })
       );
 

@@ -194,9 +194,9 @@ export function RoleChangeModal({
       title="역할 변경"
       position="bottom"
     >
-      <View className="p-4">
+      <View>
         {/* 스태프 정보 */}
-        <Card variant="filled" padding="md" className="mb-4">
+        <Card variant="filled" padding="sm" className="mb-3">
           <View className="flex-row items-center">
             <View className="h-12 w-12 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
               <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
@@ -220,13 +220,13 @@ export function RoleChangeModal({
         </Card>
 
         {/* 역할 선택 */}
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
           변경할 역할 선택
         </Text>
 
         <ScrollView
-          className="max-h-64 mb-4"
-          showsVerticalScrollIndicator={false}
+          className="max-h-56 mb-3"
+          showsVerticalScrollIndicator={true}
         >
           {roles.map((role) => (
             <RoleOption
@@ -240,8 +240,8 @@ export function RoleChangeModal({
         </ScrollView>
 
         {/* 변경 사유 */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <View className="mb-3">
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
             변경 사유 <Text className="text-red-500">*</Text>
           </Text>
           <TextInput
@@ -252,14 +252,14 @@ export function RoleChangeModal({
             multiline
             numberOfLines={2}
             textAlignVertical="top"
-            className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[60px]"
+            className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[48px]"
           />
         </View>
 
         {/* 안내 메시지 */}
-        <View className="flex-row items-start p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-4">
-          <AlertCircleIcon size={16} color="#D97706" />
-          <Text className="ml-2 text-sm text-yellow-700 dark:text-yellow-300 flex-1">
+        <View className="flex-row items-start p-2.5 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg mb-3">
+          <AlertCircleIcon size={14} color="#D97706" />
+          <Text className="ml-2 text-xs text-yellow-700 dark:text-yellow-300 flex-1">
             역할 변경 시 해당 역할의 시급이 적용되며, 스태프에게 알림이 발송됩니다.
           </Text>
         </View>

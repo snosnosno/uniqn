@@ -88,6 +88,7 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
       // CardDateRequirement를 DateSpecificRequirement로 변환
       const normalized = dateRequirements.map((req) => ({
         date: req.date,
+        isGrouped: req.isGrouped,
         timeSlots: req.timeSlots.map((slot) => ({
           ...slot,
           roles: slot.roles.map((r) => ({

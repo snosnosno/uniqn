@@ -128,7 +128,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
       onRequestClose={handleClose}
     >
       <View className="flex-1 justify-end bg-black/50">
-        <View className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70%]">
+        <View className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[85%]">
           {/* 헤더 */}
           <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white">

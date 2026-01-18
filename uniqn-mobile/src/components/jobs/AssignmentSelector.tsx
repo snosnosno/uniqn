@@ -26,7 +26,9 @@ import {
 import {
   areDatesConsecutive,
   formatDateRangeWithCount,
+  toDateString,
 } from '@/utils/dateRangeUtils';
+import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types
@@ -146,11 +148,12 @@ const areTimeSlotsStructureEqual = (
 /**
  * DatedScheduleInfo[] → ScheduleGroup[] 변환
  *
- * @description 대회 공고: 연속 날짜 + 동일 timeSlots 구조를 그룹화
+ * @description 대회 공고: 연속 날짜 + 동일 timeSlots 구조 + isGrouped 플래그를 그룹화
  *              일반/긴급/고정 공고: 개별 날짜를 각각 그룹으로
  */
 const groupDatedSchedules = (
   schedules: DatedScheduleInfo[],
+  dateRequirements: DateSpecificRequirement[] | undefined,
   postingType?: PostingType
 ): ScheduleGroup[] => {
   if (schedules.length === 0) return [];
@@ -177,8 +180,14 @@ const groupDatedSchedules = (
     const prev = sorted[i - 1]!;
     const curr = sorted[i]!;
 
-    // 연속 날짜이고 timeSlots 구조가 동일하면 같은 그룹
+    // isGrouped 플래그 확인
+    const prevReq = dateRequirements?.find((r) => toDateString(r.date) === prev.date);
+    const currReq = dateRequirements?.find((r) => toDateString(r.date) === curr.date);
+    const bothGrouped = prevReq?.isGrouped === true && currReq?.isGrouped === true;
+
+    // 연속 날짜이고 timeSlots 구조가 동일하고 둘 다 그룹화 설정된 경우에만 같은 그룹
     if (
+      bothGrouped &&
       areDatesConsecutive(prev.date, curr.date) &&
       areTimeSlotsStructureEqual(prev.timeSlots, curr.timeSlots)
     ) {
@@ -579,8 +588,12 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   const isTournament = jobPosting.postingType === 'tournament';
 
   const scheduleGroups = useMemo(() => {
-    return groupDatedSchedules(datedSchedules, jobPosting.postingType);
-  }, [datedSchedules, jobPosting.postingType]);
+    return groupDatedSchedules(
+      datedSchedules,
+      jobPosting.dateSpecificRequirements as DateSpecificRequirement[] | undefined,
+      jobPosting.postingType
+    );
+  }, [datedSchedules, jobPosting.dateSpecificRequirements, jobPosting.postingType]);
 
   // v3.1: 그룹 역할 토글 핸들러 (그룹 내 모든 날짜 동시 선택/해제)
   const handleGroupRoleToggle = useCallback(

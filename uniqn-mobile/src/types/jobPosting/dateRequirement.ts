@@ -97,6 +97,13 @@ export interface DateSpecificRequirement {
   /** 해당 날짜의 시간대별 요구사항 */
   timeSlots: TimeSlot[];
 
+  /**
+   * 그룹화 여부
+   * - true: 연속 날짜를 하나의 그룹으로 표시 (시간대 공유)
+   * - false/undefined: 개별 날짜로 표시
+   */
+  isGrouped?: boolean;
+
   // === 레거시 호환 필드 ===
   /** @deprecated 메인 행사 날짜 여부 - 레거시 데이터 호환용 */
   isMainDate?: boolean;

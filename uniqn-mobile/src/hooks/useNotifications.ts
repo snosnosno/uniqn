@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 import {
@@ -25,10 +25,18 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { QUERY_KEYS } from '@/constants';
+import {
+  groupNotificationsWithCategoryFilter,
+  countUnreadInGroupedList,
+} from '@/utils/notificationGrouping';
 import type {
   NotificationData,
   NotificationSettings,
   NotificationFilter,
+  NotificationCategory,
+  NotificationListItem,
+  GroupedNotificationData,
+  NotificationGroupingOptions,
 } from '@/types/notification';
 
 // ============================================================================
@@ -469,6 +477,111 @@ export function useNotificationPermission() {
 }
 
 // ============================================================================
+// useGroupedNotifications
+// ============================================================================
+
+interface UseGroupedNotificationsOptions {
+  /** 카테고리 필터 */
+  categoryFilter?: NotificationCategory | 'all';
+  /** 그룹핑 옵션 */
+  groupingOptions?: NotificationGroupingOptions;
+  /** 쿼리 활성화 */
+  enabled?: boolean;
+}
+
+interface UseGroupedNotificationsResult {
+  /** 그룹화된 알림 목록 */
+  groupedNotifications: NotificationListItem[];
+  /** 원본 알림 목록 */
+  rawNotifications: NotificationData[];
+  /** 그룹 포함 읽지 않은 수 */
+  unreadCount: number;
+  /** 로딩 상태 */
+  isLoading: boolean;
+  /** 에러 */
+  error: Error | null;
+  /** 추가 데이터 존재 */
+  hasMore: boolean;
+  /** 다음 페이지 로드 */
+  fetchNextPage: () => Promise<void>;
+  /** 다음 페이지 로딩 중 */
+  isFetchingNextPage: boolean;
+  /** 새로고침 */
+  refetch: () => Promise<void>;
+  /** 그룹 내 모든 알림 읽음 처리 */
+  markGroupAsRead: (group: GroupedNotificationData) => void;
+}
+
+/**
+ * 그룹화된 알림 목록 훅
+ *
+ * @description 알림을 그룹화하고 카테고리 필터를 적용한 목록 제공
+ */
+export function useGroupedNotifications(
+  options: UseGroupedNotificationsOptions = {}
+): UseGroupedNotificationsResult {
+  const {
+    categoryFilter = 'all',
+    groupingOptions = { enabled: true, minGroupSize: 2 },
+    enabled = true,
+  } = options;
+
+  // 기존 알림 목록 훅
+  const {
+    notifications: rawNotifications,
+    isLoading,
+    error,
+    hasMore,
+    fetchNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useNotificationList({ enabled });
+
+  // 읽음 처리 훅
+  const { markAsRead } = useMarkAsRead();
+
+  // 그룹핑 적용 (메모이제이션)
+  const groupedNotifications = useMemo(() => {
+    return groupNotificationsWithCategoryFilter(
+      rawNotifications,
+      categoryFilter === 'all' ? null : categoryFilter,
+      groupingOptions
+    );
+  }, [rawNotifications, categoryFilter, groupingOptions]);
+
+  // 읽지 않은 수 계산 (그룹 포함)
+  const unreadCount = useMemo(() => {
+    return countUnreadInGroupedList(groupedNotifications);
+  }, [groupedNotifications]);
+
+  // 그룹 내 모든 알림 읽음 처리
+  const markGroupAsRead = useCallback(
+    (group: GroupedNotificationData) => {
+      const unreadIds = group.notifications
+        .filter((n) => !n.isRead)
+        .map((n) => n.id);
+
+      // 병렬로 읽음 처리
+      unreadIds.forEach((id) => markAsRead(id));
+    },
+    [markAsRead]
+  );
+
+  return {
+    groupedNotifications,
+    rawNotifications,
+    unreadCount,
+    isLoading,
+    error,
+    hasMore,
+    fetchNextPage,
+    isFetchingNextPage,
+    refetch,
+    markGroupAsRead,
+  };
+}
+
+// ============================================================================
 // Export All
 // ============================================================================
 
@@ -482,4 +595,5 @@ export default {
   useNotificationSettingsQuery,
   useSaveNotificationSettings,
   useNotificationPermission,
+  useGroupedNotifications,
 };

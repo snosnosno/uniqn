@@ -158,7 +158,7 @@ function workLogToScheduleEvent(
     payrollStatus: workLog.payrollStatus,
     payrollAmount: workLog.payrollAmount,
     ownerPhone: cardInfo?.contactPhone,
-    ownerId: cardInfo?.ownerId,
+    ownerId: workLog.ownerId || cardInfo?.ownerId, // workLog 우선, 없으면 공고에서 폴백
     notes: workLog.notes,
     sourceCollection: 'workLogs',
     sourceId: workLog.id,

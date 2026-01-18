@@ -168,3 +168,11 @@ export {
   extractAllDatesForCalendar,
   type GroupScheduleOptions,
 } from './scheduleGrouping';
+
+// 알림 그룹핑 유틸리티
+export {
+  groupNotifications,
+  countUnreadInGroupedList,
+  groupNotificationsWithCategoryFilter,
+  isGroupedNotification,
+} from './notificationGrouping';

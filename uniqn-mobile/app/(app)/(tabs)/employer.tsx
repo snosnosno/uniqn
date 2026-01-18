@@ -271,6 +271,7 @@ const JobPostingCard = memo(function JobPostingCard({
     // DateSpecificRequirement 형태로 변환
     const converted: DateSpecificRequirement[] = reqs.map((req) => ({
       date: getDateString(req.date),
+      isGrouped: req.isGrouped,
       timeSlots: (req.timeSlots ?? []).map((ts) => ({
         startTime: (ts as { startTime?: string; time?: string }).startTime ||
                    (ts as { startTime?: string; time?: string }).time || '',

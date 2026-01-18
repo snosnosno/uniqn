@@ -22,6 +22,9 @@ export type { ApplicantProfileModalProps } from './ApplicantProfileModal';
 export { SettlementCard } from './SettlementCard';
 export type { SettlementCardProps } from './SettlementCard';
 
+export { GroupedSettlementCard } from './GroupedSettlementCard';
+export type { GroupedSettlementCardProps } from './GroupedSettlementCard';
+
 export { SettlementList } from './SettlementList';
 export type { SettlementListProps } from './SettlementList';
 

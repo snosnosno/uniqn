@@ -161,9 +161,9 @@ export function ApplicantConfirmModal({
       title={config.title}
       position="center"
     >
-      <View className="p-4">
+      <View>
         {/* 지원자 정보 */}
-        <View className="flex-row items-center p-4 bg-gray-50 dark:bg-gray-800 rounded-xl mb-4">
+        <View className="flex-row items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl mb-3">
           <Avatar
             source={userProfile?.photoURL}
             name={displayName}
@@ -187,14 +187,13 @@ export function ApplicantConfirmModal({
 
         {/* 선택된 일정 표시 (확정 시) */}
         {action === 'confirm' && formattedAssignments.length > 0 && (
-          <View className="mb-4">
-            <Text className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+          <View className="mb-3">
+            <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               확정할 일정 ({formattedAssignments.length}건)
             </Text>
             <ScrollView
-              className="max-h-32"
+              className="max-h-36"
               showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
             >
               {formattedAssignments.map((item) => (
                 <View
@@ -240,8 +239,8 @@ export function ApplicantConfirmModal({
 
         {/* 지원 메시지 */}
         {applicant.message && (
-          <View className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
-            <Text className="text-sm text-gray-600 dark:text-gray-300 mb-1 font-medium">
+          <View className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-3">
+            <Text className="text-xs text-gray-600 dark:text-gray-300 mb-0.5 font-medium">
               지원 메시지
             </Text>
             <Text className="text-sm text-gray-700 dark:text-gray-200">
@@ -251,7 +250,7 @@ export function ApplicantConfirmModal({
         )}
 
         {/* 설명 */}
-        <View className="flex-row items-center mb-4">
+        <View className="flex-row items-center mb-3">
           <AlertCircleIcon
             size={20}
             color={action === 'reject' ? '#EF4444' : '#2563EB'}
@@ -263,8 +262,8 @@ export function ApplicantConfirmModal({
 
         {/* 입력 필드 */}
         {config.showTextInput && (
-          <View className="mb-4">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <View className="mb-3">
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
               {config.inputLabel}
             </Text>
             <TextInput
@@ -273,9 +272,9 @@ export function ApplicantConfirmModal({
               placeholder={config.inputPlaceholder}
               placeholderTextColor="#9CA3AF"
               multiline
-              numberOfLines={3}
+              numberOfLines={2}
               textAlignVertical="top"
-              className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[80px]"
+              className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[60px]"
             />
           </View>
         )}

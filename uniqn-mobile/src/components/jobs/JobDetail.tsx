@@ -251,8 +251,20 @@ export function JobDetail({ job }: JobDetailProps) {
         />
       </View>
 
-      {/* 상세 정보 */}
-      <View className="p-4">
+      {/* 상세 설명 */}
+      {safeDescription.length > 0 && (
+        <View className="p-4">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+            상세 설명
+          </Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-300 leading-6">
+            {safeDescription}
+          </Text>
+        </View>
+      )}
+
+      {/* 근무 정보 */}
+      <View className="p-4 border-t border-gray-100 dark:border-gray-700">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
           근무 정보
         </Text>
@@ -346,18 +358,6 @@ export function JobDetail({ job }: JobDetailProps) {
               </Text>
             )}
           </View>
-        </View>
-      )}
-
-      {/* 상세 설명 */}
-      {safeDescription.length > 0 && (
-        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-            상세 설명
-          </Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-300 leading-6">
-            {safeDescription}
-          </Text>
         </View>
       )}
 
