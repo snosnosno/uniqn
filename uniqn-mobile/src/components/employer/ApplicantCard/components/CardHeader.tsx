@@ -6,13 +6,14 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, useColorScheme } from 'react-native';
 import { Avatar } from '../../../ui/Avatar';
 import { Badge } from '../../../ui/Badge';
 import { ChevronUpIcon, ChevronDownIcon } from '../../../icons';
 import { APPLICATION_STATUS_LABELS } from '@/types';
 import type { ApplicationStatus } from '@/types';
 import { STATUS_BADGE_VARIANT } from '../constants';
+import { getIconColor } from '@/constants';
 
 // ============================================================================
 // Types
@@ -48,6 +49,10 @@ export const CardHeader = React.memo(function CardHeader({
   onToggleExpand,
   onViewProfile,
 }: CardHeaderProps) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+  const chevronColor = getIconColor(isDarkMode, 'secondary');
+
   return (
     <View className="flex-row items-center">
       {/* 메인 영역 - 프로필 모달 열기 */}
@@ -91,9 +96,9 @@ export const CardHeader = React.memo(function CardHeader({
           {isExpanded ? '접기' : '열기'}
         </Text>
         {isExpanded ? (
-          <ChevronUpIcon size={14} color="#6B7280" />
+          <ChevronUpIcon size={14} color={chevronColor} />
         ) : (
-          <ChevronDownIcon size={14} color="#6B7280" />
+          <ChevronDownIcon size={14} color={chevronColor} />
         )}
       </Pressable>
     </View>

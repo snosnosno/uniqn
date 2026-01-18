@@ -302,3 +302,52 @@ export function getPasswordStrength(password: string): {
 
   return { score, feedback };
 }
+
+// ============================================================================
+// Logging Masking Utilities
+// ============================================================================
+
+/**
+ * 민감한 ID를 마스킹 (앞 2자리 + *** + 뒤 2자리)
+ *
+ * 로그에 사용자 ID, 스태프 ID 등 민감한 식별자를 기록할 때 사용
+ *
+ * @param id - 마스킹할 ID
+ * @returns 마스킹된 ID
+ *
+ * @example
+ * ```ts
+ * maskSensitiveId('abc123xyz');  // 'ab***yz'
+ * maskSensitiveId('short');      // '****'
+ * maskSensitiveId('');           // '****'
+ * ```
+ */
+export function maskSensitiveId(id: string): string {
+  if (!id || id.length < 5) return '****';
+  return `${id.slice(0, 2)}***${id.slice(-2)}`;
+}
+
+/**
+ * 로그용 업데이트 객체에서 민감한 필드 제거
+ *
+ * @param updates - 업데이트 객체
+ * @param sensitiveKeys - 제거할 필드 키 목록
+ * @returns 민감 필드가 제거된 객체
+ *
+ * @example
+ * ```ts
+ * sanitizeLogData({ name: 'John', notes: 'private' }, ['notes']);
+ * // { name: 'John', notes: '[REDACTED]' }
+ * ```
+ */
+export function sanitizeLogData<T extends Record<string, unknown>>(
+  data: T,
+  sensitiveKeys: string[] = ['notes', 'message', 'content', 'password']
+): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(data).map(([key, value]) => [
+      key,
+      sensitiveKeys.includes(key) ? '[REDACTED]' : value,
+    ])
+  );
+}

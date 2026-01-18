@@ -97,23 +97,14 @@ export function InAppBanner({ message, onDismiss, onDismissPermanently }: InAppB
 
     switch (action.type) {
       case 'link':
-        if (action.url) {
-          await Linking.openURL(action.url);
-        }
-        break;
       case 'deeplink':
+      case 'update':
         if (action.url) {
           await Linking.openURL(action.url);
         }
         break;
       case 'dismiss':
         onDismiss();
-        break;
-      case 'update':
-        // 앱 스토어 링크
-        if (action.url) {
-          await Linking.openURL(action.url);
-        }
         break;
     }
   }, [message.primaryAction, onDismiss]);
@@ -182,7 +173,8 @@ export function InAppBanner({ message, onDismiss, onDismissPermanently }: InAppB
               {message.showDontShowAgain && onDismissPermanently && (
                 <Pressable
                   onPress={handleDismissPermanently}
-                  className="mt-2 active:opacity-70"
+                  hitSlop={8}
+                  className="mt-2 py-1 active:opacity-70"
                 >
                   <Text className="text-xs text-gray-500 dark:text-gray-400 underline">
                     다시 보지 않기

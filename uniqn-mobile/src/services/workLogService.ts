@@ -22,6 +22,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
 import { mapFirebaseError } from '@/errors';
 import { trackSettlementComplete } from './analyticsService';
 import type { WorkLog, PayrollStatus } from '@/types';
@@ -72,7 +73,7 @@ export async function getMyWorkLogs(
   pageSize: number = DEFAULT_PAGE_SIZE
 ): Promise<WorkLog[]> {
   try {
-    logger.info('근무 기록 목록 조회', { staffId });
+    logger.info('근무 기록 목록 조회', { staffId: maskSensitiveId(staffId) });
 
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
@@ -92,7 +93,7 @@ export async function getMyWorkLogs(
 
     return workLogs;
   } catch (error) {
-    logger.error('근무 기록 목록 조회 실패', error as Error, { staffId });
+    logger.error('근무 기록 목록 조회 실패', error as Error, { staffId: maskSensitiveId(staffId) });
     throw mapFirebaseError(error);
   }
 }
@@ -104,7 +105,7 @@ export async function getMyWorkLogs(
  */
 export async function getWorkLogsByDate(staffId: string, date: string): Promise<WorkLog[]> {
   try {
-    logger.info('날짜별 근무 기록 조회', { staffId, date });
+    logger.info('날짜별 근무 기록 조회', { staffId: maskSensitiveId(staffId), date });
 
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
@@ -126,13 +127,12 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
       return aTime - bTime;
     });
   } catch (error) {
-    // Firebase 에러 코드 추출하여 상세 로깅
+    // Firebase 에러 코드만 로깅 (상세 메시지는 보안상 제외)
     const firebaseCode = (error as { code?: string })?.code || 'unknown';
     logger.error('날짜별 근무 기록 조회 실패', error as Error, {
-      staffId,
+      staffId: maskSensitiveId(staffId),
       date,
       firebaseErrorCode: firebaseCode,
-      errorMessage: (error as Error)?.message,
     });
     throw mapFirebaseError(error);
   }
@@ -172,7 +172,7 @@ export async function getTodayCheckedInWorkLog(staffId: string): Promise<WorkLog
 
     return workLogs.find((wl) => wl.status === 'checked_in') || null;
   } catch (error) {
-    logger.error('오늘 출근 기록 조회 실패', error as Error, { staffId });
+    logger.error('오늘 출근 기록 조회 실패', error as Error, { staffId: maskSensitiveId(staffId) });
     throw mapFirebaseError(error);
   }
 }
@@ -190,7 +190,7 @@ export async function isCurrentlyWorking(staffId: string): Promise<boolean> {
  */
 export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
   try {
-    logger.info('근무 기록 통계 조회', { staffId });
+    logger.info('근무 기록 통계 조회', { staffId: maskSensitiveId(staffId) });
 
     // 최근 3개월 데이터 조회
     const now = new Date();
@@ -258,7 +258,7 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
       completedPayroll,
     };
   } catch (error) {
-    logger.error('근무 기록 통계 조회 실패', error as Error, { staffId });
+    logger.error('근무 기록 통계 조회 실패', error as Error, { staffId: maskSensitiveId(staffId) });
     throw mapFirebaseError(error);
   }
 }
@@ -277,7 +277,7 @@ export async function getMonthlyPayroll(
   workLogs: WorkLog[];
 }> {
   try {
-    logger.info('월별 정산 조회', { staffId, year, month });
+    logger.info('월별 정산 조회', { staffId: maskSensitiveId(staffId), year, month });
 
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 0);
@@ -319,7 +319,7 @@ export async function getMonthlyPayroll(
       workLogs,
     };
   } catch (error) {
-    logger.error('월별 정산 조회 실패', error as Error, { staffId, year, month });
+    logger.error('월별 정산 조회 실패', error as Error, { staffId: maskSensitiveId(staffId), year, month });
     throw mapFirebaseError(error);
   }
 }
@@ -338,7 +338,7 @@ export async function updateWorkTime(
   }
 ): Promise<void> {
   try {
-    logger.info('근무 시간 수정', { workLogId, updates });
+    logger.info('근무 시간 수정', { workLogId, updates: sanitizeLogData(updates) });
 
     const db = getFirebaseDb();
 
@@ -526,7 +526,7 @@ export function subscribeToMyWorkLogs(
 ): Unsubscribe {
   const { dateRange, pageSize = DEFAULT_PAGE_SIZE, onUpdate, onError } = options;
 
-  logger.info('근무 기록 목록 실시간 구독 시작', { staffId, dateRange });
+  logger.info('근무 기록 목록 실시간 구독 시작', { staffId: maskSensitiveId(staffId), dateRange });
 
   const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
@@ -556,14 +556,14 @@ export function subscribeToMyWorkLogs(
       })) as WorkLog[];
 
       logger.debug('근무 기록 목록 업데이트 수신', {
-        staffId,
+        staffId: maskSensitiveId(staffId),
         count: workLogs.length,
       });
 
       onUpdate(workLogs);
     },
     (error) => {
-      logger.error('근무 기록 목록 구독 에러', error, { staffId });
+      logger.error('근무 기록 목록 구독 에러', error, { staffId: maskSensitiveId(staffId) });
       onError?.(mapFirebaseError(error) as Error);
     }
   );
@@ -585,7 +585,7 @@ export function subscribeToTodayWorkStatus(
 ): Unsubscribe {
   const today = formatDateString(new Date());
 
-  logger.info('오늘 근무 상태 실시간 구독 시작', { staffId, today });
+  logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
 
   const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
   const q = query(
@@ -611,14 +611,14 @@ export function subscribeToTodayWorkStatus(
       } as WorkLog;
 
       logger.debug('오늘 근무 상태 업데이트', {
-        staffId,
+        staffId: maskSensitiveId(staffId),
         status: workLog.status,
       });
 
       callbacks.onUpdate(workLog);
     },
     (error) => {
-      logger.error('오늘 근무 상태 구독 에러', error, { staffId });
+      logger.error('오늘 근무 상태 구독 에러', error, { staffId: maskSensitiveId(staffId) });
       callbacks.onError?.(mapFirebaseError(error) as Error);
     }
   );

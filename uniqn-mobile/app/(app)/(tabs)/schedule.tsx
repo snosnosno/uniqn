@@ -18,6 +18,7 @@ import {
 } from '@/components/icons';
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { formatCurrency } from '@/utils/formatters';
 import type { ScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
@@ -29,10 +30,6 @@ import type { ScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 // ============================================================================
 // Helper Functions
 // ============================================================================
-
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('ko-KR').format(amount) + '원';
-}
 
 function formatMonthTitle(year: number, month: number): string {
   return `${year}년 ${month}월`;

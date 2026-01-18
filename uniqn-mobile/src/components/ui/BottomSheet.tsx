@@ -16,6 +16,17 @@ import {
 } from '@gorhom/bottom-sheet';
 import { XMarkIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
+import { getIconColor } from '@/constants';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+/** BottomSheet 배경색 (Tailwind gray-800 / white 대응) */
+const BACKGROUND_COLORS = {
+  light: '#ffffff',
+  dark: '#1f2937', // gray-800
+} as const;
 
 // ============================================================================
 // Types
@@ -161,7 +172,7 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         handleComponent={renderHandle}
         backgroundStyle={[
           styles.background,
-          { backgroundColor: isDarkMode ? '#1f2937' : '#ffffff' },
+          { backgroundColor: isDarkMode ? BACKGROUND_COLORS.dark : BACKGROUND_COLORS.light },
         ]}
         keyboardBehavior={Platform.OS === 'ios' ? 'extend' : 'interactive'}
         keyboardBlurBehavior="restore"
@@ -181,7 +192,7 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
-                  <XMarkIcon size={18} color={isDarkMode ? '#9CA3AF' : '#6B7280'} />
+                  <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
                 </Pressable>
               )}
             </View>

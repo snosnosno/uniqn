@@ -9,9 +9,11 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable, type ViewProps } from 'react-native';
+import { View, Text, Pressable, useColorScheme, type ViewProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ChevronLeftIcon } from '@/components/icons';
+import { getIconColor } from '@/constants';
 
 // ============================================================================
 // Types
@@ -60,6 +62,8 @@ export function MobileHeader({
 }: MobileHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
 
   // 뒤로가기 핸들러
   const handleBack = () => {
@@ -104,7 +108,7 @@ export function MobileHeader({
               accessibilityRole="button"
               accessibilityLabel="뒤로 가기"
             >
-              <Text className="text-2xl text-gray-900 dark:text-white">←</Text>
+              <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
             </Pressable>
           ) : (
             leftAction

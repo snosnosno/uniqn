@@ -2,11 +2,11 @@
  * UNIQN Mobile - Toast 컴포넌트
  *
  * @description 알림 토스트 메시지
- * @version 2.0.0 - Reanimated 마이그레이션
+ * @version 2.1.0 - 아이콘 컴포넌트 적용 및 의존성 최적화
  */
 
 import React, { useEffect, useCallback } from 'react';
-import { Text, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -14,6 +14,13 @@ import Animated, {
   runOnJS,
   Easing,
 } from 'react-native-reanimated';
+import {
+  CheckCircleIcon,
+  XCircleIcon,
+  ExclamationTriangleIcon,
+  InformationCircleIcon,
+  XMarkIcon,
+} from '@/components/icons';
 import type { Toast as ToastType } from '@/stores/toastStore';
 
 // ============================================================================
@@ -32,19 +39,19 @@ interface ToastProps {
 const TOAST_STYLES = {
   success: {
     container: 'bg-green-600 dark:bg-green-700',
-    icon: '✓',
+    IconComponent: CheckCircleIcon,
   },
   error: {
     container: 'bg-red-600 dark:bg-red-700',
-    icon: '✕',
+    IconComponent: XCircleIcon,
   },
   warning: {
     container: 'bg-yellow-500 dark:bg-yellow-600',
-    icon: '⚠',
+    IconComponent: ExclamationTriangleIcon,
   },
   info: {
     container: 'bg-blue-600 dark:bg-blue-700',
-    icon: 'ℹ',
+    IconComponent: InformationCircleIcon,
   },
 };
 
@@ -91,12 +98,15 @@ export function Toast({ toast, onDismiss }: ToastProps) {
     }, toast.duration);
 
     return () => clearTimeout(timer);
-  }, [toast.id, toast.duration, opacity, translateY, handleDismiss]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [toast.id, toast.duration]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: opacity.value,
     transform: [{ translateY: translateY.value }],
   }));
+
+  const IconComponent = style.IconComponent;
 
   return (
     <Animated.View style={animatedStyle} className="mb-2">
@@ -106,11 +116,15 @@ export function Toast({ toast, onDismiss }: ToastProps) {
         accessibilityRole="alert"
         accessibilityLabel={`${toast.type}: ${toast.message}`}
       >
-        <Text className="text-white text-lg mr-3">{style.icon}</Text>
+        <View className="mr-3">
+          <IconComponent size={20} color="#FFFFFF" />
+        </View>
         <Text className="text-white text-sm flex-1 font-medium">
           {toast.message}
         </Text>
-        <Text className="text-white/80 text-xs ml-2">✕</Text>
+        <View className="ml-2 p-1">
+          <XMarkIcon size={14} color="rgba(255, 255, 255, 0.8)" />
+        </View>
       </Pressable>
     </Animated.View>
   );

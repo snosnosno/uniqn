@@ -332,3 +332,14 @@ export {
   type SeoulDistrict,
   type MetroCity,
 } from './location';
+
+// ============================================================================
+// 색상 상수
+// ============================================================================
+
+export {
+  ICON_COLORS,
+  getIconColor,
+  STATUS_COLORS,
+  PRIMARY_COLORS,
+} from './colors';

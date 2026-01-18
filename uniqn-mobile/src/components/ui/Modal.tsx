@@ -14,6 +14,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  useColorScheme,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -22,6 +23,8 @@ import Animated, {
   withSpring,
   Easing,
 } from 'react-native-reanimated';
+import { XMarkIcon } from '@/components/icons';
+import { getIconColor } from '@/constants';
 
 // ============================================================================
 // Types
@@ -63,6 +66,8 @@ export function Modal({
   size = 'md',
   position = 'center',
 }: ModalProps) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);
@@ -183,13 +188,12 @@ export function Modal({
                   {showCloseButton && (
                     <Pressable
                       onPress={onClose}
-                      className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+                      className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
                       accessibilityRole="button"
                       accessibilityLabel="닫기"
+                      hitSlop={8}
                     >
-                      <Text className="text-gray-500 dark:text-gray-400 text-lg">
-                        ✕
-                      </Text>
+                      <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
                     </Pressable>
                   )}
                 </View>

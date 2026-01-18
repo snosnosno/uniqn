@@ -14,11 +14,7 @@ import type { AssignmentDisplay } from './types';
 // Role Helpers
 // ============================================================================
 
-/**
- * 역할 라벨 가져오기 (v3.0: 통합 타입에서 직접 re-export)
- * @deprecated getRoleDisplayName을 직접 사용하세요
- */
-export { getRoleDisplayName as getRoleLabel } from '@/types/unified';
+// getRoleDisplayName은 '@/types/unified'에서 직접 import하세요
 
 // ============================================================================
 // Date/Time Formatting

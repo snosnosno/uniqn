@@ -75,8 +75,8 @@ export interface UseConfirmedStaffReturn {
   removeStaff: (input: DeleteConfirmedStaffInput) => void;
   /** 노쇼 처리 */
   setNoShow: (workLogId: string, reason?: string) => void;
-  /** 상태 변경 */
-  changeStatus: (workLogId: string, status: ConfirmedStaffStatus) => void;
+  /** 상태 변경 (Promise 반환, await 가능) */
+  changeStatus: (workLogId: string, status: ConfirmedStaffStatus) => Promise<void>;
 
   // Action 상태
   isChangingRole: boolean;
@@ -285,8 +285,8 @@ export function useConfirmedStaff(
   );
 
   const changeStatus = useCallback(
-    (workLogId: string, status: ConfirmedStaffStatus) => {
-      changeStatusMutation.mutate({ workLogId, status });
+    async (workLogId: string, status: ConfirmedStaffStatus): Promise<void> => {
+      await changeStatusMutation.mutateAsync({ workLogId, status });
     },
     [changeStatusMutation]
   );

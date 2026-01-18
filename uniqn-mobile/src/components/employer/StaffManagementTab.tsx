@@ -26,6 +26,7 @@ import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
 
 export interface StaffManagementTabProps {
   jobPostingId: string;
+  /** @todo 향후 공고 상세 정보 표시에 사용 예정 (급여, 근무시간 등) */
   jobPosting?: JobPosting;
   onShowEventQR?: () => void;
   onShowRoleChange?: (staff: ConfirmedStaff) => void;
@@ -79,6 +80,7 @@ function QuickActions({
 
 export function StaffManagementTab({
   jobPostingId,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars -- TODO: 향후 공고 상세 정보 표시에 사용 예정
   jobPosting: _jobPosting,
   onShowEventQR,
   onShowRoleChange,
@@ -242,7 +244,7 @@ export function StaffManagementTab({
       if (!statusSheetTarget) return;
 
       try {
-        changeStatus(statusSheetTarget.id, value as 'scheduled' | 'checked_in' | 'checked_out');
+        await changeStatus(statusSheetTarget.id, value as 'scheduled' | 'checked_in' | 'checked_out');
 
         const statusLabels: Record<string, string> = {
           scheduled: '출근 예정',

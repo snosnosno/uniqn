@@ -17,7 +17,7 @@ import type { UserProfile } from '@/services';
 
 // 분리된 모듈 import
 import type { ApplicantCardProps, IconColors } from './types';
-import { getRoleLabel } from './utils';
+import { getRoleDisplayName } from '@/types/unified';
 import { useAssignmentSelection } from './useAssignmentSelection';
 import {
   CardHeader,
@@ -187,7 +187,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           {/* 지원 역할 & 시간 요약 */}
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            {getRoleLabel(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
+            {getRoleDisplayName(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
           </Text>
 
           {/* 고정공고: 근무 조건 표시 (날짜 선택 없음) */}
