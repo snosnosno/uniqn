@@ -21,6 +21,7 @@ import { ReportModal, type ReportTarget } from '@/components/employer/ReportModa
 import { getUserProfile } from '@/services/authService';
 import { createReport } from '@/services/reportService';
 import { useToastStore } from '@/stores/toastStore';
+import { useModal } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
 import type { ScheduleEvent, ScheduleType, CreateReportInput } from '@/types';
 
@@ -33,6 +34,10 @@ export interface ScheduleDetailModalProps {
   visible: boolean;
   onClose: () => void;
   onQRScan?: () => void;
+  /** 지원 취소 콜백 (지원중 상태에서만 사용) */
+  onCancelApplication?: (applicationId: string) => void;
+  /** 취소 요청 콜백 (확정 상태에서 사용) */
+  onRequestCancellation?: (applicationId: string) => void;
 }
 
 type TabId = 'info' | 'work' | 'settlement';
@@ -63,6 +68,8 @@ export function ScheduleDetailModal({
   visible,
   onClose,
   onQRScan,
+  onCancelApplication,
+  onRequestCancellation,
 }: ScheduleDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('info');
 
@@ -72,6 +79,7 @@ export function ScheduleDetailModal({
   const [isReportLoading, setIsReportLoading] = useState(false);
 
   const { addToast } = useToastStore();
+  const modal = useModal();
 
   // 모달 열릴 때 첫 번째 탭으로 리셋
   useEffect(() => {
@@ -83,6 +91,34 @@ export function ScheduleDetailModal({
   const handleTabPress = useCallback((tabId: TabId) => {
     setActiveTab(tabId);
   }, []);
+
+  // 지원 취소 핸들러 (확인 모달)
+  const handleCancelApplication = useCallback(() => {
+    if (!schedule?.applicationId || !onCancelApplication) return;
+
+    modal.showConfirm(
+      '지원 취소',
+      '정말 지원을 취소하시겠습니까?\n취소 후에는 다시 지원해야 합니다.',
+      () => {
+        onCancelApplication(schedule.applicationId!);
+        onClose();
+      }
+    );
+  }, [schedule?.applicationId, onCancelApplication, onClose, modal]);
+
+  // 취소 요청 핸들러 (확인 모달)
+  const handleRequestCancellation = useCallback(() => {
+    if (!schedule?.applicationId || !onRequestCancellation) return;
+
+    modal.showConfirm(
+      '취소 요청',
+      '확정된 일정의 취소를 요청하시겠습니까?\n구인자가 승인해야 취소가 완료됩니다.',
+      () => {
+        onRequestCancellation(schedule.applicationId!);
+        onClose();
+      }
+    );
+  }, [schedule?.applicationId, onRequestCancellation, onClose, modal]);
 
   // 신고 모달 열기
   const handleOpenReportModal = useCallback(async () => {
@@ -236,20 +272,51 @@ export function ScheduleDetailModal({
         {activeTab === 'settlement' && <SettlementTab schedule={schedule} />}
       </ScrollView>
 
-      {/* 신고 버튼 - 모든 상태에서 표시 (ownerId가 있을 때만) */}
-      {schedule.ownerId && (
-        <View className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            variant="outline"
-            size="md"
-            onPress={handleOpenReportModal}
-            className="border-red-300 dark:border-red-700"
-            icon={<AlertTriangleIcon size={18} color="#EF4444" />}
-          >
-            <Text className="text-red-600 dark:text-red-400">구인자 신고</Text>
-          </Button>
-        </View>
-      )}
+      {/* 하단 버튼 영역: 취소 + 신고 (2열) */}
+      <View className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3">
+        {/* 지원 취소 버튼 (지원중 상태) */}
+        {schedule.type === 'applied' && onCancelApplication && schedule.applicationId && (
+          <View className="flex-1">
+            <Button
+              variant="outline"
+              size="md"
+              onPress={handleCancelApplication}
+              className="border-red-300 dark:border-red-700"
+            >
+              <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
+            </Button>
+          </View>
+        )}
+
+        {/* 취소 요청 버튼 (확정 상태) */}
+        {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && (
+          <View className="flex-1">
+            <Button
+              variant="outline"
+              size="md"
+              onPress={handleRequestCancellation}
+              className="border-orange-300 dark:border-orange-700"
+            >
+              <Text className="text-orange-600 dark:text-orange-400 font-semibold">취소 요청</Text>
+            </Button>
+          </View>
+        )}
+
+        {/* 신고 버튼 */}
+        {schedule.ownerId && (
+          <View className="flex-1">
+            <Button
+              variant="outline"
+              size="md"
+              onPress={handleOpenReportModal}
+              className="border-gray-300 dark:border-gray-600"
+              icon={<AlertTriangleIcon size={16} color="#6B7280" />}
+            >
+              <Text className="text-gray-600 dark:text-gray-400">신고</Text>
+            </Button>
+          </View>
+        )}
+      </View>
 
       {/* 신고 모달 */}
       <ReportModal

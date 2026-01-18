@@ -47,17 +47,13 @@ function formatMonthTitle(year: number, month: number): string {
 interface ScheduleItemProps {
   schedule: ScheduleEvent;
   onPress: () => void;
-  onCancelApplication?: (applicationId: string) => void;
-  onRequestCancellation?: (applicationId: string) => void;
 }
 
-function ScheduleItem({ schedule, onPress, onCancelApplication, onRequestCancellation }: ScheduleItemProps) {
+function ScheduleItem({ schedule, onPress }: ScheduleItemProps) {
   return (
     <ScheduleCard
       schedule={schedule}
       onPress={onPress}
-      onCancelApplication={onCancelApplication}
-      onRequestCancellation={onRequestCancellation}
     />
   );
 }
@@ -389,8 +385,6 @@ export default function ScheduleScreen() {
                     key={schedule.id}
                     schedule={schedule}
                     onPress={() => handleOpenDetailSheet(schedule)}
-                    onCancelApplication={handleCancelApplication}
-                    onRequestCancellation={handleRequestCancellation}
                   />
                 ))}
               </View>
@@ -452,8 +446,6 @@ export default function ScheduleScreen() {
                     key={schedule.id}
                     schedule={schedule}
                     onPress={() => handleOpenDetailSheet(schedule)}
-                    onCancelApplication={handleCancelApplication}
-                    onRequestCancellation={handleRequestCancellation}
                   />
                 ))}
               </View>
@@ -468,6 +460,8 @@ export default function ScheduleScreen() {
         visible={isDetailSheetVisible}
         onClose={handleCloseDetailSheet}
         onQRScan={handleQRScan}
+        onCancelApplication={handleCancelApplication}
+        onRequestCancellation={handleRequestCancellation}
       />
 
       {/* QR 스캐너 */}

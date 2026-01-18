@@ -8,7 +8,7 @@
  * @version 1.0.0
  */
 
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Timestamp } from 'firebase/firestore';
 import { Card, Badge } from '@/components/ui';
@@ -17,9 +17,8 @@ import {
   ClockIcon,
   MapIcon,
   BriefcaseIcon,
-  CurrencyDollarIcon,
+  BanknotesIcon,
   UserIcon,
-  XMarkIcon,
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatCurrency, calculateSettlementWithTax, DEFAULT_SALARY_INFO, DEFAULT_TAX_SETTINGS, type SalaryInfo, type Allowances, type TaxSettings } from '@/utils/settlement';
@@ -32,10 +31,6 @@ import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
   onPress?: () => void;
-  /** 지원 취소 콜백 (지원중 상태에서만 사용) */
-  onCancelApplication?: (applicationId: string) => void;
-  /** 취소 요청 콜백 (확정 상태에서 사용) */
-  onRequestCancellation?: (applicationId: string) => void;
 }
 
 // ============================================================================
@@ -117,27 +112,9 @@ function formatDate(dateString: string): string {
 export const ScheduleCard = memo(function ScheduleCard({
   schedule,
   onPress,
-  onCancelApplication,
-  onRequestCancellation,
 }: ScheduleCardProps) {
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
-
-  // 지원 취소 핸들러 (applied 상태)
-  const handleCancelPress = useCallback((e: { stopPropagation: () => void }) => {
-    e.stopPropagation();
-    if (schedule.applicationId && onCancelApplication) {
-      onCancelApplication(schedule.applicationId);
-    }
-  }, [schedule.applicationId, onCancelApplication]);
-
-  // 취소 요청 핸들러 (confirmed 상태)
-  const handleRequestCancellation = useCallback((e: { stopPropagation: () => void }) => {
-    e.stopPropagation();
-    if (schedule.applicationId && onRequestCancellation) {
-      onRequestCancellation(schedule.applicationId);
-    }
-  }, [schedule.applicationId, onRequestCancellation]);
 
   // 구인자명
   const ownerName = schedule.jobPostingCard?.ownerName;
@@ -271,7 +248,7 @@ export const ScheduleCard = memo(function ScheduleCard({
 
         {/* 상태별 추가 정보 */}
         {schedule.type === 'applied' ? (
-          // 지원 중: 일정 + 급여 + 구인자 + 취소버튼
+          // 지원 중: 일정 + 역할 + 급여 + 구인자
           <View>
             <View className="flex-row items-center">
               <CalendarIcon size={14} color="#6B7280" />
@@ -284,37 +261,31 @@ export const ScheduleCard = memo(function ScheduleCard({
                 {formatTime(schedule.startTime)}
               </Text>
             </View>
-            <View className="flex-row items-center justify-between mt-2">
-              <View className="flex-row items-center flex-1">
-                {salaryDisplay && (
-                  <>
-                    <CurrencyDollarIcon size={14} color="#6B7280" />
-                    <Text className="ml-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-                      {salaryDisplay}
-                    </Text>
-                  </>
-                )}
-                {ownerName && (
-                  <View className="flex-row items-center ml-3">
-                    <UserIcon size={14} color="#9CA3AF" />
-                    <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                      {ownerName}
-                    </Text>
-                  </View>
-                )}
+            <View className="flex-row items-center flex-wrap mt-2">
+              {/* 역할 */}
+              <View className="flex-row items-center mr-3">
+                <BriefcaseIcon size={14} color="#6B7280" />
+                <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                  {getRoleDisplayName(schedule.role, schedule.customRole)}
+                </Text>
               </View>
-              {/* 지원 취소 버튼 */}
-              {onCancelApplication && schedule.applicationId && (
-                <Pressable
-                  onPress={handleCancelPress}
-                  className="flex-row items-center px-2 py-1 rounded-md bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
-                  hitSlop={8}
-                >
-                  <XMarkIcon size={14} color="#EF4444" />
-                  <Text className="ml-1 text-xs text-red-500 dark:text-red-400">
-                    취소
+              {/* 급여 */}
+              {salaryDisplay && (
+                <View className="flex-row items-center mr-3">
+                  <BanknotesIcon size={14} color="#6B7280" />
+                  <Text className="ml-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {salaryDisplay}
                   </Text>
-                </Pressable>
+                </View>
+              )}
+              {/* 구인자 */}
+              {ownerName && (
+                <View className="flex-row items-center">
+                  <UserIcon size={14} color="#9CA3AF" />
+                  <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
+                    {ownerName}
+                  </Text>
+                </View>
               )}
             </View>
           </View>
@@ -339,26 +310,11 @@ export const ScheduleCard = memo(function ScheduleCard({
                     confirmedTimeDisplay}
               </Text>
             </View>
-            <View className="flex-row items-center justify-between mt-2">
-              <View className="flex-row items-center">
-                <BriefcaseIcon size={14} color="#6B7280" />
-                <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-                  {getRoleDisplayName(schedule.role, schedule.customRole)}
-                </Text>
-              </View>
-              {/* 확정 상태: 취소 요청 버튼 */}
-              {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && (
-                <Pressable
-                  onPress={handleRequestCancellation}
-                  className="flex-row items-center px-2 py-1 rounded-md bg-orange-50 dark:bg-orange-900/20 active:bg-orange-100 dark:active:bg-orange-900/30"
-                  hitSlop={8}
-                >
-                  <XMarkIcon size={14} color="#F97316" />
-                  <Text className="ml-1 text-xs text-orange-600 dark:text-orange-400">
-                    취소 요청
-                  </Text>
-                </Pressable>
-              )}
+            <View className="flex-row items-center mt-2">
+              <BriefcaseIcon size={14} color="#6B7280" />
+              <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
+                {getRoleDisplayName(schedule.role, schedule.customRole)}
+              </Text>
             </View>
           </View>
         )}

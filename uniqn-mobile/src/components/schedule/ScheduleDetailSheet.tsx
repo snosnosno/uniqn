@@ -34,6 +34,10 @@ interface ScheduleDetailSheetProps {
   visible: boolean;
   onClose: () => void;
   onQRScan?: () => void;
+  /** 지원 취소 콜백 (지원중 상태에서만 사용) */
+  onCancelApplication?: (applicationId: string) => void;
+  /** 취소 요청 콜백 (확정 상태에서 사용) */
+  onRequestCancellation?: (applicationId: string) => void;
 }
 
 // ============================================================================
@@ -105,6 +109,8 @@ export function ScheduleDetailSheet({
   visible,
   onClose,
   onQRScan,
+  onCancelApplication,
+  onRequestCancellation,
 }: ScheduleDetailSheetProps) {
   // 현재 근무 상태 확인
   const { isWorking } = useCurrentWorkStatus();
@@ -115,6 +121,22 @@ export function ScheduleDetailSheet({
       onQRScan();
     }
   }, [onQRScan]);
+
+  // 지원 취소 핸들러
+  const handleCancelApplication = useCallback(() => {
+    if (schedule?.applicationId && onCancelApplication) {
+      onCancelApplication(schedule.applicationId);
+      onClose();
+    }
+  }, [schedule?.applicationId, onCancelApplication, onClose]);
+
+  // 취소 요청 핸들러
+  const handleRequestCancellation = useCallback(() => {
+    if (schedule?.applicationId && onRequestCancellation) {
+      onRequestCancellation(schedule.applicationId);
+      onClose();
+    }
+  }, [schedule?.applicationId, onRequestCancellation, onClose]);
 
   if (!schedule) return null;
 
@@ -243,13 +265,39 @@ export function ScheduleDetailSheet({
         </View>
       )}
 
-      {/* 지원 중 안내 */}
+      {/* 지원 중: 안내 + 취소 버튼 */}
       {schedule.type === 'applied' && (
-        <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4">
-          <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
-            지원이 확정되면 출퇴근 기능을 사용할 수 있습니다.
-          </Text>
+        <View>
+          <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 mb-4">
+            <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
+              지원이 확정되면 출퇴근 기능을 사용할 수 있습니다.
+            </Text>
+          </View>
+          {onCancelApplication && schedule.applicationId && (
+            <Button
+              variant="outline"
+              onPress={handleCancelApplication}
+              className="border-red-300 dark:border-red-700"
+            >
+              <Text className="text-red-600 dark:text-red-400 font-semibold">
+                지원 취소
+              </Text>
+            </Button>
+          )}
         </View>
+      )}
+
+      {/* 확정 상태: 취소 요청 버튼 */}
+      {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && !canCheckInOut && (
+        <Button
+          variant="outline"
+          onPress={handleRequestCancellation}
+          className="border-orange-300 dark:border-orange-700"
+        >
+          <Text className="text-orange-600 dark:text-orange-400 font-semibold">
+            취소 요청
+          </Text>
+        </Button>
       )}
     </Modal>
   );
