@@ -232,6 +232,118 @@ export interface ScheduleGroup {
   isPast: boolean;
 }
 
+// ============================================================================
+// Grouped Schedule Types (연속/다중 날짜 통합 표시용)
+// ============================================================================
+
+/**
+ * 날짜별 상태 정보 (통합 카드 펼침 시 표시)
+ */
+export interface DateStatus {
+  /** 날짜 (YYYY-MM-DD) */
+  date: string;
+  /** 포맷된 날짜 (예: "1/15(수)") */
+  formattedDate: string;
+  /** 출석 상태 */
+  status: AttendanceStatus;
+  /** 해당 날짜의 원본 ScheduleEvent ID */
+  scheduleEventId: string;
+}
+
+/**
+ * 통합 스케줄 이벤트
+ *
+ * 같은 지원(applicationId)의 연속/비연속 다중 날짜를 하나의 카드로 통합 표시
+ *
+ * @example
+ * 3일 연속 딜러 지원:
+ * - 기존: 3개의 개별 ScheduleCard
+ * - 개선: 1개의 GroupedScheduleCard ("1월 15일 ~ 17일 (3일)")
+ *
+ * 비연속 날짜 지원:
+ * - 기존: 2개의 개별 ScheduleCard (1/15, 1/17)
+ * - 개선: 1개의 GroupedScheduleCard ("1/15, 1/17 (2일)")
+ */
+export interface GroupedScheduleEvent {
+  /** 고유 ID: "grouped_{applicationId}" */
+  id: string;
+
+  /** 스케줄 타입 (applied, confirmed, completed, cancelled) */
+  type: ScheduleType;
+
+  /** 이벤트(공고) ID */
+  eventId: string;
+
+  /** 이벤트명 */
+  eventName: string;
+
+  /** 장소 */
+  location: string;
+
+  /** 상세 주소 */
+  detailedAddress?: string;
+
+  /**
+   * 날짜 범위 정보
+   */
+  dateRange: {
+    /** 시작 날짜 (YYYY-MM-DD) */
+    start: string;
+    /** 종료 날짜 (YYYY-MM-DD) */
+    end: string;
+    /** 전체 날짜 배열 (정렬됨) */
+    dates: string[];
+    /** 총 일수 */
+    totalDays: number;
+    /** 연속 날짜 여부 */
+    isConsecutive: boolean;
+  };
+
+  /**
+   * 역할 목록 (다중 역할 통합 지원)
+   * 예: ["딜러"], ["딜러", "플로어맨"]
+   */
+  roles: string[];
+
+  /**
+   * 커스텀 역할명 목록 (roles와 동일 인덱스로 매핑)
+   * undefined는 해당 role에 customRole이 없음을 의미
+   */
+  customRoles?: (string | undefined)[];
+
+  /** 시간대 문자열 (예: "19:00 ~ 02:00") */
+  timeSlot: string;
+
+  /**
+   * 날짜별 상태 (펼침 시 표시)
+   */
+  dateStatuses: DateStatus[];
+
+  /** 원본 ScheduleEvent 배열 */
+  originalEvents: ScheduleEvent[];
+
+  /** 지원서 ID (applicationId) */
+  applicationId?: string;
+
+  /** JobPostingCard 정보 (UI 렌더링용) */
+  jobPostingCard?: JobPostingCard;
+
+  /** 구인자 ID */
+  ownerId?: string;
+
+  /** 구인자 연락처 */
+  ownerPhone?: string;
+}
+
+/**
+ * GroupedScheduleEvent인지 확인하는 타입 가드
+ */
+export function isGroupedScheduleEvent(
+  event: ScheduleEvent | GroupedScheduleEvent
+): event is GroupedScheduleEvent {
+  return 'dateRange' in event && 'originalEvents' in event;
+}
+
 /**
  * 출퇴근 요청
  */

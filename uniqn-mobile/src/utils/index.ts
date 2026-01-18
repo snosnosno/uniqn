@@ -155,3 +155,16 @@ export {
   isRateLimited,
   getPasswordStrength,
 } from './security';
+
+// 스케줄 그룹핑 유틸리티 (연속/다중 날짜 통합 표시)
+export {
+  isConsecutiveDates,
+  formatSingleDate,
+  formatDateDisplay,
+  formatRolesDisplay,
+  groupScheduleEvents,
+  filterSchedulesByDate,
+  calculateGroupedStats,
+  extractAllDatesForCalendar,
+  type GroupScheduleOptions,
+} from './scheduleGrouping';

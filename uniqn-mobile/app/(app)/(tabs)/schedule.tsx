@@ -3,11 +3,16 @@
  * 내 스케줄 화면
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
-import { CalendarView, ScheduleCard, ScheduleDetailModal } from '@/components/schedule';
+import {
+  CalendarView,
+  ScheduleCard,
+  ScheduleDetailModal,
+  GroupedScheduleCard,
+} from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
 import { TabHeader } from '@/components/headers';
 import {
@@ -19,7 +24,13 @@ import {
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
 import { formatCurrency } from '@/utils/formatters';
-import type { ScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
+import type {
+  ScheduleEvent,
+  GroupedScheduleEvent,
+  QRCodeScanResult,
+  QRCodeAction,
+} from '@/types';
+import { isGroupedScheduleEvent } from '@/types';
 
 // ============================================================================
 // Constants
@@ -204,6 +215,8 @@ export default function ScheduleScreen() {
 
   // 스케줄 상세 시트 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
+  // 그룹 모달 지원을 위해 유지
+  const [selectedGroupedSchedule, setSelectedGroupedSchedule] = useState<GroupedScheduleEvent | null>(null);
   const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
 
   // QR 스캐너 상태
@@ -218,7 +231,8 @@ export default function ScheduleScreen() {
 
   const {
     schedules,
-    groupedSchedules,
+    // groupedSchedules는 날짜별 그룹화, groupedByApplication은 지원별 그룹화
+    groupedByApplication,
     selectedDateSchedules,
     stats,
     currentMonth,
@@ -231,7 +245,17 @@ export default function ScheduleScreen() {
     goToMonth,
     goToToday,
     refresh,
-  } = useCalendarView();
+  } = useCalendarView({ enableGrouping: true });
+
+  // 총 일수 계산 (그룹화된 스케줄의 실제 일수 합계)
+  const totalDays = useMemo(() => {
+    return groupedByApplication.reduce((sum, item) => {
+      if (isGroupedScheduleEvent(item)) {
+        return sum + item.dateRange.totalDays;
+      }
+      return sum + 1;
+    }, 0);
+  }, [groupedByApplication]);
 
   // 뷰 토글 핸들러
   const handleToggleView = useCallback(() => {
@@ -263,17 +287,46 @@ export default function ScheduleScreen() {
     router.push(`/(app)/applications/${applicationId}/cancel`);
   }, []);
 
-  // 스케줄 상세 시트 열기
+  // 단일 스케줄 상세 시트 열기
   const handleOpenDetailSheet = useCallback((schedule: ScheduleEvent) => {
     setSelectedSchedule(schedule);
+    setSelectedGroupedSchedule(null);
     setIsDetailSheetVisible(true);
+  }, []);
+
+  // 그룹화된 스케줄 클릭 시 첫 번째 원본 이벤트로 상세 시트 열기
+  const handleOpenGroupedDetailSheet = useCallback((group: GroupedScheduleEvent) => {
+    // 원본 이벤트 중 첫 번째를 선택
+    if (group.originalEvents.length > 0) {
+      setSelectedSchedule(group.originalEvents[0]);
+      setSelectedGroupedSchedule(group);
+      setIsDetailSheetVisible(true);
+    }
+  }, []);
+
+  // 그룹 내 특정 날짜 클릭 핸들러
+  const handleGroupDatePress = useCallback((date: string, scheduleEventId: string, group: GroupedScheduleEvent) => {
+    const targetEvent = group.originalEvents.find(e => e.id === scheduleEventId || e.date === date);
+    if (targetEvent) {
+      setSelectedSchedule(targetEvent);
+      setSelectedGroupedSchedule(group);
+      setIsDetailSheetVisible(true);
+    }
   }, []);
 
   // 스케줄 상세 시트 닫기
   const handleCloseDetailSheet = useCallback(() => {
     setIsDetailSheetVisible(false);
     // 닫힌 후 선택된 스케줄 초기화 (애니메이션 완료 후)
-    setTimeout(() => setSelectedSchedule(null), 300);
+    setTimeout(() => {
+      setSelectedSchedule(null);
+      setSelectedGroupedSchedule(null);
+    }, 300);
+  }, []);
+
+  // 그룹 모드에서 날짜 변경 핸들러 (모달 내 이전/다음 버튼)
+  const handleModalDateChange = useCallback((_date: string, schedule: ScheduleEvent) => {
+    setSelectedSchedule(schedule);
   }, []);
 
   // QR 스캔 핸들러
@@ -374,26 +427,40 @@ export default function ScheduleScreen() {
               onMonthChange={handleMonthChange}
             />
 
-            {/* 선택된 날짜의 스케줄 */}
+            {/* 선택된 날짜의 스케줄 (그룹화 적용) */}
             {selectedDateSchedules.length > 0 && (
               <View className="mt-4 px-4">
                 <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   {selectedDate} 스케줄 ({selectedDateSchedules.length}건)
                 </Text>
-                {selectedDateSchedules.map((schedule) => (
-                  <ScheduleItem
-                    key={schedule.id}
-                    schedule={schedule}
-                    onPress={() => handleOpenDetailSheet(schedule)}
-                  />
-                ))}
+                {selectedDateSchedules.map((item) => {
+                  if (isGroupedScheduleEvent(item)) {
+                    // 그룹화된 스케줄: GroupedScheduleCard 사용
+                    return (
+                      <GroupedScheduleCard
+                        key={item.id}
+                        group={item}
+                        onPress={() => handleOpenGroupedDetailSheet(item)}
+                        onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
+                      />
+                    );
+                  }
+                  // 단일 스케줄: ScheduleCard 사용
+                  return (
+                    <ScheduleItem
+                      key={item.id}
+                      schedule={item}
+                      onPress={() => handleOpenDetailSheet(item)}
+                    />
+                  );
+                })}
               </View>
             )}
           </View>
         </ScrollView>
       )}
 
-      {/* 리스트 뷰 */}
+      {/* 리스트 뷰 (그룹화 적용) */}
       {viewMode === 'list' && (
         <ScrollView
           className="flex-1"
@@ -409,52 +476,45 @@ export default function ScheduleScreen() {
                 <SkeletonScheduleCard key={i} />
               ))}
             </View>
-          ) : schedules.length === 0 ? (
+          ) : groupedByApplication.length === 0 ? (
             <EmptyState
               title="스케줄이 없습니다"
               description={`${currentMonth.year}년 ${currentMonth.month}월에 예정된 스케줄이 없습니다.\n공고에 지원하면 스케줄이 여기에 표시됩니다.`}
               variant="content"
             />
           ) : (
-            // 날짜별 그룹화된 스케줄
-            groupedSchedules.map((group) => (
-              <View key={group.date} className="mb-4">
-                {/* 날짜 헤더 */}
-                <View className="flex-row items-center mb-2">
-                  <Text
-                    className={`text-sm font-medium ${
-                      group.isToday
-                        ? 'text-primary-600 dark:text-primary-400'
-                        : group.isPast
-                          ? 'text-gray-400 dark:text-gray-500'
-                          : 'text-gray-700 dark:text-gray-300'
-                    }`}
-                  >
-                    {group.isToday ? '오늘 • ' : ''}
-                    {group.formattedDate}
-                  </Text>
-                  {group.isToday && (
-                    <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-full">
-                      <Text className="text-xs text-primary-600 dark:text-primary-400">TODAY</Text>
-                    </View>
-                  )}
-                </View>
-
-                {/* 해당 날짜의 스케줄들 */}
-                {group.events.map((schedule) => (
+            // 지원(applicationId)별 그룹화된 스케줄
+            <View>
+              <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+                {currentMonth.month}월 스케줄 ({groupedByApplication.length}건, {totalDays}일)
+              </Text>
+              {groupedByApplication.map((item) => {
+                if (isGroupedScheduleEvent(item)) {
+                  // 그룹화된 스케줄: GroupedScheduleCard 사용
+                  return (
+                    <GroupedScheduleCard
+                      key={item.id}
+                      group={item}
+                      onPress={() => handleOpenGroupedDetailSheet(item)}
+                      onDatePress={(date, eventId) => handleGroupDatePress(date, eventId, item)}
+                    />
+                  );
+                }
+                // 단일 스케줄: ScheduleCard 사용
+                return (
                   <ScheduleItem
-                    key={schedule.id}
-                    schedule={schedule}
-                    onPress={() => handleOpenDetailSheet(schedule)}
+                    key={item.id}
+                    schedule={item}
+                    onPress={() => handleOpenDetailSheet(item)}
                   />
-                ))}
-              </View>
-            ))
+                );
+              })}
+            </View>
           )}
         </ScrollView>
       )}
 
-      {/* 스케줄 상세 모달 (3탭) */}
+      {/* 스케줄 상세 모달 (3탭 + 그룹 모드 지원) */}
       <ScheduleDetailModal
         schedule={selectedSchedule}
         visible={isDetailSheetVisible}
@@ -462,6 +522,8 @@ export default function ScheduleScreen() {
         onQRScan={handleQRScan}
         onCancelApplication={handleCancelApplication}
         onRequestCancellation={handleRequestCancellation}
+        groupedSchedule={selectedGroupedSchedule}
+        onDateChange={handleModalDateChange}
       />
 
       {/* QR 스캐너 */}

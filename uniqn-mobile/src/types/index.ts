@@ -240,10 +240,14 @@ export type {
   GenerateEventQRInput,
   EventQRScanResult,
   EventQRValidationResult,
+  // 통합 스케줄 타입 (연속/다중 날짜 표시용)
+  DateStatus,
+  GroupedScheduleEvent,
 } from './schedule';
 
 export {
   toAttendanceStatus,
+  isGroupedScheduleEvent,
   SCHEDULE_COLORS,
   ATTENDANCE_STATUS_COLORS,
   SCHEDULE_TYPE_LABELS,

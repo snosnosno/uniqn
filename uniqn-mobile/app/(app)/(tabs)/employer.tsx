@@ -23,6 +23,11 @@ import {
   BriefcaseIcon,
   QrCodeIcon,
 } from '@/components/icons';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+} from '@/utils/dateRangeUtils';
+import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import type { JobPosting, PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
 // ============================================================================
@@ -181,6 +186,27 @@ const getDateString = (dateInput: string | Timestamp | { seconds: number }): str
   return '';
 };
 
+/**
+ * 시작/종료 날짜 사이의 모든 날짜 반환
+ */
+const getDatesBetween = (startDate: string, endDate: string): string[] => {
+  const dates: string[] = [];
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+    return [startDate];
+  }
+
+  const current = new Date(start);
+  while (current <= end) {
+    dates.push(current.toISOString().split('T')[0]!);
+    current.setDate(current.getDate() + 1);
+  }
+
+  return dates;
+};
+
 // ============================================================================
 // Sub-component: RoleLine
 // ============================================================================
@@ -237,41 +263,41 @@ const JobPostingCard = memo(function JobPostingCard({
   const status = statusConfig[posting.status] || statusConfig.active;
   const allowanceItems = getAllowanceItems(posting.allowances);
 
-  // dateSpecificRequirements를 정렬된 형태로 변환 (오늘 기준)
-  const dateRequirements = useMemo(() => {
+  // dateSpecificRequirements를 그룹화된 형태로 변환
+  const groupedDateRequirements = useMemo(() => {
     const reqs = posting.dateSpecificRequirements ?? [];
-    const today = new Date().toISOString().split('T')[0] ?? '';
+    if (reqs.length === 0) return [];
 
-    return reqs
-      .map((req) => ({
-        date: getDateString(req.date),
-        timeSlots: (req.timeSlots ?? [])
-          .map((ts) => ({
-            startTime: (ts as { startTime?: string; time?: string }).startTime ||
-                       (ts as { startTime?: string; time?: string }).time || '',
-            isTimeToBeAnnounced: (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
-            roles: ts.roles ?? [],
-          }))
-          // 시간대 정렬: 시간 미정 → 맨 뒤, 그 외 시간 순
-          .sort((a, b) => {
-            if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
-            if (!a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return -1;
-            return a.startTime.localeCompare(b.startTime);
-          }),
-      }))
-      // 날짜 정렬: 오늘 이후 먼저 (가까운 순), 과거는 뒤로 (최근 순)
-      .sort((a, b) => {
-        const aIsFuture = a.date >= today;
-        const bIsFuture = b.date >= today;
+    // DateSpecificRequirement 형태로 변환
+    const converted: DateSpecificRequirement[] = reqs.map((req) => ({
+      date: getDateString(req.date),
+      timeSlots: (req.timeSlots ?? []).map((ts) => ({
+        startTime: (ts as { startTime?: string; time?: string }).startTime ||
+                   (ts as { startTime?: string; time?: string }).time || '',
+        isTimeToBeAnnounced: (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
+        roles: ts.roles ?? [],
+      })),
+    }));
 
-        if (aIsFuture && !bIsFuture) return -1;
-        if (!aIsFuture && bIsFuture) return 1;
+    // 그룹화
+    const groups = groupRequirementsToDateRanges(converted);
 
-        if (aIsFuture && bIsFuture) {
-          return a.date.localeCompare(b.date);
-        }
-        return b.date.localeCompare(a.date);
-      });
+    // 각 그룹에 추가 정보 계산
+    return groups.map((group) => {
+      const firstTimeSlot = group.timeSlots[0];
+      const displayTime = firstTimeSlot?.isTimeToBeAnnounced
+        ? '미정'
+        : firstTimeSlot?.startTime || '-';
+
+      // 날짜 수 계산
+      const groupDates = getDatesBetween(group.startDate, group.endDate);
+
+      return {
+        ...group,
+        displayTime,
+        dayCount: groupDates.length,
+      };
+    });
   }, [posting.dateSpecificRequirements]);
 
   return (
@@ -325,36 +351,34 @@ const JobPostingCard = memo(function JobPostingCard({
               startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
               compact={true}
             />
-          ) : dateRequirements.length > 0 ? (
-            dateRequirements.map((dateReq, dateIdx) => (
-              <View key={dateIdx} className="mb-2">
-                {/* 날짜 */}
-                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  📅 {formatDate(dateReq.date)}
-                </Text>
+          ) : groupedDateRequirements.length > 0 ? (
+            groupedDateRequirements.map((group, groupIdx) => {
+              const isSingleDay = group.dayCount === 1;
+              const dateDisplay = isSingleDay
+                ? formatDate(group.startDate)
+                : formatDateRangeWithCount(group.startDate, group.endDate);
 
-                {/* 시간대별 */}
-                {dateReq.timeSlots.map((slot, slotIdx) => {
-                  // 시간 미정 여부 확인
-                  const displayTime = slot.isTimeToBeAnnounced
-                    ? '미정'
-                    : slot.startTime || '-';
+              return (
+                <View key={group.id || groupIdx} className="mb-2">
+                  {/* 날짜 범위 */}
+                  <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    📅 {dateDisplay}
+                  </Text>
 
-                  return (
-                    <View key={slotIdx} className="ml-5 mt-1">
-                      {slot.roles.map((role, roleIdx) => (
-                        <RoleLine
-                          key={roleIdx}
-                          role={role}
-                          showTime={roleIdx === 0}
-                          time={displayTime}
-                        />
-                      ))}
-                    </View>
-                  );
-                })}
-              </View>
-            ))
+                  {/* 시간 + 역할 (첫 번째 timeSlot 기준) */}
+                  <View className="ml-5 mt-1">
+                    {group.timeSlots[0]?.roles.map((role: RoleData, roleIdx: number) => (
+                      <RoleLine
+                        key={roleIdx}
+                        role={role}
+                        showTime={roleIdx === 0}
+                        time={group.displayTime}
+                      />
+                    ))}
+                  </View>
+                </View>
+              );
+            })
           ) : (
             // 레거시 폴백
             <View className="mb-2">

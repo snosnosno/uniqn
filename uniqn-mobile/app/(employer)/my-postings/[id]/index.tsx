@@ -30,7 +30,7 @@ import {
 import { useApplicantManagement } from '@/hooks/useApplicantManagement';
 import {
   PostingTypeBadge,
-  DateRequirementDisplay,
+  GroupedDateRequirementDisplay,
   FixedScheduleDisplay,
   RoleSalaryDisplay,
   TournamentStatusBadge,
@@ -103,7 +103,12 @@ const getAllowanceItems = (allowances?: Allowances): string[] => {
 
 function ActionCard({ icon, title, description, badge, onPress }: ActionCardProps) {
   return (
-    <Pressable onPress={onPress} className="active:opacity-70">
+    <Pressable
+      onPress={onPress}
+      className="active:opacity-70"
+      accessibilityRole="button"
+      accessibilityLabel={`${title}, ${description}`}
+    >
       <Card variant="elevated" padding="md" className="flex-row items-center">
         <View className="h-12 w-12 rounded-full bg-primary-50 dark:bg-primary-900/30 items-center justify-center mr-4">
           {icon}
@@ -137,7 +142,7 @@ export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { job: posting, isLoading, error, refresh } = useJobDetail(id || '');
-  const { cancellationPendingCount } = useApplicantManagement(id || '');
+  const { cancellationPendingCount, stats: applicantStats } = useApplicantManagement(id || '');
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
 
   // 삭제 확인 모달 상태
@@ -225,10 +230,15 @@ export default function JobPostingDetailScreen() {
   };
 
   const status = statusConfig[posting.status] || statusConfig.active;
-  const applicantCount = posting.applicationCount || 0;
-  const confirmedCount = posting.filledPositions || 0;
+
+  // 지원자 기준 통계 (사람 수) - applicantStats에서 가져옴
+  const totalApplicants = applicantStats?.total || posting.applicationCount || 0;
+  const confirmedApplicants = applicantStats?.confirmed || 0;
+  const pendingApplicants = (applicantStats?.applied || 0) + (applicantStats?.pending || 0);
+
+  // 배정 기준 통계 (슬롯 수) - posting에서 가져옴
+  const filledPositions = posting.filledPositions || 0;
   const totalPositions = posting.totalPositions || 0;
-  const pendingCount = applicantCount - confirmedCount;
 
   // 안전한 값 추출
   const safeTitle = String(posting.title || '제목 없음');
@@ -339,14 +349,10 @@ export default function JobPostingDetailScreen() {
                   </Text>
                 </View>
                 <View className="ml-6">
-                  {posting.dateSpecificRequirements!.map((req, idx) => (
-                    <DateRequirementDisplay
-                      key={idx}
-                      requirement={req}
-                      index={idx}
-                      showFilledCount={true}
-                    />
-                  ))}
+                  <GroupedDateRequirementDisplay
+                    requirements={posting.dateSpecificRequirements!}
+                    showFilledCount={true}
+                  />
                 </View>
               </View>
             ) : (
@@ -399,35 +405,45 @@ export default function JobPostingDetailScreen() {
               </>
             )}
 
-            {/* 모집 현황 */}
-            <View className="flex-row justify-around p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
-                  {applicantCount}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">총 지원자</Text>
+            {/* 모집 현황 - 지원자(사람) + 배정(슬롯) 구분 표시 */}
+            <View className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+              {/* 지원자 현황 (사람 수) */}
+              <View className="flex-row justify-around mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+                <View className="items-center flex-1">
+                  <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                    {totalApplicants}
+                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">지원자</Text>
+                </View>
+                <View className="w-px bg-gray-200 dark:bg-gray-700" />
+                <View className="items-center flex-1">
+                  <Text className="text-2xl font-bold text-success-600 dark:text-success-400">
+                    {confirmedApplicants}
+                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
+                </View>
+                <View className="w-px bg-gray-200 dark:bg-gray-700" />
+                <View className="items-center flex-1">
+                  <Text className="text-2xl font-bold text-warning-600 dark:text-warning-400">
+                    {pendingApplicants}
+                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">대기중</Text>
+                </View>
               </View>
-              <View className="w-px bg-gray-200 dark:bg-gray-700" />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-success-600 dark:text-success-400">
-                  {confirmedCount}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">확정</Text>
-              </View>
-              <View className="w-px bg-gray-200 dark:bg-gray-700" />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-warning-600 dark:text-warning-400">
-                  {pendingCount > 0 ? pendingCount : 0}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">대기중</Text>
-              </View>
-              <View className="w-px bg-gray-200 dark:bg-gray-700" />
-              <View className="items-center">
-                <Text className="text-2xl font-bold text-gray-600 dark:text-gray-400">
-                  {totalPositions}
-                </Text>
-                <Text className="text-sm text-gray-500 dark:text-gray-400">모집인원</Text>
-              </View>
+              {/* 배정 현황 (슬롯 수) - 대회공고 타입만 표시 */}
+              {posting.postingType === 'tournament' && (
+                <View className="flex-row justify-center items-center">
+                  <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">배정현황</Text>
+                  <Text className="text-lg font-bold text-gray-900 dark:text-white">
+                    {filledPositions}
+                  </Text>
+                  <Text className="text-lg text-gray-400 dark:text-gray-500 mx-1">/</Text>
+                  <Text className="text-lg font-bold text-gray-600 dark:text-gray-400">
+                    {totalPositions}
+                  </Text>
+                  <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">건</Text>
+                </View>
+              )}
             </View>
           </Card>
         </View>
@@ -443,8 +459,8 @@ export default function JobPostingDetailScreen() {
             <ActionCard
               icon={<UsersIcon size={24} color="#2563EB" />}
               title="지원자 관리"
-              description={`${pendingCount > 0 ? pendingCount : 0}명의 지원자가 대기중입니다`}
-              badge={pendingCount > 0 ? { label: `${pendingCount}명`, variant: 'warning' } : undefined}
+              description={`${pendingApplicants}명의 지원자가 대기중입니다`}
+              badge={pendingApplicants > 0 ? { label: `${pendingApplicants}명`, variant: 'warning' } : undefined}
               onPress={handleApplicants}
             />
 
@@ -462,7 +478,7 @@ export default function JobPostingDetailScreen() {
               icon={<BanknotesIcon size={24} color="#10B981" />}
               title="스태프/정산 관리"
               description="확정 스태프 관리 및 정산"
-              badge={confirmedCount > 0 ? { label: `${confirmedCount}명`, variant: 'success' } : undefined}
+              badge={filledPositions > 0 ? { label: `${filledPositions}건`, variant: 'success' } : undefined}
               onPress={handleSettlements}
             />
 
@@ -545,6 +561,9 @@ export default function JobPostingDetailScreen() {
             onPress={handleDeletePress}
             disabled={isDeleting}
             className="flex-row items-center justify-center py-4 rounded-xl bg-red-50 dark:bg-red-900/20 active:bg-red-100 dark:active:bg-red-900/30"
+            accessibilityRole="button"
+            accessibilityLabel="공고 삭제"
+            accessibilityState={{ disabled: isDeleting }}
           >
             {isDeleting ? (
               <ActivityIndicator size="small" color="#EF4444" />

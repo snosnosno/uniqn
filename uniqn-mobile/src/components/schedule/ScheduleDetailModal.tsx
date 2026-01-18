@@ -3,10 +3,11 @@
  *
  * @description 스케줄 상세 정보를 3탭(정보/근무/정산)으로 표시하는 모달
  *   + 구직자 → 구인자 신고 기능
- * @version 1.1.0
+ *   + 그룹화된 스케줄 지원 (다중 날짜 전환)
+ * @version 1.2.0
  */
 
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Modal, Badge, Button } from '@/components/ui';
 import {
@@ -15,6 +16,9 @@ import {
   ClockIcon,
   BanknotesIcon,
   AlertTriangleIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  CalendarIcon,
 } from '@/components/icons';
 import { InfoTab, WorkTab, SettlementTab } from './tabs';
 import { ReportModal, type ReportTarget } from '@/components/employer/ReportModal';
@@ -23,7 +27,8 @@ import { createReport } from '@/services/reportService';
 import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
-import type { ScheduleEvent, ScheduleType, CreateReportInput } from '@/types';
+import { formatSingleDate } from '@/utils/scheduleGrouping';
+import type { ScheduleEvent, ScheduleType, GroupedScheduleEvent, CreateReportInput } from '@/types';
 
 // ============================================================================
 // Types
@@ -38,6 +43,10 @@ export interface ScheduleDetailModalProps {
   onCancelApplication?: (applicationId: string) => void;
   /** 취소 요청 콜백 (확정 상태에서 사용) */
   onRequestCancellation?: (applicationId: string) => void;
+  /** 그룹화된 스케줄 (다중 날짜 전환 지원) */
+  groupedSchedule?: GroupedScheduleEvent | null;
+  /** 그룹 내 날짜 변경 콜백 */
+  onDateChange?: (date: string, schedule: ScheduleEvent) => void;
 }
 
 type TabId = 'info' | 'work' | 'settlement';
@@ -70,6 +79,8 @@ export function ScheduleDetailModal({
   onQRScan,
   onCancelApplication,
   onRequestCancellation,
+  groupedSchedule,
+  onDateChange,
 }: ScheduleDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('info');
 
@@ -80,6 +91,37 @@ export function ScheduleDetailModal({
 
   const { addToast } = useToastStore();
   const modal = useModal();
+
+  // 그룹 모드 관련 상태
+  const isGroupMode = !!groupedSchedule && groupedSchedule.dateRange.totalDays > 1;
+
+  // 현재 날짜 인덱스 (그룹 모드)
+  const currentDateIndex = useMemo(() => {
+    if (!isGroupMode || !schedule) return 0;
+    const index = groupedSchedule.dateRange.dates.indexOf(schedule.date);
+    return index >= 0 ? index : 0;
+  }, [isGroupMode, groupedSchedule, schedule]);
+
+  // 이전/다음 날짜로 이동
+  const handlePrevDate = useCallback(() => {
+    if (!isGroupMode || currentDateIndex === 0 || !groupedSchedule) return;
+    const prevDate = groupedSchedule.dateRange.dates[currentDateIndex - 1];
+    const prevSchedule = groupedSchedule.originalEvents.find(e => e.date === prevDate);
+    if (prevSchedule && onDateChange) {
+      onDateChange(prevDate, prevSchedule);
+    }
+  }, [isGroupMode, currentDateIndex, groupedSchedule, onDateChange]);
+
+  const handleNextDate = useCallback(() => {
+    if (!isGroupMode || !groupedSchedule) return;
+    const totalDates = groupedSchedule.dateRange.dates.length;
+    if (currentDateIndex >= totalDates - 1) return;
+    const nextDate = groupedSchedule.dateRange.dates[currentDateIndex + 1];
+    const nextSchedule = groupedSchedule.originalEvents.find(e => e.date === nextDate);
+    if (nextSchedule && onDateChange) {
+      onDateChange(nextDate, nextSchedule);
+    }
+  }, [isGroupMode, currentDateIndex, groupedSchedule, onDateChange]);
 
   // 모달 열릴 때 첫 번째 탭으로 리셋
   useEffect(() => {
@@ -202,6 +244,52 @@ export function ScheduleDetailModal({
         <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
       </View>
 
+      {/* 그룹 모드: 날짜 네비게이션 */}
+      {isGroupMode && groupedSchedule && (
+        <View className="flex-row items-center justify-between bg-primary-50 dark:bg-primary-900/20 rounded-xl px-3 py-2 mb-3">
+          {/* 이전 버튼 */}
+          <Pressable
+            onPress={handlePrevDate}
+            disabled={currentDateIndex === 0}
+            className={`w-8 h-8 items-center justify-center rounded-full ${
+              currentDateIndex === 0
+                ? 'opacity-30'
+                : 'active:bg-primary-100 dark:active:bg-primary-800/30'
+            }`}
+            accessibilityLabel="이전 날짜"
+          >
+            <ChevronLeftIcon size={20} color="#4F46E5" />
+          </Pressable>
+
+          {/* 현재 날짜 표시 */}
+          <View className="items-center">
+            <View className="flex-row items-center">
+              <CalendarIcon size={14} color="#4F46E5" />
+              <Text className="ml-1.5 text-sm font-semibold text-primary-700 dark:text-primary-300">
+                {schedule?.date ? formatSingleDate(schedule.date) : ''}
+              </Text>
+            </View>
+            <Text className="text-xs text-primary-500 dark:text-primary-400 mt-0.5">
+              {currentDateIndex + 1} / {groupedSchedule.dateRange.totalDays}일
+            </Text>
+          </View>
+
+          {/* 다음 버튼 */}
+          <Pressable
+            onPress={handleNextDate}
+            disabled={currentDateIndex >= groupedSchedule.dateRange.totalDays - 1}
+            className={`w-8 h-8 items-center justify-center rounded-full ${
+              currentDateIndex >= groupedSchedule.dateRange.totalDays - 1
+                ? 'opacity-30'
+                : 'active:bg-primary-100 dark:active:bg-primary-800/30'
+            }`}
+            accessibilityLabel="다음 날짜"
+          >
+            <ChevronRightIcon size={20} color="#4F46E5" />
+          </Pressable>
+        </View>
+      )}
+
       {/* Header */}
       <View className="flex-row items-start justify-between px-1 mb-3">
         <View className="flex-1">
@@ -209,6 +297,15 @@ export function ScheduleDetailModal({
             <Badge variant={status.variant} dot>
               {status.label}
             </Badge>
+            {/* 그룹 모드 표시 (연속/비연속 구분) */}
+            {isGroupMode && (
+              <View className="px-2 py-0.5 bg-primary-100 dark:bg-primary-900/30 rounded-full">
+                <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
+                  {groupedSchedule?.dateRange.totalDays}일
+                  {groupedSchedule?.dateRange.isConsecutive ? ' 연속' : ''}
+                </Text>
+              </View>
+            )}
           </View>
           <Text
             className="text-lg font-bold text-gray-900 dark:text-gray-100"

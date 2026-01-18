@@ -16,6 +16,9 @@ export type { ConfirmedActionsProps } from './ConfirmedActions';
 export { AssignmentSelector } from './AssignmentSelector';
 export type { AssignmentSelectorProps } from './AssignmentSelector';
 
+export { GroupedAssignmentSelector } from './GroupedAssignmentSelector';
+export type { GroupedAssignmentSelectorProps } from './GroupedAssignmentSelector';
+
 export { AssignmentReadOnly } from './AssignmentReadOnly';
 export type { AssignmentReadOnlyProps } from './AssignmentReadOnly';
 

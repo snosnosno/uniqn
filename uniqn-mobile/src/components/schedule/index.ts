@@ -11,6 +11,8 @@ export { ScheduleDetailModal } from './ScheduleDetailModal';
 export type { ScheduleDetailModalProps } from './ScheduleDetailModal';
 export { ScheduleCard } from './ScheduleCard';
 export type { ScheduleCardProps } from './ScheduleCard';
+export { GroupedScheduleCard } from './GroupedScheduleCard';
+export type { GroupedScheduleCardProps } from './GroupedScheduleCard';
 export { WorkLogList } from './WorkLogList';
 export type { WorkLogListProps } from './WorkLogList';
 

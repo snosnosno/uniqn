@@ -22,6 +22,10 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
+import {
+  groupScheduleEvents,
+  filterSchedulesByDate,
+} from '@/utils/scheduleGrouping';
 import type {
   ScheduleEvent,
   ScheduleFilters,
@@ -291,9 +295,36 @@ export function useScheduleStats(enabled = true) {
 }
 
 /**
- * 캘린더 뷰 상태 관리 훅
+ * 캘린더 뷰 옵션
  */
-export function useCalendarView(initialView: CalendarView = 'month') {
+interface UseCalendarViewOptions {
+  /** 초기 뷰 모드 (기본: 'month') */
+  initialView?: CalendarView;
+  /** 스케줄 그룹핑 활성화 (같은 지원의 연속/다중 날짜 통합, 기본: true) */
+  enableGrouping?: boolean;
+}
+
+/**
+ * 캘린더 뷰 상태 관리 훅
+ *
+ * @description
+ * - 월별 스케줄 조회 및 캘린더 상태 관리
+ * - enableGrouping=true 시 같은 지원의 연속/다중 날짜를 통합 표시
+ *
+ * @example
+ * // 기본 사용 (그룹핑 활성화)
+ * const { groupedByApplication, selectedDateSchedules } = useCalendarView();
+ *
+ * // 그룹핑 비활성화
+ * const { schedules } = useCalendarView({ enableGrouping: false });
+ */
+export function useCalendarView(options: UseCalendarViewOptions | CalendarView = 'month') {
+  // 옵션 정규화 (하위 호환성: 문자열도 허용)
+  const normalizedOptions: UseCalendarViewOptions =
+    typeof options === 'string' ? { initialView: options } : options;
+
+  const { initialView = 'month', enableGrouping = true } = normalizedOptions;
+
   const [view, setView] = useState<CalendarView>(initialView);
   const [selectedDate, setSelectedDate] = useState<string>(
     new Date().toISOString().split('T')[0]
@@ -345,8 +376,27 @@ export function useCalendarView(initialView: CalendarView = 'month') {
       month: currentMonth.month,
     });
 
-  // 선택된 날짜의 스케줄
+  // 같은 지원(applicationId)의 연속/다중 날짜를 통합
+  // 결과: (ScheduleEvent | GroupedScheduleEvent)[]
+  const groupedByApplication = useMemo(
+    () =>
+      enableGrouping
+        ? groupScheduleEvents(schedules, { enabled: true, minGroupSize: 2 })
+        : schedules,
+    [schedules, enableGrouping]
+  );
+
+  // 선택된 날짜의 스케줄 (그룹핑된 버전)
+  // GroupedScheduleEvent는 해당 날짜를 포함하면 반환
   const selectedDateSchedules = useMemo(() => {
+    if (enableGrouping) {
+      return filterSchedulesByDate(groupedByApplication, selectedDate);
+    }
+    return schedules.filter((s) => s.date === selectedDate);
+  }, [groupedByApplication, schedules, selectedDate, enableGrouping]);
+
+  // 원본 스케줄에서 선택된 날짜 필터링 (개별 카드용)
+  const selectedDateSchedulesRaw = useMemo(() => {
     return schedules.filter((s) => s.date === selectedDate);
   }, [schedules, selectedDate]);
 
@@ -355,12 +405,16 @@ export function useCalendarView(initialView: CalendarView = 'month') {
     view,
     selectedDate,
     currentMonth,
-    // 데이터
+    // 데이터 (원본)
     schedules,
-    groupedSchedules,
+    groupedSchedules, // 날짜별 그룹화 (기존)
     markedDates,
-    selectedDateSchedules,
     stats,
+    // 데이터 (통합 표시용)
+    groupedByApplication, // 같은 지원 통합 (신규)
+    selectedDateSchedules, // 선택된 날짜 (그룹핑 적용)
+    selectedDateSchedulesRaw, // 선택된 날짜 (원본)
+    // 상태
     isLoading,
     error,
     // 액션

@@ -53,5 +53,6 @@ export { PreQuestionForm } from './PreQuestionForm';
 // ============================================================================
 
 export { DateRequirementDisplay } from './DateRequirementDisplay';
+export { GroupedDateRequirementDisplay } from './GroupedDateRequirementDisplay';
 export { RoleSalaryDisplay, SalarySummary } from './RoleSalaryDisplay';
 export { FixedScheduleDisplay } from './FixedScheduleDisplay';
