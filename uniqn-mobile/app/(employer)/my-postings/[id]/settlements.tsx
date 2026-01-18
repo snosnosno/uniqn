@@ -42,7 +42,7 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
-import type { WorkLog, Allowances, ConfirmedStaff, CreateReportInput } from '@/types';
+import type { WorkLog, Allowances, ConfirmedStaff, CreateReportInput, GroupedSettlement } from '@/types';
 
 // ============================================================================
 // Constants
@@ -225,6 +225,7 @@ export default function StaffSettlementsScreen() {
 
   // 정산 상세 모달 상태
   const [selectedWorkLogForDetail, setSelectedWorkLogForDetail] = useState<WorkLog | null>(null);
+  const [selectedGroupForDetail, setSelectedGroupForDetail] = useState<GroupedSettlement | null>(null);
   const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
 
   // 정산 확인 모달 상태
@@ -359,10 +360,17 @@ export default function StaffSettlementsScreen() {
   // 정산 관리 핸들러
   // ============================================================================
 
-  // 근무기록 클릭 → 상세 모달 열기
-  const handleWorkLogPress = useCallback((workLog: WorkLog) => {
+  // 근무기록 클릭 → 상세 모달 열기 (그룹 정보 포함)
+  const handleWorkLogPress = useCallback((workLog: WorkLog, group: GroupedSettlement) => {
     setSelectedWorkLogForDetail(workLog);
+    setSelectedGroupForDetail(group);
     setIsDetailModalVisible(true);
+  }, []);
+
+  // 날짜 변경 핸들러 (상세 모달 내 날짜 네비게이션)
+  const handleDateChange = useCallback((workLog: WorkLog) => {
+    setSelectedWorkLogForDetail(workLog);
+    // selectedGroupForDetail은 유지 (같은 그룹 내 이동)
   }, []);
 
   // 시간 수정 클릭 (상세 모달에서)
@@ -770,8 +778,11 @@ export default function StaffSettlementsScreen() {
         onClose={() => {
           setIsDetailModalVisible(false);
           setSelectedWorkLogForDetail(null);
+          setSelectedGroupForDetail(null);
         }}
         workLog={selectedWorkLogForDetail}
+        groupedSettlement={selectedGroupForDetail ?? undefined}
+        onDateChange={handleDateChange}
         salaryInfo={getEffectiveSalaryInfoFromRoles(selectedWorkLogForDetail || {}, rolesForList, salaryConfig.defaultSalary)}
         allowances={getEffectiveAllowances(selectedWorkLogForDetail || {}, salaryConfig.allowances)}
         taxSettings={getEffectiveTaxSettings(selectedWorkLogForDetail || {}, posting?.taxSettings)}

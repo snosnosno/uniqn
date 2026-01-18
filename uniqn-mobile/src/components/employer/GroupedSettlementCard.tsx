@@ -48,10 +48,10 @@ if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental
 export interface GroupedSettlementCardProps {
   /** 그룹화된 정산 정보 */
   group: GroupedSettlement;
-  /** 카드 클릭 핸들러 (첫 번째 WorkLog 상세) */
-  onPress?: (workLog: WorkLog) => void;
-  /** 개별 날짜 클릭 핸들러 */
-  onDatePress?: (workLog: WorkLog) => void;
+  /** 카드 클릭 핸들러 (첫 번째 WorkLog 상세) - 그룹 정보 포함 */
+  onPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
+  /** 개별 날짜 클릭 핸들러 - 그룹 정보 포함 */
+  onDatePress?: (workLog: WorkLog, group: GroupedSettlement) => void;
   /** 그룹 일괄 정산 핸들러 */
   onBulkSettle?: (workLogs: WorkLog[]) => void;
   /** 개별 정산 핸들러 */
@@ -99,6 +99,7 @@ const PAYROLL_STATUS_CONFIG: Record<
 const DateStatusRow = memo(function DateStatusRow({
   status,
   workLog,
+  group,
   isLast,
   selectionMode,
   isSelected,
@@ -108,11 +109,12 @@ const DateStatusRow = memo(function DateStatusRow({
 }: {
   status: DateSettlementStatus;
   workLog: WorkLog;
+  group: GroupedSettlement;
   isLast: boolean;
   selectionMode?: boolean;
   isSelected?: boolean;
   onToggleSelect?: (workLog: WorkLog) => void;
-  onPress?: (workLog: WorkLog) => void;
+  onPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
   onSettle?: (workLog: WorkLog) => void;
 }) {
   const payrollConfig = PAYROLL_STATUS_CONFIG[status.payrollStatus];
@@ -123,9 +125,9 @@ const DateStatusRow = memo(function DateStatusRow({
     if (selectionMode && onToggleSelect) {
       onToggleSelect(workLog);
     } else {
-      onPress?.(workLog);
+      onPress?.(workLog, group);
     }
-  }, [selectionMode, onToggleSelect, onPress, workLog]);
+  }, [selectionMode, onToggleSelect, onPress, workLog, group]);
 
   const handleSettle = useCallback(() => {
     onSettle?.(workLog);
@@ -264,9 +266,9 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   // 카드 클릭
   const handlePress = useCallback(() => {
     if (group.originalWorkLogs.length > 0) {
-      onPress?.(group.originalWorkLogs[0]);
+      onPress?.(group.originalWorkLogs[0], group);
     }
-  }, [onPress, group.originalWorkLogs]);
+  }, [onPress, group]);
 
   // 그룹 일괄 정산
   const handleBulkSettle = useCallback(() => {
@@ -408,6 +410,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
                 key={status.workLogId}
                 status={status}
                 workLog={workLog}
+                group={group}
                 isLast={index === group.dateStatuses.length - 1}
                 selectionMode={selectionMode}
                 isSelected={selectedIds?.has(status.workLogId)}

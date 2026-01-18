@@ -20,7 +20,10 @@ import {
   DocumentIcon,
   ChevronDownIcon,
   ChevronUpIcon,
+  ChevronLeftIcon,
+  ChevronRightIcon,
 } from '../icons';
+import { useThemeStore } from '@/stores/themeStore';
 import { formatTime, formatDate } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import {
@@ -36,7 +39,7 @@ import {
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import type { UserProfile } from '@/services';
-import type { WorkLog, PayrollStatus, Allowances } from '@/types';
+import type { WorkLog, PayrollStatus, Allowances, GroupedSettlement } from '@/types';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -56,6 +59,10 @@ export interface SettlementDetailModalProps {
   onEditTime?: (workLog: WorkLog) => void;
   onEditAmount?: (workLog: WorkLog) => void;
   onSettle?: (workLog: WorkLog) => void;
+  /** 통합 그룹 정보 (날짜 선택용) */
+  groupedSettlement?: GroupedSettlement;
+  /** 날짜 변경 콜백 */
+  onDateChange?: (workLog: WorkLog) => void;
 }
 
 // ============================================================================
@@ -203,7 +210,12 @@ export function SettlementDetailModal({
   onEditTime,
   onEditAmount,
   onSettle,
+  groupedSettlement,
+  onDateChange,
 }: SettlementDetailModalProps) {
+  // 다크모드 감지
+  const { isDarkMode: isDark } = useThemeStore();
+
   // 사용자 프로필 조회
   const { data: userProfile } = useQuery<UserProfile | null>({
     queryKey: ['userProfile', workLog?.staffId],
@@ -215,6 +227,42 @@ export function SettlementDetailModal({
   // 수정 이력 접기/펼치기 상태 (기본: 접힘)
   const [isTimeHistoryExpanded, setIsTimeHistoryExpanded] = useState(false);
   const [isAmountHistoryExpanded, setIsAmountHistoryExpanded] = useState(false);
+
+  // ============================================================================
+  // 날짜 네비게이션 로직 (그룹 모드)
+  // ============================================================================
+
+  // 그룹 모드 여부 (2일 이상일 때 활성화)
+  const isGroupMode = !!groupedSettlement && groupedSettlement.dateRange.totalDays > 1;
+
+  // 현재 날짜 인덱스 계산
+  const currentDateIndex = useMemo(() => {
+    if (!isGroupMode || !workLog) return 0;
+    const index = groupedSettlement.dateRange.dates.indexOf(workLog.date);
+    return index >= 0 ? index : 0;
+  }, [isGroupMode, groupedSettlement, workLog]);
+
+  // 이전 날짜로 이동
+  const handlePrevDate = useCallback(() => {
+    if (!isGroupMode || currentDateIndex === 0 || !groupedSettlement) return;
+    const prevDate = groupedSettlement.dateRange.dates[currentDateIndex - 1];
+    const prevWorkLog = groupedSettlement.originalWorkLogs.find(wl => wl.date === prevDate);
+    if (prevWorkLog && onDateChange) {
+      onDateChange(prevWorkLog);
+    }
+  }, [isGroupMode, currentDateIndex, groupedSettlement, onDateChange]);
+
+  // 다음 날짜로 이동
+  const handleNextDate = useCallback(() => {
+    if (!isGroupMode || !groupedSettlement) return;
+    const maxIndex = groupedSettlement.dateRange.dates.length - 1;
+    if (currentDateIndex >= maxIndex) return;
+    const nextDate = groupedSettlement.dateRange.dates[currentDateIndex + 1];
+    const nextWorkLog = groupedSettlement.originalWorkLogs.find(wl => wl.date === nextDate);
+    if (nextWorkLog && onDateChange) {
+      onDateChange(nextWorkLog);
+    }
+  }, [isGroupMode, currentDateIndex, groupedSettlement, onDateChange]);
 
   // 계산된 값들
   const startTime = useMemo(() => workLog ? parseTimestamp(workLog.actualStartTime) : null, [workLog]);
@@ -283,6 +331,44 @@ export function SettlementDetailModal({
         </View>
 
         <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+          {/* 날짜 네비게이션 (그룹 모드일 때만) */}
+          {isGroupMode && (
+            <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <Pressable
+                onPress={handlePrevDate}
+                disabled={currentDateIndex === 0}
+                className={`p-2 rounded-full min-w-[44px] min-h-[44px] items-center justify-center ${
+                  currentDateIndex === 0 ? 'opacity-30' : 'active:bg-gray-200 dark:active:bg-gray-700'
+                }`}
+                accessibilityLabel="이전 날짜"
+              >
+                <ChevronLeftIcon size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
+              </Pressable>
+
+              <View className="flex-1 items-center">
+                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                  {workLog?.date ? formatDate(parseTimestamp(workLog.date) || new Date(workLog.date)) : ''}
+                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  {currentDateIndex + 1} / {groupedSettlement?.dateRange.totalDays}
+                </Text>
+              </View>
+
+              <Pressable
+                onPress={handleNextDate}
+                disabled={currentDateIndex >= (groupedSettlement?.dateRange.totalDays ?? 1) - 1}
+                className={`p-2 rounded-full min-w-[44px] min-h-[44px] items-center justify-center ${
+                  currentDateIndex >= (groupedSettlement?.dateRange.totalDays ?? 1) - 1
+                    ? 'opacity-30'
+                    : 'active:bg-gray-200 dark:active:bg-gray-700'
+                }`}
+                accessibilityLabel="다음 날짜"
+              >
+                <ChevronRightIcon size={24} color={isDark ? '#9CA3AF' : '#6B7280'} />
+              </Pressable>
+            </View>
+          )}
+
           {/* 프로필 헤더 */}
           <View className="items-center py-6 bg-gray-50 dark:bg-gray-800">
             <Avatar

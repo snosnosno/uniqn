@@ -62,7 +62,8 @@ export interface SettlementListProps {
   error?: Error | null;
   onRefresh?: () => void;
   isRefreshing?: boolean;
-  onWorkLogPress?: (workLog: WorkLog) => void;
+  /** 근무기록 클릭 핸들러 (그룹 정보 포함) */
+  onWorkLogPress?: (workLog: WorkLog, group: GroupedSettlement) => void;
   onSettle?: (workLog: WorkLog) => void;
   onBulkSettle?: (workLogs: WorkLog[]) => void;
   showBulkActions?: boolean;
