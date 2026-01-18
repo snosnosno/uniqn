@@ -14,7 +14,6 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  useColorScheme,
 } from 'react-native';
 import Animated, {
   useSharedValue,
@@ -25,6 +24,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -66,8 +66,7 @@ export function Modal({
   size = 'md',
   position = 'center',
 }: ModalProps) {
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const { isDarkMode } = useThemeStore();
   const fadeOpacity = useSharedValue(0);
   const scale = useSharedValue(0.9);
   const translateY = useSharedValue(100);

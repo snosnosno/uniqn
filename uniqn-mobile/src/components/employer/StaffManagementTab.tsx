@@ -16,7 +16,6 @@ import { ConfirmModal } from '../ui/Modal';
 import { ActionSheet, type ActionSheetOption } from '../ui/ActionSheet';
 import { QRCodeIcon, RefreshIcon, CheckCircleIcon, ClockIcon, CalendarIcon } from '../icons';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
 
@@ -86,7 +85,6 @@ export function StaffManagementTab({
   onShowRoleChange,
   onShowReport,
 }: StaffManagementTabProps) {
-  const { addToast } = useToastStore();
 
   // 스태프 데이터
   const {
@@ -179,34 +177,18 @@ export function StaffManagementTab({
   );
 
   // 스태프 삭제 실행
+  // 토스트는 useConfirmedStaff 훅의 onSuccess/onError에서 처리
   const executeDelete = useCallback(
-    async (staff: ConfirmedStaff) => {
-      try {
-        removeStaff({
-          workLogId: staff.id,
-          jobPostingId,
-          staffId: staff.staffId,
-          date: staff.date,
-          reason: '구인자에 의한 삭제',
-        });
-
-        addToast({
-          type: 'success',
-          message: `${staff.staffName}님이 삭제되었습니다.`,
-        });
-      } catch (error) {
-        logger.error('스태프 삭제 실패', error as Error, {
-          component: 'StaffManagementTab',
-          staffId: staff.staffId,
-          jobPostingId,
-        });
-        addToast({
-          type: 'error',
-          message: '삭제에 실패했습니다.',
-        });
-      }
+    (staff: ConfirmedStaff) => {
+      removeStaff({
+        workLogId: staff.id,
+        jobPostingId,
+        staffId: staff.staffId,
+        date: staff.date,
+        reason: '구인자에 의한 삭제',
+      });
     },
-    [removeStaff, jobPostingId, addToast]
+    [removeStaff, jobPostingId]
   );
 
   // 스태프 삭제 확인 모달 표시
@@ -239,31 +221,18 @@ export function StaffManagementTab({
   }, []);
 
   // 상태 변경 ActionSheet에서 옵션 선택
+  // 토스트는 useConfirmedStaff 훅의 onSuccess/onError에서 처리
   const handleStatusSelect = useCallback(
     async (value: string) => {
       if (!statusSheetTarget) return;
 
       try {
         await changeStatus(statusSheetTarget.id, value as 'scheduled' | 'checked_in' | 'checked_out');
-
-        const statusLabels: Record<string, string> = {
-          scheduled: '출근 예정',
-          checked_in: '출근',
-          checked_out: '퇴근',
-        };
-        const statusLabel = statusLabels[value] || value;
-        addToast({
-          type: 'success',
-          message: `${statusSheetTarget.staffName}님이 ${statusLabel} 처리되었습니다.`,
-        });
       } catch {
-        addToast({
-          type: 'error',
-          message: '상태 변경에 실패했습니다. 다시 시도해주세요.',
-        });
+        // 에러는 훅의 onError에서 처리됨
       }
     },
-    [statusSheetTarget, changeStatus, addToast]
+    [statusSheetTarget, changeStatus]
   );
 
   // 상태 변경 옵션 생성 (현재 상태 제외한 3가지 옵션)

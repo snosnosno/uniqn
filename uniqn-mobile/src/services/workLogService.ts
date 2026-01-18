@@ -23,7 +23,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
-import { mapFirebaseError } from '@/errors';
+import { mapFirebaseError, BusinessError, ERROR_CODES } from '@/errors';
 import { trackSettlementComplete } from './analyticsService';
 import type { WorkLog, PayrollStatus } from '@/types';
 
@@ -347,14 +347,18 @@ export async function updateWorkTime(
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
 
       // 이미 정산 완료된 경우 수정 불가
       if (workLog.payrollStatus === 'completed') {
-        throw new Error('이미 정산 완료된 근무 기록은 수정할 수 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산 완료된 근무 기록은 수정할 수 없습니다',
+        });
       }
 
       const updateData: Record<string, unknown> = {
@@ -403,14 +407,18 @@ export async function updatePayrollStatus(
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
 
       // 중복 정산 방지
       if (status === 'completed' && workLog.payrollStatus === 'completed') {
-        throw new Error('이미 정산 완료된 근무 기록입니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+          userMessage: '이미 정산 완료된 근무 기록입니다',
+        });
       }
 
       const updateData: Record<string, unknown> = {

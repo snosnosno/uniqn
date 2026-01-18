@@ -9,11 +9,12 @@
  */
 
 import React from 'react';
-import { View, Text, Pressable, useColorScheme, type ViewProps } from 'react-native';
+import { View, Text, Pressable, type ViewProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ChevronLeftIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -62,8 +63,7 @@ export function MobileHeader({
 }: MobileHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const colorScheme = useColorScheme();
-  const isDarkMode = colorScheme === 'dark';
+  const { isDarkMode } = useThemeStore();
 
   // 뒤로가기 핸들러
   const handleBack = () => {
