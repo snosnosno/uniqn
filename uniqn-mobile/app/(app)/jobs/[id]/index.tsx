@@ -16,14 +16,53 @@ import {
   ScrollView,
   RefreshControl,
   ActivityIndicator,
+  Pressable,
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ChevronLeftIcon } from '@/components/icons';
 import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications, useAuth } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { trackJobView } from '@/services/analyticsService';
+
+// ============================================================================
+// Custom Header Component
+// ============================================================================
+
+function CustomHeader({ title }: { title?: string }) {
+  const { isDarkMode } = useThemeStore();
+
+  return (
+    <View className="flex-row items-center px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+      <Pressable
+        onPress={() => router.back()}
+        className="p-2 -ml-2 mr-2"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+      >
+        <ChevronLeftIcon
+          size={24}
+          color={isDarkMode ? '#ffffff' : '#111827'}
+        />
+      </Pressable>
+      <Text className="text-base font-semibold text-gray-900 dark:text-white">
+        공고 상세
+      </Text>
+      {title && (
+        <>
+          <Text className="mx-2 text-gray-400 dark:text-gray-500">|</Text>
+          <Text
+            className="flex-1 text-base text-gray-600 dark:text-gray-400"
+            numberOfLines={1}
+          >
+            {title}
+          </Text>
+        </>
+      )}
+    </View>
+  );
+}
 
 // ============================================================================
 // Loading Component
@@ -73,7 +112,6 @@ function ErrorState({
 
 export default function AuthenticatedJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { isDarkMode } = useThemeStore();
   const { user } = useAuth();
   const { hasApplied, getApplicationStatus } = useApplications();
 
@@ -103,17 +141,9 @@ export default function AuthenticatedJobDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '공고 상세',
-            headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
-            },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <CustomHeader />
         <LoadingState />
       </SafeAreaView>
     );
@@ -121,17 +151,9 @@ export default function AuthenticatedJobDetailScreen() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
-        <Stack.Screen
-          options={{
-            headerShown: true,
-            title: '공고 상세',
-            headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
-            },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
-          }}
-        />
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+        <Stack.Screen options={{ headerShown: false }} />
+        <CustomHeader />
         <ErrorState
           message={error?.message ?? '공고를 찾을 수 없습니다'}
           onRetry={refresh}
@@ -171,23 +193,9 @@ export default function AuthenticatedJobDetailScreen() {
     !applicationStatus?.cancellationRequest;
 
   return (
-    <SafeAreaView
-      className="flex-1 bg-gray-50 dark:bg-gray-900"
-      edges={['top']}
-    >
-      <Stack.Screen
-        options={{
-          headerShown: true,
-          title: job.title,
-          headerStyle: {
-            backgroundColor: isDarkMode ? '#111827' : '#ffffff',
-          },
-          headerTintColor: isDarkMode ? '#ffffff' : '#111827',
-          headerTitleStyle: {
-            fontWeight: '600',
-          },
-        }}
-      />
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <Stack.Screen options={{ headerShown: false }} />
+      <CustomHeader title={job.title} />
 
       <ScrollView
         className="flex-1"

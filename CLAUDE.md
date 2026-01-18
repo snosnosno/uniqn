@@ -642,26 +642,138 @@ perf: 리스트 렌더링 최적화 (React.memo 적용)
 
 ## React Native 앱 개발 가이드 (uniqn-mobile/)
 
-> ⚠️ **중요**: 이 섹션은 React Native + Expo 기반 신규 모바일앱 개발에 적용됩니다.
-> 상세 스펙은 `specs/react-native-app/` 폴더의 문서들을 참조하세요.
+> ⚠️ **중요**: 이 섹션은 React Native + Expo 기반 모바일앱 개발에 적용됩니다.
+
+### 프로젝트 현황
+
+```yaml
+버전: 1.0.0
+상태: Phase 2 진행 중 (인증 + 구인구직)
+```
+
+| 카테고리 | 파일 수 | 설명 |
+|---------|--------|------|
+| **Routes (app/)** | 61 | Expo Router 라우트 파일 |
+| **Components** | 192 | UI 34개 + 기능별 158개 |
+| **Hooks** | 33 | 커스텀 훅 |
+| **Services** | 31 | 비즈니스 로직 서비스 |
+| **Stores** | 7 | Zustand 전역 상태 |
+| **Types** | 24 | TypeScript 타입 정의 |
+| **Schemas** | 18 | Zod 검증 스키마 |
+| **전체 TypeScript** | **423** | src + app 합계 |
+
+### 기술 스택 (실제 버전)
+
+```yaml
+Core:
+  - Expo SDK: 54
+  - React Native: 0.81.5
+  - React: 19.1.0
+  - TypeScript: 5.9.2 (strict 모드)
+
+Navigation & State:
+  - Expo Router: 6.0.19 (파일 기반 라우팅)
+  - Zustand: 5.0.9 (전역 상태)
+  - TanStack Query: 5.90.12 (서버 상태)
+
+UI/Styling:
+  - NativeWind: 4.2.1 (Tailwind CSS)
+  - @shopify/flash-list: 가상화 리스트
+  - expo-image: 3.0.11 (이미지 최적화)
+  - @gorhom/bottom-sheet: 5.2.8
+
+Backend:
+  - Firebase: 12.6.0 (Modular API)
+  # @react-native-firebase 대신 Firebase Modular API 사용
+
+Forms & Validation:
+  - React Hook Form: 7.68.0
+  - Zod: 4.1.13
+  - @hookform/resolvers: 5.2.2
+```
+
+### 폴더 구조
+
+```
+uniqn-mobile/
+├── app/                           # Expo Router (61개 라우트)
+│   ├── _layout.tsx               # Root Layout (4단계 Provider)
+│   ├── index.tsx                 # 스플래시 화면
+│   ├── +not-found.tsx            # 404 페이지
+│   ├── (public)/                 # 비로그인 접근 가능
+│   │   └── jobs/                 # 공고 목록/상세 (읽기 전용)
+│   ├── (auth)/                   # 인증 플로우
+│   │   ├── login.tsx
+│   │   ├── signup.tsx
+│   │   └── forgot-password.tsx
+│   ├── (app)/                    # 로그인 필수 (staff+)
+│   │   ├── (tabs)/               # 탭 네비게이션 (5개)
+│   │   │   ├── index.tsx         # 구인구직 (홈)
+│   │   │   ├── schedule.tsx      # 내 스케줄
+│   │   │   ├── qr.tsx            # QR 스캔
+│   │   │   ├── employer.tsx      # 내 공고 (구인자용)
+│   │   │   └── profile.tsx       # 프로필
+│   │   ├── jobs/[id]/            # 공고 상세/지원
+│   │   ├── applications/         # 지원 내역
+│   │   ├── notifications.tsx     # 알림
+│   │   ├── notices/              # 공지사항
+│   │   ├── support/              # 고객지원
+│   │   └── settings/             # 설정
+│   ├── (employer)/               # 구인자 전용
+│   │   └── my-postings/          # 공고관리, 지원자관리, 정산
+│   └── (admin)/                  # 관리자 전용
+│       ├── users/                # 사용자 관리
+│       ├── reports/              # 신고 관리
+│       ├── announcements/        # 공지 관리
+│       ├── tournaments/          # 대회공고 승인
+│       └── stats/                # 통계
+│
+├── src/
+│   ├── components/               # 192개 (22개 폴더)
+│   │   ├── ui/                   # 기본 UI (34개)
+│   │   ├── auth/                 # 인증 (7개)
+│   │   ├── jobs/                 # 구인공고 (17개)
+│   │   ├── employer/             # 구인자 (21개)
+│   │   ├── schedule/             # 스케줄 (6개)
+│   │   ├── qr/                   # QR 코드 (4개)
+│   │   ├── notifications/        # 알림 (6개)
+│   │   ├── admin/                # 관리자 (6개)
+│   │   └── ...                   # 기타
+│   ├── hooks/                    # 33개 커스텀 훅
+│   ├── services/                 # 31개 비즈니스 서비스
+│   ├── stores/                   # 7개 Zustand 스토어
+│   ├── types/                    # 24개 타입 정의
+│   ├── schemas/                  # 18개 Zod 스키마
+│   ├── errors/                   # 에러 시스템
+│   ├── utils/                    # 유틸리티
+│   ├── lib/                      # 라이브러리 설정
+│   │   ├── queryClient.ts        # React Query + Query Keys
+│   │   ├── firebase.ts           # Firebase 지연 초기화
+│   │   ├── mmkvStorage.ts        # MMKV 저장소
+│   │   └── secureStorage.ts      # Secure Storage
+│   └── constants/                # 상수
+│
+└── functions/                    # Firebase Cloud Functions
+```
 
 ### 아키텍처 레이어 구조
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  Presentation Layer (Screens, Components)                   │
+│  Presentation Layer (app/, components/)                     │
 │  └─ UI 렌더링만, 비즈니스 로직/Firebase 직접 호출 금지        │
 ├─────────────────────────────────────────────────────────────┤
-│  Hooks Layer (useAuth, useJobs, useSchedule)                │
+│  Hooks Layer (33개 커스텀 훅)                               │
 │  └─ 상태와 서비스 연결, 로딩/에러 상태 관리                   │
 ├─────────────────────────────────────────────────────────────┤
-│  State Layer (Zustand + TanStack Query)                     │
-│  └─ Zustand: UI 상태, 세션  |  Query: 서버 데이터 캐싱       │
+│  State Layer (Zustand 7개 + TanStack Query)                 │
+│  └─ Zustand: UI/세션 상태  |  Query: 서버 데이터 캐싱        │
 ├─────────────────────────────────────────────────────────────┤
-│  Service Layer (authService, jobService...)                 │
-│  └─ 비즈니스 로직, Firebase 호출, 에러 처리                  │
+│  Service Layer (31개 서비스)                                │
+│  └─ 비즈니스 로직, Firebase Modular API, 에러 처리           │
 ├─────────────────────────────────────────────────────────────┤
-│  Firebase Layer (Auth, Firestore, Storage)                  │
+│  Firebase Layer (Auth, Firestore, Storage, Functions)       │
+│  └─ lib/firebase.ts (지연 초기화, Proxy 패턴)               │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -674,150 +786,313 @@ perf: 리스트 렌더링 최적화 (React.memo 적용)
 ❌ Hooks에서 다른 Hooks의 내부 상태 직접 수정 금지
 ```
 
-### Provider 구조 (8→3단계 단순화)
+### Provider 구조 (4단계)
 
 ```tsx
-// ❌ 기존 (8단계 중첩) - 복잡하고 디버깅 어려움
-<ErrorBoundary>
-  <FirebaseErrorBoundary>
-    <QueryClientProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <ChipProvider>...
-
-// ✅ React Native (3단계로 단순화)
-<QueryClientProvider client={queryClient}>
-  <GestureHandlerRootView>
-    <ThemeProvider value={theme}>
-      <Stack />
-      <ModalManager />
-      <ToastManager />
-    </ThemeProvider>
-  </GestureHandlerRootView>
-</QueryClientProvider>
+// app/_layout.tsx - 실제 구조
+<GestureHandlerRootView>
+  <SafeAreaProvider>
+    <QueryClientProvider client={queryClient}>
+      <BottomSheetModalProvider>
+        <AppContent />  // Stack + 전역 훅 (useAuthGuard, useNotificationHandler)
+        <ModalManager />
+        <ToastManager />
+        <InAppMessageManager />
+      </BottomSheetModalProvider>
+    </QueryClientProvider>
+  </SafeAreaProvider>
+</GestureHandlerRootView>
 ```
 
-**Provider 대체 방안**:
-| 기존 Provider | 대체 방안 |
-|--------------|----------|
-| AuthProvider | `useAuthStore` (Zustand) |
-| ThemeProvider | `useThemeStore` (Zustand) |
-| ChipProvider | `useChipStore` (Zustand) |
-| TournamentProvider | 제외 (Phase 2) |
-
-### 상태 분리 원칙
+### Zustand 스토어 (7개)
 
 ```yaml
-Zustand (클라이언트 상태):
-  - authStore: 인증 상태, 사용자 세션
-  - themeStore: 테마 설정
-  - toastStore: 토스트 알림
-  - modalStore: 모달 상태
-  - filterStore: 필터 조건
+authStore (414줄):
+  - user, profile, status (idle|loading|authenticated|unauthenticated)
+  - isAdmin, isEmployer, isStaff (계산된 플래그)
+  - MMKV 영구 저장, Hydration 추적
 
-TanStack Query (서버 상태):
-  - jobPostings: 구인공고 목록/상세
-  - applications: 지원 내역
-  - schedules: 스케줄 데이터
-  - notifications: 알림 목록
+themeStore (116줄):
+  - mode (light|dark|system), isDarkMode
+  - NativeWind colorScheme 연동
+  - 시스템 테마 자동 감지
+
+toastStore (143줄):
+  - toasts[] (최대 3개), 자동 제거
+  - toast.success/error/info 편의 메서드
+
+modalStore (205줄):
+  - 모달 스택 관리
+  - showAlert, showConfirm, showLoading
+
+notificationStore (427줄):
+  - notifications[], unreadCount, settings
+  - 카테고리별 읽지 않은 수
+  - 필터 시스템
+
+inAppMessageStore (239줄):
+  - 우선순위 큐 (critical > high > medium > low)
+  - 세션당 1회 표시 (sessionShownIds)
+  - 영구 이력 저장
 ```
 
-### Query Keys 중앙 관리
+### 서비스 레이어 (31개)
+
+```yaml
+Core (7개):
+  - authService: 로그인/회원가입/소셜로그인
+  - jobService: 공고 조회/필터링/검색
+  - applicationService: 지원 트랜잭션 (v2.0 Assignment)
+  - scheduleService: WorkLogs + Applications 병합
+  - workLogService: 근무 기록
+  - notificationService: 알림 조회/읽음처리
+  - reportService: 양방향 신고 시스템
+
+Employer (5개):
+  - jobManagementService: 공고 생성/수정/삭제
+  - applicantManagementService: 지원자 확정/거절
+  - settlementService: 정산 계산/처리
+  - confirmedStaffService: 확정 스태프 관리
+  - applicationHistoryService: 확정/취소 이력
+
+Admin (4개):
+  - adminService: 사용자 관리
+  - announcementService: 공지 관리
+  - tournamentApprovalService: 대회공고 승인
+  - inquiryService: 문의 관리
+
+Infrastructure (15개):
+  - pushNotificationService: FCM 토큰 관리
+  - eventQRService: QR 생성/검증 (3분 유효)
+  - deepLinkService: 딥링크 라우팅
+  - storageService: MMKV + SecureStore
+  - sessionService: 토큰 관리
+  - analyticsService: 이벤트 추적
+  - crashlyticsService: 에러 로깅
+  - performanceService: 성능 모니터링
+  - featureFlagService: 기능 플래그
+  - templateService: 공고 템플릿
+  - accountDeletionService: 계정 삭제
+  - inAppMessageService: 인앱 메시지
+  - applicantConversionService: 지원자 변환
+  - jobPostingMigration: 공고 마이그레이션
+```
+
+### 커스텀 훅 (33개)
+
+```yaml
+App (2):
+  - useAppInitialize: Firebase 인증 상태, 초기화
+  - useVersionCheck: 앱 버전 확인
+
+Auth (3):
+  - useAuth: 인증 상태 통합 (profile에서 권한 직접 계산)
+  - useAuthGuard: 라우트별 권한 가드
+  - useNavigationTracking: Analytics 추적
+
+Jobs (3):
+  - useJobPostings: 무한스크롤 공고 목록
+  - useJobDetail: 공고 상세
+  - usePostingTypeCounts: 타입별 공고 개수
+
+Applications (1):
+  - useApplications: 지원 제출/취소 (Optimistic Update)
+
+Schedule (8):
+  - useSchedules, useSchedulesByMonth, useSchedulesByDate
+  - useTodaySchedules, useUpcomingSchedules
+  - useScheduleDetail, useScheduleStats, useCalendarView
+
+WorkLog (6):
+  - useWorkLogs, useWorkLogsByDate, useWorkLogDetail
+  - useCurrentWorkStatus, useWorkLogStats, useMonthlyPayroll
+
+QR (3):
+  - useQRCodeScanner, useQRScannerModal, useQRDisplayModal
+
+Notification (5+):
+  - useNotificationList, useNotificationRealtime
+  - useUnreadCountRealtime, useMarkAsRead, useMarkAllAsRead
+
+Employer (5+):
+  - useJobManagement, useApplicantManagement
+  - useSettlement, useConfirmedStaff, useEventQR
+
+Admin (3+):
+  - useAdminDashboard, useTournamentApproval, useAnnouncement
+```
+
+### Query Keys 중앙 관리 (14개 도메인)
 
 ```typescript
-// src/lib/queryClient.ts - 모든 Query Key는 여기서 관리
+// src/lib/queryClient.ts
 export const queryKeys = {
-  jobPostings: {
-    all: ['jobPostings'] as const,
-    list: (filters: object) => ['jobPostings', 'list', filters] as const,
-    detail: (id: string) => ['jobPostings', 'detail', id] as const,
-    mine: () => ['jobPostings', 'mine'] as const,
-  },
-  applications: {
-    all: ['applications'] as const,
-    mine: () => ['applications', 'mine'] as const,
-  },
-  schedules: { ... },
-  notifications: { ... },
+  // 기본
+  user: { all, current, profile },
+  jobPostings: { all, lists, list, details, detail, mine },
+  applications: { all, lists, list, detail, mine, byJobPosting },
+  schedules: { all, list, mine, byDate, byMonth },
+  workLogs: { all, mine, byDate, bySchedule },
+  notifications: { all, list, unread, unreadCount },
+  settings: { all, user, notification },
+
+  // 구인자용
+  jobManagement: { all, myPostings, stats },
+  applicantManagement: { all, byJobPosting, stats, cancellationRequests },
+  settlement: { all, byJobPosting, summary, mySummary, calculation },
+  confirmedStaff: { all, byJobPosting, byDate, detail, grouped },
+  templates: { all, list, detail },
+  eventQR: { all, current, history },
+  reports: { all, byJobPosting, byStaff },
+
+  // 관리자용
+  admin: { all, dashboard, users, userDetail, metrics },
+  tournaments: { all, pending, approved, rejected, detail, myPending },
+  announcements: { all, published, adminList, detail, unreadCount },
 };
 
-// 사용 예시
-useQuery({ queryKey: queryKeys.jobPostings.detail(id), ... });
+// 캐싱 정책
+export const cachingPolicies = {
+  realtime: 0,              // 항상 fresh (notifications)
+  frequent: 2 * 60 * 1000,  // 2분 (jobPostings.list)
+  standard: 5 * 60 * 1000,  // 5분 (기본)
+  stable: 30 * 60 * 1000,   // 30분 (settings)
+  offlineFirst: Infinity,   // 무제한 (mySchedule)
+};
 ```
 
-### 캐싱 정책 (5단계)
+### UI 컴포넌트 (34개)
 
-| 정책 | staleTime | 용도 | 예시 |
-|------|-----------|------|------|
-| `realtime` | 0 | 실시간 데이터 | notifications |
-| `frequent` | 2분 | 자주 변경 | jobPostings.list |
-| `standard` | 5분 | 보통 빈도 | jobPostings.detail |
-| `stable` | 30분 | 드물게 변경 | settings, regions |
-| `offlineFirst` | ∞ | 오프라인 우선 | mySchedule |
+```yaml
+기본 (7):
+  - Button (5 variant), Input (5 type), Card (3 variant)
+  - Badge (6 variant), Avatar, Divider, Accordion
+
+상태 표시 (5):
+  - Loading, LoadingOverlay, InlineLoadingOverlay
+  - EmptyState (3 variant), ErrorState
+
+스켈레톤 (1 + 10 프리셋):
+  - Skeleton (shimmer 애니메이션)
+  - SkeletonText, SkeletonCard, SkeletonListItem
+  - SkeletonJobCard, SkeletonScheduleCard, SkeletonApplicantCard
+  - SkeletonNotificationItem, SkeletonProfileHeader, SkeletonSettlementRow
+
+피드백 (5):
+  - Toast, ToastManager
+  - Modal (Reanimated), AlertModal, ConfirmModal
+
+폼 (8):
+  - FormField, FormSection, FormRow, FormSelect
+  - Checkbox, CheckboxGroup, Radio
+  - DatePicker, TimePicker, CalendarPicker
+
+기타 (8):
+  - OptimizedImage (expo-image, Blurhash)
+  - MobileHeader, LargeHeader
+  - BottomSheet, SelectBottomSheet, ActionSheet
+  - CircularProgress, ErrorBoundary (5가지 세분화)
+  - ModalManager, InAppBanner, InAppModal, InAppMessageManager
+```
 
 ### 권한 계층 및 라우트 그룹
 
 ```typescript
-// 권한 계층 (숫자가 높을수록 상위 권한)
+// 권한 계층
 const ROLE_HIERARCHY: Record<UserRole, number> = {
   admin: 100,     // 관리자: 모든 기능
   employer: 50,   // 구인자: 공고 관리, 지원자 관리
   staff: 10,      // 스태프: 지원, 스케줄 확인
-  // guest: 0     // 비로그인: role === null
 };
 
-// 권한 비교 함수
+// 권한 비교
 function hasPermission(userRole: UserRole | null, required: UserRole): boolean {
   if (!userRole) return false;
   return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[required];
 }
 ```
 
-**라우트 그룹 구조** (Expo Router):
-```
-app/
-├── (public)/           # 비로그인 접근 가능
-│   ├── index.tsx       # 홈/랜딩
-│   └── jobs/           # 공고 목록 (읽기 전용)
-├── (auth)/             # 인증 플로우
-│   ├── login.tsx
-│   ├── register.tsx
-│   └── forgot-password.tsx
-├── (app)/              # 로그인 필수 (staff+)
-│   ├── _layout.tsx     # AuthGuard 적용
-│   ├── jobs/[id]/apply.tsx
-│   ├── schedule/
-│   └── profile/
-├── (employer)/         # employer 이상
-│   ├── _layout.tsx     # PermissionGuard(employer)
-│   ├── my-postings/
-│   └── applicants/
-└── (admin)/            # admin 전용
-    ├── _layout.tsx     # PermissionGuard(admin)
-    └── users/
-```
+**라우트 그룹별 권한**:
+| 그룹 | 권한 | 화면 |
+|------|------|------|
+| `(public)` | 없음 | jobs/index, jobs/[id] |
+| `(auth)` | 없음 (로그인 시 리다이렉트) | login, signup, forgot-password |
+| `(app)` | staff+ | tabs/*, jobs/[id]/apply, notifications, settings |
+| `(employer)` | employer+ | my-postings/*, applicants, settlements |
+| `(admin)` | admin | users, reports, announcements, tournaments, stats |
 
 **라우트 가드 패턴**:
 ```typescript
 // app/(app)/_layout.tsx
 export default function AppLayout() {
-  const { user, isLoading } = useAuth();
+  const { isLoading, isAuthenticated } = useAuthStore();
 
-  if (isLoading) return <LoadingScreen />;
-  if (!user) return <Redirect href="/login" />;
+  if (isLoading) return <LoadingSpinner />;
+  if (!isAuthenticated) return null;  // useAuthGuard가 리다이렉트 처리
 
-  return <Stack />;
+  return (
+    <NetworkErrorBoundary>
+      <Stack screenOptions={{ headerShown: false }} />
+    </NetworkErrorBoundary>
+  );
 }
 
 // app/(employer)/_layout.tsx
 export default function EmployerLayout() {
-  const { role } = useAuth();
+  const { isLoading, isAuthenticated } = useAuthStore();
+  const hasEmployerRole = useHasRole('employer');
 
-  if (!hasPermission(role, 'employer')) {
-    return <Redirect href="/" />;
-  }
+  if (isLoading) return <LoadingSpinner />;
+  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+  if (!hasEmployerRole) return <Redirect href="/(app)/(tabs)" />;
 
   return <Stack />;
+}
+```
+
+### 에러 처리 체계
+
+```typescript
+// 에러 클래스 계층 (src/errors/)
+AppError (base)
+├── AuthError         // E2xxx: 로그인, 토큰 만료
+├── NetworkError      // E1xxx: 연결, 타임아웃
+├── ValidationError   // E3xxx: 입력 검증 실패
+├── PermissionError   // E4xxx: 권한 부족
+└── BusinessError     // E6xxx: 비즈니스 로직
+    ├── AlreadyAppliedError
+    ├── ApplicationClosedError
+    ├── MaxCapacityReachedError
+    ├── AlreadyCheckedInError
+    ├── NotCheckedInError
+    ├── InvalidQRCodeError
+    ├── ExpiredQRCodeError
+    ├── QRSecurityMismatchError
+    ├── QRWrongEventError
+    ├── QRWrongDateError
+    ├── AlreadySettledError
+    ├── InvalidWorkLogError
+    ├── DuplicateReportError
+    ├── ReportNotFoundError
+    ├── ReportAlreadyReviewedError
+    └── CannotReportSelfError
+
+// 에러 코드 체계
+E1xxx: 네트워크 (OFFLINE, TIMEOUT, SERVER_UNREACHABLE)
+E2xxx: 인증 (INVALID_CREDENTIALS, TOKEN_EXPIRED, TOO_MANY_REQUESTS)
+E3xxx: 검증 (REQUIRED, FORMAT, SCHEMA)
+E4xxx: Firebase (PERMISSION_DENIED, DOCUMENT_NOT_FOUND, QUOTA_EXCEEDED)
+E5xxx: 보안 (XSS_DETECTED, UNAUTHORIZED_ACCESS)
+E6xxx: 비즈니스 (ALREADY_APPLIED, MAX_CAPACITY, INVALID_QR 등)
+E7xxx: 알 수 없는 에러
+
+// 필수 속성
+interface AppError {
+  code: string;           // E1001, E6002 등
+  category: ErrorCategory;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+  userMessage: string;    // 사용자 친화적 메시지 (한글)
+  isRetryable: boolean;   // 재시도 가능 여부
 }
 ```
 
@@ -835,140 +1110,13 @@ import { z } from 'zod';
 // 3. 내부 모듈 (절대 경로)
 import { Button } from '@/components/ui';
 import { useAuth } from '@/hooks/useAuth';
-import { jobPostingService } from '@/services/job';
+import { jobService } from '@/services/jobService';
 
 // 4. 타입
 import type { JobPosting } from '@/types';
 
 // 5. 상대 경로 (같은 기능 내)
 import { JobCardSkeleton } from './JobCardSkeleton';
-```
-
-### 기술 스택 (버전 고정 필수)
-
-```yaml
-Core:
-  - Expo SDK: 52+
-  - React Native: 0.76+
-  - React: 18.3+
-  - TypeScript: 5.3+ (strict 모드)
-
-Navigation & State:
-  - Expo Router: 4.0+ (파일 기반 라우팅)
-  - Zustand: 5.0+ (전역 상태)
-  - TanStack Query: 5.17+ (서버 상태)
-
-UI/Styling:
-  - NativeWind: 4.0+ (Tailwind v4 호환)
-  - @shopify/flash-list: 가상화 리스트
-  - expo-image: 이미지 최적화
-
-Backend:
-  - Firebase: 11.0+ (Modular API)
-  - @react-native-firebase/*: 네이티브 SDK
-
-Forms & Validation:
-  - React Hook Form: 7.54+
-  - Zod: 3.23+ (기존 스키마 재사용)
-```
-
-### 폴더/파일 네이밍 규칙 (React Native)
-
-```
-파일명:
-├── 컴포넌트: PascalCase.tsx (JobCard.tsx)
-├── 훅: camelCase.ts (useJobPostings.ts)
-├── 서비스: camelCase.ts (jobPostingService.ts)
-├── 타입: camelCase.ts (jobPosting.ts)
-├── 유틸리티: camelCase.ts (formatters.ts)
-└── 상수: camelCase.ts (colors.ts)
-
-폴더명:
-├── 모두 kebab-case (job-posting/)
-└── 라우트 그룹: (parentheses) ((tabs)/, (auth)/)
-
-라우트 파일 (Expo Router):
-├── index.tsx         # 기본 라우트
-├── [id]/index.tsx    # 동적 라우트
-├── _layout.tsx       # 레이아웃
-└── +not-found.tsx    # 404 페이지
-```
-
-### 플랫폼 분기 패턴
-
-```typescript
-// 방법 1: 파일 기반 분기 (권장)
-src/components/
-├── Button.tsx        // 기본 (iOS/Android)
-├── Button.web.tsx    // 웹 전용
-└── index.ts          // 자동 선택
-
-// 방법 2: 조건부 분기
-import { Platform } from 'react-native';
-
-export function CameraScanner() {
-  if (Platform.OS === 'web') {
-    return <WebQRScanner />;  // 웹: navigator.mediaDevices
-  }
-  return <NativeCamera />;    // 네이티브: expo-camera
-}
-```
-
-**플랫폼별 차이점**:
-| 기능 | iOS/Android | Web |
-|------|-------------|-----|
-| **스토리지** | expo-secure-store | localStorage |
-| **푸시 알림** | FCM + APNS | 미지원 (인앱) |
-| **카메라/QR** | expo-camera | navigator.mediaDevices |
-| **햅틱** | expo-haptics | 미지원 |
-| **생체 인증** | expo-local-authentication | 미지원 |
-
-### 코드 변환 규칙 (Web → React Native)
-
-| Web 요소 | RN 요소 | NativeWind |
-|---------|---------|:----------:|
-| `<div>` | `<View>` | ✅ 그대로 |
-| `<span>`, `<p>`, `<h1>` | `<Text>` | ✅ 그대로 |
-| `<button>` | `<Pressable>` | ✅ 그대로 |
-| `<input>` | `<TextInput>` | ✅ 그대로 |
-| `<img>` | `<Image>` (expo-image) | ✅ 그대로 |
-| `<a>` | `<Link>` (expo-router) | ✅ 그대로 |
-| `onClick` | `onPress` | - |
-| `localStorage` | `MMKV` / `SecureStore` | - |
-
-```tsx
-// ❌ Web (React)
-<div className="p-4 bg-white dark:bg-gray-800">
-  <button onClick={handleClick}>클릭</button>
-</div>
-
-// ✅ React Native (NativeWind)
-<View className="p-4 bg-white dark:bg-gray-800">
-  <Pressable onPress={handlePress}>
-    <Text>클릭</Text>
-  </Pressable>
-</View>
-```
-
-### 코드 재사용 계획
-
-```yaml
-100% 재사용 (복사만):
-  - types/: TypeScript 타입 정의
-  - schemas/: Zod 스키마
-  - constants/: 상수
-
-90% 재사용 (import 경로 수정):
-  - utils/: 유틸리티 함수
-  - services/: Firebase import 변경
-
-70-80% 재사용 (플랫폼 분기):
-  - stores/: Zustand 스토어
-  - hooks/: Firebase 훅
-
-재작성 필요:
-  - components/: React DOM → React Native
-  - pages/ → app/: React Router → Expo Router
 ```
 
 ### Firebase 트랜잭션 규칙
@@ -978,209 +1126,121 @@ export function CameraScanner() {
 // ❌ 금지: 여러 문서를 개별 업데이트 (데이터 불일치 위험)
 await updateDoc(applicationRef, { status: 'accepted' });
 await updateDoc(jobPostingRef, { applicantCount: increment(1) });
-await addDoc(workLogsRef, workLogData);
 
 // ✅ 필수: runTransaction으로 원자적 처리
-await firestore().runTransaction(async (transaction) => {
+await runTransaction(db, async (transaction) => {
   // 1. 모든 읽기 먼저
   const applicationDoc = await transaction.get(applicationRef);
   const jobPostingDoc = await transaction.get(jobPostingRef);
 
-  if (!applicationDoc.exists || !jobPostingDoc.exists) {
-    throw new Error('문서가 존재하지 않습니다');
-  }
-
   // 2. 비즈니스 검증
-  const currentCount = jobPostingDoc.data()?.applicantCount ?? 0;
   if (currentCount >= maxApplicants) {
-    throw new Error('모집 인원이 마감되었습니다');
+    throw new MaxCapacityReachedError();
   }
 
   // 3. 모든 쓰기 실행 (원자적)
-  transaction.update(applicationRef, {
-    status: 'accepted',
-    updatedAt: serverTimestamp(),
-  });
-  transaction.update(jobPostingRef, {
-    applicantCount: currentCount + 1,
-  });
-  transaction.set(workLogRef, {
-    ...workLogData,
-    createdAt: serverTimestamp(),
-  });
+  transaction.update(applicationRef, { status: 'accepted' });
+  transaction.update(jobPostingRef, { applicantCount: currentCount + 1 });
 });
 ```
 
-**트랜잭션 사용 필수 시나리오**:
+**트랜잭션 필수 시나리오**:
 | 시나리오 | 관련 문서 | 이유 |
 |---------|----------|------|
-| 지원 수락/거절 | applications, jobPostings, workLogs | 카운트 정합성 |
-| 출퇴근 기록 | workLogs, schedules | 중복 방지 |
-| 칩 충전/차감 | users, chipTransactions | 잔액 정합성 |
-| 공고 마감 | jobPostings, applications | 상태 일관성 |
+| 지원하기 (applyToJobV2) | applications, jobPostings | 중복 체크 + 카운트 |
+| 지원 취소 | applications, jobPostings | 카운트 정합성 |
+| QR 출퇴근 | workLogs, applications | 중복 방지 |
+| 정산 처리 | workLogs, settlements | 금액 정합성 |
 
-**트랜잭션 규칙**:
-```
-✅ 읽기(get) → 검증 → 쓰기(set/update) 순서 유지
-✅ 트랜잭션 내 최대 500개 문서 제한
-✅ 실패 시 자동 재시도 (최대 5회)
-❌ 트랜잭션 내 비동기 외부 호출 금지
-❌ 트랜잭션 내 UI 상태 변경 금지
-```
-
-### 에러 처리 체계
-
-```typescript
-// 에러 클래스 계층
-AppError (base)
-├── AuthError         // 인증 (로그인, 토큰 만료)
-├── NetworkError      // 연결, 타임아웃
-├── ValidationError   // 입력 검증 실패
-├── PermissionError   // 권한 부족
-└── BusinessError     // 칩 부족, 중복 지원 등
-
-// 에러 코드 체계
-E1xxx: 네트워크 에러
-E2xxx: 인증 에러
-E3xxx: 검증 에러
-E4xxx: Firebase 에러
-E5xxx: 보안 에러
-E6xxx: 비즈니스 에러
-E7xxx: 알 수 없는 에러
-
-// 필수 속성
-interface AppError {
-  code: string;           // 에러 코드
-  category: ErrorCategory;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  userMessage: string;    // 사용자 친화적 메시지 (한글)
-  isRetryable: boolean;   // 재시도 가능 여부
-}
-```
-
-### 보안 규칙 (React Native)
+### 보안 규칙
 
 ```typescript
 // ✅ 민감 데이터: expo-secure-store
 import * as SecureStore from 'expo-secure-store';
-
 await SecureStore.setItemAsync('authToken', token, {
   keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
 });
 
-// ✅ 일반 데이터: react-native-mmkv
+// ✅ 일반 데이터: MMKV (AsyncStorage보다 30배 빠름)
 import { MMKV } from 'react-native-mmkv';
 const storage = new MMKV();
 storage.set('preferences', JSON.stringify(prefs));
+
+// ✅ XSS 방지: Zod refine
+const messageSchema = z.string().refine(xssValidation, '위험한 문자열 감지');
 ```
 
-**비밀번호 정책**:
+**비밀번호 정책** (auth.schema.ts):
 - 최소 8자, 최대 128자
-- 대문자 1개 이상
-- 소문자 1개 이상
-- 숫자 1개 이상
-- 특수문자 1개 이상 (`!@#$%^&*`)
+- 대문자/소문자/숫자/특수문자 각 1개 이상
 - 3자 이상 연속 금지 (`123`, `abc`)
 
-### 성능 규칙 (React Native)
+### 성능 규칙
 
 ```typescript
 // ✅ 리스트: FlashList (FlatList 대신)
-import { FlashList } from '@shopify/flash-list';
-
 <FlashList
   data={items}
   renderItem={({ item }) => <ItemCard item={item} />}
   estimatedItemSize={80}
-  keyExtractor={item => item.id}
 />
 
-// ✅ 이미지: expo-image
-import { Image } from 'expo-image';
-
+// ✅ 이미지: expo-image + Blurhash
 <Image
   source={uri}
   placeholder={blurhash}
   cachePolicy="memory-disk"
   transition={200}
 />
+
+// ✅ 메모이제이션
+const jobs = useMemo(() => data?.pages.flatMap(p => p.items) ?? [], [data]);
+const handlePress = useCallback(() => onPress(id), [id, onPress]);
 ```
 
 **성능 지표**:
 | 지표 | 목표 |
 |------|------|
-| 첫 로드 (모바일) | < 2초 |
+| 첫 로드 | < 2초 |
 | 화면 전환 | < 300ms |
 | 리스트 스크롤 | 60fps |
-| 번들 크기 | < 500KB (gzip) |
 
-### Phase별 우선순위
+### 품질 게이트
 
-```
-P0 (필수): MVP 출시에 반드시 필요
-P1 (중요): 출시 전 구현 권장
-P2 (나중): 출시 후 구현 가능
-```
+| 항목 | MVP 기준 | 출시 기준 | 현재 |
+|------|:--------:|:---------:|:----:|
+| TypeScript strict 에러 | 0개 | 0개 | 0개 |
+| ESLint 에러 | 0개 | 0개 | 0개 |
+| ESLint 경고 | < 10개 | < 5개 | - |
+| 테스트 커버리지 (전체) | 14%+ | 60%+ | 14% |
+| 테스트 커버리지 (services/) | 40%+ | 70%+ | 40% |
 
-**Phase 구조**:
-```
-Phase 1: 프로젝트 기반 (환경 설정, 핵심 컴포넌트)
-Phase 2: 인증 + 구인구직 (로그인, 공고 목록/상세/지원)
-Phase 3: 스케줄 + 알림 (캘린더, QR 출퇴근, 푸시)
-Phase 4: 구인자 기능 (공고 관리, 지원자 관리, 정산)
-Phase 5: 최적화 + 배포 준비 (성능, 보안, Analytics)
-Phase 6: 앱스토어 출시 (심사, 배포)
-```
-
-### 품질 게이트 (React Native)
-
-| 항목 | MVP 기준 | 출시 기준 |
-|------|:--------:|:---------:|
-| TypeScript strict 에러 | 0개 | 0개 |
-| ESLint 에러 | 0개 | 0개 |
-| ESLint 경고 | < 10개 | < 5개 |
-| 테스트 커버리지 (전체) | 60%+ | 75%+ |
-| 테스트 커버리지 (services/) | 70%+ | 85%+ |
-| 테스트 커버리지 (utils/) | 80%+ | 90%+ |
-
-### 개발 명령어 (uniqn-mobile/)
+### 개발 명령어
 
 ```bash
 cd uniqn-mobile
 
 # 개발
-npx expo start                    # 개발 서버
-npm run type-check               # TypeScript 검증
-npm run lint                     # ESLint 검사
+npm start                        # Expo 개발 서버
+npm run type-check              # TypeScript 검증
+npm run lint                    # ESLint 검사
+npm run quality                 # type-check + lint + format:check
 
 # 플랫폼별 실행
-npx expo run:ios                 # iOS 시뮬레이터
-npx expo run:android             # Android 에뮬레이터
-npx expo export -p web           # Web 빌드
+npx expo run:ios                # iOS 시뮬레이터
+npx expo run:android            # Android 에뮬레이터
+npm run build:web               # Web 빌드
 
 # 테스트
-npm test                         # Jest 테스트
-npm run test:coverage           # 커버리지 리포트
+npm test                        # Jest 테스트
+npm run test:coverage          # 커버리지 리포트
 
 # 빌드 (EAS)
-eas build --platform ios         # iOS 빌드
-eas build --platform android     # Android 빌드
-eas submit                       # 스토어 제출
+eas build --platform ios        # iOS 빌드
+eas build --platform android    # Android 빌드
 ```
 
-### 주요 스펙 문서
-
-| 문서 | 용도 |
-|------|------|
-| [DEVELOPMENT_CHECKLIST.md](specs/react-native-app/DEVELOPMENT_CHECKLIST.md) | 전체 작업 추적 |
-| [00-overview.md](specs/react-native-app/00-overview.md) | 프로젝트 구조 |
-| [01-architecture.md](specs/react-native-app/01-architecture.md) | 아키텍처 설계 |
-| [05-components.md](specs/react-native-app/05-components.md) | 컴포넌트 시스템 |
-| [09-error-handling.md](specs/react-native-app/09-error-handling.md) | 에러 처리 전략 |
-| [12-security.md](specs/react-native-app/12-security.md) | 보안 설계 |
-| [22-migration-mapping.md](specs/react-native-app/22-migration-mapping.md) | 코드 변환 가이드 |
-
-### 코드 리뷰 체크리스트 (React Native)
+### 코드 리뷰 체크리스트
 
 **기능 추가 시**:
 - [ ] TypeScript strict mode 준수 (any 타입 없음)
@@ -1192,11 +1252,12 @@ eas submit                       # 스토어 제출
 - [ ] 터치 타겟 최소 44px
 - [ ] `accessibilityLabel` 적용
 
-**플랫폼 분기 시**:
-- [ ] `Platform.OS` 또는 `.web.tsx` 파일 분리
-- [ ] 네이티브 전용 기능 (카메라, 푸시) 웹 대체 구현
+**트랜잭션 필요 시**:
+- [ ] 여러 문서 업데이트는 runTransaction 사용
+- [ ] 읽기 → 검증 → 쓰기 순서 유지
+- [ ] BusinessError 클래스로 에러 처리
 
 ---
 
-*마지막 업데이트: 2025-12-16*
-*프로젝트 버전: v0.2.3*
+*마지막 업데이트: 2025-01-18*
+*프로젝트 버전: v1.0.0*

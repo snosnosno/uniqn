@@ -1,12 +1,12 @@
 /**
  * UNIQN Mobile - 공고 상세 레이아웃
- * 모든 공고 상세 하위 화면에 공고 제목 배너 표시
+ * 모든 공고 상세 하위 화면에 헤더에 제목 통합 표시
  *
- * @description 헤더 아래에 공고 제목을 표시하여 현재 어떤 공고를 보고 있는지 명확히 함
- * @version 1.1.0
+ * @description 헤더에 "화면명 | 공고제목" 형태로 표시
+ * @version 2.0.0
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { View, Text, Pressable, useColorScheme } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
@@ -15,29 +15,46 @@ import { EventQRModal } from '@/components/employer/EventQRModal';
 import { HeaderBackButton } from '@/components/navigation';
 
 /**
- * 공고 제목 배너 컴포넌트
- */
-function PostingTitleBanner({ title }: { title?: string }) {
-  return (
-    <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <Text
-        className="text-base font-semibold text-gray-900 dark:text-white"
-        numberOfLines={1}
-      >
-        {title || '공고'}
-      </Text>
-    </View>
-  );
-}
-
-/**
  * 헤더 QR 버튼
  */
 function HeaderQRButton({ tintColor, onPress }: { tintColor: string; onPress: () => void }) {
   return (
-    <Pressable onPress={onPress} hitSlop={8} className="p-2 -mr-2">
+    <Pressable onPress={onPress} hitSlop={8} className="p-2 mr-2">
       <QRCodeIcon size={22} color={tintColor} />
     </Pressable>
+  );
+}
+
+/**
+ * 커스텀 헤더 타이틀 컴포넌트
+ */
+function HeaderTitle({
+  screenTitle,
+  jobTitle,
+  isDark,
+}: {
+  screenTitle: string;
+  jobTitle?: string;
+  isDark: boolean;
+}) {
+  return (
+    <View className="flex-row items-center flex-1">
+      <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+        {screenTitle}
+      </Text>
+      {jobTitle && (
+        <>
+          <Text className="mx-2" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>|</Text>
+          <Text
+            className="flex-1 text-base"
+            style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
+            numberOfLines={1}
+          >
+            {jobTitle}
+          </Text>
+        </>
+      )}
+    </View>
   );
 }
 
@@ -58,73 +75,83 @@ export default function JobPostingDetailLayout() {
     setShowQRModal(false);
   }, []);
 
+  // 공고 제목 (로딩 중이면 빈 문자열)
+  const jobTitle = useMemo(() => {
+    if (isLoading) return '';
+    return job?.title || '';
+  }, [isLoading, job?.title]);
+
   return (
     <View className="flex-1 bg-gray-50 dark:bg-gray-900">
-      {/* 공고 제목 배너 (로딩 중에도 플레이스홀더 표시) */}
-      <PostingTitleBanner title={isLoading ? '불러오는 중...' : job?.title} />
-
-      {/* 하위 화면 렌더링 */}
-      <View className="flex-1">
-        <Stack
-          screenOptions={{
-            headerShown: true,
-            headerStyle: {
-              backgroundColor: isDark ? '#111827' : '#ffffff',
-            },
-            headerTintColor: isDark ? '#ffffff' : '#111827',
-            headerTitleStyle: {
-              fontWeight: '600',
-            },
-            animation: 'slide_from_right',
-            contentStyle: {
-              backgroundColor: isDark ? '#111827' : '#f9fafb',
-            },
-            headerLeft: () => (
-              <HeaderBackButton
-                tintColor={isDark ? '#ffffff' : '#111827'}
-                fallbackHref="/(app)/(tabs)/employer"
-              />
-            ),
-            headerRight: () => (
-              <HeaderQRButton
-                tintColor={isDark ? '#ffffff' : '#111827'}
-                onPress={handleShowQR}
-              />
+      <Stack
+        screenOptions={{
+          headerShown: true,
+          headerStyle: {
+            backgroundColor: isDark ? '#111827' : '#ffffff',
+          },
+          headerTintColor: isDark ? '#ffffff' : '#111827',
+          headerTitleStyle: {
+            fontWeight: '600',
+          },
+          animation: 'slide_from_right',
+          contentStyle: {
+            backgroundColor: isDark ? '#111827' : '#f9fafb',
+          },
+          headerLeft: () => (
+            <HeaderBackButton
+              tintColor={isDark ? '#ffffff' : '#111827'}
+              fallbackHref="/(app)/(tabs)/employer"
+            />
+          ),
+          headerRight: () => (
+            <HeaderQRButton
+              tintColor={isDark ? '#ffffff' : '#111827'}
+              onPress={handleShowQR}
+            />
+          ),
+        }}
+      >
+        <Stack.Screen
+          name="index"
+          options={{
+            headerTitle: () => (
+              <HeaderTitle screenTitle="공고 상세" jobTitle={jobTitle} isDark={isDark} />
             ),
           }}
-        >
-          <Stack.Screen
-            name="index"
-            options={{
-              title: '공고 상세',
-            }}
-          />
-          <Stack.Screen
-            name="applicants"
-            options={{
-              title: '지원자 관리',
-            }}
-          />
-          <Stack.Screen
-            name="settlements"
-            options={{
-              title: '스태프 / 정산 관리',
-            }}
-          />
-          <Stack.Screen
-            name="edit"
-            options={{
-              title: '공고 수정',
-            }}
-          />
-          <Stack.Screen
-            name="cancellation-requests"
-            options={{
-              title: '취소 요청 관리',
-            }}
-          />
-        </Stack>
-      </View>
+        />
+        <Stack.Screen
+          name="applicants"
+          options={{
+            headerTitle: () => (
+              <HeaderTitle screenTitle="지원자 관리" jobTitle={jobTitle} isDark={isDark} />
+            ),
+          }}
+        />
+        <Stack.Screen
+          name="settlements"
+          options={{
+            headerTitle: () => (
+              <HeaderTitle screenTitle="정산 관리" jobTitle={jobTitle} isDark={isDark} />
+            ),
+          }}
+        />
+        <Stack.Screen
+          name="edit"
+          options={{
+            headerTitle: () => (
+              <HeaderTitle screenTitle="공고 수정" jobTitle={jobTitle} isDark={isDark} />
+            ),
+          }}
+        />
+        <Stack.Screen
+          name="cancellation-requests"
+          options={{
+            headerTitle: () => (
+              <HeaderTitle screenTitle="취소 요청" jobTitle={jobTitle} isDark={isDark} />
+            ),
+          }}
+        />
+      </Stack>
 
       {/* 현장 QR 모달 */}
       <EventQRModal
