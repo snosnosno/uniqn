@@ -96,6 +96,11 @@ export {
   type TimePickerProps,
   type TimePickerGridProps,
 } from './TimePicker';
+export {
+  TimeWheelPicker,
+  type TimeWheelPickerProps,
+  type TimeValue,
+} from './TimeWheelPicker';
 
 // ============================================================================
 // Progress Components

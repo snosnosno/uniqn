@@ -142,22 +142,20 @@ export function NumberPickerModal({
               style={{
                 top: ITEM_HEIGHT * 2,
                 height: ITEM_HEIGHT,
+                pointerEvents: 'none',
               }}
-              pointerEvents="none"
             />
 
             {/* 상단/하단 페이드 효과 */}
             <View
               className="absolute top-0 left-0 right-0 z-10"
-              style={{ height: ITEM_HEIGHT * 2 }}
-              pointerEvents="none"
+              style={{ height: ITEM_HEIGHT * 2, pointerEvents: 'none' }}
             >
               <View className="flex-1 bg-gradient-to-b from-white dark:from-gray-800" />
             </View>
             <View
               className="absolute bottom-0 left-0 right-0 z-10"
-              style={{ height: ITEM_HEIGHT * 2 }}
-              pointerEvents="none"
+              style={{ height: ITEM_HEIGHT * 2, pointerEvents: 'none' }}
             >
               <View className="flex-1 bg-gradient-to-t from-white dark:from-gray-800" />
             </View>

@@ -259,11 +259,11 @@ export default function JobPostingDetailScreen() {
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* 공고 정보 카드 */}
-        <View className="px-4 pt-4">
-          <Card variant="elevated" padding="lg">
+        <View className="px-4 pt-3">
+          <Card variant="elevated" padding="md">
             {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
             {posting.postingType && posting.postingType !== 'regular' && (
-              <View className="flex-row items-center flex-wrap mb-2">
+              <View className="flex-row items-center flex-wrap mb-1.5">
                 <PostingTypeBadge
                   type={posting.postingType as PostingType}
                   size="sm"
@@ -282,9 +282,9 @@ export default function JobPostingDetailScreen() {
             )}
 
             {/* 헤더: 제목 + 상태뱃지 + 접기버튼 */}
-            <View className="flex-row items-start justify-between mb-4">
+            <View className="flex-row items-start justify-between mb-2">
               {/* 제목 */}
-              <Text className="flex-1 text-xl font-bold text-gray-900 dark:text-white mr-3" numberOfLines={2}>
+              <Text className="flex-1 text-lg font-bold text-gray-900 dark:text-white mr-3" numberOfLines={2}>
                 {safeTitle}
               </Text>
               {/* 상태뱃지 + 접기/펼치기 버튼 */}
@@ -297,13 +297,13 @@ export default function JobPostingDetailScreen() {
                   className="flex-row items-center px-2 py-1 rounded-lg active:bg-gray-100 dark:active:bg-gray-700"
                   hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                 >
-                  <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-1">
                     {isInfoExpanded ? '접기' : '상세'}
                   </Text>
                   {isInfoExpanded ? (
-                    <ChevronUpIcon size={16} color="#9CA3AF" />
+                    <ChevronUpIcon size={14} color="#9CA3AF" />
                   ) : (
-                    <ChevronDownIcon size={16} color="#9CA3AF" />
+                    <ChevronDownIcon size={14} color="#9CA3AF" />
                   )}
                 </Pressable>
               </View>
@@ -409,25 +409,25 @@ export default function JobPostingDetailScreen() {
             )}
 
             {/* 모집 현황 - 지원자(사람) + 배정(슬롯) 구분 표시 */}
-            <View className="p-4 bg-gray-50 dark:bg-gray-800 rounded-xl">
+            <View className="px-3 pt-3 pb-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
               {/* 지원자 현황 (사람 수) */}
-              <View className="flex-row justify-around mb-3 pb-3 border-b border-gray-200 dark:border-gray-700">
+              <View className={`flex-row justify-around ${posting.postingType === 'tournament' ? 'mb-2 pb-2 border-b border-gray-200 dark:border-gray-700' : ''}`}>
                 <View className="items-center flex-1">
-                  <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
+                  <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
                     {totalApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">지원자</Text>
                 </View>
                 <View className="w-px bg-gray-200 dark:bg-gray-700" />
                 <View className="items-center flex-1">
-                  <Text className="text-2xl font-bold text-success-600 dark:text-success-400">
+                  <Text className="text-xl font-bold text-success-600 dark:text-success-400">
                     {confirmedApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
                 </View>
                 <View className="w-px bg-gray-200 dark:bg-gray-700" />
                 <View className="items-center flex-1">
-                  <Text className="text-2xl font-bold text-warning-600 dark:text-warning-400">
+                  <Text className="text-xl font-bold text-warning-600 dark:text-warning-400">
                     {pendingApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">대기중</Text>
@@ -436,15 +436,15 @@ export default function JobPostingDetailScreen() {
               {/* 배정 현황 (슬롯 수) - 대회공고 타입만 표시 */}
               {posting.postingType === 'tournament' && (
                 <View className="flex-row justify-center items-center">
-                  <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">배정현황</Text>
-                  <Text className="text-lg font-bold text-gray-900 dark:text-white">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-1.5">배정현황</Text>
+                  <Text className="text-base font-bold text-gray-900 dark:text-white">
                     {filledPositions}
                   </Text>
-                  <Text className="text-lg text-gray-400 dark:text-gray-500 mx-1">/</Text>
-                  <Text className="text-lg font-bold text-gray-600 dark:text-gray-400">
+                  <Text className="text-base text-gray-400 dark:text-gray-500 mx-0.5">/</Text>
+                  <Text className="text-base font-bold text-gray-600 dark:text-gray-400">
                     {totalPositions}
                   </Text>
-                  <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">건</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 ml-1">건</Text>
                 </View>
               )}
             </View>
@@ -452,7 +452,7 @@ export default function JobPostingDetailScreen() {
         </View>
 
         {/* 관리 메뉴 */}
-        <View className="px-4 py-4">
+        <View className="px-4 pt-3 pb-4">
           <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
             관리
           </Text>

@@ -6,8 +6,9 @@
  */
 
 import { isAppError, type AppError } from '@/errors/AppError';
-import { crashlyticsService } from '@/services/crashlyticsService';
 import { env } from '@/config/env';
+
+// Note: crashlyticsService는 동적 import로 순환 의존성 방지
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
@@ -88,13 +89,17 @@ const output = (level: LogLevel, entry: LogEntry): void => {
       break;
   }
 
-  // 프로덕션에서 error 레벨은 Crashlytics로 전송
+  // 프로덕션에서 error 레벨은 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
   if (isProduction && level === 'error' && entry.error) {
-    crashlyticsService.recordError(entry.error, {
-      logMessage: entry.message,
-      ...entry.context,
+    import('@/services/crashlyticsService').then(({ crashlyticsService }) => {
+      crashlyticsService.recordError(entry.error!, {
+        logMessage: entry.message,
+        ...entry.context,
+      }).catch(() => {
+        // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+      });
     }).catch(() => {
-      // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+      // 동적 import 실패 시 무시
     });
   }
 };
@@ -264,12 +269,16 @@ export const logger = {
 
       output('error', entry);
 
-      // 프로덕션에서는 심각도에 따라 Crashlytics로 전송
+      // 프로덕션에서는 심각도에 따라 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
       if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
         // LogContext를 CrashContext-호환 형식으로 변환
         const crashContext = context ? toCrashContext(context) : undefined;
-        crashlyticsService.recordAppError(error, crashContext).catch(() => {
-          // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+        import('@/services/crashlyticsService').then(({ crashlyticsService }) => {
+          crashlyticsService.recordAppError(error, crashContext).catch(() => {
+            // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+          });
+        }).catch(() => {
+          // 동적 import 실패 시 무시
         });
       }
     } else if (error instanceof Error) {

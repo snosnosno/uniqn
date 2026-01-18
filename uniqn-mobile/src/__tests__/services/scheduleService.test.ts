@@ -29,12 +29,6 @@ import {
 } from '@/services/scheduleService';
 import type { ScheduleEvent } from '@/types';
 
-// MockScheduleEvent type available for future use
-void import('../mocks/factories').then(m => m.createMockScheduleEvent as unknown);
-
-// ScheduleType is available for type assertions in future tests
-void import('@/types').then(m => m as unknown);
-
 // Mock Firebase
 const mockGetDoc = jest.fn();
 const mockGetDocs = jest.fn();

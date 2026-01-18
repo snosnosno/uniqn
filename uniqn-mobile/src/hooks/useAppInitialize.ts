@@ -2,18 +2,17 @@
  * UNIQN Mobile - useAppInitialize Hook
  *
  * @description 앱 초기화 상태 관리
- * @version 1.1.0
+ * @version 1.2.0
  *
  * 초기화 순서:
  * 1. 환경변수 검증
  * 2. Zustand hydration 대기 (AsyncStorage 복원)
  * 3. Firebase 초기화
- * 4. 인증 상태 확인
+ * 4. 강제 업데이트 체크
+ * 5. 인증 상태 확인
  *
- * TODO [출시 전]: 폰트 로딩 추가 (expo-font)
- * TODO [출시 전]: 푸시 알림 권한 확인 로직 추가
- * TODO [출시 전]: 강제 업데이트 체크 로직 추가
- * TODO [출시 전]: 네트워크 상태 확인 로직 추가
+ * TODO [출시 후]: 폰트 로딩 추가 (expo-font) - 기본 폰트 사용 시 불필요
+ * NOTE: 푸시 알림 권한은 useNotificationHandler에서 처리
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -25,6 +24,12 @@ import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
 import { getUserProfile } from '@/services/authService';
+import {
+  checkForceUpdate,
+  ForceUpdateError,
+  MaintenanceError,
+  type VersionCheckResult,
+} from '@/services/versionService';
 
 // ============================================================================
 // Types
@@ -34,6 +39,12 @@ interface AppInitState {
   isInitialized: boolean;
   isLoading: boolean;
   error: Error | null;
+  /** 강제 업데이트 필요 여부 */
+  requiresUpdate: boolean;
+  /** 점검 모드 여부 */
+  isMaintenanceMode: boolean;
+  /** 버전 체크 결과 */
+  versionCheckResult: VersionCheckResult | null;
 }
 
 interface UseAppInitializeReturn extends AppInitState {
@@ -49,6 +60,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
     isInitialized: false,
     isLoading: true,
     error: null,
+    requiresUpdate: false,
+    isMaintenanceMode: false,
+    versionCheckResult: null,
   });
 
   // 무한 루프 방지를 위해 초기화 실행 여부 추적
@@ -103,14 +117,40 @@ export function useAppInitialize(): UseAppInitializeReturn {
       }
       logger.debug('Firebase 초기화 완료', { component: 'useAppInitialize' });
 
-      // 5. 인증 상태 초기화 (복원된 상태 활용)
+      // 5. 강제 업데이트 체크
+      logger.debug('버전 체크 중...', { component: 'useAppInitialize' });
+      const versionResult = await checkForceUpdate();
+
+      // 점검 모드인 경우
+      if (versionResult.isMaintenanceMode) {
+        throw new MaintenanceError(
+          versionResult.maintenanceMessage || '서버 점검 중입니다. 잠시 후 다시 시도해주세요.'
+        );
+      }
+
+      // 강제 업데이트 필요한 경우
+      if (versionResult.mustUpdate) {
+        throw new ForceUpdateError(
+          '앱을 최신 버전으로 업데이트해주세요.',
+          versionResult.latestVersion,
+          versionResult.releaseNotes
+        );
+      }
+
+      logger.debug('버전 체크 완료', {
+        component: 'useAppInitialize',
+        updateType: versionResult.updateType,
+        currentVersion: versionResult.currentVersion,
+      });
+
+      // 6. 인증 상태 초기화 (복원된 상태 활용)
       // getState()로 안정적인 함수 참조 획득
       await useAuthStore.getState().initialize();
 
-      // 6. 인증 상태 확인 (Firebase Auth 리스너 등록)
+      // 7. 인증 상태 확인 (Firebase Auth 리스너 등록)
       await useAuthStore.getState().checkAuthState();
 
-      // 7. Firebase Auth 상태 확정 대기 및 토큰 갱신
+      // 8. Firebase Auth 상태 확정 대기 및 토큰 갱신
       // 웹앱에서 가입한 계정도 모바일앱에서 최신 Custom Claims를 가져옴
       logger.debug('Firebase Auth 상태 확정 대기 중...', { component: 'useAppInitialize' });
 
@@ -187,15 +227,17 @@ export function useAppInitialize(): UseAppInitializeReturn {
         logger.debug('로그인된 사용자 없음', { component: 'useAppInitialize' });
       }
 
-      // 8. 기타 초기화 작업 (필요 시 추가)
-      // - 폰트 로딩
-      // - 설정 데이터 로딩
-      // - 푸시 알림 권한 확인
+      // 9. 기타 초기화 작업 (필요 시 추가)
+      // - 폰트 로딩 (기본 폰트 사용 시 불필요)
+      // NOTE: 푸시 알림 권한은 useNotificationHandler에서 처리
 
       setState({
         isInitialized: true,
         isLoading: false,
         error: null,
+        requiresUpdate: versionResult.shouldUpdate,
+        isMaintenanceMode: false,
+        versionCheckResult: versionResult,
       });
 
       // 성능 추적: 초기화 성공
@@ -205,6 +247,50 @@ export function useAppInitialize(): UseAppInitializeReturn {
       logger.info('앱 초기화 완료', { component: 'useAppInitialize' });
     } catch (error) {
       const err = error instanceof Error ? error : new Error(String(error));
+
+      // 강제 업데이트 에러 처리
+      if (err instanceof ForceUpdateError) {
+        logger.warn('강제 업데이트 필요', {
+          component: 'useAppInitialize',
+          latestVersion: err.latestVersion,
+        });
+
+        appInitTrace.putAttribute('status', 'force_update');
+        appInitTrace.stop();
+
+        setState({
+          isInitialized: false,
+          isLoading: false,
+          error: err,
+          requiresUpdate: true,
+          isMaintenanceMode: false,
+          versionCheckResult: null,
+        });
+        return;
+      }
+
+      // 점검 모드 에러 처리
+      if (err instanceof MaintenanceError) {
+        logger.warn('점검 모드', {
+          component: 'useAppInitialize',
+          message: err.message,
+        });
+
+        appInitTrace.putAttribute('status', 'maintenance');
+        appInitTrace.stop();
+
+        setState({
+          isInitialized: false,
+          isLoading: false,
+          error: err,
+          requiresUpdate: false,
+          isMaintenanceMode: true,
+          versionCheckResult: null,
+        });
+        return;
+      }
+
+      // 일반 에러 처리
       logger.error('앱 초기화 실패', err, { component: 'useAppInitialize' });
 
       // 성능 추적: 초기화 실패
@@ -216,6 +302,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
         isInitialized: false,
         isLoading: false,
         error: err,
+        requiresUpdate: false,
+        isMaintenanceMode: false,
+        versionCheckResult: null,
       });
     } finally {
       // 스플래시 화면 숨기기

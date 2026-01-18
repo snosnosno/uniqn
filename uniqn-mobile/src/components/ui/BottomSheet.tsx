@@ -73,10 +73,90 @@ export interface BottomSheetRef {
 }
 
 // ============================================================================
-// Component
+// Web Component
 // ============================================================================
 
-export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
+/**
+ * 웹 환경용 BottomSheet (Modal position="bottom" 사용)
+ */
+const WebBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
+  (
+    {
+      visible,
+      onClose,
+      title,
+      showCloseButton = true,
+      showHandle = true,
+      closeOnBackdrop = true,
+      scrollable = false,
+      children,
+    },
+    ref
+  ) => {
+    // ref 메서드 웹 폴백 (no-op 함수들)
+    useImperativeHandle(ref, () => ({
+      snapToIndex: () => {
+        // 웹에서는 스냅 포인트 미지원
+      },
+      close: onClose,
+      expand: () => {
+        // 웹에서는 확장 미지원
+      },
+      collapse: () => {
+        // 웹에서는 축소 미지원
+      },
+      present: () => {
+        // 웹에서는 present 미지원
+      },
+    }));
+
+    return (
+      <Modal
+        visible={visible}
+        onClose={onClose}
+        position="bottom"
+        showCloseButton={showCloseButton}
+        closeOnBackdrop={closeOnBackdrop}
+      >
+        {/* Handle bar (시각적 요소만) */}
+        {showHandle && (
+          <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
+            <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+          </View>
+        )}
+
+        {/* Header */}
+        {title && (
+          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-gray-700">
+            <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
+              {title}
+            </Text>
+          </View>
+        )}
+
+        {/* Content */}
+        {scrollable ? (
+          <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
+            <View className="py-4">{children}</View>
+          </ScrollView>
+        ) : (
+          <View className="py-4">{children}</View>
+        )}
+      </Modal>
+    );
+  }
+);
+
+WebBottomSheet.displayName = 'WebBottomSheet';
+
+// ============================================================================
+// Native Component
+// ============================================================================
+
+/**
+ * 네이티브 환경용 BottomSheet (@gorhom/bottom-sheet 사용)
+ */
+const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
   (
     {
       visible,
@@ -95,59 +175,6 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
   ) => {
     const bottomSheetRef = useRef<BottomSheetModal>(null);
     const { isDarkMode } = useThemeStore();
-
-    // ========================================================================
-    // 웹 환경: Modal(position="bottom") 사용
-    // ========================================================================
-    if (isWeb) {
-      // ref 메서드 웹 폴백
-      useImperativeHandle(ref, () => ({
-        snapToIndex: () => {},
-        close: onClose,
-        expand: () => {},
-        collapse: () => {},
-        present: () => {},
-      }));
-
-      return (
-        <Modal
-          visible={visible}
-          onClose={onClose}
-          position="bottom"
-          showCloseButton={showCloseButton}
-          closeOnBackdrop={closeOnBackdrop}
-        >
-          {/* Handle bar (시각적 요소만) */}
-          {showHandle && (
-            <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
-              <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
-            </View>
-          )}
-
-          {/* Header */}
-          {title && (
-            <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-gray-700">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
-                {title}
-              </Text>
-            </View>
-          )}
-
-          {/* Content */}
-          {scrollable ? (
-            <ScrollView style={{ flex: 1 }} showsVerticalScrollIndicator={false}>
-              <View className="py-4">{children}</View>
-            </ScrollView>
-          ) : (
-            <View className="py-4">{children}</View>
-          )}
-        </Modal>
-      );
-    }
-
-    // ========================================================================
-    // 네이티브 환경: @gorhom/bottom-sheet 사용
-    // ========================================================================
 
     // 스냅 포인트 메모이제이션
     const snapPoints = useMemo(
@@ -258,6 +285,29 @@ export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         </ContentWrapper>
       </BottomSheetModal>
     );
+  }
+);
+
+NativeBottomSheet.displayName = 'NativeBottomSheet';
+
+// ============================================================================
+// Main Component (Platform Router)
+// ============================================================================
+
+/**
+ * BottomSheet 컴포넌트
+ *
+ * 플랫폼에 따라 적절한 구현체를 반환합니다.
+ * - 웹: Modal (position="bottom") 사용
+ * - 네이티브: @gorhom/bottom-sheet 사용
+ */
+export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
+  (props, ref) => {
+    // 플랫폼별 컴포넌트 분기 (Hooks 호출 없음 - ESLint 규칙 준수)
+    if (isWeb) {
+      return <WebBottomSheet {...props} ref={ref} />;
+    }
+    return <NativeBottomSheet {...props} ref={ref} />;
   }
 );
 

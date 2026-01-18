@@ -294,15 +294,18 @@ export default function ScheduleScreen() {
     setIsDetailSheetVisible(true);
   }, []);
 
-  // 그룹화된 스케줄 클릭 시 첫 번째 원본 이벤트로 상세 시트 열기
+  // 그룹화된 스케줄 클릭 시 선택된 날짜의 원본 이벤트로 상세 시트 열기
   const handleOpenGroupedDetailSheet = useCallback((group: GroupedScheduleEvent) => {
-    // 원본 이벤트 중 첫 번째를 선택
-    if (group.originalEvents.length > 0) {
-      setSelectedSchedule(group.originalEvents[0]);
-      setSelectedGroupedSchedule(group);
-      setIsDetailSheetVisible(true);
-    }
-  }, []);
+    if (group.originalEvents.length === 0) return;
+
+    // 캘린더에서 선택한 날짜(selectedDate)와 일치하는 이벤트 찾기
+    const targetEvent = group.originalEvents.find(e => e.date === selectedDate)
+      || group.originalEvents[0]; // 없으면 첫 번째로 대체
+
+    setSelectedSchedule(targetEvent);
+    setSelectedGroupedSchedule(group);
+    setIsDetailSheetVisible(true);
+  }, [selectedDate]);
 
   // 그룹 내 특정 날짜 클릭 핸들러
   const handleGroupDatePress = useCallback((date: string, scheduleEventId: string, group: GroupedScheduleEvent) => {

@@ -11,7 +11,8 @@ import { Image } from 'expo-image';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
-import { ClockIcon, AlertCircleIcon, CheckIcon } from '../icons';
+import { TimeWheelPicker, type TimeValue } from '../ui/TimeWheelPicker';
+import { ClockIcon, AlertCircleIcon, CheckIcon, ChevronDownIcon } from '../icons';
 import { formatTime, formatDate, parseTimeSlotToDate } from '@/utils/dateUtils';
 import type { WorkLog } from '@/types';
 
@@ -114,37 +115,6 @@ function parseTimeInput(timeStr: string, baseDate: Date): Date | null {
   return result;
 }
 
-/**
- * 숫자만 입력 시 HH:MM 형식으로 자동 변환
- * 4자리 입력 시에만 자동 포맷팅: "1000" → "10:00"
- */
-function autoFormatTimeInput(input: string): string {
-  // 이미 콜론이 있으면 그대로 반환 (HH:MM 형식 유지)
-  if (input.includes(':')) {
-    return input;
-  }
-
-  // 숫자만 추출
-  const digits = input.replace(/\D/g, '');
-
-  if (digits.length === 0) return '';
-
-  // 4자리 초과 방지
-  if (digits.length > 4) {
-    return digits.slice(0, 4);
-  }
-
-  // 4자리: 1000 → 10:00 (4자리일 때만 자동 포맷팅)
-  if (digits.length === 4) {
-    const hours = digits.slice(0, 2);
-    const minutes = digits.slice(2, 4);
-    return `${hours}:${minutes}`;
-  }
-
-  // 3자리 이하: 그대로 반환 (입력 중)
-  return digits;
-}
-
 // ============================================================================
 // Sub-components
 // ============================================================================
@@ -152,33 +122,39 @@ function autoFormatTimeInput(input: string): string {
 interface TimeInputProps {
   label: string;
   value: string;
-  onChange: (value: string) => void;
   originalTime?: Date | null;
-  currentTime: Date | null;
   iconColor: string;
   /** 미정 여부 */
   isUndefined?: boolean;
   /** 미정 상태 변경 핸들러 */
   onUndefinedChange?: (isUndefined: boolean) => void;
+  /** 휠 피커 열기 */
+  onOpenPicker: () => void;
 }
 
 function TimeInput({
   label,
   value,
-  onChange,
   originalTime,
-  currentTime: _currentTime, // TODO: 현재 시간과 비교 표시 시 활용
   iconColor,
   isUndefined = false,
   onUndefinedChange,
+  onOpenPicker,
 }: TimeInputProps) {
   const hasChanged = originalTime && !isUndefined && formatTimeForInput(originalTime) !== value;
 
-  // 숫자만 입력 시 자동 HH:MM 포맷팅
-  const handleChangeText = useCallback((text: string) => {
-    const formatted = autoFormatTimeInput(text);
-    onChange(formatted);
-  }, [onChange]);
+  // 표시용 텍스트 (24시 이상이면 다음날 표시)
+  const displayText = useMemo(() => {
+    if (!value) return '시간 선택';
+    const match = value.match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return value;
+    const hour = parseInt(match[1], 10);
+    const minute = match[2];
+    if (hour >= 24) {
+      return `${value} (다음날 ${(hour - 24).toString().padStart(2, '0')}:${minute})`;
+    }
+    return value;
+  }, [value]);
 
   return (
     <View className="mb-4">
@@ -205,30 +181,34 @@ function TimeInput({
           </Pressable>
         )}
       </View>
-      <View
-        className={`flex-row items-center p-3 border rounded-lg
+
+      {/* 시간 선택 버튼 (휠 피커 트리거) */}
+      <Pressable
+        onPress={() => !isUndefined && onOpenPicker()}
+        disabled={isUndefined}
+        className={`flex-row items-center justify-between p-3 border rounded-lg min-h-[52px]
           ${isUndefined
             ? 'bg-gray-100 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
-            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700'
           }`}
       >
-        <ClockIcon size={20} color={isUndefined ? '#9CA3AF' : iconColor} />
-        {isUndefined ? (
-          <Text className="ml-2 flex-1 text-lg font-semibold text-gray-400 dark:text-gray-500">
-            미정
-          </Text>
-        ) : (
-          <TextInput
-            value={value}
-            onChangeText={handleChangeText}
-            placeholder="HH:MM"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="number-pad"
-            maxLength={5}
-            className="ml-2 flex-1 text-lg font-semibold text-gray-900 dark:text-white"
-          />
+        <View className="flex-row items-center flex-1">
+          <ClockIcon size={20} color={isUndefined ? '#9CA3AF' : iconColor} />
+          {isUndefined ? (
+            <Text className="ml-2 text-lg font-semibold text-gray-400 dark:text-gray-500">
+              미정
+            </Text>
+          ) : (
+            <Text className="ml-2 text-lg font-semibold text-gray-900 dark:text-white">
+              {displayText}
+            </Text>
+          )}
+        </View>
+        {!isUndefined && (
+          <ChevronDownIcon size={20} color="#9CA3AF" />
         )}
-      </View>
+      </Pressable>
+
       {hasChanged && originalTime && (
         <Text className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
           원래: {formatTime(originalTime)}
@@ -255,6 +235,9 @@ export function WorkTimeEditor({
   // 미정 상태
   const [isStartTimeUndefined, setIsStartTimeUndefined] = useState(false);
   const [isEndTimeUndefined, setIsEndTimeUndefined] = useState(false);
+
+  // 휠 피커 상태 (출근/퇴근 구분)
+  const [activePicker, setActivePicker] = useState<'start' | 'end' | null>(null);
 
   // workLog 변경 시 초기값 설정
   React.useEffect(() => {
@@ -431,14 +414,49 @@ export function WorkTimeEditor({
   // 닫기
   const handleClose = useCallback(() => {
     setReason('');
+    setActivePicker(null);
     onClose();
   }, [onClose]);
+
+  // 휠 피커에서 선택 완료
+  const handlePickerConfirm = useCallback((timeValue: TimeValue) => {
+    const hourStr = timeValue.hour.toString().padStart(2, '0');
+    const minuteStr = timeValue.minute.toString().padStart(2, '0');
+    const timeStr = `${hourStr}:${minuteStr}`;
+
+    if (activePicker === 'start') {
+      setStartTimeStr(timeStr);
+    } else if (activePicker === 'end') {
+      setEndTimeStr(timeStr);
+    }
+    setActivePicker(null);
+  }, [activePicker]);
+
+  // 현재 활성 피커의 값
+  const activePickerValue = useMemo((): TimeValue => {
+    const timeStr = activePicker === 'start' ? startTimeStr : endTimeStr;
+    if (!timeStr) {
+      return { hour: 9, minute: 0 };
+    }
+    const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
+    if (match) {
+      return {
+        hour: parseInt(match[1], 10),
+        minute: parseInt(match[2], 10),
+      };
+    }
+    return { hour: 9, minute: 0 };
+  }, [activePicker, startTimeStr, endTimeStr]);
+
+  // 현재 활성 피커의 제목
+  const activePickerTitle = activePicker === 'start' ? '출근 시간' : '퇴근 시간';
 
   if (!workLog) return null;
 
   const workDate = workLog.date ? parseTimestamp(workLog.date) : null;
 
   return (
+  <>
     <Modal
       visible={visible}
       onClose={handleClose}
@@ -480,33 +498,31 @@ export function WorkTimeEditor({
           <TimeInput
             label="출근 시간"
             value={startTimeStr}
-            onChange={setStartTimeStr}
             originalTime={originalStartTime}
-            currentTime={startTime}
             iconColor="#2563EB"
             isUndefined={isStartTimeUndefined}
             onUndefinedChange={setIsStartTimeUndefined}
+            onOpenPicker={() => setActivePicker('start')}
           />
 
           {/* 퇴근 시간 */}
           <TimeInput
             label="퇴근 시간"
             value={endTimeStr}
-            onChange={setEndTimeStr}
             originalTime={originalEndTime}
-            currentTime={endTime}
             iconColor="#EF4444"
             isUndefined={isEndTimeUndefined}
             onUndefinedChange={setIsEndTimeUndefined}
+            onOpenPicker={() => setActivePicker('end')}
           />
 
-          {/* 시간 형식 안내 */}
+          {/* 시간 선택 안내 */}
           <View className="flex-row items-start p-3 bg-gray-100 dark:bg-gray-900 rounded-lg mb-4">
             <View className="mt-0.5">
               <AlertCircleIcon size={16} color="#6B7280" />
             </View>
             <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-              숫자 4자리 입력{'\n'}(예: 0900, 다음날 새벽은 2500)
+              탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
             </Text>
           </View>
 
@@ -581,6 +597,17 @@ export function WorkTimeEditor({
         </View>
       </View>
     </Modal>
+
+    {/* 휠 피커 모달 (메인 모달 바깥에서 렌더링) */}
+    <TimeWheelPicker
+      visible={activePicker !== null}
+      value={activePickerValue}
+      title={activePickerTitle}
+      minuteInterval={15}
+      onConfirm={handlePickerConfirm}
+      onClose={() => setActivePicker(null)}
+    />
+  </>
   );
 }
 

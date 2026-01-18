@@ -176,7 +176,7 @@ function WebModal({
       {/* Modal Container */}
       <View
         className={`flex-1 ${containerStyle}`}
-        pointerEvents="box-none"
+        style={{ pointerEvents: 'box-none' }}
       >
         <View
           style={[
@@ -188,15 +188,16 @@ function WebModal({
                   // @ts-expect-error - 웹 전용 스타일
                   transition:
                     'opacity 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                  pointerEvents: 'auto' as const,
                 }
               : {
                   opacity: isAnimating ? 1 : 0,
                   transform: [{ translateY: isAnimating ? 0 : 100 }],
                   transition: 'opacity 200ms ease, transform 300ms ease-out',
+                  pointerEvents: 'auto' as const,
                 },
           ]}
           className={modalClassName}
-          pointerEvents="auto"
         >
           {/* Header */}
           {(title || showCloseButton) && (
