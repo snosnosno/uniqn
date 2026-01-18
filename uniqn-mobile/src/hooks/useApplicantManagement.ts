@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 지원자 관리 훅 (구인자용)
  *
- * @description 지원자 조회, 확정, 거절, 대기열 관리
+ * @description 지원자 조회, 확정, 거절 관리
  * @version 1.0.0
  */
 
@@ -11,8 +11,6 @@ import {
   confirmApplication,
   rejectApplication,
   bulkConfirmApplications,
-  addToWaitlist,
-  promoteFromWaitlist,
   markApplicationAsRead,
   getApplicantStatsByRole,
   reviewCancellationRequest,
@@ -221,85 +219,6 @@ export function useBulkConfirmApplications() {
       addToast({
         type: 'error',
         message: '일괄 확정에 실패했습니다.',
-      });
-    },
-  });
-}
-
-// ============================================================================
-// 대기열 관리 훅
-// ============================================================================
-
-/**
- * 대기열 추가 뮤테이션 훅
- */
-export function useAddToWaitlist() {
-  const queryClient = useQueryClient();
-  const { addToast } = useToastStore();
-  const { user } = useAuthStore();
-
-  return useMutation({
-    mutationFn: (applicationId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
-      return addToWaitlist(applicationId, user.uid);
-    },
-    onSuccess: () => {
-      logger.info('대기열 추가 완료');
-      addToast({
-        type: 'success',
-        message: '대기열에 추가되었습니다.',
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applicantManagement.all,
-      });
-    },
-    onError: (error) => {
-      logger.error('대기열 추가 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '대기열 추가에 실패했습니다.',
-      });
-    },
-  });
-}
-
-/**
- * 대기열 승격 뮤테이션 훅
- */
-export function usePromoteFromWaitlist() {
-  const queryClient = useQueryClient();
-  const { addToast } = useToastStore();
-  const { user } = useAuthStore();
-
-  return useMutation({
-    mutationFn: (applicationId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
-      return promoteFromWaitlist(applicationId, user.uid);
-    },
-    onSuccess: (result) => {
-      logger.info('대기열 승격 완료', { workLogId: result.workLogId });
-      addToast({
-        type: 'success',
-        message: '대기열에서 확정되었습니다.',
-      });
-
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applicantManagement.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.applications.all,
-      });
-    },
-    onError: (error) => {
-      logger.error('대기열 승격 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '승격에 실패했습니다.',
       });
     },
   });
@@ -656,8 +575,6 @@ export function useApplicantManagement(jobPostingId: string) {
   const confirmMutation = useConfirmApplication();
   const rejectMutation = useRejectApplication();
   const bulkConfirmMutation = useBulkConfirmApplications();
-  const addToWaitlistMutation = useAddToWaitlist();
-  const promoteFromWaitlistMutation = usePromoteFromWaitlist();
   const markAsReadMutation = useMarkAsRead();
 
   // v2.0 히스토리 기반 확정/취소
@@ -753,13 +670,6 @@ export function useApplicantManagement(jobPostingId: string) {
     bulkConfirm: bulkConfirmMutation.mutate,
     isBulkConfirming: bulkConfirmMutation.isPending,
 
-    // 대기열
-    addToWaitlist: addToWaitlistMutation.mutate,
-    isAddingToWaitlist: addToWaitlistMutation.isPending,
-
-    promoteFromWaitlist: promoteFromWaitlistMutation.mutate,
-    isPromoting: promoteFromWaitlistMutation.isPending,
-
     // 읽음 처리
     markAsRead: markAsReadMutation.mutate,
 
@@ -797,7 +707,6 @@ export function useApplicantManagement(jobPostingId: string) {
     pendingCount: countByStatus('pending'),
     confirmedCount: countByStatus('confirmed'),
     rejectedCount: countByStatus('rejected'),
-    waitlistCount: countByStatus('waitlisted'),
     completedCount: countByStatus('completed'),
     cancellationPendingCount: countByStatus('cancellation_pending'),
   };

@@ -24,7 +24,7 @@ import { getRoleDisplayName } from '@/types/unified';
 // Types
 // ============================================================================
 
-export type ConfirmModalAction = 'confirm' | 'reject' | 'waitlist';
+export type ConfirmModalAction = 'confirm' | 'reject';
 
 export interface ApplicantConfirmModalProps {
   visible: boolean;
@@ -33,7 +33,6 @@ export interface ApplicantConfirmModalProps {
   action: ConfirmModalAction;
   onConfirm: (notes?: string) => void;
   onReject: (reason?: string) => void;
-  onWaitlist: () => void;
   isLoading?: boolean;
   /** 선택된 일정 (확정 시 표시) */
   selectedAssignments?: Assignment[];
@@ -70,15 +69,6 @@ const ACTION_CONFIG: Record<ConfirmModalAction, {
     inputLabel: '거절 사유 (선택)',
     inputPlaceholder: '거절 사유를 입력하세요',
   },
-  waitlist: {
-    title: '대기열 추가',
-    description: '이 지원자를 대기열에 추가하시겠습니까?',
-    buttonText: '대기열 추가',
-    buttonVariant: 'secondary',
-    showTextInput: false,
-    inputLabel: '',
-    inputPlaceholder: '',
-  },
 };
 
 // ============================================================================
@@ -92,7 +82,6 @@ export function ApplicantConfirmModal({
   action,
   onConfirm,
   onReject,
-  onWaitlist,
   isLoading = false,
   selectedAssignments,
 }: ApplicantConfirmModalProps) {
@@ -159,12 +148,9 @@ export function ApplicantConfirmModal({
       case 'reject':
         onReject(inputValue.trim() || undefined);
         break;
-      case 'waitlist':
-        onWaitlist();
-        break;
     }
     setInputValue('');
-  }, [action, inputValue, onConfirm, onReject, onWaitlist]);
+  }, [action, inputValue, onConfirm, onReject]);
 
   if (!applicant) return null;
 
@@ -268,22 +254,12 @@ export function ApplicantConfirmModal({
         <View className="flex-row items-center mb-4">
           <AlertCircleIcon
             size={20}
-            color={action === 'reject' ? '#EF4444' : action === 'confirm' ? '#2563EB' : '#7C3AED'}
+            color={action === 'reject' ? '#EF4444' : '#2563EB'}
           />
           <Text className="ml-2 text-sm text-gray-600 dark:text-gray-300">
             {config.description}
           </Text>
         </View>
-
-
-        {/* 대기열 안내 */}
-        {action === 'waitlist' && (
-          <View className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg mb-4">
-            <Text className="text-sm text-purple-700 dark:text-purple-300">
-              대기열에 추가된 지원자는 정원에 공석이 생기면 확정으로 승격할 수 있습니다.
-            </Text>
-          </View>
-        )}
 
         {/* 입력 필드 */}
         {config.showTextInput && (

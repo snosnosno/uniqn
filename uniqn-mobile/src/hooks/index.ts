@@ -144,8 +144,6 @@ export {
   useConfirmApplication,
   useRejectApplication,
   useBulkConfirmApplications,
-  useAddToWaitlist,
-  usePromoteFromWaitlist,
   useMarkAsRead as useMarkApplicationAsRead,
 } from './useApplicantManagement';
 

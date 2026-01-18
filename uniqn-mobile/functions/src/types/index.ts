@@ -84,7 +84,7 @@ export interface ApplicationDoc {
   jobPostingId: string;
   applicantId: string;
   applicantName: string;
-  status: 'pending' | 'confirmed' | 'rejected' | 'waitlisted' | 'cancelled';
+  status: 'pending' | 'confirmed' | 'rejected' | 'cancelled';
   createdAt: admin.firestore.Timestamp;
   updatedAt: admin.firestore.Timestamp;
 }

@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 지원자 관리 서비스 (구인자용)
  *
- * @description 지원자 목록 조회, 확정, 거절, 대기자 관리 서비스
+ * @description 지원자 목록 조회, 확정, 거절 서비스
  * @version 2.0.0 - Assignment v2.0 지원
  */
 
@@ -50,7 +50,6 @@ const STATUS_TO_STATS_KEY: Record<ApplicationStatus, keyof ApplicationStats | nu
   confirmed: 'confirmed',
   rejected: 'rejected',
   cancelled: 'cancelled',
-  waitlisted: 'waitlisted',
   completed: 'completed',
   cancellation_pending: 'cancellationPending',
 };
@@ -142,7 +141,6 @@ export async function getApplicantsByJobPosting(
       confirmed: 0,
       rejected: 0,
       cancelled: 0,
-      waitlisted: 0,
       completed: 0,
       cancellationPending: 0,
     };
@@ -345,98 +343,6 @@ export async function bulkConfirmApplications(
 }
 
 /**
- * 대기자로 등록
- */
-export async function addToWaitlist(
-  applicationId: string,
-  ownerId: string
-): Promise<void> {
-  try {
-    logger.info('대기자 등록 시작', { applicationId, ownerId });
-
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (!applicationDoc.exists()) {
-        throw new Error('존재하지 않는 지원입니다');
-      }
-
-      const applicationData = applicationDoc.data() as Application;
-
-      // 공고 소유자 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
-      }
-
-      const jobData = jobDoc.data() as JobPosting;
-      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-      if (postingOwnerId !== ownerId) {
-        throw new Error('본인의 공고만 관리할 수 있습니다');
-      }
-
-      // 대기자 순번 계산
-      const waitlistQuery = query(
-        collection(getFirebaseDb(), APPLICATIONS_COLLECTION),
-        where('jobPostingId', '==', applicationData.jobPostingId),
-        where('status', '==', 'waitlisted'),
-        orderBy('waitlistOrder', 'desc')
-      );
-      const waitlistSnapshot = await getDocs(waitlistQuery);
-      const nextOrder = waitlistSnapshot.empty ? 1 : (waitlistSnapshot.docs[0].data().waitlistOrder ?? 0) + 1;
-
-      // 대기자로 등록
-      transaction.update(applicationRef, {
-        status: 'waitlisted',
-        waitlistOrder: nextOrder,
-        processedBy: ownerId,
-        processedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-    });
-
-    logger.info('대기자 등록 완료', { applicationId });
-  } catch (error) {
-    logger.error('대기자 등록 실패', error as Error, { applicationId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
-  }
-}
-
-/**
- * 대기자 확정 승격 (정원 확보 시)
- */
-export async function promoteFromWaitlist(
-  applicationId: string,
-  ownerId: string
-): Promise<ConfirmResult> {
-  try {
-    logger.info('대기자 승격 시작', { applicationId, ownerId });
-
-    // 일반 확정과 동일 로직
-    const result = await confirmApplication({ applicationId }, ownerId);
-
-    // 승격 시간 기록
-    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      transaction.update(applicationRef, {
-        waitlistPromotedAt: serverTimestamp(),
-      });
-    });
-
-    logger.info('대기자 승격 완료', { applicationId });
-
-    return result;
-  } catch (error) {
-    logger.error('대기자 승격 실패', error as Error, { applicationId });
-    throw error;
-  }
-}
-
-/**
  * 지원 읽음 처리 (구인자가 지원서를 확인)
  */
 export async function markApplicationAsRead(
@@ -501,7 +407,6 @@ export async function getApplicantStatsByRole(
           confirmed: 0,
           rejected: 0,
           cancelled: 0,
-          waitlisted: 0,
           completed: 0,
           cancellationPending: 0,
         };

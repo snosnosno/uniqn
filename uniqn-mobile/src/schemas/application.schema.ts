@@ -12,7 +12,7 @@ import { xssValidation } from '@/utils/security';
  * 지원 상태 스키마
  */
 export const applicationStatusSchema = z.enum(
-  ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'waitlisted', 'completed', 'cancellation_pending'],
+  ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'cancellation_pending'],
   {
     error: '올바른 지원 상태가 아닙니다',
   }

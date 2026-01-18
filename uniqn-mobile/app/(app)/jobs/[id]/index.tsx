@@ -178,8 +178,6 @@ export default function AuthenticatedJobDetailScreen() {
         return '지원 승인됨';
       case 'rejected':
         return '지원이 거절되었습니다';
-      case 'waitlisted':
-        return '대기자 명단에 등록됨';
       case 'cancelled':
         return '지원이 취소되었습니다';
       default:

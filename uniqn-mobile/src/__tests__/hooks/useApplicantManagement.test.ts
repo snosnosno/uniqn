@@ -25,8 +25,6 @@ import {
   useConfirmApplication,
   useRejectApplication,
   useBulkConfirmApplications,
-  useAddToWaitlist,
-  usePromoteFromWaitlist,
   useMarkAsRead,
   useApplicantManagement,
 } from '@/hooks/useApplicantManagement';
@@ -49,8 +47,6 @@ const mockGetApplicantsByJobPosting = jest.fn();
 const mockConfirmApplication = jest.fn();
 const mockRejectApplication = jest.fn();
 const mockBulkConfirmApplications = jest.fn();
-const mockAddToWaitlist = jest.fn();
-const mockPromoteFromWaitlist = jest.fn();
 const mockMarkApplicationAsRead = jest.fn();
 const mockGetApplicantStatsByRole = jest.fn();
 
@@ -60,8 +56,6 @@ jest.mock('@/services', () => ({
   confirmApplication: (...args: unknown[]) => mockConfirmApplication(...args),
   rejectApplication: (...args: unknown[]) => mockRejectApplication(...args),
   bulkConfirmApplications: (...args: unknown[]) => mockBulkConfirmApplications(...args),
-  addToWaitlist: (...args: unknown[]) => mockAddToWaitlist(...args),
-  promoteFromWaitlist: (...args: unknown[]) => mockPromoteFromWaitlist(...args),
   markApplicationAsRead: (...args: unknown[]) => mockMarkApplicationAsRead(...args),
   getApplicantStatsByRole: (...args: unknown[]) => mockGetApplicantStatsByRole(...args),
 }));
@@ -234,7 +228,6 @@ function createMockApplicantListResult(applicants = [createMockApplicantWithDeta
     pending: 0,
     confirmed: 0,
     rejected: 0,
-    waitlisted: 0,
     completed: 0,
   };
 
@@ -295,8 +288,8 @@ describe('useApplicantManagement Hooks', () => {
   describe('useApplicantStats', () => {
     it('should return stats by role', () => {
       const mockStats = {
-        dealer: { total: 5, applied: 3, pending: 0, confirmed: 2, rejected: 0, waitlisted: 0, completed: 0 },
-        floor: { total: 3, applied: 2, pending: 0, confirmed: 1, rejected: 0, waitlisted: 0, completed: 0 },
+        dealer: { total: 5, applied: 3, pending: 0, confirmed: 2, rejected: 0, completed: 0 },
+        floor: { total: 3, applied: 2, pending: 0, confirmed: 1, rejected: 0, completed: 0 },
       };
       mockData = mockStats;
 
@@ -436,55 +429,6 @@ describe('useApplicantManagement Hooks', () => {
   });
 
   // ==========================================================================
-  // useAddToWaitlist
-  // ==========================================================================
-
-  describe('useAddToWaitlist', () => {
-    it('should add to waitlist', async () => {
-      mockAddToWaitlist.mockResolvedValueOnce(undefined);
-
-      const { result } = renderHook(() => useAddToWaitlist());
-
-      await act(async () => {
-        result.current.mutate('app-1');
-      });
-
-      expect(mockAddToWaitlist).toHaveBeenCalledWith('app-1', 'employer-1');
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'success',
-        message: '대기열에 추가되었습니다.',
-      });
-    });
-  });
-
-  // ==========================================================================
-  // usePromoteFromWaitlist
-  // ==========================================================================
-
-  describe('usePromoteFromWaitlist', () => {
-    it('should promote from waitlist', async () => {
-      const mockResult = {
-        applicationId: 'app-1',
-        workLogId: 'worklog-new',
-        message: '승격 완료',
-      };
-      mockPromoteFromWaitlist.mockResolvedValueOnce(mockResult);
-
-      const { result } = renderHook(() => usePromoteFromWaitlist());
-
-      await act(async () => {
-        result.current.mutate('app-1');
-      });
-
-      expect(mockPromoteFromWaitlist).toHaveBeenCalledWith('app-1', 'employer-1');
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'success',
-        message: '대기열에서 확정되었습니다.',
-      });
-    });
-  });
-
-  // ==========================================================================
   // useMarkAsRead
   // ==========================================================================
 
@@ -524,7 +468,6 @@ describe('useApplicantManagement Hooks', () => {
       expect(result.current.confirmApplication).toBeDefined();
       expect(result.current.rejectApplication).toBeDefined();
       expect(result.current.bulkConfirm).toBeDefined();
-      expect(result.current.addToWaitlist).toBeDefined();
       expect(result.current.markAsRead).toBeDefined();
     });
 
@@ -534,7 +477,6 @@ describe('useApplicantManagement Hooks', () => {
         createMockApplicantWithDetails({ id: 'app-2', status: 'pending' }),
         createMockApplicantWithDetails({ id: 'app-3', status: 'confirmed' }),
         createMockApplicantWithDetails({ id: 'app-4', status: 'rejected' }),
-        createMockApplicantWithDetails({ id: 'app-5', status: 'waitlisted' }),
       ]);
       mockData = mockApplicantList;
 
@@ -543,7 +485,6 @@ describe('useApplicantManagement Hooks', () => {
       expect(result.current.pendingCount).toBe(2);
       expect(result.current.confirmedCount).toBe(1);
       expect(result.current.rejectedCount).toBe(1);
-      expect(result.current.waitlistCount).toBe(1);
     });
 
     it('should filter applicants by status', () => {

@@ -21,7 +21,6 @@ export const STATUS_BADGE_VARIANT: Record<ApplicationStatus, StatusBadgeVariant>
   confirmed: 'success',
   rejected: 'error',
   cancelled: 'default',
-  waitlisted: 'primary',
   completed: 'success',
   cancellation_pending: 'warning',
 };

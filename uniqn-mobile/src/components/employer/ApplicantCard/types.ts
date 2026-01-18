@@ -17,7 +17,6 @@ export interface ApplicantCardProps {
   /** 확정 콜백 - selectedAssignments가 전달되면 해당 일정만 확정 */
   onConfirm?: (applicant: ApplicantWithDetails, selectedAssignments?: Assignment[]) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
-  onWaitlist?: (applicant: ApplicantWithDetails) => void;
   /** 확정 취소 (confirmed 상태에서만 사용) */
   onCancelConfirmation?: (applicant: ApplicantWithDetails) => void;
   /** 스태프로 변환 (confirmed 상태에서만 사용) */
@@ -51,6 +50,33 @@ export interface AssignmentDisplay {
   timeSlotDisplay: string; // 표시용 ("미정" 포함)
   role: string;            // 단일 역할
   roleLabel: string;       // 단일 역할 라벨
+}
+
+/**
+ * 그룹화된 Assignment 표시 타입
+ * 같은 timeSlot + role을 가진 연속/비연속 날짜들을 그룹화
+ */
+export interface GroupedAssignmentDisplay {
+  /** 그룹 ID (timeSlot_role 형태) */
+  groupId: string;
+  /** 날짜 범위 */
+  dateRange: {
+    start: string;
+    end: string;
+    dates: string[];
+    totalDays: number;
+    isConsecutive: boolean;
+  };
+  /** 시간대 표시 */
+  timeSlotDisplay: string;
+  /** 역할 라벨 */
+  roleLabel: string;
+  /** 역할 원본 값 */
+  role: string;
+  /** 시간대 원본 값 */
+  timeSlot: string;
+  /** 그룹 내 개별 일정 */
+  items: AssignmentDisplay[];
 }
 
 /**

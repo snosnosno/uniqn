@@ -34,8 +34,6 @@ interface ApplicantCardProps {
   onConfirm?: (applicationId: string) => void;
   /** 거절 버튼 핸들러 */
   onReject?: (applicationId: string) => void;
-  /** 대기자 추가 핸들러 */
-  onWaitlist?: (applicationId: string) => void;
   /** 버튼 로딩 상태 */
   isLoading?: boolean;
   /** 컴팩트 모드 (목록용) */
@@ -93,8 +91,6 @@ const getStatusBadgeVariant = (
     case 'confirmed':
     case 'completed':
       return 'success';
-    case 'waitlisted':
-      return 'warning';
     case 'rejected':
     case 'cancelled':
       return 'error';
@@ -323,17 +319,15 @@ const ActionButtons = memo(function ActionButtons({
   status,
   onConfirm,
   onReject,
-  onWaitlist,
   isLoading,
 }: {
   status: ApplicationStatus;
   onConfirm?: () => void;
   onReject?: () => void;
-  onWaitlist?: () => void;
   isLoading?: boolean;
 }) {
   // 처리 가능한 상태인지 확인
-  const canProcess = status === 'applied' || status === 'pending' || status === 'waitlisted';
+  const canProcess = status === 'applied' || status === 'pending';
 
   if (!canProcess) return null;
 
@@ -348,17 +342,6 @@ const ActionButtons = memo(function ActionButtons({
           className="flex-1"
         >
           확정
-        </Button>
-      )}
-      {onWaitlist && status !== 'waitlisted' && (
-        <Button
-          variant="outline"
-          size="sm"
-          onPress={onWaitlist}
-          disabled={isLoading}
-          className="flex-1"
-        >
-          대기자
         </Button>
       )}
       {onReject && (
@@ -407,7 +390,6 @@ export const ApplicantCard = memo(function ApplicantCard({
   onPress,
   onConfirm,
   onReject,
-  onWaitlist,
   isLoading = false,
   compact = false,
   showHistory = false,
@@ -426,10 +408,6 @@ export const ApplicantCard = memo(function ApplicantCard({
   const handleReject = useCallback(() => {
     onReject?.(application.id);
   }, [application.id, onReject]);
-
-  const handleWaitlist = useCallback(() => {
-    onWaitlist?.(application.id);
-  }, [application.id, onWaitlist]);
 
   // 히스토리 존재 여부
   const hasHistory =
@@ -510,7 +488,6 @@ export const ApplicantCard = memo(function ApplicantCard({
           status={application.status}
           onConfirm={onConfirm ? handleConfirm : undefined}
           onReject={onReject ? handleReject : undefined}
-          onWaitlist={onWaitlist ? handleWaitlist : undefined}
           isLoading={isLoading}
         />
       )}

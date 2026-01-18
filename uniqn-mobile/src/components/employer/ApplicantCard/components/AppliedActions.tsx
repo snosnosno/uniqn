@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 신규 지원 액션 버튼
  *
- * @description 지원자 확정/거절/대기열 버튼
+ * @description 지원자 확정/거절 버튼
  * @version 1.0.0
  */
 
@@ -24,8 +24,6 @@ export interface AppliedActionsProps {
   onConfirm: () => void;
   /** 거절 핸들러 */
   onReject: () => void;
-  /** 대기열 핸들러 (없으면 버튼 숨김) */
-  onWaitlist?: () => void;
 }
 
 // ============================================================================
@@ -38,7 +36,6 @@ export const AppliedActions = React.memo(function AppliedActions({
   selectedCount,
   onConfirm,
   onReject,
-  onWaitlist,
 }: AppliedActionsProps) {
   // 확정 버튼 비활성화 조건: 고정공고가 아니고, 일정이 있는데 선택된 것이 없을 때
   const isConfirmDisabled = !isFixedMode && totalCount > 0 && selectedCount === 0;
@@ -62,18 +59,6 @@ export const AppliedActions = React.memo(function AppliedActions({
           거절
         </Text>
       </Pressable>
-
-      {/* 대기열 버튼 */}
-      {onWaitlist && (
-        <Pressable
-          onPress={onWaitlist}
-          className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-purple-50 dark:bg-purple-900/20 active:opacity-70"
-        >
-          <Text className="text-sm font-medium text-purple-600 dark:text-purple-400">
-            대기열
-          </Text>
-        </Pressable>
-      )}
 
       {/* 확정 버튼 */}
       <Pressable

@@ -194,7 +194,6 @@ export default function JobDetailScreen() {
                 {applicationStatus?.status === 'pending' && '지원 검토 중'}
                 {applicationStatus?.status === 'confirmed' && '지원 승인됨'}
                 {applicationStatus?.status === 'rejected' && '지원이 거절되었습니다'}
-                {applicationStatus?.status === 'waitlisted' && '대기자 명단에 등록됨'}
               </Text>
               <Button
                 onPress={() => router.push('/(app)/(tabs)/schedule')}

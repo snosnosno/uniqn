@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 상태 정보 컴포넌트
  *
- * @description 대기 순번, 거절 사유, 확정 이력 표시
+ * @description 거절 사유, 확정 이력 표시
  * @version 1.0.0
  */
 
@@ -17,8 +17,6 @@ import type { ApplicationStatus, ConfirmationHistoryEntry } from '@/types';
 export interface StatusInfoProps {
   /** 지원 상태 */
   status: ApplicationStatus;
-  /** 대기 순번 */
-  waitlistOrder?: number;
   /** 거절 사유 */
   rejectionReason?: string;
   /** 확정 이력 */
@@ -33,22 +31,12 @@ export interface StatusInfoProps {
 
 export const StatusInfo = React.memo(function StatusInfo({
   status,
-  waitlistOrder,
   rejectionReason,
   confirmationHistory,
   showConfirmationHistory = true,
 }: StatusInfoProps) {
   return (
     <>
-      {/* 대기자 순번 */}
-      {status === 'waitlisted' && waitlistOrder && (
-        <View className="bg-purple-50 dark:bg-purple-900/20 rounded-lg px-3 py-2 mb-2">
-          <Text className="text-sm text-purple-700 dark:text-purple-300">
-            대기 순번: {waitlistOrder}번
-          </Text>
-        </View>
-      )}
-
       {/* 거절 사유 */}
       {status === 'rejected' && rejectionReason && (
         <View className="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-2">

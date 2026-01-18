@@ -184,8 +184,6 @@ export {
   confirmApplication,
   rejectApplication,
   bulkConfirmApplications,
-  addToWaitlist,
-  promoteFromWaitlist,
   markApplicationAsRead,
   getApplicantStatsByRole,
   type ApplicantWithDetails,

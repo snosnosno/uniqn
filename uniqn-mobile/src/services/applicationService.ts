@@ -346,7 +346,6 @@ export async function getApplicationStats(
       confirmed: 0,
       rejected: 0,
       cancelled: 0,
-      waitlisted: 0,
       completed: 0,
       cancellation_pending: 0,
     };

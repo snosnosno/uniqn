@@ -33,10 +33,8 @@ export default function ApplicantsScreen() {
     refresh,
     confirmWithHistory,
     rejectApplication,
-    addToWaitlist,
     isConfirmingWithHistory,
     isRejecting,
-    isAddingToWaitlist,
     markAsRead,
   } = useApplicantManagement(jobPostingId || '');
 
@@ -81,13 +79,6 @@ export default function ApplicantsScreen() {
     setIsModalVisible(true);
   }, []);
 
-  // 대기열 버튼 클릭
-  const handleWaitlist = useCallback((applicant: ApplicantWithDetails) => {
-    setSelectedApplicant(applicant);
-    setModalAction('waitlist');
-    setIsModalVisible(true);
-  }, []);
-
   // 모달에서 확정 처리
   const handleModalConfirm = useCallback((notes?: string) => {
     if (!selectedApplicant) return;
@@ -113,15 +104,6 @@ export default function ApplicantsScreen() {
     setIsModalVisible(false);
     setSelectedApplicant(null);
   }, [selectedApplicant, rejectApplication]);
-
-  // 모달에서 대기열 처리
-  const handleModalWaitlist = useCallback(() => {
-    if (!selectedApplicant) return;
-
-    addToWaitlist(selectedApplicant.id);
-    setIsModalVisible(false);
-    setSelectedApplicant(null);
-  }, [selectedApplicant, addToWaitlist]);
 
   // 모달 닫기
   const handleCloseModal = useCallback(() => {
@@ -157,7 +139,7 @@ export default function ApplicantsScreen() {
     );
   }
 
-  const isProcessing = isConfirmingWithHistory || isRejecting || isAddingToWaitlist;
+  const isProcessing = isConfirmingWithHistory || isRejecting;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
@@ -171,7 +153,6 @@ export default function ApplicantsScreen() {
         isRefreshing={false}
         onConfirm={handleConfirm}
         onReject={handleReject}
-        onWaitlist={handleWaitlist}
         onViewProfile={handleViewProfile}
       />
 
@@ -183,7 +164,6 @@ export default function ApplicantsScreen() {
         action={modalAction}
         onConfirm={handleModalConfirm}
         onReject={handleModalReject}
-        onWaitlist={handleModalWaitlist}
         isLoading={isProcessing}
         selectedAssignments={selectedAssignmentsForConfirm}
       />

@@ -53,7 +53,6 @@ const STATUS_BADGE_VARIANT: Record<ApplicationStatus, 'default' | 'primary' | 's
   confirmed: 'success',
   rejected: 'error',
   cancelled: 'default',
-  waitlisted: 'primary',
   completed: 'success',
   cancellation_pending: 'warning',
 };
@@ -434,17 +433,6 @@ export function ApplicantProfileModal({
           )}
 
           {/* 상태별 추가 정보 */}
-          {applicant.status === 'waitlisted' && applicant.waitlistOrder && (
-            <View className="px-4 pb-4">
-              <View className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-3 flex-row items-center">
-                <ClockIcon size={16} color="#7C3AED" />
-                <Text className="ml-2 text-sm text-purple-700 dark:text-purple-300">
-                  대기 순번: {applicant.waitlistOrder}번
-                </Text>
-              </View>
-            </View>
-          )}
-
           {applicant.status === 'rejected' && applicant.rejectionReason && (
             <View className="px-4 pb-4">
               <View className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 flex-row items-start">

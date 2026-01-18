@@ -233,7 +233,6 @@ function mapApplicationStatusToScheduleType(status: ApplicationStatus): Schedule
     confirmed: 'confirmed', // 확정 (workLogs와 중복될 수 있음)
     rejected: null, // 스케줄에 표시 안 함
     cancelled: 'cancelled',
-    waitlisted: 'applied', // 대기자도 지원 중으로 표시
     completed: 'completed',
     cancellation_pending: 'confirmed', // 취소 요청 중이지만 아직 확정 상태
   };
@@ -638,7 +637,7 @@ export async function getMySchedules(
     const applicationsConstraints: Parameters<typeof query>[1][] = [
       where('applicantId', '==', staffId),
       // 스케줄에 표시할 상태만 필터링
-      where('status', 'in', ['applied', 'pending', 'waitlisted']),
+      where('status', 'in', ['applied', 'pending']),
     ];
 
     applicationsConstraints.push(orderBy('createdAt', 'desc'));

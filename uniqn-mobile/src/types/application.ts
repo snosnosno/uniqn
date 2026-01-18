@@ -33,7 +33,6 @@ export type ApplicationStatus =
   | 'confirmed' // 확정
   | 'rejected' // 거절
   | 'cancelled' // 취소 (지원자가 취소)
-  | 'waitlisted' // 대기자
   | 'completed' // 근무 완료
   | 'cancellation_pending'; // 취소 요청 대기 중
 
@@ -166,9 +165,6 @@ export interface Application extends FirebaseDocument {
   /** 취소 시간 */
   cancelledAt?: Timestamp;
 
-  // === 대기자 관련 ===
-  waitlistOrder?: number;
-  waitlistPromotedAt?: Timestamp;
 
   // === 메타데이터 ===
   isRead?: boolean;
@@ -263,7 +259,6 @@ export interface ApplicationStats {
   confirmed: number;
   rejected: number;
   cancelled: number;
-  waitlisted: number;
   completed: number;
   /** 취소 요청 대기 중 (status: cancellation_pending) */
   cancellationPending: number;
@@ -278,7 +273,6 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
   confirmed: '확정',
   rejected: '거절',
   cancelled: '취소됨',
-  waitlisted: '대기자',
   completed: '완료',
   cancellation_pending: '취소 요청 중',
 };
@@ -304,10 +298,6 @@ export const APPLICATION_STATUS_COLORS: Record<
   },
   rejected: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300' },
   cancelled: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400' },
-  waitlisted: {
-    bg: 'bg-purple-100 dark:bg-purple-900/30',
-    text: 'text-purple-700 dark:text-purple-300',
-  },
   completed: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-300',

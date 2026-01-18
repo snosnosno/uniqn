@@ -23,7 +23,7 @@ import {
   CardHeader,
   AppliedActions,
   ConfirmedActions,
-  AssignmentSelector,
+  GroupedAssignmentSelector,
   AssignmentReadOnly,
   ContactInfo,
   StatusInfo,
@@ -42,7 +42,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   applicant,
   onConfirm,
   onReject,
-  onWaitlist,
   onCancelConfirmation,
   onConvertToStaff,
   onViewProfile,
@@ -76,9 +75,12 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const {
     selectedKeys,
     assignmentDisplays,
+    groupedAssignments,
     selectedCount,
     totalCount,
     toggleAssignment,
+    toggleGroup,
+    getGroupSelectionState,
     getSelectedAssignments,
   } = useAssignmentSelection({
     assignments: applicant.assignments,
@@ -146,11 +148,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
     onReject?.(applicant);
   }, [applicant, onReject]);
 
-  // 대기열 핸들러
-  const handleWaitlist = useCallback(() => {
-    onWaitlist?.(applicant);
-  }, [applicant, onWaitlist]);
-
   // 확정 취소 핸들러
   const handleCancelConfirmation = useCallback(() => {
     onCancelConfirmation?.(applicant);
@@ -206,15 +203,18 @@ export const ApplicantCard = React.memo(function ApplicantCard({
             </View>
           )}
 
-          {/* 일정 선택 (고정공고 제외, applied 상태) */}
+          {/* 일정 선택 - 그룹화된 뷰 (고정공고 제외, applied 상태) */}
           {!isFixedMode && canShowActions && (
-            <AssignmentSelector
-              assignmentDisplays={assignmentDisplays}
+            <GroupedAssignmentSelector
+              groupedAssignments={groupedAssignments}
               selectedKeys={selectedKeys}
               selectedCount={selectedCount}
+              totalCount={totalCount}
               isDark={isDark}
               iconColors={iconColors}
               onToggle={toggleAssignment}
+              onToggleGroup={toggleGroup}
+              getGroupSelectionState={getGroupSelectionState}
             />
           )}
 
@@ -239,7 +239,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           {/* 상태 정보 */}
           <StatusInfo
             status={applicant.status}
-            waitlistOrder={applicant.waitlistOrder}
             rejectionReason={applicant.rejectionReason}
             confirmationHistory={applicant.confirmationHistory}
             showConfirmationHistory={showConfirmationHistory}
@@ -263,7 +262,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
           selectedCount={selectedCount}
           onConfirm={handleConfirm}
           onReject={handleReject}
-          onWaitlist={onWaitlist ? handleWaitlist : undefined}
         />
       )}
     </Card>

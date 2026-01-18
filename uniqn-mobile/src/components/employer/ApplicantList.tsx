@@ -30,7 +30,6 @@ export interface ApplicantListProps {
   isRefreshing?: boolean;
   onConfirm?: (applicant: ApplicantWithDetails) => void;
   onReject?: (applicant: ApplicantWithDetails) => void;
-  onWaitlist?: (applicant: ApplicantWithDetails) => void;
   /** 프로필 상세보기 */
   onViewProfile?: (applicant: ApplicantWithDetails) => void;
 }
@@ -45,7 +44,6 @@ const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
   { value: 'all', label: '전체' },
   { value: 'applied', label: '신규' },
   { value: 'confirmed', label: '확정' },
-  { value: 'waitlisted', label: '대기' },
   { value: 'rejected', label: '거절' },
 ];
 
@@ -109,7 +107,6 @@ export function ApplicantList({
   isRefreshing,
   onConfirm,
   onReject,
-  onWaitlist,
   onViewProfile,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
@@ -140,12 +137,11 @@ export function ApplicantList({
           applicant={item}
           onConfirm={onConfirm}
           onReject={onReject}
-          onWaitlist={onWaitlist}
           onViewProfile={onViewProfile}
         />
       </View>
     ),
-    [onConfirm, onReject, onWaitlist, onViewProfile]
+    [onConfirm, onReject, onViewProfile]
   );
 
   const keyExtractor = useCallback((item: ApplicantWithDetails) => item.id, []);
