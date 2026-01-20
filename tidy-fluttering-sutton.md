@@ -14,10 +14,17 @@
 
 **제약 조건**:
 - ✅ 기능 100% 유지
-- ✅ Firestore 스키마(필드명, 문서 구조) 변경 없음
+- ✅ **Firestore 스키마 변경 가능** (마이그레이션 스크립트로 처리)
+  - `eventId` → `jobPostingId` 통일
+  - 기존 데이터 일괄 마이그레이션 진행
 - ✅ 기존 import 경로 하위 호환 (re-export)
 - ✅ 실시간 구독(onSnapshot) 정상 동작 유지
 - ✅ 트랜잭션 무결성 유지
+
+**🔥 2025-01-20 계획 변경**: Firestore 스키마 변경 허용으로 대폭 단순화
+- Phase 2: IdNormalizer → **ID 마이그레이션**으로 변경
+- Phase 9: 레거시 필드 정리 → **삭제** (더 이상 불필요)
+- 전체 복잡도 40% 감소 예상
 
 ---
 
@@ -761,84 +768,591 @@ case 'checked_in':
 
 ---
 
-### Phase 2: ID 정규화
+### Phase 2: ID 마이그레이션 🔥 (계획 변경됨)
 
-**목표**: `eventId`/`jobPostingId` 혼용 문제 해결 (Firestore 스키마 변경 없이)
+**목표**: `eventId` → `jobPostingId` **완전 통일** (Firestore 스키마 변경)
 
-**신규 파일**:
-- `src/shared/id/IdNormalizer.ts`
-- `src/shared/id/index.ts`
+> ⚠️ **2025-01-20 변경**: 스키마 변경 허용으로 정규화 레이어 불필요 → 직접 마이그레이션
 
-**수정 파일**:
-- `src/services/scheduleService.ts`
-- `src/services/confirmedStaffService.ts`
-- `src/services/settlementService.ts`
-- `src/services/applicationService.ts`
-- `src/utils/scheduleGrouping.ts`
+---
 
-**IdNormalizer 설계** (확장):
+#### 📊 실제 코드 분석 결과 (2025-01-20 기준)
+
+**영향 범위** (16개 파일, 26개 핵심 위치):
+
+| 카테고리 | 파일 수 | 혼용 심각도 | 설명 |
+|---------|:------:|:----------:|------|
+| **서비스** | 6개 | 🔴 높음 | Firestore 쿼리에서 직접 혼용 |
+| **타입** | 5개 | 🟠 중간 | 인터페이스 필드 정의 |
+| **훅** | 2개 | 🟡 낮음 | 서비스 호출 시 전달 |
+| **스키마** | 3개 | 🟡 낮음 | Zod 검증 스키마 |
+
+---
+
+#### 🔴 서비스 파일별 상세 현황
+
+**1. settlementService.ts** (8개 위치 - 가장 심각)
 ```typescript
-export class IdNormalizer {
-  // 기존
-  static extractJobPostingId(doc: { eventId?: string; jobPostingId?: string }): string;
-  static toEventId(jobPostingId: string): string; // 쿼리용 (레거시 호환)
+// 라인 236, 810: 의도적 혼용 패턴
+where('eventId', '==', jobPostingId)  // 매개변수는 jobPostingId, 쿼리는 eventId
 
-  // 🆕 복합 키 생성/파싱 (Application ID)
-  static generateApplicationId(jobPostingId: string, applicantId: string): string;
-  static parseApplicationId(id: string): { jobPostingId: string; applicantId: string };
+// 라인 328, 398, 501, 600, 627, 747: WorkLog 필드 참조
+workLog.eventId  // WorkLog에서 eventId 읽기
+```
 
-  // 🆕 staffId vs applicantId 정규화
-  static extractApplicantId(doc: { staffId?: string; applicantId?: string }): string;
-  static toStaffId(applicantId: string): string; // WorkLog용 (레거시 호환)
+**2. scheduleService.ts** (7개 위치)
+```typescript
+// 라인 149, 169: WorkLog → ScheduleEvent 변환
+eventId: workLog.eventId
+applicationId: `${workLog.eventId}_${workLog.staffId}`  // 복합 키
 
-  // 🆕 배치 정규화
-  static normalizeIds<T extends { eventId?: string; jobPostingId?: string }>(
-    docs: T[]
-  ): (T & { normalizedJobPostingId: string })[];
+// 라인 281, 317: Application → ScheduleEvent 변환
+eventId: application.jobPostingId  // jobPostingId를 eventId로 매핑
+
+// 라인 703: 명시적 주석
+// "IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)"
+```
+
+**3. confirmedStaffService.ts** (4개 위치)
+```typescript
+// 라인 124 주석: @param jobPostingId 공고 ID (eventId)
+// 라인 136, 200, 415, 515: 동일 패턴
+where('eventId', '==', jobPostingId)
+```
+
+**4. eventQRService.ts** (6개 위치)
+```typescript
+// 라인 94, 123, 127, 145, 174, 225, 287, 293
+eventId: input.eventId  // QR 데이터에서 eventId 사용
+where('eventId', '==', eventId)
+```
+
+**5. applicantConversionService.ts** (5개 위치)
+```typescript
+// 라인 97, 211, 247, 317, 391
+// 함수 매개변수명이 eventId이지만 실제로는 jobPostingId 역할
+```
+
+**6. applicationHistoryService.ts** (1개 위치)
+```typescript
+// 라인 349: 명시적 매핑
+eventId: applicationData.jobPostingId
+```
+
+---
+
+#### 🔵 타입 파일별 상세 현황
+
+| 파일 | 인터페이스 | eventId 라인 | 상태 |
+|------|-----------|:------------:|------|
+| schedule.ts | ScheduleEvent | 133 | 필수 필드 |
+| schedule.ts | GroupedScheduleEvent | 275 | 필수 필드 |
+| schedule.ts | WorkLog | 421 | **핵심 - 필수 필드** |
+| schedule.ts | EventQRCode | 575 | 필수 필드 |
+| schedule.ts | EventQRDisplayData | 597 | 필수 필드 |
+| schedule.ts | GenerateEventQRInput | 611 | 필수 필드 |
+| schedule.ts | EventQRValidationResult | 633 | 선택 필드 |
+| settlement.ts | GroupedSettlement | 54 | 필수 필드 |
+| notification.ts | NotificationPayload | 464 | 선택 필드 |
+| application.ts | Application | 105 | **레거시 (deprecated)** |
+
+---
+
+#### 🟡 스키마 파일 현황
+
+| 파일 | 필드 | 라인 | 필수 여부 |
+|------|------|:----:|:--------:|
+| workLog.schema.ts | eventId | 50 | ✅ Required |
+| settlement.schema.ts | eventId | 63, 82 | ✅/❓ |
+| schedule.schema.ts | eventId | 45 | ✅ Required |
+
+---
+
+#### 🔍 혼용 패턴 분류
+
+**패턴 A: 매개변수-쿼리 불일치** (가장 흔함, 6개 서비스)
+```typescript
+// 함수는 jobPostingId로 받지만, Firestore 쿼리에서는 eventId로 조회
+function getWorkLogs(jobPostingId: string) {
+  where('eventId', '==', jobPostingId)  // ⚠️ 혼용
+}
+```
+
+**패턴 B: 타입 매핑** (Application → WorkLog 변환)
+```typescript
+// Application의 jobPostingId를 eventId로 변환
+const workLog = {
+  eventId: application.jobPostingId,  // ⚠️ 명시적 변환
+  staffId: application.applicantId,
+};
+```
+
+**패턴 C: WorkLog 필드 직접 사용** (정상적인 사용)
+```typescript
+// WorkLog 타입이 eventId를 가지므로 정상
+const id = workLog.eventId;
+```
+
+---
+
+#### ⚠️ 근본 원인
+
+1. **WorkLog 스키마가 eventId 유지**: Firestore에 저장된 필드명이 `eventId`
+2. **Application은 jobPostingId 사용**: 신규 표준으로 변경됨
+3. **QR 코드 시스템이 eventId 기반**: 구조 자체가 eventId로 정의
+
+---
+
+**레거시 영향 범위** (참고용):
+```
+타입 파일 (5개): application.ts, settlement.ts, schedule.ts, notification.ts
+서비스 (6개): scheduleService, settlementService, eventQRService, confirmedStaffService, applicantConversionService, applicationHistoryService
+스키마 (3개): workLog.schema, settlement.schema, schedule.schema
+훅 (2개): useApplicantManagement, useEventQR
+```
+
+---
+
+### 📋 작업 순서 (5단계)
+
+#### 2-1. 타입 파일 변경 (8개 인터페이스)
+
+**schedule.ts** (7개 인터페이스 수정):
+```typescript
+// ScheduleEvent (라인 133)
+interface ScheduleEvent {
+  // eventId: string;  // ❌ 제거
+  jobPostingId: string;  // ✅ 추가
 }
 
-// 사용 예시
-const applicationId = IdNormalizer.generateApplicationId(jobPostingId, applicantId);
-// 결과: "JOB123_USER456"
+// GroupedScheduleEvent (라인 275)
+interface GroupedScheduleEvent {
+  // eventId: string;  // ❌ 제거
+  jobPostingId: string;  // ✅ 추가
+}
 
-const { jobPostingId, applicantId } = IdNormalizer.parseApplicationId(applicationId);
+// WorkLog (라인 421) - 핵심
+interface WorkLog {
+  // eventId: string;  // ❌ 제거
+  jobPostingId: string;  // ✅ 추가
+}
+
+// EventQRCode (라인 575)
+// EventQRDisplayData (라인 597)
+// GenerateEventQRInput (라인 611)
+// EventQRValidationResult (라인 633)
+// 모두 동일하게 eventId → jobPostingId
 ```
 
-**현재 혼용 현황**:
-| 컨텍스트 | 사용 필드 | 표준화 방향 |
-|---------|----------|-----------|
-| Application | `jobPostingId` | ✅ 유지 |
-| WorkLog | `eventId` | → `jobPostingId` (읽기 시 정규화) |
-| Schedule | `eventId` | → `jobPostingId` (읽기 시 정규화) |
-| Report | `jobPostingId` | ✅ 유지 |
-| EventQR | `eventId` | → `jobPostingId` (정규화 필요) 🆕 |
-
-**🆕 reportService ↔ eventQRService ID 불일치**:
+**settlement.ts** (1개 인터페이스 수정):
 ```typescript
-// reportService.ts - jobPostingId 사용
-where('jobPostingId', '==', validatedInput.jobPostingId)
-
-// eventQRService.ts - eventId 사용
-where('eventId', '==', input.eventId)
-
-// → 신고 시 QR 데이터 참조 시 혼동 위험
-// → IdNormalizer 적용 대상에 추가
+// GroupedSettlement (라인 54)
+interface GroupedSettlement {
+  // eventId: string;  // ❌ 제거
+  jobPostingId: string;  // ✅ 추가
+}
 ```
 
-**쿼리 호환성 유지**:
+**notification.ts** (선택적):
 ```typescript
-// 읽기: 자동 정규화
-const workLogs = await getWorkLogs(staffId);
-workLogs.forEach(wl => {
-  const jobPostingId = IdNormalizer.extractJobPostingId(wl);
-  // eventId 또는 jobPostingId 중 있는 값 반환
-});
+// NotificationPayload (라인 464) - 선택 필드이므로 후순위
+// eventId?: string;  → jobPostingId?: string;
+```
 
-// 쓰기: 레거시 필드 포함
-const writeData = {
-  jobPostingId,
-  eventId: IdNormalizer.toEventId(jobPostingId), // 레거시 호환
-};
+**application.ts** (정리):
+```typescript
+// Application (라인 105) - 이미 deprecated
+// eventId 필드 완전 제거 (이미 optional)
+```
+
+---
+
+#### 2-2. 서비스/훅 쿼리 변경 (31개 위치)
+
+**settlementService.ts** (8개 위치):
+| 라인 | 변경 전 | 변경 후 |
+|:----:|---------|--------|
+| 236 | `where('eventId', '==', jobPostingId)` | `where('jobPostingId', '==', jobPostingId)` |
+| 328 | `workLog.eventId` | `workLog.jobPostingId` |
+| 398 | `workLog.eventId` | `workLog.jobPostingId` |
+| 501 | `workLog.eventId` | `workLog.jobPostingId` |
+| 600 | `data.eventId` | `data.jobPostingId` |
+| 627 | `workLog.eventId` | `workLog.jobPostingId` |
+| 747 | `workLog.eventId` | `workLog.jobPostingId` |
+| 810 | `where('eventId', '==', ...)` | `where('jobPostingId', '==', ...)` |
+
+**scheduleService.ts** (7개 위치):
+| 라인 | 변경 전 | 변경 후 |
+|:----:|---------|--------|
+| 149 | `eventId: workLog.eventId` | `jobPostingId: workLog.jobPostingId` |
+| 169 | `${workLog.eventId}_${workLog.staffId}` | `${workLog.jobPostingId}_${workLog.staffId}` |
+| 281 | `eventId: application.jobPostingId` | `jobPostingId: application.jobPostingId` |
+| 317 | `eventId: application.jobPostingId` | `jobPostingId: application.jobPostingId` |
+| 703 | 주석 업데이트 | (혼용 해결 완료 명시) |
+| 836 | `workLog.eventId` | `workLog.jobPostingId` |
+| 924 | `wl.eventId` | `wl.jobPostingId` |
+
+**confirmedStaffService.ts** (4개 위치):
+| 라인 | 변경 전 | 변경 후 |
+|:----:|---------|--------|
+| 136 | `where('eventId', '==', jobPostingId)` | `where('jobPostingId', '==', jobPostingId)` |
+| 200 | 동일 | 동일 |
+| 415 | 동일 | 동일 |
+| 515 | 동일 | 동일 |
+
+**eventQRService.ts** (6개 위치):
+| 라인 | 변경 내용 |
+|:----:|---------|
+| 94, 123, 127, 145 | `eventId` → `jobPostingId` |
+| 174, 225, 287, 293 | `where('eventId', '==', ...)` → `where('jobPostingId', '==', ...)` |
+
+**applicantConversionService.ts** (5개 위치):
+| 라인 | 변경 내용 |
+|:----:|---------|
+| 97, 317 | 함수 매개변수 `eventId` → `jobPostingId` |
+| 211, 247 | WorkLog 생성 시 `eventId` → `jobPostingId` |
+| 391 | 쿼리 필드 변경 |
+
+**applicationHistoryService.ts** (1개 위치):
+```typescript
+// 라인 349
+// eventId: applicationData.jobPostingId  // 제거
+jobPostingId: applicationData.jobPostingId  // 그대로
+```
+
+---
+
+#### 2-3. 스키마 파일 변경 (3개 파일)
+
+```typescript
+// workLog.schema.ts (라인 50)
+// eventId: z.string().min(1, ...)  // ❌ 제거
+jobPostingId: z.string().min(1, '공고 ID가 필요합니다')  // ✅ 추가
+
+// settlement.schema.ts (라인 63, 82)
+// eventId 필드 → jobPostingId로 변경
+
+// schedule.schema.ts (라인 45)
+// eventId 필드 → jobPostingId로 변경
+```
+
+---
+
+#### 2-4. Firestore 마이그레이션 스크립트 (완전판)
+
+```typescript
+// functions/src/migration/migrateEventIdToJobPostingId.ts
+import * as admin from 'firebase-admin';
+import { FieldValue } from 'firebase-admin/firestore';
+
+const db = admin.firestore();
+
+interface MigrationResult {
+  collection: string;
+  migrated: number;
+  skipped: number;
+  errors: string[];
+}
+
+// 1. WorkLogs 마이그레이션
+export async function migrateWorkLogs(): Promise<MigrationResult> {
+  const result: MigrationResult = {
+    collection: 'workLogs',
+    migrated: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  let lastDoc: FirebaseFirestore.DocumentSnapshot | null = null;
+  const BATCH_SIZE = 500;
+
+  while (true) {
+    let query = db.collection('workLogs')
+      .where('eventId', '!=', null)
+      .limit(BATCH_SIZE);
+
+    if (lastDoc) {
+      query = query.startAfter(lastDoc);
+    }
+
+    const snapshot = await query.get();
+    if (snapshot.empty) break;
+
+    const batch = db.batch();
+    let batchCount = 0;
+
+    for (const doc of snapshot.docs) {
+      const data = doc.data();
+
+      // 이미 마이그레이션된 경우 스킵
+      if (data.jobPostingId) {
+        result.skipped++;
+        continue;
+      }
+
+      try {
+        batch.update(doc.ref, {
+          jobPostingId: data.eventId,         // eventId 값 복사
+          _migrated: true,                     // 마이그레이션 플래그
+          _migratedAt: FieldValue.serverTimestamp(),
+          _migratedFrom: 'eventId',
+        });
+        batchCount++;
+      } catch (error) {
+        result.errors.push(`${doc.id}: ${error}`);
+      }
+    }
+
+    if (batchCount > 0) {
+      await batch.commit();
+      result.migrated += batchCount;
+    }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+
+    // 진행 상황 로깅
+    console.log(`WorkLogs: ${result.migrated} migrated, ${result.skipped} skipped`);
+  }
+
+  return result;
+}
+
+// 2. EventQRCodes 마이그레이션
+export async function migrateEventQRCodes(): Promise<MigrationResult> {
+  const result: MigrationResult = {
+    collection: 'eventQRCodes',
+    migrated: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  const snapshot = await db.collection('eventQRCodes').get();
+  const batch = db.batch();
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+
+    if (data.jobPostingId) {
+      result.skipped++;
+      continue;
+    }
+
+    if (data.eventId) {
+      batch.update(doc.ref, {
+        jobPostingId: data.eventId,
+        _migrated: true,
+        _migratedAt: FieldValue.serverTimestamp(),
+      });
+      result.migrated++;
+    }
+  }
+
+  if (result.migrated > 0) {
+    await batch.commit();
+  }
+
+  return result;
+}
+
+// 3. 전체 마이그레이션 실행
+export async function runFullMigration() {
+  console.log('🚀 Starting ID Migration: eventId → jobPostingId');
+  console.log('=' .repeat(50));
+
+  const results: MigrationResult[] = [];
+
+  // Step 1: WorkLogs
+  console.log('\n📦 Migrating WorkLogs...');
+  results.push(await migrateWorkLogs());
+
+  // Step 2: EventQRCodes
+  console.log('\n📦 Migrating EventQRCodes...');
+  results.push(await migrateEventQRCodes());
+
+  // 결과 요약
+  console.log('\n' + '=' .repeat(50));
+  console.log('📊 Migration Summary:');
+  for (const r of results) {
+    console.log(`  ${r.collection}: ${r.migrated} migrated, ${r.skipped} skipped`);
+    if (r.errors.length > 0) {
+      console.log(`    ⚠️ Errors: ${r.errors.length}`);
+    }
+  }
+
+  return results;
+}
+
+// 4. 롤백 스크립트
+export async function rollbackMigration(collection: string = 'workLogs') {
+  console.log(`🔄 Rolling back ${collection}...`);
+
+  const snapshot = await db.collection(collection)
+    .where('_migrated', '==', true)
+    .get();
+
+  const batch = db.batch();
+  let count = 0;
+
+  for (const doc of snapshot.docs) {
+    batch.update(doc.ref, {
+      jobPostingId: FieldValue.delete(),
+      _migrated: FieldValue.delete(),
+      _migratedAt: FieldValue.delete(),
+      _migratedFrom: FieldValue.delete(),
+    });
+    count++;
+  }
+
+  if (count > 0) {
+    await batch.commit();
+  }
+
+  console.log(`✅ Rolled back ${count} documents`);
+  return { rolledBack: count };
+}
+
+// 5. 마이그레이션 검증
+export async function verifyMigration(): Promise<{
+  workLogs: { total: number; migrated: number; pending: number };
+  eventQRCodes: { total: number; migrated: number; pending: number };
+}> {
+  const verifyCollection = async (name: string) => {
+    const total = (await db.collection(name).count().get()).data().count;
+    const migrated = (await db.collection(name)
+      .where('jobPostingId', '!=', null)
+      .count()
+      .get()
+    ).data().count;
+
+    return { total, migrated, pending: total - migrated };
+  };
+
+  return {
+    workLogs: await verifyCollection('workLogs'),
+    eventQRCodes: await verifyCollection('eventQRCodes'),
+  };
+}
+```
+
+---
+
+#### 2-5. IdNormalizer 단순화
+
+```typescript
+// src/shared/id/IdNormalizer.ts
+// 마이그레이션 완료 후 단순화된 버전
+
+export class IdNormalizer {
+  // ✅ 유지: 복합 키 생성
+  static generateApplicationId(jobPostingId: string, applicantId: string): string {
+    return `${jobPostingId}_${applicantId}`;
+  }
+
+  // ✅ 유지: 복합 키 파싱
+  static parseApplicationId(applicationId: string): {
+    jobPostingId: string;
+    applicantId: string;
+  } {
+    const [jobPostingId, applicantId] = applicationId.split('_');
+    return { jobPostingId, applicantId };
+  }
+
+  // ❌ 제거: 정규화 로직 (더 이상 불필요)
+  // static normalizeJobId() - 제거
+  // static normalizeUserId() - 제거
+  // static extractJobPostingId() - 제거
+}
+
+---
+
+### 🗄️ 마이그레이션 대상 컬렉션
+
+| 컬렉션 | 필드 변경 | 문서 수 (예상) | 우선순위 |
+|--------|----------|:-------------:|:--------:|
+| **workLogs** | `eventId` → `jobPostingId` | 1,000~10,000+ | 🔴 높음 |
+| **eventQRCodes** | `eventId` → `jobPostingId` | 100~500 | 🔴 높음 |
+
+**타입 변경만 필요** (Firestore 저장 안함):
+| 타입 | 파일 | 용도 |
+|------|------|------|
+| ScheduleEvent | schedule.ts | 클라이언트 병합 결과 |
+| GroupedScheduleEvent | schedule.ts | 그룹화된 스케줄 |
+| GroupedSettlement | settlement.ts | 정산 그룹 |
+| NotificationPayload | notification.ts | 알림 페이로드 |
+
+---
+
+### 📅 마이그레이션 실행 순서
+
+```
+Day 1: 준비
+├── 1. Firestore 백업 (필수)
+├── 2. 테스트 환경에서 마이그레이션 스크립트 검증
+└── 3. 롤백 스크립트 테스트
+
+Day 2: 코드 변경 (앱 배포 전)
+├── 1. 타입 파일 변경 (8개 인터페이스)
+├── 2. 스키마 파일 변경 (3개 파일)
+├── 3. 서비스/훅 쿼리 변경 (31개 위치)
+└── 4. npm run type-check && npm run lint
+
+Day 3: 데이터 마이그레이션
+├── 1. Firestore 마이그레이션 스크립트 실행
+├── 2. 검증 스크립트로 결과 확인
+├── 3. 앱 배포 (신규 코드)
+└── 4. 모니터링 (24시간)
+
+Day 4+: 정리 (선택적)
+├── 1. eventId 필드 제거 스크립트 실행 (옵션)
+└── 2. IdNormalizer 단순화
+```
+
+---
+
+### ✅ Phase 2 완료 기준
+
+**코드 변경**:
+- [ ] 타입 파일 8개 인터페이스에서 `eventId` → `jobPostingId`
+- [ ] 서비스 파일 6개에서 31개 위치 수정
+- [ ] 스키마 파일 3개 수정
+- [ ] 훅 파일 2개 수정
+- [ ] `npm run type-check` 에러 0개
+- [ ] `npm run lint` 에러 0개
+
+**데이터 마이그레이션**:
+- [ ] Firestore 백업 완료
+- [ ] workLogs 컬렉션 마이그레이션 완료
+- [ ] eventQRCodes 컬렉션 마이그레이션 완료
+- [ ] 검증 스크립트 통과 (pending: 0)
+
+**기능 테스트**:
+- [ ] 스케줄 탭 정상 표시
+- [ ] QR 출퇴근 정상 동작
+- [ ] 정산 금액 정상 계산
+- [ ] 실시간 구독(onSnapshot) 정상 동작
+
+---
+
+### ⚠️ 위험 요소 및 대응
+
+| 위험 | 확률 | 영향 | 대응 |
+|------|:----:|:----:|------|
+| 쿼리 결과 0개 | 중간 | 🔴 높음 | 마이그레이션 전 쿼리 먼저 변경 금지 |
+| 롤백 필요 | 낮음 | 🟠 중간 | 롤백 스크립트 준비 완료 |
+| 부분 마이그레이션 | 낮음 | 🟡 낮음 | 페이지네이션으로 안전한 배치 처리 |
+| 인덱스 누락 | 중간 | 🟠 중간 | `jobPostingId` 필드 인덱스 미리 생성 |
+
+**Firestore 인덱스 추가 필요**:
+```
+// firestore.indexes.json에 추가
+{
+  "collectionGroup": "workLogs",
+  "queryScope": "COLLECTION",
+  "fields": [
+    { "fieldPath": "jobPostingId", "order": "ASCENDING" },
+    { "fieldPath": "date", "order": "DESCENDING" }
+  ]
+}
 ```
 
 ---
@@ -3224,18 +3738,33 @@ src/
 ### Phase별 완료 기준
 
 ```
-Phase 2 (ID 정규화) 완료 후:
-☐ IdNormalizer.normalizeJobId() 적용
-☐ IdNormalizer.normalizeUserId() 적용
-☐ scheduleService 배치 조회 통합
-☐ 기존 쿼리 정상 동작 확인
-☐ onSnapshot 콜백 정상 동작 확인
+Phase 2 (ID 정규화) 완료 후: ✅ 2025-01-20 완료
+☑ IdNormalizer.normalizeJobId() 적용
+☑ IdNormalizer.normalizeUserId() 적용
+☑ scheduleService 배치 조회 통합
+☑ 기존 쿼리 정상 동작 확인
+☑ onSnapshot 콜백 정상 동작 확인 (25개 테스트)
 
-Phase 1 (상태 매핑) 완료 후:
-☐ StatusMapper.toAttendance() 적용
-☐ StatusMapper.workLogToSchedule() 적용
-☐ 기존 toAttendanceStatus() 제거
-☐ 상태 변환 일관성 테스트 통과
+Phase 1 (상태 매핑) 완료 후: ✅ 2025-01-21 완료
+☑ StatusMapper.toAttendance() 적용
+☑ StatusMapper.workLogToSchedule() 적용
+☑ 기존 toAttendanceStatus() → StatusMapper로 위임
+☑ 상태 변환 일관성 테스트 통과 (44개 테스트)
+
+Phase 3 (시간 정규화) 완료 후: ✅ 2025-01-21 완료
+☑ TimeNormalizer.normalize() 구현 (actualStartTime > checkInTime 우선순위)
+☑ TimeNormalizer.calculateHours() 구현
+☑ TimeNormalizer.getEffectiveHours() 구현
+☑ Timestamp, Date, ISO string 모든 형식 지원
+☑ 시간 정규화 테스트 통과 (28개 테스트)
+
+Phase 4 (역할 처리) 완료 후: ✅ 2025-01-21 완료
+☑ RoleResolver.normalizeUserRole() 구현 (대소문자 무관, manager→employer 하위호환)
+☑ RoleResolver.hasPermission() 구현 (계층 기반 권한 검증)
+☑ RoleResolver.requireAdmin/requireRole() 구현 (PermissionError 발생)
+☑ RoleResolver.getStaffRoleDisplayName() 구현 (직무 역할 표시명)
+☑ RoleResolver.resolveStaffRoles() 구현 (role/roles/roleIds/customRole 통합)
+☑ 역할 처리 테스트 통과 (66개 테스트)
 
 Phase 11 (에러 처리) 완료 후:
 ☐ hookErrorHandler 적용 (20+ 파일)
@@ -3259,11 +3788,13 @@ Phase 8 (Query) 완료 후:
 ☐ 서비스에서 트리거 호출 연동
 ☐ 캐시 무효화 정상 동작 확인
 
-Phase 5 (스케줄) 완료 후:
-☐ ScheduleMerger 적용
-☐ 병합 로직 일관성 확인
-☐ GroupedScheduleEvent 정상 생성
-☐ 실시간 업데이트 정상 동작
+Phase 5 (스케줄) 완료 후: ✅ 2025-01-21 완료
+☑ ScheduleMerger.merge() 구현 (WorkLog 우선 병합, 날짜 범위 필터)
+☑ ScheduleMerger.groupByDate() 구현 (날짜별 그룹화 + 한글 label)
+☑ ScheduleMerger.groupByApplication() 구현 (applicationId 그룹화)
+☑ ScheduleMerger.isConsecutiveDates() 구현 (연속 날짜 확인)
+☑ ScheduleMerger.calculateStats() 구현 (타입별 통계)
+☑ 스케줄 병합 테스트 통과 (20개 테스트)
 
 Phase 14 (컴포넌트) 완료 후:
 ☐ StatusBadge 통합
