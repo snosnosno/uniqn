@@ -282,7 +282,7 @@ export class SettlementCalculator {
    * @returns 정산 결과 배열
    */
   static calculateBatch(
-    inputs: Array<{ workLogId: string; input: CalculationInput }>
+    inputs: { workLogId: string; input: CalculationInput }[]
   ): SettlementResult[] {
     return inputs.map(({ workLogId, input }) =>
       this.calculateWithCache(workLogId, input)

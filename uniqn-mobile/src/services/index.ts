@@ -415,3 +415,38 @@ export {
   getReportCountByStaff,
 } from './reportService';
 
+// ============================================================================
+// 도메인 레이어 Re-export (Phase 7)
+// ============================================================================
+
+/**
+ * @description 도메인 레이어의 주요 클래스 및 유틸리티를 services에서도 사용 가능하게 re-export
+ * 하위 호환성 유지를 위해 제공
+ */
+
+// Schedule Domain (Phase 5)
+export { ScheduleMerger } from '../domains/schedule';
+export type {
+  MergeOptions,
+  DateGroup,
+  ApplicationGroup,
+  GroupByApplicationResult,
+  GroupByApplicationOptions,
+  ScheduleStats as ScheduleMergerStats,
+} from '../domains/schedule';
+
+// Settlement Domain (Phase 6)
+export {
+  SettlementCalculator,
+  TaxCalculator,
+  SettlementCache,
+} from '../domains/settlement';
+export type {
+  CalculationInput,
+  SettlementResult as CalculatorSettlementResult,
+  SettlementBreakdown,
+  TaxBreakdown,
+  TaxableAmounts,
+  CachedSettlement,
+} from '../domains/settlement';
+

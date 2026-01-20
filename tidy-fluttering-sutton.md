@@ -3798,6 +3798,14 @@ Phase 5 (스케줄) 완료 후: ✅ 2025-01-21 완료
 ☑ ScheduleMerger.calculateStats() 구현 (타입별 통계)
 ☑ 스케줄 병합 테스트 통과 (20개 테스트)
 
+Phase 7 (도메인) 완료 후: ✅ 2025-01-21 완료
+☑ src/domains/job/index.ts 생성 (공고 타입 re-export)
+☑ src/domains/application/index.ts 생성 (지원서 타입 re-export)
+☑ src/domains/staff/index.ts 생성 (스태프 타입 re-export)
+☑ src/domains/index.ts 생성 (중앙 배럴 export)
+☑ src/services/index.ts 수정 (도메인 re-export 추가)
+☑ 타입 검사 통과 / 린트 통과 / 테스트 통과 (64개)
+
 Phase 14 (컴포넌트) 완료 후:
 ☐ StatusBadge 통합
 ☐ DetailSheet 통합
