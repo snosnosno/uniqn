@@ -3772,11 +3772,13 @@ Phase 11 (에러 처리) 완료 후:
 ☐ createMutationErrorHandler() 적용
 ☐ 사용자 메시지 일관성 확인
 
-Phase 6 (정산) 완료 후:
-☐ SettlementCalculator 적용
-☐ SettlementCache 연동
-☐ 정산 금액 비교 테스트 통과
-☐ 중복 계산 제거 확인
+Phase 6 (정산) 완료 후: ✅ 2025-01-21 완료
+☑ SettlementCalculator.calculate() 구현 (시간/급여/수당/세금 통합)
+☑ SettlementCalculator.calculateTotal() 구현 (배치 계산)
+☑ SettlementCalculator.getSalaryForRole() 구현 (역할별 급여 조회)
+☑ TaxCalculator 분리 (none/fixed/rate + 항목별 과세)
+☑ SettlementCache 구현 (5분 TTL, inputHash 기반 변경 감지)
+☑ 정산 계산 테스트 통과 (44개 테스트)
 
 Phase 12 (실시간) 완료 후:
 ☐ WorkLogSubscriptionManager 적용
