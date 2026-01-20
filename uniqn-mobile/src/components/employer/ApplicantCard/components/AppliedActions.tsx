@@ -7,7 +7,8 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { CheckIcon, XMarkIcon } from '../../../icons';
+
+import { CheckIcon, XMarkIcon } from '@/components/icons';
 
 // ============================================================================
 // Types

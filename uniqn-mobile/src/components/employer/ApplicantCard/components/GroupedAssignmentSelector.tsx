@@ -7,6 +7,7 @@
 
 import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+
 import {
   CheckIcon,
   CalendarIcon,
@@ -15,7 +16,8 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   MinusIcon,
-} from '../../../icons';
+} from '@/components/icons';
+
 import type { GroupedAssignmentDisplay, IconColors } from '../types';
 import type { GroupSelectionState } from '../useAssignmentSelection';
 import { createAssignmentKey } from '../utils';

@@ -8,7 +8,7 @@
  * TODO [출시 전]: 검색 기능 추가 (옵션이 많을 경우)
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, memo } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,57 @@ export interface SelectOption<T = string> {
   value: T;
   disabled?: boolean;
 }
+
+interface SelectOptionItemProps<T> {
+  item: SelectOption<T>;
+  isSelected: boolean;
+  onSelect: (option: SelectOption<T>) => void;
+}
+
+// ============================================================================
+// SelectOptionItem Component (메모이제이션)
+// ============================================================================
+
+function SelectOptionItemComponent<T>({
+  item,
+  isSelected,
+  onSelect,
+}: SelectOptionItemProps<T>) {
+  const handlePress = useCallback(() => {
+    if (!item.disabled) {
+      onSelect(item);
+    }
+  }, [item, onSelect]);
+
+  return (
+    <Pressable
+      onPress={handlePress}
+      disabled={item.disabled}
+      className={`
+        px-4 py-4 border-b border-gray-100 dark:border-gray-700
+        ${item.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
+        ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
+      `}
+    >
+      <View className="flex-row items-center justify-between">
+        <Text
+          className={`text-base ${
+            isSelected
+              ? 'text-primary-600 dark:text-primary-400 font-medium'
+              : 'text-gray-900 dark:text-white'
+          } ${item.disabled ? 'text-gray-400' : ''}`}
+        >
+          {item.label}
+        </Text>
+        {isSelected && (
+          <Text className="text-primary-600 dark:text-primary-400">✓</Text>
+        )}
+      </View>
+    </Pressable>
+  );
+}
+
+const SelectOptionItem = memo(SelectOptionItemComponent) as typeof SelectOptionItemComponent;
 
 interface FormSelectProps<T = string> extends Omit<ViewProps, 'children'> {
   /** 선택 옵션 목록 */
@@ -169,30 +220,11 @@ export function FormSelect<T = string>({
               data={options}
               keyExtractor={(item, index) => `${item.value}-${index}`}
               renderItem={({ item }) => (
-                <Pressable
-                  onPress={() => handleSelect(item)}
-                  disabled={item.disabled}
-                  className={`
-                    px-4 py-4 border-b border-gray-100 dark:border-gray-700
-                    ${item.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
-                    ${item.value === value ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
-                  `}
-                >
-                  <View className="flex-row items-center justify-between">
-                    <Text
-                      className={`text-base ${
-                        item.value === value
-                          ? 'text-primary-600 dark:text-primary-400 font-medium'
-                          : 'text-gray-900 dark:text-white'
-                      } ${item.disabled ? 'text-gray-400' : ''}`}
-                    >
-                      {item.label}
-                    </Text>
-                    {item.value === value && (
-                      <Text className="text-primary-600 dark:text-primary-400">✓</Text>
-                    )}
-                  </View>
-                </Pressable>
+                <SelectOptionItem
+                  item={item}
+                  isSelected={item.value === value}
+                  onSelect={handleSelect}
+                />
               )}
               ListEmptyComponent={
                 <View className="py-8 items-center">

@@ -295,13 +295,12 @@ function setupAppStateListener(): void {
 /**
  * 알림에서 페이로드 추출
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function extractPayload(notification: any): NotificationPayload {
-  const content = notification.request?.content || notification.content || {};
+function extractPayload(notification: NotificationsTypes.Notification): NotificationPayload {
+  const content = notification.request?.content;
   return {
-    title: content.title || '',
-    body: content.body || '',
-    data: content.data || {},
+    title: content?.title || '',
+    body: content?.body || '',
+    data: (content?.data as Record<string, unknown>) || {},
   };
 }
 

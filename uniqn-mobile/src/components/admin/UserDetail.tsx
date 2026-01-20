@@ -7,10 +7,8 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Pressable } from 'react-native';
-import { Avatar } from '../ui/Avatar';
-import { Badge } from '../ui/Badge';
-import { Card } from '../ui/Card';
-import { Loading } from '../ui/Loading';
+
+import { Avatar, Badge, Card, Loading } from '@/components/ui';
 import {
   UserIcon,
   PhoneIcon,
@@ -18,13 +16,12 @@ import {
   CalendarIcon,
   GlobeIcon,
   CheckIcon,
-  
   EditIcon,
   ShieldIcon,
   BriefcaseIcon,
   CreditCardIcon,
   ClockIcon,
-} from '../icons';
+} from '@/components/icons';
 import {
   USER_ROLE_LABELS,
   USER_ROLE_BADGE_VARIANT,

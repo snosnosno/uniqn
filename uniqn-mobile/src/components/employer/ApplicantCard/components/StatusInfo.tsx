@@ -7,7 +7,9 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { ConfirmationHistoryTimeline } from '../../../applicant/ConfirmationHistoryTimeline';
+
+import { ConfirmationHistoryTimeline } from '@/components/applicant/ConfirmationHistoryTimeline';
+
 import type { ApplicationStatus, ConfirmationHistoryEntry } from '@/types';
 
 // ============================================================================

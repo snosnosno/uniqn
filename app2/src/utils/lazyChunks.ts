@@ -6,20 +6,6 @@ export const adminChunk = {
   InquiryManagementPage: lazy(() => import('../pages/admin/InquiryManagementPage')),
 };
 
-// 직원 기능 그룹 - 하나의 청크로 묶음
-export const staffChunk = {
-  AttendancePage: lazy(() => import('../pages/AttendancePage')),
-  AvailableTimesPage: lazy(() => import('../pages/AvailableTimesPage')),
-  MySchedulePage: lazy(() => import('../pages/MySchedulePage')),
-};
-
-// 구인/스태프 관리 그룹
-export const jobManagementChunk = {
-  JobBoardPage: lazy(() => import('../pages/JobBoardPage')),
-  JobPostingAdminPage: lazy(() => import('../pages/JobPostingAdminPage')),
-  JobPostingDetailPage: lazy(() => import('../pages/JobPostingDetailPage')),
-};
-
 // 토너먼트 운영 관리 그룹
 export const tournamentChunk = {
   TournamentsPage: lazy(() => import('../pages/TournamentsPage')),

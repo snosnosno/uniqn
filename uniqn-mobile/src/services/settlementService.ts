@@ -20,6 +20,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
+import { FIREBASE_LIMITS } from '@/constants';
 import {
   type SalaryInfo as UtilitySalaryInfo,
   type Allowances as UtilityAllowances,
@@ -573,12 +574,11 @@ export async function bulkSettlement(
     let failedCount = 0;
     let totalAmount = 0;
 
-    // Firestore 배치 제한: 500개
-    const batchSize = 500;
+    // Firestore 배치 제한
     const batches: string[][] = [];
 
-    for (let i = 0; i < input.workLogIds.length; i += batchSize) {
-      batches.push(input.workLogIds.slice(i, i + batchSize));
+    for (let i = 0; i < input.workLogIds.length; i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS) {
+      batches.push(input.workLogIds.slice(i, i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS));
     }
 
     for (const batchIds of batches) {

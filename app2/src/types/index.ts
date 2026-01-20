@@ -104,10 +104,7 @@ export { SCHEDULE_COLORS, ATTENDANCE_STATUS_COLORS } from './schedule';
 // 스케줄의 AttendanceStatus는 별칭으로 export
 export type { AttendanceStatus as ScheduleAttendanceStatus } from './schedule';
 
-// 구인공고 관련 타입
-export * from './jobPosting';
-
-// 급여 관련 타입
+// 급여 관련 타입 (토너먼트 스태프 정산에서 사용)
 export * from './payroll';
 export * from './simplePayroll';
 

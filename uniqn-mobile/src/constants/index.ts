@@ -343,3 +343,9 @@ export {
   STATUS_COLORS,
   PRIMARY_COLORS,
 } from './colors';
+
+// ============================================================================
+// Firebase 제한 상수
+// ============================================================================
+
+export { FIREBASE_LIMITS, type FirebaseLimits } from './firebase';

@@ -119,11 +119,30 @@ export function AnnouncementForm({
   }, []);
 
   // Toggle role selection
-  const toggleRole = (role: UserRole) => {
+  const toggleRole = useCallback((role: UserRole) => {
     setTargetRoles((prev) =>
       prev.includes(role) ? prev.filter((r) => r !== role) : [...prev, role]
     );
-  };
+  }, []);
+
+  // Category selection handler
+  const handleCategorySelect = useCallback((cat: AnnouncementCategory) => {
+    setCategory(cat);
+  }, []);
+
+  // Priority selection handler
+  const handlePrioritySelect = useCallback((p: AnnouncementPriority) => {
+    setPriority(p);
+  }, []);
+
+  // Target type handlers
+  const handleTargetTypeAll = useCallback(() => {
+    setTargetType('all');
+  }, []);
+
+  const handleTargetTypeRoles = useCallback(() => {
+    setTargetType('roles');
+  }, []);
 
   // Image Add Handler (다중 선택 지원)
   const handleAddImages = useCallback(async () => {
@@ -320,7 +339,7 @@ export function AnnouncementForm({
             {ANNOUNCEMENT_CATEGORIES.map((cat) => (
               <Pressable
                 key={cat.key}
-                onPress={() => setCategory(cat.key)}
+                onPress={() => handleCategorySelect(cat.key)}
                 className={`px-4 py-2 rounded-lg border ${
                   category === cat.key
                     ? 'bg-blue-600 border-blue-600'
@@ -398,7 +417,7 @@ export function AnnouncementForm({
             {([0, 1, 2] as AnnouncementPriority[]).map((p) => (
               <Pressable
                 key={p}
-                onPress={() => setPriority(p)}
+                onPress={() => handlePrioritySelect(p)}
                 className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                   priority === p
                     ? p === 2
@@ -450,7 +469,7 @@ export function AnnouncementForm({
           {/* Target Type */}
           <View className="flex-row gap-2 mb-3">
             <Pressable
-              onPress={() => setTargetType('all')}
+              onPress={handleTargetTypeAll}
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'all'
                   ? 'bg-blue-600 border-blue-600'
@@ -468,7 +487,7 @@ export function AnnouncementForm({
               </Text>
             </Pressable>
             <Pressable
-              onPress={() => setTargetType('roles')}
+              onPress={handleTargetTypeRoles}
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'roles'
                   ? 'bg-blue-600 border-blue-600'

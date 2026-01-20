@@ -22,7 +22,51 @@
  */
 import { useMemo } from 'react';
 import { Timestamp } from 'firebase/firestore';
-import { formatDate } from '../utils/jobPosting/dateUtils';
+
+/**
+ * 다양한 날짜 형식을 표준 형식으로 변환
+ * @param dateInput - 다양한 형식의 날짜 입력
+ * @returns 포맷된 날짜 문자열 (YYYY-MM-DD 또는 YYYY년 MM월 DD일)
+ */
+const formatDate = (dateInput: unknown): string => {
+  if (!dateInput) return '';
+
+  let date: Date | null = null;
+
+  // Firebase Timestamp
+  if (dateInput && typeof dateInput === 'object' && 'toDate' in dateInput) {
+    const timestampObj = dateInput as { toDate: () => Date };
+    date = timestampObj.toDate();
+  }
+  // Timestamp with seconds/nanoseconds
+  else if (dateInput && typeof dateInput === 'object' && 'seconds' in dateInput) {
+    const ts = dateInput as { seconds: number; nanoseconds?: number };
+    date = new Date(ts.seconds * 1000);
+  }
+  // Date object
+  else if (dateInput instanceof Date) {
+    date = dateInput;
+  }
+  // String
+  else if (typeof dateInput === 'string') {
+    date = new Date(dateInput);
+  }
+  // Number (timestamp)
+  else if (typeof dateInput === 'number') {
+    date = new Date(dateInput);
+  }
+
+  if (!date || isNaN(date.getTime())) {
+    return '';
+  }
+
+  // YYYY-MM-DD 형식으로 반환
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+
+  return `${year}-${month}-${day}`;
+};
 
 /**
  * 날짜 입력 타입 정의

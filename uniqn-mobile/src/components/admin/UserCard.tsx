@@ -7,16 +7,15 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Avatar } from '../ui/Avatar';
+
+import { Card, Badge, Avatar } from '@/components/ui';
 import {
   UserIcon,
   PhoneIcon,
   ClockIcon,
   CheckIcon,
   ChevronRightIcon,
-} from '../icons';
+} from '@/components/icons';
 import { USER_ROLE_LABELS, USER_ROLE_BADGE_VARIANT } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import type { AdminUser } from '@/types';

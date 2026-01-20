@@ -19,7 +19,11 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import type { DateValue } from './applicants/selection';
+
+/**
+ * 날짜 값 타입 (문자열 또는 null/undefined)
+ */
+type DateValue = string | null | undefined;
 
 /**
  * 지원 선택사항 - 단일 또는 다중 역할/시간/날짜 조합

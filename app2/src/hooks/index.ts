@@ -5,22 +5,9 @@
  * 모든 커스텀 훅을 통합 export합니다.
  * 이 파일을 통해 깔끔한 import 경로를 제공합니다.
  *
- * @version 2.0.0
- * @since 2025-11-25
+ * @version 3.0.0 - 토너먼트 전용 리팩토링
+ * @since 2025-01-19
  * @author T-HOLDEM Development Team
- *
- * @example
- * ```typescript
- * // 개별 import
- * import { useAuth } from '@/hooks';
- *
- * // 여러 Hook import
- * import {
- *   useNotifications,
- *   useJobPostings,
- *   useScheduleData
- * } from '@/hooks';
- * ```
  */
 
 // =============================================================================
@@ -49,88 +36,6 @@ export type {
 } from './firestore';
 
 // =============================================================================
-// Job Posting Hooks
-// =============================================================================
-
-/** 고정공고 관리 Hook */
-export { useFixedJobPostings } from './useFixedJobPostings';
-export type { UseFixedJobPostingsReturn } from './useFixedJobPostings';
-
-/** 구인공고 목록 Hook */
-export { useJobPostings, useInfiniteJobPostings, JobPostingUtils } from './useJobPostings';
-export type { JobPostingFilters, JobPosting, ConfirmedStaff } from './useJobPostings';
-
-/** 구인공고 폼 Hook */
-export { useJobPostingForm } from './useJobPostingForm';
-
-/** 구인공고 작업 Hook */
-export { useJobPostingOperations } from './useJobPostingOperations';
-
-/** 구인공고 승인 Hook */
-export { useJobPostingApproval } from './useJobPostingApproval';
-
-/** 구인공고 공지 Hook */
-export { useJobPostingAnnouncement } from './useJobPostingAnnouncement';
-export type { UseJobPostingAnnouncementReturn } from './useJobPostingAnnouncement';
-
-// =============================================================================
-// Schedule & WorkLog Hooks
-// =============================================================================
-
-/** 스케줄 데이터 Hook (메인) */
-export { useScheduleData } from './useScheduleData';
-
-/** 통합 WorkLog Hook */
-export {
-  useUnifiedWorkLogs,
-  useJobPostingWorkLogs,
-  useStaffWorkLogs,
-  useDateRangeWorkLogs,
-} from './useUnifiedWorkLogs';
-
-/** 교대 스케줄 Hook */
-export { useShiftSchedule, generateTimeSlots } from './useShiftSchedule';
-export type { ShiftSchedule, ShiftDealer, WorkLog } from './useShiftSchedule';
-
-// =============================================================================
-// Staff Hooks
-// =============================================================================
-
-/** 스태프 관리 타입 */
-export type {
-  StaffData,
-  StaffFilters,
-  GroupedStaffData,
-  JobRole,
-  UserRole,
-} from './useStaffManagement';
-
-/** 스태프 QR Hook */
-export { useStaffQR } from './useStaffQR';
-
-/** 스태프 근무 데이터 Hook */
-export { useStaffWorkData } from './useStaffWorkData';
-
-// ============================================================================
-// Staff 하위 모듈 Hooks (권장)
-// ============================================================================
-
-/**
- * 스태프 선택 Hook (SSOT - 권장)
- * @description 인자 없이 사용 가능한 표준 버전입니다.
- */
-export { useStaffSelection as useStaffSelectionV2 } from './staff/useStaffSelection';
-export type { UseStaffSelectionReturn } from './staff/useStaffSelection';
-
-export { useStaffActions } from './staff/useStaffActions';
-export type { UseStaffActionsParams, UseStaffActionsReturn } from './staff/useStaffActions';
-
-export { useStaffData } from './staff/useStaffData';
-export type { UseStaffDataParams, UseStaffDataReturn } from './staff/useStaffData';
-
-export { useStaffModals } from './staff/useStaffModals';
-
-// =============================================================================
 // Table Hooks
 // =============================================================================
 
@@ -148,17 +53,6 @@ export { useTableAssignment } from './tables/useTableAssignment';
 export { useTableOperations } from './tables/useTableOperations';
 
 // =============================================================================
-// Notification Hooks
-// =============================================================================
-
-/** 알림 Hook */
-export { useNotifications } from './useNotifications';
-export type { UseNotificationsReturn } from './useNotifications';
-
-/** 알림 설정 Hook */
-export { useNotificationSettings } from './useNotificationSettings';
-
-// =============================================================================
 // Tournament Hooks
 // =============================================================================
 
@@ -171,6 +65,17 @@ export { useParticipants } from './useParticipants';
 /** 설정 Hook */
 export { useSettings } from './useSettings';
 export type { TournamentSettings } from './useSettings';
+
+// =============================================================================
+// Notification Hooks
+// =============================================================================
+
+/** 알림 Hook */
+export { useNotifications } from './useNotifications';
+export type { UseNotificationsReturn } from './useNotifications';
+
+/** 알림 설정 Hook */
+export { useNotificationSettings } from './useNotificationSettings';
 
 // =============================================================================
 // Data & State Hooks
@@ -194,16 +99,6 @@ export type { DateFilterContextType } from './useDateFilter';
 /** 날짜별 그룹화 Hook */
 export { useGroupByDate } from './useGroupByDate';
 export type { GroupByDateOptions, GroupedData, UseGroupByDateReturn } from './useGroupByDate';
-
-/** 출석 상태 Hook */
-export { useAttendanceStatus } from './useAttendanceStatus';
-
-// =============================================================================
-// Payment Hooks (급여 관련만 유지)
-// =============================================================================
-
-/** 급여 계산 Worker Hook */
-export { usePayrollWorker } from './usePayrollWorker';
 
 // =============================================================================
 // User & Account Hooks
@@ -279,6 +174,3 @@ export { logAction, useStructuredLogger, useLogger } from './useLogger';
 /** 시스템 공지 Hook */
 export { useSystemAnnouncements } from './useSystemAnnouncements';
 export type { UseSystemAnnouncementsReturn } from './useSystemAnnouncements';
-
-/** 템플릿 관리자 Hook */
-export { useTemplateManager } from './useTemplateManager';

@@ -2,13 +2,14 @@
  * Zustand UnifiedDataStore
  *
  * UnifiedDataContext를 대체하는 전역 상태 관리 Store
- * - 5개 Firebase 컬렉션 관리 (staff, workLogs, applications, attendanceRecords, jobPostings)
+ * - 4개 Firebase 컬렉션 관리 (staff, workLogs, applications, attendanceRecords)
  * - 실시간 구독 (onSnapshot)
  * - immer 미들웨어로 불변성 자동 처리
  * - devtools 미들웨어로 Redux DevTools 연동
  *
- * @version 1.0.0
+ * @version 2.0.0 - 토너먼트 전용 리팩토링 (jobPostings 제거)
  * @created 2025-11-15
+ * @updated 2025-01-19
  * @feature 001-zustand-migration
  */
 
@@ -40,6 +41,7 @@ interface UnifiedDataState {
   workLogs: Map<string, WorkLog>;
   applications: Map<string, Application>;
   attendanceRecords: Map<string, AttendanceRecord>;
+  /** @deprecated 토너먼트 전용 리팩토링으로 더 이상 구독하지 않음. 하위 호환성을 위해 빈 Map 유지 */
   jobPostings: Map<string, JobPosting>;
   isLoading: boolean;
   error: Error | null;
@@ -64,7 +66,6 @@ interface UnifiedDataSelectors {
   getApplicationsByApplicantId: (applicantId: string) => Application[];
   getAttendanceByStaffId: (staffId: string) => AttendanceRecord[];
   getAttendanceByEventId: (eventId: string) => AttendanceRecord[];
-  getActiveJobPostings: () => JobPosting[];
   /**
    * 스케줄 이벤트 목록 조회 (레거시 호환성)
    * @returns WorkLog 기반 커스텀 객체 배열 (ScheduleEvent 타입과 다름)
@@ -109,13 +110,6 @@ interface UnifiedDataActions {
   updateAttendanceRecordsBatch: (records: AttendanceRecord[]) => void;
   deleteAttendanceRecordsBatch: (ids: string[]) => void;
 
-  // JobPosting CRUD
-  setJobPostings: (jobPostings: Map<string, JobPosting>) => void;
-  updateJobPosting: (posting: JobPosting) => void;
-  deleteJobPosting: (id: string) => void;
-  updateJobPostingsBatch: (postings: JobPosting[]) => void;
-  deleteJobPostingsBatch: (ids: string[]) => void;
-
   // 로딩/에러 상태 관리
   setLoading: (isLoading: boolean) => void;
   setError: (error: Error | null) => void;
@@ -134,7 +128,6 @@ let staffUnsubscribe: Unsubscribe | null = null;
 let workLogsUnsubscribe: Unsubscribe | null = null;
 let applicationsUnsubscribe: Unsubscribe | null = null;
 let attendanceRecordsUnsubscribe: Unsubscribe | null = null;
-let jobPostingsUnsubscribe: Unsubscribe | null = null;
 
 /**
  * Zustand Store 생성
@@ -151,6 +144,7 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       workLogs: new Map<string, WorkLog>(),
       applications: new Map<string, Application>(),
       attendanceRecords: new Map<string, AttendanceRecord>(),
+      /** @deprecated 하위 호환성을 위한 빈 Map (구독 없음) */
       jobPostings: new Map<string, JobPosting>(),
       isLoading: false,
       error: null,
@@ -239,14 +233,6 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       },
 
       /**
-       * 활성화된 구인 공고 목록 조회
-       */
-      getActiveJobPostings: (): JobPosting[] => {
-        const postings = Array.from(get().jobPostings.values());
-        return postings.filter((posting) => posting.status === 'open');
-      },
-
-      /**
        * 스케줄 이벤트 목록 조회 (레거시 호환성)
        * workLogs를 기반으로 커스텀 객체 형태로 변환
        * @note 향후 ScheduleEvent 타입으로 리팩토링 필요
@@ -254,19 +240,17 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       getScheduleEvents: (): Array<Record<string, unknown>> => {
         const workLogs = Array.from(get().workLogs.values());
         const staff = get().staff;
-        const jobPostings = get().jobPostings;
 
         return workLogs.map((log) => {
           const staffData = staff.get(log.staffId);
           const eventId = log.eventId || log.assignmentInfo?.postingId || '';
-          const posting = jobPostings.get(eventId);
 
           return {
             id: log.id,
             staffId: log.staffId,
             staffName: staffData?.name || log.staffInfo?.name || log.staffName,
             eventId: eventId,
-            eventName: posting?.title || '',
+            eventName: '',
             date: log.date,
             role: log.assignmentInfo?.role || log.role || '',
             assignedTime: log.assignmentInfo?.assignedTime || log.assignedTime || '',
@@ -456,34 +440,6 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
               });
             }
           );
-
-          // JobPostings 구독
-          const jobPostingsQuery = query(collection(db, 'jobPostings'));
-          jobPostingsUnsubscribe = onSnapshot(
-            jobPostingsQuery,
-            (snapshot) => {
-              const postingsMap = new Map<string, JobPosting>();
-              snapshot.docs.forEach((doc) => {
-                const data = doc.data() as Omit<JobPosting, 'id'>;
-                postingsMap.set(doc.id, { ...data, id: doc.id });
-              });
-
-              set((state) => {
-                state.jobPostings = postingsMap;
-              });
-
-              logger.info('[UnifiedDataStore] JobPostings 데이터 업데이트', {
-                count: postingsMap.size,
-              });
-            },
-            (err) => {
-              logger.error('[UnifiedDataStore] JobPostings 구독 에러', err);
-              set({
-                error: err,
-                isLoading: false,
-              });
-            }
-          );
         } catch (err) {
           const errorObj = err instanceof Error ? err : new Error(String(err));
           logger.error('[UnifiedDataStore] 구독 초기화 에러', errorObj);
@@ -518,11 +474,6 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
         if (attendanceRecordsUnsubscribe) {
           attendanceRecordsUnsubscribe();
           attendanceRecordsUnsubscribe = null;
-        }
-
-        if (jobPostingsUnsubscribe) {
-          jobPostingsUnsubscribe();
-          jobPostingsUnsubscribe = null;
         }
 
         // Store 초기화
@@ -619,25 +570,6 @@ export const useUnifiedDataStore = create<UnifiedDataStore>()(
       deleteAttendanceRecordsBatch: (ids: string[]): void =>
         set((state) => {
           ids.forEach((id) => state.attendanceRecords.delete(id));
-        }),
-
-      // JobPosting CRUD
-      setJobPostings: (items: Map<string, JobPosting>): void => set({ jobPostings: items }),
-      updateJobPosting: (item: JobPosting): void =>
-        set((state) => {
-          state.jobPostings.set(item.id, item);
-        }),
-      deleteJobPosting: (id: string): void =>
-        set((state) => {
-          state.jobPostings.delete(id);
-        }),
-      updateJobPostingsBatch: (items: JobPosting[]): void =>
-        set((state) => {
-          items.forEach((item) => state.jobPostings.set(item.id, item));
-        }),
-      deleteJobPostingsBatch: (ids: string[]): void =>
-        set((state) => {
-          ids.forEach((id) => state.jobPostings.delete(id));
         }),
 
       // ========== 로딩/에러 상태 관리 ==========

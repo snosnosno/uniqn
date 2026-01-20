@@ -2,8 +2,10 @@
  * Feature Flag 설정
  *
  * 애플리케이션의 기능을 동적으로 활성화/비활성화하는 설정 파일입니다.
- * 초기 출시 시 일부 기능을 비공개하고, 향후 쉽게 활성화할 수 있도록 관리합니다.
+ * 토너먼트 전용 리팩토링 버전 (v2.0.0)
  *
+ * @version 2.0.0
+ * @updated 2025-01-19
  * @example
  * // 기능 활성화 확인
  * if (FEATURE_FLAGS.TOURNAMENTS) {
@@ -24,37 +26,38 @@ export type FeatureFlag = keyof typeof FEATURE_FLAGS;
  */
 export const FEATURE_FLAGS = {
   // ========================================
-  // 비공개 기능 (초기 출시 시)
+  // 토너먼트 기능 (핵심 기능)
   // ========================================
 
   /**
    * 토너먼트 관리 기능
    * - 경로: /app/tournaments
    * - 설명: 토너먼트 생성, 조회, 수정, 삭제 관리
-   * - 상태: 초기 출시 시 비공개
+   * - 상태: 활성화
    */
-  TOURNAMENTS: false,
+  TOURNAMENTS: true,
 
   /**
    * 참가자 관리 기능
    * - 경로: /app/participants
    * - 설명: 토너먼트 참가자 등록 및 관리
-   * - 상태: 초기 출시 시 비공개
+   * - 상태: 활성화
    */
-  PARTICIPANTS: false,
+  PARTICIPANTS: true,
 
   /**
    * 테이블 관리 기능
    * - 경로: /app/tables
    * - 설명: 게임 테이블 생성 및 배치 관리
-   * - 상태: 초기 출시 시 비공개
+   * - 상태: 활성화
    */
-  TABLES: false,
+  TABLES: true,
 
   /**
    * 교대 관리 기능
    * - 경로: /app/admin/shift-schedule
-   * - 설명: 스태프 교대 스케줄 관리
+   * - 설명: 토너먼트 스태프 교대 스케줄 관리
+   * - 상태: 비활성화 (준비 중)
    */
   SHIFT_SCHEDULE: false,
 
@@ -62,19 +65,13 @@ export const FEATURE_FLAGS = {
    * 상금 관리 기능
    * - 경로: /app/admin/prizes
    * - 설명: 토너먼트 상금 분배 및 관리
+   * - 상태: 비활성화 (준비 중)
    */
   PRIZES: false,
 
   // ========================================
-  // 공개 기능 (초기 출시 포함)
+  // 공통 기능
   // ========================================
-
-  /**
-   * 구인구직 게시판
-   * - 경로: /app/jobs
-   * - 설명: 딜러 구인공고 조회 및 지원
-   */
-  JOB_BOARD: true,
 
   /**
    * 프로필 관리
@@ -84,39 +81,11 @@ export const FEATURE_FLAGS = {
   PROFILE: true,
 
   /**
-   * 스케줄 조회
-   * - 경로: /app/schedule, /app/my-schedule
-   * - 설명: 개인 근무 스케줄 확인
-   */
-  SCHEDULE: true,
-
-  /**
-   * 출석 관리
-   * - 경로: /app/attendance
-   * - 설명: 출석 체크 및 기록
-   */
-  ATTENDANCE: true,
-
-  /**
    * 알림 시스템
    * - 경로: /app/notifications
    * - 설명: 푸시 알림 및 공지사항
    */
   NOTIFICATIONS: true,
-
-  /**
-   * 관리자 대시보드
-   * - 경로: /app/admin/ceo-dashboard
-   * - 설명: CEO/관리자 전용 대시보드
-   */
-  ADMIN_DASHBOARD: true,
-
-  /**
-   * 구인공고 관리
-   * - 경로: /app/admin/job-postings
-   * - 설명: 구인공고 작성 및 관리
-   */
-  JOB_POSTING_MANAGEMENT: true,
 
   /**
    * 사용자 관리
@@ -131,26 +100,6 @@ export const FEATURE_FLAGS = {
    * - 설명: 사용자 문의 처리
    */
   INQUIRY_MANAGEMENT: true,
-
-  /**
-   * 지원서 승인
-   * - 경로: /app/admin/approvals
-   * - 설명: 딜러 지원서 승인/거절
-   */
-  APPROVALS: true,
-
-  // ========================================
-  // 리팩토링 기능 (점진적 배포)
-  // ========================================
-
-  /**
-   * 리팩토링된 구인공고 폼 ✅ (2025-11-10 활성화)
-   * - 설명: JobPostingForm 컴포넌트 분리 (988줄 → 5개 파일)
-   * - 개선: Zod 검증, XSS 방지, React.memo 최적화, Props Grouping
-   * - 목적: 테스트 가능성, 재사용성, 유지보수성 향상
-   * - 상태: 정식 배포 (Phase 1-4 완료)
-   */
-  USE_REFACTORED_JOB_FORM: true,
 
   // ========================================
   // 시스템 관리 기능
@@ -189,17 +138,6 @@ export const isFeatureEnabled = (feature: FeatureFlag): boolean => {
  * 환경별 Feature Flag 오버라이드
  *
  * 개발 환경에서는 모든 기능을 활성화하여 테스트할 수 있습니다.
- *
- * @example
- * // 개발 환경에서 모든 기능 활성화
- * export const isDevelopment = process.env.NODE_ENV === 'development';
- *
- * if (isDevelopment) {
- *   // 개발 환경에서는 모든 기능 활성화
- *   Object.keys(FEATURE_FLAGS).forEach(key => {
- *     (FEATURE_FLAGS as any)[key] = true;
- *   });
- * }
  */
 export const isDevelopment = process.env.NODE_ENV === 'development';
 

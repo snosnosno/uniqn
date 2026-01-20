@@ -7,21 +7,13 @@
 
 import React, { useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Switch } from 'react-native';
+
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Input } from '../ui/Input';
-import { FormSelect } from '../ui/FormSelect';
-import { Button } from '../ui/Button';
-import { Avatar } from '../ui/Avatar';
-import { Loading } from '../ui/Loading';
-import {
-  UserIcon,
-  PhoneIcon,
-  
-  ShieldIcon,
-  CheckIcon,
-} from '../icons';
+
+import { Input, FormSelect, Button, Avatar, Loading } from '@/components/ui';
+import { UserIcon, PhoneIcon, ShieldIcon, CheckIcon } from '@/components/icons';
 import {
   USER_ROLE_LABELS,
   COUNTRIES,

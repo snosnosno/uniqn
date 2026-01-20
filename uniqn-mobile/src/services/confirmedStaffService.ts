@@ -91,7 +91,8 @@ async function getStaffName(staffId: string): Promise<string> {
       return userData.displayName || userData.name || `스태프 ${staffId.slice(-4)}`;
     }
     return `스태프 ${staffId.slice(-4)}`;
-  } catch {
+  } catch (error) {
+    logger.warn('스태프 이름 조회 실패', { staffId, error });
     return `스태프 ${staffId.slice(-4)}`;
   }
 }

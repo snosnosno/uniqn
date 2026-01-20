@@ -176,7 +176,8 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
             return { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
           }
           return null;
-        } catch {
+        } catch (error) {
+          logger.warn('공고 정보 조회 실패', { jobId, error });
           return null;
         }
       });

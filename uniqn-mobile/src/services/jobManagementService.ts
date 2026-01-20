@@ -19,6 +19,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
+import { FIREBASE_LIMITS } from '@/constants';
 import { migrateJobPostingForWrite } from './jobPostingMigration';
 import type {
   JobPosting,
@@ -703,10 +704,9 @@ export async function bulkUpdateJobPostingStatus(
 
     let successCount = 0;
 
-    // Firestore 배치 작업은 최대 500개까지
-    const batchSize = 500;
-    for (let i = 0; i < jobPostingIds.length; i += batchSize) {
-      const batch = jobPostingIds.slice(i, i + batchSize);
+    // Firestore 배치 작업 제한
+    for (let i = 0; i < jobPostingIds.length; i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS) {
+      const batch = jobPostingIds.slice(i, i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS);
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         for (const jobPostingId of batch) {

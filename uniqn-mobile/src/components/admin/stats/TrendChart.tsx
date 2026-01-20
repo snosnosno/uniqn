@@ -4,9 +4,21 @@
  * @description 7일 트렌드 데이터를 라인/바 차트로 시각화
  */
 
+import { useMemo } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { LineChart, BarChart } from 'react-native-chart-kit';
 import { useThemeStore } from '@/stores/themeStore';
+
+/**
+ * HEX 색상을 RGBA 색상 함수로 변환
+ */
+function hexToRgba(hex: string, opacity: number): string {
+  const cleanHex = hex.replace('#', '');
+  const r = parseInt(cleanHex.substring(0, 2), 16);
+  const g = parseInt(cleanHex.substring(2, 4), 16);
+  const b = parseInt(cleanHex.substring(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${opacity})`;
+}
 
 const screenWidth = Dimensions.get('window').width;
 
@@ -32,46 +44,33 @@ export function TrendChart({
 }: TrendChartProps) {
   const { isDarkMode } = useThemeStore();
 
-  // 데이터가 없거나 빈 경우
-  if (!data || data.length === 0) {
-    return (
-      <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          {title}
-        </Text>
-        <View className="h-[180px] items-center justify-center">
-          <Text className="text-gray-500 dark:text-gray-400">
-            데이터가 없습니다
-          </Text>
-        </View>
-      </View>
-    );
-  }
+  // 색상 함수 메모이제이션 (hooks는 항상 동일한 순서로 호출되어야 함)
+  const colorFn = useMemo(
+    () => (opacity: number = 1) => hexToRgba(color, opacity),
+    [color]
+  );
 
-  // 차트 데이터 변환
-  const labels = data.map((d) => {
-    // "2024-01-15" -> "01/15"
-    const parts = d.date.split('-');
-    return `${parts[1]}/${parts[2]}`;
-  });
-  const values = data.map((d) => d.count);
+  // 차트 데이터 변환 (빈 배열 안전 처리)
+  const { labels, values, total } = useMemo(() => {
+    if (!data || data.length === 0) {
+      return { labels: [], values: [], total: 0 };
+    }
+    const lbls = data.map((d) => {
+      // "2024-01-15" -> "01/15"
+      const parts = d.date.split('-');
+      return `${parts[1]}/${parts[2]}`;
+    });
+    const vals = data.map((d) => d.count);
+    const sum = vals.reduce((acc, v) => acc + v, 0);
+    return { labels: lbls, values: vals, total: sum };
+  }, [data]);
 
-  // 합계 계산
-  const total = values.reduce((sum, v) => sum + v, 0);
-
-  const chartConfig = {
+  const chartConfig = useMemo(() => ({
     backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
     backgroundGradientFrom: isDarkMode ? '#1f2937' : '#ffffff',
     backgroundGradientTo: isDarkMode ? '#1f2937' : '#ffffff',
     decimalPlaces: 0,
-    color: (opacity = 1) => {
-      // color prop에서 RGB 추출
-      const hex = color.replace('#', '');
-      const r = parseInt(hex.substring(0, 2), 16);
-      const g = parseInt(hex.substring(2, 4), 16);
-      const b = parseInt(hex.substring(4, 6), 16);
-      return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-    },
+    color: colorFn,
     labelColor: () => (isDarkMode ? '#9ca3af' : '#6b7280'),
     style: {
       borderRadius: 16,
@@ -86,24 +85,34 @@ export function TrendChart({
       stroke: isDarkMode ? '#374151' : '#e5e7eb',
       strokeWidth: 1,
     },
-  };
+  }), [isDarkMode, color, colorFn]);
 
-  const chartData = {
+  const chartData = useMemo(() => ({
     labels,
     datasets: [
       {
         data: values.length > 0 ? values : [0],
-        color: (opacity = 1) => {
-          const hex = color.replace('#', '');
-          const r = parseInt(hex.substring(0, 2), 16);
-          const g = parseInt(hex.substring(2, 4), 16);
-          const b = parseInt(hex.substring(4, 6), 16);
-          return `rgba(${r}, ${g}, ${b}, ${opacity})`;
-        },
+        color: colorFn,
         strokeWidth: 2,
       },
     ],
-  };
+  }), [labels, values, colorFn]);
+
+  // 데이터가 없거나 빈 경우 (hooks 호출 이후에 early return)
+  if (!data || data.length === 0) {
+    return (
+      <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
+          {title}
+        </Text>
+        <View className="h-[180px] items-center justify-center">
+          <Text className="text-gray-500 dark:text-gray-400">
+            데이터가 없습니다
+          </Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">

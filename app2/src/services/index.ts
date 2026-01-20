@@ -5,65 +5,10 @@
  * 모든 서비스 모듈을 통합 export합니다.
  * 이 파일을 통해 깔끔한 import 경로를 제공합니다.
  *
- * @version 1.0.0
- * @since 2025-11-25
+ * @version 2.0.0 - 토너먼트 전용 리팩토링
+ * @since 2025-01-19
  * @author T-HOLDEM Development Team
- *
- * @example
- * ```typescript
- * // 개별 import
- * import { EventService } from '@/services';
- *
- * // 여러 서비스 import
- * import {
- *   initializePushNotifications,
- *   ApplicantConversionService
- * } from '@/services';
- * ```
  */
-
-// =============================================================================
-// Job Posting Services
-// =============================================================================
-
-/** 고정공고 조회수 서비스 */
-export { incrementViewCount, viewCountService } from './fixedJobPosting';
-
-// =============================================================================
-// Application Services
-// =============================================================================
-
-/** 지원자 전환 서비스 */
-export {
-  ApplicantConversionService,
-  applicantConversionService,
-} from './applicantConversionService';
-
-/** 지원 이력 서비스 */
-export { ApplicationHistoryService } from './ApplicationHistoryService';
-export type { ApplicationStateInfo } from './ApplicationHistoryService';
-
-// =============================================================================
-// Staff & QR Services
-// =============================================================================
-
-/** 스태프 QR 서비스 */
-export {
-  getOrCreateStaffQR,
-  regenerateStaffQR,
-  generateDynamicQRPayload,
-  validateQRPayload,
-} from './StaffQRService';
-
-/** 스태프 QR 출석 서비스 */
-export {
-  checkStaffConfirmed,
-  checkScanCooldown,
-  findWorkLog,
-  saveScanHistory,
-  handleCheckIn,
-  handleCheckOut,
-} from './StaffQRAttendanceService';
 
 // =============================================================================
 // Notification Services

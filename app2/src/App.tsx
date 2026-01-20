@@ -46,21 +46,12 @@ import { logger } from './utils/logger';
 import CapacitorInitializer from './components/capacitor/CapacitorInitializer';
 
 // Import grouped lazy chunks for optimized bundle splitting
-import {
-  adminChunk,
-  staffChunk,
-  jobManagementChunk,
-  tournamentChunk,
-  coreChunk,
-} from './utils/lazyChunks';
+import { adminChunk, tournamentChunk, coreChunk } from './utils/lazyChunks';
 
 // Notification Pages
 const NotificationTestPage = React.lazy(() => import('./pages/NotificationTestPage'));
 const AnnouncementsPage = React.lazy(() => import('./pages/AnnouncementsPage'));
 const NotificationSettingsPage = React.lazy(() => import('./pages/NotificationSettingsPage'));
-
-// Job Posting Approval Page (Admin Only)
-const ApprovalManagementPage = React.lazy(() => import('./pages/ApprovalManagementPage'));
 
 // Settings & Legal Pages
 const SettingsPage = React.lazy(() => import('./pages/SettingsPage'));
@@ -72,10 +63,6 @@ const PrivacyPolicyPage = React.lazy(() => import('./pages/legal/PrivacyPolicyPa
 
 // Extract components from chunks
 const { UserManagementPage, InquiryManagementPage } = adminChunk;
-
-const { AttendancePage, AvailableTimesPage, MySchedulePage } = staffChunk;
-
-const { JobBoardPage, JobPostingAdminPage, JobPostingDetailPage } = jobManagementChunk;
 
 const {
   ParticipantsPage,
@@ -92,12 +79,7 @@ const NotificationsPage = React.lazy(() => import('./pages/NotificationsPage'));
 
 // A component to handle role-based redirection for authenticated users
 const AppRedirect: React.FC = () => {
-  const { isAdmin } = useAuth(); // isAdmin is kept for compatibility
-  return isAdmin ? (
-    <Navigate to="/app/admin/job-postings" replace />
-  ) : (
-    <Navigate to="/app/profile" replace />
-  );
+  return <Navigate to="/app/tournaments" replace />;
 };
 
 // Maintenance mode checker component
@@ -298,47 +280,6 @@ const App: React.FC = () => {
                                 }
                               />
 
-                              {/* Dealer facing routes */}
-                              <Route
-                                path="jobs"
-                                element={
-                                  <Suspense fallback={<LoadingSpinner />}>
-                                    <JobBoardPage />
-                                  </Suspense>
-                                }
-                              />
-                              <Route
-                                path="my-schedule"
-                                element={
-                                  <Suspense fallback={<LoadingSpinner />}>
-                                    <MySchedulePage />
-                                  </Suspense>
-                                }
-                              />
-                              <Route
-                                path="schedule"
-                                element={
-                                  <Suspense fallback={<LoadingSpinner />}>
-                                    <MySchedulePage />
-                                  </Suspense>
-                                }
-                              />
-                              <Route
-                                path="attendance"
-                                element={
-                                  <Suspense fallback={<LoadingSpinner />}>
-                                    <AttendancePage />
-                                  </Suspense>
-                                }
-                              />
-                              <Route
-                                path="available-times"
-                                element={
-                                  <Suspense fallback={<LoadingSpinner />}>
-                                    <AvailableTimesPage />
-                                  </Suspense>
-                                }
-                              />
                               <Route
                                 path="support"
                                 element={
@@ -416,31 +357,6 @@ const App: React.FC = () => {
                                 />
                               </Route>
 
-                              {/* Job Posting Management - Admin, Employer, Staff with permission */}
-                              <Route
-                                path="admin"
-                                element={
-                                  <RoleBasedRoute allowedRoles={['admin', 'employer', 'staff']} />
-                                }
-                              >
-                                <Route
-                                  path="job-postings"
-                                  element={
-                                    <Suspense fallback={<LoadingSpinner />}>
-                                      <JobPostingAdminPage />
-                                    </Suspense>
-                                  }
-                                />
-                                <Route
-                                  path="job-posting/:id"
-                                  element={
-                                    <Suspense fallback={<LoadingSpinner />}>
-                                      <JobPostingDetailPage />
-                                    </Suspense>
-                                  }
-                                />
-                              </Route>
-
                               {/* Admin Only Route */}
                               <Route
                                 path="admin"
@@ -459,14 +375,6 @@ const App: React.FC = () => {
                                   element={
                                     <Suspense fallback={<LoadingSpinner />}>
                                       <InquiryManagementPage />
-                                    </Suspense>
-                                  }
-                                />
-                                <Route
-                                  path="job-posting-approvals"
-                                  element={
-                                    <Suspense fallback={<LoadingSpinner />}>
-                                      <ApprovalManagementPage />
                                     </Suspense>
                                   }
                                 />

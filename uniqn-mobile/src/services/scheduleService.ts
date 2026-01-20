@@ -22,6 +22,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, NetworkError, ERROR_CODES } from '@/errors';
+import { FIREBASE_LIMITS } from '@/constants';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
 import type {
   ScheduleEvent,
@@ -357,11 +358,10 @@ async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string,
   }
 
   // Firestore whereIn 최대 30개 제한 → 청크 분할
-  const CHUNK_SIZE = 30;
   const uniqueIds = [...new Set(eventIds)]; // 중복 제거
   const chunks: string[][] = [];
-  for (let i = 0; i < uniqueIds.length; i += CHUNK_SIZE) {
-    chunks.push(uniqueIds.slice(i, i + CHUNK_SIZE));
+  for (let i = 0; i < uniqueIds.length; i += FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS) {
+    chunks.push(uniqueIds.slice(i, i + FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS));
   }
 
   // 청크별 배치 쿼리 (병렬 처리)

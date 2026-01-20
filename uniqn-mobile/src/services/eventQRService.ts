@@ -93,7 +93,8 @@ function parseQRData(qrString: string): EventQRDisplayData | null {
     if (data.type !== 'event') return null;
     if (!data.eventId || !data.date || !data.action || !data.securityCode) return null;
     return data as EventQRDisplayData;
-  } catch {
+  } catch (error) {
+    logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
     return null;
   }
 }

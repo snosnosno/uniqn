@@ -7,7 +7,8 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { PhoneIcon, MessageIcon, DocumentIcon } from '../../../icons';
+
+import { PhoneIcon, MessageIcon, DocumentIcon } from '@/components/icons';
 
 // ============================================================================
 // Types

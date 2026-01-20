@@ -7,7 +7,9 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { CalendarIcon, BriefcaseIcon } from '../../../icons';
+
+import { CalendarIcon, BriefcaseIcon } from '@/components/icons';
+
 import type { AssignmentDisplay, IconColors } from '../types';
 import { createAssignmentKey, formatAppliedDate } from '../utils';
 

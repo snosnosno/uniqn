@@ -7,9 +7,9 @@
 
 import React from 'react';
 import { View, Text, Pressable, useColorScheme } from 'react-native';
-import { Avatar } from '../../../ui/Avatar';
-import { Badge } from '../../../ui/Badge';
-import { ChevronUpIcon, ChevronDownIcon } from '../../../icons';
+
+import { Avatar, Badge } from '@/components/ui';
+import { ChevronUpIcon, ChevronDownIcon } from '@/components/icons';
 import { APPLICATION_STATUS_LABELS } from '@/types';
 import type { ApplicationStatus } from '@/types';
 import { STATUS_BADGE_VARIANT } from '../constants';

@@ -4,6 +4,7 @@
  * @description 사용자 역할별 분포를 원형 차트로 시각화
  */
 
+import { useMemo, useCallback } from 'react';
 import { View, Text, Dimensions } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
 import { useThemeStore } from '@/stores/themeStore';
@@ -30,38 +31,41 @@ export function RoleDistributionChart({
   const total = data.admin + data.employer + data.staff;
 
   // 퍼센트 계산
-  const getPercent = (value: number) => {
+  const getPercent = useCallback((value: number) => {
     if (total === 0) return 0;
     return Math.round((value / total) * 100);
-  };
+  }, [total]);
 
-  const chartData = [
-    {
-      name: '관리자',
-      population: data.admin,
-      color: '#dc2626',
-      legendFontColor: isDarkMode ? '#9ca3af' : '#6b7280',
-      legendFontSize: 12,
-    },
-    {
-      name: '구인자',
-      population: data.employer,
-      color: '#2563eb',
-      legendFontColor: isDarkMode ? '#9ca3af' : '#6b7280',
-      legendFontSize: 12,
-    },
-    {
-      name: '스태프',
-      population: data.staff,
-      color: '#16a34a',
-      legendFontColor: isDarkMode ? '#9ca3af' : '#6b7280',
-      legendFontSize: 12,
-    },
-  ];
+  const chartData = useMemo(() => {
+    const legendColor = isDarkMode ? '#9ca3af' : '#6b7280';
+    return [
+      {
+        name: '관리자',
+        population: data.admin,
+        color: '#dc2626',
+        legendFontColor: legendColor,
+        legendFontSize: 12,
+      },
+      {
+        name: '구인자',
+        population: data.employer,
+        color: '#2563eb',
+        legendFontColor: legendColor,
+        legendFontSize: 12,
+      },
+      {
+        name: '스태프',
+        population: data.staff,
+        color: '#16a34a',
+        legendFontColor: legendColor,
+        legendFontSize: 12,
+      },
+    ];
+  }, [data.admin, data.employer, data.staff, isDarkMode]);
 
-  const chartConfig = {
+  const chartConfig = useMemo(() => ({
     color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  };
+  }), []);
 
   return (
     <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
