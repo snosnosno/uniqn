@@ -38,6 +38,7 @@ import type {
 } from '@/types';
 import { toJobPostingCard } from '@/types/jobPosting';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
+import { IdNormalizer } from '@/shared/id';
 
 // ============================================================================
 // Constants
@@ -699,24 +700,24 @@ export async function getMySchedules(
     // ========================================
     // 5. 공고 정보 일괄 조회 (JobPostingCard 포함)
     // ========================================
-    const workLogEventIds = workLogs.map((wl) => wl.eventId);
-    const applicationEventIds = applications.map((app) => app.jobPostingId);
-    const allEventIds = [...new Set([...workLogEventIds, ...applicationEventIds])];
-
-    const jobPostingCardMap = await fetchJobPostingCardBatch(allEventIds);
+    // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
+    const allJobPostingIds = IdNormalizer.extractUnifiedIds(workLogs, applications);
+    const jobPostingCardMap = await fetchJobPostingCardBatch(Array.from(allJobPostingIds));
 
     // ========================================
     // 6. ScheduleEvent 변환
     // ========================================
-    // WorkLogs → ScheduleEvent
+    // WorkLogs → ScheduleEvent (IdNormalizer로 정규화된 ID 사용)
     const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) => {
-      const cardInfo = jobPostingCardMap.get(workLog.eventId);
+      const normalizedId = IdNormalizer.normalizeJobId(workLog);
+      const cardInfo = jobPostingCardMap.get(normalizedId);
       return workLogToScheduleEvent(workLog, cardInfo);
     });
 
     // Applications → ScheduleEvent[] (다중 날짜 지원)
     const applicationSchedules: ScheduleEvent[] = applications.flatMap((app) => {
-      const cardInfo = jobPostingCardMap.get(app.jobPostingId);
+      const normalizedId = IdNormalizer.normalizeJobId(app);
+      const cardInfo = jobPostingCardMap.get(normalizedId);
       return applicationToScheduleEvents(app, cardInfo);
     });
 
