@@ -7,6 +7,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
 import type { JobPostingCard } from './jobPosting';
+import { StatusMapper } from '@/shared/status';
 
 /**
  * 출석 상태 (UI 표시용)
@@ -26,25 +27,14 @@ export type WorkLogStatus =
 /**
  * WorkLogStatus → AttendanceStatus 변환 유틸
  *
+ * @description StatusMapper로 위임 (Phase 1 - 상태 매핑 통합)
  * @example
  * toAttendanceStatus('scheduled') // 'not_started'
  * toAttendanceStatus('checked_in') // 'checked_in'
  * toAttendanceStatus('completed') // 'checked_out'
  */
 export function toAttendanceStatus(workLogStatus: WorkLogStatus): AttendanceStatus {
-  switch (workLogStatus) {
-    case 'scheduled':
-      return 'not_started';
-    case 'checked_in':
-      return 'checked_in';
-    case 'checked_out':
-    case 'completed':
-      return 'checked_out';
-    case 'cancelled':
-      return 'not_started';
-    default:
-      return 'not_started';
-  }
+  return StatusMapper.toAttendance(workLogStatus);
 }
 
 /**

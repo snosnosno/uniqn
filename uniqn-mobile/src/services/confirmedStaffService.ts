@@ -45,6 +45,7 @@ import {
 } from '@/types/confirmedStaff';
 import type { WorkLog, WorkTimeModification, RoleChangeHistory } from '@/types';
 import { STAFF_ROLES } from '@/constants';
+import { StatusMapper } from '@/shared/status';
 
 // 표준 역할 키 목록 (other 제외)
 const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
@@ -99,18 +100,21 @@ async function getStaffName(staffId: string): Promise<string> {
 
 /**
  * WorkLog 상태를 ConfirmedStaffStatus로 변환
+ *
+ * @description Phase 1 - StatusMapper로 위임
+ * @note no_show는 WorkLogStatus에 없으므로 별도 처리
  */
 function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
-  const statusMap: Record<string, ConfirmedStaffStatus> = {
-    confirmed: 'scheduled',
-    scheduled: 'scheduled',
-    checked_in: 'checked_in',
-    checked_out: 'checked_out',
-    completed: 'completed',
-    cancelled: 'cancelled',
-    no_show: 'no_show',
-  };
-  return statusMap[status] || 'scheduled';
+  // no_show는 WorkLogStatus에 없으므로 직접 처리
+  if (status === 'no_show') {
+    return 'no_show';
+  }
+  // confirmed는 레거시 상태, scheduled로 정규화
+  if (status === 'confirmed') {
+    return 'scheduled';
+  }
+  // 나머지는 StatusMapper로 위임
+  return StatusMapper.toConfirmedStaff(status as import('@/shared/status').WorkLogStatus);
 }
 
 // ============================================================================

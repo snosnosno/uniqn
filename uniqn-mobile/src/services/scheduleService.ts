@@ -39,6 +39,7 @@ import type {
 import { toJobPostingCard } from '@/types/jobPosting';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import { IdNormalizer } from '@/shared/id';
+import { StatusMapper } from '@/shared/status';
 
 // ============================================================================
 // Constants
@@ -109,18 +110,16 @@ function timestampToDate(value: Timestamp | Date | string | null | undefined): D
 
 /**
  * WorkLog를 ScheduleEvent로 변환
+ *
+ * @description Phase 1 - StatusMapper로 상태 매핑 통합
  */
 function workLogToScheduleEvent(
   workLog: WorkLog,
   cardInfo?: JobPostingCardWithMeta
 ): ScheduleEvent {
-  // status 매핑: WorkLog status → ScheduleType
-  let type: ScheduleType = 'confirmed';
-  if (workLog.status === 'completed' || workLog.status === 'checked_out') {
-    type = 'completed';
-  } else if (workLog.status === 'cancelled') {
-    type = 'cancelled';
-  }
+  // StatusMapper로 상태 매핑 (Phase 1 통합)
+  const type = StatusMapper.workLogToSchedule(workLog.status);
+  const attendanceStatus = StatusMapper.toAttendance(workLog.status);
 
   // 정산 세부 내역 미리 계산 (SettlementTab에서 중복 계산 방지)
   const settlementBreakdown = calculateSettlementBreakdown(
@@ -151,12 +150,7 @@ function workLogToScheduleEvent(
     location: cardInfo?.location || '',
     role: workLog.role,
     customRole: workLog.customRole,
-    status:
-      workLog.status === 'checked_in'
-        ? 'checked_in'
-        : workLog.status === 'checked_out' || workLog.status === 'completed'
-          ? 'checked_out'
-          : 'not_started',
+    status: attendanceStatus,
     payrollStatus: workLog.payrollStatus,
     payrollAmount: workLog.payrollAmount,
     ownerPhone: cardInfo?.contactPhone,
@@ -227,19 +221,11 @@ function parseTimeSlotToTimestamp(
 
 /**
  * Application status를 ScheduleType으로 매핑
+ *
+ * @description Phase 1 - StatusMapper로 위임
  */
 function mapApplicationStatusToScheduleType(status: ApplicationStatus): ScheduleType | null {
-  const typeMapping: Record<ApplicationStatus, ScheduleType | null> = {
-    applied: 'applied',
-    pending: 'applied', // pending도 "지원 중"으로 표시
-    confirmed: 'confirmed', // 확정 (workLogs와 중복될 수 있음)
-    rejected: null, // 스케줄에 표시 안 함
-    cancelled: 'cancelled',
-    completed: 'completed',
-    cancellation_pending: 'confirmed', // 취소 요청 중이지만 아직 확정 상태
-  };
-
-  return typeMapping[status] ?? null;
+  return StatusMapper.applicationToSchedule(status);
 }
 
 /**
