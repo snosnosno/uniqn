@@ -3,7 +3,7 @@
 UNIQN (구 T-HOLDEM) 프로젝트의 모든 개발 문서 모음입니다.
 
 **마지막 업데이트**: 2025년 11월 27일
-**프로젝트 버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**프로젝트 버전**: v0.2.4 (Production Ready)
 **총 문서 수**: 46개 (13개 폴더)
 
 ---
@@ -15,8 +15,7 @@ docs/
 ├── README.md              # 문서 인덱스 (이 파일)
 ├── core/                  # 핵심 개발 가이드
 ├── features/              # 기능별 가이드
-│   ├── payment/           # 결제/칩 시스템
-│   └── jobposting/        # 구인공고 시스템
+│   └── payment/           # 결제/칩 시스템
 ├── guides/                # 운영 가이드
 ├── operations/            # 운영 문서
 ├── reference/             # 참조 문서
@@ -61,15 +60,6 @@ docs/
 | [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) | 칩 시스템 구현 가이드 |
 | [REVENUE_MODEL_ANALYSIS.md](features/payment/REVENUE_MODEL_ANALYSIS.md) | 수익 모델 분석 |
 | [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) | 결제 시스템 개발 문서 |
-
-### [features/jobposting/](features/jobposting/) - 구인공고 시스템
-
-| 문서 | 설명 |
-|------|------|
-| [JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md](features/jobposting/JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md) | 공고 시스템 구현 명세서 |
-| [FIXED_JOB_POSTING_MASTER_PLAN.md](features/jobposting/FIXED_JOB_POSTING_MASTER_PLAN.md) | 고정공고 기능 마스터플랜 |
-| [FIXED_JOB_POSTING_IMPLEMENTATION_STATUS.md](features/jobposting/FIXED_JOB_POSTING_IMPLEMENTATION_STATUS.md) | 고정공고 구현 상태 보고서 |
-| [JOBPOSTING_FORM_REFACTORING_ANALYSIS.md](features/jobposting/JOBPOSTING_FORM_REFACTORING_ANALYSIS.md) | JobPostingForm 리팩토링 분석 |
 
 ---
 
@@ -195,10 +185,6 @@ docs/
 2. [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) - 구현 가이드
 3. [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 운영 가이드
 
-### 구인공고 시스템 개발
-1. [JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md](features/jobposting/JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md) - 시스템 명세
-2. [FIXED_JOB_POSTING_MASTER_PLAN.md](features/jobposting/FIXED_JOB_POSTING_MASTER_PLAN.md) - 고정공고 설계
-
 ---
 
 ## 주요 프로젝트 정보
@@ -219,11 +205,10 @@ docs/
 | 멀티테넌트 | Production | 100% (Phase 1-6) |
 | 토너먼트 시스템 | Production | 100% |
 | 국제화(i18n) | Production | 100% (한국어/영어) |
-| 구인공고 4타입 | Production | 100% (지원/고정/대회/긴급) |
 | 결제/칩 시스템 | Development | 57% (토스페이먼츠 연동 중) |
 
 ### 최근 업데이트
-- **v0.2.4** (2025-10-31): 구인공고 타입 확장 시스템 (4개 타입)
+- **v0.2.4** (2025-10-31): 기능 확장 및 안정화
 - **v0.2.3** (2025-10-18): 알림/멀티테넌트/테이블 관리 고도화
 - **v0.2.2** (2025-09-19): 인증 시스템 고도화 완료
 
@@ -247,11 +232,6 @@ docs/
 - [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) - 개발 문서
 - [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 운영 가이드
 - [REVENUE_MODEL_ANALYSIS.md](features/payment/REVENUE_MODEL_ANALYSIS.md) - 수익 분석
-
-### 구인공고 시스템
-- [JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md](features/jobposting/JOB_POSTING_SYSTEM_IMPLEMENTATION_SPEC.md) - 시스템 명세
-- [FIXED_JOB_POSTING_MASTER_PLAN.md](features/jobposting/FIXED_JOB_POSTING_MASTER_PLAN.md) - 고정공고 설계
-- [FIXED_JOB_POSTING_IMPLEMENTATION_STATUS.md](features/jobposting/FIXED_JOB_POSTING_IMPLEMENTATION_STATUS.md) - 구현 현황
 
 ### 테스트 & 품질
 - [TESTING_GUIDE.md](core/TESTING_GUIDE.md) - 테스트 작성 가이드
@@ -278,8 +258,8 @@ docs/
 ```markdown
 # 문서 제목
 
-**최종 업데이트**: 2026년 1월 18일
-**버전**: v0.2.3 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 1월 20일
+**버전**: v0.2.3 (Production Ready)
 **상태**: ✅ **Production Ready** (또는 적절한 상태)
 
 ---
