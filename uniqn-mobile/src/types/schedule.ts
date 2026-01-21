@@ -120,6 +120,11 @@ export interface ScheduleEvent extends FirebaseDocument {
   actualEndTime?: Timestamp | null;
 
   // 이벤트 정보
+  /**
+   * 공고 ID
+   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   * @see IdNormalizer.normalizeJobId() 정규화 헬퍼 사용
+   */
   eventId: string;
   eventName: string;
   location: string;
@@ -261,7 +266,10 @@ export interface GroupedScheduleEvent {
   /** 스케줄 타입 (applied, confirmed, completed, cancelled) */
   type: ScheduleType;
 
-  /** 이벤트(공고) ID */
+  /**
+   * 공고 ID
+   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   */
   eventId: string;
 
   /** 이벤트명 */
@@ -408,6 +416,11 @@ export interface SettlementModification {
  */
 export interface WorkLog extends FirebaseDocument {
   staffId: string;
+  /**
+   * 공고 ID
+   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   * @see IdNormalizer.normalizeJobId() 정규화 헬퍼 사용
+   */
   eventId: string;
   date: string;
 
@@ -561,7 +574,10 @@ export interface QRCodeScanResult {
  */
 export interface EventQRCode {
   id: string;
-  /** 공고 ID */
+  /**
+   * 공고 ID
+   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   */
   eventId: string;
   /** 근무 날짜 (YYYY-MM-DD) */
   date: string;
@@ -584,6 +600,7 @@ export interface EventQRCode {
  */
 export interface EventQRDisplayData {
   type: 'event';
+  /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정 */
   eventId: string;
   date: string;
   action: QRCodeAction;
@@ -598,6 +615,7 @@ export interface EventQRDisplayData {
  * QR 생성 입력
  */
 export interface GenerateEventQRInput {
+  /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정 */
   eventId: string;
   date: string;
   action: QRCodeAction;
@@ -620,6 +638,7 @@ export interface EventQRScanResult {
  */
 export interface EventQRValidationResult {
   isValid: boolean;
+  /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정 */
   eventId?: string;
   date?: string;
   action?: QRCodeAction;

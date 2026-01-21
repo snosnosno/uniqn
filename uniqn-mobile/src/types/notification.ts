@@ -461,6 +461,7 @@ export interface GroupedNotificationData {
   /** 그룹핑 컨텍스트 */
   context: {
     jobId?: string;
+    /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 통합 예정 */
     eventId?: string;
     jobTitle?: string;
     eventName?: string;
