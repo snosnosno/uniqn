@@ -9,6 +9,7 @@ import React, { useState, useMemo, useCallback, useEffect } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, TextInput } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { Avatar } from '../ui/Avatar';
 import {
   XMarkIcon,
@@ -135,7 +136,7 @@ export function SettlementEditModal({
 }: SettlementEditModalProps) {
   // 사용자 프로필 조회
   const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: ['userProfile', workLog?.staffId],
+    queryKey: queryKeys.user.profile(workLog?.staffId ?? ''),
     queryFn: () => getUserProfile(workLog!.staffId),
     enabled: visible && !!workLog?.staffId,
     staleTime: 5 * 60 * 1000,

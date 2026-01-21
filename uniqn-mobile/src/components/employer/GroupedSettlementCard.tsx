@@ -19,6 +19,7 @@ import {
   UIManager,
 } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { Card, Avatar, Checkbox } from '@/components/ui';
 import {
   CalendarIcon,
@@ -206,7 +207,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
   const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: ['userProfile', group.staffId],
+    queryKey: queryKeys.user.profile(group.staffId),
     queryFn: () => getUserProfile(group.staffId),
     enabled: !!group.staffId,
     staleTime: 5 * 60 * 1000, // 5분 캐싱

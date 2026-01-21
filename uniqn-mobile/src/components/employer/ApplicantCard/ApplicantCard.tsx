@@ -9,6 +9,7 @@ import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { Card } from '../../ui/Card';
 import { FixedScheduleDisplay } from '../../jobs/FixedScheduleDisplay';
 import { formatRelativeTime } from '@/utils/dateUtils';
@@ -89,7 +90,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 사용자 프로필 조회
   const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: ['userProfile', applicant.applicantId],
+    queryKey: queryKeys.user.profile(applicant.applicantId),
     queryFn: () => getUserProfile(applicant.applicantId),
     enabled: !!applicant.applicantId,
     staleTime: 5 * 60 * 1000,

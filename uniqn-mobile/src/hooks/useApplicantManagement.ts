@@ -552,7 +552,7 @@ export function useBatchConvertToStaff() {
  */
 export function useCanConvertToStaff(applicationId: string) {
   return useQuery({
-    queryKey: ['canConvertToStaff', applicationId],
+    queryKey: queryKeys.applicantManagement.canConvertToStaff(applicationId),
     queryFn: () => canConvertToStaff(applicationId),
     enabled: !!applicationId,
     staleTime: cachingPolicies.standard,

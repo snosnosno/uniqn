@@ -9,6 +9,7 @@ import React, { useMemo } from 'react';
 import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import {
@@ -193,7 +194,7 @@ export function ApplicantProfileModal({
 }: ApplicantProfileModalProps) {
   // 사용자 프로필 조회 (모달이 열려있고 applicant가 있을 때만)
   const { data: userProfile, isLoading: isProfileLoading } = useQuery<UserProfile | null>({
-    queryKey: ['userProfile', applicant?.applicantId],
+    queryKey: queryKeys.user.profile(applicant?.applicantId ?? ''),
     queryFn: () => getUserProfile(applicant!.applicantId),
     enabled: visible && !!applicant?.applicantId,
     staleTime: 5 * 60 * 1000, // 5분

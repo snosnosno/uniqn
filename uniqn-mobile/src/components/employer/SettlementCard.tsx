@@ -8,6 +8,7 @@
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
@@ -73,7 +74,7 @@ export const SettlementCard = React.memo(function SettlementCard({
 }: SettlementCardProps) {
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
   const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: ['userProfile', workLog.staffId],
+    queryKey: queryKeys.user.profile(workLog.staffId),
     queryFn: () => getUserProfile(workLog.staffId),
     enabled: !!workLog.staffId,
     staleTime: 5 * 60 * 1000,

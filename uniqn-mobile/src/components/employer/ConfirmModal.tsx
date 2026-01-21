@@ -9,6 +9,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { useQuery } from '@tanstack/react-query';
+import { queryKeys } from '@/lib/queryClient';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
@@ -92,7 +93,7 @@ export function ApplicantConfirmModal({
 
   // 지원자 프로필 사진 조회
   const { data: userProfile } = useQuery({
-    queryKey: ['userProfile', applicant?.applicantId],
+    queryKey: queryKeys.user.profile(applicant?.applicantId ?? ''),
     queryFn: () => getUserProfile(applicant!.applicantId),
     enabled: !!applicant?.applicantId && visible,
     staleTime: 5 * 60 * 1000,

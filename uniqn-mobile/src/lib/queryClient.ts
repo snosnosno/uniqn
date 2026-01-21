@@ -319,6 +319,9 @@ export const queryKeys = {
       [...queryKeys.applicantManagement.all, 'stats', jobPostingId] as const,
     cancellationRequests: (jobPostingId: string) =>
       [...queryKeys.applicantManagement.all, 'cancellationRequests', jobPostingId] as const,
+    /** 스태프 변환 가능 여부 (Phase 8 추가) */
+    canConvertToStaff: (applicationId: string) =>
+      [...queryKeys.applicantManagement.all, 'canConvertToStaff', applicationId] as const,
   },
 
   // 정산 관리 (구인자)
