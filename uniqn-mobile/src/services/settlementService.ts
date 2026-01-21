@@ -21,11 +21,11 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError } from '@/errors';
 import { FIREBASE_LIMITS } from '@/constants';
+import { SettlementCalculator } from '@/domains/settlement';
 import {
   type SalaryInfo as UtilitySalaryInfo,
   type Allowances as UtilityAllowances,
   type TaxSettings as UtilityTaxSettings,
-  calculateHoursWorked as utilCalculateHoursWorked,
   calculateSettlementFromWorkLog,
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
@@ -171,21 +171,16 @@ export interface SettlementFilters {
 }
 
 // ============================================================================
-// Helper Functions
+// Helper Functions (SettlementCalculator 위임)
 // ============================================================================
 
 /**
- * 근무 시간 계산 (시간 단위) - 유틸리티 래퍼
+ * 근무 시간 계산 (시간 단위)
+ *
+ * @description SettlementCalculator.calculateHours 위임 (Phase 6 리팩토링)
+ * 다양한 타임스탬프 형식 자동 파싱 지원
  */
-function calculateHoursWorked(
-  startTime: Timestamp | string | Date | null | undefined,
-  endTime: Timestamp | string | Date | null | undefined
-): number {
-  // Timestamp를 Date로 변환
-  const start = startTime instanceof Timestamp ? startTime.toDate() : startTime;
-  const end = endTime instanceof Timestamp ? endTime.toDate() : endTime;
-  return utilCalculateHoursWorked(start, end);
-}
+const calculateHoursWorked = SettlementCalculator.calculateHours.bind(SettlementCalculator);
 
 /**
  * 날짜 문자열을 YYYY-MM-DD 형식으로 변환 (향후 날짜 필터링 시 활용)

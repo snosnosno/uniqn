@@ -18,6 +18,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { WorkLogCreator } from '@/domains/schedule';
 import type {
   Application,
   Assignment,
@@ -36,49 +37,22 @@ const JOB_POSTINGS_COLLECTION = 'jobPostings';
 const WORK_LOGS_COLLECTION = 'workLogs';
 
 // ============================================================================
-// Helper Functions
+// Helper Functions (WorkLogCreator 위임)
 // ============================================================================
 
 /**
  * Assignment의 timeSlot에서 시작 시간 추출
- * @example "09:00" → "09:00"
- * @example "09:00~18:00" → "09:00"
- * @example "09:00 - 18:00" → "09:00"
+ *
+ * @description WorkLogCreator.extractStartTime 위임 (Phase 5 리팩토링)
  */
-function extractStartTime(timeSlot: string): string {
-  if (!timeSlot) return '';
-  // "~" 또는 " - " 로 분리하여 첫 번째 시간 추출
-  const separators = /[-~]/;
-  const parts = timeSlot.split(separators);
-  return parts[0]?.trim() ?? '';
-}
+const extractStartTime = WorkLogCreator.extractStartTime.bind(WorkLogCreator);
 
 /**
  * 날짜와 시간 문자열을 Timestamp로 변환
- * @param date "2024-01-15" 형식
- * @param time "09:00" 형식
- * @returns Timestamp 또는 null (파싱 실패 시)
+ *
+ * @description WorkLogCreator.createTimestampFromDateTime 위임 (Phase 5 리팩토링)
  */
-function createTimestampFromDateTime(date: string, time: string): Timestamp | null {
-  if (!date || !time) return null;
-
-  // 시간 형식 검증 (HH:mm)
-  const timeMatch = time.match(/^(\d{1,2}):(\d{2})$/);
-  if (!timeMatch) return null;
-
-  const hours = parseInt(timeMatch[1], 10);
-  const minutes = parseInt(timeMatch[2], 10);
-
-  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
-
-  try {
-    const dateTime = new Date(`${date}T${time.padStart(5, '0')}:00`);
-    if (isNaN(dateTime.getTime())) return null;
-    return Timestamp.fromDate(dateTime);
-  } catch {
-    return null;
-  }
-}
+const createTimestampFromDateTime = WorkLogCreator.createTimestampFromDateTime.bind(WorkLogCreator);
 
 /**
  * dateSpecificRequirements의 filled 값 업데이트
