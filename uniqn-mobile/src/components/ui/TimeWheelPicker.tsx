@@ -23,7 +23,7 @@ import { AlertCircleIcon } from '../icons';
 import { isWeb } from '@/utils/platform';
 
 // 웹에서만 react-dom 사용 (Portal용)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const ReactDOM = Platform.OS === 'web' ? require('react-dom') : null;
 
 // ============================================================================
