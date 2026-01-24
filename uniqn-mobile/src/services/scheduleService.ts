@@ -40,6 +40,8 @@ import { toJobPostingCard } from '@/types/jobPosting';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import { IdNormalizer } from '@/shared/id';
 import { StatusMapper } from '@/shared/status';
+import { ScheduleMerger } from '@/domains/schedule';
+import { RealtimeManager } from '@/shared/realtime';
 
 // ============================================================================
 // Constants
@@ -137,6 +139,10 @@ function workLogToScheduleEvent(
     cardInfo?.card
   );
 
+  // 공고 ID 정규화 (jobPostingId 우선, eventId 폴백)
+  const jobPostingId = workLog.jobPostingId || workLog.eventId || '';
+  const jobPostingName = cardInfo?.title || '이벤트';
+
   return {
     id: workLog.id,
     type,
@@ -145,8 +151,12 @@ function workLogToScheduleEvent(
     endTime: normalizeTimestamp(workLog.scheduledEndTime),
     actualStartTime: normalizeTimestamp(workLog.actualStartTime),
     actualEndTime: normalizeTimestamp(workLog.actualEndTime),
+    // 정규화된 필드 (Phase 2)
+    jobPostingId,
+    jobPostingName,
+    // 하위 호환성
     eventId: workLog.eventId,
-    eventName: cardInfo?.title || '이벤트',
+    eventName: jobPostingName,
     location: cardInfo?.location || '',
     role: workLog.role,
     customRole: workLog.customRole,
@@ -160,7 +170,7 @@ function workLogToScheduleEvent(
     sourceId: workLog.id,
     workLogId: workLog.id,
     // applicationId: 복합 키로 구성 (jobPostingId_staffId)
-    applicationId: `${workLog.eventId}_${workLog.staffId}`,
+    applicationId: `${jobPostingId}_${workLog.staffId}`,
     // 개별 오버라이드 (구인자가 스태프별로 수정한 정산 정보)
     customSalaryInfo: workLog.customSalaryInfo,
     customAllowances: workLog.customAllowances,
@@ -255,6 +265,10 @@ function applicationToScheduleEvents(
         // 고정공고 마커는 스킵
         if (date === FIXED_DATE_MARKER) continue;
 
+        // 공고 정보 정규화
+        const jobPostingId = application.jobPostingId;
+        const jobPostingName = cardInfo?.title || application.jobPostingTitle || '공고';
+
         // 고유 ID 생성: applicationId_assignmentIdx_dateIdx (중복 방지)
         const event: ScheduleEvent = {
           id: `${application.id}_${assignmentIdx}_${dateIdx}`,
@@ -264,8 +278,12 @@ function applicationToScheduleEvents(
           endTime: parseTimeSlotToTimestamp(assignment.timeSlot, date, 'end'),
           actualStartTime: null,
           actualEndTime: null,
-          eventId: application.jobPostingId,
-          eventName: cardInfo?.title || application.jobPostingTitle || '공고',
+          // 정규화된 필드 (Phase 2)
+          jobPostingId,
+          jobPostingName,
+          // 하위 호환성
+          eventId: jobPostingId,
+          eventName: jobPostingName,
           location: cardInfo?.location || '',
           role: assignment.roleIds[0] || application.appliedRole,
           customRole: application.customRole,
@@ -288,6 +306,10 @@ function applicationToScheduleEvents(
     }
   } else if (application.appliedDate) {
     // 레거시 지원서 (assignments 없음) - appliedDate 사용
+    // 공고 정보 정규화
+    const jobPostingId = application.jobPostingId;
+    const jobPostingName = cardInfo?.title || application.jobPostingTitle || '공고';
+
     const event: ScheduleEvent = {
       id: `${application.id}_${application.appliedDate}`,
       type: scheduleType,
@@ -300,8 +322,12 @@ function applicationToScheduleEvents(
         : null,
       actualStartTime: null,
       actualEndTime: null,
-      eventId: application.jobPostingId,
-      eventName: cardInfo?.title || application.jobPostingTitle || '공고',
+      // 정규화된 필드 (Phase 2)
+      jobPostingId,
+      jobPostingName,
+      // 하위 호환성
+      eventId: jobPostingId,
+      eventName: jobPostingName,
       location: cardInfo?.location || '',
       role: application.appliedRole,
       customRole: application.customRole,
@@ -395,16 +421,9 @@ async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string,
 }
 
 /**
- * 스케줄 중복 체크용 키 생성
- */
-function generateScheduleKey(schedule: ScheduleEvent): string {
-  // eventId + date 조합으로 고유 키 생성
-  return `${schedule.eventId}_${schedule.date}`;
-}
-
-/**
  * WorkLogs와 Applications 스케줄을 병합하고 중복 제거
  *
+ * @description Phase 5 - ScheduleMerger로 위임
  * 중복 판별 기준: 같은 eventId + 같은 date
  * 우선순위: workLogs > applications (확정된 WorkLog가 있으면 Application은 제외)
  */
@@ -413,37 +432,10 @@ function mergeAndDeduplicateSchedules(
   applicationSchedules: ScheduleEvent[],
   dateRange?: { start: string; end: string }
 ): ScheduleEvent[] {
-  // 1. WorkLogs로 중복 체크 맵 생성
-  const existingKeys = new Set<string>();
-
-  for (const schedule of workLogSchedules) {
-    const key = generateScheduleKey(schedule);
-    existingKeys.add(key);
-  }
-
-  // 2. Applications에서 중복 제거
-  const filteredApplicationSchedules = applicationSchedules.filter((schedule) => {
-    const key = generateScheduleKey(schedule);
-    // 이미 WorkLog로 존재하면 제외
-    if (existingKeys.has(key)) {
-      return false;
-    }
-
-    // 날짜 범위 필터 (applications은 Firestore에서 필터링 못함)
-    if (dateRange) {
-      if (schedule.date < dateRange.start || schedule.date > dateRange.end) {
-        return false;
-      }
-    }
-
-    return true;
+  return ScheduleMerger.merge(workLogSchedules, applicationSchedules, {
+    dateRange,
+    sortOrder: 'desc',
   });
-
-  // 3. 병합 후 날짜순 정렬 (내림차순)
-  const merged = [...workLogSchedules, ...filteredApplicationSchedules];
-  merged.sort((a, b) => b.date.localeCompare(a.date));
-
-  return merged;
 }
 
 /**
@@ -726,7 +718,7 @@ export async function getMySchedules(
       const term = filters.searchTerm.toLowerCase();
       filteredSchedules = filteredSchedules.filter(
         (s) =>
-          s.eventName.toLowerCase().includes(term) ||
+          s.jobPostingName.toLowerCase().includes(term) ||
           s.location.toLowerCase().includes(term) ||
           s.role.toLowerCase().includes(term)
       );
@@ -817,9 +809,11 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
     const workLog = { id: workLogDoc.id, ...workLogDoc.data() } as WorkLog;
 
     // 공고 정보 조회 (JobPostingCard 포함)
+    // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
+    const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
     let cardInfo: JobPostingCardWithMeta | undefined;
     try {
-      const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId));
+      const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId));
       if (eventDoc.exists()) {
         const data = eventDoc.data();
         const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
@@ -832,7 +826,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
         };
       }
     } catch (err) {
-      logger.debug('공고 정보 조회 실패 (상세)', { eventId: workLog.eventId, error: err });
+      logger.debug('공고 정보 조회 실패 (상세)', { jobPostingId: normalizedJobId, error: err });
     }
 
     return workLogToScheduleEvent(workLog, cardInfo);
@@ -881,48 +875,57 @@ export async function getUpcomingSchedules(
 
 /**
  * 스케줄 실시간 구독
+ *
+ * @description Phase 12 - RealtimeManager로 중복 구독 방지
  */
 export function subscribeToSchedules(
   staffId: string,
   onUpdate: (schedules: ScheduleEvent[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  logger.info('스케줄 구독 시작', { staffId });
+  return RealtimeManager.subscribe(
+    RealtimeManager.Keys.schedules(staffId),
+    () => {
+      logger.info('스케줄 구독 시작', { staffId });
 
-  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-  const q = query(
-    workLogsRef,
-    where('staffId', '==', staffId),
-    orderBy('date', 'desc'),
-    limit(50)
-  );
+      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+      const q = query(
+        workLogsRef,
+        where('staffId', '==', staffId),
+        orderBy('date', 'desc'),
+        limit(50)
+      );
 
-  return onSnapshot(
-    q,
-    async (snapshot) => {
-      try {
-        const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as WorkLog[];
+      return onSnapshot(
+        q,
+        async (snapshot) => {
+          try {
+            const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
+              id: docSnap.id,
+              ...docSnap.data(),
+            })) as WorkLog[];
 
-        // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
-        const eventIds = workLogs.map((wl) => wl.eventId);
-        const cardInfoMap = await fetchJobPostingCardBatch(eventIds);
+            // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
+            // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
+            const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
+            const cardInfoMap = await fetchJobPostingCardBatch(jobPostingIds);
 
-        const schedules = workLogs.map((workLog) =>
-          workLogToScheduleEvent(workLog, cardInfoMap.get(workLog.eventId))
-        );
+            const schedules = workLogs.map((workLog) => {
+              const normalizedId = IdNormalizer.normalizeJobId(workLog);
+              return workLogToScheduleEvent(workLog, cardInfoMap.get(normalizedId));
+            });
 
-        onUpdate(schedules);
-      } catch (error) {
-        logger.error('스케줄 구독 처리 실패', error as Error);
-        onError?.(error as Error);
-      }
-    },
-    (error) => {
-      logger.error('스케줄 구독 에러', error);
-      onError?.(error);
+            onUpdate(schedules);
+          } catch (error) {
+            logger.error('스케줄 구독 처리 실패', error as Error);
+            onError?.(error as Error);
+          }
+        },
+        (error) => {
+          logger.error('스케줄 구독 에러', error);
+          onError?.(error);
+        }
+      );
     }
   );
 }

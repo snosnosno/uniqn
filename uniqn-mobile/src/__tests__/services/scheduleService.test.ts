@@ -375,7 +375,7 @@ describe('scheduleService', () => {
       const result = await getScheduleById('wl-1');
 
       expect(result).not.toBeNull();
-      expect(result?.eventName).toBe('테스트 이벤트');
+      expect(result?.jobPostingName).toBe('테스트 이벤트');
       expect(result?.location).toBe('서울');
     });
   });
@@ -516,8 +516,8 @@ describe('Schedule Mock Factories', () => {
       const schedule = createMockScheduleEvent();
 
       expect(schedule.id).toBeDefined();
-      expect(schedule.eventId).toBeDefined();
-      expect(schedule.eventName).toBeDefined();
+      expect(schedule.jobPostingId).toBeDefined();
+      expect(schedule.jobPostingName).toBeDefined();
       expect(schedule.location).toBeDefined();
       expect(schedule.role).toBeDefined();
       expect(schedule.type).toBe('confirmed');
@@ -528,12 +528,12 @@ describe('Schedule Mock Factories', () => {
       const schedule = createMockScheduleEvent({
         type: 'completed',
         status: 'checked_out',
-        eventName: '커스텀 이벤트',
+        jobPostingName: '커스텀 이벤트',
       });
 
       expect(schedule.type).toBe('completed');
       expect(schedule.status).toBe('checked_out');
-      expect(schedule.eventName).toBe('커스텀 이벤트');
+      expect(schedule.jobPostingName).toBe('커스텀 이벤트');
     });
   });
 

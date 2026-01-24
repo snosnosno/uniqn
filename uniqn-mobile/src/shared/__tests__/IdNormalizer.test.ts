@@ -137,16 +137,14 @@ describe('IdNormalizer', () => {
   // ============================================================================
   describe('extractUnifiedIds', () => {
     it('WorkLog + Application에서 중복 없이 ID 추출', () => {
-      const workLogs = [{ eventId: 'JOB1' }, { eventId: 'JOB2' }];
+      // Phase 2: jobPostingId 우선 사용
+      const workLogs = [{ jobPostingId: 'JOB1' }, { jobPostingId: 'JOB2' }];
       const applications = [
         { jobPostingId: 'JOB2' }, // 중복
         { jobPostingId: 'JOB3' },
       ];
 
-      const ids = IdNormalizer.extractUnifiedIds(
-        workLogs as { eventId: string }[],
-        applications as { jobPostingId: string }[]
-      );
+      const ids = IdNormalizer.extractUnifiedIds(workLogs, applications);
 
       expect(ids.size).toBe(3);
       expect(ids.has('JOB1')).toBe(true);
@@ -154,13 +152,32 @@ describe('IdNormalizer', () => {
       expect(ids.has('JOB3')).toBe(true);
     });
 
+    it('jobPostingId 우선, eventId 폴백', () => {
+      // jobPostingId가 있으면 우선, 없으면 eventId 사용
+      const workLogs = [
+        { jobPostingId: 'JOB1', eventId: 'OLD1' }, // jobPostingId 우선
+        { jobPostingId: '', eventId: 'JOB2' }, // eventId 폴백
+      ];
+      const applications: { jobPostingId: string }[] = [];
+
+      const ids = IdNormalizer.extractUnifiedIds(workLogs, applications);
+
+      expect(ids.size).toBe(2);
+      expect(ids.has('JOB1')).toBe(true);
+      expect(ids.has('JOB2')).toBe(true);
+      expect(ids.has('OLD1')).toBe(false); // jobPostingId가 있으므로 eventId 무시
+    });
+
     it('빈 배열 처리', () => {
       const ids = IdNormalizer.extractUnifiedIds([], []);
       expect(ids.size).toBe(0);
     });
 
-    it('undefined eventId 무시', () => {
-      const workLogs = [{ eventId: 'JOB1' }, { eventId: undefined }] as { eventId: string }[];
+    it('undefined/빈 문자열 무시', () => {
+      const workLogs = [
+        { jobPostingId: 'JOB1' },
+        { jobPostingId: '', eventId: '' }, // 둘 다 빈 문자열 - 무시
+      ];
       const applications: { jobPostingId: string }[] = [];
 
       const ids = IdNormalizer.extractUnifiedIds(workLogs, applications);

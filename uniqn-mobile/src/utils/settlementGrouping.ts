@@ -176,6 +176,9 @@ function createGroupedSettlement(
   return {
     id: `grouped_settlement_${staffId}`,
     staffId,
+    // 정규화된 필드 (Phase 2)
+    jobPostingId: firstWorkLog.jobPostingId,
+    // 하위 호환성
     eventId: firstWorkLog.eventId,
     staffProfile: extractStaffProfile(firstWorkLog),
     dateRange: {

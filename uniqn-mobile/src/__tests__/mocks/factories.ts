@@ -351,8 +351,12 @@ export interface MockScheduleEvent {
   date: string;
   startTime: { toMillis: () => number; toDate: () => Date } | null;
   endTime: { toMillis: () => number; toDate: () => Date } | null;
-  eventId: string;
-  eventName: string;
+  // 정규화된 필드 (Phase 2)
+  jobPostingId: string;
+  jobPostingName: string;
+  // 하위 호환성
+  eventId?: string;
+  eventName?: string;
   location: string;
   role: string;
   status: 'not_started' | 'checked_in' | 'checked_out';
@@ -382,12 +386,19 @@ export function createMockScheduleEvent(
   // Extract non-timestamp overrides
   const { startTime, endTime, ...restOverrides } = overrides;
 
+  const jobPostingId = `event-${scheduleCounter}`;
+  const jobPostingName = `테스트 이벤트 ${scheduleCounter}`;
+
   return {
     id: `schedule-${scheduleCounter}`,
     type: 'confirmed',
     date: new Date().toISOString().split('T')[0],
-    eventId: `event-${scheduleCounter}`,
-    eventName: `테스트 이벤트 ${scheduleCounter}`,
+    // 정규화된 필드 (Phase 2)
+    jobPostingId,
+    jobPostingName,
+    // 하위 호환성
+    eventId: jobPostingId,
+    eventName: jobPostingName,
     location: '서울 강남구',
     role: '딜러',
     status: 'not_started',

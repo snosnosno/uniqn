@@ -32,10 +32,10 @@ export interface WorkLogCreateInput {
   staffId: string;
   /** 스태프 이름 */
   staffName: string;
-  /** 이벤트(공고) ID */
-  eventId: string;
-  /** 이벤트 이름 */
-  eventName: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
+  /** 공고 이름 */
+  jobPostingName: string;
   /** 역할 ID */
   roleId: string;
   /** 날짜 (YYYY-MM-DD) */
@@ -56,7 +56,13 @@ export interface WorkLogCreateInput {
 export interface WorkLogData {
   staffId: string;
   staffName: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
+  /** 공고 이름 */
+  jobPostingName: string;
+  /** @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용 */
   eventId: string;
+  /** @deprecated eventName 대신 jobPostingName 사용 - 하위 호환성용 */
   eventName: string;
   role: string;
   date: string;
@@ -186,8 +192,11 @@ export class WorkLogCreator {
     return {
       staffId: input.staffId,
       staffName: input.staffName,
-      eventId: input.eventId,
-      eventName: input.eventName,
+      jobPostingId: input.jobPostingId,
+      jobPostingName: input.jobPostingName,
+      // 하위 호환성: eventId/eventName도 함께 저장
+      eventId: input.jobPostingId,
+      eventName: input.jobPostingName,
       role: input.roleId,
       date: input.date,
       timeSlot: input.timeSlot,
@@ -219,7 +228,7 @@ export class WorkLogCreator {
    * @returns BatchCreateResult
    */
   static createFromAssignments(
-    assignments: Array<{
+    assignments: {
       dates: string[];
       timeSlot: string;
       roleIds?: string[];
@@ -227,9 +236,9 @@ export class WorkLogCreator {
       checkMethod?: 'individual' | 'group';
       isTimeToBeAnnounced?: boolean;
       tentativeDescription?: string | null;
-    }>,
+    }[],
     staffInfo: { staffId: string; staffName: string },
-    eventInfo: { eventId: string; eventName: string },
+    jobPostingInfo: { jobPostingId: string; jobPostingName: string },
     defaultRole?: string
   ): BatchCreateResult {
     const workLogs: WorkLogData[] = [];
@@ -242,8 +251,8 @@ export class WorkLogCreator {
         const workLog = this.create({
           staffId: staffInfo.staffId,
           staffName: staffInfo.staffName,
-          eventId: eventInfo.eventId,
-          eventName: eventInfo.eventName,
+          jobPostingId: jobPostingInfo.jobPostingId,
+          jobPostingName: jobPostingInfo.jobPostingName,
           roleId,
           date,
           timeSlot: assignment.timeSlot,
@@ -272,7 +281,7 @@ export class WorkLogCreator {
    * @returns 총 날짜 개수 (= 생성될 WorkLog 수)
    */
   static countAssignments(
-    assignments: Array<{ dates: string[] }>
+    assignments: { dates: string[] }[]
   ): number {
     return assignments.reduce((sum, a) => sum + a.dates.length, 0);
   }

@@ -29,9 +29,6 @@ import {
   useApplicantManagement,
 } from '@/hooks/useApplicantManagement';
 
-// createMockJobPosting is available for future tests
-void import('../mocks/factories').then(m => m.createMockJobPosting);
-
 jest.mock('@/lib/firebase', () => ({
   db: {},
   auth: {},
@@ -186,6 +183,8 @@ jest.mock('@/lib/queryClient', () => ({
       all: ['applicantManagement'],
       byJobPosting: (id: string) => ['applicantManagement', 'byJobPosting', id],
       stats: (id: string) => ['applicantManagement', 'stats', id],
+      cancellationRequests: (id: string) => ['applicantManagement', 'cancellationRequests', id],
+      canConvertToStaff: (id: string) => ['applicantManagement', 'canConvertToStaff', id],
     },
     applications: {
       all: ['applications'],

@@ -70,7 +70,9 @@ export const ROLE_HIERARCHY: Record<UserRole, number> = {
  * normalizeUserRole('Manager') // 'employer' (하위 호환성)
  * normalizeUserRole('invalid') // null
  */
-export const normalizeUserRole = RoleResolver.normalizeUserRole;
+export function normalizeUserRole(role: string | null | undefined): UserRole | null {
+  return RoleResolver.normalizeUserRole(role);
+}
 
 interface AuthState {
   // 상태
@@ -334,7 +336,12 @@ export const useHasRole = (requiredRole: UserRole) => {
  * hasPermission('Manager', 'employer') // true (manager = employer, 하위 호환성)
  * hasPermission('staff', 'admin') // false (staff < admin)
  */
-export const hasPermission = RoleResolver.hasPermission;
+export function hasPermission(
+  userRole: UserRole | string | null | undefined,
+  requiredRole: UserRole
+): boolean {
+  return RoleResolver.hasPermission(userRole, requiredRole);
+}
 
 // ============================================================================
 // Hydration Utilities

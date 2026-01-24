@@ -185,7 +185,7 @@ function createGroupKey(schedule: ScheduleEvent): string | null {
   // timeSlot 정규화 (구분자 통일)
   const normalizedTimeSlot = schedule.timeSlot?.replace(' - ', '~') || '';
 
-  return `${schedule.applicationId}_${schedule.eventId}_${schedule.type}_${normalizedTimeSlot}`;
+  return `${schedule.applicationId}_${schedule.jobPostingId}_${schedule.type}_${normalizedTimeSlot}`;
 }
 
 /**
@@ -232,6 +232,10 @@ function createGroupedScheduleEvent(
   return {
     id: `grouped_${firstEvent.applicationId}`,
     type: firstEvent.type,
+    // 정규화된 필드 (Phase 2)
+    jobPostingId: firstEvent.jobPostingId,
+    jobPostingName: firstEvent.jobPostingName,
+    // 하위 호환성
     eventId: firstEvent.eventId,
     eventName: firstEvent.eventName,
     location: firstEvent.location,

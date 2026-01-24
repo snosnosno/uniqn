@@ -124,8 +124,8 @@ function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
 /**
  * 공고별 확정 스태프 목록 조회
  *
- * @description workLogs 컬렉션에서 eventId로 필터링하여 조회
- * @param jobPostingId 공고 ID (eventId)
+ * @description workLogs 컬렉션에서 jobPostingId로 필터링하여 조회
+ * @param jobPostingId 공고 ID
  * @returns 확정 스태프 목록, 날짜별 그룹, 통계
  */
 export async function getConfirmedStaff(
@@ -137,10 +137,9 @@ export async function getConfirmedStaff(
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
-      where('eventId', '==', jobPostingId),
+      where('jobPostingId', '==', jobPostingId),
       orderBy('date', 'asc')
     );
-
     const snapshot = await getDocs(q);
     const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
@@ -201,10 +200,9 @@ export async function getConfirmedStaffByDate(
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
-      where('eventId', '==', jobPostingId),
+      where('jobPostingId', '==', jobPostingId),
       where('date', '==', date)
     );
-
     const snapshot = await getDocs(q);
     const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
@@ -416,7 +414,7 @@ export async function deleteConfirmedStaff(
       const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
       const appQuery = query(
         applicationsRef,
-        where('eventId', '==', input.jobPostingId),
+        where('jobPostingId', '==', input.jobPostingId),
         where('applicantId', '==', input.staffId)
       );
       const appSnapshot = await getDocs(appQuery);
@@ -503,6 +501,8 @@ export async function updateStaffStatus(
 
 /**
  * 확정 스태프 목록 실시간 구독
+ *
+ * @description 새 데이터는 jobPostingId로 조회, 기존 데이터는 마이그레이션 필요
  */
 export function subscribeToConfirmedStaff(
   jobPostingId: string,
@@ -514,9 +514,11 @@ export function subscribeToConfirmedStaff(
   logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
   const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+  // NOTE: 새 데이터는 jobPostingId와 eventId 둘 다 저장됨
+  // 기존 eventId만 있는 데이터는 마이그레이션 필요
   const q = query(
     workLogsRef,
-    where('eventId', '==', jobPostingId),
+    where('jobPostingId', '==', jobPostingId),
     orderBy('date', 'asc')
   );
 

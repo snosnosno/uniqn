@@ -120,13 +120,17 @@ export interface ScheduleEvent extends FirebaseDocument {
   actualEndTime?: Timestamp | null;
 
   // 이벤트 정보
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
+  /** 공고명 (정규화된 필드명) */
+  jobPostingName: string;
   /**
-   * 공고 ID
-   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   * @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용
    * @see IdNormalizer.normalizeJobId() 정규화 헬퍼 사용
    */
-  eventId: string;
-  eventName: string;
+  eventId?: string;
+  /** @deprecated eventName 대신 jobPostingName 사용 - 하위 호환성용 */
+  eventName?: string;
   location: string;
   detailedAddress?: string;
 
@@ -266,14 +270,19 @@ export interface GroupedScheduleEvent {
   /** 스케줄 타입 (applied, confirmed, completed, cancelled) */
   type: ScheduleType;
 
-  /**
-   * 공고 ID
-   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
-   */
-  eventId: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
 
-  /** 이벤트명 */
-  eventName: string;
+  /** 공고명 (정규화된 필드명) */
+  jobPostingName: string;
+
+  /**
+   * @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용
+   */
+  eventId?: string;
+
+  /** @deprecated eventName 대신 jobPostingName 사용 - 하위 호환성용 */
+  eventName?: string;
 
   /** 장소 */
   location: string;
@@ -416,12 +425,13 @@ export interface SettlementModification {
  */
 export interface WorkLog extends FirebaseDocument {
   staffId: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
   /**
-   * 공고 ID
-   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   * @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용
    * @see IdNormalizer.normalizeJobId() 정규화 헬퍼 사용
    */
-  eventId: string;
+  eventId?: string;
   date: string;
 
   // 스태프 프로필 정보 (비정규화 - 조회 편의)
@@ -574,11 +584,12 @@ export interface QRCodeScanResult {
  */
 export interface EventQRCode {
   id: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
   /**
-   * 공고 ID
-   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   * @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용
    */
-  eventId: string;
+  eventId?: string;
   /** 근무 날짜 (YYYY-MM-DD) */
   date: string;
   /** 출근/퇴근 */
@@ -600,8 +611,10 @@ export interface EventQRCode {
  */
 export interface EventQRDisplayData {
   type: 'event';
-  /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정 */
-  eventId: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
+  /** @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용 */
+  eventId?: string;
   date: string;
   action: QRCodeAction;
   securityCode: string;
@@ -615,8 +628,8 @@ export interface EventQRDisplayData {
  * QR 생성 입력
  */
 export interface GenerateEventQRInput {
-  /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정 */
-  eventId: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: string;
   date: string;
   action: QRCodeAction;
   createdBy: string;
@@ -638,8 +651,8 @@ export interface EventQRScanResult {
  */
 export interface EventQRValidationResult {
   isValid: boolean;
-  /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정 */
-  eventId?: string;
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId?: string;
   date?: string;
   action?: QRCodeAction;
   errorMessage?: string;

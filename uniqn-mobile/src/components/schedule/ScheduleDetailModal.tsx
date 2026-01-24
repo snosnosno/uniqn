@@ -316,7 +316,7 @@ export function ScheduleDetailModal({
             className="text-lg font-bold text-gray-900 dark:text-gray-100"
             numberOfLines={2}
           >
-            {schedule.eventName}
+            {schedule.jobPostingName}
           </Text>
         </View>
         <Pressable
@@ -429,8 +429,8 @@ export function ScheduleDetailModal({
         onClose={handleCloseReportModal}
         mode="employee"
         target={reportTarget}
-        jobPostingId={schedule.eventId}
-        jobPostingTitle={schedule.eventName}
+        jobPostingId={schedule.jobPostingId}
+        jobPostingTitle={schedule.jobPostingName}
         onSubmit={handleReportSubmit}
         isLoading={isReportLoading}
       />

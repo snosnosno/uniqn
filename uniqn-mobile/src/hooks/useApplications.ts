@@ -16,6 +16,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { createMutationErrorHandler } from '@/shared/errors';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
 
 // ============================================================================
@@ -94,13 +95,7 @@ export function useApplications() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: (error) => {
-      logger.error('v2.0 지원 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '지원에 실패했습니다.',
-      });
-    },
+    onError: createMutationErrorHandler('v2.0 지원', addToast),
   });
 
   // 지원 취소 (Optimistic Update 적용)

@@ -230,7 +230,7 @@ export const ScheduleCard = memo(function ScheduleCard({
           }`}
           numberOfLines={1}
         >
-          {schedule.eventName}
+          {schedule.jobPostingName}
         </Text>
 
         {/* 장소 */}

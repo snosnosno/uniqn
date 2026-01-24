@@ -221,20 +221,22 @@ export class IdNormalizer {
    * @returns 통합된 공고 ID Set
    *
    * @example
-   * const workLogs = [{ eventId: 'JOB1' }, { eventId: 'JOB2' }];
+   * const workLogs = [{ jobPostingId: 'JOB1' }, { jobPostingId: 'JOB2' }];
    * const applications = [{ jobPostingId: 'JOB2' }, { jobPostingId: 'JOB3' }];
    * IdNormalizer.extractUnifiedIds(workLogs, applications)
    * // Set { 'JOB1', 'JOB2', 'JOB3' }
    */
   static extractUnifiedIds(
-    workLogs: Pick<WorkLog, 'eventId'>[],
+    workLogs: Pick<WorkLog, 'jobPostingId' | 'eventId'>[],
     applications: Pick<Application, 'jobPostingId'>[]
   ): Set<string> {
     const ids = new Set<string>();
 
+    // Phase 2: jobPostingId 우선, eventId는 하위 호환용
     workLogs.forEach((wl) => {
-      if (wl.eventId) {
-        ids.add(wl.eventId);
+      const id = wl.jobPostingId || wl.eventId;
+      if (id) {
+        ids.add(id);
       }
     });
 

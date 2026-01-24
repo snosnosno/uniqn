@@ -30,6 +30,7 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { createMutationErrorHandler } from '@/shared/errors';
 import type { ConfirmApplicationInput, RejectApplicationInput, ApplicationStatus, Assignment } from '@/types';
 
 // ============================================================================
@@ -118,13 +119,7 @@ export function useConfirmApplication() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: (error) => {
-      logger.error('지원 확정 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '확정에 실패했습니다.',
-      });
-    },
+    onError: createMutationErrorHandler('지원 확정', addToast),
   });
 }
 
@@ -435,7 +430,7 @@ export function useCancelConfirmation() {
 
 interface ConvertToStaffInput {
   applicationId: string;
-  eventId: string;
+  jobPostingId: string;
   notes?: string;
 }
 
@@ -454,7 +449,7 @@ export function useConvertToStaff() {
       }
       return convertApplicantToStaff(
         input.applicationId,
-        input.eventId,
+        input.jobPostingId,
         user.uid,
         { notes: input.notes }
       );
@@ -500,11 +495,11 @@ export function useBatchConvertToStaff() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ applicationIds, eventId }: { applicationIds: string[]; eventId: string }) => {
+    mutationFn: ({ applicationIds, jobPostingId }: { applicationIds: string[]; jobPostingId: string }) => {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
-      return batchConvertApplicants(applicationIds, eventId, user.uid);
+      return batchConvertApplicants(applicationIds, jobPostingId, user.uid);
     },
     onSuccess: (result) => {
       logger.info('일괄 스태프 변환 완료', {

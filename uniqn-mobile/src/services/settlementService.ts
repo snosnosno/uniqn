@@ -26,7 +26,6 @@ import {
   type SalaryInfo as UtilitySalaryInfo,
   type Allowances as UtilityAllowances,
   type TaxSettings as UtilityTaxSettings,
-  calculateSettlementFromWorkLog,
   getEffectiveSalaryInfoFromRoles,
   getEffectiveAllowances,
   getEffectiveTaxSettings,
@@ -36,6 +35,7 @@ import type {
   PayrollStatus,
   JobPosting,
 } from '@/types';
+import { IdNormalizer } from '@/shared/id';
 
 // ============================================================================
 // Constants
@@ -175,14 +175,6 @@ export interface SettlementFilters {
 // ============================================================================
 
 /**
- * 근무 시간 계산 (시간 단위)
- *
- * @description SettlementCalculator.calculateHours 위임 (Phase 6 리팩토링)
- * 다양한 타임스탬프 형식 자동 파싱 지원
- */
-const calculateHoursWorked = SettlementCalculator.calculateHours.bind(SettlementCalculator);
-
-/**
  * 날짜 문자열을 YYYY-MM-DD 형식으로 변환 (향후 날짜 필터링 시 활용)
  * export for future use - suppresses unused warning
  */
@@ -228,11 +220,11 @@ export async function getWorkLogsByJobPosting(
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
-      where('eventId', '==', jobPostingId),
+      where('jobPostingId', '==', jobPostingId),
       orderBy('date', 'desc')
     );
-
     const snapshot = await getDocs(q);
+
     let workLogs: SettlementWorkLog[] = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
@@ -262,23 +254,25 @@ export async function getWorkLogsByJobPosting(
       });
     }
 
-    // 4. 근무 시간 및 예상 정산액 계산 (수당/세금 포함)
+    // 4. 근무 시간 및 예상 정산액 계산 (Phase 6 - SettlementCalculator 사용)
     workLogs = workLogs.map((wl) => {
-      const hoursWorked = calculateHoursWorked(wl.actualStartTime, wl.actualEndTime);
-
-      // 유틸리티 함수를 사용하여 수당/세금 포함 정산 금액 계산
       const wlWithOverrides = wl as WorkLogWithOverrides;
       const salaryInfo = getEffectiveSalaryInfoFromRoles(wlWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
       const allowances = getEffectiveAllowances(wlWithOverrides, jobPosting.allowances);
       const taxSettings = getEffectiveTaxSettings(wlWithOverrides, jobPosting.taxSettings);
 
-      const settlement = calculateSettlementFromWorkLog(wlWithOverrides, salaryInfo, allowances, taxSettings);
-      const calculatedAmount = settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay;
+      const result = SettlementCalculator.calculate({
+        startTime: wl.actualStartTime,
+        endTime: wl.actualEndTime,
+        salaryInfo,
+        allowances,
+        taxSettings,
+      });
 
       return {
         ...wl,
-        hoursWorked: Math.round(hoursWorked * 100) / 100,
-        calculatedAmount,
+        hoursWorked: result.hoursWorked,
+        calculatedAmount: result.afterTaxPay,
       };
     });
 
@@ -319,8 +313,9 @@ export async function calculateSettlement(
 
     const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
 
-    // 2. 공고 조회 및 소유권 확인
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
+    // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
+    const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
@@ -333,25 +328,29 @@ export async function calculateSettlement(
       throw new Error('본인의 공고에 대한 정산만 계산할 수 있습니다');
     }
 
-    // 3. 근무 시간 계산
-    const hoursWorked = calculateHoursWorked(workLog.actualStartTime, workLog.actualEndTime);
-
-    // 4. 급여/수당/세금 정보 조회 (개별 오버라이드 우선)
+    // 3. 급여/수당/세금 정보 조회 (개별 오버라이드 우선)
     const workLogWithOverrides = workLog as WorkLogWithOverrides;
     const salaryInfo = getEffectiveSalaryInfoFromRoles(workLogWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
     const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
     const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
 
-    // 5. 정산 금액 계산 (수당/세금 포함)
-    const settlement = calculateSettlementFromWorkLog(workLogWithOverrides, salaryInfo, allowances, taxSettings);
-    const grossPay = settlement.totalPay;
+    // 4. 정산 금액 계산 (Phase 6 - SettlementCalculator 사용)
+    const settlementResult = SettlementCalculator.calculate({
+      startTime: workLog.actualStartTime,
+      endTime: workLog.actualEndTime,
+      salaryInfo,
+      allowances,
+      taxSettings,
+    });
+
+    const grossPay = settlementResult.totalPay;
     const deductions = input.deductions ?? 0;
-    const netPay = (settlement.taxAmount > 0 ? settlement.afterTaxPay : grossPay) - deductions;
+    const netPay = settlementResult.afterTaxPay - deductions;
 
     const result: SettlementCalculation = {
       workLogId: input.workLogId,
       salaryType: salaryInfo.type,
-      hoursWorked: Math.round(hoursWorked * 100) / 100,
+      hoursWorked: settlementResult.hoursWorked,
       grossPay,
       deductions,
       netPay,
@@ -389,8 +388,9 @@ export async function updateWorkTime(
 
       const workLog = workLogDoc.data() as WorkLog;
 
-      // 2. 공고 조회 및 소유권 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
+      // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
+      const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -492,8 +492,9 @@ export async function settleWorkLog(
 
       const workLog = workLogDoc.data() as WorkLog;
 
-      // 2. 공고 조회 및 소유권 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
+      // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
+      const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -587,12 +588,12 @@ export async function bulkSettlement(
           })
         );
 
-        // 2. 공고별로 그룹화하여 소유권 확인
+        // 2. 공고별로 그룹화하여 소유권 확인 (IdNormalizer로 ID 정규화)
         const jobPostingIds = new Set<string>();
         workLogDocs.forEach((wl) => {
           if (wl.doc.exists()) {
             const data = wl.doc.data() as WorkLog;
-            jobPostingIds.add(data.eventId);
+            jobPostingIds.add(IdNormalizer.normalizeJobId(data));
           }
         });
 
@@ -619,7 +620,8 @@ export async function bulkSettlement(
           }
 
           const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
-          const jobPosting = jobPostings.get(workLog.eventId);
+          const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+          const jobPosting = jobPostings.get(normalizedJobId);
 
           // 소유권 확인
           if (!jobPosting || jobPosting.ownerId !== ownerId) {
@@ -657,14 +659,20 @@ export async function bulkSettlement(
             continue;
           }
 
-          // 정산 금액 계산 (수당/세금 포함)
+          // 정산 금액 계산 (Phase 6 - SettlementCalculator 사용)
           const workLogWithOverrides = workLog as WorkLogWithOverrides;
           const salaryInfo = getEffectiveSalaryInfoFromRoles(workLogWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
           const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
           const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
 
-          const settlement = calculateSettlementFromWorkLog(workLogWithOverrides, salaryInfo, allowances, taxSettings);
-          const amount = settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay;
+          const settlementResult = SettlementCalculator.calculate({
+            startTime: workLog.actualStartTime,
+            endTime: workLog.actualEndTime,
+            salaryInfo,
+            allowances,
+            taxSettings,
+          });
+          const amount = settlementResult.afterTaxPay;
 
           // 정산 처리
           const updateData: Record<string, unknown> = {
@@ -738,8 +746,9 @@ export async function updateSettlementStatus(
 
       const workLog = workLogDoc.data() as WorkLog;
 
-      // 2. 공고 조회 및 소유권 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, workLog.eventId);
+      // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
+      const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -802,10 +811,10 @@ export async function getJobPostingSettlementSummary(
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
-      where('eventId', '==', jobPostingId)
+      where('jobPostingId', '==', jobPostingId)
     );
-
     const snapshot = await getDocs(q);
+
     const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...docSnap.data(),
@@ -854,14 +863,20 @@ export async function getJobPostingSettlementSummary(
           workLogsByRole[effectiveRole].completedAmount += amount;
         } else {
           pendingSettlement++;
-          // 미정산인 경우 예상 금액 계산 (수당/세금 포함)
+          // 미정산인 경우 예상 금액 계산 (Phase 6 - SettlementCalculator 사용)
           const workLogWithOverrides = workLog as WorkLogWithOverrides;
           const salaryInfo = getEffectiveSalaryInfoFromRoles(workLogWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
           const allowances = getEffectiveAllowances(workLogWithOverrides, jobPosting.allowances);
           const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
 
-          const settlement = calculateSettlementFromWorkLog(workLogWithOverrides, salaryInfo, allowances, taxSettings);
-          const estimatedAmount = settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay;
+          const settlementResult = SettlementCalculator.calculate({
+            startTime: workLog.actualStartTime,
+            endTime: workLog.actualEndTime,
+            salaryInfo,
+            allowances,
+            taxSettings,
+          });
+          const estimatedAmount = settlementResult.afterTaxPay;
 
           totalPendingAmount += amount > 0 ? amount : estimatedAmount;
           workLogsByRole[effectiveRole].pendingAmount += amount > 0 ? amount : estimatedAmount;

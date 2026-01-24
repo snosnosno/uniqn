@@ -35,6 +35,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { normalizeError } from '@/errors';
 import { withErrorHandling } from '@/utils/withErrorHandling';
+import { RealtimeManager } from '@/shared/realtime';
 import { COLLECTIONS } from '@/constants';
 import type {
   NotificationData,
@@ -316,70 +317,84 @@ export async function cleanupOldNotifications(userId: string, daysToKeep = 30): 
 
 /**
  * 알림 실시간 구독
+ *
+ * @description Phase 12 - RealtimeManager로 중복 구독 방지
  */
 export function subscribeToNotifications(
   userId: string,
   onNotifications: (notifications: NotificationData[]) => void,
   onError?: (error: Error) => void
 ): () => void {
-  const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-  const q = query(
-    notificationsRef,
-    where('recipientId', '==', userId),
-    orderBy('createdAt', 'desc'),
-    limit(50)
-  );
+  return RealtimeManager.subscribe(
+    RealtimeManager.Keys.notifications(userId),
+    () => {
+      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+      const q = query(
+        notificationsRef,
+        where('recipientId', '==', userId),
+        orderBy('createdAt', 'desc'),
+        limit(50)
+      );
 
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      const notifications = snapshot.docs.map(docToNotification);
-      onNotifications(notifications);
-    },
-    (error) => {
-      const appError = normalizeError(error);
-      logger.error('알림 구독 에러', appError, {
-        code: appError.code,
-      });
-      onError?.(appError);
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          const notifications = snapshot.docs.map(docToNotification);
+          onNotifications(notifications);
+        },
+        (error) => {
+          const appError = normalizeError(error);
+          logger.error('알림 구독 에러', appError, {
+            code: appError.code,
+          });
+          onError?.(appError);
+        }
+      );
+
+      logger.info('알림 구독 시작', { userId });
+      return unsubscribe;
     }
   );
-
-  logger.info('알림 구독 시작', { userId });
-  return unsubscribe;
 }
 
 /**
  * 읽지 않은 알림 수 실시간 구독
+ *
+ * @description Phase 12 - RealtimeManager로 중복 구독 방지
  */
 export function subscribeToUnreadCount(
   userId: string,
   onCount: (count: number) => void,
   onError?: (error: Error) => void
 ): () => void {
-  const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-  const q = query(
-    notificationsRef,
-    where('recipientId', '==', userId),
-    where('isRead', '==', false)
-  );
+  return RealtimeManager.subscribe(
+    RealtimeManager.Keys.unreadCount(userId),
+    () => {
+      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+      const q = query(
+        notificationsRef,
+        where('recipientId', '==', userId),
+        where('isRead', '==', false)
+      );
 
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      onCount(snapshot.size);
-    },
-    (error) => {
-      const appError = normalizeError(error);
-      logger.error('읽지 않은 알림 수 구독 에러', appError, {
-        code: appError.code,
-      });
-      onError?.(appError);
+      const unsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          onCount(snapshot.size);
+        },
+        (error) => {
+          const appError = normalizeError(error);
+          logger.error('읽지 않은 알림 수 구독 에러', appError, {
+            code: appError.code,
+          });
+          onError?.(appError);
+        }
+      );
+
+      logger.info('읽지 않은 알림 수 구독 시작', { userId });
+      return unsubscribe;
     }
   );
-
-  logger.info('읽지 않은 알림 수 구독 시작', { userId });
-  return unsubscribe;
 }
 
 // ============================================================================

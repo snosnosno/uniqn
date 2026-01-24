@@ -320,6 +320,10 @@ export async function confirmApplicationWithHistory(
           const workLogData = {
             staffId: applicationData.applicantId,
             staffName: applicationData.applicantName,
+            // Phase 2: 정규화된 필드
+            jobPostingId: applicationData.jobPostingId,
+            jobPostingName: jobData.title,
+            // 하위 호환성
             eventId: applicationData.jobPostingId,
             eventName: jobData.title,
             role,

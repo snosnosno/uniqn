@@ -145,7 +145,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
       onPress={onPress}
       disabled={!onPress}
       accessibilityRole="button"
-      accessibilityLabel={`${group.eventName} 스케줄 상세 보기, ${group.dateRange.totalDays}일`}
+      accessibilityLabel={`${group.jobPostingName} 스케줄 상세 보기, ${group.dateRange.totalDays}일`}
     >
       <Card className={`mb-3 ${isCancelled ? 'opacity-60' : ''}`}>
         {/* 상단: 상태 뱃지 + 총 일수 */}
@@ -183,7 +183,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           }`}
           numberOfLines={1}
         >
-          {group.eventName}
+          {group.jobPostingName}
         </Text>
 
         {/* 장소 */}

@@ -157,7 +157,7 @@ export function useEventQR(
       logger.info('이벤트 QR 생성 시작', { jobPostingId, date, action, isRefresh });
 
       const result = await generateEventQR({
-        eventId: jobPostingId,
+        jobPostingId,
         date,
         action,
         createdBy,

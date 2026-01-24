@@ -50,11 +50,13 @@ export interface GroupedSettlement {
   /** 스태프 ID */
   staffId: string;
 
+  /** 공고 ID (정규화된 필드명) - 첫 번째 WorkLog의 jobPostingId */
+  jobPostingId: string;
+
   /**
-   * 공고 ID - 첫 번째 WorkLog의 eventId (화면 컨텍스트용)
-   * @deprecated Phase 2 마이그레이션 후 jobPostingId로 변경 예정
+   * @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용
    */
-  eventId: string;
+  eventId?: string;
 
   /** 스태프 프로필 정보 (비정규화) */
   staffProfile: {

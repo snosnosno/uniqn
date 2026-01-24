@@ -12,7 +12,7 @@
  * QR 코드 데이터 구조:
  * {
  *   type: 'event',
- *   eventId: string,        // 공고 ID
+ *   jobPostingId: string,   // 공고 ID (정규화된 필드명)
  *   date: string,           // 근무 날짜 (YYYY-MM-DD)
  *   action: 'checkIn' | 'checkOut',
  *   securityCode: string,   // 보안 코드 (UUID)
@@ -86,13 +86,24 @@ function generateSecurityCode(): string {
 
 /**
  * QR 데이터 파싱
+ *
+ * @description jobPostingId 우선, eventId 폴백 (하위 호환성)
  */
 function parseQRData(qrString: string): EventQRDisplayData | null {
   try {
     const data = JSON.parse(qrString);
     if (data.type !== 'event') return null;
-    if (!data.eventId || !data.date || !data.action || !data.securityCode) return null;
-    return data as EventQRDisplayData;
+
+    // jobPostingId 또는 eventId 중 하나는 있어야 함 (하위 호환성)
+    const jobPostingId = data.jobPostingId || data.eventId;
+    if (!jobPostingId || !data.date || !data.action || !data.securityCode) return null;
+
+    return {
+      ...data,
+      jobPostingId,
+      // 하위 호환성: eventId도 유지
+      eventId: jobPostingId,
+    } as EventQRDisplayData;
   } catch (error) {
     logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
     return null;
@@ -119,12 +130,13 @@ export async function generateEventQR(
     const expiresAt = now + QR_VALIDITY_DURATION_MS;
     const securityCode = generateSecurityCode();
 
-    // 기존 활성 QR 비활성화 (같은 이벤트/날짜/액션)
-    await deactivateExistingQRCodes(input.eventId, input.date, input.action);
+    // 기존 활성 QR 비활성화 (같은 공고/날짜/액션)
+    await deactivateExistingQRCodes(input.jobPostingId, input.date, input.action);
 
-    // 새 QR 코드 생성
+    // 새 QR 코드 생성 (jobPostingId 사용, eventId도 하위 호환성용으로 저장)
     const qrData: Omit<EventQRCode, 'id'> = {
-      eventId: input.eventId,
+      jobPostingId: input.jobPostingId,
+      eventId: input.jobPostingId, // 하위 호환성
       date: input.date,
       action: input.action,
       securityCode,
@@ -142,7 +154,8 @@ export async function generateEventQR(
     // 표시용 데이터
     const displayData: EventQRDisplayData = {
       type: 'event',
-      eventId: input.eventId,
+      jobPostingId: input.jobPostingId,
+      eventId: input.jobPostingId, // 하위 호환성
       date: input.date,
       action: input.action,
       securityCode,
@@ -163,15 +176,16 @@ export async function generateEventQR(
  * 기존 활성 QR 코드 비활성화
  */
 async function deactivateExistingQRCodes(
-  eventId: string,
+  jobPostingId: string,
   date: string,
   action: QRCodeAction
 ): Promise<void> {
   try {
     const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
+    // jobPostingId로 조회 (새 데이터 기준)
     const q = query(
       qrRef,
-      where('eventId', '==', eventId),
+      where('jobPostingId', '==', jobPostingId),
       where('date', '==', date),
       where('action', '==', action),
       where('isActive', '==', true)
@@ -187,7 +201,7 @@ async function deactivateExistingQRCodes(
       )
     );
   } catch (error) {
-    logger.warn('기존 QR 비활성화 실패', { eventId, date, action, error });
+    logger.warn('기존 QR 비활성화 실패', { jobPostingId, date, action, error });
   }
 }
 
@@ -218,11 +232,11 @@ export async function validateEventQR(
       };
     }
 
-    // 3. 서버 측 검증 (보안 코드 확인)
+    // 3. 서버 측 검증 (보안 코드 확인) - jobPostingId로 조회
     const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
     const q = query(
       qrRef,
-      where('eventId', '==', qrData.eventId),
+      where('jobPostingId', '==', qrData.jobPostingId),
       where('date', '==', qrData.date),
       where('action', '==', qrData.action),
       where('securityCode', '==', qrData.securityCode),
@@ -250,7 +264,7 @@ export async function validateEventQR(
 
     return {
       isValid: true,
-      eventId: qrData.eventId,
+      jobPostingId: qrData.jobPostingId,
       date: qrData.date,
       action: qrData.action,
     };
@@ -284,19 +298,19 @@ export async function processEventQRCheckIn(
       });
     }
 
-    const { eventId, date, action } = validation;
+    const { jobPostingId, date, action } = validation;
 
     // 2. 해당 스태프의 WorkLog 찾기 (쿼리는 트랜잭션 외부에서)
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
     const q = query(
       workLogsRef,
-      where('eventId', '==', eventId),
+      where('jobPostingId', '==', jobPostingId),
       where('staffId', '==', staffId),
       where('date', '==', date),
       limit(1)
     );
-
     const snapshot = await getDocs(q);
+
     if (snapshot.empty) {
       throw new InvalidQRCodeError({
         message: '해당 근무 기록을 찾을 수 없습니다.',
@@ -428,7 +442,7 @@ export async function processEventQRCheckIn(
  * 현재 활성 QR 코드 조회
  */
 export async function getActiveEventQR(
-  eventId: string,
+  jobPostingId: string,
   date: string,
   action: QRCodeAction
 ): Promise<EventQRCode | null> {
@@ -436,7 +450,7 @@ export async function getActiveEventQR(
     const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
     const q = query(
       qrRef,
-      where('eventId', '==', eventId),
+      where('jobPostingId', '==', jobPostingId),
       where('date', '==', date),
       where('action', '==', action),
       where('isActive', '==', true),
@@ -461,7 +475,7 @@ export async function getActiveEventQR(
 
     return { id: docSnap.id, ...data };
   } catch (error) {
-    logger.error('활성 QR 조회 실패', error as Error, { eventId, date, action });
+    logger.error('활성 QR 조회 실패', error as Error, { jobPostingId, date, action });
     return null;
   }
 }

@@ -212,7 +212,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         {/* 기본 정보만 표시 */}
         <Section icon={<DocumentIcon size={18} color="#9CA3AF" />} title="공고 정보">
           <Text className="text-base text-gray-500 dark:text-gray-400">
-            {schedule.eventName}
+            {schedule.jobPostingName}
           </Text>
         </Section>
 

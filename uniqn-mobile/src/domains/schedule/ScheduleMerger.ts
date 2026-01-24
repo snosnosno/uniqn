@@ -277,10 +277,10 @@ export class ScheduleMerger {
    * 스케줄 중복 체크용 키 생성
    *
    * @param schedule - 스케줄 이벤트
-   * @returns eventId_date 형식의 키
+   * @returns jobPostingId_date 형식의 키
    */
   static generateScheduleKey(schedule: ScheduleEvent): string {
-    return `${schedule.eventId}_${schedule.date}`;
+    return `${schedule.jobPostingId}_${schedule.date}`;
   }
 
   /**

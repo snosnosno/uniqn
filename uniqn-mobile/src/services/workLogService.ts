@@ -25,6 +25,7 @@ import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
 import { mapFirebaseError, BusinessError, ERROR_CODES } from '@/errors';
 import { trackSettlementComplete } from './analyticsService';
+import { RealtimeManager } from '@/shared/realtime';
 import type { WorkLog, PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -467,6 +468,9 @@ export async function updatePayrollStatus(
  * // 클린업
  * return () => unsubscribe();
  */
+/**
+ * @description Phase 12 - RealtimeManager로 중복 구독 방지
+ */
 export function subscribeToWorkLog(
   workLogId: string,
   callbacks: {
@@ -474,38 +478,41 @@ export function subscribeToWorkLog(
     onError?: (error: Error) => void;
   }
 ): Unsubscribe {
-  logger.info('근무 기록 실시간 구독 시작', { workLogId });
+  return RealtimeManager.subscribe(
+    RealtimeManager.Keys.workLogs(workLogId),
+    () => {
+      logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
-  const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
 
-  const unsubscribe = onSnapshot(
-    workLogRef,
-    (docSnap) => {
-      if (!docSnap.exists()) {
-        logger.warn('구독 중인 근무 기록이 존재하지 않음', { workLogId });
-        callbacks.onUpdate(null);
-        return;
-      }
+      return onSnapshot(
+        workLogRef,
+        (docSnap) => {
+          if (!docSnap.exists()) {
+            logger.warn('구독 중인 근무 기록이 존재하지 않음', { workLogId });
+            callbacks.onUpdate(null);
+            return;
+          }
 
-      const workLog: WorkLog = {
-        id: docSnap.id,
-        ...docSnap.data(),
-      } as WorkLog;
+          const workLog: WorkLog = {
+            id: docSnap.id,
+            ...docSnap.data(),
+          } as WorkLog;
 
-      logger.debug('근무 기록 업데이트 수신', {
-        workLogId,
-        status: workLog.status,
-      });
+          logger.debug('근무 기록 업데이트 수신', {
+            workLogId,
+            status: workLog.status,
+          });
 
-      callbacks.onUpdate(workLog);
-    },
-    (error) => {
-      logger.error('근무 기록 구독 에러', error, { workLogId });
-      callbacks.onError?.(mapFirebaseError(error) as Error);
+          callbacks.onUpdate(workLog);
+        },
+        (error) => {
+          logger.error('근무 기록 구독 에러', error, { workLogId });
+          callbacks.onError?.(mapFirebaseError(error) as Error);
+        }
+      );
     }
   );
-
-  return unsubscribe;
 }
 
 /**

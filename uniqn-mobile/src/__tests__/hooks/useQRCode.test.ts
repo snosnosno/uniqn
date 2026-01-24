@@ -51,7 +51,8 @@ function createMockEventQRDisplayData(
 ): EventQRDisplayData {
   return {
     type: 'event',
-    eventId: 'event-123',
+    jobPostingId: 'event-123',
+    eventId: 'event-123', // 하위 호환성용
     date: '2024-01-15',
     action: 'checkIn',
     securityCode: 'uuid-security-code',

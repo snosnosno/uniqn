@@ -20,6 +20,7 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { createMutationErrorHandler } from '@/shared/errors';
 import type {
   CreateJobPostingInput,
   UpdateJobPostingInput,
@@ -133,13 +134,7 @@ export function useCreateJobPosting() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: (error) => {
-      logger.error('공고 생성 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '공고 등록에 실패했습니다.',
-      });
-    },
+    onError: createMutationErrorHandler('공고 생성', addToast),
   });
 }
 

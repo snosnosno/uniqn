@@ -94,14 +94,14 @@ export interface ConversionOptions {
  */
 export async function convertApplicantToStaff(
   applicationId: string,
-  eventId: string,
+  jobPostingId: string,
   managerId: string,
   options: ConversionOptions = {}
 ): Promise<ConversionResult> {
   const { skipExisting = false, createWorkLogs = true, notes } = options;
 
   try {
-    logger.info('지원자→스태프 변환 시작', { applicationId, eventId, managerId });
+    logger.info('지원자→스태프 변환 시작', { applicationId, jobPostingId, managerId });
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 읽기
@@ -148,17 +148,17 @@ export async function convertApplicantToStaff(
       const isNewStaff = !staffDoc.exists();
 
       if (staffDoc.exists() && !skipExisting) {
-        // 해당 이벤트에서 이미 스태프인지 확인
+        // 해당 공고에서 이미 스태프인지 확인
         const existingWorkLogsQuery = query(
           collection(getFirebaseDb(), WORK_LOGS_COLLECTION),
           where('staffId', '==', applicationData.applicantId),
-          where('eventId', '==', eventId)
+          where('jobPostingId', '==', jobPostingId)
         );
         const existingWorkLogs = await getDocs(existingWorkLogsQuery);
 
         if (!existingWorkLogs.empty) {
           throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_APPLIED, {
-            userMessage: '이미 해당 이벤트의 스태프입니다',
+            userMessage: '이미 해당 공고의 스태프입니다',
           });
         }
       }
@@ -208,7 +208,10 @@ export async function convertApplicantToStaff(
             staffName: applicationData.applicantName,
             staffNickname: applicationData.applicantNickname ?? null,
             staffPhotoURL: applicationData.applicantPhotoURL ?? null,
-            eventId,
+            jobPostingId,
+            jobPostingName: jobData.title,
+            // 하위 호환성: eventId도 함께 저장
+            eventId: jobPostingId,
             eventName: jobData.title,
             ownerId: jobData.ownerId, // 구인자 ID (신고 기능 등에서 사용)
             role,
@@ -244,7 +247,10 @@ export async function convertApplicantToStaff(
                 staffName: applicationData.applicantName,
                 staffNickname: applicationData.applicantNickname ?? null,
                 staffPhotoURL: applicationData.applicantPhotoURL ?? null,
-                eventId,
+                jobPostingId,
+                jobPostingName: jobData.title,
+                // 하위 호환성: eventId도 함께 저장
+                eventId: jobPostingId,
                 eventName: jobData.title,
                 ownerId: jobData.ownerId, // 구인자 ID (신고 기능 등에서 사용)
                 role,
@@ -314,7 +320,7 @@ export async function convertApplicantToStaff(
  */
 export async function batchConvertApplicants(
   applicationIds: string[],
-  eventId: string,
+  jobPostingId: string,
   managerId: string,
   options: ConversionOptions = {},
   onProgress?: (current: number, total: number) => void
@@ -322,7 +328,7 @@ export async function batchConvertApplicants(
   try {
     logger.info('일괄 스태프 변환 시작', {
       count: applicationIds.length,
-      eventId,
+      jobPostingId,
       managerId,
     });
 
@@ -340,7 +346,7 @@ export async function batchConvertApplicants(
       try {
         const conversionResult = await convertApplicantToStaff(
           applicationId,
-          eventId,
+          jobPostingId,
           managerId,
           { ...options, skipExisting: true }
         );
@@ -378,7 +384,7 @@ export async function batchConvertApplicants(
  */
 export async function isAlreadyStaff(
   userId: string,
-  eventId?: string
+  jobPostingId?: string
 ): Promise<boolean> {
   try {
     const staffRef = doc(getFirebaseDb(), STAFF_COLLECTION, userId);
@@ -388,12 +394,12 @@ export async function isAlreadyStaff(
       return false;
     }
 
-    // eventId가 지정된 경우 해당 이벤트의 WorkLog 존재 확인
-    if (eventId) {
+    // jobPostingId가 지정된 경우 해당 공고의 WorkLog 존재 확인
+    if (jobPostingId) {
       const workLogsQuery = query(
         collection(getFirebaseDb(), WORK_LOGS_COLLECTION),
         where('staffId', '==', userId),
-        where('eventId', '==', eventId)
+        where('jobPostingId', '==', jobPostingId)
       );
       const workLogs = await getDocs(workLogsQuery);
       return !workLogs.empty;
@@ -401,7 +407,7 @@ export async function isAlreadyStaff(
 
     return true;
   } catch (error) {
-    logger.error('스태프 존재 확인 실패', error as Error, { userId, eventId });
+    logger.error('스태프 존재 확인 실패', error as Error, { userId, jobPostingId });
     return false;
   }
 }
