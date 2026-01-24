@@ -11,7 +11,7 @@ import React, { memo, useMemo, useState, useCallback } from 'react';
 import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { getRoleDisplayName } from '@/types/unified';
 import {
   groupRequirementsToDateRanges,

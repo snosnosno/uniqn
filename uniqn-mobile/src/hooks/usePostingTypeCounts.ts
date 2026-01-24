@@ -14,7 +14,7 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
-import { queryKeys } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
 import type { PostingType } from '@/types';
 
@@ -95,8 +95,8 @@ export function usePostingTypeCounts() {
   const query_result = useQuery({
     queryKey: [...queryKeys.jobPostings.all, 'typeAvailability'] as const,
     queryFn: fetchPostingTypeAvailability,
-    staleTime: 2 * 60 * 1000, // 2분
-    gcTime: 10 * 60 * 1000, // 10분
+    staleTime: cachingPolicies.frequent, // 2분
+    gcTime: cachingPolicies.standard * 2, // 10분
   });
 
   // 우선순위에 따른 첫 번째 공고가 있는 타입 계산

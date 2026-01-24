@@ -10,7 +10,7 @@ import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import type { ConfirmationHistoryEntry, OriginalApplication, Assignment } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 
 // ============================================================================
 // Types

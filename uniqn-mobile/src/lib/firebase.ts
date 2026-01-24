@@ -17,7 +17,10 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { initializeAuth, getAuth, Auth } from 'firebase/auth';
 // @ts-expect-error - getReactNativePersistence exists at runtime but missing from types
 import { getReactNativePersistence } from 'firebase/auth';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, Timestamp } from 'firebase/firestore';
+
+// Re-export Timestamp for components (중앙화된 Firebase 타입 접근)
+export { Timestamp };
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, Functions } from 'firebase/functions';
 import AsyncStorage from '@react-native-async-storage/async-storage';

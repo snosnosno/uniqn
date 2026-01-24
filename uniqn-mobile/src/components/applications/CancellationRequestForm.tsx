@@ -82,7 +82,7 @@ export function CancellationRequestForm({
       <View className="flex-1 bg-white dark:bg-gray-900">
         {/* 헤더 */}
         <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <Pressable onPress={handleClose} className="p-2 -ml-2">
+          <Pressable onPress={handleClose} className="p-2 -ml-2" accessibilityLabel="닫기">
             <Text className="text-gray-600 dark:text-gray-400 text-lg">✕</Text>
           </Pressable>
           <Text className="text-lg font-semibold text-gray-900 dark:text-white">

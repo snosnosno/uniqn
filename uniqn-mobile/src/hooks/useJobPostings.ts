@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { getJobPostings, convertToCard } from '@/services';
-import { queryKeys } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import type { JobPostingFilters, JobPostingCard } from '@/types';
 
 // ============================================================================
@@ -42,8 +42,8 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
     initialPageParam: undefined as import('firebase/firestore').QueryDocumentSnapshot<import('firebase/firestore').DocumentData> | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     enabled,
-    staleTime: 2 * 60 * 1000, // 2분
-    gcTime: 10 * 60 * 1000, // 10분
+    staleTime: cachingPolicies.frequent, // 2분
+    gcTime: cachingPolicies.standard * 2, // 10분
   });
 
   // 전체 데이터를 플랫하게 변환 후 정렬

@@ -7,7 +7,7 @@
 
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { Badge } from '@/components/ui';
 import {
   DocumentIcon,

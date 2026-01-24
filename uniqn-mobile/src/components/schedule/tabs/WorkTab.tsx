@@ -7,7 +7,7 @@
 
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { Button, Badge } from '@/components/ui';
 import {
   BriefcaseIcon,

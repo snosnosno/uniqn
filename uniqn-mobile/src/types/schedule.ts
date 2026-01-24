@@ -6,8 +6,11 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
-import type { JobPostingCard } from './jobPosting';
+import type { JobPostingCard, SalaryType } from './jobPosting';
 import { StatusMapper } from '@/shared/status';
+
+// Re-export SalaryType from jobPosting (single source of truth)
+export type { SalaryType };
 
 /**
  * 출석 상태 (UI 표시용)
@@ -46,11 +49,6 @@ export type ScheduleType = 'applied' | 'confirmed' | 'completed' | 'cancelled';
  * 정산 상태
  */
 export type PayrollStatus = 'pending' | 'processing' | 'completed';
-
-/**
- * 급여 타입
- */
-export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
 
 /**
  * 세금 타입

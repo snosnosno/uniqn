@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { queryKeys, invalidateQueries } from '@/lib/queryClient';
+import { queryKeys, invalidateQueries, cachingPolicies } from '@/lib/queryClient';
 import {
   getConfirmedStaff,
   getConfirmedStaffByDate,
@@ -142,7 +142,7 @@ export function useConfirmedStaff(
       return getConfirmedStaff(jobPostingId);
     },
     enabled: !!jobPostingId && !realtime,
-    staleTime: 2 * 60 * 1000, // 2분
+    staleTime: cachingPolicies.frequent, // 2분
   });
 
   // ============================================================================

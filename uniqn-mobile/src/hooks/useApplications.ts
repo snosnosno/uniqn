@@ -12,7 +12,7 @@ import {
   cancelApplication as cancelApplicationService,
   requestCancellation as requestCancellationService,
 } from '@/services';
-import { queryKeys } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
@@ -51,7 +51,7 @@ export function useApplications() {
     queryKey: queryKeys.applications.mine(),
     queryFn: () => getMyApplications(user!.uid),
     enabled: !!user,
-    staleTime: 2 * 60 * 1000, // 2분
+    staleTime: cachingPolicies.frequent, // 2분
   });
 
   // 지원 제출 (v2.0: Assignment + PreQuestion)

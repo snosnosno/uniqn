@@ -7,7 +7,7 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { Modal } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Badge } from '@/components/ui';

@@ -293,7 +293,7 @@ export function SettlementSettingsModal({
           <Text className="text-lg font-semibold text-gray-900 dark:text-white">
             정산 설정
           </Text>
-          <Pressable onPress={onClose} hitSlop={8} disabled={isSaving}>
+          <Pressable onPress={onClose} hitSlop={8} disabled={isSaving} accessibilityLabel="닫기">
             <XMarkIcon size={24} color="#6B7280" />
           </Pressable>
         </View>

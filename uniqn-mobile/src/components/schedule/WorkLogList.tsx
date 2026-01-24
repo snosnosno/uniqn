@@ -14,7 +14,7 @@ import {
   Pressable,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
 import {
   CalendarIcon,
@@ -360,6 +360,8 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
         data={workLogs}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
+        // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+        estimatedItemSize={180}
         contentContainerStyle={{ padding: 16 }}
         showsVerticalScrollIndicator={false}
         refreshControl={

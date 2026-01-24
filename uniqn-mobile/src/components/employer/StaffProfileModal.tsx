@@ -208,7 +208,7 @@ export function StaffProfileModal({
           <Text className="text-lg font-semibold text-gray-900 dark:text-white">
             스태프 프로필
           </Text>
-          <Pressable onPress={onClose} hitSlop={8}>
+          <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="닫기">
             <XMarkIcon size={24} color="#6B7280" />
           </Pressable>
         </View>

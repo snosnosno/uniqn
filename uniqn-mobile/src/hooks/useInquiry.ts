@@ -2,13 +2,14 @@
  * UNIQN Mobile - Inquiry Hooks
  *
  * @description 문의 관련 커스텀 훅 (TanStack Query)
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import {
   fetchMyInquiries,
   fetchAllInquiries,
@@ -30,16 +31,20 @@ import { FAQ_DATA, filterFAQByCategory } from '@/types';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
 
 // ============================================================================
-// Query Keys
+// Query Keys - 중앙 관리 (queryClient.ts)에서 import
 // ============================================================================
 
+/**
+ * @deprecated queryKeys.inquiries 사용 권장 (하위 호환성용)
+ */
 export const inquiryKeys = {
-  all: ['inquiries'] as const,
-  mine: () => [...inquiryKeys.all, 'mine'] as const,
-  adminList: (filters?: InquiryFilters) => [...inquiryKeys.all, 'admin', filters] as const,
-  detail: (id: string) => [...inquiryKeys.all, 'detail', id] as const,
-  unansweredCount: () => [...inquiryKeys.all, 'unansweredCount'] as const,
-  faq: (category?: InquiryCategory | 'all') => ['faq', category] as const,
+  all: queryKeys.inquiries.all,
+  mine: () => queryKeys.inquiries.mine(),
+  adminList: (filters?: InquiryFilters) =>
+    queryKeys.inquiries.adminList(filters as Record<string, unknown>),
+  detail: (id: string) => queryKeys.inquiries.detail(id),
+  unansweredCount: () => queryKeys.inquiries.unansweredCount(),
+  faq: (category?: InquiryCategory | 'all') => queryKeys.inquiries.faq(category),
 };
 
 // ============================================================================
@@ -69,7 +74,7 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
       return result;
     },
     enabled: enabled && !!user?.uid,
-    staleTime: 0, // 항상 최신 데이터 사용
+    staleTime: cachingPolicies.realtime, // 항상 최신 데이터 사용
   });
 
   const fetchNextPage = useCallback(async () => {
@@ -129,7 +134,7 @@ export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
       return result;
     },
     enabled,
-    staleTime: 1000 * 60 * 2, // 2분
+    staleTime: cachingPolicies.frequent, // 2분
   });
 
   const fetchNextPage = useCallback(async () => {
@@ -166,7 +171,7 @@ export function useInquiryDetail(inquiryId: string | undefined) {
     queryKey: inquiryKeys.detail(inquiryId || ''),
     queryFn: () => getInquiry(inquiryId!),
     enabled: !!inquiryId,
-    staleTime: 1000 * 60 * 5, // 5분
+    staleTime: cachingPolicies.standard, // 5분
   });
 }
 
@@ -273,7 +278,7 @@ export function useUnansweredCount() {
   return useQuery({
     queryKey: inquiryKeys.unansweredCount(),
     queryFn: getUnansweredCount,
-    staleTime: 1000 * 60 * 5, // 5분
+    staleTime: cachingPolicies.standard, // 5분
   });
 }
 
@@ -294,7 +299,7 @@ export function useFAQ(options: UseFAQOptions = {}) {
       // 하드코딩된 FAQ 데이터 사용
       return filterFAQByCategory(FAQ_DATA, category);
     },
-    staleTime: 1000 * 60 * 30, // 30분 (stable 정책)
-    gcTime: 1000 * 60 * 60, // 1시간
+    staleTime: cachingPolicies.stable, // 30분
+    gcTime: 60 * 60 * 1000, // 1시간
   });
 }

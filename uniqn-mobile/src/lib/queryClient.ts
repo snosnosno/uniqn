@@ -409,6 +409,22 @@ export const queryKeys = {
     /** 읽지 않은 공지 수 */
     unreadCount: () => [...queryKeys.announcements.all, 'unreadCount'] as const,
   },
+
+  // 문의 (Inquiry)
+  inquiries: {
+    all: ['inquiries'] as const,
+    /** 내 문의 목록 */
+    mine: (userId?: string) => [...queryKeys.inquiries.all, 'mine', userId] as const,
+    /** 전체 문의 목록 (관리자) */
+    adminList: (filters?: Record<string, unknown>) =>
+      [...queryKeys.inquiries.all, 'admin', filters] as const,
+    /** 문의 상세 */
+    detail: (id: string) => [...queryKeys.inquiries.all, 'detail', id] as const,
+    /** 미답변 문의 수 */
+    unansweredCount: () => [...queryKeys.inquiries.all, 'unansweredCount'] as const,
+    /** FAQ */
+    faq: (category?: string) => ['faq', category] as const,
+  },
 } as const;
 
 // ============================================================================

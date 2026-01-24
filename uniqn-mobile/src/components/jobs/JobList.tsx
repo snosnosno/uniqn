@@ -117,6 +117,8 @@ export function JobList({
       data={jobs}
       renderItem={renderItem}
       keyExtractor={keyExtractor}
+      // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+      estimatedItemSize={160}
       contentContainerStyle={{ padding: 16 }}
       showsVerticalScrollIndicator={false}
       refreshControl={

@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { QUERY_KEYS } from '@/constants';
+import { cachingPolicies } from '@/lib/queryClient';
 import {
   groupNotificationsWithCategoryFilter,
   countUnreadInGroupedList,
@@ -99,7 +100,7 @@ export function useNotificationList(
       return result.notifications;
     },
     enabled: enabled && !!user?.uid,
-    staleTime: 1000 * 60 * 2, // 2분
+    staleTime: cachingPolicies.frequent, // 2분
   });
 
   // 스토어 동기화
@@ -377,7 +378,7 @@ export function useNotificationSettingsQuery() {
       return getNotificationSettings(user.uid);
     },
     enabled: !!user?.uid,
-    staleTime: 1000 * 60 * 30, // 30분
+    staleTime: cachingPolicies.stable, // 30분
   });
 
   // 스토어 동기화

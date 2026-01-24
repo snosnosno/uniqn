@@ -8,7 +8,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { getRoleDisplayName } from '@/types/unified';
 
 // 역할 요구사항 호환 타입 (postingConfig + dateRequirement 양쪽 지원)

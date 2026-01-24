@@ -287,7 +287,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
             <Text className="text-lg font-bold text-gray-900 dark:text-white">
               {modalContent?.label}
             </Text>
-            <Pressable onPress={() => setModalContent(null)} className="p-2">
+            <Pressable onPress={() => setModalContent(null)} className="p-2" accessibilityLabel="닫기">
               <Text className="text-2xl text-gray-500 dark:text-gray-400">×</Text>
             </Pressable>
           </View>

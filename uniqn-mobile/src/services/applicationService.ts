@@ -27,6 +27,8 @@ import {
   ApplicationClosedError,
   MaxCapacityReachedError,
   ValidationError,
+  BusinessError,
+  PermissionError,
   ERROR_CODES,
 } from '@/errors';
 import { trackJobApply, trackEvent } from './analyticsService';
@@ -263,24 +265,32 @@ export async function cancelApplication(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new Error('지원 내역을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '지원 내역을 찾을 수 없습니다',
+        });
       }
 
       const applicationData = applicationDoc.data() as Application;
 
       // 본인 확인
       if (applicationData.applicantId !== applicantId) {
-        throw new Error('본인의 지원만 취소할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 지원만 취소할 수 있습니다',
+        });
       }
 
       // 이미 취소된 경우
       if (applicationData.status === 'cancelled') {
-        throw new Error('이미 취소된 지원입니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_CANCELLED, {
+          userMessage: '이미 취소된 지원입니다',
+        });
       }
 
       // 확정된 경우 취소 불가
       if (applicationData.status === 'confirmed') {
-        throw new Error('확정된 지원은 취소할 수 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_CANNOT_CANCEL_CONFIRMED, {
+          userMessage: '확정된 지원은 취소할 수 없습니다. 취소 요청을 이용해주세요.',
+        });
       }
 
       // 지원 취소 처리
@@ -629,31 +639,43 @@ export async function requestCancellation(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new Error('지원 내역을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '지원 내역을 찾을 수 없습니다',
+        });
       }
 
       const applicationData = applicationDoc.data() as Application;
 
       // 1. 본인 확인
       if (applicationData.applicantId !== applicantId) {
-        throw new Error('본인의 지원만 취소 요청할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 지원만 취소 요청할 수 있습니다',
+        });
       }
 
       // 2. 확정된 상태인지 확인
       if (applicationData.status !== 'confirmed') {
         if (applicationData.status === 'applied' || applicationData.status === 'pending') {
-          throw new Error('아직 확정되지 않은 지원은 직접 취소할 수 있습니다');
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
+          });
         }
-        throw new Error('취소 요청이 불가능한 상태입니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '취소 요청이 불가능한 상태입니다',
+        });
       }
 
       // 3. 이미 취소 요청이 있는지 확인
       if (applicationData.cancellationRequest) {
         if (applicationData.cancellationRequest.status === 'pending') {
-          throw new Error('이미 취소 요청이 진행 중입니다');
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
+            userMessage: '이미 취소 요청이 진행 중입니다',
+          });
         }
         if (applicationData.cancellationRequest.status === 'rejected') {
-          throw new Error('이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.');
+          throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
+            userMessage: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
+          });
         }
       }
 
@@ -734,7 +756,9 @@ export async function reviewCancellationRequest(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new Error('지원 내역을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '지원 내역을 찾을 수 없습니다',
+        });
       }
 
       const applicationData = applicationDoc.data() as Application;
@@ -744,22 +768,30 @@ export async function reviewCancellationRequest(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('공고를 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
       }
 
       const jobData = jobDoc.data() as JobPosting;
 
       if (jobData.ownerId !== reviewerId) {
-        throw new Error('본인의 공고에 대한 요청만 검토할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고에 대한 요청만 검토할 수 있습니다',
+        });
       }
 
       // 2. 취소 요청 상태 확인
       if (applicationData.status !== 'cancellation_pending') {
-        throw new Error('검토 대기 중인 취소 요청이 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '검토 대기 중인 취소 요청이 없습니다',
+        });
       }
 
       if (!applicationData.cancellationRequest || applicationData.cancellationRequest.status !== 'pending') {
-        throw new Error('유효한 취소 요청이 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '유효한 취소 요청이 없습니다',
+        });
       }
 
       // 3. 취소 요청 업데이트 (undefined 값은 Firestore에서 허용되지 않음)
@@ -817,7 +849,11 @@ export async function reviewCancellationRequest(
       reviewerId,
     });
 
-    if (error instanceof ValidationError) {
+    if (
+      error instanceof ValidationError ||
+      error instanceof BusinessError ||
+      error instanceof PermissionError
+    ) {
       throw error;
     }
 
@@ -840,12 +876,16 @@ export async function getCancellationRequests(
     // 먼저 공고 소유자 확인
     const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId));
     if (!jobDoc.exists()) {
-      throw new Error('공고를 찾을 수 없습니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '공고를 찾을 수 없습니다',
+      });
     }
 
     const jobData = jobDoc.data() as JobPosting;
     if (jobData.ownerId !== ownerId) {
-      throw new Error('본인의 공고만 조회할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 공고만 조회할 수 있습니다',
+      });
     }
 
     // 취소 요청 대기 중인 지원서 조회
@@ -873,6 +913,11 @@ export async function getCancellationRequests(
     return applications;
   } catch (error) {
     logger.error('취소 요청 목록 조회 실패', error as Error, { jobPostingId });
+
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+
     throw mapFirebaseError(error);
   }
 }
