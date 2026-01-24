@@ -60,8 +60,8 @@ export interface GroupByApplicationOptions {
   minGroupSize?: number;
 }
 
-/** 통계 */
-export interface ScheduleStats {
+/** 병합 통계 (ScheduleMerger 내부용) */
+export interface MergerScheduleStats {
   total: number;
   applied: number;
   confirmed: number;
@@ -103,7 +103,7 @@ export class ScheduleMerger {
   /**
    * WorkLogs와 Applications 병합
    *
-   * @description 같은 eventId + date면 WorkLog 우선
+   * @description 같은 jobPostingId + date면 WorkLog 우선
    *
    * @param workLogSchedules - WorkLog 기반 스케줄
    * @param applicationSchedules - Application 기반 스케줄
@@ -289,8 +289,8 @@ export class ScheduleMerger {
    * @param schedules - 스케줄 배열
    * @returns 통계 객체
    */
-  static calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
-    const stats: ScheduleStats = {
+  static calculateStats(schedules: ScheduleEvent[]): MergerScheduleStats {
+    const stats: MergerScheduleStats = {
       total: schedules.length,
       applied: 0,
       confirmed: 0,

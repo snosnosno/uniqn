@@ -227,8 +227,18 @@ export class RealtimeManager {
     schedulesByMonth: (userId: string, year: number, month: number) =>
       `schedules:${userId}:${year}-${month}`,
 
-    /** 근무 기록 */
+    /** 근무 기록 목록 (staffId 기준) */
     workLogs: (staffId: string) => `workLogs:${staffId}`,
+
+    /** 근무 기록 목록 (staffId + 날짜 범위 기준) */
+    workLogsByRange: (staffId: string, startDate?: string, endDate?: string) =>
+      `workLogs:${staffId}:${startDate ?? 'all'}:${endDate ?? 'all'}`,
+
+    /** 단일 근무 기록 (workLogId 기준) */
+    workLog: (workLogId: string) => `workLog:${workLogId}`,
+
+    /** 오늘 근무 상태 (staffId + date 기준) */
+    todayWorkStatus: (staffId: string, date: string) => `workLogs:today:${staffId}:${date}`,
 
     /** 확정 스태프 목록 */
     confirmedStaff: (jobPostingId: string) => `confirmedStaff:${jobPostingId}`,

@@ -479,7 +479,7 @@ export function subscribeToWorkLog(
   }
 ): Unsubscribe {
   return RealtimeManager.subscribe(
-    RealtimeManager.Keys.workLogs(workLogId),
+    RealtimeManager.Keys.workLog(workLogId),
     () => {
       logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
@@ -518,7 +518,8 @@ export function subscribeToWorkLog(
 /**
  * 내 근무 기록 목록 실시간 구독
  *
- * @description 스케줄 화면에서 실시간 업데이트 수신
+ * @description Phase 12 - RealtimeManager로 중복 구독 방지
+ * 스케줄 화면에서 실시간 업데이트 수신
  *
  * @example
  * const unsubscribe = subscribeToMyWorkLogs(staffId, {
@@ -541,55 +542,59 @@ export function subscribeToMyWorkLogs(
 ): Unsubscribe {
   const { dateRange, pageSize = DEFAULT_PAGE_SIZE, onUpdate, onError } = options;
 
-  logger.info('근무 기록 목록 실시간 구독 시작', { staffId: maskSensitiveId(staffId), dateRange });
+  return RealtimeManager.subscribe(
+    RealtimeManager.Keys.workLogsByRange(staffId, dateRange?.start, dateRange?.end),
+    () => {
+      logger.info('근무 기록 목록 실시간 구독 시작', { staffId: maskSensitiveId(staffId), dateRange });
 
-  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
-  // 쿼리 생성 - 날짜 범위 유무에 따라 분기
-  const q = dateRange
-    ? query(
-        workLogsRef,
-        where('staffId', '==', staffId),
-        where('date', '>=', dateRange.start),
-        where('date', '<=', dateRange.end),
-        orderBy('date', 'desc'),
-        limit(pageSize)
-      )
-    : query(
-        workLogsRef,
-        where('staffId', '==', staffId),
-        orderBy('date', 'desc'),
-        limit(pageSize)
+      // 쿼리 생성 - 날짜 범위 유무에 따라 분기
+      const q = dateRange
+        ? query(
+            workLogsRef,
+            where('staffId', '==', staffId),
+            where('date', '>=', dateRange.start),
+            where('date', '<=', dateRange.end),
+            orderBy('date', 'desc'),
+            limit(pageSize)
+          )
+        : query(
+            workLogsRef,
+            where('staffId', '==', staffId),
+            orderBy('date', 'desc'),
+            limit(pageSize)
+          );
+
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
+            id: docSnap.id,
+            ...docSnap.data(),
+          })) as WorkLog[];
+
+          logger.debug('근무 기록 목록 업데이트 수신', {
+            staffId: maskSensitiveId(staffId),
+            count: workLogs.length,
+          });
+
+          onUpdate(workLogs);
+        },
+        (error) => {
+          logger.error('근무 기록 목록 구독 에러', error, { staffId: maskSensitiveId(staffId) });
+          onError?.(mapFirebaseError(error) as Error);
+        }
       );
-
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      })) as WorkLog[];
-
-      logger.debug('근무 기록 목록 업데이트 수신', {
-        staffId: maskSensitiveId(staffId),
-        count: workLogs.length,
-      });
-
-      onUpdate(workLogs);
-    },
-    (error) => {
-      logger.error('근무 기록 목록 구독 에러', error, { staffId: maskSensitiveId(staffId) });
-      onError?.(mapFirebaseError(error) as Error);
     }
   );
-
-  return unsubscribe;
 }
 
 /**
  * 오늘의 근무 상태 실시간 구독
  *
- * @description 출퇴근 버튼 상태를 실시간으로 업데이트
+ * @description Phase 12 - RealtimeManager로 중복 구독 방지
+ * 출퇴근 버튼 상태를 실시간으로 업데이트
  */
 export function subscribeToTodayWorkStatus(
   staffId: string,
@@ -600,43 +605,46 @@ export function subscribeToTodayWorkStatus(
 ): Unsubscribe {
   const today = formatDateString(new Date());
 
-  logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
+  return RealtimeManager.subscribe(
+    RealtimeManager.Keys.todayWorkStatus(staffId, today),
+    () => {
+      logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
 
-  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-  const q = query(
-    workLogsRef,
-    where('staffId', '==', staffId),
-    where('date', '==', today),
-    where('status', 'in', ['confirmed', 'checked_in']),
-    limit(1)
-  );
+      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+      const q = query(
+        workLogsRef,
+        where('staffId', '==', staffId),
+        where('date', '==', today),
+        where('status', 'in', ['confirmed', 'checked_in']),
+        limit(1)
+      );
 
-  const unsubscribe = onSnapshot(
-    q,
-    (snapshot) => {
-      if (snapshot.empty) {
-        callbacks.onUpdate(null);
-        return;
-      }
+      return onSnapshot(
+        q,
+        (snapshot) => {
+          if (snapshot.empty) {
+            callbacks.onUpdate(null);
+            return;
+          }
 
-      const docSnap = snapshot.docs[0];
-      const workLog: WorkLog = {
-        id: docSnap.id,
-        ...docSnap.data(),
-      } as WorkLog;
+          const docSnap = snapshot.docs[0];
+          const workLog: WorkLog = {
+            id: docSnap.id,
+            ...docSnap.data(),
+          } as WorkLog;
 
-      logger.debug('오늘 근무 상태 업데이트', {
-        staffId: maskSensitiveId(staffId),
-        status: workLog.status,
-      });
+          logger.debug('오늘 근무 상태 업데이트', {
+            staffId: maskSensitiveId(staffId),
+            status: workLog.status,
+          });
 
-      callbacks.onUpdate(workLog);
-    },
-    (error) => {
-      logger.error('오늘 근무 상태 구독 에러', error, { staffId: maskSensitiveId(staffId) });
-      callbacks.onError?.(mapFirebaseError(error) as Error);
+          callbacks.onUpdate(workLog);
+        },
+        (error) => {
+          logger.error('오늘 근무 상태 구독 에러', error, { staffId: maskSensitiveId(staffId) });
+          callbacks.onError?.(mapFirebaseError(error) as Error);
+        }
+      );
     }
   );
-
-  return unsubscribe;
 }

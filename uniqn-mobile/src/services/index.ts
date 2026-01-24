@@ -432,7 +432,7 @@ export type {
   ApplicationGroup,
   GroupByApplicationResult,
   GroupByApplicationOptions,
-  ScheduleStats as ScheduleMergerStats,
+  MergerScheduleStats,
 } from '../domains/schedule';
 
 // Settlement Domain (Phase 6)

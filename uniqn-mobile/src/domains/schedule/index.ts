@@ -12,7 +12,7 @@ export type {
   ApplicationGroup,
   GroupByApplicationResult,
   GroupByApplicationOptions,
-  ScheduleStats,
+  MergerScheduleStats,
 } from './ScheduleMerger';
 
 // WorkLogCreator 타입
