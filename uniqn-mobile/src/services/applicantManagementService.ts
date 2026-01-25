@@ -18,7 +18,13 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, MaxCapacityReachedError } from '@/errors';
+import {
+  mapFirebaseError,
+  MaxCapacityReachedError,
+  BusinessError,
+  PermissionError,
+  ERROR_CODES,
+} from '@/errors';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
 import type {
   Application,
@@ -100,14 +106,18 @@ export async function getApplicantsByJobPosting(
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
-      throw new Error('존재하지 않는 공고입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 공고입니다',
+      });
     }
 
     const jobData = jobDoc.data() as JobPosting;
     // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
     const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
     if (postingOwnerId !== ownerId) {
-      throw new Error('본인의 공고만 조회할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 공고만 조회할 수 있습니다',
+      });
     }
 
     // 지원자 목록 조회
@@ -178,7 +188,10 @@ export async function getApplicantsByJobPosting(
     return { applicants, stats };
   } catch (error) {
     logger.error('지원자 목록 조회 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -205,7 +218,9 @@ export async function confirmApplication(
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
-      throw new Error('존재하지 않는 지원입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 지원입니다',
+      });
     }
 
     const applicationData = applicationDoc.data() as Application;
@@ -232,9 +247,14 @@ export async function confirmApplication(
     };
   } catch (error) {
     logger.error('지원 확정 실패', error as Error, { applicationId: input.applicationId });
-    throw error instanceof Error || error instanceof MaxCapacityReachedError
-      ? error
-      : mapFirebaseError(error);
+    if (
+      error instanceof BusinessError ||
+      error instanceof PermissionError ||
+      error instanceof MaxCapacityReachedError
+    ) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -254,18 +274,24 @@ export async function rejectApplication(
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
-        throw new Error('존재하지 않는 지원입니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 지원입니다',
+        });
       }
 
       const applicationData = applicationDoc.data() as Application;
 
       // 이미 처리된 경우
       if (applicationData.status === 'confirmed') {
-        throw new Error('이미 확정된 지원은 거절할 수 없습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 확정된 지원은 거절할 수 없습니다',
+        });
       }
 
       if (applicationData.status === 'rejected') {
-        throw new Error('이미 거절된 지원입니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 거절된 지원입니다',
+        });
       }
 
       // 공고 소유자 확인
@@ -273,14 +299,18 @@ export async function rejectApplication(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
       }
 
       const jobData = jobDoc.data() as JobPosting;
       // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
       const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
       if (postingOwnerId !== ownerId) {
-        throw new Error('본인의 공고만 관리할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 관리할 수 있습니다',
+        });
       }
 
       // 지원 상태 변경
@@ -296,7 +326,10 @@ export async function rejectApplication(
     logger.info('지원 거절 완료', { applicationId: input.applicationId });
   } catch (error) {
     logger.error('지원 거절 실패', error as Error, { applicationId: input.applicationId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -354,7 +387,9 @@ export async function markApplicationAsRead(
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
-      throw new Error('존재하지 않는 지원입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 지원입니다',
+      });
     }
 
     const applicationData = applicationDoc.data() as Application;
@@ -364,7 +399,9 @@ export async function markApplicationAsRead(
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists() || (jobDoc.data() as JobPosting).ownerId !== ownerId) {
-      throw new Error('본인의 공고만 조회할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 공고만 조회할 수 있습니다',
+      });
     }
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
@@ -375,7 +412,10 @@ export async function markApplicationAsRead(
     });
   } catch (error) {
     logger.error('지원 읽음 처리 실패', error as Error, { applicationId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -425,6 +465,9 @@ export async function getApplicantStatsByRole(
     return statsByRole as Record<StaffRole, ApplicationStats>;
   } catch (error) {
     logger.error('역할별 지원자 통계 조회 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }

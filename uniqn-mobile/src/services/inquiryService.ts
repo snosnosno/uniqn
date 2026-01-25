@@ -24,6 +24,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
+import { ValidationError, ERROR_CODES } from '@/errors';
 import { COLLECTIONS } from '@/constants';
 import type {
   Inquiry,
@@ -99,7 +100,10 @@ export async function fetchMyInquiries(
     const { userId, filters: _filters, pageSize = PAGE_SIZE, lastDoc } = options;
 
     if (!userId) {
-      throw new Error('사용자 ID가 필요합니다');
+      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+        field: 'userId',
+        userMessage: '사용자 ID가 필요합니다',
+      });
     }
 
     // 기본 쿼리

@@ -18,7 +18,12 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import {
+  mapFirebaseError,
+  BusinessError,
+  PermissionError,
+  ERROR_CODES,
+} from '@/errors';
 import { FIREBASE_LIMITS } from '@/constants';
 import { migrateJobPostingForWrite } from './jobPostingMigration';
 import type {
@@ -418,21 +423,27 @@ export async function updateJobPosting(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
       }
 
       const currentData = jobDoc.data() as JobPosting;
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
-        throw new Error('본인의 공고만 수정할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 수정할 수 있습니다',
+        });
       }
 
       // 확정된 지원자가 있는 경우 일정/역할 수정 불가
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       if (hasConfirmedApplicants) {
         if (input.workDate || input.timeSlot || input.roles) {
-          throw new Error('확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다');
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
+          });
         }
       }
 
@@ -485,7 +496,10 @@ export async function updateJobPosting(
     return result;
   } catch (error) {
     logger.error('공고 수정 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -508,20 +522,26 @@ export async function deleteJobPosting(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
       }
 
       const currentData = jobDoc.data() as JobPosting;
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
-        throw new Error('본인의 공고만 삭제할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 삭제할 수 있습니다',
+        });
       }
 
       // 확정된 지원자가 있는 경우 삭제 불가
       const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
       if (hasConfirmedApplicants) {
-        throw new Error('확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요.');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
+        });
       }
 
       // Soft Delete: status를 cancelled로 변경
@@ -534,7 +554,10 @@ export async function deleteJobPosting(
     logger.info('공고 삭제 완료', { jobPostingId });
   } catch (error) {
     logger.error('공고 삭제 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -553,19 +576,25 @@ export async function closeJobPosting(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
       }
 
       const currentData = jobDoc.data() as JobPosting;
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
-        throw new Error('본인의 공고만 마감할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 마감할 수 있습니다',
+        });
       }
 
       // 이미 마감된 경우
       if (currentData.status === 'closed') {
-        throw new Error('이미 마감된 공고입니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 마감된 공고입니다',
+        });
       }
 
       transaction.update(jobRef, {
@@ -577,7 +606,10 @@ export async function closeJobPosting(
     logger.info('공고 마감 완료', { jobPostingId });
   } catch (error) {
     logger.error('공고 마감 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -596,24 +628,32 @@ export async function reopenJobPosting(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('존재하지 않는 공고입니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
       }
 
       const currentData = jobDoc.data() as JobPosting;
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
-        throw new Error('본인의 공고만 재오픈할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 재오픈할 수 있습니다',
+        });
       }
 
       // 활성 상태인 경우
       if (currentData.status === 'active') {
-        throw new Error('이미 활성 상태인 공고입니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 활성 상태인 공고입니다',
+        });
       }
 
       // 취소된 공고는 재오픈 불가
       if (currentData.status === 'cancelled') {
-        throw new Error('삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요.');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요',
+        });
       }
 
       // 고정공고인 경우 expiresAt 갱신 (현재 + 7일)
@@ -636,7 +676,10 @@ export async function reopenJobPosting(
     logger.info('공고 재오픈 완료', { jobPostingId });
   } catch (error) {
     logger.error('공고 재오픈 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 

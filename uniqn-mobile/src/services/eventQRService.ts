@@ -294,7 +294,7 @@ export async function processEventQRCheckIn(
     if (!validation.isValid) {
       throw new InvalidQRCodeError({
         message: validation.errorMessage || 'QR 검증 실패',
-        userMessage: validation.errorMessage || 'QR 코드가 유효하지 않습니다.',
+        userMessage: validation.errorMessage || 'QR 코드가 유효하지 않습니다',
       });
     }
 
@@ -313,8 +313,8 @@ export async function processEventQRCheckIn(
 
     if (snapshot.empty) {
       throw new InvalidQRCodeError({
-        message: '해당 근무 기록을 찾을 수 없습니다.',
-        userMessage: '이 공고에 확정된 스태프가 아닙니다.',
+        message: '해당 근무 기록을 찾을 수 없습니다',
+        userMessage: '이 공고에 확정된 스태프가 아닙니다',
       });
     }
 
@@ -329,8 +329,8 @@ export async function processEventQRCheckIn(
 
       if (!workLogDoc.exists()) {
         throw new InvalidQRCodeError({
-          message: '근무 기록이 존재하지 않습니다.',
-          userMessage: '근무 기록을 찾을 수 없습니다.',
+          message: '근무 기록이 존재하지 않습니다',
+          userMessage: '근무 기록을 찾을 수 없습니다',
         });
       }
 
@@ -341,8 +341,8 @@ export async function processEventQRCheckIn(
         // 출근 처리
         if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
           throw new AlreadyCheckedInError({
-            message: '이미 출근 처리되었습니다.',
-            userMessage: '이미 출근 처리가 완료되었습니다.',
+            message: '이미 출근 처리되었습니다',
+            userMessage: '이미 출근 처리가 완료되었습니다',
             workLogId,
           });
         }
@@ -374,8 +374,8 @@ export async function processEventQRCheckIn(
         // 퇴근 처리
         if (workLog.status !== 'checked_in') {
           throw new NotCheckedInError({
-            message: '먼저 출근 처리가 필요합니다.',
-            userMessage: '출근 처리 후 퇴근할 수 있습니다.',
+            message: '먼저 출근 처리가 필요합니다',
+            userMessage: '출근 처리 후 퇴근할 수 있습니다',
           });
         }
 

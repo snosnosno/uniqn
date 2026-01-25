@@ -21,7 +21,12 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import {
+  mapFirebaseError,
+  BusinessError,
+  PermissionError,
+  ERROR_CODES,
+} from '@/errors';
 import type {
   JobPostingTemplate,
   CreateTemplateInput,
@@ -146,7 +151,9 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
-      throw new Error('존재하지 않는 템플릿입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 템플릿입니다',
+      });
     }
 
     // 사용 통계 업데이트 (비동기, 에러 무시)
@@ -167,7 +174,10 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
     return template;
   } catch (error) {
     logger.error('템플릿 불러오기 실패', error as Error, { templateId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -188,14 +198,18 @@ export async function deleteTemplate(
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
-      throw new Error('존재하지 않는 템플릿입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 템플릿입니다',
+      });
     }
 
     const template = docSnapshot.data() as Omit<JobPostingTemplate, 'id'>;
 
     // 본인 확인
     if (template.createdBy !== userId) {
-      throw new Error('본인의 템플릿만 삭제할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 템플릿만 삭제할 수 있습니다',
+      });
     }
 
     await deleteDoc(docRef);
@@ -203,7 +217,10 @@ export async function deleteTemplate(
     logger.info('템플릿 삭제 완료', { templateId });
   } catch (error) {
     logger.error('템플릿 삭제 실패', error as Error, { templateId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -226,14 +243,18 @@ export async function updateTemplate(
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
-      throw new Error('존재하지 않는 템플릿입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 템플릿입니다',
+      });
     }
 
     const template = docSnapshot.data() as Omit<JobPostingTemplate, 'id'>;
 
     // 본인 확인
     if (template.createdBy !== userId) {
-      throw new Error('본인의 템플릿만 수정할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 템플릿만 수정할 수 있습니다',
+      });
     }
 
     const updateData: Record<string, unknown> = {};
@@ -255,6 +276,9 @@ export async function updateTemplate(
     logger.info('템플릿 업데이트 완료', { templateId });
   } catch (error) {
     logger.error('템플릿 업데이트 실패', error as Error, { templateId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }

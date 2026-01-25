@@ -30,7 +30,12 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { AuthError, ERROR_CODES, mapFirebaseError } from '@/errors';
+import {
+  AuthError,
+  BusinessError,
+  ERROR_CODES,
+  mapFirebaseError,
+} from '@/errors';
 import {
   trackLogin,
   trackSignup,
@@ -445,9 +450,9 @@ export async function signInWithApple(): Promise<AuthResult> {
   // const oAuthCredential = OAuthProvider.credential('apple.com', credential.identityToken);
   // const userCredential = await signInWithCredential(getFirebaseAuth(), oAuthCredential);
 
-  throw new Error(
-    'Apple 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다. 출시 전 구현 필요.'
-  );
+  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+    userMessage: 'Apple 로그인은 아직 준비 중입니다. 다른 로그인 방식을 이용해주세요',
+  });
 }
 
 /**
@@ -475,9 +480,9 @@ export async function signInWithGoogle(): Promise<AuthResult> {
   // const googleCredential = GoogleAuthProvider.credential(idToken);
   // const userCredential = await signInWithCredential(getFirebaseAuth(), googleCredential);
 
-  throw new Error(
-    'Google 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다.'
-  );
+  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+    userMessage: 'Google 로그인은 아직 준비 중입니다. 다른 로그인 방식을 이용해주세요',
+  });
 }
 
 /**
@@ -503,9 +508,9 @@ export async function signInWithKakao(): Promise<AuthResult> {
   // const token = await kakaoLogin();
   // Firebase Custom Token 방식 또는 Functions 연동 필요
 
-  throw new Error(
-    '카카오 로그인은 프로덕션 환경에서 아직 구현되지 않았습니다.'
-  );
+  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+    userMessage: '카카오 로그인은 아직 준비 중입니다. 다른 로그인 방식을 이용해주세요',
+  });
 }
 
 // ============================================================================

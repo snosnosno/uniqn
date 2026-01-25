@@ -62,7 +62,7 @@ export async function createReport(input: CreateReportInput): Promise<string> {
   const user = auth.currentUser;
   if (!user) {
     throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다.',
+      userMessage: '인증이 필요합니다',
     });
   }
 
@@ -263,7 +263,7 @@ export async function getMyReports(): Promise<Report[]> {
   const user = auth.currentUser;
   if (!user) {
     throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다.',
+      userMessage: '인증이 필요합니다',
     });
   }
 
@@ -344,7 +344,7 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
   const user = auth.currentUser;
   if (!user) {
     throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다.',
+      userMessage: '인증이 필요합니다',
     });
   }
 

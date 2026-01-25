@@ -19,7 +19,13 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import {
+  mapFirebaseError,
+  BusinessError,
+  PermissionError,
+  ERROR_CODES,
+  AlreadySettledError,
+} from '@/errors';
 import { FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
@@ -207,13 +213,17 @@ export async function getWorkLogsByJobPosting(
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
-      throw new Error('존재하지 않는 공고입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 공고입니다',
+      });
     }
 
     const jobPosting = jobDoc.data() as JobPosting;
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new Error('본인의 공고만 조회할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 공고만 조회할 수 있습니다',
+      });
     }
 
     // 2. 근무 기록 쿼리 생성
@@ -284,7 +294,10 @@ export async function getWorkLogsByJobPosting(
     return workLogs;
   } catch (error) {
     logger.error('공고별 근무 기록 조회 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -308,7 +321,9 @@ export async function calculateSettlement(
     const workLogDoc = await getDoc(workLogRef);
 
     if (!workLogDoc.exists()) {
-      throw new Error('근무 기록을 찾을 수 없습니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '근무 기록을 찾을 수 없습니다',
+      });
     }
 
     const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
@@ -319,13 +334,17 @@ export async function calculateSettlement(
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
-      throw new Error('공고를 찾을 수 없습니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '공고를 찾을 수 없습니다',
+      });
     }
 
     const jobPosting = jobDoc.data() as JobPosting;
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new Error('본인의 공고에 대한 정산만 계산할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 공고에 대한 정산만 계산할 수 있습니다',
+      });
     }
 
     // 3. 급여/수당/세금 정보 조회 (개별 오버라이드 우선)
@@ -361,7 +380,10 @@ export async function calculateSettlement(
     return result;
   } catch (error) {
     logger.error('정산 금액 계산 실패', error as Error, { workLogId: input.workLogId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -383,7 +405,9 @@ export async function updateWorkTime(
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
@@ -394,18 +418,22 @@ export async function updateWorkTime(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('공고를 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
       }
 
       const jobPosting = jobDoc.data() as JobPosting;
 
       if (jobPosting.ownerId !== ownerId) {
-        throw new Error('본인의 공고에 대한 근무 기록만 수정할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고에 대한 근무 기록만 수정할 수 있습니다',
+        });
       }
 
       // 3. 이미 정산 완료된 경우 수정 불가
       if (workLog.payrollStatus === 'completed') {
-        throw new Error('이미 정산 완료된 근무 기록은 수정할 수 없습니다');
+        throw new AlreadySettledError();
       }
 
       // 4. 수정 데이터 준비 (checkInTime/checkOutTime 사용, null = 미정)
@@ -465,7 +493,10 @@ export async function updateWorkTime(
     logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
   } catch (error) {
     logger.error('근무 시간 수정 실패', error as Error, { input });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -487,7 +518,9 @@ export async function settleWorkLog(
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
@@ -498,23 +531,29 @@ export async function settleWorkLog(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('공고를 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
       }
 
       const jobPosting = jobDoc.data() as JobPosting;
 
       if (jobPosting.ownerId !== ownerId) {
-        throw new Error('본인의 공고에 대한 정산만 처리할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고에 대한 정산만 처리할 수 있습니다',
+        });
       }
 
       // 3. 출퇴근 완료 여부 확인
       if (workLog.status !== 'checked_out' && workLog.status !== 'completed') {
-        throw new Error('출퇴근이 완료된 근무 기록만 정산할 수 있습니다');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '출퇴근이 완료된 근무 기록만 정산할 수 있습니다',
+        });
       }
 
       // 4. 중복 정산 방지
       if (workLog.payrollStatus === 'completed') {
-        throw new Error('이미 정산 완료된 근무 기록입니다');
+        throw new AlreadySettledError();
       }
 
       // 5. 정산 처리
@@ -544,11 +583,17 @@ export async function settleWorkLog(
   } catch (error) {
     logger.error('개별 정산 처리 실패', error as Error, { input });
 
+    const message = error instanceof BusinessError || error instanceof PermissionError
+      ? error.userMessage
+      : error instanceof Error
+        ? error.message
+        : '정산 처리에 실패했습니다';
+
     return {
       success: false,
       workLogId: input.workLogId,
       amount: 0,
-      message: error instanceof Error ? error.message : '정산 처리에 실패했습니다',
+      message,
     };
   }
 }
@@ -718,7 +763,10 @@ export async function bulkSettlement(
     return result;
   } catch (error) {
     logger.error('일괄 정산 처리 실패', error as Error, { workLogCount: input.workLogIds.length });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -741,7 +789,9 @@ export async function updateSettlementStatus(
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
@@ -752,13 +802,17 @@ export async function updateSettlementStatus(
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
-        throw new Error('공고를 찾을 수 없습니다');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
       }
 
       const jobPosting = jobDoc.data() as JobPosting;
 
       if (jobPosting.ownerId !== ownerId) {
-        throw new Error('본인의 공고에 대한 정산만 처리할 수 있습니다');
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고에 대한 정산만 처리할 수 있습니다',
+        });
       }
 
       // 3. 상태 업데이트
@@ -777,7 +831,10 @@ export async function updateSettlementStatus(
     logger.info('정산 상태 변경 완료', { workLogId, status });
   } catch (error) {
     logger.error('정산 상태 변경 실패', error as Error, { workLogId, status });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 
@@ -798,13 +855,17 @@ export async function getJobPostingSettlementSummary(
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {
-      throw new Error('존재하지 않는 공고입니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 공고입니다',
+      });
     }
 
     const jobPosting = jobDoc.data() as JobPosting;
 
     if (jobPosting.ownerId !== ownerId) {
-      throw new Error('본인의 공고만 조회할 수 있습니다');
+      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+        userMessage: '본인의 공고만 조회할 수 있습니다',
+      });
     }
 
     // 2. 근무 기록 조회
@@ -906,7 +967,10 @@ export async function getJobPostingSettlementSummary(
     return summary;
   } catch (error) {
     logger.error('공고별 정산 요약 조회 실패', error as Error, { jobPostingId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError || error instanceof PermissionError) {
+      throw error;
+    }
+    throw mapFirebaseError(error);
   }
 }
 

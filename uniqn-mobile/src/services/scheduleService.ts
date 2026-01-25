@@ -637,7 +637,7 @@ export async function getMySchedules(
         staffId,
       });
       throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
-        userMessage: '스케줄을 불러올 수 없습니다. 네트워크 연결을 확인해주세요.',
+        userMessage: '스케줄을 불러올 수 없습니다. 네트워크 연결을 확인해주세요',
       });
     }
 

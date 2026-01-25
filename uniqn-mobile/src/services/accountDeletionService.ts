@@ -25,7 +25,12 @@ import {
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, AuthError } from '@/errors';
+import {
+  mapFirebaseError,
+  AuthError,
+  BusinessError,
+  ERROR_CODES,
+} from '@/errors';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
@@ -186,19 +191,25 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
     const userDoc = await getDoc(userRef);
 
     if (!userDoc.exists()) {
-      throw new Error('사용자를 찾을 수 없습니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '사용자를 찾을 수 없습니다',
+      });
     }
 
     const userData = userDoc.data();
     const deletionRequest = userData.deletionRequest as DeletionRequest | undefined;
 
     if (!deletionRequest || deletionRequest.status !== 'pending') {
-      throw new Error('진행 중인 탈퇴 요청이 없습니다');
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '진행 중인 탈퇴 요청이 없습니다',
+      });
     }
 
     // 유예 기간 확인
     if (deletionRequest.scheduledDeletionAt.toDate() < new Date()) {
-      throw new Error('탈퇴 유예 기간이 만료되었습니다');
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '탈퇴 유예 기간이 만료되었습니다',
+      });
     }
 
     // 탈퇴 취소
@@ -211,6 +222,9 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
     logger.info('회원탈퇴 철회 완료', { userId });
   } catch (error) {
     logger.error('회원탈퇴 철회 실패', error as Error, { userId });
+    if (error instanceof BusinessError) {
+      throw error;
+    }
     throw mapFirebaseError(error);
   }
 }
@@ -272,7 +286,9 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
     // 1. 프로필 정보
     const profile = await getMyData(userId);
     if (!profile) {
-      throw new Error('사용자를 찾을 수 없습니다');
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '사용자를 찾을 수 없습니다',
+      });
     }
 
     // 2. 지원 내역
@@ -321,6 +337,9 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
     return exportData;
   } catch (error) {
     logger.error('데이터 내보내기 실패', error as Error, { userId });
+    if (error instanceof BusinessError) {
+      throw error;
+    }
     throw mapFirebaseError(error);
   }
 }

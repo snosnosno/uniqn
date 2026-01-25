@@ -30,7 +30,11 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import {
+  mapFirebaseError,
+  BusinessError,
+  ERROR_CODES,
+} from '@/errors';
 import {
   workLogToConfirmedStaff,
   groupStaffByDate,
@@ -252,7 +256,9 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다.');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
@@ -284,6 +290,9 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
     logger.info('스태프 역할 변경 완료', { workLogId: input.workLogId });
   } catch (error) {
     logger.error('스태프 역할 변경 실패', error as Error, { ...input });
+    if (error instanceof BusinessError) {
+      throw error;
+    }
     throw mapFirebaseError(error);
   }
 }
@@ -308,7 +317,9 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다.');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog & {
@@ -361,6 +372,9 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
     logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
   } catch (error) {
     logger.error('근무 시간 수정 실패', error as Error, { workLogId: input.workLogId });
+    if (error instanceof BusinessError) {
+      throw error;
+    }
     throw mapFirebaseError(error);
   }
 }
@@ -386,20 +400,26 @@ export async function deleteConfirmedStaff(
       // WorkLog 조회
       const workLogDoc = await transaction.get(workLogRef);
       if (!workLogDoc.exists()) {
-        throw new Error('근무 기록을 찾을 수 없습니다.');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록을 찾을 수 없습니다',
+        });
       }
 
       const workLog = workLogDoc.data() as WorkLog;
 
       // 이미 출퇴근한 경우 삭제 불가
       if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
-        throw new Error('이미 출퇴근한 스태프는 삭제할 수 없습니다.');
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 출퇴근한 스태프는 삭제할 수 없습니다',
+        });
       }
 
       // JobPosting 조회
       const jobPostingDoc = await transaction.get(jobPostingRef);
       if (!jobPostingDoc.exists()) {
-        throw new Error('공고를 찾을 수 없습니다.');
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
       }
 
       // 1. WorkLog 상태를 cancelled로 변경 (완전 삭제 대신)
@@ -437,6 +457,9 @@ export async function deleteConfirmedStaff(
     logger.info('확정 스태프 삭제 완료', { ...input });
   } catch (error) {
     logger.error('확정 스태프 삭제 실패', error as Error, { ...input });
+    if (error instanceof BusinessError) {
+      throw error;
+    }
     throw mapFirebaseError(error);
   }
 }

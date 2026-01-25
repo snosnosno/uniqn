@@ -1311,21 +1311,26 @@ Day 4+: 정리 (선택적)
 
 ### ✅ Phase 2 완료 기준
 
-**코드 변경**:
+**Phase 2A - @deprecated 추가 (완료)**:
+- [x] 타입 파일에 @deprecated 주석 추가 (9곳)
+- [x] IdNormalizer 호환성 레이어 적용
+- [x] `npm run type-check` 에러 0개
+- [x] `npm run lint` 에러 0개
+
+**Phase 2B - 필드명 변경 (Firestore 마이그레이션 후)**:
 - [ ] 타입 파일 8개 인터페이스에서 `eventId` → `jobPostingId`
 - [ ] 서비스 파일 6개에서 31개 위치 수정
 - [ ] 스키마 파일 3개 수정
 - [ ] 훅 파일 2개 수정
-- [ ] `npm run type-check` 에러 0개
-- [ ] `npm run lint` 에러 0개
+- [ ] Firestore 마이그레이션 완료
 
-**데이터 마이그레이션**:
+**데이터 마이그레이션** (Phase 2B):
 - [ ] Firestore 백업 완료
 - [ ] workLogs 컬렉션 마이그레이션 완료
 - [ ] eventQRCodes 컬렉션 마이그레이션 완료
 - [ ] 검증 스크립트 통과 (pending: 0)
 
-**기능 테스트**:
+**기능 테스트** (Phase 2B):
 - [ ] 스케줄 탭 정상 표시
 - [ ] QR 출퇴근 정상 동작
 - [ ] 정산 금액 정상 계산
@@ -1747,7 +1752,14 @@ export const useCancelApplication = () => {
 
 ---
 
-### Phase 9: 레거시 필드 정리
+### ~~Phase 9: 레거시 필드 정리~~ (삭제됨)
+
+> **2025-01-20 계획 변경**: Firestore 스키마 변경 허용으로 Phase 9 삭제
+> - LegacyFieldHelper 불필요 (Phase 2에서 직접 마이그레이션)
+> - 레거시 필드 처리가 IdNormalizer로 통합됨
+
+<details>
+<summary>원본 계획 (참고용)</summary>
 
 **목표**: deprecated 필드 타입에서 제거하고 마이그레이션 헬퍼 제공
 
@@ -1833,6 +1845,8 @@ export const userRoleSchema = z.enum(['admin', 'employer', 'staff'], {
 // 다른 파일에서 import
 import { userRoleSchema } from './common.schema';
 ```
+
+</details>
 
 ---
 
@@ -2192,11 +2206,15 @@ src/domains/application/index.ts
 src/domains/staff/index.ts
 
 # utils/format/ (포맷팅 통합)
-src/utils/format/date.ts
-src/utils/format/currency.ts
-src/utils/format/time.ts
-src/utils/format/role.ts                     🆕
-src/utils/format/index.ts
+# ⚠️ 폴더 미생성 - 기존 파일에 이미 통합되어 있음:
+# - src/utils/formatters.ts (currency, role, phone 등)
+# - src/utils/dateUtils.ts (date, time)
+# 아래는 원본 계획 (미실행):
+# src/utils/format/date.ts
+# src/utils/format/currency.ts
+# src/utils/format/time.ts
+# src/utils/format/role.ts
+# src/utils/format/index.ts
 
 # __tests__/ (테스트)
 src/shared/__tests__/StatusMapper.test.ts    🆕 Phase 13
@@ -3766,11 +3784,11 @@ Phase 4 (역할 처리) 완료 후: ✅ 2025-01-21 완료
 ☑ RoleResolver.resolveStaffRoles() 구현 (role/roles/roleIds/customRole 통합)
 ☑ 역할 처리 테스트 통과 (66개 테스트)
 
-Phase 11 (에러 처리) 완료 후:
-☐ hookErrorHandler 적용 (20+ 파일)
-☐ requireAuth() 헬퍼 적용
-☐ createMutationErrorHandler() 적용
-☐ 사용자 메시지 일관성 확인
+Phase 11 (에러 처리) 완료 후: ✅ 완료
+☑ hookErrorHandler.ts 생성 (src/shared/errors/)
+☑ createMutationErrorHandler() 구현
+☑ requireAuth() 타입 가드 구현
+☑ extractErrorMessage(), canRetry(), needsReauth() 유틸리티
 
 Phase 6 (정산) 완료 후: ✅ 2025-01-21 완료
 ☑ SettlementCalculator.calculate() 구현 (시간/급여/수당/세금 통합)
@@ -3780,15 +3798,15 @@ Phase 6 (정산) 완료 후: ✅ 2025-01-21 완료
 ☑ SettlementCache 구현 (5분 TTL, inputHash 기반 변경 감지)
 ☑ 정산 계산 테스트 통과 (44개 테스트)
 
-Phase 12 (실시간) 완료 후:
-☐ WorkLogSubscriptionManager 적용
-☐ 중복 구독 제거 확인
-☐ 구독 해제 정상 동작 확인
+Phase 12 (실시간) 완료 후: ✅ 완료
+☑ RealtimeManager.ts 생성
+☑ 참조 카운트 기반 구독 관리
+☑ Keys 헬퍼로 일관된 키 패턴
 
-Phase 8 (Query) 완료 후:
-☐ invalidationTriggers 적용
-☐ 서비스에서 트리거 호출 연동
-☐ 캐시 무효화 정상 동작 확인
+Phase 8 (Query) 완료 후: ✅ 완료
+☑ invalidateQueries 객체 통합 (queryClient.ts:440-469)
+☑ 12개 도메인별 무효화 함수
+☑ 복합 무효화: staffManagement(), tournamentApproval()
 
 Phase 5 (스케줄) 완료 후: ✅ 2025-01-21 완료
 ☑ ScheduleMerger.merge() 구현 (WorkLog 우선 병합, 날짜 범위 필터)
