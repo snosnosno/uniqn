@@ -32,10 +32,11 @@ import {
 } from '@/hooks/useSettlement';
 
 // createMockJobPosting is available for future tests
-void import('../mocks/factories').then(m => m.createMockJobPosting);
+// NOTE: Dynamic imports removed due to Jest compatibility issues
+// import { createMockJobPosting } from '../mocks/factories';
 
 // useMySettlementSummary is available for future tests
-void import('@/hooks/useSettlement').then(m => m.useMySettlementSummary);
+// import { useMySettlementSummary } from '@/hooks/useSettlement';
 
 jest.mock('@/lib/firebase', () => ({
   db: {},

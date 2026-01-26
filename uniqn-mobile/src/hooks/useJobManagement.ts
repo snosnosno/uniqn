@@ -164,6 +164,10 @@ export function useUpdateJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.detail(params.jobPostingId),
       });
+      // 공고 목록 캐시 무효화 (구직자 화면 동기화)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.lists(),
+      });
     },
     onError: (error) => {
       logger.error('공고 수정 실패', error as Error);
@@ -242,6 +246,10 @@ export function useCloseJobPosting() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.detail(jobPostingId),
       });
+      // 공고 목록 캐시 무효화 (구직자 화면 동기화)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.lists(),
+      });
     },
     onError: (error) => {
       logger.error('공고 마감 실패', error as Error);
@@ -278,6 +286,10 @@ export function useReopenJobPosting() {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.detail(jobPostingId),
+      });
+      // 공고 목록 캐시 무효화 (구직자 화면 동기화)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.lists(),
       });
     },
     onError: (error) => {

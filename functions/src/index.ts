@@ -54,14 +54,14 @@ export { expireFixedPostings } from './scheduled/expireFixedPostings';
 export { onFixedPostingExpired } from './triggers/onFixedPostingExpired';
 
 // --- Existing Functions (placeholders for brevity) ---
-export const onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });
-export const onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { /* ... */ });
+export const onApplicationStatusChange = functions.region('asia-northeast3').firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });
+export const onJobPostingCreated = functions.region('asia-northeast3').firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { /* ... */ });
 
 /**
  * Firestore trigger that automatically validates and fixes job posting data
  * when a new job posting is created or updated
  */
-export const validateJobPostingData = functions.firestore.document("jobPostings/{postId}").onWrite(async (change, context) => {
+export const validateJobPostingData = functions.region('asia-northeast3').firestore.document("jobPostings/{postId}").onWrite(async (change, context) => {
     const postId = context.params.postId;
     
     // Skip if document was deleted
@@ -123,13 +123,13 @@ export const validateJobPostingData = functions.firestore.document("jobPostings/
         }
     }
 });
-export const matchDealersToEvent = functions.https.onCall(async (data, context) => { /* ... */ });
-export const assignDealerToEvent = functions.https.onCall(async (data, context) => { /* ... */ });
-export const generateEventQrToken = functions.https.onCall(async (data, context) => { /* ... */ });
-export const recordAttendance = functions.https.onCall(async (data, context) => { /* ... */ });
-export const calculatePayrollsForEvent = functions.https.onCall(async (data, context) => { /* ... */ });
-export const getPayrolls = functions.https.onCall(async (data, context) => { /* ... */ });
-export const submitDealerRating = functions.https.onCall(async (data, context) => { /* ... */ });
+export const matchDealersToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
+export const assignDealerToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
+export const generateEventQrToken = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
+export const recordAttendance = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
+export const calculatePayrollsForEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
+export const getPayrolls = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
+export const submitDealerRating = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
 
 // --- Data Migration Functions ---
 
@@ -137,7 +137,7 @@ export const submitDealerRating = functions.https.onCall(async (data, context) =
  * Migrates existing job postings to include requiredRoles and proper date formats
  * Only callable by admin users
  */
-export const migrateJobPostings = functions.https.onCall(async (data, context) => {
+export const migrateJobPostings = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     // Check admin permissions
     if (context.auth?.token?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can run data migrations.');
@@ -231,7 +231,7 @@ export const migrateJobPostings = functions.https.onCall(async (data, context) =
  * - Managers are created as disabled and await admin approval.
  * - Passes extra data (phone, gender) via displayName for the trigger.
  */
-export const requestRegistration = functions.https.onCall(async (data) => {
+export const requestRegistration = functions.region('asia-northeast3').https.onCall(async (data) => {
     functions.logger.info("requestRegistration called with data:", data);
 
     const { email, password, name, nickname, role, phone, gender, consents } = data;
@@ -343,7 +343,7 @@ export const requestRegistration = functions.https.onCall(async (data) => {
  * Processes a registration request for a manager, either approving or rejecting it.
  * Only callable by an admin.
  */
-export const processRegistration = functions.https.onCall(async (data, context) => {
+export const processRegistration = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     if (context.auth?.token?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can process registration requests.');
     }
@@ -382,7 +382,7 @@ export const processRegistration = functions.https.onCall(async (data, context) 
 /**
  * Creates a new user account, stores details in Firestore, and sets a custom role claim.
  */
-export const createUserAccount = functions.https.onCall(async (data, context) => {
+export const createUserAccount = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     if (context.auth?.token?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can create new user accounts.');
     }
@@ -415,7 +415,7 @@ export const createUserAccount = functions.https.onCall(async (data, context) =>
  * when a new user is created in Firebase Authentication.
  * This handles all user creation sources and parses extra data from the displayName.
  */
-export const createUserData = functions.auth.user().onCreate(async (user) => {
+export const createUserData = functions.region('asia-northeast3').auth.user().onCreate(async (user) => {
     const { uid, email, displayName, phoneNumber } = user;
     const userRef = db.collection("users").doc(uid);
 
@@ -487,7 +487,7 @@ export const createUserData = functions.auth.user().onCreate(async (user) => {
  * Firestore trigger that automatically sets a custom user claim whenever a user's role is
  * created or changed in the 'users' collection.
  */
-export const onUserRoleChange = functions.firestore.document('users/{uid}').onWrite(async (change, context) => {
+export const onUserRoleChange = functions.region('asia-northeast3').firestore.document('users/{uid}').onWrite(async (change, context) => {
     const { uid } = context.params;
     const newRole = change.after.exists ? change.after.data()?.role : null;
     const oldRole = change.before.exists ? change.before.data()?.role : null;
@@ -510,7 +510,7 @@ export const onUserRoleChange = functions.firestore.document('users/{uid}').onWr
 
 // --- Dashboard Functions ---
 
-export const getDashboardStats = functions.https.onRequest((request, response) => {
+export const getDashboardStats = functions.region('asia-northeast3').https.onRequest((request, response) => {
   corsHandler(request, response, async () => {
     try {
       const now = new Date();
@@ -554,7 +554,7 @@ export const getDashboardStats = functions.https.onRequest((request, response) =
  * Updates an existing user's details.
  * Only callable by an admin.
  */
-export const updateUser = functions.https.onCall(async (data, context) => {
+export const updateUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     if (context.auth?.token?.role !== 'admin') {
         functions.logger.error("updateUser denied", { auth: context.auth });
         throw new functions.https.HttpsError('permission-denied', 'Only admins can update users.');
@@ -581,7 +581,7 @@ export const updateUser = functions.https.onCall(async (data, context) => {
  * Deletes a user from Firebase Authentication and Firestore.
  * Only callable by an admin.
  */
-export const deleteUser = functions.https.onCall(async (data, context) => {
+export const deleteUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     if (context.auth?.token?.role !== 'admin') {
         functions.logger.error("deleteUser denied", { auth: context.auth });
         throw new functions.https.HttpsError('permission-denied', 'Only admins can delete users.');
@@ -612,7 +612,7 @@ export const deleteUser = functions.https.onCall(async (data, context) => {
  * Logs user actions for audit trail and analytics purposes.
  * This is a "fire-and-forget" function - it should not block the client.
  */
-export const logAction = functions.https.onCall(async (data, context) => {
+export const logAction = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     try {
         const { action, details = {} } = data;
         
@@ -663,7 +663,7 @@ export const logAction = functions.https.onCall(async (data, context) => {
  * Alternative HTTP endpoint version of logAction for cases where onCall doesn't work
  * This handles CORS properly for direct HTTP requests
  */
-export const logActionHttp = functions.https.onRequest((request, response) => {
+export const logActionHttp = functions.region('asia-northeast3').https.onRequest((request, response) => {
     corsHandler(request, response, async () => {
         try {
             if (request.method !== 'POST') {
@@ -710,7 +710,7 @@ export const logActionHttp = functions.https.onRequest((request, response) => {
 /**
  * Automatically updates applicantCount in job postings when applications are created/deleted
  */
-export const updateJobPostingApplicantCount = functions.firestore
+export const updateJobPostingApplicantCount = functions.region('asia-northeast3').firestore
     .document('applications/{applicationId}')
     .onWrite(async (change, context) => {
         const applicationData = change.after.exists ? change.after.data() : null;
@@ -749,7 +749,7 @@ export const updateJobPostingApplicantCount = functions.firestore
 /**
  * Automatically updates participantCount in events when participants are added/removed
  */
-export const updateEventParticipantCount = functions.firestore
+export const updateEventParticipantCount = functions.region('asia-northeast3').firestore
     .document('participants/{participantId}')
     .onWrite(async (change, context) => {
         const participantData = change.after.exists ? change.after.data() : null;

@@ -102,6 +102,42 @@ jest.mock('@/utils/logger', () => ({
 
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
+  ERROR_CODES: {
+    FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
+    FIREBASE_PERMISSION_DENIED: 'E4001',
+    BUSINESS_INVALID_STATE: 'E6042',
+  },
+  BusinessError: class BusinessError extends Error {
+    public userMessage: string;
+    public code: string;
+    constructor(code: string, options?: { userMessage?: string }) {
+      const message = options?.userMessage || code;
+      super(message);
+      this.name = 'BusinessError';
+      this.code = code;
+      this.userMessage = message;
+    }
+  },
+  PermissionError: class PermissionError extends Error {
+    public userMessage: string;
+    public code: string;
+    constructor(code: string, options?: { userMessage?: string }) {
+      const message = options?.userMessage || code;
+      super(message);
+      this.name = 'PermissionError';
+      this.code = code;
+      this.userMessage = message;
+    }
+  },
+  AlreadySettledError: class AlreadySettledError extends Error {
+    public userMessage: string;
+    constructor(options?: { userMessage?: string }) {
+      const defaultMessage = '이미 정산 완료된 근무 기록입니다';
+      super(options?.userMessage || defaultMessage);
+      this.name = 'AlreadySettledError';
+      this.userMessage = options?.userMessage || defaultMessage;
+    }
+  },
 }));
 
 // ============================================================================

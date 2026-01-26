@@ -103,13 +103,13 @@ Object.defineProperty(exports, "expireFixedPostings", { enumerable: true, get: f
 var onFixedPostingExpired_1 = require("./triggers/onFixedPostingExpired");
 Object.defineProperty(exports, "onFixedPostingExpired", { enumerable: true, get: function () { return onFixedPostingExpired_1.onFixedPostingExpired; } });
 // --- Existing Functions (placeholders for brevity) ---
-exports.onApplicationStatusChange = functions.firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { });
-exports.onJobPostingCreated = functions.firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { });
+exports.onApplicationStatusChange = functions.region('asia-northeast3').firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { });
+exports.onJobPostingCreated = functions.region('asia-northeast3').firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { });
 /**
  * Firestore trigger that automatically validates and fixes job posting data
  * when a new job posting is created or updated
  */
-exports.validateJobPostingData = functions.firestore.document("jobPostings/{postId}").onWrite(async (change, context) => {
+exports.validateJobPostingData = functions.region('asia-northeast3').firestore.document("jobPostings/{postId}").onWrite(async (change, context) => {
     const postId = context.params.postId;
     // Skip if document was deleted
     if (!change.after.exists) {
@@ -161,19 +161,19 @@ exports.validateJobPostingData = functions.firestore.document("jobPostings/{post
         }
     }
 });
-exports.matchDealersToEvent = functions.https.onCall(async (data, context) => { });
-exports.assignDealerToEvent = functions.https.onCall(async (data, context) => { });
-exports.generateEventQrToken = functions.https.onCall(async (data, context) => { });
-exports.recordAttendance = functions.https.onCall(async (data, context) => { });
-exports.calculatePayrollsForEvent = functions.https.onCall(async (data, context) => { });
-exports.getPayrolls = functions.https.onCall(async (data, context) => { });
-exports.submitDealerRating = functions.https.onCall(async (data, context) => { });
+exports.matchDealersToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
+exports.assignDealerToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
+exports.generateEventQrToken = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
+exports.recordAttendance = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
+exports.calculatePayrollsForEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
+exports.getPayrolls = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
+exports.submitDealerRating = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
 // --- Data Migration Functions ---
 /**
  * Migrates existing job postings to include requiredRoles and proper date formats
  * Only callable by admin users
  */
-exports.migrateJobPostings = functions.https.onCall(async (data, context) => {
+exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     var _a, _b;
     // Check admin permissions
     if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
@@ -250,7 +250,7 @@ exports.migrateJobPostings = functions.https.onCall(async (data, context) => {
  * - Managers are created as disabled and await admin approval.
  * - Passes extra data (phone, gender) via displayName for the trigger.
  */
-exports.requestRegistration = functions.https.onCall(async (data) => {
+exports.requestRegistration = functions.region('asia-northeast3').https.onCall(async (data) => {
     var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     functions.logger.info("requestRegistration called with data:", data);
     const { email, password, name, nickname, role, phone, gender, consents } = data;
@@ -336,7 +336,7 @@ exports.requestRegistration = functions.https.onCall(async (data) => {
  * Processes a registration request for a manager, either approving or rejecting it.
  * Only callable by an admin.
  */
-exports.processRegistration = functions.https.onCall(async (data, context) => {
+exports.processRegistration = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     var _a, _b, _c;
     if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can process registration requests.');
@@ -374,7 +374,7 @@ exports.processRegistration = functions.https.onCall(async (data, context) => {
 /**
  * Creates a new user account, stores details in Firestore, and sets a custom role claim.
  */
-exports.createUserAccount = functions.https.onCall(async (data, context) => {
+exports.createUserAccount = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     var _a, _b;
     if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can create new user accounts.');
@@ -404,7 +404,7 @@ exports.createUserAccount = functions.https.onCall(async (data, context) => {
  * when a new user is created in Firebase Authentication.
  * This handles all user creation sources and parses extra data from the displayName.
  */
-exports.createUserData = functions.auth.user().onCreate(async (user) => {
+exports.createUserData = functions.region('asia-northeast3').auth.user().onCreate(async (user) => {
     const { uid, email, displayName, phoneNumber } = user;
     const userRef = db.collection("users").doc(uid);
     functions.logger.info(`New user: ${email} (UID: ${uid}). Parsing displayName: "${displayName}"`);
@@ -455,7 +455,7 @@ exports.createUserData = functions.auth.user().onCreate(async (user) => {
  * Firestore trigger that automatically sets a custom user claim whenever a user's role is
  * created or changed in the 'users' collection.
  */
-exports.onUserRoleChange = functions.firestore.document('users/{uid}').onWrite(async (change, context) => {
+exports.onUserRoleChange = functions.region('asia-northeast3').firestore.document('users/{uid}').onWrite(async (change, context) => {
     var _a, _b;
     const { uid } = context.params;
     const newRole = change.after.exists ? (_a = change.after.data()) === null || _a === void 0 ? void 0 : _a.role : null;
@@ -475,7 +475,7 @@ exports.onUserRoleChange = functions.firestore.document('users/{uid}').onWrite(a
     }
 });
 // --- Dashboard Functions ---
-exports.getDashboardStats = functions.https.onRequest((request, response) => {
+exports.getDashboardStats = functions.region('asia-northeast3').https.onRequest((request, response) => {
     corsHandler(request, response, async () => {
         try {
             const now = new Date();
@@ -509,7 +509,7 @@ exports.getDashboardStats = functions.https.onRequest((request, response) => {
  * Updates an existing user's details.
  * Only callable by an admin.
  */
-exports.updateUser = functions.https.onCall(async (data, context) => {
+exports.updateUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     var _a, _b;
     if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
         functions.logger.error("updateUser denied", { auth: context.auth });
@@ -533,7 +533,7 @@ exports.updateUser = functions.https.onCall(async (data, context) => {
  * Deletes a user from Firebase Authentication and Firestore.
  * Only callable by an admin.
  */
-exports.deleteUser = functions.https.onCall(async (data, context) => {
+exports.deleteUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     var _a, _b;
     if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
         functions.logger.error("deleteUser denied", { auth: context.auth });
@@ -560,7 +560,7 @@ exports.deleteUser = functions.https.onCall(async (data, context) => {
  * Logs user actions for audit trail and analytics purposes.
  * This is a "fire-and-forget" function - it should not block the client.
  */
-exports.logAction = functions.https.onCall(async (data, context) => {
+exports.logAction = functions.region('asia-northeast3').https.onCall(async (data, context) => {
     var _a, _b, _c, _d, _e, _f, _g;
     try {
         const { action, details = {} } = data;
@@ -604,7 +604,7 @@ exports.logAction = functions.https.onCall(async (data, context) => {
  * Alternative HTTP endpoint version of logAction for cases where onCall doesn't work
  * This handles CORS properly for direct HTTP requests
  */
-exports.logActionHttp = functions.https.onRequest((request, response) => {
+exports.logActionHttp = functions.region('asia-northeast3').https.onRequest((request, response) => {
     corsHandler(request, response, async () => {
         try {
             if (request.method !== 'POST') {
@@ -643,7 +643,7 @@ exports.logActionHttp = functions.https.onRequest((request, response) => {
 /**
  * Automatically updates applicantCount in job postings when applications are created/deleted
  */
-exports.updateJobPostingApplicantCount = functions.firestore
+exports.updateJobPostingApplicantCount = functions.region('asia-northeast3').firestore
     .document('applications/{applicationId}')
     .onWrite(async (change, context) => {
     const applicationData = change.after.exists ? change.after.data() : null;
@@ -675,7 +675,7 @@ exports.updateJobPostingApplicantCount = functions.firestore
 /**
  * Automatically updates participantCount in events when participants are added/removed
  */
-exports.updateEventParticipantCount = functions.firestore
+exports.updateEventParticipantCount = functions.region('asia-northeast3').firestore
     .document('participants/{participantId}')
     .onWrite(async (change, context) => {
     const participantData = change.after.exists ? change.after.data() : null;

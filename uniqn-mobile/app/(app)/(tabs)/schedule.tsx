@@ -527,6 +527,7 @@ export default function ScheduleScreen() {
         onRequestCancellation={handleRequestCancellation}
         groupedSchedule={selectedGroupedSchedule}
         onDateChange={handleModalDateChange}
+        onRefreshSchedule={refresh}
       />
 
       {/* QR 스캐너 */}

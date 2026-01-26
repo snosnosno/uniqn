@@ -105,7 +105,7 @@ describe('Mock Factories', () => {
       const application = createMockApplication();
 
       expect(application.id).toBe('application-1');
-      expect(application.status).toBe('pending');
+      expect(application.status).toBe('applied');
     });
 
     it('should allow overriding status', () => {

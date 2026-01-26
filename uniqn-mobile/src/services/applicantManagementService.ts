@@ -15,6 +15,8 @@ import {
   orderBy,
   runTransaction,
   serverTimestamp,
+  onSnapshot,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -23,6 +25,9 @@ import {
   MaxCapacityReachedError,
   BusinessError,
   PermissionError,
+  AuthError,
+  isPermissionError,
+  isAuthError,
   ERROR_CODES,
 } from '@/errors';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
@@ -472,4 +477,200 @@ export async function getApplicantStatsByRole(
     }
     throw mapFirebaseError(error);
   }
+}
+
+// ============================================================================
+// 실시간 구독 (Realtime Subscription)
+// ============================================================================
+
+export interface SubscribeToApplicantsCallbacks {
+  onUpdate: (result: ApplicantListResult) => void;
+  onError?: (error: Error) => void;
+}
+
+/**
+ * 공고 소유권 검증 (구독 전 권한 확인용)
+ *
+ * @returns true: 소유자, false: 비소유자 또는 공고 없음
+ */
+export async function verifyJobPostingOwnership(
+  jobPostingId: string,
+  ownerId: string
+): Promise<boolean> {
+  try {
+    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
+    const jobDoc = await getDoc(jobRef);
+
+    if (!jobDoc.exists()) {
+      return false;
+    }
+
+    const jobData = jobDoc.data() as JobPosting;
+    const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+
+    return postingOwnerId === ownerId;
+  } catch (error) {
+    logger.error('공고 소유권 검증 실패', error as Error, { jobPostingId, ownerId });
+    return false;
+  }
+}
+
+/**
+ * 공고별 지원자 목록 실시간 구독 (구인자용)
+ *
+ * @description onSnapshot을 사용하여 지원자 목록을 실시간으로 구독합니다.
+ *              새 지원이 들어오거나 상태가 변경되면 즉시 콜백이 호출됩니다.
+ *
+ * @note 치명적 에러(권한, 인증) 발생 시 자동으로 구독이 해제됩니다.
+ *
+ * @returns Unsubscribe 함수 (컴포넌트 언마운트 시 호출 필요)
+ */
+export function subscribeToApplicants(
+  jobPostingId: string,
+  ownerId: string,
+  callbacks: SubscribeToApplicantsCallbacks
+): Unsubscribe {
+  logger.info('지원자 목록 실시간 구독 시작', { jobPostingId, ownerId });
+
+  const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+  const q = query(
+    applicationsRef,
+    where('jobPostingId', '==', jobPostingId),
+    orderBy('createdAt', 'desc')
+  );
+
+  // 공고 정보 캐싱 (소유권 확인 및 지원자 데이터에 포함)
+  let cachedJobPosting: JobPosting | null = null;
+  let isOwnerVerified = false;
+  let unsubscribeFn: Unsubscribe | null = null;
+
+  /**
+   * 치명적 에러 시 구독 자동 해제 (W5)
+   */
+  const handleFatalError = (error: Error) => {
+    if (isPermissionError(error) || isAuthError(error)) {
+      logger.warn('치명적 에러로 구독 자동 해제', {
+        errorCode: (error as PermissionError | AuthError).code,
+        jobPostingId,
+      });
+      unsubscribeFn?.();
+    }
+    callbacks.onError?.(error);
+  };
+
+  unsubscribeFn = onSnapshot(
+    q,
+    async (snapshot) => {
+      try {
+        // 첫 호출 시 공고 소유자 확인
+        if (!isOwnerVerified) {
+          const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
+          const jobDoc = await getDoc(jobRef);
+
+          if (!jobDoc.exists()) {
+            const error = new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+              userMessage: '존재하지 않는 공고입니다',
+            });
+            callbacks.onError?.(error);
+            return;
+          }
+
+          const jobData = jobDoc.data() as JobPosting;
+          const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+
+          if (postingOwnerId !== ownerId) {
+            const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+              userMessage: '본인의 공고만 조회할 수 있습니다',
+            });
+            // 권한 에러는 치명적 → 자동 해제
+            handleFatalError(error);
+            return;
+          }
+
+          cachedJobPosting = { ...jobData, id: jobDoc.id } as JobPosting;
+          isOwnerVerified = true;
+        }
+
+        // 지원자 목록 처리
+        const applicants: ApplicantWithDetails[] = [];
+        const stats: ApplicationStats = {
+          total: 0,
+          applied: 0,
+          pending: 0,
+          confirmed: 0,
+          rejected: 0,
+          cancelled: 0,
+          completed: 0,
+          cancellationPending: 0,
+        };
+
+        snapshot.docs.forEach((docSnapshot) => {
+          const application = {
+            ...docSnapshot.data(),
+            id: docSnapshot.id,
+            jobPosting: cachedJobPosting,
+          } as ApplicantWithDetails;
+
+          applicants.push(application);
+
+          // 통계 집계
+          stats.total++;
+          const statsKey = STATUS_TO_STATS_KEY[application.status];
+          if (statsKey && statsKey !== 'total') {
+            stats[statsKey]++;
+          }
+        });
+
+        logger.debug('지원자 목록 실시간 업데이트', {
+          jobPostingId,
+          count: applicants.length,
+          stats,
+        });
+
+        callbacks.onUpdate({ applicants, stats });
+      } catch (error) {
+        logger.error('지원자 목록 실시간 구독 처리 실패', error as Error, { jobPostingId });
+        handleFatalError(error as Error);
+      }
+    },
+    (firebaseError) => {
+      logger.error('지원자 목록 실시간 구독 에러', firebaseError, { jobPostingId });
+      const appError = mapFirebaseError(firebaseError);
+
+      // Firebase 에러도 치명적 에러 여부 확인 후 처리
+      handleFatalError(appError as Error);
+    }
+  );
+
+  return () => unsubscribeFn?.();
+}
+
+/**
+ * 비동기 권한 검증 후 지원자 목록 실시간 구독 (S1)
+ *
+ * @description 구독 전 권한을 먼저 확인하여 불필요한 구독을 방지합니다.
+ *              권한이 없으면 onSnapshot을 호출하지 않고 즉시 에러를 반환합니다.
+ *
+ * @returns Promise<Unsubscribe> - 구독 해제 함수
+ */
+export async function subscribeToApplicantsAsync(
+  jobPostingId: string,
+  ownerId: string,
+  callbacks: SubscribeToApplicantsCallbacks
+): Promise<Unsubscribe> {
+  // 1. 구독 전 권한 검증
+  const isOwner = await verifyJobPostingOwnership(jobPostingId, ownerId);
+
+  if (!isOwner) {
+    const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      userMessage: '해당 공고의 소유자가 아닙니다',
+    });
+    logger.warn('구독 전 권한 검증 실패', { jobPostingId, ownerId });
+    callbacks.onError?.(error);
+    return () => {}; // 빈 unsubscribe 반환
+  }
+
+  // 2. 권한 확인 후 구독 시작
+  logger.info('구독 전 권한 검증 통과, 구독 시작', { jobPostingId, ownerId });
+  return subscribeToApplicants(jobPostingId, ownerId, callbacks);
 }

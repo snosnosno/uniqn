@@ -166,9 +166,21 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       DEFAULT_TAX_SETTINGS;
   }, [schedule.settlementBreakdown?.taxSettings, schedule.customTaxSettings, schedule.jobPostingCard?.taxSettings]);
 
-  // 정산 계산 (세금 포함) - settlementBreakdown 우선 사용
+  // 정산 계산 (세금 포함)
+  // 우선순위: 실제 시간 재계산 > settlementBreakdown > 예정 시간 계산
   const settlement = useMemo(() => {
-    // 미리 계산된 settlementBreakdown이 있으면 그대로 사용 (중복 계산 방지)
+    // 1. 실제 출퇴근 시간이 있으면 항상 최신 시간으로 재계산 (시간 수정 시 즉시 반영)
+    if (schedule.checkInTime && schedule.checkOutTime) {
+      return calculateSettlementWithTax(
+        schedule.checkInTime,
+        schedule.checkOutTime,
+        salaryInfo,
+        allowances,
+        taxSettings
+      );
+    }
+
+    // 2. 미리 계산된 settlementBreakdown이 있으면 사용 (출퇴근 시간 없는 경우)
     if (schedule.settlementBreakdown) {
       return {
         hoursWorked: schedule.settlementBreakdown.hoursWorked,
@@ -180,19 +192,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       };
     }
 
-    // 폴백: 직접 계산 (하위 호환성)
-    // 실제 출퇴근 시간이 있으면 실제 금액 계산
-    if (schedule.checkInTime && schedule.checkOutTime) {
-      return calculateSettlementWithTax(
-        schedule.checkInTime,
-        schedule.checkOutTime,
-        salaryInfo,
-        allowances,
-        taxSettings
-      );
-    }
-
-    // 예정 시간으로 예상 금액 계산
+    // 3. 예정 시간으로 예상 금액 계산 (폴백)
     if (schedule.startTime && schedule.endTime) {
       return calculateSettlementWithTax(
         schedule.startTime,

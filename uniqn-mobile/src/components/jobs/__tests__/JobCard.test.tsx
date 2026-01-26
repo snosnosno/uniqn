@@ -244,8 +244,8 @@ describe('JobCard', () => {
       <JobCard job={jobWithAllowances} onPress={mockOnPress} />
     );
 
-    expect(getByText(/식비: 10,000원/)).toBeTruthy();
-    expect(getByText(/교통비: 5,000원/)).toBeTruthy();
+    expect(getByText(/식비 10,000원/)).toBeTruthy();
+    expect(getByText(/교통비 5,000원/)).toBeTruthy();
   });
 
   it('should not render allowances when not provided', () => {

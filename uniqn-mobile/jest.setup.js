@@ -2,17 +2,63 @@
  * UNIQN Mobile - Jest Setup
  *
  * @description Global test setup and mocks
- * @version 1.0.0
+ * @version 2.0.0 - Centralized Firebase/Expo mocks
  */
 
 /* eslint-disable no-undef */
 /* eslint-disable @typescript-eslint/no-require-imports */
 /* eslint-disable @typescript-eslint/no-empty-function */
 
+// ============================================================================
+// Expo Linking Mock (MUST be before any service imports)
+// deepLinkService 초기화 문제 해결
+// ============================================================================
+jest.mock('expo-linking', () => ({
+  createURL: jest.fn((path) => `uniqn://${path || ''}`),
+  parse: jest.fn((_url) => ({ path: '', queryParams: {} })),
+  addEventListener: jest.fn(() => ({ remove: jest.fn() })),
+  removeEventListener: jest.fn(),
+  getInitialURL: jest.fn(() => Promise.resolve(null)),
+  canOpenURL: jest.fn(() => Promise.resolve(true)),
+  openURL: jest.fn(() => Promise.resolve()),
+  openSettings: jest.fn(() => Promise.resolve()),
+}));
+
 // Mock AsyncStorage
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock')
 );
+
+// Mock @react-native-community/netinfo
+jest.mock('@react-native-community/netinfo', () => ({
+  addEventListener: jest.fn(() => jest.fn()),
+  fetch: jest.fn(() =>
+    Promise.resolve({
+      type: 'wifi',
+      isConnected: true,
+      isInternetReachable: true,
+      details: { isConnectionExpensive: false },
+    })
+  ),
+  configure: jest.fn(),
+  useNetInfo: jest.fn(() => ({
+    type: 'wifi',
+    isConnected: true,
+    isInternetReachable: true,
+    details: { isConnectionExpensive: false },
+  })),
+  NetInfoStateType: {
+    unknown: 'unknown',
+    none: 'none',
+    cellular: 'cellular',
+    wifi: 'wifi',
+    bluetooth: 'bluetooth',
+    ethernet: 'ethernet',
+    wimax: 'wimax',
+    vpn: 'vpn',
+    other: 'other',
+  },
+}));
 
 // Mock expo-secure-store
 jest.mock('expo-secure-store', () => ({
@@ -103,35 +149,136 @@ jest.mock('firebase/auth', () => ({
   }),
 }));
 
+// ============================================================================
+// Firebase Firestore Mock (with class-based Timestamp for instanceof support)
+// ============================================================================
+
+// MockTimestamp 클래스 정의 (instanceof 체크 지원)
+class MockTimestamp {
+  constructor(seconds, nanoseconds = 0) {
+    this._seconds = seconds;
+    this._nanoseconds = nanoseconds;
+  }
+
+  get seconds() {
+    return this._seconds;
+  }
+
+  get nanoseconds() {
+    return this._nanoseconds;
+  }
+
+  toDate() {
+    return new Date(this._seconds * 1000 + this._nanoseconds / 1000000);
+  }
+
+  toMillis() {
+    return this._seconds * 1000 + this._nanoseconds / 1000000;
+  }
+
+  isEqual(other) {
+    return this._seconds === other._seconds && this._nanoseconds === other._nanoseconds;
+  }
+
+  static now() {
+    const now = Date.now();
+    return new MockTimestamp(Math.floor(now / 1000), (now % 1000) * 1000000);
+  }
+
+  static fromDate(date) {
+    const ms = date.getTime();
+    return new MockTimestamp(Math.floor(ms / 1000), (ms % 1000) * 1000000);
+  }
+
+  static fromMillis(milliseconds) {
+    return new MockTimestamp(Math.floor(milliseconds / 1000), (milliseconds % 1000) * 1000000);
+  }
+}
+
+// 전역으로 MockTimestamp 노출 (테스트에서 참조 가능)
+global.MockTimestamp = MockTimestamp;
+
 jest.mock('firebase/firestore', () => ({
   getFirestore: jest.fn(() => ({})),
-  collection: jest.fn(),
-  doc: jest.fn(),
+  collection: jest.fn((db, path) => ({ path })),
+  collectionGroup: jest.fn((db, collectionId) => ({ collectionId })),
+  doc: jest.fn((db, ...pathSegments) => ({
+    id: pathSegments[pathSegments.length - 1] || 'mock-doc-id',
+    path: pathSegments.join('/'),
+  })),
   getDoc: jest.fn(),
   getDocs: jest.fn(),
   setDoc: jest.fn(),
   updateDoc: jest.fn(),
   deleteDoc: jest.fn(),
-  query: jest.fn(),
-  where: jest.fn(),
-  orderBy: jest.fn(),
-  limit: jest.fn(),
+  addDoc: jest.fn(),
+  query: jest.fn((collectionRef, ...constraints) => ({ collectionRef, constraints })),
+  where: jest.fn((field, op, value) => ({ type: 'where', field, op, value })),
+  orderBy: jest.fn((field, direction = 'asc') => ({ type: 'orderBy', field, direction })),
+  limit: jest.fn((n) => ({ type: 'limit', n })),
+  limitToLast: jest.fn((n) => ({ type: 'limitToLast', n })),
+  startAt: jest.fn((...values) => ({ type: 'startAt', values })),
+  startAfter: jest.fn((...values) => ({ type: 'startAfter', values })),
+  endAt: jest.fn((...values) => ({ type: 'endAt', values })),
+  endBefore: jest.fn((...values) => ({ type: 'endBefore', values })),
   onSnapshot: jest.fn((query, callback) => {
     callback({ docs: [] });
     return jest.fn();
   }),
-  serverTimestamp: jest.fn(() => new Date()),
-  Timestamp: {
-    now: jest.fn(() => ({ toDate: () => new Date() })),
-    fromDate: jest.fn((date) => ({ toDate: () => date })),
-  },
+  runTransaction: jest.fn(),
+  writeBatch: jest.fn(() => ({
+    set: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+    commit: jest.fn(() => Promise.resolve()),
+  })),
+  serverTimestamp: jest.fn(() => ({ _serverTimestamp: true })),
+  increment: jest.fn((n) => ({ _increment: n })),
+  arrayUnion: jest.fn((...elements) => ({ _arrayUnion: elements })),
+  arrayRemove: jest.fn((...elements) => ({ _arrayRemove: elements })),
+  deleteField: jest.fn(() => ({ _deleteField: true })),
+  Timestamp: MockTimestamp,
 }));
 
 jest.mock('firebase/storage', () => ({
   getStorage: jest.fn(() => ({})),
-  ref: jest.fn(),
-  uploadBytes: jest.fn(),
-  getDownloadURL: jest.fn(),
+  ref: jest.fn((storage, path) => ({ path })),
+  uploadBytes: jest.fn(() => Promise.resolve({ ref: { fullPath: 'mock-path' } })),
+  uploadBytesResumable: jest.fn(() => ({
+    on: jest.fn(),
+    snapshot: { ref: { fullPath: 'mock-path' } },
+  })),
+  getDownloadURL: jest.fn(() => Promise.resolve('https://mock-download-url.com/file')),
+  deleteObject: jest.fn(() => Promise.resolve()),
+  listAll: jest.fn(() => Promise.resolve({ items: [], prefixes: [] })),
+}));
+
+jest.mock('firebase/functions', () => ({
+  getFunctions: jest.fn(() => ({})),
+  httpsCallable: jest.fn((_functions, _name) => jest.fn(() => Promise.resolve({ data: {} }))),
+  connectFunctionsEmulator: jest.fn(),
+}));
+
+// ============================================================================
+// @/lib/firebase Mock (Internal Firebase Library)
+// ============================================================================
+jest.mock('@/lib/firebase', () => ({
+  db: {},
+  auth: {},
+  storage: {},
+  functions: {},
+  getFirebaseDb: jest.fn(() => ({})),
+  getFirebaseAuth: jest.fn(() => ({
+    currentUser: null,
+    onAuthStateChanged: jest.fn((callback) => {
+      callback(null);
+      return jest.fn();
+    }),
+  })),
+  getFirebaseStorage: jest.fn(() => ({})),
+  getFirebaseFunctions: jest.fn(() => ({})),
+  initializeFirebase: jest.fn(() => Promise.resolve()),
+  isFirebaseInitialized: jest.fn(() => true),
 }));
 
 // Mock @tanstack/react-query

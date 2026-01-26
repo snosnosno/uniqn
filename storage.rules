@@ -27,6 +27,11 @@ service firebase.storage {
       return request.auth.token.role == 'admin' || request.auth.token.role == 'manager';
     }
 
+    // 구인자 확인 (employer 또는 admin) - 공고 작성 권한
+    function canPostJobs() {
+      return request.auth.token.role == 'employer' || request.auth.token.role == 'admin';
+    }
+
     // 이미지 파일 검증
     function isValidImage() {
       return request.resource.contentType.matches('image/(jpeg|jpg|png|gif|webp)');
@@ -53,19 +58,20 @@ service firebase.storage {
     }
 
     // ================= Job Posting Images =================
-    // 공고 이미지 - 공고 작성자가 업로드
+    // 공고 이미지 - employer/admin만 업로드 가능 (DoS 방지)
     match /job-postings/{postingId}/{allPaths=**} {
       // 읽기: 모든 인증된 사용자
       allow read: if isSignedIn();
 
-      // 쓰기: 인증된 사용자 + 10MB 제한 + 이미지만
-      // (구체적인 공고 작성자 권한은 Firestore에서 검증)
+      // 쓰기: employer/admin만 + 10MB 제한 + 이미지만
+      // Custom Claims의 role 필드로 권한 검증
       allow create, update: if isSignedIn()
+                            && canPostJobs()
                             && isUnderSizeLimit(10)
                             && isValidImage();
 
-      // 삭제: 인증된 사용자 (Firestore에서 권한 검증)
-      allow delete: if isSignedIn();
+      // 삭제: employer/admin만
+      allow delete: if isSignedIn() && canPostJobs();
     }
 
     // ================= Announcements =================

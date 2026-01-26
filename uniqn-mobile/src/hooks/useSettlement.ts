@@ -85,6 +85,7 @@ export function useMySettlementSummary(dateRange?: { start: string; end: string 
  * 정산 금액 계산 훅
  */
 export function useCalculateSettlement() {
+  const queryClient = useQueryClient();
   const { user } = useAuthStore();
 
   return useMutation({
@@ -98,6 +99,10 @@ export function useCalculateSettlement() {
       logger.info('정산 금액 계산 완료', {
         workLogId: result.workLogId,
         netPay: result.netPay,
+      });
+      // 정산 캐시 무효화 (계산 결과 즉시 반영)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.settlement.all,
       });
     },
     onError: (error) => {
@@ -138,6 +143,10 @@ export function useUpdateWorkTime() {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.workLogs.all,
+      });
+      // 스케줄 캐시 무효화 (ScheduleDetailModal 탭 간 동기화)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.schedules.all,
       });
     },
     onError: (error) => {

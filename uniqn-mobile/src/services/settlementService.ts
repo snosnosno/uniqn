@@ -439,6 +439,8 @@ export async function updateWorkTime(
       // 4. 수정 데이터 준비 (checkInTime/checkOutTime 사용, null = 미정)
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),
+        // 시간 수정 시 기존 정산 계산 무효화 (재계산 필요)
+        settlementBreakdown: null,
       };
 
       // checkInTime 설정 (undefined면 건드리지 않음, null이면 미정으로 저장)

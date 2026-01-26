@@ -27,8 +27,10 @@ jest.mock('firebase/firestore', () => ({
   serverTimestamp: jest.fn(() => ({ _seconds: Date.now() / 1000 })),
   increment: jest.fn((n) => n),
 }));
+const mockDb = {};
 jest.mock('@/lib/firebase', () => ({
-  db: {},
+  db: mockDb,
+  getFirebaseDb: () => mockDb,
 }));
 jest.mock('@/utils/logger', () => ({
   logger: {

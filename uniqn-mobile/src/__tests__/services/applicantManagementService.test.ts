@@ -60,8 +60,10 @@ jest.mock('firebase/firestore', () => ({
   },
 }));
 
+const mockDb = {};
 jest.mock('@/lib/firebase', () => ({
-  db: {},
+  db: mockDb,
+  getFirebaseDb: () => mockDb,
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -75,6 +77,44 @@ jest.mock('@/utils/logger', () => ({
 
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
+  ERROR_CODES: {
+    FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
+    FIREBASE_PERMISSION_DENIED: 'E4001',
+    BUSINESS_INVALID_STATE: 'E6042',
+  },
+  BusinessError: class BusinessError extends Error {
+    public userMessage: string;
+    public code: string;
+    constructor(code: string, options?: { userMessage?: string }) {
+      const message = options?.userMessage || code;
+      super(message);
+      this.name = 'BusinessError';
+      this.code = code;
+      this.userMessage = message;
+    }
+  },
+  PermissionError: class PermissionError extends Error {
+    public userMessage: string;
+    public code: string;
+    constructor(code: string, options?: { userMessage?: string }) {
+      const message = options?.userMessage || code;
+      super(message);
+      this.name = 'PermissionError';
+      this.code = code;
+      this.userMessage = message;
+    }
+  },
+  ValidationError: class ValidationError extends Error {
+    public userMessage: string;
+    public code: string;
+    constructor(code: string, options?: { userMessage?: string }) {
+      const message = options?.userMessage || code;
+      super(message);
+      this.name = 'ValidationError';
+      this.code = code;
+      this.userMessage = message;
+    }
+  },
   MaxCapacityReachedError: class MaxCapacityReachedError extends Error {
     public userMessage: string;
     public jobPostingId: string;
@@ -258,6 +298,12 @@ describe('applicantManagementService', () => {
 
       const mockWorkLogRef = { id: 'worklog-new' };
 
+      // Mock the initial getDoc call (before transaction)
+      mockGetDoc.mockResolvedValueOnce({
+        exists: () => true,
+        data: () => application,
+      });
+
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
           get: jest.fn()
@@ -296,6 +342,21 @@ describe('applicantManagementService', () => {
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'confirmed',
+        // Service checks confirmationHistory for active confirmation, not just status
+        confirmationHistory: [
+          {
+            status: 'confirmed',
+            confirmedAt: new Date().toISOString(),
+            confirmedBy: 'employer-1',
+            workLogIds: ['wl-1'],
+          },
+        ],
+      });
+
+      // Mock the initial getDoc call (before transaction)
+      mockGetDoc.mockResolvedValueOnce({
+        exists: () => true,
+        data: () => application,
       });
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
@@ -331,6 +392,12 @@ describe('applicantManagementService', () => {
         status: 'applied',
       });
 
+      // Mock the initial getDoc call (before transaction)
+      mockGetDoc.mockResolvedValueOnce({
+        exists: () => true,
+        data: () => application,
+      });
+
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
           get: jest.fn()
@@ -361,6 +428,12 @@ describe('applicantManagementService', () => {
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
+      });
+
+      // Mock the initial getDoc call (before transaction)
+      mockGetDoc.mockResolvedValueOnce({
+        exists: () => true,
+        data: () => application,
       });
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
@@ -492,6 +565,17 @@ describe('applicantManagementService', () => {
         status: 'applied',
       });
 
+      // Mock the initial getDoc calls (before each transaction)
+      mockGetDoc
+        .mockResolvedValueOnce({
+          exists: () => true,
+          data: () => application1,
+        })
+        .mockResolvedValueOnce({
+          exists: () => true,
+          data: () => application2,
+        });
+
       let callCount = 0;
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         callCount++;
@@ -536,7 +620,27 @@ describe('applicantManagementService', () => {
       const application2 = createMockApplicationWithDetails({
         id: 'app-2',
         status: 'confirmed', // already confirmed - will fail
+        // Service checks confirmationHistory for active confirmation
+        confirmationHistory: [
+          {
+            status: 'confirmed',
+            confirmedAt: new Date().toISOString(),
+            confirmedBy: 'employer-1',
+            workLogIds: ['wl-existing'],
+          },
+        ],
       });
+
+      // Mock the initial getDoc calls (before each transaction)
+      mockGetDoc
+        .mockResolvedValueOnce({
+          exists: () => true,
+          data: () => application1,
+        })
+        .mockResolvedValueOnce({
+          exists: () => true,
+          data: () => application2,
+        });
 
       let callCount = 0;
       mockRunTransaction.mockImplementation(async (_db, callback) => {

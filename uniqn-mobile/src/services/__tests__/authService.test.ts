@@ -36,6 +36,13 @@ jest.mock('@/utils/logger', () => ({
     debug: jest.fn(),
   },
 }));
+jest.mock('../analyticsService', () => ({
+  trackLogin: jest.fn(),
+  trackSignup: jest.fn(),
+  trackLogout: jest.fn(),
+  setUserId: jest.fn(),
+  setUserProperties: jest.fn(),
+}));
 
 const mockSignInWithEmailAndPassword = signInWithEmailAndPassword as jest.Mock;
 const mockCreateUserWithEmailAndPassword = createUserWithEmailAndPassword as jest.Mock;
@@ -66,6 +73,7 @@ describe('AuthService', () => {
     const mockUser = {
       uid: 'test-uid',
       email: 'test@example.com',
+      getIdToken: jest.fn(() => Promise.resolve('mock-token')),
     };
 
     const mockProfile = {

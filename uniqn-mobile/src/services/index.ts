@@ -181,6 +181,9 @@ export {
 // Applicant Management Service (구인자용 지원자 관리)
 export {
   getApplicantsByJobPosting,
+  subscribeToApplicants,
+  subscribeToApplicantsAsync,
+  verifyJobPostingOwnership,
   confirmApplication,
   rejectApplication,
   bulkConfirmApplications,
@@ -190,6 +193,7 @@ export {
   type ApplicantListResult,
   type ConfirmResult,
   type BulkConfirmResult,
+  type SubscribeToApplicantsCallbacks,
 } from './applicantManagementService';
 
 // Settlement Service (구인자용 정산 관리)

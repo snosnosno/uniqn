@@ -7,7 +7,7 @@
  * @version 1.2.0
  */
 
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { Modal, Badge, Button } from '@/components/ui';
 import {
@@ -47,6 +47,8 @@ export interface ScheduleDetailModalProps {
   groupedSchedule?: GroupedScheduleEvent | null;
   /** 그룹 내 날짜 변경 콜백 */
   onDateChange?: (date: string, schedule: ScheduleEvent) => void;
+  /** 스케줄 데이터 리페치 콜백 (탭 간 동기화용) */
+  onRefreshSchedule?: () => void;
 }
 
 type TabId = 'info' | 'work' | 'settlement';
@@ -68,6 +70,9 @@ const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | '
   cancelled: { label: '취소', variant: 'error' },
 };
 
+/** 중복 리페치 방지를 위한 쿨다운 (3초) */
+const REFETCH_COOLDOWN_MS = 3000;
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -81,6 +86,7 @@ export function ScheduleDetailModal({
   onRequestCancellation,
   groupedSchedule,
   onDateChange,
+  onRefreshSchedule,
 }: ScheduleDetailModalProps) {
   const [activeTab, setActiveTab] = useState<TabId>('info');
 
@@ -91,6 +97,9 @@ export function ScheduleDetailModal({
 
   const { addToast } = useToastStore();
   const modal = useModal();
+
+  // 중복 리페치 방지를 위한 마지막 리페치 시간
+  const lastRefetchTimeRef = useRef<number>(0);
 
   // 그룹 모드 관련 상태
   const isGroupMode = !!groupedSchedule && groupedSchedule.dateRange.totalDays > 1;
@@ -123,16 +132,33 @@ export function ScheduleDetailModal({
     }
   }, [isGroupMode, currentDateIndex, groupedSchedule, onDateChange]);
 
-  // 모달 열릴 때 첫 번째 탭으로 리셋
+  // 쿨다운을 적용한 리페치 함수
+  const triggerRefresh = useCallback(() => {
+    if (!onRefreshSchedule) return;
+
+    const now = Date.now();
+    if (now - lastRefetchTimeRef.current >= REFETCH_COOLDOWN_MS) {
+      lastRefetchTimeRef.current = now;
+      onRefreshSchedule();
+    }
+  }, [onRefreshSchedule]);
+
+  // 모달 열릴 때 첫 번째 탭으로 리셋 + 데이터 리프레시
   useEffect(() => {
     if (visible) {
       setActiveTab('info');
+      // 모달 열릴 때 데이터 리프레시 요청 (쿨다운 적용)
+      triggerRefresh();
     }
-  }, [visible]);
+  }, [visible, triggerRefresh]);
 
   const handleTabPress = useCallback((tabId: TabId) => {
     setActiveTab(tabId);
-  }, []);
+    // 정산탭으로 전환 시 데이터 리프레시 요청 (쿨다운 적용)
+    if (tabId === 'settlement') {
+      triggerRefresh();
+    }
+  }, [triggerRefresh]);
 
   // 지원 취소 핸들러 (확인 모달)
   const handleCancelApplication = useCallback(() => {
