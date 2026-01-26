@@ -128,9 +128,9 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
                   {slot.roles.map((role, roleIdx) => {
                     // RoleRequirement → CardRole-like 변환
                     const cardRole: CardRole = {
-                      role: role.role ?? role.name ?? '',
+                      role: role.role ?? '',
                       customRole: role.customRole,
-                      count: role.headcount ?? role.count ?? 0,
+                      count: role.headcount ?? 0,
                       filled: role.filled ?? 0,
                     };
                     return (
@@ -241,11 +241,10 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     });
   }, [job.id, job.title, job.location, job.workDate, toggleBookmark]);
 
-  // 역할에서 급여 정보 추출
-  const getRolesWithSalary = (): { role: string; customRole?: string; salary: SalaryInfo }[] => {
+  // 역할에서 급여 정보 추출 (메모이제이션 적용)
+  const rolesWithSalary = useMemo(() => {
     if (job.useSameSalary) return [];
 
-    // dateRequirements에서 역할별 급여 추출
     const rolesMap = new Map<string, { role: string; customRole?: string; salary: SalaryInfo }>();
 
     job.dateRequirements?.forEach((dateReq) => {
@@ -262,9 +261,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
     });
 
     return Array.from(rolesMap.values());
-  };
-
-  const rolesWithSalary = getRolesWithSalary();
+  }, [job.useSameSalary, job.dateRequirements]);
 
   // 표시할 급여 결정
   const displaySalary: SalaryInfo = job.defaultSalary ??

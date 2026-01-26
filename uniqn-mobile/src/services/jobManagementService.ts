@@ -112,7 +112,7 @@ function extractRoleKeysFromDateReq(
   dateReqs?.forEach((dateReq) => {
     dateReq.timeSlots?.forEach((slot) => {
       slot.roles?.forEach((roleReq) => {
-        const rawRole = roleReq.role ?? roleReq.name ?? 'dealer';
+        const rawRole = roleReq.role ?? 'dealer';
         // 커스텀 역할이면 customRole을 키로 사용
         const roleKey = rawRole === 'other' && roleReq.customRole
           ? roleReq.customRole

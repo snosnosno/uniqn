@@ -50,22 +50,16 @@ const formatDate = (dateStr: string): string => {
 };
 
 const formatTimeRange = (slot: TimeSlot): string => {
-  if (slot.isFullDay) {
-    return '종일';
-  }
   if (slot.isTimeToBeAnnounced) {
     return slot.tentativeDescription ?? '미정';
   }
-  const startTime = slot.startTime ?? slot.time ?? '-';
-  if (slot.endTime) {
-    return `${startTime} - ${slot.endTime}`;
-  }
+  const startTime = slot.startTime ?? '-';
   return startTime;
 };
 
 const getTotalPositions = (slots: TimeSlot[]): number => {
   return slots.reduce((total, slot) => {
-    return total + slot.roles.reduce((sum, r) => sum + (r.headcount ?? r.count ?? 0), 0);
+    return total + slot.roles.reduce((sum, r) => sum + (r.headcount ?? 0), 0);
   }, 0);
 };
 
@@ -93,7 +87,7 @@ const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemP
       <View className="flex-row flex-wrap gap-1">
         {slot.roles.map((role, index) => (
           <Badge key={index} variant="default" size="sm">
-            {getRoleDisplayName(role.role ?? role.name ?? 'dealer', role.customRole)} {role.headcount ?? role.count ?? 0}명
+            {getRoleDisplayName(role.role ?? 'dealer', role.customRole)} {role.headcount ?? 0}명
           </Badge>
         ))}
       </View>

@@ -2,21 +2,16 @@
  * UNIQN Mobile - FormSelect 컴포넌트
  *
  * @description 선택 필드 컴포넌트 (드롭다운)
- * @version 1.0.0
+ * @version 2.0.0
  *
- * TODO [출시 전]: 접근성 개선 - accessibilityRole, accessibilityState 추가
- * TODO [출시 전]: 검색 기능 추가 (옵션이 많을 경우)
+ * 주요 기능:
+ * - 접근성 개선 (WCAG 준수)
+ * - 검색 기능 (옵션이 많을 경우)
  */
 
-import React, { useState, useCallback, memo } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-  FlatList,
-  type ViewProps,
-} from 'react-native';
+import React, { useState, useCallback, useMemo, memo } from 'react';
+import { View, Text, Pressable, Modal, TextInput, type ViewProps } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 
 // ============================================================================
 // Types
@@ -58,6 +53,9 @@ function SelectOptionItemComponent<T>({
         ${item.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
         ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
       `}
+      accessibilityRole="radio"
+      accessibilityState={{ selected: isSelected, disabled: item.disabled }}
+      accessibilityLabel={`${item.label}${isSelected ? ', 선택됨' : ''}`}
     >
       <View className="flex-row items-center justify-between">
         <Text
@@ -98,6 +96,12 @@ interface FormSelectProps<T = string> extends Omit<ViewProps, 'children'> {
   errorMessage?: string;
   /** 필수 여부 */
   required?: boolean;
+  /** 검색 기능 활성화 */
+  searchable?: boolean;
+  /** 검색 플레이스홀더 */
+  searchPlaceholder?: string;
+  /** 검색 표시 임계값 (옵션 수가 이 값 이상일 때 검색 표시) */
+  searchThreshold?: number;
 }
 
 // ============================================================================
@@ -114,22 +118,42 @@ export function FormSelect<T = string>({
   label,
   errorMessage,
   required = false,
+  searchable = false,
+  searchPlaceholder = '검색...',
+  searchThreshold = 5,
   className,
   ...props
 }: FormSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // 현재 선택된 옵션 찾기
   const selectedOption = options.find((opt) => opt.value === value);
+
+  // 검색 표시 여부 (searchable이고 옵션 수가 임계값 이상일 때)
+  const showSearch = searchable && options.length >= searchThreshold;
+
+  // 필터링된 옵션 목록
+  const filteredOptions = useMemo(() => {
+    if (!searchQuery.trim()) return options;
+    const query = searchQuery.toLowerCase().trim();
+    return options.filter((opt) => opt.label.toLowerCase().includes(query));
+  }, [options, searchQuery]);
+
+  // 모달 닫기 시 검색어 초기화
+  const handleClose = useCallback(() => {
+    setIsOpen(false);
+    setSearchQuery('');
+  }, []);
 
   // 옵션 선택 핸들러
   const handleSelect = useCallback(
     (option: SelectOption<T>) => {
       if (option.disabled) return;
       onValueChange?.(option.value);
-      setIsOpen(false);
+      handleClose();
     },
-    [onValueChange]
+    [onValueChange, handleClose]
   );
 
   // 스타일 계산
@@ -169,8 +193,9 @@ export function FormSelect<T = string>({
           ${disabled ? 'opacity-50' : 'active:bg-gray-50 dark:active:bg-gray-700'}
         `}
         accessibilityRole="button"
-        accessibilityLabel={label || placeholder}
+        accessibilityLabel={`${label || placeholder}${selectedOption ? `, 현재 선택: ${selectedOption.label}` : ''}`}
         accessibilityHint="탭하여 옵션 선택"
+        accessibilityState={{ expanded: isOpen, disabled }}
       >
         <Text className={`text-base ${getTextStyle()}`}>
           {selectedOption?.label || placeholder}
@@ -191,11 +216,11 @@ export function FormSelect<T = string>({
         visible={isOpen}
         transparent
         animationType="fade"
-        onRequestClose={() => setIsOpen(false)}
+        onRequestClose={handleClose}
       >
         <Pressable
           className="flex-1 bg-black/50 justify-end"
-          onPress={() => setIsOpen(false)}
+          onPress={handleClose}
         >
           <Pressable
             className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70%]"
@@ -207,17 +232,34 @@ export function FormSelect<T = string>({
                 {label || '선택'}
               </Text>
               <Pressable
-                onPress={() => setIsOpen(false)}
+                onPress={handleClose}
                 className="p-2"
                 accessibilityLabel="닫기"
+                accessibilityRole="button"
               >
                 <Text className="text-gray-500 dark:text-gray-400 text-lg">✕</Text>
               </Pressable>
             </View>
 
+            {/* 검색 입력 */}
+            {showSearch && (
+              <View className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+                <TextInput
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  placeholder={searchPlaceholder}
+                  placeholderTextColor="#9CA3AF"
+                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-base text-gray-900 dark:text-white"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  accessibilityLabel="옵션 검색"
+                />
+              </View>
+            )}
+
             {/* 옵션 목록 */}
-            <FlatList
-              data={options}
+            <FlashList
+              data={filteredOptions}
               keyExtractor={(item, index) => `${item.value}-${index}`}
               renderItem={({ item }) => (
                 <SelectOptionItem
@@ -229,10 +271,26 @@ export function FormSelect<T = string>({
               ListEmptyComponent={
                 <View className="py-8 items-center">
                   <Text className="text-gray-500 dark:text-gray-400">
-                    선택 가능한 옵션이 없습니다
+                    {searchQuery.trim()
+                      ? '검색 결과가 없습니다'
+                      : '선택 가능한 옵션이 없습니다'}
                   </Text>
+                  {searchQuery.trim() && (
+                    <Pressable
+                      onPress={() => setSearchQuery('')}
+                      className="mt-2 px-4 py-2"
+                      accessibilityRole="button"
+                      accessibilityLabel="검색어 초기화"
+                    >
+                      <Text className="text-primary-600 dark:text-primary-400">
+                        검색어 초기화
+                      </Text>
+                    </Pressable>
+                  )}
                 </View>
               }
+              // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+              estimatedItemSize={56}
             />
 
             {/* 하단 여백 (SafeArea) */}

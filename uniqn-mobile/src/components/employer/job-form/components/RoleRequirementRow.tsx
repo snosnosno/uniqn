@@ -11,9 +11,11 @@
  * - 중복 역할 방지
  */
 
-import React, { useCallback } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
-import { XCircleIcon } from '@/components/icons';
+import React, { useCallback, useState, useMemo } from 'react';
+import { View, Text, Pressable, TextInput, FlatList } from 'react-native';
+import { XCircleIcon, ChevronDownIcon, CheckIcon } from '@/components/icons';
+import { Modal } from '@/components/ui';
+import { STAFF_ROLES } from '@/constants';
 import { clampHeadcount } from '@/utils/job-posting/dateUtils';
 import type { RoleRequirement } from '@/types/jobPosting/dateRequirement';
 import type { StaffRole } from '@/types/common';
@@ -46,17 +48,28 @@ export function RoleRequirementRow({
   role,
   index,
   canRemove,
-  usedRoles: _usedRoles, // TODO: 역할 선택 UI 구현 시 사용
+  usedRoles,
   onUpdate,
   onRemove,
 }: RoleRequirementRowProps) {
-  // TODO: 역할 변경 (역할 선택 UI 구현 시 사용)
-  // const handleRoleChange = useCallback(
-  //   (newRole: StaffRole | 'other') => {
-  //     onUpdate(index, { role: newRole });
-  //   },
-  //   [index, onUpdate]
-  // );
+  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
+
+  // 이미 선택된 역할 제외 (현재 역할은 포함)
+  const availableRoles = useMemo(() => {
+    const currentRole = role.role ?? 'dealer';
+    return STAFF_ROLES.filter(
+      (r) => r.key === currentRole || r.key === 'other' || !usedRoles.includes(r.key as StaffRole | 'other')
+    );
+  }, [usedRoles, role.role]);
+
+  // 역할 변경
+  const handleRoleChange = useCallback(
+    (newRole: StaffRole | 'other') => {
+      onUpdate(index, { role: newRole, customRole: newRole === 'other' ? '' : undefined });
+      setIsRoleModalOpen(false);
+    },
+    [index, onUpdate]
+  );
 
   // 커스텀 역할명 변경
   const handleCustomRoleChange = useCallback(
@@ -80,17 +93,73 @@ export function RoleRequirementRow({
     [index, onUpdate]
   );
 
+  const currentRoleKey = role.role ?? 'dealer';
+  const currentRoleInfo = STAFF_ROLES.find((r) => r.key === currentRoleKey);
+
   return (
     <View className="flex-row items-center gap-2 mb-2">
-      {/* 역할 선택 (간소화: 버튼으로 표시) */}
-      <View className="flex-1">
-        <View className="flex-row items-center bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2">
+      {/* 역할 선택 버튼 */}
+      <Pressable
+        onPress={() => setIsRoleModalOpen(true)}
+        className="flex-1 flex-row items-center justify-between bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 active:bg-gray-100 dark:active:bg-gray-700"
+        accessibilityRole="button"
+        accessibilityLabel={`역할 선택: ${getRoleDisplayName(currentRoleKey, role.customRole)}`}
+        accessibilityHint="탭하여 역할 변경"
+      >
+        <View className="flex-row items-center gap-2">
+          <Text className="text-base">{currentRoleInfo?.icon ?? '👤'}</Text>
           <Text className="text-sm text-gray-900 dark:text-white">
-            {getRoleDisplayName(role.role ?? role.name ?? 'dealer', role.customRole)}
+            {getRoleDisplayName(currentRoleKey, role.customRole)}
           </Text>
         </View>
-        {/* TODO: 역할 선택 모달/드롭다운 추가 */}
-      </View>
+        <ChevronDownIcon size={16} color="#9CA3AF" />
+      </Pressable>
+
+      {/* 역할 선택 모달 */}
+      <Modal
+        visible={isRoleModalOpen}
+        onClose={() => setIsRoleModalOpen(false)}
+        title="역할 선택"
+        position="bottom"
+        size="full"
+      >
+        <FlatList
+          data={availableRoles}
+          keyExtractor={(item) => item.key}
+          renderItem={({ item }) => {
+            const isSelected = item.key === currentRoleKey;
+            const isDisabled = item.key !== 'other' && item.key !== currentRoleKey && usedRoles.includes(item.key as StaffRole | 'other');
+
+            return (
+              <Pressable
+                onPress={() => !isDisabled && handleRoleChange(item.key as StaffRole | 'other')}
+                disabled={isDisabled}
+                className={`flex-row items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 ${
+                  isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                } ${isDisabled ? 'opacity-40' : 'active:bg-gray-100 dark:active:bg-gray-700'}`}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+                accessibilityLabel={`${item.name}${isSelected ? ', 선택됨' : ''}`}
+              >
+                <View className="flex-row items-center gap-3">
+                  <Text className="text-lg">{item.icon}</Text>
+                  <Text
+                    className={`text-base ${
+                      isSelected
+                        ? 'text-blue-600 dark:text-blue-400 font-medium'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {item.name}
+                  </Text>
+                </View>
+                {isSelected && <CheckIcon size={20} color="#3B82F6" />}
+              </Pressable>
+            );
+          }}
+          className="max-h-80"
+        />
+      </Modal>
 
       {/* 커스텀 역할명 입력 (other 선택 시) */}
       {role.role === 'other' && (

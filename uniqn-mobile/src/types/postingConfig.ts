@@ -9,9 +9,10 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import type {
-  DateSpecificRequirement as DateSpecificRequirementV2,
-  TimeSlot as TimeSlotV2,
+import {
+  sortTimeSlots,
+  type DateSpecificRequirement as DateSpecificRequirementV2,
+  type TimeSlot as TimeSlotV2,
 } from './jobPosting/dateRequirement';
 import type { SalaryInfo } from './jobPosting';
 
@@ -274,25 +275,6 @@ export function getDateFromRequirement(req: DateSpecificRequirement): string {
     return new Date(req.date.seconds * 1000).toISOString().split('T')[0] ?? '';
   }
   return '';
-}
-
-/**
- * 시간대 정렬 (빠른 시간 순서)
- *
- * @description 시작 시간 기준으로 오름차순 정렬
- */
-function sortTimeSlots(timeSlots: TimeSlotV2[]): TimeSlotV2[] {
-  return [...timeSlots].sort((a, b) => {
-    // 시간 미정인 경우 맨 뒤로
-    if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
-    if (!a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return -1;
-    if (a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return 0;
-
-    // 시작 시간 비교 (HH:mm 형식)
-    const timeA = a.startTime ?? a.time ?? '99:99';
-    const timeB = b.startTime ?? b.time ?? '99:99';
-    return timeA.localeCompare(timeB);
-  });
 }
 
 /**

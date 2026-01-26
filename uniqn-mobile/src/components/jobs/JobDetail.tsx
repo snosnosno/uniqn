@@ -109,8 +109,8 @@ function DateRequirementsGroupedDisplay({
                       </Text>
                       <View className="flex-row flex-wrap">
                         {slot.roles.map((role, roleIdx) => {
-                          const roleName = getRoleDisplayName(role.role ?? role.name ?? '', role.customRole);
-                          const headcount = role.headcount ?? role.count ?? 0;
+                          const roleName = getRoleDisplayName(role.role ?? '', role.customRole);
+                          const headcount = role.headcount ?? 0;
                           const filled = role.filled ?? 0;
                           const isFilled = filled >= headcount && headcount > 0;
 

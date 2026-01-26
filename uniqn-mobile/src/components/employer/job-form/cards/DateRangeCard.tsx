@@ -69,7 +69,7 @@ export function DateRangeCard({
   // 총 인원 계산
   const totalHeadcount = useMemo(() => {
     return group.timeSlots.reduce((sum, slot) => {
-      return sum + slot.roles.reduce((roleSum, r) => roleSum + (r.headcount ?? r.count ?? 0), 0);
+      return sum + slot.roles.reduce((roleSum, r) => roleSum + (r.headcount ?? 0), 0);
     }, 0);
   }, [group.timeSlots]);
 

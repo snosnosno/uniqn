@@ -177,7 +177,7 @@ export function useAssignmentSelection({
       const selectedSlots = selectionMap.get(date);
       if (!selectedSlots) return false;
       return timeSlots.every((slot) => {
-        const slotTime = slot.startTime ?? slot.time ?? '';
+        const slotTime = slot.startTime ?? '';
         return selectedSlots.has(slotTime);
       });
     },
@@ -222,7 +222,7 @@ export function useAssignmentSelection({
         );
         const currentSlots = selectionMap.get(date) ?? new Set();
         const newSlots = timeSlots.filter((slot) => {
-          const slotTime = slot.startTime ?? slot.time ?? '';
+          const slotTime = slot.startTime ?? '';
           return !currentSlots.has(slotTime);
         });
 
@@ -234,7 +234,7 @@ export function useAssignmentSelection({
 
         const newAssignments = slotsToAdd
           .map((slot) => {
-            const slotTime = slot.startTime ?? slot.time ?? '';
+            const slotTime = slot.startTime ?? '';
             return slotTime ? createSimpleAssignment(selectedRole, slotTime, date) : null;
           })
           .filter((a): a is NonNullable<typeof a> => a !== null);

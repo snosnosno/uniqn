@@ -16,6 +16,7 @@ import { PlusIcon, TrashIcon } from '@/components/icons';
 import { formatDateWithDay } from '@/utils/dateUtils';
 import { TimeSlotCard } from './TimeSlotCard';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
+import { useToast } from '@/stores/toastStore';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -46,6 +47,8 @@ export function DateRequirementCard({
   onUpdate,
   onRemove,
 }: DateRequirementCardProps) {
+  const toast = useToast();
+
   // 날짜 문자열 추출
   const getDateString = (dateInput: DateSpecificRequirement['date']): string => {
     if (typeof dateInput === 'string') return dateInput;
@@ -63,7 +66,7 @@ export function DateRequirementCard({
   // 시간대 추가
   const handleAddTimeSlot = useCallback(() => {
     if (requirement.timeSlots.length >= MAX_TIME_SLOTS_PER_DATE) {
-      // TODO: Toast 알림
+      toast.warning(`시간대는 최대 ${MAX_TIME_SLOTS_PER_DATE}개까지 추가할 수 있습니다`);
       return;
     }
 
@@ -84,7 +87,7 @@ export function DateRequirementCard({
       timeSlots: [...requirement.timeSlots, newTimeSlot],
     };
     onUpdate(index, updated);
-  }, [index, requirement.timeSlots, onUpdate]);
+  }, [index, requirement.timeSlots, onUpdate, toast]);
 
   // 시간대 업데이트
   const handleUpdateTimeSlot = useCallback(
@@ -100,14 +103,14 @@ export function DateRequirementCard({
   const handleRemoveTimeSlot = useCallback(
     (timeSlotIndex: number) => {
       if (requirement.timeSlots.length <= 1) {
-        // TODO: Toast 알림 - 최소 1개 필요
+        toast.warning('최소 1개의 시간대가 필요합니다');
         return;
       }
 
       const updated = requirement.timeSlots.filter((_, i) => i !== timeSlotIndex);
       onUpdate(index, { timeSlots: updated });
     },
-    [index, requirement.timeSlots, onUpdate]
+    [index, requirement.timeSlots, onUpdate, toast]
   );
 
   const canAddTimeSlot = requirement.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;

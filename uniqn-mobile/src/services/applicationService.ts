@@ -97,7 +97,7 @@ function checkRoleCapacity(
       for (const slot of req.timeSlots || []) {
         const roleReq = slot.roles?.find(matchesRole);
         if (roleReq) {
-          const total = roleReq.headcount ?? roleReq.count ?? 0;
+          const total = roleReq.headcount ?? 0;
           const filled = roleReq.filled ?? 0;
           if (total > 0 && filled < total) {
             return { available: true };

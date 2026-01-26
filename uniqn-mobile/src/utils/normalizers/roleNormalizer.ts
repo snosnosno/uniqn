@@ -41,11 +41,11 @@ export function normalizeJobRoleStats(role: {
 export function normalizeFormRoleRequirement(
   role: DateRoleRequirement
 ): RoleInfo {
-  // 역할 ID 추출 (role > name 우선순위)
-  const roleId = role.role ?? role.name ?? 'other';
+  // 역할 ID 추출
+  const roleId = role.role ?? 'other';
 
-  // 필요 인원 추출 (headcount > count 우선순위)
-  const requiredCount = role.headcount ?? role.count ?? 0;
+  // 필요 인원 추출
+  const requiredCount = role.headcount ?? 0;
 
   // 충원 인원
   const filledCount = role.filled ?? 0;
@@ -158,7 +158,7 @@ export function getRolesForDateAndTime(
 
   // 해당 시간대의 역할 찾기
   const slot = dateReq.timeSlots.find((ts) => {
-    const slotTime = ts.startTime ?? (ts as { time?: string }).time ?? '';
+    const slotTime = ts.startTime ?? '';
     return slotTime === timeSlot;
   });
 

@@ -18,7 +18,6 @@ import type { SalaryInfo } from '../jobPosting';
  * 역할 요구사항
  *
  * @description 시간대별 필요한 역할과 인원수
- * @note 레거시 호환을 위해 일부 필드가 선택적입니다. 새 코드에서는 id, role, headcount를 사용하세요.
  */
 export interface RoleRequirement {
   /** 고유 ID (React Hook Form useFieldArray용) */
@@ -36,14 +35,7 @@ export interface RoleRequirement {
   /** 역할별 급여 */
   salary?: SalaryInfo;
 
-  // === 레거시 호환 필드 ===
-  /** @deprecated role 사용 권장 - 역할 이름 (레거시 데이터 호환용) */
-  name?: StaffRole | string;
-
-  /** @deprecated headcount 사용 권장 - 필요 인원 (레거시 데이터 호환용) */
-  count?: number;
-
-  /** @deprecated 충원된 인원 (레거시 데이터 호환용) */
+  /** 충원된 인원 */
   filled?: number;
 }
 
@@ -54,7 +46,6 @@ export interface RoleRequirement {
  * - 시작시간만 입력 (종료시간 제거)
  * - 시간 미정 지원
  * - 역할별 인원 관리
- * @note 레거시 호환을 위해 일부 필드가 선택적입니다. 새 코드에서는 id, startTime을 사용하세요.
  */
 export interface TimeSlot {
   /** 고유 ID (React Hook Form useFieldArray용) */
@@ -71,16 +62,6 @@ export interface TimeSlot {
 
   /** 역할별 필요 인원 */
   roles: RoleRequirement[];
-
-  // === 레거시 호환 필드 ===
-  /** @deprecated startTime 사용 권장 - 레거시 데이터 호환용 */
-  time?: string;
-
-  /** @deprecated 종료 시간 (HH:mm 형식) - 레거시 데이터 호환용 */
-  endTime?: string;
-
-  /** @deprecated 종일 여부 - 레거시 데이터 호환용 */
-  isFullDay?: boolean;
 }
 
 /**
@@ -149,8 +130,10 @@ export function getDateString(dateInput: string | Timestamp | { seconds: number 
 
 /**
  * 시간대 정렬 (빠른 시간 순서)
+ *
+ * @description 시작 시간 기준으로 오름차순 정렬, 시간 미정은 맨 뒤로
  */
-function sortTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
+export function sortTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
   return [...timeSlots].sort((a, b) => {
     // 시간 미정인 경우 맨 뒤로
     if (a.isTimeToBeAnnounced && !b.isTimeToBeAnnounced) return 1;
@@ -158,8 +141,8 @@ function sortTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
     if (a.isTimeToBeAnnounced && b.isTimeToBeAnnounced) return 0;
 
     // 시작 시간 비교 (HH:mm 형식)
-    const timeA = a.startTime ?? a.time ?? '99:99';
-    const timeB = b.startTime ?? b.time ?? '99:99';
+    const timeA = a.startTime ?? '99:99';
+    const timeB = b.startTime ?? '99:99';
     return timeA.localeCompare(timeB);
   });
 }

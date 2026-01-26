@@ -124,7 +124,7 @@ export const SalarySection = memo(function SalarySection({
     data.dateSpecificRequirements?.forEach((dateReq) => {
       dateReq.timeSlots?.forEach((slot) => {
         slot.roles?.forEach((roleReq) => {
-          const rawRole = (roleReq.role ?? roleReq.name ?? 'dealer') as string;
+          const rawRole = (roleReq.role ?? 'dealer') as string;
           const isCustomRole = rawRole === 'other' && !!roleReq.customRole;
           // 커스텀 역할이면 customRole을 키로 사용
           const roleKey = isCustomRole
@@ -135,7 +135,7 @@ export const SalarySection = memo(function SalarySection({
             ? roleReq.customRole!
             : getRoleDisplayName(rawRole);
           const existing = roleMap.get(roleKey);
-          const headcount = roleReq.headcount ?? roleReq.count ?? 0;
+          const headcount = roleReq.headcount ?? 0;
 
           // 같은 역할이면 인원 합산
           roleMap.set(roleKey, {

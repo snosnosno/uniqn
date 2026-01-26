@@ -2,17 +2,26 @@
  * UNIQN Mobile - MobileHeader 컴포넌트
  *
  * @description 모바일 화면 상단 헤더
- * @version 1.0.0
+ * @version 2.0.0
  *
- * TODO [출시 전]: 스크롤 시 헤더 축소 애니메이션 추가
- * TODO [출시 전]: 검색 모드 전환 기능 추가
+ * 주요 기능:
+ * - 스크롤 시 헤더 축소 애니메이션
+ * - 검색 모드 전환 기능
  */
 
-import React from 'react';
-import { View, Text, Pressable, type ViewProps } from 'react-native';
+import React, { useState, useCallback, useEffect } from 'react';
+import { View, Text, Pressable, TextInput, type ViewProps } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeftIcon } from '@/components/icons';
+import Animated, {
+  useAnimatedStyle,
+  interpolate,
+  Extrapolate,
+  withTiming,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
+import { ChevronLeftIcon, MagnifyingGlassIcon, XMarkIcon } from '@/components/icons';
 import { getIconColor } from '@/constants';
 import { useThemeStore } from '@/stores/themeStore';
 
@@ -41,7 +50,29 @@ interface MobileHeaderProps extends ViewProps {
   border?: boolean;
   /** 중앙 정렬 여부 */
   centerTitle?: boolean;
+  /** 스크롤 위치 (축소 애니메이션용) */
+  scrollY?: SharedValue<number>;
+  /** 헤더 축소 활성화 */
+  collapsible?: boolean;
+  /** 검색 모드 활성화 */
+  searchMode?: boolean;
+  /** 검색어 변경 콜백 */
+  onSearch?: (query: string) => void;
+  /** 검색 플레이스홀더 */
+  searchPlaceholder?: string;
+  /** 검색 모드 토글 콜백 */
+  onSearchModeChange?: (isSearchMode: boolean) => void;
+  /** 검색 버튼 표시 */
+  showSearchButton?: boolean;
 }
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const HEADER_HEIGHT_EXPANDED = 56;
+const HEADER_HEIGHT_COLLAPSED = 44;
+const SCROLL_THRESHOLD = 100;
 
 // ============================================================================
 // Component
@@ -58,12 +89,33 @@ export function MobileHeader({
   shadow = false,
   border = true,
   centerTitle = false,
+  scrollY,
+  collapsible = false,
+  searchMode = false,
+  onSearch,
+  searchPlaceholder = '검색...',
+  onSearchModeChange,
+  showSearchButton = false,
   className,
   ...props
 }: MobileHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const { isDarkMode } = useThemeStore();
+  const [isSearchActive, setIsSearchActive] = useState(searchMode);
+  const [searchQuery, setSearchQuery] = useState('');
+
+  // 검색 모드 애니메이션
+  const searchModeAnim = useSharedValue(searchMode ? 1 : 0);
+
+  useEffect(() => {
+    searchModeAnim.value = withTiming(isSearchActive ? 1 : 0, { duration: 200 });
+  }, [isSearchActive, searchModeAnim]);
+
+  // 외부 searchMode prop 변경 감지
+  useEffect(() => {
+    setIsSearchActive(searchMode);
+  }, [searchMode]);
 
   // 뒤로가기 핸들러
   const handleBack = () => {
@@ -73,6 +125,34 @@ export function MobileHeader({
       router.back();
     }
   };
+
+  // 검색 모드 토글
+  const toggleSearchMode = useCallback(() => {
+    const newMode = !isSearchActive;
+    setIsSearchActive(newMode);
+    onSearchModeChange?.(newMode);
+    if (!newMode) {
+      setSearchQuery('');
+      onSearch?.('');
+    }
+  }, [isSearchActive, onSearchModeChange, onSearch]);
+
+  // 검색어 변경
+  const handleSearchChange = useCallback(
+    (text: string) => {
+      setSearchQuery(text);
+      onSearch?.(text);
+    },
+    [onSearch]
+  );
+
+  // 검색 취소
+  const handleSearchCancel = useCallback(() => {
+    setIsSearchActive(false);
+    setSearchQuery('');
+    onSearch?.('');
+    onSearchModeChange?.(false);
+  }, [onSearch, onSearchModeChange]);
 
   // 배경 스타일
   const getBackgroundStyle = () => {
@@ -92,52 +172,167 @@ export function MobileHeader({
     return styles.join(' ');
   };
 
+  // 스크롤 축소 애니메이션 스타일
+  const animatedHeaderStyle = useAnimatedStyle(() => {
+    if (!scrollY || !collapsible) {
+      return { height: HEADER_HEIGHT_EXPANDED };
+    }
+
+    const height = interpolate(
+      scrollY.value,
+      [0, SCROLL_THRESHOLD],
+      [HEADER_HEIGHT_EXPANDED, HEADER_HEIGHT_COLLAPSED],
+      Extrapolate.CLAMP
+    );
+
+    return { height };
+  });
+
+  // 타이틀 폰트 크기 애니메이션
+  const animatedTitleStyle = useAnimatedStyle(() => {
+    if (!scrollY || !collapsible) {
+      return { fontSize: 18 };
+    }
+
+    const fontSize = interpolate(
+      scrollY.value,
+      [0, SCROLL_THRESHOLD],
+      [18, 16],
+      Extrapolate.CLAMP
+    );
+
+    return { fontSize };
+  });
+
+  // 서브타이틀 투명도 애니메이션
+  const animatedSubtitleStyle = useAnimatedStyle(() => {
+    if (!scrollY || !collapsible) {
+      return { opacity: 1 };
+    }
+
+    const opacity = interpolate(
+      scrollY.value,
+      [0, SCROLL_THRESHOLD / 2],
+      [1, 0],
+      Extrapolate.CLAMP
+    );
+
+    return { opacity };
+  });
+
+  // 검색 모드 UI 애니메이션
+  const searchContainerStyle = useAnimatedStyle(() => ({
+    opacity: searchModeAnim.value,
+    transform: [{ translateX: interpolate(searchModeAnim.value, [0, 1], [20, 0]) }],
+  }));
+
+  const normalHeaderStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(searchModeAnim.value, [0, 1], [1, 0]),
+    transform: [{ translateX: interpolate(searchModeAnim.value, [0, 1], [0, -20]) }],
+  }));
+
   return (
     <View
       className={`${getBackgroundStyle()} ${getBorderStyle()} ${className || ''}`}
       style={{ paddingTop: insets.top }}
       {...props}
     >
-      <View className="flex-row items-center h-14 px-4">
-        {/* 왼쪽 영역 */}
-        <View className="w-12 items-start">
-          {showBack ? (
+      <Animated.View className="flex-row items-center px-4" style={animatedHeaderStyle}>
+        {isSearchActive ? (
+          // 검색 모드 UI
+          <Animated.View className="flex-1 flex-row items-center" style={searchContainerStyle}>
+            <View className="flex-1 flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
+              <MagnifyingGlassIcon size={20} color="#9CA3AF" />
+              <TextInput
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                placeholder={searchPlaceholder}
+                placeholderTextColor="#9CA3AF"
+                className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
+                autoFocus
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                accessibilityLabel="검색"
+              />
+              {searchQuery.length > 0 && (
+                <Pressable
+                  onPress={() => handleSearchChange('')}
+                  className="p-1"
+                  accessibilityRole="button"
+                  accessibilityLabel="검색어 지우기"
+                >
+                  <XMarkIcon size={16} color="#9CA3AF" />
+                </Pressable>
+              )}
+            </View>
             <Pressable
-              onPress={handleBack}
-              className="p-2 -ml-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+              onPress={handleSearchCancel}
+              className="ml-3 py-2"
               accessibilityRole="button"
-              accessibilityLabel="뒤로 가기"
+              accessibilityLabel="검색 취소"
             >
-              <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
+              <Text className="text-primary-600 dark:text-primary-400 font-medium">취소</Text>
             </Pressable>
-          ) : (
-            leftAction
-          )}
-        </View>
+          </Animated.View>
+        ) : (
+          // 일반 헤더 UI
+          <Animated.View className="flex-1 flex-row items-center" style={normalHeaderStyle}>
+            {/* 왼쪽 영역 */}
+            <View className="w-12 items-start">
+              {showBack ? (
+                <Pressable
+                  onPress={handleBack}
+                  className="p-2 -ml-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+                  accessibilityRole="button"
+                  accessibilityLabel="뒤로 가기"
+                >
+                  <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
+                </Pressable>
+              ) : (
+                leftAction
+              )}
+            </View>
 
-        {/* 중앙 영역 - 제목 */}
-        <View className={`flex-1 ${centerTitle ? 'items-center' : 'items-start'}`}>
-          {title && (
-            <Text
-              className="text-lg font-semibold text-gray-900 dark:text-white"
-              numberOfLines={1}
-            >
-              {title}
-            </Text>
-          )}
-          {subtitle && (
-            <Text
-              className="text-sm text-gray-500 dark:text-gray-400"
-              numberOfLines={1}
-            >
-              {subtitle}
-            </Text>
-          )}
-        </View>
+            {/* 중앙 영역 - 제목 */}
+            <View className={`flex-1 ${centerTitle ? 'items-center' : 'items-start'}`}>
+              {title && (
+                <Animated.Text
+                  className="font-semibold text-gray-900 dark:text-white"
+                  numberOfLines={1}
+                  style={animatedTitleStyle}
+                >
+                  {title}
+                </Animated.Text>
+              )}
+              {subtitle && (
+                <Animated.Text
+                  className="text-sm text-gray-500 dark:text-gray-400"
+                  numberOfLines={1}
+                  style={animatedSubtitleStyle}
+                >
+                  {subtitle}
+                </Animated.Text>
+              )}
+            </View>
 
-        {/* 오른쪽 영역 */}
-        <View className="min-w-12 items-end shrink-0">{rightAction}</View>
-      </View>
+            {/* 오른쪽 영역 */}
+            <View className="min-w-12 items-end shrink-0 flex-row">
+              {showSearchButton && onSearch && (
+                <Pressable
+                  onPress={toggleSearchMode}
+                  className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+                  accessibilityRole="button"
+                  accessibilityLabel="검색"
+                >
+                  <MagnifyingGlassIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
+                </Pressable>
+              )}
+              {rightAction}
+            </View>
+          </Animated.View>
+        )}
+      </Animated.View>
     </View>
   );
 }

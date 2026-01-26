@@ -29,18 +29,16 @@ import { normalizeFormRoleRequirement, normalizeJobRoleStats } from './roleNorma
 function normalizeTimeSlot(slot: TimeSlot, index: number): TimeSlotInfo {
   const roles: RoleInfo[] = (slot.roles ?? []).map(normalizeFormRoleRequirement);
 
-  // startTime 또는 time 필드에서 시간 추출
-  const startTime = slot.startTime ?? (slot as { time?: string }).time ?? null;
+  // startTime 필드에서 시간 추출
+  const startTime = slot.startTime ?? null;
 
   return createTimeSlotInfo(
     slot.id ?? `slot-${index}`,
     startTime,
     roles,
     {
-      endTime: slot.endTime,
       isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
       tentativeDescription: slot.tentativeDescription,
-      isFullDay: slot.isFullDay,
     }
   );
 }

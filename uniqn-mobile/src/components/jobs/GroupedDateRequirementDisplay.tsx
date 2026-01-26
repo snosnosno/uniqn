@@ -167,13 +167,13 @@ const GroupItem = memo(function GroupItem({
   const firstTimeSlot = group.timeSlots[0];
   const timeDisplay = firstTimeSlot?.isTimeToBeAnnounced
     ? `미정${firstTimeSlot.tentativeDescription ? ` (${firstTimeSlot.tentativeDescription})` : ''}`
-    : firstTimeSlot?.startTime || firstTimeSlot?.time || '-';
+    : firstTimeSlot?.startTime || '-';
 
   // 역할 표시
   const rolesDisplay = firstTimeSlot?.roles
     .map(r => {
-      const label = getRoleLabel(r.role, r.name, r.customRole);
-      const headcount = r.headcount ?? r.count ?? 0;
+      const label = getRoleLabel(r.role, undefined, r.customRole);
+      const headcount = r.headcount ?? 0;
       if (showFilledCount) {
         const filled = r.filled ?? 0;
         return `${label} ${filled}/${headcount}명`;

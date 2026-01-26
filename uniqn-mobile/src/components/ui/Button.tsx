@@ -61,6 +61,15 @@ const sizeTextStyles: Record<ButtonSize, string> = {
   lg: 'text-lg',
 };
 
+/** 로딩 인디케이터 색상 (variant별) */
+const LOADER_COLORS: Record<ButtonVariant, string> = {
+  primary: '#ffffff',
+  secondary: '#6B7280',
+  outline: '#6B7280',
+  ghost: '#6B7280',
+  danger: '#ffffff',
+};
+
 /**
  * 버튼 컴포넌트
  *
@@ -86,11 +95,6 @@ export const Button = memo(function Button({
     accessibilityLabel ??
     (typeof children === 'string' ? children : undefined);
 
-  const getLoaderColor = () => {
-    if (variant === 'primary' || variant === 'danger') return '#ffffff';
-    return '#6B7280';
-  };
-
   const buttonClass = `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''}`.trim();
   const textClass = `font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
 
@@ -107,7 +111,7 @@ export const Button = memo(function Button({
       className={buttonClass}
     >
       {loading ? (
-        <ActivityIndicator color={getLoaderColor()} size="small" />
+        <ActivityIndicator color={LOADER_COLORS[variant]} size="small" />
       ) : (
         <>
           {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}

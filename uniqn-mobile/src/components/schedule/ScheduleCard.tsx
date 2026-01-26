@@ -192,8 +192,16 @@ export const ScheduleCard = memo(function ScheduleCard({
 
   const isCancelled = schedule.type === 'cancelled';
 
+  // 접근성 라벨 생성
+  const accessibilityLabel = `${schedule.jobPostingName}, ${status.label}, ${formatDate(schedule.date)}${schedule.location ? `, ${schedule.location}` : ''}`;
+
   return (
-    <Pressable onPress={onPress} disabled={!onPress}>
+    <Pressable
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+    >
       <Card className={`mb-3 ${isCancelled ? 'opacity-60' : ''}`}>
         {/* 상단: 상태 뱃지 + 금액(completed) */}
         <View className="flex-row items-start justify-between mb-2">

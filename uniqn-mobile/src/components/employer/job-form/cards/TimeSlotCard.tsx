@@ -72,15 +72,15 @@ const RoleCard = React.memo(function RoleCard({
 }: RoleCardProps) {
   const [showNumberPicker, setShowNumberPicker] = useState(false);
 
-  // 역할명 가져오기 (v2.0: role, 레거시: name 지원)
-  const roleKey = role.role ?? role.name ?? 'dealer';
+  // 역할명 가져오기
+  const roleKey = role.role ?? 'dealer';
   const roleName = roleKey === 'other' && role.customRole
     ? role.customRole
     : STAFF_ROLES.find(r => r.key === roleKey)?.name || roleKey;
 
   const icon = ROLE_ICONS[roleName] || DEFAULT_ROLE_ICON;
-  // 인원수 (v2.0: headcount, 레거시: count 지원)
-  const headcount = role.headcount ?? role.count ?? 1;
+  // 인원수
+  const headcount = role.headcount ?? 1;
   const isCustom = roleKey === 'other';
 
   // 휠 피커 확인 핸들러
@@ -194,7 +194,7 @@ export function TimeSlotCard({
   // 이미 추가된 역할명 목록 (중복 방지)
   const existingRoleNames = useMemo(() => {
     return timeSlot.roles.map((r) => {
-      const roleKey = r.role ?? r.name ?? 'dealer';
+      const roleKey = r.role ?? 'dealer';
       if (roleKey === 'other' && r.customRole) {
         return r.customRole;
       }
@@ -256,7 +256,7 @@ export function TimeSlotCard({
       const updatedRoles = [...timeSlot.roles];
       const role = updatedRoles[roleIndex];
       if (role) {
-        const currentCount = role.headcount ?? role.count ?? 1;
+        const currentCount = role.headcount ?? 1;
         const newCount = Math.max(1, Math.min(200, currentCount + delta));
         updatedRoles[roleIndex] = { ...role, headcount: newCount };
         onUpdate(index, { roles: updatedRoles });
@@ -306,7 +306,7 @@ export function TimeSlotCard({
 
   // 총 인원 계산
   const totalHeadcount = useMemo(
-    () => timeSlot.roles.reduce((sum, r) => sum + (r.headcount ?? r.count ?? 0), 0),
+    () => timeSlot.roles.reduce((sum, r) => sum + (r.headcount ?? 0), 0),
     [timeSlot.roles]
   );
 
@@ -389,7 +389,7 @@ export function TimeSlotCard({
                 시작 시간
               </Text>
               <TimePicker
-                value={timeSlot.startTime ?? timeSlot.time ?? '09:00'}
+                value={timeSlot.startTime ?? '09:00'}
                 onChange={handleStartTimeChange}
                 placeholder="시간을 선택하세요"
               />
