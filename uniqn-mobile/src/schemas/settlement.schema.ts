@@ -60,7 +60,10 @@ export type SettlementItemData = z.infer<typeof settlementItemSchema>;
  * 정산 생성 스키마
  */
 export const createSettlementSchema = z.object({
-  eventId: z.string().min(1, { message: '이벤트 ID는 필수입니다' }),
+  /** 공고 ID (정규화된 필드명) */
+  jobPostingId: z.string().min(1, { message: '공고 ID는 필수입니다' }),
+  /** @deprecated jobPostingId 사용 권장 - 하위 호환성용 */
+  eventId: z.string().optional(),
   type: settlementTypeSchema,
   items: z.array(settlementItemSchema).min(1, { message: '정산 항목이 최소 1개 이상 필요합니다' }),
   totalAmount: z.number().min(0, { message: '총 금액은 0 이상이어야 합니다' }),

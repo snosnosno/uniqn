@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 import { logger } from "@/utils/logger";
-import { BusinessError, ERROR_CODES } from "@/errors";
+import { BusinessError, ERROR_CODES, mapFirebaseError } from "@/errors";
 import type {
   AdminUser,
   AdminUserFilters,
@@ -142,10 +142,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     return stats;
   } catch (error) {
     logger.error("대시보드 통계 조회 실패", error as Error);
-    throw new BusinessError(ERROR_CODES.FIREBASE_UNAVAILABLE, {
-      userMessage: "통계 정보를 불러오는데 실패했습니다",
-      metadata: { operation: "getDashboardStats" },
-    });
+    if (error instanceof BusinessError) throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -221,10 +219,8 @@ export async function getUsers(
     return result;
   } catch (error) {
     logger.error("사용자 목록 조회 실패", error as Error);
-    throw new BusinessError(ERROR_CODES.FIREBASE_UNAVAILABLE, {
-      userMessage: "사용자 목록을 불러오는데 실패했습니다",
-      metadata: { operation: "getUsers" },
-    });
+    if (error instanceof BusinessError) throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -252,12 +248,9 @@ export async function getUserById(userId: string): Promise<AdminUser> {
     logger.info("사용자 조회 완료", { userId, userName: user.name });
     return user;
   } catch (error) {
-    if (error instanceof BusinessError) throw error;
     logger.error("사용자 조회 실패", error as Error, { userId });
-    throw new BusinessError(ERROR_CODES.FIREBASE_UNAVAILABLE, {
-      userMessage: "사용자 정보를 불러오는데 실패했습니다",
-      metadata: { operation: "getUserById", userId },
-    });
+    if (error instanceof BusinessError) throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -286,12 +279,9 @@ export async function updateUserRole(
 
     logger.info("사용자 역할 변경 완료", { userId, previousRole: currentRole, newRole, reason });
   } catch (error) {
-    if (error instanceof BusinessError) throw error;
     logger.error("사용자 역할 변경 실패", error as Error, { userId, newRole });
-    throw new BusinessError(ERROR_CODES.FIREBASE_UNAVAILABLE, {
-      userMessage: "역할 변경에 실패했습니다",
-      metadata: { operation: "updateUserRole", userId, newRole },
-    });
+    if (error instanceof BusinessError) throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -319,12 +309,9 @@ export async function setUserActive(
 
     logger.info("사용자 상태 변경 완료", { userId, isActive, reason });
   } catch (error) {
-    if (error instanceof BusinessError) throw error;
     logger.error("사용자 상태 변경 실패", error as Error, { userId, isActive });
-    throw new BusinessError(ERROR_CODES.FIREBASE_UNAVAILABLE, {
-      userMessage: "상태 변경에 실패했습니다",
-      metadata: { operation: "setUserActive", userId, isActive },
-    });
+    if (error instanceof BusinessError) throw error;
+    throw mapFirebaseError(error);
   }
 }
 
@@ -397,10 +384,8 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
     return metrics;
   } catch (error) {
     logger.error("시스템 메트릭스 조회 실패", error as Error);
-    throw new BusinessError(ERROR_CODES.FIREBASE_UNAVAILABLE, {
-      userMessage: "시스템 메트릭스를 불러오는데 실패했습니다",
-      metadata: { operation: "getSystemMetrics" },
-    });
+    if (error instanceof BusinessError) throw error;
+    throw mapFirebaseError(error);
   }
 }
 

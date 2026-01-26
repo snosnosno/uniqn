@@ -32,17 +32,10 @@ export interface NormalizedWorkTime {
  * WorkLog, ConfirmedStaff 등 다양한 시간 필드 조합 지원
  */
 export interface TimeFieldsInput {
-  // 새 필드명 (우선)
-  /** 출근 시간 (QR 또는 관리자 수정) */
+  /** 실제 출근 시간 (QR 스캔 또는 관리자 수정) */
   checkInTime?: Timestamp | Date | string | null;
-  /** 퇴근 시간 (QR 또는 관리자 수정) */
+  /** 실제 퇴근 시간 (QR 스캔 또는 관리자 수정) */
   checkOutTime?: Timestamp | Date | string | null;
-
-  // 레거시 필드명
-  /** 실제 출근 시간 (레거시) */
-  actualStartTime?: Timestamp | Date | string | null;
-  /** 실제 퇴근 시간 (레거시) */
-  actualEndTime?: Timestamp | Date | string | null;
 
   // 예정 시간
   /** 예정 출근 시간 */

@@ -114,8 +114,10 @@ export interface ScheduleEvent extends FirebaseDocument {
   // 시간 정보
   startTime: Timestamp | null;
   endTime: Timestamp | null;
-  actualStartTime?: Timestamp | null;
-  actualEndTime?: Timestamp | null;
+  /** 실제 출근 시간 (QR 스캔 또는 관리자 수정) */
+  checkInTime?: Timestamp | null;
+  /** 실제 퇴근 시간 (QR 스캔 또는 관리자 수정) */
+  checkOutTime?: Timestamp | null;
 
   // 이벤트 정보
   /** 공고 ID (정규화된 필드명) */
@@ -444,9 +446,11 @@ export interface WorkLog extends FirebaseDocument {
   scheduledStartTime?: string | Timestamp;
   scheduledEndTime?: string | Timestamp;
 
-  // 실제 시간
-  actualStartTime?: string | Timestamp;
-  actualEndTime?: string | Timestamp;
+  // 실제 시간 (QR 스캔 또는 관리자 수정)
+  /** 실제 출근 시간 */
+  checkInTime?: Timestamp | null;
+  /** 실제 퇴근 시간 */
+  checkOutTime?: Timestamp | null;
 
   // 상태
   status: WorkLogStatus;
