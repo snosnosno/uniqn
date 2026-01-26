@@ -272,8 +272,8 @@ export async function getWorkLogsByJobPosting(
       const taxSettings = getEffectiveTaxSettings(wlWithOverrides, jobPosting.taxSettings);
 
       const result = SettlementCalculator.calculate({
-        startTime: wl.actualStartTime,
-        endTime: wl.actualEndTime,
+        startTime: wl.checkInTime,
+        endTime: wl.checkOutTime,
         salaryInfo,
         allowances,
         taxSettings,
@@ -355,8 +355,8 @@ export async function calculateSettlement(
 
     // 4. 정산 금액 계산 (Phase 6 - SettlementCalculator 사용)
     const settlementResult = SettlementCalculator.calculate({
-      startTime: workLog.actualStartTime,
-      endTime: workLog.actualEndTime,
+      startTime: workLog.checkInTime,
+      endTime: workLog.checkOutTime,
       salaryInfo,
       allowances,
       taxSettings,
@@ -437,7 +437,6 @@ export async function updateWorkTime(
       }
 
       // 4. 수정 데이터 준비 (checkInTime/checkOutTime 사용, null = 미정)
-      const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; checkOutTime?: unknown };
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),
       };
@@ -445,28 +444,20 @@ export async function updateWorkTime(
       // checkInTime 설정 (undefined면 건드리지 않음, null이면 미정으로 저장)
       if (input.checkInTime !== undefined) {
         updateData.checkInTime = input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null;
-        // 레거시 호환
-        if (input.checkInTime) {
-          updateData.actualStartTime = Timestamp.fromDate(input.checkInTime);
-        }
       }
 
       // checkOutTime 설정
       if (input.checkOutTime !== undefined) {
         updateData.checkOutTime = input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null;
-        // 레거시 호환
-        if (input.checkOutTime) {
-          updateData.actualEndTime = Timestamp.fromDate(input.checkOutTime);
-        }
       }
 
       if (input.notes !== undefined) {
         updateData.notes = input.notes;
       }
 
-      // 수정 이력 기록 (기존 시간 우선: checkInTime/checkOutTime)
-      const prevCheckIn = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
-      const prevCheckOut = workLogWithCheck.checkOutTime ?? workLog.actualEndTime;
+      // 수정 이력 기록
+      const prevCheckIn = workLog.checkInTime ?? null;
+      const prevCheckOut = workLog.checkOutTime ?? null;
 
       const modificationLog = {
         modifiedAt: new Date().toISOString(),
@@ -711,8 +702,8 @@ export async function bulkSettlement(
           const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
 
           const settlementResult = SettlementCalculator.calculate({
-            startTime: workLog.actualStartTime,
-            endTime: workLog.actualEndTime,
+            startTime: workLog.checkInTime,
+            endTime: workLog.checkOutTime,
             salaryInfo,
             allowances,
             taxSettings,
@@ -931,8 +922,8 @@ export async function getJobPostingSettlementSummary(
           const taxSettings = getEffectiveTaxSettings(workLogWithOverrides, jobPosting.taxSettings);
 
           const settlementResult = SettlementCalculator.calculate({
-            startTime: workLog.actualStartTime,
-            endTime: workLog.actualEndTime,
+            startTime: workLog.checkInTime,
+            endTime: workLog.checkOutTime,
             salaryInfo,
             allowances,
             taxSettings,

@@ -327,7 +327,7 @@ export function SettlementList({
   const selectableWorkLogs = useMemo(() => {
     return workLogs.filter(
       (log) => (log.payrollStatus || 'pending') === 'pending' &&
-        log.actualStartTime && log.actualEndTime
+        log.checkInTime && log.checkOutTime
     );
   }, [workLogs]);
 

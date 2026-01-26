@@ -182,10 +182,10 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
     // 폴백: 직접 계산 (하위 호환성)
     // 실제 출퇴근 시간이 있으면 실제 금액 계산
-    if (schedule.actualStartTime && schedule.actualEndTime) {
+    if (schedule.checkInTime && schedule.checkOutTime) {
       return calculateSettlementWithTax(
-        schedule.actualStartTime,
-        schedule.actualEndTime,
+        schedule.checkInTime,
+        schedule.checkOutTime,
         salaryInfo,
         allowances,
         taxSettings
@@ -204,7 +204,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     }
 
     return null;
-  }, [schedule.settlementBreakdown, schedule.actualStartTime, schedule.actualEndTime, schedule.startTime, schedule.endTime, salaryInfo, allowances, taxSettings]);
+  }, [schedule.settlementBreakdown, schedule.checkInTime, schedule.checkOutTime, schedule.startTime, schedule.endTime, salaryInfo, allowances, taxSettings]);
 
   // 근무 시간: settlementBreakdown 우선 사용
   const hoursWorked = useMemo(() => {
@@ -213,19 +213,19 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       return schedule.settlementBreakdown.hoursWorked;
     }
     // 폴백: 직접 계산
-    if (schedule.actualStartTime && schedule.actualEndTime) {
-      return calculateHoursWorked(schedule.actualStartTime, schedule.actualEndTime);
+    if (schedule.checkInTime && schedule.checkOutTime) {
+      return calculateHoursWorked(schedule.checkInTime, schedule.checkOutTime);
     }
     if (schedule.startTime && schedule.endTime) {
       return calculateHoursWorked(schedule.startTime, schedule.endTime);
     }
     return 0;
-  }, [schedule.settlementBreakdown?.hoursWorked, schedule.actualStartTime, schedule.actualEndTime, schedule.startTime, schedule.endTime]);
+  }, [schedule.settlementBreakdown?.hoursWorked, schedule.checkInTime, schedule.checkOutTime, schedule.startTime, schedule.endTime]);
 
   // 예상 금액 여부: settlementBreakdown 우선 사용
   const isEstimate = hasBreakdown
     ? schedule.settlementBreakdown!.isEstimate
-    : !schedule.actualStartTime || !schedule.actualEndTime;
+    : !schedule.checkInTime || !schedule.checkOutTime;
   const payrollStatus = (schedule.payrollStatus || 'pending') as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 

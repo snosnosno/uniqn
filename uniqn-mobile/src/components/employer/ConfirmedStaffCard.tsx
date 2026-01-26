@@ -154,40 +154,28 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
       const date = parseTimestamp(staff.checkInTime);
       return date ? formatTime(date) : '미정';
     }
-    // 2. 레거시: actualStartTime이 있으면 사용
-    if (staff.actualStartTime) {
-      const date = parseTimestamp(staff.actualStartTime);
-      return date ? formatTime(date) : '미정';
-    }
-    // 3. 없으면 timeSlot에서 시작시간 파싱
+    // 2. 없으면 timeSlot에서 시작시간 파싱
     if (staff.timeSlot && staff.date) {
       const { startTime } = parseTimeSlotToDate(staff.timeSlot, staff.date);
       return startTime ? formatTime(startTime) : '미정';
     }
     return '미정';
-  }, [staff.checkInTime, staff.actualStartTime, staff.timeSlot, staff.date]);
+  }, [staff.checkInTime, staff.timeSlot, staff.date]);
 
   // 퇴근 시간: checkOutTime만 표시 (없으면 '미정')
   const endTimeStr = useMemo(() => {
-    // 1. checkOutTime이 있으면 사용
+    // checkOutTime이 있으면 사용
     if (staff.checkOutTime) {
       const date = parseTimestamp(staff.checkOutTime);
       return date ? formatTime(date) : '미정';
     }
-    // 2. 레거시: actualEndTime이 있으면 사용
-    if (staff.actualEndTime) {
-      const date = parseTimestamp(staff.actualEndTime);
-      return date ? formatTime(date) : '미정';
-    }
     return '미정';  // 퇴근 전까지는 미정
-  }, [staff.checkOutTime, staff.actualEndTime]);
+  }, [staff.checkOutTime]);
 
   // 근무 시간 계산 (둘 다 있을 때만)
   const workDuration = useMemo(() => {
-    const startSource = staff.checkInTime || staff.actualStartTime;
-    const endSource = staff.checkOutTime || staff.actualEndTime;
-    return calculateWorkDuration(startSource, endSource);
-  }, [staff.checkInTime, staff.actualStartTime, staff.checkOutTime, staff.actualEndTime]);
+    return calculateWorkDuration(staff.checkInTime, staff.checkOutTime);
+  }, [staff.checkInTime, staff.checkOutTime]);
 
   // 액션 버튼 표시 조건
   const canEditTime = staff.status !== 'cancelled' && staff.status !== 'no_show';

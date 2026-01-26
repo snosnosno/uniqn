@@ -101,8 +101,8 @@ export const SettlementCard = React.memo(function SettlementCard({
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 
   // 출퇴근 시간 유효 여부
-  const startTime = parseTimestamp(workLog.actualStartTime);
-  const endTime = parseTimestamp(workLog.actualEndTime);
+  const startTime = parseTimestamp(workLog.checkInTime);
+  const endTime = parseTimestamp(workLog.checkOutTime);
   const hasValidTimes = startTime && endTime;
 
   // 핸들러

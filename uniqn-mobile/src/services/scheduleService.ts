@@ -125,8 +125,8 @@ function workLogToScheduleEvent(
   // 정산 세부 내역 미리 계산 (SettlementTab에서 중복 계산 방지)
   const settlementBreakdown = calculateSettlementBreakdown(
     {
-      actualStartTime: workLog.actualStartTime,
-      actualEndTime: workLog.actualEndTime,
+      checkInTime: workLog.checkInTime,
+      checkOutTime: workLog.checkOutTime,
       scheduledStartTime: workLog.scheduledStartTime,
       scheduledEndTime: workLog.scheduledEndTime,
       role: workLog.role,
@@ -138,8 +138,8 @@ function workLogToScheduleEvent(
     cardInfo?.card
   );
 
-  // 공고 ID 정규화 (jobPostingId 우선, eventId 폴백)
-  const jobPostingId = workLog.jobPostingId || workLog.eventId || '';
+  // 공고 ID
+  const jobPostingId = workLog.jobPostingId || '';
   const jobPostingName = cardInfo?.title || '이벤트';
 
   return {
@@ -148,14 +148,10 @@ function workLogToScheduleEvent(
     date: workLog.date,
     startTime: normalizeTimestamp(workLog.scheduledStartTime),
     endTime: normalizeTimestamp(workLog.scheduledEndTime),
-    actualStartTime: normalizeTimestamp(workLog.actualStartTime),
-    actualEndTime: normalizeTimestamp(workLog.actualEndTime),
-    // 정규화된 필드 (Phase 2)
+    checkInTime: normalizeTimestamp(workLog.checkInTime),
+    checkOutTime: normalizeTimestamp(workLog.checkOutTime),
     jobPostingId,
     jobPostingName,
-    // 하위 호환성
-    eventId: workLog.eventId,
-    eventName: jobPostingName,
     location: cardInfo?.location || '',
     role: workLog.role,
     customRole: workLog.customRole,
@@ -254,8 +250,8 @@ function applicationToScheduleEvents(
     return events;
   }
 
-  // assignments가 있는 경우 (v2.0 지원서)
-  if (application.assignments && application.assignments.length > 0) {
+  // assignments 배열에서 ScheduleEvent 생성
+  if (application.assignments.length > 0) {
     for (let assignmentIdx = 0; assignmentIdx < application.assignments.length; assignmentIdx++) {
       const assignment = application.assignments[assignmentIdx];
       // 각 날짜별로 ScheduleEvent 생성
@@ -264,7 +260,7 @@ function applicationToScheduleEvents(
         // 고정공고 마커는 스킵
         if (date === FIXED_DATE_MARKER) continue;
 
-        // 공고 정보 정규화
+        // 공고 정보
         const jobPostingId = application.jobPostingId;
         const jobPostingName = cardInfo?.title || application.jobPostingTitle || '공고';
 
@@ -275,16 +271,12 @@ function applicationToScheduleEvents(
           date,
           startTime: parseTimeSlotToTimestamp(assignment.timeSlot, date, 'start'),
           endTime: parseTimeSlotToTimestamp(assignment.timeSlot, date, 'end'),
-          actualStartTime: null,
-          actualEndTime: null,
-          // 정규화된 필드 (Phase 2)
+          checkInTime: null,
+          checkOutTime: null,
           jobPostingId,
           jobPostingName,
-          // 하위 호환성
-          eventId: jobPostingId,
-          eventName: jobPostingName,
           location: cardInfo?.location || '',
-          role: assignment.roleIds[0] || application.appliedRole,
+          role: assignment.roleIds[0] || 'other',
           customRole: application.customRole,
           status: 'not_started', // applications에는 출퇴근 데이터 없음
           payrollStatus: undefined,
@@ -303,48 +295,6 @@ function applicationToScheduleEvents(
         events.push(event);
       }
     }
-  } else if (application.appliedDate) {
-    // 레거시 지원서 (assignments 없음) - appliedDate 사용
-    // 공고 정보 정규화
-    const jobPostingId = application.jobPostingId;
-    const jobPostingName = cardInfo?.title || application.jobPostingTitle || '공고';
-
-    const event: ScheduleEvent = {
-      id: `${application.id}_${application.appliedDate}`,
-      type: scheduleType,
-      date: application.appliedDate,
-      startTime: application.appliedTimeSlot
-        ? parseTimeSlotToTimestamp(application.appliedTimeSlot, application.appliedDate, 'start')
-        : null,
-      endTime: application.appliedTimeSlot
-        ? parseTimeSlotToTimestamp(application.appliedTimeSlot, application.appliedDate, 'end')
-        : null,
-      actualStartTime: null,
-      actualEndTime: null,
-      // 정규화된 필드 (Phase 2)
-      jobPostingId,
-      jobPostingName,
-      // 하위 호환성
-      eventId: jobPostingId,
-      eventName: jobPostingName,
-      location: cardInfo?.location || '',
-      role: application.appliedRole,
-      customRole: application.customRole,
-      status: 'not_started',
-      payrollStatus: undefined,
-      payrollAmount: undefined,
-      ownerPhone: cardInfo?.contactPhone,
-      ownerId: cardInfo?.ownerId,
-      notes: application.message,
-      sourceCollection: 'applications',
-      sourceId: application.id,
-      applicationId: application.id,
-      jobPostingCard: cardInfo?.card,
-      timeSlot: application.appliedTimeSlot,
-      createdAt: application.createdAt,
-      updatedAt: application.updatedAt,
-    };
-    events.push(event);
   }
 
   return events;
@@ -479,8 +429,8 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
       }
 
       // 근무 시간 계산
-      const start = timestampToDate(schedule.actualStartTime);
-      const end = timestampToDate(schedule.actualEndTime);
+      const start = timestampToDate(schedule.checkInTime);
+      const end = timestampToDate(schedule.checkOutTime);
       if (start && end) {
         hoursWorked += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
       }

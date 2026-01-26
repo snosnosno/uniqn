@@ -322,18 +322,15 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog & {
-        checkInTime?: Timestamp | string | null;
-        checkOutTime?: Timestamp | string | null;
-      };
+      const workLog = workLogDoc.data() as WorkLog;
 
       // 시간 수정 이력 저장
       const modificationHistory: WorkTimeModification[] =
         workLog.modificationHistory || [];
 
-      // 이전 시간: checkInTime/checkOutTime 우선, 없으면 actualStartTime/actualEndTime
-      const prevCheckIn = workLog.checkInTime ?? workLog.actualStartTime ?? null;
-      const prevCheckOut = workLog.checkOutTime ?? workLog.actualEndTime ?? null;
+      // 이전 시간
+      const prevCheckIn = workLog.checkInTime ?? null;
+      const prevCheckOut = workLog.checkOutTime ?? null;
 
       modificationHistory.push({
         previousStartTime: prevCheckIn,
@@ -357,14 +354,6 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
       if (input.checkOutTime) {
         updateData.status = 'checked_out';
       }
-
-      // 레거시 호환: actualStartTime/actualEndTime도 함께 업데이트 (null 포함)
-      updateData.actualStartTime = input.checkInTime
-        ? Timestamp.fromDate(input.checkInTime)
-        : null;
-      updateData.actualEndTime = input.checkOutTime
-        ? Timestamp.fromDate(input.checkOutTime)
-        : null;
 
       transaction.update(workLogRef, updateData);
     });

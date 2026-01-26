@@ -47,10 +47,8 @@ export type WorkTimeModificationData = z.infer<typeof workTimeModificationSchema
  */
 export const createWorkLogSchema = z.object({
   staffId: z.string().min(1, { message: '스태프 ID는 필수입니다' }),
-  /** 공고 ID (정규화된 필드명) */
+  /** 공고 ID */
   jobPostingId: z.string().min(1, { message: '공고 ID는 필수입니다' }),
-  /** @deprecated jobPostingId 사용 권장 - 하위 호환성용 */
-  eventId: z.string().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
   role: z.string().min(1, { message: '역할은 필수입니다' }),
   scheduledStartTime: z.string().optional(),

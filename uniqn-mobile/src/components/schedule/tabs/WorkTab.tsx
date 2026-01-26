@@ -120,7 +120,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   }, [onQRScan]);
 
   // 실제 출퇴근 시간이 있는지 확인
-  const hasActualTimes = schedule.actualStartTime || schedule.actualEndTime;
+  const hasActualTimes = schedule.checkInTime || schedule.checkOutTime;
 
   // QR 버튼 표시 조건: 확정 상태 + workLogId 있음
   const canShowQRButton = schedule.type === 'confirmed' && schedule.workLogId && onQRScan;
@@ -212,15 +212,15 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           <View className="flex-row gap-2">
             <TimeBox
               label="출근"
-              value={formatTime(schedule.actualStartTime)}
+              value={formatTime(schedule.checkInTime)}
             />
             <TimeBox
               label="퇴근"
-              value={formatTime(schedule.actualEndTime)}
+              value={formatTime(schedule.checkOutTime)}
             />
             <TimeBox
               label="근무시간"
-              value={calculateDuration(schedule.actualStartTime, schedule.actualEndTime)}
+              value={calculateDuration(schedule.checkInTime, schedule.checkOutTime)}
               isHighlight
             />
           </View>

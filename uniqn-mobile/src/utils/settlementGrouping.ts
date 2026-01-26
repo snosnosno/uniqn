@@ -76,8 +76,8 @@ function createDateSettlementStatus(
   // 정산 금액 계산
   const settlementResult = calculateSettlementFromWorkLogWithTax(
     {
-      actualStartTime: workLog.actualStartTime,
-      actualEndTime: workLog.actualEndTime,
+      checkInTime: workLog.checkInTime,
+      checkOutTime: workLog.checkOutTime,
       role: workLog.role,
       customRole: workLog.customRole,
       customSalaryInfo: workLog.customSalaryInfo,
@@ -91,7 +91,7 @@ function createDateSettlementStatus(
   );
 
   // 출퇴근 완료 여부 확인
-  const hasValidTimes = !!(workLog.actualStartTime && workLog.actualEndTime);
+  const hasValidTimes = !!(workLog.checkInTime && workLog.checkOutTime);
 
   return {
     date: workLog.date,
@@ -176,10 +176,7 @@ function createGroupedSettlement(
   return {
     id: `grouped_settlement_${staffId}`,
     staffId,
-    // 정규화된 필드 (Phase 2)
     jobPostingId: firstWorkLog.jobPostingId,
-    // 하위 호환성
-    eventId: firstWorkLog.eventId,
     staffProfile: extractStaffProfile(firstWorkLog),
     dateRange: {
       start: dates[0],

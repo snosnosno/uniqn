@@ -266,8 +266,8 @@ export function SettlementDetailModal({
   }, [isGroupMode, currentDateIndex, groupedSettlement, onDateChange]);
 
   // 계산된 값들
-  const startTime = useMemo(() => workLog ? parseTimestamp(workLog.actualStartTime) : null, [workLog]);
-  const endTime = useMemo(() => workLog ? parseTimestamp(workLog.actualEndTime) : null, [workLog]);
+  const startTime = useMemo(() => workLog ? parseTimestamp(workLog.checkInTime) : null, [workLog]);
+  const endTime = useMemo(() => workLog ? parseTimestamp(workLog.checkOutTime) : null, [workLog]);
   const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog]);
 
   const settlement = useMemo(() =>

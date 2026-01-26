@@ -2,7 +2,7 @@
  * 시간 정규화 타입 정의
  *
  * @description Phase 3 - 시간 필드 정규화
- * actualStartTime/checkInTime 중복 필드를 단일 인터페이스로 정규화
+ * checkInTime/checkOutTime 시간 필드를 통일된 인터페이스로 정규화
  */
 
 import type { Timestamp } from 'firebase/firestore';
@@ -17,9 +17,9 @@ export interface NormalizedWorkTime {
   scheduledStart: Date | null;
   /** 예정 퇴근 시간 */
   scheduledEnd: Date | null;
-  /** 실제 출근 시간 (checkInTime 또는 actualStartTime) */
+  /** 실제 출근 시간 (checkInTime) */
   actualStart: Date | null;
-  /** 실제 퇴근 시간 (checkOutTime 또는 actualEndTime) */
+  /** 실제 퇴근 시간 (checkOutTime) */
   actualEnd: Date | null;
   /** 예상 금액 여부 (실제 시간이 없어서 예정 시간 사용 시 true) */
   isEstimate: boolean;

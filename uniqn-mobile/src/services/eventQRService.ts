@@ -86,23 +86,18 @@ function generateSecurityCode(): string {
 
 /**
  * QR 데이터 파싱
- *
- * @description jobPostingId 우선, eventId 폴백 (하위 호환성)
  */
 function parseQRData(qrString: string): EventQRDisplayData | null {
   try {
     const data = JSON.parse(qrString);
     if (data.type !== 'event') return null;
 
-    // jobPostingId 또는 eventId 중 하나는 있어야 함 (하위 호환성)
-    const jobPostingId = data.jobPostingId || data.eventId;
+    const jobPostingId = data.jobPostingId;
     if (!jobPostingId || !data.date || !data.action || !data.securityCode) return null;
 
     return {
       ...data,
       jobPostingId,
-      // 하위 호환성: eventId도 유지
-      eventId: jobPostingId,
     } as EventQRDisplayData;
   } catch (error) {
     logger.debug('QR 데이터 JSON 파싱 실패', { qrString: qrString.slice(0, 50), error });
@@ -133,10 +128,9 @@ export async function generateEventQR(
     // 기존 활성 QR 비활성화 (같은 공고/날짜/액션)
     await deactivateExistingQRCodes(input.jobPostingId, input.date, input.action);
 
-    // 새 QR 코드 생성 (jobPostingId 사용, eventId도 하위 호환성용으로 저장)
+    // 새 QR 코드 생성
     const qrData: Omit<EventQRCode, 'id'> = {
       jobPostingId: input.jobPostingId,
-      eventId: input.jobPostingId, // 하위 호환성
       date: input.date,
       action: input.action,
       securityCode,
@@ -155,7 +149,6 @@ export async function generateEventQR(
     const displayData: EventQRDisplayData = {
       type: 'event',
       jobPostingId: input.jobPostingId,
-      eventId: input.jobPostingId, // 하위 호환성
       date: input.date,
       action: input.action,
       securityCode,
@@ -387,9 +380,9 @@ export async function processEventQRCheckIn(
         });
 
         // 근무 시간 계산
-        const workLogWithCheckIn = workLog as WorkLog & { checkInTime?: unknown };
+        const workLogWithCheckIn = workLog as WorkLog;
         let workDuration = 0;
-        const checkInSource = workLogWithCheckIn.checkInTime || workLog.actualStartTime;
+        const checkInSource = workLogWithCheckIn.checkInTime;
         if (checkInSource) {
           const startTime =
             checkInSource instanceof Timestamp

@@ -81,7 +81,7 @@ function formatPhoneNumber(phone: string): string {
  * 시간 표시 (timeSlot 폴백 포함 - 스태프관리화면 동기화)
  */
 function getTimeDisplay(schedule: ScheduleEvent): string {
-  // 우선순위 1: Timestamp 시간 (actualStartTime/actualEndTime 또는 startTime/endTime)
+  // 우선순위 1: Timestamp 시간 (checkInTime/checkOutTime 또는 startTime/endTime)
   if (schedule.startTime && schedule.endTime) {
     return `${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`;
   }
@@ -281,14 +281,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         {schedule.type === 'completed' ? (
           // 완료 상태: 실제 근무시간 + 예정 시간 비교
           <View className="mt-2">
-            {(schedule.actualStartTime || schedule.actualEndTime) && (
+            {(schedule.checkInTime || schedule.checkOutTime) && (
               <View className="flex-row items-center">
                 <ClockIcon size={14} color="#2563EB" />
                 <Text className="ml-1.5 text-sm text-primary-600 dark:text-primary-400 font-medium">
-                  실제: {formatTime(schedule.actualStartTime)} - {formatTime(schedule.actualEndTime)}
+                  실제: {formatTime(schedule.checkInTime)} - {formatTime(schedule.checkOutTime)}
                 </Text>
                 <Text className="ml-2 text-sm text-primary-500 dark:text-primary-500">
-                  ({calculateDuration(schedule.actualStartTime, schedule.actualEndTime)})
+                  ({calculateDuration(schedule.checkInTime, schedule.checkOutTime)})
                 </Text>
               </View>
             )}

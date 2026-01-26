@@ -181,8 +181,8 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   const roleLabel = getRoleDisplayName(workLog.role, workLog.customRole);
 
   // 실제 근무 시간 (있으면 사용, 없으면 예정 시간)
-  const startTime = workLog.actualStartTime || workLog.scheduledStartTime;
-  const endTime = workLog.actualEndTime || workLog.scheduledEndTime;
+  const startTime = workLog.checkInTime || workLog.scheduledStartTime;
+  const endTime = workLog.checkOutTime || workLog.scheduledEndTime;
   const workHours = calculateWorkHours(startTime, endTime);
 
   const isCompleted = workLog.status === 'completed' || workLog.status === 'checked_out';

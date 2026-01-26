@@ -154,10 +154,6 @@ export function StaffProfileModal({
       const date = parseTimestamp(staff.checkInTime);
       return date ? formatTime(date) : '미정';
     }
-    if (staff.actualStartTime) {
-      const date = parseTimestamp(staff.actualStartTime);
-      return date ? formatTime(date) : '미정';
-    }
     if (staff.timeSlot && staff.date) {
       const { startTime } = parseTimeSlotToDate(staff.timeSlot, staff.date);
       return startTime ? formatTime(startTime) : '미정';
@@ -170,10 +166,6 @@ export function StaffProfileModal({
     if (!staff) return '미정';
     if (staff.checkOutTime) {
       const date = parseTimestamp(staff.checkOutTime);
-      return date ? formatTime(date) : '미정';
-    }
-    if (staff.actualEndTime) {
-      const date = parseTimestamp(staff.actualEndTime);
       return date ? formatTime(date) : '미정';
     }
     return '미정';

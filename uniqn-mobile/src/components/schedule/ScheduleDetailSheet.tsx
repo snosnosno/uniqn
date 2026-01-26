@@ -219,13 +219,13 @@ export function ScheduleDetailSheet({
       </View>
 
       {/* 실제 출퇴근 시간 (근무 완료인 경우) */}
-      {schedule.status === 'checked_out' && schedule.actualStartTime && schedule.actualEndTime && (
+      {schedule.status === 'checked_out' && schedule.checkInTime && schedule.checkOutTime && (
         <View className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
           <Text className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
             실제 근무 시간
           </Text>
           <Text className="text-sm text-blue-600 dark:text-blue-300">
-            {formatTime(schedule.actualStartTime as Timestamp)} - {formatTime(schedule.actualEndTime as Timestamp)}
+            {formatTime(schedule.checkInTime as Timestamp)} - {formatTime(schedule.checkOutTime as Timestamp)}
           </Text>
         </View>
       )}

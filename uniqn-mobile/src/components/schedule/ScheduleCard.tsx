@@ -140,7 +140,7 @@ export const ScheduleCard = memo(function ScheduleCard({
     }
 
     // 없으면 계산 (오버라이드 데이터 우선, 세금 포함)
-    if (schedule.actualStartTime && schedule.actualEndTime) {
+    if (schedule.checkInTime && schedule.checkOutTime) {
       const salaryInfo: SalaryInfo = schedule.customSalaryInfo ||
         schedule.jobPostingCard?.defaultSalary ||
         DEFAULT_SALARY_INFO;
@@ -151,8 +151,8 @@ export const ScheduleCard = memo(function ScheduleCard({
         DEFAULT_TAX_SETTINGS;
 
       const result = calculateSettlementWithTax(
-        schedule.actualStartTime,
-        schedule.actualEndTime,
+        schedule.checkInTime,
+        schedule.checkOutTime,
         salaryInfo,
         allowances,
         taxSettings
@@ -303,8 +303,8 @@ export const ScheduleCard = memo(function ScheduleCard({
                 {schedule.type === 'completed'
                   ? // 완료: 근무시간 표시
                     calculateDuration(
-                      schedule.actualStartTime || schedule.startTime,
-                      schedule.actualEndTime || schedule.endTime
+                      schedule.checkInTime || schedule.startTime,
+                      schedule.checkOutTime || schedule.endTime
                     )
                   : // 확정: 예정시간 범위 표시 (timeSlot 폴백)
                     confirmedTimeDisplay}

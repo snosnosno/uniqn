@@ -117,17 +117,11 @@ export interface ConfirmedStaff {
   /** 퇴근 시간 (QR 퇴근 또는 관리자 수정, null이면 미정) */
   checkOutTime?: Timestamp | string | null;
 
-  /** 예정 출근 시간 (레거시 호환) */
+  /** 예정 출근 시간 */
   scheduledStartTime?: Timestamp | string;
 
-  /** 예정 퇴근 시간 (레거시 호환) */
+  /** 예정 퇴근 시간 */
   scheduledEndTime?: Timestamp | string;
-
-  /** 실제 출근 시간 (레거시 호환) */
-  actualStartTime?: Timestamp | string;
-
-  /** 실제 퇴근 시간 (레거시 호환) */
-  actualEndTime?: Timestamp | string;
 
   /** 정산 상태 */
   payrollStatus?: PayrollStatus;
@@ -285,8 +279,6 @@ export function workLogToConfirmedStaff(
     checkOutTime: workLog.checkOutTime as Timestamp | string | null | undefined,
     scheduledStartTime: workLog.scheduledStartTime,
     scheduledEndTime: workLog.scheduledEndTime,
-    actualStartTime: workLog.actualStartTime,
-    actualEndTime: workLog.actualEndTime,
     payrollStatus: workLog.payrollStatus,
     payrollAmount: workLog.payrollAmount,
     notes: workLog.notes,

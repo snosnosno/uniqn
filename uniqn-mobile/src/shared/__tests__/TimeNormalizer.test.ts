@@ -2,7 +2,7 @@
  * TimeNormalizer 테스트
  *
  * @description Phase 3 - 시간 필드 정규화
- * actualStartTime/checkInTime 중복 필드 정규화 로직 테스트
+ * checkInTime/checkOutTime 필드 정규화 로직 테스트
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -26,28 +26,24 @@ describe('TimeNormalizer', () => {
       expect(normalized.actualEnd).toEqual(workLog.checkOutTime);
     });
 
-    it('actualStartTime 우선 (checkInTime보다)', () => {
+    it('checkInTime → actualStart 매핑 확인 (다른 값)', () => {
       const workLog = {
-        actualStartTime: new Date('2025-01-20T09:00:00'),
-        checkInTime: new Date('2025-01-20T09:05:00'), // 다른 값
+        checkInTime: new Date('2025-01-20T09:05:00'),
       };
 
       const normalized = TimeNormalizer.normalize(workLog);
 
-      // actualStartTime이 우선
-      expect(normalized.actualStart).toEqual(workLog.actualStartTime);
+      expect(normalized.actualStart).toEqual(workLog.checkInTime);
     });
 
-    it('actualEndTime 우선 (checkOutTime보다)', () => {
+    it('checkOutTime → actualEnd 매핑 확인 (다른 값)', () => {
       const workLog = {
-        actualEndTime: new Date('2025-01-20T18:00:00'),
-        checkOutTime: new Date('2025-01-20T18:05:00'), // 다른 값
+        checkOutTime: new Date('2025-01-20T18:05:00'),
       };
 
       const normalized = TimeNormalizer.normalize(workLog);
 
-      // actualEndTime이 우선
-      expect(normalized.actualEnd).toEqual(workLog.actualEndTime);
+      expect(normalized.actualEnd).toEqual(workLog.checkOutTime);
     });
 
     it('출근만 하고 퇴근 안 한 경우', () => {
@@ -109,8 +105,8 @@ describe('TimeNormalizer', () => {
 
     it('isEstimate: actual 시간이 있으면 false', () => {
       const workLog = {
-        actualStartTime: new Date('2025-01-20T09:00:00'),
-        actualEndTime: new Date('2025-01-20T18:00:00'),
+        checkInTime: new Date('2025-01-20T09:00:00'),
+        checkOutTime: new Date('2025-01-20T18:00:00'),
       };
 
       const normalized = TimeNormalizer.normalize(workLog);

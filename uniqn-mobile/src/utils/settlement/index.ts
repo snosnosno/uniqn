@@ -231,8 +231,8 @@ export function calculateSettlement(
  */
 export function calculateSettlementFromWorkLog(
   workLog: {
-    actualStartTime?: unknown;
-    actualEndTime?: unknown;
+    checkInTime?: unknown;
+    checkOutTime?: unknown;
     role?: string;
     customSalaryInfo?: SalaryInfo;
     customAllowances?: Allowances;
@@ -248,8 +248,8 @@ export function calculateSettlementFromWorkLog(
   const effectiveTaxSettings = workLog.customTaxSettings || taxSettings || DEFAULT_TAX_SETTINGS;
 
   const baseResult = calculateSettlement(
-    workLog.actualStartTime,
-    workLog.actualEndTime,
+    workLog.checkInTime,
+    workLog.checkOutTime,
     effectiveSalary,
     effectiveAllowances
   );
@@ -286,8 +286,8 @@ export function calculateSettlementFromWorkLog(
  */
 export function calculateTotalSettlementFromRoles(
   workLogs: {
-    actualStartTime?: unknown;
-    actualEndTime?: unknown;
+    checkInTime?: unknown;
+    checkOutTime?: unknown;
     role?: string;
     customRole?: string;
     customSalaryInfo?: SalaryInfo;
@@ -307,8 +307,8 @@ export function calculateTotalSettlementFromRoles(
     const effectiveTaxSettings = log.customTaxSettings || taxSettings || DEFAULT_TAX_SETTINGS;
 
     const baseResult = calculateSettlement(
-      log.actualStartTime,
-      log.actualEndTime,
+      log.checkInTime,
+      log.checkOutTime,
       salaryInfo,
       effectiveAllowances
     );
@@ -628,8 +628,8 @@ export function calculateSettlementWithTax(
  */
 export function calculateSettlementFromWorkLogWithTax(
   workLog: WorkLogWithOverrides & {
-    actualStartTime?: unknown;
-    actualEndTime?: unknown;
+    checkInTime?: unknown;
+    checkOutTime?: unknown;
   },
   roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
   defaultSalary?: SalaryInfo,
@@ -642,8 +642,8 @@ export function calculateSettlementFromWorkLogWithTax(
   const taxSettings = getEffectiveTaxSettings(workLog, defaultTaxSettings);
 
   return calculateSettlementWithTax(
-    workLog.actualStartTime,
-    workLog.actualEndTime,
+    workLog.checkInTime,
+    workLog.checkOutTime,
     salaryInfo,
     allowances,
     taxSettings
@@ -713,8 +713,8 @@ export function getRoleSalaryFromJobPostingCard(
  */
 export function calculateSettlementBreakdown(
   workLogData: {
-    actualStartTime?: unknown;
-    actualEndTime?: unknown;
+    checkInTime?: unknown;
+    checkOutTime?: unknown;
     scheduledStartTime?: unknown;
     scheduledEndTime?: unknown;
     role?: string;
@@ -725,10 +725,10 @@ export function calculateSettlementBreakdown(
   },
   jobPostingCard?: JobPostingCard
 ): SettlementBreakdown | null {
-  // 1. 시간 결정 (actual 우선, 없으면 scheduled)
-  const startTime = workLogData.actualStartTime || workLogData.scheduledStartTime;
-  const endTime = workLogData.actualEndTime || workLogData.scheduledEndTime;
-  const isEstimate = !workLogData.actualStartTime || !workLogData.actualEndTime;
+  // 1. 시간 결정 (checkIn/checkOut 우선, 없으면 scheduled)
+  const startTime = workLogData.checkInTime || workLogData.scheduledStartTime;
+  const endTime = workLogData.checkOutTime || workLogData.scheduledEndTime;
+  const isEstimate = !workLogData.checkInTime || !workLogData.checkOutTime;
 
   // 시간 정보가 없으면 계산 불가
   if (!startTime || !endTime) {

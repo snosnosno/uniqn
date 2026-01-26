@@ -225,15 +225,15 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
         workDays.add(workLog.date);
 
         // 근무 시간 계산
-        if (workLog.actualStartTime && workLog.actualEndTime) {
+        if (workLog.checkInTime && workLog.checkOutTime) {
           const start =
-            workLog.actualStartTime instanceof Timestamp
-              ? workLog.actualStartTime.toDate()
-              : new Date(workLog.actualStartTime as string);
+            workLog.checkInTime instanceof Timestamp
+              ? workLog.checkInTime.toDate()
+              : new Date(workLog.checkInTime as string);
           const end =
-            workLog.actualEndTime instanceof Timestamp
-              ? workLog.actualEndTime.toDate()
-              : new Date(workLog.actualEndTime as string);
+            workLog.checkOutTime instanceof Timestamp
+              ? workLog.checkOutTime.toDate()
+              : new Date(workLog.checkOutTime as string);
           totalHoursWorked += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
         }
 
@@ -333,8 +333,8 @@ export async function getMonthlyPayroll(
 export async function updateWorkTime(
   workLogId: string,
   updates: {
-    actualStartTime?: Date;
-    actualEndTime?: Date;
+    checkInTime?: Date;
+    checkOutTime?: Date;
     notes?: string;
   }
 ): Promise<void> {
@@ -366,12 +366,12 @@ export async function updateWorkTime(
         updatedAt: serverTimestamp(),
       };
 
-      if (updates.actualStartTime) {
-        updateData.actualStartTime = Timestamp.fromDate(updates.actualStartTime);
+      if (updates.checkInTime) {
+        updateData.checkInTime = Timestamp.fromDate(updates.checkInTime);
       }
 
-      if (updates.actualEndTime) {
-        updateData.actualEndTime = Timestamp.fromDate(updates.actualEndTime);
+      if (updates.checkOutTime) {
+        updateData.checkOutTime = Timestamp.fromDate(updates.checkOutTime);
       }
 
       if (updates.notes !== undefined) {

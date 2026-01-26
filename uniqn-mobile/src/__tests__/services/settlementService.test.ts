@@ -136,15 +136,15 @@ function createMockWorkLogWithTimes(overrides = {}) {
 
   return {
     ...baseWorkLog,
-    eventId: 'job-1',
+    jobPostingId: 'job-1',
     staffId: 'staff-1',
     role: 'dealer',
     status: 'checked_out' as const,
     payrollStatus: 'pending' as const,
     payrollAmount: undefined,
     date: '2024-01-15',
-    actualStartTime: Timestamp.fromDate(checkIn),
-    actualEndTime: Timestamp.fromDate(checkOut),
+    checkInTime: Timestamp.fromDate(checkIn),
+    checkOutTime: Timestamp.fromDate(checkOut),
     modificationHistory: [],
     ...overrides,
   };
@@ -172,7 +172,7 @@ describe('settlementService', () => {
   describe('getWorkLogsByJobPosting', () => {
     it('should return work logs for a job posting', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
-      const workLog = createMockWorkLogWithTimes({ id: 'worklog-1', eventId: 'job-1' });
+      const workLog = createMockWorkLogWithTimes({ id: 'worklog-1', jobPostingId: 'job-1' });
 
       mockGetDoc.mockResolvedValueOnce({
         exists: () => true,
@@ -282,7 +282,7 @@ describe('settlementService', () => {
   describe('calculateSettlement', () => {
     it('should calculate settlement for hourly wage', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
-      const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
+      const workLog = createMockWorkLogWithTimes({ jobPostingId: 'job-1' });
 
       mockGetDoc
         .mockResolvedValueOnce({
@@ -315,7 +315,7 @@ describe('settlementService', () => {
         defaultSalary: { type: 'daily', amount: 150000 },
         useSameSalary: true,
       });
-      const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
+      const workLog = createMockWorkLogWithTimes({ jobPostingId: 'job-1' });
 
       mockGetDoc
         .mockResolvedValueOnce({
@@ -346,7 +346,7 @@ describe('settlementService', () => {
         defaultSalary: { type: 'monthly', amount: 3300000 },
         useSameSalary: true,
       });
-      const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
+      const workLog = createMockWorkLogWithTimes({ jobPostingId: 'job-1' });
 
       mockGetDoc
         .mockResolvedValueOnce({
@@ -369,7 +369,7 @@ describe('settlementService', () => {
 
     it('should apply deductions', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
-      const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
+      const workLog = createMockWorkLogWithTimes({ jobPostingId: 'job-1' });
 
       mockGetDoc
         .mockResolvedValueOnce({
@@ -409,7 +409,7 @@ describe('settlementService', () => {
     it('should settle a work log successfully', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog = createMockWorkLogWithTimes({
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_out',
         payrollStatus: 'pending',
       });
@@ -443,7 +443,7 @@ describe('settlementService', () => {
     it('should fail for non-checked-out work log', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog = createMockWorkLogWithTimes({
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_in',
         payrollStatus: 'pending',
       });
@@ -476,7 +476,7 @@ describe('settlementService', () => {
     it('should fail for already settled work log', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog = createMockWorkLogWithTimes({
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_out',
         payrollStatus: 'completed',
       });
@@ -516,13 +516,13 @@ describe('settlementService', () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog1 = createMockWorkLogWithTimes({
         id: 'worklog-1',
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_out',
         payrollStatus: 'pending',
       });
       const workLog2 = createMockWorkLogWithTimes({
         id: 'worklog-2',
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_out',
         payrollStatus: 'pending',
       });
@@ -571,13 +571,13 @@ describe('settlementService', () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog1 = createMockWorkLogWithTimes({
         id: 'worklog-1',
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_out',
         payrollStatus: 'pending',
       });
       const workLog2 = createMockWorkLogWithTimes({
         id: 'worklog-2',
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         status: 'checked_out',
         payrollStatus: 'completed', // already settled
       });
@@ -629,7 +629,7 @@ describe('settlementService', () => {
     it('should update settlement status', async () => {
       const jobPosting = createMockJobPostingWithSalary({ id: 'job-1' });
       const workLog = createMockWorkLogWithTimes({
-        eventId: 'job-1',
+        jobPostingId: 'job-1',
         payrollStatus: 'pending',
       });
 
@@ -659,7 +659,7 @@ describe('settlementService', () => {
         id: 'job-1',
         ownerId: 'other-employer',
       });
-      const workLog = createMockWorkLogWithTimes({ eventId: 'job-1' });
+      const workLog = createMockWorkLogWithTimes({ jobPostingId: 'job-1' });
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {

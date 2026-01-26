@@ -359,8 +359,8 @@ export class SettlementCalculator {
    */
   static calculateBreakdown(
     workLogData: {
-      actualStartTime?: unknown;
-      actualEndTime?: unknown;
+      checkInTime?: unknown;
+      checkOutTime?: unknown;
       scheduledStartTime?: unknown;
       scheduledEndTime?: unknown;
       role?: string;
@@ -371,10 +371,10 @@ export class SettlementCalculator {
     },
     jobPostingCard?: JobPostingCard
   ): SettlementBreakdown | null {
-    // 시간 결정 (actual 우선, 없으면 scheduled)
-    const startTime = workLogData.actualStartTime || workLogData.scheduledStartTime;
-    const endTime = workLogData.actualEndTime || workLogData.scheduledEndTime;
-    const isEstimate = !workLogData.actualStartTime || !workLogData.actualEndTime;
+    // 시간 결정 (checkIn/checkOut 우선, 없으면 scheduled)
+    const startTime = workLogData.checkInTime || workLogData.scheduledStartTime;
+    const endTime = workLogData.checkOutTime || workLogData.scheduledEndTime;
+    const isEstimate = !workLogData.checkInTime || !workLogData.checkOutTime;
 
     // 시간 정보가 없으면 계산 불가
     if (!startTime || !endTime) {

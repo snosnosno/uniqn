@@ -246,7 +246,7 @@ export function WorkTimeEditor({
       const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; checkOutTime?: unknown; timeSlot?: string };
 
       // 출근 시간 초기화
-      const checkInSource = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
+      const checkInSource = workLogWithCheck.checkInTime;
       if (checkInSource === null || checkInSource === undefined) {
         // timeSlot에서 기본값 파싱
         if (workLogWithCheck.timeSlot && workLog.date) {
@@ -269,7 +269,7 @@ export function WorkTimeEditor({
       }
 
       // 퇴근 시간 초기화
-      const checkOutSource = workLogWithCheck.checkOutTime ?? workLog.actualEndTime;
+      const checkOutSource = workLogWithCheck.checkOutTime;
       if (checkOutSource === null || checkOutSource === undefined) {
         setEndTimeStr('');
         setIsEndTimeUndefined(true);
@@ -305,7 +305,7 @@ export function WorkTimeEditor({
   const originalStartTime = useMemo(() => {
     if (!workLog) return null;
     const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; timeSlot?: string };
-    const source = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
+    const source = workLogWithCheck.checkInTime;
     if (source) {
       return parseTimestamp(source);
     }
@@ -320,7 +320,7 @@ export function WorkTimeEditor({
   const originalEndTime = useMemo(() => {
     if (!workLog) return null;
     const workLogWithCheck = workLog as WorkLog & { checkOutTime?: unknown };
-    const source = workLogWithCheck.checkOutTime ?? workLog.actualEndTime;
+    const source = workLogWithCheck.checkOutTime;
     return source ? parseTimestamp(source) : null;
   }, [workLog]);
 
@@ -328,7 +328,7 @@ export function WorkTimeEditor({
   const wasStartTimeUndefined = useMemo(() => {
     if (!workLog) return false;
     const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; timeSlot?: string };
-    const source = workLogWithCheck.checkInTime ?? workLog.actualStartTime;
+    const source = workLogWithCheck.checkInTime;
     if (source) return false; // 출근 시간이 있으면 미정 아님
     // timeSlot에서 파싱 시도 (초기화 로직과 일치)
     if (workLogWithCheck.timeSlot && workLog.date) {
@@ -341,7 +341,7 @@ export function WorkTimeEditor({
   const wasEndTimeUndefined = useMemo(() => {
     if (!workLog) return false;
     const workLogWithCheck = workLog as WorkLog & { checkOutTime?: unknown };
-    const source = workLogWithCheck.checkOutTime ?? workLog.actualEndTime;
+    const source = workLogWithCheck.checkOutTime;
     return source === null || source === undefined;
   }, [workLog]);
 
