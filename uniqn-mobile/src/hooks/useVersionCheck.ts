@@ -22,6 +22,7 @@ import {
   getStoreUrl,
   type UpdateType,
 } from '@/constants/version';
+import { checkForceUpdate as checkRemoteVersion } from '@/services/versionService';
 
 // ============================================================================
 // Types
@@ -124,61 +125,87 @@ export function useVersionCheck(): UseVersionCheckReturn {
 
   /**
    * 버전 체크 실행
+   *
+   * versionService를 통해 Firestore에서 원격 버전 정보를 가져옵니다.
+   * 실패 시 로컬 상수로 폴백합니다.
    */
   const checkVersion = useCallback(async () => {
     try {
       setIsLoading(true);
       setError(null);
 
-      // TODO [출시 전]: Firebase Remote Config에서 최신 버전 정보 가져오기
-      // const remoteConfig = await fetchRemoteConfig();
-      // const minimumVersion = remoteConfig.getValue('minimum_version').asString();
-      // const recommendedVersion = remoteConfig.getValue('recommended_version').asString();
+      // versionService를 통해 원격 버전 정보 가져오기
+      const remoteResult = await checkRemoteVersion();
 
-      // 현재는 로컬 상수 사용
+      // 점검 모드 확인
+      if (remoteResult.isMaintenanceMode) {
+        logger.info('점검 모드 활성화', {
+          message: remoteResult.maintenanceMessage,
+        });
+        // 점검 모드일 때도 결과 설정 (별도 UI 처리 가능)
+      }
+
+      // 원격 설정 또는 로컬 폴백
       const minimumVersion = UPDATE_POLICY.MINIMUM_VERSION;
-      const recommendedVersion = UPDATE_POLICY.RECOMMENDED_VERSION;
-
-      const updateType = checkUpdateRequired(APP_VERSION);
-      const storeUrl = getStoreUrl();
+      const recommendedVersion = remoteResult.latestVersion ?? UPDATE_POLICY.RECOMMENDED_VERSION;
 
       const checkResult: VersionCheckResult = {
-        updateType,
-        currentVersion: APP_VERSION,
+        updateType: remoteResult.updateType,
+        currentVersion: remoteResult.currentVersion,
         minimumVersion,
         recommendedVersion,
-        storeUrl,
+        storeUrl: getStoreUrl(),
       };
 
       setResult(checkResult);
 
       // 업데이트 모달 표시 여부 결정
-      if (updateType === 'required') {
+      if (remoteResult.mustUpdate) {
         // 강제 업데이트: 항상 표시
         setShowUpdateModal(true);
         logger.info('강제 업데이트 필요', {
-          currentVersion: APP_VERSION,
-          minimumVersion,
+          currentVersion: remoteResult.currentVersion,
+          latestVersion: remoteResult.latestVersion,
         });
-      } else if (updateType === 'recommended') {
+      } else if (remoteResult.shouldUpdate) {
         // 권장 업데이트: 무시하지 않았으면 표시
         const isDismissed = await checkDismissed();
         setShowUpdateModal(!isDismissed);
 
         if (!isDismissed) {
           logger.info('권장 업데이트 가능', {
-            currentVersion: APP_VERSION,
-            recommendedVersion,
+            currentVersion: remoteResult.currentVersion,
+            latestVersion: remoteResult.latestVersion,
           });
         }
       } else {
         setShowUpdateModal(false);
       }
     } catch (err) {
-      const checkError =
-        err instanceof Error ? err : new Error('버전 체크 실패');
-      setError(checkError);
-      logger.error('버전 체크 실패', checkError);
+      // 에러 시 로컬 상수로 폴백
+      const updateType = checkUpdateRequired(APP_VERSION);
+      const checkResult: VersionCheckResult = {
+        updateType,
+        currentVersion: APP_VERSION,
+        minimumVersion: UPDATE_POLICY.MINIMUM_VERSION,
+        recommendedVersion: UPDATE_POLICY.RECOMMENDED_VERSION,
+        storeUrl: getStoreUrl(),
+      };
+      setResult(checkResult);
+
+      // 폴백 결과에 따라 모달 표시
+      if (updateType === 'required') {
+        setShowUpdateModal(true);
+      } else if (updateType === 'recommended') {
+        const isDismissed = await checkDismissed();
+        setShowUpdateModal(!isDismissed);
+      } else {
+        setShowUpdateModal(false);
+      }
+
+      logger.warn('원격 버전 체크 실패, 로컬 폴백 사용', {
+        error: err instanceof Error ? err.message : 'Unknown error',
+      });
     } finally {
       setIsLoading(false);
     }

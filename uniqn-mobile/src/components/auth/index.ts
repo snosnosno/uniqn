@@ -33,3 +33,6 @@ export type {
   VerificationStatus,
   IdentityVerificationProps,
 } from './IdentityVerification';
+
+// Biometric
+export { BiometricButton, BiometricIconButton } from './BiometricButton';

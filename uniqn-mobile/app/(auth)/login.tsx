@@ -11,8 +11,9 @@ import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Timestamp } from 'firebase/firestore';
 import { Divider } from '@/components/ui';
-import { LoginForm, SocialLoginButtons } from '@/components/auth';
+import { LoginForm, SocialLoginButtons, BiometricButton } from '@/components/auth';
 import { login, signInWithApple, signInWithGoogle, signInWithKakao } from '@/services';
+import { useBiometricAuth } from '@/hooks';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore, type UserProfile as StoreUserProfile } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
@@ -39,6 +40,24 @@ export default function LoginScreen() {
   const { addToast } = useToastStore();
   const { setUser, setProfile } = useAuthStore();
 
+  // 생체 인증
+  const {
+    isEnabled: isBiometricEnabled,
+    isAvailable: isBiometricAvailable,
+    isAuthenticating: isBiometricAuthenticating,
+    biometricTypeName,
+    loginWithBiometric,
+    updateCredentials: updateBiometricCredentials,
+  } = useBiometricAuth();
+
+  // 생체 인증 로그인 핸들러
+  const handleBiometricLogin = useCallback(async () => {
+    const success = await loginWithBiometric();
+    if (success) {
+      router.replace('/(app)/(tabs)');
+    }
+  }, [loginWithBiometric]);
+
   // 이메일 로그인
   const handleLogin = useCallback(async (data: LoginFormData) => {
     setIsLoading(true);
@@ -60,6 +79,9 @@ export default function LoginScreen() {
         };
         setProfile(storeProfile);
 
+        // 생체 인증 자격 증명 갱신 (활성화된 경우)
+        await updateBiometricCredentials();
+
         logger.info('로그인 성공', { userId: result.user.uid });
         addToast({ type: 'success', message: '로그인되었습니다.' });
         router.replace('/(app)/(tabs)');
@@ -73,11 +95,11 @@ export default function LoginScreen() {
     } finally {
       setIsLoading(false);
     }
-  }, [addToast, setUser, setProfile]);
+  }, [addToast, setUser, setProfile, updateBiometricCredentials]);
 
   // 소셜 로그인 공통 처리
   const handleSocialLoginSuccess = useCallback(
-    (result: { user: { uid: string }; profile: { uid: string; email: string; name: string; nickname?: string; phone?: string; role: 'staff' | 'employer' | 'admin'; photoURL?: string; createdAt: Timestamp | Date; updatedAt: Timestamp | Date } }, provider: string) => {
+    async (result: { user: { uid: string }; profile: { uid: string; email: string; name: string; nickname?: string; phone?: string; role: 'staff' | 'employer' | 'admin'; photoURL?: string; createdAt: Timestamp | Date; updatedAt: Timestamp | Date } }, provider: string) => {
       // authStore 업데이트 (Timestamp → Date 변환)
       setUser(result.user as import('firebase/auth').User);
       const storeProfile: StoreUserProfile = {
@@ -93,11 +115,14 @@ export default function LoginScreen() {
       };
       setProfile(storeProfile);
 
+      // 생체 인증 자격 증명 갱신 (활성화된 경우)
+      await updateBiometricCredentials();
+
       logger.info(`${provider} 로그인 성공`, { userId: result.user.uid });
       addToast({ type: 'success', message: '로그인되었습니다.' });
       router.replace('/(app)/(tabs)');
     },
-    [setUser, setProfile, addToast]
+    [setUser, setProfile, addToast, updateBiometricCredentials]
   );
 
   // Apple 로그인
@@ -106,7 +131,7 @@ export default function LoginScreen() {
     try {
       const result = await signInWithApple();
       if (result.user) {
-        handleSocialLoginSuccess(result, 'Apple');
+        await handleSocialLoginSuccess(result, 'Apple');
       }
     } catch (error) {
       logger.error('Apple 로그인 실패', error as Error);
@@ -125,7 +150,7 @@ export default function LoginScreen() {
     try {
       const result = await signInWithGoogle();
       if (result.user) {
-        handleSocialLoginSuccess(result, 'Google');
+        await handleSocialLoginSuccess(result, 'Google');
       }
     } catch (error) {
       logger.error('Google 로그인 실패', error as Error);
@@ -144,7 +169,7 @@ export default function LoginScreen() {
     try {
       const result = await signInWithKakao();
       if (result.user) {
-        handleSocialLoginSuccess(result, 'Kakao');
+        await handleSocialLoginSuccess(result, 'Kakao');
       }
     } catch (error) {
       logger.error('Kakao 로그인 실패', error as Error);
@@ -181,10 +206,28 @@ export default function LoginScreen() {
             </Text>
           </View>
 
+          {/* 생체 인증 버튼 */}
+          {isBiometricEnabled && isBiometricAvailable && (
+            <View className="mb-6">
+              <BiometricButton
+                onPress={handleBiometricLogin}
+                isLoading={isBiometricAuthenticating}
+                disabled={isLoading || isSocialLoading}
+                variant="default"
+                size="lg"
+                className="w-full"
+              />
+              <Text className="text-center text-sm text-gray-500 dark:text-gray-400 mt-2">
+                {biometricTypeName}으로 빠르게 로그인하세요
+              </Text>
+              <Divider label="또는 이메일로" spacing="md" />
+            </View>
+          )}
+
           {/* 로그인 폼 */}
           <LoginForm
             onSubmit={handleLogin}
-            isLoading={isLoading || isSocialLoading}
+            isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
           />
 
           <Divider label="또는" spacing="lg" />
@@ -194,9 +237,9 @@ export default function LoginScreen() {
             onAppleLogin={handleAppleLogin}
             onGoogleLogin={handleGoogleLogin}
             onKakaoLogin={handleKakaoLogin}
-            isLoading={isLoading}
+            isLoading={isLoading || isBiometricAuthenticating}
             loadingProvider={loadingProvider}
-            disabled={isLoading}
+            disabled={isLoading || isBiometricAuthenticating}
           />
         </ScrollView>
       </KeyboardAvoidingView>

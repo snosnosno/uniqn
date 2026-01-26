@@ -18,13 +18,20 @@ import { initializeAuth, getAuth, Auth } from 'firebase/auth';
 // @ts-expect-error - getReactNativePersistence exists at runtime but missing from types
 import { getReactNativePersistence } from 'firebase/auth';
 import { getFirestore, Firestore, Timestamp } from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getFunctions, Functions } from 'firebase/functions';
+import {
+  getRemoteConfig,
+  fetchAndActivate,
+  getValue,
+  type RemoteConfig,
+} from 'firebase/remote-config';
+import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getEnv } from './env';
 
 // Re-export Timestamp for components (중앙화된 Firebase 타입 접근)
 export { Timestamp };
-import { getStorage, FirebaseStorage } from 'firebase/storage';
-import { getFunctions, Functions } from 'firebase/functions';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { getEnv } from './env';
 
 /**
  * 초기화된 인스턴스 캐시
@@ -34,6 +41,7 @@ let firebaseAuth: Auth | null = null;
 let firebaseDb: Firestore | null = null;
 let firebaseStorage: FirebaseStorage | null = null;
 let firebaseFunctions: Functions | null = null;
+let firebaseRemoteConfig: RemoteConfig | null = null;
 
 /**
  * 초기화 상태 플래그
@@ -142,6 +150,85 @@ export function getFirebaseFunctions(): Functions {
     firebaseFunctions = getFunctions(app, 'asia-northeast3');
   }
   return firebaseFunctions;
+}
+
+/**
+ * Firebase Remote Config 인스턴스 반환
+ *
+ * @note 웹에서만 완전 지원됨. 네이티브에서는 제한적 지원.
+ * @note 네이티브에서 완전 지원이 필요하면 @react-native-firebase/remote-config 사용
+ */
+export function getFirebaseRemoteConfig(): RemoteConfig | null {
+  // 웹에서만 완전 지원
+  if (Platform.OS !== 'web') {
+    // 네이티브에서는 null 반환 (featureFlagService에서 폴백 처리)
+    return null;
+  }
+
+  if (!firebaseRemoteConfig) {
+    const app = initializeFirebaseApp();
+    firebaseRemoteConfig = getRemoteConfig(app);
+
+    // 개발 환경에서는 캐시 시간 짧게 (즉시 반영)
+    if (__DEV__) {
+      firebaseRemoteConfig.settings.minimumFetchIntervalMillis = 0;
+    } else {
+      // 프로덕션: 12시간
+      firebaseRemoteConfig.settings.minimumFetchIntervalMillis = 12 * 60 * 60 * 1000;
+    }
+  }
+  return firebaseRemoteConfig;
+}
+
+/**
+ * Remote Config 값 가져오기 및 활성화
+ */
+export async function fetchAndActivateRemoteConfig(): Promise<boolean> {
+  const remoteConfig = getFirebaseRemoteConfig();
+  if (!remoteConfig) {
+    return false;
+  }
+  return fetchAndActivate(remoteConfig);
+}
+
+/**
+ * Remote Config에서 boolean 값 가져오기
+ */
+export function getRemoteConfigBoolean(key: string): boolean | null {
+  const remoteConfig = getFirebaseRemoteConfig();
+  if (!remoteConfig) {
+    return null;
+  }
+  return getValue(remoteConfig, key).asBoolean();
+}
+
+/**
+ * Remote Config에서 string 값 가져오기
+ */
+export function getRemoteConfigString(key: string): string | null {
+  const remoteConfig = getFirebaseRemoteConfig();
+  if (!remoteConfig) {
+    return null;
+  }
+  return getValue(remoteConfig, key).asString();
+}
+
+// =============================================================================
+// Firebase Performance Monitoring
+// =============================================================================
+
+/**
+ * Firebase Performance는 웹에서만 완전 지원됨
+ * 네이티브에서는 @react-native-firebase/perf 필요
+ *
+ * 현재는 웹에서만 활성화하고, 네이티브는 개발용 로깅으로 폴백
+ */
+
+/**
+ * 웹에서 Firebase Performance 사용 가능 여부
+ */
+export function isPerformanceAvailable(): boolean {
+  return Platform.OS === 'web';
 }
 
 /**

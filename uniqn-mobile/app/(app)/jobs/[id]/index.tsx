@@ -20,10 +20,10 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { ChevronLeftIcon } from '@/components/icons';
+import { ChevronLeftIcon, ShareIcon } from '@/components/icons';
 import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
-import { useJobDetail, useApplications, useAuth } from '@/hooks';
+import { useJobDetail, useApplications, useAuth, useShare } from '@/hooks';
 import { useThemeStore } from '@/stores';
 import { trackJobView } from '@/services/analyticsService';
 
@@ -31,7 +31,13 @@ import { trackJobView } from '@/services/analyticsService';
 // Custom Header Component
 // ============================================================================
 
-function CustomHeader({ title }: { title?: string }) {
+interface CustomHeaderProps {
+  title?: string;
+  onShare?: () => void;
+  isSharing?: boolean;
+}
+
+function CustomHeader({ title, onShare, isSharing }: CustomHeaderProps) {
   const { isDarkMode } = useThemeStore();
 
   return (
@@ -59,6 +65,22 @@ function CustomHeader({ title }: { title?: string }) {
             {title}
           </Text>
         </>
+      )}
+      {/* 공유 버튼 */}
+      {onShare && (
+        <Pressable
+          onPress={onShare}
+          disabled={isSharing}
+          className="p-2 -mr-2 ml-2"
+          hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+          accessibilityLabel="공고 공유하기"
+          accessibilityRole="button"
+        >
+          <ShareIcon
+            size={22}
+            color={isDarkMode ? '#9CA3AF' : '#6B7280'}
+          />
+        </Pressable>
       )}
     </View>
   );
@@ -114,10 +136,28 @@ export default function AuthenticatedJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
   const { hasApplied, getApplicationStatus } = useApplications();
+  const { shareJob, isSharing } = useShare();
 
   const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(
     id ?? ''
   );
+
+  // 공유 버튼 핸들러
+  const handleShare = useCallback(() => {
+    if (job) {
+      // location이 객체인 경우 name 추출, 문자열인 경우 그대로 사용
+      const locationStr = typeof job.location === 'string'
+        ? job.location
+        : job.location?.name ?? '';
+
+      shareJob({
+        id: job.id,
+        title: job.title,
+        location: locationStr,
+        workDate: job.workDate,
+      });
+    }
+  }, [job, shareJob]);
 
   // 공고 조회 추적
   useEffect(() => {
@@ -193,7 +233,7 @@ export default function AuthenticatedJobDetailScreen() {
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
-      <CustomHeader title={job.title} />
+      <CustomHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
 
       <ScrollView
         className="flex-1"

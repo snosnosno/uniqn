@@ -32,6 +32,8 @@ export default function SettingsLayout() {
       <Stack.Screen name="change-password" options={{ title: '비밀번호 변경' }} />
       <Stack.Screen name="delete-account" options={{ title: '계정 삭제' }} />
       <Stack.Screen name="my-data" options={{ title: '내 데이터' }} />
+      <Stack.Screen name="terms" options={{ title: '이용약관' }} />
+      <Stack.Screen name="privacy" options={{ title: '개인정보처리방침' }} />
     </Stack>
   );
 }

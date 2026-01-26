@@ -21,6 +21,7 @@ import {
   BriefcaseIcon,
   CreditCardIcon,
   ClockIcon,
+  XMarkIcon,
 } from '@/components/icons';
 import {
   USER_ROLE_LABELS,
@@ -103,7 +104,7 @@ export const UserDetail = React.memo(function UserDetail({
   isLoading = false,
   onEdit,
   onPenalty,
-  onClose: _onClose, // TODO: 닫기 버튼 구현 시 활용
+  onClose,
 }: UserDetailProps) {
   // 국적 표시
   const nationalityDisplay = useMemo(() => {
@@ -354,6 +355,17 @@ export const UserDetail = React.memo(function UserDetail({
 
         {/* 액션 버튼 */}
         <View className="flex-row mt-4 gap-3">
+          {onClose && (
+            <Pressable
+              onPress={onClose}
+              className="flex-row items-center justify-center py-3 px-4 bg-gray-200 dark:bg-gray-700 rounded-xl active:opacity-70"
+              accessibilityLabel="닫기"
+              accessibilityRole="button"
+            >
+              <XMarkIcon size={18} color="#6B7280" />
+              <Text className="ml-2 text-gray-700 dark:text-gray-300 font-semibold">닫기</Text>
+            </Pressable>
+          )}
           {onEdit && (
             <Pressable
               onPress={() => onEdit(user)}

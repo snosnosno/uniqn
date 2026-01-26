@@ -269,6 +269,25 @@ export const HeartIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
   return <Feather name="heart" size={size} color={resolvedColor} />;
 };
 
+// Bookmark Icons (즐겨찾기)
+type BookmarkIconProps = IconProps & { filled?: boolean };
+
+export const BookmarkIcon = ({ size = DEFAULT_SIZE, color, filled = false }: BookmarkIconProps) => {
+  const resolvedColor = useDefaultColor(color);
+  // filled일 때는 채워진 아이콘 (bookmark-filled가 없으므로 heart로 대체하거나 다른 방식 사용)
+  return <Feather name={filled ? 'bookmark' : 'bookmark'} size={size} color={filled ? '#F59E0B' : resolvedColor} />;
+};
+
+export const BookmarkFilledIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
+  const resolvedColor = color || '#F59E0B'; // 노란색 기본
+  return <MaterialIcons name="bookmark" size={size} color={resolvedColor} />;
+};
+
+export const BookmarkOutlineIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
+  const resolvedColor = useDefaultColor(color);
+  return <MaterialIcons name="bookmark-outline" size={size} color={resolvedColor} />;
+};
+
 export const StarIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
   const resolvedColor = useDefaultColor(color);
   return <Feather name="star" size={size} color={resolvedColor} />;

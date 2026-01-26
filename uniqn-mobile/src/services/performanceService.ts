@@ -9,11 +9,13 @@
  * - 커스텀 메트릭 기록
  * - 웹/네이티브 분기 처리
  *
- * TODO [출시 전]: @react-native-firebase/perf 네이티브 연동
+ * @note 현재 개발용 로깅으로 동작 (Firebase Console에서 확인 가능한 전송은 미구현)
+ * @note 네이티브에서 Firebase Performance를 사용하려면 @react-native-firebase/perf 설치 필요
  */
 
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
+import { isPerformanceAvailable } from '@/lib/firebase';
 
 // =============================================================================
 // Types
@@ -73,8 +75,16 @@ function createTrace(name: string): PerformanceTrace {
         });
       }
 
-      // TODO: Firebase Performance로 전송
-      // perf.trace(name).putMetric('duration', duration)
+      // 프로덕션에서 성능 데이터 기록 (로그로 수집 가능)
+      if (!__DEV__ && isPerformanceAvailable()) {
+        logger.info('Performance trace', {
+          name,
+          duration_ms: duration,
+          platform: Platform.OS,
+          attributes,
+          metrics,
+        });
+      }
     },
 
     putAttribute(key: string, value: string) {
@@ -188,7 +198,14 @@ class PerformanceService {
       logger.debug(`[Performance Metric] ${name}: ${value}`);
     }
 
-    // TODO: Firebase Performance로 전송
+    // 프로덕션에서 메트릭 기록
+    if (!__DEV__) {
+      logger.info('Performance metric', {
+        metric_name: name,
+        value,
+        platform: Platform.OS,
+      });
+    }
   }
 
   /**

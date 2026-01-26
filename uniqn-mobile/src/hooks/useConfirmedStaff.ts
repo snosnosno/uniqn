@@ -29,6 +29,7 @@ import {
 } from '@/services';
 import { logger } from '@/utils/logger';
 import { useToastStore } from '@/stores/toastStore';
+import { useAuthStore } from '@/stores/authStore';
 import type {
   ConfirmedStaff,
   ConfirmedStaffGroup,
@@ -111,6 +112,7 @@ export function useConfirmedStaff(
 ): UseConfirmedStaffReturn {
   const { realtime = false, date } = options;
   const { addToast } = useToastStore();
+  const user = useAuthStore((state) => state.user);
 
   // 실시간 데이터 (realtime 모드용)
   const [realtimeData, setRealtimeData] = useState<GetConfirmedStaffResult | null>(null);
@@ -257,17 +259,23 @@ export function useConfirmedStaff(
   }, [realtime, refetch]);
 
   const changeRole = useCallback(
-    (input: UpdateStaffRoleInput) => {
-      changeRoleMutation.mutate(input);
+    (input: Omit<UpdateStaffRoleInput, 'changedBy'> & { changedBy?: string }) => {
+      changeRoleMutation.mutate({
+        ...input,
+        changedBy: input.changedBy ?? user?.uid ?? 'system',
+      });
     },
-    [changeRoleMutation]
+    [changeRoleMutation, user?.uid]
   );
 
   const updateWorkTime = useCallback(
-    (input: UpdateWorkTimeInput) => {
-      updateWorkTimeMutation.mutate(input);
+    (input: Omit<UpdateWorkTimeInput, 'modifiedBy'> & { modifiedBy?: string }) => {
+      updateWorkTimeMutation.mutate({
+        ...input,
+        modifiedBy: input.modifiedBy ?? user?.uid ?? 'system',
+      });
     },
-    [updateWorkTimeMutation]
+    [updateWorkTimeMutation, user?.uid]
   );
 
   const removeStaff = useCallback(

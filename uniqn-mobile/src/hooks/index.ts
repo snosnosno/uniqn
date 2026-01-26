@@ -111,6 +111,52 @@ export {
 } from './useDeepLink';
 
 // ============================================================================
+// Share Hooks
+// ============================================================================
+
+export {
+  useShare,
+  type ShareJobParams,
+  type ShareResult,
+  type UseShareReturn,
+} from './useShare';
+
+// ============================================================================
+// Cache Management Hooks
+// ============================================================================
+
+export { useClearCache, type UseClearCacheReturn } from './useClearCache';
+
+// ============================================================================
+// Bookmark Hooks
+// ============================================================================
+
+export {
+  useBookmarks,
+  type BookmarkJobParams,
+  type UseBookmarksReturn,
+} from './useBookmarks';
+
+// ============================================================================
+// Auto Login Hooks
+// ============================================================================
+
+export {
+  useAutoLogin,
+  checkAutoLoginEnabled,
+  type UseAutoLoginReturn,
+} from './useAutoLogin';
+
+// ============================================================================
+// Biometric Auth Hooks
+// ============================================================================
+
+export {
+  useBiometricAuth,
+  type UseBiometricAuthReturn,
+} from './useBiometricAuth';
+
+// ============================================================================
 // Employer Hooks (구인자용 훅)
 // ============================================================================
 

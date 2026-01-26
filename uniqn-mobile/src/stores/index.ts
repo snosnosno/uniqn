@@ -65,3 +65,17 @@ export {
   selectFilter,
   selectUnreadByCategory,
 } from './notificationStore';
+
+// Bookmark Store
+export {
+  useBookmarkStore,
+  selectBookmarkCount,
+  selectBookmarks,
+  selectIsBookmarked,
+  selectToggleBookmark,
+  selectAddBookmark,
+  selectRemoveBookmark,
+  selectClearAllBookmarks,
+  selectBookmarkIds,
+} from './bookmarkStore';
+export type { BookmarkedJob } from './bookmarkStore';

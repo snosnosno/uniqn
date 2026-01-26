@@ -6,8 +6,9 @@
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, Platform } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
+import { BookmarkFilledIcon, BookmarkOutlineIcon } from '@/components/icons';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import {
@@ -24,6 +25,7 @@ import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import { formatDateShortWithDay } from '@/utils/dateUtils';
+import { useBookmarks } from '@/hooks';
 
 // ============================================================================
 // Types
@@ -223,9 +225,21 @@ const RoleLine = memo(function RoleLine({
  * FlashList 최적화를 위해 React.memo 적용
  */
 export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }: JobCardProps) {
+  const { isBookmarked, toggleBookmark } = useBookmarks();
+  const bookmarked = isBookmarked(job.id);
+
   const handlePress = useCallback(() => {
     onPress(job.id);
   }, [job.id, onPress]);
+
+  const handleBookmarkPress = useCallback(() => {
+    toggleBookmark({
+      id: job.id,
+      title: job.title,
+      location: job.location,
+      workDate: job.workDate,
+    });
+  }, [job.id, job.title, job.location, job.workDate, toggleBookmark]);
 
   // 역할에서 급여 정보 추출
   const getRolesWithSalary = (): { role: string; customRole?: string; salary: SalaryInfo }[] => {
@@ -279,7 +293,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         </View>
       )}
 
-      {/* 상단: 공고타입 + 승인상태 + 긴급 + 제목 */}
+      {/* 상단: 공고타입 + 승인상태 + 긴급 + 제목 + 북마크 */}
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 flex-row items-center flex-wrap">
           {/* 공고 타입 뱃지 (regular는 표시 안 함) */}
@@ -302,6 +316,39 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             {job.title}
           </Text>
         </View>
+        {/* 북마크 버튼 - 웹에서 button 중첩 방지를 위해 View 사용 */}
+        {Platform.OS === 'web' ? (
+          <View
+            // @ts-expect-error - React Native Web supports onClick on View
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              handleBookmarkPress();
+            }}
+            className="ml-2 p-1"
+            style={{ cursor: 'pointer' }}
+            accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
+          >
+            {bookmarked ? (
+              <BookmarkFilledIcon size={22} color="#F59E0B" />
+            ) : (
+              <BookmarkOutlineIcon size={22} />
+            )}
+          </View>
+        ) : (
+          <Pressable
+            onPress={handleBookmarkPress}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            className="ml-2 p-1"
+            accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
+            accessibilityRole="button"
+          >
+            {bookmarked ? (
+              <BookmarkFilledIcon size={22} color="#F59E0B" />
+            ) : (
+              <BookmarkOutlineIcon size={22} />
+            )}
+          </Pressable>
+        )}
       </View>
 
       {/* 장소 */}

@@ -433,6 +433,20 @@ export const settingsStorage = {
   async getTheme(): Promise<'light' | 'dark' | 'system' | null> {
     return getItem<'light' | 'dark' | 'system'>('theme');
   },
+
+  /**
+   * 자동 로그인 설정
+   * 기본값: true (자동 로그인 활성화)
+   */
+  async setAutoLoginEnabled(enabled: boolean): Promise<void> {
+    await setItem('autoLoginEnabled', enabled);
+    logger.info('자동 로그인 설정 변경', { enabled });
+  },
+
+  async isAutoLoginEnabled(): Promise<boolean> {
+    // 기본값: true (자동 로그인 기본 활성화)
+    return (await getItem<boolean>('autoLoginEnabled')) ?? true;
+  },
 };
 
 // ============================================================================

@@ -270,7 +270,7 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
         previousRole,
         newRole: input.newRole,
         reason: input.reason,
-        changedBy: 'employer', // TODO: 실제 사용자 ID로 변경
+        changedBy: input.changedBy ?? 'system',
         changedAt: Timestamp.now(),
       });
 
@@ -341,7 +341,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
         newStartTime: input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null,
         newEndTime: input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null,
         reason: input.reason,
-        modifiedBy: 'employer', // TODO: 실제 사용자 ID로 변경
+        modifiedBy: input.modifiedBy ?? 'system',
         modifiedAt: Timestamp.now(),
       });
 

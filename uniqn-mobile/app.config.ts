@@ -89,6 +89,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     infoPlist: {
       NSCameraUsageDescription: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
       NSPhotoLibraryUsageDescription: '프로필 사진 등록을 위해 사진 라이브러리 접근이 필요합니다.',
+      NSFaceIDUsageDescription: '빠른 로그인을 위해 Face ID를 사용합니다.',
     },
     // Universal Links (TODO: 도메인 설정 후 활성화)
     // associatedDomains: [
@@ -141,6 +142,12 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-camera',
       {
         cameraPermission: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
+      },
+    ],
+    [
+      'expo-local-authentication',
+      {
+        faceIDPermission: '빠른 로그인을 위해 Face ID를 사용합니다.',
       },
     ],
     '@react-native-community/datetimepicker',

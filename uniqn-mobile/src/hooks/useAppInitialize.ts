@@ -30,6 +30,7 @@ import {
   MaintenanceError,
   type VersionCheckResult,
 } from '@/services/versionService';
+import { checkAutoLoginEnabled } from './useAutoLogin';
 
 // ============================================================================
 // Types
@@ -150,7 +151,12 @@ export function useAppInitialize(): UseAppInitializeReturn {
       // 7. 인증 상태 확인 (Firebase Auth 리스너 등록)
       await useAuthStore.getState().checkAuthState();
 
-      // 8. Firebase Auth 상태 확정 대기 및 토큰 갱신
+      // 8. 자동 로그인 설정 확인
+      logger.debug('자동 로그인 설정 확인 중...', { component: 'useAppInitialize' });
+      const autoLoginEnabled = await checkAutoLoginEnabled();
+      logger.debug('자동 로그인 설정', { autoLoginEnabled, component: 'useAppInitialize' });
+
+      // 9. Firebase Auth 상태 확정 대기 및 토큰 갱신
       // 웹앱에서 가입한 계정도 모바일앱에서 최신 Custom Claims를 가져옴
       logger.debug('Firebase Auth 상태 확정 대기 중...', { component: 'useAppInitialize' });
 
@@ -175,7 +181,15 @@ export function useAppInitialize(): UseAppInitializeReturn {
         }, 3000);
       });
 
-      if (authUser) {
+      // 자동 로그인 비활성화 시: Firebase Auth 상태는 유지하되 UI는 로그인 화면 표시
+      if (authUser && !autoLoginEnabled) {
+        logger.info('자동 로그인 비활성화됨 - 로그인 화면으로 이동', {
+          component: 'useAppInitialize',
+          uid: authUser.uid,
+        });
+        // authStore의 상태를 unauthenticated로 설정 (Firebase에서 로그아웃하지 않음)
+        useAuthStore.getState().clearAuthState();
+      } else if (authUser) {
         try {
           await authUser.getIdToken(true);
 

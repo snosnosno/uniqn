@@ -100,6 +100,8 @@ interface AuthState {
   initialize: () => Promise<void>;
   checkAuthState: () => Promise<void>;
   reset: () => void;
+  /** 자동 로그인 비활성화 시 사용 - Firebase 로그아웃 없이 UI 상태만 초기화 */
+  clearAuthState: () => void;
 }
 
 // ============================================================================
@@ -235,6 +237,23 @@ export const useAuthStore = create<AuthState>()(
       // 로그아웃 시 상태 초기화
       reset: () => {
         set(initialState);
+      },
+
+      // 자동 로그인 비활성화 시 사용 - Firebase 로그아웃 없이 UI 상태만 초기화
+      // Firebase Auth 세션은 유지되므로 다음 로그인 시 빠르게 복원 가능
+      clearAuthState: () => {
+        set({
+          user: null,
+          profile: null,
+          status: 'unauthenticated',
+          isAuthenticated: false,
+          isAdmin: false,
+          isEmployer: false,
+          isStaff: false,
+          isInitialized: true,  // 초기화는 완료된 상태
+          error: null,
+        });
+        logger.info('자동 로그인 비활성화 - 인증 상태 초기화', { component: 'authStore' });
       },
     }),
     {

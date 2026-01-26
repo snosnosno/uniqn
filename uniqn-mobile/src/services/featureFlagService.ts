@@ -15,6 +15,10 @@
 
 import { logger } from '@/utils/logger';
 import { Platform } from 'react-native';
+import {
+  fetchAndActivateRemoteConfig,
+  getRemoteConfigBoolean,
+} from '@/lib/firebase';
 
 // ============================================================================
 // Feature Flag 타입 정의
@@ -113,7 +117,11 @@ class FeatureFlagService {
 
   /**
    * Remote Config에서 최신 설정 가져오기
-   * TODO [출시 전]: Firebase Remote Config 실제 연동
+   *
+   * 웹에서는 Firebase Remote Config를 사용하고,
+   * 네이티브에서는 기본값으로 폴백합니다.
+   *
+   * @note 네이티브에서 Remote Config를 사용하려면 @react-native-firebase/remote-config 필요
    */
   async fetchAndActivate(): Promise<boolean> {
     try {
@@ -125,29 +133,40 @@ class FeatureFlagService {
         return true;
       }
 
-      // TODO [출시 전]: Firebase Remote Config 연동
-      // import { getRemoteConfig, fetchAndActivate, getBoolean } from 'firebase/remote-config';
-      // const remoteConfig = getRemoteConfig(firebaseApp);
-      // await fetchAndActivate(remoteConfig);
-      //
-      // Object.keys(DEFAULT_FEATURE_FLAGS).forEach((key) => {
-      //   const flagKey = key as FeatureFlagKey;
-      //   this.flags[flagKey] = getBoolean(remoteConfig, key);
-      // });
+      // Firebase Remote Config 연동 시도
+      const fetchSuccess = await fetchAndActivateRemoteConfig();
 
-      // 현재는 Mock 데이터 사용
-      this.flags = {
-        ...DEFAULT_FEATURE_FLAGS,
-        // 플랫폼별 기본값 조정
-        enable_biometric: Platform.OS !== 'web',
-        enable_push_notifications: Platform.OS !== 'web',
-      };
+      if (fetchSuccess) {
+        // Remote Config에서 각 플래그 값 가져오기
+        Object.keys(DEFAULT_FEATURE_FLAGS).forEach((key) => {
+          const flagKey = key as FeatureFlagKey;
+          const remoteValue = getRemoteConfigBoolean(key);
+          // Remote Config에 값이 있으면 사용, 없으면 기본값 유지
+          if (remoteValue !== null) {
+            this.flags[flagKey] = remoteValue;
+          }
+        });
+        logger.info('Feature flags fetched from Remote Config', {
+          flags: this.flags,
+        });
+      } else {
+        // 네이티브이거나 fetch 실패 시 기본값 사용
+        this.flags = {
+          ...DEFAULT_FEATURE_FLAGS,
+          // 플랫폼별 기본값 조정
+          enable_biometric: Platform.OS !== 'web',
+          enable_push_notifications: Platform.OS !== 'web',
+        };
+        logger.info('Using default feature flags (Remote Config unavailable)', {
+          platform: Platform.OS,
+        });
+      }
 
       this.lastFetchTime = now;
-      logger.info('Feature flags fetched successfully');
       return true;
     } catch (error) {
       logger.error('Failed to fetch feature flags', error as Error);
+      // 에러 시 기본값 유지
       return false;
     }
   }
