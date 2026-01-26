@@ -434,10 +434,12 @@ export async function getApplicantStatsByRole(
     const statsByRole: Record<string, ApplicationStats> = {};
 
     applicants.forEach((app) => {
-      // 커스텀 역할 지원: appliedRole이 'other'이면 customRole을 키로 사용
-      const effectiveRole = (app.appliedRole as string) === 'other' && app.customRole
+      // 역할 필터링: assignments 기반 (appliedRole 제거됨)
+      const primaryRole = app.assignments[0]?.roleIds?.[0] || 'other';
+      // 커스텀 역할 지원: primaryRole이 'other'이면 customRole을 키로 사용
+      const effectiveRole = primaryRole === 'other' && app.customRole
         ? app.customRole
-        : app.appliedRole;
+        : primaryRole;
 
       if (!statsByRole[effectiveRole]) {
         statsByRole[effectiveRole] = {

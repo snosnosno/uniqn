@@ -307,8 +307,8 @@ export async function confirmApplicationWithHistory(
       const now = serverTimestamp();
 
       for (const assignment of assignmentsToConfirm) {
-        // v3.0: roleIds 사용
-        const role = assignment.roleIds[0] ?? applicationData.appliedRole;
+        // v3.0: roleIds 사용 (assignments 필수이므로 폴백 불필요)
+        const role = assignment.roleIds[0] || 'other';
         // timeSlot에서 시작 시간 추출
         const startTime = extractStartTime(assignment.timeSlot);
 
@@ -323,9 +323,6 @@ export async function confirmApplicationWithHistory(
             // Phase 2: 정규화된 필드
             jobPostingId: applicationData.jobPostingId,
             jobPostingName: jobData.title,
-            // 하위 호환성
-            eventId: applicationData.jobPostingId,
-            eventName: jobData.title,
             role,
             date,
             timeSlot: assignment.timeSlot,

@@ -119,8 +119,12 @@ function createMockJobPostingWithRoles(overrides = {}) {
   };
 }
 
-function createMockApplicationWithDetails(overrides = {}) {
+function createMockApplicationWithDetails(overrides: Record<string, unknown> = {}) {
   const baseApplication = createMockApplication();
+  // assignments 기본값 (role 필요 시 overrides에 assignments로 전달)
+  const defaultAssignments = [
+    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }
+  ];
   return {
     ...baseApplication,
     id: baseApplication.id,
@@ -128,7 +132,7 @@ function createMockApplicationWithDetails(overrides = {}) {
     applicantId: 'staff-1',
     applicantName: '홍길동',
     applicantEmail: 'hong@example.com',
-    appliedRole: 'dealer',
+    assignments: defaultAssignments,
     status: 'applied' as const,
     isRead: false,
     createdAt: new Date().toISOString(),
@@ -249,7 +253,7 @@ describe('applicantManagementService', () => {
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
-        appliedRole: 'dealer',
+        assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
       });
 
       const mockWorkLogRef = { id: 'worklog-new' };
@@ -624,17 +628,17 @@ describe('applicantManagementService', () => {
       const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const applicant1 = createMockApplicationWithDetails({
         id: 'app-1',
-        appliedRole: 'dealer',
+        assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
         status: 'confirmed',
       });
       const applicant2 = createMockApplicationWithDetails({
         id: 'app-2',
-        appliedRole: 'dealer',
+        assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
         status: 'applied',
       });
       const applicant3 = createMockApplicationWithDetails({
         id: 'app-3',
-        appliedRole: 'manager',
+        assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['manager'] }],
         status: 'applied',
       });
 

@@ -52,7 +52,6 @@ function createMockEventQRDisplayData(
   return {
     type: 'event',
     jobPostingId: 'event-123',
-    eventId: 'event-123', // 하위 호환성용
     date: '2024-01-15',
     action: 'checkIn',
     securityCode: 'uuid-security-code',
@@ -283,7 +282,7 @@ describe('useQRCode Hooks', () => {
       const { result } = renderHook(() => useQRDisplayModal());
       const initialData = createMockEventQRDisplayData();
       const updatedData = createMockEventQRDisplayData({
-        eventId: 'updated-event',
+        jobPostingId: 'updated-event',
       });
 
       act(() => {

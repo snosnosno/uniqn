@@ -37,7 +37,7 @@ import type {
   Application,
   ApplicationStatus,
   CancellationRequest,
-  CreateApplicationInputV2,
+  CreateApplicationInput,
   JobPosting,
   RecruitmentType,
   RequestCancellationInput,
@@ -391,7 +391,7 @@ export async function getApplicationStats(
  * 5. 지원서 생성 (v2.0 형식)
  */
 export async function applyToJobV2(
-  input: CreateApplicationInputV2,
+  input: CreateApplicationInput,
   applicantId: string,
   applicantName: string,
   applicantPhone?: string,
@@ -532,7 +532,6 @@ export async function applyToJobV2(
 
         // 지원 정보
         status: 'applied',
-        appliedRole: primaryRole,
         // undefined는 Firebase에 저장 불가 - 조건부 추가
         ...(input.message && { message: input.message }),
         recruitmentType,
@@ -571,8 +570,9 @@ export async function applyToJobV2(
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    // Analytics 이벤트
-    trackJobApply(input.jobPostingId, result.jobPostingTitle, result.appliedRole);
+    // Analytics 이벤트 (assignments에서 대표 역할 추출)
+    const appliedPrimaryRole = result.assignments[0]?.roleIds?.[0] || 'other';
+    trackJobApply(input.jobPostingId, result.jobPostingTitle, appliedPrimaryRole);
 
     return result;
   } catch (error) {

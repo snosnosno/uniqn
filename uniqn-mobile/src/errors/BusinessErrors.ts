@@ -218,7 +218,7 @@ export class QRSecurityMismatchError extends AppError {
     options?: Partial<{
       message: string;
       userMessage: string;
-      eventId?: string;
+      jobPostingId?: string;
     }>
   ) {
     super({
@@ -229,7 +229,7 @@ export class QRSecurityMismatchError extends AppError {
       message: options?.message,
       userMessage: options?.userMessage,
       metadata: {
-        eventId: options?.eventId,
+        jobPostingId: options?.jobPostingId,
       },
     });
     this.name = 'QRSecurityMismatchError';

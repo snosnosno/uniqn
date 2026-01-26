@@ -24,9 +24,7 @@ import type { WorkLog, Application } from '@/types';
  * 공고 ID 필드를 가진 문서 타입
  */
 export interface JobIdDocument {
-  eventId?: string;
   jobPostingId?: string;
-  postId?: string; // 레거시 호환
 }
 
 /**
@@ -70,42 +68,16 @@ export class IdNormalizer {
   // ============================================================================
 
   /**
-   * 문서에서 공고 ID 추출 (정규화)
+   * 문서에서 공고 ID 추출
    *
-   * @description 우선순위: jobPostingId > eventId > postId
-   * @param doc - eventId, jobPostingId, postId 중 하나를 가진 문서
-   * @returns 정규화된 공고 ID (없으면 빈 문자열)
+   * @param doc - jobPostingId를 가진 문서
+   * @returns 공고 ID (없으면 빈 문자열)
    *
    * @example
-   * // WorkLog (eventId 사용)
-   * IdNormalizer.normalizeJobId({ eventId: 'JOB123' }) // 'JOB123'
-   *
-   * // Application (jobPostingId 사용)
    * IdNormalizer.normalizeJobId({ jobPostingId: 'JOB123' }) // 'JOB123'
    */
   static normalizeJobId(doc: JobIdDocument): string {
-    return doc.jobPostingId || doc.eventId || doc.postId || '';
-  }
-
-  /**
-   * jobPostingId를 eventId로 변환 (레거시 쿼리 호환)
-   *
-   * @description Firestore 쿼리에서 eventId 필드를 사용하는 경우
-   * @param jobPostingId - 정규화된 공고 ID
-   * @returns eventId 값 (동일한 값)
-   */
-  static toEventId(jobPostingId: string): string {
-    return jobPostingId;
-  }
-
-  /**
-   * eventId를 jobPostingId로 변환
-   *
-   * @param eventId - 레거시 eventId
-   * @returns jobPostingId 값 (동일한 값)
-   */
-  static toJobPostingId(eventId: string): string {
-    return eventId;
+    return doc.jobPostingId || '';
   }
 
   // ============================================================================
@@ -227,16 +199,14 @@ export class IdNormalizer {
    * // Set { 'JOB1', 'JOB2', 'JOB3' }
    */
   static extractUnifiedIds(
-    workLogs: Pick<WorkLog, 'jobPostingId' | 'eventId'>[],
+    workLogs: Pick<WorkLog, 'jobPostingId'>[],
     applications: Pick<Application, 'jobPostingId'>[]
   ): Set<string> {
     const ids = new Set<string>();
 
-    // Phase 2: jobPostingId 우선, eventId는 하위 호환용
     workLogs.forEach((wl) => {
-      const id = wl.jobPostingId || wl.eventId;
-      if (id) {
-        ids.add(id);
+      if (wl.jobPostingId) {
+        ids.add(wl.jobPostingId);
       }
     });
 

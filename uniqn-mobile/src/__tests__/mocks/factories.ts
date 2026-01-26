@@ -72,8 +72,10 @@ export interface MockApplication {
   id: string;
   jobPostingId: string;
   applicantId: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn';
+  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'applied' | 'confirmed' | 'cancelled' | 'completed' | 'cancellation_pending';
   message: string | null;
+  /** v3.0 필수 필드 - 지원 일정 정보 */
+  assignments: { roleIds: string[]; dates: string[]; timeSlot?: string }[];
   createdAt: string;
   updatedAt: string;
 }
@@ -196,12 +198,22 @@ export function createMockApplication(
   applicationCounter++;
   const now = new Date().toISOString();
 
+  // v3.0 기본 assignment (레거시 appliedRole/appliedDate/appliedTimeSlot 대체)
+  const defaultAssignments = [
+    {
+      roleIds: ['dealer'],
+      dates: ['2025-01-20'],
+      timeSlot: '18:00~02:00',
+    },
+  ];
+
   return {
     id: `application-${applicationCounter}`,
     jobPostingId: `job-${applicationCounter}`,
     applicantId: `staff-${applicationCounter}`,
-    status: 'pending',
+    status: 'applied',
     message: null,
+    assignments: defaultAssignments,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -351,12 +363,9 @@ export interface MockScheduleEvent {
   date: string;
   startTime: { toMillis: () => number; toDate: () => Date } | null;
   endTime: { toMillis: () => number; toDate: () => Date } | null;
-  // 정규화된 필드 (Phase 2)
+  // 정규화된 필드 (Phase 2 - eventId/eventName 제거됨)
   jobPostingId: string;
   jobPostingName: string;
-  // 하위 호환성
-  eventId?: string;
-  eventName?: string;
   location: string;
   role: string;
   status: 'not_started' | 'checked_in' | 'checked_out';
@@ -393,12 +402,9 @@ export function createMockScheduleEvent(
     id: `schedule-${scheduleCounter}`,
     type: 'confirmed',
     date: new Date().toISOString().split('T')[0],
-    // 정규화된 필드 (Phase 2)
+    // 정규화된 필드 (Phase 2 - eventId/eventName 제거됨)
     jobPostingId,
     jobPostingName,
-    // 하위 호환성
-    eventId: jobPostingId,
-    eventName: jobPostingName,
     location: '서울 강남구',
     role: '딜러',
     status: 'not_started',

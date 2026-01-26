@@ -137,18 +137,18 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleDisplayName(application.appliedRole, application.customRole)} 역할
+              {getRoleDisplayName(application.assignments[0]?.roleIds?.[0] || 'other', application.customRole)} 역할
             </Text>
           </View>
         </View>
 
-        {/* 취소 대상 일정 표시 (v2.0) */}
-        {(application.appliedDate || application.appliedTimeSlot) && (
+        {/* 취소 대상 일정 표시 (assignments 기반) */}
+        {application.assignments.length > 0 && (
           <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-3">
             <CalendarIcon size={14} color="#DC2626" />
             <Text className="ml-2 text-sm text-red-700 dark:text-red-300">
-              취소 대상: {formatAppliedDate(application.appliedDate)}
-              {application.appliedTimeSlot && ` ${application.appliedTimeSlot}`}
+              취소 대상: {formatAppliedDate(application.assignments[0]?.dates?.[0])}
+              {application.assignments[0]?.timeSlot && ` ${application.assignments[0].timeSlot}`}
             </Text>
           </View>
         )}

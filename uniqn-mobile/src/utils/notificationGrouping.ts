@@ -45,8 +45,7 @@ function timestampToMs(ts: Timestamp | Date | undefined): number {
  * 알림에서 그룹핑 컨텍스트 키 추출
  *
  * @description 알림 타입에 따라 적절한 컨텍스트 키 반환
- * - NEW_APPLICATION, APPLICATION_CANCELLED → jobId
- * - STAFF_CHECKED_IN, STAFF_CHECKED_OUT, NO_SHOW_ALERT → eventId
+ * - 모든 그룹핑 가능 타입 → jobId 사용
  */
 function extractContextKey(notification: NotificationData): string | null {
   const { type, data } = notification;
@@ -56,19 +55,8 @@ function extractContextKey(notification: NotificationData): string | null {
     return null;
   }
 
-  switch (type) {
-    case NotificationType.NEW_APPLICATION:
-    case NotificationType.APPLICATION_CANCELLED:
-      return data?.jobId || null;
-
-    case NotificationType.STAFF_CHECKED_IN:
-    case NotificationType.STAFF_CHECKED_OUT:
-    case NotificationType.NO_SHOW_ALERT:
-      return data?.eventId || null;
-
-    default:
-      return null;
-  }
+  // 모든 알림 타입에서 jobId 사용 (통합)
+  return data?.jobId || null;
 }
 
 /**
@@ -140,9 +128,7 @@ function extractGroupContext(
 
   return {
     jobId: firstNotification.data?.jobId,
-    eventId: firstNotification.data?.eventId,
     jobTitle: firstNotification.data?.jobTitle,
-    eventName: firstNotification.data?.eventName,
   };
 }
 

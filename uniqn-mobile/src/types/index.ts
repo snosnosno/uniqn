@@ -117,7 +117,6 @@ export { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, CANCELLATION_STAT
 // 지원서 v2.0 추가 타입
 export type {
   RecruitmentType,
-  CreateApplicationInputV2,
   ConfirmApplicationInputV2,
 } from './application';
 

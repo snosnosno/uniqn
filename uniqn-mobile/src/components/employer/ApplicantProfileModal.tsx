@@ -270,7 +270,7 @@ export function ApplicantProfileModal({
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleDisplayName(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
+              {getRoleDisplayName(applicant.assignments[0]?.roleIds?.[0] || 'other', applicant.customRole)} 지원 · {appliedTimeAgo}
             </Text>
           </View>
 
@@ -372,25 +372,6 @@ export function ApplicantProfileModal({
               <AssignmentDisplay assignments={applicant.assignments} />
             </View>
           )}
-
-          {/* 레거시 지원 정보 */}
-          {(!applicant.assignments || applicant.assignments.length === 0) &&
-            (applicant.appliedDate || applicant.appliedTimeSlot) && (
-              <View className="px-4 pb-4">
-                <View className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-                  <Text className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-                    지원 일정
-                  </Text>
-                  <View className="flex-row items-center">
-                    <CalendarIcon size={14} color="#2563EB" />
-                    <Text className="ml-2 text-sm text-blue-700 dark:text-blue-300">
-                      {formatDate(applicant.appliedDate)}
-                      {applicant.appliedTimeSlot && ` ${applicant.appliedTimeSlot}`}
-                    </Text>
-                  </View>
-                </View>
-              </View>
-            )}
 
           {/* 지원 메시지 */}
           {applicant.message && (

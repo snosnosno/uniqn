@@ -176,7 +176,7 @@ export function ApplicantConfirmModal({
               {displayName}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleDisplayName(applicant.appliedRole, applicant.customRole)} 지원
+              {getRoleDisplayName(applicant.assignments[0]?.roleIds?.[0] || 'other', applicant.customRole)} 지원
             </Text>
             {applicant.applicantPhone && (
               <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">

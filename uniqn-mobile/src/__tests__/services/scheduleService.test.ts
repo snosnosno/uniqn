@@ -219,7 +219,7 @@ describe('scheduleService', () => {
         {
           id: 'wl-1',
           staffId: 'staff-123',
-          eventId: 'event-1',
+          jobPostingId: 'job-1',
           date: '2025-01-15',
           status: 'scheduled',
           role: '딜러',
@@ -267,7 +267,7 @@ describe('scheduleService', () => {
         {
           id: 'wl-1',
           staffId: 'staff-123',
-          eventId: 'event-1',
+          jobPostingId: 'job-1',
           date: '2025-01-15',
           status: 'scheduled',
           role: '딜러',
@@ -350,7 +350,7 @@ describe('scheduleService', () => {
       const mockWorkLog = {
         id: 'wl-1',
         staffId: 'staff-123',
-        eventId: 'event-1',
+        jobPostingId: 'job-1',
         date: '2025-01-15',
         status: 'scheduled',
         role: '딜러',
@@ -430,7 +430,7 @@ describe('scheduleService', () => {
         {
           id: 'wl-1',
           staffId: 'staff-123',
-          eventId: 'event-1',
+          jobPostingId: 'job-1',
           date: '2025-01-15',
           status: 'scheduled',
           role: '딜러',
@@ -467,7 +467,7 @@ describe('scheduleService', () => {
         {
           id: 'wl-1',
           staffId: 'staff-123',
-          eventId: 'event-1',
+          jobPostingId: 'job-1',
           date: '2025-01-15',
           status: 'completed',
           role: '딜러',
@@ -476,7 +476,7 @@ describe('scheduleService', () => {
         {
           id: 'wl-2',
           staffId: 'staff-123',
-          eventId: 'event-2',
+          jobPostingId: 'job-2',
           date: '2025-01-20',
           status: 'scheduled',
           role: '딜러',

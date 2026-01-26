@@ -58,8 +58,8 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
 }: NotificationGroupItemProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  // 컨텍스트 정보 (공고명/이벤트명)
-  const contextLabel = group.context.jobTitle || group.context.eventName || '';
+  // 컨텍스트 정보 (공고명)
+  const contextLabel = group.context.jobTitle || '';
 
   // 최신 알림 시간
   const latestTime = toDateFromTimestamp(group.latestCreatedAt);

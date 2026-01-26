@@ -42,14 +42,10 @@ export type PayrollStatusSchema = z.infer<typeof payrollStatusSchema>;
 export const createScheduleEventSchema = z.object({
   type: scheduleTypeSchema,
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-  /** 공고 ID (정규화된 필드명) */
+  /** 공고 ID */
   jobPostingId: z.string().min(1, { message: '공고 ID는 필수입니다' }),
-  /** 공고명 (정규화된 필드명) */
+  /** 공고명 */
   jobPostingName: z.string().min(1, { message: '공고명은 필수입니다' }),
-  /** @deprecated jobPostingId 사용 권장 - 하위 호환성용 */
-  eventId: z.string().optional(),
-  /** @deprecated jobPostingName 사용 권장 - 하위 호환성용 */
-  eventName: z.string().optional(),
   location: z.string().min(1, { message: '장소는 필수입니다' }),
   detailedAddress: z.string().optional(),
   role: z.string().min(1, { message: '역할은 필수입니다' }),

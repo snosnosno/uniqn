@@ -134,7 +134,6 @@ export {
   getAllRoles,
   getFirstAppliedDate,
   getFirstTimeSlot,
-  isV2Application,
   getFormattedSchedule,
 } from './applicationHelpers';
 

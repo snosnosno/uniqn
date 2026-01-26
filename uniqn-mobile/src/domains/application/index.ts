@@ -30,7 +30,6 @@ export type {
   ReviewCancellationInput,
   // v2.0 타입
   RecruitmentType,
-  CreateApplicationInputV2,
   ConfirmApplicationInputV2,
 } from '@/types/application';
 

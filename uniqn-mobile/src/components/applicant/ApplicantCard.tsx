@@ -145,10 +145,9 @@ const ApplicantHeader = memo(function ApplicantHeader({
   application: Application;
   compact?: boolean;
 }) {
-  const isV2 = Boolean(application.assignments?.length);
-  const roles = isV2
-    ? getUniqueRolesFromAssignments(application.assignments!)
-    : [application.appliedRole];
+  const roles = application.assignments.length > 0
+    ? getUniqueRolesFromAssignments(application.assignments)
+    : ['other'];
 
   return (
     <View className="flex-row items-start justify-between mb-2">
@@ -185,12 +184,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         </View>
       </View>
 
-      {/* v2.0 표시 뱃지 */}
-      {isV2 && !compact && (
-        <Badge variant="default" size="sm">
-          v2.0
-        </Badge>
-      )}
+      {/* assignments 기반 v2.0 뱃지 (레거시 제거됨 - 모든 지원서가 v2.0) */}
     </View>
   );
 });
@@ -417,7 +411,7 @@ export const ApplicantCard = memo(function ApplicantCard({
   // 접근성 라벨
   const accessibilityLabel = `${application.applicantName}, ${
     APPLICATION_STATUS_LABELS[application.status]
-  }, ${getRoleLabel(application.appliedRole, application.customRole)}`;
+  }, ${getRoleLabel(application.assignments[0]?.roleIds?.[0] || 'other', application.customRole)}`;
 
   const CardContent = (
     <>

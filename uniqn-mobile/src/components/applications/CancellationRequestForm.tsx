@@ -112,7 +112,7 @@ export function CancellationRequestForm({
             </View>
             <View className="flex-row items-center">
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                👤 {getRoleDisplayName(application.appliedRole, application.customRole)} 역할
+                👤 {getRoleDisplayName(application.assignments[0]?.roleIds?.[0] || 'other', application.customRole)} 역할
               </Text>
             </View>
           </View>

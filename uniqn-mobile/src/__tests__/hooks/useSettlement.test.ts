@@ -216,7 +216,7 @@ function createMockSettlementWorkLog(overrides = {}) {
   const base = createMockWorkLog();
   return {
     ...base,
-    eventId: 'job-1',
+    jobPostingId: 'job-1',
     staffName: '홍길동',
     jobPostingTitle: '테스트 공고',
     hoursWorked: 8,

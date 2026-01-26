@@ -185,7 +185,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
           {/* 지원 역할 & 시간 요약 */}
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            {getRoleDisplayName(applicant.appliedRole, applicant.customRole)} 지원 · {appliedTimeAgo}
+            {getRoleDisplayName(applicant.assignments[0]?.roleIds?.[0] || 'other', applicant.customRole)} 지원 · {appliedTimeAgo}
           </Text>
 
           {/* 고정공고: 근무 조건 표시 (날짜 선택 없음) */}
@@ -225,8 +225,6 @@ export const ApplicantCard = React.memo(function ApplicantCard({
               assignmentDisplays={assignmentDisplays}
               isDark={isDark}
               iconColors={iconColors}
-              appliedDate={applicant.appliedDate}
-              appliedTimeSlot={applicant.appliedTimeSlot}
             />
           )}
 

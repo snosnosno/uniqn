@@ -3,6 +3,8 @@
  *
  * @description Phase 5 - 스케줄 병합 로직 분리
  * WorkLog + Application 병합, 중복 제거, 그룹핑 테스트
+ *
+ * Phase 2: eventId → jobPostingId 정규화 완료
  */
 
 import { ScheduleMerger } from '../schedule/ScheduleMerger';
@@ -27,14 +29,14 @@ function createMockTimestamp(date: Date): Timestamp {
 }
 
 function createMockScheduleEvent(
-  overrides: Partial<ScheduleEvent> & { id: string; date: string; eventId: string }
+  overrides: Partial<ScheduleEvent> & { id: string; date: string; jobPostingId: string }
 ): ScheduleEvent {
   const baseDate = new Date('2025-01-20');
   return {
     type: 'confirmed',
     startTime: createMockTimestamp(baseDate),
     endTime: createMockTimestamp(new Date(baseDate.getTime() + 8 * 60 * 60 * 1000)),
-    eventName: '테스트 이벤트',
+    jobPostingName: '테스트 이벤트',
     location: '서울',
     role: 'dealer',
     status: 'not_started',
@@ -51,34 +53,34 @@ describe('ScheduleMerger', () => {
   describe('merge', () => {
     it('WorkLogs와 Applications를 병합', () => {
       const workLogs: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', eventId: 'event1', type: 'confirmed' }),
+        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1', type: 'confirmed' }),
       ];
       const applications: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'app1', date: '2025-01-21', eventId: 'event1', type: 'applied' }),
+        createMockScheduleEvent({ id: 'app1', date: '2025-01-21', jobPostingId: 'job1', type: 'applied' }),
       ];
 
       const result = ScheduleMerger.merge(workLogs, applications);
       expect(result).toHaveLength(2);
     });
 
-    it('같은 eventId + date면 WorkLog 우선', () => {
+    it('같은 jobPostingId + date면 WorkLog 우선', () => {
       const workLogs: ScheduleEvent[] = [
         createMockScheduleEvent({
           id: 'wl1',
           date: '2025-01-20',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           type: 'confirmed',
           source: 'workLog',
-        } as Partial<ScheduleEvent> & { id: string; date: string; eventId: string }),
+        } as Partial<ScheduleEvent> & { id: string; date: string; jobPostingId: string }),
       ];
       const applications: ScheduleEvent[] = [
         createMockScheduleEvent({
           id: 'app1',
           date: '2025-01-20',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           type: 'applied',
           source: 'application',
-        } as Partial<ScheduleEvent> & { id: string; date: string; eventId: string }),
+        } as Partial<ScheduleEvent> & { id: string; date: string; jobPostingId: string }),
       ];
 
       const result = ScheduleMerger.merge(workLogs, applications);
@@ -88,12 +90,12 @@ describe('ScheduleMerger', () => {
 
     it('날짜 범위 필터 적용', () => {
       const workLogs: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', eventId: 'event1' }),
+        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1' }),
       ];
       const applications: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'app1', date: '2025-01-15', eventId: 'event2' }),
-        createMockScheduleEvent({ id: 'app2', date: '2025-01-21', eventId: 'event3' }),
-        createMockScheduleEvent({ id: 'app3', date: '2025-01-25', eventId: 'event4' }),
+        createMockScheduleEvent({ id: 'app1', date: '2025-01-15', jobPostingId: 'job2' }),
+        createMockScheduleEvent({ id: 'app2', date: '2025-01-21', jobPostingId: 'job3' }),
+        createMockScheduleEvent({ id: 'app3', date: '2025-01-25', jobPostingId: 'job4' }),
       ];
 
       const result = ScheduleMerger.merge(workLogs, applications, {
@@ -109,11 +111,11 @@ describe('ScheduleMerger', () => {
 
     it('날짜순 정렬 (기본: 내림차순)', () => {
       const workLogs: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'wl1', date: '2025-01-18', eventId: 'event1' }),
+        createMockScheduleEvent({ id: 'wl1', date: '2025-01-18', jobPostingId: 'job1' }),
       ];
       const applications: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'app1', date: '2025-01-20', eventId: 'event2' }),
-        createMockScheduleEvent({ id: 'app2', date: '2025-01-19', eventId: 'event3' }),
+        createMockScheduleEvent({ id: 'app1', date: '2025-01-20', jobPostingId: 'job2' }),
+        createMockScheduleEvent({ id: 'app2', date: '2025-01-19', jobPostingId: 'job3' }),
       ];
 
       const result = ScheduleMerger.merge(workLogs, applications);
@@ -124,10 +126,10 @@ describe('ScheduleMerger', () => {
 
     it('오름차순 정렬 옵션', () => {
       const workLogs: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', eventId: 'event1' }),
+        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1' }),
       ];
       const applications: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'app1', date: '2025-01-18', eventId: 'event2' }),
+        createMockScheduleEvent({ id: 'app1', date: '2025-01-18', jobPostingId: 'job2' }),
       ];
 
       const result = ScheduleMerger.merge(workLogs, applications, {
@@ -139,8 +141,8 @@ describe('ScheduleMerger', () => {
 
     it('빈 배열 처리', () => {
       expect(ScheduleMerger.merge([], [])).toEqual([]);
-      expect(ScheduleMerger.merge([createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', eventId: 'event1' })], [])).toHaveLength(1);
-      expect(ScheduleMerger.merge([], [createMockScheduleEvent({ id: 'app1', date: '2025-01-20', eventId: 'event1' })])).toHaveLength(1);
+      expect(ScheduleMerger.merge([createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1' })], [])).toHaveLength(1);
+      expect(ScheduleMerger.merge([], [createMockScheduleEvent({ id: 'app1', date: '2025-01-20', jobPostingId: 'job1' })])).toHaveLength(1);
     });
   });
 
@@ -150,9 +152,9 @@ describe('ScheduleMerger', () => {
   describe('groupByDate', () => {
     it('날짜별로 스케줄 그룹화', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: '1', date: '2025-01-20', eventId: 'event1' }),
-        createMockScheduleEvent({ id: '2', date: '2025-01-20', eventId: 'event2' }),
-        createMockScheduleEvent({ id: '3', date: '2025-01-21', eventId: 'event3' }),
+        createMockScheduleEvent({ id: '1', date: '2025-01-20', jobPostingId: 'job1' }),
+        createMockScheduleEvent({ id: '2', date: '2025-01-20', jobPostingId: 'job2' }),
+        createMockScheduleEvent({ id: '3', date: '2025-01-21', jobPostingId: 'job3' }),
       ];
 
       const result = ScheduleMerger.groupByDate(schedules);
@@ -167,7 +169,7 @@ describe('ScheduleMerger', () => {
 
     it('그룹에 label 포함', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: '1', date: '2025-01-20', eventId: 'event1' }),
+        createMockScheduleEvent({ id: '1', date: '2025-01-20', jobPostingId: 'job1' }),
       ];
 
       const result = ScheduleMerger.groupByDate(schedules);
@@ -189,19 +191,19 @@ describe('ScheduleMerger', () => {
         createMockScheduleEvent({
           id: '1',
           date: '2025-01-20',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           applicationId: 'app1',
         }),
         createMockScheduleEvent({
           id: '2',
           date: '2025-01-21',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           applicationId: 'app1',
         }),
         createMockScheduleEvent({
           id: '3',
           date: '2025-01-20',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           applicationId: 'app2',
         }),
       ];
@@ -219,13 +221,13 @@ describe('ScheduleMerger', () => {
         createMockScheduleEvent({
           id: '1',
           date: '2025-01-20',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           applicationId: 'app1',
         }),
         createMockScheduleEvent({
           id: '2',
           date: '2025-01-21',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           // applicationId 없음
         }),
       ];
@@ -240,7 +242,7 @@ describe('ScheduleMerger', () => {
         createMockScheduleEvent({
           id: '1',
           date: '2025-01-20',
-          eventId: 'event1',
+          jobPostingId: 'job1',
           applicationId: 'app1',
         }),
         // app1은 1개뿐이므로 minGroupSize=2일 때 ungrouped로
@@ -281,15 +283,15 @@ describe('ScheduleMerger', () => {
   // generateScheduleKey: 중복 키 생성
   // ==========================================================================
   describe('generateScheduleKey', () => {
-    it('eventId + date 조합으로 키 생성', () => {
+    it('jobPostingId + date 조합으로 키 생성', () => {
       const schedule = createMockScheduleEvent({
         id: '1',
         date: '2025-01-20',
-        eventId: 'event1',
+        jobPostingId: 'job1',
       });
 
       const key = ScheduleMerger.generateScheduleKey(schedule);
-      expect(key).toBe('event1_2025-01-20');
+      expect(key).toBe('job1_2025-01-20');
     });
   });
 
@@ -299,10 +301,10 @@ describe('ScheduleMerger', () => {
   describe('calculateStats', () => {
     it('스케줄 타입별 카운트', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: '1', date: '2025-01-20', eventId: 'e1', type: 'applied' }),
-        createMockScheduleEvent({ id: '2', date: '2025-01-21', eventId: 'e2', type: 'confirmed' }),
-        createMockScheduleEvent({ id: '3', date: '2025-01-22', eventId: 'e3', type: 'confirmed' }),
-        createMockScheduleEvent({ id: '4', date: '2025-01-15', eventId: 'e4', type: 'completed' }),
+        createMockScheduleEvent({ id: '1', date: '2025-01-20', jobPostingId: 'job1', type: 'applied' }),
+        createMockScheduleEvent({ id: '2', date: '2025-01-21', jobPostingId: 'job2', type: 'confirmed' }),
+        createMockScheduleEvent({ id: '3', date: '2025-01-22', jobPostingId: 'job3', type: 'confirmed' }),
+        createMockScheduleEvent({ id: '4', date: '2025-01-15', jobPostingId: 'job4', type: 'completed' }),
       ];
 
       const stats = ScheduleMerger.calculateStats(schedules);

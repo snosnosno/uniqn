@@ -203,8 +203,13 @@ jest.mock('@/lib/queryClient', () => ({
 // Test Utilities
 // ============================================================================
 
-function createMockApplicantWithDetails(overrides = {}) {
+function createMockApplicantWithDetails(overrides: Record<string, unknown> = {}) {
   const base = createMockApplication();
+  // assignments 기본값 (overrides에서 role을 받으면 해당 role 사용)
+  const defaultRole = 'dealer';
+  const defaultAssignments = [
+    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: [defaultRole] }
+  ];
   return {
     ...base,
     id: base.id,
@@ -212,7 +217,7 @@ function createMockApplicantWithDetails(overrides = {}) {
     applicantId: 'staff-1',
     applicantName: '홍길동',
     applicantEmail: 'hong@example.com',
-    appliedRole: 'dealer',
+    assignments: defaultAssignments,
     status: 'applied' as const,
     isRead: false,
     createdAt: new Date().toISOString(),
@@ -506,9 +511,9 @@ describe('useApplicantManagement Hooks', () => {
 
     it('should filter applicants by role', () => {
       const mockApplicantList = createMockApplicantListResult([
-        createMockApplicantWithDetails({ id: 'app-1', appliedRole: 'dealer' }),
-        createMockApplicantWithDetails({ id: 'app-2', appliedRole: 'floor' }),
-        createMockApplicantWithDetails({ id: 'app-3', appliedRole: 'dealer' }),
+        createMockApplicantWithDetails({ id: 'app-1', assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }] }),
+        createMockApplicantWithDetails({ id: 'app-2', assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['floor'] }] }),
+        createMockApplicantWithDetails({ id: 'app-3', assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }] }),
       ]);
       mockData = mockApplicantList;
 

@@ -1,7 +1,7 @@
 /**
  * IdNormalizer 테스트
  *
- * @description Phase 2 - ID 정규화 테스트
+ * @description Phase 2 - ID 정규화 테스트 (레거시 eventId/postId 제거됨)
  */
 
 import { IdNormalizer } from '../id/IdNormalizer';
@@ -11,32 +11,15 @@ describe('IdNormalizer', () => {
   // normalizeJobId 테스트
   // ============================================================================
   describe('normalizeJobId', () => {
-    it('jobPostingId 우선 반환', () => {
+    it('jobPostingId 반환', () => {
       expect(
         IdNormalizer.normalizeJobId({
           jobPostingId: 'JOB123',
-          eventId: 'EVENT456',
         })
       ).toBe('JOB123');
     });
 
-    it('jobPostingId 없으면 eventId 반환', () => {
-      expect(
-        IdNormalizer.normalizeJobId({
-          eventId: 'EVENT456',
-        })
-      ).toBe('EVENT456');
-    });
-
-    it('eventId 없으면 postId 반환 (레거시)', () => {
-      expect(
-        IdNormalizer.normalizeJobId({
-          postId: 'POST789',
-        })
-      ).toBe('POST789');
-    });
-
-    it('모두 없으면 빈 문자열 반환', () => {
+    it('jobPostingId 없으면 빈 문자열 반환', () => {
       expect(IdNormalizer.normalizeJobId({})).toBe('');
     });
 
@@ -44,18 +27,16 @@ describe('IdNormalizer', () => {
       expect(
         IdNormalizer.normalizeJobId({
           jobPostingId: undefined,
-          eventId: 'EVENT456',
         })
-      ).toBe('EVENT456');
+      ).toBe('');
     });
 
     it('빈 문자열도 falsy로 처리', () => {
       expect(
         IdNormalizer.normalizeJobId({
           jobPostingId: '',
-          eventId: 'EVENT456',
         })
-      ).toBe('EVENT456');
+      ).toBe('');
     });
   });
 
@@ -137,7 +118,7 @@ describe('IdNormalizer', () => {
   // ============================================================================
   describe('extractUnifiedIds', () => {
     it('WorkLog + Application에서 중복 없이 ID 추출', () => {
-      // Phase 2: jobPostingId 우선 사용
+      // Phase 2: jobPostingId만 사용
       const workLogs = [{ jobPostingId: 'JOB1' }, { jobPostingId: 'JOB2' }];
       const applications = [
         { jobPostingId: 'JOB2' }, // 중복
@@ -152,31 +133,15 @@ describe('IdNormalizer', () => {
       expect(ids.has('JOB3')).toBe(true);
     });
 
-    it('jobPostingId 우선, eventId 폴백', () => {
-      // jobPostingId가 있으면 우선, 없으면 eventId 사용
-      const workLogs = [
-        { jobPostingId: 'JOB1', eventId: 'OLD1' }, // jobPostingId 우선
-        { jobPostingId: '', eventId: 'JOB2' }, // eventId 폴백
-      ];
-      const applications: { jobPostingId: string }[] = [];
-
-      const ids = IdNormalizer.extractUnifiedIds(workLogs, applications);
-
-      expect(ids.size).toBe(2);
-      expect(ids.has('JOB1')).toBe(true);
-      expect(ids.has('JOB2')).toBe(true);
-      expect(ids.has('OLD1')).toBe(false); // jobPostingId가 있으므로 eventId 무시
-    });
-
     it('빈 배열 처리', () => {
       const ids = IdNormalizer.extractUnifiedIds([], []);
       expect(ids.size).toBe(0);
     });
 
-    it('undefined/빈 문자열 무시', () => {
+    it('빈 문자열 무시', () => {
       const workLogs = [
         { jobPostingId: 'JOB1' },
-        { jobPostingId: '', eventId: '' }, // 둘 다 빈 문자열 - 무시
+        { jobPostingId: '' }, // 빈 문자열 - 무시
       ];
       const applications: { jobPostingId: string }[] = [];
 
@@ -193,23 +158,22 @@ describe('IdNormalizer', () => {
   describe('normalizeWorkLogs', () => {
     it('WorkLog 배열에 normalizedJobPostingId 추가', () => {
       const workLogs = [
-        { id: 'WL1', eventId: 'JOB1' },
-        { id: 'WL2', eventId: 'JOB2', jobPostingId: 'JOB2_NEW' },
+        { jobPostingId: 'JOB1' },
+        { jobPostingId: 'JOB2' },
       ];
 
       const normalized = IdNormalizer.normalizeWorkLogs(workLogs);
 
       expect(normalized[0].normalizedJobPostingId).toBe('JOB1');
-      expect(normalized[1].normalizedJobPostingId).toBe('JOB2_NEW'); // jobPostingId 우선
+      expect(normalized[1].normalizedJobPostingId).toBe('JOB2');
     });
 
     it('원본 객체의 속성 유지', () => {
-      const workLogs = [{ id: 'WL1', eventId: 'JOB1', extra: 'data' }];
+      const workLogs = [{ jobPostingId: 'JOB1' }];
 
       const normalized = IdNormalizer.normalizeWorkLogs(workLogs);
 
-      expect(normalized[0].id).toBe('WL1');
-      expect(normalized[0].extra).toBe('data');
+      expect(normalized[0].jobPostingId).toBe('JOB1');
       expect(normalized[0].normalizedJobPostingId).toBe('JOB1');
     });
   });
@@ -219,7 +183,11 @@ describe('IdNormalizer', () => {
   // ============================================================================
   describe('extractJobIds', () => {
     it('문서 배열에서 중복 없이 공고 ID 추출', () => {
-      const docs = [{ eventId: 'JOB1' }, { jobPostingId: 'JOB2' }, { eventId: 'JOB1' }];
+      const docs = [
+        { jobPostingId: 'JOB1' },
+        { jobPostingId: 'JOB2' },
+        { jobPostingId: 'JOB1' }, // 중복
+      ];
 
       const ids = IdNormalizer.extractJobIds(docs);
 
@@ -245,14 +213,6 @@ describe('IdNormalizer', () => {
   // 변환 함수 테스트
   // ============================================================================
   describe('변환 함수', () => {
-    it('toEventId는 동일한 값 반환', () => {
-      expect(IdNormalizer.toEventId('JOB123')).toBe('JOB123');
-    });
-
-    it('toJobPostingId는 동일한 값 반환', () => {
-      expect(IdNormalizer.toJobPostingId('EVENT123')).toBe('EVENT123');
-    });
-
     it('toStaffId는 동일한 값 반환', () => {
       expect(IdNormalizer.toStaffId('APP123')).toBe('APP123');
     });

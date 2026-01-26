@@ -56,14 +56,10 @@ export interface WorkLogCreateInput {
 export interface WorkLogData {
   staffId: string;
   staffName: string;
-  /** 공고 ID (정규화된 필드명) */
+  /** 공고 ID */
   jobPostingId: string;
   /** 공고 이름 */
   jobPostingName: string;
-  /** @deprecated eventId 대신 jobPostingId 사용 - 하위 호환성용 */
-  eventId: string;
-  /** @deprecated eventName 대신 jobPostingName 사용 - 하위 호환성용 */
-  eventName: string;
   role: string;
   date: string;
   timeSlot: string;
@@ -194,9 +190,6 @@ export class WorkLogCreator {
       staffName: input.staffName,
       jobPostingId: input.jobPostingId,
       jobPostingName: input.jobPostingName,
-      // 하위 호환성: eventId/eventName도 함께 저장
-      eventId: input.jobPostingId,
-      eventName: input.jobPostingName,
       role: input.roleId,
       date: input.date,
       timeSlot: input.timeSlot,

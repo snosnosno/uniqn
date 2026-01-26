@@ -20,7 +20,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
-import type { Application, Staff, JobPosting } from '@/types';
+import type { Application, Staff, JobPosting, StaffRole } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
 import { STAFF_ROLES } from '@/constants';
 
@@ -171,7 +171,7 @@ export async function convertApplicantToStaff(
           name: applicationData.applicantName,
           phone: applicationData.applicantPhone ?? '',
           email: applicationData.applicantEmail ?? '',
-          role: applicationData.appliedRole,
+          role: (applicationData.assignments[0]?.roleIds?.[0] || 'other') as StaffRole,
           isActive: true,
           totalWorkCount: 0,
           rating: 0,
@@ -200,7 +200,7 @@ export async function convertApplicantToStaff(
 
         if (isFixedOrLegacy) {
           // 단일 WorkLog 생성 (고정공고/레거시)
-          const rawRole = assignments[0]?.roleIds?.[0] ?? applicationData.appliedRole;
+          const rawRole = assignments[0]?.roleIds?.[0] || 'other';
           const { role, customRole } = normalizeRole(rawRole);
           const workLogRef = doc(workLogsRef);
           const workLogData = {
@@ -210,9 +210,6 @@ export async function convertApplicantToStaff(
             staffPhotoURL: applicationData.applicantPhotoURL ?? null,
             jobPostingId,
             jobPostingName: jobData.title,
-            // 하위 호환성: eventId도 함께 저장
-            eventId: jobPostingId,
-            eventName: jobData.title,
             ownerId: jobData.ownerId, // 구인자 ID (신고 기능 등에서 사용)
             role,
             customRole: customRole ?? null,
@@ -237,7 +234,7 @@ export async function convertApplicantToStaff(
           // Assignment별 WorkLog 생성 (일반 공고)
           for (const assignment of assignments) {
             // v3.0: roleIds 사용 (커스텀 역할 지원)
-            const rawRole = assignment.roleIds[0] ?? applicationData.appliedRole;
+            const rawRole = assignment.roleIds[0] || 'other';
             const { role, customRole } = normalizeRole(rawRole);
 
             for (const date of assignment.dates) {
@@ -249,9 +246,6 @@ export async function convertApplicantToStaff(
                 staffPhotoURL: applicationData.applicantPhotoURL ?? null,
                 jobPostingId,
                 jobPostingName: jobData.title,
-                // 하위 호환성: eventId도 함께 저장
-                eventId: jobPostingId,
-                eventName: jobData.title,
                 ownerId: jobData.ownerId, // 구인자 ID (신고 기능 등에서 사용)
                 role,
                 customRole: customRole ?? null,

@@ -41,11 +41,12 @@ export const applicationMessageSchema = z
   .optional();
 
 /**
- * 지원서 생성 스키마
+ * 지원서 생성 스키마 (레거시)
+ *
+ * @deprecated assignments 기반 createApplicationV2Schema 사용 권장
  */
 export const createApplicationSchema = z.object({
   jobPostingId: z.string().min(1, { message: '공고 ID가 필요합니다' }),
-  appliedRole: staffRoleSchema,
   message: applicationMessageSchema,
 });
 

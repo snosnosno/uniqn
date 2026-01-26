@@ -440,7 +440,7 @@ export function createDefaultNotificationSettings(): NotificationSettings {
 /**
  * 그룹핑 가능한 알림 타입
  *
- * @description 같은 컨텍스트(jobId, eventId)에서 여러 번 발생할 수 있는 타입만 포함
+ * @description 같은 컨텍스트(jobId)에서 여러 번 발생할 수 있는 타입만 포함
  */
 export const GROUPABLE_NOTIFICATION_TYPES: NotificationType[] = [
   NotificationType.NEW_APPLICATION,
@@ -461,10 +461,7 @@ export interface GroupedNotificationData {
   /** 그룹핑 컨텍스트 */
   context: {
     jobId?: string;
-    /** @deprecated Phase 2 마이그레이션 후 jobPostingId로 통합 예정 */
-    eventId?: string;
     jobTitle?: string;
-    eventName?: string;
   };
   /** 그룹 내 알림 목록 (최신순 정렬) */
   notifications: NotificationData[];

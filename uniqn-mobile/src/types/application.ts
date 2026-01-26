@@ -1,20 +1,13 @@
 /**
  * UNIQN Mobile - 지원서 관련 타입 정의
  *
- * @version 2.2.0
- * @description Assignment v2.0 + confirmationHistory 이력 관리 + 취소 요청 시스템 지원
+ * @version 3.0.0
+ * @description Assignment 필수화 + confirmationHistory 이력 관리 + 취소 요청 시스템 지원
  *
- * ## 공고 ID 필드 마이그레이션 안내
- *
- * ### Primary (필수)
- * - `jobPostingId`: 모든 새 지원서에서 사용하는 공식 필드
- *
- * ### Deprecated (2025 Q3 제거 예정)
- * - `eventId`: v2.0 초기 표준 → jobPostingId로 통일
- * - `postId`: 레거시 호환용 → jobPostingId로 통일
- * - `postTitle`: 레거시 호환용 → jobPostingTitle로 통일
- *
- * 신규 코드에서는 반드시 `jobPostingId`만 사용하세요.
+ * ## v3.0 변경사항
+ * - `assignments` 필드 필수화 (레거시 appliedRole, appliedDate, appliedTimeSlot 제거)
+ * - `eventId` 제거 → `jobPostingId` 사용
+ * - 역할 정보는 `assignments[0].roleIds[0]`에서 추출 (getPrimaryRole 헬퍼 사용)
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -84,61 +77,30 @@ export interface Application extends FirebaseDocument {
   /** 지원자 프로필 사진 URL */
   applicantPhotoURL?: string;
 
-  // === 공고 정보 (Primary) ===
-  /**
-   * @primary 공고 ID - 모든 새 지원서에서 사용하는 필수 필드
-   * @description JobPosting 컬렉션의 문서 ID를 참조
-   * @example "abc123xyz"
-   */
+  // === 공고 정보 ===
+  /** 공고 ID - JobPosting 컬렉션의 문서 ID를 참조 */
   jobPostingId: string;
   /** 공고 제목 (조회 편의를 위한 비정규화) */
   jobPostingTitle?: string;
   /** 공고 근무일 (조회 편의를 위한 비정규화) */
   jobPostingDate?: string;
 
-  // === 레거시 필드 (읽기 전용 - 신규 저장 안함) ===
-  /**
-   * @deprecated jobPostingId 사용 권장 - 신규 지원서에서는 저장하지 않음
-   * @description 기존 Firestore 데이터 읽기 전용 (하위 호환)
-   * @readonly 신규 지원서에서는 이 필드를 저장하지 않습니다
-   */
-  eventId?: string;
-
   // === 지원 정보 ===
   status: ApplicationStatus;
-  /**
-   * @deprecated assignments[0].roleIds[0] 사용 권장
-   * @description 레거시 단일 역할 필드. v2.0에서는 assignments 배열 사용
-   * @readonly 기존 Firestore 데이터 읽기용으로 유지
-   * @see getPrimaryRole() 헬퍼 함수 사용 권장
-   */
-  appliedRole: StaffRole;
   /** 커스텀 역할명 (role이 'other'일 때) */
   customRole?: string;
   message?: string;
   /** 모집 유형 구분 */
   recruitmentType?: RecruitmentType;
 
-  // === 레거시 날짜/시간대 (읽기 전용) ===
-  /**
-   * @deprecated assignments[].dates 사용 권장
-   * @description 레거시 단일 날짜 필드
-   * @see getAppliedDateInfo() 헬퍼 함수 사용 권장
-   */
-  appliedDate?: string;
-  /**
-   * @deprecated assignments[].timeSlot 사용 권장
-   * @description 레거시 단일 시간대 필드
-   * @see getAppliedDateInfo() 헬퍼 함수 사용 권장
-   */
-  appliedTimeSlot?: string;
-
-  // === Assignment v2.0 (Single Source of Truth) ===
+  // === Assignment (Single Source of Truth) ===
   /**
    * 핵심 배정 정보 - 다중 역할/시간/날짜 조합
-   * @description 이 필드가 있으면 v2.0 지원서, 없으면 레거시
+   * @description 역할, 날짜, 시간대 정보는 이 필드에서 추출
+   * @see getPrimaryRole() - 대표 역할 추출
+   * @see getAppliedDateInfo() - 날짜/시간 정보 추출
    */
-  assignments?: Assignment[];
+  assignments: Assignment[];
 
   // === 히스토리 관리 ===
   /**
@@ -182,20 +144,11 @@ export interface Application extends FirebaseDocument {
 }
 
 /**
- * 지원서 생성 입력 (레거시)
- */
-export interface CreateApplicationInput {
-  jobPostingId: string;
-  appliedRole: StaffRole;
-  message?: string;
-}
-
-/**
- * 지원서 생성 입력 v2.0
+ * 지원서 생성 입력
  *
  * @description Assignment 배열 + 사전질문 답변 지원
  */
-export interface CreateApplicationInputV2 {
+export interface CreateApplicationInput {
   jobPostingId: string;
   /** 다중 역할/시간/날짜 선택 */
   assignments: Assignment[];

@@ -232,12 +232,8 @@ function createGroupedScheduleEvent(
   return {
     id: `grouped_${firstEvent.applicationId}`,
     type: firstEvent.type,
-    // 정규화된 필드 (Phase 2)
     jobPostingId: firstEvent.jobPostingId,
     jobPostingName: firstEvent.jobPostingName,
-    // 하위 호환성
-    eventId: firstEvent.eventId,
-    eventName: firstEvent.eventName,
     location: firstEvent.location,
     detailedAddress: firstEvent.detailedAddress,
     dateRange: {

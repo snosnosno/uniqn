@@ -104,10 +104,11 @@ export const validateRequiredAnswersSchema = z.array(preQuestionAnswerSchema).re
 
 /**
  * 지원서 생성 + 사전질문 통합 스키마
+ *
+ * @description assignments 기반 지원서 생성 (역할은 assignments[].roleIds에서 추출)
  */
 export const createApplicationWithPreQuestionsSchema = z.object({
   jobPostingId: z.string().min(1, { message: '공고 ID가 필요합니다' }),
-  appliedRole: z.string().min(1, { message: '역할을 선택해주세요' }),
   preQuestionAnswers: validateRequiredAnswersSchema.optional(),
   message: z
     .string()
