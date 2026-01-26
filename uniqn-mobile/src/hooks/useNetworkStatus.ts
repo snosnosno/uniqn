@@ -2,13 +2,28 @@
  * UNIQN Mobile - 네트워크 상태 훅
  *
  * @description 네트워크 연결 상태 감지 및 관리
- * @version 1.0.0
+ * @version 2.0.0 - @react-native-community/netinfo 연동
  *
- * TODO [출시 전]: @react-native-community/netinfo 설치 후 네이티브 구현 강화
+ * 기능:
+ * - 네이티브: NetInfo 이벤트 기반 실시간 감지
+ * - 웹: navigator.onLine 기반 감지
+ * - 연결 타입 구분 (wifi, cellular, ethernet, none)
+ * - 인터넷 도달 가능 여부 확인
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
+import NetInfo, { type NetInfoState, NetInfoStateType } from '@react-native-community/netinfo';
+import { logger } from '@/utils/logger';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * 연결 타입
+ */
+export type ConnectionType = 'wifi' | 'cellular' | 'ethernet' | 'none' | 'unknown';
 
 /**
  * 네트워크 상태 타입
@@ -20,18 +35,20 @@ export interface NetworkStatus {
   isOffline: boolean;
   /** 상태 확인 중 */
   isChecking: boolean;
-  /** 연결 타입 (wifi, cellular, unknown) */
-  connectionType: 'wifi' | 'cellular' | 'unknown';
+  /** 연결 타입 */
+  connectionType: ConnectionType;
+  /** 인터넷 도달 가능 여부 (null = 확인 중) */
+  isInternetReachable: boolean | null;
   /** 마지막 확인 시간 */
   lastChecked: Date | null;
+  /** NetInfo 상세 정보 (네이티브 전용) */
+  details: NetInfoState | null;
 }
 
 /**
  * 네트워크 상태 훅 옵션
  */
 export interface UseNetworkStatusOptions {
-  /** 폴링 간격 (ms, 기본: 30000) */
-  pollingInterval?: number;
   /** 자동 체크 활성화 (기본: true) */
   autoCheck?: boolean;
   /** 오프라인 시 콜백 */
@@ -40,17 +57,65 @@ export interface UseNetworkStatusOptions {
   onOnline?: () => void;
 }
 
-const DEFAULT_OPTIONS: UseNetworkStatusOptions = {
-  pollingInterval: 30000,
-  autoCheck: true,
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * NetInfo 타입을 ConnectionType으로 변환
+ */
+function mapConnectionType(type: NetInfoStateType): ConnectionType {
+  switch (type) {
+    case NetInfoStateType.wifi:
+      return 'wifi';
+    case NetInfoStateType.cellular:
+      return 'cellular';
+    case NetInfoStateType.ethernet:
+      return 'ethernet';
+    case NetInfoStateType.none:
+      return 'none';
+    default:
+      return 'unknown';
+  }
+}
+
+/**
+ * NetInfoState에서 온라인 여부 판단
+ */
+function isOnlineFromState(state: NetInfoState): boolean {
+  // isConnected가 true이고, isInternetReachable이 false가 아닌 경우
+  // (null인 경우는 아직 확인 중이므로 일단 연결된 것으로 간주)
+  return state.isConnected === true && state.isInternetReachable !== false;
+}
+
+// ============================================================================
+// Initial State
+// ============================================================================
+
+const INITIAL_STATUS: NetworkStatus = {
+  isOnline: true, // 초기값은 온라인으로 가정
+  isOffline: false,
+  isChecking: true,
+  connectionType: 'unknown',
+  isInternetReachable: null,
+  lastChecked: null,
+  details: null,
 };
+
+// ============================================================================
+// Hook
+// ============================================================================
 
 /**
  * 네트워크 상태 감지 훅
  *
+ * @description
+ * - 네이티브: NetInfo.addEventListener()로 실시간 상태 변경 감지
+ * - 웹: navigator.onLine + online/offline 이벤트 리스너
+ *
  * @example
  * ```tsx
- * const { isOnline, isOffline } = useNetworkStatus({
+ * const { isOnline, isOffline, connectionType } = useNetworkStatus({
  *   onOffline: () => toast.warning('인터넷 연결이 끊어졌습니다'),
  *   onOnline: () => toast.success('인터넷에 연결되었습니다'),
  * });
@@ -58,117 +123,129 @@ const DEFAULT_OPTIONS: UseNetworkStatusOptions = {
  * if (isOffline) {
  *   return <OfflineBanner />;
  * }
+ *
+ * // 연결 타입에 따른 처리
+ * if (connectionType === 'cellular') {
+ *   // 모바일 데이터 사용 시 경고
+ * }
  * ```
  */
 export function useNetworkStatus(
   options: UseNetworkStatusOptions = {}
 ): NetworkStatus & { checkConnection: () => Promise<boolean> } {
-  const { pollingInterval, autoCheck, onOffline, onOnline } = {
-    ...DEFAULT_OPTIONS,
-    ...options,
-  };
+  const { autoCheck = true, onOffline, onOnline } = options;
 
-  const [status, setStatus] = useState<NetworkStatus>({
-    isOnline: true,
-    isOffline: false,
-    isChecking: true,
-    connectionType: 'unknown',
-    lastChecked: null,
-  });
-
-  const [wasOnline, setWasOnline] = useState(true);
+  const [status, setStatus] = useState<NetworkStatus>(INITIAL_STATUS);
+  const wasOnlineRef = useRef(true);
+  const isInitializedRef = useRef(false);
 
   /**
-   * 네트워크 연결 확인
+   * 네트워크 연결 수동 확인
    */
   const checkConnection = useCallback(async (): Promise<boolean> => {
     setStatus((prev) => ({ ...prev, isChecking: true }));
 
     try {
-      // 웹에서는 navigator.onLine 사용
       if (Platform.OS === 'web') {
+        // 웹: navigator.onLine 사용
         const online = typeof navigator !== 'undefined' ? navigator.onLine : true;
         setStatus({
           isOnline: online,
           isOffline: !online,
           isChecking: false,
           connectionType: 'unknown',
+          isInternetReachable: online,
           lastChecked: new Date(),
+          details: null,
         });
         return online;
       }
 
-      // 네이티브에서는 실제 요청으로 확인 (간단한 구현)
-      // TODO: @react-native-community/netinfo 설치 후 개선
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
+      // 네이티브: NetInfo.fetch() 사용
+      const state = await NetInfo.fetch();
+      const online = isOnlineFromState(state);
 
-        const response = await fetch('https://www.google.com/generate_204', {
-          method: 'HEAD',
-          signal: controller.signal,
-        });
+      setStatus({
+        isOnline: online,
+        isOffline: !online,
+        isChecking: false,
+        connectionType: mapConnectionType(state.type),
+        isInternetReachable: state.isInternetReachable,
+        lastChecked: new Date(),
+        details: state,
+      });
 
-        clearTimeout(timeoutId);
+      return online;
+    } catch (error) {
+      logger.error('네트워크 상태 확인 실패', error as Error, {
+        component: 'useNetworkStatus',
+      });
 
-        const online = response.ok || response.status === 204;
-        setStatus({
-          isOnline: online,
-          isOffline: !online,
-          isChecking: false,
-          connectionType: 'unknown',
-          lastChecked: new Date(),
-        });
-        return online;
-      } catch {
-        setStatus({
-          isOnline: false,
-          isOffline: true,
-          isChecking: false,
-          connectionType: 'unknown',
-          lastChecked: new Date(),
-        });
-        return false;
-      }
-    } catch {
       setStatus({
         isOnline: false,
         isOffline: true,
         isChecking: false,
         connectionType: 'unknown',
+        isInternetReachable: false,
         lastChecked: new Date(),
+        details: null,
       });
+
       return false;
     }
   }, []);
 
   // 온라인/오프라인 상태 변경 콜백
   useEffect(() => {
-    if (status.isChecking) return;
+    // 초기 로딩 중이거나 아직 초기화되지 않은 경우 스킵
+    if (status.isChecking || !isInitializedRef.current) return;
+
+    const wasOnline = wasOnlineRef.current;
 
     if (wasOnline && status.isOffline) {
+      logger.info('네트워크 상태 변경: 오프라인', {
+        component: 'useNetworkStatus',
+        connectionType: status.connectionType,
+      });
       onOffline?.();
     } else if (!wasOnline && status.isOnline) {
+      logger.info('네트워크 상태 변경: 온라인', {
+        component: 'useNetworkStatus',
+        connectionType: status.connectionType,
+      });
       onOnline?.();
     }
 
-    setWasOnline(status.isOnline);
-  }, [status.isOnline, status.isOffline, status.isChecking, wasOnline, onOffline, onOnline]);
+    wasOnlineRef.current = status.isOnline;
+  }, [status.isOnline, status.isOffline, status.isChecking, onOffline, onOnline]);
 
-  // 초기 체크 및 이벤트 리스너 설정
+  // 네트워크 상태 구독
   useEffect(() => {
     if (!autoCheck) return;
 
-    // 초기 체크
-    checkConnection();
+    // 웹 환경
+    if (Platform.OS === 'web') {
+      // 초기 상태 설정
+      const initialOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+      setStatus({
+        isOnline: initialOnline,
+        isOffline: !initialOnline,
+        isChecking: false,
+        connectionType: 'unknown',
+        isInternetReachable: initialOnline,
+        lastChecked: new Date(),
+        details: null,
+      });
+      isInitializedRef.current = true;
 
-    // 웹에서 online/offline 이벤트 리스너
-    if (Platform.OS === 'web' && typeof window !== 'undefined') {
+      if (typeof window === 'undefined') return;
+
       const handleOnline = () => {
         setStatus((prev) => ({
           ...prev,
           isOnline: true,
           isOffline: false,
+          isInternetReachable: true,
           lastChecked: new Date(),
         }));
       };
@@ -178,6 +255,7 @@ export function useNetworkStatus(
           ...prev,
           isOnline: false,
           isOffline: true,
+          isInternetReachable: false,
           lastChecked: new Date(),
         }));
       };
@@ -191,12 +269,40 @@ export function useNetworkStatus(
       };
     }
 
-    // 폴링 (네이티브)
-    if (pollingInterval && pollingInterval > 0) {
-      const intervalId = setInterval(checkConnection, pollingInterval);
-      return () => clearInterval(intervalId);
-    }
-  }, [autoCheck, pollingInterval, checkConnection]);
+    // 네이티브 환경: NetInfo 이벤트 구독
+    logger.debug('NetInfo 구독 시작', { component: 'useNetworkStatus' });
+
+    const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
+      const online = isOnlineFromState(state);
+
+      logger.debug('NetInfo 상태 변경', {
+        component: 'useNetworkStatus',
+        isConnected: state.isConnected,
+        isInternetReachable: state.isInternetReachable,
+        type: state.type,
+      });
+
+      setStatus({
+        isOnline: online,
+        isOffline: !online,
+        isChecking: false,
+        connectionType: mapConnectionType(state.type),
+        isInternetReachable: state.isInternetReachable,
+        lastChecked: new Date(),
+        details: state,
+      });
+
+      // 초기화 완료 표시 (첫 번째 이벤트 수신 후)
+      if (!isInitializedRef.current) {
+        isInitializedRef.current = true;
+      }
+    });
+
+    return () => {
+      logger.debug('NetInfo 구독 해제', { component: 'useNetworkStatus' });
+      unsubscribe();
+    };
+  }, [autoCheck]);
 
   return {
     ...status,

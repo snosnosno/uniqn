@@ -151,6 +151,20 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       },
     ],
     '@react-native-community/datetimepicker',
+    // TODO [출시 전]: expo-notifications 플러그인 활성화 (EAS Build 필요)
+    // 현재 상태: pushNotificationService.ts, usePushNotifications.ts 구현 완료
+    // 활성화 방법:
+    // 1. 아래 주석 해제
+    // 2. google-services.json (Android), GoogleService-Info.plist (iOS) 확인
+    // 3. eas build --profile development 실행
+    // [
+    //   'expo-notifications',
+    //   {
+    //     icon: './assets/notification-icon.png',
+    //     color: '#3B82F6',
+    //     // Android 알림 채널은 pushNotificationService.ts에서 동적 생성
+    //   },
+    // ],
   ],
 
   // 추가 설정

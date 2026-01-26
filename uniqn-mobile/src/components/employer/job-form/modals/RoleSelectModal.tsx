@@ -6,7 +6,8 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, Pressable, TextInput, Modal, FlatList } from 'react-native';
+import { View, Text, Pressable, TextInput, Modal } from 'react-native';
+import { FlashList } from '@shopify/flash-list';
 import { XMarkIcon, CheckIcon } from '@/components/icons';
 import { STAFF_ROLES, type StaffRoleOption } from '@/constants';
 
@@ -193,12 +194,14 @@ export const RoleSelectModal = memo(function RoleSelectModal({
             </View>
           ) : (
             // 역할 목록
-            <FlatList
+            <FlashList
               data={STAFF_ROLES}
               renderItem={renderRoleItem}
               keyExtractor={(item) => item.key}
               contentContainerStyle={{ paddingBottom: 34 }}
               showsVerticalScrollIndicator={false}
+              // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
+              estimatedItemSize={56}
             />
           )}
         </View>

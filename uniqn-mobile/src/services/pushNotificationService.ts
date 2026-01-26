@@ -10,6 +10,34 @@
  * - 포그라운드/백그라운드 알림 처리
  * - 알림 채널 설정 (Android)
  * - 로컬 알림 스케줄링
+ *
+ * ============================================================================
+ * TODO [출시 전]: 푸시 알림 활성화 체크리스트
+ * ============================================================================
+ *
+ * 현재 상태: 코드 구현 완료, EAS Build 필요
+ *
+ * 활성화 단계:
+ * 1. app.config.ts에서 expo-notifications 플러그인 주석 해제
+ * 2. Firebase 콘솔에서 설정 파일 다운로드:
+ *    - Android: google-services.json → 프로젝트 루트
+ *    - iOS: GoogleService-Info.plist → 프로젝트 루트
+ * 3. EAS Build 실행:
+ *    - npx eas build --profile development --platform ios
+ *    - npx eas build --profile development --platform android
+ * 4. 실제 디바이스에서 테스트 (시뮬레이터 불가)
+ *
+ * 연관 파일:
+ * - app.config.ts: 플러그인 설정
+ * - notificationService.ts: FCM 토큰 Firestore 저장
+ * - usePushNotifications.ts: React 훅
+ * - useNotificationHandler.ts: 알림 수신/터치 핸들러
+ * - functions/src/utils/notifications.ts: Cloud Functions FCM 전송
+ *
+ * 테스트 방법:
+ * - Firebase 콘솔 > Cloud Messaging > 테스트 메시지 전송
+ * - functions에서 sendNotification() 호출
+ * ============================================================================
  */
 
 import { Platform, AppState, type AppStateStatus } from 'react-native';

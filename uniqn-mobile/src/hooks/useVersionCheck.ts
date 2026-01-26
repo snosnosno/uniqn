@@ -13,7 +13,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { Linking, Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getMMKVInstance } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import {
   APP_VERSION,
@@ -100,10 +100,11 @@ export function useVersionCheck(): UseVersionCheckReturn {
   /**
    * 권장 업데이트 무시 여부 확인
    */
-  const checkDismissed = useCallback(async (): Promise<boolean> => {
+  const checkDismissed = useCallback((): boolean => {
     try {
+      const storage = getMMKVInstance();
       const key = `${DISMISS_KEY_PREFIX}${UPDATE_POLICY.RECOMMENDED_VERSION}`;
-      const dismissedAt = await AsyncStorage.getItem(key);
+      const dismissedAt = storage.getString(key);
 
       if (!dismissedAt) return false;
 
@@ -113,7 +114,7 @@ export function useVersionCheck(): UseVersionCheckReturn {
 
       // 무시 기간이 지났으면 다시 표시
       if (Date.now() > expiryTime) {
-        await AsyncStorage.removeItem(key);
+        storage.delete(key);
         return false;
       }
 
@@ -169,7 +170,7 @@ export function useVersionCheck(): UseVersionCheckReturn {
         });
       } else if (remoteResult.shouldUpdate) {
         // 권장 업데이트: 무시하지 않았으면 표시
-        const isDismissed = await checkDismissed();
+        const isDismissed = checkDismissed();
         setShowUpdateModal(!isDismissed);
 
         if (!isDismissed) {
@@ -197,7 +198,7 @@ export function useVersionCheck(): UseVersionCheckReturn {
       if (updateType === 'required') {
         setShowUpdateModal(true);
       } else if (updateType === 'recommended') {
-        const isDismissed = await checkDismissed();
+        const isDismissed = checkDismissed();
         setShowUpdateModal(!isDismissed);
       } else {
         setShowUpdateModal(false);
@@ -222,8 +223,9 @@ export function useVersionCheck(): UseVersionCheckReturn {
     }
 
     try {
+      const storage = getMMKVInstance();
       const key = `${DISMISS_KEY_PREFIX}${UPDATE_POLICY.RECOMMENDED_VERSION}`;
-      await AsyncStorage.setItem(key, Date.now().toString());
+      storage.set(key, Date.now().toString());
       setShowUpdateModal(false);
 
       logger.info('권장 업데이트 무시', {

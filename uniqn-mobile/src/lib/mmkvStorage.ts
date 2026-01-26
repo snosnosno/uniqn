@@ -354,6 +354,84 @@ export function clearAllStorage(): void {
 }
 
 // ============================================================================
+// AsyncStorage → MMKV Migration
+// ============================================================================
+
+const MIGRATION_COMPLETED_KEY = '@uniqn:mmkv_migration_completed';
+
+/**
+ * AsyncStorage에서 MMKV로 데이터 마이그레이션
+ *
+ * 마이그레이션 대상:
+ * - @uniqn:update_dismissed_* (업데이트 모달 "나중에" 기록)
+ * - uniqn-in-app-messages (인앱 메시지 표시 이력)
+ *
+ * @returns 마이그레이션 성공 여부
+ */
+export async function migrateFromAsyncStorage(): Promise<boolean> {
+  // 웹 환경에서는 스킵
+  if (Platform.OS === 'web') {
+    return true;
+  }
+
+  const storage = getMMKVInstance();
+
+  // 이미 마이그레이션 완료된 경우 스킵
+  if (storage.contains(MIGRATION_COMPLETED_KEY)) {
+    return true;
+  }
+
+  try {
+    // AsyncStorage 동적 import (설치되지 않은 경우 대비)
+    const AsyncStorage = await import('@react-native-async-storage/async-storage').then(
+      (m) => m.default
+    );
+
+    const allKeys = await AsyncStorage.getAllKeys();
+    let migratedCount = 0;
+
+    // 마이그레이션 대상 키 패턴
+    const migrationPatterns = [
+      '@uniqn:update_dismissed_', // useVersionCheck
+      'uniqn-in-app-messages', // inAppMessageStore (Zustand persist)
+    ];
+
+    for (const key of allKeys) {
+      const shouldMigrate = migrationPatterns.some(
+        (pattern) => key === pattern || key.startsWith(pattern)
+      );
+
+      if (shouldMigrate) {
+        const value = await AsyncStorage.getItem(key);
+        if (value !== null) {
+          storage.set(key, value);
+          migratedCount++;
+          logger.info('[MMKV] 마이그레이션 완료', { key });
+        }
+      }
+    }
+
+    // 마이그레이션 완료 플래그 설정
+    storage.set(MIGRATION_COMPLETED_KEY, Date.now().toString());
+
+    if (migratedCount > 0) {
+      logger.info('[MMKV] AsyncStorage → MMKV 마이그레이션 완료', {
+        migratedCount,
+      });
+    }
+
+    return true;
+  } catch (error) {
+    logger.warn('[MMKV] 마이그레이션 실패 (AsyncStorage 미설치 또는 에러)', {
+      error,
+    });
+    // 마이그레이션 실패해도 앱 실행에는 영향 없음
+    storage.set(MIGRATION_COMPLETED_KEY, Date.now().toString());
+    return false;
+  }
+}
+
+// ============================================================================
 // Exports
 // ============================================================================
 
@@ -366,5 +444,6 @@ export default {
   removeStorageItem,
   clearStorageByPrefix,
   clearAllStorage,
+  migrateFromAsyncStorage,
   STORAGE_KEYS,
 };

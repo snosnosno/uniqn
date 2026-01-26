@@ -14,6 +14,7 @@
 
 import { QueryClient, QueryCache, MutationCache, onlineManager } from '@tanstack/react-query';
 import { Platform, AppState, type AppStateStatus } from 'react-native';
+import NetInfo from '@react-native-community/netinfo';
 import { logger } from '@/utils/logger';
 import {
   normalizeError,
@@ -71,11 +72,23 @@ export function initializeQueryListeners(): () => void {
     });
   }
 
-  // 앱 상태 변경 시 리페치 트리거 (네이티브)
+  // 네이티브 환경: NetInfo 연동
   if (Platform.OS !== 'web') {
+    // NetInfo 구독 - 네트워크 상태 변경 시 onlineManager 업데이트
+    const unsubscribeNetInfo = NetInfo.addEventListener((state) => {
+      const isOnline = state.isConnected === true && state.isInternetReachable !== false;
+      onlineManager.setOnline(isOnline);
+      logger.info('네트워크 상태 변경 (NetInfo)', {
+        isOnline,
+        type: state.type,
+        isInternetReachable: state.isInternetReachable,
+      });
+    });
+    subscriptions.push(unsubscribeNetInfo);
+
+    // 앱 상태 변경 시 리페치 트리거
     const handleAppStateChange = (nextAppState: AppStateStatus) => {
       if (nextAppState === 'active') {
-        // 앱이 포그라운드로 돌아오면 온라인 상태 확인
         logger.debug('앱 포그라운드 전환, 쿼리 리페치 트리거');
       }
     };

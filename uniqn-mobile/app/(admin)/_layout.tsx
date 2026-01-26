@@ -81,6 +81,12 @@ export default function AdminLayout() {
         }}
       />
       <Stack.Screen
+        name="reports/[id]"
+        options={{
+          title: '신고 상세',
+        }}
+      />
+      <Stack.Screen
         name="settings"
         options={{
           title: '시스템 설정',

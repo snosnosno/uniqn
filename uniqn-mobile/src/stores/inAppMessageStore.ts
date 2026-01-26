@@ -7,7 +7,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { mmkvStorage } from '@/lib/mmkvStorage';
 import type {
   InAppMessage,
   InAppMessageState,
@@ -181,7 +181,7 @@ export const useInAppMessageStore = create<InAppMessageState & InAppMessageActio
     }),
     {
       name: STORAGE_KEY,
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => mmkvStorage),
       // history만 영구 저장 (메시지 큐는 세션 데이터)
       partialize: (state) => ({
         history: state.history,

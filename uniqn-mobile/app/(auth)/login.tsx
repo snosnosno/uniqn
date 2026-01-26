@@ -10,6 +10,7 @@ import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-na
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Timestamp } from 'firebase/firestore';
+import Constants from 'expo-constants';
 import { Divider } from '@/components/ui';
 import { LoginForm, SocialLoginButtons, BiometricButton } from '@/components/auth';
 import { login, signInWithApple, signInWithGoogle, signInWithKakao } from '@/services';
@@ -33,6 +34,10 @@ function toDate(value: Timestamp | Date | unknown): Date {
 }
 
 type SocialProvider = 'apple' | 'google' | 'kakao';
+
+// 소셜 로그인 활성화 여부 (SocialLoginButtons.tsx와 동일한 조건)
+const SOCIAL_LOGIN_ENABLED =
+  __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
 
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
@@ -230,17 +235,20 @@ export default function LoginScreen() {
             isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
           />
 
-          <Divider label="또는" spacing="lg" />
-
-          {/* 소셜 로그인 */}
-          <SocialLoginButtons
-            onAppleLogin={handleAppleLogin}
-            onGoogleLogin={handleGoogleLogin}
-            onKakaoLogin={handleKakaoLogin}
-            isLoading={isLoading || isBiometricAuthenticating}
-            loadingProvider={loadingProvider}
-            disabled={isLoading || isBiometricAuthenticating}
-          />
+          {/* 소셜 로그인 (프로덕션에서는 숨김) */}
+          {SOCIAL_LOGIN_ENABLED && (
+            <>
+              <Divider label="또는" spacing="lg" />
+              <SocialLoginButtons
+                onAppleLogin={handleAppleLogin}
+                onGoogleLogin={handleGoogleLogin}
+                onKakaoLogin={handleKakaoLogin}
+                isLoading={isLoading || isBiometricAuthenticating}
+                loadingProvider={loadingProvider}
+                disabled={isLoading || isBiometricAuthenticating}
+              />
+            </>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

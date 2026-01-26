@@ -6,10 +6,12 @@
  *
  * 초기화 순서:
  * 1. 환경변수 검증
- * 2. Zustand hydration 대기 (AsyncStorage 복원)
- * 3. Firebase 초기화
- * 4. 강제 업데이트 체크
- * 5. 인증 상태 확인
+ * 2. 스플래시 화면 유지
+ * 3. AsyncStorage → MMKV 마이그레이션 (일회성)
+ * 4. Zustand hydration 대기 (MMKV 복원)
+ * 5. Firebase 초기화
+ * 6. 강제 업데이트 체크
+ * 7-11. 인증 상태 확인 및 프로필 로드
  *
  * TODO [출시 후]: 폰트 로딩 추가 (expo-font) - 기본 폰트 사용 시 불필요
  * NOTE: 푸시 알림 권한은 useNotificationHandler에서 처리
@@ -21,6 +23,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
+import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
 import { getUserProfile } from '@/services/authService';
@@ -101,7 +104,11 @@ export function useAppInitialize(): UseAppInitializeReturn {
       }
       logger.debug('환경변수 검증 완료', { component: 'useAppInitialize' });
 
-      // 3. Zustand hydration 대기 (AsyncStorage에서 상태 복원)
+      // 3. AsyncStorage → MMKV 마이그레이션 (일회성)
+      logger.debug('스토리지 마이그레이션 체크 중...', { component: 'useAppInitialize' });
+      await migrateFromAsyncStorage();
+
+      // 4. Zustand hydration 대기 (MMKV에서 상태 복원)
       logger.debug('Hydration 대기 중...', { component: 'useAppInitialize' });
       const hydrated = await waitForHydration(5000);
       if (!hydrated) {
@@ -110,7 +117,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       }
       logger.debug('Hydration 완료', { component: 'useAppInitialize' });
 
-      // 4. Firebase 초기화 (지연 초기화)
+      // 5. Firebase 초기화 (지연 초기화)
       logger.debug('Firebase 초기화 중...', { component: 'useAppInitialize' });
       const firebaseResult = tryInitializeFirebase();
       if (!firebaseResult.success) {
@@ -118,7 +125,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       }
       logger.debug('Firebase 초기화 완료', { component: 'useAppInitialize' });
 
-      // 5. 강제 업데이트 체크
+      // 6. 강제 업데이트 체크
       logger.debug('버전 체크 중...', { component: 'useAppInitialize' });
       const versionResult = await checkForceUpdate();
 
@@ -144,19 +151,19 @@ export function useAppInitialize(): UseAppInitializeReturn {
         currentVersion: versionResult.currentVersion,
       });
 
-      // 6. 인증 상태 초기화 (복원된 상태 활용)
+      // 7. 인증 상태 초기화 (복원된 상태 활용)
       // getState()로 안정적인 함수 참조 획득
       await useAuthStore.getState().initialize();
 
-      // 7. 인증 상태 확인 (Firebase Auth 리스너 등록)
+      // 8. 인증 상태 확인 (Firebase Auth 리스너 등록)
       await useAuthStore.getState().checkAuthState();
 
-      // 8. 자동 로그인 설정 확인
+      // 9. 자동 로그인 설정 확인
       logger.debug('자동 로그인 설정 확인 중...', { component: 'useAppInitialize' });
       const autoLoginEnabled = await checkAutoLoginEnabled();
       logger.debug('자동 로그인 설정', { autoLoginEnabled, component: 'useAppInitialize' });
 
-      // 9. Firebase Auth 상태 확정 대기 및 토큰 갱신
+      // 10. Firebase Auth 상태 확정 대기 및 토큰 갱신
       // 웹앱에서 가입한 계정도 모바일앱에서 최신 Custom Claims를 가져옴
       logger.debug('Firebase Auth 상태 확정 대기 중...', { component: 'useAppInitialize' });
 
@@ -241,7 +248,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
         logger.debug('로그인된 사용자 없음', { component: 'useAppInitialize' });
       }
 
-      // 9. 기타 초기화 작업 (필요 시 추가)
+      // 11. 기타 초기화 작업 (필요 시 추가)
       // - 폰트 로딩 (기본 폰트 사용 시 불필요)
       // NOTE: 푸시 알림 권한은 useNotificationHandler에서 처리
 

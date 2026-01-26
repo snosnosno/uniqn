@@ -18,6 +18,7 @@ import {
   where,
   orderBy,
   serverTimestamp,
+  type QueryConstraint,
 } from 'firebase/firestore';
 import { db, auth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -42,6 +43,7 @@ import type {
   CreateReportInput,
   ReviewReportInput,
   ReportStatus,
+  ReporterType,
 } from '@/types/report';
 import { getReportSeverity } from '@/types/report';
 
@@ -445,6 +447,81 @@ export async function getReportCountByStaff(staffId: string): Promise<{
 }
 
 // ============================================================================
+// Admin Functions
+// ============================================================================
+
+/**
+ * 신고 필터 옵션 (관리자용)
+ */
+export interface GetAllReportsFilters {
+  /** 신고 상태 필터 */
+  status?: ReportStatus | 'all';
+  /** 심각도 필터 */
+  severity?: 'low' | 'medium' | 'high' | 'critical' | 'all';
+  /** 신고자 유형 필터 */
+  reporterType?: ReporterType | 'all';
+}
+
+/**
+ * 전체 신고 목록 조회 (관리자용)
+ *
+ * @description 관리자가 모든 신고를 조회하고 처리할 수 있도록
+ * 필터링 및 정렬 기능을 제공합니다.
+ */
+export async function getAllReports(filters: GetAllReportsFilters = {}): Promise<Report[]> {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '인증이 필요합니다',
+    });
+  }
+
+  logger.info('Getting all reports (admin)', { filters });
+
+  try {
+    const constraints: QueryConstraint[] = [];
+
+    // 상태 필터
+    if (filters.status && filters.status !== 'all') {
+      constraints.push(where('status', '==', filters.status));
+    }
+
+    // 심각도 필터
+    if (filters.severity && filters.severity !== 'all') {
+      constraints.push(where('severity', '==', filters.severity));
+    }
+
+    // 신고자 유형 필터
+    if (filters.reporterType && filters.reporterType !== 'all') {
+      constraints.push(where('reporterType', '==', filters.reporterType));
+    }
+
+    // 정렬: 최신순
+    constraints.push(orderBy('createdAt', 'desc'));
+
+    const q = query(collection(db, REPORTS_COLLECTION), ...constraints);
+    const snapshot = await getDocs(q);
+
+    const rawData = snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    }));
+
+    const reports = parseReportDocuments(rawData);
+
+    logger.info('Got all reports', {
+      count: reports.length,
+      filters,
+    });
+
+    return reports as Report[];
+  } catch (error) {
+    logger.error('Failed to get all reports', error as Error, { filters });
+    throw mapFirebaseError(error);
+  }
+}
+
+// ============================================================================
 // Export
 // ============================================================================
 
@@ -456,6 +533,7 @@ export const reportService = {
   getReportById,
   reviewReport,
   getReportCountByStaff,
+  getAllReports,
 };
 
 export default reportService;

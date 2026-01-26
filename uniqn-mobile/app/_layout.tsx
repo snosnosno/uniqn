@@ -21,6 +21,7 @@ import {
   ErrorState,
   ScreenErrorBoundary,
   InAppMessageManager,
+  OfflineBanner,
 } from '@/components/ui';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -61,6 +62,7 @@ function MainNavigator() {
   return (
     <>
       <StatusBar style={isDark ? 'light' : 'dark'} />
+      <OfflineBanner variant="banner" />
       <Stack
         screenOptions={{
           headerShown: false,
