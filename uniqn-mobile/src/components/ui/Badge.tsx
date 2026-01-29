@@ -8,15 +8,54 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 
-type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
-type BadgeSize = 'sm' | 'md';
+export type BadgeVariant = 'default' | 'primary' | 'secondary' | 'success' | 'warning' | 'error';
+export type BadgeSize = 'sm' | 'md';
+
+/**
+ * 자주 사용되는 Badge 프리셋
+ * variant + children + size 조합을 사전 정의
+ */
+export type BadgePreset =
+  | 'urgent'          // 긴급 (error)
+  | 'important'       // 중요 (primary)
+  | 'pinned'          // 고정 (error)
+  | 'pending'         // 대기 중 (warning)
+  | 'confirmed'       // 확정 (success)
+  | 'completed'       // 완료 (success)
+  | 'cancelled'       // 취소됨 (default)
+  | 'closed'          // 마감 (default)
+  | 'new'             // 신규 (primary)
+  | 'tournament';     // 토너먼트 (primary)
+
+/** 프리셋 설정 */
+const BADGE_PRESETS: Record<BadgePreset, { variant: BadgeVariant; label: string }> = {
+  urgent: { variant: 'error', label: '긴급' },
+  important: { variant: 'primary', label: '중요' },
+  pinned: { variant: 'error', label: '고정' },
+  pending: { variant: 'warning', label: '대기 중' },
+  confirmed: { variant: 'success', label: '확정' },
+  completed: { variant: 'success', label: '완료' },
+  cancelled: { variant: 'default', label: '취소됨' },
+  closed: { variant: 'default', label: '마감' },
+  new: { variant: 'primary', label: '신규' },
+  tournament: { variant: 'primary', label: '토너먼트' },
+};
 
 export interface BadgeProps {
-  children: React.ReactNode;
+  /** 배지 텍스트 (preset 사용 시 생략 가능) */
+  children?: React.ReactNode;
+  /** 배지 스타일 변형 */
   variant?: BadgeVariant;
+  /** 배지 크기 */
   size?: BadgeSize;
+  /** 프리셋 (variant + children 자동 설정) */
+  preset?: BadgePreset;
+  /** dot 표시 여부 */
   dot?: boolean;
+  /** 추가 클래스 */
   className?: string;
+  /** 접근성 라벨 (미지정시 children 문자열 사용) */
+  accessibilityLabel?: string;
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
@@ -58,19 +97,36 @@ const textSizeStyles: Record<BadgeSize, string> = {
 
 export function Badge({
   children,
-  variant = 'default',
+  variant: variantProp,
   size = 'md',
+  preset,
   dot = false,
   className = '',
+  accessibilityLabel,
 }: BadgeProps) {
+  // 프리셋이 있으면 프리셋 설정 사용, 없으면 props 사용
+  const presetConfig = preset ? BADGE_PRESETS[preset] : null;
+  const variant = variantProp ?? presetConfig?.variant ?? 'default';
+  const displayContent = children ?? presetConfig?.label;
+
   const containerClass = `flex-row items-center rounded-full ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
   const dotClass = `mr-2 h-2 w-2 rounded-full ${dotStyles[variant]}`;
   const textClass = `font-medium ${textStyles[variant]} ${textSizeStyles[size]}`;
 
+  // children 또는 preset label이 문자열인 경우 자동으로 accessibilityLabel 생성
+  const resolvedAccessibilityLabel =
+    accessibilityLabel ??
+    (typeof displayContent === 'string' ? `${displayContent} 배지` : undefined);
+
   return (
-    <View className={containerClass}>
+    <View
+      className={containerClass}
+      accessible={true}
+      accessibilityRole="text"
+      accessibilityLabel={resolvedAccessibilityLabel}
+    >
       {dot && <View className={dotClass} />}
-      <Text className={textClass}>{children}</Text>
+      <Text className={textClass}>{displayContent}</Text>
     </View>
   );
 }

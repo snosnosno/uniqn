@@ -387,26 +387,55 @@ async function createMockSocialLoginResult(
       provider
     );
     return { user: userCredential.user, profile: newProfile };
-  } catch {
-    // 계정이 없으면 새로 생성
-    logger.info(`[MOCK] ${provider} 신규 계정 생성`, { email: mockEmail });
+  } catch (error) {
+    // Firebase Auth 에러 코드 확인
+    const firebaseError = error as { code?: string; message?: string };
+    const errorCode = firebaseError.code ?? '';
 
-    const userCredential = await createUserWithEmailAndPassword(
-      getFirebaseAuth(),
-      mockEmail,
-      mockPassword
-    );
+    // 계정이 없는 경우: 신규 생성
+    if (errorCode === 'auth/user-not-found' || errorCode === 'auth/invalid-credential') {
+      logger.info(`[MOCK] ${provider} 신규 계정 생성`, { email: mockEmail, errorCode });
 
-    await updateProfile(userCredential.user, { displayName: mockName });
+      const userCredential = await createUserWithEmailAndPassword(
+        getFirebaseAuth(),
+        mockEmail,
+        mockPassword
+      );
 
-    const newProfile = await createMockProfile(
-      userCredential.user.uid,
-      mockEmail,
-      mockName,
-      provider
-    );
+      await updateProfile(userCredential.user, { displayName: mockName });
 
-    return { user: userCredential.user, profile: newProfile };
+      const newProfile = await createMockProfile(
+        userCredential.user.uid,
+        mockEmail,
+        mockName,
+        provider
+      );
+
+      return { user: userCredential.user, profile: newProfile };
+    }
+
+    // 비밀번호 오류 (이미 계정이 있지만 비밀번호가 다른 경우 - 기존 Mock 비밀번호 변경됨)
+    if (errorCode === 'auth/wrong-password') {
+      logger.warn(`[MOCK] ${provider} 비밀번호 불일치 - 비밀번호 재설정 필요`, {
+        email: mockEmail,
+        errorCode,
+      });
+      throw new Error(`Mock 계정 비밀번호가 변경되었습니다. Firebase Console에서 비밀번호를 재설정하거나 계정을 삭제해주세요.`);
+    }
+
+    // 이메일 중복 (계정 생성 시)
+    if (errorCode === 'auth/email-already-in-use') {
+      logger.warn(`[MOCK] ${provider} 이메일 중복`, { email: mockEmail, errorCode });
+      throw new Error(`이미 등록된 이메일입니다. 다른 로그인 방법을 시도해주세요.`);
+    }
+
+    // 기타 에러: 상세 로깅 후 재throw
+    logger.error(`[MOCK] ${provider} 소셜 로그인 실패`, error instanceof Error ? error : new Error(String(error)), {
+      email: mockEmail,
+      errorCode,
+      errorMessage: firebaseError.message,
+    });
+    throw error;
   }
 }
 

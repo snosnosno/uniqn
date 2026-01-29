@@ -4,14 +4,23 @@
  * @description 공지사항 목록에서 사용하는 카드
  */
 
-import { View, Text, Pressable } from 'react-native';
+// 1. React/React Native
+import { View, Text, Pressable, useColorScheme } from 'react-native';
+
+// 2. 외부 라이브러리
 import { Ionicons } from '@expo/vector-icons';
-import type { Announcement } from '@/types';
+
+// 3. 내부 모듈
+import { getIconColor } from '@/constants/colors';
+import { formatDateKorean } from '@/utils/dateUtils';
 import {
   ANNOUNCEMENT_STATUS_CONFIG,
   ANNOUNCEMENT_CATEGORY_LABELS,
   ANNOUNCEMENT_PRIORITY_CONFIG,
 } from '@/types/announcement';
+
+// 4. 타입
+import type { Announcement } from '@/types';
 
 interface AnnouncementCardProps {
   announcement: Announcement;
@@ -19,26 +28,12 @@ interface AnnouncementCardProps {
 }
 
 export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProps) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const statusConfig = ANNOUNCEMENT_STATUS_CONFIG[announcement.status];
   const priorityConfig = ANNOUNCEMENT_PRIORITY_CONFIG[announcement.priority];
   const categoryLabel = ANNOUNCEMENT_CATEGORY_LABELS[announcement.category];
-
-  // 날짜 포맷
-  const formatDate = (timestamp: unknown): string => {
-    if (!timestamp) return '-';
-    try {
-      const date = timestamp instanceof Date
-        ? timestamp
-        : (timestamp as { toDate: () => Date }).toDate();
-      return date.toLocaleDateString('ko-KR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-      });
-    } catch {
-      return '-';
-    }
-  };
 
   return (
     <Pressable
@@ -99,7 +94,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
         <View className="flex-row items-center gap-4">
           {/* Author */}
           <View className="flex-row items-center">
-            <Ionicons name="person-outline" size={12} color="#9ca3af" />
+            <Ionicons name="person-outline" size={12} color={getIconColor(isDarkMode, 'secondary')} />
             <Text className="text-xs text-gray-400 ml-1">
               {announcement.authorName}
             </Text>
@@ -107,7 +102,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
           {/* View Count */}
           <View className="flex-row items-center">
-            <Ionicons name="eye-outline" size={12} color="#9ca3af" />
+            <Ionicons name="eye-outline" size={12} color={getIconColor(isDarkMode, 'secondary')} />
             <Text className="text-xs text-gray-400 ml-1">
               {announcement.viewCount.toLocaleString()}
             </Text>
@@ -117,15 +112,15 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
         {/* Date */}
         <Text className="text-xs text-gray-400">
           {announcement.status === 'published' && announcement.publishedAt
-            ? formatDate(announcement.publishedAt)
-            : formatDate(announcement.createdAt)}
+            ? (formatDateKorean(announcement.publishedAt) || '-')
+            : (announcement.createdAt ? formatDateKorean(announcement.createdAt) : '-')}
         </Text>
       </View>
 
       {/* Target Audience Indicator */}
       {announcement.targetAudience.type === 'roles' && (
         <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <Ionicons name="people-outline" size={12} color="#9ca3af" />
+          <Ionicons name="people-outline" size={12} color={getIconColor(isDarkMode, 'secondary')} />
           <Text className="text-xs text-gray-400 ml-1">
             대상: {announcement.targetAudience.roles?.map((role) => {
               switch (role) {

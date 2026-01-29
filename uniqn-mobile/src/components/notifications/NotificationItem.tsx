@@ -5,18 +5,29 @@
  * @version 1.1.0
  */
 
+// 1. React/React Native
 import React, { memo, useCallback } from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { ChevronRightIcon, TrashIcon } from '@/components/icons';
+import { View, Text, Pressable, useColorScheme } from 'react-native';
+
+// 2. 외부 라이브러리
 import Animated, {
   FadeInRight,
   FadeOutLeft,
   Layout,
 } from 'react-native-reanimated';
 import { router, type Href } from 'expo-router';
-import { NotificationIcon } from './NotificationIcon';
-import { NotificationData, toDateFromTimestamp } from '@/types/notification';
+
+// 3. 내부 모듈
+import { ChevronRightIcon, TrashIcon } from '@/components/icons';
+import { getIconColor } from '@/constants/colors';
 import { formatRelativeTime } from '@/utils/dateUtils';
+import { toDateFromTimestamp } from '@/types/notification';
+
+// 4. 타입
+import type { NotificationData } from '@/types/notification';
+
+// 5. 상대 경로
+import { NotificationIcon } from './NotificationIcon';
 
 export interface NotificationItemProps {
   /** 알림 데이터 */
@@ -41,6 +52,9 @@ export const NotificationItem = memo(function NotificationItem({
   animated = true,
   useEmoji = true,
 }: NotificationItemProps) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const handlePress = useCallback(() => {
     if (onPress) {
       onPress(notification);
@@ -127,10 +141,10 @@ export const NotificationItem = memo(function NotificationItem({
               accessibilityLabel="알림 삭제"
               className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
             >
-              <TrashIcon size={18} color="#9ca3af" />
+              <TrashIcon size={18} color={getIconColor(isDarkMode, 'secondary')} />
             </Pressable>
           ) : notification.link ? (
-            <ChevronRightIcon size={20} color="#9ca3af" />
+            <ChevronRightIcon size={20} color={getIconColor(isDarkMode, 'secondary')} />
           ) : null}
         </View>
       </View>

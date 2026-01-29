@@ -26,6 +26,7 @@ import {
   groupScheduleEvents,
   filterSchedulesByDate,
 } from '@/utils/scheduleGrouping';
+import { stableFilters } from '@/utils/queryUtils';
 import type {
   ScheduleEvent,
   ScheduleFilters,
@@ -65,7 +66,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   const [realtimeSchedules, setRealtimeSchedules] = useState<ScheduleEvent[]>([]);
 
   const query = useQuery({
-    queryKey: queryKeys.schedules.list(filters ? JSON.parse(JSON.stringify(filters)) : {}),
+    queryKey: queryKeys.schedules.list(stableFilters(filters)),
     queryFn: async () => {
       if (!staffId) throw new Error('로그인이 필요합니다.');
       return getMySchedules(staffId, filters);

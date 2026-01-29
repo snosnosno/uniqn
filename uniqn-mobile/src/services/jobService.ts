@@ -205,36 +205,31 @@ export async function incrementViewCount(id: string): Promise<void> {
 
 /**
  * 검색어로 공고 검색
+ *
+ * @description SearchProvider 추상화 사용 - 향후 Algolia 전환 용이
+ * @see searchService.ts
  */
 export async function searchJobPostings(
   searchTerm: string,
   pageSize: number = DEFAULT_PAGE_SIZE
 ): Promise<JobPosting[]> {
   try {
-    logger.info('공고 검색', { searchTerm });
+    // 지연 로딩으로 순환 참조 방지
+    const { ClientSideSearchProvider } = await import('./searchService');
 
-    // Firestore는 전문 검색을 지원하지 않으므로 클라이언트 사이드 필터링
-    // TODO [P2]: Algolia 또는 Typesense 연동
+    const searchProvider = new ClientSideSearchProvider(
+      async () => {
+        const { items } = await getJobPostings({ status: 'active' }, 100);
+        return items;
+      }
+    );
 
-    const { items } = await getJobPostings({ status: 'active' }, 100);
-
-    const normalizedTerm = searchTerm.toLowerCase().trim();
-
-    const filteredItems = items.filter((job) => {
-      const title = job.title?.toLowerCase() || '';
-      const location = job.location?.name?.toLowerCase() || '';
-      const description = job.description?.toLowerCase() || '';
-
-      return (
-        title.includes(normalizedTerm) ||
-        location.includes(normalizedTerm) ||
-        description.includes(normalizedTerm)
-      );
+    const result = await searchProvider.search(searchTerm, {
+      limit: pageSize,
+      fields: ['title', 'location.name', 'description', 'ownerName'],
     });
 
-    logger.info('공고 검색 완료', { searchTerm, count: filteredItems.length });
-
-    return filteredItems.slice(0, pageSize);
+    return result.items;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '공고 검색',

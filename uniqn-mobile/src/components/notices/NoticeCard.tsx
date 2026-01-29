@@ -5,14 +5,21 @@
  * @version 1.0.0
  */
 
+// 1. React/React Native
 import { View, Text, Pressable } from 'react-native';
+
+// 2. 외부 라이브러리
 import { router } from 'expo-router';
-import { Card, Badge } from '@/components/ui';
-import { MegaphoneIcon, GiftIcon, WrenchScrewdriverIcon, ArrowPathIcon } from '@/components/icons';
-import type { Announcement, AnnouncementCategory, AnnouncementPriority } from '@/types';
-import { toDate } from '@/types';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
+
+// 3. 내부 모듈
+import { Card, Badge } from '@/components/ui';
+import { MegaphoneIcon, GiftIcon, WrenchScrewdriverIcon, ArrowPathIcon } from '@/components/icons';
+import { toDate } from '@/types';
+
+// 4. 타입
+import type { Announcement, AnnouncementCategory, AnnouncementPriority } from '@/types';
 
 interface NoticeCardProps {
   notice: Announcement;
@@ -60,7 +67,12 @@ export function NoticeCard({ notice }: NoticeCardProps) {
     : '';
 
   return (
-    <Pressable onPress={() => router.push(`/(app)/notices/${notice.id}`)}>
+    <Pressable
+      onPress={() => router.push(`/(app)/notices/${notice.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`${CATEGORY_LABELS[notice.category]}: ${notice.title}`}
+      accessibilityHint="탭하면 공지사항 상세 페이지로 이동합니다"
+    >
       <Card className={`mb-3 ${priorityStyle.bg} ${priorityStyle.border}`}>
         <View className="flex-row items-start justify-between">
           <View className="flex-1 flex-row items-center">

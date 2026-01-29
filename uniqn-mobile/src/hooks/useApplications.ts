@@ -88,12 +88,17 @@ export function useApplications() {
       });
       addToast({ type: 'success', message: '지원이 완료되었습니다.' });
 
-      // 캐시 무효화
+      // 캐시 무효화 (세분화: 전체 무효화 대신 특정 공고만)
       queryClient.invalidateQueries({
         queryKey: queryKeys.applications.mine(),
       });
+      // 특정 공고 상세 무효화 (applicationCount 갱신)
       queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.all,
+        queryKey: queryKeys.jobPostings.detail(data.jobPostingId),
+      });
+      // 목록도 무효화 (applicationCount 표시 갱신)
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.jobPostings.lists(),
       });
     },
     onError: createMutationErrorHandler('v2.0 지원', addToast),
@@ -158,8 +163,9 @@ export function useApplications() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.applications.mine(),
       });
+      // 목록 캐시 무효화 (applicationCount 표시 갱신)
       queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.all,
+        queryKey: queryKeys.jobPostings.lists(),
       });
     },
   });

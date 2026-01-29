@@ -50,7 +50,7 @@ const variantTextStyles: Record<ButtonVariant, string> = {
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
-  sm: 'px-3 py-2 min-h-[36px]',
+  sm: 'px-3 py-2.5 min-h-[44px]', // WCAG 2.1 터치 타겟 최소 44px 준수
   md: 'px-4 py-3 min-h-[44px]',
   lg: 'px-6 py-4 min-h-[52px]',
 };

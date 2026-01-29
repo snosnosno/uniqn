@@ -13,9 +13,11 @@ import { DATE } from '@/constants';
 
 /**
  * 한국식 날짜 포맷 (2025년 1월 28일)
+ *
+ * @description Firestore Timestamp, Date, string 모두 지원
  */
-export function formatDateKorean(date: Date | string | null): string {
-  const d = typeof date === 'string' ? parseISO(date) : date;
+export function formatDateKorean(date: Date | Timestamp | string | null): string {
+  const d = toDate(date);
   if (!d) return '';
   return format(d, 'yyyy년 M월 d일', { locale: ko });
 }

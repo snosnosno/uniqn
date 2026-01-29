@@ -25,6 +25,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
+import { stableFilters } from '@/utils/queryUtils';
 import { getAnnouncementImages } from '@/types/announcement';
 import type {
   CreateAnnouncementInput,
@@ -91,7 +92,7 @@ export function useIncrementViewCount() {
  */
 export function useAllAnnouncements(filters?: AnnouncementFilters) {
   return useInfiniteQuery({
-    queryKey: queryKeys.announcements.adminList(filters as Record<string, unknown> | undefined),
+    queryKey: queryKeys.announcements.adminList(stableFilters(filters)),
     queryFn: async ({ pageParam }) => {
       const result = await fetchAllAnnouncements({
         filters,

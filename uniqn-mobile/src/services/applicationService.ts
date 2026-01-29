@@ -107,29 +107,70 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
       }
     }
 
-    // 2. 공고 정보 배치 조회 (Promise.all로 병렬 처리)
+    // 2. 공고 정보 배치 조회 (Promise.allSettled로 부분 실패 허용)
     const jobPostingMap = new Map<string, JobPosting>();
 
     if (jobPostingIds.size > 0) {
-      const jobPromises = Array.from(jobPostingIds).map(async (jobId) => {
-        try {
-          const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId));
-          if (jobDoc.exists()) {
-            return parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-          }
-          return null;
-        } catch (error) {
-          logger.warn('공고 정보 조회 실패', { jobId, error });
-          return null;
+      const jobIdArray = Array.from(jobPostingIds);
+      const jobPromises = jobIdArray.map(async (jobId) => {
+        const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId));
+        if (jobDoc.exists()) {
+          return { jobId, job: parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() }) };
         }
+        return { jobId, job: null };
       });
 
-      const jobResults = await Promise.all(jobPromises);
+      const results = await Promise.allSettled(jobPromises);
 
-      for (const job of jobResults) {
-        if (job) {
-          jobPostingMap.set(job.id, job);
+      // 성공/실패 통계 및 에러 유형 분류
+      let successCount = 0;
+      let networkErrorCount = 0;
+      let otherErrorCount = 0;
+
+      for (let i = 0; i < results.length; i++) {
+        const result = results[i];
+        const jobId = jobIdArray[i];
+
+        if (result.status === 'fulfilled' && result.value.job) {
+          jobPostingMap.set(result.value.job.id, result.value.job);
+          successCount++;
+        } else if (result.status === 'rejected') {
+          const error = result.reason as { code?: string; message?: string };
+          const isNetworkError =
+            error.code === 'unavailable' ||
+            error.code === 'deadline-exceeded' ||
+            error.message?.includes('network') ||
+            error.message?.includes('timeout');
+
+          if (isNetworkError) {
+            networkErrorCount++;
+            logger.warn('공고 조회 네트워크 오류', { jobId, errorCode: error.code });
+          } else {
+            otherErrorCount++;
+            logger.warn('공고 조회 실패', { jobId, errorCode: error.code, errorMessage: error.message });
+          }
         }
+      }
+
+      // 실패율 로깅 (모니터링용)
+      const totalCount = jobIdArray.length;
+      const failureRate = ((networkErrorCount + otherErrorCount) / totalCount) * 100;
+
+      if (failureRate > 0) {
+        logger.info('공고 배치 조회 통계', {
+          total: totalCount,
+          success: successCount,
+          networkErrors: networkErrorCount,
+          otherErrors: otherErrorCount,
+          failureRate: `${failureRate.toFixed(1)}%`,
+        });
+      }
+
+      // 네트워크 에러가 50% 이상이면 경고 (연결 문제 가능성)
+      if (networkErrorCount > 0 && networkErrorCount / totalCount >= 0.5) {
+        logger.warn('공고 조회 네트워크 에러 비율 높음 - 연결 상태 확인 필요', {
+          networkErrorRate: `${((networkErrorCount / totalCount) * 100).toFixed(1)}%`,
+        });
       }
     }
 

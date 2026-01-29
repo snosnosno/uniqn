@@ -9,6 +9,7 @@ import { useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { getJobPostings, convertToCard } from '@/services';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { stableFilters } from '@/utils/queryUtils';
 import type { JobPostingFilters, JobPostingCard } from '@/types';
 
 // ============================================================================
@@ -30,7 +31,7 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
   const queryClient = useQueryClient();
 
   const query = useInfiniteQuery({
-    queryKey: queryKeys.jobPostings.list(filters as Record<string, unknown>),
+    queryKey: queryKeys.jobPostings.list(stableFilters(filters)),
     queryFn: async ({ pageParam }) => {
       const result = await getJobPostings(
         filters,
@@ -52,10 +53,12 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
       page.items.map(convertToCard)
     ) ?? [];
 
+    if (allJobs.length === 0) return [];
+
     // 오늘 날짜
     const today = new Date().toISOString().split('T')[0] ?? '';
 
-    // 공고별 가장 빠른 미래 날짜+시간 계산
+    // 공고별 가장 빠른 미래 날짜+시간 계산 (헬퍼 함수)
     const getEarliestFutureDateTime = (job: JobPostingCard): string => {
       // dateRequirements에서 가장 빠른 미래 날짜+시간 찾기
       if (job.dateRequirements?.length) {
@@ -90,10 +93,16 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
       return `${job.workDate || '9999-99-99'} ${time}`;
     };
 
+    // 성능 최적화: 정렬 키 사전 계산 (O(n) → O(n log n) 대신 O(n²) 방지)
+    const jobsWithSortKey = allJobs.map((job) => ({
+      job,
+      sortKey: getEarliestFutureDateTime(job),
+    }));
+
     // 정렬: 오늘 이후 날짜 먼저 (가까운 순), 그 다음 과거 날짜 (최근 순)
-    return allJobs.sort((a, b) => {
-      const dateTimeA = getEarliestFutureDateTime(a);
-      const dateTimeB = getEarliestFutureDateTime(b);
+    jobsWithSortKey.sort((a, b) => {
+      const dateTimeA = a.sortKey;
+      const dateTimeB = b.sortKey;
 
       // 날짜 부분만 추출해서 미래/과거 판단
       const dateA = dateTimeA.split(' ')[0] ?? '';
@@ -114,6 +123,9 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
       // 둘 다 과거: 최근 날짜+시간 먼저
       return dateTimeB.localeCompare(dateTimeA);
     });
+
+    // 정렬된 job만 반환
+    return jobsWithSortKey.map((item) => item.job);
   }, [query.data]);
 
   const hasMore = query.hasNextPage ?? false;
@@ -121,7 +133,7 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
   // 리프레시 함수
   const refresh = async () => {
     await queryClient.invalidateQueries({
-      queryKey: queryKeys.jobPostings.list(filters as Record<string, unknown>),
+      queryKey: queryKeys.jobPostings.list(stableFilters(filters)),
     });
     await query.refetch();
   };

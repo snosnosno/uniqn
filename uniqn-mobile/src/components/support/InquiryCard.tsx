@@ -5,15 +5,25 @@
  * @version 1.0.0
  */
 
+// 1. React/React Native
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { Card } from '@/components/ui';
-import { ChevronRightIcon } from '@/components/icons';
-import { InquiryStatusBadge } from './InquiryStatusBadge';
-import type { Inquiry } from '@/types';
-import { INQUIRY_CATEGORY_LABELS, toDate } from '@/types';
+import { View, Text, Pressable, useColorScheme } from 'react-native';
+
+// 2. 외부 라이브러리
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+
+// 3. 내부 모듈
+import { Card } from '@/components/ui';
+import { ChevronRightIcon } from '@/components/icons';
+import { getIconColor } from '@/constants/colors';
+import { INQUIRY_CATEGORY_LABELS, toDate } from '@/types';
+
+// 4. 타입
+import type { Inquiry } from '@/types';
+
+// 5. 상대 경로
+import { InquiryStatusBadge } from './InquiryStatusBadge';
 
 export interface InquiryCardProps {
   inquiry: Inquiry;
@@ -29,6 +39,9 @@ export function InquiryCard({
   showAuthor = false,
   className = '',
 }: InquiryCardProps) {
+  const colorScheme = useColorScheme();
+  const isDarkMode = colorScheme === 'dark';
+
   const createdDate = toDate(inquiry.createdAt);
   const formattedDate = createdDate
     ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko })
@@ -81,7 +94,7 @@ export function InquiryCard({
           </View>
 
           {/* 화살표 아이콘 */}
-          <ChevronRightIcon size={20} color="#9CA3AF" />
+          <ChevronRightIcon size={20} color={getIconColor(isDarkMode, 'secondary')} />
         </View>
       </Card>
     </Pressable>

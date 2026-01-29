@@ -17,6 +17,10 @@ export interface CardProps extends ViewProps {
   padding?: CardPadding;
   onPress?: () => void;
   className?: string;
+  /** 접근성 라벨 (클릭 가능한 카드용) */
+  accessibilityLabel?: string;
+  /** 접근성 힌트 (클릭 가능한 카드용) */
+  accessibilityHint?: string;
 }
 
 const variantStyles: Record<CardVariant, string> = {
@@ -38,6 +42,8 @@ export function Card({
   padding = 'md',
   onPress,
   className = '',
+  accessibilityLabel,
+  accessibilityHint,
   ...props
 }: CardProps) {
   const cardContent = (
@@ -51,7 +57,13 @@ export function Card({
 
   if (onPress) {
     return (
-      <Pressable onPress={onPress} className="active:opacity-80">
+      <Pressable
+        onPress={onPress}
+        className="active:opacity-80"
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={accessibilityHint ?? '탭하면 상세 정보를 볼 수 있습니다'}
+      >
         {cardContent}
       </Pressable>
     );

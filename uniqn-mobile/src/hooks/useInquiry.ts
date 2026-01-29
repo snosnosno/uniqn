@@ -29,6 +29,7 @@ import type {
 } from '@/types';
 import { FAQ_DATA, filterFAQByCategory } from '@/types';
 import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import { stableFilters } from '@/utils/queryUtils';
 
 // ============================================================================
 // Query Keys - 중앙 관리 (queryClient.ts)에서 import
@@ -41,7 +42,7 @@ export const inquiryKeys = {
   all: queryKeys.inquiries.all,
   mine: () => queryKeys.inquiries.mine(),
   adminList: (filters?: InquiryFilters) =>
-    queryKeys.inquiries.adminList(filters as Record<string, unknown>),
+    queryKeys.inquiries.adminList(stableFilters(filters)),
   detail: (id: string) => queryKeys.inquiries.detail(id),
   unansweredCount: () => queryKeys.inquiries.unansweredCount(),
   faq: (category?: InquiryCategory | 'all') => queryKeys.inquiries.faq(category),
