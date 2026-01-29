@@ -7,6 +7,7 @@
 
 import { useState, useCallback, useEffect } from 'react';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import {
   cacheService,
   type CacheStats,
@@ -58,7 +59,7 @@ export function useClearCache(): UseClearCacheReturn {
       const stats = cacheService.getCacheStats();
       setCacheStats(stats);
     } catch (error) {
-      logger.error('캐시 통계 조회 실패', error as Error);
+      logger.error('캐시 통계 조회 실패', toError(error));
     }
   }, []);
 
@@ -91,7 +92,7 @@ export function useClearCache(): UseClearCacheReturn {
 
         logger.info('캐시 삭제 완료', result);
       } catch (error) {
-        logger.error('캐시 삭제 실패', error as Error);
+        logger.error('캐시 삭제 실패', toError(error));
 
         addToast({
           type: 'error',

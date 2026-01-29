@@ -9,7 +9,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getFirebaseStorage } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { ValidationError, AppError, ERROR_CODES } from '@/errors';
+import { ValidationError, AppError, ERROR_CODES, toError } from '@/errors';
 import type { AnnouncementImage } from '@/types';
 
 // ============================================================================
@@ -93,7 +93,7 @@ export async function uploadProfileImage(
 
     return { downloadURL, path };
   } catch (error) {
-    logger.error('프로필 이미지 업로드 실패', error as Error, { userId });
+    logger.error('프로필 이미지 업로드 실패', toError(error), { userId });
 
     if (error instanceof AppError) {
       throw error;
@@ -103,7 +103,7 @@ export async function uploadProfileImage(
       code: ERROR_CODES.UNKNOWN,
       category: 'unknown',
       userMessage: '이미지 업로드에 실패했습니다',
-      originalError: error as Error,
+      originalError: toError(error),
     });
   }
 }
@@ -150,7 +150,7 @@ export async function deleteProfileImage(imageUrl: string): Promise<void> {
       return;
     }
 
-    logger.error('프로필 이미지 삭제 실패', error as Error);
+    logger.error('프로필 이미지 삭제 실패', toError(error));
     // 삭제 실패는 무시 (업로드 성공이 더 중요)
   }
 }
@@ -243,7 +243,7 @@ export async function uploadAnnouncementImage(
 
     return { downloadURL, path };
   } catch (error) {
-    logger.error('공지사항 이미지 업로드 실패', error as Error, { userId });
+    logger.error('공지사항 이미지 업로드 실패', toError(error), { userId });
 
     if (error instanceof AppError) {
       throw error;
@@ -253,7 +253,7 @@ export async function uploadAnnouncementImage(
       code: ERROR_CODES.UNKNOWN,
       category: 'unknown',
       userMessage: '이미지 업로드에 실패했습니다',
-      originalError: error as Error,
+      originalError: toError(error),
     });
   }
 }
@@ -299,7 +299,7 @@ export async function deleteAnnouncementImage(imageUrl: string): Promise<void> {
       return;
     }
 
-    logger.error('공지사항 이미지 삭제 실패', error as Error);
+    logger.error('공지사항 이미지 삭제 실패', toError(error));
     // 삭제 실패는 무시 (업로드 성공이 더 중요)
   }
 }
@@ -363,7 +363,7 @@ export async function uploadMultipleAnnouncementImages(
         order: i,
       });
     } catch (error) {
-      logger.error('다중 이미지 업로드 중 실패', error as Error, { userId, index: i });
+      logger.error('다중 이미지 업로드 중 실패', toError(error), { userId, index: i });
       // 개별 업로드 실패는 건너뛰고 계속 진행
     }
   }

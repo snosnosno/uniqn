@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { settingsStorage } from '@/lib/secureStorage';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -61,7 +62,7 @@ export function useAutoLogin(): UseAutoLoginReturn {
       setAutoLoginEnabledState(enabled);
       logger.debug('자동 로그인 설정 로드', { enabled });
     } catch (error) {
-      logger.error('자동 로그인 설정 로드 실패', error as Error);
+      logger.error('자동 로그인 설정 로드 실패', toError(error));
       // 실패 시 기본값 true 유지
       setAutoLoginEnabledState(true);
     } finally {
@@ -79,7 +80,7 @@ export function useAutoLogin(): UseAutoLoginReturn {
       setAutoLoginEnabledState(enabled);
       logger.info('자동 로그인 설정 변경 완료', { enabled });
     } catch (error) {
-      logger.error('자동 로그인 설정 변경 실패', error as Error);
+      logger.error('자동 로그인 설정 변경 실패', toError(error));
       throw error;
     } finally {
       setIsLoading(false);
@@ -114,7 +115,7 @@ export async function checkAutoLoginEnabled(): Promise<boolean> {
   try {
     return await settingsStorage.isAutoLoginEnabled();
   } catch (error) {
-    logger.error('자동 로그인 설정 조회 실패', error as Error);
+    logger.error('자동 로그인 설정 조회 실패', toError(error));
     return true; // 기본값: 자동 로그인 활성화
   }
 }

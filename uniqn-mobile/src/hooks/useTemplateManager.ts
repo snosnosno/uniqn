@@ -18,6 +18,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { templateToFormData } from '@/types';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import type {
   JobPostingTemplate,
   CreateTemplateInput,
@@ -89,7 +90,7 @@ export function useSaveTemplate() {
       });
     },
     onError: (error) => {
-      logger.error('템플릿 저장 실패', error as Error);
+      logger.error('템플릿 저장 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '템플릿 저장에 실패했습니다.',
@@ -118,7 +119,7 @@ export function useLoadTemplate() {
       });
     },
     onError: (error) => {
-      logger.error('템플릿 불러오기 실패', error as Error);
+      logger.error('템플릿 불러오기 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '템플릿 불러오기에 실패했습니다.',
@@ -157,7 +158,7 @@ export function useDeleteTemplate() {
       });
     },
     onError: (error) => {
-      logger.error('템플릿 삭제 실패', error as Error);
+      logger.error('템플릿 삭제 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '템플릿 삭제에 실패했습니다.',

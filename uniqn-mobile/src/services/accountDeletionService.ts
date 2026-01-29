@@ -30,6 +30,7 @@ import {
   AuthError,
   BusinessError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
@@ -165,7 +166,7 @@ export async function requestAccountDeletion(
 
     return deletionRequest;
   } catch (error) {
-    logger.error('회원탈퇴 요청 실패', error as Error, {
+    logger.error('회원탈퇴 요청 실패', toError(error), {
       userId: currentUser.uid,
     });
 
@@ -221,7 +222,7 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
 
     logger.info('회원탈퇴 철회 완료', { userId });
   } catch (error) {
-    logger.error('회원탈퇴 철회 실패', error as Error, { userId });
+    logger.error('회원탈퇴 철회 실패', toError(error), { userId });
     if (error instanceof BusinessError) {
       throw error;
     }
@@ -245,7 +246,7 @@ export async function getMyData(userId: string): Promise<FirestoreUserProfile | 
 
     return userDoc.data() as FirestoreUserProfile;
   } catch (error) {
-    logger.error('개인정보 조회 실패', error as Error, { userId });
+    logger.error('개인정보 조회 실패', toError(error), { userId });
     throw mapFirebaseError(error);
   }
 }
@@ -271,7 +272,7 @@ export async function updateMyData(
 
     logger.info('개인정보 수정 완료', { userId });
   } catch (error) {
-    logger.error('개인정보 수정 실패', error as Error, { userId });
+    logger.error('개인정보 수정 실패', toError(error), { userId });
     throw mapFirebaseError(error);
   }
 }
@@ -336,7 +337,7 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
 
     return exportData;
   } catch (error) {
-    logger.error('데이터 내보내기 실패', error as Error, { userId });
+    logger.error('데이터 내보내기 실패', toError(error), { userId });
     if (error instanceof BusinessError) {
       throw error;
     }
@@ -402,7 +403,7 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
 
     logger.info('계정 완전 삭제 완료', { userId });
   } catch (error) {
-    logger.error('계정 완전 삭제 실패', error as Error, { userId });
+    logger.error('계정 완전 삭제 실패', toError(error), { userId });
     throw mapFirebaseError(error);
   }
 }
@@ -422,7 +423,7 @@ export async function getDeletionStatus(userId: string): Promise<DeletionRequest
     const userData = userDoc.data();
     return (userData.deletionRequest as DeletionRequest) ?? null;
   } catch (error) {
-    logger.error('탈퇴 상태 확인 실패', error as Error, { userId });
+    logger.error('탈퇴 상태 확인 실패', toError(error), { userId });
     throw mapFirebaseError(error);
   }
 }

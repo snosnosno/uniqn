@@ -26,6 +26,7 @@ import {
   BusinessError,
   PermissionError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
 import type {
   JobPostingTemplate,
@@ -78,7 +79,7 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
       logger.info('템플릿 조회 권한 없음 (새 사용자)', { userId });
       return [];
     }
-    logger.error('템플릿 목록 조회 실패', error as Error, { userId });
+    logger.error('템플릿 목록 조회 실패', toError(error), { userId });
     throw mapFirebaseError(error);
   }
 }
@@ -131,7 +132,7 @@ export async function saveTemplate(
 
     return newDocRef.id;
   } catch (error) {
-    logger.error('템플릿 저장 실패', error as Error, { userId });
+    logger.error('템플릿 저장 실패', toError(error), { userId });
     throw mapFirebaseError(error);
   }
 }
@@ -173,7 +174,7 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
 
     return template;
   } catch (error) {
-    logger.error('템플릿 불러오기 실패', error as Error, { templateId });
+    logger.error('템플릿 불러오기 실패', toError(error), { templateId });
     if (error instanceof BusinessError) {
       throw error;
     }
@@ -216,7 +217,7 @@ export async function deleteTemplate(
 
     logger.info('템플릿 삭제 완료', { templateId });
   } catch (error) {
-    logger.error('템플릿 삭제 실패', error as Error, { templateId });
+    logger.error('템플릿 삭제 실패', toError(error), { templateId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -275,7 +276,7 @@ export async function updateTemplate(
 
     logger.info('템플릿 업데이트 완료', { templateId });
   } catch (error) {
-    logger.error('템플릿 업데이트 실패', error as Error, { templateId });
+    logger.error('템플릿 업데이트 실패', toError(error), { templateId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }

@@ -19,6 +19,7 @@ import {
 } from '@/services/deepLinkService';
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import type { NotificationType } from '@/types/notification';
 
 // ============================================================================
@@ -149,7 +150,7 @@ export function useNotificationHandler(options: UseNotificationHandlerOptions = 
         isSetup.current = true;
         logger.info('알림 핸들러 설정 완료');
       } catch (error) {
-        logger.error('알림 핸들러 설정 실패', error as Error);
+        logger.error('알림 핸들러 설정 실패', toError(error));
       }
     };
 

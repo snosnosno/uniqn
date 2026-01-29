@@ -14,6 +14,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import type { QRCodeAction, QRCodeScanResult, EventQRDisplayData } from '@/types';
 import { isAppError } from '@/errors/AppError';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -92,16 +93,16 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
           });
         }
       } catch (error) {
-        logger.error('QR 스캔 처리 실패', error as Error);
+        logger.error('QR 스캔 처리 실패', toError(error));
         // AppError의 userMessage 활용 (사용자 친화적 메시지)
         const errorMessage = isAppError(error)
           ? error.userMessage
-          : (error as Error).message || '처리에 실패했습니다.';
+          : toError(error).message || '처리에 실패했습니다.';
         addToast({
           type: 'error',
           message: errorMessage,
         });
-        onError?.(error as Error);
+        onError?.(toError(error));
       } finally {
         setIsProcessing(false);
       }

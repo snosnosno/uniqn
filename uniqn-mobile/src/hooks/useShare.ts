@@ -8,6 +8,7 @@
 import { useState, useCallback } from 'react';
 import { Share, Platform } from 'react-native';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import { trackEvent } from '@/services/analyticsService';
 import { createJobDeepLink } from '@/services/deepLinkService';
 
@@ -91,10 +92,10 @@ export function useShare(): UseShareReturn {
 
         return { success: action === 'shared', action };
       } catch (error) {
-        logger.error('콘텐츠 공유 실패', error as Error, {
+        logger.error('콘텐츠 공유 실패', toError(error), {
           title: options.title,
         });
-        return { success: false, error: error as Error };
+        return { success: false, error: toError(error) };
       } finally {
         setIsSharing(false);
       }
@@ -147,8 +148,8 @@ export function useShare(): UseShareReturn {
 
         return { success: action === 'shared', action };
       } catch (error) {
-        logger.error('공고 공유 실패', error as Error, { jobId: job.id });
-        return { success: false, error: error as Error };
+        logger.error('공고 공유 실패', toError(error), { jobId: job.id });
+        return { success: false, error: toError(error) };
       } finally {
         setIsSharing(false);
       }

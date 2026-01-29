@@ -46,6 +46,11 @@ export {
   createJobPostingSchema,
   jobFilterSchema,
   applicationMessageSchema,
+  // 문서 파서 (v2.0)
+  jobPostingDocumentSchema,
+  parseJobPostingDocument,
+  parseJobPostingDocuments,
+  isJobPostingDocument,
 } from './jobPosting.schema';
 
 export type {
@@ -55,6 +60,7 @@ export type {
   DateTimeData,
   CreateJobPostingFormData,
   JobFilterData,
+  JobPostingDocumentData,
 } from './jobPosting.schema';
 
 // 지원서 스키마
@@ -67,6 +73,11 @@ export {
   confirmApplicationSchema,
   rejectApplicationSchema,
   cancelApplicationSchema,
+  // 문서 파서 (v2.0)
+  applicationDocumentSchema,
+  parseApplicationDocument,
+  parseApplicationDocuments,
+  isApplicationDocument,
 } from './application.schema';
 
 export type {
@@ -77,6 +88,7 @@ export type {
   ConfirmApplicationData,
   RejectApplicationData,
   CancelApplicationData,
+  ApplicationDocumentData,
 } from './application.schema';
 
 // Assignment v3.0 스키마
@@ -149,6 +161,11 @@ export {
   createWorkLogSchema,
   updateWorkLogSchema,
   modifyWorkTimeSchema,
+  // 문서 파서 (v2.0)
+  workLogDocumentSchema,
+  parseWorkLogDocument,
+  parseWorkLogDocuments,
+  isWorkLogDocument,
 } from './workLog.schema';
 
 export type {
@@ -157,6 +174,7 @@ export type {
   CreateWorkLogData,
   UpdateWorkLogData,
   ModifyWorkTimeData,
+  WorkLogDocumentData,
 } from './workLog.schema';
 
 // 정산 스키마
@@ -240,6 +258,13 @@ export {
   markNotificationReadSchema,
   deleteNotificationsSchema,
   markAllNotificationsReadSchema,
+  // 문서 파서 (v2.0)
+  notificationDocumentSchema,
+  parseNotificationDocument,
+  parseNotificationDocuments,
+  isNotificationDocument,
+  notificationSettingsDocumentSchema,
+  parseNotificationSettingsDocument,
 } from './notification.schema';
 
 export type {
@@ -253,6 +278,8 @@ export type {
   MarkNotificationReadData,
   DeleteNotificationsData,
   MarkAllNotificationsReadData,
+  NotificationDocumentData,
+  NotificationSettingsDocumentData,
 } from './notification.schema';
 
 // 페널티 스키마

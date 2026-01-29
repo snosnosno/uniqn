@@ -19,8 +19,9 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
-import type { Application, Staff, JobPosting, StaffRole } from '@/types';
+import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
+import type { Staff, StaffRole } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
 import { STAFF_ROLES } from '@/constants';
 
@@ -114,7 +115,13 @@ export async function convertApplicantToStaff(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+
+      if (!applicationData) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: '지원서 데이터 형식이 올바르지 않습니다',
+        });
+      }
 
       // 확정 상태 확인
       if (applicationData.status !== 'confirmed') {
@@ -133,7 +140,13 @@ export async function convertApplicantToStaff(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+
+      if (!jobData) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: '공고 데이터 형식이 올바르지 않습니다',
+        });
+      }
 
       // 공고 소유자 확인
       if (jobData.ownerId !== managerId) {
@@ -300,7 +313,7 @@ export async function convertApplicantToStaff(
 
     return result;
   } catch (error) {
-    logger.error('지원자→스태프 변환 실패', error as Error, { applicationId });
+    logger.error('지원자→스태프 변환 실패', toError(error), { applicationId });
     throw error instanceof ValidationError || error instanceof BusinessError
       ? error
       : mapFirebaseError(error);
@@ -368,7 +381,7 @@ export async function batchConvertApplicants(
 
     return result;
   } catch (error) {
-    logger.error('일괄 스태프 변환 실패', error as Error);
+    logger.error('일괄 스태프 변환 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -401,7 +414,7 @@ export async function isAlreadyStaff(
 
     return true;
   } catch (error) {
-    logger.error('스태프 존재 확인 실패', error as Error, { userId, jobPostingId });
+    logger.error('스태프 존재 확인 실패', toError(error), { userId, jobPostingId });
     return false;
   }
 }
@@ -421,7 +434,11 @@ export async function canConvertToStaff(applicationId: string): Promise<{
       return { canConvert: false, reason: '존재하지 않는 지원입니다' };
     }
 
-    const applicationData = applicationDoc.data() as Application;
+    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+
+    if (!applicationData) {
+      return { canConvert: false, reason: '지원서 데이터 형식이 올바르지 않습니다' };
+    }
 
     // completed 상태 먼저 체크 (이미 변환된 경우)
     if (applicationData.status === 'completed') {
@@ -438,7 +455,7 @@ export async function canConvertToStaff(applicationId: string): Promise<{
 
     return { canConvert: true };
   } catch (error) {
-    logger.error('변환 가능 여부 확인 실패', error as Error, { applicationId });
+    logger.error('변환 가능 여부 확인 실패', toError(error), { applicationId });
     return { canConvert: false, reason: '확인 중 오류가 발생했습니다' };
   }
 }
@@ -466,7 +483,13 @@ export async function revertStaffConversion(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+
+      if (!applicationData) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: '지원서 데이터 형식이 올바르지 않습니다',
+        });
+      }
 
       if (applicationData.status !== 'completed') {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
@@ -484,7 +507,14 @@ export async function revertStaffConversion(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+
+      if (!jobData) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: '공고 데이터 형식이 올바르지 않습니다',
+        });
+      }
+
       if (jobData.ownerId !== managerId) {
         throw new ValidationError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
@@ -502,7 +532,7 @@ export async function revertStaffConversion(
 
     logger.info('스태프 변환 취소 완료', { applicationId });
   } catch (error) {
-    logger.error('스태프 변환 취소 실패', error as Error, { applicationId });
+    logger.error('스태프 변환 취소 실패', toError(error), { applicationId });
     throw error instanceof ValidationError ? error : mapFirebaseError(error);
   }
 }

@@ -135,3 +135,112 @@ export const reviewCancellationSchema = z.object({
 });
 
 export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
+
+// ============================================================================
+// Firestore 문서 검증 스키마 (런타임 타입 검증)
+// ============================================================================
+
+import { logger } from '@/utils/logger';
+import type { Application } from '@/types';
+
+/**
+ * Application Firestore 문서 스키마 (런타임 검증)
+ *
+ * @description Firestore에서 읽은 데이터의 타입 안전성을 보장
+ * .passthrough()로 알려지지 않은 필드 허용 (하위 호환성)
+ */
+/**
+ * Assignment 스키마 (Application 내부용)
+ * @see types/assignment.ts
+ */
+const assignmentInnerSchema = z.object({
+  roleIds: z.array(z.string()),
+  timeSlot: z.string(),
+  dates: z.array(z.string()),
+  isGrouped: z.boolean(),
+  groupId: z.string().optional(),
+  checkMethod: z.enum(['group', 'individual']).optional(),
+  requirementId: z.string().optional(),
+  duration: z.any().optional(),
+  isTimeToBeAnnounced: z.boolean().optional(),
+  tentativeDescription: z.string().optional(),
+}).passthrough();
+
+export const applicationDocumentSchema = z.object({
+  id: z.string(),
+  jobPostingId: z.string(),
+  applicantId: z.string(),
+  status: applicationStatusSchema,
+
+  // 지원자 정보
+  applicantName: z.string().optional(),
+  applicantNickname: z.string().optional(),
+  applicantPhone: z.string().optional(),
+  applicantPhotoURL: z.string().optional(),
+
+  // 지원 내용
+  message: z.string().optional(),
+
+  // Assignment (v3.0 필수)
+  assignments: z.array(assignmentInnerSchema),
+
+  // 확정 정보
+  confirmedAt: z.any().optional(),
+  confirmedBy: z.string().optional(),
+
+  // 거절 정보
+  rejectedAt: z.any().optional(),
+  rejectionReason: z.string().optional(),
+
+  // 취소 정보
+  cancelledAt: z.any().optional(),
+  cancellationReason: z.string().optional(),
+
+  // 공고 정보 (비정규화)
+  jobPostingTitle: z.string().optional(),
+  jobPostingOwnerId: z.string().optional(),
+  workDate: z.string().optional(),
+
+  // Timestamps
+  createdAt: z.any(),
+  updatedAt: z.any(),
+}).passthrough();
+
+export type ApplicationDocumentData = z.infer<typeof applicationDocumentSchema>;
+
+/**
+ * 단일 Application 문서 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터
+ * @returns 검증된 Application 또는 null (검증 실패 시)
+ */
+export function parseApplicationDocument(data: unknown): Application | null {
+  const result = applicationDocumentSchema.safeParse(data);
+  if (!result.success) {
+    logger.warn('Application 문서 검증 실패', {
+      errors: result.error.flatten(),
+      component: 'application.schema',
+    });
+    return null;
+  }
+  return result.data as Application;
+}
+
+/**
+ * Application 문서 배열 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터 배열
+ * @returns 검증된 Application 배열 (검증 실패 항목은 제외)
+ */
+export function parseApplicationDocuments(data: unknown[]): Application[] {
+  return data
+    .map((item) => parseApplicationDocument(item))
+    .filter((item): item is Application => item !== null);
+}
+
+/**
+ * Application 타입 가드
+ */
+export function isApplicationDocument(data: unknown): data is Application {
+  return applicationDocumentSchema.safeParse(data).success;
+}

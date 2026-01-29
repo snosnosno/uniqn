@@ -35,6 +35,7 @@ import {
   BusinessError,
   ERROR_CODES,
   mapFirebaseError,
+  toError,
 } from '@/errors';
 import {
   trackLogin,
@@ -113,7 +114,7 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
-    logger.error('로그인 실패', error as Error, { email: data.email });
+    logger.error('로그인 실패', toError(error), { email: data.email });
     throw mapFirebaseError(error);
   }
 }
@@ -180,7 +181,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
-    logger.error('회원가입 실패', error as Error, { email: data.email });
+    logger.error('회원가입 실패', toError(error), { email: data.email });
     throw mapFirebaseError(error);
   }
 }
@@ -199,7 +200,7 @@ export async function signOut(): Promise<void> {
 
     logger.info('로그아웃 성공');
   } catch (error) {
-    logger.error('로그아웃 실패', error as Error);
+    logger.error('로그아웃 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -213,7 +214,7 @@ export async function resetPassword(email: string): Promise<void> {
     await sendPasswordResetEmail(getFirebaseAuth(), email);
     logger.info('비밀번호 재설정 이메일 전송 성공', { email });
   } catch (error) {
-    logger.error('비밀번호 재설정 실패', error as Error, { email });
+    logger.error('비밀번호 재설정 실패', toError(error), { email });
     throw mapFirebaseError(error);
   }
 }
@@ -231,7 +232,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
     return userDoc.data() as UserProfile;
   } catch (error) {
-    logger.error('프로필 조회 실패', error as Error, { uid });
+    logger.error('프로필 조회 실패', toError(error), { uid });
     throw mapFirebaseError(error);
   }
 }
@@ -276,7 +277,7 @@ export async function updateUserProfile(
 
     logger.info('프로필 업데이트 성공', { uid });
   } catch (error) {
-    logger.error('프로필 업데이트 실패', error as Error, { uid });
+    logger.error('프로필 업데이트 실패', toError(error), { uid });
     throw mapFirebaseError(error);
   }
 }
@@ -297,7 +298,7 @@ export async function reauthenticate(password: string): Promise<void> {
 
     logger.info('재인증 성공', { uid: user.uid });
   } catch (error) {
-    logger.error('재인증 실패', error as Error);
+    logger.error('재인증 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -547,7 +548,7 @@ export async function changePassword(
 
     logger.info('비밀번호 변경 성공', { uid: user.uid });
   } catch (error) {
-    logger.error('비밀번호 변경 실패', error as Error);
+    logger.error('비밀번호 변경 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -584,7 +585,7 @@ export async function updateProfilePhotoURL(
 
     logger.info('프로필 사진 업데이트 성공', { uid });
   } catch (error) {
-    logger.error('프로필 사진 업데이트 실패', error as Error, { uid });
+    logger.error('프로필 사진 업데이트 실패', toError(error), { uid });
     throw mapFirebaseError(error);
   }
 }

@@ -20,7 +20,7 @@ import {
   type ApplicantWithDetails,
   type ApplicantListResult,
 } from '@/services';
-import { isNetworkError } from '@/errors';
+import { isNetworkError, toError } from '@/errors';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import {
   confirmApplicationWithHistory,
@@ -146,8 +146,8 @@ export function useApplicantsByJobPosting(
       }
     } catch (error) {
       if (mountedRef.current) {
-        logger.error('지원자 구독 시작 실패', error as Error, { jobPostingId });
-        setRealtimeError(error as Error);
+        logger.error('지원자 구독 시작 실패', toError(error), { jobPostingId });
+        setRealtimeError(toError(error));
       }
     }
   }, [realtime, jobPostingId, user]);
@@ -294,7 +294,7 @@ export function useRejectApplication() {
       });
     },
     onError: (error) => {
-      logger.error('지원 거절 실패', error as Error);
+      logger.error('지원 거절 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '거절에 실패했습니다.',
@@ -350,7 +350,7 @@ export function useBulkConfirmApplications() {
       });
     },
     onError: (error) => {
-      logger.error('일괄 확정 실패', error as Error);
+      logger.error('일괄 확정 실패', toError(error));
       addToast({
         type: 'error',
         message: '일괄 확정에 실패했습니다.',
@@ -384,7 +384,7 @@ export function useMarkAsRead() {
       });
     },
     onError: (error) => {
-      logger.error('지원서 읽음 처리 실패', error as Error);
+      logger.error('지원서 읽음 처리 실패', toError(error));
     },
   });
 }
@@ -448,7 +448,7 @@ export function useReviewCancellation() {
       });
     },
     onError: (error) => {
-      logger.error('취소 요청 검토 실패', error as Error);
+      logger.error('취소 요청 검토 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '취소 요청 검토에 실패했습니다.',
@@ -512,7 +512,7 @@ export function useConfirmApplicationWithHistory() {
       });
     },
     onError: (error) => {
-      logger.error('지원 확정 (v2.0) 실패', error as Error);
+      logger.error('지원 확정 (v2.0) 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '확정에 실패했습니다.',
@@ -555,7 +555,7 @@ export function useCancelConfirmation() {
       });
     },
     onError: (error) => {
-      logger.error('확정 취소 실패', error as Error);
+      logger.error('확정 취소 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '확정 취소에 실패했습니다.',
@@ -617,7 +617,7 @@ export function useConvertToStaff() {
       });
     },
     onError: (error) => {
-      logger.error('스태프 변환 실패', error as Error);
+      logger.error('스태프 변환 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '스태프 변환에 실패했습니다.',
@@ -673,7 +673,7 @@ export function useBatchConvertToStaff() {
       });
     },
     onError: (error) => {
-      logger.error('일괄 스태프 변환 실패', error as Error);
+      logger.error('일괄 스태프 변환 실패', toError(error));
       addToast({
         type: 'error',
         message: '일괄 변환에 실패했습니다.',

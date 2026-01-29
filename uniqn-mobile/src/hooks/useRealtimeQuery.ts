@@ -22,6 +22,7 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useQuery, useQueryClient, QueryKey } from '@tanstack/react-query';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -167,7 +168,7 @@ export function useRealtimeQuery<TData>({
     data: query.data,
     isLoading: query.isLoading && !query.data,
     isError: query.isError,
-    error: query.error as Error | null,
+    error: query.error ? toError(query.error) : null,
     isSubscribed: isSubscribedRef.current,
   };
 }

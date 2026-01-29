@@ -23,6 +23,7 @@ import { deleteMultipleAnnouncementImages } from '@/services/storageService';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { getAnnouncementImages } from '@/types/announcement';
 import type {
@@ -137,7 +138,7 @@ export function useCreateAnnouncement() {
       addToast({ type: 'success', message: '공지사항이 저장되었습니다' });
     },
     onError: (error) => {
-      logger.error('공지사항 생성 실패', error as Error);
+      logger.error('공지사항 생성 실패', toError(error));
       addToast({ type: 'error', message: '공지사항 저장에 실패했습니다' });
     },
   });
@@ -194,7 +195,7 @@ export function useUpdateAnnouncement() {
       addToast({ type: 'success', message: '공지사항이 수정되었습니다' });
     },
     onError: (error) => {
-      logger.error('공지사항 수정 실패', error as Error);
+      logger.error('공지사항 수정 실패', toError(error));
       addToast({ type: 'error', message: '공지사항 수정에 실패했습니다' });
     },
   });
@@ -214,7 +215,7 @@ export function usePublishAnnouncement() {
       addToast({ type: 'success', message: '공지사항이 발행되었습니다' });
     },
     onError: (error) => {
-      logger.error('공지사항 발행 실패', error as Error);
+      logger.error('공지사항 발행 실패', toError(error));
       addToast({ type: 'error', message: '공지사항 발행에 실패했습니다' });
     },
   });
@@ -234,7 +235,7 @@ export function useArchiveAnnouncement() {
       addToast({ type: 'success', message: '공지사항이 보관되었습니다' });
     },
     onError: (error) => {
-      logger.error('공지사항 보관 실패', error as Error);
+      logger.error('공지사항 보관 실패', toError(error));
       addToast({ type: 'error', message: '공지사항 보관에 실패했습니다' });
     },
   });
@@ -279,7 +280,7 @@ export function useDeleteAnnouncement() {
       addToast({ type: 'success', message: '공지사항이 삭제되었습니다' });
     },
     onError: (error) => {
-      logger.error('공지사항 삭제 실패', error as Error);
+      logger.error('공지사항 삭제 실패', toError(error));
       addToast({ type: 'error', message: '공지사항 삭제에 실패했습니다' });
     },
   });

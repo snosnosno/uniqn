@@ -16,14 +16,14 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, MaxCapacityReachedError, ValidationError, ERROR_CODES } from '@/errors';
+import { mapFirebaseError, MaxCapacityReachedError, ValidationError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { WorkLogCreator } from '@/domains/schedule';
 import type {
   Application,
   Assignment,
   ConfirmationHistoryEntry,
-  JobPosting,
   DateSpecificRequirement,
 } from '@/types';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
@@ -229,7 +229,13 @@ export async function confirmApplicationWithHistory(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '지원 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 이미 확정된 경우 (활성 확정 확인)
       if (applicationData.confirmationHistory?.length) {
@@ -251,7 +257,13 @@ export async function confirmApplicationWithHistory(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '공고 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 공고 소유자 확인
       if (jobData.ownerId !== ownerId) {
@@ -421,7 +433,7 @@ export async function confirmApplicationWithHistory(
 
     return result;
   } catch (error) {
-    logger.error('지원 확정 (v2.0) 실패', error as Error, { applicationId });
+    logger.error('지원 확정 (v2.0) 실패', toError(error), { applicationId });
     throw error instanceof ValidationError || error instanceof MaxCapacityReachedError
       ? error
       : mapFirebaseError(error);
@@ -457,7 +469,13 @@ export async function cancelConfirmation(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '지원 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 확정 상태 확인
       if (applicationData.status !== 'confirmed') {
@@ -486,7 +504,13 @@ export async function cancelConfirmation(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '공고 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 공고 소유자 확인
       if (jobData.ownerId !== ownerId) {
@@ -578,8 +602,10 @@ export async function cancelConfirmation(
 
     return result;
   } catch (error) {
-    logger.error('확정 취소 실패', error as Error, { applicationId });
-    throw error instanceof ValidationError ? error : mapFirebaseError(error);
+    logger.error('확정 취소 실패', toError(error), { applicationId });
+    throw error instanceof ValidationError || error instanceof BusinessError
+      ? error
+      : mapFirebaseError(error);
   }
 }
 
@@ -644,7 +670,14 @@ export async function getApplicationHistorySummary(
       return null;
     }
 
-    const applicationData = applicationDoc.data() as Application;
+    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+
+    if (!applicationData) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+        userMessage: '지원 데이터를 파싱할 수 없습니다',
+      });
+    }
+
     const history = applicationData.confirmationHistory ?? [];
 
     const activeConfirmation = findActiveConfirmation(history);
@@ -659,7 +692,7 @@ export async function getApplicationHistorySummary(
       lastCancelledAt: history.filter((e) => e.cancelledAt).pop()?.cancelledAt,
     };
   } catch (error) {
-    logger.error('확정 이력 요약 조회 실패', error as Error, { applicationId });
-    throw mapFirebaseError(error);
+    logger.error('확정 이력 요약 조회 실패', toError(error), { applicationId });
+    throw error instanceof BusinessError ? error : mapFirebaseError(error);
   }
 }

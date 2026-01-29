@@ -28,3 +28,9 @@ export { ScheduleMerger } from './ScheduleMerger';
 
 // WorkLog 생성 유틸리티
 export { WorkLogCreator } from './WorkLogCreator';
+
+// ScheduleConverter 타입
+export type { JobPostingCardWithMeta } from './ScheduleConverter';
+
+// 스케줄 변환 유틸리티
+export { ScheduleConverter } from './ScheduleConverter';

@@ -37,6 +37,7 @@ import {
   ReportAlreadyReviewedError,
   CannotReportSelfError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
 import type {
   Report,
@@ -162,8 +163,8 @@ export async function createReport(input: CreateReportInput): Promise<string> {
       throw error;
     }
 
-    const firebaseError = error as Error & { code?: string; message?: string };
-    logger.error('Failed to create report', firebaseError, {
+    const firebaseError = error as { code?: string; message?: string };
+    logger.error('Failed to create report', toError(error), {
       input: validatedInput,
       errorCode: firebaseError.code,
       errorMessage: firebaseError.message,
@@ -216,7 +217,7 @@ export async function getReportsByJobPosting(jobPostingId: string): Promise<Repo
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get reports by job posting', error as Error, { jobPostingId });
+    logger.error('Failed to get reports by job posting', toError(error), { jobPostingId });
     throw mapFirebaseError(error);
   }
 }
@@ -253,7 +254,7 @@ export async function getReportsByStaff(staffId: string): Promise<Report[]> {
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get reports by staff', error as Error, { staffId });
+    logger.error('Failed to get reports by staff', toError(error), { staffId });
     throw mapFirebaseError(error);
   }
 }
@@ -297,7 +298,7 @@ export async function getMyReports(): Promise<Report[]> {
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get my reports', error as Error);
+    logger.error('Failed to get my reports', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -330,7 +331,7 @@ export async function getReportById(reportId: string): Promise<Report | null> {
 
     return report as Report;
   } catch (error) {
-    logger.error('Failed to get report by id', error as Error, { reportId });
+    logger.error('Failed to get report by id', toError(error), { reportId });
     throw mapFirebaseError(error);
   }
 }
@@ -409,7 +410,7 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
       throw error;
     }
 
-    logger.error('Failed to review report', error as Error, { input: validatedInput });
+    logger.error('Failed to review report', toError(error), { input: validatedInput });
     throw mapFirebaseError(error);
   }
 }
@@ -441,7 +442,7 @@ export async function getReportCountByStaff(staffId: string): Promise<{
       low: reports.filter((r) => r.severity === 'low').length,
     };
   } catch (error) {
-    logger.error('Failed to get report count by staff', error as Error, { staffId });
+    logger.error('Failed to get report count by staff', toError(error), { staffId });
     throw error;
   }
 }
@@ -516,7 +517,7 @@ export async function getAllReports(filters: GetAllReportsFilters = {}): Promise
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get all reports', error as Error, { filters });
+    logger.error('Failed to get all reports', toError(error), { filters });
     throw mapFirebaseError(error);
   }
 }

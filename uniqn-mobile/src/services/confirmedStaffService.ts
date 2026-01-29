@@ -34,7 +34,9 @@ import {
   mapFirebaseError,
   BusinessError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
+import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import {
   workLogToConfirmedStaff,
   groupStaffByDate,
@@ -47,7 +49,7 @@ import {
   type DeleteConfirmedStaffInput,
   type ConfirmedStaffStatus,
 } from '@/types/confirmedStaff';
-import type { WorkLog, WorkTimeModification, RoleChangeHistory } from '@/types';
+import type { WorkTimeModification, RoleChangeHistory } from '@/types';
 import { STAFF_ROLES } from '@/constants';
 import { StatusMapper } from '@/shared/status';
 
@@ -145,10 +147,9 @@ export async function getConfirmedStaff(
       orderBy('date', 'asc')
     );
     const snapshot = await getDocs(q);
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    );
 
     // 스태프 이름 조회 (병렬)
     const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
@@ -186,7 +187,7 @@ export async function getConfirmedStaff(
 
     return { staff, grouped, stats };
   } catch (error) {
-    logger.error('확정 스태프 목록 조회 실패', error as Error, { jobPostingId });
+    logger.error('확정 스태프 목록 조회 실패', toError(error), { jobPostingId });
     throw mapFirebaseError(error);
   }
 }
@@ -208,10 +209,9 @@ export async function getConfirmedStaffByDate(
       where('date', '==', date)
     );
     const snapshot = await getDocs(q);
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    );
 
     // 스태프 이름 조회
     const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
@@ -236,7 +236,7 @@ export async function getConfirmedStaffByDate(
 
     return staff;
   } catch (error) {
-    logger.error('날짜별 확정 스태프 조회 실패', error as Error, { jobPostingId, date });
+    logger.error('날짜별 확정 스태프 조회 실패', toError(error), { jobPostingId, date });
     throw mapFirebaseError(error);
   }
 }
@@ -261,7 +261,12 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
       const previousRole = workLog.role;
 
       // 역할 변경 이력 저장
@@ -289,7 +294,7 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
 
     logger.info('스태프 역할 변경 완료', { workLogId: input.workLogId });
   } catch (error) {
-    logger.error('스태프 역할 변경 실패', error as Error, { ...input });
+    logger.error('스태프 역할 변경 실패', toError(error), { ...input });
     if (error instanceof BusinessError) {
       throw error;
     }
@@ -322,7 +327,12 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 시간 수정 이력 저장
       const modificationHistory: WorkTimeModification[] =
@@ -360,7 +370,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
 
     logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
   } catch (error) {
-    logger.error('근무 시간 수정 실패', error as Error, { workLogId: input.workLogId });
+    logger.error('근무 시간 수정 실패', toError(error), { workLogId: input.workLogId });
     if (error instanceof BusinessError) {
       throw error;
     }
@@ -394,7 +404,12 @@ export async function deleteConfirmedStaff(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 이미 출퇴근한 경우 삭제 불가
       if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
@@ -445,7 +460,7 @@ export async function deleteConfirmedStaff(
 
     logger.info('확정 스태프 삭제 완료', { ...input });
   } catch (error) {
-    logger.error('확정 스태프 삭제 실패', error as Error, { ...input });
+    logger.error('확정 스태프 삭제 실패', toError(error), { ...input });
     if (error instanceof BusinessError) {
       throw error;
     }
@@ -476,7 +491,7 @@ export async function markAsNoShow(
 
     logger.info('노쇼 처리 완료', { workLogId });
   } catch (error) {
-    logger.error('노쇼 처리 실패', error as Error, { workLogId });
+    logger.error('노쇼 처리 실패', toError(error), { workLogId });
     throw mapFirebaseError(error);
   }
 }
@@ -502,7 +517,7 @@ export async function updateStaffStatus(
 
     logger.info('스태프 상태 변경 완료', { workLogId, status });
   } catch (error) {
-    logger.error('스태프 상태 변경 실패', error as Error, { workLogId, status });
+    logger.error('스태프 상태 변경 실패', toError(error), { workLogId, status });
     throw mapFirebaseError(error);
   }
 }
@@ -538,10 +553,9 @@ export function subscribeToConfirmedStaff(
     q,
     async (snapshot) => {
       try {
-        const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-          id: docSnap.id,
-          ...docSnap.data(),
-        })) as WorkLog[];
+        const workLogs = parseWorkLogDocuments(
+          snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+        );
 
         // 스태프 이름 조회
         const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
@@ -569,8 +583,8 @@ export function subscribeToConfirmedStaff(
 
         callbacks.onUpdate({ staff, grouped, stats });
       } catch (error) {
-        logger.error('확정 스태프 구독 처리 에러', error as Error, { jobPostingId });
-        callbacks.onError?.(error as Error);
+        logger.error('확정 스태프 구독 처리 에러', toError(error), { jobPostingId });
+        callbacks.onError?.(toError(error));
       }
     },
     (error) => {

@@ -21,7 +21,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, NetworkError, ERROR_CODES } from '@/errors';
+import { mapFirebaseError, NetworkError, ERROR_CODES, toError } from '@/errors';
 import { FIREBASE_LIMITS } from '@/constants';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
 import type {
@@ -33,10 +33,15 @@ import type {
   WorkLog,
   Application,
   ApplicationStatus,
-  JobPosting,
   JobPostingCard,
 } from '@/types';
 import { toJobPostingCard } from '@/types/jobPosting';
+import {
+  parseJobPostingDocument,
+  parseWorkLogDocuments,
+  parseApplicationDocuments,
+  parseWorkLogDocument,
+} from '@/schemas';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import { IdNormalizer } from '@/shared/id';
 import { StatusMapper } from '@/shared/status';
@@ -342,7 +347,11 @@ async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string,
     if (result.status === 'fulfilled') {
       for (const docSnap of result.value.docs) {
         const data = docSnap.data();
-        const jobPosting = { id: docSnap.id, ...data } as JobPosting;
+        const jobPosting = parseJobPostingDocument({ id: docSnap.id, ...data });
+        if (!jobPosting) {
+          logger.warn('JobPosting 문서 파싱 실패', { docId: docSnap.id });
+          continue;
+        }
         const card = toJobPostingCard(jobPosting);
         cardMap.set(docSnap.id, {
           card,
@@ -583,7 +592,7 @@ export async function getMySchedules(
 
     // 둘 다 실패한 경우에만 에러 throw
     if (workLogsResult.status === 'rejected' && applicationsResult.status === 'rejected') {
-      logger.error('WorkLogs, Applications 모두 조회 실패', workLogsResult.reason as Error, {
+      logger.error('WorkLogs, Applications 모두 조회 실패', toError(workLogsResult.reason), {
         staffId,
       });
       throw new NetworkError(ERROR_CODES.NETWORK_REQUEST_FAILED, {
@@ -606,22 +615,26 @@ export async function getMySchedules(
     }
 
     // ========================================
-    // 4. 데이터 파싱
+    // 4. 데이터 파싱 (안전한 파서 사용)
     // ========================================
     const workLogs: WorkLog[] =
       workLogsResult.status === 'fulfilled'
-        ? workLogsResult.value.docs.map((docSnap) => ({
-            id: docSnap.id,
-            ...docSnap.data(),
-          })) as WorkLog[]
+        ? parseWorkLogDocuments(
+            workLogsResult.value.docs.map((docSnap) => ({
+              id: docSnap.id,
+              ...docSnap.data(),
+            }))
+          )
         : [];
 
     const applications: Application[] =
       applicationsResult.status === 'fulfilled'
-        ? applicationsResult.value.docs.map((docSnap) => ({
-            id: docSnap.id,
-            ...docSnap.data(),
-          })) as Application[]
+        ? parseApplicationDocuments(
+            applicationsResult.value.docs.map((docSnap) => ({
+              id: docSnap.id,
+              ...docSnap.data(),
+            }))
+          )
         : [];
 
     // ========================================
@@ -715,7 +728,7 @@ export async function getSchedulesByDate(
 
     return schedules;
   } catch (error) {
-    logger.error('날짜별 스케줄 조회 실패', error as Error, { staffId, date });
+    logger.error('날짜별 스케줄 조회 실패', toError(error), { staffId, date });
     throw mapFirebaseError(error);
   }
 }
@@ -735,7 +748,7 @@ export async function getSchedulesByMonth(
 
     return await getMySchedules(staffId, { dateRange }, 100);
   } catch (error) {
-    logger.error('월별 스케줄 조회 실패', error as Error, { staffId, year, month });
+    logger.error('월별 스케줄 조회 실패', toError(error), { staffId, year, month });
     throw mapFirebaseError(error);
   }
 }
@@ -755,7 +768,11 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
       return null;
     }
 
-    const workLog = { id: workLogDoc.id, ...workLogDoc.data() } as WorkLog;
+    const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+    if (!workLog) {
+      logger.warn('WorkLog 문서 파싱 실패', { scheduleId });
+      return null;
+    }
 
     // 공고 정보 조회 (JobPostingCard 포함)
     // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
@@ -765,14 +782,18 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
       const eventDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId));
       if (eventDoc.exists()) {
         const data = eventDoc.data();
-        const jobPosting = { id: eventDoc.id, ...data } as JobPosting;
-        cardInfo = {
-          card: toJobPostingCard(jobPosting),
-          title: data.title || '이벤트',
-          location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
-          contactPhone: data.contactPhone,
-          ownerId: data.ownerId,
-        };
+        const jobPosting = parseJobPostingDocument({ id: eventDoc.id, ...data });
+        if (jobPosting) {
+          cardInfo = {
+            card: toJobPostingCard(jobPosting),
+            title: data.title || '이벤트',
+            location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+            contactPhone: data.contactPhone,
+            ownerId: data.ownerId,
+          };
+        } else {
+          logger.debug('JobPosting 문서 파싱 실패 (상세)', { jobPostingId: normalizedJobId });
+        }
       }
     } catch (err) {
       logger.debug('공고 정보 조회 실패 (상세)', { jobPostingId: normalizedJobId, error: err });
@@ -780,7 +801,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
 
     return workLogToScheduleEvent(workLog, cardInfo);
   } catch (error) {
-    logger.error('스케줄 상세 조회 실패', error as Error, { scheduleId });
+    logger.error('스케줄 상세 조회 실패', toError(error), { scheduleId });
     throw mapFirebaseError(error);
   }
 }
@@ -817,7 +838,7 @@ export async function getUpcomingSchedules(
     // confirmed 상태만 필터링
     return schedules.filter((s) => s.type === 'confirmed' || s.type === 'applied');
   } catch (error) {
-    logger.error('다가오는 스케줄 조회 실패', error as Error, { staffId });
+    logger.error('다가오는 스케줄 조회 실패', toError(error), { staffId });
     throw mapFirebaseError(error);
   }
 }
@@ -849,10 +870,12 @@ export function subscribeToSchedules(
         q,
         async (snapshot) => {
           try {
-            const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            })) as WorkLog[];
+            const workLogs: WorkLog[] = parseWorkLogDocuments(
+              snapshot.docs.map((docSnap) => ({
+                id: docSnap.id,
+                ...docSnap.data(),
+              }))
+            );
 
             // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
             // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
@@ -866,8 +889,8 @@ export function subscribeToSchedules(
 
             onUpdate(schedules);
           } catch (error) {
-            logger.error('스케줄 구독 처리 실패', error as Error);
-            onError?.(error as Error);
+            logger.error('스케줄 구독 처리 실패', toError(error));
+            onError?.(toError(error));
           }
         },
         (error) => {
@@ -946,7 +969,7 @@ export async function getScheduleStats(staffId: string): Promise<ScheduleStats> 
 
     return stats;
   } catch (error) {
-    logger.error('스케줄 통계 조회 실패', error as Error, { staffId });
+    logger.error('스케줄 통계 조회 실패', toError(error), { staffId });
     throw mapFirebaseError(error);
   }
 }

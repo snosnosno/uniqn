@@ -28,6 +28,7 @@ import {
   type GetConfirmedStaffResult,
 } from '@/services';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import type {
@@ -161,7 +162,7 @@ export function useConfirmedStaff(
         setRealtimeData(result);
       },
       onError: (err) => {
-        logger.error('확정 스태프 구독 에러', err, { jobPostingId });
+        logger.error('확정 스태프 구독 에러', toError(err), { jobPostingId });
         addToast({
           type: 'error',
           message: '스태프 데이터 동기화 중 오류가 발생했습니다.',
@@ -311,7 +312,7 @@ export function useConfirmedStaff(
     grouped: resultData?.grouped ?? [],
     stats: resultData?.stats ?? emptyStats,
     isLoading: realtime ? !realtimeData : isLoading,
-    error: error as Error | null,
+    error: error ? toError(error) : null,
     refresh,
     isRefreshing: isRefetching,
 

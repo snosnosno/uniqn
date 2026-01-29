@@ -29,6 +29,7 @@ import { getUserProfile } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -161,7 +162,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       );
     },
     onError: (error) => {
-      logger.error('생체 인증 설정 변경 실패', error as Error);
+      logger.error('생체 인증 설정 변경 실패', toError(error));
       useToastStore.getState().error('생체 인증 설정 변경에 실패했습니다');
     },
   });
@@ -315,7 +316,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       logger.info('생체 인증 로그인 성공', { userId: credentials.userId });
       return true;
     } catch (error) {
-      logger.error('생체 인증 로그인 실패', error as Error);
+      logger.error('생체 인증 로그인 실패', toError(error));
       useToastStore.getState().error('로그인에 실패했습니다');
       return false;
     } finally {

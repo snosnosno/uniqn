@@ -87,3 +87,93 @@ export const modifyWorkTimeSchema = z.object({
 );
 
 export type ModifyWorkTimeData = z.infer<typeof modifyWorkTimeSchema>;
+
+// ============================================================================
+// Firestore 문서 검증 스키마 (런타임 타입 검증)
+// ============================================================================
+
+import { logger } from '@/utils/logger';
+import type { WorkLog } from '@/types';
+
+/**
+ * WorkLog Firestore 문서 스키마 (런타임 검증)
+ *
+ * @description Firestore에서 읽은 데이터의 타입 안전성을 보장
+ * .passthrough()로 알려지지 않은 필드 허용 (하위 호환성)
+ */
+export const workLogDocumentSchema = z.object({
+  id: z.string(),
+  staffId: z.string(),
+  jobPostingId: z.string(),
+  date: z.string(),
+
+  // 스태프 정보
+  staffName: z.string().optional(),
+  staffNickname: z.string().optional(),
+  staffPhotoURL: z.string().optional(),
+
+  // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
+  scheduledStartTime: z.any().optional(),
+  scheduledEndTime: z.any().optional(),
+  checkInTime: z.any().optional(),
+  checkOutTime: z.any().optional(),
+
+  // 상태
+  status: workLogStatusSchema,
+  role: z.string(),
+  customRole: z.string().optional(),
+
+  // 정산 정보
+  payrollStatus: payrollStatusSchema.optional(),
+  payrollAmount: z.number().optional(),
+  payrollDate: z.any().optional(),
+  payrollNotes: z.string().optional(),
+
+  // 메타
+  notes: z.string().optional(),
+  timeSlot: z.string().optional(),
+  ownerId: z.string().optional(),
+
+  // Timestamps
+  createdAt: z.any(),
+  updatedAt: z.any(),
+}).passthrough();
+
+export type WorkLogDocumentData = z.infer<typeof workLogDocumentSchema>;
+
+/**
+ * 단일 WorkLog 문서 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터
+ * @returns 검증된 WorkLog 또는 null (검증 실패 시)
+ */
+export function parseWorkLogDocument(data: unknown): WorkLog | null {
+  const result = workLogDocumentSchema.safeParse(data);
+  if (!result.success) {
+    logger.warn('WorkLog 문서 검증 실패', {
+      errors: result.error.flatten(),
+      component: 'workLog.schema',
+    });
+    return null;
+  }
+  return result.data as WorkLog;
+}
+
+/**
+ * WorkLog 문서 배열 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터 배열
+ * @returns 검증된 WorkLog 배열 (검증 실패 항목은 제외)
+ */
+export function parseWorkLogDocuments(data: unknown[]): WorkLog[] {
+  return data
+    .map((item) => parseWorkLogDocument(item))
+    .filter((item): item is WorkLog => item !== null);
+}
+
+/**
+ * WorkLog 타입 가드
+ */
+export function isWorkLogDocument(data: unknown): data is WorkLog {
+  return workLogDocumentSchema.safeParse(data).success;
+}

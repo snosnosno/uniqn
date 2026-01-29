@@ -19,7 +19,7 @@ import { crashlyticsService } from './crashlyticsService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { router } from 'expo-router';
-import { AppError, AuthError, ERROR_CODES } from '@/errors';
+import { AppError, AuthError, ERROR_CODES, toError } from '@/errors';
 
 // sessionStorage는 향후 세션 관리 확장 시 활용
 void sessionStorage;
@@ -229,7 +229,7 @@ async function expireSession(message: string): Promise<void> {
     await getFirebaseAuth().signOut();
     useAuthStore.getState().reset();
   } catch (error) {
-    logger.error('세션 만료 - 로그아웃 실패', error as Error);
+    logger.error('세션 만료 - 로그아웃 실패', toError(error));
   }
 
   // 로그인 페이지로 이동
@@ -283,8 +283,8 @@ async function checkAndRefreshToken(): Promise<void> {
       await refreshToken();
     }
   } catch (error) {
-    logger.error('토큰 체크 실패', error as Error);
-    crashlyticsService.recordError(error as Error, {
+    logger.error('토큰 체크 실패', toError(error));
+    crashlyticsService.recordError(toError(error), {
       component: 'sessionService',
       action: 'checkAndRefreshToken',
     });
@@ -311,9 +311,9 @@ export async function refreshToken(): Promise<string | null> {
     logger.info('토큰 갱신 성공');
     return newToken;
   } catch (error) {
-    logger.error('토큰 갱신 실패', error as Error);
+    logger.error('토큰 갱신 실패', toError(error));
 
-    crashlyticsService.recordError(error as Error, {
+    crashlyticsService.recordError(toError(error), {
       component: 'sessionService',
       action: 'refreshToken',
     });
@@ -344,7 +344,7 @@ export async function getValidToken(): Promise<string | null> {
 
     return tokenResult.token;
   } catch (error) {
-    logger.error('토큰 가져오기 실패', error as Error);
+    logger.error('토큰 가져오기 실패', toError(error));
     return null;
   }
 }
@@ -380,7 +380,7 @@ export async function checkLoginAttempts(email: string): Promise<void> {
     }
   } catch (error) {
     if (error instanceof AppError) throw error;
-    logger.error('로그인 시도 횟수 확인 실패', error as Error);
+    logger.error('로그인 시도 횟수 확인 실패', toError(error));
   }
 }
 
@@ -409,7 +409,7 @@ export async function incrementLoginAttempts(email: string): Promise<void> {
       logger.warn('로그인 시도 횟수 초과 - 계정 잠금', { email: email.substring(0, 3) + '***' });
     }
   } catch (error) {
-    logger.error('로그인 시도 횟수 증가 실패', error as Error);
+    logger.error('로그인 시도 횟수 증가 실패', toError(error));
   }
 }
 
@@ -424,7 +424,7 @@ export async function resetLoginAttempts(email: string): Promise<void> {
     await deleteItem(key);
     logger.debug('로그인 시도 횟수 초기화', { email: email.substring(0, 3) + '***' });
   } catch (error) {
-    logger.error('로그인 시도 횟수 초기화 실패', error as Error);
+    logger.error('로그인 시도 횟수 초기화 실패', toError(error));
   }
 }
 

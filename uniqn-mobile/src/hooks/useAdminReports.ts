@@ -19,6 +19,7 @@ import {
 } from '@/services/reportService';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
+import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import type { ReviewReportInput } from '@/types/report';
 
@@ -106,7 +107,7 @@ export function useReviewReport() {
       getToast().success('신고가 처리되었습니다');
     },
     onError: (error) => {
-      logger.error('신고 처리 실패', error as Error, {
+      logger.error('신고 처리 실패', toError(error), {
         component: 'useReviewReport',
       });
 

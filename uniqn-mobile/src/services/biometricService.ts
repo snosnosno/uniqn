@@ -14,6 +14,7 @@
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { authStorage } from '@/lib/secureStorage';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -174,7 +175,7 @@ export async function checkBiometricStatus(): Promise<BiometricStatus> {
     logger.debug('생체 인증 상태 확인', { status });
     return status;
   } catch (error) {
-    logger.error('생체 인증 상태 확인 실패', error as Error);
+    logger.error('생체 인증 상태 확인 실패', toError(error));
     return {
       isHardwareAvailable: false,
       isEnrolled: false,
@@ -283,7 +284,7 @@ export async function authenticateWithBiometric(options?: {
       errorCode,
     };
   } catch (error) {
-    logger.error('생체 인증 오류', error as Error);
+    logger.error('생체 인증 오류', toError(error));
     return {
       success: false,
       error: '생체 인증 중 오류가 발생했습니다',
@@ -322,7 +323,7 @@ export async function saveBiometricCredentials(
 
     logger.info('생체 인증 자격 증명 저장 완료', { userId });
   } catch (error) {
-    logger.error('생체 인증 자격 증명 저장 실패', error as Error);
+    logger.error('생체 인증 자격 증명 저장 실패', toError(error));
     throw error;
   }
 }
@@ -353,7 +354,7 @@ export async function getBiometricCredentials(): Promise<BiometricCredentials | 
       refreshToken,
     };
   } catch (error) {
-    logger.error('생체 인증 자격 증명 조회 실패', error as Error);
+    logger.error('생체 인증 자격 증명 조회 실패', toError(error));
     return null;
   }
 }
@@ -369,7 +370,7 @@ export async function clearBiometricCredentials(): Promise<void> {
 
     logger.info('생체 인증 자격 증명 삭제 완료');
   } catch (error) {
-    logger.error('생체 인증 자격 증명 삭제 실패', error as Error);
+    logger.error('생체 인증 자격 증명 삭제 실패', toError(error));
     throw error;
   }
 }
@@ -393,7 +394,7 @@ export async function setBiometricEnabled(enabled: boolean): Promise<void> {
 
     logger.info('생체 인증 설정 변경', { enabled });
   } catch (error) {
-    logger.error('생체 인증 설정 변경 실패', error as Error);
+    logger.error('생체 인증 설정 변경 실패', toError(error));
     throw error;
   }
 }
@@ -407,7 +408,7 @@ export async function isBiometricEnabled(): Promise<boolean> {
     const enabled = await getItem<boolean>(BIOMETRIC_ENABLED_KEY);
     return enabled ?? false;
   } catch (error) {
-    logger.error('생체 인증 설정 조회 실패', error as Error);
+    logger.error('생체 인증 설정 조회 실패', toError(error));
     return false;
   }
 }

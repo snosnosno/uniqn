@@ -162,3 +162,123 @@ export const markAllNotificationsReadSchema = z.object({
 });
 
 export type MarkAllNotificationsReadData = z.infer<typeof markAllNotificationsReadSchema>;
+
+// ============================================================================
+// Firestore 문서 검증 스키마 (런타임 타입 검증)
+// ============================================================================
+
+import { logger } from '@/utils/logger';
+import type { NotificationData, NotificationSettings } from '@/types';
+
+/**
+ * Notification Firestore 문서 스키마 (런타임 검증)
+ *
+ * @description Firestore에서 읽은 알림 데이터의 타입 안전성을 보장
+ */
+export const notificationDocumentSchema = z.object({
+  id: z.string(),
+  recipientId: z.string(),
+  type: notificationTypeSchema,
+  category: notificationCategorySchema.optional(),
+  title: z.string(),
+  body: z.string(),
+  isRead: z.boolean(),
+
+  // 링크 및 데이터
+  link: z.string().optional(),
+  data: z.record(z.string(), z.any()).optional(),
+
+  // 우선순위
+  priority: notificationPrioritySchema.optional(),
+
+  // Timestamps
+  createdAt: z.any(),
+  readAt: z.any().optional(),
+}).passthrough();
+
+export type NotificationDocumentData = z.infer<typeof notificationDocumentSchema>;
+
+/**
+ * 단일 Notification 문서 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터
+ * @returns 검증된 NotificationData 또는 null (검증 실패 시)
+ */
+export function parseNotificationDocument(data: unknown): NotificationData | null {
+  const result = notificationDocumentSchema.safeParse(data);
+  if (!result.success) {
+    logger.warn('Notification 문서 검증 실패', {
+      errors: result.error.flatten(),
+      component: 'notification.schema',
+    });
+    return null;
+  }
+  return result.data as NotificationData;
+}
+
+/**
+ * Notification 문서 배열 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터 배열
+ * @returns 검증된 NotificationData 배열 (검증 실패 항목은 제외)
+ */
+export function parseNotificationDocuments(data: unknown[]): NotificationData[] {
+  return data
+    .map((item) => parseNotificationDocument(item))
+    .filter((item): item is NotificationData => item !== null);
+}
+
+/**
+ * Notification 타입 가드
+ */
+export function isNotificationDocument(data: unknown): data is NotificationData {
+  return notificationDocumentSchema.safeParse(data).success;
+}
+
+// ============================================================================
+// NotificationSettings 문서 스키마
+// ============================================================================
+
+/**
+ * 카테고리 설정 객체 스키마 (전체 카테고리 필수)
+ */
+const categoriesSettingsSchema = z.object({
+  application: categoryNotificationSettingSchema,
+  attendance: categoryNotificationSettingSchema,
+  settlement: categoryNotificationSettingSchema,
+  job: categoryNotificationSettingSchema,
+  system: categoryNotificationSettingSchema,
+  admin: categoryNotificationSettingSchema,
+});
+
+/**
+ * NotificationSettings Firestore 문서 스키마
+ */
+export const notificationSettingsDocumentSchema = z.object({
+  enabled: z.boolean(),
+  pushEnabled: z.boolean().optional(),
+  categories: categoriesSettingsSchema,
+  quietHours: z.object({
+    enabled: z.boolean(),
+    start: z.string(),
+    end: z.string(),
+  }).optional(),
+  updatedAt: z.any().optional(),
+}).passthrough();
+
+export type NotificationSettingsDocumentData = z.infer<typeof notificationSettingsDocumentSchema>;
+
+/**
+ * NotificationSettings 문서 안전 파싱
+ */
+export function parseNotificationSettingsDocument(data: unknown): NotificationSettings | null {
+  const result = notificationSettingsDocumentSchema.safeParse(data);
+  if (!result.success) {
+    logger.warn('NotificationSettings 문서 검증 실패', {
+      errors: result.error.flatten(),
+      component: 'notification.schema',
+    });
+    return null;
+  }
+  return result.data as NotificationSettings;
+}

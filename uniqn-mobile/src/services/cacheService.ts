@@ -12,6 +12,7 @@ import {
   STORAGE_KEYS,
   removeStorageItem,
 } from '@/lib/mmkvStorage';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -164,7 +165,7 @@ export async function clearAllCache(
 
     return { queryCleared, mmkvCleared };
   } catch (error) {
-    logger.error('캐시 삭제 실패', error as Error);
+    logger.error('캐시 삭제 실패', toError(error));
     throw error;
   }
 }
@@ -177,7 +178,7 @@ export function clearSearchHistory(): void {
     removeStorageItem(STORAGE_KEYS.SEARCH_HISTORY);
     logger.info('검색 기록 삭제 완료');
   } catch (error) {
-    logger.error('검색 기록 삭제 실패', error as Error);
+    logger.error('검색 기록 삭제 실패', toError(error));
   }
 }
 
@@ -191,7 +192,7 @@ export function clearJobPostingsCache(): void {
     queryClient.invalidateQueries({ queryKey: ['jobPostings'] });
     logger.info('공고 캐시 삭제 완료');
   } catch (error) {
-    logger.error('공고 캐시 삭제 실패', error as Error);
+    logger.error('공고 캐시 삭제 실패', toError(error));
   }
 }
 
@@ -204,7 +205,7 @@ export function clearSchedulesCache(): void {
     queryClient.invalidateQueries({ queryKey: ['schedules'] });
     logger.info('스케줄 캐시 삭제 완료');
   } catch (error) {
-    logger.error('스케줄 캐시 삭제 실패', error as Error);
+    logger.error('스케줄 캐시 삭제 실패', toError(error));
   }
 }
 

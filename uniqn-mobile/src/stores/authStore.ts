@@ -22,10 +22,19 @@ import { mmkvStorage } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { User as FirebaseUser } from 'firebase/auth';
 import type { UserRole, UserProfile } from '@/types';
+import { USER_ROLE_HIERARCHY } from '@/types/role';
 import { RoleResolver } from '@/shared/role';
 
 // Re-export for convenience (하위 호환성)
 export type { UserRole, UserProfile };
+
+/**
+ * 역할 계층 (하위 호환성 alias)
+ *
+ * @deprecated USER_ROLE_HIERARCHY를 직접 사용하세요
+ * @see src/types/role.ts - 단일 진실 소스(SSOT)
+ */
+export { USER_ROLE_HIERARCHY as ROLE_HIERARCHY };
 
 // ============================================================================
 // Types
@@ -41,21 +50,6 @@ export interface AuthUser {
 }
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
-
-/**
- * 역할 계층 (숫자가 높을수록 상위 권한)
- *
- * - admin: 최고 관리자 (모든 기능)
- * - employer: 구인자 (공고 관리, 지원자 관리)
- * - staff: 스태프 (지원, 스케줄 확인)
- *
- * ⚠️ StaffRole(직무: dealer, manager 등)과 혼동 주의
- */
-export const ROLE_HIERARCHY: Record<UserRole, number> = {
-  admin: 100,
-  employer: 50,
-  staff: 10,
-};
 
 /**
  * 사용자 역할 정규화 함수 (대소문자 무관, 하위 호환성 지원)

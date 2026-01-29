@@ -29,7 +29,9 @@ import {
   isPermissionError,
   isAuthError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
+import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
 import type {
   Application,
@@ -116,7 +118,12 @@ export async function getApplicantsByJobPosting(
       });
     }
 
-    const jobData = jobDoc.data() as JobPosting;
+    const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!jobData) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '데이터가 올바르지 않습니다',
+      });
+    }
     // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
     const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
     if (postingOwnerId !== ownerId) {
@@ -192,7 +199,7 @@ export async function getApplicantsByJobPosting(
 
     return { applicants, stats };
   } catch (error) {
-    logger.error('지원자 목록 조회 실패', error as Error, { jobPostingId });
+    logger.error('지원자 목록 조회 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -228,7 +235,12 @@ export async function confirmApplication(
       });
     }
 
-    const applicationData = applicationDoc.data() as Application;
+    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+    if (!applicationData) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '데이터가 올바르지 않습니다',
+      });
+    }
     const v2Input = input as ConfirmApplicationInputV2;
     const selectedAssignments = v2Input.selectedAssignments ?? applicationData.assignments;
 
@@ -251,7 +263,7 @@ export async function confirmApplication(
       message: historyResult.message,
     };
   } catch (error) {
-    logger.error('지원 확정 실패', error as Error, { applicationId: input.applicationId });
+    logger.error('지원 확정 실패', toError(error), { applicationId: input.applicationId });
     if (
       error instanceof BusinessError ||
       error instanceof PermissionError ||
@@ -284,7 +296,12 @@ export async function rejectApplication(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '데이터가 올바르지 않습니다',
+        });
+      }
 
       // 이미 처리된 경우
       if (applicationData.status === 'confirmed') {
@@ -309,7 +326,12 @@ export async function rejectApplication(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '데이터가 올바르지 않습니다',
+        });
+      }
       // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
       const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
       if (postingOwnerId !== ownerId) {
@@ -330,7 +352,7 @@ export async function rejectApplication(
 
     logger.info('지원 거절 완료', { applicationId: input.applicationId });
   } catch (error) {
-    logger.error('지원 거절 실패', error as Error, { applicationId: input.applicationId });
+    logger.error('지원 거절 실패', toError(error), { applicationId: input.applicationId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -375,7 +397,7 @@ export async function bulkConfirmApplications(
 
     return result;
   } catch (error) {
-    logger.error('일괄 확정 실패', error as Error);
+    logger.error('일괄 확정 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -397,13 +419,31 @@ export async function markApplicationAsRead(
       });
     }
 
-    const applicationData = applicationDoc.data() as Application;
+    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+    if (!applicationData) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '데이터가 올바르지 않습니다',
+      });
+    }
 
     // 공고 소유자 확인
     const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
     const jobDoc = await getDoc(jobRef);
 
-    if (!jobDoc.exists() || (jobDoc.data() as JobPosting).ownerId !== ownerId) {
+    if (!jobDoc.exists()) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '존재하지 않는 공고입니다',
+      });
+    }
+
+    const markReadJobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!markReadJobData) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '데이터가 올바르지 않습니다',
+      });
+    }
+
+    if (markReadJobData.ownerId !== ownerId) {
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
         userMessage: '본인의 공고만 조회할 수 있습니다',
       });
@@ -416,7 +456,7 @@ export async function markApplicationAsRead(
       });
     });
   } catch (error) {
-    logger.error('지원 읽음 처리 실패', error as Error, { applicationId });
+    logger.error('지원 읽음 처리 실패', toError(error), { applicationId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -471,7 +511,7 @@ export async function getApplicantStatsByRole(
 
     return statsByRole as Record<StaffRole, ApplicationStats>;
   } catch (error) {
-    logger.error('역할별 지원자 통계 조회 실패', error as Error, { jobPostingId });
+    logger.error('역할별 지원자 통계 조회 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -505,12 +545,15 @@ export async function verifyJobPostingOwnership(
       return false;
     }
 
-    const jobData = jobDoc.data() as JobPosting;
+    const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!jobData) {
+      return false;
+    }
     const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
 
     return postingOwnerId === ownerId;
   } catch (error) {
-    logger.error('공고 소유권 검증 실패', error as Error, { jobPostingId, ownerId });
+    logger.error('공고 소유권 검증 실패', toError(error), { jobPostingId, ownerId });
     return false;
   }
 }
@@ -575,7 +618,14 @@ export function subscribeToApplicants(
             return;
           }
 
-          const jobData = jobDoc.data() as JobPosting;
+          const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+          if (!jobData) {
+            const error = new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+              userMessage: '데이터가 올바르지 않습니다',
+            });
+            callbacks.onError?.(error);
+            return;
+          }
           const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
 
           if (postingOwnerId !== ownerId) {
@@ -587,7 +637,7 @@ export function subscribeToApplicants(
             return;
           }
 
-          cachedJobPosting = { ...jobData, id: jobDoc.id } as JobPosting;
+          cachedJobPosting = jobData;
           isOwnerVerified = true;
         }
 
@@ -629,8 +679,8 @@ export function subscribeToApplicants(
 
         callbacks.onUpdate({ applicants, stats });
       } catch (error) {
-        logger.error('지원자 목록 실시간 구독 처리 실패', error as Error, { jobPostingId });
-        handleFatalError(error as Error);
+        logger.error('지원자 목록 실시간 구독 처리 실패', toError(error), { jobPostingId });
+        handleFatalError(toError(error));
       }
     },
     (firebaseError) => {

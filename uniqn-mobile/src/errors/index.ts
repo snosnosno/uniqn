@@ -74,6 +74,10 @@ export {
 // ============================================================================
 
 export {
+  // Type Conversion (Lightweight)
+  toError,
+  getErrorCode,
+  getErrorMessageFromUnknown,
   // Normalization
   normalizeError,
   // Wrappers

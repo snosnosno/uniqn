@@ -24,6 +24,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import { QUERY_KEYS } from '@/constants';
 import { cachingPolicies } from '@/lib/queryClient';
 import {
@@ -131,7 +132,7 @@ export function useNotificationList(
       setLastDoc(result.lastDoc);
       setHasMore(result.hasMore);
     } catch (error) {
-      logger.error('다음 페이지 로드 실패', error as Error);
+      logger.error('다음 페이지 로드 실패', toError(error));
     } finally {
       setIsFetchingNextPage(false);
     }
@@ -141,7 +142,7 @@ export function useNotificationList(
     notifications: query.data ?? [],
     isLoading: query.isLoading,
     isError: query.isError,
-    error: query.error as Error | null,
+    error: query.error ? toError(query.error) : null,
     hasMore: useNotificationStore((state) => state.hasMore),
     fetchNextPage,
     isFetchingNextPage,

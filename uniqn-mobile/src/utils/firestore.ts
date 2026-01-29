@@ -10,6 +10,7 @@ import {
   writeBatch,
   doc,
   getDoc,
+  Timestamp,
   type DocumentReference,
   type Transaction,
   serverTimestamp,
@@ -473,6 +474,38 @@ export async function withRetry<T>(
   throw lastError;
 }
 
+// ============================================================================
+// Timestamp Conversion Helpers
+// ============================================================================
+
+/**
+ * Timestamp 또는 문자열을 Timestamp | null로 정규화
+ *
+ * @description 문자열 마커(FIXED_TIME_MARKER 등)는 null 반환
+ * @param value - Timestamp, 문자열, 또는 null/undefined
+ * @returns 정규화된 Timestamp 또는 null
+ */
+export function normalizeTimestamp(value: Timestamp | string | null | undefined): Timestamp | null {
+  if (!value) return null;
+  if (typeof value === 'string') return null; // 문자열 마커는 null 처리
+  return value;
+}
+
+/**
+ * Timestamp 또는 Date를 Date로 변환
+ *
+ * @description 안전한 타입 변환
+ * @param value - Timestamp, Date, 문자열, 또는 null/undefined
+ * @returns 변환된 Date 또는 null
+ */
+export function timestampToDate(value: Timestamp | Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Timestamp) return value.toDate();
+  if (value instanceof Date) return value;
+  const parsed = new Date(value);
+  return isNaN(parsed.getTime()) ? null : parsed;
+}
+
 export default {
   runSingleDocTransaction,
   runOptimisticTransaction,
@@ -480,4 +513,6 @@ export default {
   runBatchWrite,
   documentExists,
   withRetry,
+  normalizeTimestamp,
+  timestampToDate,
 };

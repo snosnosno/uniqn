@@ -19,6 +19,7 @@
 import { Platform } from 'react-native';
 import { getFirebaseApp } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -173,7 +174,7 @@ async function initializeAnalytics(): Promise<boolean> {
       return true;
     }
   } catch (error) {
-    logger.error('Analytics 초기화 실패', error as Error);
+    logger.error('Analytics 초기화 실패', toError(error));
     return false;
   }
 }
@@ -228,7 +229,7 @@ export async function trackEvent(
   } catch (error) {
     // Analytics 에러는 앱 동작에 영향을 주지 않도록 조용히 처리
     if (__DEV__) {
-      logger.error('Analytics 이벤트 추적 실패', error as Error, { eventName });
+      logger.error('Analytics 이벤트 추적 실패', toError(error), { eventName });
     }
   }
 }
@@ -263,7 +264,7 @@ export async function trackScreenView(
     }
   } catch (error) {
     if (__DEV__) {
-      logger.error('화면 조회 추적 실패', error as Error, { screenName });
+      logger.error('화면 조회 추적 실패', toError(error), { screenName });
     }
   }
 }
@@ -298,7 +299,7 @@ export async function setUserProperties(
     }
   } catch (error) {
     if (__DEV__) {
-      logger.error('사용자 속성 설정 실패', error as Error);
+      logger.error('사용자 속성 설정 실패', toError(error));
     }
   }
 }
@@ -324,7 +325,7 @@ export async function setUserId(userId: string | null): Promise<void> {
     }
   } catch (error) {
     if (__DEV__) {
-      logger.error('사용자 ID 설정 실패', error as Error);
+      logger.error('사용자 ID 설정 실패', toError(error));
     }
   }
 }

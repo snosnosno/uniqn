@@ -68,12 +68,10 @@ export interface AssignmentRoleInput {
  * - admin: 최고 관리자 (모든 기능)
  * - employer: 구인자 (공고 관리, 지원자 관리)
  * - staff: 스태프 (지원, 스케줄 확인)
+ *
+ * @see src/types/role.ts - 단일 진실 소스(SSOT)
  */
-export const USER_ROLE_HIERARCHY: Record<UserRole, number> = {
-  admin: 100,
-  employer: 50,
-  staff: 10,
-};
+export { USER_ROLE_HIERARCHY } from '@/types/role';
 
 /**
  * 사용자 역할 표시명

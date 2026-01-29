@@ -21,6 +21,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
+import { toError } from '@/errors';
 import type {
   CreateJobPostingInput,
   UpdateJobPostingInput,
@@ -170,7 +171,7 @@ export function useUpdateJobPosting() {
       });
     },
     onError: (error) => {
-      logger.error('공고 수정 실패', error as Error);
+      logger.error('공고 수정 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '공고 수정에 실패했습니다.',
@@ -207,7 +208,7 @@ export function useDeleteJobPosting() {
       });
     },
     onError: (error) => {
-      logger.error('공고 삭제 실패', error as Error);
+      logger.error('공고 삭제 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '공고 삭제에 실패했습니다.',
@@ -252,7 +253,7 @@ export function useCloseJobPosting() {
       });
     },
     onError: (error) => {
-      logger.error('공고 마감 실패', error as Error);
+      logger.error('공고 마감 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '공고 마감에 실패했습니다.',
@@ -293,7 +294,7 @@ export function useReopenJobPosting() {
       });
     },
     onError: (error) => {
-      logger.error('공고 재오픈 실패', error as Error);
+      logger.error('공고 재오픈 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '공고 재오픈에 실패했습니다.',
@@ -337,7 +338,7 @@ export function useBulkUpdateStatus() {
       });
     },
     onError: (error) => {
-      logger.error('공고 일괄 상태 변경 실패', error as Error);
+      logger.error('공고 일괄 상태 변경 실패', toError(error));
       addToast({
         type: 'error',
         message: '상태 변경에 실패했습니다.',

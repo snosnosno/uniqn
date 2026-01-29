@@ -24,7 +24,7 @@ import {
 } from "firebase/firestore";
 import { getFirebaseDb } from "@/lib/firebase";
 import { logger } from "@/utils/logger";
-import { BusinessError, ERROR_CODES, mapFirebaseError } from "@/errors";
+import { BusinessError, ERROR_CODES, mapFirebaseError, toError } from "@/errors";
 import type {
   AdminUser,
   AdminUserFilters,
@@ -141,7 +141,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
     logger.info("대시보드 통계 조회 완료", { totalUsers: stats.totalUsers });
     return stats;
   } catch (error) {
-    logger.error("대시보드 통계 조회 실패", error as Error);
+    logger.error("대시보드 통계 조회 실패", toError(error));
     if (error instanceof BusinessError) throw error;
     throw mapFirebaseError(error);
   }
@@ -218,7 +218,7 @@ export async function getUsers(
     logger.info("사용자 목록 조회 완료", { total, returned: filteredUsers.length });
     return result;
   } catch (error) {
-    logger.error("사용자 목록 조회 실패", error as Error);
+    logger.error("사용자 목록 조회 실패", toError(error));
     if (error instanceof BusinessError) throw error;
     throw mapFirebaseError(error);
   }
@@ -248,7 +248,7 @@ export async function getUserById(userId: string): Promise<AdminUser> {
     logger.info("사용자 조회 완료", { userId, userName: user.name });
     return user;
   } catch (error) {
-    logger.error("사용자 조회 실패", error as Error, { userId });
+    logger.error("사용자 조회 실패", toError(error), { userId });
     if (error instanceof BusinessError) throw error;
     throw mapFirebaseError(error);
   }
@@ -279,7 +279,7 @@ export async function updateUserRole(
 
     logger.info("사용자 역할 변경 완료", { userId, previousRole: currentRole, newRole, reason });
   } catch (error) {
-    logger.error("사용자 역할 변경 실패", error as Error, { userId, newRole });
+    logger.error("사용자 역할 변경 실패", toError(error), { userId, newRole });
     if (error instanceof BusinessError) throw error;
     throw mapFirebaseError(error);
   }
@@ -309,7 +309,7 @@ export async function setUserActive(
 
     logger.info("사용자 상태 변경 완료", { userId, isActive, reason });
   } catch (error) {
-    logger.error("사용자 상태 변경 실패", error as Error, { userId, isActive });
+    logger.error("사용자 상태 변경 실패", toError(error), { userId, isActive });
     if (error instanceof BusinessError) throw error;
     throw mapFirebaseError(error);
   }
@@ -383,7 +383,7 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
     logger.info("시스템 메트릭스 조회 완료", { daysCount: 7, systemStatus });
     return metrics;
   } catch (error) {
-    logger.error("시스템 메트릭스 조회 실패", error as Error);
+    logger.error("시스템 메트릭스 조회 실패", toError(error));
     if (error instanceof BusinessError) throw error;
     throw mapFirebaseError(error);
   }

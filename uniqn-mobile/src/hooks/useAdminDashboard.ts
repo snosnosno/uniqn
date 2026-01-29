@@ -15,6 +15,7 @@ import {
   getSystemMetrics,
 } from "@/services/adminService";
 import { queryKeys, cachingPolicies } from "@/lib/queryClient";
+import { toError } from "@/errors";
 import { logger } from "@/utils/logger";
 import type {
   AdminUserFilters,
@@ -93,7 +94,7 @@ export function useUpdateUserRole() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
     onError: (error, variables) => {
-      logger.error("사용자 역할 변경 실패", error as Error, {
+      logger.error("사용자 역할 변경 실패", toError(error), {
         userId: variables.userId,
       });
     },
@@ -122,7 +123,7 @@ export function useSetUserActive() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
     onError: (error, variables) => {
-      logger.error("사용자 상태 변경 실패", error as Error, {
+      logger.error("사용자 상태 변경 실패", toError(error), {
         userId: variables.userId,
       });
     },

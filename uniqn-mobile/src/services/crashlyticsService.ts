@@ -19,6 +19,7 @@ import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { logger } from '@/utils/logger';
 import { AppError } from '@/errors/AppError';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -93,7 +94,7 @@ async function initialize(): Promise<boolean> {
     logger.info('Sentry 에러 모니터링 연동 완료');
     return true;
   } catch (error) {
-    logger.error('에러 모니터링 초기화 실패', error as Error);
+    logger.error('에러 모니터링 초기화 실패', toError(error));
     return false;
   }
 }

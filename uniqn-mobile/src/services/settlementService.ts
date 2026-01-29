@@ -25,6 +25,7 @@ import {
   PermissionError,
   ERROR_CODES,
   AlreadySettledError,
+  toError,
 } from '@/errors';
 import { FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
@@ -42,6 +43,12 @@ import type {
   JobPosting,
 } from '@/types';
 import { IdNormalizer } from '@/shared/id';
+import {
+  parseWorkLogDocument,
+  parseWorkLogDocuments,
+  parseJobPostingDocument,
+  parseJobPostingDocuments,
+} from '@/schemas';
 
 // ============================================================================
 // Constants
@@ -218,7 +225,12 @@ export async function getWorkLogsByJobPosting(
       });
     }
 
-    const jobPosting = jobDoc.data() as JobPosting;
+    const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!jobPosting) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '공고 데이터를 파싱할 수 없습니다',
+      });
+    }
 
     if (jobPosting.ownerId !== ownerId) {
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -235,11 +247,16 @@ export async function getWorkLogsByJobPosting(
     );
     const snapshot = await getDocs(q);
 
-    let workLogs: SettlementWorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
+    const parsedWorkLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }))
+    );
+    let workLogs: SettlementWorkLog[] = parsedWorkLogs.map((wl) => ({
+      ...wl,
       jobPostingTitle: jobPosting.title,
-    })) as SettlementWorkLog[];
+    }));
 
     // 3. 필터 적용
     if (filters?.dateRange) {
@@ -293,7 +310,7 @@ export async function getWorkLogsByJobPosting(
 
     return workLogs;
   } catch (error) {
-    logger.error('공고별 근무 기록 조회 실패', error as Error, { jobPostingId });
+    logger.error('공고별 근무 기록 조회 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -326,7 +343,13 @@ export async function calculateSettlement(
       });
     }
 
-    const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
+    const parsedWorkLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+    if (!parsedWorkLog) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
+      });
+    }
+    const workLog = parsedWorkLog as WorkLog & { customRole?: string };
 
     // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
@@ -339,7 +362,12 @@ export async function calculateSettlement(
       });
     }
 
-    const jobPosting = jobDoc.data() as JobPosting;
+    const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!jobPosting) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '공고 데이터를 파싱할 수 없습니다',
+      });
+    }
 
     if (jobPosting.ownerId !== ownerId) {
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -379,7 +407,7 @@ export async function calculateSettlement(
 
     return result;
   } catch (error) {
-    logger.error('정산 금액 계산 실패', error as Error, { workLogId: input.workLogId });
+    logger.error('정산 금액 계산 실패', toError(error), { workLogId: input.workLogId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -410,7 +438,12 @@ export async function updateWorkTime(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
       const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
@@ -423,7 +456,12 @@ export async function updateWorkTime(
         });
       }
 
-      const jobPosting = jobDoc.data() as JobPosting;
+      const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobPosting) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       if (jobPosting.ownerId !== ownerId) {
         throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -485,7 +523,7 @@ export async function updateWorkTime(
 
     logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
   } catch (error) {
-    logger.error('근무 시간 수정 실패', error as Error, { input });
+    logger.error('근무 시간 수정 실패', toError(error), { input });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -516,7 +554,12 @@ export async function settleWorkLog(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
       const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
@@ -529,7 +572,12 @@ export async function settleWorkLog(
         });
       }
 
-      const jobPosting = jobDoc.data() as JobPosting;
+      const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobPosting) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       if (jobPosting.ownerId !== ownerId) {
         throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -574,7 +622,7 @@ export async function settleWorkLog(
       message: '정산이 완료되었습니다',
     };
   } catch (error) {
-    logger.error('개별 정산 처리 실패', error as Error, { input });
+    logger.error('개별 정산 처리 실패', toError(error), { input });
 
     const message = error instanceof BusinessError || error instanceof PermissionError
       ? error.userMessage
@@ -628,10 +676,14 @@ export async function bulkSettlement(
 
         // 2. 공고별로 그룹화하여 소유권 확인 (IdNormalizer로 ID 정규화)
         const jobPostingIds = new Set<string>();
+        const parsedWorkLogMap = new Map<string, WorkLog>();
         workLogDocs.forEach((wl) => {
           if (wl.doc.exists()) {
-            const data = wl.doc.data() as WorkLog;
-            jobPostingIds.add(IdNormalizer.normalizeJobId(data));
+            const parsed = parseWorkLogDocument({ id: wl.doc.id, ...wl.doc.data() });
+            if (parsed) {
+              parsedWorkLogMap.set(wl.id, parsed);
+              jobPostingIds.add(IdNormalizer.normalizeJobId(parsed));
+            }
           }
         });
 
@@ -640,13 +692,16 @@ export async function bulkSettlement(
           const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId);
           const jobDoc = await transaction.get(jobRef);
           if (jobDoc.exists()) {
-            jobPostings.set(jobId, jobDoc.data() as JobPosting);
+            const parsedJob = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+            if (parsedJob) {
+              jobPostings.set(jobId, parsedJob);
+            }
           }
         }
 
         // 3. 각 근무 기록 처리
         for (const { id, ref, doc: workLogDoc } of workLogDocs) {
-          if (!workLogDoc.exists()) {
+          if (!workLogDoc.exists() || !parsedWorkLogMap.has(id)) {
             results.push({
               success: false,
               workLogId: id,
@@ -657,7 +712,8 @@ export async function bulkSettlement(
             continue;
           }
 
-          const workLog = workLogDoc.data() as WorkLog & { customRole?: string };
+          const parsedWorkLog = parsedWorkLogMap.get(id)!;
+          const workLog = parsedWorkLog as WorkLog & { customRole?: string };
           const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
           const jobPosting = jobPostings.get(normalizedJobId);
 
@@ -755,7 +811,7 @@ export async function bulkSettlement(
 
     return result;
   } catch (error) {
-    logger.error('일괄 정산 처리 실패', error as Error, { workLogCount: input.workLogIds.length });
+    logger.error('일괄 정산 처리 실패', toError(error), { workLogCount: input.workLogIds.length });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -787,7 +843,12 @@ export async function updateSettlementStatus(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
       const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
@@ -800,7 +861,12 @@ export async function updateSettlementStatus(
         });
       }
 
-      const jobPosting = jobDoc.data() as JobPosting;
+      const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobPosting) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고 데이터를 파싱할 수 없습니다',
+        });
+      }
 
       if (jobPosting.ownerId !== ownerId) {
         throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -823,7 +889,7 @@ export async function updateSettlementStatus(
 
     logger.info('정산 상태 변경 완료', { workLogId, status });
   } catch (error) {
-    logger.error('정산 상태 변경 실패', error as Error, { workLogId, status });
+    logger.error('정산 상태 변경 실패', toError(error), { workLogId, status });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -853,7 +919,12 @@ export async function getJobPostingSettlementSummary(
       });
     }
 
-    const jobPosting = jobDoc.data() as JobPosting;
+    const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!jobPosting) {
+      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+        userMessage: '공고 데이터를 파싱할 수 없습니다',
+      });
+    }
 
     if (jobPosting.ownerId !== ownerId) {
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -869,10 +940,12 @@ export async function getJobPostingSettlementSummary(
     );
     const snapshot = await getDocs(q);
 
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }))
+    );
 
     // 3. 통계 계산
     let completedWorkLogs = 0;
@@ -959,7 +1032,7 @@ export async function getJobPostingSettlementSummary(
 
     return summary;
   } catch (error) {
-    logger.error('공고별 정산 요약 조회 실패', error as Error, { jobPostingId });
+    logger.error('공고별 정산 요약 조회 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -993,10 +1066,12 @@ export async function getMySettlementSummary(
     );
 
     const jobsSnapshot = await getDocs(jobsQuery);
-    const jobPostings = jobsSnapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as JobPosting[];
+    const jobPostings = parseJobPostingDocuments(
+      jobsSnapshot.docs.map((docSnap) => ({
+        id: docSnap.id,
+        ...docSnap.data(),
+      }))
+    );
 
     // 2. 각 공고별 정산 요약 조회
     const summaries: JobPostingSettlementSummary[] = [];
@@ -1028,7 +1103,7 @@ export async function getMySettlementSummary(
 
     return result;
   } catch (error) {
-    logger.error('전체 정산 요약 조회 실패', error as Error, { ownerId });
+    logger.error('전체 정산 요약 조회 실패', toError(error), { ownerId });
     throw mapFirebaseError(error);
   }
 }

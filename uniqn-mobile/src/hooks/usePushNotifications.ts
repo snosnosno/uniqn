@@ -21,6 +21,7 @@ import {
 import { navigateFromNotification } from '@/services/deepLinkService';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -165,7 +166,7 @@ export function usePushNotifications(
             router.push('/(app)/(tabs)/notifications');
           }
         } catch (error) {
-          logger.error('알림 네비게이션 실패', error as Error);
+          logger.error('알림 네비게이션 실패', toError(error));
           router.push('/(app)/(tabs)/notifications');
         }
       }
@@ -199,7 +200,7 @@ export function usePushNotifications(
       setIsInitialized(true);
       logger.info('푸시 알림 훅 초기화 완료');
     } catch (error) {
-      logger.error('푸시 알림 초기화 실패', error as Error);
+      logger.error('푸시 알림 초기화 실패', toError(error));
     } finally {
       isInitializingRef.current = false;
     }
@@ -216,7 +217,7 @@ export function usePushNotifications(
       setPermissionStatus(result.status);
       return result.granted;
     } catch (error) {
-      logger.error('권한 요청 실패', error as Error);
+      logger.error('권한 요청 실패', toError(error));
       return false;
     } finally {
       setIsRequestingPermission(false);
@@ -237,7 +238,7 @@ export function usePushNotifications(
       setIsTokenRegistered(success);
       return success;
     } catch (error) {
-      logger.error('토큰 등록 실패', error as Error);
+      logger.error('토큰 등록 실패', toError(error));
       return false;
     }
   }, [userId]);
@@ -255,7 +256,7 @@ export function usePushNotifications(
       setIsTokenRegistered(false);
       return success;
     } catch (error) {
-      logger.error('토큰 해제 실패', error as Error);
+      logger.error('토큰 해제 실패', toError(error));
       return false;
     }
   }, [userId]);
@@ -308,7 +309,7 @@ export function usePushNotifications(
     const refreshInterval = setInterval(() => {
       logger.info('FCM 토큰 주기적 갱신 시작');
       registerToken().catch((error) => {
-        logger.error('토큰 갱신 실패', error as Error);
+        logger.error('토큰 갱신 실패', toError(error));
       });
     }, TOKEN_REFRESH_INTERVAL);
 

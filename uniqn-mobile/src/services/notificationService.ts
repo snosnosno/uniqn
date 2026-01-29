@@ -43,6 +43,7 @@ import type {
   NotificationFilter,
 } from '@/types/notification';
 import { createDefaultNotificationSettings } from '@/types/notification';
+import { parseNotificationSettingsDocument } from '@/schemas';
 
 // ============================================================================
 // Constants
@@ -415,7 +416,13 @@ export async function getNotificationSettings(userId: string): Promise<Notificat
       return createDefaultNotificationSettings();
     }
 
-    return docSnap.data() as NotificationSettings;
+    const parsed = parseNotificationSettingsDocument(docSnap.data());
+    if (!parsed) {
+      logger.warn('알림 설정 문서 파싱 실패, 기본값 반환', { userId });
+      return createDefaultNotificationSettings();
+    }
+
+    return parsed;
   }, 'getNotificationSettings');
 }
 

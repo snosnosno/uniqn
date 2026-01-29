@@ -15,6 +15,7 @@ import {
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
+import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
@@ -138,7 +139,7 @@ export function useApplications() {
       addToast({ type: 'success', message: '지원이 취소되었습니다.' });
     },
     onError: (error, _, context) => {
-      logger.error('지원 취소 실패', error as Error);
+      logger.error('지원 취소 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '취소에 실패했습니다.',
@@ -206,7 +207,7 @@ export function useApplications() {
       addToast({ type: 'success', message: '취소 요청이 제출되었습니다.' });
     },
     onError: (error, _, context) => {
-      logger.error('취소 요청 실패', error as Error);
+      logger.error('취소 요청 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '취소 요청에 실패했습니다.',

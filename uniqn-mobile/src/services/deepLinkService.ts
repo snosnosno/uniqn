@@ -20,6 +20,7 @@ import * as ExpoLinking from 'expo-linking';
 import { router } from 'expo-router';
 import { logger } from '@/utils/logger';
 import { trackEvent } from './analyticsService';
+import { toError } from '@/errors';
 import type { NotificationType } from '@/types/notification';
 
 // ============================================================================
@@ -337,7 +338,7 @@ export function parseDeepLink(url: string): ParsedDeepLink {
       isValid: route !== null,
     };
   } catch (error) {
-    logger.error('딥링크 파싱 실패', error as Error, { url });
+    logger.error('딥링크 파싱 실패', toError(error), { url });
     return {
       url,
       path: '',
@@ -380,7 +381,7 @@ export async function navigateToDeepLink(url: string): Promise<boolean> {
 
     return true;
   } catch (error) {
-    logger.error('딥링크 네비게이션 실패', error as Error, { url });
+    logger.error('딥링크 네비게이션 실패', toError(error), { url });
     return false;
   }
 }
@@ -441,7 +442,7 @@ export async function navigateFromNotification(
     logger.info('알림 네비게이션 성공', { type, route: route.name });
     return true;
   } catch (error) {
-    logger.error('알림 네비게이션 실패', error as Error, { type });
+    logger.error('알림 네비게이션 실패', toError(error), { type });
     return false;
   }
 }
@@ -526,7 +527,7 @@ export async function getInitialDeepLink(): Promise<string | null> {
     const url = await Linking.getInitialURL();
     return url;
   } catch (error) {
-    logger.error('초기 딥링크 가져오기 실패', error as Error);
+    logger.error('초기 딥링크 가져오기 실패', toError(error));
     return null;
   }
 }
@@ -544,7 +545,7 @@ export async function openExternalUrl(url: string): Promise<boolean> {
     logger.warn('URL을 열 수 없음', { url });
     return false;
   } catch (error) {
-    logger.error('외부 URL 열기 실패', error as Error, { url });
+    logger.error('외부 URL 열기 실패', toError(error), { url });
     return false;
   }
 }

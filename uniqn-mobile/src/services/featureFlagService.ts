@@ -19,6 +19,7 @@ import {
   fetchAndActivateRemoteConfig,
   getRemoteConfigBoolean,
 } from '@/lib/firebase';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Feature Flag 타입 정의
@@ -165,7 +166,7 @@ class FeatureFlagService {
       this.lastFetchTime = now;
       return true;
     } catch (error) {
-      logger.error('Failed to fetch feature flags', error as Error);
+      logger.error('Failed to fetch feature flags', toError(error));
       // 에러 시 기본값 유지
       return false;
     }

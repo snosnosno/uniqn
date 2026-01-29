@@ -23,7 +23,9 @@ import {
   BusinessError,
   PermissionError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
+import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { FIREBASE_LIMITS } from '@/constants';
 import { migrateJobPostingForWrite } from './jobPostingMigration';
 import type {
@@ -398,7 +400,7 @@ export async function createJobPosting(
     logger.info('공고 생성 완료', { id: result.id, title: input.title });
     return result;
   } catch (error) {
-    logger.error('공고 생성 실패', error as Error, { ownerId });
+    logger.error('공고 생성 실패', toError(error), { ownerId });
     throw mapFirebaseError(error);
   }
 }
@@ -428,7 +430,12 @@ export async function updateJobPosting(
         });
       }
 
-      const currentData = jobDoc.data() as JobPosting;
+      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!currentData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
@@ -495,7 +502,7 @@ export async function updateJobPosting(
 
     return result;
   } catch (error) {
-    logger.error('공고 수정 실패', error as Error, { jobPostingId });
+    logger.error('공고 수정 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -527,7 +534,12 @@ export async function deleteJobPosting(
         });
       }
 
-      const currentData = jobDoc.data() as JobPosting;
+      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!currentData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
@@ -553,7 +565,7 @@ export async function deleteJobPosting(
 
     logger.info('공고 삭제 완료', { jobPostingId });
   } catch (error) {
-    logger.error('공고 삭제 실패', error as Error, { jobPostingId });
+    logger.error('공고 삭제 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -581,7 +593,12 @@ export async function closeJobPosting(
         });
       }
 
-      const currentData = jobDoc.data() as JobPosting;
+      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!currentData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
@@ -605,7 +622,7 @@ export async function closeJobPosting(
 
     logger.info('공고 마감 완료', { jobPostingId });
   } catch (error) {
-    logger.error('공고 마감 실패', error as Error, { jobPostingId });
+    logger.error('공고 마감 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -633,7 +650,12 @@ export async function reopenJobPosting(
         });
       }
 
-      const currentData = jobDoc.data() as JobPosting;
+      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!currentData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 본인 확인
       if (currentData.ownerId !== ownerId) {
@@ -675,7 +697,7 @@ export async function reopenJobPosting(
 
     logger.info('공고 재오픈 완료', { jobPostingId });
   } catch (error) {
-    logger.error('공고 재오픈 실패', error as Error, { jobPostingId });
+    logger.error('공고 재오픈 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
@@ -696,6 +718,9 @@ export async function getMyJobPostingStats(
     const q = query(jobsRef, where('ownerId', '==', ownerId));
 
     const snapshot = await getDocs(q);
+    const jobPostings = parseJobPostingDocuments(
+      snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
+    );
 
     const stats: JobPostingStats = {
       total: 0,
@@ -706,8 +731,7 @@ export async function getMyJobPostingStats(
       totalViews: 0,
     };
 
-    snapshot.docs.forEach((docSnapshot) => {
-      const data = docSnapshot.data() as JobPosting;
+    jobPostings.forEach((data) => {
       stats.total++;
       stats.totalApplications += data.applicationCount ?? 0;
       stats.totalViews += data.viewCount ?? 0;
@@ -729,7 +753,7 @@ export async function getMyJobPostingStats(
 
     return stats;
   } catch (error) {
-    logger.error('내 공고 통계 조회 실패', error as Error, { ownerId });
+    logger.error('내 공고 통계 조회 실패', toError(error), { ownerId });
     throw mapFirebaseError(error);
   }
 }
@@ -757,8 +781,8 @@ export async function bulkUpdateJobPostingStatus(
           const jobDoc = await transaction.get(jobRef);
 
           if (jobDoc.exists()) {
-            const data = jobDoc.data() as JobPosting;
-            if (data.ownerId === ownerId) {
+            const data = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+            if (data && data.ownerId === ownerId) {
               transaction.update(jobRef, {
                 status,
                 updatedAt: serverTimestamp(),
@@ -774,7 +798,7 @@ export async function bulkUpdateJobPostingStatus(
 
     return successCount;
   } catch (error) {
-    logger.error('공고 상태 일괄 변경 실패', error as Error);
+    logger.error('공고 상태 일괄 변경 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }

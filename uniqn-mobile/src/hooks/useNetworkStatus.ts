@@ -15,6 +15,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Platform } from 'react-native';
 import NetInfo, { type NetInfoState, NetInfoStateType } from '@react-native-community/netinfo';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -177,7 +178,7 @@ export function useNetworkStatus(
 
       return online;
     } catch (error) {
-      logger.error('네트워크 상태 확인 실패', error as Error, {
+      logger.error('네트워크 상태 확인 실패', toError(error), {
         component: 'useNetworkStatus',
       });
 

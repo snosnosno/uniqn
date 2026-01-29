@@ -30,7 +30,9 @@ import {
   BusinessError,
   PermissionError,
   ERROR_CODES,
+  toError,
 } from '@/errors';
+import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { trackJobApply, trackEvent } from './analyticsService';
 import { startApiTrace } from './performanceService';
 import type {
@@ -155,10 +157,11 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
     const jobPostingIds = new Set<string>();
 
     for (const docSnapshot of snapshot.docs) {
-      const application = {
-        id: docSnapshot.id,
-        ...docSnapshot.data(),
-      } as Application;
+      const application = parseApplicationDocument({ id: docSnapshot.id, ...docSnapshot.data() });
+      if (!application) {
+        logger.warn('지원서 데이터 파싱 실패', { docId: docSnapshot.id });
+        continue;
+      }
 
       applications.push(application);
 
@@ -175,7 +178,7 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
         try {
           const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId));
           if (jobDoc.exists()) {
-            return { id: jobDoc.id, ...jobDoc.data() } as JobPosting;
+            return parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
           }
           return null;
         } catch (error) {
@@ -209,7 +212,7 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
 
     return applicationsWithJobs;
   } catch (error) {
-    logger.error('내 지원 내역 조회 실패', error as Error, { applicantId });
+    logger.error('내 지원 내역 조회 실패', toError(error), { applicantId });
     throw mapFirebaseError(error);
   }
 }
@@ -230,10 +233,11 @@ export async function getApplicationById(
       return null;
     }
 
-    const application = {
-      id: docSnap.id,
-      ...docSnap.data(),
-    } as Application;
+    const application = parseApplicationDocument({ id: docSnap.id, ...docSnap.data() });
+    if (!application) {
+      logger.warn('지원 상세 데이터 파싱 실패', { applicationId });
+      return null;
+    }
 
     // 공고 정보 가져오기
     const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, application.jobPostingId));
@@ -241,11 +245,11 @@ export async function getApplicationById(
     return {
       ...application,
       jobPosting: jobDoc.exists()
-        ? ({ id: jobDoc.id, ...jobDoc.data() } as JobPosting)
+        ? parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() }) ?? undefined
         : undefined,
     };
   } catch (error) {
-    logger.error('지원 상세 조회 실패', error as Error, { applicationId });
+    logger.error('지원 상세 조회 실패', toError(error), { applicationId });
     throw mapFirebaseError(error);
   }
 }
@@ -270,7 +274,12 @@ export async function cancelApplication(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '지원 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 본인 확인
       if (applicationData.applicantId !== applicantId) {
@@ -312,7 +321,7 @@ export async function cancelApplication(
     // Analytics 이벤트
     trackEvent('application_cancel', { application_id: applicationId });
   } catch (error) {
-    logger.error('지원 취소 실패', error as Error, { applicationId });
+    logger.error('지원 취소 실패', toError(error), { applicationId });
     throw mapFirebaseError(error);
   }
 }
@@ -334,10 +343,13 @@ export async function hasAppliedToJob(
       return false;
     }
 
-    const data = docSnap.data() as Application;
+    const data = parseApplicationDocument({ id: docSnap.id, ...docSnap.data() });
+    if (!data) {
+      return false;
+    }
     return data.status !== 'cancelled';
   } catch (error) {
-    logger.error('지원 여부 확인 실패', error as Error, { jobPostingId, applicantId });
+    logger.error('지원 여부 확인 실패', toError(error), { jobPostingId, applicantId });
     return false;
   }
 }
@@ -369,7 +381,7 @@ export async function getApplicationStats(
 
     return stats;
   } catch (error) {
-    logger.error('지원 통계 조회 실패', error as Error, { applicantId });
+    logger.error('지원 통계 조회 실패', toError(error), { applicantId });
     throw mapFirebaseError(error);
   }
 }
@@ -431,7 +443,12 @@ export async function applyToJobV2(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 3. 공고 상태 확인
       if (jobData.status !== 'active') {
@@ -487,8 +504,8 @@ export async function applyToJobV2(
 
       const existingApp = await transaction.get(applicationRef);
       if (existingApp.exists()) {
-        const existingData = existingApp.data() as Application;
-        if (existingData.status !== 'cancelled') {
+        const existingData = parseApplicationDocument({ id: existingApp.id, ...existingApp.data() });
+        if (existingData && existingData.status !== 'cancelled') {
           throw new AlreadyAppliedError({
             userMessage: '이미 지원한 공고입니다',
             jobPostingId: input.jobPostingId,
@@ -580,7 +597,7 @@ export async function applyToJobV2(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    logger.error('지원하기 v2.0 실패', error as Error, {
+    logger.error('지원하기 v2.0 실패', toError(error), {
       jobPostingId: input.jobPostingId,
       applicantId,
     });
@@ -644,7 +661,12 @@ export async function requestCancellation(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '지원 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 1. 본인 확인
       if (applicationData.applicantId !== applicantId) {
@@ -705,7 +727,7 @@ export async function requestCancellation(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    logger.error('취소 요청 제출 실패', error as Error, {
+    logger.error('취소 요청 제출 실패', toError(error), {
       applicationId: input.applicationId,
       applicantId,
     });
@@ -761,7 +783,12 @@ export async function reviewCancellationRequest(
         });
       }
 
-      const applicationData = applicationDoc.data() as Application;
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '지원 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 1. 공고 정보 조회 및 소유자 확인
       const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
@@ -773,7 +800,12 @@ export async function reviewCancellationRequest(
         });
       }
 
-      const jobData = jobDoc.data() as JobPosting;
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
 
       if (jobData.ownerId !== reviewerId) {
         throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
@@ -844,7 +876,7 @@ export async function reviewCancellationRequest(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    logger.error('취소 요청 검토 실패', error as Error, {
+    logger.error('취소 요청 검토 실패', toError(error), {
       applicationId: input.applicationId,
       reviewerId,
     });
@@ -881,7 +913,12 @@ export async function getCancellationRequests(
       });
     }
 
-    const jobData = jobDoc.data() as JobPosting;
+    const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    if (!jobData) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '공고 데이터가 올바르지 않습니다',
+      });
+    }
     if (jobData.ownerId !== ownerId) {
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
         userMessage: '본인의 공고만 조회할 수 있습니다',
@@ -899,11 +936,16 @@ export async function getCancellationRequests(
 
     const snapshot = await getDocs(q);
 
-    const applications: ApplicationWithJob[] = snapshot.docs.map((docSnapshot) => ({
-      ...docSnapshot.data(),
-      id: docSnapshot.id,
-      jobPosting: { ...jobData, id: jobDoc.id },
-    })) as ApplicationWithJob[];
+    const applications: ApplicationWithJob[] = [];
+    for (const docSnapshot of snapshot.docs) {
+      const application = parseApplicationDocument({ id: docSnapshot.id, ...docSnapshot.data() });
+      if (application) {
+        applications.push({
+          ...application,
+          jobPosting: jobData,
+        });
+      }
+    }
 
     logger.info('취소 요청 목록 조회 완료', {
       jobPostingId,
@@ -912,7 +954,7 @@ export async function getCancellationRequests(
 
     return applications;
   } catch (error) {
-    logger.error('취소 요청 목록 조회 실패', error as Error, { jobPostingId });
+    logger.error('취소 요청 목록 조회 실패', toError(error), { jobPostingId });
 
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;

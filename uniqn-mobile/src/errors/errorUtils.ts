@@ -15,6 +15,103 @@ import {
 import { mapFirebaseError, isFirebaseError } from './firebaseErrorMapper';
 
 // ============================================================================
+// Error Type Conversion (Lightweight)
+// ============================================================================
+
+/**
+ * unknown 타입을 안전하게 Error로 변환 (로깅용)
+ *
+ * @description logger.error()에서 사용. normalizeError()보다 가볍고
+ * Error 타입만 필요한 경우에 적합
+ *
+ * @example
+ * try {
+ *   await someOperation();
+ * } catch (error) {
+ *   logger.error('작업 실패', toError(error), { context });
+ * }
+ */
+export function toError(error: unknown): Error {
+  // 이미 Error 인스턴스인 경우
+  if (error instanceof Error) {
+    return error;
+  }
+
+  // AppError인 경우 (Error를 상속하므로 위에서 처리되지만 명시적으로)
+  if (isAppError(error)) {
+    return error;
+  }
+
+  // 문자열 에러
+  if (typeof error === 'string') {
+    return new Error(error);
+  }
+
+  // 객체에 message 필드가 있는 경우
+  if (
+    error !== null &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  ) {
+    const err = new Error((error as { message: string }).message);
+    // code가 있으면 추가
+    if ('code' in error && typeof (error as { code: unknown }).code === 'string') {
+      (err as Error & { code?: string }).code = (error as { code: string }).code;
+    }
+    return err;
+  }
+
+  // null/undefined
+  if (error === null || error === undefined) {
+    return new Error('Unknown error occurred');
+  }
+
+  // 그 외 모든 경우
+  return new Error(String(error));
+}
+
+/**
+ * unknown 에러에서 에러 코드 추출
+ *
+ * @description Firebase 에러 등에서 코드를 안전하게 추출
+ */
+export function getErrorCode(error: unknown): string | undefined {
+  if (
+    error !== null &&
+    typeof error === 'object' &&
+    'code' in error &&
+    typeof (error as { code: unknown }).code === 'string'
+  ) {
+    return (error as { code: string }).code;
+  }
+  return undefined;
+}
+
+/**
+ * unknown 에러에서 메시지 추출
+ *
+ * @description 로깅 컨텍스트에 에러 정보를 포함할 때 사용
+ */
+export function getErrorMessageFromUnknown(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  if (
+    error !== null &&
+    typeof error === 'object' &&
+    'message' in error &&
+    typeof (error as { message: unknown }).message === 'string'
+  ) {
+    return (error as { message: string }).message;
+  }
+  return String(error);
+}
+
+// ============================================================================
 // Error Normalization
 // ============================================================================
 

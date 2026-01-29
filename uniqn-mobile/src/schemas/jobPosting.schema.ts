@@ -188,3 +188,101 @@ export const applicationMessageSchema = z
     message: '위험한 문자열이 포함되어 있습니다',
   })
   .optional();
+
+// ============================================================================
+// Firestore 문서 검증 스키마 (런타임 타입 검증)
+// ============================================================================
+
+import { logger } from '@/utils/logger';
+import type { JobPosting } from '@/types';
+
+/**
+ * JobPosting Firestore 문서 스키마 (런타임 검증)
+ *
+ * @description Firestore에서 읽은 데이터의 타입 안전성을 보장
+ * .passthrough()로 알려지지 않은 필드 허용 (하위 호환성)
+ */
+export const jobPostingDocumentSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  status: z.enum(['active', 'closed', 'cancelled']),
+
+  // 장소 정보
+  location: z.object({
+    name: z.string(),
+    district: z.string().optional(),
+  }),
+  detailedAddress: z.string().optional(),
+  contactPhone: z.string().optional(),
+
+  // 일정 정보 (쿼리용 필수 필드)
+  workDate: z.string(),
+  timeSlot: z.string(),
+
+  // 모집 정보
+  roles: z.array(z.object({
+    role: z.string(),
+    count: z.number(),
+    filled: z.number().optional(),
+    customRole: z.string().optional(),
+    salary: z.object({
+      type: salaryTypeSchema,
+      amount: z.number(),
+    }).optional(),
+  })),
+  totalPositions: z.number(),
+  filledPositions: z.number(),
+
+  // 소유자 정보
+  ownerId: z.string(),
+  ownerName: z.string().optional(),
+
+  // 메타데이터
+  postingType: postingTypeSchema.optional(),
+  isUrgent: z.boolean().optional(),
+  viewCount: z.number().optional(),
+  applicationCount: z.number().optional(),
+
+  // Timestamps (Firebase Timestamp 또는 any)
+  createdAt: z.any(),
+  updatedAt: z.any(),
+}).passthrough();
+
+export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
+
+/**
+ * 단일 JobPosting 문서 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터
+ * @returns 검증된 JobPosting 또는 null (검증 실패 시)
+ */
+export function parseJobPostingDocument(data: unknown): JobPosting | null {
+  const result = jobPostingDocumentSchema.safeParse(data);
+  if (!result.success) {
+    logger.warn('JobPosting 문서 검증 실패', {
+      errors: result.error.flatten(),
+      component: 'jobPosting.schema',
+    });
+    return null;
+  }
+  return result.data as JobPosting;
+}
+
+/**
+ * JobPosting 문서 배열 안전 파싱
+ *
+ * @param data Firestore에서 읽은 원시 데이터 배열
+ * @returns 검증된 JobPosting 배열 (검증 실패 항목은 제외)
+ */
+export function parseJobPostingDocuments(data: unknown[]): JobPosting[] {
+  return data
+    .map((item) => parseJobPostingDocument(item))
+    .filter((item): item is JobPosting => item !== null);
+}
+
+/**
+ * JobPosting 타입 가드
+ */
+export function isJobPostingDocument(data: unknown): data is JobPosting {
+  return jobPostingDocumentSchema.safeParse(data).success;
+}

@@ -22,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import { mapFirebaseError, toError } from '@/errors';
 import { startApiTrace } from '@/services/performanceService';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/types';
@@ -169,7 +169,7 @@ export async function getJobPostings(
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
-    logger.error('공고 목록 조회 실패', error as Error);
+    logger.error('공고 목록 조회 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -208,7 +208,7 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
-    logger.error('공고 상세 조회 실패', error as Error, { id });
+    logger.error('공고 상세 조회 실패', toError(error), { id });
     throw mapFirebaseError(error);
   }
 }
@@ -261,7 +261,7 @@ export async function searchJobPostings(
 
     return filteredItems.slice(0, pageSize);
   } catch (error) {
-    logger.error('공고 검색 실패', error as Error, { searchTerm });
+    logger.error('공고 검색 실패', toError(error), { searchTerm });
     throw mapFirebaseError(error);
   }
 }
@@ -276,7 +276,7 @@ export async function getUrgentJobPostings(
     const { items } = await getJobPostings({ status: 'active', isUrgent: true }, pageSize);
     return items;
   } catch (error) {
-    logger.error('긴급 공고 조회 실패', error as Error);
+    logger.error('긴급 공고 조회 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -311,7 +311,7 @@ export async function getMyJobPostings(
 
     return items;
   } catch (error) {
-    logger.error('내 공고 조회 실패', error as Error, { ownerId });
+    logger.error('내 공고 조회 실패', toError(error), { ownerId });
     throw mapFirebaseError(error);
   }
 }

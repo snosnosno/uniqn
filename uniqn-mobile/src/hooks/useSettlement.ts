@@ -26,6 +26,7 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import type { PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -106,7 +107,7 @@ export function useCalculateSettlement() {
       });
     },
     onError: (error) => {
-      logger.error('정산 금액 계산 실패', error as Error);
+      logger.error('정산 금액 계산 실패', toError(error));
     },
   });
 }
@@ -150,7 +151,7 @@ export function useUpdateWorkTime() {
       });
     },
     onError: (error) => {
-      logger.error('근무 시간 수정 실패', error as Error);
+      logger.error('근무 시간 수정 실패', toError(error));
       addToast({
         type: 'error',
         message: error instanceof Error ? error.message : '시간 수정에 실패했습니다.',
@@ -204,7 +205,7 @@ export function useSettleWorkLog() {
       });
     },
     onError: (error) => {
-      logger.error('개별 정산 실패', error as Error);
+      logger.error('개별 정산 실패', toError(error));
       addToast({
         type: 'error',
         message: '정산 처리에 실패했습니다.',
@@ -258,7 +259,7 @@ export function useBulkSettlement() {
       });
     },
     onError: (error) => {
-      logger.error('일괄 정산 실패', error as Error);
+      logger.error('일괄 정산 실패', toError(error));
       addToast({
         type: 'error',
         message: '일괄 정산에 실패했습니다.',
@@ -308,7 +309,7 @@ export function useUpdateSettlementStatus() {
       });
     },
     onError: (error) => {
-      logger.error('정산 상태 변경 실패', error as Error);
+      logger.error('정산 상태 변경 실패', toError(error));
       addToast({
         type: 'error',
         message: '상태 변경에 실패했습니다.',

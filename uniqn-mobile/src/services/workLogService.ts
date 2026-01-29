@@ -23,7 +23,8 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
-import { mapFirebaseError, BusinessError, ERROR_CODES } from '@/errors';
+import { mapFirebaseError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import { trackSettlementComplete } from './analyticsService';
 import { RealtimeManager } from '@/shared/realtime';
 import type { WorkLog, PayrollStatus } from '@/types';
@@ -85,16 +86,15 @@ export async function getMyWorkLogs(
     );
 
     const snapshot = await getDocs(q);
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    );
 
     logger.info('근무 기록 목록 조회 완료', { count: workLogs.length });
 
     return workLogs;
   } catch (error) {
-    logger.error('근무 기록 목록 조회 실패', error as Error, { staffId: maskSensitiveId(staffId) });
+    logger.error('근무 기록 목록 조회 실패', toError(error), { staffId: maskSensitiveId(staffId) });
     throw mapFirebaseError(error);
   }
 }
@@ -116,10 +116,9 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
     );
 
     const snapshot = await getDocs(q);
-    const workLogs = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    );
 
     // createdAt 기준 오름차순 정렬 (JS)
     return workLogs.sort((a, b) => {
@@ -130,7 +129,7 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
   } catch (error) {
     // Firebase 에러 코드만 로깅 (상세 메시지는 보안상 제외)
     const firebaseCode = (error as { code?: string })?.code || 'unknown';
-    logger.error('날짜별 근무 기록 조회 실패', error as Error, {
+    logger.error('날짜별 근무 기록 조회 실패', toError(error), {
       staffId: maskSensitiveId(staffId),
       date,
       firebaseErrorCode: firebaseCode,
@@ -153,9 +152,9 @@ export async function getWorkLogById(workLogId: string): Promise<WorkLog | null>
       return null;
     }
 
-    return { id: docSnap.id, ...docSnap.data() } as WorkLog;
+    return parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
   } catch (error) {
-    logger.error('근무 기록 상세 조회 실패', error as Error, { workLogId });
+    logger.error('근무 기록 상세 조회 실패', toError(error), { workLogId });
     throw mapFirebaseError(error);
   }
 }
@@ -173,7 +172,7 @@ export async function getTodayCheckedInWorkLog(staffId: string): Promise<WorkLog
 
     return workLogs.find((wl) => wl.status === 'checked_in') || null;
   } catch (error) {
-    logger.error('오늘 출근 기록 조회 실패', error as Error, { staffId: maskSensitiveId(staffId) });
+    logger.error('오늘 출근 기록 조회 실패', toError(error), { staffId: maskSensitiveId(staffId) });
     throw mapFirebaseError(error);
   }
 }
@@ -208,10 +207,9 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
     );
 
     const snapshot = await getDocs(q);
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    );
 
     let completedCount = 0;
     let totalHoursWorked = 0;
@@ -259,7 +257,7 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
       completedPayroll,
     };
   } catch (error) {
-    logger.error('근무 기록 통계 조회 실패', error as Error, { staffId: maskSensitiveId(staffId) });
+    logger.error('근무 기록 통계 조회 실패', toError(error), { staffId: maskSensitiveId(staffId) });
     throw mapFirebaseError(error);
   }
 }
@@ -293,10 +291,9 @@ export async function getMonthlyPayroll(
     );
 
     const snapshot = await getDocs(q);
-    const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as WorkLog[];
+    const workLogs = parseWorkLogDocuments(
+      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+    );
 
     let totalAmount = 0;
     let pendingAmount = 0;
@@ -320,7 +317,7 @@ export async function getMonthlyPayroll(
       workLogs,
     };
   } catch (error) {
-    logger.error('월별 정산 조회 실패', error as Error, { staffId: maskSensitiveId(staffId), year, month });
+    logger.error('월별 정산 조회 실패', toError(error), { staffId: maskSensitiveId(staffId), year, month });
     throw mapFirebaseError(error);
   }
 }
@@ -353,7 +350,12 @@ export async function updateWorkTime(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 이미 정산 완료된 경우 수정 불가
       if (workLog.payrollStatus === 'completed') {
@@ -383,7 +385,7 @@ export async function updateWorkTime(
 
     logger.info('근무 시간 수정 완료', { workLogId });
   } catch (error) {
-    logger.error('근무 시간 수정 실패', error as Error, { workLogId });
+    logger.error('근무 시간 수정 실패', toError(error), { workLogId });
     throw error instanceof Error ? error : mapFirebaseError(error);
   }
 }
@@ -413,7 +415,12 @@ export async function updatePayrollStatus(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+          userMessage: '근무 기록 데이터가 올바르지 않습니다',
+        });
+      }
 
       // 중복 정산 방지
       if (status === 'completed' && workLog.payrollStatus === 'completed') {
@@ -445,7 +452,7 @@ export async function updatePayrollStatus(
       trackSettlementComplete(amount, 1);
     }
   } catch (error) {
-    logger.error('정산 상태 업데이트 실패', error as Error, { workLogId });
+    logger.error('정산 상태 업데이트 실패', toError(error), { workLogId });
     throw error instanceof Error ? error : mapFirebaseError(error);
   }
 }
@@ -494,10 +501,12 @@ export function subscribeToWorkLog(
             return;
           }
 
-          const workLog: WorkLog = {
-            id: docSnap.id,
-            ...docSnap.data(),
-          } as WorkLog;
+          const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
+          if (!workLog) {
+            logger.warn('근무 기록 데이터 파싱 실패', { workLogId });
+            callbacks.onUpdate(null);
+            return;
+          }
 
           logger.debug('근무 기록 업데이트 수신', {
             workLogId,
@@ -569,10 +578,9 @@ export function subscribeToMyWorkLogs(
       return onSnapshot(
         q,
         (snapshot) => {
-          const workLogs: WorkLog[] = snapshot.docs.map((docSnap) => ({
-            id: docSnap.id,
-            ...docSnap.data(),
-          })) as WorkLog[];
+          const workLogs = parseWorkLogDocuments(
+            snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
+          );
 
           logger.debug('근무 기록 목록 업데이트 수신', {
             staffId: maskSensitiveId(staffId),
@@ -628,10 +636,12 @@ export function subscribeToTodayWorkStatus(
           }
 
           const docSnap = snapshot.docs[0];
-          const workLog: WorkLog = {
-            id: docSnap.id,
-            ...docSnap.data(),
-          } as WorkLog;
+          const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
+          if (!workLog) {
+            logger.warn('오늘 근무 기록 파싱 실패', { staffId: maskSensitiveId(staffId) });
+            callbacks.onUpdate(null);
+            return;
+          }
 
           logger.debug('오늘 근무 상태 업데이트', {
             staffId: maskSensitiveId(staffId),

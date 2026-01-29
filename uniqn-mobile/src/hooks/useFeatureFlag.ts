@@ -19,6 +19,7 @@ import {
   type FeatureFlags,
 } from '@/services/featureFlagService';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 
 // ============================================================================
 // 기본 훅: 단일 Feature Flag 조회
@@ -99,7 +100,7 @@ export function useFeatureFlagWithStatus(key: FeatureFlagKey): FeatureFlagStatus
       await featureFlagService.fetchAndActivate();
       setIsEnabled(featureFlagService.getFlag(key));
     } catch (error) {
-      logger.error('Failed to refresh feature flag', error as Error, { key });
+      logger.error('Failed to refresh feature flag', toError(error), { key });
       setHasError(true);
     } finally {
       setIsLoading(false);
@@ -112,7 +113,7 @@ export function useFeatureFlagWithStatus(key: FeatureFlagKey): FeatureFlagStatus
         await featureFlagService.initialize();
         setIsEnabled(featureFlagService.getFlag(key));
       } catch (error) {
-        logger.error('Failed to initialize feature flag', error as Error, { key });
+        logger.error('Failed to initialize feature flag', toError(error), { key });
         setHasError(true);
       } finally {
         setIsLoading(false);

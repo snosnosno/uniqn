@@ -45,6 +45,7 @@ import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import type * as NotificationsTypes from 'expo-notifications';
 import { logger } from '@/utils/logger';
+import { toError } from '@/errors';
 import { crashlyticsService } from './crashlyticsService';
 import { registerFCMToken, unregisterFCMToken } from './notificationService';
 
@@ -217,8 +218,8 @@ export async function initialize(): Promise<boolean> {
     logger.info('푸시 알림 서비스 초기화 완료');
     return true;
   } catch (error) {
-    logger.error('푸시 알림 서비스 초기화 실패', error as Error);
-    crashlyticsService.recordError(error as Error, {
+    logger.error('푸시 알림 서비스 초기화 실패', toError(error));
+    crashlyticsService.recordError(toError(error), {
       component: 'pushNotificationService',
       action: 'initialize',
     });
@@ -245,7 +246,7 @@ async function setupAndroidChannels(): Promise<void> {
     }
     logger.info('Android 알림 채널 설정 완료', { channels: DEFAULT_CHANNELS.length });
   } catch (error) {
-    logger.error('Android 알림 채널 설정 실패', error as Error);
+    logger.error('Android 알림 채널 설정 실패', toError(error));
   }
 }
 
@@ -362,7 +363,7 @@ export async function checkPermission(): Promise<NotificationPermissionStatus> {
       } : undefined,
     };
   } catch (error) {
-    logger.error('알림 권한 확인 실패', error as Error);
+    logger.error('알림 권한 확인 실패', toError(error));
     return {
       granted: false,
       canAskAgain: true,
@@ -408,7 +409,7 @@ export async function requestPermission(): Promise<NotificationPermissionStatus>
     logger.info('푸시 알림 권한 요청 결과', { status: result.status, granted: result.granted });
     return result;
   } catch (error) {
-    logger.error('알림 권한 요청 실패', error as Error);
+    logger.error('알림 권한 요청 실패', toError(error));
     return {
       granted: false,
       canAskAgain: true,
@@ -465,8 +466,8 @@ export async function getToken(): Promise<PushTokenResult | null> {
       type: 'fcm',
     };
   } catch (error) {
-    logger.error('푸시 토큰 발급 실패', error as Error);
-    crashlyticsService.recordError(error as Error, {
+    logger.error('푸시 토큰 발급 실패', toError(error));
+    crashlyticsService.recordError(toError(error), {
       component: 'pushNotificationService',
       action: 'getToken',
     });
@@ -489,7 +490,7 @@ export async function registerToken(userId: string): Promise<boolean> {
     logger.info('푸시 토큰 등록 완료', { userId, type: tokenResult.type });
     return true;
   } catch (error) {
-    logger.error('푸시 토큰 등록 실패', error as Error);
+    logger.error('푸시 토큰 등록 실패', toError(error));
     return false;
   }
 }
@@ -509,7 +510,7 @@ export async function unregisterToken(userId: string): Promise<boolean> {
     logger.info('푸시 토큰 해제 완료', { userId });
     return true;
   } catch (error) {
-    logger.error('푸시 토큰 해제 실패', error as Error);
+    logger.error('푸시 토큰 해제 실패', toError(error));
     return false;
   }
 }
@@ -534,7 +535,7 @@ export async function setBadge(count: number): Promise<void> {
   try {
     await Notifications.setBadgeCountAsync(count);
   } catch (error) {
-    logger.error('뱃지 설정 실패', error as Error);
+    logger.error('뱃지 설정 실패', toError(error));
   }
 }
 
@@ -554,7 +555,7 @@ export async function getBadge(): Promise<number> {
   try {
     return await Notifications.getBadgeCountAsync();
   } catch (error) {
-    logger.error('뱃지 조회 실패', error as Error);
+    logger.error('뱃지 조회 실패', toError(error));
     return 0;
   }
 }
@@ -605,7 +606,7 @@ export async function scheduleLocalNotification(
     logger.info('로컬 알림 스케줄링', { identifier, title: payload.title });
     return identifier;
   } catch (error) {
-    logger.error('로컬 알림 스케줄링 실패', error as Error);
+    logger.error('로컬 알림 스케줄링 실패', toError(error));
     return null;
   }
 }
@@ -620,7 +621,7 @@ export async function cancelScheduledNotification(identifier: string): Promise<v
     await Notifications.cancelScheduledNotificationAsync(identifier);
     logger.info('스케줄 알림 취소', { identifier });
   } catch (error) {
-    logger.error('스케줄 알림 취소 실패', error as Error);
+    logger.error('스케줄 알림 취소 실패', toError(error));
   }
 }
 
@@ -634,7 +635,7 @@ export async function cancelAllScheduledNotifications(): Promise<void> {
     await Notifications.cancelAllScheduledNotificationsAsync();
     logger.info('모든 스케줄 알림 취소');
   } catch (error) {
-    logger.error('모든 스케줄 알림 취소 실패', error as Error);
+    logger.error('모든 스케줄 알림 취소 실패', toError(error));
   }
 }
 
@@ -648,7 +649,7 @@ export async function dismissAllNotifications(): Promise<void> {
     await Notifications.dismissAllNotificationsAsync();
     logger.info('모든 알림 닫기');
   } catch (error) {
-    logger.error('알림 닫기 실패', error as Error);
+    logger.error('알림 닫기 실패', toError(error));
   }
 }
 

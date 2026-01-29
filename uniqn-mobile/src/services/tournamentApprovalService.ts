@@ -22,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseFunctions, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, BusinessError, AuthError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
+import { mapFirebaseError, BusinessError, AuthError, PermissionError, ValidationError, ERROR_CODES, toError } from '@/errors';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import type {
   ApproveTournamentData,
@@ -119,7 +119,7 @@ export async function approveTournamentPosting(
 
     return result.data;
   } catch (error) {
-    logger.error('대회공고 승인 실패', error as Error, {
+    logger.error('대회공고 승인 실패', toError(error), {
       postingId: data.postingId,
     });
     throw mapFirebaseFunctionError(error);
@@ -157,7 +157,7 @@ export async function rejectTournamentPosting(
 
     return result.data;
   } catch (error) {
-    logger.error('대회공고 거부 실패', error as Error, {
+    logger.error('대회공고 거부 실패', toError(error), {
       postingId: data.postingId,
     });
     throw mapFirebaseFunctionError(error);
@@ -191,7 +191,7 @@ export async function resubmitTournamentPosting(
 
     return result.data;
   } catch (error) {
-    logger.error('대회공고 재제출 실패', error as Error, {
+    logger.error('대회공고 재제출 실패', toError(error), {
       postingId: data.postingId,
     });
     throw mapFirebaseFunctionError(error);
@@ -226,7 +226,7 @@ export async function getPendingTournamentPostings(): Promise<JobPosting[]> {
     logger.info('승인 대기 대회공고 목록 조회 완료', { count: postings.length });
     return postings;
   } catch (error) {
-    logger.error('승인 대기 대회공고 목록 조회 실패', error as Error);
+    logger.error('승인 대기 대회공고 목록 조회 실패', toError(error));
     throw mapFirebaseError(error);
   }
 }
@@ -257,7 +257,7 @@ export async function getTournamentPostingsByStatus(
     logger.info('대회공고 목록 조회 완료', { status, count: postings.length });
     return postings;
   } catch (error) {
-    logger.error('대회공고 목록 조회 실패', error as Error, { status });
+    logger.error('대회공고 목록 조회 실패', toError(error), { status });
     throw mapFirebaseError(error);
   }
 }
@@ -293,7 +293,7 @@ export async function getMyPendingTournamentPostings(
     });
     return postings;
   } catch (error) {
-    logger.error('내 대회공고 목록 조회 실패', error as Error, { ownerId });
+    logger.error('내 대회공고 목록 조회 실패', toError(error), { ownerId });
     throw mapFirebaseError(error);
   }
 }
@@ -330,7 +330,7 @@ export async function getTournamentPostingById(
     logger.info('대회공고 상세 조회 완료', { postingId });
     return posting;
   } catch (error) {
-    logger.error('대회공고 상세 조회 실패', error as Error, { postingId });
+    logger.error('대회공고 상세 조회 실패', toError(error), { postingId });
     throw mapFirebaseError(error);
   }
 }

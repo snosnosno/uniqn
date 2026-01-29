@@ -37,17 +37,17 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError } from '@/errors';
+import { mapFirebaseError, toError } from '@/errors';
 import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
   AlreadyCheckedInError,
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
+import { parseWorkLogDocument } from '@/schemas';
 import { trackCheckIn, trackCheckOut } from './analyticsService';
 import { parseTimeSlotToDate, toISODateString } from '@/utils/dateUtils';
 import type {
-  WorkLog,
   QRCodeAction,
   EventQRCode,
   EventQRDisplayData,
@@ -160,7 +160,7 @@ export async function generateEventQR(
 
     return { qrId: docRef.id, displayData };
   } catch (error) {
-    logger.error('이벤트 QR 생성 실패', error as Error, { ...input });
+    logger.error('이벤트 QR 생성 실패', toError(error), { ...input });
     throw mapFirebaseError(error);
   }
 }
@@ -262,7 +262,7 @@ export async function validateEventQR(
       action: qrData.action,
     };
   } catch (error) {
-    logger.error('QR 검증 실패', error as Error);
+    logger.error('QR 검증 실패', toError(error));
     return {
       isValid: false,
       errorMessage: 'QR 코드 검증 중 오류가 발생했습니다.',
@@ -327,7 +327,13 @@ export async function processEventQRCheckIn(
         });
       }
 
-      const workLog = workLogDoc.data() as WorkLog;
+      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+      if (!workLog) {
+        throw new InvalidQRCodeError({
+          message: '근무 기록 데이터가 유효하지 않습니다',
+          userMessage: '근무 기록을 처리할 수 없습니다',
+        });
+      }
 
       // 3-2. 상태 확인 및 출퇴근 처리
       if (action === 'checkIn') {
@@ -347,9 +353,9 @@ export async function processEventQRCheckIn(
         };
 
         // checkInTime이 없으면 timeSlot에서 파싱해서 저장
-        const workLogWithTimeSlot = workLog as WorkLog & { timeSlot?: string; checkInTime?: unknown };
-        if (!workLogWithTimeSlot.checkInTime && workLogWithTimeSlot.timeSlot && date) {
-          const { startTime } = parseTimeSlotToDate(workLogWithTimeSlot.timeSlot, date);
+        // workLog는 이미 parseWorkLogDocument로 검증됨 (timeSlot은 스키마에 optional로 정의됨)
+        if (!workLog.checkInTime && workLog.timeSlot && date) {
+          const { startTime } = parseTimeSlotToDate(workLog.timeSlot, date);
           if (startTime) {
             updateData.checkInTime = Timestamp.fromDate(startTime);
           }
@@ -360,7 +366,7 @@ export async function processEventQRCheckIn(
 
         return {
           action: 'checkIn' as const,
-          hasExistingCheckInTime: !!workLogWithTimeSlot.checkInTime,
+          hasExistingCheckInTime: !!workLog.checkInTime,
           workDuration: 0,
         };
       } else {
@@ -380,9 +386,9 @@ export async function processEventQRCheckIn(
         });
 
         // 근무 시간 계산
-        const workLogWithCheckIn = workLog as WorkLog;
+        // workLog는 이미 parseWorkLogDocument로 검증됨
         let workDuration = 0;
-        const checkInSource = workLogWithCheckIn.checkInTime;
+        const checkInSource = workLog.checkInTime;
         if (checkInSource) {
           const startTime =
             checkInSource instanceof Timestamp
@@ -416,7 +422,7 @@ export async function processEventQRCheckIn(
       message: result.action === 'checkIn' ? '출근이 완료되었습니다.' : '퇴근이 완료되었습니다.',
     };
   } catch (error) {
-    logger.error('QR 스캔 출퇴근 처리 실패', error as Error, { staffId });
+    logger.error('QR 스캔 출퇴근 처리 실패', toError(error), { staffId });
 
     if (
       error instanceof InvalidQRCodeError ||
@@ -468,7 +474,7 @@ export async function getActiveEventQR(
 
     return { id: docSnap.id, ...data };
   } catch (error) {
-    logger.error('활성 QR 조회 실패', error as Error, { jobPostingId, date, action });
+    logger.error('활성 QR 조회 실패', toError(error), { jobPostingId, date, action });
     return null;
   }
 }
@@ -483,7 +489,7 @@ export async function deactivateEventQR(qrId: string): Promise<void> {
     });
     logger.info('QR 코드 비활성화 완료', { qrId });
   } catch (error) {
-    logger.error('QR 코드 비활성화 실패', error as Error, { qrId });
+    logger.error('QR 코드 비활성화 실패', toError(error), { qrId });
     throw mapFirebaseError(error);
   }
 }
@@ -517,7 +523,7 @@ export async function cleanupExpiredQRCodes(): Promise<number> {
     logger.info('만료 QR 정리 완료', { count });
     return count;
   } catch (error) {
-    logger.error('만료 QR 정리 실패', error as Error);
+    logger.error('만료 QR 정리 실패', toError(error));
     return 0;
   }
 }
