@@ -20,12 +20,12 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import {
-  handleServiceError,
   BusinessError,
   PermissionError,
   ERROR_CODES,
   AlreadySettledError,
 } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toDateString } from '@/utils/date';
 import { FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';

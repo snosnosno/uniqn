@@ -17,7 +17,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { handleServiceError, handleSilentError } from '@/errors';
+import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { startApiTrace } from '@/services/performanceService';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';

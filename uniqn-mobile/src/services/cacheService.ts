@@ -12,7 +12,8 @@ import {
   STORAGE_KEYS,
   removeStorageItem,
 } from '@/lib/mmkvStorage';
-import { toError, handleSilentError } from '@/errors';
+import { toError } from '@/errors';
+import { handleSilentError } from '@/errors/serviceErrorHandler';
 
 // ============================================================================
 // Types

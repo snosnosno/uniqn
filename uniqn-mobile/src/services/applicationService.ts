@@ -22,8 +22,6 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import {
-  handleServiceError,
-  handleErrorWithDefault,
   AlreadyAppliedError,
   ApplicationClosedError,
   MaxCapacityReachedError,
@@ -32,6 +30,7 @@ import {
   PermissionError,
   ERROR_CODES,
 } from '@/errors';
+import { handleServiceError, handleErrorWithDefault } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { trackJobApply, trackEvent } from './analyticsService';
 import { startApiTrace } from './performanceService';
@@ -47,6 +46,7 @@ import type {
   StaffRole,
 } from '@/types';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
+import { applicationValidator } from '@/domains/application';
 
 // ============================================================================
 // Constants
@@ -61,69 +61,6 @@ const JOB_POSTINGS_COLLECTION = 'jobPostings';
 
 export interface ApplicationWithJob extends Application {
   jobPosting?: Partial<JobPosting>;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * 특정 역할의 정원 확인
- *
- * @description dateSpecificRequirements 또는 roles 배열에서 역할별 마감 상태 확인
- * 기존 getClosingStatus는 전체 정원만 확인하므로, 역할별 세부 확인 필요 시 사용
- *
- * @param jobData - 공고 데이터
- * @param appliedRole - 지원 역할
- * @returns 해당 역할의 모집 가능 여부 및 사유
- */
-function checkRoleCapacity(
-  jobData: JobPosting,
-  appliedRole: string
-): { available: boolean; reason?: string } {
-  /**
-   * 역할 매칭 헬퍼
-   * - 표준 역할: r.role === appliedRole
-   * - 커스텀 역할: r.role === 'other' && r.customRole === appliedRole
-   */
-  const matchesRole = (r: { role?: string; name?: string; customRole?: string }) => {
-    if (r.role === appliedRole || r.name === appliedRole) return true;
-    // 커스텀 역할 체크: role이 'other'이고 customRole이 appliedRole과 일치
-    if (r.role === 'other' && r.customRole === appliedRole) return true;
-    return false;
-  };
-
-  // dateSpecificRequirements가 있으면 역할별 마감 확인
-  if (jobData.dateSpecificRequirements?.length) {
-    for (const req of jobData.dateSpecificRequirements) {
-      for (const slot of req.timeSlots || []) {
-        const roleReq = slot.roles?.find(matchesRole);
-        if (roleReq) {
-          const total = roleReq.headcount ?? 0;
-          const filled = roleReq.filled ?? 0;
-          if (total > 0 && filled < total) {
-            return { available: true };
-          }
-        }
-      }
-    }
-    return { available: false, reason: '해당 역할의 모집이 마감되었습니다' };
-  }
-
-  // 레거시: roles 배열 확인
-  if (jobData.roles?.length) {
-    const roleReq = jobData.roles.find(matchesRole);
-    if (roleReq) {
-      const filled = roleReq.filled ?? 0;
-      if (filled < roleReq.count) {
-        return { available: true };
-      }
-    }
-    return { available: false, reason: '해당 역할의 모집이 마감되었습니다' };
-  }
-
-  // 역할 정보 없으면 통과 (레거시 호환)
-  return { available: true };
 }
 
 // ============================================================================
@@ -504,7 +441,7 @@ export async function applyToJobV2(
       // 5-1. 역할별 정원 확인 (Assignment의 첫 번째 역할 기준)
       const firstAssignmentRole = input.assignments[0]?.roleIds[0];
       if (firstAssignmentRole) {
-        const roleCapacity = checkRoleCapacity(jobData, firstAssignmentRole);
+        const roleCapacity = applicationValidator.checkRoleCapacity(jobData, firstAssignmentRole);
         if (!roleCapacity.available) {
           throw new MaxCapacityReachedError({
             userMessage: roleCapacity.reason ?? '해당 역할의 모집이 마감되었습니다',

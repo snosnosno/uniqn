@@ -37,7 +37,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, toError, handleSilentError } from '@/errors';
+import { mapFirebaseError, toError } from '@/errors';
+import { handleSilentError } from '@/errors/serviceErrorHandler';
 import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
