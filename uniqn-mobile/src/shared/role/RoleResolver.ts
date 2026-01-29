@@ -168,6 +168,56 @@ export class RoleResolver {
   }
 
   // ==========================================================================
+  // 역할 플래그 계산 (Phase 8 - 이원화 해결)
+  // ==========================================================================
+
+  /**
+   * 역할 플래그 계산 (단일 소스)
+   *
+   * @description 권한 계산 이원화 문제 해결을 위한 단일 계산 메서드
+   * authStore와 useAuth에서 이 메서드를 사용하여 일관된 값 보장
+   *
+   * @param role - UserRole 또는 null
+   * @returns 역할 플래그 객체
+   *
+   * @example
+   * const flags = RoleResolver.computeRoleFlags('employer');
+   * // { isAdmin: false, isEmployer: true, isStaff: true }
+   */
+  static computeRoleFlags(role: UserRole | string | null | undefined): {
+    isAdmin: boolean;
+    isEmployer: boolean;
+    isStaff: boolean;
+  } {
+    // 문자열인 경우 정규화
+    const normalizedRole = typeof role === 'string' ? this.normalizeUserRole(role) : role;
+
+    if (!normalizedRole) {
+      return { isAdmin: false, isEmployer: false, isStaff: false };
+    }
+
+    const roleLevel = USER_ROLE_HIERARCHY[normalizedRole] ?? 0;
+
+    return {
+      isAdmin: normalizedRole === 'admin',
+      isEmployer: roleLevel >= USER_ROLE_HIERARCHY.employer,
+      isStaff: roleLevel >= USER_ROLE_HIERARCHY.staff,
+    };
+  }
+
+  /**
+   * 역할 레벨 반환
+   *
+   * @param role - UserRole 또는 null
+   * @returns 역할 레벨 (숫자)
+   */
+  static getRoleLevel(role: UserRole | string | null | undefined): number {
+    const normalizedRole = typeof role === 'string' ? this.normalizeUserRole(role) : role;
+    if (!normalizedRole) return 0;
+    return USER_ROLE_HIERARCHY[normalizedRole] ?? 0;
+  }
+
+  // ==========================================================================
   // 직무 역할 (StaffRole) 관련
   // ==========================================================================
 

@@ -2,10 +2,18 @@
  * UNIQN Mobile - 공통 타입 정의
  *
  * @description 프로젝트 전반에서 사용되는 기본 타입들
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * Phase 8 변경사항:
+ * - UserRole, StaffRole → role.ts로 이동
+ * - 하위 호환성을 위해 re-export 유지
  */
 
 import { Timestamp } from 'firebase/firestore';
+
+// Phase 8: 역할 타입은 role.ts에서 정의 (하위 호환성을 위해 re-export)
+import type { UserRole, StaffRole } from './role';
+export type { UserRole, StaffRole };
 
 /**
  * Firebase 문서 기본 타입
@@ -15,17 +23,6 @@ export interface FirebaseDocument {
   createdAt?: Timestamp | Date;
   updatedAt?: Timestamp | Date;
 }
-
-/**
- * 사용자 역할 (앱 권한)
- *
- * - admin: 관리자 (모든 기능)
- * - employer: 구인자 (공고 관리, 지원자 관리)
- * - staff: 스태프 (지원, 스케줄 확인)
- *
- * ⚠️ StaffRole과 혼동 주의: StaffRole은 포커룸 직무 (dealer, manager 등)
- */
-export type UserRole = 'admin' | 'employer' | 'staff';
 
 /**
  * 사용자 타입
@@ -41,10 +38,7 @@ export interface User extends FirebaseDocument {
   fcmTokens?: string[]; // 멀티 디바이스 지원
 }
 
-/**
- * 스태프 역할
- */
-export type StaffRole = 'dealer' | 'manager' | 'chiprunner' | 'admin';
+// StaffRole은 role.ts에서 정의됨 (re-export는 위에서 처리)
 
 /**
  * 스태프 타입

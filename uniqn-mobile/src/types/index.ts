@@ -18,12 +18,24 @@
  * - Legacy*: 하위 호환성을 위한 레거시 타입 (신규 코드에서 사용 금지)
  */
 
+// 역할 타입 (Phase 8 - 통합)
+export type { UserRole, StaffRole, RoleFlags } from './role';
+export {
+  USER_ROLE_HIERARCHY,
+  USER_ROLE_LABELS,
+  VALID_USER_ROLES,
+  STAFF_ROLE_LABELS,
+  VALID_STAFF_ROLES,
+  isUserRole,
+  isStaffRole,
+  getUserRoleLabel,
+  getStaffRoleLabel,
+} from './role';
+
 // 공통 타입
 export type {
   FirebaseDocument,
-  UserRole,
   User,
-  StaffRole,
   Staff,
   ApiResponse,
   PaginationInfo,
@@ -292,7 +304,7 @@ export type {
 export {
   PENALTY_TYPE_LABELS,
   ADMIN_USER_SORT_LABELS,
-  USER_ROLE_LABELS,
+  // USER_ROLE_LABELS는 role.ts에서 export (Phase 8)
   USER_ROLE_BADGE_VARIANT,
   COUNTRIES,
   getCountryByCode,

@@ -2,12 +2,15 @@
  * UNIQN Mobile - useAuth 훅
  *
  * @description 인증 상태 관련 편의 훅 (useAuthStore 래퍼)
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * 변경사항 (Phase 8):
+ * - 역할 플래그 중복 계산 제거
+ * - authStore의 계산된 값을 직접 사용 (RoleResolver 단일 소스)
  */
 
 import {
   useAuthStore,
-  ROLE_HIERARCHY,
   type AuthUser,
   type UserProfile,
   type AuthStatus,
@@ -45,6 +48,10 @@ interface UseAuthReturn {
  *
  * @description useAuthStore의 주요 상태를 편리하게 사용할 수 있도록 래핑
  *
+ * Phase 8 개선: 역할 플래그 이원화 해결
+ * - 이전: useAuth에서 중복 계산 → MMKV rehydration 시 불일치 가능
+ * - 이후: authStore에서 RoleResolver로 계산 → useAuth는 값만 전달
+ *
  * @example
  * ```tsx
  * function MyComponent() {
@@ -61,11 +68,8 @@ interface UseAuthReturn {
 export function useAuth(): UseAuthReturn {
   const store = useAuthStore();
 
-  // ⚠️ 중요: store.isAdmin 등은 MMKV rehydration 후 업데이트가 지연될 수 있으므로
-  // profile.role에서 직접 계산하여 항상 정확한 값을 반환
-  const role = store.profile?.role ?? null;
-  const roleLevel = role ? (ROLE_HIERARCHY[role] ?? 0) : 0;
-
+  // Phase 8: 역할 플래그는 authStore에서 RoleResolver로 계산됨
+  // 여기서는 store 값을 그대로 전달 (중복 계산 제거)
   return {
     // 사용자 정보
     user: store.user,
@@ -73,16 +77,16 @@ export function useAuth(): UseAuthReturn {
 
     // 상태
     status: store.status,
-    isAuthenticated: store.isAuthenticated || !!store.user,
+    isAuthenticated: store.isAuthenticated,
     isLoading: store.isLoading,
     isInitialized: store.isInitialized,
     error: store.error,
 
-    // 권한 (profile.role에서 직접 계산)
-    role,
-    isAdmin: role === 'admin',
-    isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
-    isStaff: roleLevel >= ROLE_HIERARCHY.staff,
+    // 권한 (authStore에서 RoleResolver로 계산된 값 사용)
+    role: store.profile?.role ?? null,
+    isAdmin: store.isAdmin,
+    isEmployer: store.isEmployer,
+    isStaff: store.isStaff,
   };
 }
 

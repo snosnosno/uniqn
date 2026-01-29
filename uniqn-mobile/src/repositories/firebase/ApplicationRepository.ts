@@ -1,0 +1,902 @@
+/**
+ * UNIQN Mobile - Firebase Application Repository
+ *
+ * @description Firebase Firestore 기반 Application Repository 구현
+ * @version 1.0.0
+ *
+ * 책임:
+ * 1. Firebase 쿼리 실행
+ * 2. 트랜잭션 캡슐화 (데이터 정합성 보장)
+ * 3. 문서 파싱 및 타입 변환
+ *
+ * 비즈니스 로직:
+ * - 지원 검증 → ApplicationValidator (domains/)
+ * - 역할 정원 확인 → checkRoleCapacity helper
+ */
+
+import {
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  orderBy,
+  runTransaction,
+  serverTimestamp,
+  Timestamp,
+  increment,
+} from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase';
+import { logger } from '@/utils/logger';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import {
+  mapFirebaseError,
+  AlreadyAppliedError,
+  ApplicationClosedError,
+  MaxCapacityReachedError,
+  ValidationError,
+  BusinessError,
+  PermissionError,
+  ERROR_CODES,
+  toError,
+} from '@/errors';
+import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
+import type {
+  IApplicationRepository,
+  ApplicationWithJob,
+  ApplyContext,
+} from '../interfaces';
+import type {
+  Application,
+  ApplicationStatus,
+  CancellationRequest,
+  CreateApplicationInput,
+  JobPosting,
+  RecruitmentType,
+  RequestCancellationInput,
+  ReviewCancellationInput,
+  StaffRole,
+} from '@/types';
+import { isValidAssignment, validateRequiredAnswers } from '@/types';
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const APPLICATIONS_COLLECTION = 'applications';
+const JOB_POSTINGS_COLLECTION = 'jobPostings';
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * 특정 역할의 정원 확인
+ */
+function checkRoleCapacity(
+  jobData: JobPosting,
+  appliedRole: string
+): { available: boolean; reason?: string } {
+  const matchesRole = (r: { role?: string; name?: string; customRole?: string }) => {
+    if (r.role === appliedRole || r.name === appliedRole) return true;
+    if (r.role === 'other' && r.customRole === appliedRole) return true;
+    return false;
+  };
+
+  if (jobData.dateSpecificRequirements?.length) {
+    for (const req of jobData.dateSpecificRequirements) {
+      for (const slot of req.timeSlots || []) {
+        const roleReq = slot.roles?.find(matchesRole);
+        if (roleReq) {
+          const total = roleReq.headcount ?? 0;
+          const filled = roleReq.filled ?? 0;
+          if (total > 0 && filled < total) {
+            return { available: true };
+          }
+        }
+      }
+    }
+    return { available: false, reason: '해당 역할의 모집이 마감되었습니다' };
+  }
+
+  if (jobData.roles?.length) {
+    const roleReq = jobData.roles.find(matchesRole);
+    if (roleReq) {
+      const filled = roleReq.filled ?? 0;
+      if (filled < roleReq.count) {
+        return { available: true };
+      }
+    }
+    return { available: false, reason: '해당 역할의 모집이 마감되었습니다' };
+  }
+
+  return { available: true };
+}
+
+// ============================================================================
+// Repository Implementation
+// ============================================================================
+
+/**
+ * Firebase Application Repository
+ */
+export class FirebaseApplicationRepository implements IApplicationRepository {
+  // ==========================================================================
+  // 조회 (Read)
+  // ==========================================================================
+
+  async getById(applicationId: string): Promise<ApplicationWithJob | null> {
+    try {
+      logger.info('지원 상세 조회', { applicationId });
+
+      const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return null;
+      }
+
+      const application = parseApplicationDocument({ id: docSnap.id, ...docSnap.data() });
+      if (!application) {
+        logger.warn('지원 상세 데이터 파싱 실패', { applicationId });
+        return null;
+      }
+
+      const jobDoc = await getDoc(
+        doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, application.jobPostingId)
+      );
+
+      return {
+        ...application,
+        jobPosting: jobDoc.exists()
+          ? parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() }) ?? undefined
+          : undefined,
+      };
+    } catch (error) {
+      logger.error('지원 상세 조회 실패', toError(error), { applicationId });
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async getByApplicantId(applicantId: string): Promise<ApplicationWithJob[]> {
+    try {
+      logger.info('내 지원 내역 조회', { applicantId });
+
+      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const q = query(
+        applicationsRef,
+        where('applicantId', '==', applicantId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        return [];
+      }
+
+      const applications: Application[] = [];
+      const jobPostingIds = new Set<string>();
+
+      for (const docSnapshot of snapshot.docs) {
+        const application = parseApplicationDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (!application) {
+          logger.warn('지원서 데이터 파싱 실패', { docId: docSnapshot.id });
+          continue;
+        }
+
+        applications.push(application);
+
+        if (application.jobPostingId) {
+          jobPostingIds.add(application.jobPostingId);
+        }
+      }
+
+      // 공고 정보 배치 조회
+      const jobPostingMap = new Map<string, JobPosting>();
+
+      if (jobPostingIds.size > 0) {
+        const jobPromises = Array.from(jobPostingIds).map(async (jobId) => {
+          try {
+            const jobDoc = await getDoc(
+              doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId)
+            );
+            if (jobDoc.exists()) {
+              return parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+            }
+            return null;
+          } catch (error) {
+            logger.warn('공고 정보 조회 실패', { jobId, error });
+            return null;
+          }
+        });
+
+        const jobResults = await Promise.all(jobPromises);
+
+        for (const job of jobResults) {
+          if (job) {
+            jobPostingMap.set(job.id, job);
+          }
+        }
+      }
+
+      // 지원서에 공고 정보 조인
+      const applicationsWithJobs: ApplicationWithJob[] = applications.map((application) => {
+        const jobPosting = jobPostingMap.get(application.jobPostingId);
+        return jobPosting ? { ...application, jobPosting } : application;
+      });
+
+      logger.info('내 지원 내역 조회 완료', {
+        applicantId,
+        applicationCount: applications.length,
+        jobPostingCount: jobPostingMap.size,
+      });
+
+      return applicationsWithJobs;
+    } catch (error) {
+      logger.error('내 지원 내역 조회 실패', toError(error), { applicantId });
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async getByJobPostingId(jobPostingId: string): Promise<Application[]> {
+    try {
+      logger.info('공고별 지원서 조회', { jobPostingId });
+
+      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const q = query(
+        applicationsRef,
+        where('jobPostingId', '==', jobPostingId),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+
+      const applications: Application[] = [];
+      for (const docSnapshot of snapshot.docs) {
+        const application = parseApplicationDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (application) {
+          applications.push(application);
+        }
+      }
+
+      return applications;
+    } catch (error) {
+      logger.error('공고별 지원서 조회 실패', toError(error), { jobPostingId });
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async hasApplied(jobPostingId: string, applicantId: string): Promise<boolean> {
+    try {
+      const applicationId = `${jobPostingId}_${applicantId}`;
+      const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return false;
+      }
+
+      const data = parseApplicationDocument({ id: docSnap.id, ...docSnap.data() });
+      if (!data) {
+        return false;
+      }
+      return data.status !== 'cancelled';
+    } catch (error) {
+      logger.error('지원 여부 확인 실패', toError(error), { jobPostingId, applicantId });
+      return false;
+    }
+  }
+
+  async getStatsByApplicantId(
+    applicantId: string
+  ): Promise<Record<ApplicationStatus, number>> {
+    try {
+      const applications = await this.getByApplicantId(applicantId);
+
+      const stats: Record<ApplicationStatus, number> = {
+        applied: 0,
+        pending: 0,
+        confirmed: 0,
+        rejected: 0,
+        cancelled: 0,
+        completed: 0,
+        cancellation_pending: 0,
+      };
+
+      applications.forEach((app) => {
+        if (app.status in stats) {
+          stats[app.status]++;
+        }
+      });
+
+      return stats;
+    } catch (error) {
+      logger.error('지원 통계 조회 실패', toError(error), { applicantId });
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async getCancellationRequests(
+    jobPostingId: string,
+    ownerId: string
+  ): Promise<ApplicationWithJob[]> {
+    try {
+      logger.info('취소 요청 목록 조회', { jobPostingId, ownerId });
+
+      // 공고 소유자 확인
+      const jobDoc = await getDoc(
+        doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId)
+      );
+      if (!jobDoc.exists()) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '공고를 찾을 수 없습니다',
+        });
+      }
+
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '공고 데이터가 올바르지 않습니다',
+        });
+      }
+      if (jobData.ownerId !== ownerId) {
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 조회할 수 있습니다',
+        });
+      }
+
+      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const q = query(
+        applicationsRef,
+        where('jobPostingId', '==', jobPostingId),
+        where('status', '==', 'cancellation_pending'),
+        orderBy('updatedAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+
+      const applications: ApplicationWithJob[] = [];
+      for (const docSnapshot of snapshot.docs) {
+        const application = parseApplicationDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (application) {
+          applications.push({
+            ...application,
+            jobPosting: jobData,
+          });
+        }
+      }
+
+      logger.info('취소 요청 목록 조회 완료', {
+        jobPostingId,
+        count: applications.length,
+      });
+
+      return applications;
+    } catch (error) {
+      logger.error('취소 요청 목록 조회 실패', toError(error), { jobPostingId });
+
+      if (error instanceof BusinessError || error instanceof PermissionError) {
+        throw error;
+      }
+
+      throw mapFirebaseError(error);
+    }
+  }
+
+  // ==========================================================================
+  // 트랜잭션 (Write)
+  // ==========================================================================
+
+  async applyWithTransaction(
+    input: CreateApplicationInput,
+    context: ApplyContext
+  ): Promise<Application> {
+    try {
+      logger.info('지원하기 트랜잭션 시작', {
+        jobPostingId: input.jobPostingId,
+        applicantId: context.applicantId,
+        assignmentCount: input.assignments.length,
+      });
+
+      // Assignment 유효성 검증
+      for (const assignment of input.assignments) {
+        if (!isValidAssignment(assignment)) {
+          throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+            userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해주세요.',
+          });
+        }
+      }
+
+      const result = await runTransaction(getFirebaseDb(), async (transaction) => {
+        // 공고 정보 읽기
+        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, input.jobPostingId);
+        const jobDoc = await transaction.get(jobRef);
+
+        if (!jobDoc.exists()) {
+          throw new ApplicationClosedError({
+            userMessage: '존재하지 않는 공고입니다',
+            jobPostingId: input.jobPostingId,
+          });
+        }
+
+        const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+        if (!jobData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '공고 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 공고 상태 확인
+        if (jobData.status !== 'active') {
+          throw new ApplicationClosedError({
+            userMessage: '지원이 마감된 공고입니다',
+            jobPostingId: input.jobPostingId,
+          });
+        }
+
+        // 사전질문 필수 답변 검증
+        if (jobData.usesPreQuestions && jobData.preQuestions?.length) {
+          if (!input.preQuestionAnswers?.length) {
+            throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+              userMessage: '사전질문에 답변해주세요',
+            });
+          }
+
+          const isValid = validateRequiredAnswers(input.preQuestionAnswers);
+          if (!isValid) {
+            throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+              userMessage: '필수 질문에 모두 답변해주세요',
+            });
+          }
+        }
+
+        // 정원 확인
+        const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
+
+        if (totalPositions > 0 && currentFilled >= totalPositions) {
+          throw new MaxCapacityReachedError({
+            userMessage: '모집 인원이 마감되었습니다',
+            jobPostingId: input.jobPostingId,
+            maxCapacity: totalPositions,
+            currentCount: currentFilled,
+          });
+        }
+
+        // 역할별 정원 확인
+        const firstAssignmentRole = input.assignments[0]?.roleIds[0];
+        if (firstAssignmentRole) {
+          const roleCapacity = checkRoleCapacity(jobData, firstAssignmentRole);
+          if (!roleCapacity.available) {
+            throw new MaxCapacityReachedError({
+              userMessage: roleCapacity.reason ?? '해당 역할의 모집이 마감되었습니다',
+              jobPostingId: input.jobPostingId,
+            });
+          }
+        }
+
+        // 중복 지원 검사
+        const applicationId = `${input.jobPostingId}_${context.applicantId}`;
+        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+
+        const existingApp = await transaction.get(applicationRef);
+        if (existingApp.exists()) {
+          const existingData = parseApplicationDocument({
+            id: existingApp.id,
+            ...existingApp.data(),
+          });
+          if (existingData && existingData.status !== 'cancelled') {
+            throw new AlreadyAppliedError({
+              userMessage: '이미 지원한 공고입니다',
+              jobPostingId: input.jobPostingId,
+              applicationId: existingApp.id,
+            });
+          }
+        }
+
+        // 모집 유형 결정
+        const recruitmentType: RecruitmentType =
+          jobData.postingType === 'fixed' ? 'fixed' : 'event';
+
+        // 대표 역할 결정
+        const firstAssignment = input.assignments[0];
+        const primaryRole = (firstAssignment?.roleIds[0] ?? 'dealer') as StaffRole;
+
+        // 지원서 데이터 생성
+        const now = serverTimestamp();
+        const applicationData: Omit<Application, 'id'> = {
+          applicantId: context.applicantId,
+          applicantName: context.applicantName,
+          ...(context.applicantPhone && { applicantPhone: context.applicantPhone }),
+          ...(context.applicantEmail && { applicantEmail: context.applicantEmail }),
+          ...(context.applicantNickname && { applicantNickname: context.applicantNickname }),
+          ...(context.applicantPhotoURL && { applicantPhotoURL: context.applicantPhotoURL }),
+          applicantRole: primaryRole,
+
+          jobPostingId: input.jobPostingId,
+          jobPostingTitle: jobData.title || '',
+          ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
+
+          status: 'applied',
+          ...(input.message && { message: input.message }),
+          recruitmentType,
+
+          assignments: input.assignments,
+          ...(input.preQuestionAnswers && { preQuestionAnswers: input.preQuestionAnswers }),
+
+          isRead: false,
+          createdAt: now as Timestamp,
+          updatedAt: now as Timestamp,
+        };
+
+        // 트랜잭션 쓰기
+        transaction.set(applicationRef, applicationData);
+        transaction.update(jobRef, {
+          applicationCount: increment(1),
+          updatedAt: serverTimestamp(),
+        });
+
+        return {
+          id: applicationId,
+          ...applicationData,
+        } as Application;
+      });
+
+      logger.info('지원하기 트랜잭션 성공', {
+        applicationId: result.id,
+        jobPostingId: input.jobPostingId,
+        assignmentCount: input.assignments.length,
+      });
+
+      return result;
+    } catch (error) {
+      logger.error('지원하기 트랜잭션 실패', toError(error), {
+        jobPostingId: input.jobPostingId,
+        applicantId: context.applicantId,
+      });
+
+      if (
+        error instanceof AlreadyAppliedError ||
+        error instanceof ApplicationClosedError ||
+        error instanceof MaxCapacityReachedError ||
+        error instanceof ValidationError
+      ) {
+        throw error;
+      }
+
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async cancelWithTransaction(applicationId: string, applicantId: string): Promise<void> {
+    try {
+      logger.info('지원 취소 시작', { applicationId, applicantId });
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+        const applicationDoc = await transaction.get(applicationRef);
+
+        if (!applicationDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '지원 내역을 찾을 수 없습니다',
+          });
+        }
+
+        const applicationData = parseApplicationDocument({
+          id: applicationDoc.id,
+          ...applicationDoc.data(),
+        });
+        if (!applicationData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '지원 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 본인 확인
+        if (applicationData.applicantId !== applicantId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인의 지원만 취소할 수 있습니다',
+          });
+        }
+
+        // 이미 취소된 경우
+        if (applicationData.status === 'cancelled') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_CANCELLED, {
+            userMessage: '이미 취소된 지원입니다',
+          });
+        }
+
+        // 확정된 경우 취소 불가
+        if (applicationData.status === 'confirmed') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_CANNOT_CANCEL_CONFIRMED, {
+            userMessage: '확정된 지원은 취소할 수 없습니다. 취소 요청을 이용해주세요.',
+          });
+        }
+
+        // 지원 취소 처리
+        transaction.update(applicationRef, {
+          status: 'cancelled',
+          updatedAt: serverTimestamp(),
+        });
+
+        // 공고의 지원자 수 감소
+        const jobRef = doc(
+          getFirebaseDb(),
+          JOB_POSTINGS_COLLECTION,
+          applicationData.jobPostingId
+        );
+        transaction.update(jobRef, {
+          applicationCount: increment(-1),
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      logger.info('지원 취소 성공', { applicationId });
+    } catch (error) {
+      logger.error('지원 취소 실패', toError(error), { applicationId });
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async requestCancellationWithTransaction(
+    input: RequestCancellationInput,
+    applicantId: string
+  ): Promise<void> {
+    try {
+      logger.info('취소 요청 제출 시작', {
+        applicationId: input.applicationId,
+        applicantId,
+      });
+
+      // 사유 검증
+      if (!input.reason || input.reason.trim().length < 5) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          userMessage: '취소 사유를 5자 이상 입력해주세요',
+        });
+      }
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        const applicationRef = doc(
+          getFirebaseDb(),
+          APPLICATIONS_COLLECTION,
+          input.applicationId
+        );
+        const applicationDoc = await transaction.get(applicationRef);
+
+        if (!applicationDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '지원 내역을 찾을 수 없습니다',
+          });
+        }
+
+        const applicationData = parseApplicationDocument({
+          id: applicationDoc.id,
+          ...applicationDoc.data(),
+        });
+        if (!applicationData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '지원 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 본인 확인
+        if (applicationData.applicantId !== applicantId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인의 지원만 취소 요청할 수 있습니다',
+          });
+        }
+
+        // 확정된 상태인지 확인
+        if (applicationData.status !== 'confirmed') {
+          if (
+            applicationData.status === 'applied' ||
+            applicationData.status === 'pending'
+          ) {
+            throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+              userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
+            });
+          }
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '취소 요청이 불가능한 상태입니다',
+          });
+        }
+
+        // 이미 취소 요청이 있는지 확인
+        if (applicationData.cancellationRequest) {
+          if (applicationData.cancellationRequest.status === 'pending') {
+            throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
+              userMessage: '이미 취소 요청이 진행 중입니다',
+            });
+          }
+          if (applicationData.cancellationRequest.status === 'rejected') {
+            throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
+              userMessage:
+                '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
+            });
+          }
+        }
+
+        // 취소 요청 생성
+        const cancellationRequest: CancellationRequest = {
+          requestedAt: new Date().toISOString(),
+          reason: input.reason.trim(),
+          status: 'pending',
+        };
+
+        // 트랜잭션 쓰기
+        transaction.update(applicationRef, {
+          status: 'cancellation_pending' as ApplicationStatus,
+          cancellationRequest,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      logger.info('취소 요청 제출 성공', { applicationId: input.applicationId });
+    } catch (error) {
+      logger.error('취소 요청 제출 실패', toError(error), {
+        applicationId: input.applicationId,
+        applicantId,
+      });
+
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+
+      throw mapFirebaseError(error);
+    }
+  }
+
+  async reviewCancellationWithTransaction(
+    input: ReviewCancellationInput,
+    reviewerId: string
+  ): Promise<void> {
+    try {
+      logger.info('취소 요청 검토 시작', {
+        applicationId: input.applicationId,
+        approved: input.approved,
+        reviewerId,
+      });
+
+      // 거절 시 사유 필수
+      if (
+        !input.approved &&
+        (!input.rejectionReason || input.rejectionReason.trim().length < 3)
+      ) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          userMessage: '거절 사유를 3자 이상 입력해주세요',
+        });
+      }
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        const applicationRef = doc(
+          getFirebaseDb(),
+          APPLICATIONS_COLLECTION,
+          input.applicationId
+        );
+        const applicationDoc = await transaction.get(applicationRef);
+
+        if (!applicationDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '지원 내역을 찾을 수 없습니다',
+          });
+        }
+
+        const applicationData = parseApplicationDocument({
+          id: applicationDoc.id,
+          ...applicationDoc.data(),
+        });
+        if (!applicationData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '지원 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 공고 정보 조회 및 소유자 확인
+        const jobRef = doc(
+          getFirebaseDb(),
+          JOB_POSTINGS_COLLECTION,
+          applicationData.jobPostingId
+        );
+        const jobDoc = await transaction.get(jobRef);
+
+        if (!jobDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공고를 찾을 수 없습니다',
+          });
+        }
+
+        const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+        if (!jobData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '공고 데이터가 올바르지 않습니다',
+          });
+        }
+
+        if (jobData.ownerId !== reviewerId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인의 공고에 대한 요청만 검토할 수 있습니다',
+          });
+        }
+
+        // 취소 요청 상태 확인
+        if (applicationData.status !== 'cancellation_pending') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '검토 대기 중인 취소 요청이 없습니다',
+          });
+        }
+
+        if (
+          !applicationData.cancellationRequest ||
+          applicationData.cancellationRequest.status !== 'pending'
+        ) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '유효한 취소 요청이 없습니다',
+          });
+        }
+
+        // 취소 요청 업데이트
+        const updatedCancellationRequest: CancellationRequest = {
+          ...applicationData.cancellationRequest,
+          status: input.approved ? 'approved' : 'rejected',
+          reviewedAt: new Date().toISOString(),
+          reviewedBy: reviewerId,
+          ...(input.rejectionReason?.trim()
+            ? { rejectionReason: input.rejectionReason.trim() }
+            : {}),
+        };
+
+        if (input.approved) {
+          // 승인: 지원 상태를 cancelled로 변경 + 지원자 수 감소
+          transaction.update(applicationRef, {
+            status: 'cancelled' as ApplicationStatus,
+            cancellationRequest: updatedCancellationRequest,
+            cancelledAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          });
+
+          transaction.update(jobRef, {
+            applicationCount: increment(-1),
+            updatedAt: serverTimestamp(),
+          });
+        } else {
+          // 거절: 지원 상태를 confirmed로 복원
+          transaction.update(applicationRef, {
+            status: 'confirmed' as ApplicationStatus,
+            cancellationRequest: updatedCancellationRequest,
+            updatedAt: serverTimestamp(),
+          });
+        }
+      });
+
+      logger.info('취소 요청 검토 성공', {
+        applicationId: input.applicationId,
+        approved: input.approved,
+      });
+    } catch (error) {
+      logger.error('취소 요청 검토 실패', toError(error), {
+        applicationId: input.applicationId,
+        reviewerId,
+      });
+
+      if (
+        error instanceof ValidationError ||
+        error instanceof BusinessError ||
+        error instanceof PermissionError
+      ) {
+        throw error;
+      }
+
+      throw mapFirebaseError(error);
+    }
+  }
+}

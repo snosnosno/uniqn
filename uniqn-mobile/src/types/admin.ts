@@ -168,14 +168,8 @@ export interface CreatePenaltyInput {
 // Constants
 // ============================================================================
 
-/**
- * 역할 레이블
- */
-export const USER_ROLE_LABELS: Record<UserRole, string> = {
-  admin: '관리자',
-  employer: '구인자',
-  staff: '스태프',
-};
+// Phase 8: USER_ROLE_LABELS는 role.ts에서 정의됨 (하위 호환성을 위해 re-export)
+export { USER_ROLE_LABELS } from './role';
 
 /**
  * 역할 배지 색상

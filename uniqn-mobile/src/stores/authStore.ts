@@ -174,15 +174,12 @@ export const useAuthStore = create<AuthState>()(
           return;
         }
 
-        const roleLevel = ROLE_HIERARCHY[profile.role] ?? 0;
+        // Phase 8: RoleResolver로 역할 플래그 계산 통합 (이원화 해결)
+        const roleFlags = RoleResolver.computeRoleFlags(profile.role);
 
         set({
           profile,
-          isAdmin: profile.role === 'admin',
-          // employer 이상 (admin, employer)
-          isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
-          // staff 이상 (admin, employer, staff)
-          isStaff: roleLevel >= ROLE_HIERARCHY.staff,
+          ...roleFlags,
         });
       },
 
@@ -272,20 +269,17 @@ export const useAuthStore = create<AuthState>()(
 
         // ⚠️ 중요: partialize에서 isAdmin/isEmployer/isStaff는 저장하지 않으므로
         // 복원된 profile을 기반으로 역할 플래그 재계산 필요
+        // Phase 8: RoleResolver.computeRoleFlags로 통합 (이원화 해결)
         if (state?.profile) {
-          const roleLevel = ROLE_HIERARCHY[state.profile.role] ?? 0;
+          const roleFlags = RoleResolver.computeRoleFlags(state.profile.role);
           useAuthStore.setState({
-            isAdmin: state.profile.role === 'admin',
-            isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
-            isStaff: roleLevel >= ROLE_HIERARCHY.staff,
+            ...roleFlags,
             isAuthenticated: !!state.user,
           });
           logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
             component: 'AuthStore',
             role: state.profile.role,
-            isAdmin: state.profile.role === 'admin',
-            isEmployer: roleLevel >= ROLE_HIERARCHY.employer,
-            isStaff: roleLevel >= ROLE_HIERARCHY.staff,
+            ...roleFlags,
           });
         }
       },
@@ -329,15 +323,14 @@ export const useProfile = () => useAuthStore(selectProfile);
 
 /**
  * 역할 기반 권한 체크
+ *
+ * Phase 8: RoleResolver.hasPermission 사용 (이원화 해결)
  */
 export const useHasRole = (requiredRole: UserRole) => {
   const profile = useAuthStore(selectProfile);
   if (!profile) return false;
 
-  const userLevel = ROLE_HIERARCHY[profile.role] ?? 0;
-  const requiredLevel = ROLE_HIERARCHY[requiredRole] ?? 0;
-
-  return userLevel >= requiredLevel;
+  return RoleResolver.hasPermission(profile.role, requiredRole);
 };
 
 /**

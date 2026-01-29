@@ -1,12 +1,14 @@
 /**
  * 지원서 도메인 모듈
  *
- * @description Phase 7 - 도메인 모듈 구조 완성
+ * @description Phase 7 + Phase 8 - 도메인 모듈 구조 완성
  * 지원서 관련 도메인 로직을 중앙에서 export
  *
+ * ## 도메인 클래스
+ * - ApplicationValidator: 지원서 유효성 검증 (Phase 8)
+ * - ApplicationStatusMachine: 상태 전이 관리 (Phase 8)
+ *
  * ## 향후 확장 계획
- * - ApplicationValidator: 지원서 유효성 검증
- * - ApplicationStatusMachine: 상태 전이 관리
  * - ApplicationMerger: 중복 지원 처리
  */
 
@@ -75,3 +77,25 @@ export {
   countCancellations,
   createHistorySummary,
 } from '@/types/applicationHistory';
+
+// ============================================================================
+// Domain Classes (Phase 8)
+// ============================================================================
+
+// ApplicationValidator - 지원서 검증 로직
+export {
+  ApplicationValidator,
+  applicationValidator,
+  type RoleCapacityResult,
+  type ApplicationValidationResult,
+  type ApplicationValidationError,
+} from './ApplicationValidator';
+
+// ApplicationStatusMachine - 상태 전이 관리
+export {
+  ApplicationStatusMachine,
+  applicationStatusMachine,
+  type StatusAction,
+  type TransitionResult,
+  type StatusMetadata,
+} from './ApplicationStatusMachine';
