@@ -10,8 +10,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { doc, updateDoc, serverTimestamp, arrayUnion } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { doc, updateDoc, serverTimestamp, arrayUnion, getFirebaseDb } from '@/lib/firebase';
 import {
   SettlementList,
   WorkTimeEditor,

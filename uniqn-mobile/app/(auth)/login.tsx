@@ -9,7 +9,7 @@ import { useState, useCallback } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import Constants from 'expo-constants';
 import { Divider } from '@/components/ui';
 import { LoginForm, SocialLoginButtons, BiometricButton } from '@/components/auth';

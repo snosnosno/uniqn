@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "296074758861",
+    "project_id": "tholdem-ebc18",
+    "storage_bucket": "tholdem-ebc18.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:296074758861:android:9240385999c4fe56bcf784",
+        "android_client_info": {
+          "package_name": "com.uniqn.mobile"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "296074758861-r69the9fpvei7b50or4io0bji77sf5eb.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC6XA1FDYqizdDzNQTpWx1FikHQ7ZEaSos"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "296074758861-r69the9fpvei7b50or4io0bji77sf5eb.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "296074758861-0g6rl5i5hk37mbnr6nlpcndb09me6gaq.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.uniqn.mobile"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

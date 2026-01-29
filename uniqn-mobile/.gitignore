@@ -17,22 +17,18 @@ web-build/
 *.apk
 *.aab
 
-# iOS
-ios/Pods/
+# Native directories (EAS Build가 자동 생성)
+android/
+ios/
 *.xcuserstate
-
-# Android
-android/app/build/
-android/.gradle/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
 
-# Firebase config (보안상 중요!)
-google-services.json
-GoogleService-Info.plist
+# Firebase config
+# google-services.json, GoogleService-Info.plist는 EAS Build에 필요하므로 git에 포함
 firebase.json
 
 # Editor

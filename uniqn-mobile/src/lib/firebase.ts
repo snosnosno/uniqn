@@ -17,7 +17,29 @@ import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
 import { initializeAuth, getAuth, Auth } from 'firebase/auth';
 // @ts-expect-error - getReactNativePersistence exists at runtime but missing from types
 import { getReactNativePersistence } from 'firebase/auth';
-import { getFirestore, Firestore, Timestamp } from 'firebase/firestore';
+import {
+  getFirestore,
+  Firestore,
+  Timestamp,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  writeBatch,
+  runTransaction,
+  increment,
+} from 'firebase/firestore';
 import { getStorage, FirebaseStorage } from 'firebase/storage';
 import { getFunctions, Functions } from 'firebase/functions';
 import {
@@ -30,8 +52,28 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { getEnv } from './env';
 
-// Re-export Timestamp for components (중앙화된 Firebase 타입 접근)
-export { Timestamp };
+// Re-export Firestore utilities (중앙화된 Firebase 접근)
+export {
+  Timestamp,
+  doc,
+  updateDoc,
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove,
+  collection,
+  query,
+  where,
+  orderBy,
+  limit,
+  getDocs,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  writeBatch,
+  runTransaction,
+  increment,
+};
 
 /**
  * 초기화된 인스턴스 캐시

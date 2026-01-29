@@ -153,19 +153,40 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const payrollStatus = (schedule.payrollStatus || 'pending') as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 
-  // 급여 정보 (settlementBreakdown > customSalaryInfo > jobPostingCard)
+  // 급여 정보 (settlementBreakdown > customSalaryInfo > 역할별 급여 > defaultSalary)
   const salaryInfo = useMemo(() => {
+    // 1. settlementBreakdown 우선 (정산 완료 시)
     if (schedule.settlementBreakdown?.salaryInfo) {
       return schedule.settlementBreakdown.salaryInfo;
     }
+    // 2. customSalaryInfo (구인자가 오버라이드한 급여)
     if (schedule.customSalaryInfo) {
       return schedule.customSalaryInfo;
     }
-    if (schedule.jobPostingCard?.defaultSalary) {
-      return schedule.jobPostingCard.defaultSalary;
+    // 3. 역할별 급여 조회: dateRequirements에서 해당 날짜/역할의 급여 찾기
+    const card = schedule.jobPostingCard;
+    if (card?.dateRequirements) {
+      const dateReq = card.dateRequirements.find(
+        (dr) => dr.date === schedule.date
+      );
+      if (dateReq) {
+        for (const timeSlot of dateReq.timeSlots || []) {
+          const roleInfo = timeSlot.roles?.find(
+            (r) => r.role === schedule.role ||
+              (schedule.role === 'other' && r.role === 'other' && r.customRole === schedule.customRole)
+          );
+          if (roleInfo?.salary) {
+            return roleInfo.salary;
+          }
+        }
+      }
+    }
+    // 4. 폴백: defaultSalary
+    if (card?.defaultSalary) {
+      return card.defaultSalary;
     }
     return null;
-  }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, schedule.jobPostingCard?.defaultSalary]);
+  }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, schedule.jobPostingCard, schedule.date, schedule.role, schedule.customRole]);
 
   // 수당 정보 (settlementBreakdown > customAllowances > jobPostingCard)
   const allowances: Allowances | undefined = useMemo(() => {

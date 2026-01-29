@@ -160,7 +160,6 @@ export default function JobPostingDetailScreen() {
 
   // 공고 수정
   const handleEdit = useCallback(() => {
-    // TODO: 공고 수정 화면으로 이동
     router.push(`/(employer)/my-postings/${id}/edit`);
   }, [router, id]);
 

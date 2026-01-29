@@ -2,11 +2,11 @@
  * UNIQN Mobile - Analytics 서비스
  *
  * @description Firebase Analytics 이벤트 추적 및 사용자 속성 관리
- * @version 1.0.0
+ * @version 2.0.0
  *
  * 구현 상태:
- * - 웹: Firebase Analytics SDK 사용
- * - 네이티브: expo-analytics-firebase 또는 @react-native-firebase/analytics 필요 (TODO [출시 전])
+ * - 웹: Firebase Analytics SDK
+ * - 네이티브: 로깅 (추후 네이티브 SDK 추가 예정)
  *
  * 이벤트 카테고리:
  * - 인증: login, signup, logout
@@ -123,6 +123,10 @@ export interface UserProperties {
   preferred_location?: string;
 }
 
+// Analytics 인스턴스 타입
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AnalyticsInstance = any;
+
 // ============================================================================
 // Analytics Instance Management
 // ============================================================================
@@ -130,14 +134,14 @@ export interface UserProperties {
 /**
  * Analytics 인스턴스 (플랫폼별)
  */
-let analyticsInstance: unknown = null;
+let analyticsInstance: AnalyticsInstance = null;
 let isAnalyticsInitialized = false;
 let isAnalyticsEnabled = true;
 
 /**
  * Analytics 초기화
- * 웹에서만 Firebase Analytics SDK 사용
- * 네이티브는 별도 네이티브 모듈 필요
+ * 웹: Firebase Analytics SDK
+ * 네이티브: 로깅 (추후 네이티브 SDK 추가)
  */
 async function initializeAnalytics(): Promise<boolean> {
   if (isAnalyticsInitialized) return true;
@@ -161,12 +165,10 @@ async function initializeAnalytics(): Promise<boolean> {
         return false;
       }
     } else {
-      // 네이티브 환경: 별도 구현 필요
-      // TODO [출시 전]: @react-native-firebase/analytics 또는 expo-analytics 연동
-      logger.info('Analytics 네이티브 SDK 연동 필요', {
+      // 네이티브 환경: 로깅만 (추후 네이티브 SDK 추가)
+      logger.info('Analytics: 네이티브 환경 - 로깅 모드', {
         platform: Platform.OS,
       });
-      // 네이티브에서는 이벤트만 로깅 (개발용)
       isAnalyticsInitialized = true;
       return true;
     }
@@ -213,10 +215,9 @@ export async function trackEvent(
     if (Platform.OS === 'web' && analyticsInstance) {
       // 웹: Firebase Analytics SDK
       const { logEvent } = await import('firebase/analytics');
-      // @ts-expect-error - analyticsInstance is dynamically imported
       logEvent(analyticsInstance, eventName, cleanParams);
     } else {
-      // 네이티브 또는 개발 환경: 로깅만
+      // 네이티브: 로깅만
       if (__DEV__) {
         logger.debug('Analytics Event', {
           event: eventName,
@@ -248,7 +249,6 @@ export async function trackScreenView(
 
     if (Platform.OS === 'web' && analyticsInstance) {
       const { logEvent } = await import('firebase/analytics');
-      // @ts-expect-error - analyticsInstance is dynamically imported
       logEvent(analyticsInstance, 'screen_view', {
         firebase_screen: screenName,
         firebase_screen_class: screenClass || screenName,
@@ -283,8 +283,14 @@ export async function setUserProperties(
 
     if (Platform.OS === 'web' && analyticsInstance) {
       const { setUserProperties: setProps } = await import('firebase/analytics');
-      // @ts-expect-error - analyticsInstance is dynamically imported
-      setProps(analyticsInstance, properties);
+      // UserProperties를 CustomParams로 변환
+      const customParams: Record<string, string> = {};
+      for (const [key, value] of Object.entries(properties)) {
+        if (value !== undefined) {
+          customParams[key] = String(value);
+        }
+      }
+      setProps(analyticsInstance, customParams);
     } else {
       if (__DEV__) {
         logger.debug('Analytics User Properties', { properties });
@@ -310,7 +316,6 @@ export async function setUserId(userId: string | null): Promise<void> {
 
     if (Platform.OS === 'web' && analyticsInstance) {
       const { setUserId: setId } = await import('firebase/analytics');
-      // @ts-expect-error - analyticsInstance is dynamically imported
       setId(analyticsInstance, userId);
     } else {
       if (__DEV__) {

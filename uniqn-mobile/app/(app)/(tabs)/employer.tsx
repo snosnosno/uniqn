@@ -6,7 +6,7 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';

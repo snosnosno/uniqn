@@ -22,7 +22,7 @@ import {
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatCurrency, calculateSettlementWithTax, DEFAULT_SALARY_INFO, DEFAULT_TAX_SETTINGS, type SalaryInfo, type Allowances, type TaxSettings } from '@/utils/settlement';
-import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
+import type { ScheduleEvent, ScheduleType, AttendanceStatus, JobPostingCard } from '@/types';
 
 // ============================================================================
 // Types
@@ -65,6 +65,33 @@ const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: strin
 // ============================================================================
 // Helper Functions
 // ============================================================================
+
+/**
+ * 역할별 급여 조회 (dateRequirements에서 해당 날짜/역할의 급여 찾기)
+ */
+function getRoleSalaryFromCard(
+  card: JobPostingCard | undefined,
+  date: string,
+  role: string,
+  customRole?: string
+): SalaryInfo | undefined {
+  if (!card?.dateRequirements) return undefined;
+
+  const dateReq = card.dateRequirements.find((dr) => dr.date === date);
+  if (!dateReq) return undefined;
+
+  for (const timeSlot of dateReq.timeSlots || []) {
+    const roleInfo = timeSlot.roles?.find(
+      (r) =>
+        r.role === role ||
+        (role === 'other' && r.role === 'other' && r.customRole === customRole)
+    );
+    if (roleInfo?.salary) {
+      return roleInfo.salary;
+    }
+  }
+  return undefined;
+}
 
 function formatTime(timestamp: Timestamp | null): string {
   if (!timestamp) return '--:--';
@@ -119,16 +146,23 @@ export const ScheduleCard = memo(function ScheduleCard({
   // 구인자명
   const ownerName = schedule.jobPostingCard?.ownerName;
 
-  // 급여 정보 추출 (JobPostingCard에서)
+  // 급여 정보 추출 (역할별 급여 우선, defaultSalary 폴백)
   const salaryDisplay = useMemo(() => {
-    if (schedule.jobPostingCard?.defaultSalary) {
-      const { type, amount } = schedule.jobPostingCard.defaultSalary;
+    const card = schedule.jobPostingCard;
+    if (!card) return null;
+
+    // 1. 역할별 급여 조회
+    const roleSalary = getRoleSalaryFromCard(card, schedule.date, schedule.role, schedule.customRole);
+    const salary = roleSalary || card.defaultSalary;
+
+    if (salary) {
+      const { type, amount } = salary;
       if (type === 'other') return '협의';
       const typeLabel = type === 'hourly' ? '시급' : type === 'daily' ? '일급' : '월급';
       return `${typeLabel} ${amount.toLocaleString()}원`;
     }
     return null;
-  }, [schedule.jobPostingCard?.defaultSalary]);
+  }, [schedule.jobPostingCard, schedule.date, schedule.role, schedule.customRole]);
 
   // 완료 상태 금액 계산 (payrollAmount 우선, 없으면 계산)
   const completedAmount = useMemo(() => {
@@ -141,7 +175,15 @@ export const ScheduleCard = memo(function ScheduleCard({
 
     // 없으면 계산 (오버라이드 데이터 우선, 세금 포함)
     if (schedule.checkInTime && schedule.checkOutTime) {
+      // 역할별 급여 조회 (customSalaryInfo > 역할별 급여 > defaultSalary)
+      const roleSalary = getRoleSalaryFromCard(
+        schedule.jobPostingCard,
+        schedule.date,
+        schedule.role,
+        schedule.customRole
+      );
       const salaryInfo: SalaryInfo = schedule.customSalaryInfo ||
+        roleSalary ||
         schedule.jobPostingCard?.defaultSalary ||
         DEFAULT_SALARY_INFO;
       const allowances: Allowances | undefined = schedule.customAllowances ||

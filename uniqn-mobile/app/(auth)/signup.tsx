@@ -10,7 +10,7 @@ import { useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Timestamp } from 'firebase/firestore';
+import { Timestamp } from '@/lib/firebase';
 import { SignupForm } from '@/components/auth';
 import { signUp } from '@/services';
 import { useToastStore } from '@/stores/toastStore';
