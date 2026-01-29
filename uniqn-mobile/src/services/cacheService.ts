@@ -12,7 +12,7 @@ import {
   STORAGE_KEYS,
   removeStorageItem,
 } from '@/lib/mmkvStorage';
-import { toError } from '@/errors';
+import { toError, handleSilentError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -172,18 +172,26 @@ export async function clearAllCache(
 
 /**
  * 검색 기록만 삭제
+ *
+ * @description 실패해도 앱 동작에 영향 없음 (silent 처리)
  */
 export function clearSearchHistory(): void {
   try {
     removeStorageItem(STORAGE_KEYS.SEARCH_HISTORY);
     logger.info('검색 기록 삭제 완료');
   } catch (error) {
-    logger.error('검색 기록 삭제 실패', toError(error));
+    // 캐시 삭제 실패는 앱 동작에 영향 없음 - 명시적 silent 처리
+    handleSilentError(error, {
+      operation: '검색 기록 삭제',
+      component: 'cacheService',
+    });
   }
 }
 
 /**
  * 공고 캐시만 삭제
+ *
+ * @description 실패해도 앱 동작에 영향 없음 (silent 처리)
  */
 export function clearJobPostingsCache(): void {
   try {
@@ -192,12 +200,18 @@ export function clearJobPostingsCache(): void {
     queryClient.invalidateQueries({ queryKey: ['jobPostings'] });
     logger.info('공고 캐시 삭제 완료');
   } catch (error) {
-    logger.error('공고 캐시 삭제 실패', toError(error));
+    // 캐시 삭제 실패는 앱 동작에 영향 없음 - 명시적 silent 처리
+    handleSilentError(error, {
+      operation: '공고 캐시 삭제',
+      component: 'cacheService',
+    });
   }
 }
 
 /**
  * 스케줄 캐시만 삭제
+ *
+ * @description 실패해도 앱 동작에 영향 없음 (silent 처리)
  */
 export function clearSchedulesCache(): void {
   try {
@@ -205,7 +219,11 @@ export function clearSchedulesCache(): void {
     queryClient.invalidateQueries({ queryKey: ['schedules'] });
     logger.info('스케줄 캐시 삭제 완료');
   } catch (error) {
-    logger.error('스케줄 캐시 삭제 실패', toError(error));
+    // 캐시 삭제 실패는 앱 동작에 영향 없음 - 명시적 silent 처리
+    handleSilentError(error, {
+      operation: '스케줄 캐시 삭제',
+      component: 'cacheService',
+    });
   }
 }
 

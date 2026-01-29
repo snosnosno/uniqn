@@ -37,7 +37,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, toError } from '@/errors';
+import { mapFirebaseError, toError, handleSilentError } from '@/errors';
 import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
@@ -194,7 +194,12 @@ async function deactivateExistingQRCodes(
       )
     );
   } catch (error) {
-    logger.warn('기존 QR 비활성화 실패', { jobPostingId, date, action, error });
+    // 기존 QR 비활성화 실패는 새 QR 생성에 영향 없음 - 명시적 silent 처리
+    handleSilentError(error, {
+      operation: '기존 QR 비활성화',
+      component: 'eventQRService',
+      context: { jobPostingId, date, action },
+    });
   }
 }
 

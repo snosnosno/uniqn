@@ -25,6 +25,7 @@ import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
 import { mapFirebaseError, BusinessError, ERROR_CODES, toError } from '@/errors';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
+import { toDateString } from '@/utils/date';
 import { trackSettlementComplete } from './analyticsService';
 import { RealtimeManager } from '@/shared/realtime';
 import type { WorkLog, PayrollStatus } from '@/types';
@@ -47,20 +48,6 @@ export interface WorkLogStats {
   averageHoursPerDay: number;
   pendingPayroll: number;
   completedPayroll: number;
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 날짜 문자열을 YYYY-MM-DD 형식으로 변환
- */
-function formatDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
 }
 
 // ============================================================================
@@ -167,7 +154,7 @@ export async function getWorkLogById(workLogId: string): Promise<WorkLog | null>
  */
 export async function getTodayCheckedInWorkLog(staffId: string): Promise<WorkLog | null> {
   try {
-    const today = formatDateString(new Date());
+    const today = toDateString(new Date());
     const workLogs = await getWorkLogsByDate(staffId, today);
 
     return workLogs.find((wl) => wl.status === 'checked_in') || null;
@@ -201,7 +188,7 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
-      where('date', '>=', formatDateString(threeMonthsAgo)),
+      where('date', '>=', toDateString(threeMonthsAgo)),
       orderBy('date', 'desc'),
       limit(500)
     );
@@ -285,8 +272,8 @@ export async function getMonthlyPayroll(
     const q = query(
       workLogsRef,
       where('staffId', '==', staffId),
-      where('date', '>=', formatDateString(startDate)),
-      where('date', '<=', formatDateString(endDate)),
+      where('date', '>=', toDateString(startDate)),
+      where('date', '<=', toDateString(endDate)),
       orderBy('date', 'asc')
     );
 
@@ -611,7 +598,7 @@ export function subscribeToTodayWorkStatus(
     onError?: (error: Error) => void;
   }
 ): Unsubscribe {
-  const today = formatDateString(new Date());
+  const today = toDateString(new Date());
 
   return RealtimeManager.subscribe(
     RealtimeManager.Keys.todayWorkStatus(staffId, today),

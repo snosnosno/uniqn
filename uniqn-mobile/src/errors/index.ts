@@ -135,3 +135,23 @@ export {
   isReportAlreadyReviewedError,
   isCannotReportSelfError,
 } from './BusinessErrors';
+
+// ============================================================================
+// Service Error Handler
+// ============================================================================
+
+export {
+  // Core Handler
+  handleServiceError,
+  // Specialized Handlers
+  handleSilentError,
+  handleErrorWithDefault,
+  // Wrappers
+  wrapService,
+  wrapSyncService,
+  // Utilities
+  maskSensitiveData,
+  // Types
+  type ServiceErrorOptions,
+  type SilentErrorOptions,
+} from './serviceErrorHandler';

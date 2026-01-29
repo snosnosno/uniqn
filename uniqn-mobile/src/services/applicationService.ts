@@ -22,7 +22,8 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import {
-  mapFirebaseError,
+  handleServiceError,
+  handleErrorWithDefault,
   AlreadyAppliedError,
   ApplicationClosedError,
   MaxCapacityReachedError,
@@ -30,7 +31,6 @@ import {
   BusinessError,
   PermissionError,
   ERROR_CODES,
-  toError,
 } from '@/errors';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { trackJobApply, trackEvent } from './analyticsService';
@@ -212,8 +212,11 @@ export async function getMyApplications(applicantId: string): Promise<Applicatio
 
     return applicationsWithJobs;
   } catch (error) {
-    logger.error('내 지원 내역 조회 실패', toError(error), { applicantId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '내 지원 내역 조회',
+      component: 'applicationService',
+      context: { applicantId },
+    });
   }
 }
 
@@ -249,8 +252,11 @@ export async function getApplicationById(
         : undefined,
     };
   } catch (error) {
-    logger.error('지원 상세 조회 실패', toError(error), { applicationId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원 상세 조회',
+      component: 'applicationService',
+      context: { applicationId },
+    });
   }
 }
 
@@ -321,8 +327,11 @@ export async function cancelApplication(
     // Analytics 이벤트
     trackEvent('application_cancel', { application_id: applicationId });
   } catch (error) {
-    logger.error('지원 취소 실패', toError(error), { applicationId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원 취소',
+      component: 'applicationService',
+      context: { applicationId, applicantId },
+    });
   }
 }
 
@@ -349,8 +358,11 @@ export async function hasAppliedToJob(
     }
     return data.status !== 'cancelled';
   } catch (error) {
-    logger.error('지원 여부 확인 실패', toError(error), { jobPostingId, applicantId });
-    return false;
+    return handleErrorWithDefault(error, false, {
+      operation: '지원 여부 확인',
+      component: 'applicationService',
+      context: { jobPostingId, applicantId },
+    });
   }
 }
 
@@ -381,8 +393,11 @@ export async function getApplicationStats(
 
     return stats;
   } catch (error) {
-    logger.error('지원 통계 조회 실패', toError(error), { applicantId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원 통계 조회',
+      component: 'applicationService',
+      context: { applicantId },
+    });
   }
 }
 
@@ -597,21 +612,12 @@ export async function applyToJobV2(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    logger.error('지원하기 v2.0 실패', toError(error), {
-      jobPostingId: input.jobPostingId,
-      applicantId,
+    // handleServiceError가 AppError 서브클래스(AlreadyAppliedError 등)를 자동 보존
+    throw handleServiceError(error, {
+      operation: '지원하기 v2.0',
+      component: 'applicationService',
+      context: { jobPostingId: input.jobPostingId, applicantId },
     });
-
-    if (
-      error instanceof AlreadyAppliedError ||
-      error instanceof ApplicationClosedError ||
-      error instanceof MaxCapacityReachedError ||
-      error instanceof ValidationError
-    ) {
-      throw error;
-    }
-
-    throw mapFirebaseError(error);
   }
 }
 
@@ -727,16 +733,12 @@ export async function requestCancellation(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    logger.error('취소 요청 제출 실패', toError(error), {
-      applicationId: input.applicationId,
-      applicantId,
+    // handleServiceError가 ValidationError를 자동 보존
+    throw handleServiceError(error, {
+      operation: '취소 요청 제출',
+      component: 'applicationService',
+      context: { applicationId: input.applicationId, applicantId },
     });
-
-    if (error instanceof ValidationError) {
-      throw error;
-    }
-
-    throw mapFirebaseError(error);
   }
 }
 
@@ -876,20 +878,12 @@ export async function reviewCancellationRequest(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    logger.error('취소 요청 검토 실패', toError(error), {
-      applicationId: input.applicationId,
-      reviewerId,
+    // handleServiceError가 ValidationError/BusinessError/PermissionError를 자동 보존
+    throw handleServiceError(error, {
+      operation: '취소 요청 검토',
+      component: 'applicationService',
+      context: { applicationId: input.applicationId, reviewerId },
     });
-
-    if (
-      error instanceof ValidationError ||
-      error instanceof BusinessError ||
-      error instanceof PermissionError
-    ) {
-      throw error;
-    }
-
-    throw mapFirebaseError(error);
   }
 }
 
@@ -954,12 +948,10 @@ export async function getCancellationRequests(
 
     return applications;
   } catch (error) {
-    logger.error('취소 요청 목록 조회 실패', toError(error), { jobPostingId });
-
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '취소 요청 목록 조회',
+      component: 'applicationService',
+      context: { jobPostingId, ownerId },
+    });
   }
 }

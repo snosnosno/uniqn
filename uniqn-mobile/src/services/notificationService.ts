@@ -15,7 +15,6 @@ import {
   where,
   orderBy,
   limit,
-  startAfter,
   getDocs,
   getDoc,
   setDoc,
@@ -35,6 +34,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { normalizeError } from '@/errors';
 import { withErrorHandling } from '@/utils/withErrorHandling';
+import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { RealtimeManager } from '@/shared/realtime';
 import { COLLECTIONS } from '@/constants';
 import type {
@@ -110,50 +110,30 @@ export async function fetchNotifications(
   return withErrorHandling(async () => {
     const { userId, filter, pageSize = PAGE_SIZE, lastDoc } = options;
 
-    // 기본 쿼리 조건
     const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-    let q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      orderBy('createdAt', 'desc'),
-      limit(pageSize + 1) // 다음 페이지 존재 여부 확인용
-    );
 
-    // 읽음 여부 필터
-    if (filter?.isRead !== undefined) {
-      q = query(
-        notificationsRef,
-        where('recipientId', '==', userId),
-        where('isRead', '==', filter.isRead),
-        orderBy('createdAt', 'desc'),
-        limit(pageSize + 1)
-      );
-    }
-
-    // 페이지네이션
-    if (lastDoc) {
-      q = query(q, startAfter(lastDoc));
-    }
+    // QueryBuilder를 사용한 쿼리 구성
+    const q = new QueryBuilder(notificationsRef)
+      .whereEqual('recipientId', userId)
+      .whereIf(filter?.isRead !== undefined, 'isRead', '==', filter?.isRead)
+      .orderByDesc('createdAt')
+      .paginate(pageSize, lastDoc)
+      .build();
 
     const snapshot = await getDocs(q);
-    const docs = snapshot.docs;
 
-    // 다음 페이지 존재 여부
-    const hasMore = docs.length > pageSize;
-    const resultDocs = hasMore ? docs.slice(0, pageSize) : docs;
-
-    const notifications = resultDocs.map(docToNotification);
-    const newLastDoc = resultDocs.length > 0 ? resultDocs[resultDocs.length - 1] : null;
+    // 페이지네이션 결과 처리
+    const result = processPaginatedResults(snapshot.docs, pageSize, docToNotification);
 
     logger.info('알림 목록 조회 성공', {
-      count: notifications.length,
-      hasMore,
+      count: result.items.length,
+      hasMore: result.hasMore,
     });
 
     return {
-      notifications,
-      lastDoc: newLastDoc,
-      hasMore,
+      notifications: result.items,
+      lastDoc: result.lastDoc,
+      hasMore: result.hasMore,
     };
   }, 'fetchNotifications');
 }

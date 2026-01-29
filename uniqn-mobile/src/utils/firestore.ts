@@ -516,3 +516,16 @@ export default {
   normalizeTimestamp,
   timestampToDate,
 };
+
+// ============================================================================
+// Query Builder Re-export
+// ============================================================================
+
+export {
+  QueryBuilder,
+  processPaginatedResults,
+  processPaginatedResultsWithFilter,
+  buildQuery,
+  type PaginatedResult,
+  type DateRange,
+} from './firestore/queryBuilder';

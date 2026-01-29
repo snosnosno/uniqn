@@ -10,19 +10,15 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  startAfter,
-  QueryDocumentSnapshot,
-  DocumentData,
   updateDoc,
   increment,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, toError } from '@/errors';
+import { handleServiceError, handleSilentError } from '@/errors';
+import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { startApiTrace } from '@/services/performanceService';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/types';
@@ -64,86 +60,54 @@ export async function getJobPostings(
     logger.info('공고 목록 조회', { filters, pageSize });
 
     const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
-    const constraints: Parameters<typeof query>[1][] = [];
 
-    // 기본 필터: active 상태만
-    constraints.push(where('status', '==', filters?.status || 'active'));
-
-    // 역할 필터
-    if (filters?.roles && filters.roles.length > 0) {
-      // Firestore에서 array-contains-any는 최대 10개까지
-      constraints.push(where('roles', 'array-contains-any', filters.roles.slice(0, 10)));
-    }
-
-    // 지역 필터
-    if (filters?.district) {
-      constraints.push(where('location.district', '==', filters.district));
-    }
-
-    // 긴급 공고 필터
-    if (filters?.isUrgent !== undefined) {
-      constraints.push(where('isUrgent', '==', filters.isUrgent));
-    }
-
-    // 구인자 필터 (내 공고)
-    if (filters?.ownerId) {
-      constraints.push(where('ownerId', '==', filters.ownerId));
-    }
-
-    // 날짜 범위 필터
-    if (filters?.dateRange) {
-      constraints.push(where('workDate', '>=', filters.dateRange.start));
-      constraints.push(where('workDate', '<=', filters.dateRange.end));
-    }
-
-    // 공고 타입 필터
-    // postingTypes 배열이 있으면 우선 적용 (in 쿼리)
     // 대회공고 포함 시 클라이언트 필터링 필요 (미승인 제외)
     const includesTournamentInArray = filters?.postingTypes?.includes('tournament') ?? false;
+
+    // QueryBuilder로 쿼리 조합
+    const qb = new QueryBuilder(jobsRef)
+      // 기본 필터: status
+      .whereEqual('status', filters?.status || 'active')
+      // 역할 필터 (최대 10개)
+      .whereArrayContainsAny('roles', filters?.roles?.slice(0, 10))
+      // 지역 필터
+      .whereIf(!!filters?.district, 'location.district', '==', filters?.district)
+      // 긴급 공고 필터
+      .whereIf(filters?.isUrgent !== undefined, 'isUrgent', '==', filters?.isUrgent)
+      // 구인자 필터 (내 공고)
+      .whereIf(!!filters?.ownerId, 'ownerId', '==', filters?.ownerId)
+      // 날짜 범위 필터
+      .whereDateRange('workDate', filters?.dateRange);
+
+    // 공고 타입 필터 (복잡한 조건은 분기 처리)
     if (filters?.postingTypes && filters.postingTypes.length > 0) {
-      constraints.push(where('postingType', 'in', filters.postingTypes));
+      qb.whereIn('postingType', filters.postingTypes);
     } else if (filters?.postingType === 'tournament') {
       // 대회 공고는 승인된(approved) 것만 일반 목록에 노출
-      constraints.push(where('postingType', '==', 'tournament'));
-      constraints.push(where('tournamentConfig.approvalStatus', '==', 'approved'));
+      qb.whereEqual('postingType', 'tournament');
+      qb.whereEqual('tournamentConfig.approvalStatus', 'approved');
     } else if (filters?.postingType) {
-      constraints.push(where('postingType', '==', filters.postingType));
+      qb.whereEqual('postingType', filters.postingType);
     }
 
     // 단일 날짜 필터 (workDates 배열에서 array-contains 쿼리)
-    if (filters?.workDate && !filters?.dateRange) {
-      constraints.push(where('workDates', 'array-contains', filters.workDate));
-    }
+    qb.whereIf(!!filters?.workDate && !filters?.dateRange, 'workDates', 'array-contains', filters?.workDate);
 
-    // 정렬: 날짜순 (최신순)
-    constraints.push(orderBy('workDate', 'desc'));
-    constraints.push(orderBy('createdAt', 'desc'));
+    // 정렬 및 페이지네이션
+    const q = qb
+      .orderByDesc('workDate')
+      .orderBy('createdAt', 'desc')
+      .paginate(pageSize, lastDocument)
+      .build();
 
-    // 페이지네이션
-    if (lastDocument) {
-      constraints.push(startAfter(lastDocument));
-    }
-
-    constraints.push(limit(pageSize + 1)); // 다음 페이지 존재 여부 확인용
-
-    const q = query(jobsRef, ...constraints);
     const snapshot = await getDocs(q);
 
-    const items: JobPosting[] = [];
-    let lastDoc: QueryDocumentSnapshot<DocumentData> | null = null;
-    let hasMore = false;
-
-    snapshot.docs.forEach((docSnapshot, index) => {
-      if (index < pageSize) {
-        items.push({
-          id: docSnapshot.id,
-          ...docSnapshot.data(),
-        } as JobPosting);
-        lastDoc = docSnapshot;
-      } else {
-        hasMore = true;
-      }
-    });
+    // 페이지네이션 결과 처리
+    const { items, lastDoc, hasMore } = processPaginatedResults(
+      snapshot.docs,
+      pageSize,
+      (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() } as JobPosting)
+    );
 
     // 복수 타입 필터에 tournament 포함 시: 미승인 대회공고 제외 (클라이언트 필터링)
     // Firestore에서 OR 조건 불가하므로 클라이언트에서 처리
@@ -169,8 +133,11 @@ export async function getJobPostings(
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
-    logger.error('공고 목록 조회 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 목록 조회',
+      component: 'jobService',
+      context: { filters, pageSize },
+    });
   }
 }
 
@@ -208,8 +175,11 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();
-    logger.error('공고 상세 조회 실패', toError(error), { id });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 상세 조회',
+      component: 'jobService',
+      context: { jobPostingId: id },
+    });
   }
 }
 
@@ -224,7 +194,12 @@ export async function incrementViewCount(id: string): Promise<void> {
     });
   } catch (error) {
     // 조회수 증가 실패는 무시 (사용자 경험에 영향 없음)
-    logger.warn('조회수 증가 실패', { id, error });
+    handleSilentError(error, {
+      operation: '조회수 증가',
+      component: 'jobService',
+      context: { jobPostingId: id },
+      logLevel: 'warn',
+    });
   }
 }
 
@@ -261,8 +236,11 @@ export async function searchJobPostings(
 
     return filteredItems.slice(0, pageSize);
   } catch (error) {
-    logger.error('공고 검색 실패', toError(error), { searchTerm });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 검색',
+      component: 'jobService',
+      context: { searchTerm },
+    });
   }
 }
 
@@ -276,8 +254,11 @@ export async function getUrgentJobPostings(
     const { items } = await getJobPostings({ status: 'active', isUrgent: true }, pageSize);
     return items;
   } catch (error) {
-    logger.error('긴급 공고 조회 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '긴급 공고 조회',
+      component: 'jobService',
+      context: { pageSize },
+    });
   }
 }
 
@@ -311,8 +292,11 @@ export async function getMyJobPostings(
 
     return items;
   } catch (error) {
-    logger.error('내 공고 조회 실패', toError(error), { ownerId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '내 공고 조회',
+      component: 'jobService',
+      context: { ownerId },  // ownerId 자동 마스킹
+    });
   }
 }
 

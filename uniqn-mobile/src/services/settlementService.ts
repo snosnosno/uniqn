@@ -20,13 +20,13 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import {
-  mapFirebaseError,
+  handleServiceError,
   BusinessError,
   PermissionError,
   ERROR_CODES,
   AlreadySettledError,
-  toError,
 } from '@/errors';
+import { toDateString } from '@/utils/date';
 import { FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
@@ -188,15 +188,10 @@ export interface SettlementFilters {
 // ============================================================================
 
 /**
- * 날짜 문자열을 YYYY-MM-DD 형식으로 변환 (향후 날짜 필터링 시 활용)
- * export for future use - suppresses unused warning
+ * 날짜 문자열을 YYYY-MM-DD 형식으로 변환
+ * @deprecated Use `toDateString` from `@/utils/date` instead
  */
-export function formatSettlementDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
+export const formatSettlementDateString = toDateString;
 
 // ============================================================================
 // Settlement Service
@@ -310,11 +305,11 @@ export async function getWorkLogsByJobPosting(
 
     return workLogs;
   } catch (error) {
-    logger.error('공고별 근무 기록 조회 실패', toError(error), { jobPostingId });
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고별 근무 기록 조회',
+      component: 'settlementService',
+      context: { jobPostingId, ownerId },
+    });
   }
 }
 
@@ -407,11 +402,11 @@ export async function calculateSettlement(
 
     return result;
   } catch (error) {
-    logger.error('정산 금액 계산 실패', toError(error), { workLogId: input.workLogId });
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '정산 금액 계산',
+      component: 'settlementService',
+      context: { workLogId: input.workLogId, ownerId },
+    });
   }
 }
 
@@ -523,11 +518,11 @@ export async function updateWorkTime(
 
     logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
   } catch (error) {
-    logger.error('근무 시간 수정 실패', toError(error), { input });
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '근무 시간 수정',
+      component: 'settlementService',
+      context: { workLogId: input.workLogId, ownerId },
+    });
   }
 }
 
@@ -622,7 +617,8 @@ export async function settleWorkLog(
       message: '정산이 완료되었습니다',
     };
   } catch (error) {
-    logger.error('개별 정산 처리 실패', toError(error), { input });
+    // 개별 정산은 성공/실패 결과를 반환하므로 throw 대신 로깅 후 반환
+    logger.error('개별 정산 처리 실패', error instanceof Error ? error : undefined, { input });
 
     const message = error instanceof BusinessError || error instanceof PermissionError
       ? error.userMessage
@@ -811,11 +807,11 @@ export async function bulkSettlement(
 
     return result;
   } catch (error) {
-    logger.error('일괄 정산 처리 실패', toError(error), { workLogCount: input.workLogIds.length });
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '일괄 정산 처리',
+      component: 'settlementService',
+      context: { workLogCount: input.workLogIds.length, ownerId },
+    });
   }
 }
 
@@ -889,11 +885,11 @@ export async function updateSettlementStatus(
 
     logger.info('정산 상태 변경 완료', { workLogId, status });
   } catch (error) {
-    logger.error('정산 상태 변경 실패', toError(error), { workLogId, status });
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '정산 상태 변경',
+      component: 'settlementService',
+      context: { workLogId, status, ownerId },
+    });
   }
 }
 
@@ -1032,11 +1028,11 @@ export async function getJobPostingSettlementSummary(
 
     return summary;
   } catch (error) {
-    logger.error('공고별 정산 요약 조회 실패', toError(error), { jobPostingId });
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고별 정산 요약 조회',
+      component: 'settlementService',
+      context: { jobPostingId, ownerId },
+    });
   }
 }
 
@@ -1103,7 +1099,10 @@ export async function getMySettlementSummary(
 
     return result;
   } catch (error) {
-    logger.error('전체 정산 요약 조회 실패', toError(error), { ownerId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '전체 정산 요약 조회',
+      component: 'settlementService',
+      context: { ownerId },
+    });
   }
 }

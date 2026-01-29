@@ -24,6 +24,8 @@ import { logger } from '@/utils/logger';
 import { mapFirebaseError, NetworkError, ERROR_CODES, toError } from '@/errors';
 import { FIREBASE_LIMITS } from '@/constants';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
+import { toDateString } from '@/utils/date';
+import { normalizeTimestamp, timestampToDate } from '@/utils/firestore';
 import type {
   ScheduleEvent,
   ScheduleFilters,
@@ -71,47 +73,15 @@ export interface ScheduleQueryResult {
 // ============================================================================
 
 /**
- * 날짜 문자열을 YYYY-MM-DD 형식으로 변환
- */
-function formatDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
  * 월의 시작일과 끝일 계산
  */
 function getMonthRange(year: number, month: number): { start: string; end: string } {
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0);
   return {
-    start: formatDateString(startDate),
-    end: formatDateString(endDate),
+    start: toDateString(startDate),
+    end: toDateString(endDate),
   };
-}
-
-/**
- * Timestamp 또는 문자열을 Timestamp | null로 정규화
- * @description 문자열 마커(FIXED_TIME_MARKER 등)는 null 반환
- */
-function normalizeTimestamp(value: Timestamp | string | null | undefined): Timestamp | null {
-  if (!value) return null;
-  if (typeof value === 'string') return null; // 문자열 마커는 null 처리
-  return value;
-}
-
-/**
- * Timestamp 또는 Date를 Date로 변환
- * @description 안전한 타입 변환으로 as unknown as string 타입 단언 제거
- */
-function timestampToDate(value: Timestamp | Date | string | null | undefined): Date | null {
-  if (!value) return null;
-  if (value instanceof Timestamp) return value.toDate();
-  if (value instanceof Date) return value;
-  const parsed = new Date(value);
-  return isNaN(parsed.getTime()) ? null : parsed;
 }
 
 /**
@@ -403,7 +373,7 @@ function mergeAndDeduplicateSchedules(
  * - 지원/확정 카운트: 미래 날짜 기준으로 계산
  */
 function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
-  const today = formatDateString(new Date());
+  const today = toDateString(new Date());
 
   let completedSchedules = 0;
   let confirmedSchedules = 0;
@@ -472,7 +442,7 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
  */
 export function groupSchedulesByDate(schedules: ScheduleEvent[]): ScheduleGroup[] {
   const groups = new Map<string, ScheduleEvent[]>();
-  const today = formatDateString(new Date());
+  const today = toDateString(new Date());
 
   // 날짜별로 그룹화
   schedules.forEach((schedule) => {
@@ -810,7 +780,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
  * 오늘의 스케줄 조회
  */
 export async function getTodaySchedules(staffId: string): Promise<ScheduleEvent[]> {
-  const today = formatDateString(new Date());
+  const today = toDateString(new Date());
   return getSchedulesByDate(staffId, today);
 }
 
@@ -830,8 +800,8 @@ export async function getUpcomingSchedules(
 
     const { schedules } = await getMySchedules(staffId, {
       dateRange: {
-        start: formatDateString(today),
-        end: formatDateString(endDate),
+        start: toDateString(today),
+        end: toDateString(endDate),
       },
     });
 
@@ -960,8 +930,8 @@ export async function getScheduleStats(staffId: string): Promise<ScheduleStats> 
       staffId,
       {
         dateRange: {
-          start: formatDateString(sixMonthsAgo),
-          end: formatDateString(now),
+          start: toDateString(sixMonthsAgo),
+          end: toDateString(now),
         },
       },
       500
