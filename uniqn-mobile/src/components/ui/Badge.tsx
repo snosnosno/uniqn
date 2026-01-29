@@ -2,7 +2,7 @@
  * UNIQN Mobile - Badge 컴포넌트
  *
  * @description 상태나 카테고리를 표시하는 배지
- * @version 1.0.0
+ * @version 1.1.0 - preset/variant 우선순위 문서화
  */
 
 import React from 'react';
@@ -41,14 +41,35 @@ const BADGE_PRESETS: Record<BadgePreset, { variant: BadgeVariant; label: string 
   tournament: { variant: 'primary', label: '토너먼트' },
 };
 
+/**
+ * Badge 컴포넌트 Props
+ *
+ * @description
+ * preset과 개별 props(variant, children)를 함께 사용할 경우 우선순위:
+ * - variant: `variant` prop > `preset.variant` > 'default'
+ * - children: `children` prop > `preset.label`
+ *
+ * @example
+ * // 프리셋만 사용 (권장)
+ * <Badge preset="confirmed" />  // variant="success", children="확정"
+ *
+ * // 프리셋 + variant 오버라이드 (variant만 변경, 텍스트는 프리셋 사용)
+ * <Badge preset="confirmed" variant="primary" />  // variant="primary", children="확정"
+ *
+ * // 프리셋 + children 오버라이드 (스타일은 프리셋, 텍스트만 변경)
+ * <Badge preset="confirmed">승인됨</Badge>  // variant="success", children="승인됨"
+ *
+ * // 직접 지정 (프리셋 없이)
+ * <Badge variant="error">긴급</Badge>
+ */
 export interface BadgeProps {
-  /** 배지 텍스트 (preset 사용 시 생략 가능) */
+  /** 배지 텍스트 (preset 사용 시 생략 가능, 지정 시 preset.label보다 우선) */
   children?: React.ReactNode;
-  /** 배지 스타일 변형 */
+  /** 배지 스타일 변형 (지정 시 preset.variant보다 우선) */
   variant?: BadgeVariant;
   /** 배지 크기 */
   size?: BadgeSize;
-  /** 프리셋 (variant + children 자동 설정) */
+  /** 프리셋 (variant + children 기본값 자동 설정, 개별 props로 오버라이드 가능) */
   preset?: BadgePreset;
   /** dot 표시 여부 */
   dot?: boolean;
@@ -104,9 +125,13 @@ export function Badge({
   className = '',
   accessibilityLabel,
 }: BadgeProps) {
-  // 프리셋이 있으면 프리셋 설정 사용, 없으면 props 사용
+  // 프리셋 설정 로드
   const presetConfig = preset ? BADGE_PRESETS[preset] : null;
+
+  // 우선순위: variantProp > preset.variant > 'default'
   const variant = variantProp ?? presetConfig?.variant ?? 'default';
+
+  // 우선순위: children > preset.label
   const displayContent = children ?? presetConfig?.label;
 
   const containerClass = `flex-row items-center rounded-full ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
