@@ -37,8 +37,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, toError } from '@/errors';
-import { handleSilentError } from '@/errors/serviceErrorHandler';
+import { toError } from '@/errors';
+import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
@@ -161,8 +161,11 @@ export async function generateEventQR(
 
     return { qrId: docRef.id, displayData };
   } catch (error) {
-    logger.error('이벤트 QR 생성 실패', toError(error), { ...input });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '이벤트 QR 생성',
+      component: 'eventQRService',
+      context: { ...input },
+    });
   }
 }
 
@@ -439,7 +442,11 @@ export async function processEventQRCheckIn(
       throw error;
     }
 
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: 'QR 스캔 출퇴근 처리',
+      component: 'eventQRService',
+      context: { staffId },
+    });
   }
 }
 
@@ -495,8 +502,11 @@ export async function deactivateEventQR(qrId: string): Promise<void> {
     });
     logger.info('QR 코드 비활성화 완료', { qrId });
   } catch (error) {
-    logger.error('QR 코드 비활성화 실패', toError(error), { qrId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: 'QR 코드 비활성화',
+      component: 'eventQRService',
+      context: { qrId },
+    });
   }
 }
 

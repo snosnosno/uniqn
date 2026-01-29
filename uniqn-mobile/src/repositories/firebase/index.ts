@@ -6,7 +6,5 @@
  */
 
 export { FirebaseApplicationRepository } from './ApplicationRepository';
-
-// TODO: Phase 1 완료 후 추가 구현
-// export { FirebaseJobPostingRepository } from './JobPostingRepository';
-// export { FirebaseWorkLogRepository } from './WorkLogRepository';
+export { FirebaseJobPostingRepository } from './JobPostingRepository';
+export { FirebaseWorkLogRepository } from './WorkLogRepository';

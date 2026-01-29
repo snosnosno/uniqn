@@ -23,6 +23,7 @@ import {
 import { getFirebaseFunctions, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { mapFirebaseError, BusinessError, AuthError, PermissionError, ValidationError, ERROR_CODES, toError } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import type {
   ApproveTournamentData,
@@ -226,8 +227,10 @@ export async function getPendingTournamentPostings(): Promise<JobPosting[]> {
     logger.info('승인 대기 대회공고 목록 조회 완료', { count: postings.length });
     return postings;
   } catch (error) {
-    logger.error('승인 대기 대회공고 목록 조회 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '승인 대기 대회공고 목록 조회',
+      component: 'tournamentApprovalService',
+    });
   }
 }
 
@@ -257,8 +260,11 @@ export async function getTournamentPostingsByStatus(
     logger.info('대회공고 목록 조회 완료', { status, count: postings.length });
     return postings;
   } catch (error) {
-    logger.error('대회공고 목록 조회 실패', toError(error), { status });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '대회공고 목록 조회',
+      component: 'tournamentApprovalService',
+      context: { status },
+    });
   }
 }
 
@@ -293,8 +299,11 @@ export async function getMyPendingTournamentPostings(
     });
     return postings;
   } catch (error) {
-    logger.error('내 대회공고 목록 조회 실패', toError(error), { ownerId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '내 대회공고 목록 조회',
+      component: 'tournamentApprovalService',
+      context: { ownerId },
+    });
   }
 }
 
@@ -330,8 +339,11 @@ export async function getTournamentPostingById(
     logger.info('대회공고 상세 조회 완료', { postingId });
     return posting;
   } catch (error) {
-    logger.error('대회공고 상세 조회 실패', toError(error), { postingId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '대회공고 상세 조회',
+      component: 'tournamentApprovalService',
+      context: { postingId },
+    });
   }
 }
 

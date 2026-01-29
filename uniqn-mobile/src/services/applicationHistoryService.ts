@@ -16,7 +16,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, MaxCapacityReachedError, ValidationError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { MaxCapacityReachedError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { WorkLogCreator } from '@/domains/schedule';
@@ -433,10 +434,14 @@ export async function confirmApplicationWithHistory(
 
     return result;
   } catch (error) {
-    logger.error('지원 확정 (v2.0) 실패', toError(error), { applicationId });
-    throw error instanceof ValidationError || error instanceof MaxCapacityReachedError
-      ? error
-      : mapFirebaseError(error);
+    if (error instanceof ValidationError || error instanceof MaxCapacityReachedError) {
+      throw error;
+    }
+    throw handleServiceError(error, {
+      operation: '지원 확정 (v2.0)',
+      component: 'applicationHistoryService',
+      context: { applicationId },
+    });
   }
 }
 
@@ -602,10 +607,14 @@ export async function cancelConfirmation(
 
     return result;
   } catch (error) {
-    logger.error('확정 취소 실패', toError(error), { applicationId });
-    throw error instanceof ValidationError || error instanceof BusinessError
-      ? error
-      : mapFirebaseError(error);
+    if (error instanceof ValidationError || error instanceof BusinessError) {
+      throw error;
+    }
+    throw handleServiceError(error, {
+      operation: '확정 취소',
+      component: 'applicationHistoryService',
+      context: { applicationId },
+    });
   }
 }
 
@@ -692,7 +701,13 @@ export async function getApplicationHistorySummary(
       lastCancelledAt: history.filter((e) => e.cancelledAt).pop()?.cancelledAt,
     };
   } catch (error) {
-    logger.error('확정 이력 요약 조회 실패', toError(error), { applicationId });
-    throw error instanceof BusinessError ? error : mapFirebaseError(error);
+    if (error instanceof BusinessError) {
+      throw error;
+    }
+    throw handleServiceError(error, {
+      operation: '확정 이력 요약 조회',
+      component: 'applicationHistoryService',
+      context: { applicationId },
+    });
   }
 }

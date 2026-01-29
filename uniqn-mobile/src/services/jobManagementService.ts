@@ -18,13 +18,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  mapFirebaseError,
-  BusinessError,
-  PermissionError,
-  ERROR_CODES,
-  toError,
-} from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { FIREBASE_LIMITS } from '@/constants';
 import { migrateJobPostingForWrite } from './jobPostingMigration';
@@ -400,8 +395,11 @@ export async function createJobPosting(
     logger.info('공고 생성 완료', { id: result.id, title: input.title });
     return result;
   } catch (error) {
-    logger.error('공고 생성 실패', toError(error), { ownerId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 생성',
+      component: 'jobManagementService',
+      context: { ownerId },
+    });
   }
 }
 
@@ -502,11 +500,14 @@ export async function updateJobPosting(
 
     return result;
   } catch (error) {
-    logger.error('공고 수정 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 수정',
+      component: 'jobManagementService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -565,11 +566,14 @@ export async function deleteJobPosting(
 
     logger.info('공고 삭제 완료', { jobPostingId });
   } catch (error) {
-    logger.error('공고 삭제 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 삭제',
+      component: 'jobManagementService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -622,11 +626,14 @@ export async function closeJobPosting(
 
     logger.info('공고 마감 완료', { jobPostingId });
   } catch (error) {
-    logger.error('공고 마감 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 마감',
+      component: 'jobManagementService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -697,11 +704,14 @@ export async function reopenJobPosting(
 
     logger.info('공고 재오픈 완료', { jobPostingId });
   } catch (error) {
-    logger.error('공고 재오픈 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 재오픈',
+      component: 'jobManagementService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -753,8 +763,11 @@ export async function getMyJobPostingStats(
 
     return stats;
   } catch (error) {
-    logger.error('내 공고 통계 조회 실패', toError(error), { ownerId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '내 공고 통계 조회',
+      component: 'jobManagementService',
+      context: { ownerId },
+    });
   }
 }
 
@@ -798,7 +811,10 @@ export async function bulkUpdateJobPostingStatus(
 
     return successCount;
   } catch (error) {
-    logger.error('공고 상태 일괄 변경 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고 상태 일괄 변경',
+      component: 'jobManagementService',
+      context: { status, ownerId },
+    });
   }
 }

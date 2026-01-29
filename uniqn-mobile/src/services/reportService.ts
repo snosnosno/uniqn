@@ -18,8 +18,8 @@ import {
   where,
   orderBy,
   serverTimestamp,
-  type QueryConstraint,
 } from 'firebase/firestore';
+import { QueryBuilder } from '@/utils/firestore/queryBuilder';
 import { db, auth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import {
@@ -29,7 +29,6 @@ import {
   parseReportDocument,
 } from '@/schemas';
 import {
-  mapFirebaseError,
   AuthError,
   ValidationError,
   DuplicateReportError,
@@ -39,6 +38,7 @@ import {
   ERROR_CODES,
   toError,
 } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type {
   Report,
   CreateReportInput,
@@ -163,19 +163,16 @@ export async function createReport(input: CreateReportInput): Promise<string> {
       throw error;
     }
 
-    const firebaseError = error as { code?: string; message?: string };
-    logger.error('Failed to create report', toError(error), {
-      input: validatedInput,
-      errorCode: firebaseError.code,
-      errorMessage: firebaseError.message,
-      reportData: {
+    throw handleServiceError(error, {
+      operation: '신고 생성',
+      component: 'reportService',
+      context: {
         type: validatedInput.type,
         reporterType: validatedInput.reporterType,
         targetId: validatedInput.targetId,
         jobPostingId: validatedInput.jobPostingId,
       },
     });
-    throw mapFirebaseError(error);
   }
 }
 
@@ -217,8 +214,11 @@ export async function getReportsByJobPosting(jobPostingId: string): Promise<Repo
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get reports by job posting', toError(error), { jobPostingId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '공고별 신고 목록 조회',
+      component: 'reportService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -254,8 +254,11 @@ export async function getReportsByStaff(staffId: string): Promise<Report[]> {
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get reports by staff', toError(error), { staffId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '스태프별 신고 목록 조회',
+      component: 'reportService',
+      context: { staffId },
+    });
   }
 }
 
@@ -298,8 +301,10 @@ export async function getMyReports(): Promise<Report[]> {
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get my reports', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '내 신고 목록 조회',
+      component: 'reportService',
+    });
   }
 }
 
@@ -331,8 +336,11 @@ export async function getReportById(reportId: string): Promise<Report | null> {
 
     return report as Report;
   } catch (error) {
-    logger.error('Failed to get report by id', toError(error), { reportId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '신고 상세 조회',
+      component: 'reportService',
+      context: { reportId },
+    });
   }
 }
 
@@ -410,8 +418,11 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
       throw error;
     }
 
-    logger.error('Failed to review report', toError(error), { input: validatedInput });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '신고 처리',
+      component: 'reportService',
+      context: { reportId: validatedInput.reportId, status: validatedInput.status },
+    });
   }
 }
 
@@ -480,27 +491,15 @@ export async function getAllReports(filters: GetAllReportsFilters = {}): Promise
   logger.info('Getting all reports (admin)', { filters });
 
   try {
-    const constraints: QueryConstraint[] = [];
+    // QueryBuilder로 조건부 필터링
+    const reportsRef = collection(db, REPORTS_COLLECTION);
+    const q = new QueryBuilder(reportsRef)
+      .whereIf(filters.status && filters.status !== 'all', 'status', '==', filters.status)
+      .whereIf(filters.severity && filters.severity !== 'all', 'severity', '==', filters.severity)
+      .whereIf(filters.reporterType && filters.reporterType !== 'all', 'reporterType', '==', filters.reporterType)
+      .orderByDesc('createdAt')
+      .build();
 
-    // 상태 필터
-    if (filters.status && filters.status !== 'all') {
-      constraints.push(where('status', '==', filters.status));
-    }
-
-    // 심각도 필터
-    if (filters.severity && filters.severity !== 'all') {
-      constraints.push(where('severity', '==', filters.severity));
-    }
-
-    // 신고자 유형 필터
-    if (filters.reporterType && filters.reporterType !== 'all') {
-      constraints.push(where('reporterType', '==', filters.reporterType));
-    }
-
-    // 정렬: 최신순
-    constraints.push(orderBy('createdAt', 'desc'));
-
-    const q = query(collection(db, REPORTS_COLLECTION), ...constraints);
     const snapshot = await getDocs(q);
 
     const rawData = snapshot.docs.map((docSnap) => ({
@@ -517,8 +516,11 @@ export async function getAllReports(filters: GetAllReportsFilters = {}): Promise
 
     return reports as Report[];
   } catch (error) {
-    logger.error('Failed to get all reports', toError(error), { filters });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '전체 신고 목록 조회',
+      component: 'reportService',
+      context: { filters },
+    });
   }
 }
 

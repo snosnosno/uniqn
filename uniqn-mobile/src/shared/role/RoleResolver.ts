@@ -10,7 +10,7 @@
  * 3. 다양한 역할 필드 형식 통합 처리
  */
 
-import { ROLE_LABELS } from '@/constants';
+import { ROLE_LABELS, STAFF_ROLES } from '@/constants';
 import { PermissionError, ERROR_CODES } from '@/errors';
 import type { UserRole } from '@/types';
 import type {
@@ -220,6 +220,64 @@ export class RoleResolver {
   // ==========================================================================
   // 직무 역할 (StaffRole) 관련
   // ==========================================================================
+
+  /**
+   * 역할 키 또는 이름을 표시명으로 변환
+   *
+   * @description 영어 코드(dealer) 또는 한글명(딜러) 모두 처리
+   * 커스텀 역할은 그대로 반환
+   *
+   * @param roleKeyOrName - 역할 키 또는 이름
+   * @returns 표시용 역할명 (한글)
+   *
+   * @example
+   * RoleResolver.toDisplayName('dealer') // '딜러'
+   * RoleResolver.toDisplayName('딜러') // '딜러'
+   * RoleResolver.toDisplayName('custom') // 'custom' (매핑 없으면 그대로)
+   */
+  static toDisplayName(roleKeyOrName: string): string {
+    if (!roleKeyOrName) return '';
+
+    // key로 찾기
+    const byKey = STAFF_ROLES.find((r) => r.key === roleKeyOrName);
+    if (byKey) return byKey.name;
+
+    // name으로 찾기 (이미 한글인 경우)
+    const byName = STAFF_ROLES.find((r) => r.name === roleKeyOrName);
+    if (byName) return byName.name;
+
+    // 찾지 못하면 원래 값 반환 (커스텀 역할)
+    return roleKeyOrName;
+  }
+
+  /**
+   * 역할 이름 또는 키를 영어 키로 변환
+   *
+   * @description 한글명(딜러) 또는 영어 코드(dealer) 모두 처리
+   * 커스텀 역할은 그대로 반환
+   *
+   * @param roleKeyOrName - 역할 키 또는 이름
+   * @returns 역할 키 (영어)
+   *
+   * @example
+   * RoleResolver.toKey('딜러') // 'dealer'
+   * RoleResolver.toKey('dealer') // 'dealer'
+   * RoleResolver.toKey('커스텀역할') // '커스텀역할' (매핑 없으면 그대로)
+   */
+  static toKey(roleKeyOrName: string): string {
+    if (!roleKeyOrName) return '';
+
+    // 이미 key인 경우
+    const byKey = STAFF_ROLES.find((r) => r.key === roleKeyOrName);
+    if (byKey) return byKey.key;
+
+    // name인 경우 key로 변환
+    const byName = STAFF_ROLES.find((r) => r.name === roleKeyOrName);
+    if (byName) return byName.key;
+
+    // 찾지 못하면 원래 값 반환 (커스텀 역할)
+    return roleKeyOrName;
+  }
 
   /**
    * 직무 역할 표시명 반환

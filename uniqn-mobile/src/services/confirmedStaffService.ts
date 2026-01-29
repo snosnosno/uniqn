@@ -30,12 +30,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  mapFirebaseError,
-  BusinessError,
-  ERROR_CODES,
-  toError,
-} from '@/errors';
+import { BusinessError, ERROR_CODES, toError } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import {
   workLogToConfirmedStaff,
@@ -187,8 +183,11 @@ export async function getConfirmedStaff(
 
     return { staff, grouped, stats };
   } catch (error) {
-    logger.error('확정 스태프 목록 조회 실패', toError(error), { jobPostingId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '확정 스태프 목록 조회',
+      component: 'confirmedStaffService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -236,8 +235,11 @@ export async function getConfirmedStaffByDate(
 
     return staff;
   } catch (error) {
-    logger.error('날짜별 확정 스태프 조회 실패', toError(error), { jobPostingId, date });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '날짜별 확정 스태프 조회',
+      component: 'confirmedStaffService',
+      context: { jobPostingId, date },
+    });
   }
 }
 
@@ -294,11 +296,14 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
 
     logger.info('스태프 역할 변경 완료', { workLogId: input.workLogId });
   } catch (error) {
-    logger.error('스태프 역할 변경 실패', toError(error), { ...input });
     if (error instanceof BusinessError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '스태프 역할 변경',
+      component: 'confirmedStaffService',
+      context: { workLogId: input.workLogId },
+    });
   }
 }
 
@@ -370,11 +375,14 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
 
     logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
   } catch (error) {
-    logger.error('근무 시간 수정 실패', toError(error), { workLogId: input.workLogId });
     if (error instanceof BusinessError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '근무 시간 수정',
+      component: 'confirmedStaffService',
+      context: { workLogId: input.workLogId },
+    });
   }
 }
 
@@ -460,11 +468,14 @@ export async function deleteConfirmedStaff(
 
     logger.info('확정 스태프 삭제 완료', { ...input });
   } catch (error) {
-    logger.error('확정 스태프 삭제 실패', toError(error), { ...input });
     if (error instanceof BusinessError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '확정 스태프 삭제',
+      component: 'confirmedStaffService',
+      context: { workLogId: input.workLogId, jobPostingId: input.jobPostingId },
+    });
   }
 }
 
@@ -491,8 +502,11 @@ export async function markAsNoShow(
 
     logger.info('노쇼 처리 완료', { workLogId });
   } catch (error) {
-    logger.error('노쇼 처리 실패', toError(error), { workLogId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '노쇼 처리',
+      component: 'confirmedStaffService',
+      context: { workLogId },
+    });
   }
 }
 
@@ -517,8 +531,11 @@ export async function updateStaffStatus(
 
     logger.info('스태프 상태 변경 완료', { workLogId, status });
   } catch (error) {
-    logger.error('스태프 상태 변경 실패', toError(error), { workLogId, status });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '스태프 상태 변경',
+      component: 'confirmedStaffService',
+      context: { workLogId, status },
+    });
   }
 }
 
@@ -588,8 +605,12 @@ export function subscribeToConfirmedStaff(
       }
     },
     (error) => {
-      logger.error('확정 스태프 구독 에러', error, { jobPostingId });
-      callbacks.onError?.(mapFirebaseError(error) as Error);
+      const appError = handleServiceError(error, {
+        operation: '확정 스태프 구독',
+        component: 'confirmedStaffService',
+        context: { jobPostingId },
+      });
+      callbacks.onError?.(appError as Error);
     }
   );
 

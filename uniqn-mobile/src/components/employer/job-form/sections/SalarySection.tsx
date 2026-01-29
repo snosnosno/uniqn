@@ -9,8 +9,8 @@ import React, { useCallback, useMemo, memo, useEffect } from 'react';
 import { View, Text, Pressable, Switch, TextInput } from 'react-native';
 import { Card } from '@/components';
 import { GiftIcon } from '@/components/icons';
-import { STAFF_ROLES } from '@/constants';
 import { PROVIDED_FLAG } from '@/utils/settlement';
+import { RoleResolver } from '@/shared/role';
 import type { JobPostingFormData, SalaryType, SalaryInfo, FormRoleWithCount } from '@/types';
 
 // ============================================================================
@@ -53,32 +53,9 @@ const parseCurrency = (value: string): number => {
   return parseInt(value.replace(/[^0-9]/g, ''), 10) || 0;
 };
 
-/**
- * 역할 코드를 한글 이름으로 변환
- */
-const getRoleDisplayName = (roleName: string): string => {
-  // 영어 코드로 찾기
-  const staffRoleByKey = STAFF_ROLES.find((r) => r.key === roleName);
-  if (staffRoleByKey) return staffRoleByKey.name;
-  // 한글명으로 찾기 (이미 한글인 경우)
-  const staffRoleByName = STAFF_ROLES.find((r) => r.name === roleName);
-  if (staffRoleByName) return staffRoleByName.name;
-  return roleName;
-};
-
-/**
- * 한글 역할명 또는 영어 코드를 영어 코드로 변환
- */
-const getRoleKey = (role: string): string => {
-  // 이미 영어 코드인 경우
-  const staffRoleByKey = STAFF_ROLES.find((r) => r.key === role);
-  if (staffRoleByKey) return staffRoleByKey.key;
-  // 한글명인 경우 영어 코드로 변환
-  const staffRoleByName = STAFF_ROLES.find((r) => r.name === role);
-  if (staffRoleByName) return staffRoleByName.key;
-  // 찾지 못하면 원래 값 반환 (커스텀 역할)
-  return role;
-};
+// 역할 변환은 RoleResolver 사용
+const getRoleDisplayName = RoleResolver.toDisplayName.bind(RoleResolver);
+const getRoleKey = RoleResolver.toKey.bind(RoleResolver);
 
 /** 추출된 역할 정보 */
 interface ExtractedRole {

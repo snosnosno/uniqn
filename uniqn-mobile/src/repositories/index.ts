@@ -25,7 +25,11 @@
  * ```
  */
 
-import { FirebaseApplicationRepository } from './firebase';
+import {
+  FirebaseApplicationRepository,
+  FirebaseJobPostingRepository,
+  FirebaseWorkLogRepository,
+} from './firebase';
 
 // ============================================================================
 // Interfaces
@@ -50,11 +54,11 @@ export type {
 // Firebase Implementations
 // ============================================================================
 
-export { FirebaseApplicationRepository } from './firebase';
-
-// TODO: Phase 1 완료 후 추가
-// export { FirebaseJobPostingRepository } from './firebase';
-// export { FirebaseWorkLogRepository } from './firebase';
+export {
+  FirebaseApplicationRepository,
+  FirebaseJobPostingRepository,
+  FirebaseWorkLogRepository,
+} from './firebase';
 
 // ============================================================================
 // Singleton Instances
@@ -78,6 +82,38 @@ export { FirebaseApplicationRepository } from './firebase';
  */
 export const applicationRepository = new FirebaseApplicationRepository();
 
-// TODO: Phase 1 완료 후 추가
-// export const jobPostingRepository = new FirebaseJobPostingRepository();
-// export const workLogRepository = new FirebaseWorkLogRepository();
+/**
+ * JobPosting Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { jobPostingRepository } from '@/repositories';
+ *
+ * // 조회
+ * const job = await jobPostingRepository.getById(jobPostingId);
+ *
+ * // 목록 조회
+ * const { items, hasMore } = await jobPostingRepository.getList(filters);
+ * ```
+ */
+export const jobPostingRepository = new FirebaseJobPostingRepository();
+
+/**
+ * WorkLog Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { workLogRepository } from '@/repositories';
+ *
+ * // 조회
+ * const workLogs = await workLogRepository.getByStaffId(staffId);
+ *
+ * // 통계
+ * const stats = await workLogRepository.getStats(staffId);
+ * ```
+ */
+export const workLogRepository = new FirebaseWorkLogRepository();

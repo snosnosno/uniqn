@@ -21,13 +21,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  mapFirebaseError,
-  BusinessError,
-  PermissionError,
-  ERROR_CODES,
-  toError,
-} from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type {
   JobPostingTemplate,
   CreateTemplateInput,
@@ -79,8 +74,11 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
       logger.info('템플릿 조회 권한 없음 (새 사용자)', { userId });
       return [];
     }
-    logger.error('템플릿 목록 조회 실패', toError(error), { userId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '템플릿 목록 조회',
+      component: 'templateService',
+      context: { userId },
+    });
   }
 }
 
@@ -132,8 +130,11 @@ export async function saveTemplate(
 
     return newDocRef.id;
   } catch (error) {
-    logger.error('템플릿 저장 실패', toError(error), { userId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '템플릿 저장',
+      component: 'templateService',
+      context: { userId, name: input.name },
+    });
   }
 }
 
@@ -174,11 +175,14 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
 
     return template;
   } catch (error) {
-    logger.error('템플릿 불러오기 실패', toError(error), { templateId });
     if (error instanceof BusinessError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '템플릿 불러오기',
+      component: 'templateService',
+      context: { templateId },
+    });
   }
 }
 
@@ -217,11 +221,14 @@ export async function deleteTemplate(
 
     logger.info('템플릿 삭제 완료', { templateId });
   } catch (error) {
-    logger.error('템플릿 삭제 실패', toError(error), { templateId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '템플릿 삭제',
+      component: 'templateService',
+      context: { templateId, userId },
+    });
   }
 }
 
@@ -276,10 +283,13 @@ export async function updateTemplate(
 
     logger.info('템플릿 업데이트 완료', { templateId });
   } catch (error) {
-    logger.error('템플릿 업데이트 실패', toError(error), { templateId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '템플릿 업데이트',
+      component: 'templateService',
+      context: { templateId, userId },
+    });
   }
 }

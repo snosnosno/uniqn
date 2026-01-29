@@ -19,7 +19,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, ValidationError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { ValidationError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff, StaffRole } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
@@ -313,10 +314,14 @@ export async function convertApplicantToStaff(
 
     return result;
   } catch (error) {
-    logger.error('지원자→스태프 변환 실패', toError(error), { applicationId });
-    throw error instanceof ValidationError || error instanceof BusinessError
-      ? error
-      : mapFirebaseError(error);
+    if (error instanceof ValidationError || error instanceof BusinessError) {
+      throw error;
+    }
+    throw handleServiceError(error, {
+      operation: '지원자→스태프 변환',
+      component: 'applicantConversionService',
+      context: { applicationId },
+    });
   }
 }
 
@@ -381,8 +386,11 @@ export async function batchConvertApplicants(
 
     return result;
   } catch (error) {
-    logger.error('일괄 스태프 변환 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '일괄 스태프 변환',
+      component: 'applicantConversionService',
+      context: { count: applicationIds.length, jobPostingId },
+    });
   }
 }
 
@@ -532,7 +540,13 @@ export async function revertStaffConversion(
 
     logger.info('스태프 변환 취소 완료', { applicationId });
   } catch (error) {
-    logger.error('스태프 변환 취소 실패', toError(error), { applicationId });
-    throw error instanceof ValidationError ? error : mapFirebaseError(error);
+    if (error instanceof ValidationError) {
+      throw error;
+    }
+    throw handleServiceError(error, {
+      operation: '스태프 변환 취소',
+      component: 'applicantConversionService',
+      context: { applicationId },
+    });
   }
 }

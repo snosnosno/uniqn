@@ -21,7 +21,8 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, NetworkError, ERROR_CODES, toError } from '@/errors';
+import { NetworkError, ERROR_CODES, toError } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { FIREBASE_LIMITS } from '@/constants';
 import { toDateString } from '@/utils/date';
 import { timestampToDate } from '@/utils/firestore';
@@ -44,6 +45,7 @@ import {
 import { IdNormalizer } from '@/shared/id';
 import { ScheduleMerger, ScheduleConverter, type JobPostingCardWithMeta } from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';
+import { QueryBuilder } from '@/utils/firestore/queryBuilder';
 
 // ============================================================================
 // Constants
@@ -302,51 +304,41 @@ export async function getMySchedules(
     logger.info('스케줄 목록 조회 시작', { staffId, filters });
 
     // ========================================
-    // 1. WorkLogs 쿼리 구성
+    // 1. WorkLogs 쿼리 구성 (QueryBuilder 사용)
     // ========================================
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const workLogsConstraints: Parameters<typeof query>[1][] = [
-      where('staffId', '==', staffId),
-    ];
 
-    if (filters?.dateRange) {
-      workLogsConstraints.push(where('date', '>=', filters.dateRange.start));
-      workLogsConstraints.push(where('date', '<=', filters.dateRange.end));
-    }
-
+    // 상태 매핑 (UI 상태 → Firestore 상태)
+    let mappedStatus: string | undefined;
     if (filters?.status) {
-      const statusMapping: Record<string, string[]> = {
-        not_started: ['scheduled'],
-        checked_in: ['checked_in'],
-        checked_out: ['checked_out', 'completed'],
+      const statusMapping: Record<string, string> = {
+        not_started: 'scheduled',
+        checked_in: 'checked_in',
+        checked_out: 'checked_out',
       };
-      const firestoreStatuses = statusMapping[filters.status] || [filters.status];
-      if (firestoreStatuses.length === 1) {
-        workLogsConstraints.push(where('status', '==', firestoreStatuses[0]));
-      }
+      mappedStatus = statusMapping[filters.status];
     }
 
-    workLogsConstraints.push(orderBy('date', 'desc'));
-    workLogsConstraints.push(limit(pageSize));
-
-    const workLogsQuery = query(workLogsRef, ...workLogsConstraints);
+    const workLogsQuery = new QueryBuilder(workLogsRef)
+      .whereEqual('staffId', staffId)
+      .whereDateRange('date', filters?.dateRange)
+      .whereIf(!!mappedStatus, 'status', '==', mappedStatus)
+      .orderByDesc('date')
+      .limit(pageSize)
+      .build();
 
     // ========================================
-    // 2. Applications 쿼리 구성
+    // 2. Applications 쿼리 구성 (QueryBuilder 사용)
     // ========================================
     // 복합 인덱스: applicantId + status + createdAt (firestore.indexes.json 참조)
-    // 인덱스 생성 완료 후 orderBy('createdAt', 'desc') 추가 가능
     const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-    const applicationsConstraints: Parameters<typeof query>[1][] = [
-      where('applicantId', '==', staffId),
-      // 스케줄에 표시할 상태만 필터링
-      where('status', 'in', ['applied', 'pending']),
-    ];
 
-    applicationsConstraints.push(orderBy('createdAt', 'desc'));
-    applicationsConstraints.push(limit(pageSize));
-
-    const applicationsQuery = query(applicationsRef, ...applicationsConstraints);
+    const applicationsQuery = new QueryBuilder(applicationsRef)
+      .whereEqual('applicantId', staffId)
+      .whereIn('status', ['applied', 'pending'])
+      .orderByDesc('createdAt')
+      .limit(pageSize)
+      .build();
 
     // ========================================
     // 3. 병렬 조회 (부분 실패 허용)
@@ -472,9 +464,11 @@ export async function getMySchedules(
 
     return { schedules: filteredSchedules, stats };
   } catch (error) {
-    const appError = mapFirebaseError(error);
-    logger.error('스케줄 목록 조회 실패', appError, { staffId });
-    throw appError;
+    throw handleServiceError(error, {
+      operation: '스케줄 목록 조회',
+      component: 'scheduleService',
+      context: { staffId },
+    });
   }
 }
 
@@ -494,8 +488,11 @@ export async function getSchedulesByDate(
 
     return schedules;
   } catch (error) {
-    logger.error('날짜별 스케줄 조회 실패', toError(error), { staffId, date });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '날짜별 스케줄 조회',
+      component: 'scheduleService',
+      context: { staffId, date },
+    });
   }
 }
 
@@ -514,8 +511,11 @@ export async function getSchedulesByMonth(
 
     return await getMySchedules(staffId, { dateRange }, 100);
   } catch (error) {
-    logger.error('월별 스케줄 조회 실패', toError(error), { staffId, year, month });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '월별 스케줄 조회',
+      component: 'scheduleService',
+      context: { staffId, year, month },
+    });
   }
 }
 
@@ -567,8 +567,11 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
 
     return ScheduleConverter.workLogToScheduleEvent(workLog, cardInfo);
   } catch (error) {
-    logger.error('스케줄 상세 조회 실패', toError(error), { scheduleId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '스케줄 상세 조회',
+      component: 'scheduleService',
+      context: { scheduleId },
+    });
   }
 }
 
@@ -604,8 +607,11 @@ export async function getUpcomingSchedules(
     // confirmed 상태만 필터링
     return schedules.filter((s) => s.type === 'confirmed' || s.type === 'applied');
   } catch (error) {
-    logger.error('다가오는 스케줄 조회 실패', toError(error), { staffId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '다가오는 스케줄 조회',
+      component: 'scheduleService',
+      context: { staffId },
+    });
   }
 }
 
@@ -735,7 +741,10 @@ export async function getScheduleStats(staffId: string): Promise<ScheduleStats> 
 
     return stats;
   } catch (error) {
-    logger.error('스케줄 통계 조회 실패', toError(error), { staffId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '스케줄 통계 조회',
+      component: 'scheduleService',
+      context: { staffId },
+    });
   }
 }

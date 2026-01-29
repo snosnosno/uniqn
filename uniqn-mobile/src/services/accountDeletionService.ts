@@ -25,13 +25,8 @@ import {
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  mapFirebaseError,
-  AuthError,
-  BusinessError,
-  ERROR_CODES,
-  toError,
-} from '@/errors';
+import { AuthError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
@@ -177,7 +172,11 @@ export async function requestAccountDeletion(
       });
     }
 
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '회원탈퇴 요청',
+      component: 'accountDeletionService',
+      context: { userId: currentUser.uid, reason },
+    });
   }
 }
 
@@ -222,11 +221,14 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
 
     logger.info('회원탈퇴 철회 완료', { userId });
   } catch (error) {
-    logger.error('회원탈퇴 철회 실패', toError(error), { userId });
     if (error instanceof BusinessError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '회원탈퇴 철회',
+      component: 'accountDeletionService',
+      context: { userId },
+    });
   }
 }
 
@@ -246,8 +248,11 @@ export async function getMyData(userId: string): Promise<FirestoreUserProfile | 
 
     return userDoc.data() as FirestoreUserProfile;
   } catch (error) {
-    logger.error('개인정보 조회 실패', toError(error), { userId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '개인정보 조회',
+      component: 'accountDeletionService',
+      context: { userId },
+    });
   }
 }
 
@@ -272,8 +277,11 @@ export async function updateMyData(
 
     logger.info('개인정보 수정 완료', { userId });
   } catch (error) {
-    logger.error('개인정보 수정 실패', toError(error), { userId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '개인정보 수정',
+      component: 'accountDeletionService',
+      context: { userId, fields: Object.keys(updates) },
+    });
   }
 }
 
@@ -337,11 +345,14 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
 
     return exportData;
   } catch (error) {
-    logger.error('데이터 내보내기 실패', toError(error), { userId });
     if (error instanceof BusinessError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '데이터 내보내기',
+      component: 'accountDeletionService',
+      context: { userId },
+    });
   }
 }
 
@@ -403,8 +414,11 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
 
     logger.info('계정 완전 삭제 완료', { userId });
   } catch (error) {
-    logger.error('계정 완전 삭제 실패', toError(error), { userId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '계정 완전 삭제',
+      component: 'accountDeletionService',
+      context: { userId },
+    });
   }
 }
 
@@ -423,7 +437,10 @@ export async function getDeletionStatus(userId: string): Promise<DeletionRequest
     const userData = userDoc.data();
     return (userData.deletionRequest as DeletionRequest) ?? null;
   } catch (error) {
-    logger.error('탈퇴 상태 확인 실패', toError(error), { userId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '탈퇴 상태 확인',
+      component: 'accountDeletionService',
+      context: { userId },
+    });
   }
 }

@@ -21,7 +21,6 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import {
-  mapFirebaseError,
   MaxCapacityReachedError,
   BusinessError,
   PermissionError,
@@ -31,6 +30,7 @@ import {
   ERROR_CODES,
   toError,
 } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
 import type {
@@ -199,11 +199,14 @@ export async function getApplicantsByJobPosting(
 
     return { applicants, stats };
   } catch (error) {
-    logger.error('지원자 목록 조회 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원자 목록 조회',
+      component: 'applicantManagementService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -263,7 +266,6 @@ export async function confirmApplication(
       message: historyResult.message,
     };
   } catch (error) {
-    logger.error('지원 확정 실패', toError(error), { applicationId: input.applicationId });
     if (
       error instanceof BusinessError ||
       error instanceof PermissionError ||
@@ -271,7 +273,11 @@ export async function confirmApplication(
     ) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원 확정',
+      component: 'applicantManagementService',
+      context: { applicationId: input.applicationId },
+    });
   }
 }
 
@@ -352,11 +358,14 @@ export async function rejectApplication(
 
     logger.info('지원 거절 완료', { applicationId: input.applicationId });
   } catch (error) {
-    logger.error('지원 거절 실패', toError(error), { applicationId: input.applicationId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원 거절',
+      component: 'applicantManagementService',
+      context: { applicationId: input.applicationId },
+    });
   }
 }
 
@@ -397,8 +406,10 @@ export async function bulkConfirmApplications(
 
     return result;
   } catch (error) {
-    logger.error('일괄 확정 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '일괄 확정',
+      component: 'applicantManagementService',
+    });
   }
 }
 
@@ -456,11 +467,14 @@ export async function markApplicationAsRead(
       });
     });
   } catch (error) {
-    logger.error('지원 읽음 처리 실패', toError(error), { applicationId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '지원 읽음 처리',
+      component: 'applicantManagementService',
+      context: { applicationId },
+    });
   }
 }
 
@@ -511,11 +525,14 @@ export async function getApplicantStatsByRole(
 
     return statsByRole as Record<StaffRole, ApplicationStats>;
   } catch (error) {
-    logger.error('역할별 지원자 통계 조회 실패', toError(error), { jobPostingId });
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
     }
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '역할별 지원자 통계 조회',
+      component: 'applicantManagementService',
+      context: { jobPostingId },
+    });
   }
 }
 
@@ -684,8 +701,11 @@ export function subscribeToApplicants(
       }
     },
     (firebaseError) => {
-      logger.error('지원자 목록 실시간 구독 에러', firebaseError, { jobPostingId });
-      const appError = mapFirebaseError(firebaseError);
+      const appError = handleServiceError(firebaseError, {
+        operation: '지원자 목록 실시간 구독',
+        component: 'applicantManagementService',
+        context: { jobPostingId },
+      });
 
       // Firebase 에러도 치명적 에러 여부 확인 후 처리
       handleFatalError(appError as Error);

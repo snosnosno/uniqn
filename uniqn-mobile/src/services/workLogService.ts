@@ -23,7 +23,8 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
-import { mapFirebaseError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { BusinessError, ERROR_CODES } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import { toDateString } from '@/utils/date';
 import { trackSettlementComplete } from './analyticsService';
@@ -81,8 +82,11 @@ export async function getMyWorkLogs(
 
     return workLogs;
   } catch (error) {
-    logger.error('근무 기록 목록 조회 실패', toError(error), { staffId: maskSensitiveId(staffId) });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '근무 기록 목록 조회',
+      component: 'workLogService',
+      context: { staffId: maskSensitiveId(staffId) },
+    });
   }
 }
 
@@ -114,14 +118,11 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
       return aTime - bTime;
     });
   } catch (error) {
-    // Firebase 에러 코드만 로깅 (상세 메시지는 보안상 제외)
-    const firebaseCode = (error as { code?: string })?.code || 'unknown';
-    logger.error('날짜별 근무 기록 조회 실패', toError(error), {
-      staffId: maskSensitiveId(staffId),
-      date,
-      firebaseErrorCode: firebaseCode,
+    throw handleServiceError(error, {
+      operation: '날짜별 근무 기록 조회',
+      component: 'workLogService',
+      context: { staffId: maskSensitiveId(staffId), date },
     });
-    throw mapFirebaseError(error);
   }
 }
 
@@ -141,8 +142,11 @@ export async function getWorkLogById(workLogId: string): Promise<WorkLog | null>
 
     return parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
   } catch (error) {
-    logger.error('근무 기록 상세 조회 실패', toError(error), { workLogId });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '근무 기록 상세 조회',
+      component: 'workLogService',
+      context: { workLogId },
+    });
   }
 }
 
@@ -159,8 +163,11 @@ export async function getTodayCheckedInWorkLog(staffId: string): Promise<WorkLog
 
     return workLogs.find((wl) => wl.status === 'checked_in') || null;
   } catch (error) {
-    logger.error('오늘 출근 기록 조회 실패', toError(error), { staffId: maskSensitiveId(staffId) });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '오늘 출근 기록 조회',
+      component: 'workLogService',
+      context: { staffId: maskSensitiveId(staffId) },
+    });
   }
 }
 
@@ -244,8 +251,11 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
       completedPayroll,
     };
   } catch (error) {
-    logger.error('근무 기록 통계 조회 실패', toError(error), { staffId: maskSensitiveId(staffId) });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '근무 기록 통계 조회',
+      component: 'workLogService',
+      context: { staffId: maskSensitiveId(staffId) },
+    });
   }
 }
 
@@ -304,8 +314,11 @@ export async function getMonthlyPayroll(
       workLogs,
     };
   } catch (error) {
-    logger.error('월별 정산 조회 실패', toError(error), { staffId: maskSensitiveId(staffId), year, month });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '월별 정산 조회',
+      component: 'workLogService',
+      context: { staffId: maskSensitiveId(staffId), year, month },
+    });
   }
 }
 
@@ -372,8 +385,11 @@ export async function updateWorkTime(
 
     logger.info('근무 시간 수정 완료', { workLogId });
   } catch (error) {
-    logger.error('근무 시간 수정 실패', toError(error), { workLogId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '근무 시간 수정',
+      component: 'workLogService',
+      context: { workLogId },
+    });
   }
 }
 
@@ -439,8 +455,11 @@ export async function updatePayrollStatus(
       trackSettlementComplete(amount, 1);
     }
   } catch (error) {
-    logger.error('정산 상태 업데이트 실패', toError(error), { workLogId });
-    throw error instanceof Error ? error : mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '정산 상태 업데이트',
+      component: 'workLogService',
+      context: { workLogId },
+    });
   }
 }
 
@@ -503,8 +522,12 @@ export function subscribeToWorkLog(
           callbacks.onUpdate(workLog);
         },
         (error) => {
-          logger.error('근무 기록 구독 에러', error, { workLogId });
-          callbacks.onError?.(mapFirebaseError(error) as Error);
+          const appError = handleServiceError(error, {
+            operation: '근무 기록 구독',
+            component: 'workLogService',
+            context: { workLogId },
+          });
+          callbacks.onError?.(appError as Error);
         }
       );
     }
@@ -577,8 +600,12 @@ export function subscribeToMyWorkLogs(
           onUpdate(workLogs);
         },
         (error) => {
-          logger.error('근무 기록 목록 구독 에러', error, { staffId: maskSensitiveId(staffId) });
-          onError?.(mapFirebaseError(error) as Error);
+          const appError = handleServiceError(error, {
+            operation: '근무 기록 목록 구독',
+            component: 'workLogService',
+            context: { staffId: maskSensitiveId(staffId) },
+          });
+          onError?.(appError as Error);
         }
       );
     }
@@ -638,8 +665,12 @@ export function subscribeToTodayWorkStatus(
           callbacks.onUpdate(workLog);
         },
         (error) => {
-          logger.error('오늘 근무 상태 구독 에러', error, { staffId: maskSensitiveId(staffId) });
-          callbacks.onError?.(mapFirebaseError(error) as Error);
+          const appError = handleServiceError(error, {
+            operation: '오늘 근무 상태 구독',
+            component: 'workLogService',
+            context: { staffId: maskSensitiveId(staffId) },
+          });
+          callbacks.onError?.(appError as Error);
         }
       );
     }

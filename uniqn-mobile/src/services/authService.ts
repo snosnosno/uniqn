@@ -34,9 +34,8 @@ import {
   AuthError,
   BusinessError,
   ERROR_CODES,
-  mapFirebaseError,
-  toError,
 } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
   trackLogin,
   trackSignup,
@@ -114,8 +113,11 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
-    logger.error('로그인 실패', toError(error), { email: data.email });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '로그인',
+      component: 'authService',
+      context: { email: data.email },
+    });
   }
 }
 
@@ -181,8 +183,11 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
-    logger.error('회원가입 실패', toError(error), { email: data.email });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '회원가입',
+      component: 'authService',
+      context: { email: data.email, role: data.role },
+    });
   }
 }
 
@@ -200,8 +205,10 @@ export async function signOut(): Promise<void> {
 
     logger.info('로그아웃 성공');
   } catch (error) {
-    logger.error('로그아웃 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '로그아웃',
+      component: 'authService',
+    });
   }
 }
 
@@ -214,8 +221,11 @@ export async function resetPassword(email: string): Promise<void> {
     await sendPasswordResetEmail(getFirebaseAuth(), email);
     logger.info('비밀번호 재설정 이메일 전송 성공', { email });
   } catch (error) {
-    logger.error('비밀번호 재설정 실패', toError(error), { email });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '비밀번호 재설정',
+      component: 'authService',
+      context: { email },
+    });
   }
 }
 
@@ -232,8 +242,11 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
     return userDoc.data() as UserProfile;
   } catch (error) {
-    logger.error('프로필 조회 실패', toError(error), { uid });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '프로필 조회',
+      component: 'authService',
+      context: { uid },
+    });
   }
 }
 
@@ -277,8 +290,11 @@ export async function updateUserProfile(
 
     logger.info('프로필 업데이트 성공', { uid });
   } catch (error) {
-    logger.error('프로필 업데이트 실패', toError(error), { uid });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '프로필 업데이트',
+      component: 'authService',
+      context: { uid },
+    });
   }
 }
 
@@ -298,8 +314,10 @@ export async function reauthenticate(password: string): Promise<void> {
 
     logger.info('재인증 성공', { uid: user.uid });
   } catch (error) {
-    logger.error('재인증 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '재인증',
+      component: 'authService',
+    });
   }
 }
 
@@ -548,8 +566,10 @@ export async function changePassword(
 
     logger.info('비밀번호 변경 성공', { uid: user.uid });
   } catch (error) {
-    logger.error('비밀번호 변경 실패', toError(error));
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '비밀번호 변경',
+      component: 'authService',
+    });
   }
 }
 
@@ -585,7 +605,10 @@ export async function updateProfilePhotoURL(
 
     logger.info('프로필 사진 업데이트 성공', { uid });
   } catch (error) {
-    logger.error('프로필 사진 업데이트 실패', toError(error), { uid });
-    throw mapFirebaseError(error);
+    throw handleServiceError(error, {
+      operation: '프로필 사진 업데이트',
+      component: 'authService',
+      context: { uid },
+    });
   }
 }
