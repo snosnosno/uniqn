@@ -100,6 +100,14 @@ jest.mock('@/utils/logger', () => ({
   },
 }));
 
+// 스키마 파싱 함수 mock - 테스트 데이터를 그대로 반환
+jest.mock('@/schemas', () => ({
+  parseJobPostingDocument: jest.fn((data) => data),
+  parseJobPostingDocuments: jest.fn((data) => data),
+  parseWorkLogDocument: jest.fn((data) => data),
+  parseWorkLogDocuments: jest.fn((data) => data.filter(Boolean)),
+}));
+
 jest.mock('@/errors', () => ({
   mapFirebaseError: (error: Error) => error,
   ERROR_CODES: {
@@ -144,23 +152,44 @@ jest.mock('@/errors', () => ({
 // Test Utilities
 // ============================================================================
 
-function createMockJobPostingWithSalary(overrides = {}) {
+function createMockJobPostingWithSalary(overrides: Record<string, unknown> = {}) {
   const baseJob = createMockJobPosting();
+  // 스키마 호환 mock 데이터 생성
+  // timestampSchema는 { seconds, nanoseconds } 형식도 허용 (z.instanceof 우회)
+  const mockTimestamp = {
+    seconds: Math.floor(new Date('2024-01-10T00:00:00').getTime() / 1000),
+    nanoseconds: 0,
+  };
   return {
-    ...baseJob,
     id: baseJob.id,
     title: baseJob.title,
-    ownerId: 'employer-1',
+    status: 'active' as const,
+    // 스키마 요구사항: location은 객체
+    location: {
+      name: '서울 강남구',
+      district: '강남구',
+    },
+    detailedAddress: '테헤란로 123',
+    // 스키마 요구사항: workDate, timeSlot 필수
+    workDate: '2024-01-15',
+    timeSlot: '09:00~18:00',
     // v2.0: 역할별 급여가 roles 배열에 포함
     roles: [
       { role: 'dealer', count: 3, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
       { role: 'manager', count: 1, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
     ],
+    totalPositions: 4,
+    filledPositions: 0,
+    ownerId: 'employer-1',
+    ownerName: '테스트 구인자',
     defaultSalary: {
       type: 'hourly' as const,
       amount: 15000,
     },
     useSameSalary: true,
+    // 스키마 요구사항: { seconds, nanoseconds } 형식 (z.instanceof 우회)
+    createdAt: mockTimestamp,
+    updatedAt: mockTimestamp,
     ...overrides,
   };
 }
@@ -766,7 +795,9 @@ describe('settlementService', () => {
 
     it('should throw error for non-existent job posting', async () => {
       mockGetDoc.mockResolvedValueOnce({
+        id: 'non-existent',
         exists: () => false,
+        data: () => null,
       });
 
       await expect(
@@ -781,9 +812,14 @@ describe('settlementService', () => {
       });
 
       mockGetDoc.mockResolvedValueOnce({
+        id: 'job-1',
         exists: () => true,
         data: () => jobPosting,
       });
+
+      // PermissionError를 던지기 전에 getDocs가 호출되지 않아야 함
+      // 하지만 mock 설정이 필요함 (코드 경로 보호)
+      mockGetDocs.mockResolvedValueOnce({ docs: [] });
 
       await expect(
         getJobPostingSettlementSummary('job-1', 'employer-1')
