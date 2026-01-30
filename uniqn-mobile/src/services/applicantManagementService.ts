@@ -737,7 +737,8 @@ export async function subscribeToApplicantsAsync(
     });
     logger.warn('구독 전 권한 검증 실패', { jobPostingId, ownerId });
     callbacks.onError?.(error);
-    return () => {}; // 빈 unsubscribe 반환
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    return () => {}; // 빈 unsubscribe 반환 (권한 없음으로 구독 시작 안 함)
   }
 
   // 2. 권한 확인 후 구독 시작

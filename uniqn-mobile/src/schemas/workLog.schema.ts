@@ -6,8 +6,10 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/utils/logger';
 import { payrollStatusSchema } from './schedule.schema';
 import { timestampSchema, optionalTimestampSchema } from './common';
+import type { WorkLog } from '@/types';
 
 // ============================================================================
 // 근무 기록 상태 스키마
@@ -92,9 +94,6 @@ export type ModifyWorkTimeData = z.infer<typeof modifyWorkTimeSchema>;
 // ============================================================================
 // Firestore 문서 검증 스키마 (런타임 타입 검증)
 // ============================================================================
-
-import { logger } from '@/utils/logger';
-import type { WorkLog } from '@/types';
 
 /**
  * WorkLog Firestore 문서 스키마 (런타임 검증)

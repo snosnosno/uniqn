@@ -31,6 +31,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import type { UserProfile } from '@/services';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 
 // ============================================================================
 // Types
@@ -75,24 +76,13 @@ const STATUS_BADGE_VARIANT: Record<ConfirmedStaffStatus, 'default' | 'primary' |
 // ============================================================================
 
 /**
- * Timestamp를 Date로 변환
- */
-const parseTimestamp = (value: unknown): Date | null => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
-};
-
-/**
  * 근무 시간 계산 (시:분 형식)
+ *
+ * @description TimeNormalizer.parseTime() 사용으로 타입 안전성 확보
  */
-const calculateWorkDuration = (startTime: unknown, endTime: unknown): string | null => {
-  const start = parseTimestamp(startTime);
-  const end = parseTimestamp(endTime);
+const calculateWorkDuration = (startTime: TimeInput, endTime: TimeInput): string | null => {
+  const start = TimeNormalizer.parseTime(startTime);
+  const end = TimeNormalizer.parseTime(endTime);
 
   if (!start || !end) return null;
 
@@ -151,7 +141,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const startTimeStr = useMemo(() => {
     // 1. checkInTime이 있으면 사용 (QR 출근 또는 관리자 수정)
     if (staff.checkInTime) {
-      const date = parseTimestamp(staff.checkInTime);
+      const date = TimeNormalizer.parseTime(staff.checkInTime);
       return date ? formatTime(date) : '미정';
     }
     // 2. 없으면 timeSlot에서 시작시간 파싱
@@ -166,7 +156,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const endTimeStr = useMemo(() => {
     // checkOutTime이 있으면 사용
     if (staff.checkOutTime) {
-      const date = parseTimestamp(staff.checkOutTime);
+      const date = TimeNormalizer.parseTime(staff.checkOutTime);
       return date ? formatTime(date) : '미정';
     }
     return '미정';  // 퇴근 전까지는 미정

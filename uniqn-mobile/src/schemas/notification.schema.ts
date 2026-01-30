@@ -6,7 +6,9 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/utils/logger';
 import { timestampSchema, optionalTimestampSchema, metadataSchema } from './common';
+import type { NotificationData, NotificationSettings } from '@/types';
 
 // ============================================================================
 // 알림 타입 스키마
@@ -167,9 +169,6 @@ export type MarkAllNotificationsReadData = z.infer<typeof markAllNotificationsRe
 // ============================================================================
 // Firestore 문서 검증 스키마 (런타임 타입 검증)
 // ============================================================================
-
-import { logger } from '@/utils/logger';
-import type { NotificationData, NotificationSettings } from '@/types';
 
 /**
  * Notification Firestore 문서 스키마 (런타임 검증)

@@ -26,6 +26,7 @@ import { getFirebaseDb } from "@/lib/firebase";
 import { logger } from "@/utils/logger";
 import { BusinessError, ERROR_CODES } from "@/errors";
 import { handleServiceError } from "@/errors/serviceErrorHandler";
+import { TimeNormalizer, type TimeInput } from "@/shared/time";
 import type {
   AdminUser,
   AdminUserFilters,
@@ -39,10 +40,8 @@ import type { UserRole } from "@/types/common";
 // Helper Functions
 // ============================================================================
 
-function toDate(timestamp: Timestamp | Date | undefined): Date {
-  if (!timestamp) return new Date();
-  if (timestamp instanceof Date) return timestamp;
-  return timestamp.toDate();
+function toDate(value: TimeInput): Date {
+  return TimeNormalizer.parseTime(value) ?? new Date();
 }
 
 function getTodayStart(): Date {

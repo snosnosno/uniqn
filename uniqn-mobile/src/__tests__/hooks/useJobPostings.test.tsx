@@ -11,6 +11,12 @@ import React from 'react';
 import type { JobPostingCard } from '@/types';
 
 // ============================================================================
+// Import After Mocks
+// ============================================================================
+
+import { useJobPostings } from '@/hooks/useJobPostings';
+
+// ============================================================================
 // Firebase Mock
 // ============================================================================
 
@@ -30,12 +36,6 @@ jest.mock('@/services', () => ({
   getJobPostings: (...args: unknown[]) => mockGetJobPostings(...args),
   convertToCard: (posting: unknown) => mockConvertToCard(posting),
 }));
-
-// ============================================================================
-// Import After Mocks
-// ============================================================================
-
-import { useJobPostings } from '@/hooks/useJobPostings';
 
 // ============================================================================
 // Test Setup
@@ -64,7 +64,7 @@ function createWrapper() {
 function createMockJobPosting(
   id: string,
   workDate: string,
-  dateRequirements?: Array<{ date: string; timeSlots: Array<{ startTime: string }> }>
+  dateRequirements?: { date: string; timeSlots: { startTime: string }[] }[]
 ): JobPostingCard {
   const defaultRole = { role: 'dealer', count: 1, filled: 0 };
   return {

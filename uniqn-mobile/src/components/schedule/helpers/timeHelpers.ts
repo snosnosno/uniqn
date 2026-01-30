@@ -2,34 +2,36 @@
  * UNIQN Mobile - ScheduleCard 시간 헬퍼
  *
  * @description 시간 포맷팅 관련 유틸리티
- * @version 1.0.0
+ * @version 1.1.0 - TimeNormalizer 통합
  */
 
-import { Timestamp } from '@/lib/firebase';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 
 /**
- * Timestamp를 HH:mm 형식으로 포맷
+ * TimeInput을 HH:mm 형식으로 포맷
  */
-export function formatTime(timestamp: Timestamp | null): string {
-  if (!timestamp) return '--:--';
-  const date = timestamp.toDate();
+export function formatTime(value: TimeInput): string {
+  const date = TimeNormalizer.parseTime(value);
+  if (!date) return '--:--';
   return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
 /**
  * 시작/종료 시간 범위 포맷
  */
-export function formatTimeRange(start: Timestamp | null, end: Timestamp | null): string {
+export function formatTimeRange(start: TimeInput, end: TimeInput): string {
   return `${formatTime(start)} - ${formatTime(end)}`;
 }
 
 /**
  * 근무 시간 계산 (자정 넘기 처리 포함)
  */
-export function calculateDuration(start: Timestamp | null, end: Timestamp | null): string {
-  if (!start || !end) return '-';
-  const startDate = start.toDate();
-  const endDate = end.toDate();
+export function calculateDuration(start: TimeInput, end: TimeInput): string {
+  const startDate = TimeNormalizer.parseTime(start);
+  const endDate = TimeNormalizer.parseTime(end);
+
+  if (!startDate || !endDate) return '-';
+
   let diffMs = endDate.getTime() - startDate.getTime();
 
   // 자정을 넘어가는 경우 (예: 18:00 ~ 02:00)

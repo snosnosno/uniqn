@@ -6,7 +6,13 @@
  */
 
 import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
-import type { JobPosting, JobPostingFilters, JobPostingStatus } from '@/types';
+import type {
+  JobPosting,
+  JobPostingFilters,
+  JobPostingStatus,
+  CreateJobPostingInput,
+  UpdateJobPostingInput,
+} from '@/types';
 
 // ============================================================================
 // Types
@@ -30,6 +36,34 @@ export interface PostingTypeCounts {
   fixed: number;
   tournament: number;
   total: number;
+}
+
+/**
+ * 공고 생성 컨텍스트
+ */
+export interface CreateJobPostingContext {
+  ownerId: string;
+  ownerName: string;
+}
+
+/**
+ * 공고 생성 결과
+ */
+export interface CreateJobPostingResult {
+  id: string;
+  jobPosting: JobPosting;
+}
+
+/**
+ * 공고 통계
+ */
+export interface JobPostingStats {
+  total: number;
+  active: number;
+  closed: number;
+  cancelled: number;
+  totalApplications: number;
+  totalViews: number;
 }
 
 // ============================================================================
@@ -99,4 +133,72 @@ export interface IJobPostingRepository {
    * @param status - 새 상태
    */
   updateStatus(jobPostingId: string, status: JobPostingStatus): Promise<void>;
+
+  // ==========================================================================
+  // 변경 (Write) - 트랜잭션
+  // ==========================================================================
+
+  /**
+   * 공고 생성 (트랜잭션)
+   * @param input - 공고 생성 입력
+   * @param context - 생성자 컨텍스트 (ownerId, ownerName)
+   * @returns 생성된 공고 ID와 데이터
+   */
+  createWithTransaction(
+    input: CreateJobPostingInput,
+    context: CreateJobPostingContext
+  ): Promise<CreateJobPostingResult>;
+
+  /**
+   * 공고 수정 (트랜잭션, 권한 검증 포함)
+   * @param jobPostingId - 공고 ID
+   * @param input - 수정 입력
+   * @param ownerId - 수정 요청자 ID (권한 검증용)
+   */
+  updateWithTransaction(
+    jobPostingId: string,
+    input: UpdateJobPostingInput,
+    ownerId: string
+  ): Promise<JobPosting>;
+
+  /**
+   * 공고 삭제 - Soft Delete (트랜잭션)
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 삭제 요청자 ID (권한 검증용)
+   */
+  deleteWithTransaction(jobPostingId: string, ownerId: string): Promise<void>;
+
+  /**
+   * 공고 마감 (트랜잭션)
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 마감 요청자 ID (권한 검증용)
+   */
+  closeWithTransaction(jobPostingId: string, ownerId: string): Promise<void>;
+
+  /**
+   * 공고 재오픈 (트랜잭션)
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 재오픈 요청자 ID (권한 검증용)
+   */
+  reopenWithTransaction(jobPostingId: string, ownerId: string): Promise<void>;
+
+  /**
+   * 소유자별 공고 통계 조회
+   * @param ownerId - 소유자 ID
+   * @returns 공고 통계
+   */
+  getStatsByOwnerId(ownerId: string): Promise<JobPostingStats>;
+
+  /**
+   * 여러 공고 상태 일괄 변경 (배치 트랜잭션)
+   * @param jobPostingIds - 공고 ID 배열
+   * @param status - 새 상태
+   * @param ownerId - 변경 요청자 ID (권한 검증용)
+   * @returns 변경된 공고 수
+   */
+  bulkUpdateStatus(
+    jobPostingIds: string[],
+    status: JobPostingStatus,
+    ownerId: string
+  ): Promise<number>;
 }

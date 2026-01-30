@@ -10,6 +10,12 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 // ============================================================================
+// Import After Mocks
+// ============================================================================
+
+import { useApplications } from '@/hooks/useApplications';
+
+// ============================================================================
 // Mocks
 // ============================================================================
 
@@ -58,12 +64,6 @@ jest.mock('@/utils/logger', () => ({
 jest.mock('@/shared/errors', () => ({
   createMutationErrorHandler: () => jest.fn(),
 }));
-
-// ============================================================================
-// Import After Mocks
-// ============================================================================
-
-import { useApplications } from '@/hooks/useApplications';
 
 // ============================================================================
 // Test Utilities

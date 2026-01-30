@@ -7,6 +7,7 @@
 
 import type { JobPostingCard } from '@/types/jobPosting';
 import type { SalaryInfo, Allowances, TaxSettings } from '@/utils/settlement';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { TaxCalculator } from './TaxCalculator';
 import { SettlementCache, type CachedSettlement } from './SettlementCache';
 
@@ -18,8 +19,8 @@ import { SettlementCache, type CachedSettlement } from './SettlementCache';
  * 정산 계산 입력
  */
 export interface CalculationInput {
-  startTime: unknown;
-  endTime: unknown;
+  startTime: TimeInput;
+  endTime: TimeInput;
   salaryInfo: SalaryInfo;
   allowances?: Allowances;
   taxSettings?: TaxSettings;
@@ -91,31 +92,14 @@ export class SettlementCalculator {
    * @param endTime - 퇴근 시간 (Date, Timestamp, string)
    * @returns 근무 시간 (소수점 2자리)
    */
-  static calculateHours(startTime: unknown, endTime: unknown): number {
-    const start = this.parseTimestamp(startTime);
-    const end = this.parseTimestamp(endTime);
+  static calculateHours(startTime: TimeInput, endTime: TimeInput): number {
+    const start = TimeNormalizer.parseTime(startTime);
+    const end = TimeNormalizer.parseTime(endTime);
 
     if (!start || !end) return 0;
 
     const totalMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
     return totalMinutes / 60;
-  }
-
-  /**
-   * 타임스탬프 파싱 (다양한 형식 지원)
-   */
-  private static parseTimestamp(value: unknown): Date | null {
-    if (!value) return null;
-    if (value instanceof Date) return value;
-    if (typeof value === 'string') return new Date(value);
-    if (
-      typeof value === 'object' &&
-      'toDate' in value &&
-      typeof (value as { toDate: () => Date }).toDate === 'function'
-    ) {
-      return (value as { toDate: () => Date }).toDate();
-    }
-    return null;
   }
 
   // ==========================================================================
@@ -359,10 +343,10 @@ export class SettlementCalculator {
    */
   static calculateBreakdown(
     workLogData: {
-      checkInTime?: unknown;
-      checkOutTime?: unknown;
-      scheduledStartTime?: unknown;
-      scheduledEndTime?: unknown;
+      checkInTime?: TimeInput;
+      checkOutTime?: TimeInput;
+      scheduledStartTime?: TimeInput;
+      scheduledEndTime?: TimeInput;
       role?: string;
       customRole?: string;
       customSalaryInfo?: SalaryInfo;

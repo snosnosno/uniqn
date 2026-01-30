@@ -7,6 +7,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { FirebaseDocument } from './common';
 import type { JobPostingCard, SalaryType } from './jobPosting';
+import type { TimeInput } from '@/shared/time/types';
 import { StatusMapper } from '@/shared/status';
 
 // Re-export SalaryType from jobPosting (single source of truth)
@@ -115,9 +116,9 @@ export interface ScheduleEvent extends FirebaseDocument {
   startTime: Timestamp | null;
   endTime: Timestamp | null;
   /** 실제 출근 시간 (QR 스캔 또는 관리자 수정) */
-  checkInTime?: Timestamp | null;
+  checkInTime?: TimeInput;
   /** 실제 퇴근 시간 (QR 스캔 또는 관리자 수정) */
-  checkOutTime?: Timestamp | null;
+  checkOutTime?: TimeInput;
 
   // 공고 정보
   /** 공고 ID */
@@ -350,15 +351,15 @@ export interface AttendanceRequest {
  * 근무 시간 수정 이력
  */
 export interface WorkTimeModification {
-  modifiedAt: string | Timestamp;
+  modifiedAt: TimeInput;
   modifiedBy: string;
   reason: string;
-  previousStartTime?: string | Timestamp | null;
-  previousEndTime?: string | Timestamp | null;
+  previousStartTime?: TimeInput;
+  previousEndTime?: TimeInput;
   /** 새 출근 시간 (null = 미정) */
-  newStartTime?: string | Timestamp | null;
+  newStartTime?: TimeInput;
   /** 새 퇴근 시간 (null = 미정) */
-  newEndTime?: string | Timestamp | null;
+  newEndTime?: TimeInput;
 }
 
 /**
@@ -428,9 +429,9 @@ export interface WorkLog extends FirebaseDocument {
 
   // 실제 시간 (QR 스캔 또는 관리자 수정)
   /** 실제 출근 시간 */
-  checkInTime?: Timestamp | null;
+  checkInTime?: TimeInput;
   /** 실제 퇴근 시간 */
-  checkOutTime?: Timestamp | null;
+  checkOutTime?: TimeInput;
 
   // 상태
   status: WorkLogStatus;

@@ -33,7 +33,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
  * 문서 파서 함수 타입
  */
 export type DocumentParser<T> = (
-  docs: Array<{ id: string; [key: string]: unknown }>
+  docs: { id: string; [key: string]: unknown }[]
 ) => T[];
 
 /**
@@ -226,6 +226,9 @@ export function useRealtimeSubscription<T>(
 
       onError?.(appError);
     }
+    // NOTE: scheduleReconnect는 의도적으로 제외 (순환 의존성 방지)
+    // subscribe → scheduleReconnect → subscribe 순환을 피하기 위함
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key, queryFn, parser, enabled, autoReconnect, onError, onData]);
 
   /**
@@ -329,11 +332,13 @@ export function useRealtimeDocument<T>(
 } {
   // 단일 문서 파서를 배열 파서로 변환
   const arrayParser = useCallback(
-    (docs: Array<{ id: string; [key: string]: unknown }>) => {
+    (docs: { id: string; [key: string]: unknown }[]) => {
       if (docs.length === 0) return [];
       const parsed = options.parser(docs[0]);
       return parsed ? [parsed] : [];
     },
+    // options.parser만 사용하므로 전체 options 객체 불필요
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     [options.parser]
   );
 

@@ -7,7 +7,9 @@
 
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
+import { logger } from '@/utils/logger';
 import { timestampSchema } from './common';
+import type { JobPosting } from '@/types';
 
 /**
  * 공고 타입 스키마
@@ -193,9 +195,6 @@ export const applicationMessageSchema = z
 // ============================================================================
 // Firestore 문서 검증 스키마 (런타임 타입 검증)
 // ============================================================================
-
-import { logger } from '@/utils/logger';
-import type { JobPosting } from '@/types';
 
 /**
  * JobPosting Firestore 문서 스키마 (런타임 검증)

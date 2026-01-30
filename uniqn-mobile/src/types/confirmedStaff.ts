@@ -7,6 +7,7 @@
 
 import type { Timestamp } from 'firebase/firestore';
 import type { WorkLog, PayrollStatus } from './schedule';
+import type { TimeInput } from '@/shared/time/types';
 
 // ============================================================================
 // 확정 스태프 상태
@@ -112,10 +113,10 @@ export interface ConfirmedStaff {
   timeSlot?: string;
 
   /** 출근 시간 (QR 출근 또는 관리자 수정, null이면 미정) */
-  checkInTime?: Timestamp | string | null;
+  checkInTime?: TimeInput;
 
   /** 퇴근 시간 (QR 퇴근 또는 관리자 수정, null이면 미정) */
-  checkOutTime?: Timestamp | string | null;
+  checkOutTime?: TimeInput;
 
   /** 예정 출근 시간 */
   scheduledStartTime?: Timestamp | string;
@@ -177,9 +178,9 @@ export interface ConfirmedStaffGroup {
 export interface UpdateWorkTimeInput {
   workLogId: string;
   /** 출근 시간 (null이면 미정으로 설정) */
-  checkInTime: Date | null;
+  checkInTime: TimeInput;
   /** 퇴근 시간 (null이면 미정으로 설정) */
-  checkOutTime: Date | null;
+  checkOutTime: TimeInput;
   reason: string;
   /** 수정자 ID (선택적, 기본값: 'system') */
   modifiedBy?: string;
@@ -263,7 +264,7 @@ export interface ConfirmedStaffStats {
  * WorkLog에서 ConfirmedStaff로 변환
  */
 export function workLogToConfirmedStaff(
-  workLog: WorkLog & { timeSlot?: string; checkInTime?: unknown; checkOutTime?: unknown; customRole?: string },
+  workLog: WorkLog & { timeSlot?: string; checkInTime?: TimeInput; checkOutTime?: TimeInput; customRole?: string },
   staffName?: string
 ): ConfirmedStaff {
   return {

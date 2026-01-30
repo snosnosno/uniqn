@@ -5,24 +5,12 @@
  * @version 1.0.0
  */
 
-import {
-  collection,
-  doc,
-  setDoc,
-  serverTimestamp,
-  Timestamp,
-  runTransaction,
-  query,
-  where,
-  getDocs,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
-import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
-import { FIREBASE_LIMITS } from '@/constants';
 import { migrateJobPostingForWrite } from './jobPostingMigration';
+import { jobPostingRepository } from '@/repositories';
+import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
 import type {
   JobPosting,
   JobPostingStatus,
@@ -34,28 +22,10 @@ import type {
 } from '@/types';
 
 // ============================================================================
-// Constants
+// Types (Re-export from Repository)
 // ============================================================================
 
-const COLLECTION_NAME = 'jobPostings';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface CreateJobPostingResult {
-  id: string;
-  jobPosting: JobPosting;
-}
-
-export interface JobPostingStats {
-  total: number;
-  active: number;
-  closed: number;
-  cancelled: number;
-  totalApplications: number;
-  totalViews: number;
-}
+export type { CreateJobPostingResult, JobPostingStats };
 
 // ============================================================================
 // Helper Functions
@@ -187,118 +157,40 @@ function convertToRoleRequirements(
 // ============================================================================
 
 /**
- * undefined 필드 제거 함수 (Firebase는 undefined 값을 허용하지 않음)
- * 재귀적으로 중첩 객체도 정리
- */
-function removeUndefined<T extends Record<string, unknown>>(obj: T): T {
-  return Object.fromEntries(
-    Object.entries(obj)
-      .filter(([, v]) => v !== undefined)
-      .map(([k, v]) => {
-        // 객체 타입인 경우 재귀적으로 정리
-        if (v && typeof v === 'object' && !Array.isArray(v)) {
-          return [k, removeUndefined(v as Record<string, unknown>)];
-        }
-        return [k, v];
-      })
-  ) as T;
-}
-
-/**
  * 단일 공고 생성 (내부 함수)
+ *
+ * @description Repository 패턴 사용
+ * - 서비스: 역할 변환, 마이그레이션 적용
+ * - Repository: Firebase 저장, 트랜잭션 처리
  */
 async function createSinglePosting(
   input: CreateJobPostingInput,
   ownerId: string,
   ownerName: string
 ): Promise<CreateJobPostingResult> {
-  const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
-  const newDocRef = doc(jobsRef);
-  const now = serverTimestamp();
-
   // 역할 변환 (FormRoleWithCount → RoleRequirement) - salary 포함
   const convertedRoles = convertToRoleRequirements(
     input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
   );
 
-  // 총 모집 인원 계산
-  const totalPositions = convertedRoles.reduce((sum, role) => sum + role.count, 0);
-
-  // input에서 roles, startTime 분리 (startTime은 string → Timestamp 변환 필요)
-  const {
-    roles: _inputRoles,
-    startTime: inputStartTime,
-    ...restInput
-  } = input;
+  // input에서 roles 분리 (변환된 roles 사용)
+  const { roles: _inputRoles, ...restInput } = input;
 
   // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
   const migrationResult = migrateJobPostingForWrite(restInput);
   const migratedInput = migrationResult.data;
 
-  // dateSpecificRequirements에서 날짜만 추출하여 workDates 배열 생성 (array-contains 쿼리용)
-  const workDates = (restInput.dateSpecificRequirements ?? [])
-    .map((req) => {
-      if (typeof req.date === 'string') return req.date;
-      if (req.date && 'toDate' in req.date) {
-        return (req.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
-      }
-      if (req.date && 'seconds' in req.date) {
-        return new Date((req.date as { seconds: number }).seconds * 1000)
-          .toISOString().split('T')[0] ?? '';
-      }
-      return '';
-    })
-    .filter(Boolean);
-
-  const jobPostingData: Omit<JobPosting, 'id'> = removeUndefined({
+  // Repository 호출을 위한 입력 준비
+  const preparedInput: CreateJobPostingInput = {
     ...migratedInput,
     roles: convertedRoles,
-    status: 'active',
-    ownerId,
-    ownerName,
-    // Security Rules 필수 필드: createdBy (ownerId와 동일)
-    createdBy: ownerId,
-    // Security Rules 필수 필드: description (빈 문자열 허용)
-    description: restInput.description || '',
-    // Security Rules: postingType 기본값
-    postingType: restInput.postingType || 'regular',
-    totalPositions,
-    filledPositions: 0,
-    viewCount: 0,
-    applicationCount: 0,
-    // 필수 필드 기본값
-    workDate: restInput.workDate || '',
-    timeSlot: restInput.timeSlot || (inputStartTime ? `${inputStartTime}~` : ''),
-    // 날짜 필터용 배열 (array-contains 쿼리용)
-    workDates: workDates.length > 0 ? workDates : undefined,
-    // 대회공고인 경우 승인 대기 상태로 초기화
-    ...(restInput.postingType === 'tournament' && {
-      tournamentConfig: {
-        approvalStatus: 'pending' as const,
-        submittedAt: now as Timestamp,
-      },
-    }),
-    // 고정공고인 경우 fixedConfig 추가 (게시 기간 7일)
-    // Note: createdAt은 Timestamp.now() 사용 (serverTimestamp()는 Security Rules의 is timestamp 검사 실패)
-    ...(restInput.postingType === 'fixed' && {
-      fixedConfig: {
-        durationDays: 7 as const,
-        createdAt: Timestamp.now(),
-        expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
-      },
-    }),
-    createdAt: now as Timestamp,
-    updatedAt: now as Timestamp,
-  });
-
-  await setDoc(newDocRef, jobPostingData);
-
-  const jobPosting: JobPosting = {
-    id: newDocRef.id,
-    ...jobPostingData,
   };
 
-  return { id: newDocRef.id, jobPosting };
+  // Repository를 통해 공고 생성
+  return jobPostingRepository.createWithTransaction(preparedInput, {
+    ownerId,
+    ownerName,
+  });
 }
 
 /**
@@ -406,6 +298,10 @@ export async function createJobPosting(
 /**
  * 공고 수정 (구인자 전용)
  *
+ * @description Repository 패턴 사용
+ * - 서비스: 역할 변환, 마이그레이션 적용
+ * - Repository: Firebase 트랜잭션, 권한 검증, 비즈니스 규칙 검증
+ *
  * 비즈니스 규칙:
  * - 본인 공고만 수정 가능
  * - 확정된 지원자가 있으면 일부 필드 수정 불가
@@ -418,91 +314,38 @@ export async function updateJobPosting(
   try {
     logger.info('공고 수정 시작', { jobPostingId, ownerId });
 
-    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
+    // 역할 변환 (FormRoleWithCount → RoleRequirement)
+    let convertedRoles: RoleRequirement[] | undefined;
+    if (input.roles) {
+      convertedRoles = convertToRoleRequirements(
+        input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
+      );
+    }
 
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
+    // input에서 roles를 분리 (변환된 roles 사용)
+    const { roles: _inputRoles, ...restInput } = input;
 
-      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
+    // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
+    const migrationResult = migrateJobPostingForWrite(restInput);
+    const migratedInput = migrationResult.data;
 
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 수정할 수 있습니다',
-        });
-      }
+    // Repository 호출을 위한 입력 준비
+    const preparedInput: UpdateJobPostingInput = {
+      ...migratedInput,
+      ...(convertedRoles ? { roles: convertedRoles } : {}),
+    };
 
-      // 확정된 지원자가 있는 경우 일정/역할 수정 불가
-      const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
-      if (hasConfirmedApplicants) {
-        if (input.workDate || input.timeSlot || input.roles) {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
-          });
-        }
-      }
-
-      // 역할 변환 (FormRoleWithCount → RoleRequirement) - 일관된 형식 유지
-      let convertedRoles: RoleRequirement[] | undefined;
-      if (input.roles) {
-        convertedRoles = convertToRoleRequirements(
-          input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
-        );
-      }
-
-      // 총 모집 인원 재계산 (역할이 변경된 경우)
-      let totalPositions = currentData.totalPositions;
-      if (convertedRoles) {
-        totalPositions = convertedRoles.reduce((sum, role) => sum + role.count, 0);
-      }
-
-      // undefined 필드 제거 (Firebase는 undefined 값을 허용하지 않음)
-      const removeUndefinedLocal = <T extends Record<string, unknown>>(obj: T): T => {
-        return Object.fromEntries(
-          Object.entries(obj).filter(([, v]) => v !== undefined)
-        ) as T;
-      };
-
-      // input에서 roles를 분리 (변환된 roles 사용을 위해)
-      const { roles: _inputRoles, ...restInput } = input;
-
-      // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
-      const migrationResult = migrateJobPostingForWrite(restInput);
-      const migratedInput = migrationResult.data;
-
-      const updateData = removeUndefinedLocal({
-        ...migratedInput,
-        ...(convertedRoles ? { roles: convertedRoles } : {}),
-        totalPositions,
-        updatedAt: serverTimestamp(),
-      });
-
-      transaction.update(jobRef, updateData);
-
-      return {
-        ...currentData,
-        ...updateData,
-        id: jobPostingId,
-      } as JobPosting;
-    });
+    // Repository를 통해 공고 수정
+    const result = await jobPostingRepository.updateWithTransaction(
+      jobPostingId,
+      preparedInput,
+      ownerId
+    );
 
     logger.info('공고 수정 완료', { jobPostingId });
 
     return result;
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
     throw handleServiceError(error, {
       operation: '공고 수정',
       component: 'jobManagementService',
@@ -513,6 +356,8 @@ export async function updateJobPosting(
 
 /**
  * 공고 삭제 (Soft Delete)
+ *
+ * @description Repository 패턴 사용
  *
  * 비즈니스 규칙:
  * - 본인 공고만 삭제 가능
@@ -525,50 +370,10 @@ export async function deleteJobPosting(
   try {
     logger.info('공고 삭제 시작', { jobPostingId, ownerId });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 삭제할 수 있습니다',
-        });
-      }
-
-      // 확정된 지원자가 있는 경우 삭제 불가
-      const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
-      if (hasConfirmedApplicants) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
-        });
-      }
-
-      // Soft Delete: status를 cancelled로 변경
-      transaction.update(jobRef, {
-        status: 'cancelled',
-        updatedAt: serverTimestamp(),
-      });
-    });
+    await jobPostingRepository.deleteWithTransaction(jobPostingId, ownerId);
 
     logger.info('공고 삭제 완료', { jobPostingId });
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
     throw handleServiceError(error, {
       operation: '공고 삭제',
       component: 'jobManagementService',
@@ -579,6 +384,8 @@ export async function deleteJobPosting(
 
 /**
  * 공고 마감
+ *
+ * @description Repository 패턴 사용
  */
 export async function closeJobPosting(
   jobPostingId: string,
@@ -587,48 +394,10 @@ export async function closeJobPosting(
   try {
     logger.info('공고 마감 시작', { jobPostingId, ownerId });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 마감할 수 있습니다',
-        });
-      }
-
-      // 이미 마감된 경우
-      if (currentData.status === 'closed') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 마감된 공고입니다',
-        });
-      }
-
-      transaction.update(jobRef, {
-        status: 'closed',
-        updatedAt: serverTimestamp(),
-      });
-    });
+    await jobPostingRepository.closeWithTransaction(jobPostingId, ownerId);
 
     logger.info('공고 마감 완료', { jobPostingId });
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
     throw handleServiceError(error, {
       operation: '공고 마감',
       component: 'jobManagementService',
@@ -639,6 +408,8 @@ export async function closeJobPosting(
 
 /**
  * 공고 재오픈
+ *
+ * @description Repository 패턴 사용
  */
 export async function reopenJobPosting(
   jobPostingId: string,
@@ -647,66 +418,10 @@ export async function reopenJobPosting(
   try {
     logger.info('공고 재오픈 시작', { jobPostingId, ownerId });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const currentData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!currentData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (currentData.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 재오픈할 수 있습니다',
-        });
-      }
-
-      // 활성 상태인 경우
-      if (currentData.status === 'active') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 활성 상태인 공고입니다',
-        });
-      }
-
-      // 취소된 공고는 재오픈 불가
-      if (currentData.status === 'cancelled') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요',
-        });
-      }
-
-      // 고정공고인 경우 expiresAt 갱신 (현재 + 7일)
-      const updateData: Record<string, unknown> = {
-        status: 'active',
-        updatedAt: serverTimestamp(),
-      };
-
-      if (currentData.postingType === 'fixed') {
-        updateData.fixedConfig = {
-          ...currentData.fixedConfig,
-          durationDays: 7,
-          expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
-        };
-      }
-
-      transaction.update(jobRef, updateData);
-    });
+    await jobPostingRepository.reopenWithTransaction(jobPostingId, ownerId);
 
     logger.info('공고 재오픈 완료', { jobPostingId });
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
-      throw error;
-    }
     throw handleServiceError(error, {
       operation: '공고 재오픈',
       component: 'jobManagementService',
@@ -717,6 +432,8 @@ export async function reopenJobPosting(
 
 /**
  * 내 공고 통계 조회
+ *
+ * @description Repository 패턴 사용
  */
 export async function getMyJobPostingStats(
   ownerId: string
@@ -724,40 +441,7 @@ export async function getMyJobPostingStats(
   try {
     logger.info('내 공고 통계 조회', { ownerId });
 
-    const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
-    const q = query(jobsRef, where('ownerId', '==', ownerId));
-
-    const snapshot = await getDocs(q);
-    const jobPostings = parseJobPostingDocuments(
-      snapshot.docs.map((docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }))
-    );
-
-    const stats: JobPostingStats = {
-      total: 0,
-      active: 0,
-      closed: 0,
-      cancelled: 0,
-      totalApplications: 0,
-      totalViews: 0,
-    };
-
-    jobPostings.forEach((data) => {
-      stats.total++;
-      stats.totalApplications += data.applicationCount ?? 0;
-      stats.totalViews += data.viewCount ?? 0;
-
-      switch (data.status) {
-        case 'active':
-          stats.active++;
-          break;
-        case 'closed':
-          stats.closed++;
-          break;
-        case 'cancelled':
-          stats.cancelled++;
-          break;
-      }
-    });
+    const stats = await jobPostingRepository.getStatsByOwnerId(ownerId);
 
     logger.info('내 공고 통계 조회 완료', { ownerId, stats });
 
@@ -773,6 +457,8 @@ export async function getMyJobPostingStats(
 
 /**
  * 공고 상태 일괄 변경
+ *
+ * @description Repository 패턴 사용
  */
 export async function bulkUpdateJobPostingStatus(
   jobPostingIds: string[],
@@ -782,30 +468,11 @@ export async function bulkUpdateJobPostingStatus(
   try {
     logger.info('공고 상태 일괄 변경 시작', { count: jobPostingIds.length, status, ownerId });
 
-    let successCount = 0;
-
-    // Firestore 배치 작업 제한
-    for (let i = 0; i < jobPostingIds.length; i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS) {
-      const batch = jobPostingIds.slice(i, i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS);
-
-      await runTransaction(getFirebaseDb(), async (transaction) => {
-        for (const jobPostingId of batch) {
-          const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
-          const jobDoc = await transaction.get(jobRef);
-
-          if (jobDoc.exists()) {
-            const data = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-            if (data && data.ownerId === ownerId) {
-              transaction.update(jobRef, {
-                status,
-                updatedAt: serverTimestamp(),
-              });
-              successCount++;
-            }
-          }
-        }
-      });
-    }
+    const successCount = await jobPostingRepository.bulkUpdateStatus(
+      jobPostingIds,
+      status,
+      ownerId
+    );
 
     logger.info('공고 상태 일괄 변경 완료', { successCount });
 

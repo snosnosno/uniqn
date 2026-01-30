@@ -7,7 +7,6 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Timestamp } from '@/lib/firebase';
 import { Modal } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { Badge } from '@/components/ui';
@@ -23,6 +22,7 @@ import {
 import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
 
 // ============================================================================
@@ -61,9 +61,9 @@ const attendanceConfig: Record<AttendanceStatus, { label: string; color: string;
 // Helper Functions
 // ============================================================================
 
-function formatTime(timestamp: Timestamp | null): string {
-  if (!timestamp) return '--:--';
-  const date = timestamp.toDate();
+function formatTime(value: TimeInput): string {
+  const date = TimeNormalizer.parseTime(value);
+  if (!date) return '--:--';
   return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
 }
 
@@ -225,7 +225,7 @@ export function ScheduleDetailSheet({
             실제 근무 시간
           </Text>
           <Text className="text-sm text-blue-600 dark:text-blue-300">
-            {formatTime(schedule.checkInTime as Timestamp)} - {formatTime(schedule.checkOutTime as Timestamp)}
+            {formatTime(schedule.checkInTime)} - {formatTime(schedule.checkOutTime)}
           </Text>
         </View>
       )}

@@ -13,11 +13,11 @@ import React, { memo, useState, useCallback } from 'react';
 import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Timestamp } from '@/lib/firebase';
 import { router } from 'expo-router';
 import { XCircleIcon, RefreshIcon } from '@/components/icons';
 import { useTournamentApproval } from '@/hooks/useTournamentApproval';
 import { ConfirmModal } from '@/components/ui/Modal';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { TournamentConfig } from '@/types';
 
 // ============================================================================
@@ -106,13 +106,10 @@ const SIZE_CONFIG = {
 // ============================================================================
 
 /**
- * Timestamp 또는 Date를 Date 객체로 변환
+ * TimeInput을 Date 객체로 변환
  */
-function toDate(value: Timestamp | Date | undefined): Date | null {
-  if (!value) return null;
-  if (value instanceof Timestamp) return value.toDate();
-  if (value instanceof Date) return value;
-  return null;
+function toDate(value: TimeInput): Date | null {
+  return TimeNormalizer.parseTime(value);
 }
 
 /**

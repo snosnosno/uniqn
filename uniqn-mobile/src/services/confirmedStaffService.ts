@@ -48,6 +48,7 @@ import {
 import type { WorkTimeModification, RoleChangeHistory } from '@/types';
 import { STAFF_ROLES } from '@/constants';
 import { StatusMapper } from '@/shared/status';
+import { TimeNormalizer } from '@/shared/time';
 
 // 표준 역할 키 목록 (other 제외)
 const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
@@ -315,10 +316,14 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
  */
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
   try {
+    // TimeInput을 Date로 변환
+    const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
+    const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
+
     logger.info('근무 시간 수정', {
       workLogId: input.workLogId,
-      checkInTime: input.checkInTime?.toISOString() ?? '미정',
-      checkOutTime: input.checkOutTime?.toISOString() ?? '미정',
+      checkInTime: checkInDate?.toISOString() ?? '미정',
+      checkOutTime: checkOutDate?.toISOString() ?? '미정',
     });
 
     const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
@@ -350,8 +355,8 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
       modificationHistory.push({
         previousStartTime: prevCheckIn,
         previousEndTime: prevCheckOut,
-        newStartTime: input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null,
-        newEndTime: input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null,
+        newStartTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
+        newEndTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
         reason: input.reason,
         modifiedBy: input.modifiedBy ?? 'system',
         modifiedAt: Timestamp.now(),
@@ -359,14 +364,14 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
 
       // 업데이트 데이터 구성 (null은 삭제 대신 null로 저장)
       const updateData: Record<string, unknown> = {
-        checkInTime: input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null,
-        checkOutTime: input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null,
+        checkInTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
+        checkOutTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
         modificationHistory,
         updatedAt: serverTimestamp(),
       };
 
       // 퇴근 시간 입력 시에만 상태 변경 (출근 시간만 변경 시에는 기존 상태 유지)
-      if (input.checkOutTime) {
+      if (checkOutDate) {
         updateData.status = 'checked_out';
       }
 

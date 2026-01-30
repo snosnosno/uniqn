@@ -16,6 +16,7 @@ import {
   useApplicantsByJobPosting,
   useApplicantStats,
 } from './useApplicantsByJobPosting';
+import { getPrimaryRoleId } from './helpers';
 
 import {
   useConfirmApplication,
@@ -84,6 +85,8 @@ export {
   useCanConvertToStaff,
 } from './useStaffConversion';
 
+export { getPrimaryRoleId, getAllRoleIds } from './helpers';
+
 // ============================================================================
 // 통합 훅
 // ============================================================================
@@ -134,7 +137,7 @@ export function useApplicantManagement(
     if (filters.role) {
       // 역할 필터링: assignments 기반 (appliedRole 제거됨)
       result = result.filter((a) => {
-        const primaryRole = a.assignments[0]?.roleIds?.[0] || 'other';
+        const primaryRole = getPrimaryRoleId(a.assignments);
         // 표준 역할 매칭
         if (primaryRole === filters.role) return true;
         // 커스텀 역할 매칭: primaryRole이 'other'이고 customRole이 filters.role과 일치

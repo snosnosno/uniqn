@@ -14,6 +14,7 @@ import { Card } from '../ui/Card';
 import { TimeWheelPicker, type TimeValue } from '../ui/TimeWheelPicker';
 import { ClockIcon, AlertCircleIcon, CheckIcon, ChevronDownIcon } from '../icons';
 import { formatTime, formatDate, parseTimeSlotToDate } from '@/utils/dateUtils';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { WorkLog } from '@/types';
 
 // ============================================================================
@@ -40,15 +41,11 @@ export type EditingField = 'startTime' | 'endTime' | null;
 // Helpers
 // ============================================================================
 
-function parseTimestamp(value: unknown): Date {
-  if (!value) return new Date();
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  // Firestore Timestamp
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return new Date();
+/**
+ * TimeInput을 Date로 변환 (null일 경우 현재 시간 반환)
+ */
+function parseTimestamp(value: TimeInput): Date {
+  return TimeNormalizer.parseTime(value) ?? new Date();
 }
 
 function calculateDuration(start: Date, end: Date): string {
@@ -132,7 +129,7 @@ interface TimeInputProps {
   onOpenPicker: () => void;
 }
 
-function TimeInput({
+function TimeInputField({
   label,
   value,
   originalTime,
@@ -495,7 +492,7 @@ export function WorkTimeEditor({
         {/* 시간 편집 카드 */}
         <Card variant="outlined" padding="md" className="mb-4">
           {/* 출근 시간 */}
-          <TimeInput
+          <TimeInputField
             label="출근 시간"
             value={startTimeStr}
             originalTime={originalStartTime}
@@ -506,7 +503,7 @@ export function WorkTimeEditor({
           />
 
           {/* 퇴근 시간 */}
-          <TimeInput
+          <TimeInputField
             label="퇴근 시간"
             value={endTimeStr}
             originalTime={originalEndTime}

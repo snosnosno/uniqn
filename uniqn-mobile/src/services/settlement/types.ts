@@ -6,6 +6,7 @@
  */
 
 import type { WorkLog, PayrollStatus } from '@/types';
+import type { TimeInput } from '@/shared/time/types';
 import type {
   SalaryInfo as UtilitySalaryInfo,
   Allowances as UtilityAllowances,
@@ -114,9 +115,9 @@ export interface SettlementCalculation {
 export interface UpdateWorkTimeInput {
   workLogId: string;
   /** 출근 시간 (null = 미정) */
-  checkInTime?: Date | null;
+  checkInTime?: TimeInput;
   /** 퇴근 시간 (null = 미정) */
-  checkOutTime?: Date | null;
+  checkOutTime?: TimeInput;
   notes?: string;
   reason?: string; // 수정 사유
 }

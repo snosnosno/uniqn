@@ -7,6 +7,7 @@
 
 import type { JobPosting } from '@/types';
 import type { RoleRequirement as DateRoleRequirement } from '@/types/jobPosting/dateRequirement';
+import { getDateString } from '@/types/jobPosting/dateRequirement';
 import type { RoleWithCount } from '@/types/postingConfig';
 import {
   type RoleInfo,
@@ -145,12 +146,8 @@ export function getRolesForDateAndTime(
 
   // 해당 날짜의 요구사항 찾기
   const dateReq = job.dateSpecificRequirements.find((req) => {
-    const reqDate =
-      typeof req.date === 'string'
-        ? req.date
-        : 'toDate' in req.date
-          ? (req.date as { toDate: () => Date }).toDate().toISOString().split('T')[0]
-          : '';
+    // getDateString으로 다양한 형식 (string | Timestamp | { seconds }) 통합 처리
+    const reqDate = getDateString(req.date);
     return reqDate === date;
   });
 

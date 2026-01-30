@@ -7,6 +7,7 @@
 
 import type { SettlementBreakdown, SalaryType as ScheduleSalaryType, TaxType as ScheduleTaxType } from '@/types/schedule';
 import type { JobPostingCard } from '@/types/jobPosting';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 
 // ============================================================================
 // Types
@@ -63,30 +64,24 @@ export const PROVIDED_FLAG = -1;
 
 /**
  * Firebase Timestamp 등 다양한 형식의 날짜를 Date로 변환
+ *
+ * @deprecated TimeNormalizer.parseTime()을 직접 사용하세요
+ * @description 하위 호환성을 위해 유지, unknown 타입 허용
  */
 export function parseTimestamp(value: unknown): Date | null {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (
-    typeof value === 'object' &&
-    'toDate' in value &&
-    typeof (value as { toDate: () => Date }).toDate === 'function'
-  ) {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
+  // unknown을 TimeInput으로 안전하게 캐스팅
+  return TimeNormalizer.parseTime(value as TimeInput);
 }
 
 /**
  * 근무 시간 계산 (시간 단위)
  */
 export function calculateHoursWorked(
-  startTime: unknown,
-  endTime: unknown
+  startTime: TimeInput,
+  endTime: TimeInput
 ): number {
-  const start = parseTimestamp(startTime);
-  const end = parseTimestamp(endTime);
+  const start = TimeNormalizer.parseTime(startTime);
+  const end = TimeNormalizer.parseTime(endTime);
 
   if (!start || !end) return 0;
 
@@ -195,8 +190,8 @@ export function calculateAllowanceAmount(allowances?: Allowances): number {
  * @returns 근무시간, 기본 급여, 수당, 총 금액
  */
 export function calculateSettlement(
-  startTime: unknown,
-  endTime: unknown,
+  startTime: TimeInput,
+  endTime: TimeInput,
   salaryInfo: SalaryInfo,
   allowances?: Allowances
 ): SettlementResult {
@@ -231,8 +226,8 @@ export function calculateSettlement(
  */
 export function calculateSettlementFromWorkLog(
   workLog: {
-    checkInTime?: unknown;
-    checkOutTime?: unknown;
+    checkInTime?: TimeInput;
+    checkOutTime?: TimeInput;
     role?: string;
     customSalaryInfo?: SalaryInfo;
     customAllowances?: Allowances;
@@ -286,8 +281,8 @@ export function calculateSettlementFromWorkLog(
  */
 export function calculateTotalSettlementFromRoles(
   workLogs: {
-    checkInTime?: unknown;
-    checkOutTime?: unknown;
+    checkInTime?: TimeInput;
+    checkOutTime?: TimeInput;
     role?: string;
     customRole?: string;
     customSalaryInfo?: SalaryInfo;
@@ -590,8 +585,8 @@ export interface ExtendedSettlementResult extends SettlementResult {
  * @description taxableItems에 따라 항목별로 세금 적용 여부를 결정
  */
 export function calculateSettlementWithTax(
-  startTime: unknown,
-  endTime: unknown,
+  startTime: TimeInput,
+  endTime: TimeInput,
   salaryInfo: SalaryInfo,
   allowances?: Allowances,
   taxSettings?: TaxSettings
@@ -628,8 +623,8 @@ export function calculateSettlementWithTax(
  */
 export function calculateSettlementFromWorkLogWithTax(
   workLog: WorkLogWithOverrides & {
-    checkInTime?: unknown;
-    checkOutTime?: unknown;
+    checkInTime?: TimeInput;
+    checkOutTime?: TimeInput;
   },
   roles: { role?: string; name?: string; customRole?: string; salary?: SalaryInfo }[] | undefined,
   defaultSalary?: SalaryInfo,
@@ -713,10 +708,10 @@ export function getRoleSalaryFromJobPostingCard(
  */
 export function calculateSettlementBreakdown(
   workLogData: {
-    checkInTime?: unknown;
-    checkOutTime?: unknown;
-    scheduledStartTime?: unknown;
-    scheduledEndTime?: unknown;
+    checkInTime?: TimeInput;
+    checkOutTime?: TimeInput;
+    scheduledStartTime?: TimeInput;
+    scheduledEndTime?: TimeInput;
     role?: string;
     customRole?: string;
     customSalaryInfo?: SalaryInfo;

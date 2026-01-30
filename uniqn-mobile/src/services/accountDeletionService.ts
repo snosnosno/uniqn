@@ -1,8 +1,8 @@
 /**
  * UNIQN Mobile - 회원탈퇴 서비스
  *
- * @description Firebase 기반 회원탈퇴 및 개인정보 관리 서비스
- * @version 1.0.0
+ * @description Repository 패턴 기반 회원탈퇴 및 개인정보 관리 서비스
+ * @version 2.0.0
  *
  * 법적 요구사항:
  * - 회원탈퇴 기능 제공 (개인정보보호법)
@@ -10,80 +10,34 @@
  * - 개인정보 열람/수정/삭제 권리
  */
 
-import {
-  doc,
-  getDoc,
-  getDocs,
-  updateDoc,
-  collection,
-  query,
-  where,
-  writeBatch,
-  serverTimestamp,
-  Timestamp,
-} from 'firebase/firestore';
+import { Timestamp } from 'firebase/firestore';
 import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { getFirebaseDb, getFirebaseAuth } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { AuthError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { AuthError, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { userRepository } from '@/repositories';
+import type { DeletionReason, DeletionRequest, UserDataExport } from '@/repositories';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const USERS_COLLECTION = 'users';
-const APPLICATIONS_COLLECTION = 'applications';
-const WORK_LOGS_COLLECTION = 'workLogs';
-const NOTIFICATIONS_COLLECTION = 'notifications';
-
 /** 회원탈퇴 유예 기간 (일) */
 const DELETION_GRACE_PERIOD_DAYS = 30;
 
 // ============================================================================
-// Types
+// Types (Re-export from Repository)
 // ============================================================================
 
-export type DeletionReason =
-  | 'no_longer_needed'
-  | 'found_better_service'
-  | 'privacy_concerns'
-  | 'too_many_notifications'
-  | 'difficult_to_use'
-  | 'other';
-
-export interface DeletionRequest {
-  userId: string;
-  reason: DeletionReason;
-  reasonDetail?: string;
-  requestedAt: Timestamp;
-  scheduledDeletionAt: Timestamp;
-  status: 'pending' | 'cancelled' | 'completed';
-}
+export type { DeletionReason, DeletionRequest, UserDataExport };
 
 /**
  * @deprecated UserData는 FirestoreUserProfile로 대체됨
  * @see FirestoreUserProfile from '@/types/user'
  */
 export type UserData = FirestoreUserProfile;
-
-export interface UserDataExport {
-  profile: FirestoreUserProfile;
-  applications: {
-    id: string;
-    jobPostingTitle: string;
-    status: string;
-    createdAt: string;
-  }[];
-  workLogs: {
-    id: string;
-    date: string;
-    checkInAt?: string;
-    checkOutAt?: string;
-  }[];
-  exportedAt: string;
-}
 
 // ============================================================================
 // Deletion Reasons (Korean labels)
@@ -105,8 +59,10 @@ export const DELETION_REASONS: Record<DeletionReason, string> = {
 /**
  * 회원탈퇴 요청
  *
- * 1. 비밀번호 재인증 (보안)
- * 2. 계정 비활성화 (즉시)
+ * @description Repository 패턴 사용
+ *
+ * 1. 비밀번호 재인증 (보안) - 서비스에서 처리
+ * 2. 계정 비활성화 (즉시) - Repository를 통해 처리
  * 3. 30일 후 완전 삭제 예약
  */
 export async function requestAccountDeletion(
@@ -125,18 +81,17 @@ export async function requestAccountDeletion(
   try {
     logger.info('회원탈퇴 요청 시작', { userId: currentUser.uid, reason });
 
-    // 1. 비밀번호 재인증
+    // 1. 비밀번호 재인증 (서비스 레이어에서 처리)
     const credential = EmailAuthProvider.credential(currentUser.email, password);
     await reauthenticateWithCredential(currentUser, credential);
 
-    // 2. 탈퇴 요청 정보 저장
+    // 2. 탈퇴 요청 정보 준비
     const now = Timestamp.now();
     const scheduledDeletion = Timestamp.fromDate(
       new Date(Date.now() + DELETION_GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000)
     );
 
-    const deletionRequest: DeletionRequest = {
-      userId: currentUser.uid,
+    const deletionRequestData: Omit<DeletionRequest, 'userId'> = {
       reason,
       reasonDetail,
       requestedAt: now,
@@ -144,13 +99,13 @@ export async function requestAccountDeletion(
       status: 'pending',
     };
 
-    // 3. 사용자 문서 업데이트 (비활성화)
-    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, currentUser.uid);
-    await updateDoc(userRef, {
-      status: 'deactivated',
-      deletionRequest,
-      updatedAt: serverTimestamp(),
-    });
+    // 3. Repository를 통해 저장
+    await userRepository.requestDeletion(currentUser.uid, deletionRequestData);
+
+    const deletionRequest: DeletionRequest = {
+      userId: currentUser.uid,
+      ...deletionRequestData,
+    };
 
     logger.info('회원탈퇴 요청 완료', {
       userId: currentUser.uid,
@@ -182,48 +137,17 @@ export async function requestAccountDeletion(
 
 /**
  * 회원탈퇴 철회 (유예 기간 내)
+ *
+ * @description Repository 패턴 사용
  */
 export async function cancelAccountDeletion(userId: string): Promise<void> {
   try {
     logger.info('회원탈퇴 철회 요청', { userId });
 
-    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '사용자를 찾을 수 없습니다',
-      });
-    }
-
-    const userData = userDoc.data();
-    const deletionRequest = userData.deletionRequest as DeletionRequest | undefined;
-
-    if (!deletionRequest || deletionRequest.status !== 'pending') {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '진행 중인 탈퇴 요청이 없습니다',
-      });
-    }
-
-    // 유예 기간 확인
-    if (deletionRequest.scheduledDeletionAt.toDate() < new Date()) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '탈퇴 유예 기간이 만료되었습니다',
-      });
-    }
-
-    // 탈퇴 취소
-    await updateDoc(userRef, {
-      status: 'active',
-      'deletionRequest.status': 'cancelled',
-      updatedAt: serverTimestamp(),
-    });
+    await userRepository.cancelDeletion(userId);
 
     logger.info('회원탈퇴 철회 완료', { userId });
   } catch (error) {
-    if (error instanceof BusinessError) {
-      throw error;
-    }
     throw handleServiceError(error, {
       operation: '회원탈퇴 철회',
       component: 'accountDeletionService',
@@ -234,19 +158,16 @@ export async function cancelAccountDeletion(userId: string): Promise<void> {
 
 /**
  * 내 개인정보 조회
+ *
+ * @description Repository 패턴 사용
  */
 export async function getMyData(userId: string): Promise<FirestoreUserProfile | null> {
   try {
     logger.info('개인정보 조회', { userId });
 
-    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
-    const userDoc = await getDoc(userRef);
+    const profile = await userRepository.getById(userId);
 
-    if (!userDoc.exists()) {
-      return null;
-    }
-
-    return userDoc.data() as FirestoreUserProfile;
+    return profile;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '개인정보 조회',
@@ -259,7 +180,8 @@ export async function getMyData(userId: string): Promise<FirestoreUserProfile | 
 /**
  * 개인정보 수정
  *
- * @description my-data 화면에서 닉네임만 수정 가능
+ * @description Repository 패턴 사용
+ * my-data 화면에서 닉네임만 수정 가능
  * name, phone은 본인인증 정보라 수정 불가 (profile.tsx에서도 읽기 전용)
  */
 export async function updateMyData(
@@ -269,11 +191,7 @@ export async function updateMyData(
   try {
     logger.info('개인정보 수정', { userId, fields: Object.keys(updates) });
 
-    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
-    await updateDoc(userRef, {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+    await userRepository.updateProfile(userId, updates);
 
     logger.info('개인정보 수정 완료', { userId });
   } catch (error) {
@@ -287,67 +205,23 @@ export async function updateMyData(
 
 /**
  * 내 데이터 내보내기 (JSON)
+ *
+ * @description Repository 패턴 사용
  */
 export async function exportMyData(userId: string): Promise<UserDataExport> {
   try {
     logger.info('데이터 내보내기 시작', { userId });
 
-    // 1. 프로필 정보
-    const profile = await getMyData(userId);
-    if (!profile) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '사용자를 찾을 수 없습니다',
-      });
-    }
-
-    // 2. 지원 내역
-    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-    const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
-    const applicationsSnapshot = await getDocs(applicationsQuery);
-
-    const applications = applicationsSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        jobPostingTitle: data.jobPostingTitle ?? '',
-        status: data.status,
-        createdAt: data.createdAt?.toDate?.()?.toISOString() ?? '',
-      };
-    });
-
-    // 3. 근무 기록
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const workLogsQuery = query(workLogsRef, where('staffId', '==', userId));
-    const workLogsSnapshot = await getDocs(workLogsQuery);
-
-    const workLogs = workLogsSnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        date: data.date ?? '',
-        checkInAt: data.checkInTime?.toDate?.()?.toISOString(),
-        checkOutAt: data.checkOutTime?.toDate?.()?.toISOString(),
-      };
-    });
-
-    const exportData: UserDataExport = {
-      profile,
-      applications,
-      workLogs,
-      exportedAt: new Date().toISOString(),
-    };
+    const exportData = await userRepository.getExportData(userId);
 
     logger.info('데이터 내보내기 완료', {
       userId,
-      applicationsCount: applications.length,
-      workLogsCount: workLogs.length,
+      applicationsCount: exportData.applications.length,
+      workLogsCount: exportData.workLogs.length,
     });
 
     return exportData;
   } catch (error) {
-    if (error instanceof BusinessError) {
-      throw error;
-    }
     throw handleServiceError(error, {
       operation: '데이터 내보내기',
       component: 'accountDeletionService',
@@ -360,57 +234,16 @@ export async function exportMyData(userId: string): Promise<UserDataExport> {
  * 계정 완전 삭제 (Cloud Functions에서 호출)
  * 유예 기간 후 실제 삭제 처리
  *
+ * @description Repository 패턴 사용
  * @internal 이 함수는 Cloud Functions에서만 호출해야 합니다
  */
 export async function permanentlyDeleteAccount(userId: string): Promise<void> {
   try {
     logger.info('계정 완전 삭제 시작', { userId });
 
-    const batch = writeBatch(getFirebaseDb());
+    await userRepository.permanentlyDeleteWithBatch(userId);
 
-    // 1. 지원 내역 익명화
-    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-    const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
-    const applicationsSnapshot = await getDocs(applicationsQuery);
-
-    applicationsSnapshot.docs.forEach((doc) => {
-      batch.update(doc.ref, {
-        applicantId: '[deleted]',
-        applicantName: '[탈퇴한 사용자]',
-        applicantPhone: null,
-      });
-    });
-
-    // 2. 근무 기록 익명화
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const workLogsQuery = query(workLogsRef, where('staffId', '==', userId));
-    const workLogsSnapshot = await getDocs(workLogsQuery);
-
-    workLogsSnapshot.docs.forEach((doc) => {
-      batch.update(doc.ref, {
-        staffId: '[deleted]',
-        staffName: '[탈퇴한 사용자]',
-      });
-    });
-
-    // 3. 알림 삭제
-    const notificationsRef = collection(getFirebaseDb(), NOTIFICATIONS_COLLECTION);
-    const notificationsQuery = query(notificationsRef, where('userId', '==', userId));
-    const notificationsSnapshot = await getDocs(notificationsQuery);
-
-    notificationsSnapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    // 4. 사용자 문서 삭제
-    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
-    batch.delete(userRef);
-
-    // 배치 실행
-    await batch.commit();
-
-    // 5. Firebase Auth 계정 삭제 (이미 로그아웃된 상태일 수 있음)
-    // Note: 실제로는 Cloud Functions에서 Admin SDK로 처리해야 함
+    // Note: Firebase Auth 계정 삭제는 Cloud Functions에서 Admin SDK로 처리해야 함
 
     logger.info('계정 완전 삭제 완료', { userId });
   } catch (error) {
@@ -424,18 +257,12 @@ export async function permanentlyDeleteAccount(userId: string): Promise<void> {
 
 /**
  * 탈퇴 상태 확인
+ *
+ * @description Repository 패턴 사용
  */
 export async function getDeletionStatus(userId: string): Promise<DeletionRequest | null> {
   try {
-    const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
-    const userDoc = await getDoc(userRef);
-
-    if (!userDoc.exists()) {
-      return null;
-    }
-
-    const userData = userDoc.data();
-    return (userData.deletionRequest as DeletionRequest) ?? null;
+    return await userRepository.getDeletionStatus(userId);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '탈퇴 상태 확인',

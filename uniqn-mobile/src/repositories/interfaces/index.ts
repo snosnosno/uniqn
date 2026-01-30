@@ -17,6 +17,9 @@ export type {
   IJobPostingRepository,
   PaginatedJobPostings,
   PostingTypeCounts,
+  CreateJobPostingContext,
+  CreateJobPostingResult,
+  JobPostingStats,
 } from './IJobPostingRepository';
 
 // WorkLog Repository
@@ -25,3 +28,11 @@ export type {
   WorkLogStats,
   MonthlyPayrollSummary,
 } from './IWorkLogRepository';
+
+// User Repository
+export type {
+  IUserRepository,
+  DeletionReason,
+  DeletionRequest,
+  UserDataExport,
+} from './IUserRepository';

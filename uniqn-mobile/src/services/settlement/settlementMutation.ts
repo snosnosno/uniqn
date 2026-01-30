@@ -10,6 +10,7 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
+  type Transaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -29,6 +30,7 @@ import {
 } from '@/utils/settlement';
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
+import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog, PayrollStatus, JobPosting } from '@/types';
 import {
   WORK_LOGS_COLLECTION,
@@ -40,6 +42,76 @@ import {
   type SettlementResult,
   type BulkSettlementResult,
 } from './types';
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/**
+ * 근무 기록 소유권 검증 결과
+ */
+interface WorkLogOwnershipResult {
+  workLog: WorkLog;
+  jobPosting: JobPosting;
+  workLogRef: ReturnType<typeof doc>;
+}
+
+/**
+ * 근무 기록 소유권 검증 (트랜잭션 내부용)
+ *
+ * @description WorkLog 조회 및 JobPosting 소유권 확인
+ * @throws BusinessError 문서를 찾을 수 없는 경우
+ * @throws PermissionError 소유권이 없는 경우
+ */
+async function validateWorkLogOwnership(
+  transaction: Transaction,
+  workLogId: string,
+  ownerId: string,
+  operationMessage: string = '처리'
+): Promise<WorkLogOwnershipResult> {
+  // 1. 근무 기록 조회
+  const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+  const workLogDoc = await transaction.get(workLogRef);
+
+  if (!workLogDoc.exists()) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '근무 기록을 찾을 수 없습니다',
+    });
+  }
+
+  const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+  if (!workLog) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
+    });
+  }
+
+  // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
+  const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+  const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
+  const jobDoc = await transaction.get(jobRef);
+
+  if (!jobDoc.exists()) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '공고를 찾을 수 없습니다',
+    });
+  }
+
+  const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+  if (!jobPosting) {
+    throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+      userMessage: '공고 데이터를 파싱할 수 없습니다',
+    });
+  }
+
+  if (jobPosting.ownerId !== ownerId) {
+    throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+      userMessage: `본인의 공고에 대한 근무 기록만 ${operationMessage}할 수 있습니다`,
+    });
+  }
+
+  return { workLog, jobPosting, workLogRef };
+}
 
 // ============================================================================
 // Work Time Update
@@ -58,46 +130,13 @@ export async function updateWorkTimeForSettlement(
     logger.info('근무 시간 수정 시작', { input, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 근무 기록 조회
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
-      const workLogDoc = await transaction.get(workLogRef);
-
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
-        });
-      }
-
-      // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
-      const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
-        });
-      }
-
-      const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!jobPosting) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고 데이터를 파싱할 수 없습니다',
-        });
-      }
-
-      if (jobPosting.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고에 대한 근무 기록만 수정할 수 있습니다',
-        });
-      }
+      // 1-2. 근무 기록 및 공고 조회 + 소유권 확인
+      const { workLog, workLogRef } = await validateWorkLogOwnership(
+        transaction,
+        input.workLogId,
+        ownerId,
+        '수정'
+      );
 
       // 3. 이미 정산 완료된 경우 수정 불가
       if (workLog.payrollStatus === 'completed') {
@@ -105,6 +144,14 @@ export async function updateWorkTimeForSettlement(
       }
 
       // 4. 수정 데이터 준비 (checkInTime/checkOutTime 사용, null = 미정)
+      // TimeInput을 Date로 변환
+      const checkInDate = input.checkInTime !== undefined
+        ? TimeNormalizer.parseTime(input.checkInTime)
+        : undefined;
+      const checkOutDate = input.checkOutTime !== undefined
+        ? TimeNormalizer.parseTime(input.checkOutTime)
+        : undefined;
+
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),
         // 시간 수정 시 기존 정산 계산 무효화 (재계산 필요)
@@ -113,12 +160,12 @@ export async function updateWorkTimeForSettlement(
 
       // checkInTime 설정 (undefined면 건드리지 않음, null이면 미정으로 저장)
       if (input.checkInTime !== undefined) {
-        updateData.checkInTime = input.checkInTime ? Timestamp.fromDate(input.checkInTime) : null;
+        updateData.checkInTime = checkInDate ? Timestamp.fromDate(checkInDate) : null;
       }
 
       // checkOutTime 설정
       if (input.checkOutTime !== undefined) {
-        updateData.checkOutTime = input.checkOutTime ? Timestamp.fromDate(input.checkOutTime) : null;
+        updateData.checkOutTime = checkOutDate ? Timestamp.fromDate(checkOutDate) : null;
       }
 
       if (input.notes !== undefined) {
@@ -137,14 +184,14 @@ export async function updateWorkTimeForSettlement(
         previousEndTime: prevCheckOut ?? null,
         newStartTime:
           input.checkInTime !== undefined
-            ? input.checkInTime
-              ? Timestamp.fromDate(input.checkInTime)
+            ? checkInDate
+              ? Timestamp.fromDate(checkInDate)
               : null
             : undefined,
         newEndTime:
           input.checkOutTime !== undefined
-            ? input.checkOutTime
-              ? Timestamp.fromDate(input.checkOutTime)
+            ? checkOutDate
+              ? Timestamp.fromDate(checkOutDate)
               : null
             : undefined,
       };
@@ -181,46 +228,13 @@ export async function settleWorkLog(
     logger.info('개별 정산 처리 시작', { input, ownerId });
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 근무 기록 조회
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
-      const workLogDoc = await transaction.get(workLogRef);
-
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
-        });
-      }
-
-      // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
-      const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
-        });
-      }
-
-      const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!jobPosting) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고 데이터를 파싱할 수 없습니다',
-        });
-      }
-
-      if (jobPosting.ownerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고에 대한 정산만 처리할 수 있습니다',
-        });
-      }
+      // 1-2. 근무 기록 및 공고 조회 + 소유권 확인
+      const { workLog, workLogRef } = await validateWorkLogOwnership(
+        transaction,
+        input.workLogId,
+        ownerId,
+        '정산'
+      );
 
       // 3. 출퇴근 완료 여부 확인
       if (workLog.status !== 'checked_out' && workLog.status !== 'completed') {

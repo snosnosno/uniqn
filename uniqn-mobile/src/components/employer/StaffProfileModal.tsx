@@ -32,6 +32,7 @@ import {
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { getUserProfile } from '@/services';
 import type { UserProfile } from '@/services';
 
@@ -76,16 +77,10 @@ const formatDate = (dateStr?: string): string => {
 };
 
 /**
- * Timestamp를 Date로 변환
+ * TimeInput을 Date로 변환 (TimeNormalizer 위임)
  */
-const parseTimestamp = (value: unknown): Date | null => {
-  if (!value) return null;
-  if (value instanceof Date) return value;
-  if (typeof value === 'string') return new Date(value);
-  if (typeof value === 'object' && 'toDate' in value && typeof (value as { toDate: () => Date }).toDate === 'function') {
-    return (value as { toDate: () => Date }).toDate();
-  }
-  return null;
+const parseTimestamp = (value: TimeInput): Date | null => {
+  return TimeNormalizer.parseTime(value);
 };
 
 // ============================================================================

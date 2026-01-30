@@ -14,12 +14,13 @@ import {
   Pressable,
 } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { Timestamp } from '@/lib/firebase';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
+import { formatTime } from './helpers/timeHelpers';
 import {
   CalendarIcon,
   ClockIcon,
-  
+
   BriefcaseIcon,
   CurrencyDollarIcon,
   CheckCircleIcon,
@@ -88,23 +89,6 @@ const PAYROLL_STATUS_CONFIG: Record<
 // ============================================================================
 
 /**
- * Timestamp를 시간 문자열로 변환
- */
-function formatTime(timestamp: string | Timestamp | undefined): string {
-  if (!timestamp) return '--:--';
-
-  const date = typeof timestamp === 'string'
-    ? new Date(timestamp)
-    : timestamp.toDate();
-
-  return date.toLocaleTimeString('ko-KR', {
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  });
-}
-
-/**
  * 날짜 문자열 포맷
  */
 function formatDate(dateString: string): string {
@@ -121,17 +105,13 @@ function formatDate(dateString: string): string {
  * 근무 시간 계산
  */
 function calculateWorkHours(
-  startTime: string | Timestamp | undefined,
-  endTime: string | Timestamp | undefined
+  startTime: TimeInput,
+  endTime: TimeInput
 ): string {
-  if (!startTime || !endTime) return '-';
+  const start = TimeNormalizer.parseTime(startTime);
+  const end = TimeNormalizer.parseTime(endTime);
 
-  const start = typeof startTime === 'string'
-    ? new Date(startTime)
-    : startTime.toDate();
-  const end = typeof endTime === 'string'
-    ? new Date(endTime)
-    : endTime.toDate();
+  if (!start || !end) return '-';
 
   const diffMs = end.getTime() - start.getTime();
   const hours = Math.floor(diffMs / (1000 * 60 * 60));

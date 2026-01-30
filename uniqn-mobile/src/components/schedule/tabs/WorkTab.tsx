@@ -7,8 +7,8 @@
 
 import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
-import { Timestamp } from '@/lib/firebase';
 import { Button, Badge } from '@/components/ui';
+import { formatTime, calculateDuration } from '../helpers/timeHelpers';
 import {
   BriefcaseIcon,
   ClockIcon,
@@ -41,30 +41,6 @@ const attendanceConfig: Record<AttendanceStatus, { label: string; variant: 'defa
 // ============================================================================
 // Helpers
 // ============================================================================
-
-function formatTime(timestamp: Timestamp | string | null | undefined): string {
-  if (!timestamp) return '--:--';
-  const date = typeof timestamp === 'string'
-    ? new Date(timestamp)
-    : timestamp.toDate();
-  return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
-function calculateDuration(
-  start: Timestamp | string | null | undefined,
-  end: Timestamp | string | null | undefined
-): string {
-  if (!start || !end) return '-';
-  const startDate = typeof start === 'string' ? new Date(start) : start.toDate();
-  const endDate = typeof end === 'string' ? new Date(end) : end.toDate();
-  const diffMs = endDate.getTime() - startDate.getTime();
-  if (diffMs <= 0) return '-';
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  if (hours > 0 && minutes > 0) return `${hours}시간 ${minutes}분`;
-  if (hours > 0) return `${hours}시간`;
-  return `${minutes}분`;
-}
 
 /**
  * 전화번호 포맷팅 (010-1234-5678 형식)

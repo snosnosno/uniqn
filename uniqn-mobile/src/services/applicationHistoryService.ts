@@ -28,6 +28,7 @@ import type {
   DateSpecificRequirement,
 } from '@/types';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
+import { getDateString } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Constants
@@ -101,17 +102,8 @@ export function updateDateSpecificRequirementsFilled(
 
       // 해당 날짜의 requirement 찾기
       const dateReq = updatedRequirements.find((req) => {
-        // date가 string, Timestamp, {seconds: number} 형태일 수 있음
-        let reqDateStr: string;
-        if (typeof req.date === 'string') {
-          reqDateStr = req.date;
-        } else if (req.date && 'toDate' in req.date) {
-          reqDateStr = (req.date as { toDate: () => Date }).toDate().toISOString().split('T')[0] ?? '';
-        } else if (req.date && 'seconds' in req.date) {
-          reqDateStr = new Date((req.date as { seconds: number }).seconds * 1000).toISOString().split('T')[0] ?? '';
-        } else {
-          reqDateStr = '';
-        }
+        // getDateString으로 다양한 형식 (string | Timestamp | { seconds }) 통합 처리
+        const reqDateStr = getDateString(req.date);
         return reqDateStr === date;
       });
 

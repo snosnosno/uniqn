@@ -29,6 +29,7 @@ import {
   FirebaseApplicationRepository,
   FirebaseJobPostingRepository,
   FirebaseWorkLogRepository,
+  FirebaseUserRepository,
 } from './firebase';
 
 // ============================================================================
@@ -44,10 +45,18 @@ export type {
   IJobPostingRepository,
   PaginatedJobPostings,
   PostingTypeCounts,
+  CreateJobPostingContext,
+  CreateJobPostingResult,
+  JobPostingStats,
   // WorkLog
   IWorkLogRepository,
   WorkLogStats,
   MonthlyPayrollSummary,
+  // User
+  IUserRepository,
+  DeletionReason,
+  DeletionRequest,
+  UserDataExport,
 } from './interfaces';
 
 // ============================================================================
@@ -58,6 +67,7 @@ export {
   FirebaseApplicationRepository,
   FirebaseJobPostingRepository,
   FirebaseWorkLogRepository,
+  FirebaseUserRepository,
 } from './firebase';
 
 // ============================================================================
@@ -117,3 +127,24 @@ export const jobPostingRepository = new FirebaseJobPostingRepository();
  * ```
  */
 export const workLogRepository = new FirebaseWorkLogRepository();
+
+/**
+ * User Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { userRepository } from '@/repositories';
+ *
+ * // 조회
+ * const profile = await userRepository.getById(userId);
+ *
+ * // 프로필 수정
+ * await userRepository.updateProfile(userId, { nickname: '새닉네임' });
+ *
+ * // 탈퇴 요청 저장
+ * await userRepository.requestDeletion(userId, deletionRequest);
+ * ```
+ */
+export const userRepository = new FirebaseUserRepository();

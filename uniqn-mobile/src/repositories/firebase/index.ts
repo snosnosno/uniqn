@@ -8,3 +8,4 @@
 export { FirebaseApplicationRepository } from './ApplicationRepository';
 export { FirebaseJobPostingRepository } from './JobPostingRepository';
 export { FirebaseWorkLogRepository } from './WorkLogRepository';
+export { FirebaseUserRepository } from './UserRepository';

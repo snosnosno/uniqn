@@ -35,6 +35,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument } from '@/schemas';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
 import { getTodayString } from '@/utils/date';
+import { TimeNormalizer } from '@/shared/time';
 import type {
   IWorkLogRepository,
   WorkLogStats,
@@ -290,14 +291,16 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
           stats.completedCount++;
         }
 
-        // 근무 시간 계산 (체크인/체크아웃 Timestamp에서)
+        // 근무 시간 계산 (체크인/체크아웃에서 - TimeNormalizer 사용)
         if (workLog.checkInTime && workLog.checkOutTime) {
-          const checkIn = workLog.checkInTime.toDate().getTime();
-          const checkOut = workLog.checkOutTime.toDate().getTime();
-          const durationMs = checkOut - checkIn;
-          const durationHours = durationMs / (1000 * 60 * 60);
-          if (durationHours > 0) {
-            stats.totalHoursWorked += durationHours;
+          const checkInDate = TimeNormalizer.parseTime(workLog.checkInTime);
+          const checkOutDate = TimeNormalizer.parseTime(workLog.checkOutTime);
+          if (checkInDate && checkOutDate) {
+            const durationMs = checkOutDate.getTime() - checkInDate.getTime();
+            const durationHours = durationMs / (1000 * 60 * 60);
+            if (durationHours > 0) {
+              stats.totalHoursWorked += durationHours;
+            }
           }
         }
 

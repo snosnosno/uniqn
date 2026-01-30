@@ -5,8 +5,7 @@
  * checkInTime/checkOutTime을 통일된 인터페이스로 정규화
  */
 
-import type { Timestamp } from 'firebase/firestore';
-import type { NormalizedWorkTime, TimeFieldsInput } from './types';
+import type { NormalizedWorkTime, TimeFieldsInput, TimeInput } from './types';
 
 /**
  * TimeNormalizer 클래스
@@ -128,18 +127,24 @@ export class TimeNormalizer {
   }
 
   // ===========================================================================
-  // Private Helpers
+  // 시간 파싱 (Public)
   // ===========================================================================
 
   /**
    * 다양한 형식의 시간을 Date로 변환
    *
-   * @param value Timestamp, Date, string, null, undefined
+   * @description TimeInput 타입의 값을 Date로 정규화
+   * SettlementCalculator, 컴포넌트 등에서 재사용 가능
+   *
+   * @param value TimeInput (Timestamp, Date, string, null, undefined)
    * @returns Date 또는 null
+   *
+   * @example
+   * TimeNormalizer.parseTime(firebaseTimestamp) // Date
+   * TimeNormalizer.parseTime('2025-01-15T09:00:00') // Date
+   * TimeNormalizer.parseTime(null) // null
    */
-  private static parseTime(
-    value: Timestamp | Date | string | null | undefined
-  ): Date | null {
+  static parseTime(value: TimeInput): Date | null {
     if (!value) {
       return null;
     }

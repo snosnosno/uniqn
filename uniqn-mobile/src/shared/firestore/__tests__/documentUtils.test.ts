@@ -15,6 +15,8 @@ import {
 } from '../documentUtils';
 import { BusinessError, PermissionError } from '@/errors';
 
+import { doc, getDoc, getDocs, collection, query } from 'firebase/firestore';
+
 // Mock Firebase
 jest.mock('firebase/firestore', () => ({
   doc: jest.fn((_db, collection, id) => ({ path: `${collection}/${id}` })),
@@ -27,8 +29,6 @@ jest.mock('firebase/firestore', () => ({
 jest.mock('@/lib/firebase', () => ({
   getFirebaseDb: jest.fn(() => ({})),
 }));
-
-import { doc, getDoc, getDocs, collection, query } from 'firebase/firestore';
 
 // Test types
 interface TestDocument {

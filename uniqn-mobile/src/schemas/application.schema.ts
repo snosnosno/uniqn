@@ -7,11 +7,13 @@
 
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
+import { logger } from '@/utils/logger';
 import {
   timestampSchema,
   optionalTimestampSchema,
   optionalDurationSchema,
 } from './common';
+import type { Application } from '@/types';
 
 /**
  * 지원 상태 스키마
@@ -144,9 +146,6 @@ export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
 // ============================================================================
 // Firestore 문서 검증 스키마 (런타임 타입 검증)
 // ============================================================================
-
-import { logger } from '@/utils/logger';
-import type { Application } from '@/types';
 
 /**
  * Application Firestore 문서 스키마 (런타임 검증)
