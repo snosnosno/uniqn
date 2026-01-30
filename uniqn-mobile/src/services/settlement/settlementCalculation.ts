@@ -8,7 +8,7 @@
 import { doc, getDoc } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { BusinessError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
@@ -109,7 +109,25 @@ export async function calculateSettlement(
 
     const grossPay = settlementResult.totalPay;
     const deductions = input.deductions ?? 0;
-    const netPay = settlementResult.afterTaxPay - deductions;
+
+    // 음수 공제 검증 (부정 지급 방지)
+    if (deductions < 0) {
+      throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '공제 금액은 0 이상이어야 합니다',
+      });
+    }
+
+    const netPay = Math.max(0, settlementResult.afterTaxPay - deductions);
+
+    // 음수 정산 금액 경고 (로깅만, 0으로 처리)
+    if (settlementResult.afterTaxPay - deductions < 0) {
+      logger.warn('공제 후 금액이 음수', {
+        workLogId: input.workLogId,
+        afterTaxPay: settlementResult.afterTaxPay,
+        deductions,
+        adjustedNetPay: netPay,
+      });
+    }
 
     const result: SettlementCalculation = {
       workLogId: input.workLogId,

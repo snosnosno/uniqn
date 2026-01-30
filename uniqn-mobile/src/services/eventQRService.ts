@@ -344,6 +344,32 @@ export async function processEventQRCheckIn(
         });
       }
 
+      // 방어적 검증: staffId 일치 확인 (동시성 안전성 강화)
+      if (workLog.staffId !== staffId) {
+        logger.error('WorkLog staffId 불일치', {
+          expected: staffId,
+          actual: workLog.staffId,
+          workLogId,
+        });
+        throw new InvalidQRCodeError({
+          message: 'WorkLog staffId 불일치',
+          userMessage: '권한이 없는 근무 기록입니다',
+        });
+      }
+
+      // 방어적 검증: jobPostingId 일치 확인
+      if (workLog.jobPostingId !== jobPostingId) {
+        logger.error('WorkLog jobPostingId 불일치', {
+          expected: jobPostingId,
+          actual: workLog.jobPostingId,
+          workLogId,
+        });
+        throw new InvalidQRCodeError({
+          message: 'WorkLog jobPostingId 불일치',
+          userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
+        });
+      }
+
       // 3-2. 상태 확인 및 출퇴근 처리
       if (action === 'checkIn') {
         // 출근 처리

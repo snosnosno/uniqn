@@ -696,8 +696,9 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
           });
         }
 
-        // 확정된 상태인지 확인
+        // 확정된 상태인지 확인 (명시적 상태 검증)
         if (applicationData.status !== 'confirmed') {
+          // 지원 대기 상태: 직접 취소 가능
           if (
             applicationData.status === 'applied' ||
             applicationData.status === 'pending'
@@ -706,6 +707,31 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
               userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
             });
           }
+          // 이미 취소된 상태
+          if (applicationData.status === 'cancelled') {
+            throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+              userMessage: '이미 취소된 지원입니다',
+            });
+          }
+          // 거절된 상태
+          if (applicationData.status === 'rejected') {
+            throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+              userMessage: '거절된 지원은 취소 요청이 불가능합니다',
+            });
+          }
+          // 완료된 상태
+          if (applicationData.status === 'completed') {
+            throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+              userMessage: '이미 완료된 근무는 취소 요청이 불가능합니다',
+            });
+          }
+          // 취소 요청 대기 중
+          if (applicationData.status === 'cancellation_pending') {
+            throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
+              userMessage: '이미 취소 요청이 진행 중입니다',
+            });
+          }
+          // 기타 알 수 없는 상태
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '취소 요청이 불가능한 상태입니다',
           });

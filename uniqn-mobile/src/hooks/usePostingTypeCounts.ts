@@ -2,18 +2,11 @@
  * UNIQN Mobile - 공고 타입별 존재 여부 확인 훅
  *
  * @description 각 공고 타입별로 공고가 있는지 확인하여 자동 탭 선택에 사용
- * @version 1.0.0
+ * @version 1.1.0 - Repository 패턴 적용
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  collection,
-  query,
-  where,
-  limit,
-  getDocs,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { jobPostingRepository } from '@/repositories';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
 import type { PostingType } from '@/types';
@@ -46,38 +39,30 @@ export const AUTO_SELECT_PRIORITY: PostingType[] = [
 // ============================================================================
 
 /**
- * 특정 타입의 공고가 존재하는지 확인
- */
-async function checkPostingTypeExists(postingType: PostingType): Promise<boolean> {
-  try {
-    const jobsRef = collection(getFirebaseDb(), 'jobPostings');
-    const q = query(
-      jobsRef,
-      where('status', '==', 'active'),
-      where('postingType', '==', postingType),
-      limit(1)
-    );
-
-    const snapshot = await getDocs(q);
-    return !snapshot.empty;
-  } catch (error) {
-    logger.warn('공고 타입 존재 확인 실패', { postingType, error });
-    return false;
-  }
-}
-
-/**
- * 모든 타입의 공고 존재 여부 확인
+ * 모든 타입의 공고 존재 여부 확인 (Repository 사용)
  */
 async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> {
-  const [urgent, tournament, regular, fixed] = await Promise.all([
-    checkPostingTypeExists('urgent'),
-    checkPostingTypeExists('tournament'),
-    checkPostingTypeExists('regular'),
-    checkPostingTypeExists('fixed'),
-  ]);
+  try {
+    // Repository 메서드로 타입별 개수 조회
+    const counts = await jobPostingRepository.getTypeCounts({ status: 'active' });
 
-  return { urgent, tournament, regular, fixed };
+    // 개수 > 0 이면 존재
+    return {
+      urgent: counts.urgent > 0,
+      tournament: counts.tournament > 0,
+      regular: counts.normal > 0, // normal = regular
+      fixed: counts.fixed > 0,
+    };
+  } catch (error) {
+    logger.warn('공고 타입 존재 확인 실패', { error });
+    // 에러 시 모두 false 반환 (graceful degradation)
+    return {
+      urgent: false,
+      tournament: false,
+      regular: false,
+      fixed: false,
+    };
+  }
 }
 
 // ============================================================================
