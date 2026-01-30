@@ -1,67 +1,35 @@
 /**
  * UNIQN Mobile - 지원 서비스
  *
- * @description Firebase Firestore 기반 지원 서비스 (트랜잭션 필수)
- * @version 1.0.0
+ * @description Repository 패턴 기반 지원 서비스
+ * @version 2.0.0 - Repository 패턴 적용 (Phase 2.1)
+ *
+ * 아키텍처:
+ * Service Layer → Repository Layer → Firebase
+ *
+ * 책임 분리:
+ * - Service: 비즈니스 로직 조합, Analytics, 에러 변환
+ * - Repository: 데이터 접근, 트랜잭션 캡슐화
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  runTransaction,
-  serverTimestamp,
-  Timestamp,
-  increment,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { getClosingStatus } from '@/utils/job-posting/dateUtils';
-import {
-  AlreadyAppliedError,
-  ApplicationClosedError,
-  MaxCapacityReachedError,
-  ValidationError,
-  BusinessError,
-  PermissionError,
-  ERROR_CODES,
-} from '@/errors';
 import { handleServiceError, handleErrorWithDefault } from '@/errors/serviceErrorHandler';
-import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
+import { applicationRepository, type ApplicationWithJob, type ApplyContext } from '@/repositories';
 import { trackJobApply, trackEvent } from './analyticsService';
 import { startApiTrace } from './performanceService';
 import type {
   Application,
   ApplicationStatus,
-  CancellationRequest,
   CreateApplicationInput,
-  JobPosting,
-  RecruitmentType,
   RequestCancellationInput,
   ReviewCancellationInput,
-  StaffRole,
 } from '@/types';
-import { isValidAssignment, validateRequiredAnswers } from '@/types';
-import { applicationValidator } from '@/domains/application';
 
 // ============================================================================
-// Constants
+// Re-export Types
 // ============================================================================
 
-const APPLICATIONS_COLLECTION = 'applications';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-
-// ============================================================================
-// Types
-// ============================================================================
-
-export interface ApplicationWithJob extends Application {
-  jobPosting?: Partial<JobPosting>;
-}
+export type { ApplicationWithJob } from '@/repositories';
 
 // ============================================================================
 // Application Service
@@ -70,125 +38,20 @@ export interface ApplicationWithJob extends Application {
 /**
  * 내 지원 내역 조회
  *
- * @description N+1 쿼리 최적화: 공고 정보를 배치로 조회
+ * @description Repository를 통해 지원 내역 + 공고 정보 조회
  */
 export async function getMyApplications(applicantId: string): Promise<ApplicationWithJob[]> {
   try {
     logger.info('내 지원 내역 조회', { applicantId });
 
-    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-    const q = query(
-      applicationsRef,
-      where('applicantId', '==', applicantId),
-      orderBy('createdAt', 'desc')
-    );
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return [];
-    }
-
-    // 1. 모든 지원서 매핑 + 고유 공고 ID 수집
-    const applications: Application[] = [];
-    const jobPostingIds = new Set<string>();
-
-    for (const docSnapshot of snapshot.docs) {
-      const application = parseApplicationDocument({ id: docSnapshot.id, ...docSnapshot.data() });
-      if (!application) {
-        logger.warn('지원서 데이터 파싱 실패', { docId: docSnapshot.id });
-        continue;
-      }
-
-      applications.push(application);
-
-      if (application.jobPostingId) {
-        jobPostingIds.add(application.jobPostingId);
-      }
-    }
-
-    // 2. 공고 정보 배치 조회 (Promise.allSettled로 부분 실패 허용)
-    const jobPostingMap = new Map<string, JobPosting>();
-
-    if (jobPostingIds.size > 0) {
-      const jobIdArray = Array.from(jobPostingIds);
-      const jobPromises = jobIdArray.map(async (jobId) => {
-        const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId));
-        if (jobDoc.exists()) {
-          return { jobId, job: parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() }) };
-        }
-        return { jobId, job: null };
-      });
-
-      const results = await Promise.allSettled(jobPromises);
-
-      // 성공/실패 통계 및 에러 유형 분류
-      let successCount = 0;
-      let networkErrorCount = 0;
-      let otherErrorCount = 0;
-
-      for (let i = 0; i < results.length; i++) {
-        const result = results[i];
-        const jobId = jobIdArray[i];
-
-        if (result.status === 'fulfilled' && result.value.job) {
-          jobPostingMap.set(result.value.job.id, result.value.job);
-          successCount++;
-        } else if (result.status === 'rejected') {
-          const error = result.reason as { code?: string; message?: string };
-          const isNetworkError =
-            error.code === 'unavailable' ||
-            error.code === 'deadline-exceeded' ||
-            error.message?.includes('network') ||
-            error.message?.includes('timeout');
-
-          if (isNetworkError) {
-            networkErrorCount++;
-            logger.warn('공고 조회 네트워크 오류', { jobId, errorCode: error.code });
-          } else {
-            otherErrorCount++;
-            logger.warn('공고 조회 실패', { jobId, errorCode: error.code, errorMessage: error.message });
-          }
-        }
-      }
-
-      // 실패율 로깅 (모니터링용)
-      const totalCount = jobIdArray.length;
-      const failureRate = ((networkErrorCount + otherErrorCount) / totalCount) * 100;
-
-      if (failureRate > 0) {
-        logger.info('공고 배치 조회 통계', {
-          total: totalCount,
-          success: successCount,
-          networkErrors: networkErrorCount,
-          otherErrors: otherErrorCount,
-          failureRate: `${failureRate.toFixed(1)}%`,
-        });
-      }
-
-      // 네트워크 에러가 50% 이상이면 경고 (연결 문제 가능성)
-      if (networkErrorCount > 0 && networkErrorCount / totalCount >= 0.5) {
-        logger.warn('공고 조회 네트워크 에러 비율 높음 - 연결 상태 확인 필요', {
-          networkErrorRate: `${((networkErrorCount / totalCount) * 100).toFixed(1)}%`,
-        });
-      }
-    }
-
-    // 3. 지원서에 공고 정보 조인 (O(1) 조회)
-    const applicationsWithJobs: ApplicationWithJob[] = applications.map((application) => {
-      const jobPosting = jobPostingMap.get(application.jobPostingId);
-      return jobPosting
-        ? { ...application, jobPosting }
-        : application;
-    });
+    const applications = await applicationRepository.getByApplicantId(applicantId);
 
     logger.info('내 지원 내역 조회 완료', {
       applicantId,
       applicationCount: applications.length,
-      jobPostingCount: jobPostingMap.size,
     });
 
-    return applicationsWithJobs;
+    return applications;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '내 지원 내역 조회',
@@ -207,28 +70,9 @@ export async function getApplicationById(
   try {
     logger.info('지원 상세 조회', { applicationId });
 
-    const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-    const docSnap = await getDoc(docRef);
+    const application = await applicationRepository.getById(applicationId);
 
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    const application = parseApplicationDocument({ id: docSnap.id, ...docSnap.data() });
-    if (!application) {
-      logger.warn('지원 상세 데이터 파싱 실패', { applicationId });
-      return null;
-    }
-
-    // 공고 정보 가져오기
-    const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, application.jobPostingId));
-
-    return {
-      ...application,
-      jobPosting: jobDoc.exists()
-        ? parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() }) ?? undefined
-        : undefined,
-    };
+    return application;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '지원 상세 조회',
@@ -248,57 +92,7 @@ export async function cancelApplication(
   try {
     logger.info('지원 취소 시작', { applicationId, applicantId });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '지원 내역을 찾을 수 없습니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '지원 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 본인 확인
-      if (applicationData.applicantId !== applicantId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 지원만 취소할 수 있습니다',
-        });
-      }
-
-      // 이미 취소된 경우
-      if (applicationData.status === 'cancelled') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_CANCELLED, {
-          userMessage: '이미 취소된 지원입니다',
-        });
-      }
-
-      // 확정된 경우 취소 불가
-      if (applicationData.status === 'confirmed') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_CANNOT_CANCEL_CONFIRMED, {
-          userMessage: '확정된 지원은 취소할 수 없습니다. 취소 요청을 이용해주세요.',
-        });
-      }
-
-      // 지원 취소 처리
-      transaction.update(applicationRef, {
-        status: 'cancelled',
-        updatedAt: serverTimestamp(),
-      });
-
-      // 공고의 지원자 수 감소
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
-      transaction.update(jobRef, {
-        applicationCount: increment(-1),
-        updatedAt: serverTimestamp(),
-      });
-    });
+    await applicationRepository.cancelWithTransaction(applicationId, applicantId);
 
     logger.info('지원 취소 성공', { applicationId });
 
@@ -321,20 +115,7 @@ export async function hasAppliedToJob(
   applicantId: string
 ): Promise<boolean> {
   try {
-    // 복합 키로 직접 확인
-    const applicationId = `${jobPostingId}_${applicantId}`;
-    const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return false;
-    }
-
-    const data = parseApplicationDocument({ id: docSnap.id, ...docSnap.data() });
-    if (!data) {
-      return false;
-    }
-    return data.status !== 'cancelled';
+    return await applicationRepository.hasApplied(jobPostingId, applicantId);
   } catch (error) {
     return handleErrorWithDefault(error, false, {
       operation: '지원 여부 확인',
@@ -351,25 +132,7 @@ export async function getApplicationStats(
   applicantId: string
 ): Promise<Record<ApplicationStatus, number>> {
   try {
-    const applications = await getMyApplications(applicantId);
-
-    const stats: Record<ApplicationStatus, number> = {
-      applied: 0,
-      pending: 0,
-      confirmed: 0,
-      rejected: 0,
-      cancelled: 0,
-      completed: 0,
-      cancellation_pending: 0,
-    };
-
-    applications.forEach((app) => {
-      if (app.status in stats) {
-        stats[app.status]++;
-      }
-    });
-
-    return stats;
+    return await applicationRepository.getStatsByApplicantId(applicantId);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '지원 통계 조회',
@@ -386,9 +149,9 @@ export async function getApplicationStats(
 /**
  * 공고에 지원하기 v2.0 (트랜잭션)
  *
- * @description Assignment 배열 + 사전질문 답변 지원
+ * @description Repository를 통해 트랜잭션 처리
  *
- * 비즈니스 로직:
+ * 비즈니스 로직 (Repository에서 처리):
  * 1. Assignment 유효성 검증
  * 2. 사전질문 필수 답변 검증
  * 3. 중복 지원 검사
@@ -415,160 +178,18 @@ export async function applyToJobV2(
       assignmentCount: input.assignments.length,
     });
 
-    // 1. Assignment 유효성 검증
-    for (const assignment of input.assignments) {
-      if (!isValidAssignment(assignment)) {
-        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
-          userMessage: '잘못된 지원 정보입니다. 역할, 시간, 날짜를 확인해주세요.',
-        });
-      }
-    }
+    // ApplyContext 생성
+    const context: ApplyContext = {
+      applicantId,
+      applicantName,
+      applicantPhone,
+      applicantEmail,
+      applicantNickname,
+      applicantPhotoURL,
+    };
 
-    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 2. 공고 정보 읽기
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, input.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new ApplicationClosedError({
-          userMessage: '존재하지 않는 공고입니다',
-          jobPostingId: input.jobPostingId,
-        });
-      }
-
-      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!jobData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 3. 공고 상태 확인
-      if (jobData.status !== 'active') {
-        throw new ApplicationClosedError({
-          userMessage: '지원이 마감된 공고입니다',
-          jobPostingId: input.jobPostingId,
-        });
-      }
-
-      // 4. 사전질문 필수 답변 검증
-      if (jobData.usesPreQuestions && jobData.preQuestions?.length) {
-        if (!input.preQuestionAnswers?.length) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '사전질문에 답변해주세요',
-          });
-        }
-
-        const isValid = validateRequiredAnswers(input.preQuestionAnswers);
-        if (!isValid) {
-          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-            userMessage: '필수 질문에 모두 답변해주세요',
-          });
-        }
-      }
-
-      // 5. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
-      const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
-
-      if (totalPositions > 0 && currentFilled >= totalPositions) {
-        throw new MaxCapacityReachedError({
-          userMessage: '모집 인원이 마감되었습니다',
-          jobPostingId: input.jobPostingId,
-          maxCapacity: totalPositions,
-          currentCount: currentFilled,
-        });
-      }
-
-      // 5-1. 역할별 정원 확인 (Assignment의 첫 번째 역할 기준)
-      const firstAssignmentRole = input.assignments[0]?.roleIds[0];
-      if (firstAssignmentRole) {
-        const roleCapacity = applicationValidator.checkRoleCapacity(jobData, firstAssignmentRole);
-        if (!roleCapacity.available) {
-          throw new MaxCapacityReachedError({
-            userMessage: roleCapacity.reason ?? '해당 역할의 모집이 마감되었습니다',
-            jobPostingId: input.jobPostingId,
-          });
-        }
-      }
-
-      // 6. 중복 지원 검사 (복합 키)
-      const applicationId = `${input.jobPostingId}_${applicantId}`;
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-
-      const existingApp = await transaction.get(applicationRef);
-      if (existingApp.exists()) {
-        const existingData = parseApplicationDocument({ id: existingApp.id, ...existingApp.data() });
-        if (existingData && existingData.status !== 'cancelled') {
-          throw new AlreadyAppliedError({
-            userMessage: '이미 지원한 공고입니다',
-            jobPostingId: input.jobPostingId,
-            applicationId: existingApp.id,
-          });
-        }
-      }
-
-      // 7. 모집 유형 결정
-      const recruitmentType: RecruitmentType =
-        jobData.postingType === 'fixed' ? 'fixed' : 'event';
-
-      // 8. 대표 역할 결정 (레거시 호환)
-      const firstAssignment = input.assignments[0];
-      // v3.0: roleIds 사용
-      const primaryRole = (
-        firstAssignment?.roleIds[0] ?? 'dealer'
-      ) as StaffRole;
-
-      // 9. 지원서 데이터 생성 (v2.0)
-      const now = serverTimestamp();
-      const applicationData: Omit<Application, 'id'> = {
-        // 지원자 정보
-        applicantId,
-        applicantName,
-        // undefined는 Firebase에 저장 불가 - 조건부 추가
-        ...(applicantPhone && { applicantPhone }),
-        ...(applicantEmail && { applicantEmail }),
-        ...(applicantNickname && { applicantNickname }),
-        ...(applicantPhotoURL && { applicantPhotoURL }),
-        applicantRole: primaryRole,
-
-        // 공고 정보 (레거시 호환)
-        jobPostingId: input.jobPostingId,
-        jobPostingTitle: jobData.title || '',
-        // 레거시 필드: workDate가 있는 경우에만 포함
-        ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
-
-        // NOTE: eventId, postId, postTitle 레거시 필드는 더 이상 저장하지 않음
-        // 기존 데이터는 Application 타입에서 읽기 전용으로 지원
-
-        // 지원 정보
-        status: 'applied',
-        // undefined는 Firebase에 저장 불가 - 조건부 추가
-        ...(input.message && { message: input.message }),
-        recruitmentType,
-
-        // v2.0 핵심 필드
-        assignments: input.assignments,
-        // undefined는 Firebase에 저장 불가 - 조건부 추가
-        ...(input.preQuestionAnswers && { preQuestionAnswers: input.preQuestionAnswers }),
-
-        // 메타데이터
-        isRead: false,
-        createdAt: now as Timestamp,
-        updatedAt: now as Timestamp,
-      };
-
-      // 10. 트랜잭션 쓰기
-      transaction.set(applicationRef, applicationData);
-      transaction.update(jobRef, {
-        applicationCount: increment(1),
-        updatedAt: serverTimestamp(),
-      });
-
-      return {
-        id: applicationId,
-        ...applicationData,
-      } as Application;
-    });
+    // Repository를 통해 트랜잭션 실행
+    const result = await applicationRepository.applyWithTransaction(input, context);
 
     logger.info('지원하기 v2.0 성공', {
       applicationId: result.id,
@@ -581,7 +202,7 @@ export async function applyToJobV2(
     trace.stop();
 
     // Analytics 이벤트 (assignments에서 대표 역할 추출)
-    const appliedPrimaryRole = result.assignments[0]?.roleIds?.[0] || 'other';
+    const appliedPrimaryRole = result.assignments?.[0]?.roleIds?.[0] || 'other';
     trackJobApply(input.jobPostingId, result.jobPostingTitle, appliedPrimaryRole);
 
     return result;
@@ -606,14 +227,7 @@ export async function applyToJobV2(
 /**
  * 취소 요청 제출 (스태프용)
  *
- * @description 확정된 지원에 대해 취소 요청을 제출합니다.
- *              구인자가 승인하면 지원이 취소됩니다.
- *
- * 비즈니스 로직:
- * 1. 본인 확인
- * 2. 확정된 상태인지 확인
- * 3. 이미 취소 요청이 있는지 확인
- * 4. 취소 요청 생성 + 상태 변경 (원자적)
+ * @description Repository를 통해 트랜잭션 처리
  */
 export async function requestCancellation(
   input: RequestCancellationInput,
@@ -628,77 +242,7 @@ export async function requestCancellation(
       applicantId,
     });
 
-    // 사유 검증
-    if (!input.reason || input.reason.trim().length < 5) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-        userMessage: '취소 사유를 5자 이상 입력해주세요',
-      });
-    }
-
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '지원 내역을 찾을 수 없습니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '지원 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 1. 본인 확인
-      if (applicationData.applicantId !== applicantId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 지원만 취소 요청할 수 있습니다',
-        });
-      }
-
-      // 2. 확정된 상태인지 확인
-      if (applicationData.status !== 'confirmed') {
-        if (applicationData.status === 'applied' || applicationData.status === 'pending') {
-          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
-          });
-        }
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '취소 요청이 불가능한 상태입니다',
-        });
-      }
-
-      // 3. 이미 취소 요청이 있는지 확인
-      if (applicationData.cancellationRequest) {
-        if (applicationData.cancellationRequest.status === 'pending') {
-          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
-            userMessage: '이미 취소 요청이 진행 중입니다',
-          });
-        }
-        if (applicationData.cancellationRequest.status === 'rejected') {
-          throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
-            userMessage: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
-          });
-        }
-      }
-
-      // 4. 취소 요청 생성
-      const cancellationRequest: CancellationRequest = {
-        requestedAt: new Date().toISOString(),
-        reason: input.reason.trim(),
-        status: 'pending',
-      };
-
-      // 5. 트랜잭션 쓰기 - 상태를 cancellation_pending으로 변경
-      transaction.update(applicationRef, {
-        status: 'cancellation_pending' as ApplicationStatus,
-        cancellationRequest,
-        updatedAt: serverTimestamp(),
-      });
-    });
+    await applicationRepository.requestCancellationWithTransaction(input, applicantId);
 
     logger.info('취소 요청 제출 성공', { applicationId: input.applicationId });
 
@@ -711,7 +255,6 @@ export async function requestCancellation(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    // handleServiceError가 ValidationError를 자동 보존
     throw handleServiceError(error, {
       operation: '취소 요청 제출',
       component: 'applicationService',
@@ -723,13 +266,7 @@ export async function requestCancellation(
 /**
  * 취소 요청 검토 (구인자용)
  *
- * @description 스태프의 취소 요청을 승인하거나 거절합니다.
- *
- * 비즈니스 로직:
- * 1. 공고 소유자 확인
- * 2. 취소 요청 상태 확인
- * 3. 승인 시: 지원 상태를 cancelled로 변경 + 지원자 수 감소
- * 4. 거절 시: 지원 상태를 confirmed로 복원
+ * @description Repository를 통해 트랜잭션 처리
  */
 export async function reviewCancellationRequest(
   input: ReviewCancellationInput,
@@ -746,98 +283,7 @@ export async function reviewCancellationRequest(
       reviewerId,
     });
 
-    // 거절 시 사유 필수
-    if (!input.approved && (!input.rejectionReason || input.rejectionReason.trim().length < 3)) {
-      throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-        userMessage: '거절 사유를 3자 이상 입력해주세요',
-      });
-    }
-
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '지원 내역을 찾을 수 없습니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '지원 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 1. 공고 정보 조회 및 소유자 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
-        });
-      }
-
-      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!jobData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '공고 데이터가 올바르지 않습니다',
-        });
-      }
-
-      if (jobData.ownerId !== reviewerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고에 대한 요청만 검토할 수 있습니다',
-        });
-      }
-
-      // 2. 취소 요청 상태 확인
-      if (applicationData.status !== 'cancellation_pending') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '검토 대기 중인 취소 요청이 없습니다',
-        });
-      }
-
-      if (!applicationData.cancellationRequest || applicationData.cancellationRequest.status !== 'pending') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '유효한 취소 요청이 없습니다',
-        });
-      }
-
-      // 3. 취소 요청 업데이트 (undefined 값은 Firestore에서 허용되지 않음)
-      const updatedCancellationRequest: CancellationRequest = {
-        ...applicationData.cancellationRequest,
-        status: input.approved ? 'approved' : 'rejected',
-        reviewedAt: new Date().toISOString(),
-        reviewedBy: reviewerId,
-        // rejectionReason은 거절 시에만 포함 (undefined는 Firestore 에러 발생)
-        ...(input.rejectionReason?.trim() ? { rejectionReason: input.rejectionReason.trim() } : {}),
-      };
-
-      if (input.approved) {
-        // 승인: 지원 상태를 cancelled로 변경 + 지원자 수 감소
-        transaction.update(applicationRef, {
-          status: 'cancelled' as ApplicationStatus,
-          cancellationRequest: updatedCancellationRequest,
-          cancelledAt: serverTimestamp(),
-          updatedAt: serverTimestamp(),
-        });
-
-        transaction.update(jobRef, {
-          applicationCount: increment(-1),
-          updatedAt: serverTimestamp(),
-        });
-      } else {
-        // 거절: 지원 상태를 confirmed로 복원
-        transaction.update(applicationRef, {
-          status: 'confirmed' as ApplicationStatus,
-          cancellationRequest: updatedCancellationRequest,
-          updatedAt: serverTimestamp(),
-        });
-      }
-    });
+    await applicationRepository.reviewCancellationWithTransaction(input, reviewerId);
 
     logger.info('취소 요청 검토 성공', {
       applicationId: input.applicationId,
@@ -856,7 +302,6 @@ export async function reviewCancellationRequest(
     trace.putAttribute('status', 'error');
     trace.stop();
 
-    // handleServiceError가 ValidationError/BusinessError/PermissionError를 자동 보존
     throw handleServiceError(error, {
       operation: '취소 요청 검토',
       component: 'applicationService',
@@ -868,7 +313,7 @@ export async function reviewCancellationRequest(
 /**
  * 취소 요청 목록 조회 (구인자용)
  *
- * @description 특정 공고의 대기 중인 취소 요청 목록을 조회합니다.
+ * @description Repository를 통해 조회
  */
 export async function getCancellationRequests(
   jobPostingId: string,
@@ -877,47 +322,7 @@ export async function getCancellationRequests(
   try {
     logger.info('취소 요청 목록 조회', { jobPostingId, ownerId });
 
-    // 먼저 공고 소유자 확인
-    const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId));
-    if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '공고를 찾을 수 없습니다',
-      });
-    }
-
-    const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-    if (!jobData) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '공고 데이터가 올바르지 않습니다',
-      });
-    }
-    if (jobData.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-        userMessage: '본인의 공고만 조회할 수 있습니다',
-      });
-    }
-
-    // 취소 요청 대기 중인 지원서 조회
-    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-    const q = query(
-      applicationsRef,
-      where('jobPostingId', '==', jobPostingId),
-      where('status', '==', 'cancellation_pending'),
-      orderBy('updatedAt', 'desc')
-    );
-
-    const snapshot = await getDocs(q);
-
-    const applications: ApplicationWithJob[] = [];
-    for (const docSnapshot of snapshot.docs) {
-      const application = parseApplicationDocument({ id: docSnapshot.id, ...docSnapshot.data() });
-      if (application) {
-        applications.push({
-          ...application,
-          jobPosting: jobData,
-        });
-      }
-    }
+    const applications = await applicationRepository.getCancellationRequests(jobPostingId, ownerId);
 
     logger.info('취소 요청 목록 조회 완료', {
       jobPostingId,

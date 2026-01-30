@@ -27,7 +27,7 @@ import {
   DocumentIcon,
   TrashIcon,
 } from '@/components/icons';
-import { useApplicantManagement } from '@/hooks/useApplicantManagement';
+import { useApplicantManagement } from '@/hooks/applicant';
 import {
   PostingTypeBadge,
   GroupedDateRequirementDisplay,

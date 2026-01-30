@@ -15,7 +15,7 @@ import { Loading, ErrorState, EmptyState } from '@/components';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { InboxIcon } from '@/components/icons';
-import { useApplicantManagement } from '@/hooks/useApplicantManagement';
+import { useApplicantManagement } from '@/hooks/applicant';
 import { useThemeStore } from '@/stores';
 import type { Application } from '@/types';
 

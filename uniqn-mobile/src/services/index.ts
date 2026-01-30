@@ -196,11 +196,11 @@ export {
   type SubscribeToApplicantsCallbacks,
 } from './applicantManagementService';
 
-// Settlement Service (구인자용 정산 관리)
+// Settlement Service (구인자용 정산 관리) - Phase 3 분할 완료
 export {
   getWorkLogsByJobPosting,
   calculateSettlement,
-  updateWorkTime as updateWorkTimeForSettlement,
+  updateWorkTimeForSettlement,
   settleWorkLog,
   bulkSettlement,
   updateSettlementStatus,
@@ -216,7 +216,7 @@ export {
   type JobPostingSettlementSummary,
   type UpdateWorkTimeInput,
   type SettlementFilters,
-} from './settlementService';
+} from './settlement';
 
 // ============================================================================
 // Analytics & Deep Link Services

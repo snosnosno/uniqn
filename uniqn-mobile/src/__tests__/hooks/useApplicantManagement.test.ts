@@ -27,7 +27,7 @@ import {
   useBulkConfirmApplications,
   useMarkAsRead,
   useApplicantManagement,
-} from '@/hooks/useApplicantManagement';
+} from '@/hooks/applicant';
 
 jest.mock('@/lib/firebase', () => ({
   db: {},

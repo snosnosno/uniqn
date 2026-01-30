@@ -5,12 +5,11 @@
  * - applied: 공고 정보 중심 (JobCard 스타일)
  * - confirmed: 역할 + 출퇴근 상태
  * - completed: 역할 + 정산 금액
- * @version 1.0.0
+ * @version 1.1.0 - 헬퍼 분리
  */
 
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Timestamp } from '@/lib/firebase';
 import { Card, Badge } from '@/components/ui';
 import {
   CalendarIcon,
@@ -21,8 +20,25 @@ import {
   UserIcon,
 } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatCurrency, calculateSettlementWithTax, DEFAULT_SALARY_INFO, DEFAULT_TAX_SETTINGS, type SalaryInfo, type Allowances, type TaxSettings } from '@/utils/settlement';
-import type { ScheduleEvent, ScheduleType, AttendanceStatus, JobPostingCard } from '@/types';
+import {
+  formatCurrency,
+  calculateSettlementWithTax,
+  DEFAULT_SALARY_INFO,
+  DEFAULT_TAX_SETTINGS,
+  type SalaryInfo,
+  type Allowances,
+  type TaxSettings,
+} from '@/utils/settlement';
+import {
+  formatTime,
+  formatTimeRange,
+  formatDate,
+  calculateDuration,
+  getRoleSalaryFromCard,
+  statusConfig,
+  attendanceConfig,
+} from './helpers';
+import type { ScheduleEvent } from '@/types';
 
 // ============================================================================
 // Types
@@ -31,105 +47,6 @@ import type { ScheduleEvent, ScheduleType, AttendanceStatus, JobPostingCard } fr
 export interface ScheduleCardProps {
   schedule: ScheduleEvent;
   onPress?: () => void;
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
-  applied: { label: '지원 중', variant: 'warning' },
-  confirmed: { label: '확정', variant: 'success' },
-  completed: { label: '완료', variant: 'default' },
-  cancelled: { label: '취소', variant: 'error' },
-};
-
-const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: string; textColor: string }> = {
-  not_started: {
-    label: '출근 전',
-    bgColor: 'bg-gray-100 dark:bg-gray-700',
-    textColor: 'text-gray-600 dark:text-gray-400',
-  },
-  checked_in: {
-    label: '근무 중',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    textColor: 'text-green-700 dark:text-green-300',
-  },
-  checked_out: {
-    label: '퇴근 완료',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    textColor: 'text-blue-700 dark:text-blue-300',
-  },
-};
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * 역할별 급여 조회 (dateRequirements에서 해당 날짜/역할의 급여 찾기)
- */
-function getRoleSalaryFromCard(
-  card: JobPostingCard | undefined,
-  date: string,
-  role: string,
-  customRole?: string
-): SalaryInfo | undefined {
-  if (!card?.dateRequirements) return undefined;
-
-  const dateReq = card.dateRequirements.find((dr) => dr.date === date);
-  if (!dateReq) return undefined;
-
-  for (const timeSlot of dateReq.timeSlots || []) {
-    const roleInfo = timeSlot.roles?.find(
-      (r) =>
-        r.role === role ||
-        (role === 'other' && r.role === 'other' && r.customRole === customRole)
-    );
-    if (roleInfo?.salary) {
-      return roleInfo.salary;
-    }
-  }
-  return undefined;
-}
-
-function formatTime(timestamp: Timestamp | null): string {
-  if (!timestamp) return '--:--';
-  const date = timestamp.toDate();
-  return date.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: false });
-}
-
-function formatTimeRange(start: Timestamp | null, end: Timestamp | null): string {
-  return `${formatTime(start)} - ${formatTime(end)}`;
-}
-
-function calculateDuration(start: Timestamp | null, end: Timestamp | null): string {
-  if (!start || !end) return '-';
-  const startDate = start.toDate();
-  const endDate = end.toDate();
-  let diffMs = endDate.getTime() - startDate.getTime();
-
-  // 자정을 넘어가는 경우 (예: 18:00 ~ 02:00)
-  if (diffMs < 0) {
-    diffMs += 24 * 60 * 60 * 1000;
-  }
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (hours > 0 && minutes > 0) return `${hours}시간 ${minutes}분`;
-  if (hours > 0) return `${hours}시간`;
-  return `${minutes}분`;
-}
-
-function formatDate(dateString: string): string {
-  if (!dateString) return '-';
-  const date = new Date(dateString);
-  if (isNaN(date.getTime())) return dateString;
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
 }
 
 // ============================================================================

@@ -1,8 +1,34 @@
 /**
  * UNIQN Mobile - Zod 스키마 중앙 인덱스
  *
- * @version 1.0.0
+ * @version 1.1.0 - Phase 1.5 공통 스키마 추가
  */
+
+// 공통 스키마 (v1.1.0)
+export {
+  // Timestamp schemas
+  timestampSchema,
+  optionalTimestampSchema,
+  nullableTimestampSchema,
+  // Duration schemas (aliased to avoid conflict with assignment.schema)
+  durationSchema as commonDurationSchema,
+  optionalDurationSchema,
+  // Metadata schema
+  metadataSchema,
+  optionalMetadataSchema,
+  // Common field schemas
+  documentIdSchema,
+  emailSchema as commonEmailSchema,
+  phoneSchema as commonPhoneSchema,
+  dateStringSchema,
+  timeStringSchema,
+} from './common';
+
+export type {
+  TimestampInput,
+  DurationInput,
+  MetadataInput,
+} from './common';
 
 // 인증 스키마
 export {

@@ -14,7 +14,7 @@ import {
   type ConfirmModalAction,
 } from '@/components/employer';
 import { Loading, ErrorState } from '@/components';
-import { useApplicantManagement } from '@/hooks/useApplicantManagement';
+import { useApplicantManagement } from '@/hooks/applicant';
 import type { ApplicantWithDetails } from '@/services';
 import type { Assignment } from '@/types';
 

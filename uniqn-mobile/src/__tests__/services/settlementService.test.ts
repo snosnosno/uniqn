@@ -19,7 +19,7 @@ import {
   bulkSettlement,
   updateSettlementStatus,
   getJobPostingSettlementSummary,
-} from '@/services/settlementService';
+} from '@/services/settlement';
 
 // Import Timestamp from mocked module for use in test utilities
 import { Timestamp } from 'firebase/firestore';

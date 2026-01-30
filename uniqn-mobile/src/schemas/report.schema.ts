@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
+import { timestampSchema, optionalTimestampSchema } from './common';
 
 // ============================================================================
 // 기본 스키마
@@ -191,10 +192,10 @@ export const reportDocumentSchema = z.object({
   status: reportStatusUnionSchema,
   reviewerId: z.string().optional(),
   reviewerNotes: z.string().optional(),
-  reviewedAt: z.any().optional(), // Firebase Timestamp
+  reviewedAt: optionalTimestampSchema, // Firebase Timestamp
   severity: reportSeveritySchema,
-  createdAt: z.any(), // Firebase Timestamp
-  updatedAt: z.any(), // Firebase Timestamp
+  createdAt: timestampSchema, // Firebase Timestamp
+  updatedAt: timestampSchema, // Firebase Timestamp
 });
 
 export type ReportDocumentData = z.infer<typeof reportDocumentSchema>;

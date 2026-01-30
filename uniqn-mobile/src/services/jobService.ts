@@ -1,17 +1,20 @@
 /**
  * UNIQN Mobile - 구인공고 서비스
  *
- * @description Firebase Firestore 기반 구인공고 서비스
- * @version 1.0.0
+ * @description Repository 패턴 기반 구인공고 서비스
+ * @version 2.0.0 - Repository 패턴 적용 (Phase 2.1)
+ *
+ * 아키텍처:
+ * Service Layer → Repository Layer → Firebase
+ *
+ * 책임 분리:
+ * - Service: 복잡한 필터 조합, 검색, Analytics
+ * - Repository: 단순 조회/업데이트 캡슐화
  */
 
 import {
   collection,
-  doc,
-  getDoc,
   getDocs,
-  updateDoc,
-  increment,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
@@ -20,8 +23,15 @@ import { logger } from '@/utils/logger';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { startApiTrace } from '@/services/performanceService';
+import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/types';
+
+// ============================================================================
+// Re-export Types
+// ============================================================================
+
+export type { PaginatedJobPostings } from '@/repositories';
 
 // ============================================================================
 // Constants
@@ -31,21 +41,16 @@ const COLLECTION_NAME = 'jobPostings';
 const DEFAULT_PAGE_SIZE = 20;
 
 // ============================================================================
-// Types
-// ============================================================================
-
-export interface PaginatedJobPostings {
-  items: JobPosting[];
-  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
-  hasMore: boolean;
-}
-
-// ============================================================================
 // Job Service
 // ============================================================================
 
 /**
  * 공고 목록 조회 (무한스크롤 지원)
+ *
+ * @description 복잡한 필터 조합 로직은 Service에서 처리
+ * - 대회공고 승인 상태 필터
+ * - 복수 공고 타입 필터
+ * - 날짜 범위 필터
  */
 export async function getJobPostings(
   filters?: JobPostingFilters,
@@ -143,6 +148,8 @@ export async function getJobPostings(
 
 /**
  * 공고 상세 조회
+ *
+ * @description Repository를 통해 조회
  */
 export async function getJobPostingById(id: string): Promise<JobPosting | null> {
   const trace = startApiTrace('getJobPostingById');
@@ -151,20 +158,14 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
   try {
     logger.info('공고 상세 조회', { id });
 
-    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, id);
-    const docSnap = await getDoc(docRef);
+    const jobPosting = await jobPostingRepository.getById(id);
 
-    if (!docSnap.exists()) {
+    if (!jobPosting) {
       logger.warn('공고를 찾을 수 없음', { id });
       trace.putAttribute('status', 'not_found');
       trace.stop();
       return null;
     }
-
-    const jobPosting = {
-      id: docSnap.id,
-      ...docSnap.data(),
-    } as JobPosting;
 
     logger.info('공고 상세 조회 완료', { id, title: jobPosting.title });
 
@@ -185,13 +186,12 @@ export async function getJobPostingById(id: string): Promise<JobPosting | null> 
 
 /**
  * 조회수 증가
+ *
+ * @description Repository를 통해 업데이트
  */
 export async function incrementViewCount(id: string): Promise<void> {
   try {
-    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, id);
-    await updateDoc(docRef, {
-      viewCount: increment(1),
-    });
+    await jobPostingRepository.incrementViewCount(id);
   } catch (error) {
     // 조회수 증가 실패는 무시 (사용자 경험에 영향 없음)
     handleSilentError(error, {

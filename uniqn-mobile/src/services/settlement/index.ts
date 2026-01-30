@@ -1,14 +1,68 @@
 /**
- * Settlement Service - 배럴 Export
+ * UNIQN Mobile - 정산 서비스 배럴
  *
- * @description 정산 서비스 진입점
- * 기존 settlementService.ts를 re-export하여 호환성 유지
+ * @description 정산 관련 서비스 통합 export
+ * @version 1.0.0
  *
- * 향후 분리 계획:
- * - settlementQuery.ts: 조회 (getWorkLogsByJobPosting, getJobPostingSettlementSummary)
- * - settlementCalculation.ts: 계산 (calculateSettlement)
- * - settlementMutation.ts: 변경 (updateWorkTime, settleWorkLog, bulkSettlement)
+ * 기존 import 경로 호환성 유지:
+ * - import { getWorkLogsByJobPosting } from '@/services/settlementService'
+ * - import { getWorkLogsByJobPosting } from '@/services/settlement'
+ * - import { getWorkLogsByJobPosting } from '@/services'
  */
 
-// 기존 settlementService에서 모든 export 가져오기
-export * from '../settlementService';
+// ============================================================================
+// Types
+// ============================================================================
+
+export type {
+  // Internal types
+  WorkLogWithOverrides,
+  // Query types
+  SettlementWorkLog,
+  SettlementFilters,
+  JobPostingSettlementSummary,
+  // Calculation types
+  CalculateSettlementInput,
+  SettlementCalculation,
+  // Mutation types
+  UpdateWorkTimeInput,
+  SettleWorkLogInput,
+  BulkSettlementInput,
+  SettlementResult,
+  BulkSettlementResult,
+} from './types';
+
+// ============================================================================
+// Query Functions
+// ============================================================================
+
+export {
+  getWorkLogsByJobPosting,
+  getJobPostingSettlementSummary,
+  getMySettlementSummary,
+} from './settlementQuery';
+
+// ============================================================================
+// Calculation Functions
+// ============================================================================
+
+export { calculateSettlement } from './settlementCalculation';
+
+// ============================================================================
+// Mutation Functions
+// ============================================================================
+
+export {
+  updateWorkTimeForSettlement,
+  settleWorkLog,
+  bulkSettlement,
+  updateSettlementStatus,
+} from './settlementMutation';
+
+// ============================================================================
+// Legacy Alias (하위 호환성)
+// ============================================================================
+
+// updateWorkTime은 updateWorkTimeForSettlement로 rename됨
+// 기존 코드 호환을 위해 alias 제공
+export { updateWorkTimeForSettlement as updateWorkTime } from './settlementMutation';

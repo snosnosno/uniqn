@@ -1,14 +1,20 @@
 /**
  * UNIQN Mobile - 근무 기록 서비스
  *
- * @description Firebase Firestore 기반 출퇴근/근무 기록 서비스
- * @version 1.0.0
+ * @description Repository 패턴 기반 출퇴근/근무 기록 서비스
+ * @version 2.0.0 - Repository 패턴 적용 (Phase 2.1)
+ *
+ * 아키텍처:
+ * Service Layer → Repository Layer → Firebase
+ *
+ * 책임 분리:
+ * - Service: 복잡한 통계 계산, 트랜잭션, 실시간 구독
+ * - Repository: 단순 조회 캡슐화
  */
 
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
   where,
@@ -29,7 +35,14 @@ import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import { toDateString } from '@/utils/date';
 import { trackSettlementComplete } from './analyticsService';
 import { RealtimeManager } from '@/shared/realtime';
+import { workLogRepository, type WorkLogStats } from '@/repositories';
 import type { WorkLog, PayrollStatus } from '@/types';
+
+// ============================================================================
+// Re-export Types
+// ============================================================================
+
+export type { WorkLogStats } from '@/repositories';
 
 // ============================================================================
 // Constants
@@ -39,24 +52,13 @@ const WORK_LOGS_COLLECTION = 'workLogs';
 const DEFAULT_PAGE_SIZE = 50;
 
 // ============================================================================
-// Types
-// ============================================================================
-
-export interface WorkLogStats {
-  totalWorkLogs: number;
-  completedCount: number;
-  totalHoursWorked: number;
-  averageHoursPerDay: number;
-  pendingPayroll: number;
-  completedPayroll: number;
-}
-
-// ============================================================================
 // Work Log Service
 // ============================================================================
 
 /**
  * 내 근무 기록 목록 조회
+ *
+ * @description Repository를 통해 조회
  */
 export async function getMyWorkLogs(
   staffId: string,
@@ -65,18 +67,7 @@ export async function getMyWorkLogs(
   try {
     logger.info('근무 기록 목록 조회', { staffId: maskSensitiveId(staffId) });
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('staffId', '==', staffId),
-      orderBy('date', 'desc'),
-      limit(pageSize)
-    );
-
-    const snapshot = await getDocs(q);
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-    );
+    const workLogs = await workLogRepository.getByStaffId(staffId, pageSize);
 
     logger.info('근무 기록 목록 조회 완료', { count: workLogs.length });
 
@@ -93,30 +84,15 @@ export async function getMyWorkLogs(
 /**
  * 특정 날짜의 근무 기록 조회
  *
- * @description orderBy 대신 JS 정렬 사용 (복합 인덱스 불필요)
+ * @description Repository를 통해 조회
  */
 export async function getWorkLogsByDate(staffId: string, date: string): Promise<WorkLog[]> {
   try {
     logger.info('날짜별 근무 기록 조회', { staffId: maskSensitiveId(staffId), date });
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('staffId', '==', staffId),
-      where('date', '==', date)
-    );
+    const workLogs = await workLogRepository.getByDate(staffId, date);
 
-    const snapshot = await getDocs(q);
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-    );
-
-    // createdAt 기준 오름차순 정렬 (JS)
-    return workLogs.sort((a, b) => {
-      const aTime = a.createdAt instanceof Timestamp ? a.createdAt.toMillis() : 0;
-      const bTime = b.createdAt instanceof Timestamp ? b.createdAt.toMillis() : 0;
-      return aTime - bTime;
-    });
+    return workLogs;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '날짜별 근무 기록 조회',
@@ -128,19 +104,14 @@ export async function getWorkLogsByDate(staffId: string, date: string): Promise<
 
 /**
  * 근무 기록 상세 조회
+ *
+ * @description Repository를 통해 조회
  */
 export async function getWorkLogById(workLogId: string): Promise<WorkLog | null> {
   try {
     logger.info('근무 기록 상세 조회', { workLogId });
 
-    const docRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    return parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
+    return await workLogRepository.getById(workLogId);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '근무 기록 상세 조회',
@@ -181,75 +152,16 @@ export async function isCurrentlyWorking(staffId: string): Promise<boolean> {
 
 /**
  * 근무 기록 통계 조회
+ *
+ * @description Repository를 통해 조회
  */
 export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
   try {
     logger.info('근무 기록 통계 조회', { staffId: maskSensitiveId(staffId) });
 
-    // 최근 3개월 데이터 조회
-    const now = new Date();
-    const threeMonthsAgo = new Date(now);
-    threeMonthsAgo.setMonth(now.getMonth() - 3);
+    const stats = await workLogRepository.getStats(staffId);
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('staffId', '==', staffId),
-      where('date', '>=', toDateString(threeMonthsAgo)),
-      orderBy('date', 'desc'),
-      limit(500)
-    );
-
-    const snapshot = await getDocs(q);
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-    );
-
-    let completedCount = 0;
-    let totalHoursWorked = 0;
-    let pendingPayroll = 0;
-    let completedPayroll = 0;
-    const workDays = new Set<string>();
-
-    workLogs.forEach((workLog) => {
-      if (workLog.status === 'checked_out' || workLog.status === 'completed') {
-        completedCount++;
-        workDays.add(workLog.date);
-
-        // 근무 시간 계산
-        if (workLog.checkInTime && workLog.checkOutTime) {
-          const start =
-            workLog.checkInTime instanceof Timestamp
-              ? workLog.checkInTime.toDate()
-              : new Date(workLog.checkInTime as string);
-          const end =
-            workLog.checkOutTime instanceof Timestamp
-              ? workLog.checkOutTime.toDate()
-              : new Date(workLog.checkOutTime as string);
-          totalHoursWorked += (end.getTime() - start.getTime()) / (1000 * 60 * 60);
-        }
-
-        // 정산 금액
-        if (workLog.payrollAmount) {
-          if (workLog.payrollStatus === 'completed') {
-            completedPayroll += workLog.payrollAmount;
-          } else {
-            pendingPayroll += workLog.payrollAmount;
-          }
-        }
-      }
-    });
-
-    const averageHoursPerDay = workDays.size > 0 ? totalHoursWorked / workDays.size : 0;
-
-    return {
-      totalWorkLogs: workLogs.length,
-      completedCount,
-      totalHoursWorked: Math.round(totalHoursWorked * 10) / 10,
-      averageHoursPerDay: Math.round(averageHoursPerDay * 10) / 10,
-      pendingPayroll,
-      completedPayroll,
-    };
+    return stats;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '근무 기록 통계 조회',
@@ -261,6 +173,8 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
 
 /**
  * 월별 정산 정보 조회
+ *
+ * @description 복잡한 쿼리 + workLogs 반환이 필요하여 Service에서 처리
  */
 export async function getMonthlyPayroll(
   staffId: string,

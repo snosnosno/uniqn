@@ -7,6 +7,11 @@
 
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
+import {
+  timestampSchema,
+  optionalTimestampSchema,
+  optionalDurationSchema,
+} from './common';
 
 /**
  * 지원 상태 스키마
@@ -161,7 +166,7 @@ const assignmentInnerSchema = z.object({
   groupId: z.string().optional(),
   checkMethod: z.enum(['group', 'individual']).optional(),
   requirementId: z.string().optional(),
-  duration: z.any().optional(),
+  duration: optionalDurationSchema,
   isTimeToBeAnnounced: z.boolean().optional(),
   tentativeDescription: z.string().optional(),
 }).passthrough();
@@ -185,15 +190,15 @@ export const applicationDocumentSchema = z.object({
   assignments: z.array(assignmentInnerSchema),
 
   // 확정 정보
-  confirmedAt: z.any().optional(),
+  confirmedAt: optionalTimestampSchema,
   confirmedBy: z.string().optional(),
 
   // 거절 정보
-  rejectedAt: z.any().optional(),
+  rejectedAt: optionalTimestampSchema,
   rejectionReason: z.string().optional(),
 
   // 취소 정보
-  cancelledAt: z.any().optional(),
+  cancelledAt: optionalTimestampSchema,
   cancellationReason: z.string().optional(),
 
   // 공고 정보 (비정규화)
@@ -202,8 +207,8 @@ export const applicationDocumentSchema = z.object({
   workDate: z.string().optional(),
 
   // Timestamps
-  createdAt: z.any(),
-  updatedAt: z.any(),
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
 }).passthrough();
 
 export type ApplicationDocumentData = z.infer<typeof applicationDocumentSchema>;

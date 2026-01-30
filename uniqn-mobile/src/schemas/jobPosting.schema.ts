@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
+import { timestampSchema } from './common';
 
 /**
  * 공고 타입 스키마
@@ -243,9 +244,9 @@ export const jobPostingDocumentSchema = z.object({
   viewCount: z.number().optional(),
   applicationCount: z.number().optional(),
 
-  // Timestamps (Firebase Timestamp 또는 any)
-  createdAt: z.any(),
-  updatedAt: z.any(),
+  // Timestamps (Firebase Timestamp)
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
 }).passthrough();
 
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;

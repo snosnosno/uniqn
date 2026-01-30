@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { payrollStatusSchema } from './schedule.schema';
+import { timestampSchema, optionalTimestampSchema } from './common';
 
 // ============================================================================
 // 근무 기록 상태 스키마
@@ -113,10 +114,10 @@ export const workLogDocumentSchema = z.object({
   staffPhotoURL: z.string().optional(),
 
   // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
-  scheduledStartTime: z.any().optional(),
-  scheduledEndTime: z.any().optional(),
-  checkInTime: z.any().optional(),
-  checkOutTime: z.any().optional(),
+  scheduledStartTime: optionalTimestampSchema.or(z.string()).optional(),
+  scheduledEndTime: optionalTimestampSchema.or(z.string()).optional(),
+  checkInTime: optionalTimestampSchema.or(z.string()).optional(),
+  checkOutTime: optionalTimestampSchema.or(z.string()).optional(),
 
   // 상태
   status: workLogStatusSchema,
@@ -126,7 +127,7 @@ export const workLogDocumentSchema = z.object({
   // 정산 정보
   payrollStatus: payrollStatusSchema.optional(),
   payrollAmount: z.number().optional(),
-  payrollDate: z.any().optional(),
+  payrollDate: optionalTimestampSchema,
   payrollNotes: z.string().optional(),
 
   // 메타
@@ -135,8 +136,8 @@ export const workLogDocumentSchema = z.object({
   ownerId: z.string().optional(),
 
   // Timestamps
-  createdAt: z.any(),
-  updatedAt: z.any(),
+  createdAt: timestampSchema,
+  updatedAt: timestampSchema,
 }).passthrough();
 
 export type WorkLogDocumentData = z.infer<typeof workLogDocumentSchema>;

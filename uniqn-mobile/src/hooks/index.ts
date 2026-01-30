@@ -182,7 +182,7 @@ export {
   useDeleteTemplate,
 } from './useTemplateManager';
 
-// Applicant Management (지원자 관리)
+// Applicant Management (지원자 관리) - Phase 3 분할 완료
 export {
   useApplicantManagement,
   useApplicantsByJobPosting,
@@ -191,7 +191,19 @@ export {
   useRejectApplication,
   useBulkConfirmApplications,
   useMarkAsRead as useMarkApplicationAsRead,
-} from './useApplicantManagement';
+  // v2.0 히스토리 기반 확정/취소
+  useConfirmApplicationWithHistory,
+  useCancelConfirmation,
+  // 취소 요청 관리
+  useCancellationRequests,
+  useReviewCancellation,
+  // 스태프 변환
+  useConvertToStaff,
+  useBatchConvertToStaff,
+  useCanConvertToStaff,
+  type UseApplicantManagementOptions,
+  type UseApplicantsByJobPostingOptions,
+} from './applicant';
 
 // Settlement (정산 관리)
 export {

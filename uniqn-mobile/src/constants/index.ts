@@ -25,16 +25,9 @@ export {
 } from './version';
 
 // ============================================================================
-// 출석 상태
+// 출석 상태 (statusConfig.ts에서 re-export)
 // ============================================================================
-
-export const ATTENDANCE_STATUS = {
-  NOT_STARTED: 'not_started',
-  CHECKED_IN: 'checked_in',
-  CHECKED_OUT: 'checked_out',
-} as const;
-
-export type AttendanceStatusType = (typeof ATTENDANCE_STATUS)[keyof typeof ATTENDANCE_STATUS];
+// ATTENDANCE_STATUS, AttendanceStatusType은 statusConfig.ts에서 export됨
 
 // ============================================================================
 // Firebase 컬렉션
@@ -338,10 +331,30 @@ export {
 // ============================================================================
 
 export {
+  // Icon colors
   ICON_COLORS,
   getIconColor,
+  // Status colors
   STATUS_COLORS,
   PRIMARY_COLORS,
+  // Badge colors (v1.1.0)
+  type BadgeVariant,
+  BADGE_COLORS,
+  BADGE_CLASSES,
+  getBadgeColor,
+  getBadgeClasses,
+  // Text colors (v1.1.0)
+  TEXT_COLORS,
+  TEXT_CLASSES,
+  getTextColor,
+  // Card colors (v1.1.0)
+  CARD_COLORS,
+  CARD_CLASSES,
+  getCardColor,
+  // Border colors (v1.1.0)
+  BORDER_COLORS,
+  BORDER_CLASSES,
+  getBorderColor,
 } from './colors';
 
 // ============================================================================
@@ -349,3 +362,36 @@ export {
 // ============================================================================
 
 export { FIREBASE_LIMITS, type FirebaseLimits } from './firebase';
+
+// ============================================================================
+// 상태 설정 통합 (v1.1.0)
+// ============================================================================
+
+export {
+  // Types
+  type StatusConfig,
+  type AttendanceStatusConfig,
+  type ApplicationStatusType,
+  type ScheduleStatusType,
+  type AttendanceStatusType,
+  type PayrollStatusType,
+  type JobPostingStatusType,
+  type InquiryStatusType,
+  type AnnouncementPriorityType,
+  // Status Configs
+  APPLICATION_STATUS,
+  SCHEDULE_STATUS,
+  ATTENDANCE_STATUS,
+  PAYROLL_STATUS,
+  JOB_POSTING_STATUS,
+  INQUIRY_STATUS,
+  ANNOUNCEMENT_PRIORITY,
+  // Utility Functions
+  getStatusConfig,
+  getStatusLabel,
+  getStatusHexColor,
+  getStatusVariant,
+  // Legacy Exports (deprecated)
+  applicationStatusConfig,
+  statusConfig,
+} from './statusConfig';

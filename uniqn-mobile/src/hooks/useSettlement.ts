@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
   getWorkLogsByJobPosting,
   calculateSettlement,
@@ -22,11 +22,11 @@ import {
   type BulkSettlementInput,
   type UpdateWorkTimeInput,
 } from '@/services';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import type { PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -86,8 +86,8 @@ export function useMySettlementSummary(dateRange?: { start: string; end: string 
  * 정산 금액 계산 훅
  */
 export function useCalculateSettlement() {
-  const queryClient = useQueryClient();
   const { user } = useAuthStore();
+  const { addToast } = useToastStore();
 
   return useMutation({
     mutationFn: (input: CalculateSettlementInput) => {
@@ -101,14 +101,10 @@ export function useCalculateSettlement() {
         workLogId: result.workLogId,
         netPay: result.netPay,
       });
-      // 정산 캐시 무효화 (계산 결과 즉시 반영)
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.settlement.all,
-      });
+      // 이벤트 기반 캐시 무효화
+      invalidateRelated('settlement.process');
     },
-    onError: (error) => {
-      logger.error('정산 금액 계산 실패', toError(error));
-    },
+    onError: errorHandlerPresets.settlement(addToast),
   });
 }
 
@@ -120,7 +116,6 @@ export function useCalculateSettlement() {
  * 근무 시간 수정 뮤테이션 훅
  */
 export function useUpdateWorkTime() {
-  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -138,25 +133,10 @@ export function useUpdateWorkTime() {
         message: '근무 시간이 수정되었습니다.',
       });
 
-      // 캐시 무효화
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.settlement.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.workLogs.all,
-      });
-      // 스케줄 캐시 무효화 (ScheduleDetailModal 탭 간 동기화)
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.schedules.all,
-      });
+      // 이벤트 기반 캐시 무효화
+      invalidateRelated('workLog.update');
     },
-    onError: (error) => {
-      logger.error('근무 시간 수정 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '시간 수정에 실패했습니다.',
-      });
-    },
+    onError: createMutationErrorHandler('근무 시간 수정', addToast),
   });
 }
 
@@ -168,7 +148,6 @@ export function useUpdateWorkTime() {
  * 개별 정산 뮤테이션 훅
  */
 export function useSettleWorkLog() {
-  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -196,21 +175,10 @@ export function useSettleWorkLog() {
         });
       }
 
-      // 캐시 무효화
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.settlement.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.workLogs.all,
-      });
+      // 이벤트 기반 캐시 무효화
+      invalidateRelated('settlement.process');
     },
-    onError: (error) => {
-      logger.error('개별 정산 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: '정산 처리에 실패했습니다.',
-      });
-    },
+    onError: errorHandlerPresets.settlement(addToast),
   });
 }
 
@@ -218,7 +186,6 @@ export function useSettleWorkLog() {
  * 일괄 정산 뮤테이션 훅
  */
 export function useBulkSettlement() {
-  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -250,21 +217,10 @@ export function useBulkSettlement() {
         });
       }
 
-      // 캐시 무효화
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.settlement.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.workLogs.all,
-      });
+      // 이벤트 기반 캐시 무효화
+      invalidateRelated('settlement.bulkProcess');
     },
-    onError: (error) => {
-      logger.error('일괄 정산 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: '일괄 정산에 실패했습니다.',
-      });
-    },
+    onError: errorHandlerPresets.settlement(addToast),
   });
 }
 
@@ -272,7 +228,6 @@ export function useBulkSettlement() {
  * 정산 상태 변경 뮤테이션 훅
  */
 export function useUpdateSettlementStatus() {
-  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -303,18 +258,10 @@ export function useUpdateSettlementStatus() {
         message: statusMessages[status],
       });
 
-      // 캐시 무효화
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.settlement.all,
-      });
+      // 이벤트 기반 캐시 무효화
+      invalidateRelated('settlement.process');
     },
-    onError: (error) => {
-      logger.error('정산 상태 변경 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: '상태 변경에 실패했습니다.',
-      });
-    },
+    onError: errorHandlerPresets.settlement(addToast),
   });
 }
 

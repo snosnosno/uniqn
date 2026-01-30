@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { timestampSchema, optionalTimestampSchema, metadataSchema } from './common';
 
 // ============================================================================
 // 알림 타입 스키마
@@ -186,14 +187,14 @@ export const notificationDocumentSchema = z.object({
 
   // 링크 및 데이터
   link: z.string().optional(),
-  data: z.record(z.string(), z.any()).optional(),
+  data: metadataSchema.optional(),
 
   // 우선순위
   priority: notificationPrioritySchema.optional(),
 
   // Timestamps
-  createdAt: z.any(),
-  readAt: z.any().optional(),
+  createdAt: timestampSchema,
+  readAt: optionalTimestampSchema,
 }).passthrough();
 
 export type NotificationDocumentData = z.infer<typeof notificationDocumentSchema>;
@@ -263,7 +264,7 @@ export const notificationSettingsDocumentSchema = z.object({
     start: z.string(),
     end: z.string(),
   }).optional(),
-  updatedAt: z.any().optional(),
+  updatedAt: optionalTimestampSchema,
 }).passthrough();
 
 export type NotificationSettingsDocumentData = z.infer<typeof notificationSettingsDocumentSchema>;
