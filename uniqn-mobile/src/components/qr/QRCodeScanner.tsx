@@ -2,7 +2,7 @@
  * UNIQN Mobile - QRCodeScanner 컴포넌트
  *
  * @description 출퇴근용 QR 코드 스캐너
- * @version 2.0.0 - Event QR 시스템 전용
+ * @version 2.1.0 - Event QR 시스템 전용 + 웹 호환성
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -16,6 +16,9 @@ import {
   ScanIcon,
 } from '@/components/icons';
 import { logger } from '@/utils/logger';
+import { isWeb } from '@/utils/platform';
+// @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
+import { createPortal } from 'react-dom';
 import type { QRCodeScanResult, QRCodeAction } from '@/types';
 
 // ============================================================================
@@ -37,6 +40,16 @@ interface QRCodeScannerProps {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const SCAN_AREA_SIZE = SCREEN_WIDTH * 0.7;
+
+// ============================================================================
+// Web Portal (다른 모달보다 높은 z-index로 렌더링)
+// ============================================================================
+
+function WebModalPortal({ children, visible }: { children: React.ReactNode; visible: boolean }) {
+  if (!visible) return null;
+  if (typeof document === 'undefined') return <>{children}</>;
+  return createPortal(children, document.body);
+}
 
 // ============================================================================
 // Component
@@ -232,6 +245,24 @@ export function QRCodeScanner({
     );
   };
 
+  // 웹: Portal로 z-index 99999에 렌더링 (다른 모달보다 위)
+  if (isWeb) {
+    return (
+      <WebModalPortal visible={visible}>
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            // @ts-expect-error - 웹 전용 스타일
+            { position: 'fixed', zIndex: 99999 },
+          ]}
+        >
+          {renderContent()}
+        </View>
+      </WebModalPortal>
+    );
+  }
+
+  // 네이티브: 기존 RNModal 사용
   return (
     <RNModal
       visible={visible}
