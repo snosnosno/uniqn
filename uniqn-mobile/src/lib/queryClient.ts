@@ -597,11 +597,16 @@ export const invalidationGraph: Record<string, string[]> = {
  * // workLogs 변경 시 schedules도 함께 무효화
  * await invalidateRelated('workLogs');
  */
+/** 인자 없이 호출 가능한 무효화 함수 타입 */
+type NoArgInvalidator = () => void | Promise<void>;
+
 export async function invalidateRelated(
   primaryKey: keyof typeof invalidationGraph
 ): Promise<void> {
-  // 주 데이터 무효화
-  const primaryInvalidate = invalidateQueries[primaryKey as keyof typeof invalidateQueries];
+  // 주 데이터 무효화 (invalidationGraph 키는 모두 인자 없는 함수)
+  const primaryInvalidate = invalidateQueries[
+    primaryKey as keyof typeof invalidateQueries
+  ] as NoArgInvalidator | undefined;
   if (typeof primaryInvalidate === 'function') {
     await primaryInvalidate();
   }
@@ -609,7 +614,9 @@ export async function invalidateRelated(
   // 관련 데이터 무효화
   const relatedKeys = invalidationGraph[primaryKey] || [];
   for (const relatedKey of relatedKeys) {
-    const relatedInvalidate = invalidateQueries[relatedKey as keyof typeof invalidateQueries];
+    const relatedInvalidate = invalidateQueries[
+      relatedKey as keyof typeof invalidateQueries
+    ] as NoArgInvalidator | undefined;
     if (typeof relatedInvalidate === 'function') {
       await relatedInvalidate();
     }

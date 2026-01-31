@@ -30,6 +30,8 @@ import {
   FirebaseJobPostingRepository,
   FirebaseWorkLogRepository,
   FirebaseUserRepository,
+  FirebaseEventQRRepository,
+  FirebaseNotificationRepository,
 } from './firebase';
 
 // ============================================================================
@@ -57,6 +59,11 @@ export type {
   DeletionReason,
   DeletionRequest,
   UserDataExport,
+  // EventQR
+  IEventQRRepository,
+  // Notification
+  INotificationRepository,
+  GetNotificationsOptions,
 } from './interfaces';
 
 // ============================================================================
@@ -68,6 +75,8 @@ export {
   FirebaseJobPostingRepository,
   FirebaseWorkLogRepository,
   FirebaseUserRepository,
+  FirebaseEventQRRepository,
+  FirebaseNotificationRepository,
 } from './firebase';
 
 // ============================================================================
@@ -148,3 +157,45 @@ export const workLogRepository = new FirebaseWorkLogRepository();
  * ```
  */
 export const userRepository = new FirebaseUserRepository();
+
+/**
+ * EventQR Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { eventQRRepository } from '@/repositories';
+ *
+ * // 조회
+ * const qr = await eventQRRepository.getActiveByJobAndDate(jobPostingId, date, 'checkIn');
+ *
+ * // 생성
+ * const qrId = await eventQRRepository.create(qrData);
+ *
+ * // 비활성화
+ * await eventQRRepository.deactivate(qrId);
+ * ```
+ */
+export const eventQRRepository = new FirebaseEventQRRepository();
+
+/**
+ * Notification Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { notificationRepository } from '@/repositories';
+ *
+ * // 조회
+ * const notifications = await notificationRepository.getByUserId(userId);
+ *
+ * // 읽음 처리
+ * await notificationRepository.markAsRead(notificationId);
+ *
+ * // 설정 조회
+ * const settings = await notificationRepository.getSettings(userId);
+ * ```
+ */
+export const notificationRepository = new FirebaseNotificationRepository();

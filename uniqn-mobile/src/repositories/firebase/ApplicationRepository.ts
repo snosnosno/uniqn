@@ -1228,4 +1228,77 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       });
     }
   }
+
+  async markAsRead(applicationId: string, ownerId: string): Promise<void> {
+    try {
+      logger.info('지원 읽음 처리 시작', { applicationId, ownerId });
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        // 지원서 읽기
+        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+        const applicationDoc = await transaction.get(applicationRef);
+
+        if (!applicationDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '존재하지 않는 지원입니다',
+          });
+        }
+
+        const applicationData = parseApplicationDocument({
+          id: applicationDoc.id,
+          ...applicationDoc.data(),
+        });
+        if (!applicationData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 공고 소유자 확인
+        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+        const jobDoc = await transaction.get(jobRef);
+
+        if (!jobDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '존재하지 않는 공고입니다',
+          });
+        }
+
+        const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+        if (!jobData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
+        const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+        if (postingOwnerId !== ownerId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인의 공고만 조회할 수 있습니다',
+          });
+        }
+
+        // 읽음 처리
+        transaction.update(applicationRef, {
+          isRead: true,
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      logger.info('지원 읽음 처리 성공', { applicationId });
+    } catch (error) {
+      logger.error('지원 읽음 처리 실패', toError(error), { applicationId, ownerId });
+
+      if (error instanceof BusinessError || error instanceof PermissionError) {
+        throw error;
+      }
+
+      throw handleServiceError(error, {
+        operation: '지원 읽음 처리 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { applicationId, ownerId },
+      });
+    }
+  }
 }

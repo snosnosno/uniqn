@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Dimensions, Modal as RNModal } from 'react-native';
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
@@ -103,133 +103,145 @@ export function QRCodeScanner({
     setFlashEnabled((prev) => !prev);
   }, []);
 
-  if (!visible) return null;
+  // 권한 체크 - 모달 내부 컨텐츠
+  const renderContent = () => {
+    if (!permission) {
+      return (
+        <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
+          <View className="flex-1 justify-center items-center">
+            <Text className="text-white">카메라 권한 확인 중...</Text>
+          </View>
+        </SafeAreaView>
+      );
+    }
 
-  // 권한 체크
-  if (!permission) {
+    if (!permission.granted) {
+      return (
+        <SafeAreaView className="flex-1 bg-gray-900" edges={['top', 'bottom']}>
+          <View className="flex-1 justify-center items-center p-6">
+            <ScanIcon size={64} color="#6B7280" />
+            <Text className="text-white text-xl font-bold mt-4 text-center">
+              카메라 권한이 필요합니다
+            </Text>
+            <Text className="text-gray-400 text-center mt-2 mb-6">
+              QR 코드를 스캔하려면 카메라 접근 권한을 허용해주세요.
+            </Text>
+            <Button onPress={requestPermission}>
+              권한 허용하기
+            </Button>
+            <Pressable onPress={onClose} className="mt-4">
+              <Text className="text-gray-400">닫기</Text>
+            </Pressable>
+          </View>
+        </SafeAreaView>
+      );
+    }
+
     return (
       <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
-        <View className="flex-1 justify-center items-center">
-          <Text className="text-white">카메라 권한 확인 중...</Text>
-        </View>
-      </SafeAreaView>
-    );
-  }
-
-  if (!permission.granted) {
-    return (
-      <SafeAreaView className="flex-1 bg-gray-900" edges={['top', 'bottom']}>
-        <View className="flex-1 justify-center items-center p-6">
-          <ScanIcon size={64} color="#6B7280" />
-          <Text className="text-white text-xl font-bold mt-4 text-center">
-            카메라 권한이 필요합니다
-          </Text>
-          <Text className="text-gray-400 text-center mt-2 mb-6">
-            QR 코드를 스캔하려면 카메라 접근 권한을 허용해주세요.
-          </Text>
-          <Button onPress={requestPermission}>
-            권한 허용하기
-          </Button>
-          <Pressable onPress={onClose} className="mt-4">
-            <Text className="text-gray-400">닫기</Text>
+        {/* 헤더 */}
+        <View className="flex-row items-center justify-between px-4 py-3 bg-black/50 z-10">
+          <Pressable
+            onPress={onClose}
+            className="w-10 h-10 items-center justify-center rounded-full"
+            accessibilityLabel="닫기"
+          >
+            <XMarkIcon size={24} color="#FFFFFF" />
+          </Pressable>
+          <Text className="text-white text-lg font-semibold">{title}</Text>
+          <Pressable
+            onPress={handleToggleFlash}
+            className="w-10 h-10 items-center justify-center rounded-full"
+            accessibilityLabel={flashEnabled ? '플래시 끄기' : '플래시 켜기'}
+          >
+            <Text className={flashEnabled ? 'text-yellow-400' : 'text-white'}>
+              {flashEnabled ? '🔦' : '💡'}
+            </Text>
           </Pressable>
         </View>
+
+        {/* 카메라 뷰 */}
+        <View className="flex-1">
+          <CameraView
+            style={StyleSheet.absoluteFillObject}
+            facing="back"
+            enableTorch={flashEnabled}
+            barcodeScannerSettings={{
+              barcodeTypes: ['qr'],
+            }}
+            onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
+          />
+
+          {/* 오버레이 */}
+          <View className="flex-1 justify-center items-center">
+            {/* 스캔 영역 가이드 */}
+            <View
+              style={{
+                width: SCAN_AREA_SIZE,
+                height: SCAN_AREA_SIZE,
+                borderWidth: 2,
+                borderColor: scanned ? '#22C55E' : '#FFFFFF',
+                borderRadius: 16,
+              }}
+            >
+              {/* 코너 장식 */}
+              <View
+                className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg"
+                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+              />
+              <View
+                className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg"
+                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+              />
+              <View
+                className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg"
+                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+              />
+              <View
+                className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg"
+                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+              />
+            </View>
+
+            {/* 안내 문구 */}
+            <Text className="text-white text-center mt-6 px-8">
+              {scanned
+                ? '스캔 완료!'
+                : expectedAction === 'checkIn'
+                  ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
+                  : expectedAction === 'checkOut'
+                    ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
+                    : 'QR 코드를 영역 안에 맞춰주세요'}
+            </Text>
+          </View>
+        </View>
+
+        {/* 하단 버튼 */}
+        {scanned && (
+          <View className="px-6 py-4 bg-black/50">
+            <Button
+              variant="outline"
+              onPress={handleRescan}
+              icon={<RefreshIcon size={20} color="#FFFFFF" />}
+            >
+              <Text className="text-white ml-2">다시 스캔하기</Text>
+            </Button>
+          </View>
+        )}
       </SafeAreaView>
     );
-  }
+  };
 
   return (
-    <SafeAreaView className="flex-1 bg-black" edges={['top', 'bottom']}>
-      {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 bg-black/50 z-10">
-        <Pressable
-          onPress={onClose}
-          className="w-10 h-10 items-center justify-center rounded-full"
-          accessibilityLabel="닫기"
-        >
-          <XMarkIcon size={24} color="#FFFFFF" />
-        </Pressable>
-        <Text className="text-white text-lg font-semibold">{title}</Text>
-        <Pressable
-          onPress={handleToggleFlash}
-          className="w-10 h-10 items-center justify-center rounded-full"
-          accessibilityLabel={flashEnabled ? '플래시 끄기' : '플래시 켜기'}
-        >
-          <Text className={flashEnabled ? 'text-yellow-400' : 'text-white'}>
-            {flashEnabled ? '🔦' : '💡'}
-          </Text>
-        </Pressable>
-      </View>
-
-      {/* 카메라 뷰 */}
-      <View className="flex-1">
-        <CameraView
-          style={StyleSheet.absoluteFillObject}
-          facing="back"
-          enableTorch={flashEnabled}
-          barcodeScannerSettings={{
-            barcodeTypes: ['qr'],
-          }}
-          onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-        />
-
-        {/* 오버레이 */}
-        <View className="flex-1 justify-center items-center">
-          {/* 스캔 영역 가이드 */}
-          <View
-            style={{
-              width: SCAN_AREA_SIZE,
-              height: SCAN_AREA_SIZE,
-              borderWidth: 2,
-              borderColor: scanned ? '#22C55E' : '#FFFFFF',
-              borderRadius: 16,
-            }}
-          >
-            {/* 코너 장식 */}
-            <View
-              className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg"
-              style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
-            />
-            <View
-              className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg"
-              style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
-            />
-            <View
-              className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg"
-              style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
-            />
-            <View
-              className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg"
-              style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
-            />
-          </View>
-
-          {/* 안내 문구 */}
-          <Text className="text-white text-center mt-6 px-8">
-            {scanned
-              ? '스캔 완료!'
-              : expectedAction === 'checkIn'
-                ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
-                : expectedAction === 'checkOut'
-                  ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
-                  : 'QR 코드를 영역 안에 맞춰주세요'}
-          </Text>
-        </View>
-      </View>
-
-      {/* 하단 버튼 */}
-      {scanned && (
-        <View className="px-6 py-4 bg-black/50">
-          <Button
-            variant="outline"
-            onPress={handleRescan}
-            icon={<RefreshIcon size={20} color="#FFFFFF" />}
-          >
-            <Text className="text-white ml-2">다시 스캔하기</Text>
-          </Button>
-        </View>
-      )}
-    </SafeAreaView>
+    <RNModal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+      statusBarTranslucent
+    >
+      {renderContent()}
+    </RNModal>
   );
 }
 

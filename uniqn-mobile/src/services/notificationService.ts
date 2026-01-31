@@ -10,40 +10,27 @@
 
 import {
   collection,
-  doc,
   query,
   where,
   orderBy,
   limit,
-  getDocs,
-  getDoc,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  writeBatch,
   onSnapshot,
-  Timestamp,
-  serverTimestamp,
-  QueryDocumentSnapshot,
-  getCountFromServer,
-  arrayUnion,
-  arrayRemove,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { normalizeError } from '@/errors';
 import { withErrorHandling } from '@/utils/withErrorHandling';
-import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { RealtimeManager } from '@/shared/realtime';
 import { COLLECTIONS } from '@/constants';
+import { notificationRepository } from '@/repositories';
 import type {
   NotificationData,
   NotificationSettings,
   NotificationFilter,
 } from '@/types/notification';
-import { createDefaultNotificationSettings } from '@/types/notification';
-import { parseNotificationSettingsDocument } from '@/schemas';
 
 // ============================================================================
 // Constants
@@ -80,8 +67,9 @@ interface NotificationPermissionStatus {
 
 /**
  * Firestore 문서를 NotificationData로 변환
+ * @description 실시간 구독에서만 사용 (Repository는 내부 변환 사용)
  */
-function docToNotification(doc: QueryDocumentSnapshot): NotificationData {
+function docToNotification(doc: QueryDocumentSnapshot<DocumentData>): NotificationData {
   const data = doc.data();
   return {
     id: doc.id,
@@ -110,24 +98,10 @@ export async function fetchNotifications(
   return withErrorHandling(async () => {
     const { userId, filter, pageSize = PAGE_SIZE, lastDoc } = options;
 
-    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-
-    // QueryBuilder를 사용한 쿼리 구성
-    const q = new QueryBuilder(notificationsRef)
-      .whereEqual('recipientId', userId)
-      .whereIf(filter?.isRead !== undefined, 'isRead', '==', filter?.isRead)
-      .orderByDesc('createdAt')
-      .paginate(pageSize, lastDoc)
-      .build();
-
-    const snapshot = await getDocs(q);
-
-    // 페이지네이션 결과 처리
-    const result = processPaginatedResults(snapshot.docs, pageSize, docToNotification);
-
-    logger.info('알림 목록 조회 성공', {
-      count: result.items.length,
-      hasMore: result.hasMore,
+    const result = await notificationRepository.getByUserId(userId, {
+      filter,
+      pageSize,
+      lastDoc,
     });
 
     return {
@@ -143,15 +117,7 @@ export async function fetchNotifications(
  */
 export async function getUnreadCount(userId: string): Promise<number> {
   return withErrorHandling(async () => {
-    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-    const q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      where('isRead', '==', false)
-    );
-
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
+    return notificationRepository.getUnreadCount(userId);
   }, 'getUnreadCount');
 }
 
@@ -160,14 +126,7 @@ export async function getUnreadCount(userId: string): Promise<number> {
  */
 export async function getNotification(notificationId: string): Promise<NotificationData | null> {
   return withErrorHandling(async () => {
-    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    return docToNotification(docSnap as QueryDocumentSnapshot);
+    return notificationRepository.getById(notificationId);
   }, 'getNotification');
 }
 
@@ -180,13 +139,7 @@ export async function getNotification(notificationId: string): Promise<Notificat
  */
 export async function markAsRead(notificationId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
-    await updateDoc(docRef, {
-      isRead: true,
-      readAt: serverTimestamp(),
-    });
-
-    logger.info('알림 읽음 처리', { notificationId });
+    await notificationRepository.markAsRead(notificationId);
   }, 'markAsRead');
 }
 
@@ -195,34 +148,7 @@ export async function markAsRead(notificationId: string): Promise<void> {
  */
 export async function markAllAsRead(userId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-    const q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      where('isRead', '==', false)
-    );
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      logger.info('읽지 않은 알림 없음');
-      return;
-    }
-
-    // 배치 처리
-    const batch = writeBatch(getFirebaseDb());
-    const now = serverTimestamp();
-
-    snapshot.docs.forEach((doc) => {
-      batch.update(doc.ref, {
-        isRead: true,
-        readAt: now,
-      });
-    });
-
-    await batch.commit();
-
-    logger.info('모든 알림 읽음 처리', { count: snapshot.size });
+    await notificationRepository.markAllAsRead(userId);
   }, 'markAllAsRead');
 }
 
@@ -231,10 +157,7 @@ export async function markAllAsRead(userId: string): Promise<void> {
  */
 export async function deleteNotification(notificationId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
-    await deleteDoc(docRef);
-
-    logger.info('알림 삭제', { notificationId });
+    await notificationRepository.delete(notificationId);
   }, 'deleteNotification');
 }
 
@@ -243,18 +166,7 @@ export async function deleteNotification(notificationId: string): Promise<void> 
  */
 export async function deleteNotifications(notificationIds: string[]): Promise<void> {
   return withErrorHandling(async () => {
-    if (notificationIds.length === 0) return;
-
-    const batch = writeBatch(getFirebaseDb());
-
-    notificationIds.forEach((id) => {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, id);
-      batch.delete(docRef);
-    });
-
-    await batch.commit();
-
-    logger.info('여러 알림 삭제', { count: notificationIds.length });
+    await notificationRepository.deleteMany(notificationIds);
   }, 'deleteNotifications');
 }
 
@@ -263,32 +175,7 @@ export async function deleteNotifications(notificationIds: string[]): Promise<vo
  */
 export async function cleanupOldNotifications(userId: string, daysToKeep = 30): Promise<number> {
   return withErrorHandling(async () => {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
-
-    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-    const q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      where('createdAt', '<', Timestamp.fromDate(cutoffDate)),
-      limit(500) // 한 번에 처리할 최대 개수
-    );
-
-    const snapshot = await getDocs(q);
-
-    if (snapshot.empty) {
-      return 0;
-    }
-
-    const batch = writeBatch(getFirebaseDb());
-    snapshot.docs.forEach((doc) => {
-      batch.delete(doc.ref);
-    });
-
-    await batch.commit();
-
-    logger.info('오래된 알림 정리', { count: snapshot.size, daysToKeep });
-    return snapshot.size;
+    return notificationRepository.deleteOlderThan(userId, daysToKeep);
   }, 'cleanupOldNotifications');
 }
 
@@ -388,21 +275,7 @@ export function subscribeToUnreadCount(
  */
 export async function getNotificationSettings(userId: string): Promise<NotificationSettings> {
   return withErrorHandling(async () => {
-    // Firestore 규칙에 맞는 경로 사용: users/{userId}/notificationSettings/{settingId}
-    const docRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'notificationSettings', 'default');
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return createDefaultNotificationSettings();
-    }
-
-    const parsed = parseNotificationSettingsDocument(docSnap.data());
-    if (!parsed) {
-      logger.warn('알림 설정 문서 파싱 실패, 기본값 반환', { userId });
-      return createDefaultNotificationSettings();
-    }
-
-    return parsed;
+    return notificationRepository.getSettings(userId);
   }, 'getNotificationSettings');
 }
 
@@ -415,18 +288,7 @@ export async function saveNotificationSettings(
   settings: NotificationSettings
 ): Promise<void> {
   return withErrorHandling(async () => {
-    // Firestore 규칙에 맞는 경로 사용: users/{userId}/notificationSettings/{settingId}
-    const docRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'notificationSettings', 'default');
-    await setDoc(
-      docRef,
-      {
-        ...settings,
-        updatedAt: serverTimestamp(),
-      },
-      { merge: true }
-    );
-
-    logger.info('알림 설정 저장', { userId });
+    await notificationRepository.saveSettings(userId, settings);
   }, 'saveNotificationSettings');
 }
 
@@ -501,13 +363,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
  */
 export async function registerFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {
-    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-    await updateDoc(userRef, {
-      fcmTokens: arrayUnion(token),
-      lastTokenUpdate: serverTimestamp(),
-    });
-
-    logger.info('FCM 토큰 등록', { userId, tokenPrefix: token.substring(0, 20) });
+    await notificationRepository.registerFCMToken(userId, token);
   }, 'registerFCMToken');
 }
 
@@ -518,12 +374,7 @@ export async function registerFCMToken(userId: string, token: string): Promise<v
  */
 export async function unregisterFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {
-    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-    await updateDoc(userRef, {
-      fcmTokens: arrayRemove(token),
-    });
-
-    logger.info('FCM 토큰 삭제', { userId, tokenPrefix: token.substring(0, 20) });
+    await notificationRepository.unregisterFCMToken(userId, token);
   }, 'unregisterFCMToken');
 }
 
@@ -534,12 +385,7 @@ export async function unregisterFCMToken(userId: string, token: string): Promise
  */
 export async function unregisterAllFCMTokens(userId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-    await updateDoc(userRef, {
-      fcmTokens: [],
-    });
-
-    logger.info('모든 FCM 토큰 삭제', { userId });
+    await notificationRepository.unregisterAllFCMTokens(userId);
   }, 'unregisterAllFCMTokens');
 }
 

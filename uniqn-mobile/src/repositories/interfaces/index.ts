@@ -37,3 +37,12 @@ export type {
   DeletionRequest,
   UserDataExport,
 } from './IUserRepository';
+
+// EventQR Repository
+export type { IEventQRRepository } from './IEventQRRepository';
+
+// Notification Repository
+export type {
+  INotificationRepository,
+  GetNotificationsOptions,
+} from './INotificationRepository';

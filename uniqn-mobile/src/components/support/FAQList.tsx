@@ -6,15 +6,10 @@
  */
 
 import React, { useMemo, useState, useCallback } from 'react';
-import { View, Text, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, LayoutAnimation } from 'react-native';
 import { AccordionItem } from '@/components/ui';
 import type { FAQItem, InquiryCategory } from '@/types';
 import { INQUIRY_CATEGORY_LABELS } from '@/types';
-
-// Android에서 LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export interface FAQListProps {
   /** FAQ 아이템 목록 */

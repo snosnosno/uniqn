@@ -266,14 +266,18 @@ export const useAuthStore = create<AuthState>()(
         // Phase 8: RoleResolver.computeRoleFlags로 통합 (이원화 해결)
         if (state?.profile) {
           const roleFlags = RoleResolver.computeRoleFlags(state.profile.role);
-          useAuthStore.setState({
-            ...roleFlags,
-            isAuthenticated: !!state.user,
-          });
-          logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
-            component: 'AuthStore',
-            role: state.profile.role,
-            ...roleFlags,
+          // ⚠️ queueMicrotask로 렌더링 사이클 이후 상태 업데이트
+          // React 경고 방지: "Can't perform a React state update on a component that hasn't mounted yet"
+          queueMicrotask(() => {
+            useAuthStore.setState({
+              ...roleFlags,
+              isAuthenticated: !!state.user,
+            });
+            logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
+              component: 'AuthStore',
+              role: state.profile?.role,
+              ...roleFlags,
+            });
           });
         }
       },

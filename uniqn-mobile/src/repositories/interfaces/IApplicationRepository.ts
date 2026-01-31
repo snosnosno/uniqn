@@ -215,4 +215,18 @@ export interface IApplicationRepository {
     input: RejectApplicationInput,
     reviewerId: string
   ): Promise<void>;
+
+  /**
+   * 지원 읽음 처리 (트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 지원서 존재 확인
+   * 2. 공고 소유자 확인
+   * 3. isRead 플래그 업데이트
+   *
+   * @param applicationId - 지원서 ID
+   * @param ownerId - 공고 소유자 ID (권한 확인용)
+   * @throws PermissionError (소유자 아님), BusinessError (존재하지 않음)
+   */
+  markAsRead(applicationId: string, ownerId: string): Promise<void>;
 }

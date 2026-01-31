@@ -10,9 +10,6 @@ import {
   doc,
   query,
   where,
-  orderBy,
-  limit,
-  startAfter,
   getDocs,
   getDoc,
   addDoc,
@@ -26,6 +23,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
+import { QueryBuilder, processPaginatedResultsWithFilter } from '@/utils/firestore';
 import { COLLECTIONS } from '@/constants';
 import type {
   Announcement,
@@ -105,61 +103,42 @@ export async function fetchPublishedAnnouncements(
     const db = getFirebaseDb();
     const { pageSize = PAGE_SIZE, lastDoc } = options;
 
-    // 발행된 공지만 조회 (고정 > 우선순위 > 발행일 순)
-    let q = query(
-      collection(db, COLLECTIONS.ANNOUNCEMENTS),
-      where('status', '==', 'published'),
-      orderBy('isPinned', 'desc'),
-      orderBy('priority', 'desc'),
-      orderBy('publishedAt', 'desc'),
-      limit(pageSize + 1)
-    );
-
-    // 페이지네이션
-    if (lastDoc) {
-      q = query(
-        collection(db, COLLECTIONS.ANNOUNCEMENTS),
-        where('status', '==', 'published'),
-        orderBy('isPinned', 'desc'),
-        orderBy('priority', 'desc'),
-        orderBy('publishedAt', 'desc'),
-        startAfter(lastDoc),
-        limit(pageSize + 1)
-      );
-    }
+    // QueryBuilder로 쿼리 구성 (고정 > 우선순위 > 발행일 순)
+    const q = new QueryBuilder(collection(db, COLLECTIONS.ANNOUNCEMENTS))
+      .whereEqual('status', 'published')
+      .orderByDesc('isPinned')
+      .orderByDesc('priority')
+      .orderByDesc('publishedAt')
+      .paginate(pageSize, lastDoc)
+      .build();
 
     const snapshot = await getDocs(q);
-    const docs = snapshot.docs;
 
-    // 대상 역할 필터링
-    const filteredDocs = docs.filter((doc) => {
-      const data = doc.data();
-      const targetAudience = data.targetAudience ?? { type: 'all' };
-
-      if (targetAudience.type === 'all') {
-        return true;
+    // 대상 역할 필터링 + 페이지네이션 처리
+    const result = processPaginatedResultsWithFilter(
+      snapshot.docs,
+      pageSize,
+      docToAnnouncement,
+      (announcement) => {
+        const targetAudience = announcement.targetAudience ?? { type: 'all' };
+        if (targetAudience.type === 'all') return true;
+        if (targetAudience.type === 'roles' && targetAudience.roles && userRole) {
+          return targetAudience.roles.includes(userRole);
+        }
+        return false;
       }
-
-      if (targetAudience.type === 'roles' && targetAudience.roles && userRole) {
-        return targetAudience.roles.includes(userRole);
-      }
-
-      return false;
-    });
-
-    const hasMore = filteredDocs.length > pageSize;
-    const announcements = filteredDocs.slice(0, pageSize).map(docToAnnouncement);
+    );
 
     logger.info('발행된 공지사항 조회 완료', {
       component: 'announcementService',
-      count: announcements.length,
+      count: result.items.length,
       userRole,
     });
 
     return {
-      announcements,
-      lastDoc: announcements.length > 0 ? filteredDocs[announcements.length - 1] : null,
-      hasMore,
+      announcements: result.items,
+      lastDoc: result.lastDoc,
+      hasMore: result.hasMore,
     };
   }, 'fetchPublishedAnnouncements');
 }
@@ -174,58 +153,26 @@ export async function fetchAllAnnouncements(
     const db = getFirebaseDb();
     const { filters, pageSize = PAGE_SIZE, lastDoc } = options;
 
-    // 기본 쿼리 (최신순)
-    let q = query(
-      collection(db, COLLECTIONS.ANNOUNCEMENTS),
-      orderBy('createdAt', 'desc'),
-      limit(pageSize + 1)
-    );
-
-    // 상태 필터
-    if (filters?.status && filters.status !== 'all') {
-      q = query(
-        collection(db, COLLECTIONS.ANNOUNCEMENTS),
-        where('status', '==', filters.status),
-        orderBy('createdAt', 'desc'),
-        limit(pageSize + 1)
-      );
-    }
-
-    // 페이지네이션
-    if (lastDoc) {
-      if (filters?.status && filters.status !== 'all') {
-        q = query(
-          collection(db, COLLECTIONS.ANNOUNCEMENTS),
-          where('status', '==', filters.status),
-          orderBy('createdAt', 'desc'),
-          startAfter(lastDoc),
-          limit(pageSize + 1)
-        );
-      } else {
-        q = query(
-          collection(db, COLLECTIONS.ANNOUNCEMENTS),
-          orderBy('createdAt', 'desc'),
-          startAfter(lastDoc),
-          limit(pageSize + 1)
-        );
-      }
-    }
+    // QueryBuilder로 쿼리 구성
+    const q = new QueryBuilder(collection(db, COLLECTIONS.ANNOUNCEMENTS))
+      .whereIf(filters?.status && filters.status !== 'all', 'status', '==', filters?.status)
+      .orderByDesc('createdAt')
+      .paginate(pageSize, lastDoc)
+      .build();
 
     const snapshot = await getDocs(q);
-    const docs = snapshot.docs;
-    const hasMore = docs.length > pageSize;
-    const announcements = docs.slice(0, pageSize).map(docToAnnouncement);
+    const result = processPaginatedResultsWithFilter(snapshot.docs, pageSize, docToAnnouncement);
 
     logger.info('전체 공지사항 조회 완료', {
       component: 'announcementService',
-      count: announcements.length,
+      count: result.items.length,
       filters,
     });
 
     return {
-      announcements,
-      lastDoc: announcements.length > 0 ? docs[announcements.length - 1] : null,
-      hasMore,
+      announcements: result.items,
+      lastDoc: result.lastDoc,
+      hasMore: result.hasMore,
     };
   }, 'fetchAllAnnouncements');
 }

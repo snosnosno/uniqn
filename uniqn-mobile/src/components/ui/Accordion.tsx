@@ -6,13 +6,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { ChevronDownIcon } from '@/components/icons';
-
-// Android에서 LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================================
 // AccordionItem

@@ -113,13 +113,18 @@ export const useThemeStore = create<ThemeState>()(
         if (state) {
           // 복원 후 isDarkMode 재계산
           const isDark = computeIsDarkMode(state.mode);
-          state.isDarkMode = isDark;
 
           // NativeWind colorScheme 적용 (system 모드는 실제 값으로 변환)
           const effectiveMode = state.mode === 'system'
             ? (isDark ? 'dark' : 'light')
             : state.mode;
           nativeWindColorScheme.set(effectiveMode);
+
+          // ⚠️ queueMicrotask로 렌더링 사이클 이후 상태 업데이트
+          // React 경고 방지: "Can't perform a React state update on a component that hasn't mounted yet"
+          queueMicrotask(() => {
+            useThemeStore.setState({ isDarkMode: isDark });
+          });
 
           // hydration 완료 표시
           state.setHasHydrated(true);

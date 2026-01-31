@@ -36,10 +36,11 @@ export type {
 } from '@/types/application';
 
 export {
-  APPLICATION_STATUS_LABELS,
   APPLICATION_STATUS_COLORS,
   CANCELLATION_STATUS_LABELS,
 } from '@/types/application';
+
+export { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 // Assignment v3.0 타입
 export type {

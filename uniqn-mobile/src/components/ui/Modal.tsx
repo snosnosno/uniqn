@@ -223,6 +223,7 @@ function WebModal({
             style={{ flex: 1 }}
             contentContainerStyle={{ flexGrow: 1 }}
             showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
             <View className="p-5">{children}</View>
           </ScrollView>
@@ -348,11 +349,11 @@ function NativeModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className={`flex-1 ${containerStyle}`}>
+        <View className={`flex-1 ${containerStyle}`} pointerEvents="box-none">
           {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
           <Pressable
             onPress={handleBackdropPress}
-            className="absolute inset-0"
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
             accessibilityRole="button"
             accessibilityLabel="모달 닫기"
           >
@@ -363,8 +364,10 @@ function NativeModal({
           </Pressable>
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <Animated.View style={[modalAnimatedStyle, modalMaxHeightStyle]}>
-            <View className={modalClassName} style={{ maxHeight: '100%' }}>
+          <Animated.View
+            style={[modalAnimatedStyle, modalMaxHeightStyle, { flexShrink: 1 }]}
+          >
+            <View className={modalClassName}>
               {/* Header */}
               {(title || showCloseButton) && (
                 <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
@@ -387,9 +390,9 @@ function NativeModal({
 
               {/* Content */}
               <ScrollView
-                style={{ flex: 1 }}
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled"
               >
                 <View className="p-5">{children}</View>
               </ScrollView>

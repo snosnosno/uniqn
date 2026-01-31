@@ -25,11 +25,8 @@ import {
   collection,
   doc,
   getDocs,
-  addDoc,
-  updateDoc,
   query,
   where,
-  orderBy,
   limit,
   Timestamp,
   serverTimestamp,
@@ -38,7 +35,7 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
   InvalidQRCodeError,
   ExpiredQRCodeError,
@@ -48,6 +45,7 @@ import {
 import { parseWorkLogDocument } from '@/schemas';
 import { trackCheckIn, trackCheckOut } from './analyticsService';
 import { parseTimeSlotToDate, toISODateString } from '@/utils/dateUtils';
+import { eventQRRepository } from '@/repositories';
 import type {
   QRCodeAction,
   EventQRCode,
@@ -61,7 +59,6 @@ import type {
 // Constants
 // ============================================================================
 
-const EVENT_QR_COLLECTION = 'eventQRCodes';
 const WORK_LOGS_COLLECTION = 'workLogs';
 
 /** QR 코드 유효 시간 (3분) */
@@ -126,10 +123,10 @@ export async function generateEventQR(
     const expiresAt = now + QR_VALIDITY_DURATION_MS;
     const securityCode = generateSecurityCode();
 
-    // 기존 활성 QR 비활성화 (같은 공고/날짜/액션)
-    await deactivateExistingQRCodes(input.jobPostingId, input.date, input.action);
+    // 기존 활성 QR 비활성화 (같은 공고/날짜/액션) - Repository 사용
+    await eventQRRepository.deactivateByJobAndDate(input.jobPostingId, input.date, input.action);
 
-    // 새 QR 코드 생성
+    // 새 QR 코드 생성 - Repository 사용
     const qrData: Omit<EventQRCode, 'id'> = {
       jobPostingId: input.jobPostingId,
       date: input.date,
@@ -141,10 +138,7 @@ export async function generateEventQR(
       isActive: true,
     };
 
-    const docRef = await addDoc(
-      collection(getFirebaseDb(), EVENT_QR_COLLECTION),
-      qrData
-    );
+    const qrId = await eventQRRepository.create(qrData);
 
     // 표시용 데이터
     const displayData: EventQRDisplayData = {
@@ -157,52 +151,14 @@ export async function generateEventQR(
       expiresAt,
     };
 
-    logger.info('이벤트 QR 생성 완료', { qrId: docRef.id });
+    logger.info('이벤트 QR 생성 완료', { qrId });
 
-    return { qrId: docRef.id, displayData };
+    return { qrId, displayData };
   } catch (error) {
     throw handleServiceError(error, {
       operation: '이벤트 QR 생성',
       component: 'eventQRService',
       context: { ...input },
-    });
-  }
-}
-
-/**
- * 기존 활성 QR 코드 비활성화
- */
-async function deactivateExistingQRCodes(
-  jobPostingId: string,
-  date: string,
-  action: QRCodeAction
-): Promise<void> {
-  try {
-    const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
-    // jobPostingId로 조회 (새 데이터 기준)
-    const q = query(
-      qrRef,
-      where('jobPostingId', '==', jobPostingId),
-      where('date', '==', date),
-      where('action', '==', action),
-      where('isActive', '==', true)
-    );
-
-    const snapshot = await getDocs(q);
-
-    await Promise.all(
-      snapshot.docs.map((docSnap) =>
-        updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, docSnap.id), {
-          isActive: false,
-        })
-      )
-    );
-  } catch (error) {
-    // 기존 QR 비활성화 실패는 새 QR 생성에 영향 없음 - 명시적 silent 처리
-    handleSilentError(error, {
-      operation: '기존 QR 비활성화',
-      component: 'eventQRService',
-      context: { jobPostingId, date, action },
     });
   }
 }
@@ -234,33 +190,18 @@ export async function validateEventQR(
       };
     }
 
-    // 3. 서버 측 검증 (보안 코드 확인) - jobPostingId로 조회
-    const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
-    const q = query(
-      qrRef,
-      where('jobPostingId', '==', qrData.jobPostingId),
-      where('date', '==', qrData.date),
-      where('action', '==', qrData.action),
-      where('securityCode', '==', qrData.securityCode),
-      where('isActive', '==', true),
-      limit(1)
+    // 3. 서버 측 검증 (보안 코드 확인) - Repository 사용
+    const qrDoc = await eventQRRepository.validateSecurityCode(
+      qrData.jobPostingId,
+      qrData.date,
+      qrData.action,
+      qrData.securityCode
     );
 
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) {
+    if (!qrDoc) {
       return {
         isValid: false,
         errorMessage: '유효하지 않거나 만료된 QR 코드입니다.',
-      };
-    }
-
-    const qrDoc = snapshot.docs[0].data() as EventQRCode;
-
-    // 4. 서버 시간 기준 만료 확인
-    if (qrDoc.expiresAt.toMillis() < now) {
-      return {
-        isValid: false,
-        errorMessage: 'QR 코드가 만료되었습니다. 새 QR 코드를 요청하세요.',
       };
     }
 
@@ -484,90 +425,24 @@ export async function getActiveEventQR(
   date: string,
   action: QRCodeAction
 ): Promise<EventQRCode | null> {
-  try {
-    const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
-    const q = query(
-      qrRef,
-      where('jobPostingId', '==', jobPostingId),
-      where('date', '==', date),
-      where('action', '==', action),
-      where('isActive', '==', true),
-      orderBy('createdAt', 'desc'),
-      limit(1)
-    );
-
-    const snapshot = await getDocs(q);
-    if (snapshot.empty) return null;
-
-    const docSnap = snapshot.docs[0];
-    const data = docSnap.data() as Omit<EventQRCode, 'id'>;
-
-    // 만료 확인
-    if (data.expiresAt.toMillis() < Date.now()) {
-      // 만료된 QR 비활성화
-      await updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, docSnap.id), {
-        isActive: false,
-      });
-      return null;
-    }
-
-    return { id: docSnap.id, ...data };
-  } catch (error) {
-    logger.error('활성 QR 조회 실패', toError(error), { jobPostingId, date, action });
-    return null;
-  }
+  // Repository로 위임 (만료 시 자동 비활성화 포함)
+  return eventQRRepository.getActiveByJobAndDate(jobPostingId, date, action);
 }
 
 /**
  * QR 코드 삭제 (비활성화)
  */
 export async function deactivateEventQR(qrId: string): Promise<void> {
-  try {
-    await updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, qrId), {
-      isActive: false,
-    });
-    logger.info('QR 코드 비활성화 완료', { qrId });
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: 'QR 코드 비활성화',
-      component: 'eventQRService',
-      context: { qrId },
-    });
-  }
+  // Repository로 위임
+  return eventQRRepository.deactivate(qrId);
 }
 
 /**
  * 만료된 QR 코드 정리 (백그라운드 작업용)
  */
 export async function cleanupExpiredQRCodes(): Promise<number> {
-  try {
-    const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
-    const now = Timestamp.now();
-
-    const q = query(
-      qrRef,
-      where('isActive', '==', true),
-      where('expiresAt', '<', now)
-    );
-
-    const snapshot = await getDocs(q);
-    let count = 0;
-
-    await Promise.all(
-      snapshot.docs.map(async (docSnap) => {
-        await updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, docSnap.id), {
-          isActive: false,
-        });
-        count++;
-      })
-    );
-
-    logger.info('만료 QR 정리 완료', { count });
-    return count;
-  } catch (error) {
-    logger.error('만료 QR 정리 실패', toError(error));
-    return 0;
-  }
+  // Repository로 위임
+  return eventQRRepository.deactivateExpired();
 }
 
 /**

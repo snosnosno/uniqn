@@ -6,14 +6,7 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { NotificationIcon } from './NotificationIcon';
@@ -24,14 +17,6 @@ import {
   toDateFromTimestamp,
 } from '@/types/notification';
 import { formatRelativeTime } from '@/utils/dateUtils';
-
-// Android LayoutAnimation 활성화
-if (
-  Platform.OS === 'android' &&
-  UIManager.setLayoutAnimationEnabledExperimental
-) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 export interface NotificationGroupItemProps {
   /** 그룹 데이터 */

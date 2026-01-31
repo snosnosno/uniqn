@@ -10,7 +10,7 @@
  */
 
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { Card, Badge } from '@/components/ui';
 import {
   CalendarIcon,
@@ -24,11 +24,6 @@ import {
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
 import type { GroupedScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
-
-// Android에서 LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================================
 // Types

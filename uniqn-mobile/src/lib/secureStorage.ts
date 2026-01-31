@@ -62,7 +62,7 @@ export type KeychainAccessible =
 // Constants
 // ============================================================================
 
-const STORAGE_PREFIX = '@uniqn_secure:';
+const STORAGE_PREFIX = 'uniqn_secure_';
 const DEFAULT_KEYCHAIN_ACCESSIBLE: KeychainAccessible = 'WHEN_UNLOCKED_THIS_DEVICE_ONLY';
 
 // ============================================================================

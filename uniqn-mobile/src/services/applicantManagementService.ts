@@ -13,8 +13,6 @@ import {
   query,
   where,
   orderBy,
-  runTransaction,
-  serverTimestamp,
   onSnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';
@@ -33,6 +31,7 @@ import {
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
+import { applicationRepository } from '@/repositories';
 import type {
   Application,
   ApplicationStatus,
@@ -283,6 +282,8 @@ export async function confirmApplication(
 
 /**
  * 지원 거절 (트랜잭션)
+ *
+ * @description Repository의 rejectWithTransaction을 활용하여 데이터 접근 추상화
  */
 export async function rejectApplication(
   input: RejectApplicationInput,
@@ -291,70 +292,7 @@ export async function rejectApplication(
   try {
     logger.info('지원 거절 시작', { applicationId: input.applicationId, ownerId });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 지원서 읽기
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 지원입니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 이미 처리된 경우
-      if (applicationData.status === 'confirmed') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 확정된 지원은 거절할 수 없습니다',
-        });
-      }
-
-      if (applicationData.status === 'rejected') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 거절된 지원입니다',
-        });
-      }
-
-      // 공고 소유자 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!jobData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '데이터가 올바르지 않습니다',
-        });
-      }
-      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-      if (postingOwnerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 관리할 수 있습니다',
-        });
-      }
-
-      // 지원 상태 변경
-      transaction.update(applicationRef, {
-        status: 'rejected',
-        processedBy: ownerId,
-        processedAt: serverTimestamp(),
-        ...(input.reason && { rejectionReason: input.reason }),
-        updatedAt: serverTimestamp(),
-      });
-    });
+    await applicationRepository.rejectWithTransaction(input, ownerId);
 
     logger.info('지원 거절 완료', { applicationId: input.applicationId });
   } catch (error) {
@@ -416,62 +354,14 @@ export async function bulkConfirmApplications(
 /**
  * 지원 읽음 처리 (구인자가 지원서를 확인)
  *
- * @description 트랜잭션 내에서 모든 읽기/쓰기 수행 (TOCTOU 방지)
+ * @description Repository의 markAsRead를 활용하여 데이터 접근 추상화
  */
 export async function markApplicationAsRead(
   applicationId: string,
   ownerId: string
 ): Promise<void> {
   try {
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 1. 지원서 읽기 (트랜잭션 내부)
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (!applicationDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 지원입니다',
-        });
-      }
-
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
-      if (!applicationData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 2. 공고 소유자 확인 (트랜잭션 내부)
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
-
-      if (!jobDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '존재하지 않는 공고입니다',
-        });
-      }
-
-      const markReadJobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-      if (!markReadJobData) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-      const postingOwnerId = markReadJobData.ownerId ?? markReadJobData.createdBy;
-      if (postingOwnerId !== ownerId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인의 공고만 조회할 수 있습니다',
-        });
-      }
-
-      // 3. 읽음 처리
-      transaction.update(applicationRef, {
-        isRead: true,
-        updatedAt: serverTimestamp(),
-      });
-    });
+    await applicationRepository.markAsRead(applicationId, ownerId);
   } catch (error) {
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;

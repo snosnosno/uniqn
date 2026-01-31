@@ -10,14 +10,7 @@
  */
 
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { Card, Avatar, Checkbox } from '@/components/ui';
@@ -36,11 +29,6 @@ import { getRoleDisplayName } from '@/types/unified';
 import { getUserProfile, type UserProfile } from '@/services';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
-
-// Android에서 LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================================
 // Types

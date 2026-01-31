@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 
 import {
   CheckIcon,
@@ -22,11 +22,6 @@ import type { GroupedAssignmentDisplay, IconColors } from '../types';
 import type { GroupSelectionState } from '../useAssignmentSelection';
 import { createAssignmentKey } from '../utils';
 import { formatDateDisplay } from '@/utils/scheduleGrouping';
-
-// Android에서 LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================================
 // Types

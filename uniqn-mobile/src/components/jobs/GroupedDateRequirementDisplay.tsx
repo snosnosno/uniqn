@@ -8,7 +8,7 @@
  */
 
 import React, { memo, useMemo, useState, useCallback } from 'react';
-import { View, Text, Pressable, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, Pressable, LayoutAnimation } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { Timestamp } from '@/lib/firebase';
@@ -20,11 +20,6 @@ import {
 } from '@/utils/dateRangeUtils';
 import type { DateRangeGroup } from '@/utils/dateRangeUtils';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
-
-// Android에서 LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================================
 // Types

@@ -6,7 +6,7 @@
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Text, LayoutAnimation, Platform, UIManager } from 'react-native';
+import { View, Text, LayoutAnimation } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
@@ -29,11 +29,6 @@ import {
   ContactInfo,
   StatusInfo,
 } from './components';
-
-// Android LayoutAnimation 활성화
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 // ============================================================================
 // Component

@@ -8,7 +8,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
-import { View, Text, Pressable, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { Modal, Badge, Button } from '@/components/ui';
 import {
   XMarkIcon,
@@ -279,18 +279,22 @@ export function ScheduleDetailModal({
       {isGroupMode && groupedSchedule && (
         <View className="flex-row items-center justify-between bg-primary-50 dark:bg-primary-900/20 rounded-xl px-3 py-2 mb-3">
           {/* 이전 버튼 */}
-          <Pressable
+          <TouchableOpacity
             onPress={handlePrevDate}
             disabled={currentDateIndex === 0}
-            className={`w-8 h-8 items-center justify-center rounded-full ${
-              currentDateIndex === 0
-                ? 'opacity-30'
-                : 'active:bg-primary-100 dark:active:bg-primary-800/30'
-            }`}
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 16,
+              opacity: currentDateIndex === 0 ? 0.3 : 1,
+            }}
+            activeOpacity={0.7}
             accessibilityLabel="이전 날짜"
           >
             <ChevronLeftIcon size={20} color="#4F46E5" />
-          </Pressable>
+          </TouchableOpacity>
 
           {/* 현재 날짜 표시 */}
           <View className="items-center">
@@ -306,18 +310,22 @@ export function ScheduleDetailModal({
           </View>
 
           {/* 다음 버튼 */}
-          <Pressable
+          <TouchableOpacity
             onPress={handleNextDate}
             disabled={currentDateIndex >= groupedSchedule.dateRange.totalDays - 1}
-            className={`w-8 h-8 items-center justify-center rounded-full ${
-              currentDateIndex >= groupedSchedule.dateRange.totalDays - 1
-                ? 'opacity-30'
-                : 'active:bg-primary-100 dark:active:bg-primary-800/30'
-            }`}
+            style={{
+              width: 32,
+              height: 32,
+              alignItems: 'center',
+              justifyContent: 'center',
+              borderRadius: 16,
+              opacity: currentDateIndex >= groupedSchedule.dateRange.totalDays - 1 ? 0.3 : 1,
+            }}
+            activeOpacity={0.7}
             accessibilityLabel="다음 날짜"
           >
             <ChevronRightIcon size={20} color="#4F46E5" />
-          </Pressable>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -345,13 +353,21 @@ export function ScheduleDetailModal({
             {schedule.jobPostingName}
           </Text>
         </View>
-        <Pressable
+        <TouchableOpacity
           onPress={onClose}
-          className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+          style={{
+            width: 32,
+            height: 32,
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: 16,
+            backgroundColor: '#F3F4F6',
+          }}
+          activeOpacity={0.7}
           accessibilityLabel="닫기"
         >
           <XMarkIcon size={18} color="#9CA3AF" />
-        </Pressable>
+        </TouchableOpacity>
       </View>
 
       {/* Tab Navigation */}
@@ -359,48 +375,50 @@ export function ScheduleDetailModal({
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
-            <Pressable
+            <TouchableOpacity
               key={tab.id}
               onPress={() => handleTabPress(tab.id)}
-              className={`flex-1 flex-row items-center justify-center py-2.5 rounded-lg ${
-                isActive
-                  ? 'bg-white dark:bg-gray-600 shadow-sm'
-                  : ''
-              }`}
+              style={{
+                flex: 1,
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'center',
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: isActive ? '#FFFFFF' : 'transparent',
+              }}
+              activeOpacity={0.7}
               accessibilityRole="tab"
               accessibilityState={{ selected: isActive }}
             >
-              <View className={isActive ? 'opacity-100' : 'opacity-60'}>
+              <View style={{ opacity: isActive ? 1 : 0.6 }}>
                 {React.cloneElement(tab.icon as React.ReactElement<{ color?: string }>, {
                   color: isActive ? '#4F46E5' : '#6B7280',
                 })}
               </View>
               <Text
-                className={`ml-1.5 text-sm font-medium ${
-                  isActive
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400'
-                }`}
+                style={{
+                  marginLeft: 6,
+                  fontSize: 14,
+                  fontWeight: '500',
+                  color: isActive ? '#4F46E5' : '#6B7280',
+                }}
               >
                 {tab.label}
               </Text>
-            </Pressable>
+            </TouchableOpacity>
           );
         })}
       </View>
 
       {/* 콘텐츠 + 버튼 영역 */}
-      <View className="flex-1 max-h-[65vh]">
+      <View>
         {/* Tab Content */}
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          bounces={false}
-        >
+        <View>
           {activeTab === 'info' && <InfoTab schedule={schedule} />}
           {activeTab === 'work' && <WorkTab schedule={schedule} onQRScan={onQRScan} />}
           {activeTab === 'settlement' && <SettlementTab schedule={schedule} />}
-        </ScrollView>
+        </View>
 
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
         <View className="pt-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3">
