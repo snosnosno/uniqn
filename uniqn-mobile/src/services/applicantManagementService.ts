@@ -415,52 +415,58 @@ export async function bulkConfirmApplications(
 
 /**
  * 지원 읽음 처리 (구인자가 지원서를 확인)
+ *
+ * @description 트랜잭션 내에서 모든 읽기/쓰기 수행 (TOCTOU 방지)
  */
 export async function markApplicationAsRead(
   applicationId: string,
   ownerId: string
 ): Promise<void> {
   try {
-    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-    const applicationDoc = await getDoc(applicationRef);
-
-    if (!applicationDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '존재하지 않는 지원입니다',
-      });
-    }
-
-    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
-    if (!applicationData) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '데이터가 올바르지 않습니다',
-      });
-    }
-
-    // 공고 소유자 확인
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
-    const jobDoc = await getDoc(jobRef);
-
-    if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '존재하지 않는 공고입니다',
-      });
-    }
-
-    const markReadJobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-    if (!markReadJobData) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '데이터가 올바르지 않습니다',
-      });
-    }
-
-    if (markReadJobData.ownerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-        userMessage: '본인의 공고만 조회할 수 있습니다',
-      });
-    }
-
     await runTransaction(getFirebaseDb(), async (transaction) => {
+      // 1. 지원서 읽기 (트랜잭션 내부)
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const applicationDoc = await transaction.get(applicationRef);
+
+      if (!applicationDoc.exists()) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 지원입니다',
+        });
+      }
+
+      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      if (!applicationData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '데이터가 올바르지 않습니다',
+        });
+      }
+
+      // 2. 공고 소유자 확인 (트랜잭션 내부)
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobDoc = await transaction.get(jobRef);
+
+      if (!jobDoc.exists()) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
+      }
+
+      const markReadJobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!markReadJobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '데이터가 올바르지 않습니다',
+        });
+      }
+
+      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
+      const postingOwnerId = markReadJobData.ownerId ?? markReadJobData.createdBy;
+      if (postingOwnerId !== ownerId) {
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 조회할 수 있습니다',
+        });
+      }
+
+      // 3. 읽음 처리
       transaction.update(applicationRef, {
         isRead: true,
         updatedAt: serverTimestamp(),

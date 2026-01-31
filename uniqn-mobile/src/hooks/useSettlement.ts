@@ -22,7 +22,7 @@ import {
   type BulkSettlementInput,
   type UpdateWorkTimeInput,
 } from '@/services';
-import { queryKeys, cachingPolicies, invalidateRelated } from '@/lib';
+import { queryKeys, queryCachingOptions, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
@@ -46,7 +46,8 @@ export function useWorkLogsByJobPosting(
     queryKey: queryKeys.settlement.byJobPosting(jobPostingId),
     queryFn: () => getWorkLogsByJobPosting(jobPostingId, user!.uid, filters),
     enabled: !!user && !!jobPostingId,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.settlement.staleTime,
+    gcTime: queryCachingOptions.settlement.gcTime,
   });
 }
 
@@ -60,7 +61,8 @@ export function useSettlementSummary(jobPostingId: string) {
     queryKey: queryKeys.settlement.summary(jobPostingId),
     queryFn: () => getJobPostingSettlementSummary(jobPostingId, user!.uid),
     enabled: !!user && !!jobPostingId,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.settlement.staleTime,
+    gcTime: queryCachingOptions.settlement.gcTime,
   });
 }
 
@@ -74,7 +76,8 @@ export function useMySettlementSummary(dateRange?: { start: string; end: string 
     queryKey: queryKeys.settlement.mySummary(),
     queryFn: () => getMySettlementSummary(user!.uid, dateRange),
     enabled: !!user,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.settlement.staleTime,
+    gcTime: queryCachingOptions.settlement.gcTime,
   });
 }
 

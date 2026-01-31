@@ -13,6 +13,7 @@ export {
   queryClient,
   queryKeys,
   cachingPolicies,
+  queryCachingOptions,
   invalidateQueries,
 } from './queryClient';
 

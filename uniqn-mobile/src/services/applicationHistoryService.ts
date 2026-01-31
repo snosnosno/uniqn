@@ -26,6 +26,7 @@ import type {
   Assignment,
   ConfirmationHistoryEntry,
   DateSpecificRequirement,
+  StaffRole,
 } from '@/types';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
 import { getDateString } from '@/types/jobPosting/dateRequirement';
@@ -368,14 +369,10 @@ export async function confirmApplicationWithHistory(
 
       // 9. 공고 filledPositions 업데이트
       const updatedRoles = jobData.roles.map((r) => {
-        // v3.0: roleIds 사용 (커스텀 역할 지원)
-        // r.role이 'other'이면 customRole로 매칭
-        const roleWithCustom = r as typeof r & { customRole?: string };
-        const effectiveRole = (r.role as string) === 'other' && roleWithCustom.customRole
-          ? roleWithCustom.customRole
-          : r.role;
+        // v3.0: roleIds는 StaffRole[] 타입
+        // 역할 매칭: roleIds에 해당 역할이 포함되어 있는지 확인
         const roleAssignments = assignmentsToConfirm.filter(
-          (a) => a.roleIds.includes(effectiveRole)
+          (a) => a.roleIds.includes(r.role as StaffRole)
         );
         const addedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: r.filled + addedCount };
@@ -533,14 +530,10 @@ export async function cancelConfirmation(
 
       // 5. 공고 filledPositions 감소
       const updatedRoles = jobData.roles.map((r) => {
-        // v3.0: roleIds 사용 (커스텀 역할 지원)
-        // r.role이 'other'이면 customRole로 매칭
-        const roleWithCustom = r as typeof r & { customRole?: string };
-        const effectiveRole = (r.role as string) === 'other' && roleWithCustom.customRole
-          ? roleWithCustom.customRole
-          : r.role;
+        // v3.0: roleIds는 StaffRole[] 타입
+        // 역할 매칭: roleIds에 해당 역할이 포함되어 있는지 확인
         const roleAssignments = cancelledAssignments.filter(
-          (a) => a.roleIds.includes(effectiveRole)
+          (a) => a.roleIds.includes(r.role as StaffRole)
         );
         const removedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: Math.max(0, r.filled - removedCount) };

@@ -50,7 +50,7 @@ async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> 
     return {
       urgent: counts.urgent > 0,
       tournament: counts.tournament > 0,
-      regular: counts.normal > 0, // normal = regular
+      regular: counts.regular > 0,
       fixed: counts.fixed > 0,
     };
   } catch (error) {

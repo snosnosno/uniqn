@@ -14,6 +14,8 @@ import type {
   Application,
   ApplicationStatus,
   CreateApplicationInput,
+  ConfirmApplicationInputV2,
+  RejectApplicationInput,
   RequestCancellationInput,
   ReviewCancellationInput,
   JobPosting,
@@ -173,6 +175,44 @@ export interface IApplicationRepository {
    */
   reviewCancellationWithTransaction(
     input: ReviewCancellationInput,
+    reviewerId: string
+  ): Promise<void>;
+
+  /**
+   * 지원 확정 (트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 공고 소유자 확인
+   * 2. 지원 상태 확인 (applied/pending만 가능)
+   * 3. 정원 확인
+   * 4. 지원 상태를 confirmed로 변경
+   * 5. filledPositions 증가
+   * 6. WorkLog 생성 (각 assignment별)
+   *
+   * @param input - 확정 정보 (applicationId, selectedAssignments, notes)
+   * @param reviewerId - 검토자 ID (권한 확인용)
+   * @throws PermissionError (소유자 아님), MaxCapacityReachedError (정원 초과)
+   */
+  confirmWithTransaction(
+    input: ConfirmApplicationInputV2,
+    reviewerId: string
+  ): Promise<void>;
+
+  /**
+   * 지원 거절 (트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 공고 소유자 확인
+   * 2. 지원 상태 확인 (applied/pending만 가능)
+   * 3. 지원 상태를 rejected로 변경
+   * 4. 거절 사유 저장
+   *
+   * @param input - 거절 정보 (applicationId, reason)
+   * @param reviewerId - 검토자 ID (권한 확인용)
+   * @throws PermissionError (소유자 아님), BusinessError (이미 확정/거절됨)
+   */
+  rejectWithTransaction(
+    input: RejectApplicationInput,
     reviewerId: string
   ): Promise<void>;
 }

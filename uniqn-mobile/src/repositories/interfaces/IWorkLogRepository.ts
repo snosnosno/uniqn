@@ -6,7 +6,19 @@
  */
 
 import type { Unsubscribe } from 'firebase/firestore';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog, PayrollStatus, WorkLogStatus } from '@/types';
+
+/**
+ * 근무 기록 조회 필터 옵션
+ */
+export interface WorkLogFilterOptions {
+  /** 날짜 범위 필터 */
+  dateRange?: { start: string; end: string };
+  /** 상태 필터 */
+  status?: WorkLogStatus;
+  /** 페이지 크기 (기본 50) */
+  pageSize?: number;
+}
 
 // ============================================================================
 // Types
@@ -33,6 +45,7 @@ export interface MonthlyPayrollSummary {
   pendingAmount: number;
   completedAmount: number;
   workLogCount: number;
+  workLogs?: WorkLog[]; // 상세 조회 시 포함
 }
 
 // ============================================================================
@@ -65,6 +78,22 @@ export interface IWorkLogRepository {
    * @returns 근무 기록 목록
    */
   getByStaffId(staffId: string, pageSize?: number): Promise<WorkLog[]>;
+
+  /**
+   * 스태프의 근무 기록을 필터와 함께 조회
+   *
+   * @description scheduleService에서 사용하는 필터링된 조회
+   * - 날짜 범위 필터
+   * - 상태 필터 (scheduled, checked_in, checked_out)
+   *
+   * @param staffId - 스태프 ID
+   * @param options - 필터 옵션
+   * @returns 필터링된 근무 기록 목록
+   */
+  getByStaffIdWithFilters(
+    staffId: string,
+    options?: WorkLogFilterOptions
+  ): Promise<WorkLog[]>;
 
   /**
    * 특정 날짜의 근무 기록 조회
@@ -104,6 +133,28 @@ export interface IWorkLogRepository {
    */
   getMonthlyPayroll(staffId: string, year: number, month: number): Promise<MonthlyPayrollSummary>;
 
+  /**
+   * 날짜 범위로 근무 기록 조회
+   * @param staffId - 스태프 ID
+   * @param startDate - 시작 날짜 (YYYY-MM-DD)
+   * @param endDate - 종료 날짜 (YYYY-MM-DD)
+   * @returns 근무 기록 목록
+   */
+  getByDateRange(staffId: string, startDate: string, endDate: string): Promise<WorkLog[]>;
+
+  /**
+   * 공고-스태프-날짜로 근무 기록 조회
+   * @param jobPostingId - 공고 ID
+   * @param staffId - 스태프 ID
+   * @param date - 날짜 (YYYY-MM-DD)
+   * @returns 근무 기록 또는 null
+   */
+  findByJobPostingStaffDate(
+    jobPostingId: string,
+    staffId: string,
+    date: string
+  ): Promise<WorkLog | null>;
+
   // ==========================================================================
   // 실시간 구독 (Realtime)
   // ==========================================================================
@@ -119,6 +170,22 @@ export interface IWorkLogRepository {
   subscribeByDate(
     staffId: string,
     date: string,
+    onData: (workLogs: WorkLog[]) => void,
+    onError: (error: Error) => void
+  ): Unsubscribe;
+
+  /**
+   * 스태프의 전체 근무 기록 실시간 구독 (최근 50개)
+   *
+   * @description scheduleService의 subscribeToSchedules에서 사용
+   *
+   * @param staffId - 스태프 ID
+   * @param onData - 데이터 콜백
+   * @param onError - 에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeByStaffId(
+    staffId: string,
     onData: (workLogs: WorkLog[]) => void,
     onError: (error: Error) => void
   ): Unsubscribe;

@@ -10,7 +10,7 @@ import { View, RefreshControl, ActivityIndicator } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { JobCard } from './JobCard';
 import { EmptyState } from '@/components/ui/EmptyState';
-import { Skeleton } from '@/components/ui/Skeleton';
+import { SkeletonJobCard } from '@/components/ui/Skeleton';
 import type { JobPostingCard } from '@/types';
 
 // ============================================================================
@@ -27,27 +27,6 @@ interface JobListProps {
   onLoadMore: () => void;
   onJobPress: (jobId: string) => void;
   emptyMessage?: string;
-}
-
-// ============================================================================
-// Loading Skeleton
-// ============================================================================
-
-function JobCardSkeleton() {
-  return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700">
-      <Skeleton className="h-5 w-3/4 mb-3" />
-      <View className="flex-row gap-2 mb-3">
-        <Skeleton className="h-5 w-16 rounded-full" />
-        <Skeleton className="h-5 w-16 rounded-full" />
-      </View>
-      <Skeleton className="h-4 w-1/2 mb-2" />
-      <View className="flex-row justify-between">
-        <Skeleton className="h-4 w-24" />
-        <Skeleton className="h-5 w-28" />
-      </View>
-    </View>
-  );
 }
 
 // ============================================================================
@@ -90,12 +69,12 @@ export function JobList({
 
   const keyExtractor = useCallback((item: JobPostingCard) => item.id, []);
 
-  // 초기 로딩
+  // 초기 로딩 - 표준화된 SkeletonJobCard 사용
   if (isLoading && jobs.length === 0) {
     return (
       <View className="flex-1 p-4">
         {[1, 2, 3].map((i) => (
-          <JobCardSkeleton key={i} />
+          <SkeletonJobCard key={i} />
         ))}
       </View>
     );

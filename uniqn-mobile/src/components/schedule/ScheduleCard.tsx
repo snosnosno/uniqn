@@ -31,13 +31,12 @@ import {
 } from '@/utils/settlement';
 import {
   formatTime,
-  formatTimeRange,
   formatDate,
-  calculateDuration,
   getRoleSalaryFromCard,
   statusConfig,
   attendanceConfig,
 } from './helpers';
+import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 
 // ============================================================================
@@ -125,29 +124,16 @@ export const ScheduleCard = memo(function ScheduleCard({
     return null;
   }, [schedule]);
 
-  // 확정 상태 시간 표시 (startTime/endTime이 없으면 timeSlot 폴백)
+  // 시간 표시 정보 (WorkTimeDisplay 사용 - 구인자 화면과 일관성 확보)
+  const timeDisplayInfo = useMemo(() => {
+    return WorkTimeDisplay.getDisplayInfo(schedule);
+  }, [schedule]);
+
+  // 확정 상태 시간 표시 (예정 시간)
   const confirmedTimeDisplay = useMemo(() => {
     if (schedule.type !== 'confirmed') return null;
-
-    // 1. startTime, endTime이 있으면 formatTimeRange 사용
-    if (schedule.startTime && schedule.endTime) {
-      return formatTimeRange(schedule.startTime, schedule.endTime);
-    }
-
-    // 2. 없으면 schedule.timeSlot 사용 (workLog에서 직접 매핑됨)
-    if (schedule.timeSlot) {
-      // "18:00~02:00" 또는 "18:00 - 02:00" 형식을 그대로 표시
-      return schedule.timeSlot.replace('~', ' - ');
-    }
-
-    // 3. 마지막 폴백: jobPostingCard.timeSlot
-    const cardTimeSlot = schedule.jobPostingCard?.timeSlot;
-    if (cardTimeSlot) {
-      return cardTimeSlot.replace('~', ' - ');
-    }
-
-    return '--:-- - --:--';
-  }, [schedule]);
+    return `${timeDisplayInfo.scheduledStart} - ${timeDisplayInfo.scheduledEnd}`;
+  }, [schedule.type, timeDisplayInfo]);
 
   const isCancelled = schedule.type === 'cancelled';
 
@@ -268,12 +254,9 @@ export const ScheduleCard = memo(function ScheduleCard({
               <ClockIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 {schedule.type === 'completed'
-                  ? // 완료: 근무시간 표시
-                    calculateDuration(
-                      schedule.checkInTime || schedule.startTime,
-                      schedule.checkOutTime || schedule.endTime
-                    )
-                  : // 확정: 예정시간 범위 표시 (timeSlot 폴백)
+                  ? // 완료: 근무시간 표시 (WorkTimeDisplay 사용)
+                    timeDisplayInfo.duration
+                  : // 확정: 예정시간 범위 표시 (WorkTimeDisplay 사용)
                     confirmedTimeDisplay}
               </Text>
             </View>

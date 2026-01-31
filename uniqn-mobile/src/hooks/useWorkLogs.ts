@@ -17,7 +17,7 @@ import {
   getMonthlyPayroll,
 } from '@/services/workLogService';
 import { useAuthStore } from '@/stores/authStore';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
 
 // ============================================================================
 // Types
@@ -48,7 +48,8 @@ export function useWorkLogs(options: UseWorkLogsOptions = {}) {
       return getMyWorkLogs(staffId, limit);
     },
     enabled: enabled && !!staffId,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.workLogs.staleTime,
+    gcTime: queryCachingOptions.workLogs.gcTime,
   });
 
   const refresh = useCallback(async () => {
@@ -81,7 +82,8 @@ export function useWorkLogsByDate(date: string, enabled = true) {
       return getWorkLogsByDate(staffId, date);
     },
     enabled: enabled && !!staffId && !!date,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.workLogs.staleTime,
+    gcTime: queryCachingOptions.workLogs.gcTime,
   });
 
   return {

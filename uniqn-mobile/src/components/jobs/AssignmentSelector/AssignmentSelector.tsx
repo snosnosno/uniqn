@@ -8,12 +8,13 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useJobSchedule } from '@/hooks';
-import type { Assignment } from '@/types';
+import type { Assignment, StaffRole } from '@/types';
 import {
   createSimpleAssignment,
   FIXED_DATE_MARKER,
   FIXED_TIME_MARKER,
 } from '@/types';
+import { isStaffRole } from '@/types/role';
 import { getRoleDisplayName } from '@/types/unified';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import {
@@ -92,7 +93,9 @@ export const AssignmentSelector = memo(function AssignmentSelector({
         if (maxSelections && selectedAssignments.length >= maxSelections) {
           return;
         }
-        const newAssignment = createSimpleAssignment(role, slotTime, date, {
+        // 커스텀 역할이면 'other'로 매핑
+        const roleId: StaffRole = isStaffRole(role) ? role : 'other';
+        const newAssignment = createSimpleAssignment(roleId, slotTime, date, {
           isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
           tentativeDescription: timeOptions?.tentativeDescription,
         });
@@ -155,8 +158,10 @@ export const AssignmentSelector = memo(function AssignmentSelector({
           return;
         }
 
+        // 커스텀 역할이면 'other'로 매핑
+        const roleId: StaffRole = isStaffRole(role) ? role : 'other';
         const groupAssignments = group.dates.map((schedule) =>
-          createSimpleAssignment(role, slotTime, schedule.date, {
+          createSimpleAssignment(roleId, slotTime, schedule.date, {
             isTimeToBeAnnounced: timeOptions?.isTimeToBeAnnounced,
             tentativeDescription: timeOptions?.tentativeDescription,
           })

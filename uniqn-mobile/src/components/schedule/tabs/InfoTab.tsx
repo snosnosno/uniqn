@@ -8,7 +8,7 @@
 import React, { memo, useMemo } from 'react';
 import { View, Text, Pressable, Linking } from 'react-native';
 import { Badge } from '@/components/ui';
-import { formatTime, calculateDuration } from '../helpers/timeHelpers';
+// formatTime, calculateDuration은 WorkTimeDisplay로 대체됨
 import {
   DocumentIcon,
   MapIcon,
@@ -28,6 +28,7 @@ import {
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
+import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -70,18 +71,30 @@ function formatPhoneNumber(phone: string): string {
 }
 
 /**
- * 시간 표시 (timeSlot 폴백 포함 - 스태프관리화면 동기화)
+ * 예정 시간 표시 (WorkTimeDisplay 사용)
+ *
+ * @description 구인자 화면과 일관성 확보
+ * 우선순위: startTime/endTime → scheduledStartTime/scheduledEndTime → timeSlot
  */
 function getTimeDisplay(schedule: ScheduleEvent): string {
-  // 우선순위 1: Timestamp 시간 (checkInTime/checkOutTime 또는 startTime/endTime)
-  if (schedule.startTime && schedule.endTime) {
-    return `${formatTime(schedule.startTime)} - ${formatTime(schedule.endTime)}`;
-  }
-  // 우선순위 2: timeSlot 문자열 폴백 (스태프관리화면과 동일)
-  if (schedule.timeSlot) {
-    return schedule.timeSlot.replace('~', ' - ');
-  }
-  return '--:-- - --:--';
+  return WorkTimeDisplay.getScheduledTimeRange(schedule);
+}
+
+/**
+ * 실제 시간 표시 (출퇴근 기록이 있는 경우)
+ *
+ * @returns "HH:mm - HH:mm" 또는 null (기록 없음)
+ */
+function getActualTimeDisplay(schedule: ScheduleEvent): string | null {
+  return WorkTimeDisplay.getActualTimeRange(schedule);
+}
+
+/**
+ * 근무 시간 계산 (WorkTimeDisplay 사용)
+ */
+function getWorkDuration(schedule: ScheduleEvent): string {
+  const info = WorkTimeDisplay.getDisplayInfo(schedule);
+  return info.duration;
 }
 
 function formatFullDate(dateString: string): string {
@@ -277,16 +290,16 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </Text>
 
         {schedule.type === 'completed' ? (
-          // 완료 상태: 실제 근무시간 + 예정 시간 비교
+          // 완료 상태: 실제 근무시간 + 예정 시간 비교 (WorkTimeDisplay 사용)
           <View className="mt-2">
-            {(schedule.checkInTime || schedule.checkOutTime) && (
+            {getActualTimeDisplay(schedule) && (
               <View className="flex-row items-center">
                 <ClockIcon size={14} color="#2563EB" />
                 <Text className="ml-1.5 text-sm text-primary-600 dark:text-primary-400 font-medium">
-                  실제: {formatTime(schedule.checkInTime)} - {formatTime(schedule.checkOutTime)}
+                  실제: {getActualTimeDisplay(schedule)}
                 </Text>
                 <Text className="ml-2 text-sm text-primary-500 dark:text-primary-500">
-                  ({calculateDuration(schedule.checkInTime, schedule.checkOutTime)})
+                  ({getWorkDuration(schedule)})
                 </Text>
               </View>
             )}
@@ -295,23 +308,15 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
               <Text className="ml-1.5 text-sm text-gray-500 dark:text-gray-400">
                 예정: {getTimeDisplay(schedule)}
               </Text>
-              <Text className="ml-2 text-sm text-gray-400 dark:text-gray-500">
-                ({calculateDuration(schedule.startTime, schedule.endTime)})
-              </Text>
             </View>
           </View>
         ) : (
-          // 지원중/확정 상태: 예정 시간 (timeSlot 폴백 적용)
+          // 지원중/확정 상태: 예정 시간 (WorkTimeDisplay 사용)
           <View className="flex-row items-center mt-2">
             <ClockIcon size={14} color="#9CA3AF" />
             <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
               {getTimeDisplay(schedule)}
             </Text>
-            {(schedule.startTime && schedule.endTime) && (
-              <Text className="ml-2 text-sm text-gray-500 dark:text-gray-500">
-                (예정 {calculateDuration(schedule.startTime, schedule.endTime)})
-              </Text>
-            )}
           </View>
         )}
       </Section>

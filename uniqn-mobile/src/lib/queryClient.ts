@@ -452,19 +452,90 @@ export const queryKeys = {
 
 /**
  * 데이터 특성에 따른 staleTime 정책
+ *
+ * @description 각 쿼리별 적절한 staleTime 선택 가이드:
+ * - realtime: 정산, 근무기록 등 실시간 동기화 필수 데이터
+ * - frequent: 스케줄 등 자주 변경될 수 있는 데이터
+ * - standard: 공고 목록 등 보통 빈도의 데이터
+ * - stable: 설정, 프로필 등 드물게 변경되는 데이터
+ * - offlineFirst: 오프라인 우선 접근이 필요한 데이터
  */
 export const cachingPolicies = {
-  /** 실시간 데이터 - 항상 fresh 체크 */
+  /** 실시간 데이터 - 항상 fresh 체크 (settlement, workLogs) */
   realtime: 0,
-  /** 자주 변경되는 데이터 - 2분 */
+  /** 자주 변경되는 데이터 - 2분 (schedules) */
   frequent: 2 * 60 * 1000,
-  /** 보통 빈도 - 5분 (기본값) */
+  /** 보통 빈도 - 5분 (기본값: jobPostings, applications) */
   standard: 5 * 60 * 1000,
-  /** 드물게 변경 - 30분 */
+  /** 드물게 변경 - 30분 (settings, user profile) */
   stable: 30 * 60 * 1000,
   /** 오프라인 우선 - 무제한 */
   offlineFirst: Infinity,
+} as const;
 
+/**
+ * 쿼리 키별 권장 캐싱 정책 매핑
+ *
+ * @description 각 쿼리 도메인별 권장 staleTime/gcTime 설정
+ * 훅에서 useQuery 호출 시 이 설정을 참조하여 일관된 캐싱 적용
+ *
+ * @example
+ * ```typescript
+ * // useSchedules.ts
+ * const { data } = useQuery({
+ *   queryKey: queryKeys.schedules.mine(),
+ *   queryFn: fetchSchedules,
+ *   staleTime: queryCachingOptions.schedules.staleTime,
+ *   gcTime: queryCachingOptions.schedules.gcTime,
+ * });
+ * ```
+ */
+export const queryCachingOptions = {
+  /** 스케줄 - 2분 (자주 변경될 수 있음) */
+  schedules: {
+    staleTime: cachingPolicies.frequent,
+    gcTime: 5 * 60 * 1000, // 5분
+  },
+  /** 정산 - 실시간 (금액 정확성 중요) */
+  settlement: {
+    staleTime: cachingPolicies.realtime,
+    gcTime: 2 * 60 * 1000, // 2분
+  },
+  /** 근무기록 - 실시간 (출퇴근 상태 즉시 반영) */
+  workLogs: {
+    staleTime: cachingPolicies.realtime,
+    gcTime: 2 * 60 * 1000, // 2분
+  },
+  /** 공고 목록 - 5분 */
+  jobPostings: {
+    staleTime: cachingPolicies.standard,
+    gcTime: 10 * 60 * 1000, // 10분
+  },
+  /** 지원서 - 5분 */
+  applications: {
+    staleTime: cachingPolicies.standard,
+    gcTime: 10 * 60 * 1000, // 10분
+  },
+  /** 알림 - 실시간 */
+  notifications: {
+    staleTime: cachingPolicies.realtime,
+    gcTime: 5 * 60 * 1000, // 5분
+  },
+  /** 확정 스태프 - 2분 */
+  confirmedStaff: {
+    staleTime: cachingPolicies.frequent,
+    gcTime: 5 * 60 * 1000, // 5분
+  },
+  /** 사용자 설정 - 30분 */
+  settings: {
+    staleTime: cachingPolicies.stable,
+    gcTime: 60 * 60 * 1000, // 1시간
+  },
+  /** 사용자 프로필 - 30분 */
+  user: {
+    staleTime: cachingPolicies.stable,
+    gcTime: 60 * 60 * 1000, // 1시간
+  },
 } as const;
 
 // ============================================================================

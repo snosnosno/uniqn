@@ -40,6 +40,7 @@ import type {
   IWorkLogRepository,
   WorkLogStats,
   MonthlyPayrollSummary,
+  WorkLogFilterOptions,
 } from '../interfaces';
 import type { WorkLog, PayrollStatus } from '@/types';
 
@@ -136,6 +137,66 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
         operation: '스태프별 근무 기록 조회',
         component: 'WorkLogRepository',
         context: { staffId },
+      });
+    }
+  }
+
+  async getByStaffIdWithFilters(
+    staffId: string,
+    options?: WorkLogFilterOptions
+  ): Promise<WorkLog[]> {
+    try {
+      logger.info('필터를 포함한 스태프별 근무 기록 조회', { staffId, options });
+
+      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+
+      const queryBuilder = new QueryBuilder(workLogsRef)
+        .whereEqual('staffId', staffId);
+
+      // 날짜 범위 필터
+      if (options?.dateRange) {
+        queryBuilder
+          .where('date', '>=', options.dateRange.start)
+          .where('date', '<=', options.dateRange.end);
+      }
+
+      // 상태 필터
+      if (options?.status) {
+        queryBuilder.whereEqual('status', options.status);
+      }
+
+      const q = queryBuilder
+        .orderByDesc('date')
+        .limit(options?.pageSize ?? DEFAULT_PAGE_SIZE)
+        .build();
+
+      const snapshot = await getDocs(q);
+
+      const items: WorkLog[] = [];
+
+      for (const docSnapshot of snapshot.docs) {
+        const workLog = parseWorkLogDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+
+        if (workLog) {
+          items.push(workLog);
+        }
+      }
+
+      logger.info('필터를 포함한 스태프별 근무 기록 조회 완료', {
+        staffId,
+        count: items.length,
+      });
+
+      return items;
+    } catch (error) {
+      logger.error('필터를 포함한 스태프별 근무 기록 조회 실패', toError(error), { staffId });
+      throw handleServiceError(error, {
+        operation: '필터를 포함한 스태프별 근무 기록 조회',
+        component: 'WorkLogRepository',
+        context: { staffId, ...options },
       });
     }
   }
@@ -356,12 +417,14 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       const snapshot = await getDocs(q);
 
+      const workLogs: WorkLog[] = [];
       const summary: MonthlyPayrollSummary = {
         month: monthStr,
         totalAmount: 0,
         pendingAmount: 0,
         completedAmount: 0,
         workLogCount: 0,
+        workLogs: [],
       };
 
       for (const docSnapshot of snapshot.docs) {
@@ -372,6 +435,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
         if (!workLog) continue;
 
+        workLogs.push(workLog);
         summary.workLogCount++;
         const amount = workLog.payrollAmount ?? 0;
         summary.totalAmount += amount;
@@ -383,7 +447,9 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
         }
       }
 
-      logger.info('월별 정산 요약 조회 완료', { staffId, summary });
+      summary.workLogs = workLogs;
+
+      logger.info('월별 정산 요약 조회 완료', { staffId, summary: { ...summary, workLogs: undefined } });
 
       return summary;
     } catch (error) {
@@ -396,6 +462,113 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
         operation: '월별 정산 요약 조회',
         component: 'WorkLogRepository',
         context: { staffId, year, month },
+      });
+    }
+  }
+
+  async getByDateRange(
+    staffId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<WorkLog[]> {
+    try {
+      logger.info('날짜 범위 근무 기록 조회', { staffId, startDate, endDate });
+
+      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+
+      const q = query(
+        workLogsRef,
+        where('staffId', '==', staffId),
+        where('date', '>=', startDate),
+        where('date', '<=', endDate),
+        orderBy('date', 'asc')
+      );
+
+      const snapshot = await getDocs(q);
+      const items: WorkLog[] = [];
+
+      for (const docSnapshot of snapshot.docs) {
+        const workLog = parseWorkLogDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+
+        if (workLog) {
+          items.push(workLog);
+        }
+      }
+
+      logger.info('날짜 범위 근무 기록 조회 완료', {
+        staffId,
+        startDate,
+        endDate,
+        count: items.length,
+      });
+
+      return items;
+    } catch (error) {
+      logger.error('날짜 범위 근무 기록 조회 실패', toError(error), {
+        staffId,
+        startDate,
+        endDate,
+      });
+      throw handleServiceError(error, {
+        operation: '날짜 범위 근무 기록 조회',
+        component: 'WorkLogRepository',
+        context: { staffId, startDate, endDate },
+      });
+    }
+  }
+
+  async findByJobPostingStaffDate(
+    jobPostingId: string,
+    staffId: string,
+    date: string
+  ): Promise<WorkLog | null> {
+    try {
+      logger.info('공고-스태프-날짜 근무 기록 조회', { jobPostingId, staffId, date });
+
+      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+
+      const q = query(
+        workLogsRef,
+        where('jobPostingId', '==', jobPostingId),
+        where('staffId', '==', staffId),
+        where('date', '==', date),
+        limit(1)
+      );
+
+      const snapshot = await getDocs(q);
+
+      if (snapshot.empty) {
+        logger.info('공고-스태프-날짜 근무 기록 없음', { jobPostingId, staffId, date });
+        return null;
+      }
+
+      const docSnapshot = snapshot.docs[0];
+      const workLog = parseWorkLogDocument({
+        id: docSnapshot.id,
+        ...docSnapshot.data(),
+      });
+
+      logger.info('공고-스태프-날짜 근무 기록 조회 완료', {
+        jobPostingId,
+        staffId,
+        date,
+        found: !!workLog,
+      });
+
+      return workLog;
+    } catch (error) {
+      logger.error('공고-스태프-날짜 근무 기록 조회 실패', toError(error), {
+        jobPostingId,
+        staffId,
+        date,
+      });
+      throw handleServiceError(error, {
+        operation: '공고-스태프-날짜 근무 기록 조회',
+        component: 'WorkLogRepository',
+        context: { jobPostingId, staffId, date },
       });
     }
   }
@@ -450,6 +623,52 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
           staffId,
           date,
         });
+        onError(error);
+      }
+    );
+  }
+
+  subscribeByStaffId(
+    staffId: string,
+    onData: (workLogs: WorkLog[]) => void,
+    onError: (error: Error) => void
+  ): Unsubscribe {
+    logger.info('스태프별 근무 기록 실시간 구독 시작', { staffId });
+
+    const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+
+    const q = query(
+      workLogsRef,
+      where('staffId', '==', staffId),
+      orderBy('date', 'desc'),
+      limit(DEFAULT_PAGE_SIZE)
+    );
+
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        const items: WorkLog[] = [];
+
+        for (const docSnapshot of snapshot.docs) {
+          const workLog = parseWorkLogDocument({
+            id: docSnapshot.id,
+            ...docSnapshot.data(),
+          });
+
+          if (workLog) {
+            items.push(workLog);
+          }
+        }
+
+        logger.debug('스태프별 근무 기록 업데이트', {
+          staffId,
+          count: items.length,
+        });
+
+        onData(items);
+      },
+      (error) => {
+        logger.error('스태프별 근무 기록 구독 에러', toError(error), { staffId });
         onError(error);
       }
     );

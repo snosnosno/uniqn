@@ -17,6 +17,7 @@
 import {
   collection,
   doc,
+  documentId,
   getDoc,
   getDocs,
   setDoc,
@@ -101,6 +102,72 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         operation: '공고 상세 조회',
         component: 'JobPostingRepository',
         context: { jobPostingId },
+      });
+    }
+  }
+
+  async getByIdBatch(jobPostingIds: string[]): Promise<JobPosting[]> {
+    try {
+      if (jobPostingIds.length === 0) {
+        return [];
+      }
+
+      logger.info('공고 배치 조회', { count: jobPostingIds.length });
+
+      const uniqueIds = [...new Set(jobPostingIds)];
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const items: JobPosting[] = [];
+
+      // Firestore whereIn은 최대 30개 제한
+      const BATCH_SIZE = 30;
+      const chunks: string[][] = [];
+
+      for (let i = 0; i < uniqueIds.length; i += BATCH_SIZE) {
+        chunks.push(uniqueIds.slice(i, i + BATCH_SIZE));
+      }
+
+      // 병렬 처리
+      const results = await Promise.allSettled(
+        chunks.map(async (chunk) => {
+          const q = query(
+            jobPostingsRef,
+            where(documentId(), 'in', chunk)
+          );
+          return getDocs(q);
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          for (const docSnapshot of result.value.docs) {
+            const jobPosting = parseJobPostingDocument({
+              id: docSnapshot.id,
+              ...docSnapshot.data(),
+            });
+
+            if (jobPosting) {
+              items.push(jobPosting);
+            }
+          }
+        } else {
+          logger.warn('공고 배치 조회 일부 실패', { error: result.reason });
+        }
+      }
+
+      logger.info('공고 배치 조회 완료', {
+        requested: jobPostingIds.length,
+        found: items.length,
+      });
+
+      return items;
+    } catch (error) {
+      logger.error('공고 배치 조회 실패', toError(error), {
+        count: jobPostingIds.length,
+      });
+      throw handleServiceError(error, {
+        operation: '공고 배치 조회',
+        component: 'JobPostingRepository',
+        context: { count: jobPostingIds.length },
       });
     }
   }
@@ -248,7 +315,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       const snapshot = await getDocs(q);
 
       const counts: PostingTypeCounts = {
-        normal: 0,
+        regular: 0,
         urgent: 0,
         fixed: 0,
         tournament: 0,
@@ -262,8 +329,8 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         counts.total++;
 
         switch (postingType) {
-          case 'normal':
-            counts.normal++;
+          case 'regular':
+            counts.regular++;
             break;
           case 'urgent':
             counts.urgent++;

@@ -19,7 +19,9 @@ import type {
   Assignment,
   PreQuestionAnswer,
   PostingType,
+  StaffRole,
 } from '@/types';
+import { isStaffRole } from '@/types/role';
 import {
   initializePreQuestionAnswers,
   findUnansweredRequired,
@@ -74,7 +76,7 @@ export function ApplicationForm({
   // 고정공고 모드 판단: postingType === 'fixed'이면 고정공고
   const isFixedMode = job.postingType === 'fixed';
 
-  // 고정공고용 상태
+  // 고정공고용 상태 (커스텀 역할 지원을 위해 string 유지)
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [message, setMessage] = useState('');
 
@@ -192,10 +194,12 @@ export function ApplicationForm({
 
     // 고정공고: 역할 선택을 Assignment로 변환
     if (isFixedMode && selectedRole) {
+      // 커스텀 역할이면 'other'로 매핑, 표준 역할이면 그대로 사용
+      const roleId: StaffRole = isStaffRole(selectedRole) ? selectedRole : 'other';
       const fixedAssignment: Assignment = {
         dates: [FIXED_DATE_MARKER],
         timeSlot: job.timeSlot?.split(/[-~]/)[0]?.trim() || FIXED_TIME_MARKER,
-        roleIds: [selectedRole],
+        roleIds: [roleId],
         isGrouped: false,
       };
 

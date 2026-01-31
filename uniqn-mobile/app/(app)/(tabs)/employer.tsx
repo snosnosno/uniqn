@@ -66,6 +66,9 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
             className={`flex-1 items-center justify-center rounded-md py-2 ${
               isSelected ? 'bg-white shadow-sm dark:bg-gray-700' : ''
             }`}
+            accessibilityLabel={`${option.label} 공고 ${count}건`}
+            accessibilityRole="tab"
+            accessibilityState={{ selected: isSelected }}
           >
             <Text
               className={`text-sm font-medium ${
@@ -302,137 +305,135 @@ const JobPostingCard = memo(function JobPostingCard({
   }, [posting.dateSpecificRequirements]);
 
   return (
-    <Card variant="elevated" padding="md" onPress={() => onPress(posting)} className="mx-4 mb-3">
-      {/* 상단: 공고타입 + 긴급 + 제목 + 상태 */}
-      <View className="mb-2 flex-row items-start justify-between">
-        <View className="flex-1 flex-row items-center flex-wrap">
-          {posting.postingType && posting.postingType !== 'regular' && (
-            <PostingTypeBadge
-              type={posting.postingType as PostingType}
-              size="sm"
-              className="mr-2"
-            />
-          )}
-          {posting.isUrgent && (
-            <Badge variant="error" size="sm" className="mr-2">
-              긴급
-            </Badge>
-          )}
-          <Text
-            className="text-base font-semibold text-gray-900 dark:text-white flex-1"
-            numberOfLines={1}
-          >
-            {posting.title}
-          </Text>
-        </View>
-        {/* QR 버튼 */}
-        <Pressable
-          onPress={() => onShowQR(posting)}
-          className="p-1.5 ml-2 active:opacity-70"
-          accessibilityLabel="현장 QR 표시"
-          onStartShouldSetResponder={() => true}
-        >
-          <QrCodeIcon size={18} color="#2563EB" />
-        </Pressable>
-      </View>
-
-      {/* 장소 */}
-      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-        📍 {posting.location.name}
-      </Text>
-
-      {/* 일정 + 급여/수당 그리드 */}
-      <View className="flex-row">
-        {/* 왼쪽: 일정 */}
-        <View className="flex-1 pr-3">
-          {posting.postingType === 'fixed' ? (
-            // 고정공고: FixedScheduleDisplay 사용
-            <FixedScheduleDisplay
-              daysPerWeek={posting.daysPerWeek}
-              startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
-              compact={true}
-            />
-          ) : groupedDateRequirements.length > 0 ? (
-            groupedDateRequirements.map((group, groupIdx) => {
-              const isSingleDay = group.dayCount === 1;
-              const dateDisplay = isSingleDay
-                ? formatDate(group.startDate)
-                : formatDateRangeWithCount(group.startDate, group.endDate);
-
-              return (
-                <View key={group.id || groupIdx} className="mb-2">
-                  {/* 날짜 범위 */}
-                  <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    📅 {dateDisplay}
-                  </Text>
-
-                  {/* 시간 + 역할 (첫 번째 timeSlot 기준) */}
-                  <View className="ml-5 mt-1">
-                    {group.timeSlots[0]?.roles.map((role: RoleData, roleIdx: number) => (
-                      <RoleLine
-                        key={roleIdx}
-                        role={role}
-                        showTime={roleIdx === 0}
-                        time={group.displayTime}
-                      />
-                    ))}
-                  </View>
-                </View>
-              );
-            })
-          ) : (
-            // 레거시 폴백
-            <View className="mb-2">
-              <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                📅 {formatDate(posting.workDate)}
-              </Text>
-              <Text className="text-sm text-gray-900 dark:text-gray-100 ml-5 mt-1">
-                🕐 {posting.timeSlot || '-'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* 오른쪽: 급여 + 수당 */}
-        <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
-          {/* 급여 - v2.0: roles[].salary 구조 */}
-          {!posting.useSameSalary &&
-          posting.roles?.some((r) => r.salary) ? (
-            // 역할별 급여 표시
-            posting.roles
-              .filter((r) => r.salary)
-              .map((r, idx) => (
-                <Text
-                  key={idx}
-                  className="text-sm text-gray-900 dark:text-white"
-                >
-                  💰 {getRoleLabel(r.role, (r as { customRole?: string }).customRole)}: {r.salary?.type === 'other' ? '협의' : formatSalary(r.salary?.type || 'hourly', r.salary?.amount || 0)}
-                </Text>
-              ))
-          ) : (
-            // 단일 급여 표시 (useSameSalary 또는 defaultSalary)
-            <Text className="text-sm font-medium text-gray-900 dark:text-white">
-              💰 {formatSalary(
-                posting.defaultSalary?.type || posting.roles?.[0]?.salary?.type || 'hourly',
-                posting.defaultSalary?.amount || posting.roles?.[0]?.salary?.amount || 0
-              )}
+    <Card variant="elevated" padding="md" className="mx-4 mb-3">
+      {/* 클릭 가능한 상단 영역 (제목, 위치, 일정, 급여) */}
+      <Pressable
+        onPress={() => onPress(posting)}
+        accessibilityLabel={`${posting.title} 공고 상세보기`}
+        accessibilityRole="button"
+      >
+        {/* 상단: 공고타입 + 긴급 + 제목 */}
+        <View className="mb-2 flex-row items-start justify-between">
+          <View className="flex-1 flex-row items-center flex-wrap">
+            {posting.postingType && posting.postingType !== 'regular' && (
+              <PostingTypeBadge
+                type={posting.postingType as PostingType}
+                size="sm"
+                className="mr-2"
+              />
+            )}
+            {posting.isUrgent && (
+              <Badge variant="error" size="sm" className="mr-2">
+                긴급
+              </Badge>
+            )}
+            <Text
+              className="text-base font-semibold text-gray-900 dark:text-white flex-1"
+              numberOfLines={1}
+            >
+              {posting.title}
             </Text>
-          )}
-
-          {/* 수당 */}
-          {allowanceItems.length > 0 && (
-            <View className="mt-1">
-              {allowanceItems.map((item, idx) => (
-                <Text key={idx} className="text-sm text-gray-500 dark:text-gray-400">
-                  {item}
-                </Text>
-              ))}
-            </View>
-          )}
+          </View>
         </View>
-      </View>
 
-      {/* 하단: 지원자 수 + 상태뱃지 + 마감/재오픈 버튼 */}
+        {/* 장소 */}
+        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          📍 {posting.location.name}
+        </Text>
+
+        {/* 일정 + 급여/수당 그리드 */}
+        <View className="flex-row">
+          {/* 왼쪽: 일정 */}
+          <View className="flex-1 pr-3">
+            {posting.postingType === 'fixed' ? (
+              // 고정공고: FixedScheduleDisplay 사용
+              <FixedScheduleDisplay
+                daysPerWeek={posting.daysPerWeek}
+                startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+                compact={true}
+              />
+            ) : groupedDateRequirements.length > 0 ? (
+              groupedDateRequirements.map((group, groupIdx) => {
+                const isSingleDay = group.dayCount === 1;
+                const dateDisplay = isSingleDay
+                  ? formatDate(group.startDate)
+                  : formatDateRangeWithCount(group.startDate, group.endDate);
+
+                return (
+                  <View key={group.id || groupIdx} className="mb-2">
+                    {/* 날짜 범위 */}
+                    <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      📅 {dateDisplay}
+                    </Text>
+
+                    {/* 시간 + 역할 (첫 번째 timeSlot 기준) */}
+                    <View className="ml-5 mt-1">
+                      {group.timeSlots[0]?.roles.map((role: RoleData, roleIdx: number) => (
+                        <RoleLine
+                          key={roleIdx}
+                          role={role}
+                          showTime={roleIdx === 0}
+                          time={group.displayTime}
+                        />
+                      ))}
+                    </View>
+                  </View>
+                );
+              })
+            ) : (
+              // 레거시 폴백
+              <View className="mb-2">
+                <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  📅 {formatDate(posting.workDate)}
+                </Text>
+                <Text className="text-sm text-gray-900 dark:text-gray-100 ml-5 mt-1">
+                  🕐 {posting.timeSlot || '-'}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {/* 오른쪽: 급여 + 수당 */}
+          <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
+            {/* 급여 - v2.0: roles[].salary 구조 */}
+            {!posting.useSameSalary &&
+            posting.roles?.some((r) => r.salary) ? (
+              // 역할별 급여 표시
+              posting.roles
+                .filter((r) => r.salary)
+                .map((r, idx) => (
+                  <Text
+                    key={idx}
+                    className="text-sm text-gray-900 dark:text-white"
+                  >
+                    💰 {getRoleLabel(r.role, (r as { customRole?: string }).customRole)}: {r.salary?.type === 'other' ? '협의' : formatSalary(r.salary?.type || 'hourly', r.salary?.amount || 0)}
+                  </Text>
+                ))
+            ) : (
+              // 단일 급여 표시 (useSameSalary 또는 defaultSalary)
+              <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                💰 {formatSalary(
+                  posting.defaultSalary?.type || posting.roles?.[0]?.salary?.type || 'hourly',
+                  posting.defaultSalary?.amount || posting.roles?.[0]?.salary?.amount || 0
+                )}
+              </Text>
+            )}
+
+            {/* 수당 */}
+            {allowanceItems.length > 0 && (
+              <View className="mt-1">
+                {allowanceItems.map((item, idx) => (
+                  <Text key={idx} className="text-sm text-gray-500 dark:text-gray-400">
+                    {item}
+                  </Text>
+                ))}
+              </View>
+            )}
+          </View>
+        </View>
+      </Pressable>
+
+      {/* 하단: 지원자 수 + QR/상태/액션 버튼 (별도 영역으로 분리) */}
       <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
         <View className="flex-row items-center">
           <UsersIcon size={14} color="#2563EB" />
@@ -441,8 +442,17 @@ const JobPostingCard = memo(function JobPostingCard({
           </Text>
         </View>
 
-        {/* 상태 뱃지 + 마감/재오픈 버튼 */}
-        <View onStartShouldSetResponder={() => true} className="flex-row items-center gap-2">
+        {/* QR + 상태 뱃지 + 마감/재오픈 버튼 */}
+        <View className="flex-row items-center gap-2">
+          {/* QR 버튼 */}
+          <Pressable
+            onPress={() => onShowQR(posting)}
+            className="p-1.5 active:opacity-70"
+            accessibilityLabel="현장 QR 표시"
+            accessibilityRole="button"
+          >
+            <QrCodeIcon size={18} color="#2563EB" />
+          </Pressable>
           {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus && (
             <TournamentStatusBadge
               status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
@@ -459,6 +469,9 @@ const JobPostingCard = memo(function JobPostingCard({
               onPress={() => onClose(posting.id)}
               disabled={isClosing}
               className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md active:opacity-70"
+              accessibilityLabel={`${posting.title} 공고 마감하기`}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isClosing }}
             >
               <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">
                 {isClosing ? '처리중...' : '마감하기'}
@@ -470,6 +483,9 @@ const JobPostingCard = memo(function JobPostingCard({
               onPress={() => onReopen(posting.id)}
               disabled={isReopening}
               className="px-3 py-1.5 bg-primary-50 dark:bg-primary-900/30 rounded-md active:opacity-70"
+              accessibilityLabel={`${posting.title} 공고 재오픈하기`}
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isReopening }}
             >
               <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
                 {isReopening ? '처리중...' : '재오픈'}

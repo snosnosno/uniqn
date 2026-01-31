@@ -195,12 +195,21 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
 
 /**
  * 알림 데이터 인터페이스
+ *
+ * @description Firestore notifications 컬렉션 문서 구조
  */
 export interface NotificationData extends FirebaseDocument {
   /** 수신자 ID */
   recipientId: string;
   /** 알림 타입 */
   type: NotificationType;
+  /**
+   * 알림 카테고리
+   *
+   * @description Firestore에 저장되거나 type에서 계산됨
+   * @see NOTIFICATION_TYPE_TO_CATEGORY - type에서 category 계산
+   */
+  category?: NotificationCategory;
   /** 제목 */
   title: string;
   /** 본문 */
@@ -211,6 +220,8 @@ export interface NotificationData extends FirebaseDocument {
   data?: Record<string, string>;
   /** 읽음 여부 */
   isRead: boolean;
+  /** 우선순위 */
+  priority?: NotificationPriority;
   /** 생성 시간 */
   createdAt: Timestamp;
   /** 읽은 시간 */

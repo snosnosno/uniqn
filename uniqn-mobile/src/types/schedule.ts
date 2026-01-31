@@ -9,6 +9,7 @@ import { FirebaseDocument } from './common';
 import type { JobPostingCard, SalaryType } from './jobPosting';
 import type { TimeInput } from '@/shared/time/types';
 import { StatusMapper } from '@/shared/status';
+import type { StaffRole } from './role';
 
 // Re-export SalaryType from jobPosting (single source of truth)
 export type { SalaryType };
@@ -435,7 +436,8 @@ export interface WorkLog extends FirebaseDocument {
 
   // 상태
   status: WorkLogStatus;
-  role: string;
+  /** 스태프 직무 역할 */
+  role: StaffRole;
   /** 커스텀 역할명 (role이 'other'일 때) */
   customRole?: string;
 

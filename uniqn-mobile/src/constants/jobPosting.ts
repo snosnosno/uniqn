@@ -1,12 +1,17 @@
 /**
  * 구인공고 관련 상수 정의
  *
- * @version 2.0.0
+ * @version 2.1.0
  * @description 날짜별 요구사항 섹션 구현을 위한 상수
+ *
+ * ## 역할 통합 (v2.1.0)
+ * - STAFF_ROLE_KEYS는 types/role.ts의 VALID_STAFF_ROLES와 동기화
+ * - UI용 STAFF_ROLES는 별도 유지 (아이콘, 표시명 포함)
  */
 
 import { PostingType } from '@/types/postingConfig';
 import { DateConstraint } from '@/types/jobPosting/dateRequirement';
+import { VALID_STAFF_ROLES, type StaffRole } from '@/types/role';
 
 /**
  * 타입별 날짜 제약사항
@@ -56,32 +61,27 @@ export const MAX_HEADCOUNT = 200;
 export const MIN_HEADCOUNT = 1;
 
 /**
- * 스태프 역할 키 목록 (정규화된 단일 소스)
+ * 스태프 역할 키 목록 (types/role.ts에서 파생)
  *
  * @description
- * - 전체 앱에서 역할 검증에 사용하는 유일한 키 목록
+ * - types/role.ts의 VALID_STAFF_ROLES와 동기화
  * - 스키마 검증, 타입 정의, UI 옵션 등에 공통 사용
  * - 순서: 딜러 → 플로어 → 서빙 → 매니저 → 직원 → 기타
  */
-export const STAFF_ROLE_KEYS = [
-  'dealer',
-  'floor',
-  'serving',
-  'manager',
-  'staff',
-  'other',
-] as const;
+export const STAFF_ROLE_KEYS = VALID_STAFF_ROLES;
 
 /**
- * 스태프 역할 키 타입
+ * 스태프 역할 키 타입 (StaffRole과 동일)
+ *
+ * @deprecated StaffRole 타입 직접 사용 권장 (types/role.ts)
  */
-export type StaffRoleKey = (typeof STAFF_ROLE_KEYS)[number];
+export type StaffRoleKey = StaffRole;
 
 /**
  * 스태프 역할 옵션 인터페이스
  */
 export interface StaffRoleOption {
-  key: StaffRoleKey;
+  key: StaffRole;
   name: string;
   icon: string;
 }

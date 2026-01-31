@@ -13,9 +13,10 @@
  *
  * 2. **StaffRole** (직무 역할): 포커룸에서의 업무 역할
  *    - dealer: 딜러
- *    - manager: 매니저
- *    - chiprunner: 칩러너
  *    - floor: 플로어
+ *    - serving: 서빙
+ *    - manager: 매니저
+ *    - staff: 직원
  *    - other: 기타 (customRole과 함께 사용)
  *
  * ## 사용 가이드
@@ -35,7 +36,7 @@
  * const flags = RoleResolver.computeRoleFlags(profile.role);
  * ```
  *
- * @version 1.0.0
+ * @version 2.1.0
  */
 
 // ============================================================================
@@ -88,35 +89,39 @@ export const VALID_USER_ROLES: readonly UserRole[] = ['admin', 'employer', 'staf
  * @description 포커룸에서의 업무 역할
  *
  * - dealer: 딜러
- * - manager: 매니저
- * - chiprunner: 칩러너
  * - floor: 플로어
- * - admin: 관리 (StaffRole의 admin은 UserRole과 다름)
+ * - serving: 서빙
+ * - manager: 매니저
+ * - staff: 직원 (일반 스태프)
  * - other: 기타 (customRole 필드와 함께 사용)
+ *
+ * @note v2.1.0 통합: chiprunner → floor, admin 제거 (UserRole과 혼동 방지)
  */
-export type StaffRole = 'dealer' | 'manager' | 'chiprunner' | 'floor' | 'admin' | 'other';
+export type StaffRole = 'dealer' | 'floor' | 'serving' | 'manager' | 'staff' | 'other';
 
 /**
  * 스태프 직무 역할 한글 표시명
  */
 export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
   dealer: '딜러',
-  manager: '매니저',
-  chiprunner: '칩러너',
   floor: '플로어',
-  admin: '관리',
+  serving: '서빙',
+  manager: '매니저',
+  staff: '직원',
   other: '기타',
 };
 
 /**
  * 유효한 스태프 역할 목록
+ *
+ * @description 전체 앱에서 역할 검증에 사용하는 유일한 키 목록
  */
-export const VALID_STAFF_ROLES: readonly StaffRole[] = [
+export const VALID_STAFF_ROLES = [
   'dealer',
-  'manager',
-  'chiprunner',
   'floor',
-  'admin',
+  'serving',
+  'manager',
+  'staff',
   'other',
 ] as const;
 

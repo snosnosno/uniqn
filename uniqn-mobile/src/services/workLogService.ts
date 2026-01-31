@@ -15,7 +15,6 @@
 import {
   collection,
   doc,
-  getDocs,
   query,
   where,
   orderBy,
@@ -174,7 +173,7 @@ export async function getWorkLogStats(staffId: string): Promise<WorkLogStats> {
 /**
  * 월별 정산 정보 조회
  *
- * @description 복잡한 쿼리 + workLogs 반환이 필요하여 Service에서 처리
+ * @description Repository 패턴 적용 - workLogRepository.getMonthlyPayroll 사용
  */
 export async function getMonthlyPayroll(
   staffId: string,
@@ -189,43 +188,13 @@ export async function getMonthlyPayroll(
   try {
     logger.info('월별 정산 조회', { staffId: maskSensitiveId(staffId), year, month });
 
-    const startDate = new Date(year, month - 1, 1);
-    const endDate = new Date(year, month, 0);
-
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('staffId', '==', staffId),
-      where('date', '>=', toDateString(startDate)),
-      where('date', '<=', toDateString(endDate)),
-      orderBy('date', 'asc')
-    );
-
-    const snapshot = await getDocs(q);
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-    );
-
-    let totalAmount = 0;
-    let pendingAmount = 0;
-    let completedAmount = 0;
-
-    workLogs.forEach((workLog) => {
-      if (workLog.payrollAmount) {
-        totalAmount += workLog.payrollAmount;
-        if (workLog.payrollStatus === 'completed') {
-          completedAmount += workLog.payrollAmount;
-        } else {
-          pendingAmount += workLog.payrollAmount;
-        }
-      }
-    });
+    const summary = await workLogRepository.getMonthlyPayroll(staffId, year, month);
 
     return {
-      totalAmount,
-      pendingAmount,
-      completedAmount,
-      workLogs,
+      totalAmount: summary.totalAmount,
+      pendingAmount: summary.pendingAmount,
+      completedAmount: summary.completedAmount,
+      workLogs: summary.workLogs ?? [],
     };
   } catch (error) {
     throw handleServiceError(error, {

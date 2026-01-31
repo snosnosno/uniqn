@@ -31,7 +31,7 @@ export interface PaginatedJobPostings {
  * 공고 타입별 개수
  */
 export interface PostingTypeCounts {
-  normal: number;
+  regular: number;
   urgent: number;
   fixed: number;
   tournament: number;
@@ -88,6 +88,13 @@ export interface IJobPostingRepository {
    * @returns 공고 또는 null
    */
   getById(jobPostingId: string): Promise<JobPosting | null>;
+
+  /**
+   * 여러 ID로 공고 배치 조회
+   * @param jobPostingIds - 공고 ID 배열
+   * @returns 공고 목록 (ID 순서 유지되지 않음)
+   */
+  getByIdBatch(jobPostingIds: string[]): Promise<JobPosting[]>;
 
   /**
    * 공고 목록 조회 (무한스크롤 지원)

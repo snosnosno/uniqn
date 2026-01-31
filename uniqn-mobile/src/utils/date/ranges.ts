@@ -70,27 +70,45 @@ export function sortDates(dates: string[]): string[] {
 }
 
 /**
- * 근무 시간 문자열 파싱 (예: "18:00 - 02:00" 또는 "18:00~02:00")
+ * 근무 시간 문자열 파싱
+ *
+ * @description 다양한 형식 지원:
+ * - "09:00" → { start: "09:00", end: null }
+ * - "09:00~18:00" → { start: "09:00", end: "18:00" }
+ * - "09:00 - 18:00" → { start: "09:00", end: "18:00" }
+ *
+ * @param timeSlot - 시간 슬롯 문자열
+ * @returns { start, end } 또는 null (파싱 실패)
  */
 export function parseTimeSlot(
   timeSlot: string
 ): {
   start: string;
-  end: string;
+  end: string | null;
 } | null {
-  const match = timeSlot.match(/(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2})/);
-  if (!match) return null;
+  // 시작-종료 형식 먼저 시도 (예: "14:00~22:00", "09:00 - 18:00")
+  const fullMatch = timeSlot.match(/(\d{1,2}:\d{2})\s*[-~]\s*(\d{1,2}:\d{2})/);
+  if (fullMatch) {
+    return { start: fullMatch[1], end: fullMatch[2] };
+  }
 
-  return {
-    start: match[1],
-    end: match[2],
-  };
+  // 시작 시간만 있는 형식 (예: "19:00")
+  const startOnlyMatch = timeSlot.match(/^(\d{1,2}:\d{2})$/);
+  if (startOnlyMatch) {
+    return { start: startOnlyMatch[1], end: null };
+  }
+
+  return null;
 }
 
 /**
  * timeSlot 문자열에서 시작/종료 시간을 Date 객체로 추출
  *
- * @param timeSlot "09:00-18:00" 또는 "09:00 - 18:00" 형식
+ * @description 단일 시간 형식도 지원:
+ * - "09:00-18:00" → { startTime: Date, endTime: Date }
+ * - "19:00" → { startTime: Date, endTime: null }
+ *
+ * @param timeSlot "09:00-18:00", "09:00 - 18:00", 또는 "19:00" 형식
  * @param dateStr 날짜 (YYYY-MM-DD)
  * @returns { startTime: Date | null, endTime: Date | null }
  */
@@ -104,6 +122,15 @@ export function parseTimeSlotToDate(
   if (!parsed) return { startTime: null, endTime: null };
 
   const startTime = new Date(`${dateStr}T${parsed.start}:00`);
+
+  // 유효하지 않은 시작 시간 체크
+  if (isNaN(startTime.getTime())) return { startTime: null, endTime: null };
+
+  // 종료 시간이 null이면 endTime도 null (단일 시간 형식)
+  if (!parsed.end) {
+    return { startTime, endTime: null };
+  }
+
   let endTime = new Date(`${dateStr}T${parsed.end}:00`);
 
   // 자정을 넘어가는 경우 (예: 18:00-02:00)
@@ -111,8 +138,7 @@ export function parseTimeSlotToDate(
     endTime = addDays(endTime, 1);
   }
 
-  // 유효하지 않은 날짜 체크
-  if (isNaN(startTime.getTime())) return { startTime: null, endTime: null };
+  // 유효하지 않은 종료 시간 체크
   if (isNaN(endTime.getTime())) return { startTime, endTime: null };
 
   return { startTime, endTime };

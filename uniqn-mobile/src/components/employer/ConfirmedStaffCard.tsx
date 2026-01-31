@@ -28,10 +28,9 @@ import {
   type ConfirmedStaffStatus,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
 import { getUserProfile } from '@/services';
 import type { UserProfile } from '@/services';
-import { TimeNormalizer, type TimeInput } from '@/shared/time';
+import { WorkTimeDisplay } from '@/shared/time';
 
 // ============================================================================
 // Types
@@ -69,31 +68,6 @@ const STATUS_BADGE_VARIANT: Record<ConfirmedStaffStatus, 'default' | 'primary' |
   completed: 'success',
   cancelled: 'error',
   no_show: 'warning',
-};
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * 근무 시간 계산 (시:분 형식)
- *
- * @description TimeNormalizer.parseTime() 사용으로 타입 안전성 확보
- */
-const calculateWorkDuration = (startTime: TimeInput, endTime: TimeInput): string | null => {
-  const start = TimeNormalizer.parseTime(startTime);
-  const end = TimeNormalizer.parseTime(endTime);
-
-  if (!start || !end) return null;
-
-  const diffMs = end.getTime() - start.getTime();
-  if (diffMs <= 0) return '0시간';
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (minutes === 0) return `${hours}시간`;
-  return `${hours}시간 ${minutes}분`;
 };
 
 // ============================================================================
@@ -137,35 +111,37 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                       staff.status === 'checked_out' ||
                       staff.status === 'completed';
 
-  // 출근 시간: checkInTime 우선, 없으면 timeSlot에서 파싱
-  const startTimeStr = useMemo(() => {
-    // 1. checkInTime이 있으면 사용 (QR 출근 또는 관리자 수정)
-    if (staff.checkInTime) {
-      const date = TimeNormalizer.parseTime(staff.checkInTime);
-      return date ? formatTime(date) : '미정';
-    }
-    // 2. 없으면 timeSlot에서 시작시간 파싱
-    if (staff.timeSlot && staff.date) {
-      const { startTime } = parseTimeSlotToDate(staff.timeSlot, staff.date);
-      return startTime ? formatTime(startTime) : '미정';
-    }
-    return '미정';
-  }, [staff.checkInTime, staff.timeSlot, staff.date]);
+  // 시간 표시 정보 (WorkTimeDisplay 사용 - 직원 화면과 일관성 확보)
+  const timeInfo = useMemo(() => {
+    return WorkTimeDisplay.getDisplayInfo({
+      checkInTime: staff.checkInTime,
+      checkOutTime: staff.checkOutTime,
+      scheduledStartTime: staff.scheduledStartTime,
+      scheduledEndTime: staff.scheduledEndTime,
+      timeSlot: staff.timeSlot,
+      date: staff.date,
+    });
+  }, [
+    staff.checkInTime,
+    staff.checkOutTime,
+    staff.scheduledStartTime,
+    staff.scheduledEndTime,
+    staff.timeSlot,
+    staff.date,
+  ]);
 
-  // 퇴근 시간: checkOutTime만 표시 (없으면 '미정')
-  const endTimeStr = useMemo(() => {
-    // checkOutTime이 있으면 사용
-    if (staff.checkOutTime) {
-      const date = TimeNormalizer.parseTime(staff.checkOutTime);
-      return date ? formatTime(date) : '미정';
-    }
-    return '미정';  // 퇴근 전까지는 미정
-  }, [staff.checkOutTime]);
+  // 출근 시간: 예정 상태면 예정 시간, 출근 후면 실제 시간
+  const startTimeStr = staff.status === 'scheduled'
+    ? timeInfo.scheduledStart
+    : timeInfo.checkIn;
 
-  // 근무 시간 계산 (둘 다 있을 때만)
-  const workDuration = useMemo(() => {
-    return calculateWorkDuration(staff.checkInTime, staff.checkOutTime);
-  }, [staff.checkInTime, staff.checkOutTime]);
+  // 퇴근 시간: 예정 상태면 예정 시간, 퇴근 후면 실제 시간
+  const endTimeStr = staff.status === 'scheduled'
+    ? timeInfo.scheduledEnd
+    : timeInfo.checkOut;
+
+  // 근무 시간 계산 (실제 시간 기반, 없으면 '-')
+  const workDuration = timeInfo.hasActualTime ? timeInfo.duration : null;
 
   // 액션 버튼 표시 조건
   const canEditTime = staff.status !== 'cancelled' && staff.status !== 'no_show';
@@ -261,7 +237,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             <View className="flex-row flex-1 ml-2">
               <View className="flex-1">
                 <View className="flex-row items-center">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">출근</Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">
+                    {timeInfo.isActualTime ? '출근' : '예정'}
+                  </Text>
                   {isCheckedIn && (
                     <View className="ml-1">
                       <CheckCircleIcon size={12} color="#22C55E" />
@@ -273,7 +251,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
                 </Text>
               </View>
               <View className="flex-1">
-                <Text className="text-xs text-gray-500 dark:text-gray-400">퇴근</Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400">
+                  {timeInfo.isActualTime ? '퇴근' : '예정'}
+                </Text>
                 <Text className="text-sm font-medium text-gray-900 dark:text-white">
                   {endTimeStr}
                 </Text>

@@ -14,6 +14,7 @@ import {
   optionalDurationSchema,
 } from './common';
 import type { Application } from '@/types';
+import { VALID_STAFF_ROLES } from '@/types/role';
 
 /**
  * 지원 상태 스키마
@@ -29,8 +30,11 @@ export type ApplicationStatusSchema = z.infer<typeof applicationStatusSchema>;
 
 /**
  * 스태프 역할 스키마
+ *
+ * @description types/role.ts의 VALID_STAFF_ROLES와 동기화
+ * - dealer, floor, serving, manager, staff, other
  */
-export const staffRoleSchema = z.enum(['dealer', 'manager', 'chiprunner', 'admin'], {
+export const staffRoleSchema = z.enum(VALID_STAFF_ROLES, {
   error: '올바른 역할을 선택해주세요',
 });
 
@@ -117,6 +121,8 @@ export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;
  * 취소 요청 검토 스키마 (구인자용)
  *
  * @description 구인자가 취소 요청을 승인/거절할 때 사용
+ * - 승인: rejectionReason 불필요
+ * - 거절: rejectionReason 필수
  */
 export const reviewCancellationSchema = z.object({
   applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
@@ -127,7 +133,10 @@ export const reviewCancellationSchema = z.object({
     .max(200, { message: '거절 사유는 200자를 초과할 수 없습니다' })
     .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
-});
+}).refine(
+  (data) => data.approved || (data.rejectionReason && data.rejectionReason.length >= 3),
+  { message: '거절 시 거절 사유를 입력해주세요', path: ['rejectionReason'] }
+);
 
 export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
 
@@ -144,9 +153,11 @@ export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
 /**
  * Assignment 스키마 (Application 내부용)
  * @see types/assignment.ts
+ *
+ * @description roleIds는 StaffRole 값만 허용 (타입 안전성 강화)
  */
 const assignmentInnerSchema = z.object({
-  roleIds: z.array(z.string()),
+  roleIds: z.array(staffRoleSchema),
   timeSlot: z.string(),
   dates: z.array(z.string()),
   isGrouped: z.boolean(),

@@ -10,3 +10,10 @@ export type { NormalizedWorkTime, TimeFieldsInput, TimeInput } from './types';
 
 // 시간 정규화 유틸리티
 export { TimeNormalizer } from './TimeNormalizer';
+
+// 시간 표시 유틸리티 (구인자/직원 화면 통합)
+export {
+  WorkTimeDisplay,
+  type WorkTimeSource,
+  type WorkTimeDisplayResult,
+} from './WorkTimeDisplay';

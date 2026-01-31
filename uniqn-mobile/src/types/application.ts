@@ -7,7 +7,21 @@
  * ## v3.0 변경사항
  * - `assignments` 필드 필수화 (레거시 appliedRole, appliedDate, appliedTimeSlot 제거)
  * - `eventId` 제거 → `jobPostingId` 사용
+ * - `postTitle` 제거 → `jobPostingTitle` 사용
  * - 역할 정보는 `assignments[0].roleIds[0]`에서 추출 (getPrimaryRole 헬퍼 사용)
+ *
+ * ## 레거시 필드 (Firestore에 존재할 수 있음, 읽기 전용)
+ * - `eventId`: jobPostingId로 대체됨
+ * - `postId`: jobPostingId로 대체됨
+ * - `postTitle`: jobPostingTitle로 대체됨
+ * - `appliedRoles`: assignments[].roleIds로 대체됨
+ * - `preferredDates`: assignments[].dates로 대체됨
+ *
+ * ## 상태 흐름
+ * applied → pending → confirmed → completed
+ *                   ↘ rejected
+ *                   ↘ cancelled
+ *                   ↘ cancellation_pending → cancelled (승인) / confirmed (거절)
  */
 
 import { Timestamp } from 'firebase/firestore';
@@ -35,25 +49,66 @@ export type ApplicationStatus =
 export type CancellationRequestStatus = 'pending' | 'approved' | 'rejected';
 
 /**
- * 취소 요청 정보
- *
- * @description 확정된 지원에 대해 스태프가 취소를 요청하고,
- *              구인자가 승인/거절하는 워크플로우를 지원
+ * 취소 요청 기본 필드
  */
-export interface CancellationRequest {
+interface CancellationRequestBase {
   /** 요청 시간 */
   requestedAt: string;
   /** 취소 사유 (필수) */
   reason: string;
-  /** 요청 상태 */
-  status: CancellationRequestStatus;
-  /** 검토 시간 */
-  reviewedAt?: string;
-  /** 검토자 ID */
-  reviewedBy?: string;
-  /** 거절 사유 (거절 시 필수) */
-  rejectionReason?: string;
 }
+
+/**
+ * 대기 중인 취소 요청
+ */
+interface CancellationRequestPending extends CancellationRequestBase {
+  status: 'pending';
+  reviewedAt?: never;
+  reviewedBy?: never;
+  rejectionReason?: never;
+}
+
+/**
+ * 승인된 취소 요청
+ */
+interface CancellationRequestApproved extends CancellationRequestBase {
+  status: 'approved';
+  /** 검토 시간 (필수) */
+  reviewedAt: string;
+  /** 검토자 ID (필수) */
+  reviewedBy: string;
+  rejectionReason?: never;
+}
+
+/**
+ * 거절된 취소 요청
+ */
+interface CancellationRequestRejected extends CancellationRequestBase {
+  status: 'rejected';
+  /** 검토 시간 (필수) */
+  reviewedAt: string;
+  /** 검토자 ID (필수) */
+  reviewedBy: string;
+  /** 거절 사유 (필수) */
+  rejectionReason: string;
+}
+
+/**
+ * 취소 요청 정보 (Discriminated Union)
+ *
+ * @description 확정된 지원에 대해 스태프가 취소를 요청하고,
+ *              구인자가 승인/거절하는 워크플로우를 지원
+ *
+ * @example
+ * // 상태별 타입 가드 사용
+ * if (cancellationRequest.status === 'rejected') {
+ *   console.log(cancellationRequest.rejectionReason); // 타입 안전
+ * }
+ */
+export type CancellationRequest =
+  | CancellationRequestPending
+  | CancellationRequestApproved
+  | CancellationRequestRejected;
 
 /**
  * 모집 유형

@@ -6,12 +6,14 @@
 import { useEffect } from 'react';
 import { Tabs, useNavigation } from 'expo-router';
 import { useColorScheme, Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeIcon, CalendarIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const navigation = useNavigation();
+  const insets = useSafeAreaInsets();
 
   // 웹에서 탭 전환 시 aria-hidden 포커스 충돌 방지
   useEffect(() => {
@@ -35,7 +37,8 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: isDark ? '#1F2937' : '#ffffff',
           borderTopColor: isDark ? '#374151' : '#e5e7eb',
-          height: 56,
+          height: 56 + insets.bottom,
+          paddingBottom: insets.bottom,
         },
         tabBarLabelStyle: {
           fontSize: 11,

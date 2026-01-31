@@ -31,7 +31,6 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import {
-  mapFirebaseError,
   AlreadyAppliedError,
   ApplicationClosedError,
   MaxCapacityReachedError,
@@ -41,6 +40,7 @@ import {
   ERROR_CODES,
   toError,
 } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type {
   IApplicationRepository,
@@ -51,12 +51,16 @@ import type {
   Application,
   ApplicationStatus,
   CancellationRequest,
+  ConfirmApplicationInputV2,
   CreateApplicationInput,
   JobPosting,
   RecruitmentType,
+  RejectApplicationInput,
   RequestCancellationInput,
   ReviewCancellationInput,
   StaffRole,
+  WorkLog,
+  WorkLogStatus,
 } from '@/types';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 
@@ -66,6 +70,7 @@ import { isValidAssignment, validateRequiredAnswers } from '@/types';
 
 const APPLICATIONS_COLLECTION = 'applications';
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
+const WORK_LOGS_COLLECTION = 'workLogs';
 
 // ============================================================================
 // Helpers
@@ -155,7 +160,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       };
     } catch (error) {
       logger.error('지원 상세 조회 실패', toError(error), { applicationId });
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '지원 상세 조회',
+        component: 'ApplicationRepository',
+        context: { applicationId },
+      });
     }
   }
 
@@ -239,7 +248,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       return applicationsWithJobs;
     } catch (error) {
       logger.error('내 지원 내역 조회 실패', toError(error), { applicantId });
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '내 지원 내역 조회',
+        component: 'ApplicationRepository',
+        context: { applicantId },
+      });
     }
   }
 
@@ -270,7 +283,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       return applications;
     } catch (error) {
       logger.error('공고별 지원서 조회 실패', toError(error), { jobPostingId });
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '공고별 지원서 조회',
+        component: 'ApplicationRepository',
+        context: { jobPostingId },
+      });
     }
   }
 
@@ -320,7 +337,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       return stats;
     } catch (error) {
       logger.error('지원 통계 조회 실패', toError(error), { applicantId });
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '지원 통계 조회',
+        component: 'ApplicationRepository',
+        context: { applicantId },
+      });
     }
   }
 
@@ -390,7 +411,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         throw error;
       }
 
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '취소 요청 목록 조회',
+        component: 'ApplicationRepository',
+        context: { jobPostingId },
+      });
     }
   }
 
@@ -574,7 +599,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         throw error;
       }
 
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '지원하기 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { jobPostingId: input.jobPostingId, applicantId: context.applicantId },
+      });
     }
   }
 
@@ -644,7 +673,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       logger.info('지원 취소 성공', { applicationId });
     } catch (error) {
       logger.error('지원 취소 실패', toError(error), { applicationId });
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '지원 취소 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { applicationId, applicantId },
+      });
     }
   }
 
@@ -778,7 +811,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         throw error;
       }
 
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '취소 요청 제출 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { applicationId: input.applicationId, applicantId },
+      });
     }
   }
 
@@ -870,19 +907,24 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
           });
         }
 
-        // 취소 요청 업데이트
-        const updatedCancellationRequest: CancellationRequest = {
-          ...applicationData.cancellationRequest,
-          status: input.approved ? 'approved' : 'rejected',
+        // 취소 요청 업데이트 (Discriminated Union 패턴)
+        const baseFields = {
+          requestedAt: applicationData.cancellationRequest.requestedAt,
+          reason: applicationData.cancellationRequest.reason,
           reviewedAt: new Date().toISOString(),
           reviewedBy: reviewerId,
-          ...(input.rejectionReason?.trim()
-            ? { rejectionReason: input.rejectionReason.trim() }
-            : {}),
         };
 
+        const updatedCancellationRequest: CancellationRequest = input.approved
+          ? { ...baseFields, status: 'approved' as const }
+          : {
+              ...baseFields,
+              status: 'rejected' as const,
+              rejectionReason: input.rejectionReason?.trim() || '거절됨',
+            };
+
         if (input.approved) {
-          // 승인: 지원 상태를 cancelled로 변경 + 지원자 수 감소
+          // 승인: 지원 상태를 cancelled로 변경 + 지원자 수/확정 인원 감소
           transaction.update(applicationRef, {
             status: 'cancelled' as ApplicationStatus,
             cancellationRequest: updatedCancellationRequest,
@@ -892,6 +934,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
           transaction.update(jobRef, {
             applicationCount: increment(-1),
+            filledPositions: increment(-1),
             updatedAt: serverTimestamp(),
           });
         } else {
@@ -922,7 +965,267 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         throw error;
       }
 
-      throw mapFirebaseError(error);
+      throw handleServiceError(error, {
+        operation: '취소 요청 검토 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { applicationId: input.applicationId, reviewerId },
+      });
+    }
+  }
+
+  async confirmWithTransaction(
+    input: ConfirmApplicationInputV2,
+    reviewerId: string
+  ): Promise<void> {
+    try {
+      logger.info('지원 확정 시작', {
+        applicationId: input.applicationId,
+        reviewerId,
+      });
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        // 지원서 조회
+        const applicationRef = doc(
+          getFirebaseDb(),
+          APPLICATIONS_COLLECTION,
+          input.applicationId
+        );
+        const applicationDoc = await transaction.get(applicationRef);
+
+        if (!applicationDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '지원 내역을 찾을 수 없습니다',
+          });
+        }
+
+        const applicationData = parseApplicationDocument({
+          id: applicationDoc.id,
+          ...applicationDoc.data(),
+        });
+        if (!applicationData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '지원 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 공고 조회 및 소유자 확인
+        const jobRef = doc(
+          getFirebaseDb(),
+          JOB_POSTINGS_COLLECTION,
+          applicationData.jobPostingId
+        );
+        const jobDoc = await transaction.get(jobRef);
+
+        if (!jobDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공고를 찾을 수 없습니다',
+          });
+        }
+
+        const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+        if (!jobData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '공고 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 소유자 확인
+        if (jobData.ownerId !== reviewerId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인의 공고에 대한 지원만 확정할 수 있습니다',
+          });
+        }
+
+        // 지원 상태 확인 (applied 또는 pending만 확정 가능)
+        if (applicationData.status !== 'applied' && applicationData.status !== 'pending') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 확정할 수 있습니다.`,
+          });
+        }
+
+        // 정원 확인
+        const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
+        if (totalPositions > 0 && currentFilled >= totalPositions) {
+          throw new MaxCapacityReachedError({
+            userMessage: '모집 인원이 마감되었습니다',
+            jobPostingId: applicationData.jobPostingId,
+            maxCapacity: totalPositions,
+            currentCount: currentFilled,
+          });
+        }
+
+        // 확정할 assignments 결정
+        const assignmentsToConfirm = input.selectedAssignments || applicationData.assignments;
+
+        // 지원 상태 업데이트
+        transaction.update(applicationRef, {
+          status: 'confirmed' as ApplicationStatus,
+          confirmedAt: serverTimestamp(),
+          processedBy: reviewerId,
+          processedAt: serverTimestamp(),
+          ...(input.notes && { notes: input.notes }),
+          updatedAt: serverTimestamp(),
+        });
+
+        // filledPositions 증가
+        transaction.update(jobRef, {
+          filledPositions: increment(1),
+          updatedAt: serverTimestamp(),
+        });
+
+        // WorkLog 생성 (각 assignment의 날짜별로)
+        for (const assignment of assignmentsToConfirm) {
+          for (const date of assignment.dates) {
+            const workLogId = `${applicationData.jobPostingId}_${applicationData.applicantId}_${date}`;
+            const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+
+            const primaryRole = (assignment.roleIds[0] || 'other') as StaffRole;
+
+            const workLogData: Omit<WorkLog, 'id' | 'createdAt' | 'updatedAt'> = {
+              staffId: applicationData.applicantId,
+              staffName: applicationData.applicantName,
+              staffNickname: applicationData.applicantNickname,
+              staffPhotoURL: applicationData.applicantPhotoURL,
+              jobPostingId: applicationData.jobPostingId,
+              ownerId: jobData.ownerId,
+              date,
+              role: primaryRole,
+              status: 'scheduled' as WorkLogStatus,
+              payrollStatus: 'pending',
+              ...(assignment.timeSlot && { timeSlot: assignment.timeSlot }),
+            };
+
+            transaction.set(workLogRef, {
+              ...workLogData,
+              createdAt: serverTimestamp(),
+              updatedAt: serverTimestamp(),
+            });
+          }
+        }
+      });
+
+      logger.info('지원 확정 성공', { applicationId: input.applicationId });
+    } catch (error) {
+      logger.error('지원 확정 실패', toError(error), {
+        applicationId: input.applicationId,
+        reviewerId,
+      });
+
+      if (
+        error instanceof BusinessError ||
+        error instanceof PermissionError ||
+        error instanceof MaxCapacityReachedError
+      ) {
+        throw error;
+      }
+
+      throw handleServiceError(error, {
+        operation: '지원 확정 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { applicationId: input.applicationId, reviewerId },
+      });
+    }
+  }
+
+  async rejectWithTransaction(
+    input: RejectApplicationInput,
+    reviewerId: string
+  ): Promise<void> {
+    try {
+      logger.info('지원 거절 시작', {
+        applicationId: input.applicationId,
+        reviewerId,
+      });
+
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        // 지원서 조회
+        const applicationRef = doc(
+          getFirebaseDb(),
+          APPLICATIONS_COLLECTION,
+          input.applicationId
+        );
+        const applicationDoc = await transaction.get(applicationRef);
+
+        if (!applicationDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '지원 내역을 찾을 수 없습니다',
+          });
+        }
+
+        const applicationData = parseApplicationDocument({
+          id: applicationDoc.id,
+          ...applicationDoc.data(),
+        });
+        if (!applicationData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '지원 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 공고 조회 및 소유자 확인
+        const jobRef = doc(
+          getFirebaseDb(),
+          JOB_POSTINGS_COLLECTION,
+          applicationData.jobPostingId
+        );
+        const jobDoc = await transaction.get(jobRef);
+
+        if (!jobDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공고를 찾을 수 없습니다',
+          });
+        }
+
+        const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+        if (!jobData) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '공고 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 소유자 확인
+        if (jobData.ownerId !== reviewerId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인의 공고에 대한 지원만 거절할 수 있습니다',
+          });
+        }
+
+        // 지원 상태 확인 (applied 또는 pending만 거절 가능)
+        if (applicationData.status !== 'applied' && applicationData.status !== 'pending') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 거절할 수 있습니다.`,
+          });
+        }
+
+        // 지원 상태 업데이트
+        transaction.update(applicationRef, {
+          status: 'rejected' as ApplicationStatus,
+          rejectionReason: input.reason || '',
+          processedBy: reviewerId,
+          processedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
+      });
+
+      logger.info('지원 거절 성공', { applicationId: input.applicationId });
+    } catch (error) {
+      logger.error('지원 거절 실패', toError(error), {
+        applicationId: input.applicationId,
+        reviewerId,
+      });
+
+      if (
+        error instanceof BusinessError ||
+        error instanceof PermissionError
+      ) {
+        throw error;
+      }
+
+      throw handleServiceError(error, {
+        operation: '지원 거절 트랜잭션',
+        component: 'ApplicationRepository',
+        context: { applicationId: input.applicationId, reviewerId },
+      });
     }
   }
 }

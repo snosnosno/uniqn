@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { logger } from '@/utils/logger';
 import { payrollStatusSchema } from './schedule.schema';
 import { timestampSchema, optionalTimestampSchema } from './common';
+import { staffRoleSchema } from './application.schema';
 import type { WorkLog } from '@/types';
 
 // ============================================================================
@@ -53,7 +54,7 @@ export const createWorkLogSchema = z.object({
   /** 공고 ID */
   jobPostingId: z.string().min(1, { message: '공고 ID는 필수입니다' }),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-  role: z.string().min(1, { message: '역할은 필수입니다' }),
+  role: staffRoleSchema,
   scheduledStartTime: z.string().optional(),
   scheduledEndTime: z.string().optional(),
   notes: z.string().max(500, { message: '메모는 500자를 초과할 수 없습니다' }).optional(),
@@ -120,14 +121,14 @@ export const workLogDocumentSchema = z.object({
 
   // 상태
   status: workLogStatusSchema,
-  role: z.string(),
+  role: staffRoleSchema,
   customRole: z.string().optional(),
 
   // 정산 정보
   payrollStatus: payrollStatusSchema.optional(),
-  payrollAmount: z.number().optional(),
+  payrollAmount: z.number().nullable().optional(),
   payrollDate: optionalTimestampSchema,
-  payrollNotes: z.string().optional(),
+  payrollNotes: z.string().nullable().optional(),
 
   // 메타
   notes: z.string().optional(),

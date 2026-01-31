@@ -27,6 +27,7 @@ export type {
   IWorkLogRepository,
   WorkLogStats,
   MonthlyPayrollSummary,
+  WorkLogFilterOptions,
 } from './IWorkLogRepository';
 
 // User Repository

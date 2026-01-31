@@ -20,7 +20,7 @@ import {
   getCalendarMarkedDates,
 } from '@/services/scheduleService';
 import { useAuthStore } from '@/stores/authStore';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
 import {
   groupScheduleEvents,
@@ -72,8 +72,8 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
       return getMySchedules(staffId, filters);
     },
     enabled: enabled && !!staffId && !realtime,
-    staleTime: cachingPolicies.frequent,
-    gcTime: cachingPolicies.standard,
+    staleTime: queryCachingOptions.schedules.staleTime,
+    gcTime: queryCachingOptions.schedules.gcTime,
   });
 
   // 실시간 구독
@@ -142,7 +142,8 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
       return getSchedulesByMonth(staffId, year, month);
     },
     enabled: enabled && !!staffId,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.schedules.staleTime,
+    gcTime: queryCachingOptions.schedules.gcTime,
   });
 
   const schedules = useMemo(
@@ -188,7 +189,8 @@ export function useSchedulesByDate(date: string, enabled = true) {
       return getSchedulesByDate(staffId, date);
     },
     enabled: enabled && !!staffId && !!date,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.schedules.staleTime,
+    gcTime: queryCachingOptions.schedules.gcTime,
   });
 
   return {
@@ -259,7 +261,8 @@ export function useUpcomingSchedules(days = 7, enabled = true) {
       return getUpcomingSchedules(staffId, days);
     },
     enabled: enabled && !!staffId,
-    staleTime: cachingPolicies.frequent,
+    staleTime: queryCachingOptions.schedules.staleTime,
+    gcTime: queryCachingOptions.schedules.gcTime,
   });
 
   return {

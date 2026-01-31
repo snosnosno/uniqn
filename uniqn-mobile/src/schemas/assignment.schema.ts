@@ -6,12 +6,13 @@
  */
 
 import { z } from 'zod';
+import { VALID_STAFF_ROLES } from '@/types/role';
 
 /**
- * 역할 ID 배열 스키마 (v3.0: roleIds 필수)
+ * 역할 ID 배열 스키마 (v3.0: roleIds 필수, StaffRole 검증)
  */
 export const roleIdsSchema = z
-  .array(z.string().min(1))
+  .array(z.enum(VALID_STAFF_ROLES))
   .min(1, { message: '최소 1개 이상의 역할을 선택해주세요' });
 
 /**
