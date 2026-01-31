@@ -1,11 +1,11 @@
 /**
  * UNIQN Mobile - 회원가입 Step 1: 계정 정보
  *
- * @description 이메일, 비밀번호 입력
- * @version 1.0.0
+ * @description 이메일, 비밀번호 입력 + 이메일 중복 확인
+ * @version 1.1.0
  */
 
-import React from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,8 @@ import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PasswordStrength } from '@/components/auth/PasswordStrength';
 import { signUpStep1Schema, type SignUpStep1Data } from '@/schemas';
+import { checkEmailExists } from '@/services/authService';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // Types
@@ -29,10 +31,13 @@ interface SignupStep1Props {
 // ============================================================================
 
 export function SignupStep1({ onNext, initialData, isLoading = false }: SignupStep1Props) {
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+
   const {
     control,
     handleSubmit,
     watch,
+    setError,
     formState: { errors },
   } = useForm<SignUpStep1Data>({
     resolver: zodResolver(signUpStep1Schema),
@@ -44,6 +49,36 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
   });
 
   const password = watch('password');
+
+  const handleNext = useCallback(
+    async (data: SignUpStep1Data) => {
+      setIsCheckingEmail(true);
+      try {
+        const exists = await checkEmailExists(data.email);
+
+        if (exists) {
+          setError('email', {
+            type: 'manual',
+            message: '이미 사용 중인 이메일입니다',
+          });
+          return;
+        }
+
+        onNext(data);
+      } catch (error) {
+        logger.error('이메일 중복 확인 실패', error as Error);
+        setError('email', {
+          type: 'manual',
+          message: '이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.',
+        });
+      } finally {
+        setIsCheckingEmail(false);
+      }
+    },
+    [onNext, setError]
+  );
+
+  const isProcessing = isLoading || isCheckingEmail;
 
   return (
     <View className="w-full flex-col gap-4">
@@ -65,7 +100,7 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
               autoCapitalize="none"
               autoComplete="email"
               error={errors.email?.message}
-              editable={!isLoading}
+              editable={!isProcessing}
             />
           )}
         />
@@ -88,7 +123,7 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
               type="password"
               autoComplete="new-password"
               error={errors.password?.message}
-              editable={!isLoading}
+              editable={!isProcessing}
             />
           )}
         />
@@ -112,7 +147,7 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
               type="password"
               autoComplete="new-password"
               error={errors.passwordConfirm?.message}
-              editable={!isLoading}
+              editable={!isProcessing}
             />
           )}
         />
@@ -121,11 +156,12 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
       {/* 다음 버튼 */}
       <View className="mt-6">
         <Button
-          onPress={handleSubmit(onNext)}
-          disabled={isLoading}
+          onPress={handleSubmit(handleNext)}
+          disabled={isProcessing}
+          loading={isCheckingEmail}
           fullWidth
         >
-          다음
+          {isCheckingEmail ? '이메일 확인 중...' : '다음'}
         </Button>
       </View>
     </View>

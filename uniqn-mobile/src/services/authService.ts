@@ -19,6 +19,7 @@ import {
   updateProfile,
   EmailAuthProvider,
   reauthenticateWithCredential,
+  fetchSignInMethodsForEmail,
 } from 'firebase/auth';
 import {
   doc,
@@ -117,6 +118,32 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       operation: '로그인',
       component: 'authService',
       context: { email: data.email },
+    });
+  }
+}
+
+/**
+ * 이메일 중복 확인
+ *
+ * @description Step 1에서 다음 단계로 넘어가기 전에 이메일 중복 여부 확인
+ * @param email 확인할 이메일
+ * @returns 이메일이 이미 존재하면 true, 없으면 false
+ */
+export async function checkEmailExists(email: string): Promise<boolean> {
+  try {
+    logger.info('이메일 중복 확인', { email });
+
+    const methods = await fetchSignInMethodsForEmail(getFirebaseAuth(), email);
+    const exists = methods.length > 0;
+
+    logger.info('이메일 중복 확인 완료', { email, exists });
+
+    return exists;
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '이메일 중복 확인',
+      component: 'authService',
+      context: { email },
     });
   }
 }
