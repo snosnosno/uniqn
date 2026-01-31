@@ -138,7 +138,7 @@ export async function fetchMyInquiries(
 
     return {
       inquiries,
-      lastDoc: docs.length > 0 ? docs[Math.min(docs.length - 1, pageSize - 1)] : null,
+      lastDoc: inquiries.length > 0 ? docs[inquiries.length - 1] : null,
       hasMore,
     };
   }, 'fetchMyInquiries');
@@ -204,7 +204,7 @@ export async function fetchAllInquiries(
 
     return {
       inquiries,
-      lastDoc: docs.length > 0 ? docs[Math.min(docs.length - 1, pageSize - 1)] : null,
+      lastDoc: inquiries.length > 0 ? docs[inquiries.length - 1] : null,
       hasMore,
     };
   }, 'fetchAllInquiries');

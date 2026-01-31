@@ -73,9 +73,9 @@ export type PayrollStatus = 'pending' | 'processing' | 'completed';
  * 출석 상태 라벨
  */
 export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
-  not_started: '미출근',
-  checked_in: '출근',
-  checked_out: '퇴근',
+  not_started: '출근 전',
+  checked_in: '근무 중',
+  checked_out: '퇴근 완료',
 };
 
 /**
@@ -121,10 +121,10 @@ export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
  * 스케줄 타입 라벨
  */
 export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
-  applied: '지원',
+  applied: '지원 중',
   confirmed: '확정',
   completed: '완료',
-  cancelled: '취소',
+  cancelled: '취소됨',
 };
 
 /**

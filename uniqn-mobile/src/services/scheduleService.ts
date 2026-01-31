@@ -63,6 +63,8 @@ const DEFAULT_PAGE_SIZE = 50;
 export interface ScheduleQueryResult {
   schedules: ScheduleEvent[];
   stats: ScheduleStats;
+  /** 부분 실패 시 경고 메시지 */
+  warning?: string;
 }
 
 // ============================================================================
@@ -358,18 +360,24 @@ export async function getMySchedules(
       });
     }
 
-    // 부분 실패 로깅
+    // 부분 실패 로깅 및 경고 메시지 생성
+    let partialFailureWarning: string | undefined;
+
     if (workLogsResult.status === 'rejected') {
       logger.warn('WorkLogs 조회 실패 (Applications는 성공)', {
         error: workLogsResult.reason,
         staffId,
       });
+      partialFailureWarning = '일부 근무 기록을 불러오지 못했습니다';
     }
     if (applicationsResult.status === 'rejected') {
       logger.warn('Applications 조회 실패 (WorkLogs는 성공)', {
         error: applicationsResult.reason,
         staffId,
       });
+      partialFailureWarning = partialFailureWarning
+        ? '일부 데이터를 불러오지 못했습니다'
+        : '일부 지원 기록을 불러오지 못했습니다';
     }
 
     // ========================================
@@ -462,7 +470,11 @@ export async function getMySchedules(
       durationMs: duration,
     });
 
-    return { schedules: filteredSchedules, stats };
+    return {
+      schedules: filteredSchedules,
+      stats,
+      ...(partialFailureWarning && { warning: partialFailureWarning }),
+    };
   } catch (error) {
     throw handleServiceError(error, {
       operation: '스케줄 목록 조회',

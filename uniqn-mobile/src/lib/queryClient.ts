@@ -574,4 +574,46 @@ export const invalidateQueries = {
   all: () => queryClient.invalidateQueries(),
 };
 
+// ============================================================================
+// 관계 기반 캐시 무효화
+// ============================================================================
+
+/**
+ * 데이터 관계 그래프
+ *
+ * 특정 데이터가 변경될 때 함께 무효화해야 하는 관련 데이터를 정의
+ * - workLogs 변경 → schedules도 갱신 필요 (스케줄은 workLogs 데이터 포함)
+ * - applications 변경 → schedules도 갱신 필요 (지원 상태가 스케줄에 표시)
+ */
+export const invalidationGraph: Record<string, string[]> = {
+  workLogs: ['schedules'],
+  applications: ['schedules'],
+};
+
+/**
+ * 관계 데이터를 함께 무효화하는 헬퍼 함수
+ *
+ * @example
+ * // workLogs 변경 시 schedules도 함께 무효화
+ * await invalidateRelated('workLogs');
+ */
+export async function invalidateRelated(
+  primaryKey: keyof typeof invalidationGraph
+): Promise<void> {
+  // 주 데이터 무효화
+  const primaryInvalidate = invalidateQueries[primaryKey as keyof typeof invalidateQueries];
+  if (typeof primaryInvalidate === 'function') {
+    await primaryInvalidate();
+  }
+
+  // 관련 데이터 무효화
+  const relatedKeys = invalidationGraph[primaryKey] || [];
+  for (const relatedKey of relatedKeys) {
+    const relatedInvalidate = invalidateQueries[relatedKey as keyof typeof invalidateQueries];
+    if (typeof relatedInvalidate === 'function') {
+      await relatedInvalidate();
+    }
+  }
+}
+
 export default queryClient;

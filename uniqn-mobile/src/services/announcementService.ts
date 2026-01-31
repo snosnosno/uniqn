@@ -158,7 +158,7 @@ export async function fetchPublishedAnnouncements(
 
     return {
       announcements,
-      lastDoc: filteredDocs.length > 0 ? filteredDocs[Math.min(filteredDocs.length - 1, pageSize - 1)] : null,
+      lastDoc: announcements.length > 0 ? filteredDocs[announcements.length - 1] : null,
       hasMore,
     };
   }, 'fetchPublishedAnnouncements');
@@ -224,7 +224,7 @@ export async function fetchAllAnnouncements(
 
     return {
       announcements,
-      lastDoc: docs.length > 0 ? docs[Math.min(docs.length - 1, pageSize - 1)] : null,
+      lastDoc: announcements.length > 0 ? docs[announcements.length - 1] : null,
       hasMore,
     };
   }, 'fetchAllAnnouncements');

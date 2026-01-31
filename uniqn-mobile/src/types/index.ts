@@ -124,7 +124,8 @@ export type {
   ReviewCancellationInput,
 } from './application';
 
-export { APPLICATION_STATUS_LABELS, APPLICATION_STATUS_COLORS, CANCELLATION_STATUS_LABELS } from './application';
+export { APPLICATION_STATUS_COLORS, CANCELLATION_STATUS_LABELS } from './application';
+export { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 // 지원서 v2.0 추가 타입
 export type {
@@ -261,9 +262,8 @@ export {
   isGroupedScheduleEvent,
   SCHEDULE_COLORS,
   ATTENDANCE_STATUS_COLORS,
-  SCHEDULE_TYPE_LABELS,
-  ATTENDANCE_STATUS_LABELS,
 } from './schedule';
+export { SCHEDULE_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/shared/status';
 
 // 정산 그룹핑 타입
 export type {

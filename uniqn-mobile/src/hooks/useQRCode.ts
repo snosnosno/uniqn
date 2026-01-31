@@ -11,6 +11,7 @@ import { useState, useCallback } from 'react';
 import { processEventQRCheckIn } from '@/services/eventQRService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
 import type { QRCodeAction, QRCodeScanResult, EventQRDisplayData } from '@/types';
 import { isAppError } from '@/errors/AppError';
@@ -81,6 +82,10 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         const scanResult = await processEventQRCheckIn(qrString, user.uid);
 
         if (scanResult.success) {
+          // 캐시 무효화: workLogs 변경 → schedules도 갱신 필요
+          await queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
+          await queryClient.invalidateQueries({ queryKey: queryKeys.schedules.all });
+
           addToast({
             type: 'success',
             message: scanResult.message,

@@ -519,25 +519,6 @@ export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
   checked_out: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
 };
 
-/**
- * 스케줄 타입 라벨
- */
-export const SCHEDULE_TYPE_LABELS: Record<ScheduleType, string> = {
-  applied: '지원 중',
-  confirmed: '확정',
-  completed: '완료',
-  cancelled: '취소됨',
-};
-
-/**
- * 출석 상태 라벨
- */
-export const ATTENDANCE_STATUS_LABELS: Record<AttendanceStatus, string> = {
-  not_started: '출근 전',
-  checked_in: '근무 중',
-  checked_out: '퇴근 완료',
-};
-
 // ============================================================================
 // QR Code Types
 // ============================================================================

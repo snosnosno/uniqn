@@ -273,19 +273,6 @@ export interface ApplicationStats {
 }
 
 /**
- * 지원 상태 라벨
- */
-export const APPLICATION_STATUS_LABELS: Record<ApplicationStatus, string> = {
-  applied: '지원 완료',
-  pending: '검토 중',
-  confirmed: '확정',
-  rejected: '거절',
-  cancelled: '취소됨',
-  completed: '완료',
-  cancellation_pending: '취소 요청 중',
-};
-
-/**
  * 지원 상태 색상 (NativeWind 클래스)
  */
 export const APPLICATION_STATUS_COLORS: Record<
