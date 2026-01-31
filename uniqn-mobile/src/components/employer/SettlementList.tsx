@@ -185,18 +185,16 @@ function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps)
             <Pressable
               key={option.value}
               onPress={() => onFilterChange(option.value)}
-              className={`
-                flex-1 items-center justify-center py-2 rounded-md
-                ${isSelected ? 'bg-white dark:bg-gray-700 shadow-sm' : ''}
-              `}
+              className="flex-1 items-center justify-center py-2 rounded-md"
+              style={{
+                backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
+              }}
             >
               <Text
-                className={`
-                  text-sm font-medium
-                  ${isSelected
-                    ? 'text-primary-600 dark:text-primary-400'
-                    : 'text-gray-500 dark:text-gray-400'}
-                `}
+                className="text-sm font-medium"
+                style={{
+                  color: isSelected ? '#4F46E5' : '#6B7280',
+                }}
               >
                 {option.label} ({count})
               </Text>

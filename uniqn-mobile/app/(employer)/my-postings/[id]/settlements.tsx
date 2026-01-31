@@ -110,36 +110,37 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
     <View className="flex-row bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
       <Pressable
         onPress={() => onTabChange('staff')}
-        className={`flex-1 flex-row items-center justify-center py-4 ${
-          activeTab === 'staff'
-            ? 'border-b-2 border-primary-600'
-            : ''
-        }`}
+        className="flex-1 flex-row items-center justify-center py-4"
+        style={{
+          borderBottomWidth: activeTab === 'staff' ? 2 : 0,
+          borderBottomColor: '#4F46E5',
+        }}
       >
         <UsersIcon
           size={20}
           color={activeTab === 'staff' ? '#2563EB' : '#6B7280'}
         />
         <Text
-          className={`ml-2 text-base font-medium ${
-            activeTab === 'staff'
-              ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
+          className="ml-2 text-base font-medium"
+          style={{
+            color: activeTab === 'staff' ? '#4F46E5' : '#6B7280',
+          }}
         >
           스태프 관리
         </Text>
         {staffCount > 0 && (
-          <View className={`ml-2 px-2 py-0.5 rounded-full ${
-            activeTab === 'staff'
-              ? 'bg-primary-100 dark:bg-primary-900/30'
-              : 'bg-gray-100 dark:bg-gray-700'
-          }`}>
-            <Text className={`text-xs font-medium ${
-              activeTab === 'staff'
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-500 dark:text-gray-400'
-            }`}>
+          <View
+            className="ml-2 px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: activeTab === 'staff' ? '#EEF2FF' : '#F3F4F6',
+            }}
+          >
+            <Text
+              className="text-xs font-medium"
+              style={{
+                color: activeTab === 'staff' ? '#4F46E5' : '#6B7280',
+              }}
+            >
               {staffCount}
             </Text>
           </View>
@@ -148,36 +149,37 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
 
       <Pressable
         onPress={() => onTabChange('settlement')}
-        className={`flex-1 flex-row items-center justify-center py-4 ${
-          activeTab === 'settlement'
-            ? 'border-b-2 border-primary-600'
-            : ''
-        }`}
+        className="flex-1 flex-row items-center justify-center py-4"
+        style={{
+          borderBottomWidth: activeTab === 'settlement' ? 2 : 0,
+          borderBottomColor: '#4F46E5',
+        }}
       >
         <CurrencyYenIcon
           size={20}
           color={activeTab === 'settlement' ? '#2563EB' : '#6B7280'}
         />
         <Text
-          className={`ml-2 text-base font-medium ${
-            activeTab === 'settlement'
-              ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
+          className="ml-2 text-base font-medium"
+          style={{
+            color: activeTab === 'settlement' ? '#4F46E5' : '#6B7280',
+          }}
         >
           정산
         </Text>
         {settlementCount > 0 && (
-          <View className={`ml-2 px-2 py-0.5 rounded-full ${
-            activeTab === 'settlement'
-              ? 'bg-primary-100 dark:bg-primary-900/30'
-              : 'bg-gray-100 dark:bg-gray-700'
-          }`}>
-            <Text className={`text-xs font-medium ${
-              activeTab === 'settlement'
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-500 dark:text-gray-400'
-            }`}>
+          <View
+            className="ml-2 px-2 py-0.5 rounded-full"
+            style={{
+              backgroundColor: activeTab === 'settlement' ? '#EEF2FF' : '#F3F4F6',
+            }}
+          >
+            <Text
+              className="text-xs font-medium"
+              style={{
+                color: activeTab === 'settlement' ? '#4F46E5' : '#6B7280',
+              }}
+            >
               {settlementCount}
             </Text>
           </View>

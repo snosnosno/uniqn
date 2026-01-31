@@ -58,30 +58,27 @@ const StatusTab = memo(function StatusTab({
   return (
     <Pressable
       onPress={onPress}
-      className={`px-4 py-2 rounded-full mr-2 flex-row items-center ${
-        isSelected
-          ? 'bg-blue-600 dark:bg-blue-500'
-          : 'bg-gray-200 dark:bg-gray-700'
-      }`}
+      className="px-4 py-2 rounded-full mr-2 flex-row items-center"
+      style={{
+        backgroundColor: isSelected ? '#2563EB' : '#E5E7EB',
+      }}
     >
       <Text
-        className={`text-sm font-medium ${
-          isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
-        }`}
+        className="text-sm font-medium"
+        style={{
+          color: isSelected ? '#FFFFFF' : '#374151',
+        }}
       >
         {label}
       </Text>
       {typeof count === 'number' && count > 0 && (
         <View
-          className={`ml-1.5 px-1.5 py-0.5 rounded-full ${
-            isSelected ? 'bg-white/20' : 'bg-gray-400 dark:bg-gray-600'
-          }`}
+          className="ml-1.5 px-1.5 py-0.5 rounded-full"
+          style={{
+            backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#9CA3AF',
+          }}
         >
-          <Text
-            className={`text-xs font-medium ${
-              isSelected ? 'text-white' : 'text-white'
-            }`}
-          >
+          <Text className="text-xs font-medium text-white">
             {count}
           </Text>
         </View>

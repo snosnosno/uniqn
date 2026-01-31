@@ -63,19 +63,19 @@ function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
           <Pressable
             key={option.value}
             onPress={() => onChange(option.value)}
-            className={`flex-1 items-center justify-center rounded-md py-2 ${
-              isSelected ? 'bg-white shadow-sm dark:bg-gray-700' : ''
-            }`}
+            className="flex-1 items-center justify-center rounded-md py-2"
+            style={{
+              backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
+            }}
             accessibilityLabel={`${option.label} 공고 ${count}건`}
             accessibilityRole="tab"
             accessibilityState={{ selected: isSelected }}
           >
             <Text
-              className={`text-sm font-medium ${
-                isSelected
-                  ? 'text-primary-600 dark:text-primary-400'
-                  : 'text-gray-500 dark:text-gray-400'
-              }`}
+              className="text-sm font-medium"
+              style={{
+                color: isSelected ? '#4F46E5' : '#6B7280',
+              }}
             >
               {option.label} ({count})
             </Text>
