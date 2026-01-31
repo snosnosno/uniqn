@@ -64,6 +64,18 @@ export interface AuthResult {
 }
 
 // ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * 생년월일(YYYYMMDD)에서 출생년도 추출
+ */
+function extractBirthYear(birthDate?: string): number | undefined {
+  if (!birthDate || birthDate.length < 4) return undefined;
+  return parseInt(birthDate.substring(0, 4), 10);
+}
+
+// ============================================================================
 // Auth Service
 // ============================================================================
 
@@ -183,6 +195,11 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       identityProvider: data.identityProvider,
       verifiedName: data.verifiedName,
       verifiedPhone: data.verifiedPhone,
+      verifiedBirthDate: data.verifiedBirthDate,
+      verifiedGender: data.verifiedGender,
+      // 파생 정보 (본인인증 데이터에서 추출)
+      birthYear: extractBirthYear(data.verifiedBirthDate),
+      gender: data.verifiedGender,
       // 동의 정보
       termsAgreed: data.termsAgreed,
       privacyAgreed: data.privacyAgreed,
@@ -193,7 +210,8 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       updatedAt: serverTimestamp() as Timestamp,
     };
 
-    await setDoc(doc(getFirebaseDb(), 'users', user.uid), profile);
+    // merge: true로 Cloud Function이 먼저 생성한 문서를 덮어씀
+    await setDoc(doc(getFirebaseDb(), 'users', user.uid), profile, { merge: true });
 
     logger.info('회원가입 성공', { uid: user.uid, role: data.role });
 
@@ -279,6 +297,31 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 }
 
 /**
+ * 마케팅 동의 상태 업데이트
+ */
+export async function updateMarketingConsent(
+  uid: string,
+  marketingAgreed: boolean
+): Promise<void> {
+  try {
+    logger.info('마케팅 동의 업데이트', { uid, marketingAgreed });
+
+    await updateDoc(doc(getFirebaseDb(), 'users', uid), {
+      marketingAgreed,
+      updatedAt: serverTimestamp(),
+    });
+
+    logger.info('마케팅 동의 업데이트 성공', { uid, marketingAgreed });
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '마케팅 동의 업데이트',
+      component: 'authService',
+      context: { uid, marketingAgreed },
+    });
+  }
+}
+
+/**
  * 사용자 프로필 업데이트
  * Firestore와 Firebase Auth를 동시에 업데이트
  */
@@ -295,24 +338,17 @@ export async function updateUserProfile(
       updatedAt: serverTimestamp(),
     });
 
-    // 2. Firebase Auth 업데이트 (name, photoURL 변경 시)
+    // 2. Firebase Auth 업데이트 (photoURL 변경 시)
+    // Note: name(본명)은 본인인증 정보이므로 수정 불가
     const currentUser = getFirebaseAuth().currentUser;
     if (currentUser && currentUser.uid === uid) {
-      const authUpdates: { displayName?: string; photoURL?: string } = {};
-
-      // name(본명)이 변경되면 displayName 업데이트
-      if (updates.name) {
-        authUpdates.displayName = updates.name;
-      }
-
       // photoURL이 변경되면 Firebase Auth도 업데이트
       if ('photoURL' in updates) {
-        authUpdates.photoURL = updates.photoURL ?? undefined;
-      }
-
-      if (Object.keys(authUpdates).length > 0) {
+        const authUpdates: { photoURL?: string } = {
+          photoURL: updates.photoURL ?? undefined,
+        };
         await updateProfile(currentUser, authUpdates);
-        logger.info('Firebase Auth 프로필 업데이트', { uid, fields: Object.keys(authUpdates) });
+        logger.info('Firebase Auth 프로필 업데이트', { uid, fields: ['photoURL'] });
       }
     }
 

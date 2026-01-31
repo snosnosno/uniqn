@@ -26,7 +26,37 @@ interface SignupStep2Props {
 interface VerificationResult {
   name: string;
   phone: string;
+  birthDate: string;  // YYYYMMDD 형식
+  gender: 'male' | 'female';
   provider: IdentityProvider;
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
+/**
+ * 생년월일에서 출생년도 추출
+ */
+function extractBirthYear(birthDate: string): number {
+  return parseInt(birthDate.substring(0, 4), 10);
+}
+
+/**
+ * 18세 이상 검증
+ */
+function validateAge(birthDate: string): boolean {
+  const birthYear = extractBirthYear(birthDate);
+  const currentYear = new Date().getFullYear();
+  return currentYear - birthYear >= 18;
+}
+
+/**
+ * 생년월일 포맷팅 (YYYYMMDD → YYYY.MM.DD)
+ */
+function formatBirthDate(birthDate: string): string {
+  if (birthDate.length !== 8) return birthDate;
+  return `${birthDate.substring(0, 4)}.${birthDate.substring(4, 6)}.${birthDate.substring(6, 8)}`;
 }
 
 // ============================================================================
@@ -40,6 +70,8 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
       ? {
           name: initialData.verifiedName || '',
           phone: initialData.verifiedPhone || '',
+          birthDate: initialData.verifiedBirthDate || '',
+          gender: initialData.verifiedGender || 'male',
           provider: initialData.identityProvider || 'pass',
         }
       : null
@@ -62,8 +94,16 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
       const mockResult: VerificationResult = {
         name: '홍길동',
         phone: '010-1234-5678',
+        birthDate: '19900101',  // 본인인증에서 받은 생년월일
+        gender: 'male',  // 본인인증에서 받은 성별
         provider,
       };
+
+      // 18세 미만 가입 차단
+      if (!validateAge(mockResult.birthDate)) {
+        setError('만 18세 이상만 가입 가능합니다.');
+        return;
+      }
 
       setVerifiedData(mockResult);
     } catch {
@@ -84,6 +124,8 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
       identityProvider: verifiedData.provider,
       verifiedName: verifiedData.name,
       verifiedPhone: verifiedData.phone,
+      verifiedBirthDate: verifiedData.birthDate,
+      verifiedGender: verifiedData.gender,
     });
   };
 
@@ -125,6 +167,18 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
               <Text className="text-gray-500 dark:text-gray-400 w-16">휴대폰</Text>
               <Text className="text-gray-900 dark:text-white font-medium">
                 {verifiedData.phone}
+              </Text>
+            </View>
+            <View className="flex-row">
+              <Text className="text-gray-500 dark:text-gray-400 w-16">생년월일</Text>
+              <Text className="text-gray-900 dark:text-white font-medium">
+                {formatBirthDate(verifiedData.birthDate)}
+              </Text>
+            </View>
+            <View className="flex-row">
+              <Text className="text-gray-500 dark:text-gray-400 w-16">성별</Text>
+              <Text className="text-gray-900 dark:text-white font-medium">
+                {verifiedData.gender === 'male' ? '남성' : '여성'}
               </Text>
             </View>
             <View className="flex-row">

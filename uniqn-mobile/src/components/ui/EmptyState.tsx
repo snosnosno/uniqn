@@ -9,6 +9,16 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import { SearchIcon, DocumentIcon } from '@/components/icons';
 import { Button } from './Button';
+import { useThemeStore } from '@/stores/themeStore';
+
+// ============================================================================
+// Theme Constants
+// ============================================================================
+
+const ICON_COLORS = {
+  default: { light: '#6B7280', dark: '#9CA3AF' }, // gray-500 / gray-400
+  error: '#EF4444', // error-500 (동일)
+} as const;
 
 export interface EmptyStateProps {
   title?: string;
@@ -28,16 +38,17 @@ export function EmptyState({
   onAction,
   variant = 'content',
 }: EmptyStateProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const defaultIconColor = isDarkMode ? ICON_COLORS.default.dark : ICON_COLORS.default.light;
+
   const getDefaultIcon = () => {
     switch (variant) {
       case 'search':
-        // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
-        return <SearchIcon size={48} color="#6B7280" />;
+        return <SearchIcon size={48} color={defaultIconColor} />;
       case 'error':
-        return <DocumentIcon size={48} color="#EF4444" />;
+        return <DocumentIcon size={48} color={ICON_COLORS.error} />;
       default:
-        // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
-        return <DocumentIcon size={48} color="#6B7280" />;
+        return <DocumentIcon size={48} color={defaultIconColor} />;
     }
   };
 

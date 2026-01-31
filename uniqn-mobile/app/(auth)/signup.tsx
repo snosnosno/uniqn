@@ -52,6 +52,21 @@ export default function SignUpScreen() {
           phone: result.profile.phone,
           role: result.profile.role,
           photoURL: result.profile.photoURL,
+          // 본인인증 정보
+          identityVerified: result.profile.identityVerified,
+          identityProvider: result.profile.identityProvider,
+          verifiedName: result.profile.verifiedName,
+          verifiedPhone: result.profile.verifiedPhone,
+          verifiedBirthDate: result.profile.verifiedBirthDate,
+          verifiedGender: result.profile.verifiedGender,
+          // 파생 정보
+          birthYear: result.profile.birthYear,
+          gender: result.profile.gender,
+          // 동의 정보
+          termsAgreed: result.profile.termsAgreed,
+          privacyAgreed: result.profile.privacyAgreed,
+          marketingAgreed: result.profile.marketingAgreed,
+          // 메타데이터
           createdAt: toDate(result.profile.createdAt),
           updatedAt: toDate(result.profile.updatedAt),
         };

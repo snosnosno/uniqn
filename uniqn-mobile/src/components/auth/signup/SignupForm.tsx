@@ -86,6 +86,8 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
         identityProvider: updatedFormData.step2!.identityProvider,
         verifiedName: updatedFormData.step2!.verifiedName,
         verifiedPhone: updatedFormData.step2!.verifiedPhone,
+        verifiedBirthDate: updatedFormData.step2!.verifiedBirthDate,
+        verifiedGender: updatedFormData.step2!.verifiedGender,
         // Step 3: 프로필
         nickname: updatedFormData.step3!.nickname,
         role: updatedFormData.step3!.role,

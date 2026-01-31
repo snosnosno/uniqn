@@ -13,6 +13,8 @@ import {
   LockIcon,
   ChevronRightIcon,
   TrashIcon,
+  ShieldCheckIcon,
+  DocumentIcon,
 } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
@@ -163,6 +165,18 @@ export default function SettingsScreen() {
           <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
             계정
           </Text>
+          <SettingItem
+            icon={<ShieldCheckIcon size={22} color="#6B7280" />}
+            label="본인인증"
+            onPress={() => router.push('/(app)/settings/identity-verification')}
+          />
+          <Divider spacing="sm" />
+          <SettingItem
+            icon={<DocumentIcon size={22} color="#6B7280" />}
+            label="동의 정보 관리"
+            onPress={() => router.push('/(app)/settings/consent-management')}
+          />
+          <Divider spacing="sm" />
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"

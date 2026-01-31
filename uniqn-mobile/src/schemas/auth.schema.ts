@@ -152,7 +152,7 @@ export type SignUpStep1Data = z.infer<typeof signUpStep1Schema>;
 /**
  * 회원가입 Step 2 스키마 (본인인증 - 필수)
  *
- * PASS 또는 카카오 본인인증을 통해 실명/휴대폰 번호 검증
+ * PASS 또는 카카오 본인인증을 통해 실명/휴대폰 번호/생년월일/성별 검증
  */
 export const signUpStep2Schema = z.object({
   identityVerified: z.literal(true, {
@@ -163,6 +163,12 @@ export const signUpStep2Schema = z.object({
   }),
   verifiedName: nameSchema,  // 본인인증된 실명
   verifiedPhone: phoneSchema,  // 본인인증된 휴대폰 번호
+  verifiedBirthDate: z.string().regex(/^\d{8}$/, {
+    message: '생년월일 형식이 올바르지 않습니다',
+  }),  // 본인인증된 생년월일 (YYYYMMDD)
+  verifiedGender: z.enum(['male', 'female'], {
+    error: '성별 정보가 필요합니다',
+  }),  // 본인인증된 성별
 });
 
 export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
@@ -210,6 +216,8 @@ export const signUpSchema = z.object({
   identityProvider: z.enum(['pass', 'kakao']).optional(),
   verifiedName: z.string().optional(),
   verifiedPhone: z.string().optional(),
+  verifiedBirthDate: z.string().optional(),  // 본인인증된 생년월일 (YYYYMMDD)
+  verifiedGender: z.enum(['male', 'female']).optional(),  // 본인인증된 성별
   // Step 3: 프로필
   nickname: z.string(),
   role: z.enum(['staff', 'employer']),

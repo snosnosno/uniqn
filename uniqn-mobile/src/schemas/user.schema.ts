@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { nameSchema, phoneSchema, passwordSchema, passwordConfirmSchema } from './auth.schema';
+import { passwordSchema, passwordConfirmSchema } from './auth.schema';
 
 // ============================================================================
 // 사용자 역할 스키마
@@ -39,25 +39,19 @@ export type GenderSchema = z.infer<typeof genderSchema>;
 
 /**
  * 프로필 업데이트 스키마
+ *
+ * @note name, phone, birthYear, gender는 본인인증 정보이므로 수정 불가
  */
 export const updateProfileSchema = z.object({
-  name: nameSchema.optional(),
   nickname: z
     .string()
     .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
     .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
     .trim()
     .optional(),
-  phone: phoneSchema.optional(),
   photoURL: z.string().url({ message: '올바른 URL 형식이 아닙니다' }).optional(),
   bio: z.string().max(200, { message: '자기소개는 200자를 초과할 수 없습니다' }).optional(),
-  // 추가 정보
-  gender: genderSchema.optional(),
-  birthYear: z
-    .number()
-    .min(1950, { message: '올바른 출생년도를 입력해주세요' })
-    .max(new Date().getFullYear() - 18, { message: '만 18세 이상만 가입 가능합니다' })
-    .optional(),
+  // 추가 정보 (본인인증 정보가 아닌 필드만)
   region: z.string().max(50, { message: '지역은 50자를 초과할 수 없습니다' }).optional(),
   experienceYears: z
     .number()

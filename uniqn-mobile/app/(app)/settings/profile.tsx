@@ -43,8 +43,6 @@ export default function ProfileEditScreen() {
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
       nickname: '',
-      gender: undefined,
-      birthYear: undefined,
       region: '',
       experienceYears: undefined,
       career: '',
@@ -58,8 +56,6 @@ export default function ProfileEditScreen() {
     if (hasHydrated && profile) {
       reset({
         nickname: profile.nickname ?? '',
-        gender: profile.gender ?? undefined,
-        birthYear: profile.birthYear ?? undefined,
         region: profile.region ?? '',
         experienceYears: profile.experienceYears ?? undefined,
         career: profile.career ?? '',
@@ -85,12 +81,6 @@ export default function ProfileEditScreen() {
 
       if (data.nickname !== profile?.nickname) {
         updates.nickname = data.nickname;
-      }
-      if (data.gender !== profile?.gender) {
-        updates.gender = data.gender;
-      }
-      if (data.birthYear !== profile?.birthYear) {
-        updates.birthYear = data.birthYear;
       }
       if (data.region !== profile?.region) {
         updates.region = data.region;
@@ -189,11 +179,31 @@ export default function ProfileEditScreen() {
             </View>
 
             {/* 전화번호 (읽기 전용 - 본인인증 정보) */}
-            <View>
+            <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.phone ?? '본인인증 후 자동 입력'}
+                </Text>
+              </View>
+            </View>
+
+            {/* 생년월일 (읽기 전용 - 본인인증 정보) */}
+            <View className="mb-4">
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">생년월일</Text>
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {profile?.birthYear ? `${profile.birthYear}년` : '본인인증 후 자동 입력'}
+                </Text>
+              </View>
+            </View>
+
+            {/* 성별 (읽기 전용 - 본인인증 정보) */}
+            <View>
+              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+                <Text className="text-gray-600 dark:text-gray-300">
+                  {profile?.gender === 'male' ? '남성' : profile?.gender === 'female' ? '여성' : '본인인증 후 자동 입력'}
                 </Text>
               </View>
             </View>
@@ -230,75 +240,6 @@ export default function ProfileEditScreen() {
               />
               {errors.nickname && (
                 <Text className="mt-1 text-sm text-error-500">{errors.nickname.message}</Text>
-              )}
-            </View>
-
-            {/* 성별 */}
-            <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
-              <Controller
-                control={control}
-                name="gender"
-                render={({ field: { onChange, value } }) => (
-                  <View className="flex-row gap-2">
-                    {[
-                      { key: 'male', label: '남성' },
-                      { key: 'female', label: '여성' },
-                      { key: 'other', label: '기타' },
-                    ].map((option) => (
-                      <Pressable
-                        key={option.key}
-                        onPress={() => onChange(option.key as 'male' | 'female' | 'other')}
-                        className={`flex-1 rounded-lg border px-4 py-3 ${
-                          value === option.key
-                            ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
-                            : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
-                        }`}
-                      >
-                        <Text
-                          className={`text-center ${
-                            value === option.key
-                              ? 'font-medium text-primary-600 dark:text-primary-400'
-                              : 'text-gray-700 dark:text-gray-300'
-                          }`}
-                        >
-                          {option.label}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
-                )}
-              />
-            </View>
-
-            {/* 나이 (출생년도) */}
-            <View className="mb-4">
-              <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">출생년도</Text>
-              <Controller
-                control={control}
-                name="birthYear"
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <TextInput
-                    className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
-                      errors.birthYear
-                        ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
-                    }`}
-                    value={value?.toString() ?? ''}
-                    onChangeText={(text) => {
-                      const num = parseInt(text, 10);
-                      onChange(isNaN(num) ? undefined : num);
-                    }}
-                    onBlur={onBlur}
-                    placeholder="예: 1990"
-                    placeholderTextColor="#9CA3AF"
-                    keyboardType="number-pad"
-                    maxLength={4}
-                  />
-                )}
-              />
-              {errors.birthYear && (
-                <Text className="mt-1 text-sm text-error-500">{errors.birthYear.message}</Text>
               )}
             </View>
 

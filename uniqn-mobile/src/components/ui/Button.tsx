@@ -7,6 +7,7 @@
 
 import React, { memo } from 'react';
 import { Pressable, Text, ActivityIndicator, View, PressableProps } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
 
 type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
 type ButtonSize = 'sm' | 'md' | 'lg';
@@ -61,13 +62,13 @@ const sizeTextStyles: Record<ButtonSize, string> = {
   lg: 'text-lg',
 };
 
-/** 로딩 인디케이터 색상 (variant별) */
-const LOADER_COLORS: Record<ButtonVariant, string> = {
-  primary: '#ffffff',
-  secondary: '#6B7280',
-  outline: '#6B7280',
-  ghost: '#6B7280',
-  danger: '#ffffff',
+/** 로딩 인디케이터 색상 (variant별, 다크모드 지원) */
+const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
+  primary: { light: '#ffffff', dark: '#ffffff' },
+  secondary: { light: '#6B7280', dark: '#D1D5DB' },
+  outline: { light: '#6B7280', dark: '#D1D5DB' },
+  ghost: { light: '#6B7280', dark: '#D1D5DB' },
+  danger: { light: '#ffffff', dark: '#ffffff' },
 };
 
 /**
@@ -88,7 +89,9 @@ export const Button = memo(function Button({
   accessibilityLabel,
   ...props
 }: ButtonProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const isDisabled = disabled || loading;
+  const loaderColor = isDarkMode ? LOADER_COLORS[variant].dark : LOADER_COLORS[variant].light;
 
   // children이 문자열인 경우 자동으로 accessibilityLabel 생성
   const resolvedAccessibilityLabel =
@@ -111,7 +114,7 @@ export const Button = memo(function Button({
       className={buttonClass}
     >
       {loading ? (
-        <ActivityIndicator color={LOADER_COLORS[variant]} size="small" />
+        <ActivityIndicator color={loaderColor} size="small" />
       ) : (
         <>
           {icon && iconPosition === 'left' && <View className="mr-2">{icon}</View>}

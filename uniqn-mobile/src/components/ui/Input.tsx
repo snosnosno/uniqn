@@ -6,8 +6,9 @@
  */
 
 import React, { useState } from 'react';
-import { View, TextInput, Text, Pressable, TextInputProps, useColorScheme } from 'react-native';
+import { View, TextInput, Text, Pressable, TextInputProps } from 'react-native';
 import { EyeIcon, EyeSlashIcon } from '@/components/icons';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Theme Constants
@@ -40,10 +41,10 @@ export function Input({
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
-  const colorScheme = useColorScheme();
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
 
   const isPassword = type === 'password';
-  const placeholderColor = colorScheme === 'dark' ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
+  const placeholderColor = isDarkMode ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
 
   const getKeyboardType = (): TextInputProps['keyboardType'] => {
     switch (type) {

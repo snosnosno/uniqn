@@ -232,6 +232,72 @@ export default function MyDataScreen() {
           <DataRow label="수정일" value={formatDate(userData?.updatedAt)} />
         </Card>
 
+        {/* 본인인증 정보 */}
+        <Card className="mb-4">
+          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            본인인증 정보
+          </Text>
+
+          <DataRow
+            label="인증 상태"
+            value={userData?.identityVerified ? '인증 완료' : '미인증'}
+          />
+          {userData?.identityVerified && (
+            <>
+              <DataRow
+                label="인증 방법"
+                value={
+                  userData?.identityProvider === 'pass'
+                    ? 'PASS 본인인증'
+                    : userData?.identityProvider === 'kakao'
+                      ? '카카오 본인인증'
+                      : '-'
+                }
+              />
+              <DataRow label="인증 이름" value={userData?.verifiedName ?? null} />
+              <DataRow label="인증 연락처" value={userData?.verifiedPhone ?? null} />
+              <DataRow
+                label="생년월일"
+                value={
+                  userData?.verifiedBirthDate
+                    ? `${userData.verifiedBirthDate.substring(0, 4)}.${userData.verifiedBirthDate.substring(4, 6)}.${userData.verifiedBirthDate.substring(6, 8)}`
+                    : null
+                }
+              />
+              <DataRow
+                label="성별"
+                value={
+                  userData?.verifiedGender === 'male'
+                    ? '남성'
+                    : userData?.verifiedGender === 'female'
+                      ? '여성'
+                      : null
+                }
+              />
+            </>
+          )}
+        </Card>
+
+        {/* 동의 정보 */}
+        <Card className="mb-4">
+          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            동의 정보
+          </Text>
+
+          <DataRow
+            label="이용약관"
+            value={userData?.termsAgreed ? '동의함' : '미동의'}
+          />
+          <DataRow
+            label="개인정보처리방침"
+            value={userData?.privacyAgreed ? '동의함' : '미동의'}
+          />
+          <DataRow
+            label="마케팅 수신"
+            value={userData?.marketingAgreed ? '동의함' : '미동의'}
+          />
+        </Card>
+
         {/* 데이터 내보내기 */}
         <Card className="mb-4">
           <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">

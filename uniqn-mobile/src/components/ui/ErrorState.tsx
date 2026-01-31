@@ -105,8 +105,7 @@ export function ErrorState({
 
       {/* 에러 코드 (AppError인 경우) */}
       {isAppError(error) && (
-        // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
-        <Text className="text-xs text-gray-500 dark:text-gray-500 mb-4">
+        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-4">
           에러 코드: {error.code}
         </Text>
       )}

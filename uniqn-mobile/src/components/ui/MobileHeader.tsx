@@ -74,6 +74,12 @@ const HEADER_HEIGHT_EXPANDED = 56;
 const HEADER_HEIGHT_COLLAPSED = 44;
 const SCROLL_THRESHOLD = 100;
 
+/** 검색 입력 플레이스홀더 색상 (다크모드 지원) */
+const SEARCH_PLACEHOLDER_COLORS = {
+  light: '#6B7280', // gray-500
+  dark: '#9CA3AF',  // gray-400
+} as const;
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -242,12 +248,15 @@ export function MobileHeader({
           // 검색 모드 UI
           <Animated.View className="flex-1 flex-row items-center" style={searchContainerStyle}>
             <View className="flex-1 flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
-              <MagnifyingGlassIcon size={20} color="#9CA3AF" />
+              <MagnifyingGlassIcon
+                size={20}
+                color={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
+              />
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearchChange}
                 placeholder={searchPlaceholder}
-                placeholderTextColor="#9CA3AF"
+                placeholderTextColor={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
                 className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
                 autoFocus
                 autoCapitalize="none"
@@ -262,7 +271,10 @@ export function MobileHeader({
                   accessibilityRole="button"
                   accessibilityLabel="검색어 지우기"
                 >
-                  <XMarkIcon size={16} color="#9CA3AF" />
+                  <XMarkIcon
+                    size={16}
+                    color={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
+                  />
                 </Pressable>
               )}
             </View>

@@ -240,34 +240,46 @@ export const requestRegistration = functions.region('asia-northeast3').https.onC
         functions.logger.error("Validation failed: Missing required fields.", { data });
         throw new functions.https.HttpsError('invalid-argument', 'Missing required fields for registration.');
     }
-    if (role !== 'manager') {
+
+    // 웹앱에서는 employer로 가입
+    const validRoles = ['employer', 'staff'];
+    if (!validRoles.includes(role)) {
         functions.logger.error("Validation failed: Invalid role.", { role });
-        throw new functions.https.HttpsError('invalid-argument', 'Role must be "manager".');
+        throw new functions.https.HttpsError('invalid-argument', `Role must be one of: ${validRoles.join(', ')}`);
     }
 
     try {
-        // Combine extra profile data into a parsable JSON string.
-        const extraData = JSON.stringify({
-            role, // role 정보 추가
-            ...(phone && { phone }),
-            ...(gender && { gender }),
-            ...(nickname && { nickname }),
-        });
-
-        // Build the displayName with embedded markers for the trigger to parse.
-        // Format: "Real Name [{...extraData}]"
-        const displayNameForAuth = `${name} [${extraData}]`;
-
+        // 1. Firebase Auth 사용자 생성
         const userRecord = await admin.auth().createUser({
             email,
             password,
-            displayName: displayNameForAuth,
-            disabled: false, // 모든 사용자 즉시 활성화
-            emailVerified: false, // 이메일 미인증 상태로 생성
+            displayName: name,
+            disabled: false,
+            emailVerified: false,
         });
 
-        // 이메일 인증은 클라이언트에서 sendEmailVerification() 호출로 처리
-        functions.logger.info(`User created successfully: ${email}. Email verification will be sent from client.`);
+        const uid = userRecord.uid;
+        functions.logger.info(`User created successfully: ${email} (UID: ${uid})`);
+
+        // 2. Firestore에 프로필 생성
+        const userRef = db.collection("users").doc(uid);
+        await userRef.set({
+            uid,
+            email,
+            name,
+            nickname: nickname || name,
+            phone: phone || null,
+            role,
+            gender: gender || null,
+            isActive: true,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // 3. Custom Claims 설정
+        await admin.auth().setCustomUserClaims(uid, { role });
+
+        functions.logger.info(`Profile created and claims set for UID: ${uid}`);
 
         // Save consent data to Firestore if provided
         if (consents && userRecord.uid) {
@@ -407,79 +419,6 @@ export const createUserAccount = functions.region('asia-northeast3').https.onCal
         console.error("Error creating new user:", error);
         throw new functions.https.HttpsError('internal', error.message, error);
     }
-});
-
-
-/**
- * Firestore trigger that automatically creates a user document in Firestore
- * when a new user is created in Firebase Authentication.
- * This handles all user creation sources and parses extra data from the displayName.
- */
-export const createUserData = functions.region('asia-northeast3').auth.user().onCreate(async (user) => {
-    const { uid, email, displayName, phoneNumber } = user;
-    const userRef = db.collection("users").doc(uid);
-
-    functions.logger.info(`New user: ${email} (UID: ${uid}). Parsing displayName: "${displayName}"`);
-
-    let initialRole = 'manager';
-    let finalDisplayName = "Unnamed User";
-    let extraData: { [key: string]: any } = { phone: phoneNumber || null };
-
-    if (displayName) {
-        const extraDataMatch = displayName.match(/\[(\{.*\})\]/);
-        const pendingManagerMatch = displayName.includes('[PENDING_MANAGER]');
-
-        finalDisplayName = displayName
-            .replace(/\[PENDING_MANAGER\]/g, '')
-            .replace(/\[(\{.*\})\]/g, '')
-            .trim();
-
-        if (finalDisplayName === "") finalDisplayName = "Unnamed User";
-
-        if (pendingManagerMatch) initialRole = 'pending_manager';
-
-        if (extraDataMatch && extraDataMatch[1]) {
-            try {
-                const parsedData = JSON.parse(extraDataMatch[1]);
-                extraData = { ...extraData, ...parsedData };
-
-                // extraData에 role이 있으면 우선 사용
-                if (parsedData.role) {
-                    initialRole = parsedData.role;
-                    functions.logger.info(`Using role from extraData: ${initialRole}`);
-                }
-            } catch (e) {
-                functions.logger.error(`Failed to parse extra data from displayName for UID ${uid}`, { displayName, e });
-            }
-        }
-    }
-
-    // role은 Firestore 문서에 저장하지만 extraData에서는 제거 (중복 방지)
-    const { role: _, ...extraDataWithoutRole } = extraData;
-
-    try {
-        await userRef.set({
-            name: finalDisplayName,
-            email: email,
-            role: initialRole,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            ...extraDataWithoutRole,
-        });
-
-        await admin.auth().setCustomUserClaims(uid, { role: initialRole });
-
-        // displayName을 정상적인 이름으로 업데이트 (JSON 데이터 제거)
-        await admin.auth().updateUser(uid, {
-            displayName: finalDisplayName,
-            ...(initialRole === 'pending_manager' && { disabled: true })
-        });
-
-        functions.logger.info(`Successfully created Firestore document/claims for UID: ${uid}`);
-    } catch (error) {
-        functions.logger.error(`Failed to create Firestore document for UID: ${uid}`, error);
-    }
-
-    return null;
 });
 
 

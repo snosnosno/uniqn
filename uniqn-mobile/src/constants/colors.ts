@@ -422,3 +422,88 @@ export const BORDER_CLASSES = {
   focus: 'border-blue-500 dark:border-blue-400',
   error: 'border-red-500 dark:border-red-400',
 } as const;
+
+// ============================================================================
+// 차트 색상 (v1.2.0)
+// ============================================================================
+
+/**
+ * 차트 색상 (다크모드 지원)
+ */
+export const CHART_COLORS = {
+  background: {
+    light: '#FFFFFF',
+    dark: '#1F2937', // gray-800
+  },
+  text: {
+    light: '#111827', // gray-900
+    dark: '#F9FAFB', // gray-50
+  },
+  grid: {
+    light: '#E5E7EB', // gray-200
+    dark: '#374151', // gray-700
+  },
+  series: {
+    light: ['#3B82F6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6'],
+    dark: ['#60A5FA', '#4ADE80', '#FBBF24', '#F87171', '#A78BFA'],
+  },
+} as const;
+
+/**
+ * 차트 색상 반환 헬퍼
+ */
+export function getChartColors(isDarkMode: boolean) {
+  return {
+    background: isDarkMode ? CHART_COLORS.background.dark : CHART_COLORS.background.light,
+    text: isDarkMode ? CHART_COLORS.text.dark : CHART_COLORS.text.light,
+    grid: isDarkMode ? CHART_COLORS.grid.dark : CHART_COLORS.grid.light,
+    series: isDarkMode ? CHART_COLORS.series.dark : CHART_COLORS.series.light,
+  };
+}
+
+// ============================================================================
+// 플레이스홀더 색상 (v1.2.0)
+// ============================================================================
+
+/**
+ * 입력 필드 플레이스홀더 색상
+ */
+export const PLACEHOLDER_COLORS = {
+  light: '#6B7280', // gray-500
+  dark: '#9CA3AF', // gray-400
+} as const;
+
+/**
+ * 플레이스홀더 색상 반환 헬퍼
+ */
+export function getPlaceholderColor(isDarkMode: boolean): string {
+  return isDarkMode ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
+}
+
+// ============================================================================
+// 로딩 인디케이터 색상 (v1.2.0)
+// ============================================================================
+
+/**
+ * 로딩 인디케이터 색상
+ */
+export const LOADING_COLORS = {
+  primary: {
+    light: '#3B82F6', // primary-500
+    dark: '#60A5FA', // primary-400
+  },
+  secondary: {
+    light: '#6B7280', // gray-500
+    dark: '#D1D5DB', // gray-300
+  },
+} as const;
+
+/**
+ * 로딩 색상 반환 헬퍼
+ */
+export function getLoadingColor(
+  isDarkMode: boolean,
+  variant: keyof typeof LOADING_COLORS = 'primary'
+): string {
+  return isDarkMode ? LOADING_COLORS[variant].dark : LOADING_COLORS[variant].light;
+}

@@ -70,6 +70,10 @@ export interface UserProfile<T = Date> {
   verifiedName?: string;
   /** 본인인증된 전화번호 */
   verifiedPhone?: string;
+  /** 본인인증된 생년월일 (YYYYMMDD) */
+  verifiedBirthDate?: string;
+  /** 본인인증된 성별 */
+  verifiedGender?: 'male' | 'female';
 
   // 동의 정보 (Firestore 전용, Store에서는 optional)
   /** 이용약관 동의 */
@@ -114,12 +118,11 @@ export type FirestoreUserProfile = UserProfile<Timestamp>;
  * 프로필 수정 가능 필드
  *
  * @description profile.tsx에서 수정 가능한 필드
- * @note name은 Firebase Auth displayName 동기화용 (특수 케이스에서만 사용)
- * @note phone은 본인인증 정보라 수정 불가
+ * @note name, phone, birthYear, gender는 본인인증 정보이므로 수정 불가 (읽기 전용)
  */
 export type EditableProfileFields = Pick<
   UserProfile,
-  'name' | 'nickname' | 'photoURL' | 'gender' | 'birthYear' | 'region' | 'experienceYears' | 'career' | 'note'
+  'nickname' | 'photoURL' | 'region' | 'experienceYears' | 'career' | 'note'
 >;
 
 /**

@@ -7,6 +7,16 @@
 
 import React from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
+import { useThemeStore } from '@/stores/themeStore';
+
+// ============================================================================
+// Theme Constants
+// ============================================================================
+
+const LOADING_COLORS = {
+  light: '#3b82f6', // primary-500
+  dark: '#60a5fa',  // primary-400 (다크모드에서 더 밝게)
+} as const;
 
 export interface LoadingProps {
   size?: 'small' | 'large';
@@ -17,13 +27,16 @@ export interface LoadingProps {
 
 export function Loading({
   size = 'large',
-  color = '#3b82f6',
+  color,
   message,
   fullScreen = false,
 }: LoadingProps) {
+  const isDarkMode = useThemeStore((state) => state.isDarkMode);
+  const resolvedColor = color ?? (isDarkMode ? LOADING_COLORS.dark : LOADING_COLORS.light);
+
   const content = (
     <View className="items-center justify-center">
-      <ActivityIndicator size={size} color={color} />
+      <ActivityIndicator size={size} color={resolvedColor} />
       {message && (
         <Text className="mt-3 text-sm text-gray-600 dark:text-gray-400">{message}</Text>
       )}
