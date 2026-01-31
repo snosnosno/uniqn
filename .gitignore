@@ -76,6 +76,9 @@ serviceAccountKey*.json
 firebase-adminsdk-*.json
 google-services.json
 GoogleService-Info.plist
+# EAS Build를 위해 uniqn-mobile의 Firebase 설정 파일은 허용
+!uniqn-mobile/google-services.json
+!uniqn-mobile/GoogleService-Info.plist
 
 # Security certificates and keys
 *.key
