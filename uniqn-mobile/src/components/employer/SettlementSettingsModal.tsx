@@ -6,10 +6,9 @@
  */
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, Modal } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Pressable } from 'react-native';
+import { SheetModal } from '../ui/SheetModal';
 import {
-  XMarkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from '../icons';
@@ -280,110 +279,97 @@ export function SettlementSettingsModal({
     }
   }, [roles, allowances, taxSettings, isSaving, onSave, onClose]);
 
+  // Footer 컨텐츠
+  const footerContent = (
+    <View className="flex-row gap-4">
+      <Pressable
+        onPress={onClose}
+        disabled={isSaving}
+        className={`flex-1 py-4 rounded-xl bg-gray-100 dark:bg-gray-700 ${
+          isSaving ? 'opacity-50' : 'active:opacity-70'
+        }`}
+      >
+        <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 text-center">
+          취소
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={handleSave}
+        disabled={isSaving}
+        className={`flex-1 py-4 rounded-xl bg-primary-500 ${
+          isSaving ? 'opacity-50' : 'active:opacity-70'
+        }`}
+      >
+        <Text className="text-lg font-semibold text-white text-center">
+          {isSaving ? '저장 중...' : '저장'}
+        </Text>
+      </Pressable>
+    </View>
+  );
+
   return (
-    <Modal
+    <SheetModal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onClose={onClose}
+      title="정산 설정"
+      footer={footerContent}
+      isLoading={isSaving}
     >
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
-        {/* 헤더 */}
-        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-            정산 설정
-          </Text>
-          <Pressable onPress={onClose} hitSlop={8} disabled={isSaving} accessibilityLabel="닫기">
-            <XMarkIcon size={24} color="#6B7280" />
-          </Pressable>
-        </View>
-
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
+      <View className="px-4">
+        {/* 역할별 급여 설정 섹션 */}
+        <AccordionSection
+          title="역할별 급여 설정"
+          subtitle="역할에 따른 급여 유형과 금액을 설정합니다"
+          expanded={expandedSections.roles}
+          onToggle={() => toggleSection('roles')}
         >
-          {/* 역할별 급여 설정 섹션 */}
-          <AccordionSection
-            title="역할별 급여 설정"
-            subtitle="역할에 따른 급여 유형과 금액을 설정합니다"
-            expanded={expandedSections.roles}
-            onToggle={() => toggleSection('roles')}
-          >
-            {displayRoles.map((roleData, index) => {
-              const roleKey = getRoleKey(roleData);
-              return (
-                <RoleSalaryItem
-                  key={`${roleKey}-${index}`}
-                  role={roleKey}
-                  salaryInfo={roleData.salary || DEFAULT_SALARY_INFO}
-                  onChange={(info) => handleRoleSalaryChange(index, info)}
-                  onApplyToAll={() => handleApplyToAllRoles(roleData.salary || DEFAULT_SALARY_INFO)}
-                  showApplyButton={index === 0 && displayRoles.length > 1}
-                />
-              );
-            })}
-          </AccordionSection>
+          {displayRoles.map((roleData, index) => {
+            const roleKey = getRoleKey(roleData);
+            return (
+              <RoleSalaryItem
+                key={`${roleKey}-${index}`}
+                role={roleKey}
+                salaryInfo={roleData.salary || DEFAULT_SALARY_INFO}
+                onChange={(info) => handleRoleSalaryChange(index, info)}
+                onApplyToAll={() => handleApplyToAllRoles(roleData.salary || DEFAULT_SALARY_INFO)}
+                showApplyButton={index === 0 && displayRoles.length > 1}
+              />
+            );
+          })}
+        </AccordionSection>
 
-          {/* 수당 설정 섹션 */}
-          <AccordionSection
-            title="수당 설정"
-            subtitle="모든 스태프에게 적용되는 수당을 설정합니다"
-            expanded={expandedSections.allowances}
-            onToggle={() => toggleSection('allowances')}
-          >
-            <AllowanceEditor
-              allowances={allowances}
-              onChange={setAllowances}
-              showLabel={false}
-            />
-          </AccordionSection>
+        {/* 수당 설정 섹션 */}
+        <AccordionSection
+          title="수당 설정"
+          subtitle="모든 스태프에게 적용되는 수당을 설정합니다"
+          expanded={expandedSections.allowances}
+          onToggle={() => toggleSection('allowances')}
+        >
+          <AllowanceEditor
+            allowances={allowances}
+            onChange={setAllowances}
+            showLabel={false}
+          />
+        </AccordionSection>
 
-          {/* 세금 설정 섹션 */}
-          <AccordionSection
-            title="세금 설정"
-            subtitle="정산 시 공제할 세금을 설정합니다"
-            expanded={expandedSections.tax}
-            onToggle={() => toggleSection('tax')}
-          >
-            <TaxSettingsEditor
-              taxSettings={taxSettings}
-              onChange={setTaxSettings}
-              showLabel={false}
-              showPreview={false}
-            />
-          </AccordionSection>
+        {/* 세금 설정 섹션 */}
+        <AccordionSection
+          title="세금 설정"
+          subtitle="정산 시 공제할 세금을 설정합니다"
+          expanded={expandedSections.tax}
+          onToggle={() => toggleSection('tax')}
+        >
+          <TaxSettingsEditor
+            taxSettings={taxSettings}
+            onChange={setTaxSettings}
+            showLabel={false}
+            showPreview={false}
+          />
+        </AccordionSection>
 
-          <View className="h-4" />
-        </ScrollView>
-
-        {/* 하단 버튼 */}
-        <View className="flex-row gap-4 px-5 py-5 border-t border-gray-200 dark:border-gray-700">
-          <Pressable
-            onPress={onClose}
-            disabled={isSaving}
-            className={`flex-1 py-4 rounded-xl bg-gray-100 dark:bg-gray-700 ${
-              isSaving ? 'opacity-50' : 'active:opacity-70'
-            }`}
-          >
-            <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 text-center">
-              취소
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSave}
-            disabled={isSaving}
-            className={`flex-1 py-4 rounded-xl bg-primary-500 ${
-              isSaving ? 'opacity-50' : 'active:opacity-70'
-            }`}
-          >
-            <Text className="text-lg font-semibold text-white text-center">
-              {isSaving ? '저장 중...' : '저장'}
-            </Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    </Modal>
+        <View className="h-4" />
+      </View>
+    </SheetModal>
   );
 }
 

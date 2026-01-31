@@ -6,9 +6,10 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, Pressable, TextInput, Modal } from 'react-native';
+import { View, Text, Pressable, TextInput } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { XMarkIcon, CheckIcon } from '@/components/icons';
+import { Modal } from '@/components/ui/Modal';
+import { CheckIcon } from '@/components/icons';
 import { STAFF_ROLES, type StaffRoleOption } from '@/constants';
 
 // ============================================================================
@@ -124,76 +125,62 @@ export const RoleSelectModal = memo(function RoleSelectModal({
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      title={title}
+      position="bottom"
+      showCloseButton
     >
-      <View className="flex-1 justify-end bg-black/50">
-        <View className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[85%]">
-          {/* 헤더 */}
-          <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-              {title}
+      <View className="-mx-5 -mb-5">
+        {showCustomInput ? (
+          // 커스텀 역할 입력
+          <View className="p-4">
+            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+              역할 이름을 입력하세요
             </Text>
-            <Pressable
-              onPress={handleClose}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              accessibilityRole="button"
-              accessibilityLabel="닫기"
-            >
-              <XMarkIcon size={24} color="#6B7280" />
-            </Pressable>
-          </View>
-
-          {showCustomInput ? (
-            // 커스텀 역할 입력
-            <View className="p-4">
-              <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                역할 이름을 입력하세요
-              </Text>
-              <TextInput
-                value={customRoleName}
-                onChangeText={setCustomRoleName}
-                placeholder="예: 바텐더, 캐셔"
-                placeholderTextColor="#9CA3AF"
-                autoFocus
-                className="border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white bg-white dark:bg-gray-800"
-              />
-              <View className="flex-row gap-3 mt-4">
-                <Pressable
-                  onPress={() => {
-                    setShowCustomInput(false);
-                    setCustomRoleName('');
-                  }}
-                  className="flex-1 py-3 rounded-lg bg-gray-100 dark:bg-gray-700"
-                >
-                  <Text className="text-center font-medium text-gray-700 dark:text-gray-300">
-                    취소
-                  </Text>
-                </Pressable>
-                <Pressable
-                  onPress={handleAddCustomRole}
-                  disabled={!customRoleName.trim()}
-                  className={`flex-1 py-3 rounded-lg ${
+            <TextInput
+              value={customRoleName}
+              onChangeText={setCustomRoleName}
+              placeholder="예: 바텐더, 캐셔"
+              placeholderTextColor="#9CA3AF"
+              autoFocus
+              className="border-2 border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white bg-white dark:bg-gray-800"
+            />
+            <View className="flex-row gap-3 mt-4">
+              <Pressable
+                onPress={() => {
+                  setShowCustomInput(false);
+                  setCustomRoleName('');
+                }}
+                className="flex-1 py-3 rounded-lg bg-gray-100 dark:bg-gray-700"
+              >
+                <Text className="text-center font-medium text-gray-700 dark:text-gray-300">
+                  취소
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleAddCustomRole}
+                disabled={!customRoleName.trim()}
+                className={`flex-1 py-3 rounded-lg ${
+                  customRoleName.trim()
+                    ? 'bg-indigo-500'
+                    : 'bg-gray-300 dark:bg-gray-600'
+                }`}
+              >
+                <Text
+                  className={`text-center font-medium ${
                     customRoleName.trim()
-                      ? 'bg-indigo-500'
-                      : 'bg-gray-300 dark:bg-gray-600'
+                      ? 'text-white'
+                      : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
-                  <Text
-                    className={`text-center font-medium ${
-                      customRoleName.trim()
-                        ? 'text-white'
-                        : 'text-gray-500 dark:text-gray-400'
-                    }`}
-                  >
-                    추가
-                  </Text>
-                </Pressable>
-              </View>
+                  추가
+                </Text>
+              </Pressable>
             </View>
-          ) : (
-            // 역할 목록
+          </View>
+        ) : (
+          // 역할 목록
+          <View style={{ height: 350 }}>
             <FlashList
               data={STAFF_ROLES}
               renderItem={renderRoleItem}
@@ -203,8 +190,8 @@ export const RoleSelectModal = memo(function RoleSelectModal({
               // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
               estimatedItemSize={56}
             />
-          )}
-        </View>
+          </View>
+        )}
       </View>
     </Modal>
   );

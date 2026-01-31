@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, Modal, ScrollView } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { FormField } from '@/components/ui/FormField';
 import { cancellationRequestSchema } from '@/schemas/application.schema';
@@ -72,26 +73,37 @@ export function CancellationRequestForm({
     onClose();
   }, [onClose]);
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
-    >
-      <View className="flex-1 bg-white dark:bg-gray-900">
-        {/* 헤더 */}
-        <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <Pressable onPress={handleClose} className="p-2 -ml-2" accessibilityLabel="닫기">
-            <Text className="text-gray-600 dark:text-gray-400 text-lg">✕</Text>
-          </Pressable>
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-            취소 요청
-          </Text>
-          <View className="w-8" />
-        </View>
+  // Footer 컨텐츠
+  const footerContent = (
+    <View className="flex-row gap-3">
+      <Button
+        onPress={handleClose}
+        variant="outline"
+        disabled={isSubmitting}
+        className="flex-1"
+      >
+        취소
+      </Button>
+      <Button
+        onPress={handleSubmit}
+        disabled={!canSubmit}
+        loading={isSubmitting}
+        className="flex-1"
+      >
+        요청 제출
+      </Button>
+    </View>
+  );
 
-        <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
+  return (
+    <SheetModal
+      visible={visible}
+      onClose={handleClose}
+      title="취소 요청"
+      footer={footerContent}
+      isLoading={isSubmitting}
+    >
+      <View className="px-4">
           {/* 안내 문구 */}
           <View className="bg-warning-50 dark:bg-warning-900/30 rounded-lg p-4 mb-6">
             <Text className="text-warning-700 dark:text-warning-300 text-sm leading-5">
@@ -156,31 +168,8 @@ export function CancellationRequestForm({
               • 무단 취소는 평판에 영향을 줄 수 있습니다.
             </Text>
           </View>
-        </ScrollView>
-
-        {/* 하단 버튼 */}
-        <View className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <View className="flex-row gap-3">
-            <Button
-              onPress={handleClose}
-              variant="outline"
-              disabled={isSubmitting}
-              className="flex-1"
-            >
-              취소
-            </Button>
-            <Button
-              onPress={handleSubmit}
-              disabled={!canSubmit}
-              loading={isSubmitting}
-              className="flex-1"
-            >
-              요청 제출
-            </Button>
-          </View>
-        </View>
       </View>
-    </Modal>
+    </SheetModal>
   );
 }
 

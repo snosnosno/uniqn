@@ -6,9 +6,10 @@
  */
 
 import React, { useState } from 'react';
-import { View, Text, Pressable, ScrollView, Modal } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { signUpStep4Schema, type SignUpStep4Data } from '@/schemas';
 
@@ -275,38 +276,22 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
       </View>
 
       {/* 약관 상세 모달 */}
-      <Modal
+      <SheetModal
         visible={!!modalContent}
-        animationType="slide"
-        presentationStyle="pageSheet"
-        onRequestClose={() => setModalContent(null)}
+        onClose={() => setModalContent(null)}
+        title={modalContent?.label || '약관'}
+        footer={
+          <Button onPress={() => setModalContent(null)} fullWidth>
+            확인
+          </Button>
+        }
       >
-        <View className="flex-1 bg-white dark:bg-gray-900">
-          {/* 헤더 */}
-          <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">
-              {modalContent?.label}
-            </Text>
-            <Pressable onPress={() => setModalContent(null)} className="p-2" accessibilityLabel="닫기">
-              <Text className="text-2xl text-gray-500 dark:text-gray-400">×</Text>
-            </Pressable>
-          </View>
-
-          {/* 내용 */}
-          <ScrollView className="flex-1 p-4">
-            <Text className="text-gray-700 dark:text-gray-300 leading-6">
-              {modalContent?.content}
-            </Text>
-          </ScrollView>
-
-          {/* 닫기 버튼 */}
-          <View className="p-4 border-t border-gray-200 dark:border-gray-700">
-            <Button onPress={() => setModalContent(null)} fullWidth>
-              확인
-            </Button>
-          </View>
+        <View className="px-4">
+          <Text className="text-gray-700 dark:text-gray-300 leading-6">
+            {modalContent?.content}
+          </Text>
         </View>
-      </Modal>
+      </SheetModal>
     </View>
   );
 }

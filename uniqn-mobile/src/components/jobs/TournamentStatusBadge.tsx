@@ -10,11 +10,12 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, Pressable, Modal, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import { format } from 'date-fns';
+import { Modal } from '@/components/ui/Modal';
 import { ko } from 'date-fns/locale';
 import { router } from 'expo-router';
-import { XCircleIcon, RefreshIcon } from '@/components/icons';
+import { RefreshIcon } from '@/components/icons';
 import { useTournamentApproval } from '@/hooks/useTournamentApproval';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
@@ -254,80 +255,62 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
       {canShowReason && (
         <Modal
           visible={showModal}
-          transparent
-          animationType="fade"
-          onRequestClose={handleClose}
+          onClose={handleClose}
+          title="승인이 거부되었습니다"
+          size="sm"
+          position="center"
         >
-          <Pressable
-            className="flex-1 bg-black/50 justify-center items-center p-4"
-            onPress={handleClose}
-          >
-            <Pressable
-              className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-sm border border-red-200 dark:border-red-800"
-              onPress={(e) => e.stopPropagation()}
-            >
-              {/* 헤더 */}
-              <View className="flex-row items-center justify-between p-4 border-b border-red-100 dark:border-red-900/50">
-                <View className="flex-row items-center">
-                  <XCircleIcon size={20} color="#EF4444" />
-                  <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
-                    승인이 거부되었습니다
-                  </Text>
-                </View>
-                {formattedDate && (
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {formattedDate}
-                  </Text>
-                )}
-              </View>
+          <View className="-mt-2">
+            {formattedDate && (
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                {formattedDate}
+              </Text>
+            )}
 
-              {/* 거부 사유 */}
-              <View className="p-4">
-                <View className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-3">
-                  <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    거부 사유
-                  </Text>
-                  <Text className="text-base text-gray-700 dark:text-gray-300">
-                    {rejectionReason}
-                  </Text>
-                </View>
+            {/* 거부 사유 */}
+            <View className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-3">
+              <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                거부 사유
+              </Text>
+              <Text className="text-base text-gray-700 dark:text-gray-300">
+                {rejectionReason}
+              </Text>
+            </View>
 
-                <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
-                </Text>
+            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+              공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
+            </Text>
 
-                {/* 액션 버튼 (postingId가 있을 때만 표시) */}
-                {postingId && (
-                  <View className="flex-row">
-                    <Pressable
-                      onPress={handleEdit}
-                      className="flex-1 mr-2 py-3 rounded-xl border border-blue-600 dark:border-blue-500 items-center justify-center active:opacity-70"
-                    >
-                      <Text className="text-base font-medium text-blue-600 dark:text-blue-400">
-                        수정하기
+            {/* 액션 버튼 (postingId가 있을 때만 표시) */}
+            {postingId && (
+              <View className="flex-row">
+                <Pressable
+                  onPress={handleEdit}
+                  className="flex-1 mr-2 py-3 rounded-xl border border-blue-600 dark:border-blue-500 items-center justify-center active:opacity-70"
+                >
+                  <Text className="text-base font-medium text-blue-600 dark:text-blue-400">
+                    수정하기
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={handleResubmitPress}
+                  disabled={resubmit.isPending}
+                  className="flex-1 ml-2 py-3 rounded-xl bg-blue-600 dark:bg-blue-500 flex-row items-center justify-center active:opacity-80"
+                >
+                  {resubmit.isPending ? (
+                    <ActivityIndicator size="small" color="#ffffff" />
+                  ) : (
+                    <>
+                      <RefreshIcon size={18} color="#ffffff" />
+                      <Text className="ml-2 text-base font-medium text-white">
+                        재제출
                       </Text>
-                    </Pressable>
-                    <Pressable
-                      onPress={handleResubmitPress}
-                      disabled={resubmit.isPending}
-                      className="flex-1 ml-2 py-3 rounded-xl bg-blue-600 dark:bg-blue-500 flex-row items-center justify-center active:opacity-80"
-                    >
-                      {resubmit.isPending ? (
-                        <ActivityIndicator size="small" color="#ffffff" />
-                      ) : (
-                        <>
-                          <RefreshIcon size={18} color="#ffffff" />
-                          <Text className="ml-2 text-base font-medium text-white">
-                            재제출
-                          </Text>
-                        </>
-                      )}
-                    </Pressable>
-                  </View>
-                )}
+                    </>
+                  )}
+                </Pressable>
               </View>
-            </Pressable>
-          </Pressable>
+            )}
+          </View>
         </Modal>
       )}
 

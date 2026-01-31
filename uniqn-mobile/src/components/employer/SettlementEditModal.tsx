@@ -6,13 +6,12 @@
  */
 
 import React, { useState, useMemo, useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, TextInput } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, Pressable, TextInput } from 'react-native';
+import { SheetModal } from '../ui/SheetModal';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { Avatar } from '../ui/Avatar';
 import {
-  XMarkIcon,
   ChevronDownIcon,
   ChevronUpIcon,
 } from '../icons';
@@ -222,31 +221,45 @@ export function SettlementEditModal({
 
   if (!workLog) return null;
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
-    >
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
-        {/* 헤더 */}
-        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-            정산 금액 수정
-          </Text>
-          <Pressable onPress={onClose} hitSlop={8} disabled={isSaving} accessibilityLabel="닫기">
-            <XMarkIcon size={24} color="#6B7280" />
-          </Pressable>
-        </View>
+  // Footer 버튼
+  const footerContent = (
+    <View className="flex-row gap-3">
+      <Pressable
+        onPress={onClose}
+        disabled={isSaving}
+        className={`flex-1 py-3.5 rounded-xl bg-gray-100 dark:bg-gray-700 ${
+          isSaving ? 'opacity-50' : 'active:opacity-70'
+        }`}
+      >
+        <Text className="text-base font-medium text-gray-700 dark:text-gray-300 text-center">
+          취소
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={handleSave}
+        disabled={isSaving}
+        className={`flex-1 py-3.5 rounded-xl bg-primary-500 ${
+          isSaving ? 'opacity-50' : 'active:opacity-70'
+        }`}
+      >
+        <Text className="text-base font-semibold text-white text-center">
+          {isSaving ? '저장 중...' : '저장'}
+        </Text>
+      </Pressable>
+    </View>
+  );
 
-        <ScrollView
-          className="flex-1"
-          showsVerticalScrollIndicator={false}
-          keyboardShouldPersistTaps="handled"
-        >
-          {/* 프로필 헤더 */}
-          <View className="flex-row items-center p-4 bg-gray-50 dark:bg-gray-800">
+  return (
+    <SheetModal
+      visible={visible}
+      onClose={onClose}
+      title="정산 금액 수정"
+      footer={footerContent}
+      isLoading={isSaving}
+    >
+      <View>
+        {/* 프로필 헤더 */}
+        <View className="flex-row items-center p-4 bg-gray-50 dark:bg-gray-800 -mx-5 -mt-5">
             <Avatar
               source={profilePhotoURL}
               name={displayName}
@@ -387,35 +400,8 @@ export function SettlementEditModal({
           </View>
 
           <View className="h-4" />
-        </ScrollView>
-
-        {/* 하단 버튼 */}
-        <View className="flex-row gap-3 px-4 py-4 border-t border-gray-200 dark:border-gray-700">
-          <Pressable
-            onPress={onClose}
-            disabled={isSaving}
-            className={`flex-1 py-3.5 rounded-xl bg-gray-100 dark:bg-gray-700 ${
-              isSaving ? 'opacity-50' : 'active:opacity-70'
-            }`}
-          >
-            <Text className="text-base font-medium text-gray-700 dark:text-gray-300 text-center">
-              취소
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSave}
-            disabled={isSaving}
-            className={`flex-1 py-3.5 rounded-xl bg-primary-500 ${
-              isSaving ? 'opacity-50' : 'active:opacity-70'
-            }`}
-          >
-            <Text className="text-base font-semibold text-white text-center">
-              {isSaving ? '저장 중...' : '저장'}
-            </Text>
-          </Pressable>
-        </View>
-      </SafeAreaView>
-    </Modal>
+      </View>
+    </SheetModal>
   );
 }
 

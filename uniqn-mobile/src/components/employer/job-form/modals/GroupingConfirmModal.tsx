@@ -6,8 +6,9 @@
  */
 
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, Modal } from 'react-native';
-import { XMarkIcon, CalendarIcon } from '@/components/icons';
+import { View, Text, Pressable } from 'react-native';
+import { Modal } from '@/components/ui/Modal';
+import { CalendarIcon } from '@/components/icons';
 import {
   formatDateRangeWithCount,
   groupConsecutiveDates,
@@ -104,29 +105,12 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
   return (
     <Modal
       visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleClose}
+      onClose={handleClose}
+      title="날짜 그룹화"
+      size="md"
+      position="center"
     >
-      <View className="flex-1 bg-black/50 justify-center items-center px-4">
-        <View className="w-full max-w-sm bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
-          {/* 헤더 */}
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">
-              날짜 그룹화
-            </Text>
-            <Pressable
-              onPress={handleClose}
-              className="p-2 -mr-2 active:opacity-70"
-              accessibilityRole="button"
-              accessibilityLabel="닫기"
-            >
-              <XMarkIcon size={24} color="#6B7280" />
-            </Pressable>
-          </View>
-
-          {/* 내용 */}
-          <View className="p-4">
+      <View className="-mt-2">
             {/* 선택된 날짜 미리보기 (선택 옵션에 따라 변경) */}
             <View className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
               <View className="flex-row items-center mb-1">
@@ -227,33 +211,31 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
                 각 날짜마다 다른 시간대/인원 설정 가능
               </Text>
             </Pressable>
-          </View>
 
-          {/* 푸터 버튼 */}
-          <View className="flex-row px-4 pb-4 gap-3">
-            <Pressable
-              onPress={handleClose}
-              className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-gray-700 active:opacity-80"
-              accessibilityRole="button"
-              accessibilityLabel="취소"
-            >
-              <Text className="text-center text-base font-semibold text-gray-700 dark:text-gray-300">
-                취소
-              </Text>
-            </Pressable>
-            <Pressable
-              onPress={handleConfirm}
-              className="flex-1 py-3 rounded-xl bg-blue-600 dark:bg-blue-500 active:opacity-80"
-              accessibilityRole="button"
-              accessibilityLabel="확인"
-            >
-              <Text className="text-center text-base font-semibold text-white">
-                확인
-              </Text>
-            </Pressable>
+            {/* 푸터 버튼 */}
+            <View className="flex-row gap-3 mt-4">
+              <Pressable
+                onPress={handleClose}
+                className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-gray-700 active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="취소"
+              >
+                <Text className="text-center text-base font-semibold text-gray-700 dark:text-gray-300">
+                  취소
+                </Text>
+              </Pressable>
+              <Pressable
+                onPress={handleConfirm}
+                className="flex-1 py-3 rounded-xl bg-blue-600 dark:bg-blue-500 active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="확인"
+              >
+                <Text className="text-center text-base font-semibold text-white">
+                  확인
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </View>
     </Modal>
   );
 });

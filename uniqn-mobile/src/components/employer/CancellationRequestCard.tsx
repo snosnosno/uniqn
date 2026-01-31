@@ -6,8 +6,9 @@
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { View, Text, Pressable, TextInput, Modal } from 'react-native';
+import { View, Text, Pressable, TextInput } from 'react-native';
 import { Card } from '../ui/Card';
+import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
@@ -236,53 +237,48 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
       {/* 거절 사유 입력 모달 */}
       <Modal
         visible={showRejectModal}
-        animationType="fade"
-        transparent
-        onRequestClose={handleCloseRejectModal}
+        onClose={handleCloseRejectModal}
+        title="취소 요청 거절"
+        size="sm"
+        position="center"
       >
-        <View className="flex-1 bg-black/50 items-center justify-center p-4">
-          <View className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-5">
-            {/* 모달 헤더 */}
-            <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-              취소 요청 거절
-            </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
-              거절 사유를 입력해주세요.
-            </Text>
+        <View className="-mt-2">
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            거절 사유를 입력해주세요.
+          </Text>
 
-            {/* 거절 사유 입력 */}
-            <TextInput
-              value={rejectionReason}
-              onChangeText={setRejectionReason}
-              placeholder="최소 3자 이상 입력해주세요"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={3}
-              maxLength={200}
-              className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-base min-h-[80px] mb-4"
-              textAlignVertical="top"
-            />
-            <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mb-4">
-              {rejectionReason.length}/200
-            </Text>
+          {/* 거절 사유 입력 */}
+          <TextInput
+            value={rejectionReason}
+            onChangeText={setRejectionReason}
+            placeholder="최소 3자 이상 입력해주세요"
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={3}
+            maxLength={200}
+            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-base min-h-[80px] mb-4"
+            textAlignVertical="top"
+          />
+          <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mb-4">
+            {rejectionReason.length}/200
+          </Text>
 
-            {/* 버튼 */}
-            <View className="flex-row gap-3">
-              <Button
-                onPress={handleCloseRejectModal}
-                variant="outline"
-                className="flex-1"
-              >
-                취소
-              </Button>
-              <Button
-                onPress={handleSubmitReject}
-                disabled={rejectionReason.trim().length < 3}
-                className="flex-1"
-              >
-                거절하기
-              </Button>
-            </View>
+          {/* 버튼 */}
+          <View className="flex-row gap-3">
+            <Button
+              onPress={handleCloseRejectModal}
+              variant="outline"
+              className="flex-1"
+            >
+              취소
+            </Button>
+            <Button
+              onPress={handleSubmitReject}
+              disabled={rejectionReason.trim().length < 3}
+              className="flex-1"
+            >
+              거절하기
+            </Button>
           </View>
         </View>
       </Modal>

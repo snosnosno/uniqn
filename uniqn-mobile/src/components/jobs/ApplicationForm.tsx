@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, Pressable, Modal, ScrollView } from 'react-native';
+import { View, Text, TextInput, Pressable } from 'react-native';
+import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { Badge } from '@/components/ui/Badge';
 import { AssignmentSelector } from './AssignmentSelector';
@@ -239,26 +240,27 @@ export function ApplicationForm({
     onClose();
   }, [job.preQuestions, onClose]);
 
-  return (
-    <Modal
-      visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={handleClose}
+  // Footer 컨텐츠
+  const footerContent = (
+    <Button
+      onPress={handleSubmit}
+      disabled={!canSubmit}
+      loading={isSubmitting}
+      fullWidth
     >
-      <View className="flex-1 bg-white dark:bg-gray-900">
-        {/* 헤더 */}
-        <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <Pressable onPress={handleClose} className="p-2 -ml-2" accessibilityLabel="닫기">
-            <Text className="text-gray-600 dark:text-gray-400 text-lg">✕</Text>
-          </Pressable>
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-            지원하기
-          </Text>
-          <View className="w-8" />
-        </View>
+      지원하기
+    </Button>
+  );
 
-        <ScrollView className="flex-1 p-4" showsVerticalScrollIndicator={false}>
+  return (
+    <SheetModal
+      visible={visible}
+      onClose={handleClose}
+      title="지원하기"
+      footer={footerContent}
+      isLoading={isSubmitting}
+    >
+      <View className="px-4">
           {/* 공고 정보 */}
           <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
             {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
@@ -442,21 +444,8 @@ export function ApplicationForm({
               • 지원 후 취소는 마이페이지에서 가능합니다.
             </Text>
           </View>
-        </ScrollView>
-
-        {/* 하단 버튼 */}
-        <View className="p-4 border-t border-gray-200 dark:border-gray-700">
-          <Button
-            onPress={handleSubmit}
-            disabled={!canSubmit}
-            loading={isSubmitting}
-            fullWidth
-          >
-            지원하기
-          </Button>
-        </View>
       </View>
-    </Modal>
+    </SheetModal>
   );
 }
 

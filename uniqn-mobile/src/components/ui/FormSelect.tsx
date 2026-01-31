@@ -10,8 +10,9 @@
  */
 
 import React, { useState, useCallback, useMemo, memo } from 'react';
-import { View, Text, Pressable, Modal, TextInput, type ViewProps } from 'react-native';
+import { View, Text, Pressable, TextInput, type ViewProps } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { Modal } from './Modal';
 
 // ============================================================================
 // Types
@@ -214,50 +215,30 @@ export function FormSelect<T = string>({
       {/* 옵션 모달 */}
       <Modal
         visible={isOpen}
-        transparent
-        animationType="fade"
-        onRequestClose={handleClose}
+        onClose={handleClose}
+        title={label || '선택'}
+        position="bottom"
+        showCloseButton
       >
-        <Pressable
-          className="flex-1 bg-black/50 justify-end"
-          onPress={handleClose}
-        >
-          <Pressable
-            className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70%]"
-            onPress={(e) => e.stopPropagation()}
-          >
-            {/* 헤더 */}
-            <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                {label || '선택'}
-              </Text>
-              <Pressable
-                onPress={handleClose}
-                className="p-2"
-                accessibilityLabel="닫기"
-                accessibilityRole="button"
-              >
-                <Text className="text-gray-500 dark:text-gray-400 text-lg">✕</Text>
-              </Pressable>
+        <View className="-mx-5 -mb-5">
+          {/* 검색 입력 */}
+          {showSearch && (
+            <View className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+              <TextInput
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder={searchPlaceholder}
+                placeholderTextColor="#9CA3AF"
+                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-base text-gray-900 dark:text-white"
+                autoCapitalize="none"
+                autoCorrect={false}
+                accessibilityLabel="옵션 검색"
+              />
             </View>
+          )}
 
-            {/* 검색 입력 */}
-            {showSearch && (
-              <View className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
-                <TextInput
-                  value={searchQuery}
-                  onChangeText={setSearchQuery}
-                  placeholder={searchPlaceholder}
-                  placeholderTextColor="#9CA3AF"
-                  className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-base text-gray-900 dark:text-white"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  accessibilityLabel="옵션 검색"
-                />
-              </View>
-            )}
-
-            {/* 옵션 목록 */}
+          {/* 옵션 목록 */}
+          <View style={{ height: 320 }}>
             <FlashList
               data={filteredOptions}
               keyExtractor={(item, index) => `${item.value}-${index}`}
@@ -292,11 +273,11 @@ export function FormSelect<T = string>({
               // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
               estimatedItemSize={56}
             />
+          </View>
 
-            {/* 하단 여백 (SafeArea) */}
-            <View className="h-8" />
-          </Pressable>
-        </Pressable>
+          {/* 하단 여백 (SafeArea) */}
+          <View className="h-8" />
+        </View>
       </Modal>
     </View>
   );

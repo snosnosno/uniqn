@@ -6,14 +6,13 @@
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, ScrollView, Pressable, Modal, ActivityIndicator } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, Text, ActivityIndicator } from 'react-native';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
+import { SheetModal } from '../ui/SheetModal';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import {
-  XMarkIcon,
   PhoneIcon,
   MailIcon,
   CalendarIcon,
@@ -224,24 +223,12 @@ export function ApplicantProfileModal({
     : baseName;
 
   return (
-    <Modal
+    <SheetModal
       visible={visible}
-      animationType="slide"
-      presentationStyle="pageSheet"
-      onRequestClose={onClose}
+      onClose={onClose}
+      title="지원자 프로필"
     >
-      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
-        {/* 헤더 */}
-        <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-            지원자 프로필
-          </Text>
-          <Pressable onPress={onClose} hitSlop={8} accessibilityLabel="닫기">
-            <XMarkIcon size={24} color="#6B7280" />
-          </Pressable>
-        </View>
-
-        <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <View>
           {/* 프로필 헤더 */}
           <View className="items-center py-4 bg-gray-50 dark:bg-gray-800">
             {isProfileLoading ? (
@@ -471,9 +458,8 @@ export function ApplicantProfileModal({
           )}
 
           <View className="h-8" />
-        </ScrollView>
-      </SafeAreaView>
-    </Modal>
+      </View>
+    </SheetModal>
   );
 }
 
