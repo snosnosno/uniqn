@@ -239,15 +239,17 @@ export const FILE = {
  * - 새 역할 추가 시 이 매핑만 수정하면 전체 앱에 반영
  */
 export const ROLE_LABELS: Record<string, string> = {
-  // 영문 키 (기본)
+  // 사용자 역할 (UserRole)
+  admin: '관리자',
+  employer: '구인자',
+  staff: '일반',
+  // 스태프 역할 (StaffRole - 직무)
   dealer: '딜러',
   floor: '플로어',
   serving: '서빙',
   manager: '매니저',
-  staff: '직원',
   chiprunner: '칩러너',
   supervisor: '슈퍼바이저',
-  admin: '관리자',
   other: '기타',
   user: '일반 사용자',
   // 한글 키 (역호환성 - 기존 데이터 지원)
