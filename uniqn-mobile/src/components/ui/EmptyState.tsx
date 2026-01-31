@@ -31,11 +31,13 @@ export function EmptyState({
   const getDefaultIcon = () => {
     switch (variant) {
       case 'search':
-        return <SearchIcon size={48} color="#9CA3AF" />;
+        // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
+        return <SearchIcon size={48} color="#6B7280" />;
       case 'error':
         return <DocumentIcon size={48} color="#EF4444" />;
       default:
-        return <DocumentIcon size={48} color="#9CA3AF" />;
+        // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
+        return <DocumentIcon size={48} color="#6B7280" />;
     }
   };
 

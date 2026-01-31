@@ -102,35 +102,6 @@ export async function withErrorHandling<T>(
   throw lastError || new Error(errorMessage || '알 수 없는 오류');
 }
 
-/**
- * 동기 함수에 대한 에러 처리 래퍼
- */
-export function withErrorHandlingSync<T>(
-  fn: () => T,
-  options: Omit<ErrorHandlingOptions, 'retryCount' | 'retryDelay'> = {}
-): T {
-  const { logError = true, errorMessage, defaultValue, context = {} } = options;
-
-  try {
-    return fn();
-  } catch (error) {
-    const normalized = normalizeError(error);
-
-    if (logError) {
-      logger.error(errorMessage || '작업 실패', normalized, {
-        ...context,
-        errorCode: normalized.code,
-      });
-    }
-
-    if (defaultValue !== undefined) {
-      return defaultValue as T;
-    }
-
-    throw error;
-  }
-}
-
 // ============================================================================
 // Utility
 // ============================================================================

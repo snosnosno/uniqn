@@ -6,8 +6,17 @@
  */
 
 import React, { useState } from 'react';
-import { View, TextInput, Text, Pressable, TextInputProps } from 'react-native';
+import { View, TextInput, Text, Pressable, TextInputProps, useColorScheme } from 'react-native';
 import { EyeIcon, EyeSlashIcon } from '@/components/icons';
+
+// ============================================================================
+// Theme Constants
+// ============================================================================
+
+const PLACEHOLDER_COLORS = {
+  light: '#6B7280', // gray-500 (WCAG AA 준수)
+  dark: '#9CA3AF',  // gray-400 (다크모드에서 더 밝게)
+} as const;
 
 type InputType = 'text' | 'email' | 'password' | 'number' | 'phone';
 
@@ -31,8 +40,10 @@ export function Input({
 }: InputProps) {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const colorScheme = useColorScheme();
 
   const isPassword = type === 'password';
+  const placeholderColor = colorScheme === 'dark' ? PLACEHOLDER_COLORS.dark : PLACEHOLDER_COLORS.light;
 
   const getKeyboardType = (): TextInputProps['keyboardType'] => {
     switch (type) {
@@ -75,6 +86,7 @@ export function Input({
 
         <TextInput
           {...props}
+          accessibilityLabel={props.accessibilityLabel ?? label}
           secureTextEntry={isPassword && !showPassword}
           keyboardType={getKeyboardType()}
           onFocus={(e) => {
@@ -86,7 +98,7 @@ export function Input({
             props.onBlur?.(e);
           }}
           className="flex-1 py-3 text-base text-gray-900 dark:text-gray-100"
-          placeholderTextColor="#9CA3AF"
+          placeholderTextColor={placeholderColor}
         />
 
         {isPassword && (
@@ -96,9 +108,9 @@ export function Input({
             hitSlop={8}
           >
             {showPassword ? (
-              <EyeSlashIcon size={20} color="#6B7280" />
+              <EyeSlashIcon size={20} color={placeholderColor} />
             ) : (
-              <EyeIcon size={20} color="#6B7280" />
+              <EyeIcon size={20} color={placeholderColor} />
             )}
           </Pressable>
         )}
@@ -109,7 +121,8 @@ export function Input({
       {(error || hint) && (
         <Text
           className={`mt-1 text-sm ${
-            error ? 'text-error-500' : 'text-gray-500 dark:text-gray-400'
+            // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
+            error ? 'text-error-500' : 'text-gray-600 dark:text-gray-400'
           }`}
         >
           {error || hint}

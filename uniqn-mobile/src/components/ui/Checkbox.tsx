@@ -109,6 +109,8 @@ export const Checkbox = memo(function Checkbox({
       accessibilityRole="checkbox"
       accessibilityState={{ checked, disabled }}
       accessibilityLabel={label}
+      // P1 접근성: accessibilityHint 추가
+      accessibilityHint={checked ? '선택됨. 두 번 탭하여 선택 해제' : '두 번 탭하여 선택'}
       testID={testID}
       className={`flex-row items-start ${disabled ? 'opacity-60' : ''} ${className}`}
     >
@@ -152,8 +154,9 @@ export const Checkbox = memo(function Checkbox({
                 mt-0.5
                 ${config.description}
                 ${disabled
-                  ? 'text-gray-400 dark:text-gray-500'
-                  : 'text-gray-500 dark:text-gray-400'
+                  // P1 접근성: WCAG AA 준수를 위해 대비 개선
+                  ? 'text-gray-500 dark:text-gray-500'
+                  : 'text-gray-600 dark:text-gray-400'
                 }
               `}
             >

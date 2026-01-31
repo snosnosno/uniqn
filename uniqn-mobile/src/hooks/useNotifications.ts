@@ -25,8 +25,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import { QUERY_KEYS } from '@/constants';
-import { cachingPolicies } from '@/lib/queryClient';
+import { cachingPolicies, queryKeys } from '@/lib/queryClient';
 import {
   groupNotificationsWithCategoryFilter,
   countUnreadInGroupedList,
@@ -42,17 +41,11 @@ import type {
 } from '@/types/notification';
 
 // ============================================================================
-// Query Keys
+// Query Keys (중앙 관리 - @/lib/queryClient.ts의 queryKeys.notifications 사용)
 // ============================================================================
 
-const notificationKeys = {
-  all: [QUERY_KEYS.NOTIFICATIONS] as const,
-  lists: () => [...notificationKeys.all, 'list'] as const,
-  list: (filters: NotificationFilter) => [...notificationKeys.lists(), filters] as const,
-  unreadCount: () => [...notificationKeys.all, 'unreadCount'] as const,
-  settings: () => [...notificationKeys.all, 'settings'] as const,
-  permission: () => [...notificationKeys.all, 'permission'] as const,
-};
+// P2 아키텍처: 로컬 notificationKeys 제거, queryKeys.notifications 사용
+const notificationKeys = queryKeys.notifications;
 
 // ============================================================================
 // useNotificationList

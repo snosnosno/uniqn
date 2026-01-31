@@ -48,18 +48,6 @@ export const applicationMessageSchema = z
   .optional();
 
 /**
- * 지원서 생성 스키마 (레거시)
- *
- * @deprecated assignments 기반 createApplicationV2Schema 사용 권장
- */
-export const createApplicationSchema = z.object({
-  jobPostingId: z.string().min(1, { message: '공고 ID가 필요합니다' }),
-  message: applicationMessageSchema,
-});
-
-export type CreateApplicationFormData = z.infer<typeof createApplicationSchema>;
-
-/**
  * 지원서 필터 스키마
  */
 export const applicationFilterSchema = z.object({
@@ -167,7 +155,12 @@ const assignmentInnerSchema = z.object({
   requirementId: z.string().optional(),
   duration: optionalDurationSchema,
   isTimeToBeAnnounced: z.boolean().optional(),
-  tentativeDescription: z.string().optional(),
+  // P1 보안: XSS 검증 추가
+  tentativeDescription: z.string()
+    .refine((val) => !val || xssValidation(val), {
+      message: '위험한 문자열이 포함되어 있습니다',
+    })
+    .optional(),
 }).passthrough();
 
 export const applicationDocumentSchema = z.object({

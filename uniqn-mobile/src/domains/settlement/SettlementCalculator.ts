@@ -112,9 +112,16 @@ export class SettlementCalculator {
    * @param salaryInfo - 급여 정보 (타입, 금액)
    * @param hoursWorked - 근무 시간
    * @returns 기본 급여
+   *
+   * @description P1 보안: 음수 금액 검증 추가
    */
   static calculateBasePay(salaryInfo: SalaryInfo, hoursWorked: number): number {
     if (hoursWorked === 0) return 0;
+
+    // P1 보안: 음수 금액 방어
+    if (salaryInfo.amount < 0) {
+      return 0;
+    }
 
     switch (salaryInfo.type) {
       case 'hourly':
@@ -304,22 +311,20 @@ export class SettlementCalculator {
       return jobPostingCard.defaultSalary;
     }
 
-    // dateRequirements > timeSlots > roles 구조에서 역할별 급여 조회
-    if (jobPostingCard.dateRequirements) {
-      for (const dateReq of jobPostingCard.dateRequirements) {
-        for (const timeSlot of dateReq.timeSlots || []) {
-          for (const r of timeSlot.roles || []) {
-            // 역할 매칭
-            const isMatch =
-              (role === 'other' && customRole && r.customRole === customRole) ||
-              r.role === role;
+    // dateRequirements > timeSlots > roles 구조에서 역할별 급여 조회 (flatMap으로 평탄화)
+    const allRoles = (jobPostingCard.dateRequirements ?? [])
+      .flatMap(dateReq => dateReq.timeSlots ?? [])
+      .flatMap(timeSlot => timeSlot.roles ?? []);
 
-            if (isMatch && r.salary) {
-              return r.salary;
-            }
-          }
-        }
-      }
+    const matchedRole = allRoles.find(r => {
+      const isMatch =
+        (role === 'other' && customRole && r.customRole === customRole) ||
+        r.role === role;
+      return isMatch && r.salary;
+    });
+
+    if (matchedRole?.salary) {
+      return matchedRole.salary;
     }
 
     // 역할별 급여 못 찾으면 defaultSalary 폴백

@@ -109,20 +109,12 @@ export { getErrorMessage as getFirebaseErrorMessage } from '@/errors';
 
 export {
   withErrorHandling,
-  withErrorHandlingSync,
   type ErrorHandlingOptions,
 } from './withErrorHandling';
 
 export {
   withRetry,
   withRetryResult,
-  createRetryable,
-  retryOnErrors,
-  retryOnCategories,
-  FAST_RETRY,
-  STANDARD_RETRY,
-  AGGRESSIVE_RETRY,
-  CONSERVATIVE_RETRY,
   type RetryOptions,
   type RetryResult,
 } from './withRetry';

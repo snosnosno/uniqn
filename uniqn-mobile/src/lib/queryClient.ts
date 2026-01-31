@@ -293,9 +293,15 @@ export const queryKeys = {
   // 알림
   notifications: {
     all: ['notifications'] as const,
-    list: () => [...queryKeys.notifications.all, 'list'] as const,
+    lists: () => [...queryKeys.notifications.all, 'list'] as const,
+    // P2 아키텍처: 제네릭 타입으로 NotificationFilter 등 다양한 필터 지원
+    list: <T extends object>(filters: T) =>
+      [...queryKeys.notifications.all, 'list', filters] as const,
     unread: () => [...queryKeys.notifications.all, 'unread'] as const,
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
+    // P2 아키텍처: Query Keys 중앙 관리 확장
+    settings: () => [...queryKeys.notifications.all, 'settings'] as const,
+    permission: () => [...queryKeys.notifications.all, 'permission'] as const,
   },
 
   // 설정

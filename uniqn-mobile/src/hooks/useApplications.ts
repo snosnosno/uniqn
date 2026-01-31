@@ -92,13 +92,10 @@ export function useApplications() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.applications.mine(),
       });
-      // 특정 공고 상세 무효화 (applicationCount 갱신)
+      // 특정 공고 상세만 무효화 (applicationCount 갱신)
+      // 참고: 목록에서는 applicationCount를 표시하지 않으므로 lists() 무효화 불필요
       queryClient.invalidateQueries({
         queryKey: queryKeys.jobPostings.detail(data.jobPostingId),
-      });
-      // 목록도 무효화 (applicationCount 표시 갱신)
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.lists(),
       });
     },
     onError: createMutationErrorHandler('v2.0 지원', addToast),
@@ -163,10 +160,7 @@ export function useApplications() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.applications.mine(),
       });
-      // 목록 캐시 무효화 (applicationCount 표시 갱신)
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.jobPostings.lists(),
-      });
+      // 참고: 목록에서는 applicationCount를 표시하지 않으므로 lists() 무효화 불필요
     },
   });
 

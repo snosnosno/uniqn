@@ -125,6 +125,8 @@ const RadioItem = memo(function RadioItem({
       accessibilityRole="radio"
       accessibilityState={{ selected, disabled: isDisabled }}
       accessibilityLabel={option.label}
+      // P1 접근성: accessibilityHint 추가
+      accessibilityHint={selected ? '선택됨' : '두 번 탭하여 선택'}
       className={`flex-row items-start ${isDisabled ? 'opacity-60' : ''}`}
     >
       {/* Radio Circle */}
@@ -166,8 +168,9 @@ const RadioItem = memo(function RadioItem({
               mt-0.5
               ${config.description}
               ${isDisabled
-                ? 'text-gray-400 dark:text-gray-500'
-                : 'text-gray-500 dark:text-gray-400'
+                // P1 접근성: WCAG AA 준수를 위해 대비 개선
+                ? 'text-gray-500 dark:text-gray-500'
+                : 'text-gray-600 dark:text-gray-400'
               }
             `}
           >

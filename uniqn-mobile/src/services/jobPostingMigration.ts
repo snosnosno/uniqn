@@ -15,7 +15,6 @@ import { logger } from '@/utils/logger';
 import {
   convertTournamentDatesToDateRequirements,
   convertDateRequirementsToTournamentDates,
-  generateId,
 } from '@/utils/job-posting/dateUtils';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 
@@ -258,61 +257,3 @@ export function migrateJobPostingForWrite<T extends Partial<MigratableData>>(
   }
 }
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
-/**
- * 기본 DateSpecificRequirement 생성
- *
- * @description 새 날짜 추가 시 기본 구조 생성
- */
-export function createDefaultDateRequirement(
-  date: string,
-  defaultStartTime = '09:00'
-): DateSpecificRequirement {
-  return {
-    date,
-    timeSlots: [
-      {
-        id: generateId(),
-        startTime: defaultStartTime,
-        isTimeToBeAnnounced: false,
-        roles: [
-          {
-            id: generateId(),
-            role: 'dealer',
-            headcount: 1,
-          },
-        ],
-      },
-    ],
-  };
-}
-
-/**
- * 역할 마이그레이션 (레거시 → 신규)
- *
- * @description 레거시 역할 키를 신규 역할 키로 변환
- */
-export function migrateRoleKey(legacyRole: string): string {
-  const ROLE_MIGRATION_MAP: Record<string, string> = {
-    floorman: 'floor',
-    supervisor: 'manager',
-    chip_runner: 'staff',
-  };
-
-  return ROLE_MIGRATION_MAP[legacyRole] || legacyRole;
-}
-
-/**
- * 역할 목록 마이그레이션
- *
- * @description 레거시 역할 배열을 신규 형식으로 변환
- */
-export function migrateRoles<T extends { role: string }>(roles: T[]): T[] {
-  return roles.map((r) => ({
-    ...r,
-    role: migrateRoleKey(r.role),
-  }));
-}

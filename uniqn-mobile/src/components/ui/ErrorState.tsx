@@ -8,6 +8,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { isAppError, type AppError } from '@/errors';
+import { Button } from './Button';
 
 // ============================================================================
 // Types
@@ -104,21 +105,21 @@ export function ErrorState({
 
       {/* 에러 코드 (AppError인 경우) */}
       {isAppError(error) && (
-        <Text className="text-xs text-gray-400 dark:text-gray-500 mb-4">
+        // P1 접근성: WCAG AA 준수를 위해 대비 개선 (gray-400 → gray-500)
+        <Text className="text-xs text-gray-500 dark:text-gray-500 mb-4">
           에러 코드: {error.code}
         </Text>
       )}
 
       {/* 재시도 버튼 */}
       {canRetry && (
-        <Pressable
+        <Button
+          variant="primary"
           onPress={onRetry}
-          className="bg-blue-600 px-8 py-3 rounded-xl active:bg-blue-700"
-          accessibilityRole="button"
           accessibilityLabel={retryText}
         >
-          <Text className="text-white font-semibold">{retryText}</Text>
-        </Pressable>
+          {retryText}
+        </Button>
       )}
     </View>
   );

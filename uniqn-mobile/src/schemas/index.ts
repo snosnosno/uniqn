@@ -94,7 +94,6 @@ export {
   applicationStatusSchema,
   staffRoleSchema,
   applicationMessageSchema as createApplicationMessageSchema,
-  createApplicationSchema,
   applicationFilterSchema,
   confirmApplicationSchema,
   rejectApplicationSchema,
@@ -109,7 +108,6 @@ export {
 export type {
   ApplicationStatusSchema,
   StaffRoleSchema,
-  CreateApplicationFormData,
   ApplicationFilterData,
   ConfirmApplicationData,
   RejectApplicationData,
