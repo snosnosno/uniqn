@@ -15,7 +15,6 @@
 import {
   collection,
   doc,
-  getDoc,
   getDocs,
   query,
   where,
@@ -48,6 +47,7 @@ import {
 import type { WorkTimeModification, RoleChangeHistory } from '@/types';
 import { STAFF_ROLES } from '@/constants';
 import { StatusMapper } from '@/shared/status';
+import { userRepository } from '@/repositories';
 import { TimeNormalizer } from '@/shared/time';
 
 // 표준 역할 키 목록 (other 제외)
@@ -60,7 +60,6 @@ const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other'
 const WORK_LOGS_COLLECTION = 'workLogs';
 const JOB_POSTINGS_COLLECTION = 'jobPostings';
 const APPLICATIONS_COLLECTION = 'applications';
-const USERS_COLLECTION = 'users';
 
 // ============================================================================
 // Types
@@ -86,13 +85,14 @@ export interface RoleChangeHistoryEntry {
 
 /**
  * 사용자 이름 조회
+ *
+ * @description Repository 패턴 적용 - userRepository.getById 사용
  */
 async function getStaffName(staffId: string): Promise<string> {
   try {
-    const userDoc = await getDoc(doc(getFirebaseDb(), USERS_COLLECTION, staffId));
-    if (userDoc.exists()) {
-      const userData = userDoc.data();
-      return userData.displayName || userData.name || `스태프 ${staffId.slice(-4)}`;
+    const user = await userRepository.getById(staffId);
+    if (user) {
+      return user.nickname || user.name || `스태프 ${staffId.slice(-4)}`;
     }
     return `스태프 ${staffId.slice(-4)}`;
   } catch (error) {
@@ -363,17 +363,27 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
       });
 
       // 업데이트 데이터 구성 (null은 삭제 대신 null로 저장)
+      // 예정 시간도 동기화하여 모든 화면에서 일관된 시간 표시
       const updateData: Record<string, unknown> = {
         checkInTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
         checkOutTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
+        scheduledStartTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
+        scheduledEndTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
         modificationHistory,
         updatedAt: serverTimestamp(),
       };
 
-      // 퇴근 시간 입력 시에만 상태 변경 (출근 시간만 변경 시에는 기존 상태 유지)
+      // 시간에 따른 상태 변경
+      // - 퇴근 시간 있음 → checked_out
+      // - 출근 시간만 있음 → 기존 상태 유지
+      // - 둘 다 미정 → scheduled (예정 상태로 복원)
       if (checkOutDate) {
         updateData.status = 'checked_out';
+      } else if (!checkInDate) {
+        // 출퇴근 모두 미정인 경우 예정 상태로 복원
+        updateData.status = 'scheduled';
       }
+      // 출근 시간만 있는 경우: 기존 상태 유지 (status 필드 업데이트 안함)
 
       transaction.update(workLogRef, updateData);
     });
@@ -448,17 +458,13 @@ export async function deleteConfirmedStaff(
       });
 
       // 2. Application이 있으면 상태 복원
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-      const appQuery = query(
-        applicationsRef,
-        where('jobPostingId', '==', input.jobPostingId),
-        where('applicantId', '==', input.staffId)
-      );
-      const appSnapshot = await getDocs(appQuery);
+      // Application ID 형식: `${jobPostingId}_${applicantId}`
+      const applicationId = `${input.jobPostingId}_${input.staffId}`;
+      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const applicationDoc = await transaction.get(applicationRef);
 
-      if (!appSnapshot.empty) {
-        const appDoc = appSnapshot.docs[0];
-        transaction.update(doc(getFirebaseDb(), APPLICATIONS_COLLECTION, appDoc.id), {
+      if (applicationDoc.exists()) {
+        transaction.update(applicationRef, {
           status: 'applied',
           updatedAt: serverTimestamp(),
         });
