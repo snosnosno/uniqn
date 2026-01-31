@@ -12,7 +12,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
-import { colorScheme } from 'nativewind';
+import { colorScheme as nativeWindColorScheme } from 'nativewind';
 import { queryClient } from '@/lib/queryClient';
 import { isWeb } from '@/utils/platform';
 import {
@@ -42,13 +42,17 @@ if (__DEV__) {
  * 초기화 완료 후 렌더링되므로 useAuthGuard 안전하게 호출 가능
  */
 function MainNavigator() {
-  const { isDarkMode, mode } = useThemeStore();
+  const { mode, isDarkMode } = useThemeStore();
   const isDark = isDarkMode;
 
-  // 앱 시작 시 저장된 테마를 NativeWind에 적용
+  // 마운트 시 NativeWind colorScheme 확실히 적용
+  // (themeStore hydration 타이밍 이슈 해결)
   useEffect(() => {
-    colorScheme.set(mode);
-  }, [mode]);
+    const effectiveMode = mode === 'system'
+      ? (isDark ? 'dark' : 'light')
+      : mode;
+    nativeWindColorScheme.set(effectiveMode);
+  }, [mode, isDark]);
 
   // 앱 전역 인증 가드 - 초기화 완료 후에만 실행됨
   useAuthGuard();

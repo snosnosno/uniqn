@@ -2,7 +2,10 @@
  * UNIQN Mobile - Theme Store
  *
  * @description 테마 상태 관리 (라이트/다크 모드 + MMKV)
- * @version 1.1.0
+ * @version 1.2.0
+ *
+ * 변경사항:
+ * - v1.2.0: hydration 추적 및 waitForHydration 추가
  */
 
 import { create } from 'zustand';
@@ -12,16 +15,24 @@ import { Appearance, ColorSchemeName } from 'react-native';
 import { colorScheme as nativeWindColorScheme } from 'nativewind';
 
 // ============================================================================
+// Constants
+// ============================================================================
+
+const VALID_THEME_MODES = ['light', 'dark', 'system'] as const;
+
+// ============================================================================
 // Types
 // ============================================================================
 
-export type ThemeMode = 'light' | 'dark' | 'system';
+export type ThemeMode = (typeof VALID_THEME_MODES)[number];
 
 interface ThemeState {
   mode: ThemeMode;
   isDarkMode: boolean;
+  _hasHydrated: boolean; // MMKV에서 복원 완료 여부
   setTheme: (mode: ThemeMode) => void;
   toggleTheme: () => void;
+  setHasHydrated: (hasHydrated: boolean) => void;
 }
 
 // ============================================================================
@@ -57,8 +68,18 @@ export const useThemeStore = create<ThemeState>()(
     (set, get) => ({
       mode: 'system',
       isDarkMode: getSystemDarkMode(),
+      _hasHydrated: false,
+
+      setHasHydrated: (hasHydrated: boolean) => {
+        set({ _hasHydrated: hasHydrated });
+      },
 
       setTheme: (mode: ThemeMode) => {
+        // 유효성 검증
+        if (!VALID_THEME_MODES.includes(mode)) {
+          console.warn(`[themeStore] Invalid theme mode: ${mode}, using 'system'`);
+          mode = 'system';
+        }
         applyColorScheme(mode);
         set({
           mode,
@@ -90,9 +111,18 @@ export const useThemeStore = create<ThemeState>()(
       partialize: (state) => ({ mode: state.mode }),
       onRehydrateStorage: () => (state) => {
         if (state) {
-          // 복원 후 isDarkMode 재계산 및 시스템 colorScheme 적용
-          state.isDarkMode = computeIsDarkMode(state.mode);
-          applyColorScheme(state.mode);
+          // 복원 후 isDarkMode 재계산
+          const isDark = computeIsDarkMode(state.mode);
+          state.isDarkMode = isDark;
+
+          // NativeWind colorScheme 적용 (system 모드는 실제 값으로 변환)
+          const effectiveMode = state.mode === 'system'
+            ? (isDark ? 'dark' : 'light')
+            : state.mode;
+          nativeWindColorScheme.set(effectiveMode);
+
+          // hydration 완료 표시
+          state.setHasHydrated(true);
         }
       },
     }
@@ -107,10 +137,53 @@ export const useThemeStore = create<ThemeState>()(
 Appearance.addChangeListener(({ colorScheme }: { colorScheme: ColorSchemeName }) => {
   const state = useThemeStore.getState();
   if (state.mode === 'system') {
+    // NativeWind colorScheme 즉시 반영
+    nativeWindColorScheme.set(colorScheme || 'light');
     useThemeStore.setState({
       isDarkMode: colorScheme === 'dark',
     });
   }
 });
+
+// ============================================================================
+// Hydration Helper
+// ============================================================================
+
+/**
+ * Theme Store Hydration 완료 대기
+ *
+ * @param timeout - 타임아웃 (기본 3초)
+ * @returns hydration 완료 여부
+ *
+ * @example
+ * ```typescript
+ * const hydrated = await waitForThemeHydration();
+ * if (hydrated) {
+ *   // 복원된 테마로 작업 수행
+ * }
+ * ```
+ */
+export async function waitForThemeHydration(timeout = 3000): Promise<boolean> {
+  // 이미 hydrated인 경우 즉시 반환
+  if (useThemeStore.getState()._hasHydrated) {
+    return true;
+  }
+
+  // hydration 완료 대기
+  return new Promise<boolean>((resolve) => {
+    const timeoutId = setTimeout(() => {
+      unsubscribe();
+      resolve(false);
+    }, timeout);
+
+    const unsubscribe = useThemeStore.subscribe((state) => {
+      if (state._hasHydrated) {
+        clearTimeout(timeoutId);
+        unsubscribe();
+        resolve(true);
+      }
+    });
+  });
+}
 
 export default useThemeStore;
