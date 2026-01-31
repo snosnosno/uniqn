@@ -21,12 +21,59 @@ import { Timestamp } from 'firebase/firestore';
 // ============================================================================
 
 /**
- * Firebase Timestamp 타입 검증
+ * Timestamp-like 객체 타입 가드
+ *
+ * @description toDate() 메서드가 있는 객체인지 확인
+ */
+function isTimestampLike(value: unknown): value is Timestamp {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'toDate' in value &&
+    typeof (value as Record<string, unknown>).toDate === 'function'
+  );
+}
+
+/**
+ * seconds/nanoseconds 객체 타입 가드
+ */
+function isTimestampObject(value: unknown): value is { seconds: number; nanoseconds: number } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'seconds' in value &&
+    'nanoseconds' in value &&
+    typeof (value as Record<string, unknown>).seconds === 'number' &&
+    typeof (value as Record<string, unknown>).nanoseconds === 'number'
+  );
+}
+
+/**
+ * serverTimestamp() 센티널 값 타입 가드
+ *
+ * @description Firestore에서 pendingWrites 상태일 때 serverTimestamp()는
+ *              실제 Timestamp 대신 { _methodName: 'serverTimestamp' } 형태로 반환됨
+ */
+function isServerTimestampSentinel(value: unknown): value is { _methodName: 'serverTimestamp' } {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    '_methodName' in value &&
+    (value as Record<string, unknown>)._methodName === 'serverTimestamp'
+  );
+}
+
+/**
+ * Firebase Timestamp 타입 검증 및 변환
  *
  * @description Firestore에서 읽은 Timestamp 또는 JS Date 객체 허용
- * - Timestamp 인스턴스
+ * - Timestamp 인스턴스 (toDate 메서드로 판별)
  * - Date 인스턴스
  * - { seconds: number, nanoseconds: number } 형태 (JSON 직렬화된 Timestamp)
+ *
+ * @note z.instanceof(Timestamp)는 번들러 환경에서 실패할 수 있으므로
+ *       toDate() 메서드 존재 여부로 판별
+ * @note 모든 유효한 입력은 Timestamp로 변환되어 출력 타입이 일관됨
  *
  * @example
  * const schema = z.object({
@@ -38,17 +85,36 @@ import { Timestamp } from 'firebase/firestore';
  * { createdAt: new Date() }
  * { createdAt: { seconds: 1234567890, nanoseconds: 0 } }
  */
-export const timestampSchema = z.union([
-  // Firebase Timestamp 인스턴스
-  z.instanceof(Timestamp),
-  // JS Date 인스턴스
-  z.instanceof(Date),
-  // JSON 직렬화된 Timestamp (서버에서 받은 데이터)
-  z.object({
-    seconds: z.number(),
-    nanoseconds: z.number(),
-  }),
-]);
+export const timestampSchema = z
+  .custom<Timestamp | Date | { seconds: number; nanoseconds: number } | { _methodName: 'serverTimestamp' }>(
+    (val) =>
+      isTimestampLike(val) ||
+      val instanceof Date ||
+      isTimestampObject(val) ||
+      isServerTimestampSentinel(val),
+    { message: 'Timestamp 형식이 아닙니다' }
+  )
+  .transform((val): Timestamp => {
+    // 이미 Timestamp-like 객체인 경우 그대로 반환
+    if (isTimestampLike(val)) {
+      return val as Timestamp;
+    }
+    // Date 객체인 경우 Timestamp로 변환
+    if (val instanceof Date) {
+      return Timestamp.fromDate(val);
+    }
+    // { seconds, nanoseconds } 객체인 경우 Timestamp로 변환
+    if (isTimestampObject(val)) {
+      return new Timestamp(val.seconds, val.nanoseconds);
+    }
+    // serverTimestamp() 센티널 값인 경우 현재 시간으로 변환
+    // (pendingWrites 상태에서 읽은 경우)
+    if (isServerTimestampSentinel(val)) {
+      return Timestamp.now();
+    }
+    // 여기에 도달하면 안됨 (위의 custom에서 이미 검증됨)
+    throw new Error('Invalid timestamp format');
+  });
 
 /**
  * 선택적 Timestamp 스키마
