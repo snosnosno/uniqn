@@ -14,8 +14,12 @@
  */
 
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 import { StateStorage } from 'zustand/middleware';
 import { logger } from '@/utils/logger';
+
+// 경고 중복 방지 플래그
+let mmkvWarningShown = false;
 
 // ============================================================================
 // MMKV Instance (Conditional Import)
@@ -114,14 +118,31 @@ function createMemoryStorageFallback(): MMKVInstance {
 }
 
 /**
+ * Expo Go 환경인지 확인
+ */
+function isExpoGo(): boolean {
+  return Constants.executionEnvironment === 'storeClient';
+}
+
+/**
  * MMKV 초기화
  *
  * 웹: localStorage 사용
  * 네이티브: MMKV 사용 (설치 필요)
+ * Expo Go: 메모리 스토리지 (네이티브 모듈 미지원)
  */
 function initializeMMKV(): MMKVInstance {
   if (Platform.OS === 'web') {
     return createWebStorageWrapper();
+  }
+
+  // Expo Go에서는 네이티브 모듈 사용 불가
+  if (isExpoGo()) {
+    if (!mmkvWarningShown) {
+      mmkvWarningShown = true;
+      logger.info('[MMKV] Expo Go 환경 - 메모리 스토리지 사용 (정상)');
+    }
+    return createMemoryStorageFallback();
   }
 
   // 네이티브 환경: MMKV 사용 시도
@@ -132,7 +153,10 @@ function initializeMMKV(): MMKVInstance {
       id: 'uniqn-storage',
     });
   } catch {
-    logger.warn('[MMKV] react-native-mmkv 미설치. 메모리 스토리지 사용.');
+    if (!mmkvWarningShown) {
+      mmkvWarningShown = true;
+      logger.warn('[MMKV] 네이티브 모듈 로드 실패 - 메모리 스토리지 사용');
+    }
     return createMemoryStorageFallback();
   }
 }

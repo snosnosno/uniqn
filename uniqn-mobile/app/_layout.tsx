@@ -34,6 +34,7 @@ if (__DEV__) {
   LogBox.ignoreLogs([
     'props.pointerEvents is deprecated', // expo-router 내부 이슈
     'Image: style.tintColor is deprecated', // react-navigation 내부 이슈
+    'SafeAreaView has been deprecated', // react-native-calendars 등 써드파티 이슈 (RN 0.81.5+)
   ]);
 }
 
