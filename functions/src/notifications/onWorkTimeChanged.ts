@@ -8,42 +8,19 @@
  *
  * @trigger Firestore onUpdate
  * @collection workLogs/{workLogId}
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-10-15
+ *
+ * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { getFcmTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast } from '../utils/notificationUtils';
+import { formatTime, extractUserId } from '../utils/helpers';
 
 const db = admin.firestore();
-
-/**
- * Firestore Timestamp를 HH:MM 형식으로 변환 (KST 기준)
- *
- * ⚠️ 중요: Firestore Timestamp는 UTC로 저장되므로 KST(UTC+9)로 변환 필요
- * - Firestore: UTC 05:00 → KST 14:00으로 변환
- */
-function formatTime(time: any): string {
-  if (!time) return '';
-
-  if (typeof time === 'string') {
-    return time;
-  }
-
-  // Firestore Timestamp인 경우
-  if (time.toDate) {
-    const utcDate = time.toDate(); // UTC 시간
-
-    // ✅ KST로 변환 (UTC+9)
-    const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
-
-    const hours = kstDate.getUTCHours().toString().padStart(2, '0');
-    const minutes = kstDate.getUTCMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
-  return '';
-}
 
 /**
  * 근무시간 변경 알림 트리거
@@ -103,10 +80,7 @@ export const onWorkTimeChanged = functions.firestore
       }
 
       // 2. 근무자 정보 조회
-      // staffId에서 실제 사용자 ID 추출 (staffId 형식: {userId}_{index})
-      const actualUserId = after.staffId.includes('_')
-        ? after.staffId.split('_')[0]
-        : after.staffId;
+      const actualUserId = extractUserId(after.staffId);
 
       const staffDoc = await db
         .collection('users')
@@ -152,27 +126,21 @@ export const onWorkTimeChanged = functions.firestore
       const notificationRef = db.collection('notifications').doc();
       const notificationId = notificationRef.id;
 
-      // actualUserId는 위에서 이미 추출됨 (line 100-102)
-
       await notificationRef.set({
         id: notificationId,
-        userId: actualUserId, // 근무자에게 전송 (실제 userId 사용)
+        recipientId: actualUserId,
         type: 'schedule_change',
-        category: 'schedule',
+        category: 'attendance',
         priority: 'high',
         title: notificationTitle,
         body: notificationBody,
-        action: {
-          type: 'navigate',
-          target: '/app/my-schedule',
-        },
+        link: '/schedule',
         relatedId: workLogId,
-        senderId: jobPosting.createdBy,
+        senderId: jobPosting.createdBy ?? null,
         isRead: false,
-        isSent: false,
-        isLocal: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
+          type: 'schedule_change',
           workLogId,
           eventId: after.eventId,
           jobPostingTitle: jobPosting.title,
@@ -180,7 +148,6 @@ export const onWorkTimeChanged = functions.firestore
           scheduledEndTime: formatTime(after.scheduledEndTime),
           location: jobPosting.location,
           district: jobPosting.district,
-          detailedAddress: jobPosting.detailedAddress,
         },
       });
 
@@ -190,9 +157,9 @@ export const onWorkTimeChanged = functions.firestore
       });
 
       // 6. FCM 토큰 확인 및 푸시 전송
-      const fcmToken = staff.fcmToken?.token || staff.fcmToken;
+      const fcmTokens = getFcmTokens(staff);
 
-      if (!fcmToken || typeof fcmToken !== 'string') {
+      if (fcmTokens.length === 0) {
         functions.logger.warn('FCM 토큰이 없습니다', {
           staffId: after.staffId,
           workLogId,
@@ -200,57 +167,34 @@ export const onWorkTimeChanged = functions.firestore
         return;
       }
 
-      // 7. FCM 푸시 메시지 전송
-      const fcmMessage = {
-        notification: {
-          title: notificationTitle,
-          body: notificationBody,
-        },
+      // 7. FCM 멀티캐스트 전송 (공통 유틸리티 사용)
+      const result = await sendMulticast(fcmTokens, {
+        title: notificationTitle,
+        body: notificationBody,
         data: {
           type: 'schedule_change',
           notificationId,
           workLogId,
           eventId: after.eventId,
-          target: '/app/my-schedule',
+          link: '/schedule',
         },
-        token: fcmToken,
-        android: {
-          priority: 'high' as const,
-          notification: {
-            sound: 'default',
-            channelId: 'schedule',
-          },
-        },
-        apns: {
-          payload: {
-            aps: {
-              sound: 'default',
-              badge: 1,
-            },
-          },
-        },
-      };
+        channelId: 'reminders',
+        priority: 'high',
+      });
 
-      try {
-        const response = await admin.messaging().send(fcmMessage);
+      functions.logger.info('근무시간 변경 알림 FCM 푸시 전송 완료', {
+        workLogId,
+        staffId: after.staffId,
+        success: result.success,
+        failure: result.failure,
+      });
 
-        functions.logger.info('근무시간 변경 알림 FCM 푸시 전송 성공', {
-          workLogId,
-          staffId: after.staffId,
-          messageId: response,
-        });
-
-        // 8. 전송 성공 시 알림 문서 업데이트
+      // 8. 전송 성공 시 알림 문서 업데이트
+      if (result.success > 0) {
         await notificationRef.update({
-          isSent: true,
           sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      } catch (fcmError: any) {
-        functions.logger.error('근무시간 변경 알림 FCM 푸시 전송 실패', {
-          workLogId,
-          staffId: after.staffId,
-          error: fcmError.message,
-          errorCode: fcmError.code,
+          fcmSuccess: result.success,
+          fcmFailure: result.failure,
         });
       }
     } catch (error: any) {

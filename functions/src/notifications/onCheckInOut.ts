@@ -8,12 +8,17 @@
  *
  * @trigger Firestore onUpdate
  * @collection workLogs/{workLogId}
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-01-18
+ *
+ * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { getFcmTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast } from '../utils/notificationUtils';
+import { formatTime, extractUserId } from '../utils/helpers';
 
 const db = admin.firestore();
 
@@ -23,7 +28,6 @@ const db = admin.firestore();
 
 interface UserData {
   fcmTokens?: string[];
-  fcmToken?: string | { token: string };
   name?: string;
 }
 
@@ -42,114 +46,6 @@ interface WorkLogData {
 }
 
 // ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Firestore Timestamp를 HH:MM 형식으로 변환 (KST 기준)
- */
-function formatTime(time: admin.firestore.Timestamp | null | undefined): string {
-  if (!time) return '';
-
-  if ('toDate' in time) {
-    const utcDate = time.toDate();
-    // KST로 변환 (UTC+9)
-    const kstDate = new Date(utcDate.getTime() + 9 * 60 * 60 * 1000);
-    const hours = kstDate.getUTCHours().toString().padStart(2, '0');
-    const minutes = kstDate.getUTCMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
-  return '';
-}
-
-/**
- * staffId에서 실제 userId 추출
- * staffId 형식: {userId}_{index} 또는 {userId}
- */
-function extractUserId(staffId: string): string {
-  if (!staffId) return '';
-  return staffId.includes('_') ? staffId.split('_')[0] : staffId;
-}
-
-/**
- * 사용자의 FCM 토큰 배열 가져오기
- */
-function getFcmTokens(userData: UserData): string[] {
-  const tokens: string[] = [];
-
-  // 새로운 fcmTokens 배열 형식
-  if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
-    tokens.push(
-      ...userData.fcmTokens.filter((t) => typeof t === 'string' && t.length > 0)
-    );
-  }
-
-  // 기존 fcmToken 형식 (호환성)
-  if (userData.fcmToken) {
-    const token =
-      typeof userData.fcmToken === 'string'
-        ? userData.fcmToken
-        : userData.fcmToken.token;
-    if (token && typeof token === 'string' && !tokens.includes(token)) {
-      tokens.push(token);
-    }
-  }
-
-  return tokens;
-}
-
-/**
- * FCM 푸시 알림 전송
- */
-async function sendPushNotification(
-  tokens: string[],
-  title: string,
-  body: string,
-  data: Record<string, string>,
-  channelId: string = 'attendance'
-): Promise<{ success: number; failure: number }> {
-  if (tokens.length === 0) {
-    return { success: 0, failure: 0 };
-  }
-
-  const message: admin.messaging.MulticastMessage = {
-    tokens,
-    notification: {
-      title,
-      body,
-    },
-    data,
-    android: {
-      priority: 'high',
-      notification: {
-        sound: 'default',
-        channelId,
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          badge: 1,
-        },
-      },
-    },
-  };
-
-  try {
-    const response = await admin.messaging().sendEachForMulticast(message);
-    return {
-      success: response.successCount,
-      failure: response.failureCount,
-    };
-  } catch (error) {
-    functions.logger.error('FCM 전송 실패', { error });
-    return { success: 0, failure: tokens.length };
-  }
-}
-
-// ============================================================================
 // Triggers
 // ============================================================================
 
@@ -158,7 +54,8 @@ async function sendPushNotification(
  *
  * @description
  * - WorkLog checkInTime/checkOutTime 변경 감지
- * - 근무자에게 FCM 푸시 알림 전송
+ * - 근무자에게 check_in_confirmed/check_out_confirmed 알림 전송
+ * - 구인자에게 staff_checked_in/staff_checked_out 알림 전송
  * - Firestore notifications 문서 생성
  */
 export const onCheckInOut = functions.firestore
@@ -234,10 +131,10 @@ export const onCheckInOut = functions.firestore
         recipientId: actualUserId,
         type: isCheckIn ? 'check_in_confirmed' : 'check_out_confirmed',
         category: 'attendance',
-        priority: 'medium',
+        priority: 'normal',
         title: notificationTitle,
         body: notificationBody,
-        link: '/app/my-schedule',
+        link: '/schedule',
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
@@ -265,19 +162,19 @@ export const onCheckInOut = functions.firestore
         return;
       }
 
-      const result = await sendPushNotification(
-        fcmTokens,
-        notificationTitle,
-        notificationBody,
-        {
+      const result = await sendMulticast(fcmTokens, {
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
           type: isCheckIn ? 'check_in_confirmed' : 'check_out_confirmed',
           notificationId,
           workLogId,
           eventId: after.eventId,
-          target: '/app/my-schedule',
+          target: '/schedule',
         },
-        'attendance'
-      );
+        channelId: 'default',
+        priority: 'normal',
+      });
 
       functions.logger.info(`${checkType} 알림 FCM 전송 완료`, {
         workLogId,
@@ -290,6 +187,85 @@ export const onCheckInOut = functions.firestore
         await notificationRef.update({
           sentAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+      }
+
+      // ========================================================================
+      // 7. 구인자에게 staff_checked_in/out 알림 전송
+      // ========================================================================
+      if (jobPosting?.createdBy) {
+        const employerDoc = await db.collection('users').doc(jobPosting.createdBy).get();
+
+        if (employerDoc.exists) {
+          const employer = employerDoc.data() as UserData;
+
+          // 구인자용 알림 내용
+          const employerTitle = isCheckIn ? '🟢 출근 알림' : '🔴 퇴근 알림';
+          const employerBody = isCheckIn
+            ? `${staff?.name || '스태프'}님이 ${formattedTime}에 출근했습니다.`
+            : `${staff?.name || '스태프'}님이 ${formattedTime}에 퇴근했습니다.`;
+
+          // 구인자용 알림 문서 생성
+          const employerNotificationRef = db.collection('notifications').doc();
+          const employerNotificationId = employerNotificationRef.id;
+
+          await employerNotificationRef.set({
+            id: employerNotificationId,
+            recipientId: jobPosting.createdBy,
+            type: isCheckIn ? 'staff_checked_in' : 'staff_checked_out',
+            category: 'attendance',
+            priority: 'normal',
+            title: employerTitle,
+            body: employerBody,
+            link: `/employer/applicants/${after.eventId}`,
+            isRead: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            data: {
+              workLogId,
+              eventId: after.eventId,
+              jobPostingTitle: jobPosting?.title || '',
+              staffId: after.staffId,
+              staffName: staff?.name || '',
+              date: after.date || '',
+              checkTime: formattedTime,
+            },
+          });
+
+          functions.logger.info(`구인자 ${checkType} 알림 문서 생성 완료`, {
+            notificationId: employerNotificationId,
+            employerId: jobPosting.createdBy,
+          });
+
+          // 구인자 FCM 푸시 전송
+          const employerTokens = getFcmTokens(employer);
+
+          if (employerTokens.length > 0) {
+            const employerResult = await sendMulticast(employerTokens, {
+              title: employerTitle,
+              body: employerBody,
+              data: {
+                type: isCheckIn ? 'staff_checked_in' : 'staff_checked_out',
+                notificationId: employerNotificationId,
+                workLogId,
+                eventId: after.eventId,
+                target: `/employer/applicants/${after.eventId}`,
+              },
+              channelId: 'reminders',
+              priority: 'normal',
+            });
+
+            if (employerResult.success > 0) {
+              await employerNotificationRef.update({
+                sentAt: admin.firestore.FieldValue.serverTimestamp(),
+              });
+            }
+
+            functions.logger.info(`구인자 ${checkType} 알림 FCM 전송 완료`, {
+              employerId: jobPosting.createdBy,
+              success: employerResult.success,
+              failure: employerResult.failure,
+            });
+          }
+        }
       }
     } catch (error: any) {
       functions.logger.error(`${checkType} 알림 처리 중 오류 발생`, {

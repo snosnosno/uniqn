@@ -12,13 +12,17 @@
  *
  * @trigger Firestore onUpdate
  * @collection applications/{applicationId}
- * @version 2.0.0
+ * @version 2.1.0
  * @since 2025-10-15
  * @updated 2025-01-18
+ *
+ * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { getFcmTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast } from '../utils/notificationUtils';
 
 const db = admin.firestore();
 
@@ -28,7 +32,6 @@ const db = admin.firestore();
 
 interface UserData {
   fcmTokens?: string[];
-  fcmToken?: string | { token: string };
   name?: string;
 }
 
@@ -57,119 +60,6 @@ interface JobPostingData {
 // Helper Functions
 // ============================================================================
 
-/**
- * 사용자의 FCM 토큰 배열 가져오기
- */
-function getFcmTokens(userData: UserData): string[] {
-  const tokens: string[] = [];
-
-  if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
-    tokens.push(
-      ...userData.fcmTokens.filter((t) => typeof t === 'string' && t.length > 0)
-    );
-  }
-
-  if (userData.fcmToken) {
-    const token =
-      typeof userData.fcmToken === 'string'
-        ? userData.fcmToken
-        : userData.fcmToken.token;
-    if (token && typeof token === 'string' && !tokens.includes(token)) {
-      tokens.push(token);
-    }
-  }
-
-  return tokens;
-}
-
-/**
- * FCM 푸시 알림 전송 (단일 토큰)
- * @deprecated Use sendPushNotification instead
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function sendFcmMessage(
-  token: string,
-  title: string,
-  body: string,
-  data: Record<string, string>,
-  priority: 'high' | 'normal' = 'high',
-  channelId: string = 'application'
-): Promise<string | null> {
-  const fcmMessage: admin.messaging.Message = {
-    notification: { title, body },
-    data,
-    token,
-    android: {
-      priority,
-      notification: {
-        sound: 'default',
-        channelId,
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          badge: 1,
-        },
-      },
-    },
-  };
-
-  try {
-    const response = await admin.messaging().send(fcmMessage);
-    return response;
-  } catch (error) {
-    return null;
-  }
-}
-
-/**
- * FCM 푸시 알림 전송 (멀티캐스트)
- */
-async function sendPushNotification(
-  tokens: string[],
-  title: string,
-  body: string,
-  data: Record<string, string>,
-  channelId: string = 'application'
-): Promise<{ success: number; failure: number }> {
-  if (tokens.length === 0) {
-    return { success: 0, failure: 0 };
-  }
-
-  const message: admin.messaging.MulticastMessage = {
-    tokens,
-    notification: { title, body },
-    data,
-    android: {
-      priority: 'high',
-      notification: {
-        sound: 'default',
-        channelId,
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          badge: 1,
-        },
-      },
-    },
-  };
-
-  try {
-    const response = await admin.messaging().sendEachForMulticast(message);
-    return {
-      success: response.successCount,
-      failure: response.failureCount,
-    };
-  } catch (error) {
-    functions.logger.error('FCM 전송 실패', { error });
-    return { success: 0, failure: tokens.length };
-  }
-}
 
 // ============================================================================
 // Main Trigger
@@ -340,7 +230,7 @@ async function sendConfirmationNotification(
     priority: 'high',
     title: notificationTitle,
     body: notificationBody,
-    link: '/app/my-schedule',
+    link: '/schedule',
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
@@ -355,18 +245,19 @@ async function sendConfirmationNotification(
   const fcmTokens = getFcmTokens(applicant);
 
   if (fcmTokens.length > 0) {
-    const result = await sendPushNotification(
-      fcmTokens,
-      notificationTitle,
-      notificationBody,
-      {
+    const result = await sendMulticast(fcmTokens, {
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
         type: 'application_confirmed',
         notificationId,
         applicationId,
         eventId: application.eventId,
-        target: '/app/my-schedule',
-      }
-    );
+        target: '/schedule',
+      },
+      channelId: 'applications',
+      priority: 'high',
+    });
 
     if (result.success > 0) {
       await notificationRef.update({
@@ -407,10 +298,10 @@ async function sendCancellationNotification(
     recipientId: application.applicantId,
     type: 'confirmation_cancelled',
     category: 'application',
-    priority: 'medium',
+    priority: 'normal',
     title: notificationTitle,
     body: notificationBody,
-    link: '/app/my-schedule',
+    link: '/schedule',
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
@@ -423,18 +314,19 @@ async function sendCancellationNotification(
   const fcmTokens = getFcmTokens(applicant);
 
   if (fcmTokens.length > 0) {
-    const result = await sendPushNotification(
-      fcmTokens,
-      notificationTitle,
-      notificationBody,
-      {
+    const result = await sendMulticast(fcmTokens, {
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
         type: 'confirmation_cancelled',
         notificationId,
         applicationId,
         eventId: application.eventId,
-        target: '/app/my-schedule',
-      }
-    );
+        target: '/schedule',
+      },
+      channelId: 'applications',
+      priority: 'normal',
+    });
 
     if (result.success > 0) {
       await notificationRef.update({
@@ -475,10 +367,10 @@ async function sendRejectionNotification(
     recipientId: application.applicantId,
     type: 'application_rejected',
     category: 'application',
-    priority: 'medium',
+    priority: 'normal',
     title: notificationTitle,
     body: notificationBody,
-    link: '/app/applications',
+    link: '/my-applications',
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
@@ -491,18 +383,19 @@ async function sendRejectionNotification(
   const fcmTokens = getFcmTokens(applicant);
 
   if (fcmTokens.length > 0) {
-    const result = await sendPushNotification(
-      fcmTokens,
-      notificationTitle,
-      notificationBody,
-      {
+    const result = await sendMulticast(fcmTokens, {
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
         type: 'application_rejected',
         notificationId,
         applicationId,
         eventId: application.eventId,
-        target: '/app/applications',
-      }
-    );
+        target: '/my-applications',
+      },
+      channelId: 'applications',
+      priority: 'normal',
+    });
 
     if (result.success > 0) {
       await notificationRef.update({
@@ -564,10 +457,10 @@ async function sendWithdrawnNotification(
     recipientId: jobPosting.createdBy,
     type: 'application_withdrawn',
     category: 'application',
-    priority: 'medium',
+    priority: 'normal',
     title: notificationTitle,
     body: notificationBody,
-    link: `/employer/my-postings/${application.eventId}/applicants`,
+    link: `/employer/applicants/${application.eventId}`,
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
@@ -582,18 +475,19 @@ async function sendWithdrawnNotification(
   const fcmTokens = getFcmTokens(employer);
 
   if (fcmTokens.length > 0) {
-    const result = await sendPushNotification(
-      fcmTokens,
-      notificationTitle,
-      notificationBody,
-      {
+    const result = await sendMulticast(fcmTokens, {
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
         type: 'application_withdrawn',
         notificationId,
         applicationId,
         eventId: application.eventId,
-        target: `/employer/my-postings/${application.eventId}/applicants`,
-      }
-    );
+        target: `/employer/applicants/${application.eventId}`,
+      },
+      channelId: 'applications',
+      priority: 'normal',
+    });
 
     if (result.success > 0) {
       await notificationRef.update({
@@ -634,10 +528,10 @@ async function sendCancellationApprovedNotification(
     recipientId: application.applicantId,
     type: 'cancellation_approved',
     category: 'application',
-    priority: 'medium',
+    priority: 'normal',
     title: notificationTitle,
     body: notificationBody,
-    link: '/app/my-schedule',
+    link: '/schedule',
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
@@ -650,18 +544,19 @@ async function sendCancellationApprovedNotification(
   const fcmTokens = getFcmTokens(applicant);
 
   if (fcmTokens.length > 0) {
-    const result = await sendPushNotification(
-      fcmTokens,
-      notificationTitle,
-      notificationBody,
-      {
+    const result = await sendMulticast(fcmTokens, {
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
         type: 'cancellation_approved',
         notificationId,
         applicationId,
         eventId: application.eventId,
-        target: '/app/my-schedule',
-      }
-    );
+        target: '/schedule',
+      },
+      channelId: 'applications',
+      priority: 'normal',
+    });
 
     if (result.success > 0) {
       await notificationRef.update({
@@ -705,7 +600,7 @@ async function sendCancellationRejectedNotification(
     priority: 'high',
     title: notificationTitle,
     body: notificationBody,
-    link: '/app/my-schedule',
+    link: '/schedule',
     isRead: false,
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
@@ -718,18 +613,19 @@ async function sendCancellationRejectedNotification(
   const fcmTokens = getFcmTokens(applicant);
 
   if (fcmTokens.length > 0) {
-    const result = await sendPushNotification(
-      fcmTokens,
-      notificationTitle,
-      notificationBody,
-      {
+    const result = await sendMulticast(fcmTokens, {
+      title: notificationTitle,
+      body: notificationBody,
+      data: {
         type: 'cancellation_rejected',
         notificationId,
         applicationId,
         eventId: application.eventId,
-        target: '/app/my-schedule',
-      }
-    );
+        target: '/schedule',
+      },
+      channelId: 'applications',
+      priority: 'high',
+    });
 
     if (result.success > 0) {
       await notificationRef.update({

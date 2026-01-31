@@ -8,12 +8,17 @@
  *
  * @trigger Firestore onCreate, onUpdate
  * @collection workLogs/{workLogId}
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-12-22
+ *
+ * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { getFcmTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast } from '../utils/notificationUtils';
+import { formatTime, extractUserId } from '../utils/helpers';
 
 const db = admin.firestore();
 
@@ -23,7 +28,6 @@ const db = admin.firestore();
 
 interface UserData {
   fcmTokens?: string[];
-  fcmToken?: string | { token: string };
   name?: string;
 }
 
@@ -43,117 +47,6 @@ interface WorkLogData {
   status?: string;
   scheduledStartTime?: admin.firestore.Timestamp | string;
   scheduledEndTime?: admin.firestore.Timestamp | string;
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Firestore Timestamp를 HH:MM 형식으로 변환 (KST 기준)
- */
-function formatTime(time: admin.firestore.Timestamp | string | null | undefined): string {
-  if (!time) return '';
-
-  if (typeof time === 'string') {
-    return time;
-  }
-
-  // Firestore Timestamp인 경우
-  if ('toDate' in time) {
-    const utcDate = time.toDate();
-    // KST로 변환 (UTC+9)
-    const kstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000));
-    const hours = kstDate.getUTCHours().toString().padStart(2, '0');
-    const minutes = kstDate.getUTCMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
-  return '';
-}
-
-/**
- * staffId에서 실제 userId 추출
- * staffId 형식: {userId}_{index} 또는 {userId}
- */
-function extractUserId(staffId: string): string {
-  if (!staffId) return '';
-  return staffId.includes('_') ? staffId.split('_')[0] : staffId;
-}
-
-/**
- * 사용자의 FCM 토큰 배열 가져오기
- * 새로운 fcmTokens 배열 형식과 기존 fcmToken 형식 모두 지원
- */
-function getFcmTokens(userData: UserData): string[] {
-  const tokens: string[] = [];
-
-  // 새로운 fcmTokens 배열 형식
-  if (userData.fcmTokens && Array.isArray(userData.fcmTokens)) {
-    tokens.push(...userData.fcmTokens.filter(t => typeof t === 'string' && t.length > 0));
-  }
-
-  // 기존 fcmToken 형식 (호환성)
-  if (userData.fcmToken) {
-    const token = typeof userData.fcmToken === 'string'
-      ? userData.fcmToken
-      : userData.fcmToken.token;
-    if (token && typeof token === 'string' && !tokens.includes(token)) {
-      tokens.push(token);
-    }
-  }
-
-  return tokens;
-}
-
-/**
- * FCM 푸시 알림 전송
- */
-async function sendPushNotification(
-  tokens: string[],
-  title: string,
-  body: string,
-  data: Record<string, string>,
-  channelId: string = 'schedule'
-): Promise<{ success: number; failure: number }> {
-  if (tokens.length === 0) {
-    return { success: 0, failure: 0 };
-  }
-
-  const message: admin.messaging.MulticastMessage = {
-    tokens,
-    notification: {
-      title,
-      body,
-    },
-    data,
-    android: {
-      priority: 'high',
-      notification: {
-        sound: 'default',
-        channelId,
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          badge: 1,
-        },
-      },
-    },
-  };
-
-  try {
-    const response = await admin.messaging().sendEachForMulticast(message);
-    return {
-      success: response.successCount,
-      failure: response.failureCount,
-    };
-  } catch (error) {
-    functions.logger.error('FCM 전송 실패', { error });
-    return { success: 0, failure: tokens.length };
-  }
 }
 
 // ============================================================================
@@ -228,11 +121,11 @@ export const onScheduleCreated = functions.firestore
         id: notificationId,
         recipientId: actualUserId,
         type: 'schedule_created',
-        category: 'schedule',
+        category: 'attendance',
         priority: 'high',
         title: notificationTitle,
         body: notificationBody,
-        link: '/app/my-schedule',
+        link: '/schedule',
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
@@ -264,19 +157,19 @@ export const onScheduleCreated = functions.firestore
         return;
       }
 
-      const result = await sendPushNotification(
-        fcmTokens,
-        notificationTitle,
-        notificationBody,
-        {
+      const result = await sendMulticast(fcmTokens, {
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
           type: 'schedule_created',
           notificationId,
           workLogId,
           eventId: workLog.eventId,
-          target: '/app/my-schedule',
+          target: '/schedule',
         },
-        'schedule'
-      );
+        channelId: 'reminders',
+        priority: 'high',
+      });
 
       functions.logger.info('스케줄 생성 알림 FCM 전송 완료', {
         workLogId,
@@ -371,11 +264,11 @@ export const onScheduleCancelled = functions.firestore
         id: notificationId,
         recipientId: actualUserId,
         type: 'schedule_cancelled',
-        category: 'schedule',
+        category: 'attendance',
         priority: 'high',
         title: notificationTitle,
         body: notificationBody,
-        link: '/app/my-schedule',
+        link: '/schedule',
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
@@ -403,19 +296,19 @@ export const onScheduleCancelled = functions.firestore
         return;
       }
 
-      const result = await sendPushNotification(
-        fcmTokens,
-        notificationTitle,
-        notificationBody,
-        {
+      const result = await sendMulticast(fcmTokens, {
+        title: notificationTitle,
+        body: notificationBody,
+        data: {
           type: 'schedule_cancelled',
           notificationId,
           workLogId,
           eventId: after.eventId,
-          target: '/app/my-schedule',
+          target: '/schedule',
         },
-        'schedule'
-      );
+        channelId: 'reminders',
+        priority: 'high',
+      });
 
       functions.logger.info('스케줄 취소 알림 FCM 전송 완료', {
         workLogId,

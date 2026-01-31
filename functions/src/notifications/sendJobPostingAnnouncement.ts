@@ -4,12 +4,15 @@
  * @description
  * 각 공고마다 확정된 스태프들에게 FCM 푸시 알림을 일괄 전송하는 Functions
  *
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-09-30
+ *
+ * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
 
 const db = admin.firestore();
 
@@ -143,8 +146,8 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
 
       await announcementRef.set(announcementData);
 
-      // 7. 스태프 FCM 토큰 조회 (배치 처리)
-      const staffTokensMap = new Map<string, string>();
+      // 7. 스태프 FCM 토큰 조회 (배치 처리, fcmTokens: string[] 배열만 사용)
+      const allUsersData: Array<{ id: string; data: any }> = [];
       const chunkSize = 10; // Firestore in 쿼리 제한
 
       for (let i = 0; i < targetStaffIds.length; i += chunkSize) {
@@ -152,27 +155,33 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
         const usersSnapshot = await db.collection('users').where('__name__', 'in', chunk).get();
 
         usersSnapshot.docs.forEach((doc) => {
-          const userData = doc.data();
-          const fcmToken = userData.fcmToken?.token || userData.fcmToken;
-
-          if (fcmToken && typeof fcmToken === 'string') {
-            staffTokensMap.set(doc.id, fcmToken);
-          }
+          allUsersData.push({ id: doc.id, data: doc.data() });
         });
+      }
+
+      const staffTokensMap = extractAllFcmTokens(allUsersData);
+      const allTokens = flattenTokens(staffTokensMap);
+
+      // 토큰 → 사용자 ID 역매핑
+      const tokenToUserMap = new Map<string, string>();
+      for (const [userId, tokens] of staffTokensMap.entries()) {
+        for (const token of tokens) {
+          tokenToUserMap.set(token, userId);
+        }
       }
 
       functions.logger.info('FCM 토큰 조회 완료', {
         totalStaff: targetStaffIds.length,
-        tokensFound: staffTokensMap.size,
+        usersWithTokens: staffTokensMap.size,
+        totalTokens: allTokens.length,
       });
 
       // 8. FCM 멀티캐스트 전송 (최대 500개씩 배치)
-      const tokens = Array.from(staffTokensMap.values());
-      const successIds: string[] = [];
-      const failedIds: string[] = [];
+      const successUserIds = new Set<string>();
+      const failedUserIds = new Set<string>();
       const errors: Array<{ userId: string; error: string }> = [];
 
-      if (tokens.length === 0) {
+      if (allTokens.length === 0) {
         functions.logger.warn('FCM 토큰이 없는 스태프만 있습니다.');
 
         await announcementRef.update({
@@ -189,26 +198,26 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
       }
 
       const batchSize = 500;
-      for (let i = 0; i < tokens.length; i += batchSize) {
-        const batchTokens = tokens.slice(i, i + batchSize);
+      for (let i = 0; i < allTokens.length; i += batchSize) {
+        const batchTokens = allTokens.slice(i, i + batchSize);
 
-        const fcmMessage = {
+        const fcmMessage: admin.messaging.MulticastMessage = {
           notification: {
             title: `📢 ${notificationTitle}`,
             body: announcementMessage,
           },
           data: {
-            type: 'job_posting_announcement',
+            type: 'announcement',
             announcementId,
             eventId,
-            target: `/app/admin/job-postings/${eventId}`,
+            link: `/jobs/${eventId}`,
           },
           tokens: batchTokens,
           android: {
-            priority: 'high' as const,
+            priority: 'high',
             notification: {
               sound: 'default',
-              channelId: 'announcement',
+              channelId: 'announcements',
             },
           },
           apns: {
@@ -224,22 +233,22 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
         try {
           const response = await admin.messaging().sendEachForMulticast(fcmMessage);
 
-          functions.logger.info(`FCM 배치 ${i / batchSize + 1} 전송 결과`, {
+          functions.logger.info(`FCM 배치 ${Math.floor(i / batchSize) + 1} 전송 결과`, {
             successCount: response.successCount,
             failureCount: response.failureCount,
           });
 
-          // 전송 결과 처리
+          // 전송 결과 처리 (토큰 → 사용자 역매핑 사용)
           response.responses.forEach((resp, idx) => {
             const token = batchTokens[idx];
-            const staffId = Array.from(staffTokensMap.entries()).find(
-              ([_, t]) => t === token
-            )?.[0];
+            const staffId = tokenToUserMap.get(token);
 
-            if (resp.success && staffId) {
-              successIds.push(staffId);
-            } else if (staffId) {
-              failedIds.push(staffId);
+            if (!staffId) return;
+
+            if (resp.success) {
+              successUserIds.add(staffId);
+            } else {
+              failedUserIds.add(staffId);
               errors.push({
                 userId: staffId,
                 error: resp.error?.message || '알 수 없는 오류',
@@ -247,15 +256,16 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
             }
           });
         } catch (error: any) {
-          functions.logger.error(`FCM 배치 ${i / batchSize + 1} 전송 실패`, error);
+          functions.logger.error(`FCM 배치 ${Math.floor(i / batchSize) + 1} 전송 실패`, {
+            error: error.message,
+            batchSize: batchTokens.length,
+          });
+
           // 배치 전체 실패 처리
           batchTokens.forEach((token) => {
-            const staffId = Array.from(staffTokensMap.entries()).find(
-              ([_, t]) => t === token
-            )?.[0];
-
+            const staffId = tokenToUserMap.get(token);
             if (staffId) {
-              failedIds.push(staffId);
+              failedUserIds.add(staffId);
               errors.push({
                 userId: staffId,
                 error: error.message || '배치 전송 실패',
@@ -265,34 +275,43 @@ export const sendJobPostingAnnouncement = functions.https.onCall(
         }
       }
 
-      // 9. 각 스태프에게 알림 문서 생성
-      const notificationBatch = db.batch();
+      // Set을 Array로 변환
+      const successIds = Array.from(successUserIds);
+      const failedIds = Array.from(failedUserIds);
 
-      successIds.forEach((staffId) => {
-        const notificationRef = db.collection('notifications').doc();
-        notificationBatch.set(notificationRef, {
-          id: notificationRef.id,
-          userId: staffId,
-          type: 'job_posting_announcement',
-          category: 'system',
-          priority: 'high',
-          title: `📢 ${notificationTitle}`,
-          body: announcementMessage,
-          action: {
-            type: 'navigate',
-            target: `/app/admin/job-postings/${eventId}`,
-          },
-          relatedId: announcementId,
-          senderId: userId,
-          isRead: false,
-          isSent: true,
-          isLocal: false,
-          createdAt: admin.firestore.FieldValue.serverTimestamp(),
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
+      // 9. 각 스태프에게 알림 문서 생성 (배치 500개 제한 고려)
+      const FIRESTORE_BATCH_LIMIT = 500;
+
+      for (let i = 0; i < successIds.length; i += FIRESTORE_BATCH_LIMIT) {
+        const batchIds = successIds.slice(i, i + FIRESTORE_BATCH_LIMIT);
+        const notificationBatch = db.batch();
+
+        batchIds.forEach((staffId) => {
+          const notificationRef = db.collection('notifications').doc();
+          notificationBatch.set(notificationRef, {
+            id: notificationRef.id,
+            recipientId: staffId,
+            type: 'announcement',
+            category: 'system',
+            priority: 'high',
+            title: `📢 ${notificationTitle}`,
+            body: announcementMessage,
+            link: `/jobs/${eventId}`,
+            data: {
+              type: 'announcement',
+              announcementId,
+              eventId,
+            },
+            relatedId: announcementId,
+            senderId: userId,
+            isRead: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            sentAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
         });
-      });
 
-      await notificationBatch.commit();
+        await notificationBatch.commit();
+      }
 
       // 10. 공지 문서 업데이트
       const sendResult: {

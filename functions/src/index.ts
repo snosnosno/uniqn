@@ -38,6 +38,9 @@ export { broadcastNewJobPosting } from './notifications/broadcastNewJobPosting';
 export { onScheduleCreated, onScheduleCancelled } from './notifications/onScheduleChanged';
 export { onCheckInOut } from './notifications/onCheckInOut';
 export { onJobPostingUpdated } from './notifications/onJobPostingUpdated';
+export { onJobPostingCancelled } from './notifications/onJobPostingCancelled';
+export { onNoShow } from './notifications/onNoShow';
+export { onSettlementCompleted } from './notifications/onSettlementCompleted';
 
 // --- Account Management Functions ---
 export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';

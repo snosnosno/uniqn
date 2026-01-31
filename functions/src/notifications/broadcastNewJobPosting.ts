@@ -7,18 +7,16 @@
  * @trigger Firestore onCreate: jobPostings/{id}
  * @condition status === 'open'
  *
- * @example
- * 알림 내용:
- * - 제목: "🎯 새로운 홀덤 딜러 구인공고"
- * - 내용: "📍 {지역} | 💰 시급 {급여}원\n지금 바로 지원하세요!"
- * - 액션: /job-postings/{id}
- *
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-10-15
+ *
+ * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast } from '../utils/notificationUtils';
 
 /**
  * 새로운 구인공고 등록 시 모든 구직자에게 알림 전송
@@ -58,115 +56,98 @@ export const broadcastNewJobPosting = functions.firestore
         return null;
       }
 
-      // 5. FCM 토큰 수집 및 알림 문서 생성
-      const fcmTokens: string[] = [];
-      const notificationPromises: Promise<any>[] = [];
-      const now = admin.firestore.Timestamp.now();
+      // 5. FCM 토큰 수집 (fcmTokens: string[] 배열만 사용)
+      const usersData = usersSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        data: doc.data(),
+      }));
 
-      for (const userDoc of usersSnapshot.docs) {
-        const userData = userDoc.data();
-        const userId = userDoc.id;
-        const fcmToken = userData.fcmToken;
+      const userTokensMap = extractAllFcmTokens(usersData);
+      const allTokens = flattenTokens(userTokensMap);
 
-        // 5-1. FCM 토큰이 있으면 수집
-        if (fcmToken && typeof fcmToken === 'string') {
-          fcmTokens.push(fcmToken);
-        }
+      functions.logger.info('[broadcastNewJobPosting] FCM 토큰 조회 완료', {
+        totalUsers: usersSnapshot.size,
+        usersWithTokens: userTokensMap.size,
+        totalTokens: allTokens.length,
+      });
 
-        // 5-2. Firestore 알림 문서 생성
-        const notificationRef = admin.firestore()
-          .collection('notifications')
-          .doc();
+      // 6. Firestore 알림 문서 일괄 생성 (배치 처리)
+      const BATCH_LIMIT = 500;
 
-        notificationPromises.push(
-          notificationRef.set({
+      for (let i = 0; i < usersSnapshot.docs.length; i += BATCH_LIMIT) {
+        const batchDocs = usersSnapshot.docs.slice(i, i + BATCH_LIMIT);
+        const batch = admin.firestore().batch();
+
+        batchDocs.forEach((userDoc) => {
+          const notificationRef = admin.firestore().collection('notifications').doc();
+
+          batch.set(notificationRef, {
             id: notificationRef.id,
-            userId: userId,  // ✅ staffId → userId 변경
-            type: 'new_job_posting',
-            category: 'system',  // ✅ category 추가
-            priority: 'medium',  // ✅ priority 추가
-            title: '🎯 새로운 구인공고',
-            body: `📍 ${title} | ${location}\n지금 바로 지원하세요!`,  // ✅ message → body 변경
-            data: {
-              postingId,
-              title,
-              location,
-              hourlyPay,
-            },
-            action: {
-              type: 'navigate',
-              target: `/app/jobs/${postingId}`,
-            },
-            relatedId: postingId,  // ✅ relatedId 추가
-            isRead: false,
-            isSent: false,  // ✅ isSent 추가
-            isLocal: false,  // ✅ isLocal 추가
-            createdAt: now,
-          })
-        );
-      }
-
-      // 6. Firestore 알림 문서 일괄 생성
-      await Promise.all(notificationPromises);
-      functions.logger.info(`[broadcastNewJobPosting] 알림 문서 생성 완료: ${notificationPromises.length}개`);
-
-      // 7. FCM 푸시 알림 전송 (최대 500개씩 배치)
-      if (fcmTokens.length > 0) {
-        const message: admin.messaging.MulticastMessage = {
-          tokens: fcmTokens,
-          notification: {
+            recipientId: userDoc.id,
+            type: 'new_job_in_area',
+            category: 'job',
+            priority: 'normal',
             title: '🎯 새로운 구인공고',
             body: `📍 ${title} | ${location}\n지금 바로 지원하세요!`,
-          },
-          data: {
-            type: 'new_job_posting',
-            postingId,
-            title,
-            location,
-            hourlyPay: String(hourlyPay),
-            target: `/app/jobs/${postingId}`,
-          },
-          android: {
-            priority: 'high',
-            notification: {
-              sound: 'default',
-              channelId: 'job_notifications',
+            link: `/jobs/${postingId}`,
+            data: {
+              type: 'new_job_in_area',
+              jobPostingId: postingId,
+              title,
+              location,
+              hourlyPay: String(hourlyPay),
             },
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-                badge: 1,
-              },
-            },
-          },
-        };
+            relatedId: postingId,
+            isRead: false,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        });
 
-        // 배치로 전송 (FCM은 최대 500개까지 지원)
-        const batchSize = 500;
+        await batch.commit();
+      }
+
+      functions.logger.info(`[broadcastNewJobPosting] 알림 문서 생성 완료: ${usersSnapshot.size}개`);
+
+      // 7. FCM 푸시 알림 전송 (공통 유틸리티 사용)
+      if (allTokens.length > 0) {
+        const FCM_BATCH_SIZE = 500;
         let successCount = 0;
         let failureCount = 0;
 
-        for (let i = 0; i < fcmTokens.length; i += batchSize) {
-          const batch = fcmTokens.slice(i, i + batchSize);
-          const batchMessage = { ...message, tokens: batch };
+        for (let i = 0; i < allTokens.length; i += FCM_BATCH_SIZE) {
+          const batchTokens = allTokens.slice(i, i + FCM_BATCH_SIZE);
 
-          try {
-            const response = await admin.messaging().sendEachForMulticast(batchMessage);
-            successCount += response.successCount;
-            failureCount += response.failureCount;
+          const result = await sendMulticast(batchTokens, {
+            title: '🎯 새로운 구인공고',
+            body: `📍 ${title} | ${location}\n지금 바로 지원하세요!`,
+            data: {
+              type: 'new_job_in_area',
+              jobPostingId: postingId,
+              title,
+              location,
+              hourlyPay: String(hourlyPay),
+              link: `/jobs/${postingId}`,
+            },
+            channelId: 'announcements',
+            priority: 'normal',
+          });
 
-            functions.logger.info(`[broadcastNewJobPosting] 배치 ${i / batchSize + 1} 전송 완료: 성공 ${response.successCount}, 실패 ${response.failureCount}`);
-          } catch (error) {
-            functions.logger.info(`[broadcastNewJobPosting] 배치 ${i / batchSize + 1} 전송 실패`);
-            failureCount += batch.length;
-          }
+          successCount += result.success;
+          failureCount += result.failure;
+
+          functions.logger.info(`[broadcastNewJobPosting] 배치 ${Math.floor(i / FCM_BATCH_SIZE) + 1} 전송 완료`, {
+            success: result.success,
+            failure: result.failure,
+          });
         }
 
-        functions.logger.info(`[broadcastNewJobPosting] FCM 전송 완료: 총 ${fcmTokens.length}개 (성공 ${successCount}, 실패 ${failureCount})`);
+        functions.logger.info('[broadcastNewJobPosting] FCM 전송 완료', {
+          totalTokens: allTokens.length,
+          successCount,
+          failureCount,
+        });
       } else {
-        functions.logger.info(`[broadcastNewJobPosting] FCM 토큰 없음`);
+        functions.logger.info('[broadcastNewJobPosting] FCM 토큰 없음');
       }
 
       functions.logger.info(`[broadcastNewJobPosting] 완료: ${postingId}`);

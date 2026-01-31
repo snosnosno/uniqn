@@ -1,15 +1,13 @@
 /**
- * 공고 수정 알림 Firebase Functions
+ * 공고 취소 알림 Firebase Functions
  *
  * @description
- * 공고 주요 필드가 수정되면 해당 공고에 지원한 지원자들에게 FCM 푸시 알림 전송
- * - 알림 대상 필드: title, location, workDate, startTime, endTime, hourlyRate
- * - 알림 대상: confirmed, pending 상태의 지원자들
+ * 공고 상태가 cancelled로 변경되면 해당 공고에 지원한 지원자들에게 FCM 푸시 알림 전송
  *
  * @trigger Firestore onUpdate
  * @collection jobPostings/{jobPostingId}
- * @version 2.0.0
- * @since 2025-01-18
+ * @version 1.0.0
+ * @since 2025-02-01
  *
  * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
@@ -35,65 +33,45 @@ interface ApplicationData {
   status: string;
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-/**
- * 알림 대상 필드 (이 필드가 변경되면 알림 발송)
- */
-const NOTIFY_FIELDS = [
-  'title',
-  'location',
-  'district',
-  'workDate',
-  'startDate',
-  'endDate',
-  'timeSlots',
-  'hourlyRate',
-  'salary',
-];
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
+interface JobPostingData {
+  title?: string;
+  location?: string;
+  status?: string;
+  createdBy?: string;
+}
 
 // ============================================================================
 // Triggers
 // ============================================================================
 
 /**
- * 공고 수정 알림 트리거
+ * 공고 취소 알림 트리거
  *
  * @description
- * - 공고 주요 필드 변경 감지
- * - 해당 공고에 지원한 지원자들에게 알림
- * - FCM 푸시 알림 전송 + Firestore notifications 문서 생성
+ * - 공고 status가 'cancelled'로 변경되면 실행
+ * - confirmed, pending, applied 상태의 지원자들에게 알림 전송
+ * - Firestore notifications 문서 생성 + FCM 푸시 전송
  */
-export const onJobPostingUpdated = functions.firestore
+export const onJobPostingCancelled = functions.firestore
   .document('jobPostings/{jobPostingId}')
   .onUpdate(async (change, context) => {
     const jobPostingId = context.params.jobPostingId;
-    const before = change.before.data();
-    const after = change.after.data();
+    const before = change.before.data() as JobPostingData;
+    const after = change.after.data() as JobPostingData;
 
-    // 주요 필드 변경 확인
-    const changedFields = NOTIFY_FIELDS.filter(
-      (field) => JSON.stringify(before[field]) !== JSON.stringify(after[field])
-    );
-
-    if (changedFields.length === 0) {
-      return; // 주요 필드 변경 없음
+    // status가 cancelled로 변경된 경우만 처리
+    if (before.status === after.status || after.status !== 'cancelled') {
+      return;
     }
 
-    functions.logger.info('공고 수정 감지', {
+    functions.logger.info('공고 취소 감지', {
       jobPostingId,
-      changedFields,
+      beforeStatus: before.status,
+      afterStatus: after.status,
     });
 
     try {
-      // 1. 해당 공고의 지원자들 조회 (confirmed, pending 상태만)
+      // 1. 해당 공고의 지원자들 조회 (confirmed, pending, applied 상태만)
       const applicationsSnap = await db
         .collection('applications')
         .where('eventId', '==', jobPostingId)
@@ -110,7 +88,11 @@ export const onJobPostingUpdated = functions.firestore
         count: applicationsSnap.size,
       });
 
-      // 2. 각 지원자에게 알림 발송
+      // 2. 알림 내용 생성
+      const notificationTitle = '🚫 공고 취소';
+      const notificationBody = `'${after.title || '공고'}'가 취소되었습니다.`;
+
+      // 3. 각 지원자에게 알림 발송
       const notificationPromises = applicationsSnap.docs.map(async (doc) => {
         const application = doc.data() as ApplicationData;
 
@@ -130,10 +112,6 @@ export const onJobPostingUpdated = functions.firestore
 
           const user = userDoc.data() as UserData;
 
-          // 알림 내용 생성
-          const notificationTitle = '📝 공고 수정 안내';
-          const notificationBody = `'${after.title || '공고'}' 공고가 수정되었습니다. 변경 내용을 확인하세요.`;
-
           // Firestore notifications 문서 생성
           const notificationRef = db.collection('notifications').doc();
           const notificationId = notificationRef.id;
@@ -141,18 +119,17 @@ export const onJobPostingUpdated = functions.firestore
           await notificationRef.set({
             id: notificationId,
             recipientId: application.applicantId,
-            type: 'job_updated',
+            type: 'job_cancelled',
             category: 'job',
-            priority: 'normal',
+            priority: 'high',
             title: notificationTitle,
             body: notificationBody,
-            link: `/jobs/${jobPostingId}`,
+            link: '/my-applications',
             isRead: false,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             data: {
               jobPostingId,
               jobPostingTitle: after.title || '',
-              changedFields: changedFields.join(', '),
             },
           });
 
@@ -164,13 +141,13 @@ export const onJobPostingUpdated = functions.firestore
               title: notificationTitle,
               body: notificationBody,
               data: {
-                type: 'job_updated',
+                type: 'job_cancelled',
                 notificationId,
                 jobPostingId,
-                target: `/jobs/${jobPostingId}`,
+                target: '/my-applications',
               },
               channelId: 'announcements',
-              priority: 'normal',
+              priority: 'high',
             });
 
             if (result.success > 0) {
@@ -179,7 +156,7 @@ export const onJobPostingUpdated = functions.firestore
               });
             }
 
-            functions.logger.info('공고 수정 알림 전송 완료', {
+            functions.logger.info('공고 취소 알림 전송 완료', {
               applicantId: application.applicantId,
               success: result.success,
               failure: result.failure,
@@ -195,12 +172,12 @@ export const onJobPostingUpdated = functions.firestore
 
       await Promise.all(notificationPromises);
 
-      functions.logger.info('공고 수정 알림 전체 처리 완료', {
+      functions.logger.info('공고 취소 알림 전체 처리 완료', {
         jobPostingId,
         totalApplicants: applicationsSnap.size,
       });
     } catch (error: any) {
-      functions.logger.error('공고 수정 알림 처리 중 오류 발생', {
+      functions.logger.error('공고 취소 알림 처리 중 오류 발생', {
         jobPostingId,
         error: error.message,
         stack: error.stack,
