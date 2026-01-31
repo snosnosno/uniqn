@@ -276,7 +276,7 @@ export function JobPostingScrollForm({
       <ScrollView
         ref={scrollViewRef}
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 160 }}
+        contentContainerStyle={{ padding: 16, paddingBottom: 100 }}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
@@ -395,55 +395,48 @@ export function JobPostingScrollForm({
         )}
       </ScrollView>
 
-      {/* 하단 버튼 영역 (고정) */}
-      <View className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-        {/* 템플릿 버튼 영역 */}
-        {(onSaveTemplate || onLoadTemplate) && (
-          <View className="flex-row gap-2 mb-3">
-            {onLoadTemplate && (
-              <View className="flex-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={onLoadTemplate}
-                  fullWidth
-                >
-                  <Text className="text-blue-600 dark:text-blue-400">
-                    템플릿 불러오기
-                  </Text>
-                </Button>
-              </View>
-            )}
-            {onSaveTemplate && (
-              <View className="flex-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onPress={onSaveTemplate}
-                  disabled={isSavingTemplate}
-                  fullWidth
-                >
-                  <Text className="text-blue-600 dark:text-blue-400">
-                    {isSavingTemplate ? '저장 중...' : '템플릿 저장'}
-                  </Text>
-                </Button>
-              </View>
-            )}
+      {/* 하단 버튼 영역 (고정) - 컴팩트 */}
+      <View className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+        {/* 템플릿 버튼 + 등록 버튼을 한 줄에 */}
+        <View className="flex-row items-center gap-2">
+          {/* 템플릿 버튼들 */}
+          {onLoadTemplate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={onLoadTemplate}
+            >
+              <Text className="text-sm text-blue-600 dark:text-blue-400">
+                불러오기
+              </Text>
+            </Button>
+          )}
+          {onSaveTemplate && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={onSaveTemplate}
+              disabled={isSavingTemplate}
+            >
+              <Text className={`text-sm ${isSavingTemplate ? 'text-gray-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                {isSavingTemplate ? '저장 중...' : '저장'}
+              </Text>
+            </Button>
+          )}
+          {/* 등록 버튼 */}
+          <View className="flex-1">
+            <Button
+              variant="primary"
+              size="sm"
+              onPress={handleSubmit}
+              disabled={isSubmitting}
+              fullWidth
+            >
+              <Text className="text-white font-semibold text-sm">
+                {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
+              </Text>
+            </Button>
           </View>
-        )}
-        {/* 등록 버튼 */}
-        <View>
-          <Button
-            variant="primary"
-            size="lg"
-            onPress={handleSubmit}
-            disabled={isSubmitting}
-            fullWidth
-          >
-            <Text className="text-white font-semibold">
-              {isSubmitting ? '등록 중...' : isTournament ? '승인 요청' : '공고 등록'}
-            </Text>
-          </Button>
         </View>
       </View>
     </View>

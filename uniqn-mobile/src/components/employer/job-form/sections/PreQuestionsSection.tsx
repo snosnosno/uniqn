@@ -7,7 +7,7 @@
 
 import React, { useState, useCallback, memo } from 'react';
 import { View, Text, Pressable, TextInput, Switch } from 'react-native';
-import { Card } from '@/components';
+import { Card, ActionSheet } from '@/components';
 import {
   PlusIcon,
   TrashIcon,
@@ -140,7 +140,7 @@ const QuestionCard = memo(function QuestionCard({
         {/* 타입 선택 */}
         <View className="flex-1 mr-4">
           <Pressable
-            onPress={() => setShowTypeSelector(!showTypeSelector)}
+            onPress={() => setShowTypeSelector(true)}
             className="flex-row items-center justify-between px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg"
           >
             <Text className="text-gray-900 dark:text-white">
@@ -149,32 +149,17 @@ const QuestionCard = memo(function QuestionCard({
             <ChevronDownIcon size={20} color="#6B7280" />
           </Pressable>
 
-          {showTypeSelector && (
-            <View className="absolute top-12 left-0 right-0 z-10 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg">
-              {QUESTION_TYPES.map((type) => (
-                <Pressable
-                  key={type.value}
-                  onPress={() => handleTypeChange(type.value)}
-                  className={`px-3 py-2 ${
-                    question.type === type.value
-                      ? 'bg-primary-50 dark:bg-primary-900/30'
-                      : ''
-                  }`}
-                >
-                  <Text className={`font-medium ${
-                    question.type === type.value
-                      ? 'text-primary-600 dark:text-primary-400'
-                      : 'text-gray-900 dark:text-white'
-                  }`}>
-                    {type.label}
-                  </Text>
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    {type.description}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
-          )}
+          {/* ActionSheet로 타입 선택 */}
+          <ActionSheet
+            visible={showTypeSelector}
+            onClose={() => setShowTypeSelector(false)}
+            title="답변 유형 선택"
+            options={QUESTION_TYPES.map((type) => ({
+              value: type.value,
+              label: `${type.label} - ${type.description}`,
+            }))}
+            onSelect={(value) => handleTypeChange(value as QuestionType)}
+          />
         </View>
 
         {/* 필수 여부 */}

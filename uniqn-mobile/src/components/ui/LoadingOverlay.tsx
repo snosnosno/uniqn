@@ -15,7 +15,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Circle } from 'react-native-svg';
@@ -130,9 +129,9 @@ export function LoadingOverlay({
         duration: 200,
         easing: Easing.ease,
       });
-      animatedScale.value = withSpring(1, {
-        damping: 15,
-        stiffness: 150,
+      animatedScale.value = withTiming(1, {
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
       });
     } else {
       animatedOpacity.value = withTiming(0, {

@@ -84,25 +84,33 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
       <Pressable
         onPress={() => onModeChange('checkIn')}
         disabled={disabled}
-        className={`flex-1 flex-row items-center justify-center py-3.5 rounded-xl ${
-          checkInActive
-            ? 'bg-green-600 dark:bg-green-700 shadow-md'
-            : 'bg-transparent'
-        } ${disabled ? 'opacity-50' : ''}`}
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 14,
+          borderRadius: 12,
+          backgroundColor: checkInActive ? '#16A34A' : 'transparent',
+          opacity: disabled ? 0.5 : 1,
+          minHeight: 48,
+        }}
         accessibilityRole="tab"
         accessibilityState={{ selected: checkInActive }}
         accessibilityLabel="출근 모드"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <LogInIcon
           size={18}
           color={checkInActive ? '#FFFFFF' : '#9CA3AF'}
         />
         <Text
-          className={`ml-2 text-base font-semibold ${
-            checkInActive
-              ? 'text-white'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
+          style={{
+            marginLeft: 8,
+            fontSize: 16,
+            fontWeight: '600',
+            color: checkInActive ? '#FFFFFF' : '#6B7280',
+          }}
         >
           출근
         </Text>
@@ -111,25 +119,33 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
       <Pressable
         onPress={() => onModeChange('checkOut')}
         disabled={disabled}
-        className={`flex-1 flex-row items-center justify-center py-3.5 rounded-xl ${
-          checkOutActive
-            ? 'bg-blue-600 dark:bg-blue-700 shadow-md'
-            : 'bg-transparent'
-        } ${disabled ? 'opacity-50' : ''}`}
+        style={{
+          flex: 1,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          paddingVertical: 14,
+          borderRadius: 12,
+          backgroundColor: checkOutActive ? '#2563EB' : 'transparent',
+          opacity: disabled ? 0.5 : 1,
+          minHeight: 48,
+        }}
         accessibilityRole="tab"
         accessibilityState={{ selected: checkOutActive }}
         accessibilityLabel="퇴근 모드"
+        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
         <LogOutIcon
           size={18}
           color={checkOutActive ? '#FFFFFF' : '#9CA3AF'}
         />
         <Text
-          className={`ml-2 text-base font-semibold ${
-            checkOutActive
-              ? 'text-white'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
+          style={{
+            marginLeft: 8,
+            fontSize: 16,
+            fontWeight: '600',
+            color: checkOutActive ? '#FFFFFF' : '#6B7280',
+          }}
         >
           퇴근
         </Text>

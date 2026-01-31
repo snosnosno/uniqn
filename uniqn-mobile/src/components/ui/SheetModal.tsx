@@ -292,11 +292,12 @@ function NativeSheetModal({
           <Animated.View
             style={[
               modalAnimatedStyle,
-              { maxHeight: windowHeight * 0.95, flexShrink: 1 },
+              { maxHeight: windowHeight * 0.95, flex: 1 },
             ]}
           >
             <SafeAreaView
               edges={['bottom']}
+              style={{ flex: 1 }}
               className="bg-white dark:bg-gray-900 rounded-t-3xl"
             >
               {/* Header */}
@@ -320,6 +321,7 @@ function NativeSheetModal({
 
               {/* Content */}
               <ScrollView
+                style={{ flex: 1 }}
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled"

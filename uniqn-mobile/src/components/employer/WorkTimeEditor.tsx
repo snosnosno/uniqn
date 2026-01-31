@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Image } from 'expo-image';
-import { Modal } from '../ui/Modal';
+import { SheetModal } from '../ui/SheetModal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { TimeWheelPicker, type TimeValue } from '../ui/TimeWheelPicker';
@@ -452,15 +452,43 @@ export function WorkTimeEditor({
 
   const workDate = workLog.date ? parseTimestamp(workLog.date) : null;
 
+  // Footer 버튼
+  const footerContent = (
+    <View className="flex-row gap-3">
+      <View className="flex-1">
+        <Button
+          variant="secondary"
+          onPress={handleClose}
+          disabled={isLoading}
+          fullWidth
+        >
+          취소
+        </Button>
+      </View>
+      <View className="flex-1">
+        <Button
+          variant="primary"
+          onPress={handleSave}
+          loading={isLoading}
+          disabled={!isValid}
+          fullWidth
+        >
+          저장
+        </Button>
+      </View>
+    </View>
+  );
+
   return (
   <>
-    <Modal
+    <SheetModal
       visible={visible}
       onClose={handleClose}
       title="근무 시간 수정"
-      position="center"
+      footer={footerContent}
+      isLoading={isLoading}
     >
-      <View className="px-4 pb-4 -mt-2">
+      <View className="px-4">
         {/* 스태프 정보 */}
         <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-2">
           {/* 프로필 이미지 */}
@@ -571,29 +599,8 @@ export function WorkTimeEditor({
             시간 수정 기록은 이력으로 저장되며, 해당 스태프에게 알림이 발송됩니다.
           </Text>
         </View>
-
-        {/* 버튼 */}
-        <View className="flex-row gap-3">
-          <Button
-            variant="secondary"
-            onPress={handleClose}
-            disabled={isLoading}
-            className="flex-1"
-          >
-            취소
-          </Button>
-          <Button
-            variant="primary"
-            onPress={handleSave}
-            loading={isLoading}
-            disabled={!isValid}
-            className="flex-1"
-          >
-            저장
-          </Button>
-        </View>
       </View>
-    </Modal>
+    </SheetModal>
 
     {/* 휠 피커 모달 (메인 모달 바깥에서 렌더링) */}
     <TimeWheelPicker

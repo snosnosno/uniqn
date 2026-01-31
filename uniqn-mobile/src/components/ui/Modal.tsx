@@ -21,7 +21,6 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withTiming,
-  withSpring,
   Easing,
 } from 'react-native-reanimated';
 import { XMarkIcon } from '@/components/icons';
@@ -275,9 +274,9 @@ function NativeModal({
       fadeOpacity.value = withTiming(1, { duration: 200, easing: Easing.ease });
 
       if (position === 'center') {
-        scale.value = withSpring(1, {
-          damping: 15,
-          stiffness: 150,
+        scale.value = withTiming(1, {
+          duration: 250,
+          easing: Easing.out(Easing.cubic),
         });
       } else {
         translateY.value = withTiming(0, {
