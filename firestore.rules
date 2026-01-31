@@ -528,11 +528,11 @@ service cloud.firestore {
       allow read: if isSignedIn() && hasValidRole();
 
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
-      // 표준 필드명 기반 검증 (staffId, eventId 필수)
+      // Phase 2: jobPostingId 사용 (eventId 대신)
       allow create: if isSignedIn() && hasValidRole() &&
-        request.resource.data.keys().hasAll(['staffId', 'eventId', 'date']) &&
+        request.resource.data.keys().hasAll(['staffId', 'jobPostingId', 'date']) &&
         request.resource.data.staffId is string &&
-        request.resource.data.eventId is string &&
+        request.resource.data.jobPostingId is string &&
         request.resource.data.date is string;
 
       // 관리자 및 유효한 역할을 가진 사용자가 수정 가능
@@ -542,8 +542,8 @@ service cloud.firestore {
       allow delete: if isSignedIn() && (
         isPrivileged() ||
         (hasValidRole() &&
-         exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
       );
     }
 
@@ -1161,25 +1161,27 @@ service cloud.firestore {
       allow read: if isSignedIn();
 
       // 생성: 구인자/관리자 + 공고 소유자 확인
+      // v2.0: eventId → jobPostingId 필드명 정규화
       allow create: if isSignedIn() && isPrivileged() &&
-        request.resource.data.keys().hasAll(['eventId', 'date', 'action', 'securityCode', 'createdBy', 'createdAt', 'expiresAt', 'isActive']) &&
+        request.resource.data.keys().hasAll(['jobPostingId', 'date', 'action', 'securityCode', 'createdBy', 'createdAt', 'expiresAt', 'isActive']) &&
         request.resource.data.createdBy == request.auth.uid &&
-        request.resource.data.eventId is string &&
+        request.resource.data.jobPostingId is string &&
         request.resource.data.date is string &&
         request.resource.data.action in ['checkIn', 'checkOut'] &&
         request.resource.data.securityCode is string &&
         request.resource.data.createdAt is timestamp &&
         request.resource.data.expiresAt is timestamp &&
         request.resource.data.isActive is bool &&
-        exists(/databases/$(database)/documents/jobPostings/$(request.resource.data.eventId)) &&
-        get(/databases/$(database)/documents/jobPostings/$(request.resource.data.eventId)).data.createdBy == request.auth.uid;
+        exists(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)).data.createdBy == request.auth.uid;
 
       // 수정: 공고 작성자 또는 관리자 (isActive 변경만)
+      // v2.0: eventId → jobPostingId 필드명 정규화
       allow update: if isSignedIn() && (
         isAdmin() ||
         (isPrivileged() &&
-         exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
       ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isActive']);
 
       // 삭제: 관리자만

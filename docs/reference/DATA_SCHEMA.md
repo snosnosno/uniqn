@@ -1,11 +1,11 @@
 # 📊 T-HOLDEM 데이터 스키마 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
-**상태**: 🚀 **Production Ready 100% 완성**
+**최종 업데이트**: 2026년 1월 31일
+**버전**: v3.0.0 (모바일앱 스키마 통합)
+**상태**: 🚀 **Production Ready**
 
 > [!SUCCESS]
-> **성과**: 실제 구현된 데이터 스키마를 기반으로 작성되었습니다. UnifiedDataContext 통합, 표준 필드명 완전 전환, Firebase 인덱스 최적화 완료.
+> **v3.0 변경사항**: 모바일앱(uniqn-mobile) 스키마와 완전 동기화, Assignment 기반 지원 시스템, 역할 체계 개편(employer 추가), 알림 컬렉션 스키마 추가
 
 ## 📋 목차
 
@@ -18,23 +18,29 @@
 
 ## 🎯 스키마 개요
 
-### 설계 원칙 (실제 구현 성과)
-- **표준 필드명**: `staffId`, `eventId` 100% 통일 (레거시 필드 완전 제거)
-- **UnifiedDataContext**: 5개→1개 Firebase 구독 통합으로 주리접율 향상
+### 설계 원칙
+- **표준 필드명**: `jobPostingId`, `checkInTime/checkOutTime` 통일
+- **Repository 패턴**: Service → Repository → Firebase 레이어 분리
 - **TypeScript Strict**: any 타입 0개, 완벽한 타입 안전성
-- **Optimistic Updates**: 즉시 UI 업데이트 + Firebase 동기화
-- **인덱스 최적화**: 6개 인덱스로 쿼리 성능 최적화
+- **하위 호환성**: 레거시 필드 읽기 지원 (Firestore Rules)
+- **인덱스 최적화**: 복합 인덱스로 쿼리 성능 최적화
 
 ### 핵심 컬렉션 구조
 ```
 Firebase Firestore
-├── staff                 # 스태프 정보
-├── workLogs              # 근무 기록
-├── applications          # 지원서
+├── users                 # 사용자 정보 (UserRole 사용)
+├── staff                 # 스태프 정보 (StaffRole 사용)
 ├── jobPostings           # 구인공고
+├── applications          # 지원서
+├── workLogs              # 근무 기록
 ├── attendanceRecords     # 출석 기록
+├── notifications         # 알림
+├── eventQRCodes          # QR 코드 (출퇴근용) ✅ v3.0 추가
+├── settlements           # 정산 정보 ✅ v3.0 추가
+├── announcements         # 공지사항 ✅ v3.0 추가
+├── reports               # 신고 (양방향) ✅ v3.0 추가
 ├── tournaments           # 토너먼트
-└── users                 # 사용자 정보
+└── inquiries             # 문의/신고
 ```
 
 ## 🗃️ Firebase 컬렉션
@@ -49,7 +55,8 @@ Document ID: Auto-generated or custom
   "id": string,              // 문서 ID (자동 생성)
   "staffId": string,         // 표준 스태프 ID ✅
   "name": string,            // 스태프 이름 (required)
-  "role": "dealer" | "server" | "manager" | "admin",  // 역할
+  "role": StaffRole,         // 직무 역할 (⚠️ UserRole과 다름)
+  "customRole"?: string,     // 커스텀 역할명 (role === 'other'일 때)
   "phone"?: string,          // 전화번호 (선택적)
   "email"?: string,          // 이메일 (선택적)
   "isActive": boolean,       // 활성 상태 (기본값: true)
@@ -69,25 +76,26 @@ Document ID: Auto-generated or custom
 
 ```typescript
 Collection: "workLogs"
-Document ID Pattern: "${eventId}_${staffId}_0_${date}"
+Document ID Pattern: "${jobPostingId}_${staffId}_0_${date}"
 
 {
   "id": string,                    // 문서 ID 패턴
   "staffId": string,               // 표준 스태프 ID ✅
   "staffName": string,             // 스태프 이름 (역정규화) ✅
-  "eventId": string,               // 표준 이벤트 ID ✅
+  "jobPostingId": string,          // 공고 ID (표준 필드) ✅
+  "jobPostingTitle"?: string,      // 공고 제목 (역정규화)
   "date": string,                  // 근무 날짜 "YYYY-MM-DD"
   "scheduledStartTime"?: Timestamp, // 예정 시작 시간
   "scheduledEndTime"?: Timestamp,   // 예정 종료 시간
-  "actualStartTime"?: Timestamp,    // 실제 시작 시간 ✅
-  "actualEndTime"?: Timestamp,      // 실제 종료 시간 ✅
+  "checkInTime"?: Timestamp,        // 실제 출근 시간 ✅
+  "checkOutTime"?: Timestamp,       // 실제 퇴근 시간 ✅
   "role"?: string,                  // 근무 역할
-  "hoursWorked"?: number,           // 근무 시간 (Web Worker 계산)
+  "hoursWorked"?: number,           // 근무 시간 (자동 계산)
   "overtimeHours"?: number,         // 초과 근무 시간
   "basePay"?: number,               // 기본급
   "overtimePay"?: number,           // 초과근무수당
   "totalPay"?: number,              // 총 급여
-  "status": "scheduled" | "checked_in" | "checked_out" | "completed",
+  "status": "scheduled" | "checked_in" | "checked_out" | "completed" | "cancelled",
   "location"?: string,              // 근무 장소
   "notes"?: string,                 // 비고
   "createdAt": Timestamp,           // 생성일시
@@ -97,7 +105,16 @@ Document ID Pattern: "${eventId}_${staffId}_0_${date}"
 }
 ```
 
-**인덱스**: `staffId`, `eventId`, `date`, `status`, `createdAt`
+**필드 변경 이력 (v2.0)**:
+| 레거시 필드 | 현재 필드 | 설명 |
+|------------|----------|------|
+| `eventId` | `jobPostingId` | 공고 참조 ID 표준화 |
+| `actualStartTime` | `checkInTime` | QR 출근 시간 |
+| `actualEndTime` | `checkOutTime` | QR 퇴근 시간 |
+
+> **하위 호환성**: Firestore Rules에서 `eventId`도 여전히 허용됩니다.
+
+**인덱스**: `staffId`, `jobPostingId`, `date`, `status`, `createdAt`
 
 ### 3. applications (지원서)
 
@@ -107,32 +124,96 @@ Document ID: Auto-generated
 
 {
   "id": string,                // 문서 ID
-  "eventId": string,           // 표준 이벤트 ID ✅
+  "jobPostingId": string,      // 공고 ID (표준 필드) ✅
+  "jobPostingTitle"?: string,  // 공고 제목 (역정규화)
   "applicantId": string,       // 지원자 ID (users 컬렉션 참조)
-  "postId": string,            // 구인공고 ID (jobPostings 참조)
-  "postTitle": string,         // 구인공고 제목 (역정규화)
   "applicantName": string,     // 지원자 이름 (역정규화)
-  "applicantPhone": string,    // 지원자 전화번호 (역정규화)
-  "status": "pending" | "confirmed" | "rejected" | "cancelled",
-  "appliedRoles": string[],    // 지원한 역할들
-  "preferredDates": string[],  // 선호 날짜들 "YYYY-MM-DD"
-  "assignments"?: {            // 배정 정보 (확정 시)
-    "date": string,            // "YYYY-MM-DD"
-    "role": string,            // 배정된 역할
-    "shift": string,           // 시프트 정보
-    "checkMethod"?: "group" | "individual"  // 그룹/개별 선택 구분 ✅
-  }[],
+  "applicantPhone"?: string,   // 지원자 전화번호 (역정규화)
+
+  // 상태 (v3.0 확장)
+  "status": "applied" | "pending" | "confirmed" | "rejected" | "cancelled" | "completed" | "cancellation_pending",
+
+  // Assignment 기반 지원 (v3.0 필수) ✅
+  "assignments": Assignment[], // 지원 날짜/역할 정보 (필수)
+
+  // 확정 이력 (v3.0 추가)
+  "confirmationHistory"?: ConfirmationHistoryEntry[],
+
+  // 취소 요청 시스템 (v3.0 추가)
+  "cancellationRequest"?: {
+    "requestedAt": Timestamp,
+    "reason": string,
+    "status": "pending" | "approved" | "rejected",
+    "reviewedAt"?: Timestamp,
+    "reviewedBy"?: string,
+    "reviewNote"?: string
+  },
+
+  // 기타 필드
   "applicationMessage"?: string, // 지원 메시지
-  "adminNotes"?: string,       // 관리자 메모
-  "rejectionReason"?: string,  // 거절 사유
-  "confirmedAt"?: Timestamp,   // 확정일시
-  "createdAt": Timestamp,      // 지원일시
-  "updatedAt": Timestamp,      // 수정일시
-  "lastModifiedBy"?: string    // 마지막 수정자 ID
+  "adminNotes"?: string,         // 관리자 메모
+  "rejectionReason"?: string,    // 거절 사유
+  "confirmedAt"?: Timestamp,     // 확정일시
+  "createdAt": Timestamp,        // 지원일시
+  "updatedAt": Timestamp,        // 수정일시
+  "lastModifiedBy"?: string      // 마지막 수정자 ID
+}
+
+// Assignment 구조 (v3.0 - 완전한 정의)
+interface Assignment {
+  // === 필수 필드 ===
+  "roleIds": string[],           // 역할 ID 배열 ["dealer", "floor", ...]
+  "timeSlot": string,            // 시간대 (예: "19:00", "14:00~22:00") ✅ 필수
+  "dates": string[],             // 지원 날짜들 ["YYYY-MM-DD", ...]
+  "isGrouped": boolean,          // 연속 날짜 그룹 여부 ✅ 필수
+
+  // === 선택 필드 ===
+  "groupId"?: string,            // 그룹 식별자 (예: "19:00_dealer_2025-01-09_2025-01-11")
+  "checkMethod"?: "group" | "individual",  // 체크 방식
+  "requirementId"?: string,      // 모집 공고 구분자 (날짜 중복 모집 구분)
+  "duration"?: AssignmentDuration,  // 기간 정보
+  "isTimeToBeAnnounced"?: boolean,  // 시간 미정 여부
+  "tentativeDescription"?: string   // 미정 사유 (예: "토너먼트 진행 상황에 따라 결정")
+}
+
+// 기간 정보 구조체
+interface AssignmentDuration {
+  "type": "single" | "consecutive" | "multi",  // 단일/연속/다중 날짜
+  "startDate": string,           // 시작일 (YYYY-MM-DD)
+  "endDate"?: string             // 종료일 (연속/다중일 경우)
+}
+
+// 확정 이력 (v3.0)
+interface ConfirmationHistoryEntry {
+  "action": "confirmed" | "rejected" | "cancelled",
+  "timestamp": Timestamp,
+  "performedBy": string,
+  "reason"?: string,
+  "affectedDates"?: string[],
+  "affectedRoles"?: string[]
 }
 ```
 
-**인덱스**: `eventId`, `applicantId`, `status`, `createdAt`
+**상태 흐름**:
+```
+applied → pending → confirmed → completed
+                  ↘ rejected
+                  ↘ cancelled
+                  ↘ cancellation_pending → cancelled (승인) 또는 confirmed (거절)
+```
+
+**필드 변경 이력 (v3.0)**:
+| 레거시 필드 | 현재 필드 | 설명 |
+|------------|----------|------|
+| `eventId` | `jobPostingId` | 공고 참조 ID 표준화 |
+| `postId` | `jobPostingId` | 공고 참조 ID 표준화 |
+| `postTitle` | `jobPostingTitle` | 필드명 통일 |
+| `appliedRoles` | `assignments[].roleIds` | Assignment 구조로 통합 |
+| `preferredDates` | `assignments[].dates` | Assignment 구조로 통합 |
+
+> **하위 호환성**: Firestore Rules에서 `eventId`, `postId`도 여전히 허용됩니다.
+
+**인덱스**: `jobPostingId`, `applicantId`, `status`, `createdAt`
 
 ### 4. jobPostings (구인공고)
 
@@ -142,10 +223,16 @@ Document ID: Auto-generated
 
 {
   "id": string,                // 문서 ID
+  "ownerId": string,           // 공고 소유자 ID (employer) ✅
   "title": string,             // 공고 제목 (required)
   "description": string,       // 공고 내용
   "location": string,          // 근무 장소
-  "eventDates": {              // 이벤트 날짜별 정보
+
+  // 날짜별 모집 정보 (v2.0 구조)
+  "dateSpecificRequirements"?: DateSpecificRequirement[],
+
+  // 레거시 호환용 (eventDates)
+  "eventDates"?: {             // 이벤트 날짜별 정보
     "[YYYY-MM-DD]": {
       "roles": {               // 역할별 모집 정보
         "dealer": {
@@ -165,20 +252,26 @@ Document ID: Auto-generated
       "additionalInfo"?: string // 추가 정보
     }
   },
+
   "requirements": {            // 공통 요구사항
     "minAge"?: number,         // 최소 연령
     "experience"?: string,     // 경험 요구사항
     "skills"?: string[],       // 필요 기술
     "certification"?: string[] // 필요 자격증
   },
-  "applicationDeadline": Timestamp, // 지원 마감일
-  "status": "draft" | "published" | "closed" | "cancelled",
+
+  "applicationDeadline"?: Timestamp, // 지원 마감일
+  "status": "active" | "closed" | "cancelled",  // 공고 상태 ✅
   "isPublic": boolean,         // 공개 여부
   "maxApplications"?: number,  // 최대 지원자 수
-  "autoClose": boolean,        // 자동 마감 여부
-  "tags"?: string[],          // 태그
-  "postingType": "regular" | "fixed" | "tournament",  // 공고 타입 ✅
-  "tournamentConfig"?: {       // 대회 공고 전용 (postingType === 'tournament')
+  "autoClose"?: boolean,       // 자동 마감 여부
+  "tags"?: string[],           // 태그
+
+  // 공고 타입 (v2.0 확장)
+  "postingType": "regular" | "fixed" | "tournament" | "urgent",  // ✅ urgent 추가
+
+  // 대회 공고 전용 (postingType === 'tournament')
+  "tournamentConfig"?: {
     "approvalStatus": "pending" | "approved" | "rejected",  // 승인 상태
     "submittedAt"?: Timestamp,   // 제출일시
     "approvedBy"?: string,       // 승인자 ID
@@ -194,26 +287,62 @@ Document ID: Auto-generated
       "rejectedAt": Timestamp
     }
   },
+
   "createdAt": Timestamp,      // 생성일시
   "updatedAt": Timestamp,      // 수정일시
   "createdBy": string,         // 생성자 ID
   "lastModifiedBy"?: string    // 마지막 수정자 ID
 }
+
+// 날짜별 모집 정보 (v2.0)
+interface DateSpecificRequirement {
+  "date": string,              // "YYYY-MM-DD"
+  "roles": RoleRequirement[],  // 역할별 모집 정보
+  "benefits"?: Benefits,       // 복리후생
+  "additionalInfo"?: string    // 추가 정보
+}
+
+interface RoleRequirement {
+  "roleId": string,            // 역할 ID
+  "count": number,             // 모집 인원
+  "hourlyRate": number,        // 시급
+  "workHours"?: {              // 근무 시간
+    "start": string,           // "HH:mm"
+    "end": string              // "HH:mm"
+  },
+  "requirements"?: string[]    // 역할별 요구사항
+}
 ```
 
-**인덱스**: `status`, `isPublic`, `applicationDeadline`, `createdAt`, `postingType + tournamentConfig.approvalStatus + createdAt`
+**상태값 변경 이력**:
+| 레거시 상태 | 현재 상태 | 설명 |
+|------------|----------|------|
+| `draft` | - | 사용 안함 (즉시 게시) |
+| `published` | `active` | 공고 활성 상태 |
+| `closed` | `closed` | 마감됨 |
+| `cancelled` | `cancelled` | 취소됨 |
+
+**공고 타입 설명**:
+| 타입 | 설명 |
+|------|------|
+| `regular` | 일반 공고 |
+| `fixed` | 고정 공고 (정기적) |
+| `tournament` | 대회 공고 (관리자 승인 필요) |
+| `urgent` | 긴급 공고 (상단 노출) ✅ |
+
+**인덱스**: `status`, `ownerId`, `isPublic`, `postingType`, `createdAt`, `postingType + tournamentConfig.approvalStatus + createdAt`
 
 ### 5. attendanceRecords (출석 기록)
 
 ```typescript
 Collection: "attendanceRecords"
-Document ID Pattern: "${staffId}_${eventId}_${date}"
+Document ID Pattern: "${staffId}_${jobPostingId}_${date}"
 
 {
   "id": string,                // 문서 ID 패턴
   "staffId": string,           // 표준 스태프 ID ✅
   "workLogId"?: string,        // 연결된 WorkLog ID
-  "eventId": string,           // 표준 이벤트 ID ✅
+  "jobPostingId": string,      // 공고 ID (표준 필드) ✅
   "date": string,              // 근무 날짜 "YYYY-MM-DD"
   "status": "not_started" | "checked_in" | "checked_out",
   "checkInTime"?: Timestamp,   // 출근 시간
@@ -238,7 +367,9 @@ Document ID Pattern: "${staffId}_${eventId}_${date}"
 }
 ```
 
-**인덱스**: `staffId`, `eventId`, `date`, `status`, `checkInTime`
+> **하위 호환성**: Firestore Rules에서 `eventId`도 여전히 허용됩니다.
+
+**인덱스**: `staffId`, `jobPostingId`, `date`, `status`, `checkInTime`
 
 ### 6. tournaments (토너먼트)
 
@@ -346,46 +477,365 @@ Document ID: Firebase Auth UID
 {
   "id": string,                // 문서 ID (Firebase Auth UID)
   "email": string,             // 이메일 (Firebase Auth 동기화)
-  "displayName"?: string,      // 표시 이름
-  "phoneNumber"?: string,      // 전화번호
-  "role": "admin" | "manager" | "staff" | "user", // 사용자 역할
-  "profile": {                 // 프로필 정보
-    "firstName": string,
-    "lastName": string,
-    "dateOfBirth"?: string,    // "YYYY-MM-DD"
-    "gender"?: "male" | "female" | "other",
-    "address"?: {
-      "street": string,
-      "city": string,
-      "state": string,
-      "zipCode": string,
-      "country": string
-    }
+  "name": string,              // 사용자 이름
+  "nickname"?: string,         // 닉네임
+  "phone"?: string,            // 전화번호
+  "photoURL"?: string,         // 프로필 이미지 URL
+
+  // 역할 체계 (v2.0)
+  // 역할 계층: admin(100) > employer(50) > staff(10)
+  // manager는 employer와 동일 권한 (하위 호환성)
+  "role": "admin" | "employer" | "staff",  // 사용자 역할 ✅
+
+  // 본인인증 관련 (v2.0)
+  "identityVerified"?: boolean,   // 본인인증 완료 여부
+  "identityVerifiedAt"?: Timestamp, // 본인인증 완료 시간
+
+  // 구인자 관련 (role === 'employer')
+  "employerAgreements"?: {        // 구인자 동의 정보
+    "termsAgreedAt": Timestamp,   // 이용약관 동의
+    "liabilityWaiverAgreedAt": Timestamp  // 면책조항 동의
   },
-  "preferences": {             // 사용자 설정
-    "language": "ko" | "en",   // 언어 설정
-    "timezone": string,        // 시간대
-    "notifications": {
-      "email": boolean,
-      "push": boolean,
-      "sms": boolean
-    }
+  "employerRegisteredAt"?: Timestamp, // 구인자 등록 시간
+
+  // 프로필 정보 (간소화)
+  "profile"?: {
+    "bio"?: string,              // 자기소개
+    "experience"?: string,       // 경력
+    "skills"?: string[]          // 보유 기술
   },
-  "staffInfo"?: {              // 스태프인 경우
-    "staffId": string,         // staff 컬렉션 참조
-    "hireDate": string,        // 고용일 "YYYY-MM-DD"
-    "department": string,      // 부서
-    "position": string         // 직급
+
+  // 알림 설정
+  "notificationSettings"?: {
+    "pushEnabled": boolean,
+    "emailEnabled": boolean
   },
-  "isActive": boolean,         // 활성 상태
-  "lastLoginAt"?: Timestamp,   // 마지막 로그인
-  "createdAt": Timestamp,      // 계정 생성일
-  "updatedAt": Timestamp,      // 수정일시
-  "lastModifiedBy"?: string    // 마지막 수정자 ID
+
+  // FCM 토큰 (멀티 디바이스 지원)
+  "fcmTokens"?: string[],
+
+  "isActive": boolean,           // 활성 상태
+  "lastLoginAt"?: Timestamp,     // 마지막 로그인
+  "createdAt": Timestamp,        // 계정 생성일
+  "updatedAt": Timestamp,        // 수정일시
+  "lastModifiedBy"?: string      // 마지막 수정자 ID
 }
 ```
 
+**역할 체계 설명**:
+| 역할 | 권한 레벨 | 설명 |
+|------|----------|------|
+| `admin` | 100 | 전체 관리 권한 |
+| `employer` | 50 | 구인공고 생성, 지원자 관리, 정산 |
+| `staff` | 10 | 지원, 스케줄 확인, QR 출퇴근 |
+
+> **하위 호환성**: `manager` 역할은 Firestore Rules에서 `employer`와 동일 권한으로 처리됩니다.
+
 **인덱스**: `role`, `isActive`, `email`, `createdAt`
+
+### 9. notifications (알림)
+
+```typescript
+Collection: "notifications"
+Document ID: Auto-generated
+
+{
+  "id": string,                 // 문서 ID
+  "recipientId": string,        // 수신자 ID (users 컬렉션 참조)
+
+  // 알림 타입 (23개)
+  "type": NotificationType,
+
+  // 알림 카테고리 (6개)
+  "category"?: NotificationCategory,
+
+  // 내용
+  "title": string,              // 알림 제목
+  "body": string,               // 알림 본문
+  "link"?: string,              // 딥링크 경로
+  "data"?: Record<string, string>, // 추가 데이터 (jobId, staffId 등)
+
+  // 상태
+  "isRead": boolean,            // 읽음 여부
+  "priority"?: "low" | "normal" | "high" | "urgent",  // 우선순위
+
+  // 시간 정보
+  "createdAt": Timestamp,       // 생성 시간
+  "readAt"?: Timestamp          // 읽은 시간
+}
+
+// 알림 타입 (23개)
+type NotificationType =
+  // 지원 관련 (5개)
+  | "new_application"         // 새로운 지원자 (구인자에게)
+  | "application_cancelled"   // 지원 취소됨
+  | "application_confirmed"   // 확정됨 (스태프에게)
+  | "confirmation_cancelled"  // 확정 취소됨
+  | "application_rejected"    // 거절됨
+
+  // 출퇴근/스케줄 관련 (7개)
+  | "staff_checked_in"        // 출근 체크인 (구인자에게)
+  | "staff_checked_out"       // 퇴근 체크아웃 (구인자에게)
+  | "checkin_reminder"        // 출근 리마인더 (스태프에게)
+  | "no_show_alert"           // 노쇼 알림
+  | "schedule_change"         // 근무 시간 변경
+  | "schedule_created"        // 새로운 근무 배정
+  | "schedule_cancelled"      // 근무 취소
+
+  // 정산 관련 (2개)
+  | "settlement_completed"    // 정산 완료 (스태프에게)
+  | "settlement_requested"    // 정산 요청 (구인자에게)
+
+  // 공고 관련 (4개)
+  | "job_closing_soon"        // 공고 마감 임박
+  | "new_job_in_area"         // 새 공고 (관심 지역)
+  | "job_updated"             // 공고 수정됨
+  | "job_cancelled"           // 공고 취소됨
+
+  // 시스템 (3개)
+  | "announcement"            // 공지사항
+  | "maintenance"             // 시스템 점검
+  | "app_update"              // 앱 업데이트
+
+  // 관리자 (2개)
+  | "inquiry_answered"        // 문의 답변 완료
+  | "report_resolved";        // 신고 처리 완료
+
+// 알림 카테고리 (6개)
+type NotificationCategory =
+  | "application"   // 지원 관련
+  | "attendance"    // 출퇴근 관련
+  | "settlement"    // 정산 관련
+  | "job"           // 공고 관련
+  | "system"        // 시스템
+  | "admin";        // 관리자
+```
+
+**우선순위 가이드**:
+| 우선순위 | 알림 타입 예시 |
+|---------|--------------|
+| `urgent` | 출근 리마인더, 노쇼 알림 |
+| `high` | 지원 확정, 확정 취소, 정산 완료 |
+| `normal` | 새로운 지원자, 공지사항 |
+| `low` | 새 공고 (관심 지역), 앱 업데이트 |
+
+**인덱스**: `recipientId`, `isRead`, `type`, `createdAt`
+
+### 10. eventQRCodes (이벤트 QR 코드)
+
+```typescript
+Collection: "eventQRCodes"
+Document ID: Auto-generated
+
+{
+  "id": string,                  // 문서 ID
+  "jobPostingId": string,        // 공고 ID
+  "date": string,                // 근무 날짜 "YYYY-MM-DD"
+  "type": "check_in" | "check_out",  // QR 타입
+
+  // QR 코드 정보
+  "qrCode": string,              // QR 코드 값 (암호화)
+  "securityToken": string,       // 보안 토큰
+
+  // 유효성
+  "validFrom": Timestamp,        // 유효 시작 시간
+  "validUntil": Timestamp,       // 유효 종료 시간 (3분 후)
+  "isUsed": boolean,             // 사용 여부
+
+  // 메타데이터
+  "createdAt": Timestamp,        // 생성 시간
+  "createdBy": string,           // 생성자 ID (구인자)
+  "usedAt"?: Timestamp,          // 사용 시간
+  "usedBy"?: string              // 사용자 ID (스태프)
+}
+```
+
+**보안 규칙**:
+- QR 코드는 3분간만 유효
+- 1회 사용 후 무효화
+- securityToken으로 위변조 방지
+
+**인덱스**: `jobPostingId`, `date`, `type`, `validUntil`
+
+### 11. settlements (정산)
+
+```typescript
+Collection: "settlements"
+Document ID: Auto-generated
+
+{
+  "id": string,                  // 문서 ID
+  "jobPostingId": string,        // 공고 ID
+  "jobPostingTitle"?: string,    // 공고 제목 (역정규화)
+  "employerId": string,          // 구인자 ID
+
+  // 정산 대상
+  "staffId": string,             // 스태프 ID
+  "staffName": string,           // 스태프 이름 (역정규화)
+  "workLogIds": string[],        // 연결된 근무 기록 ID들
+
+  // 금액 정보
+  "workDates": string[],         // 근무 날짜들
+  "totalHours": number,          // 총 근무 시간
+  "regularHours": number,        // 정규 근무 시간
+  "overtimeHours": number,       // 초과 근무 시간
+  "hourlyRate": number,          // 시급
+  "overtimeRate": number,        // 초과 근무 배율 (기본 1.5)
+  "basePay": number,             // 기본급
+  "overtimePay": number,         // 초과근무수당
+  "deductions"?: number,         // 공제액
+  "bonuses"?: number,            // 추가 수당
+  "totalAmount": number,         // 총 정산 금액
+
+  // 상태
+  "status": "pending" | "confirmed" | "paid" | "cancelled",
+
+  // 결제 정보
+  "paymentMethod"?: string,      // 결제 방법
+  "paymentNote"?: string,        // 정산 메모
+  "paidAt"?: Timestamp,          // 지급 시간
+
+  // 메타데이터
+  "createdAt": Timestamp,        // 생성 시간
+  "updatedAt": Timestamp,        // 수정 시간
+  "confirmedAt"?: Timestamp,     // 확정 시간
+  "confirmedBy"?: string         // 확정자 ID
+}
+```
+
+**정산 상태 흐름**:
+```
+pending → confirmed → paid
+                    ↘ cancelled
+```
+
+**인덱스**: `jobPostingId`, `staffId`, `employerId`, `status`, `createdAt`
+
+### 12. announcements (공지사항)
+
+```typescript
+Collection: "announcements"
+Document ID: Auto-generated
+
+{
+  "id": string,                  // 문서 ID
+  "title": string,               // 공지 제목
+  "content": string,             // 공지 내용
+
+  // 분류
+  "category": "notice" | "update" | "event" | "maintenance" | "policy",
+  "priority": "low" | "normal" | "high" | "urgent",
+
+  // 대상
+  "targetRoles"?: UserRole[],    // 대상 역할 (없으면 전체)
+  "isGlobal": boolean,           // 전체 공지 여부
+
+  // 노출 설정
+  "isPinned": boolean,           // 상단 고정
+  "isPublished": boolean,        // 게시 상태
+  "publishedAt"?: Timestamp,     // 게시 시간
+  "expiresAt"?: Timestamp,       // 만료 시간
+
+  // 첨부
+  "attachments"?: {
+    "name": string,
+    "url": string,
+    "type": string
+  }[],
+
+  // 조회 통계
+  "viewCount": number,           // 조회수
+  "readByUsers"?: string[],      // 읽은 사용자 ID 목록
+
+  // 메타데이터
+  "createdAt": Timestamp,        // 생성 시간
+  "updatedAt": Timestamp,        // 수정 시간
+  "createdBy": string,           // 작성자 ID (관리자)
+  "lastModifiedBy"?: string      // 마지막 수정자 ID
+}
+```
+
+**카테고리 설명**:
+| 카테고리 | 설명 |
+|---------|------|
+| `notice` | 일반 공지 |
+| `update` | 앱 업데이트 안내 |
+| `event` | 이벤트/프로모션 |
+| `maintenance` | 시스템 점검 |
+| `policy` | 정책 변경 |
+
+**인덱스**: `isPublished`, `category`, `priority`, `publishedAt`, `createdAt`
+
+### 13. reports (신고)
+
+```typescript
+Collection: "reports"
+Document ID: Auto-generated
+
+{
+  "id": string,                  // 문서 ID
+
+  // 신고자 정보
+  "reporterId": string,          // 신고자 ID
+  "reporterName": string,        // 신고자 이름 (역정규화)
+  "reporterType": "employer" | "staff",  // 신고자 유형
+
+  // 피신고자 정보
+  "targetId": string,            // 피신고자 ID
+  "targetName": string,          // 피신고자 이름 (역정규화)
+  "targetType": "employer" | "staff",    // 피신고자 유형
+
+  // 관련 정보
+  "jobPostingId"?: string,       // 관련 공고 ID
+  "jobPostingTitle"?: string,    // 관련 공고 제목
+  "incidentDate"?: string,       // 사건 발생일 "YYYY-MM-DD"
+
+  // 신고 내용
+  "category": "no_show" | "misconduct" | "fraud" | "harassment" | "safety" | "payment" | "other",
+  "description": string,         // 신고 내용
+  "evidence"?: {                 // 증거 자료
+    "type": "image" | "document" | "link",
+    "url": string,
+    "description"?: string
+  }[],
+
+  // 처리 상태
+  "status": "pending" | "reviewing" | "resolved" | "dismissed",
+  "priority"?: "low" | "normal" | "high" | "urgent",
+
+  // 처리 결과
+  "resolution"?: {
+    "action": "warning" | "suspension" | "ban" | "no_action",
+    "note": string,
+    "resolvedAt": Timestamp,
+    "resolvedBy": string
+  },
+
+  // 메타데이터
+  "createdAt": Timestamp,        // 신고 시간
+  "updatedAt": Timestamp,        // 수정 시간
+  "reviewedAt"?: Timestamp,      // 검토 시작 시간
+  "reviewedBy"?: string          // 검토자 ID
+}
+```
+
+**신고 카테고리 설명**:
+| 카테고리 | 설명 |
+|---------|------|
+| `no_show` | 노쇼 (무단결근/무단취소) |
+| `misconduct` | 부적절한 행동 |
+| `fraud` | 사기/허위정보 |
+| `harassment` | 괴롭힘 |
+| `safety` | 안전 문제 |
+| `payment` | 급여/정산 문제 |
+| `other` | 기타 |
+
+**양방향 신고 시스템**:
+- 구인자 → 스태프 신고 가능
+- 스태프 → 구인자 신고 가능
+- 중복 신고 방지 (같은 건에 대해 1회)
+
+**인덱스**: `reporterId`, `targetId`, `status`, `category`, `createdAt`
 
 ## 🔧 TypeScript 인터페이스
 
@@ -415,12 +865,13 @@ export interface WorkLog {
   id: string;
   staffId: string;           // 표준 필드 ✅
   staffName: string;
-  eventId: string;           // 표준 필드 ✅
+  jobPostingId: string;      // 공고 ID (표준 필드) ✅
+  jobPostingTitle?: string;  // 공고 제목 (역정규화)
   date: string;              // YYYY-MM-DD
   scheduledStartTime?: Timestamp;
   scheduledEndTime?: Timestamp;
-  actualStartTime?: Timestamp;
-  actualEndTime?: Timestamp;
+  checkInTime?: Timestamp;   // 실제 출근 시간 ✅
+  checkOutTime?: Timestamp;  // 실제 퇴근 시간 ✅
   role?: string;
   hoursWorked?: number;
   overtimeHours?: number;
@@ -438,16 +889,15 @@ export interface WorkLog {
 
 export interface Application {
   id: string;
-  eventId: string;           // 표준 필드 ✅
+  jobPostingId: string;      // 공고 ID (표준 필드) ✅
+  jobPostingTitle?: string;  // 공고 제목 (역정규화)
   applicantId: string;
-  postId: string;
-  postTitle: string;
   applicantName: string;
-  applicantPhone: string;
+  applicantPhone?: string;
   status: ApplicationStatus;
-  appliedRoles: string[];
-  preferredDates: string[];
-  assignments?: Assignment[];
+  assignments: Assignment[]; // v3.0 필수 ✅
+  confirmationHistory?: ConfirmationHistoryEntry[];
+  cancellationRequest?: CancellationRequest;
   applicationMessage?: string;
   adminNotes?: string;
   rejectionReason?: string;
@@ -457,18 +907,94 @@ export interface Application {
   lastModifiedBy?: string;
 }
 
-// 유니언 타입 정의
-export type StaffRole = 'dealer' | 'server' | 'manager' | 'admin';
-export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed';
-export type ApplicationStatus = 'applied' | 'confirmed' | 'cancelled';
+// ============================================================================
+// 역할 타입 정의 (⚠️ 두 가지 역할 체계 구분 필수)
+// ============================================================================
+
+/**
+ * UserRole (사용자 권한) - 앱 기능 접근 권한
+ * - admin: 관리자 (모든 기능)
+ * - employer: 구인자 (공고 관리, 지원자 관리, 정산)
+ * - staff: 스태프 (지원, 스케줄 확인, QR 출퇴근)
+ *
+ * ⚠️ users 컬렉션의 role 필드에 사용
+ */
+export type UserRole = 'admin' | 'employer' | 'staff';
+
+/**
+ * StaffRole (직무 역할) - 포커룸에서의 업무 역할
+ * - dealer: 딜러
+ * - manager: 매니저
+ * - chiprunner: 칩러너
+ * - floor: 플로어
+ * - admin: 관리 (StaffRole의 admin은 UserRole과 다름)
+ * - other: 기타 (customRole 필드와 함께 사용)
+ *
+ * ⚠️ staff 컬렉션, jobPostings 역할 모집, applications 지원 역할에 사용
+ */
+export type StaffRole = 'dealer' | 'manager' | 'chiprunner' | 'floor' | 'admin' | 'other';
+
+// 역할 계층 상수 (숫자가 높을수록 상위 권한)
+export const USER_ROLE_HIERARCHY: Record<UserRole, number> = {
+  admin: 100,      // 전체 관리 (모든 권한)
+  employer: 50,    // 구인자 (공고 관리, 지원자 관리, 정산)
+  staff: 10,       // 스태프 (지원, 스케줄 확인, QR 출퇴근)
+};
+
+// 직무 역할 한글 표시명
+export const STAFF_ROLE_LABELS: Record<StaffRole, string> = {
+  dealer: '딜러',
+  manager: '매니저',
+  chiprunner: '칩러너',
+  floor: '플로어',
+  admin: '관리',
+  other: '기타',
+};
+
+// 기타 유니언 타입 정의
+export type WorkLogStatus = 'scheduled' | 'checked_in' | 'checked_out' | 'completed' | 'cancelled';
+export type ApplicationStatus = 'applied' | 'pending' | 'confirmed' | 'rejected' | 'cancelled' | 'completed' | 'cancellation_pending';
 export type AttendanceStatus = 'not_started' | 'checked_in' | 'checked_out';
 
-// 복합 타입 정의
+// 복합 타입 정의 (v3.0)
 export interface Assignment {
-  date: string;              // YYYY-MM-DD
-  role: string;
-  shift: string;
-  checkMethod?: 'group' | 'individual'; // ✅ 그룹/개별 선택 구분
+  // === 필수 필드 ===
+  roleIds: string[];           // 역할 ID 배열 ["dealer", "floor", ...]
+  timeSlot: string;            // 시간대 (예: "19:00", "14:00~22:00") ✅ 필수
+  dates: string[];             // 지원 날짜들 ["YYYY-MM-DD", ...]
+  isGrouped: boolean;          // 연속 날짜 그룹 여부 ✅ 필수
+
+  // === 선택 필드 ===
+  groupId?: string;            // 그룹 식별자
+  checkMethod?: 'group' | 'individual';  // 체크 방식
+  requirementId?: string;      // 모집 공고 구분자
+  duration?: AssignmentDuration;  // 기간 정보
+  isTimeToBeAnnounced?: boolean;  // 시간 미정 여부
+  tentativeDescription?: string;  // 미정 사유
+}
+
+export interface AssignmentDuration {
+  type: 'single' | 'consecutive' | 'multi';
+  startDate: string;
+  endDate?: string;
+}
+
+export interface ConfirmationHistoryEntry {
+  action: 'confirmed' | 'rejected' | 'cancelled';
+  timestamp: Timestamp;
+  performedBy: string;
+  reason?: string;
+  affectedDates?: string[];
+  affectedRoles?: string[];
+}
+
+export interface CancellationRequest {
+  requestedAt: Timestamp;
+  reason: string;
+  status: 'pending' | 'approved' | 'rejected';
+  reviewedAt?: Timestamp;
+  reviewedBy?: string;
+  reviewNote?: string;
 }
 
 export interface PayrollCalculation {
@@ -557,19 +1083,22 @@ export const transformStaffData = (doc: DocumentData): Staff => ({
   lastModifiedBy: doc.lastModifiedBy,
 });
 
-// Firebase 문서를 Application 객체로 변환 (중요: eventId 보장)
+// Firebase 문서를 Application 객체로 변환 (v3.0 표준 필드 + 레거시 호환)
 export const transformApplicationData = (doc: DocumentData): Application => ({
   id: doc.id,
-  eventId: doc.eventId || doc.postId || '', // ✅ eventId 보장
+  // 표준 필드 (레거시 fallback)
+  jobPostingId: doc.jobPostingId || doc.eventId || doc.postId || '',  // ✅ 표준
+  jobPostingTitle: doc.jobPostingTitle || doc.postTitle || '',        // ✅ 표준
   applicantId: doc.applicantId || '',
-  postId: doc.postId || '',
-  postTitle: doc.postTitle || '',
   applicantName: doc.applicantName || '',
   applicantPhone: doc.applicantPhone || '',
   status: doc.status || 'applied',
-  appliedRoles: doc.appliedRoles || [],
-  preferredDates: doc.preferredDates || [],
+  // v3.0 Assignment 구조 (필수)
   assignments: doc.assignments || [],
+  // 확정/취소 이력
+  confirmationHistory: doc.confirmationHistory,
+  cancellationRequest: doc.cancellationRequest,
+  // 기타 필드
   applicationMessage: doc.applicationMessage,
   adminNotes: doc.adminNotes,
   rejectionReason: doc.rejectionReason,
@@ -579,14 +1108,14 @@ export const transformApplicationData = (doc: DocumentData): Application => ({
   lastModifiedBy: doc.lastModifiedBy,
 });
 
-// WorkLog ID 패턴 생성
+// WorkLog ID 패턴 생성 (v3.0 표준 필드명)
 export const generateWorkLogId = (
-  eventId: string,
+  jobPostingId: string,  // ✅ 표준 필드명
   staffId: string,
   date: string,
   index: number = 0
 ): string => {
-  return `${eventId}_${staffId}_${index}_${date}`;
+  return `${jobPostingId}_${staffId}_${index}_${date}`;
 };
 
 // 날짜 문자열 변환
@@ -755,15 +1284,56 @@ const badQuery = async () => {
 
 ## 🔄 마이그레이션 가이드
 
-### 레거시 필드 제거 (완료됨)
+### 필드명 변경 이력 (v2.0 → v3.0)
 
-| 레거시 필드 | 표준 필드 | 상태 |
-|------------|-----------|------|
-| `dealerId` | `staffId` | ✅ 완전 제거 |
-| `dealerName` | `staffName` | ✅ 완전 제거 |
-| `jobPostingId` | `eventId` | ✅ 완전 제거 |
-| `checkInTime` | `actualStartTime` | ✅ 완전 제거 |
-| `checkOutTime` | `actualEndTime` | ✅ 완전 제거 |
+**공고 참조 ID**:
+| 레거시 필드 | 현재 표준 필드 | 상태 |
+|------------|--------------|------|
+| `eventId` | `jobPostingId` | 🔄 마이그레이션 중 (하위호환 유지) |
+| `postId` | `jobPostingId` | 🔄 마이그레이션 중 (하위호환 유지) |
+
+**시간 필드**:
+| 레거시 필드 | 현재 표준 필드 | 상태 |
+|------------|--------------|------|
+| `actualStartTime` | `checkInTime` | 🔄 마이그레이션 중 |
+| `actualEndTime` | `checkOutTime` | 🔄 마이그레이션 중 |
+
+**지원서 필드 (v3.0 Assignment 구조)**:
+| 레거시 필드 | 현재 표준 필드 | 상태 |
+|------------|--------------|------|
+| `postTitle` | `jobPostingTitle` | 🔄 마이그레이션 중 |
+| `appliedRoles` | `assignments[].roleIds` | ❌ 제거됨 |
+| `preferredDates` | `assignments[].dates` | ❌ 제거됨 |
+
+**역할 체계**:
+| 레거시 역할 | 현재 역할 | 설명 |
+|-----------|---------|------|
+| `manager` | `employer` | 동일 권한 (50), 하위호환 유지 |
+| `user` | `staff` | 기본 역할로 통합 |
+
+**공고 상태**:
+| 레거시 상태 | 현재 상태 | 설명 |
+|-----------|---------|------|
+| `draft` | - | 사용 안함 |
+| `published` | `active` | 활성 공고 |
+
+**공고 타입**:
+| v2.0 | v3.0 추가 |
+|------|---------|
+| `regular`, `fixed`, `tournament` | `urgent` |
+
+### 하위 호환성 유지 정책
+
+Firestore Rules에서 레거시 필드를 계속 허용하므로:
+- ✅ 기존 데이터 읽기: 문제 없음
+- ✅ 새 데이터 쓰기: 표준 필드명 사용 (`jobPostingId`, `checkInTime` 등)
+- ✅ 점진적 마이그레이션 가능
+
+```typescript
+// 읽기 시 정규화 (IdNormalizer 패턴)
+const jobPostingId = doc.jobPostingId || doc.eventId || doc.postId;
+const checkInTime = doc.checkInTime || doc.actualStartTime;
+```
 
 ### 새로운 필드 추가 가이드
 
@@ -822,4 +1392,4 @@ const isCompatibleVersion = (version: string): boolean => {
 
 ---
 
-*마지막 업데이트: 2025년 9월 8일 - 표준 필드명 통일 및 스키마 최적화 완료*
+*마지막 업데이트: 2026년 1월 31일 - v3.0 스키마 통합 (Assignment 구조 완성, UserRole/StaffRole 구분, 누락 컬렉션 추가)*
