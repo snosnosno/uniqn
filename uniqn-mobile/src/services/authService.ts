@@ -28,6 +28,7 @@ import {
   updateDoc,
   serverTimestamp,
   Timestamp,
+  runTransaction,
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -624,6 +625,107 @@ export async function changePassword(
   } catch (error) {
     throw handleServiceError(error, {
       operation: '비밀번호 변경',
+      component: 'authService',
+    });
+  }
+}
+
+// ============================================================================
+// Employer Registration
+// ============================================================================
+
+/**
+ * 구인자로 등록 (staff → employer 역할 변경)
+ *
+ * @description
+ * - 본인인증이 완료된 staff만 구인자로 등록 가능
+ * - 이용약관 및 서약서 동의 필수
+ * - 즉시 승인 (관리자 승인 불필요)
+ * - Transaction으로 Race Condition 방지
+ *
+ * @returns 업데이트된 프로필 (Timestamp 타입)
+ */
+export async function registerAsEmployer(): Promise<UserProfile> {
+  try {
+    const user = getFirebaseAuth().currentUser;
+
+    if (!user) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '로그인이 필요합니다',
+      });
+    }
+
+    logger.info('구인자 등록 시도', { uid: user.uid });
+
+    const db = getFirebaseDb();
+    const userRef = doc(db, 'users', user.uid);
+
+    // Transaction으로 원자적 처리 (Race Condition 방지)
+    const updatedProfile = await runTransaction(db, async (transaction) => {
+      // 1. 현재 프로필 조회 (Transaction 내에서)
+      const userDoc = await transaction.get(userRef);
+
+      if (!userDoc.exists()) {
+        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+          userMessage: '사용자 정보를 찾을 수 없습니다',
+        });
+      }
+
+      const profile = userDoc.data() as UserProfile;
+
+      // 2. 이미 구인자인 경우
+      if (profile.role === 'employer' || profile.role === 'admin') {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 구인자로 등록되어 있습니다',
+        });
+      }
+
+      // 3. 본인인증 확인
+      if (!profile.identityVerified) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '본인인증을 먼저 완료해주세요',
+        });
+      }
+
+      // 4. Firestore 업데이트
+      const now = serverTimestamp();
+      const updateData = {
+        role: 'employer' as const,
+        employerAgreements: {
+          termsAgreedAt: now,
+          liabilityWaiverAgreedAt: now,
+        },
+        employerRegisteredAt: now,
+        updatedAt: now,
+      };
+
+      transaction.update(userRef, updateData);
+
+      // 5. 업데이트된 프로필 반환 (serverTimestamp는 실제 값으로 대체)
+      const timestamp = Timestamp.now();
+      return {
+        ...profile,
+        role: 'employer' as const,
+        employerAgreements: {
+          termsAgreedAt: timestamp,
+          liabilityWaiverAgreedAt: timestamp,
+        },
+        employerRegisteredAt: timestamp,
+        updatedAt: timestamp,
+      } as UserProfile;
+    });
+
+    logger.info('구인자 등록 성공', { uid: user.uid });
+
+    // 6. Analytics 이벤트
+    setUserProperties({
+      user_role: 'employer',
+    });
+
+    return updatedProfile;
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '구인자 등록',
       component: 'authService',
     });
   }

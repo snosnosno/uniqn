@@ -69,6 +69,33 @@ service cloud.firestore {
       return request.auth.uid == userId;
     }
 
+    // ================= Employer Registration Validation =================
+    // 구인자 등록 시 역할 변경 검증
+    // - staff → employer 변경만 허용
+    // - 본인인증 완료 필수
+    // - 필수 필드 검증
+    function isValidEmployerRegistration() {
+      let currentData = resource.data;
+      let newData = request.resource.data;
+      let changedFields = newData.diff(currentData).affectedKeys();
+
+      // 1. 변경 가능한 필드만 변경되었는지 확인
+      let allowedFields = ['role', 'employerAgreements', 'employerRegisteredAt', 'updatedAt'];
+
+      return changedFields.hasOnly(allowedFields) &&
+        // 2. 현재 역할이 staff인지 확인
+        currentData.role == 'staff' &&
+        // 3. 새 역할이 employer인지 확인
+        newData.role == 'employer' &&
+        // 4. 본인인증 완료 여부 확인
+        currentData.identityVerified == true &&
+        // 5. employerAgreements 필수 필드 확인
+        'employerAgreements' in newData &&
+        newData.employerAgreements.keys().hasAll(['termsAgreedAt', 'liabilityWaiverAgreedAt']) &&
+        // 6. employerRegisteredAt 존재 확인
+        'employerRegisteredAt' in newData;
+    }
+
     // ================= Job Posting Type Validation Functions =================
     // ⚠️ 클라이언트 Timestamp는 Security Rules의 `is timestamp` 검증을 통과하지 못함
     // 따라서 timestamp 필드는 존재 여부만 확인 (타입 검증 제거)
@@ -112,7 +139,23 @@ service cloud.firestore {
     // --- Users Collection ---
     match /users/{userId} {
       allow read: if isSignedIn() && (isOwner(userId) || isPrivileged());
-      allow write: if isSignedIn() && (isOwner(userId) || isPrivileged());
+
+      // 관리자는 모든 쓰기 가능
+      allow write: if isSignedIn() && isPrivileged();
+
+      // 본인 문서 생성
+      allow create: if isSignedIn() && isOwner(userId);
+
+      // 본인 문서 수정: 일반 업데이트 또는 구인자 등록
+      allow update: if isSignedIn() && isOwner(userId) && (
+        // 일반 프로필 업데이트 (role 변경 불가)
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        // 구인자 등록 (staff → employer)
+        isValidEmployerRegistration()
+      );
+
+      // 본인 문서 삭제 불가 (계정 삭제는 Cloud Functions 통해서만)
+      allow delete: if false;
 
       // Subcollection: profile (사용자 프로필 - 공개 정보)
       match /profile/{profileId} {

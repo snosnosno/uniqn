@@ -97,6 +97,21 @@ export const employerProfileSchema = z.object({
 
 export type EmployerProfileData = z.infer<typeof employerProfileSchema>;
 
+/**
+ * 구인자 등록 스키마 (staff → employer 역할 변경)
+ * @description 본인인증 완료 후 동의만으로 구인자 등록
+ */
+export const employerRegisterSchema = z.object({
+  agreeToEmployerTerms: z.literal(true, {
+    message: '구인자 이용약관에 동의해주세요',
+  }),
+  agreeToLiabilityWaiver: z.literal(true, {
+    message: '서약서에 동의해주세요',
+  }),
+});
+
+export type EmployerRegisterData = z.infer<typeof employerRegisterSchema>;
+
 // ============================================================================
 // 설정 스키마
 // ============================================================================

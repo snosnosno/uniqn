@@ -79,6 +79,17 @@ export interface UserProfile<T = Date> {
   /** 마케팅 수신 동의 */
   marketingAgreed?: boolean;
 
+  // 구인자 등록 정보 (employer 역할로 변경 시)
+  /** 구인자 약관 동의 정보 */
+  employerAgreements?: {
+    /** 구인자 이용약관 동의 일시 */
+    termsAgreedAt: T;
+    /** 서약서 동의 일시 */
+    liabilityWaiverAgreedAt: T;
+  };
+  /** 구인자 등록 일시 */
+  employerRegisteredAt?: T;
+
   // 메타데이터
   /** 활성 상태 (Firestore 전용, Store에서는 optional) */
   isActive?: boolean;

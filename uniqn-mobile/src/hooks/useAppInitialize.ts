@@ -230,6 +230,11 @@ export function useAppInitialize(): UseAppInitializeReturn {
               ...freshProfile,
               createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
               updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
+              employerAgreements: freshProfile.employerAgreements ? {
+                termsAgreedAt: freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+                liabilityWaiverAgreedAt: freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
+              } : undefined,
+              employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
             });
             logger.info('최신 프로필 로드 완료', {
               component: 'useAppInitialize',

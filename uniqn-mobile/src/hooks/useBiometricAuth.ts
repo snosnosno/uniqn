@@ -305,6 +305,11 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
             ...profile,
             createdAt: profile.createdAt?.toDate?.() ?? new Date(),
             updatedAt: profile.updatedAt?.toDate?.() ?? new Date(),
+            employerAgreements: profile.employerAgreements ? {
+              termsAgreedAt: profile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+              liabilityWaiverAgreedAt: profile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
+            } : undefined,
+            employerRegisteredAt: profile.employerRegisteredAt?.toDate?.() ?? undefined,
           });
         }
       } catch (tokenError) {

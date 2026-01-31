@@ -502,7 +502,7 @@ function NonEmployerView() {
         </Text>
         <Button
           variant="primary"
-          onPress={() => router.push('/(app)/settings')}
+          onPress={() => router.push('/(app)/employer-register')}
           className="min-w-[200px]"
         >
           <Text className="font-semibold text-white">구인자로 등록하기</Text>
