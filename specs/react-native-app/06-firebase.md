@@ -1,6 +1,6 @@
 # 06. Firebase 연동 전략
 
-> **마지막 업데이트**: 2026년 2월
+> **마지막 업데이트**: 2026년 2월 2일
 
 ## Firebase 설정
 
@@ -15,89 +15,149 @@ firebase: ^12.6.0
 # - Web, iOS, Android 단일 코드베이스
 # - Tree-shaking으로 번들 크기 최적화
 # - 기존 Firebase 프로젝트와 호환
+
+# 참고: @react-native-firebase/* 패키지는 사용하지 않음
+# - 네이티브 모듈 필요 (Expo Go 미지원)
+# - 별도 빌드 설정 필요
 ```
 
 ### 초기화 설정 (지연 초기화 + Proxy 패턴)
 ```typescript
 // src/lib/firebase.ts
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
-import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
-import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
-import { getStorage, FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
-import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
-import Constants from 'expo-constants';
+import { initializeAuth, getAuth, Auth, getReactNativePersistence } from 'firebase/auth';
+import {
+  getFirestore, Firestore, Timestamp,
+  doc, updateDoc, serverTimestamp, arrayUnion, arrayRemove,
+  collection, query, where, orderBy, limit,
+  getDocs, getDoc, setDoc, deleteDoc, onSnapshot,
+  writeBatch, runTransaction, increment,
+} from 'firebase/firestore';
+import { getStorage, FirebaseStorage } from 'firebase/storage';
+import { getFunctions, Functions } from 'firebase/functions';
+import { getRemoteConfig, fetchAndActivate, getValue, type RemoteConfig } from 'firebase/remote-config';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { getEnv } from './env';
 
-// 환경변수에서 Firebase 설정 가져오기
-const firebaseConfig = {
-  apiKey: Constants.expoConfig?.extra?.FIREBASE_API_KEY,
-  authDomain: Constants.expoConfig?.extra?.FIREBASE_AUTH_DOMAIN,
-  projectId: Constants.expoConfig?.extra?.FIREBASE_PROJECT_ID,
-  storageBucket: Constants.expoConfig?.extra?.FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: Constants.expoConfig?.extra?.FIREBASE_MESSAGING_SENDER_ID,
-  appId: Constants.expoConfig?.extra?.FIREBASE_APP_ID,
+// Re-export Firestore utilities (중앙화된 Firebase 접근)
+export {
+  Timestamp, doc, updateDoc, serverTimestamp, arrayUnion, arrayRemove,
+  collection, query, where, orderBy, limit,
+  getDocs, getDoc, setDoc, deleteDoc, onSnapshot,
+  writeBatch, runTransaction, increment,
 };
 
-// 지연 초기화 (앱 시작 시점 최적화)
-let _app: FirebaseApp | null = null;
-let _auth: Auth | null = null;
-let _db: Firestore | null = null;
-let _storage: FirebaseStorage | null = null;
-let _functions: Functions | null = null;
+// 초기화된 인스턴스 캐시
+let firebaseApp: FirebaseApp | null = null;
+let firebaseAuth: Auth | null = null;
+let firebaseDb: Firestore | null = null;
+let firebaseStorage: FirebaseStorage | null = null;
+let firebaseFunctions: Functions | null = null;
+let firebaseRemoteConfig: RemoteConfig | null = null;
 
-const getFirebaseApp = (): FirebaseApp => {
-  if (!_app) {
-    _app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+// 초기화 상태 플래그
+let isInitialized = false;
+let initializationError: Error | null = null;
+
+/**
+ * Firebase 앱 초기화 (내부용)
+ * 환경변수 검증 후 초기화 수행
+ */
+function initializeFirebaseApp(): FirebaseApp {
+  if (initializationError) throw initializationError;
+  if (firebaseApp) return firebaseApp;
+
+  try {
+    const env = getEnv();
+    const firebaseConfig = {
+      apiKey: env.EXPO_PUBLIC_FIREBASE_API_KEY,
+      authDomain: env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    };
+
+    firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
+    isInitialized = true;
+    return firebaseApp;
+  } catch (error) {
+    initializationError = error instanceof Error ? error : new Error('Firebase 초기화 실패');
+    throw initializationError;
   }
-  return _app;
-};
+}
 
-// Proxy 패턴으로 지연 접근
-export const auth = new Proxy({} as Auth, {
-  get(_, prop) {
-    if (!_auth) {
-      _auth = getAuth(getFirebaseApp());
+// Getter 함수들
+export function getFirebaseApp(): FirebaseApp { return initializeFirebaseApp(); }
+
+export function getFirebaseAuth(): Auth {
+  if (!firebaseAuth) {
+    const app = initializeFirebaseApp();
+    try {
+      firebaseAuth = initializeAuth(app, {
+        persistence: getReactNativePersistence(AsyncStorage),
+      });
+    } catch {
+      firebaseAuth = getAuth(app);
     }
-    return (_auth as any)[prop];
-  },
-});
+  }
+  return firebaseAuth;
+}
 
-export const db = new Proxy({} as Firestore, {
-  get(_, prop) {
-    if (!_db) {
-      _db = getFirestore(getFirebaseApp());
-    }
-    return (_db as any)[prop];
-  },
-});
+export function getFirebaseDb(): Firestore {
+  if (!firebaseDb) firebaseDb = getFirestore(initializeFirebaseApp());
+  return firebaseDb;
+}
 
-export const storage = new Proxy({} as FirebaseStorage, {
-  get(_, prop) {
-    if (!_storage) {
-      _storage = getStorage(getFirebaseApp());
-    }
-    return (_storage as any)[prop];
-  },
-});
+export function getFirebaseStorage(): FirebaseStorage {
+  if (!firebaseStorage) firebaseStorage = getStorage(initializeFirebaseApp());
+  return firebaseStorage;
+}
 
-export const functions = new Proxy({} as Functions, {
-  get(_, prop) {
-    if (!_functions) {
-      _functions = getFunctions(getFirebaseApp(), 'asia-northeast3');
-    }
-    return (_functions as any)[prop];
-  },
-});
+export function getFirebaseFunctions(): Functions {
+  if (!firebaseFunctions) firebaseFunctions = getFunctions(initializeFirebaseApp(), 'asia-northeast3');
+  return firebaseFunctions;
+}
 
-// 실제 인스턴스 반환 함수 (필요한 경우)
-export const getAuthInstance = () => {
-  if (!_auth) _auth = getAuth(getFirebaseApp());
-  return _auth;
-};
+export function getFirebaseRemoteConfig(): RemoteConfig | null {
+  if (Platform.OS !== 'web') return null; // 웹에서만 완전 지원
+  if (!firebaseRemoteConfig) {
+    firebaseRemoteConfig = getRemoteConfig(initializeFirebaseApp());
+    firebaseRemoteConfig.settings.minimumFetchIntervalMillis = __DEV__ ? 0 : 12 * 60 * 60 * 1000;
+  }
+  return firebaseRemoteConfig;
+}
 
-export const getDbInstance = () => {
-  if (!_db) _db = getFirestore(getFirebaseApp());
-  return _db;
-};
+/**
+ * 지연 초기화 Proxy 생성
+ * 기존 코드와의 완벽한 호환성을 위해 Proxy 사용
+ */
+function createLazyProxy<T extends object>(getter: () => T): T {
+  return new Proxy({} as T, {
+    get(_, prop) {
+      const instance = getter();
+      const value = (instance as Record<string | symbol, unknown>)[prop];
+      return typeof value === 'function' ? value.bind(instance) : value;
+    },
+    set(_, prop, value) {
+      const instance = getter();
+      (instance as Record<string | symbol, unknown>)[prop] = value;
+      return true;
+    },
+    has(_, prop) { return prop in getter(); },
+    ownKeys() { return Reflect.ownKeys(getter()); },
+    getOwnPropertyDescriptor(_, prop) { return Object.getOwnPropertyDescriptor(getter(), prop); },
+  });
+}
+
+// 레거시 호환용 export (Proxy)
+export const app: FirebaseApp = createLazyProxy(getFirebaseApp);
+export const auth: Auth = createLazyProxy(getFirebaseAuth);
+export const db: Firestore = createLazyProxy(getFirebaseDb);
+export const storage: FirebaseStorage = createLazyProxy(getFirebaseStorage);
+export const functions: Functions = createLazyProxy(getFirebaseFunctions);
+
+export function isFirebaseInitialized(): boolean { return isInitialized; }
 ```
 
 ### Expo 설정
@@ -110,23 +170,161 @@ export const getDbInstance = () => {
       [
         "expo-build-properties",
         {
-          "ios": {
-            "useFrameworks": "static"
-          }
+          "ios": { "useFrameworks": "static" }
         }
       ]
     ],
     "extra": {
       "eas": { "projectId": "..." },
-      "FIREBASE_API_KEY": "...",
-      "FIREBASE_AUTH_DOMAIN": "...",
-      "FIREBASE_PROJECT_ID": "tholdem-ebc18",
-      "FIREBASE_STORAGE_BUCKET": "...",
-      "FIREBASE_MESSAGING_SENDER_ID": "...",
-      "FIREBASE_APP_ID": "..."
+      "EXPO_PUBLIC_FIREBASE_API_KEY": "...",
+      "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "...",
+      "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "tholdem-ebc18",
+      "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "...",
+      "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "...",
+      "EXPO_PUBLIC_FIREBASE_APP_ID": "..."
     }
   }
 }
+```
+
+---
+
+## Repository 패턴 (현재 구현)
+
+### 개요
+
+Firebase 직접 접근을 추상화하여 테스트 용이성과 유지보수성을 높임.
+
+```yaml
+인터페이스 (6개):
+  - IApplicationRepository  # 지원 (가장 복잡, 트랜잭션 다수)
+  - IJobPostingRepository   # 공고
+  - IWorkLogRepository      # 근무 기록
+  - INotificationRepository # 알림
+  - IUserRepository         # 사용자
+  - IEventQRRepository      # 이벤트 QR
+
+구현체 (6개):
+  - FirebaseApplicationRepository
+  - FirebaseJobPostingRepository
+  - FirebaseWorkLogRepository
+  - FirebaseNotificationRepository
+  - FirebaseUserRepository
+  - FirebaseEventQRRepository
+```
+
+### IApplicationRepository 인터페이스
+
+```typescript
+// src/repositories/interfaces/IApplicationRepository.ts
+export interface IApplicationRepository {
+  // 조회
+  getById(applicationId: string): Promise<ApplicationWithJob | null>;
+  getByApplicantId(applicantId: string): Promise<ApplicationWithJob[]>;
+  getByJobPostingId(jobPostingId: string): Promise<Application[]>;
+  hasApplied(jobPostingId: string, applicantId: string): Promise<boolean>;
+  getStatsByApplicantId(applicantId: string): Promise<Record<ApplicationStatus, number>>;
+  getCancellationRequests(jobPostingId: string, ownerId: string): Promise<ApplicationWithJob[]>;
+
+  // 트랜잭션 (원자적 처리)
+  applyWithTransaction(input: CreateApplicationInput, context: ApplyContext): Promise<Application>;
+  cancelWithTransaction(applicationId: string, applicantId: string): Promise<void>;
+  requestCancellationWithTransaction(input: RequestCancellationInput, applicantId: string): Promise<void>;
+  reviewCancellationWithTransaction(input: ReviewCancellationInput, reviewerId: string): Promise<void>;
+  confirmWithTransaction(input: ConfirmApplicationInputV2, reviewerId: string): Promise<void>;
+  rejectWithTransaction(input: RejectApplicationInput, reviewerId: string): Promise<void>;
+  markAsRead(applicationId: string, ownerId: string): Promise<void>;
+}
+```
+
+### Firebase 구현체 예시
+
+```typescript
+// src/repositories/firebase/ApplicationRepository.ts
+export class FirebaseApplicationRepository implements IApplicationRepository {
+  async applyWithTransaction(
+    input: CreateApplicationInput,
+    context: ApplyContext
+  ): Promise<Application> {
+    // Assignment 유효성 검증
+    for (const assignment of input.assignments) {
+      if (!isValidAssignment(assignment)) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+          userMessage: '잘못된 지원 정보입니다.',
+        });
+      }
+    }
+
+    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
+      // 1. 공고 정보 읽기 (트랜잭션 내 읽기 먼저)
+      const jobRef = doc(getFirebaseDb(), 'jobPostings', input.jobPostingId);
+      const jobDoc = await transaction.get(jobRef);
+
+      if (!jobDoc.exists()) {
+        throw new ApplicationClosedError({ userMessage: '존재하지 않는 공고입니다' });
+      }
+
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+
+      // 2. 비즈니스 검증
+      if (jobData.status !== 'active') {
+        throw new ApplicationClosedError({ userMessage: '지원이 마감된 공고입니다' });
+      }
+
+      // 3. 중복 지원 검사
+      const applicationId = `${input.jobPostingId}_${context.applicantId}`;
+      const applicationRef = doc(getFirebaseDb(), 'applications', applicationId);
+      const existingApp = await transaction.get(applicationRef);
+
+      if (existingApp.exists()) {
+        const existingData = parseApplicationDocument({ id: existingApp.id, ...existingApp.data() });
+        if (existingData && existingData.status !== 'cancelled') {
+          throw new AlreadyAppliedError({ userMessage: '이미 지원한 공고입니다' });
+        }
+      }
+
+      // 4. 정원 확인
+      const { total, filled } = getClosingStatus(jobData);
+      if (total > 0 && filled >= total) {
+        throw new MaxCapacityReachedError({ userMessage: '모집 인원이 마감되었습니다' });
+      }
+
+      // 5. 트랜잭션 쓰기 (원자적)
+      const applicationData: Omit<Application, 'id'> = {
+        applicantId: context.applicantId,
+        applicantName: context.applicantName,
+        jobPostingId: input.jobPostingId,
+        status: 'applied',
+        assignments: input.assignments,
+        isRead: false,
+        createdAt: serverTimestamp() as Timestamp,
+        updatedAt: serverTimestamp() as Timestamp,
+      };
+
+      transaction.set(applicationRef, applicationData);
+      transaction.update(jobRef, {
+        applicationCount: increment(1),
+        updatedAt: serverTimestamp(),
+      });
+
+      return { id: applicationId, ...applicationData } as Application;
+    });
+
+    return result;
+  }
+
+  // ... 기타 메서드
+}
+```
+
+### Repository 의존성 규칙
+
+```
+✅ Service → Repository → Firebase (권장)
+✅ Hooks → Service → Repository (권장)
+❌ Service → Firebase 직접 호출 (금지)
+❌ Hooks → Firebase 직접 호출 (금지)
+❌ Components → Firebase 직접 호출 (절대 금지)
 ```
 
 ---
@@ -135,194 +333,58 @@ export const getDbInstance = () => {
 
 ### authService
 ```typescript
-// src/services/auth/authService.ts
-import auth, { FirebaseAuthTypes } from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import { GoogleSignin } from '@react-native-google-signin/google-signin';
-import { useAuthStore } from '@/stores/authStore';
-import { AuthError } from '@/utils/errors';
-import type { User } from '@/types';
-
-// 본인인증 데이터 타입
-interface IdentityVerificationData {
-  name: string;              // 실명
-  birthDate: string;         // 생년월일 (YYYYMMDD)
-  gender: 'M' | 'F';         // 성별
-  phone: string;             // 휴대폰 번호
-  ci: string;                // 연계정보 (중복가입 방지)
-  method: 'pass' | 'kakao' | 'nice';  // 인증 방법
-}
-
-// Google Sign-In 설정
-GoogleSignin.configure({
-  webClientId: process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID,
-});
+// src/services/authService.ts
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  sendPasswordResetEmail,
+  onAuthStateChanged,
+  signInWithCredential,
+  GoogleAuthProvider,
+  type User as FirebaseUser,
+} from 'firebase/auth';
+import { getFirebaseAuth, getFirebaseDb, doc, getDoc, setDoc, serverTimestamp } from '@/lib/firebase';
 
 export const authService = {
   // 이메일 로그인
   async signInWithEmail(email: string, password: string): Promise<User> {
     try {
-      const credential = await auth().signInWithEmailAndPassword(email, password);
+      const credential = await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
       return await this.fetchAndSetUser(credential.user);
     } catch (error: any) {
       throw new AuthError(error.code, this.getErrorMessage(error.code));
     }
   },
 
-  // 회원가입 (본인인증 필수)
+  // 회원가입 (본인인증 데이터 필수)
   async signUpWithEmail(
     email: string,
     password: string,
     profileData: Partial<User>,
-    identityData: IdentityVerificationData  // 본인인증 데이터 필수
+    identityData: IdentityVerificationData
   ): Promise<User> {
-    try {
-      // 1. CI 값으로 중복 가입 확인
-      const existingUser = await firestore()
-        .collection('users')
-        .where('identity.ci', '==', identityData.ci)
-        .limit(1)
-        .get();
-
-      if (!existingUser.empty) {
-        throw new AuthError('DUPLICATE_USER', '이미 가입된 회원입니다.');
-      }
-
-      // 2. Firebase Auth 계정 생성
-      const credential = await auth().createUserWithEmailAndPassword(email, password);
-
-      // 3. Firestore에 프로필 + 본인인증 정보 저장
-      await firestore().collection('users').doc(credential.user.uid).set({
-        ...profileData,
-        email,
-        role: 'staff',  // 기본 역할
-        // 본인인증 정보 (필수)
-        identity: {
-          verified: true,
-          name: identityData.name,
-          birthDate: identityData.birthDate,
-          gender: identityData.gender,
-          phoneLastFour: identityData.phone.slice(-4),
-          ci: identityData.ci,  // 중복 확인용
-          verifiedAt: firestore.FieldValue.serverTimestamp(),
-          method: identityData.method,
-        },
-        displayName: identityData.name,  // 실명 사용
-        phone: identityData.phone,
-        consentCompleted: false,
-        profileCompleted: false,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-      });
-
-      // 4. 이메일 인증 발송 - 사용하지 않음 (휴대폰 본인인증으로 대체)
-      // await credential.user.sendEmailVerification();
-
-      return await this.fetchAndSetUser(credential.user);
-    } catch (error: any) {
-      throw new AuthError(error.code, this.getErrorMessage(error.code));
-    }
+    // 1. CI 값으로 중복 가입 확인
+    // 2. Firebase Auth 계정 생성
+    // 3. Firestore에 프로필 + 본인인증 정보 저장
+    // ...
   },
 
   // Google 로그인 (기존 사용자만)
-  // 신규 사용자는 회원가입 플로우(본인인증 필수)로 유도
   async signInWithGoogle(): Promise<User | { requiresSignup: true; email: string }> {
-    try {
-      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
-      const { idToken } = await GoogleSignin.signIn();
-      const googleCredential = auth.GoogleAuthProvider.credential(idToken);
-      const credential = await auth().signInWithCredential(googleCredential);
-
-      // 기존 사용자 확인
-      const userDoc = await firestore()
-        .collection('users')
-        .doc(credential.user.uid)
-        .get();
-
-      if (!userDoc.exists) {
-        // 신규 사용자: 로그아웃 후 회원가입 플로우로 유도
-        // (본인인증 필수이므로 Google 로그인만으로 가입 불가)
-        await auth().signOut();
-        return {
-          requiresSignup: true,
-          email: credential.user.email || '',
-        };
-      }
-
-      // 본인인증 완료 여부 확인
-      const userData = userDoc.data();
-      if (!userData?.identity?.verified) {
-        // 본인인증 미완료 사용자
-        throw new AuthError(
-          'IDENTITY_NOT_VERIFIED',
-          '본인인증이 필요합니다. 회원가입을 완료해주세요.'
-        );
-      }
-
-      return await this.fetchAndSetUser(credential.user);
-    } catch (error: any) {
-      throw new AuthError(error.code || 'GOOGLE_SIGN_IN_ERROR', '구글 로그인에 실패했습니다.');
-    }
+    // 신규 사용자는 회원가입 플로우(본인인증 필수)로 유도
+    // ...
   },
 
   // 로그아웃
   async signOut(): Promise<void> {
-    try {
-      await auth().signOut();
-      try {
-        await GoogleSignin.signOut();
-      } catch {
-        // Google 로그인이 아닌 경우 무시
-      }
-      useAuthStore.getState().logout();
-    } catch (error: any) {
-      throw new AuthError(error.code, '로그아웃에 실패했습니다.');
-    }
-  },
-
-  // 비밀번호 재설정
-  async sendPasswordResetEmail(email: string): Promise<void> {
-    try {
-      await auth().sendPasswordResetEmail(email);
-    } catch (error: any) {
-      throw new AuthError(error.code, this.getErrorMessage(error.code));
-    }
-  },
-
-  // 사용자 데이터 조회 및 Store 업데이트
-  async fetchAndSetUser(firebaseUser: FirebaseAuthTypes.User): Promise<User> {
-    const userDoc = await firestore()
-      .collection('users')
-      .doc(firebaseUser.uid)
-      .get();
-
-    const userData = userDoc.data();
-
-    // 패널티 확인
-    if (userData?.penalty?.isBlocked) {
-      const now = new Date();
-      const blockedUntil = userData.penalty.blockedUntil?.toDate();
-      if (blockedUntil && blockedUntil > now) {
-        throw new AuthError('ACCOUNT_BLOCKED', '계정이 정지되었습니다.');
-      }
-    }
-
-    const user: User = {
-      uid: firebaseUser.uid,
-      email: firebaseUser.email,
-      displayName: userData?.displayName || firebaseUser.displayName,
-      photoURL: userData?.photoURL || firebaseUser.photoURL,
-      role: userData?.role || 'user',
-      consentCompleted: userData?.consentCompleted || false,
-      profileCompleted: userData?.profileCompleted || false,
-    };
-
-    useAuthStore.getState().setUser(user);
-    return user;
+    await signOut(getFirebaseAuth());
+    useAuthStore.getState().logout();
   },
 
   // 인증 상태 리스너
-  onAuthStateChanged(callback: (user: FirebaseAuthTypes.User | null) => void) {
-    return auth().onAuthStateChanged(callback);
+  onAuthStateChanged(callback: (user: FirebaseUser | null) => void) {
+    return onAuthStateChanged(getFirebaseAuth(), callback);
   },
 
   // 에러 메시지 변환
@@ -342,529 +404,230 @@ export const authService = {
 };
 ```
 
-### useAuthListener 훅
+### useAppInitialize 훅
 ```typescript
-// src/hooks/useAuthListener.ts
-import { useEffect } from 'react';
-import { authService } from '@/services/auth/authService';
+// src/hooks/useAppInitialize.ts
+import { useEffect, useState } from 'react';
+import { authService } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 
-export function useAuthListener() {
-  const { setUser, setLoading, logout } = useAuthStore();
+export function useAppInitialize() {
+  const [isReady, setIsReady] = useState(false);
+  const { setUser, setStatus } = useAuthStore();
 
   useEffect(() => {
     const unsubscribe = authService.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         try {
+          setStatus('loading');
           await authService.fetchAndSetUser(firebaseUser);
+          setStatus('authenticated');
         } catch (error) {
-          // 패널티 등의 이유로 로그인 불가
-          logout();
+          setStatus('unauthenticated');
         }
       } else {
-        logout();
+        setStatus('unauthenticated');
       }
-      setLoading(false);
+      setIsReady(true);
     });
 
     return unsubscribe;
   }, []);
+
+  return { isReady };
 }
 ```
 
 ---
 
-## Firestore 서비스
+## Firestore 서비스 레이어
 
-### 기본 CRUD 서비스
-```typescript
-// src/services/firebase/firestoreService.ts
-import firestore, {
-  FirebaseFirestoreTypes,
-} from '@react-native-firebase/firestore';
-import { AppError } from '@/utils/errors';
+### 서비스 목록 (37개)
 
-type QueryConstraint = FirebaseFirestoreTypes.QueryConstraint;
-type DocumentData = FirebaseFirestoreTypes.DocumentData;
+```yaml
+Core (8개):
+  - authService: 로그인/회원가입/소셜로그인
+  - jobService: 공고 조회/필터링/검색
+  - applicationService: 지원 (Repository 사용)
+  - scheduleService: WorkLogs + Applications 병합
+  - workLogService: 근무 기록
+  - notificationService: 알림 조회/읽음처리
+  - reportService: 양방향 신고 시스템
+  - searchService: 검색
 
-export const firestoreService = {
-  // 문서 조회
-  async getDoc<T>(
-    collectionPath: string,
-    docId: string
-  ): Promise<T | null> {
-    try {
-      const doc = await firestore().collection(collectionPath).doc(docId).get();
-      if (!doc.exists) return null;
-      return { id: doc.id, ...doc.data() } as T;
-    } catch (error) {
-      throw new AppError('FIRESTORE_ERROR', 'FETCH_FAILED', '데이터 조회에 실패했습니다.');
-    }
-  },
+Employer (5개):
+  - jobManagementService: 공고 생성/수정/삭제
+  - applicantManagementService: 지원자 확정/거절
+  - settlementService: 정산 계산/처리 (가장 복잡)
+  - confirmedStaffService: 확정 스태프 관리
+  - applicationHistoryService: 확정/취소 이력
 
-  // 컬렉션 조회
-  async getDocs<T>(
-    collectionPath: string,
-    constraints: QueryConstraint[] = []
-  ): Promise<T[]> {
-    try {
-      let query: FirebaseFirestoreTypes.Query = firestore().collection(collectionPath);
+Admin (4개):
+  - adminService: 사용자 관리
+  - announcementService: 공지 관리
+  - tournamentApprovalService: 대회공고 승인
+  - inquiryService: 문의 관리
 
-      for (const constraint of constraints) {
-        query = query.where(
-          constraint.fieldPath,
-          constraint.opStr,
-          constraint.value
-        );
-      }
-
-      const snapshot = await query.get();
-      return snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as T[];
-    } catch (error) {
-      throw new AppError('FIRESTORE_ERROR', 'FETCH_FAILED', '데이터 조회에 실패했습니다.');
-    }
-  },
-
-  // 문서 생성
-  async addDoc<T extends DocumentData>(
-    collectionPath: string,
-    data: Omit<T, 'id'>
-  ): Promise<string> {
-    try {
-      const docRef = await firestore().collection(collectionPath).add({
-        ...data,
-        createdAt: firestore.FieldValue.serverTimestamp(),
-        updatedAt: firestore.FieldValue.serverTimestamp(),
-      });
-      return docRef.id;
-    } catch (error) {
-      throw new AppError('FIRESTORE_ERROR', 'CREATE_FAILED', '데이터 생성에 실패했습니다.');
-    }
-  },
-
-  // 문서 업데이트
-  async updateDoc(
-    collectionPath: string,
-    docId: string,
-    data: Partial<DocumentData>
-  ): Promise<void> {
-    try {
-      await firestore().collection(collectionPath).doc(docId).update({
-        ...data,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
-      });
-    } catch (error) {
-      throw new AppError('FIRESTORE_ERROR', 'UPDATE_FAILED', '데이터 수정에 실패했습니다.');
-    }
-  },
-
-  // 문서 삭제
-  async deleteDoc(collectionPath: string, docId: string): Promise<void> {
-    try {
-      await firestore().collection(collectionPath).doc(docId).delete();
-    } catch (error) {
-      throw new AppError('FIRESTORE_ERROR', 'DELETE_FAILED', '데이터 삭제에 실패했습니다.');
-    }
-  },
-
-  // 배치 쓰기
-  async batchWrite(
-    operations: Array<{
-      type: 'set' | 'update' | 'delete';
-      collection: string;
-      docId: string;
-      data?: DocumentData;
-    }>
-  ): Promise<void> {
-    try {
-      const batch = firestore().batch();
-
-      for (const op of operations) {
-        const docRef = firestore().collection(op.collection).doc(op.docId);
-
-        switch (op.type) {
-          case 'set':
-            batch.set(docRef, {
-              ...op.data,
-              updatedAt: firestore.FieldValue.serverTimestamp(),
-            });
-            break;
-          case 'update':
-            batch.update(docRef, {
-              ...op.data,
-              updatedAt: firestore.FieldValue.serverTimestamp(),
-            });
-            break;
-          case 'delete':
-            batch.delete(docRef);
-            break;
-        }
-      }
-
-      await batch.commit();
-    } catch (error) {
-      throw new AppError('FIRESTORE_ERROR', 'BATCH_FAILED', '일괄 처리에 실패했습니다.');
-    }
-  },
-
-  // 실시간 구독
-  subscribe<T>(
-    collectionPath: string,
-    constraints: QueryConstraint[],
-    onData: (data: T[]) => void,
-    onError?: (error: Error) => void
-  ): () => void {
-    let query: FirebaseFirestoreTypes.Query = firestore().collection(collectionPath);
-
-    for (const constraint of constraints) {
-      query = query.where(
-        constraint.fieldPath,
-        constraint.opStr,
-        constraint.value
-      );
-    }
-
-    return query.onSnapshot(
-      (snapshot) => {
-        const data = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        })) as T[];
-        onData(data);
-      },
-      (error) => {
-        onError?.(error);
-      }
-    );
-  },
-};
-```
-
-### 구인공고 서비스
-```typescript
-// src/services/job/jobPostingService.ts
-import firestore from '@react-native-firebase/firestore';
-import { firestoreService } from '@/services/firebase/firestoreService';
-import type { JobPosting, JobFilters, Application } from '@/types';
-
-export const jobPostingService = {
-  // 필터링된 공고 조회
-  async getFiltered(filters: JobFilters): Promise<JobPosting[]> {
-    let query = firestore()
-      .collection('jobPostings')
-      .where('status', '==', 'active')
-      .orderBy('createdAt', 'desc');
-
-    // 지역 필터
-    if (filters.location.length > 0) {
-      query = query.where('location.district', 'in', filters.location);
-    }
-
-    // 날짜 필터
-    if (filters.dateFrom) {
-      query = query.where('dates', 'array-contains-any', [filters.dateFrom]);
-    }
-
-    // 공고 유형 필터
-    if (filters.postingType.length > 0) {
-      query = query.where('postingType', 'in', filters.postingType);
-    }
-
-    const snapshot = await query.limit(50).get();
-
-    let jobs = snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as JobPosting[];
-
-    // 클라이언트 측 추가 필터링 (Firestore 제한)
-    if (filters.salaryMin) {
-      jobs = jobs.filter((job) => job.salary >= filters.salaryMin!);
-    }
-    if (filters.salaryMax) {
-      jobs = jobs.filter((job) => job.salary <= filters.salaryMax!);
-    }
-    if (filters.searchQuery) {
-      const query = filters.searchQuery.toLowerCase();
-      jobs = jobs.filter(
-        (job) =>
-          job.title.toLowerCase().includes(query) ||
-          job.location.address.toLowerCase().includes(query)
-      );
-    }
-
-    return jobs;
-  },
-
-  // 상세 조회
-  async getById(id: string): Promise<JobPosting | null> {
-    return firestoreService.getDoc<JobPosting>('jobPostings', id);
-  },
-
-  // 지원하기
-  async apply(jobId: string, applicationData: Partial<Application>): Promise<string> {
-    const applicationId = await firestoreService.addDoc('applications', {
-      ...applicationData,
-      jobId,
-      status: 'pending',
-    });
-
-    // 공고 지원자 수 업데이트
-    await firestore()
-      .collection('jobPostings')
-      .doc(jobId)
-      .update({
-        applicantCount: firestore.FieldValue.increment(1),
-      });
-
-    return applicationId;
-  },
-
-  // 지원 취소
-  async cancelApplication(applicationId: string, jobId: string): Promise<void> {
-    await firestoreService.updateDoc('applications', applicationId, {
-      status: 'cancelled',
-    });
-
-    await firestore()
-      .collection('jobPostings')
-      .doc(jobId)
-      .update({
-        applicantCount: firestore.FieldValue.increment(-1),
-      });
-  },
-
-  // 내 지원 목록
-  async getMyApplications(userId: string): Promise<Application[]> {
-    const snapshot = await firestore()
-      .collection('applications')
-      .where('applicantId', '==', userId)
-      .orderBy('createdAt', 'desc')
-      .get();
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as Application[];
-  },
-};
+Infrastructure (20개):
+  - pushNotificationService: expo-notifications 기반
+  - eventQRService: QR 생성/검증 (3분 유효)
+  - deepLinkService: 딥링크 라우팅
+  - storageService: MMKV + SecureStore
+  - sessionService: 토큰 관리
+  - analyticsService: 이벤트 추적
+  - crashlyticsService: Sentry 연동
+  - performanceService: 성능 모니터링
+  - featureFlagService: Remote Config (웹만)
+  - templateService: 공고 템플릿
+  - accountDeletionService: 계정 삭제
+  - inAppMessageService: 인앱 메시지
+  - applicantConversionService: 지원자 변환
+  - biometricService: 생체인증
+  - cacheService: 캐시 관리
+  - versionService: 앱 버전 체크
+  - tokenRefreshService: 토큰 갱신
+  - notificationSyncService: 알림 동기화
+  - settlement/* (4개): 정산 분리 모듈
 ```
 
 ---
 
-## Storage 서비스
-
-```typescript
-// src/services/firebase/storageService.ts
-import storage from '@react-native-firebase/storage';
-import { AppError } from '@/utils/errors';
-
-export const storageService = {
-  // 이미지 업로드
-  async uploadImage(
-    path: string,
-    uri: string,
-    onProgress?: (progress: number) => void
-  ): Promise<string> {
-    try {
-      const reference = storage().ref(path);
-      const task = reference.putFile(uri);
-
-      if (onProgress) {
-        task.on('state_changed', (snapshot) => {
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          onProgress(progress);
-        });
-      }
-
-      await task;
-      return await reference.getDownloadURL();
-    } catch (error) {
-      throw new AppError('STORAGE_ERROR', 'UPLOAD_FAILED', '이미지 업로드에 실패했습니다.');
-    }
-  },
-
-  // 프로필 이미지 업로드
-  async uploadProfileImage(
-    userId: string,
-    uri: string,
-    onProgress?: (progress: number) => void
-  ): Promise<string> {
-    const path = `profiles/${userId}/${Date.now()}.jpg`;
-    return this.uploadImage(path, uri, onProgress);
-  },
-
-  // 이미지 삭제
-  async deleteImage(url: string): Promise<void> {
-    try {
-      const reference = storage().refFromURL(url);
-      await reference.delete();
-    } catch (error) {
-      // 이미 삭제된 경우 무시
-      console.warn('Image already deleted or not found');
-    }
-  },
-};
-```
-
----
-
-## Push Notification (FCM)
+## Push Notification (expo-notifications)
 
 ### FCM 설정
+
 ```typescript
-// src/services/notification/fcmService.ts
-import messaging from '@react-native-firebase/messaging';
+// src/services/pushNotificationService.ts
+import * as Notifications from 'expo-notifications';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import firestore from '@react-native-firebase/firestore';
+import { getFirebaseDb, doc, updateDoc, serverTimestamp } from '@/lib/firebase';
 
-const FCM_TOKEN_KEY = 'fcm_token';
+// 알림 핸들러 설정
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldSetBadge: true,
+  }),
+});
 
-export const fcmService = {
-  // 권한 요청
-  async requestPermission(): Promise<boolean> {
-    const authStatus = await messaging().requestPermission();
-    return (
-      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
-      authStatus === messaging.AuthorizationStatus.PROVISIONAL
-    );
-  },
-
-  // FCM 토큰 조회 및 저장
-  async getAndSaveToken(userId: string): Promise<string | null> {
-    try {
-      const hasPermission = await this.requestPermission();
-      if (!hasPermission) return null;
-
-      const token = await messaging().getToken();
-      const savedToken = await AsyncStorage.getItem(FCM_TOKEN_KEY);
-
-      // 토큰이 변경된 경우에만 저장
-      if (token !== savedToken) {
-        await firestore().collection('users').doc(userId).update({
-          fcmToken: token,
-          fcmTokenUpdatedAt: firestore.FieldValue.serverTimestamp(),
-          platform: Platform.OS,
-        });
-        await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
-      }
-
-      return token;
-    } catch (error) {
-      console.error('FCM token error:', error);
+export const pushNotificationService = {
+  // 권한 요청 및 토큰 등록
+  async registerForPushNotifications(userId: string): Promise<string | null> {
+    if (!Device.isDevice) {
+      console.log('Push notifications require a physical device');
       return null;
     }
-  },
 
-  // 토큰 갱신 리스너
-  onTokenRefresh(userId: string, callback?: (token: string) => void) {
-    return messaging().onTokenRefresh(async (token) => {
-      await firestore().collection('users').doc(userId).update({
-        fcmToken: token,
-        fcmTokenUpdatedAt: firestore.FieldValue.serverTimestamp(),
-      });
-      await AsyncStorage.setItem(FCM_TOKEN_KEY, token);
-      callback?.(token);
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    let finalStatus = existingStatus;
+
+    if (existingStatus !== 'granted') {
+      const { status } = await Notifications.requestPermissionsAsync();
+      finalStatus = status;
+    }
+
+    if (finalStatus !== 'granted') {
+      console.log('Failed to get push token for push notification!');
+      return null;
+    }
+
+    // Expo Push Token 가져오기
+    const tokenData = await Notifications.getExpoPushTokenAsync({
+      projectId: 'your-expo-project-id',
     });
+    const token = tokenData.data;
+
+    // Firestore에 토큰 저장
+    await updateDoc(doc(getFirebaseDb(), 'users', userId), {
+      expoPushToken: token,
+      pushTokenUpdatedAt: serverTimestamp(),
+      platform: Platform.OS,
+    });
+
+    // Android 채널 설정
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'default',
+        importance: Notifications.AndroidImportance.MAX,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#6366F1',
+      });
+    }
+
+    return token;
   },
 
-  // 포그라운드 메시지 핸들러
-  onForegroundMessage(
-    callback: (message: messaging.RemoteMessage) => void
+  // 알림 리스너 설정
+  addNotificationReceivedListener(callback: (notification: Notifications.Notification) => void) {
+    return Notifications.addNotificationReceivedListener(callback);
+  },
+
+  // 알림 탭 리스너
+  addNotificationResponseReceivedListener(
+    callback: (response: Notifications.NotificationResponse) => void
   ) {
-    return messaging().onMessage(callback);
-  },
-
-  // 백그라운드 메시지 핸들러 (앱 외부에서 호출)
-  setBackgroundMessageHandler(
-    handler: (message: messaging.RemoteMessage) => Promise<void>
-  ) {
-    messaging().setBackgroundMessageHandler(handler);
-  },
-
-  // 알림 클릭 핸들러
-  onNotificationOpenedApp(
-    callback: (message: messaging.RemoteMessage) => void
-  ) {
-    return messaging().onNotificationOpenedApp(callback);
-  },
-
-  // 앱이 종료된 상태에서 알림으로 열린 경우
-  async getInitialNotification(): Promise<messaging.RemoteMessage | null> {
-    return messaging().getInitialNotification();
+    return Notifications.addNotificationResponseReceivedListener(callback);
   },
 };
 ```
 
-### FCM 초기화 훅
+### useNotificationHandler 훅
 ```typescript
-// src/hooks/useFCM.ts
-import { useEffect } from 'react';
-import { fcmService } from '@/services/notification/fcmService';
+// src/hooks/useNotificationHandler.ts
+import { useEffect, useRef } from 'react';
+import * as Notifications from 'expo-notifications';
+import { pushNotificationService } from '@/services/pushNotificationService';
 import { useAuthStore } from '@/stores/authStore';
-import { useToastStore } from '@/stores/toastStore';
-import { navigation } from '@/utils/navigation';
+import { router } from 'expo-router';
 
-export function useFCM() {
+export function useNotificationHandler() {
   const user = useAuthStore((s) => s.user);
-  const { show: showToast } = useToastStore();
+  const notificationListener = useRef<Notifications.Subscription>();
+  const responseListener = useRef<Notifications.Subscription>();
 
   useEffect(() => {
     if (!user?.uid) return;
 
     // 토큰 등록
-    fcmService.getAndSaveToken(user.uid);
+    pushNotificationService.registerForPushNotifications(user.uid);
 
-    // 토큰 갱신 리스너
-    const unsubscribeToken = fcmService.onTokenRefresh(user.uid);
-
-    // 포그라운드 메시지 핸들러
-    const unsubscribeMessage = fcmService.onForegroundMessage((message) => {
-      showToast({
-        type: 'info',
-        message: message.notification?.body || '새 알림이 있습니다.',
-      });
-    });
-
-    // 알림 클릭 핸들러
-    const unsubscribeOpened = fcmService.onNotificationOpenedApp((message) => {
-      handleNotificationNavigation(message.data);
-    });
-
-    // 앱 종료 상태에서 열린 경우
-    fcmService.getInitialNotification().then((message) => {
-      if (message) {
-        handleNotificationNavigation(message.data);
+    // 포그라운드 알림 리스너
+    notificationListener.current = pushNotificationService.addNotificationReceivedListener(
+      (notification) => {
+        console.log('Notification received:', notification);
       }
-    });
+    );
+
+    // 알림 탭 리스너 (딥링크 처리)
+    responseListener.current = pushNotificationService.addNotificationResponseReceivedListener(
+      (response) => {
+        const data = response.notification.request.content.data;
+        handleNotificationNavigation(data);
+      }
+    );
 
     return () => {
-      unsubscribeToken();
-      unsubscribeMessage();
-      unsubscribeOpened();
+      notificationListener.current?.remove();
+      responseListener.current?.remove();
     };
   }, [user?.uid]);
 }
 
-function handleNotificationNavigation(data?: Record<string, string>) {
-  if (!data?.type) return;
+function handleNotificationNavigation(data: Record<string, unknown>) {
+  const type = data?.type as string;
+  const id = data?.id as string;
 
-  switch (data.type) {
+  switch (type) {
     case 'job_application':
-      navigation.toJobPostingDetail(data.jobId);
+      router.push(`/jobs/${id}`);
       break;
     case 'schedule_update':
-      navigation.toScheduleDetail(data.scheduleId);
-      break;
-    case 'message':
-      navigation.toNotifications();
+      router.push(`/schedule/${id}`);
       break;
     default:
-      navigation.toNotifications();
+      router.push('/notifications');
   }
 }
 ```
@@ -886,25 +649,37 @@ firestore/
 │   └── {postingId}/
 │       └── posting data
 │
-├── applications/               # 지원
+├── applications/               # 지원 (ID: {jobPostingId}_{applicantId})
 │   └── {applicationId}/
 │       └── application data
 │
-├── workLogs/                   # 근무 기록
+├── workLogs/                   # 근무 기록 (ID: {jobPostingId}_{staffId}_{date})
 │   └── {workLogId}/
 │       └── work log data
+│
+├── notifications/              # 알림
+│   └── {notificationId}/
+│       └── notification data
 │
 ├── inquiries/                  # 문의
 │   └── {inquiryId}/
 │       └── inquiry data
 │
-└── staff/                      # 스태프 정보
-    └── {staffId}/
-        └── staff data
+├── reports/                    # 신고
+│   └── {reportId}/
+│       └── report data
+│
+├── announcements/              # 공지사항
+│   └── {announcementId}/
+│       └── announcement data
+│
+└── templates/                  # 공고 템플릿
+    └── {templateId}/
+        └── template data
 ```
 
 ### 인덱스 설정
-```
+```json
 // firestore.indexes.json
 {
   "indexes": [
@@ -925,571 +700,326 @@ firestore/
       ]
     },
     {
+      "collectionGroup": "applications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "jobPostingId", "order": "ASCENDING" },
+        { "fieldPath": "status", "order": "ASCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "workLogs",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "staffId", "order": "ASCENDING" },
         { "fieldPath": "date", "order": "DESCENDING" }
       ]
-    }
-  ]
-}
-```
-
----
-
-## 오프라인 지원
-
-### 오프라인 캐시 설정
-```typescript
-// Firestore 오프라인 지원 (기본 활성화)
-firestore().settings({
-  persistence: true,
-  cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED,
-});
-
-// 네트워크 상태 확인
-import NetInfo from '@react-native-community/netinfo';
-
-export async function isOnline(): Promise<boolean> {
-  const state = await NetInfo.fetch();
-  return state.isConnected ?? false;
-}
-
-// 오프라인 시 캐시된 데이터 사용
-async function getJobsWithOfflineSupport(): Promise<JobPosting[]> {
-  try {
-    const online = await isOnline();
-
-    if (!online) {
-      // 캐시에서 읽기
-      const snapshot = await firestore()
-        .collection('jobPostings')
-        .get({ source: 'cache' });
-
-      return snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as JobPosting[];
-    }
-
-    // 온라인: 서버에서 읽기
-    const snapshot = await firestore()
-      .collection('jobPostings')
-      .get({ source: 'server' });
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as JobPosting[];
-  } catch (error) {
-    // 네트워크 오류 시 캐시 시도
-    const snapshot = await firestore()
-      .collection('jobPostings')
-      .get({ source: 'cache' });
-
-    return snapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    })) as JobPosting[];
-  }
-}
-```
-
----
-
-## Geo-Query 솔루션
-
-### 개요
-
-Firestore는 네이티브 geo-query를 지원하지 않으므로 **Geohash** 기반 솔루션을 사용합니다.
-
-```yaml
-솔루션: Geohash + 클라이언트 필터링
-라이브러리: geofire-common (경량, Firebase 공식 권장)
-정확도: 1~12자리 (1자리 ≈ 5,000km, 6자리 ≈ 1.2km, 9자리 ≈ 5m)
-```
-
-### 패키지 설치
-
-```bash
-npm install geofire-common
-```
-
-### Geohash 유틸리티
-
-```typescript
-// src/utils/geo.ts
-import { geohashForLocation, geohashQueryBounds, distanceBetween } from 'geofire-common';
-
-export interface GeoPoint {
-  latitude: number;
-  longitude: number;
-}
-
-export interface GeoQueryResult<T> {
-  data: T;
-  distance: number; // km
-}
-
-/**
- * 좌표를 Geohash로 변환
- */
-export function encodeGeohash(point: GeoPoint, precision: number = 9): string {
-  return geohashForLocation([point.latitude, point.longitude], precision);
-}
-
-/**
- * 반경 내 검색을 위한 Geohash 범위 계산
- * @param center 중심 좌표
- * @param radiusKm 반경 (km)
- */
-export function getGeohashBounds(center: GeoPoint, radiusKm: number) {
-  return geohashQueryBounds([center.latitude, center.longitude], radiusKm * 1000);
-}
-
-/**
- * 두 지점 간 거리 계산 (km)
- */
-export function calculateDistance(from: GeoPoint, to: GeoPoint): number {
-  return distanceBetween(
-    [from.latitude, from.longitude],
-    [to.latitude, to.longitude]
-  );
-}
-
-/**
- * 결과를 거리순으로 정렬 및 필터링
- */
-export function filterByRadius<T extends { location: { geohash: string; latitude: number; longitude: number } }>(
-  items: T[],
-  center: GeoPoint,
-  radiusKm: number
-): GeoQueryResult<T>[] {
-  return items
-    .map((item) => ({
-      data: item,
-      distance: calculateDistance(center, {
-        latitude: item.location.latitude,
-        longitude: item.location.longitude,
-      }),
-    }))
-    .filter((result) => result.distance <= radiusKm)
-    .sort((a, b) => a.distance - b.distance);
-}
-```
-
-### 데이터 저장 시 Geohash 포함
-
-```typescript
-// src/services/job/jobPostingService.ts
-import firestore from '@react-native-firebase/firestore';
-import { encodeGeohash } from '@/utils/geo';
-
-export async function createJobPosting(data: JobPostingInput): Promise<string> {
-  const geohash = encodeGeohash({
-    latitude: data.location.latitude,
-    longitude: data.location.longitude,
-  });
-
-  const docRef = await firestore().collection('jobPostings').add({
-    ...data,
-    location: {
-      ...data.location,
-      geohash, // Geohash 저장
     },
-    createdAt: firestore.FieldValue.serverTimestamp(),
-  });
-
-  return docRef.id;
-}
-```
-
-### 위치 기반 검색 서비스
-
-```typescript
-// src/services/job/geoJobService.ts
-import firestore from '@react-native-firebase/firestore';
-import { getGeohashBounds, filterByRadius, GeoPoint, GeoQueryResult } from '@/utils/geo';
-import type { JobPosting } from '@/types';
-
-interface GeoSearchOptions {
-  center: GeoPoint;
-  radiusKm: number;
-  limit?: number;
-  filters?: {
-    status?: string;
-    roles?: string[];
-  };
-}
-
-export async function searchJobsByLocation(
-  options: GeoSearchOptions
-): Promise<GeoQueryResult<JobPosting>[]> {
-  const { center, radiusKm, limit = 50, filters } = options;
-
-  // 1. Geohash 범위 계산
-  const bounds = getGeohashBounds(center, radiusKm);
-
-  // 2. 병렬 쿼리 실행 (각 범위별)
-  const promises = bounds.map(([start, end]) => {
-    let query = firestore()
-      .collection('jobPostings')
-      .where('location.geohash', '>=', start)
-      .where('location.geohash', '<=', end);
-
-    // 추가 필터 (선택적)
-    if (filters?.status) {
-      query = query.where('status', '==', filters.status);
-    }
-
-    return query.limit(limit).get();
-  });
-
-  const snapshots = await Promise.all(promises);
-
-  // 3. 결과 병합 및 중복 제거
-  const seen = new Set<string>();
-  const allItems: JobPosting[] = [];
-
-  for (const snapshot of snapshots) {
-    for (const doc of snapshot.docs) {
-      if (!seen.has(doc.id)) {
-        seen.add(doc.id);
-        allItems.push({ id: doc.id, ...doc.data() } as JobPosting);
-      }
-    }
-  }
-
-  // 4. 정확한 거리 계산 및 필터링 (클라이언트 측)
-  const filtered = filterByRadius(allItems, center, radiusKm);
-
-  // 5. 클라이언트 측 추가 필터링
-  let result = filtered;
-  if (filters?.roles?.length) {
-    result = result.filter((item) =>
-      filters.roles!.some((role) => item.data.requiredRoles?.includes(role))
-    );
-  }
-
-  return result.slice(0, limit);
-}
-```
-
-### React Hook
-
-```typescript
-// src/hooks/queries/useNearbyJobs.ts
-import { useQuery } from '@tanstack/react-query';
-import { searchJobsByLocation } from '@/services/job/geoJobService';
-import { useUserLocation } from '@/hooks/useUserLocation';
-
-interface UseNearbyJobsOptions {
-  radiusKm?: number;
-  enabled?: boolean;
-}
-
-export function useNearbyJobs({ radiusKm = 10, enabled = true }: UseNearbyJobsOptions = {}) {
-  const { location, isLoading: locationLoading } = useUserLocation();
-
-  return useQuery({
-    queryKey: ['nearbyJobs', location?.latitude, location?.longitude, radiusKm],
-    queryFn: () =>
-      searchJobsByLocation({
-        center: location!,
-        radiusKm,
-        filters: { status: 'active' },
-      }),
-    enabled: enabled && !!location && !locationLoading,
-    staleTime: 2 * 60 * 1000, // 2분
-  });
-}
-```
-
-### Firestore 인덱스 설정
-
-```json
-// firestore.indexes.json에 추가
-{
-  "indexes": [
     {
-      "collectionGroup": "jobPostings",
+      "collectionGroup": "workLogs",
       "queryScope": "COLLECTION",
       "fields": [
-        { "fieldPath": "location.geohash", "order": "ASCENDING" },
-        { "fieldPath": "status", "order": "ASCENDING" }
+        { "fieldPath": "jobPostingId", "order": "ASCENDING" },
+        { "fieldPath": "date", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "notifications",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "userId", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
       ]
     }
   ]
 }
 ```
 
-### 성능 고려사항
+---
 
-```yaml
-반경별 권장 설정:
-  1km 이하: precision 7, 쿼리 범위 좁음
-  1-5km: precision 6, 일반적 사용
-  5-20km: precision 5, 범위 넓음
-  20km 이상: precision 4, 다중 쿼리 증가
+## 트랜잭션 규칙 (필수)
 
-최적화 전략:
-  - 캐싱: 위치 변경 100m 미만 시 캐시 재사용
-  - 페이지네이션: 대량 결과 시 cursor 기반 로딩
-  - 인덱스: location.geohash + status 복합 인덱스 필수
+### 트랜잭션 필수 사용 케이스
+
+```typescript
+// ❌ 금지: 여러 문서를 개별 업데이트 (데이터 불일치 위험)
+await updateDoc(applicationRef, { status: 'confirmed' });
+await updateDoc(jobPostingRef, { filledPositions: increment(1) });
+
+// ✅ 필수: runTransaction으로 원자적 처리
+await runTransaction(getFirebaseDb(), async (transaction) => {
+  // 1. 모든 읽기 먼저
+  const applicationDoc = await transaction.get(applicationRef);
+  const jobPostingDoc = await transaction.get(jobPostingRef);
+
+  // 2. 비즈니스 검증
+  if (currentFilled >= totalPositions) {
+    throw new MaxCapacityReachedError();
+  }
+
+  // 3. 모든 쓰기 실행 (원자적)
+  transaction.update(applicationRef, { status: 'confirmed' });
+  transaction.update(jobPostingRef, { filledPositions: increment(1) });
+});
+```
+
+### 트랜잭션 필수 시나리오
+
+| 시나리오 | 관련 문서 | 이유 |
+|---------|----------|------|
+| 지원하기 | applications, jobPostings | 중복 체크 + 카운트 증가 |
+| 지원 취소 | applications, jobPostings | 상태 변경 + 카운트 감소 |
+| 지원 확정 | applications, jobPostings, workLogs | 상태 + 정원 + WorkLog 생성 |
+| 취소 요청 검토 | applications, jobPostings | 상태 변경 + 카운트 조정 |
+| QR 출퇴근 | workLogs | 중복 체크인 방지 |
+| 정산 처리 | workLogs, (payments) | 금액 정합성 |
+
+---
+
+## 에러 모니터링 (Sentry)
+
+### 개요
+
+Firebase Crashlytics 대신 Sentry를 사용합니다 (Expo 호환성).
+
+```typescript
+// src/services/crashlyticsService.ts (실제로는 Sentry 연동)
+import * as Sentry from '@sentry/react-native';
+
+export const crashlyticsService = {
+  initialize() {
+    Sentry.init({
+      dsn: process.env.EXPO_PUBLIC_SENTRY_DSN,
+      debug: __DEV__,
+      environment: __DEV__ ? 'development' : 'production',
+      tracesSampleRate: __DEV__ ? 1.0 : 0.2,
+      enableAutoSessionTracking: true,
+    });
+  },
+
+  setUser(userId: string, email?: string) {
+    Sentry.setUser({ id: userId, email });
+  },
+
+  clearUser() {
+    Sentry.setUser(null);
+  },
+
+  logError(error: Error, context?: Record<string, unknown>) {
+    Sentry.captureException(error, { extra: context });
+  },
+
+  logMessage(message: string, level: 'info' | 'warning' | 'error' = 'info') {
+    Sentry.captureMessage(message, level);
+  },
+
+  addBreadcrumb(message: string, category?: string) {
+    Sentry.addBreadcrumb({ message, category, level: 'info' });
+  },
+};
 ```
 
 ---
 
-## Security Rules 테스트
+## 오프라인 지원
 
-### 개요
-
-Firebase Security Rules는 프로덕션 배포 전 반드시 테스트해야 합니다.
-
-### 테스트 환경 설정
-
-```bash
-# Firebase Emulator 설치
-npm install -g firebase-tools
-firebase init emulators
-
-# 에뮬레이터 실행
-firebase emulators:start --only firestore
-```
-
-### 테스트 유틸리티
+### 네트워크 상태 모니터링
 
 ```typescript
-// tests/rules/testUtils.ts
-import {
-  initializeTestEnvironment,
-  assertFails,
-  assertSucceeds,
-  RulesTestEnvironment,
-} from '@firebase/rules-unit-testing';
-import * as fs from 'fs';
+// src/hooks/useNetworkStatus.ts
+import { useEffect, useState } from 'react';
+import NetInfo from '@react-native-community/netinfo';
 
-let testEnv: RulesTestEnvironment;
+export function useNetworkStatus() {
+  const [isConnected, setIsConnected] = useState(true);
 
-export async function setupTestEnv() {
-  testEnv = await initializeTestEnvironment({
-    projectId: 'test-project',
-    firestore: {
-      rules: fs.readFileSync('firestore.rules', 'utf8'),
-      host: 'localhost',
-      port: 8080,
-    },
-  });
-  return testEnv;
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(state.isConnected ?? true);
+    });
+
+    return unsubscribe;
+  }, []);
+
+  return { isConnected };
 }
-
-export async function cleanupTestEnv() {
-  await testEnv?.cleanup();
-}
-
-export function getAuthenticatedContext(uid: string, customClaims?: object) {
-  return testEnv.authenticatedContext(uid, customClaims);
-}
-
-export function getUnauthenticatedContext() {
-  return testEnv.unauthenticatedContext();
-}
-
-export { assertFails, assertSucceeds };
 ```
 
-### Security Rules 테스트 케이스
+### Firestore 오프라인 캐시
+
+Firestore Web SDK는 기본적으로 오프라인 캐시를 지원합니다.
 
 ```typescript
-// tests/rules/jobPostings.test.ts
-import {
-  setupTestEnv,
-  cleanupTestEnv,
-  getAuthenticatedContext,
-  getUnauthenticatedContext,
-  assertFails,
-  assertSucceeds,
-} from './testUtils';
+// 캐시에서 데이터 읽기 (오프라인 시)
+import { getDocsFromCache, getDocsFromServer } from 'firebase/firestore';
 
-describe('jobPostings Security Rules', () => {
-  beforeAll(async () => {
-    await setupTestEnv();
-  });
+async function getJobsWithOfflineSupport(): Promise<JobPosting[]> {
+  const jobsRef = collection(getFirebaseDb(), 'jobPostings');
+  const q = query(jobsRef, where('status', '==', 'active'), orderBy('createdAt', 'desc'));
 
-  afterAll(async () => {
-    await cleanupTestEnv();
-  });
-
-  describe('읽기 권한', () => {
-    it('인증된 사용자는 active 공고를 읽을 수 있다', async () => {
-      const db = getAuthenticatedContext('user1').firestore();
-      await assertSucceeds(
-        db.collection('jobPostings').where('status', '==', 'active').get()
-      );
-    });
-
-    it('비인증 사용자는 공고를 읽을 수 없다', async () => {
-      const db = getUnauthenticatedContext().firestore();
-      await assertFails(db.collection('jobPostings').get());
-    });
-  });
-
-  describe('쓰기 권한', () => {
-    it('공고 작성자만 수정할 수 있다', async () => {
-      const ownerDb = getAuthenticatedContext('owner1').firestore();
-      const otherDb = getAuthenticatedContext('other1').firestore();
-
-      // 작성자는 수정 가능
-      await assertSucceeds(
-        ownerDb.collection('jobPostings').doc('job1').update({ title: 'Updated' })
-      );
-
-      // 다른 사용자는 수정 불가
-      await assertFails(
-        otherDb.collection('jobPostings').doc('job1').update({ title: 'Hacked' })
-      );
-    });
-
-    it('admin은 모든 공고를 삭제할 수 있다', async () => {
-      const adminDb = getAuthenticatedContext('admin1', { role: 'admin' }).firestore();
-      await assertSucceeds(
-        adminDb.collection('jobPostings').doc('job1').delete()
-      );
-    });
-  });
-
-  describe('데이터 검증', () => {
-    it('필수 필드 없이 생성 불가', async () => {
-      const db = getAuthenticatedContext('user1').firestore();
-      await assertFails(
-        db.collection('jobPostings').add({
-          // title 필드 누락
-          description: 'Test',
-        })
-      );
-    });
-
-    it('유효하지 않은 status 값 거부', async () => {
-      const db = getAuthenticatedContext('user1').firestore();
-      await assertFails(
-        db.collection('jobPostings').add({
-          title: 'Test',
-          status: 'invalid_status', // 유효하지 않은 값
-        })
-      );
-    });
-  });
-});
-```
-
-### 사용자 문서 테스트
-
-```typescript
-// tests/rules/users.test.ts
-import {
-  setupTestEnv,
-  cleanupTestEnv,
-  getAuthenticatedContext,
-  assertFails,
-  assertSucceeds,
-} from './testUtils';
-
-describe('users Security Rules', () => {
-  beforeAll(async () => {
-    await setupTestEnv();
-  });
-
-  afterAll(async () => {
-    await cleanupTestEnv();
-  });
-
-  it('자신의 프로필만 읽을 수 있다', async () => {
-    const user1Db = getAuthenticatedContext('user1').firestore();
-
-    // 자신의 문서는 읽기 가능
-    await assertSucceeds(user1Db.collection('users').doc('user1').get());
-
-    // 다른 사용자 문서는 읽기 불가 (공개 필드 제외)
-    await assertFails(user1Db.collection('users').doc('user2').get());
-  });
-
-  it('자신의 프로필만 수정할 수 있다', async () => {
-    const user1Db = getAuthenticatedContext('user1').firestore();
-
-    await assertSucceeds(
-      user1Db.collection('users').doc('user1').update({
-        displayName: 'New Name',
-      })
-    );
-
-    await assertFails(
-      user1Db.collection('users').doc('user2').update({
-        displayName: 'Hacked',
-      })
-    );
-  });
-
-  it('role 필드는 admin만 수정 가능', async () => {
-    const userDb = getAuthenticatedContext('user1').firestore();
-    const adminDb = getAuthenticatedContext('admin1', { role: 'admin' }).firestore();
-
-    // 일반 사용자는 role 변경 불가
-    await assertFails(
-      userDb.collection('users').doc('user1').update({ role: 'admin' })
-    );
-
-    // admin은 role 변경 가능
-    await assertSucceeds(
-      adminDb.collection('users').doc('user1').update({ role: 'manager' })
-    );
-  });
-});
-```
-
-### CI/CD 통합
-
-```yaml
-# .github/workflows/test-rules.yml
-name: Test Security Rules
-
-on:
-  push:
-    paths:
-      - 'firestore.rules'
-      - 'tests/rules/**'
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install Firebase CLI
-        run: npm install -g firebase-tools
-
-      - name: Start Emulator and Run Tests
-        run: |
-          firebase emulators:exec --only firestore "npm run test:rules"
-```
-
-### 테스트 스크립트
-
-```json
-// package.json
-{
-  "scripts": {
-    "test:rules": "jest tests/rules --config jest.rules.config.js",
-    "test:rules:watch": "firebase emulators:exec --only firestore 'jest tests/rules --watch'"
+  try {
+    // 서버 먼저 시도
+    const snapshot = await getDocsFromServer(q);
+    return snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as JobPosting[];
+  } catch (error) {
+    // 네트워크 오류 시 캐시 시도
+    const cachedSnapshot = await getDocsFromCache(q);
+    return cachedSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })) as JobPosting[];
   }
 }
 ```
+
+---
+
+## 성능 최적화
+
+### React Query 캐싱 정책
+
+```typescript
+// src/lib/queryClient.ts
+export const cachingPolicies = {
+  realtime: 0,              // 항상 fresh (notifications)
+  frequent: 2 * 60 * 1000,  // 2분 (jobPostings.list)
+  standard: 5 * 60 * 1000,  // 5분 (기본)
+  stable: 30 * 60 * 1000,   // 30분 (settings)
+  offlineFirst: Infinity,   // 무제한 (mySchedule)
+};
+
+export const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: cachingPolicies.standard,
+      gcTime: 10 * 60 * 1000, // 10분
+      retry: (failureCount, error) => {
+        if (error instanceof NetworkError) return failureCount < 3;
+        if (error instanceof AuthError) return false;
+        return failureCount < 2;
+      },
+    },
+  },
+});
+```
+
+### Firestore 쿼리 최적화
+
+```typescript
+// 페이지네이션
+const PAGE_SIZE = 20;
+
+async function getJobsPaginated(lastDoc?: DocumentSnapshot) {
+  let q = query(
+    collection(getFirebaseDb(), 'jobPostings'),
+    where('status', '==', 'active'),
+    orderBy('createdAt', 'desc'),
+    limit(PAGE_SIZE)
+  );
+
+  if (lastDoc) {
+    q = query(q, startAfter(lastDoc));
+  }
+
+  return getDocs(q);
+}
+
+// 선택적 필드만 읽기 (네트워크 절약)
+// → Firestore는 문서 단위로 읽으므로 subcollection으로 분리 고려
+```
+
+---
+
+## Security Rules
+
+```javascript
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 헬퍼 함수
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    // 사용자
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId);
+      allow update: if isOwner(userId) &&
+        !request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'identity.ci']);
+      allow delete: if false; // 계정 삭제는 Cloud Functions로만
+    }
+
+    // 공고
+    match /jobPostings/{postingId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && resource.data.ownerId == request.auth.uid;
+      allow delete: if isAuthenticated() && (resource.data.ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 지원
+    match /applications/{applicationId} {
+      allow read: if isAuthenticated() && (
+        resource.data.applicantId == request.auth.uid ||
+        exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+        get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.resource.data.applicantId == request.auth.uid;
+      allow update: if isAuthenticated(); // 트랜잭션으로 처리되므로 상세 규칙은 코드에서
+      allow delete: if false;
+    }
+
+    // 근무 기록
+    match /workLogs/{workLogId} {
+      allow read: if isAuthenticated() && (
+        resource.data.staffId == request.auth.uid ||
+        resource.data.ownerId == request.auth.uid
+      );
+      allow create, update: if isAuthenticated();
+      allow delete: if false;
+    }
+
+    // 알림
+    match /notifications/{notificationId} {
+      allow read, update: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if false; // Cloud Functions로만 생성
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+    }
+  }
+}
+```
+
+---
+
+## 마이그레이션 노트
+
+### @react-native-firebase에서 Firebase Web SDK로
+
+```yaml
+변경 전: @react-native-firebase/*
+변경 후: firebase (Web SDK Modular API)
+
+주요 변경점:
+  1. 네이티브 모듈 의존 제거
+  2. Expo Go에서 바로 테스트 가능
+  3. Tree-shaking 지원으로 번들 크기 감소
+  4. 지연 초기화 패턴으로 앱 시작 성능 개선
+
+코드 변경 예시:
+  # Before
+  import auth from '@react-native-firebase/auth';
+  await auth().signInWithEmailAndPassword(email, password);
+
+  # After
+  import { signInWithEmailAndPassword } from 'firebase/auth';
+  import { getFirebaseAuth } from '@/lib/firebase';
+  await signInWithEmailAndPassword(getFirebaseAuth(), email, password);
 ```

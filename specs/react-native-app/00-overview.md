@@ -11,34 +11,36 @@
 
 ---
 
-## 마이그레이션 범위
+## 구현 완료 기능
 
-### 포함 기능 (Phase 1)
-| 기능 | 우선순위 | 복잡도 |
-|------|----------|--------|
-| 로그인/회원가입 | P0 | 중 |
-| 내 프로필 | P0 | 중 |
-| 내 스케줄 | P0 | 높음 |
-| 구인구직 | P0 | 높음 |
-| 고객센터 | P1 | 낮음 |
-| 공고관리 | P0 | 매우 높음 |
-| 설정 페이지 | P1 | 낮음 |
-| 알림 | P1 | 중 |
-| 다크모드 | P0 | 낮음 |
-| QR 코드 | P1 | 중 |
-| 공고상세관리 (전체 탭) | P0 | 높음 |
-| 관리자: 사용자관리 | P1 | 중 |
-| 관리자: 문의관리 | P1 | 중 |
-| 관리자: 토너먼트승인 | P2 | 낮음 |
+### Phase 1 완료 (v1.0.0)
+| 기능 | 상태 | 구현 파일 |
+|------|------|----------|
+| 로그인/회원가입 | ✅ 완료 | auth/, authService |
+| 내 프로필 | ✅ 완료 | profile/, settings/ |
+| 내 스케줄 | ✅ 완료 | schedule/, scheduleService |
+| 구인구직 | ✅ 완료 | jobs/, jobService |
+| 고객센터 | ✅ 완료 | support/, inquiryService |
+| 공고관리 | ✅ 완료 | employer/, jobManagementService |
+| 설정 페이지 | ✅ 완료 | settings/ (10개 하위 화면) |
+| 알림 | ✅ 완료 | notifications/, notificationService |
+| 다크모드 | ✅ 완료 | themeStore, NativeWind |
+| QR 코드 | ✅ 완료 | qr/, eventQRService |
+| 지원자 관리 | ✅ 완료 | applicant/, applicantManagementService |
+| 정산 관리 | ✅ 완료 | employer/settlements/, settlementService |
+| 관리자: 사용자관리 | ✅ 완료 | admin/users/ |
+| 관리자: 문의관리 | ✅ 완료 | admin/inquiries/ |
+| 관리자: 공지관리 | ✅ 완료 | admin/announcements/ |
+| 관리자: 신고관리 | ✅ 완료 | admin/reports/ |
+| 관리자: 대회승인 | ✅ 완료 | admin/tournaments/ |
 
-### 제외 기능 (Phase 2 이후)
-- 토너먼트 관리 시스템
+### Phase 2 (미구현)
+- 토너먼트 관리 시스템 (app2/ 참고용 보관)
 - 테이블 관리
 - 참가자 관리
 
-> **마이그레이션 전략**: 기존 React 웹앱(app2/)을 완전히 대체하는 전략입니다.
-> React Native + Expo로 iOS, Android, Web 단일 코드베이스를 구축합니다.
-> 자세한 내용은 [14-migration-plan.md](./14-migration-plan.md) 참조
+> **전략**: React Native + Expo로 iOS, Android, Web 단일 코드베이스 구축 완료.
+> 기존 웹앱(app2/)은 토너먼트 로직 참고용으로만 보관.
 
 ---
 
@@ -98,7 +100,7 @@ Utilities:
 
 ```
 uniqn-mobile/
-├── app/                           # Expo Router (64개 라우트)
+├── app/                           # Expo Router (68개 라우트)
 │   ├── _layout.tsx               # Root Layout (5단계 Provider)
 │   ├── index.tsx                 # 스플래시 화면
 │   ├── +not-found.tsx            # 404 페이지
@@ -163,16 +165,28 @@ uniqn-mobile/
 │
 ├── src/
 │   ├── components/               # 245개 (22개 폴더)
-│   │   ├── ui/                   # 48개 (기본 UI)
-│   │   ├── employer/             # 62개 (구인자 전용) ⭐ 가장 많음
-│   │   ├── jobs/                 # 19개 (공고 관련)
-│   │   ├── auth/                 # 15개 (인증)
-│   │   ├── admin/                # 15개 (관리자)
-│   │   ├── schedule/             # 11개 (스케줄)
-│   │   ├── notifications/        # 8개 (알림)
-│   │   ├── support/              # 7개 (고객지원)
-│   │   ├── qr/                   # 4개 (QR 코드)
-│   │   └── ...                   # 기타
+│   │   ├── ui/                   # 기본 UI 컴포넌트
+│   │   ├── employer/             # 구인자 전용 ⭐ 가장 많음
+│   │   ├── jobs/                 # 공고 관련
+│   │   ├── auth/                 # 인증
+│   │   ├── admin/                # 관리자
+│   │   ├── schedule/             # 스케줄
+│   │   ├── applicant/            # 지원자 관리
+│   │   ├── applications/         # 지원 내역
+│   │   ├── notifications/        # 알림
+│   │   ├── support/              # 고객지원
+│   │   ├── profile/              # 프로필
+│   │   ├── settings/             # 설정
+│   │   ├── qr/                   # QR 코드
+│   │   ├── notices/              # 공지사항
+│   │   ├── modals/               # 모달
+│   │   ├── headers/              # 헤더
+│   │   ├── navigation/           # 네비게이션
+│   │   ├── forms/                # 폼 컴포넌트
+│   │   ├── common/               # 공통
+│   │   ├── icons/                # 아이콘
+│   │   ├── onboarding/           # 온보딩
+│   │   └── lazy/                 # 지연 로딩
 │   │
 │   ├── hooks/                    # 46개 커스텀 훅
 │   │   ├── useAuth.ts, useAuthGuard.ts
@@ -184,7 +198,7 @@ uniqn-mobile/
 │   │   ├── applicant/ (지원자 관리 훅 폴더)
 │   │   └── ...
 │   │
-│   ├── stores/                   # 9개 Zustand 스토어
+│   ├── stores/                   # 10개 Zustand 스토어
 │   │   ├── authStore.ts          # 인증 상태
 │   │   ├── themeStore.ts         # 테마
 │   │   ├── toastStore.ts         # Toast 알림
@@ -228,28 +242,35 @@ uniqn-mobile/
 │   │   ├── deeplink/             # RouteMapper
 │   │   └── errors/               # hookErrorHandler
 │   │
-│   ├── domains/                  # 13개 도메인 모듈
+│   ├── domains/                  # 16개 도메인 모듈
 │   │   ├── application/          # ApplicationStatusMachine
 │   │   ├── schedule/             # ScheduleMerger, WorkLogCreator
 │   │   ├── settlement/           # SettlementCalculator, TaxCalculator
 │   │   └── ...
 │   │
-│   ├── errors/                   # 에러 시스템
+│   ├── errors/                   # 에러 시스템 (7개)
 │   │   ├── AppError.ts           # 기본 에러 클래스
-│   │   ├── BusinessErrors.ts     # 비즈니스 로직 에러
-│   │   ├── firebaseErrorMapper.ts
-│   │   └── serviceErrorHandler.ts
+│   │   ├── BusinessErrors.ts     # 비즈니스 로직 에러 (20+ 클래스)
+│   │   ├── NotificationErrors.ts # 알림 관련 에러
+│   │   ├── errorUtils.ts         # 에러 유틸리티
+│   │   ├── firebaseErrorMapper.ts# Firebase 에러 변환
+│   │   ├── serviceErrorHandler.ts# 서비스 에러 처리
+│   │   └── index.ts              # 배럴 export
 │   │
 │   ├── types/                    # 28개 타입 정의
-│   ├── schemas/                  # 18개 Zod 스키마
-│   ├── utils/                    # 29개 유틸리티
-│   ├── constants/                # 7개 상수
+│   ├── schemas/                  # 19개 Zod 스키마
+│   ├── utils/                    # 36개 유틸리티
+│   ├── constants/                # 9개 상수
 │   │
-│   └── lib/                      # 라이브러리 설정
-│       ├── firebase.ts           # 지연 초기화, Proxy 패턴
-│       ├── queryClient.ts        # Query Keys 중앙 관리
-│       ├── mmkvStorage.ts        # MMKV 저장소
-│       └── secureStorage.ts      # Secure Storage
+│   ├── lib/                      # 7개 라이브러리 설정
+│   │   ├── firebase.ts           # 지연 초기화, Proxy 패턴
+│   │   ├── queryClient.ts        # Query Keys 중앙 관리
+│   │   ├── mmkvStorage.ts        # MMKV 저장소
+│   │   ├── secureStorage.ts      # Secure Storage
+│   │   └── ...                   # 기타 설정
+│   │
+│   └── config/                   # 3개 환경설정
+│       └── env.ts                # 환경변수
 │
 ├── assets/                       # 정적 자산
 ├── __tests__/                    # 테스트
@@ -262,23 +283,26 @@ uniqn-mobile/
 └── package.json
 ```
 
-### 코드 통계 (현재 기준 - 2026년 2월)
+### 코드 통계 (v1.0.0 기준)
 
-| 항목 | 개수 |
-|------|------|
-| **라우트 파일** | 68개 |
-| **컴포넌트** | 245개 |
-| **커스텀 훅** | 46개 |
-| **서비스** | 44개 |
-| **Zustand 스토어** | 10개 |
-| **Repository** | 15개 |
-| **공유 모듈** | 33개 |
-| **도메인 모듈** | 16개 |
-| **에러 시스템** | 11개 |
-| **타입 파일** | 28개 |
-| **Zod 스키마** | 19개 |
-| **유틸리티** | 36개 |
-| **전체 src 파일** | 539개 |
+| 항목 | 개수 | 설명 |
+|------|------|------|
+| **라우트 파일 (app/)** | 68개 | Expo Router 파일 기반 라우팅 |
+| **컴포넌트** | 245개 | 22개 폴더로 구성 |
+| **커스텀 훅** | 46개 | 화면별 데이터/상태 관리 |
+| **서비스** | 44개 | 비즈니스 로직 |
+| **Zustand 스토어** | 10개 | 전역 상태 (MMKV persist) |
+| **Repository** | 15개 | 데이터 접근 추상화 |
+| **공유 모듈** | 33개 | IdNormalizer, RoleResolver 등 |
+| **도메인 모듈** | 16개 | StatusMachine, Calculator 등 |
+| **에러 시스템** | 9개 | AppError 계층 (errors/ 7 + shared/errors/ 2) |
+| **타입 파일** | 28개 | TypeScript 타입 정의 |
+| **Zod 스키마** | 19개 | 폼 검증 스키마 |
+| **유틸리티** | 36개 | 포매터, 헬퍼 함수 |
+| **상수** | 9개 | 공통 상수 정의 |
+| **라이브러리 설정** | 7개 | Firebase, QueryClient 등 |
+| **환경설정** | 3개 | env, config |
+| **전체 src 파일** | 522개 | TypeScript/TSX |
 
 ---
 
@@ -391,17 +415,18 @@ uniqn-mobile/
 
 ---
 
-## 개발 일정 (예상)
+## 개발 완료 현황
 
-| Phase | 기간 | 내용 |
+| Phase | 상태 | 내용 |
 |-------|------|------|
-| **Setup** | 1주 | 프로젝트 초기화, Firebase 연동 |
-| **Core** | 2주 | 인증, 네비게이션, 테마 시스템 |
-| **Profile & Settings** | 1주 | 프로필, 설정 페이지 |
-| **Job Board** | 3주 | 구인구직, 지원 시스템 |
-| **Schedule** | 2주 | 내 스케줄, 캘린더 |
-| **Job Management** | 3주 | 공고관리, 상세 탭들 |
-| **Admin** | 2주 | 관리자 기능 |
-| **Polish** | 2주 | QA, 성능 최적화, 버그 수정 |
+| **Setup** | ✅ 완료 | 프로젝트 초기화, Firebase 연동 |
+| **Core** | ✅ 완료 | 인증, 네비게이션, 테마 시스템 |
+| **Profile & Settings** | ✅ 완료 | 프로필, 설정 페이지 (10개 하위 화면) |
+| **Job Board** | ✅ 완료 | 구인구직, 지원 시스템, 북마크 |
+| **Schedule** | ✅ 완료 | 내 스케줄, 캘린더, 근무 기록 |
+| **Job Management** | ✅ 완료 | 공고관리, 지원자관리, 정산 |
+| **Admin** | ✅ 완료 | 사용자/신고/공지/문의/대회 관리 |
+| **QR System** | ✅ 완료 | QR 생성/스캔, 출퇴근 처리 |
+| **Notifications** | ✅ 완료 | 푸시알림, 인앱메시지, 실시간 구독 |
 
-**총 예상: 16주 (4개월)** - 1인 풀타임 기준
+**v1.0.0 릴리스 완료** (2026년 2월)

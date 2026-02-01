@@ -18,7 +18,7 @@
 ## 전체 네비게이션 맵
 
 ```
-app/                               # 총 64개 라우트
+app/                               # 총 68개 라우트
 ├── _layout.tsx                    # 루트 레이아웃 (5단계 Provider)
 ├── index.tsx                      # 시작점 (스플래시/리다이렉트)
 ├── +not-found.tsx                 # 404 페이지
@@ -64,10 +64,11 @@ app/                               # 총 64개 라우트
 │   │
 │   ├── notifications.tsx          # 알림 목록
 │   │
-│   ├── settings/                  # 설정 (10개)
+│   ├── settings/                  # 설정 (11개)
 │   │   ├── _layout.tsx
 │   │   ├── index.tsx              # 설정 메인
 │   │   ├── profile.tsx            # 프로필 수정
+│   │   ├── business-info.tsx      # 사업자 정보 (구인자)
 │   │   ├── change-password.tsx    # 비밀번호 변경
 │   │   ├── delete-account.tsx     # 계정 삭제
 │   │   ├── privacy.tsx            # 개인정보처리방침
@@ -143,7 +144,7 @@ app/                               # 총 64개 라우트
 | `(employer)` | employer+ | 9개 | 공고 관리, 지원자 관리, 정산 |
 | `(admin)` | admin | 17개 | 사용자/공지/문의/신고/통계 |
 
-**총 64개 라우트** (레이아웃 파일 제외 시 약 50개 화면)
+**총 68개 라우트** (레이아웃 파일 제외 시 약 54개 화면)
 
 ---
 
@@ -921,6 +922,6 @@ export const navigation = {
 
 ---
 
-*마지막 업데이트: 2026-02-01*
+*마지막 업데이트: 2026-02-02*
 *Expo Router 버전: v6.0.19*
-*총 라우트 수: 64개*
+*총 라우트 수: 68개*

@@ -13,7 +13,7 @@
 │  │                  Presentation Layer                      │   │
 │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐    │   │
 │  │  │ app/    │  │Components│  │  Modals │  │   UI    │    │   │
-│  │  │ (64개)  │  │ (139개) │  │         │  │         │    │   │
+│  │  │ (68개)  │  │ (245개) │  │         │  │         │    │   │
 │  │  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘    │   │
 │  └───────┼────────────┼────────────┼────────────┼──────────┘   │
 │          │            │            │            │               │
@@ -28,21 +28,21 @@
 │  ┌───────┴─────────────┴─────────────┴─────────────┴────────┐  │
 │  │                    State Layer                            │  │
 │  │  ┌────────────────┐  ┌────────────────────────────┐      │  │
-│  │  │ Zustand (9개)  │  │  TanStack Query (14도메인)  │      │  │
+│  │  │ Zustand (10개) │  │  TanStack Query (14도메인)  │      │  │
 │  │  │ auth, theme,   │  │  Query Keys 중앙 관리      │      │  │
 │  │  │ toast, modal.. │  │  캐싱 정책 적용            │      │  │
 │  │  └────────┬───────┘  └────────────┬───────────────┘      │  │
 │  └───────────┼───────────────────────┼───────────────────────┘  │
 │              │                       │                          │
 │  ┌───────────┴───────────────────────┴──────────────────────┐  │
-│  │                   Shared Layer (25개)                     │  │
+│  │                   Shared Layer (33개)                     │  │
 │  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ │  │
 │  │  │IdNormalizer│ │RoleResolver│ │StatusMapper│ │TimeNorm │ │  │
 │  │  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └────┬─────┘ │  │
 │  └────────┼─────────────┼─────────────┼────────────┼────────┘  │
 │           │             │             │            │            │
 │  ┌────────┴─────────────┴─────────────┴────────────┴────────┐  │
-│  │                   Service Layer (36개)                    │  │
+│  │                   Service Layer (44개)                    │  │
 │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐     │  │
 │  │  │  Auth   │  │   Job   │  │Schedule │  │Settlement│     │  │
 │  │  │ Service │  │ Service │  │ Service │  │ Service │     │  │
@@ -50,7 +50,7 @@
 │  └───────┼────────────┼────────────┼────────────┼───────────┘  │
 │          │            │            │            │               │
 │  ┌───────┴────────────┴────────────┴────────────┴───────────┐  │
-│  │                  Repository Layer (11개)                  │  │
+│  │                  Repository Layer (15개)                  │  │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │  │
 │  │  │ Application │  │ JobPosting  │  │  WorkLog    │      │  │
 │  │  │ Repository  │  │ Repository  │  │ Repository  │      │  │
@@ -67,14 +67,29 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Domains Layer (비즈니스 로직 분리)
+### Domains Layer (비즈니스 로직 분리 - 16개 파일)
 
 ```
 domains/
-├── application/         # ApplicationStatusMachine, Validator
-├── schedule/           # ScheduleMerger, ScheduleConverter, WorkLogCreator
-├── settlement/         # SettlementCalculator, TaxCalculator, Cache
-└── staff/              # 스태프 도메인 로직
+├── index.ts                      # 배럴 export
+├── application/                  # 지원 상태 관리
+│   ├── ApplicationStatusMachine.ts  # 상태 전이 로직
+│   ├── ApplicationValidator.ts      # 지원 검증
+│   └── index.ts
+├── job/                          # 공고 도메인
+│   └── index.ts
+├── schedule/                     # 스케줄 도메인
+│   ├── ScheduleMerger.ts         # WorkLogs + Applications 병합
+│   ├── ScheduleConverter.ts      # 데이터 변환
+│   ├── WorkLogCreator.ts         # 근무기록 생성
+│   └── index.ts
+├── settlement/                   # 정산 도메인
+│   ├── SettlementCalculator.ts   # 정산 계산
+│   ├── SettlementCache.ts        # 캐싱 로직
+│   ├── TaxCalculator.ts          # 세금 계산
+│   └── index.ts
+└── staff/                        # 스태프 도메인
+    └── index.ts
 ```
 
 ---
@@ -211,17 +226,17 @@ import { JobCardSkeleton } from './JobCardSkeleton';
 │        Hooks (46개) ◄────────────────────────────┐   │
 │         │                                        │   │
 │         ▼                                        │   │
-│       Stores (9개) ◄────── TanStack Query        │   │
+│       Stores (10개) ◄────── TanStack Query       │   │
 │         │                        │               │   │
 │         ▼                        ▼               │   │
-│        Shared (25개) ◄─────────────────────────  │   │
+│        Shared (33개) ◄─────────────────────────  │   │
 │  (IdNormalizer, RoleResolver, StatusMapper...)   │   │
 │         │                        │               │   │
 │         ▼                        ▼               │   │
-│       Services (36개) ─────► Domains (13개)      │   │
+│       Services (44개) ─────► Domains (16개)      │   │
 │         │                                        │   │
 │         ▼                                        │   │
-│    Repositories (11개)                           │   │
+│    Repositories (15개)                           │   │
 │         │                                        │   │
 │         ▼                                        │   │
 │       Firebase Layer (Web SDK)                   │   │
@@ -262,15 +277,23 @@ class ApplicationRepository implements IApplicationRepository {
 ❌ Hooks → Firebase 직접 호출 (금지)
 ```
 
-### 구현된 Repository 목록
+### 구현된 Repository 목록 (15개 파일)
 | Repository | 담당 컬렉션 | 주요 메서드 |
 |------------|-----------|------------|
-| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus |
-| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update |
-| WorkLogRepository | workLogs | findBySchedule, checkIn, checkOut |
+| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus, delete |
+| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update, delete |
+| WorkLogRepository | workLogs | findBySchedule, findByUser, checkIn, checkOut |
 | NotificationRepository | notifications | findUnread, markAsRead, subscribeToChanges |
 | UserRepository | users | findById, findByEmail, create, update |
-| EventQRRepository | qrMetadata | create, validate, deactivate |
+| EventQRRepository | qrMetadata | create, validate, deactivate, findByEvent |
+
+**인터페이스 (7개)**: `repositories/interfaces/`
+- IApplicationRepository, IJobPostingRepository, IWorkLogRepository
+- INotificationRepository, IUserRepository, IEventQRRepository
+- index.ts (배럴 export)
+
+**Firebase 구현체 (8개)**: `repositories/firebase/`
+- 각 인터페이스의 Firestore Modular API 구현
 
 ---
 
@@ -342,6 +365,18 @@ function AppContent() {
 | TournamentProvider | 제외 (Phase 2) |
 | UnifiedDataInitializer | `useAppInitialize` 훅 |
 
+### Zustand 스토어 목록 (10개 파일)
+| 스토어 | 역할 | persist |
+|--------|------|---------|
+| `authStore` | 인증 상태, user, profile, isAdmin/isEmployer 플래그 | MMKV |
+| `themeStore` | 테마 (light/dark/system), NativeWind 연동 | MMKV |
+| `toastStore` | Toast 알림 (최대 3개), 자동 제거 | - |
+| `modalStore` | 모달 스택 관리, showAlert/showConfirm | - |
+| `notificationStore` | 알림 목록, unreadCount, 필터 | MMKV |
+| `inAppMessageStore` | 우선순위 큐, 세션당 1회 표시 | MMKV |
+| `bookmarkStore` | 북마크 저장/삭제 | MMKV |
+| `tabFiltersStore` | 탭별 필터 상태 유지 | - |
+
 ### 전역 UI 매니저
 | 매니저 | 역할 |
 |--------|------|
@@ -352,55 +387,59 @@ function AppContent() {
 
 ---
 
-## 에러 처리 전략
+## 에러 처리 전략 (9개 파일)
+
+### 에러 시스템 구조
+```
+src/errors/                    # 7개 파일
+├── AppError.ts               # 기본 에러 클래스 (code, category, severity)
+├── BusinessErrors.ts         # 비즈니스 로직 에러 (20+ 클래스)
+├── NotificationErrors.ts     # 알림 관련 에러
+├── errorUtils.ts             # 에러 유틸리티
+├── firebaseErrorMapper.ts    # Firebase 에러 → AppError 변환
+├── serviceErrorHandler.ts    # 서비스 레이어 에러 처리
+└── index.ts                  # 배럴 export
+
+src/shared/errors/            # 2개 파일
+├── hookErrorHandler.ts       # 훅 레이어 에러 처리
+└── index.ts
+```
 
 ### 에러 계층
 ```typescript
-// src/utils/errors.ts
-
-// 기본 앱 에러
+// src/errors/AppError.ts
 export class AppError extends Error {
   constructor(
     message: string,
-    public code: string,
-    public userMessage: string, // 사용자에게 보여줄 메시지
+    public code: string,           // E1001, E6002 등
+    public category: ErrorCategory,
+    public severity: 'low' | 'medium' | 'high' | 'critical',
+    public userMessage: string,    // 사용자 친화적 메시지 (한글)
+    public isRetryable: boolean = false,
   ) {
     super(message);
     this.name = 'AppError';
   }
 }
 
-// 인증 에러
-export class AuthError extends AppError {
-  constructor(code: string, userMessage: string) {
-    super(`Auth Error: ${code}`, code, userMessage);
-    this.name = 'AuthError';
-  }
-}
+// 에러 코드 체계
+E1xxx: 네트워크 (OFFLINE, TIMEOUT, SERVER_UNREACHABLE)
+E2xxx: 인증 (INVALID_CREDENTIALS, TOKEN_EXPIRED, TOO_MANY_REQUESTS)
+E3xxx: 검증 (REQUIRED, FORMAT, SCHEMA)
+E4xxx: Firebase (PERMISSION_DENIED, DOCUMENT_NOT_FOUND)
+E5xxx: 보안 (XSS_DETECTED, UNAUTHORIZED_ACCESS)
+E6xxx: 비즈니스 (ALREADY_APPLIED, MAX_CAPACITY, INVALID_QR 등)
+E7xxx: 알 수 없는 에러
 
-// 권한 에러
-export class PermissionError extends AppError {
-  constructor(action: string) {
-    super(
-      `Permission denied: ${action}`,
-      'PERMISSION_DENIED',
-      '이 작업을 수행할 권한이 없습니다.'
-    );
-    this.name = 'PermissionError';
-  }
-}
-
-// 네트워크 에러
-export class NetworkError extends AppError {
-  constructor() {
-    super(
-      'Network unavailable',
-      'NETWORK_ERROR',
-      '네트워크 연결을 확인해주세요.'
-    );
-    this.name = 'NetworkError';
-  }
-}
+// src/errors/BusinessErrors.ts - 20+ 에러 클래스
+export class AlreadyAppliedError extends AppError { ... }
+export class ApplicationClosedError extends AppError { ... }
+export class MaxCapacityReachedError extends AppError { ... }
+export class AlreadyCheckedInError extends AppError { ... }
+export class InvalidQRCodeError extends AppError { ... }
+export class ExpiredQRCodeError extends AppError { ... }
+export class AlreadySettledError extends AppError { ... }
+// ... 등
 ```
 
 ### 에러 처리 흐름

@@ -3,7 +3,18 @@
 ## 개요
 
 iOS App Store와 Google Play Store 앱 심사를 통과하기 위한 종합 가이드입니다.
-UNIQN 앱의 특성(구인구직, 결제 연동, 위치 정보)에 맞는 심사 준비 사항을 다룹니다.
+UNIQN 앱의 특성(구인구직, 홀덤 관련, 위치 정보)에 맞는 심사 준비 사항을 다룹니다.
+
+### 현재 앱 정보
+
+```yaml
+앱 이름: UNIQN (유니큰)
+버전: 1.0.0
+Bundle ID (iOS): com.uniqn.mobile
+Package Name (Android): com.uniqn.mobile
+Expo SDK: 54
+React Native: 0.81.5
+```
 
 ---
 
@@ -18,8 +29,8 @@ UNIQN 앱의 특성(구인구직, 결제 연동, 위치 정보)에 맞는 심사
 | **설명** | 아래 참고 | 4,000자 이내 |
 | **카테고리** | 비즈니스 / 구인구직 | 주 카테고리 |
 | **키워드** | 홀덤,포커,딜러,스태프,아르바이트,구인,구직 | iOS만, 100자 |
-| **연령 등급** | 17+ (도박 관련) | 중요 |
-| **가격** | 무료 | 인앱 결제 없음 |
+| **연령 등급** | 17+ (도박 관련 산업) | 중요 |
+| **가격** | 무료 | 인앱 결제 예정 (포인트 충전) |
 
 ### 앱 설명 예시
 
@@ -51,17 +62,17 @@ UNIQN - 홀덤 스태프 매칭 플랫폼
 | **iPhone 6.7"** | 1290 x 2796 | 3-10장 |
 | **iPhone 6.5"** | 1284 x 2778 | 3-10장 |
 | **iPhone 5.5"** | 1242 x 2208 | 3-10장 |
-| **iPad Pro 12.9"** | 2048 x 2732 | 3-10장 (iPad 지원 시) |
+| **iPad Pro 12.9"** | 2048 x 2732 | 3-10장 (지원 시) |
 | **Android Phone** | 1080 x 1920+ | 2-8장 |
 | **Android Tablet** | 1200 x 1920+ | 선택 |
 
 ### 필수 스크린샷 구성
 
-1. **홈 화면** - 메인 기능 소개
-2. **구인공고 목록** - 핵심 기능
-3. **공고 상세/지원** - 주요 플로우
+1. **홈 화면** - 구인공고 목록 (다크모드)
+2. **공고 상세** - 상세 정보 및 지원 버튼
+3. **지원 플로우** - 지원하기 화면
 4. **QR 체크인** - 차별화 기능
-5. **정산 내역** - 신뢰성
+5. **내 스케줄** - 근무 일정 관리
 
 ---
 
@@ -73,7 +84,7 @@ UNIQN - 홀덤 스태프 매칭 플랫폼
 
 ```yaml
 # 앱 정보
-Bundle ID: com.uniqn.app
+Bundle ID: com.uniqn.mobile
 SKU: UNIQN001
 Primary Language: Korean
 
@@ -94,7 +105,7 @@ Notes for Reviewer: |
   1. 제공된 계정으로 로그인
   2. '구인공고' 탭에서 공고 목록 확인
   3. 공고 상세에서 '지원하기' 테스트
-  4. '내 지원' 탭에서 지원 현황 확인
+  4. '내 스케줄' 탭에서 지원 현황 확인
 ```
 
 #### 연령 등급 설정
@@ -217,6 +228,7 @@ Pre-Submission Checklist:
   - [ ] 알림 수신 확인
   - [ ] 프로필 수정 가능
   - [ ] 설정 화면 접근 가능
+  - [ ] 다크모드 전환 정상
 ```
 
 ### 2.3 iOS 전용 요구사항
@@ -224,7 +236,7 @@ Pre-Submission Checklist:
 #### App Tracking Transparency
 
 ```typescript
-// iOS 14.5+ ATT 권한 요청
+// iOS 14.5+ ATT 권한 요청 (필요 시)
 import { requestTrackingPermissionsAsync } from 'expo-tracking-transparency';
 
 async function requestTracking() {
@@ -242,20 +254,9 @@ async function requestTracking() {
 ```yaml
 # 소셜 로그인 제공 시 필수
 Requirement: 다른 소셜 로그인 제공 시 Apple 로그인 필수
-Implementation: expo-apple-authentication
 
-Exception: 이메일 로그인만 제공 시 불필요
-```
-
-#### In-App Purchase 관련
-
-```yaml
-# UNIQN은 인앱 결제 없음
-IAP Required: No
-
-Note: |
-  스태프 급여 정산은 앱 외부에서 직접 이체 방식으로 진행됩니다.
-  앱 내 결제 기능은 없습니다.
+현재 상태: 이메일 로그인만 제공 → Apple 로그인 불필요
+향후 계획: 소셜 로그인 추가 시 Apple 로그인 필수 구현
 ```
 
 ---
@@ -268,7 +269,7 @@ Note: |
 
 ```yaml
 # 앱 정보
-Package Name: com.uniqn.app
+Package Name: com.uniqn.mobile
 App Category: Business
 Content Rating: Mature 17+
 
@@ -359,143 +360,146 @@ Response Template: |
   인력 관리 도구입니다.
 ```
 
-#### 메타데이터 정책 위반
-
-```yaml
-Issue: 부적절한 키워드/설명
-Prevention:
-  - 과장된 표현 금지 ("최고", "유일한")
-  - 경쟁사 언급 금지
-  - 허위 기능 설명 금지
-  - 이모지 과다 사용 금지
-```
-
-#### 기능 문제
-
-```yaml
-Issue: 핵심 기능 작동 안 함
-Pre-Submission Checklist:
-  - [ ] APK 서명 확인
-  - [ ] 타겟 API 레벨 준수 (API 34+)
-  - [ ] 64비트 지원
-  - [ ] 권한 요청 정상 작동
-  - [ ] 백그라운드 제한 대응
-```
-
 ### 3.3 Android 전용 요구사항
 
 #### 타겟 API 레벨
 
 ```yaml
-# 2024년 기준
+# 2024/2025년 기준
 Target SDK: 34 (Android 14)
 Min SDK: 24 (Android 7.0)
 
-# build.gradle 또는 app.json
+# app.json
 android:
-  targetSdkVersion: 34
-  minSdkVersion: 24
+  edgeToEdgeEnabled: true
+  softwareKeyboardLayoutMode: resize
 ```
 
 #### 권한 선언
 
 ```xml
-<!-- AndroidManifest.xml -->
-<manifest>
-  <!-- 필수 권한 -->
-  <uses-permission android:name="android.permission.INTERNET" />
-  <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-
-  <!-- 위치 (공고 탐색) -->
-  <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-  <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
-
-  <!-- 카메라 (QR 스캔) -->
-  <uses-permission android:name="android.permission.CAMERA" />
-
-  <!-- 알림 (Android 13+) -->
-  <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
-  <!-- 생체인증 -->
-  <uses-permission android:name="android.permission.USE_BIOMETRIC" />
-</manifest>
-```
-
-#### Google Play Integrity
-
-```typescript
-// 앱 무결성 검증 (선택)
-import { PlayIntegrity } from 'react-native-play-integrity';
-
-async function verifyAppIntegrity() {
-  try {
-    const token = await PlayIntegrity.requestIntegrityToken();
-    // 서버에서 토큰 검증
-    await verifyTokenOnServer(token);
-  } catch (error) {
-    console.error('Integrity check failed:', error);
-  }
-}
+<!-- expo-notifications, expo-location 등 플러그인이 자동 추가 -->
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+<uses-permission android:name="android.permission.USE_BIOMETRIC" />
 ```
 
 ---
 
-## 4. 심사 대응 프로세스
+## 4. EAS Build 설정
 
-### 4.1 심사 제출 전 체크리스트
+### eas.json 구성
+
+```json
+{
+  "cli": {
+    "version": ">= 13.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "base": {
+      "node": "22.12.0"
+    },
+    "development": {
+      "extends": "base",
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": { "APP_ENV": "development" },
+      "ios": { "simulator": true },
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "extends": "base",
+      "distribution": "internal",
+      "channel": "staging",
+      "env": { "APP_ENV": "staging" },
+      "ios": { "resourceClass": "m-medium" },
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "extends": "base",
+      "distribution": "store",
+      "channel": "production",
+      "autoIncrement": true,
+      "env": { "APP_ENV": "production" },
+      "ios": { "resourceClass": "m-medium" },
+      "android": { "buildType": "app-bundle" }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "${APPLE_ID}",
+        "ascAppId": "${ASC_APP_ID}",
+        "appleTeamId": "${APPLE_TEAM_ID}"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./playstore-credentials.json",
+        "track": "internal"
+      }
+    }
+  }
+}
+```
+
+### 빌드 명령어
+
+```bash
+# 개발 빌드
+eas build --profile development --platform ios
+eas build --profile development --platform android
+
+# 프리뷰 빌드 (내부 테스트)
+eas build --profile preview --platform all
+
+# 프로덕션 빌드 (스토어 제출)
+eas build --profile production --platform ios
+eas build --profile production --platform android
+
+# 스토어 제출
+eas submit --platform ios --latest
+eas submit --platform android --latest
+```
+
+---
+
+## 5. 심사 대응 프로세스
+
+### 5.1 심사 제출 전 체크리스트
 
 ```yaml
 General:
   - [ ] 앱 아이콘 준비 (1024x1024)
-  - [ ] 스크린샷 준비 (모든 사이즈)
-  - [ ] 앱 설명 작성
+  - [ ] 스크린샷 준비 (모든 사이즈, 다크모드 포함)
+  - [ ] 앱 설명 작성 (한글)
   - [ ] 개인정보 처리방침 URL 준비
-  - [ ] 지원 URL 준비
-  - [ ] 데모 계정 준비
+  - [ ] 지원 URL 준비 (https://uniqn.app/support)
+  - [ ] 데모 계정 준비 및 테스트
+
+Technical:
+  - [ ] TypeScript 에러 없음 (npm run type-check)
+  - [ ] Lint 에러 없음 (npm run lint)
+  - [ ] 프로덕션 빌드 성공
+  - [ ] 크래시 없음 확인
 
 iOS Specific:
   - [ ] App Store Connect 앱 생성
   - [ ] 연령 등급 설문 완료
   - [ ] 개인정보 라벨 설정
   - [ ] 심사 노트 작성
-  - [ ] ATT 설명 추가 (필요 시)
 
 Android Specific:
   - [ ] Google Play Console 앱 생성
   - [ ] 콘텐츠 등급 설문 완료
   - [ ] 데이터 안전 섹션 작성
-  - [ ] 타겟 API 레벨 확인
-  - [ ] 64비트 지원 확인
+  - [ ] 64비트 지원 확인 (app-bundle)
 ```
 
-### 4.2 리젝션 대응 템플릿
-
-```yaml
-Response Structure:
-  1. 감사 인사
-  2. 문제 이해 확인
-  3. 구체적 해결 방안
-  4. 증거 자료 (스크린샷 등)
-  5. 재심사 요청
-
-Example: |
-  안녕하세요, App Review 팀 여러분.
-
-  피드백 감사드립니다.
-
-  지적하신 [Guideline X.X] 관련하여
-  다음과 같이 수정하였습니다:
-
-  1. [구체적 변경 사항 1]
-  2. [구체적 변경 사항 2]
-
-  첨부된 스크린샷에서 변경 내용을 확인하실 수 있습니다.
-
-  재심사 부탁드립니다.
-  감사합니다.
-```
-
-### 4.3 심사 일정 관리
+### 5.2 심사 일정 관리
 
 ```yaml
 iOS Timeline:
@@ -516,24 +520,25 @@ Best Practices:
 
 ---
 
-## 5. 출시 후 관리
+## 6. 출시 후 관리
 
-### 5.1 버전 관리
+### 6.1 버전 관리
 
 ```yaml
 Version Numbering:
-  Format: Major.Minor.Patch (예: 1.2.3)
+  Format: Major.Minor.Patch (예: 1.0.0)
 
-  Major: 큰 기능 변경
-  Minor: 새 기능 추가
-  Patch: 버그 수정
+  Major: 큰 기능 변경 (2.0.0)
+  Minor: 새 기능 추가 (1.1.0)
+  Patch: 버그 수정 (1.0.1)
 
 Build Number:
+  # EAS에서 자동 증가 (autoIncrement: true)
   iOS: 연속 증가 (1, 2, 3...)
   Android: 연속 증가 (versionCode)
 ```
 
-### 5.2 단계적 출시
+### 6.2 단계적 출시
 
 ```yaml
 iOS Phased Release:
@@ -554,7 +559,7 @@ Rollback:
   - Android: 이전 버전으로 롤백 가능
 ```
 
-### 5.3 리뷰 관리
+### 6.3 리뷰 관리
 
 ```yaml
 Review Response Guidelines:
@@ -582,17 +587,18 @@ Response Template (Negative): |
 
 ---
 
-## 6. 법적 요구사항
+## 7. 법적 요구사항
 
-### 6.1 필수 문서
+### 7.1 필수 문서
 
 | 문서 | URL | 내용 |
 |------|-----|------|
 | 개인정보 처리방침 | /privacy | 데이터 수집/사용/보호 |
 | 이용약관 | /terms | 서비스 이용 규칙 |
-| 환불 정책 | /refund | 환불 불가 (무료 앱) |
+| 구인자 이용약관 | /employer-terms | 구인자 전용 약관 |
+| 면책동의서 | /liability-waiver | 근무 관련 면책 |
 
-### 6.2 연령 제한
+### 7.2 연령 제한
 
 ```yaml
 # 도박 관련 산업 → 19세 이상
@@ -604,7 +610,7 @@ Implementation:
   - 앱 스토어 연령 등급: 17+
 ```
 
-### 6.3 위치 정보 동의
+### 7.3 위치 정보 동의
 
 ```yaml
 Location Data:
@@ -618,71 +624,74 @@ Location Data:
 
 ---
 
-## 7. 앱 심사 자동화
+## 8. 향후 인앱 결제 (RevenueCat)
 
-### 7.1 Fastlane 설정 (iOS)
+### 8.1 포인트 시스템 개요
 
-```ruby
-# fastlane/Fastfile
-default_platform(:ios)
+```yaml
+포인트 종류:
+  하트 (💖):
+    - 무료 획득 (출석, 활동)
+    - 90일 만료
+    - 가치: ₩300/개
 
-platform :ios do
-  desc "Submit to App Store Review"
-  lane :submit_review do
-    deliver(
-      submit_for_review: true,
-      automatic_release: false,
-      force: true,
+  다이아 (💎):
+    - 유료 충전 (RevenueCat IAP)
+    - 만료 없음 (영구)
+    - 가치: ₩300/개
 
-      # 심사 정보
-      app_review_information: {
-        first_name: "Review",
-        last_name: "Team",
-        phone_number: "+82-10-1234-5678",
-        email_address: "review@uniqn.app",
-        demo_user: "review@uniqn.app",
-        demo_password: "ReviewTest123!",
-        notes: "테스트 계정으로 모든 기능 확인 가능합니다."
-      },
+사용 용도:
+  - 일반공고 등록: 1💎
+  - 긴급공고 등록: 10💎
+  - 고정공고 등록: 5💎/주
 
-      # 메타데이터
-      metadata_path: "./fastlane/metadata"
-    )
-  end
-end
+무료 기간:
+  - 2026-07-01까지 모든 공고 무료
 ```
 
-### 7.2 Fastlane 설정 (Android)
+### 8.2 스토어 정책 준수
 
-```ruby
-# fastlane/Fastfile
-default_platform(:android)
+```yaml
+Apple App Store:
+  - IAP 필수 (디지털 콘텐츠)
+  - StoreKit 2 사용
+  - Apple 수수료: 15-30%
 
-platform :android do
-  desc "Submit to Play Store"
-  lane :deploy do
-    upload_to_play_store(
-      track: 'production',
-      release_status: 'completed',
-      aab: '../android/app/build/outputs/bundle/release/app-release.aab'
-    )
-  end
+Google Play Store:
+  - Google Play 결제 필수
+  - Billing Library 6.x
+  - Google 수수료: 15-30%
 
-  desc "Submit to Internal Testing"
-  lane :internal do
-    upload_to_play_store(
-      track: 'internal',
-      aab: '../android/app/build/outputs/bundle/release/app-release.aab'
-    )
-  end
-end
+RevenueCat:
+  - 크로스 플랫폼 IAP 관리
+  - 영수증 검증
+  - Webhook 연동
+```
+
+### 8.3 심사 시 주의사항
+
+```yaml
+예상 질문:
+  Q: "인앱 결제는 어떤 용도인가요?"
+  A: |
+    구인자가 공고를 등록할 때 사용하는 "다이아" 충전입니다.
+    - 공고 등록 비용 결제용
+    - App Store/Play Store 표준 결제 시스템 사용
+    - 환불은 각 스토어 정책에 따름
+
+  Q: "급여는 어떻게 지급되나요?"
+  A: |
+    급여는 앱 외부에서 구인자가 스태프에게 직접 지급합니다.
+    - 앱 내 정산 기능 없음
+    - 앱은 매칭만 제공
+    - 은행 이체 등 외부 수단 사용
 ```
 
 ---
 
-## 8. 심사 체크리스트
+## 9. 최종 체크리스트
 
-### 최종 제출 전 확인
+### 심사 제출 전
 
 ```yaml
 Functionality:
@@ -691,12 +700,13 @@ Functionality:
   - [ ] 핵심 기능 완전히 작동
   - [ ] 크래시 없음
   - [ ] 네트워크 오류 처리
+  - [ ] 다크모드 정상 작동
 
 Content:
   - [ ] 플레이스홀더 텍스트 없음
   - [ ] 테스트 데이터 제거
   - [ ] 개발자 도구 비활성화
-  - [ ] 디버그 로그 제거
+  - [ ] 디버그 로그 제거 (production)
 
 Metadata:
   - [ ] 앱 아이콘 최종 확인
@@ -718,228 +728,6 @@ Demo Account:
 
 ---
 
-## 9. 포인트 결제 모델 법적 검토
-
-### 개요
-
-UNIQN 앱의 "하트/다이아 포인트" 시스템이 앱 스토어 정책 및 법률에 미치는 영향을 분석합니다.
-
-```yaml
-현재 포인트 시스템:
-  하트 (💖):
-    - 무료 획득
-    - 90일 만료
-    - 가치: ₩300/개
-    - 획득 방법:
-      - 첫 가입 보너스: +10💖
-      - 일일 출석: +1💖/일
-      - 7일 연속 출석: +3💖
-      - 근무 리뷰 작성: +1💖
-      - 친구 초대: +5💖
-
-  다이아 (💎):
-    - 유료 충전 (RevenueCat 통한 IAP)
-    - 만료 없음 (영구)
-    - 가치: ₩300/개
-    - 패키지:
-      - ₩1,000 → 3💎
-      - ₩3,000 → 10💎
-      - ₩10,000 → 35💎 (+2 보너스, +6%)
-      - ₩30,000 → 110💎 (+10 보너스, +10%)
-      - ₩50,000 → 190💎 (+23 보너스, +14%)
-      - ₩100,000 → 400💎 (+67 보너스, +20%)
-
-  사용 용도:
-    - 일반공고 등록: 1💎
-    - 긴급공고 등록: 10💎
-    - 고정공고 등록: 5💎/주
-    - 상단 노출: 별도
-
-  사용 우선순위:
-    - 하트 먼저 차감 (만료 임박 순)
-    - 하트 부족 시 다이아 차감
-```
-
-### 앱 스토어 정책 분석
-
-#### Apple App Store (IAP 필수 정책)
-
-```yaml
-관련 가이드라인: 3.1.1
-
-IAP 필수 대상:
-  - 디지털 콘텐츠 및 서비스
-  - 앱 내 가상 화폐
-  - 구독 서비스
-  - 프리미엄 기능 잠금 해제
-
-UNIQN 다이아 분류:
-  - "앱 내 소비성 가상 화폐" → IAP 필수
-  - RevenueCat을 통한 App Store Connect 연동
-  - StoreKit 2 사용 (iOS 15+)
-
-Apple 수수료:
-  - 표준: 30%
-  - 소규모 비즈니스 프로그램: 15% (연 매출 $1M 미만)
-
-구현 방식:
-  - Consumable In-App Purchase (소비성)
-  - 서버 검증 필수 (RevenueCat Webhook)
-  - 환불은 Apple 정책에 따름
-```
-
-#### Google Play Store
-
-```yaml
-관련 정책: 결제 정책
-
-Google Play 결제 필수:
-  - 디지털 상품 및 콘텐츠
-  - 가상 화폐/아이템
-
-UNIQN 다이아 분류:
-  - "인앱 상품" → Google Play 결제 필수
-  - RevenueCat을 통한 Google Play Console 연동
-  - Billing Library 6.x 사용
-
-Google 수수료:
-  - 표준: 30%
-  - 소규모 개발자: 15% (첫 $1M)
-
-구현 방식:
-  - one-time product (일회성 구매)
-  - 서버 검증 필수 (RevenueCat Webhook)
-  - 환불은 Google 정책에 따름
-```
-
-### 법적 리스크 분석
-
-#### 도박 규제 관련
-
-```yaml
-위험 요소:
-  - "홀덤" 키워드가 도박 연상 가능
-  - 가상 화폐 사용
-
-완화 요소:
-  - 실제 게임 기능 없음 (일자리 매칭만)
-  - 베팅/도박 기능 없음
-  - 포인트 환불/현금화 불가
-  - 타 사용자에게 양도 불가
-
-권장 조치:
-  - 앱 설명에 "도박 아님" 명시
-  - 이용약관에 포인트 환불 불가 명시
-```
-
-#### 전자금융거래법 관련
-
-```yaml
-적용 여부 분석:
-  - 선불전자지급수단 해당 여부
-
-비해당 근거:
-  - 자사 서비스 내에서만 사용 가능
-  - 현금 환급 불가
-  - 타인 양도 불가
-  - 특정 용도(공고 등록)에만 사용
-
-결론: 전자금융거래법 비적용 (자가형 선불식 포인트)
-```
-
-### 수익 모델
-
-```yaml
-현재 모델:
-  - RevenueCat 통한 인앱 결제 (다이아 충전)
-  - App Store / Play Store 정식 결제 연동
-
-수익 채널:
-  - 다이아 패키지 판매
-  - 프리미엄 기능 (상단 노출 등)
-  - B2B 기업 제휴 (수수료 기반)
-
-무료 기간:
-  - 2026-07-01까지 모든 공고 무료
-  - 기간 중 하트/다이아 시스템 테스트
-
-수수료 구조:
-  - Apple/Google 수수료: 15~30%
-  - RevenueCat 수수료: MTR $2,500 미만 무료
-```
-
-### 심사 대응 준비
-
-#### 예상 질문 및 답변
-
-```yaml
-Q1: "이 앱은 도박과 관련이 있나요?"
-A1: |
-  아니요. UNIQN은 홀덤 토너먼트 딜러/스태프를 위한 일자리 매칭 플랫폼입니다.
-  - 실제 게임 기능 없음
-  - 도박/베팅 기능 없음
-  - 앱 내 가상 화폐는 공고 등록 비용으로만 사용
-
-Q2: "인앱 결제는 어떤 용도인가요?"
-A2: |
-  구인자가 공고를 등록할 때 사용하는 "다이아" 충전입니다.
-  - 공고 등록 비용 결제용
-  - App Store/Play Store 표준 결제 시스템 사용
-  - 환불은 각 스토어 정책에 따름
-
-Q3: "급여는 어떻게 지급되나요?"
-A3: |
-  급여는 앱 외부에서 구인자가 스태프에게 직접 지급합니다.
-  - 앱 내 정산 기능 없음
-  - 앱은 매칭만 제공
-  - 은행 이체 등 외부 수단 사용
-```
-
-### RevenueCat 설정
-
-```yaml
-App Store Connect:
-  - In-App Purchase 설정 (Consumable)
-  - 상품 ID:
-    - com.uniqn.diamond.starter
-    - com.uniqn.diamond.basic
-    - com.uniqn.diamond.popular
-    - com.uniqn.diamond.premium
-  - 심사 정보 제출
-
-Google Play Console:
-  - In-App Products 설정
-  - 상품 ID 동일하게 설정
-  - 결제 프로필 연결
-
-RevenueCat Dashboard:
-  - 앱 등록 (iOS/Android)
-  - Entitlement 설정 (non-subscription)
-  - Webhook 설정 (Firebase Functions)
-```
-
-### 법률 자문 체크리스트
-
-```yaml
-자문 필요 항목:
-  - [x] 전자금융거래법 해당 여부 → 비해당 확인
-  - [ ] 사행산업 규제 해당 여부 확인
-  - [ ] 개인정보 처리 적법성
-  - [ ] 이용약관 검토 (환불 정책 포함)
-
-담당 법무법인:
-  - [ ] IT/핀테크 전문 법무법인 선정
-  - [ ] 앱 스토어 정책 경험 확인
-  - [ ] 인앱 결제 이용약관 검토 경험 확인
-
-예상 비용:
-  - 초기 자문: 200-500만원
-  - 이용약관 작성/검토: 100-200만원
-  - 정기 자문 계약: 월 50-100만원
-```
-
----
-
 ## 부록: 유용한 리소스
 
 ### 공식 문서
@@ -948,6 +736,7 @@ RevenueCat Dashboard:
 - [Google Play Policy Center](https://play.google.com/about/developer-content-policy/)
 - [App Store Connect Help](https://help.apple.com/app-store-connect/)
 - [Google Play Console Help](https://support.google.com/googleplay/android-developer/)
+- [EAS Build Documentation](https://docs.expo.dev/build/introduction/)
 
 ### 심사 현황 확인
 
@@ -958,3 +747,10 @@ RevenueCat Dashboard:
 
 - Apple App Review: App Store Connect에서 연락
 - Google Play Support: Play Console에서 지원 요청
+- 내부 지원: support@uniqn.app
+
+---
+
+*마지막 업데이트: 2026-02-02*
+*앱 버전: v1.0.0*
+*빌드 시스템: EAS Build*

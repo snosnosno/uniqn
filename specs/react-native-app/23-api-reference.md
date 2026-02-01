@@ -1632,19 +1632,27 @@ export const ErrorMessages: Record<string, string> = {
 
 ```
 users (1)
-  └─── staff (1) ──── qrCodes (N)
+  ├─── applications (N) ──── jobPostings (1)
+  │         │
+  │         └─── confirmationHistory (배열)
+  │         └─── cancellationRequest (객체)
   │
-  └─── applications (N) ──── jobPostings (1)
+  ├─── workLogs (N)
+  │         └─── settlementBreakdown (캐싱)
   │
-  └─── workLogs (N)
+  ├─── notifications (N)
   │
-  └─── attendanceRecords (N)
+  ├─── purchases (N)
   │
-  └─── notifications (N)
+  ├─── heartBatches (서브컬렉션)
   │
-  └─── payments (N)
+  ├─── pointTransactions (서브컬렉션)
   │
-  └─── inquiries (N)
+  ├─── inquiries (N)
+  │
+  └─── reports (N)
+
+eventQRCodes (N) ──── jobPostings (1)
 ```
 
 ### 표준 필드 규칙
@@ -1653,11 +1661,152 @@ users (1)
 |------|------|------|
 | `id` | string | 문서 고유 ID |
 | `userId` | string | 사용자 참조 |
-| `staffId` | string | 스태프 참조 |
-| `eventId` | string | 공고 참조 |
+| `jobPostingId` | string | 공고 참조 (표준) |
+| `applicantId` | string | 지원자 참조 |
 | `createdAt` | Timestamp | 생성 시간 |
 | `updatedAt` | Timestamp | 수정 시간 |
 | `status` | string | 상태 enum |
+
+> **Note**: `eventId`, `postId`, `staffId`는 레거시 필드로, `jobPostingId`, `userId`로 통합 중
+
+---
+
+## 9. 서비스 레이어 구조
+
+### 9.1 Core 서비스 (7개)
+
+| 서비스 | 파일 | 주요 기능 |
+|--------|------|----------|
+| **authService** | `authService.ts` | 로그인, 회원가입, 소셜 로그인, 프로필 관리 |
+| **jobService** | `jobService.ts` | 공고 목록, 검색, 필터, 상세 조회 |
+| **applicationService** | `applicationService.ts` | 지원, 취소 요청, 지원 내역 조회 |
+| **workLogService** | `workLogService.ts` | 근무 기록 조회, 실시간 구독 |
+| **scheduleService** | `scheduleService.ts` | 스케줄 조회, 그룹핑, 캘린더 뷰 |
+| **notificationService** | `notificationService.ts` | 알림 조회, 읽음 처리, 실시간 구독 |
+| **reportService** | `reportService.ts` | 양방향 신고 (스태프↔구인자) |
+
+### 9.2 Employer 서비스 (6개)
+
+| 서비스 | 파일 | 주요 기능 |
+|--------|------|----------|
+| **jobManagementService** | `jobManagementService.ts` | 공고 CRUD, 상태 관리 |
+| **applicantManagementService** | `applicantManagementService.ts` | 지원자 확정/거절, 대기자 관리 |
+| **applicationHistoryService** | `applicationHistoryService.ts` | 확정/취소 이력 추적, WorkLog 연동 |
+| **confirmedStaffService** | `confirmedStaffService.ts` | 확정 스태프 관리, 역할 변경 |
+| **settlementService** | `settlement/*.ts` | 정산 계산, 처리 (분할 구조) |
+| **applicantConversionService** | `applicantConversionService.ts` | 지원자→스태프 변환 |
+
+### 9.3 Admin 서비스 (4개)
+
+| 서비스 | 파일 | 주요 기능 |
+|--------|------|----------|
+| **adminService** | `adminService.ts` | 대시보드 통계, 사용자 관리 |
+| **announcementService** | `announcementService.ts` | 공지사항 CRUD, 발행 관리 |
+| **tournamentApprovalService** | `tournamentApprovalService.ts` | 대회공고 승인/거절 |
+| **inquiryService** | `inquiryService.ts` | 문의 관리, FAQ |
+
+### 9.4 Infrastructure 서비스 (17개)
+
+| 서비스 | 파일 | 주요 기능 |
+|--------|------|----------|
+| **pushNotificationService** | `pushNotificationService.ts` | FCM 토큰 관리, 권한 요청 |
+| **eventQRService** | `eventQRService.ts` | QR 생성/검증 (3분 유효) |
+| **deepLinkService** | `deepLinkService.ts` | 딥링크 라우팅 |
+| **analyticsService** | `analyticsService.ts` | 이벤트 추적 |
+| **crashlyticsService** | `crashlyticsService.ts` | 에러 로깅 |
+| **performanceService** | `performanceService.ts` | 성능 모니터링 |
+| **sessionService** | `sessionService.ts` | 세션 관리, 토큰 갱신 |
+| **storageService** | `storageService.ts` | 이미지 업로드 |
+| **biometricService** | `biometricService.ts` | 생체인증 |
+| **featureFlagService** | `featureFlagService.ts` | 기능 플래그 |
+| **inAppMessageService** | `inAppMessageService.ts` | 인앱 메시지 |
+| **cacheService** | `cacheService.ts` | 캐시 관리 |
+| **versionService** | `versionService.ts` | 앱 버전 체크 |
+| **templateService** | `templateService.ts` | 공고 템플릿 |
+| **accountDeletionService** | `accountDeletionService.ts` | 계정 삭제 |
+| **tokenRefreshService** | `tokenRefreshService.ts` | 토큰 자동 갱신 |
+| **searchService** | `searchService.ts` | 클라이언트 사이드 검색 |
+
+---
+
+## 10. 훅 레이어 구조 (46개)
+
+### 10.1 인증/권한 (6개)
+
+| 훅 | 용도 |
+|----|------|
+| `useAuth` | 인증 상태 통합 래퍼 |
+| `useAuthGuard` | 라우트 권한 보호 |
+| `useAutoLogin` | 자동 로그인 |
+| `useBiometricAuth` | 생체인증 |
+| `useOnboarding` | 온보딩 상태 |
+| `useAppInitialize` | 앱 초기화 |
+
+### 10.2 공고/지원 (9개)
+
+| 훅 | 용도 |
+|----|------|
+| `useJobPostings` | 무한스크롤 공고 목록 |
+| `useJobDetail` | 공고 상세 |
+| `useJobManagement` | 공고 CRUD (구인자용) |
+| `useJobRoles` | 역할 정보 정규화 |
+| `useJobSchedule` | 일정 정보 정규화 |
+| `useApplications` | 지원 제출/취소 |
+| `useAssignmentSelection` | 배정 선택 관리 |
+| `useBookmarks` | 북마크 관리 |
+| `usePostingTypeCounts` | 타입별 공고 개수 |
+
+### 10.3 스케줄/근무 (4개)
+
+| 훅 | 용도 |
+|----|------|
+| `useSchedules` | 스케줄 조회/캘린더 |
+| `useWorkLogs` | 근무 기록 조회 |
+| `useQRCode` | QR 스캔/표시 |
+| `useEventQR` | 현장 QR 관리 (구인자용) |
+
+### 10.4 정산/구인자 (8개)
+
+| 훅 | 용도 |
+|----|------|
+| `useSettlement` | 정산 조회/처리 |
+| `useSettlementDateNavigation` | 정산 날짜 네비게이션 |
+| `useConfirmedStaff` | 확정 스태프 관리 |
+| `useApplicantsByJobPosting` | 공고별 지원자 조회 |
+| `useApplicantMutations` | 지원자 관리 뮤테이션 |
+| `useCancellationManagement` | 취소 요청 관리 |
+| `useStaffConversion` | 스태프 변환 |
+| `useTemplateManager` | 템플릿 관리 |
+
+### 10.5 알림 (3개)
+
+| 훅 | 용도 |
+|----|------|
+| `useNotifications` | 알림 조회/읽음/삭제 |
+| `useNotificationHandler` | 통합 알림 핸들러 |
+| `useDeepLink` | 딥링크 처리 |
+
+### 10.6 관리자 (4개)
+
+| 훅 | 용도 |
+|----|------|
+| `useAdminDashboard` | 관리자 대시보드 |
+| `useAdminReports` | 신고 관리 |
+| `useAnnouncement` | 공지사항 관리 |
+| `useTournamentApproval` | 대회공고 승인 |
+
+### 10.7 인프라 (8개)
+
+| 훅 | 용도 |
+|----|------|
+| `useNetworkStatus` | 네트워크 상태 감지 |
+| `useNavigationTracking` | Analytics 추적 |
+| `useFeatureFlag` | 기능 플래그 |
+| `useVersionCheck` | 앱 버전 체크 |
+| `useRealtimeQuery` | Firestore 실시간 구독 |
+| `useAllowances` | 수당 관리 |
+| `useInquiry` | 문의 관리 |
+| `useClearCache` | 캐시 삭제 |
 
 ---
 
@@ -1667,3 +1816,8 @@ users (1)
 - [06-firebase.md](./06-firebase.md) - Firebase 연동 전략
 - [12-security.md](./12-security.md) - 보안 설계
 - [22-migration-mapping.md](./22-migration-mapping.md) - 마이그레이션 매핑
+- [DATA_FLOW.md](./DATA_FLOW.md) - 데이터 흐름 및 연결 관계
+
+---
+
+*마지막 업데이트: 2026-02-02*

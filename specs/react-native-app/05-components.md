@@ -1,26 +1,28 @@
 # 05. 컴포넌트 시스템 설계
 
-> **마지막 업데이트**: 2026년 2월
+> **마지막 업데이트**: 2026년 2월 2일
 
 ## 컴포넌트 현황 (현재 구현 기준)
 
-### 폴더별 컴포넌트 개수
+### 폴더별 컴포넌트 개수 (2026년 2월 기준)
 | 폴더 | 개수 | 설명 |
 |------|------|------|
-| **ui/** | 38개 | 기본 UI 컴포넌트 |
-| **employer/** | 24개 | 구인자 전용 |
-| **jobs/** | 19개 | 공고 관련 |
-| **auth/** | 10개 | 인증 |
-| **admin/** | 9개 | 관리자 |
+| **employer/** | 62개 | 구인자 전용 (가장 많음) |
+| **ui/** | 45개 | 기본 UI 컴포넌트 |
+| **jobs/** | 21개 | 공고 관련 |
+| **auth/** | 13개 | 인증 (signup 서브폴더 포함) |
+| **admin/** | 12개 | 관리자 (announcements, stats 서브폴더 포함) |
 | **schedule/** | 9개 | 스케줄 |
-| **notifications/** | 8개 | 알림 |
-| **support/** | 7개 | 고객지원 |
-| **qr/** | 4개 | QR 코드 |
-| **headers/** | 3개 | 헤더 |
-| **기타** | 8개 | applicant, notices, navigation 등 |
-| **전체** | **139개** | |
+| **notifications/** | 7개 | 알림 |
+| **support/** | 6개 | 고객지원 |
+| **qr/** | 3개 | QR 코드 |
+| **headers/** | 2개 | StackHeader, TabHeader |
+| **applicant/** | 2개 | 지원자 카드 |
+| **settings/** | 2개 | 설정 |
+| **기타** | 8개 | applications, notices, navigation, onboarding, profile, modals, lazy, icons |
+| **전체** | **192개** | |
 
-### UI 컴포넌트 목록 (38개)
+### UI 컴포넌트 목록 (35개)
 ```yaml
 기본 (6개):
   - Button (5 variant), Input (5 type), Card (3 variant)
@@ -29,32 +31,32 @@
 상태 표시 (5개):
   - Loading, LoadingOverlay
   - EmptyState (3 variant), ErrorState (5 variant)
-  - ErrorBoundary (5가지 세분화)
+  - ErrorBoundary, OfflineBanner
 
 스켈레톤 (1개):
   - Skeleton (shimmer 애니메이션, 10+ 프리셋 포함)
 
-피드백 (4개):
+피드백 (5개):
   - Toast, ToastManager
-  - InAppBanner, InAppModal
+  - InAppBanner, InAppModal, InAppMessageManager
 
-모달 & 시트 (4개):
+모달 & 시트 (5개):
   - Modal (Reanimated)
   - BottomSheet, ActionSheet, SheetModal
   - ModalManager
 
 폼 (8개):
-  - FormField, FormSection, FormSelect
+  - FormField, FormSelect
   - Checkbox, Radio
   - DatePicker, TimePicker, TimeWheelPicker
   - CalendarPicker
 
-레이아웃 (3개):
+레이아웃 (4개):
   - MobileHeader, OptimizedImage, CircularProgress
+  - Accordion
 
-기타 (4개):
-  - InAppMessageManager, OfflineBanner
-  - Accordion, index.ts (배럴 export)
+기타 (1개):
+  - index.ts (배럴 export)
 ```
 
 ---
@@ -2184,52 +2186,96 @@ export function FormSelect({
 ## 컴포넌트 Export 구조
 
 ```typescript
-// src/components/ui/index.ts
-export * from './Button';
-export * from './Input';
-export * from './Card';
-export * from './Badge';
-export * from './BottomSheet';
-export * from './ConfirmModal';
-export * from './AlertModal';
-export * from './Toast';
-export * from './ToastManager';
-export * from './ModalManager';
-export * from './Loading';
-export * from './LoadingOverlay';
-export * from './EmptyState';
-export * from './ErrorState';
-export * from './MobileHeader';
-export * from './Skeleton';
-export * from './Avatar';
-export * from './Divider';
-export * from './Switch';
-export * from './Checkbox';
-export * from './Radio';
-export * from './Tabs';
+// src/components/ui/index.ts (실제 구현)
+// Core Components
+export { Button, Input, Card, Badge, Avatar, Divider } from './...';
+export { Accordion, AccordionItem, AccordionGroup } from './Accordion';
 
-// src/components/forms/index.ts
-export * from './FormField';
-export * from './FormSelect';
-export * from './FormDatePicker';
-export * from './FormTimePicker';
-export * from './FormCheckbox';
+// State Components
+export { EmptyState, ErrorState } from './...';
 
-// src/components/job/index.ts
-export * from './DateSlider';
-export * from './JobCard';
-export * from './JobFilters';
-export * from './ApplicationStatus';
-export * from './JobDetailSheet';
+// Error Boundary (8가지 세분화)
+export {
+  ErrorBoundary,
+  withErrorBoundary,
+  ScreenErrorBoundary,
+  FeatureErrorBoundary,
+  NetworkErrorBoundary,
+  AuthErrorBoundary,
+  FormErrorBoundary,
+  DataFetchErrorBoundary,
+  CompositeErrorBoundary,
+} from './ErrorBoundary';
 
-// src/components/schedule/index.ts
-export * from './ScheduleCard';
-export * from './CalendarView';
-export * from './ScheduleStats';
-export * from './ScheduleDetailSheet';
+// Feedback Components
+export { Toast, ToastManager, ModalManager } from './...';
+export { Modal, AlertModal, ConfirmModal } from './Modal';
+export { SheetModal, ActionSheet, BottomSheet, SelectBottomSheet } from './...';
 
-// src/components/admin/index.ts
-export * from './UserCard';
-export * from './InquiryCard';
-export * from './ApprovalCard';
+// Form Components
+export { FormField, FormSection, FormRow } from './FormField';
+export { FormSelect, Checkbox, CheckboxGroup, Radio } from './...';
+export { DatePicker, DateRangePicker, CalendarPicker } from './...';
+export { TimePicker, TimePickerGrid, TimeWheelPicker } from './...';
+
+// Loading / Skeleton Components (15개 프리셋)
+export { Loading, LoadingOverlay, InlineLoadingOverlay } from './...';
+export {
+  Skeleton, SkeletonText, SkeletonCard, SkeletonListItem, SkeletonAvatar,
+  SkeletonButton, SkeletonJobCard, SkeletonScheduleCard,
+  SkeletonNotificationItem, SkeletonApplicantCard, SkeletonProfileHeader,
+  SkeletonStatsCard, SkeletonSettlementRow,
+} from './Skeleton';
+
+// Image Components
+export { OptimizedImage, AvatarImage, BannerImage, ProductImage } from './OptimizedImage';
+
+// Layout Components
+export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
+export { CircularProgress } from './CircularProgress';
+
+// In-App Message Components
+export { InAppBanner, InAppModal, InAppMessageManager } from './...';
+
+// Network Status
+export { OfflineBanner } from './OfflineBanner';
+```
+
+### 비즈니스 컴포넌트 (폴더별)
+
+```typescript
+// src/components/jobs/ (21개)
+// 공고 목록, 상세, 지원 관련
+export { JobCard, JobCardSkeleton } from './JobCard';
+export { DateSlider } from './DateSlider';
+export { DateRequirementDisplay, DateRequirementList } from './...';
+export { FixedScheduleDisplay, GroupedDateRequirementDisplay } from './...';
+export { AssignmentSelector } from './AssignmentSelector';  // 서브폴더
+export { ApplicationForm } from './ApplicationForm';
+// ...
+
+// src/components/employer/ (62개)
+// 공고 관리, 지원자 관리, 정산
+export { ApplicantCard, ApplicantList } from './...';
+export { ConfirmedStaffCard, ConfirmedStaffList } from './...';
+export { SettlementCard, SettlementList, SettlementDetailModal } from './...';
+export { EventQRModal, StaffManagementTab } from './...';
+export { JobPostingScrollForm } from './job-form/JobPostingScrollForm';  // 서브폴더
+// ...
+
+// src/components/admin/ (12개)
+export { UserCard, UserList, UserDetail, UserEditForm } from './...';
+export { ReportCard, ApprovalModal } from './...';
+export { AnnouncementCard, AnnouncementForm } from './announcements/...';
+export { StatsSummaryCard, RoleDistributionChart } from './stats/...';
+
+// src/components/schedule/ (9개)
+export { ScheduleCard, ScheduleList } from './...';
+// ...
+
+// src/components/auth/ (13개)
+export { LoginForm, ForgotPasswordForm, SocialLoginButtons } from './...';
+export { SignupStep1, SignupStep2, SignupStep4 } from './signup/...';
+export { IdentityVerification, PasswordStrength, StepIndicator } from './...';
+export { BiometricButton } from './BiometricButton';
 ```

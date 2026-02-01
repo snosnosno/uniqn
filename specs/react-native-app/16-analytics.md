@@ -2,663 +2,423 @@
 
 ## 개요
 
-앱 사용자 행동 분석, 크래시 리포팅, 성능 모니터링을 위한 통합 분석 시스템입니다.
+UNIQN 앱의 사용자 행동 분석, 에러 모니터링, 성능 측정을 위한 통합 시스템 현황입니다.
 
-### 기술 스택
+### 기술 스택 (현재 구현)
 
-| 도구 | 용도 | 플랫폼 |
-|------|------|--------|
-| Firebase Analytics | 사용자 행동 추적 | iOS, Android, Web |
-| Firebase Crashlytics | 크래시 리포팅 | iOS, Android |
-| Firebase Performance | 성능 모니터링 | iOS, Android, Web |
-| Sentry (선택) | 에러 추적 + 웹 크래시 | All |
+| 도구 | 용도 | 플랫폼 | 상태 |
+|------|------|--------|:----:|
+| Firebase Analytics | 사용자 행동 추적 | 웹 | ✅ 구현 |
+| Sentry | 에러/크래시 모니터링 | iOS, Android, Web | ✅ 구현 |
+| 자체 Performance Service | 성능 측정 | iOS, Android, Web | ✅ 구현 |
+
+> **참고**: 네이티브 앱(iOS/Android)에서는 Firebase Analytics 대신 로깅 모드로 동작합니다.
+> 추후 네이티브 SDK(@react-native-firebase/analytics) 추가 시 실제 전송이 활성화됩니다.
 
 ---
 
-## 1. 설치 및 설정
+## 1. 설치 및 의존성
 
-### 패키지 설치
-
-```bash
-# Firebase Analytics & Crashlytics
-npx expo install @react-native-firebase/analytics
-npx expo install @react-native-firebase/crashlytics
-npx expo install @react-native-firebase/perf
-
-# Sentry (웹 크래시 포함 시)
-npx expo install @sentry/react-native
-```
-
-### app.json 설정
+### 현재 패키지
 
 ```json
 {
-  "expo": {
-    "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/analytics",
-      "@react-native-firebase/crashlytics",
-      "@react-native-firebase/perf",
-      [
-        "@sentry/react-native/expo",
-        {
-          "organization": "uniqn",
-          "project": "uniqn-mobile"
-        }
-      ]
-    ]
+  "dependencies": {
+    "@sentry/react-native": "~7.2.0",
+    "firebase": "^12.6.0"
   }
 }
 ```
 
----
-
-## 2. Analytics Service
-
-### 핵심 서비스 구현
+### app.config.ts 설정
 
 ```typescript
-// services/analytics/AnalyticsService.ts
-import analytics from '@react-native-firebase/analytics';
-import { Platform } from 'react-native';
+plugins: [
+  // Sentry - 에러 모니터링
+  [
+    '@sentry/react-native/expo',
+    {
+      organization: process.env.SENTRY_ORG,
+      project: process.env.SENTRY_PROJECT,
+    },
+  ],
+],
+```
 
-// 이벤트 타입 정의
-export type AnalyticsEventName =
+---
+
+## 2. Analytics 서비스
+
+### 2.1 구현 구조
+
+```typescript
+// src/services/analyticsService.ts
+
+// 플랫폼별 동작:
+// - 웹: Firebase Analytics SDK (실제 전송)
+// - 네이티브: 로깅 모드 (추후 네이티브 SDK 추가 예정)
+```
+
+### 2.2 이벤트 타입 정의
+
+```typescript
+export type AnalyticsEvent =
   // 인증
   | 'login'
-  | 'logout'
   | 'signup'
+  | 'logout'
   | 'password_reset'
-  // 구인공고
+  // 구인구직
   | 'job_view'
   | 'job_apply'
-  | 'job_save'
-  | 'job_share'
-  // 지원
-  | 'application_submit'
+  | 'job_create'
+  | 'job_edit'
+  | 'job_close'
+  | 'job_delete'
+  // 지원 관리
+  | 'application_confirm'
+  | 'application_reject'
   | 'application_cancel'
-  | 'confirmation_accept'
-  | 'confirmation_decline'
-  // QR 체크인
-  | 'qr_checkin'
-  | 'qr_checkout'
+  // 스케줄
+  | 'schedule_view'
+  | 'check_in'
+  | 'check_out'
   // 정산
-  | 'settlement_request'
+  | 'settlement_view'
   | 'settlement_complete'
-  // 일반
+  // 알림
+  | 'notification_receive'
+  | 'notification_click'
+  | 'notification_settings_change'
+  // 화면
   | 'screen_view'
-  | 'button_click'
-  | 'error_occurred';
+  // 검색/필터
+  | 'search'
+  | 'filter_apply'
+  // 에러
+  | 'error'
+  // 커스텀
+  | string;
+```
 
-interface EventParams {
+### 2.3 이벤트 파라미터
+
+```typescript
+export interface AnalyticsEventParams {
+  // 공통
+  screen_name?: string;
+  content_type?: string;
+  content_id?: string;
+
+  // 인증
+  method?: 'email' | 'google' | 'apple' | 'kakao';
+
+  // 구인구직
+  job_id?: string;
+  job_title?: string;
+  job_location?: string;
+  job_role?: string;
+  job_salary_type?: string;
+
+  // 지원
+  application_id?: string;
+  application_status?: string;
+
+  // 스케줄
+  schedule_date?: string;
+  work_hours?: number;
+
+  // 정산
+  settlement_amount?: number;
+  settlement_count?: number;
+
+  // 검색
+  search_term?: string;
+  filter_type?: string;
+  filter_value?: string;
+
+  // 에러
+  error_code?: string;
+  error_message?: string;
+  error_category?: string;
+
+  // 추가 파라미터
   [key: string]: string | number | boolean | undefined;
 }
+```
 
-class AnalyticsService {
-  private isEnabled: boolean = true;
-  private userId: string | null = null;
+### 2.4 사용자 속성
 
-  // 초기화
-  async initialize(): Promise<void> {
-    try {
-      // 디버그 모드에서는 분석 비활성화 옵션
-      if (__DEV__) {
-        await analytics().setAnalyticsCollectionEnabled(false);
-        this.isEnabled = false;
-        console.log('[Analytics] Disabled in development');
-        return;
-      }
-
-      await analytics().setAnalyticsCollectionEnabled(true);
-      console.log('[Analytics] Initialized');
-    } catch (error) {
-      console.error('[Analytics] Initialization failed:', error);
-    }
-  }
-
-  // 사용자 ID 설정
-  async setUserId(userId: string | null): Promise<void> {
-    this.userId = userId;
-    try {
-      await analytics().setUserId(userId);
-    } catch (error) {
-      console.error('[Analytics] setUserId failed:', error);
-    }
-  }
-
-  // 사용자 속성 설정
-  async setUserProperties(properties: {
-    role?: 'staff' | 'employer' | 'admin';
-    region?: string;
-    experienceLevel?: string;
-  }): Promise<void> {
-    try {
-      if (properties.role) {
-        await analytics().setUserProperty('user_role', properties.role);
-      }
-      if (properties.region) {
-        await analytics().setUserProperty('user_region', properties.region);
-      }
-      if (properties.experienceLevel) {
-        await analytics().setUserProperty('experience_level', properties.experienceLevel);
-      }
-    } catch (error) {
-      console.error('[Analytics] setUserProperties failed:', error);
-    }
-  }
-
-  // 화면 조회 추적
-  async logScreenView(screenName: string, screenClass?: string): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await analytics().logScreenView({
-        screen_name: screenName,
-        screen_class: screenClass || screenName,
-      });
-    } catch (error) {
-      console.error('[Analytics] logScreenView failed:', error);
-    }
-  }
-
-  // 이벤트 추적
-  async logEvent(eventName: AnalyticsEventName, params?: EventParams): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await analytics().logEvent(eventName, {
-        ...params,
-        platform: Platform.OS,
-        timestamp: Date.now(),
-      });
-    } catch (error) {
-      console.error('[Analytics] logEvent failed:', error);
-    }
-  }
-
-  // === 도메인별 이벤트 메서드 ===
-
-  // 인증 이벤트
-  async logLogin(method: 'email' | 'google' | 'apple' | 'kakao'): Promise<void> {
-    await this.logEvent('login', { method });
-  }
-
-  async logSignup(method: 'email' | 'google' | 'apple' | 'kakao'): Promise<void> {
-    await this.logEvent('signup', { method });
-  }
-
-  async logLogout(): Promise<void> {
-    await this.logEvent('logout');
-  }
-
-  // 구인공고 이벤트
-  async logJobView(jobId: string, jobTitle: string, location: string): Promise<void> {
-    await this.logEvent('job_view', {
-      job_id: jobId,
-      job_title: jobTitle,
-      location,
-    });
-  }
-
-  async logJobApply(jobId: string, jobTitle: string): Promise<void> {
-    await this.logEvent('job_apply', {
-      job_id: jobId,
-      job_title: jobTitle,
-    });
-  }
-
-  async logJobSave(jobId: string, saved: boolean): Promise<void> {
-    await this.logEvent('job_save', {
-      job_id: jobId,
-      action: saved ? 'save' : 'unsave',
-    });
-  }
-
-  // 지원 이벤트
-  async logApplicationSubmit(
-    jobId: string,
-    applicationId: string
-  ): Promise<void> {
-    await this.logEvent('application_submit', {
-      job_id: jobId,
-      application_id: applicationId,
-    });
-  }
-
-  async logConfirmationResponse(
-    applicationId: string,
-    response: 'accept' | 'decline',
-    declineReason?: string
-  ): Promise<void> {
-    await this.logEvent(
-      response === 'accept' ? 'confirmation_accept' : 'confirmation_decline',
-      {
-        application_id: applicationId,
-        decline_reason: declineReason,
-      }
-    );
-  }
-
-  // QR 체크인 이벤트
-  async logQRCheckin(eventId: string, staffId: string): Promise<void> {
-    await this.logEvent('qr_checkin', {
-      event_id: eventId,
-      staff_id: staffId,
-    });
-  }
-
-  async logQRCheckout(
-    eventId: string,
-    staffId: string,
-    workHours: number
-  ): Promise<void> {
-    await this.logEvent('qr_checkout', {
-      event_id: eventId,
-      staff_id: staffId,
-      work_hours: workHours,
-    });
-  }
-
-  // 정산 이벤트
-  async logSettlementRequest(
-    eventId: string,
-    amount: number
-  ): Promise<void> {
-    await this.logEvent('settlement_request', {
-      event_id: eventId,
-      amount,
-    });
-  }
-
-  // 에러 이벤트
-  async logError(
-    errorType: string,
-    errorMessage: string,
-    context?: string
-  ): Promise<void> {
-    await this.logEvent('error_occurred', {
-      error_type: errorType,
-      error_message: errorMessage.substring(0, 100),
-      context,
-    });
-  }
-
-  // 버튼 클릭 추적
-  async logButtonClick(
-    buttonName: string,
-    screenName: string,
-    additionalParams?: EventParams
-  ): Promise<void> {
-    await this.logEvent('button_click', {
-      button_name: buttonName,
-      screen_name: screenName,
-      ...additionalParams,
-    });
-  }
+```typescript
+export interface UserProperties {
+  user_role?: 'staff' | 'employer' | 'admin';
+  account_created_date?: string;
+  total_applications?: number;
+  total_jobs_posted?: number;
+  has_verified_phone?: boolean;
+  preferred_roles?: string;
+  preferred_location?: string;
 }
+```
 
-export const analyticsService = new AnalyticsService();
+### 2.5 핵심 API
+
+```typescript
+// 초기화
+analyticsService.initialize();
+
+// 이벤트 추적
+await trackEvent('job_apply', {
+  job_id: 'job123',
+  job_title: '홀덤 딜러 모집',
+  job_role: 'dealer',
+});
+
+// 화면 조회 추적
+await trackScreenView('JobListScreen');
+
+// 사용자 속성 설정
+await setUserProperties({
+  user_role: 'staff',
+  preferred_location: '서울',
+});
+
+// 사용자 ID 설정
+await setUserId('user123');
+```
+
+### 2.6 헬퍼 함수
+
+```typescript
+// 인증 이벤트
+trackLogin('email');
+trackSignup('google');
+trackLogout();
+
+// 구인구직 이벤트
+trackJobView('job123', '홀덤 딜러 모집');
+trackJobApply('job123', '홀덤 딜러 모집', 'dealer');
+trackJobCreate('job123', '새 공고');
+
+// 출퇴근 이벤트
+trackCheckIn('2026-02-02');
+trackCheckOut('2026-02-02', 8.5);
+
+// 정산 이벤트
+trackSettlementComplete(150000, 3);
+
+// 검색 이벤트
+trackSearch('강남 딜러');
+
+// 에러 이벤트
+trackError('E6001', '이미 지원한 공고입니다', 'business');
 ```
 
 ---
 
-## 3. Crashlytics Service
+## 3. 에러 모니터링 (Sentry)
 
-### 크래시 리포팅 구현
+### 3.1 구현 구조
 
 ```typescript
-// services/analytics/CrashlyticsService.ts
-import crashlytics from '@react-native-firebase/crashlytics';
-import { Platform } from 'react-native';
+// src/services/crashlyticsService.ts
+// Sentry 기반 에러 모니터링
 
-class CrashlyticsService {
-  private isEnabled: boolean = true;
-
-  // 초기화
-  async initialize(): Promise<void> {
-    try {
-      if (__DEV__) {
-        await crashlytics().setCrashlyticsCollectionEnabled(false);
-        this.isEnabled = false;
-        console.log('[Crashlytics] Disabled in development');
-        return;
-      }
-
-      await crashlytics().setCrashlyticsCollectionEnabled(true);
-      console.log('[Crashlytics] Initialized');
-    } catch (error) {
-      console.error('[Crashlytics] Initialization failed:', error);
-    }
-  }
-
-  // 사용자 식별
-  async setUserId(userId: string): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await crashlytics().setUserId(userId);
-    } catch (error) {
-      console.error('[Crashlytics] setUserId failed:', error);
-    }
-  }
-
-  // 사용자 속성 설정
-  async setAttributes(attributes: Record<string, string>): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await crashlytics().setAttributes(attributes);
-    } catch (error) {
-      console.error('[Crashlytics] setAttributes failed:', error);
-    }
-  }
-
-  // 커스텀 키 설정
-  async setCustomKey(key: string, value: string | number | boolean): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await crashlytics().setAttribute(key, String(value));
-    } catch (error) {
-      console.error('[Crashlytics] setCustomKey failed:', error);
-    }
-  }
-
-  // 브레드크럼 로그 (크래시 전 맥락 정보)
-  async log(message: string): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      await crashlytics().log(message);
-    } catch (error) {
-      console.error('[Crashlytics] log failed:', error);
-    }
-  }
-
-  // 비치명적 에러 기록
-  async recordError(
-    error: Error,
-    context?: string,
-    additionalData?: Record<string, string>
-  ): Promise<void> {
-    if (!this.isEnabled) return;
-
-    try {
-      // 추가 컨텍스트 설정
-      if (context) {
-        await crashlytics().log(`Context: ${context}`);
-      }
-
-      if (additionalData) {
-        await crashlytics().setAttributes(additionalData);
-      }
-
-      // 에러 기록
-      await crashlytics().recordError(error);
-    } catch (err) {
-      console.error('[Crashlytics] recordError failed:', err);
-    }
-  }
-
-  // 강제 크래시 (테스트용)
-  crash(): void {
-    crashlytics().crash();
-  }
-}
-
-export const crashlyticsService = new CrashlyticsService();
+// 플랫폼별 동작:
+// - 웹: 콘솔 로깅
+// - 네이티브: Sentry SDK로 전송
 ```
 
-### 에러 바운더리 연동
+### 3.2 에러 타입
 
 ```typescript
-// components/ErrorBoundary.tsx
-import React, { Component, ReactNode } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { crashlyticsService } from '@/services/analytics/CrashlyticsService';
+export type CrashSeverity = 'fatal' | 'non-fatal' | 'warning';
 
-interface Props {
-  children: ReactNode;
-  fallback?: ReactNode;
+export interface CrashContext {
+  screen?: string;
+  component?: string;
+  action?: string;
+  userId?: string;
+  [key: string]: string | number | boolean | undefined;
 }
+```
 
-interface State {
-  hasError: boolean;
-  error: Error | null;
-}
+### 3.3 핵심 API
 
-export class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
+```typescript
+// 초기화
+crashlyticsService.initialize();
 
-  static getDerivedStateFromError(error: Error): State {
-    return { hasError: true, error };
-  }
+// 비치명적 에러 기록
+await recordError(error, {
+  screen: 'JobDetailScreen',
+  action: 'apply_job',
+});
 
-  componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    // Crashlytics에 에러 기록
-    crashlyticsService.log(`Component Stack: ${errorInfo.componentStack}`);
-    crashlyticsService.recordError(error, 'ErrorBoundary', {
-      componentStack: errorInfo.componentStack?.substring(0, 500) || '',
-    });
-  }
+// 치명적 에러 기록
+await recordFatalError(error, {
+  component: 'PaymentForm',
+});
 
-  handleRetry = (): void => {
-    this.setState({ hasError: false, error: null });
-  };
+// 로그 메시지 추가
+await log('사용자가 로그인 시도');
 
-  render(): ReactNode {
-    if (this.state.hasError) {
-      if (this.props.fallback) {
-        return this.props.fallback;
-      }
-
-      return (
-        <View style={styles.container}>
-          <Text style={styles.title}>문제가 발생했습니다</Text>
-          <Text style={styles.message}>
-            앱에서 오류가 발생했습니다.{'\n'}
-            다시 시도해 주세요.
-          </Text>
-          <TouchableOpacity style={styles.button} onPress={this.handleRetry}>
-            <Text style={styles.buttonText}>다시 시도</Text>
-          </TouchableOpacity>
-        </View>
-      );
-    }
-
-    return this.props.children;
-  }
-}
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#fff',
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  message: {
-    fontSize: 16,
-    textAlign: 'center',
-    color: '#666',
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#3B82F6',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-  },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+// Breadcrumb 추가
+await leaveBreadcrumb('button_click', {
+  button_name: 'apply_button',
+  screen: 'JobDetail',
 });
 ```
 
----
-
-## 4. Performance Monitoring
-
-### 성능 추적 서비스
+### 3.4 사용자 정보 관리
 
 ```typescript
-// services/analytics/PerformanceService.ts
-import perf, { FirebasePerformanceTypes } from '@react-native-firebase/perf';
+// 사용자 ID 설정
+await setUserId('user123');
 
-class PerformanceService {
-  private traces: Map<string, FirebasePerformanceTypes.Trace> = new Map();
+// 사용자 정보 설정
+await setUser({
+  id: 'user123',
+  email: 'user@example.com',
+  name: '홍길동',
+});
 
-  // HTTP 메트릭 활성화
-  async initialize(): Promise<void> {
-    try {
-      await perf().setPerformanceCollectionEnabled(!__DEV__);
-      console.log('[Performance] Initialized');
-    } catch (error) {
-      console.error('[Performance] Initialization failed:', error);
-    }
-  }
-
-  // 커스텀 트레이스 시작
-  async startTrace(traceName: string): Promise<void> {
-    try {
-      const trace = await perf().startTrace(traceName);
-      this.traces.set(traceName, trace);
-    } catch (error) {
-      console.error(`[Performance] startTrace(${traceName}) failed:`, error);
-    }
-  }
-
-  // 트레이스에 메트릭 추가
-  async putMetric(
-    traceName: string,
-    metricName: string,
-    value: number
-  ): Promise<void> {
-    const trace = this.traces.get(traceName);
-    if (trace) {
-      trace.putMetric(metricName, value);
-    }
-  }
-
-  // 트레이스에 속성 추가
-  async putAttribute(
-    traceName: string,
-    attributeName: string,
-    value: string
-  ): Promise<void> {
-    const trace = this.traces.get(traceName);
-    if (trace) {
-      await trace.putAttribute(attributeName, value);
-    }
-  }
-
-  // 트레이스 종료
-  async stopTrace(traceName: string): Promise<void> {
-    const trace = this.traces.get(traceName);
-    if (trace) {
-      await trace.stop();
-      this.traces.delete(traceName);
-    }
-  }
-
-  // HTTP 요청 측정
-  async measureHttpRequest<T>(
-    url: string,
-    method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-    request: () => Promise<T>
-  ): Promise<T> {
-    const metric = await perf().newHttpMetric(url, method);
-    await metric.start();
-
-    try {
-      const response = await request();
-      metric.setHttpResponseCode(200);
-      return response;
-    } catch (error: any) {
-      metric.setHttpResponseCode(error.status || 500);
-      throw error;
-    } finally {
-      await metric.stop();
-    }
-  }
-}
-
-export const performanceService = new PerformanceService();
+// 사용자 정보 초기화 (로그아웃 시)
+await clearUser();
 ```
 
-### 성능 측정 훅
+### 3.5 커스텀 속성
 
 ```typescript
-// hooks/usePerformanceTrace.ts
-import { useEffect, useRef } from 'react';
-import { performanceService } from '@/services/analytics/PerformanceService';
+// 단일 속성 설정
+await setAttribute('screen', 'JobList');
 
-export function usePerformanceTrace(traceName: string) {
-  const isStarted = useRef(false);
+// 여러 속성 설정
+await setAttributes({
+  user_role: 'staff',
+  region: 'seoul',
+});
+```
 
-  useEffect(() => {
-    if (!isStarted.current) {
-      performanceService.startTrace(traceName);
-      isStarted.current = true;
-    }
+### 3.6 통합 헬퍼 함수
 
-    return () => {
-      if (isStarted.current) {
-        performanceService.stopTrace(traceName);
-        isStarted.current = false;
-      }
-    };
-  }, [traceName]);
+```typescript
+// AppError 기록 (severity 자동 판단)
+await recordAppError(appError, {
+  screen: 'SettlementScreen',
+});
 
-  return {
-    putMetric: (name: string, value: number) =>
-      performanceService.putMetric(traceName, name, value),
-    putAttribute: (name: string, value: string) =>
-      performanceService.putAttribute(traceName, name, value),
-  };
+// 컴포넌트 에러 기록 (ErrorBoundary용)
+await recordComponentError(error, {
+  componentStack: errorInfo.componentStack,
+});
+
+// 네트워크 에러 기록
+await recordNetworkError(error, {
+  url: 'https://api.example.com/jobs',
+  method: 'GET',
+});
+
+// 현재 화면 설정
+await setScreen('JobDetailScreen');
+```
+
+---
+
+## 4. 성능 모니터링
+
+### 4.1 구현 구조
+
+```typescript
+// src/services/performanceService.ts
+// 자체 구현 성능 측정 서비스
+
+// 동작 방식:
+// - 개발 환경: 콘솔 로깅
+// - 프로덕션: 로거 출력 (Firebase Console에서 확인 가능)
+```
+
+### 4.2 Performance Trace 인터페이스
+
+```typescript
+export interface PerformanceTrace {
+  name: string;
+  startTime: number;
+  attributes: Record<string, string>;
+  metrics: Record<string, number>;
+  start: () => void;
+  stop: () => void;
+  putAttribute: (key: string, value: string) => void;
+  putMetric: (key: string, value: number) => void;
+  incrementMetric: (key: string, value?: number) => void;
 }
+```
 
-// 사용 예시
-function JobListScreen() {
-  const { putMetric } = usePerformanceTrace('job_list_screen');
+### 4.3 화면 로드 시간 측정
 
-  const { data } = useQuery({
-    queryKey: ['jobs'],
-    queryFn: async () => {
-      const start = Date.now();
-      const result = await fetchJobs();
-      putMetric('fetch_duration_ms', Date.now() - start);
-      putMetric('job_count', result.length);
-      return result;
-    },
-  });
+```typescript
+// 화면 트레이스 시작
+const trace = performanceService.startScreenTrace('JobListScreen');
 
-  return <JobList jobs={data} />;
-}
+// ... 화면 로드 완료 후
+trace.putMetric('item_count', jobs.length);
+trace.stop();
+```
+
+### 4.4 API 호출 시간 측정
+
+```typescript
+// API 트레이스 시작
+const trace = performanceService.startApiTrace('getJobPostings');
+
+const result = await fetchData();
+
+trace.putMetric('response_size', result.length);
+trace.putAttribute('status', 'success');
+trace.stop();
+```
+
+### 4.5 작업 시간 측정 래퍼
+
+```typescript
+// 비동기 작업 측정
+const result = await performanceService.measureAsync(
+  'fetchJobs',
+  async () => await jobService.getJobPostings(),
+  { filter: 'active' }
+);
+
+// 동기 작업 측정
+const processed = performanceService.measure(
+  'processData',
+  () => processJobData(rawData),
+  { dataSize: String(rawData.length) }
+);
+```
+
+### 4.6 기타 측정
+
+```typescript
+// 커스텀 메트릭 기록
+recordMetric('job_list_render_count', 50);
+
+// 네비게이션 시간 기록
+recordNavigationTime('JobList', 'JobDetail', 150);
+
+// 렌더링 시간 기록
+recordRenderTime('JobCard', 25);
 ```
 
 ---
 
 ## 5. 화면 추적 자동화
 
-### Navigation 연동
+### 5.1 Expo Router 연동
 
 ```typescript
 // app/_layout.tsx
-import { useEffect } from 'react';
 import { usePathname, useSegments } from 'expo-router';
-import { analyticsService } from '@/services/analytics/AnalyticsService';
+import { analyticsService } from '@/services/analyticsService';
 
 export default function RootLayout() {
   const pathname = usePathname();
@@ -667,110 +427,40 @@ export default function RootLayout() {
   // 화면 변경 시 자동 추적
   useEffect(() => {
     const screenName = getScreenName(pathname, segments);
-    analyticsService.logScreenView(screenName);
+    analyticsService.trackScreenView(screenName);
   }, [pathname, segments]);
 
   return (
     // ... layout
   );
 }
+```
 
-// 경로를 화면 이름으로 변환
+### 5.2 화면 이름 매핑
+
+```typescript
 function getScreenName(pathname: string, segments: string[]): string {
   const screenMap: Record<string, string> = {
     '/': 'Home',
-    '/jobs': 'JobList',
+    '/(app)/(tabs)': 'JobList',
+    '/(app)/(tabs)/schedule': 'Schedule',
+    '/(app)/(tabs)/qr': 'QRScan',
+    '/(app)/(tabs)/employer': 'MyPostings',
+    '/(app)/(tabs)/profile': 'Profile',
     '/jobs/[id]': 'JobDetail',
     '/applications': 'ApplicationList',
-    '/profile': 'Profile',
-    '/schedule': 'Schedule',
     '/notifications': 'Notifications',
     '/settings': 'Settings',
   };
 
-  // 동적 세그먼트 처리
-  const normalizedPath = segments
-    .map((seg) => (seg.startsWith('[') ? seg : seg))
-    .join('/');
-
+  const normalizedPath = segments.join('/');
   return screenMap[`/${normalizedPath}`] || pathname;
 }
 ```
 
 ---
 
-## 6. 웹 플랫폼 지원 (React Native Web)
-
-### 플랫폼별 분기
-
-```typescript
-// services/analytics/index.ts
-import { Platform } from 'react-native';
-
-// 웹에서는 Firebase JS SDK 사용
-const createAnalyticsService = async () => {
-  if (Platform.OS === 'web') {
-    const { WebAnalyticsService } = await import('./WebAnalyticsService');
-    return new WebAnalyticsService();
-  } else {
-    const { analyticsService } = await import('./AnalyticsService');
-    return analyticsService;
-  }
-};
-
-export { createAnalyticsService };
-```
-
-### 웹 Analytics 서비스
-
-```typescript
-// services/analytics/WebAnalyticsService.ts
-import { getAnalytics, logEvent, setUserId, setUserProperties } from 'firebase/analytics';
-import { app } from '@/config/firebase';
-
-export class WebAnalyticsService {
-  private analytics = getAnalytics(app);
-
-  async logScreenView(screenName: string): Promise<void> {
-    logEvent(this.analytics, 'screen_view', {
-      firebase_screen: screenName,
-      firebase_screen_class: screenName,
-    });
-  }
-
-  async logEvent(eventName: string, params?: Record<string, any>): Promise<void> {
-    logEvent(this.analytics, eventName, {
-      ...params,
-      platform: 'web',
-      timestamp: Date.now(),
-    });
-  }
-
-  async setUserId(userId: string | null): Promise<void> {
-    if (userId) {
-      setUserId(this.analytics, userId);
-    }
-  }
-
-  async setUserProperties(properties: Record<string, string>): Promise<void> {
-    setUserProperties(this.analytics, properties);
-  }
-
-  // 웹에서는 Crashlytics 대신 에러 로깅
-  async recordError(error: Error, context?: string): Promise<void> {
-    console.error('[WebAnalytics] Error:', error, context);
-    this.logEvent('error_occurred', {
-      error_message: error.message,
-      error_stack: error.stack?.substring(0, 500),
-      context,
-    });
-  }
-}
-```
-
----
-
-## 7. 추적 이벤트 목록
+## 6. 추적 이벤트 목록
 
 ### UNIQN 핵심 이벤트
 
@@ -779,159 +469,221 @@ export class WebAnalyticsService {
 | **인증** | login | method | 로그인 방법별 전환율 |
 | | signup | method | 가입 전환율 |
 | | logout | - | 세션 종료 추적 |
-| **구인공고** | job_view | job_id, job_title, location | 공고 조회수 |
-| | job_apply | job_id, job_title | 지원 전환율 |
-| | job_save | job_id, action | 저장 기능 사용률 |
-| | job_share | job_id, method | 공유 활성도 |
-| **지원** | application_submit | job_id, application_id | 지원 완료율 |
-| | application_cancel | application_id, reason | 취소 분석 |
-| | confirmation_accept | application_id | 확정 수락률 |
-| | confirmation_decline | application_id, reason | 거절 사유 분석 |
-| **근무** | qr_checkin | event_id, staff_id | 체크인 추적 |
-| | qr_checkout | event_id, work_hours | 근무시간 분석 |
-| **정산** | settlement_request | event_id, amount | 정산 요청 추적 |
-| | settlement_complete | event_id, amount | 정산 완료 추적 |
+| **구인구직** | job_view | job_id, job_title | 공고 조회수 |
+| | job_apply | job_id, job_title, job_role | 지원 전환율 |
+| | job_create | job_id, job_title | 공고 생성 추적 |
+| | job_edit | job_id | 공고 수정 추적 |
+| | job_close | job_id | 공고 마감 추적 |
+| **지원 관리** | application_confirm | application_id | 지원 확정 |
+| | application_reject | application_id | 지원 거절 |
+| | application_cancel | application_id | 지원 취소 |
+| **근무** | check_in | schedule_date | 출근 체크 |
+| | check_out | schedule_date, work_hours | 퇴근 체크 |
+| **정산** | settlement_view | - | 정산 조회 |
+| | settlement_complete | amount, count | 정산 완료 |
+| **알림** | notification_receive | - | 알림 수신 |
+| | notification_click | - | 알림 클릭 |
 
 ### 사용자 속성
 
 | 속성 | 값 | 용도 |
 |------|-----|------|
 | user_role | staff, employer, admin | 역할별 행동 분석 |
-| user_region | 서울, 부산 등 | 지역별 활성도 |
-| experience_level | beginner, intermediate, expert | 경력별 분석 |
-| account_age_days | 숫자 | 사용자 성숙도 |
+| account_created_date | ISO 날짜 | 사용자 성숙도 |
+| total_applications | 숫자 | 활동 수준 |
+| total_jobs_posted | 숫자 | 구인자 활동 |
+| has_verified_phone | boolean | 인증 상태 |
+| preferred_location | 지역명 | 선호 지역 |
 
 ---
 
-## 8. 대시보드 설정
+## 7. 플랫폼별 구현 상태
 
-### Firebase Console 권장 대시보드
+### 현재 상태
 
 ```yaml
-# 주요 지표
-daily_active_users:
-  metric: "Active Users"
-  period: "Daily"
+웹:
+  Analytics: ✅ Firebase Analytics SDK (실제 전송)
+  에러 모니터링: ✅ 콘솔 로깅 + Sentry
+  성능 모니터링: ✅ 자체 구현 (로깅)
 
-conversion_funnel:
-  steps:
-    - job_view
-    - job_apply
-    - confirmation_accept
-    - qr_checkin
-
-retention:
-  cohort: "signup"
-  periods: [1, 7, 30]
-
-# 세그먼트
-segments:
-  - name: "활성 스태프"
-    condition: "user_role == 'staff' AND qr_checkin in last 7 days"
-
-  - name: "신규 사용자"
-    condition: "first_open in last 7 days"
+iOS/Android:
+  Analytics: ⚠️ 로깅 모드 (추후 네이티브 SDK 추가 예정)
+  에러 모니터링: ✅ Sentry SDK
+  성능 모니터링: ✅ 자체 구현 (로깅)
 ```
+
+### 향후 계획
+
+```yaml
+Phase 3 (예정):
+  - @react-native-firebase/analytics 추가
+  - @react-native-firebase/performance 추가
+  - 네이티브 앱에서 실제 Analytics 전송 활성화
+
+Phase 4 (예정):
+  - Firebase Console 대시보드 구성
+  - 커스텀 리포트 생성
+  - A/B 테스트 연동
+```
+
+---
+
+## 8. 개인정보 보호
+
+### 8.1 동의 관리
+
+```typescript
+// 개발 환경에서는 Analytics 비활성화
+if (__DEV__) {
+  analyticsService.setEnabled(false);
+  crashlyticsService.setEnabled(false);
+}
+
+// 사용자 동의에 따른 활성화
+const handleConsentChange = (granted: boolean) => {
+  analyticsService.setEnabled(granted);
+  crashlyticsService.setEnabled(granted);
+};
+```
+
+### 8.2 데이터 수집 원칙
+
+- 개인 식별 정보(PII) 직접 수집 금지
+- 사용자 ID는 익명화된 Firebase UID 사용
+- 에러 메시지에서 민감한 정보 마스킹
+- GDPR/개인정보보호법 준수
 
 ---
 
 ## 9. 디버깅 및 테스트
 
-### 디버그 모드
+### 개발 환경 로깅
 
 ```typescript
-// 개발 중 이벤트 확인
+// 개발 환경에서 이벤트 로깅 확인
 if (__DEV__) {
-  // Firebase DebugView 활성화 (iOS/Android)
-  // adb shell setprop debug.firebase.analytics.app com.uniqn.app
-  // 또는 Xcode scheme에서 -FIRDebugEnabled 추가
+  logger.debug('Analytics Event', {
+    event: eventName,
+    params: cleanParams,
+  });
 }
 ```
 
-### 이벤트 검증 체크리스트
+### 테스트 체크리스트
 
-- [ ] Firebase Console > DebugView에서 이벤트 확인
-- [ ] 파라미터 값이 올바르게 전달되는지 확인
-- [ ] 사용자 속성이 설정되는지 확인
-- [ ] 화면 조회가 자동 추적되는지 확인
-- [ ] 크래시 리포트가 Crashlytics에 표시되는지 확인
+```markdown
+## Analytics 테스트
+
+### 이벤트 추적
+- [ ] 로그인/로그아웃 이벤트 발생 확인
+- [ ] 공고 조회/지원 이벤트 발생 확인
+- [ ] 출퇴근 이벤트 발생 확인
+
+### 에러 모니터링
+- [ ] Sentry 대시보드에서 에러 확인
+- [ ] Breadcrumb 정보 확인
+- [ ] 사용자 정보 연결 확인
+
+### 성능 모니터링
+- [ ] 화면 로드 시간 측정 확인
+- [ ] API 호출 시간 측정 확인
+```
 
 ---
 
-## 10. 개인정보 보호
+## 10. 서비스 Export
 
-### GDPR/개인정보 준수
+### analyticsService
 
 ```typescript
-// services/analytics/PrivacyService.ts
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { analyticsService } from './AnalyticsService';
-import { crashlyticsService } from './CrashlyticsService';
+export const analyticsService = {
+  // 초기화
+  initialize: initializeAnalytics,
+  setEnabled: setAnalyticsEnabled,
 
-const ANALYTICS_CONSENT_KEY = 'analytics_consent';
+  // 핵심 기능
+  trackEvent,
+  trackScreenView,
+  setUserProperties,
+  setUserId,
 
-export const PrivacyService = {
-  // 동의 상태 확인
-  async hasConsent(): Promise<boolean> {
-    const consent = await AsyncStorage.getItem(ANALYTICS_CONSENT_KEY);
-    return consent === 'granted';
-  },
-
-  // 동의 설정
-  async setConsent(granted: boolean): Promise<void> {
-    await AsyncStorage.setItem(
-      ANALYTICS_CONSENT_KEY,
-      granted ? 'granted' : 'denied'
-    );
-
-    // 분석 수집 활성화/비활성화
-    await analyticsService.initialize();
-    await crashlyticsService.initialize();
-  },
-
-  // 데이터 삭제 요청 (계정 삭제 시)
-  async requestDataDeletion(userId: string): Promise<void> {
-    // Firebase에 데이터 삭제 요청
-    // 실제로는 Cloud Function을 통해 처리
-    console.log(`Data deletion requested for user: ${userId}`);
-  },
+  // 헬퍼 함수
+  trackLogin,
+  trackSignup,
+  trackLogout,
+  trackJobView,
+  trackJobApply,
+  trackJobCreate,
+  trackCheckIn,
+  trackCheckOut,
+  trackSettlementComplete,
+  trackSearch,
+  trackError,
 };
 ```
 
-### 개인정보 처리방침 연동
+### crashlyticsService
 
 ```typescript
-// 앱 첫 실행 시 동의 요청
-function OnboardingScreen() {
-  const [consent, setConsent] = useState(false);
+export const crashlyticsService = {
+  initialize,
+  setEnabled,
+  recordError,
+  recordFatalError,
+  recordAppError,
+  recordComponentError,
+  recordNetworkError,
+  log,
+  leaveBreadcrumb,
+  getBreadcrumbs,
+  clearBreadcrumbs,
+  setAttribute,
+  setAttributes,
+  setUserId,
+  setUser,
+  clearUser,
+  setScreen,
+};
+```
 
-  const handleContinue = async () => {
-    await PrivacyService.setConsent(consent);
-    router.replace('/');
-  };
+### performanceService
 
-  return (
-    <View>
-      <Text>앱 사용 개선을 위해 분석 데이터를 수집합니다.</Text>
-      <Switch value={consent} onValueChange={setConsent} />
-      <Text>분석 데이터 수집에 동의합니다</Text>
-      <Button onPress={handleContinue}>계속</Button>
-    </View>
-  );
-}
+```typescript
+export const performanceService = {
+  setEnabled,
+  startScreenTrace,
+  startApiTrace,
+  startTrace,
+  stopTrace,
+  recordMetric,
+  measureAsync,
+  measure,
+  recordNavigationTime,
+  recordRenderTime,
+  stopAllTraces,
+};
 ```
 
 ---
 
-## 체크리스트
+## 요약
 
-### 구현 완료 기준
+| 항목 | 도구 | 상태 | 플랫폼 |
+|------|------|:----:|--------|
+| 사용자 행동 분석 | Firebase Analytics | ✅ 웹 / ⚠️ 네이티브 로깅 | 웹 전송, 네이티브 로깅 |
+| 에러 모니터링 | Sentry | ✅ 구현 | 전체 플랫폼 |
+| 성능 측정 | 자체 구현 | ✅ 구현 | 전체 플랫폼 (로깅) |
+| 화면 추적 | Analytics + Router | ✅ 구현 | 전체 플랫폼 |
 
-- [ ] Firebase Analytics 초기화 완료
-- [ ] Crashlytics 초기화 및 에러 바운더리 연동
-- [ ] 핵심 이벤트 추적 구현
-- [ ] 화면 조회 자동 추적
-- [ ] 사용자 속성 설정
-- [ ] 웹 플랫폼 분기 처리
-- [ ] 개인정보 동의 처리
-- [ ] 디버그 모드 테스트 완료
+---
+
+## 관련 문서
+
+- [15-cicd.md](./15-cicd.md) - CI/CD 파이프라인
+- [14-migration-plan.md](./14-migration-plan.md) - 마이그레이션 완료 보고서
+
+---
+
+*마지막 업데이트: 2026-02-02*
+*모니터링 상태: 기본 구현 완료 (네이티브 Analytics 추가 예정)*

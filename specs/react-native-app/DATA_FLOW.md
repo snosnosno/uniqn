@@ -171,14 +171,17 @@ users.fcmToken ───────────────→ 푸시 알림 �
 
 ---
 
-## 5. Assignment v3.0 구조
+## 5. Assignment v3.1 구조
 
 ### 5.1 Assignment 타입 정의
 
 ```typescript
+// src/types/assignment.ts
 interface Assignment {
-  // v3.0: role/roles → roleIds 통합
+  // v3.1: roleIds 배열로 통합 (role/roles 레거시 지원)
   roleIds: string[];              // 단일 및 다중 역할 배열로 통일
+  role?: string;                  // 레거시 호환성 (읽기 전용)
+  roles?: string[];               // 레거시 호환성 (읽기 전용)
 
   // 날짜/시간
   dates: string[];                // 항상 배열 (연속 날짜 지원)
@@ -200,6 +203,13 @@ interface Assignment {
 const FIXED_DATE_MARKER = 'FIXED_SCHEDULE';   // 고정공고용
 const FIXED_TIME_MARKER = 'NEGOTIABLE';        // 협의 가능
 const TBA_TIME_MARKER = '미정';                // 시간 미정
+
+// DurationType
+type DurationType = {
+  type: 'single' | 'consecutive' | 'multi';
+  startDate: string;
+  endDate?: string;
+};
 ```
 
 ### 5.2 Assignment 헬퍼 함수
@@ -780,30 +790,69 @@ runTransaction(async (tx) => {
 
 ## 15. 서비스 레이어 매핑
 
-### 15.1 핵심 서비스
+### 15.1 핵심 서비스 (7개)
 
 | 서비스 파일 | 담당 데이터 | 주요 기능 |
 |------------|-----------|----------|
-| `authService.ts` | users | 로그인, 회원가입, 소셜 로그인 |
-| `jobService.ts` | jobPostings | 공고 목록, 검색, 필터, 상세 |
-| `applicationService.ts` | applications | 지원, 취소 요청 |
-| `applicantManagementService.ts` | applications | 확정, 거절, 대기자, 취소요청 검토 |
-| `applicationHistoryService.ts` | applications | 이력 추적, 감사 로그 |
-| `scheduleService.ts` | workLogs, applications | 스케줄 조회, 정산 계산 |
-| `eventQRService.ts` | eventQRCodes, workLogs | QR 생성, 검증, 체크인/아웃 |
-| `settlementService.ts` | workLogs | 정산 처리, 일괄 정산 |
-| `notificationService.ts` | notifications | 알림 조회, 읽음 처리 |
+| `authService.ts` | users | 로그인, 회원가입, 소셜 로그인, 프로필 관리 |
+| `jobService.ts` | jobPostings | 공고 목록, 검색, 필터, 상세 조회 |
+| `applicationService.ts` | applications | 지원, 취소 요청, 지원 내역 조회 |
+| `workLogService.ts` | workLogs | 근무 기록 조회, 실시간 구독 |
+| `scheduleService.ts` | workLogs, applications | 스케줄 조회, 그룹핑, 캘린더 뷰 |
+| `notificationService.ts` | notifications | 알림 조회, 읽음 처리, 실시간 구독 |
+| `reportService.ts` | reports | 양방향 신고 (스태프↔구인자) |
 
-### 15.2 보조 서비스
+### 15.2 구인자 서비스 (6개)
 
 | 서비스 파일 | 담당 데이터 | 주요 기능 |
 |------------|-----------|----------|
-| `jobManagementService.ts` | jobPostings | 공고 CRUD (구인자용) |
-| `confirmedStaffService.ts` | applications, workLogs | 확정 스태프 관리, 시간 수정 |
-| `templateService.ts` | jobPostingTemplates | 공고 템플릿 저장/로드 |
-| `applicantConversionService.ts` | applications, users | 지원자 → 스태프 변환 |
-| `storageService.ts` | Firebase Storage | 프로필 이미지 업로드 |
-| `pushNotificationService.ts` | FCM | 푸시 알림 등록/수신 |
+| `jobManagementService.ts` | jobPostings | 공고 CRUD, 상태 관리 |
+| `applicantManagementService.ts` | applications | 확정/거절, 대기자 관리, 취소요청 검토 |
+| `applicationHistoryService.ts` | applications | 확정/취소 이력 추적, WorkLog 연동 |
+| `confirmedStaffService.ts` | applications, workLogs | 확정 스태프 관리, 역할 변경 |
+| `settlementService/` | workLogs | 정산 계산/처리 (분할 구조) |
+| `applicantConversionService.ts` | applications | 지원자 → 스태프 변환 |
+
+### 15.3 관리자 서비스 (4개)
+
+| 서비스 파일 | 담당 데이터 | 주요 기능 |
+|------------|-----------|----------|
+| `adminService.ts` | users | 대시보드 통계, 사용자 관리 |
+| `announcementService.ts` | announcements | 공지사항 CRUD, 발행 관리 |
+| `tournamentApprovalService.ts` | jobPostings | 대회공고 승인/거절 |
+| `inquiryService.ts` | inquiries | 문의 관리, FAQ |
+
+### 15.4 인프라 서비스 (17개)
+
+| 서비스 파일 | 담당 데이터 | 주요 기능 |
+|------------|-----------|----------|
+| `pushNotificationService.ts` | FCM | 토큰 관리, 권한 요청, 포그라운드 처리 |
+| `eventQRService.ts` | eventQRCodes, workLogs | QR 생성/검증 (3분 유효) |
+| `deepLinkService.ts` | - | 딥링크 라우팅 |
+| `analyticsService.ts` | - | 이벤트 추적 |
+| `crashlyticsService.ts` | - | 에러 로깅, breadcrumbs |
+| `performanceService.ts` | - | 성능 모니터링 |
+| `sessionService.ts` | - | 세션 관리, 토큰 갱신 |
+| `storageService.ts` | Firebase Storage | 이미지 업로드 |
+| `biometricService.ts` | - | 생체인증 |
+| `featureFlagService.ts` | Remote Config | 기능 플래그 |
+| `inAppMessageService.ts` | - | 인앱 메시지 |
+| `cacheService.ts` | - | 캐시 관리 |
+| `versionService.ts` | - | 앱 버전 체크 |
+| `templateService.ts` | templates | 공고 템플릿 저장/로드 |
+| `accountDeletionService.ts` | users | 계정 삭제, 익명화 |
+| `tokenRefreshService.ts` | - | 토큰 자동 갱신 |
+| `searchService.ts` | - | 클라이언트 사이드 검색 |
+
+### 15.5 서비스 총계
+
+| 카테고리 | 개수 | 설명 |
+|---------|:----:|------|
+| Core | 7 | 기본 비즈니스 로직 |
+| Employer | 6 | 구인자 전용 기능 |
+| Admin | 4 | 관리자 전용 기능 |
+| Infrastructure | 17 | 인프라/공통 기능 |
+| **전체** | **34** | - |
 
 ---
 
@@ -937,39 +986,44 @@ function parseDateInput(input: DateInput): string {
 │                    UI Layer (Screens)                        │
 │                         ↕                                    │
 ├─────────────────────────────────────────────────────────────┤
-│                    Hooks Layer (42개 훅)                     │
-│  ├─ UI 상태: useToast, useSettings, useMediaQuery           │
-│  ├─ 서버 데이터: useJobPostings, useScheduleData            │
-│  ├─ Firebase 구독: useUnifiedData, useFirestoreQuery        │
-│  └─ 비즈니스 로직: useJobPostingForm, useTemplateManager    │
+│                    Hooks Layer (46개 훅)                     │
+│  ├─ 인증/권한: useAuth, useAuthGuard, useBiometricAuth      │
+│  ├─ 공고/지원: useJobPostings, useApplications              │
+│  ├─ 스케줄/QR: useSchedules, useQRCode, useEventQR          │
+│  ├─ 정산/관리: useSettlement, useConfirmedStaff             │
+│  ├─ 알림: useNotifications, useNotificationHandler          │
+│  └─ 인프라: useNetworkStatus, useFeatureFlag                │
 │                         ↕                                    │
 ├─────────────────────────────────────────────────────────────┤
 │                    State Layer                               │
-│  ├─ Zustand Store (전역 상태) ← 읽기/쓰기                    │
-│  ├─ TanStack Query (캐싱) ← 읽기                            │
-│  └─ React State (로컬 상태) ← 읽기/쓰기                      │
+│  ├─ Zustand Store (8개): auth, theme, toast, modal, etc.    │
+│  ├─ TanStack Query: 서버 데이터 캐싱 + 실시간 구독          │
+│  └─ React State (로컬 상태)                                  │
 │                         ↕                                    │
 ├─────────────────────────────────────────────────────────────┤
-│                    Service Layer                             │
+│                    Service Layer (34개)                      │
+│                         ↕                                    │
+├─────────────────────────────────────────────────────────────┤
+│                    Repository Layer (9개)                    │
 │                         ↕                                    │
 ├─────────────────────────────────────────────────────────────┤
 │                    Firebase Layer                            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
-### 19.2 주요 훅 목록
+### 19.2 주요 훅 목록 (46개)
 
-| 훅 | 담당 데이터 | 용도 |
-|----|-----------|------|
-| `useAuth` | users, authStore | 인증 상태 관리 |
-| `useJobPostings` | jobPostings | 공고 목록/검색 |
-| `useJobPostingForm` | jobPostings, templates | 공고 생성/수정 폼 |
-| `useScheduleData` | workLogs, applications | 스케줄 조회 |
-| `useUnifiedData` | staff, workLogs, applications | 실시간 통합 데이터 |
-| `useTemplateManager` | jobPostingTemplates | 템플릿 CRUD |
-| `useAccountDeletion` | deletionRequests | 계정 삭제 관리 |
-| `useEventQR` | eventQRCodes | QR 생성/검증 |
-| `useToast` | toastStore | 토스트 알림 |
+| 카테고리 | 훅 | 용도 |
+|---------|-----|------|
+| **인증** | `useAuth`, `useAuthGuard`, `useAutoLogin`, `useBiometricAuth`, `useOnboarding`, `useAppInitialize` | 인증/권한 관리 |
+| **공고** | `useJobPostings`, `useJobDetail`, `useJobManagement`, `useJobRoles`, `useJobSchedule` | 공고 조회/관리 |
+| **지원** | `useApplications`, `useAssignmentSelection`, `useBookmarks`, `usePostingTypeCounts` | 지원 관리 |
+| **스케줄** | `useSchedules`, `useWorkLogs`, `useQRCode`, `useEventQR` | 스케줄/출퇴근 |
+| **정산** | `useSettlement`, `useSettlementDateNavigation`, `useConfirmedStaff` | 정산 관리 |
+| **지원자** | `useApplicantsByJobPosting`, `useApplicantMutations`, `useCancellationManagement`, `useStaffConversion` | 지원자 관리 |
+| **알림** | `useNotifications`, `useNotificationHandler`, `useDeepLink` | 알림 처리 |
+| **관리자** | `useAdminDashboard`, `useAdminReports`, `useAnnouncement`, `useTournamentApproval` | 관리자 기능 |
+| **인프라** | `useNetworkStatus`, `useNavigationTracking`, `useFeatureFlag`, `useVersionCheck`, `useRealtimeQuery`, `useClearCache` | 인프라/공통 |
 
 ---
 
@@ -1473,12 +1527,39 @@ const {
 ## 27. 관련 문서
 
 - [01-architecture.md](./01-architecture.md) - 아키텍처 설계
-- [DATA_SCHEMA.md](../../docs/reference/DATA_SCHEMA.md) - Firestore 스키마 상세
+- [23-api-reference.md](./23-api-reference.md) - Firestore 스키마 및 API 참조
 - [09-error-handling.md](./09-error-handling.md) - 에러 처리 전략
 - [12-security.md](./12-security.md) - 보안 설계
 - [05-components.md](./05-components.md) - 컴포넌트 시스템
 - [22-migration-mapping.md](./22-migration-mapping.md) - 코드 변환 가이드
+- [DEVELOPMENT_CHECKLIST.md](./DEVELOPMENT_CHECKLIST.md) - 개발 체크리스트
 
 ---
 
-*마지막 업데이트: 2026-02-01*
+## 28. 현재 구현 상태 (v1.0.0)
+
+### 28.1 서비스/훅 통계
+
+| 항목 | 개수 | 설명 |
+|------|:----:|------|
+| **Services** | 34 | Core 7 + Employer 6 + Admin 4 + Infra 17 |
+| **Hooks** | 46 | 인증 6 + 공고/지원 9 + 스케줄 4 + 정산 8 + 알림 3 + 관리자 4 + 인프라 8 + 기타 4 |
+| **Types** | 28 | 타입 정의 파일 |
+| **Schemas** | 19 | Zod 검증 스키마 |
+| **Repositories** | 9 | Repository 패턴 구현 |
+| **Stores** | 8 | Zustand 스토어 |
+| **Components** | 198 | UI 48 + 기능별 150 |
+
+### 28.2 주요 데이터 상태
+
+| 데이터 | 상태 | 비고 |
+|--------|:----:|------|
+| Assignment | v3.1 | roleIds 배열로 통합 |
+| Application | v3.1 | 취소 요청 + 이력 추적 |
+| JobPosting | v2.0 | 4가지 타입 지원 |
+| SettlementBreakdown | v1.0 | 정산 캐싱 구조 |
+| EventQRCode | v1.0 | 3분 유효, 자동 갱신 |
+
+---
+
+*마지막 업데이트: 2026-02-02*
