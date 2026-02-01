@@ -9,7 +9,7 @@
  * - 알림 클릭 시 useNotificationNavigation() 사용
  */
 
-import { useEffect, useCallback, useRef } from 'react';
+import { useEffect, useCallback, useRef, useState } from 'react';
 // expo-router is used via deepLinkService
 import {
   setupDeepLinkListener,
@@ -23,6 +23,7 @@ import {
   type DeepLinkRoute,
   type ParsedDeepLink,
 } from '@/services/deepLinkService';
+import { RouteMapper } from '@/shared/deeplink';
 import { markAsRead } from '@/services/notificationService';
 import { trackEvent } from '@/services/analyticsService';
 import { useAuthStore } from '@/stores/authStore';
@@ -64,21 +65,8 @@ interface UseNotificationNavigationResult {
 // Constants
 // ============================================================================
 
-/** 인증이 필요한 라우트 */
-const AUTH_REQUIRED_ROUTES: DeepLinkRoute['name'][] = [
-  'notifications',
-  'notification',
-  'schedule',
-  'my-applications',
-  'application',
-  'profile',
-  'settings',
-  'settings/notifications',
-  'employer/my-postings',
-  'employer/posting',
-  'employer/applicants',
-  'employer/settlement',
-];
+/** 네비게이션 디바운스 딜레이 (ms) - 중복 클릭 방지 */
+const NAVIGATION_DEBOUNCE_MS = 500;
 
 // ============================================================================
 // useDeepLinkSetup
@@ -120,8 +108,8 @@ export function useDeepLinkSetup(options: UseDeepLinkSetupOptions = {}): void {
         return;
       }
 
-      // 인증 필요 라우트 체크
-      const requiresAuth = AUTH_REQUIRED_ROUTES.includes(parsed.route.name);
+      // 인증 필요 라우트 체크 (SSOT: RouteMapper 사용)
+      const requiresAuth = RouteMapper.requiresAuth(parsed.route.name);
 
       if (requiresAuth && !user) {
         // 인증 필요한데 미인증 상태
@@ -187,12 +175,16 @@ export function useDeepLinkSetup(options: UseDeepLinkSetupOptions = {}): void {
  * ```
  */
 export function useNotificationNavigation(): UseNotificationNavigationResult {
+  // useRef: 콜백 내부에서 최신 상태 참조 (의존성 배열 비움으로 재생성 방지)
+  // useState: UI 업데이트 트리거
   const isNavigatingRef = useRef(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const handleNotificationPress = useCallback(async (notification: NotificationData) => {
     if (isNavigatingRef.current) return;
 
     isNavigatingRef.current = true;
+    setIsNavigating(true);
 
     try {
       // 읽지 않은 알림이면 읽음 처리
@@ -218,16 +210,17 @@ export function useNotificationNavigation(): UseNotificationNavigationResult {
         notification.link
       );
     } finally {
-      // 약간의 딜레이 후 플래그 해제 (중복 클릭 방지)
+      // 딜레이 후 플래그 해제 (중복 클릭 방지)
       setTimeout(() => {
         isNavigatingRef.current = false;
-      }, 500);
+        setIsNavigating(false);
+      }, NAVIGATION_DEBOUNCE_MS);
     }
   }, []);
 
   return {
     handleNotificationPress,
-    isNavigating: isNavigatingRef.current,
+    isNavigating,
   };
 }
 
@@ -268,14 +261,15 @@ export function useDeepLinkNavigation() {
     return navigate({ name: 'job', params: { id: jobId } });
   }, [navigate]);
 
-  // 지원서로 네비게이션
-  const navigateToApplication = useCallback((applicationId: string) => {
-    return navigate({ name: 'application', params: { id: applicationId } });
+  // 지원서로 네비게이션 (v2.0: 지원 상세 화면 없음, 스케줄로 이동)
+  const navigateToApplication = useCallback((_applicationId: string) => {
+    logger.warn('navigateToApplication: 지원 상세 화면 없음, 스케줄로 이동');
+    return navigate({ name: 'schedule' });
   }, [navigate]);
 
-  // 스케줄로 네비게이션
-  const navigateToSchedule = useCallback((date?: string) => {
-    return navigate({ name: 'schedule', params: date ? { date } : undefined });
+  // 스케줄로 네비게이션 (v2.0: date 파라미터 무시됨)
+  const navigateToSchedule = useCallback((_date?: string) => {
+    return navigate({ name: 'schedule' });
   }, [navigate]);
 
   // 알림 목록으로 네비게이션
@@ -283,15 +277,25 @@ export function useDeepLinkNavigation() {
     return navigate({ name: 'notifications' });
   }, [navigate]);
 
-  // 공유용 URL 생성
+  /**
+   * 공유용 URL 생성
+   *
+   * @param type - 공유 타입 ('job' 권장, 'application'/'schedule'은 deprecated)
+   * @param id - 리소스 ID
+   * @returns 공유용 웹 URL
+   *
+   * @deprecated 'application', 'schedule' 타입은 v3.0에서 제거 예정
+   */
   const createShareUrl = useCallback(
     (type: 'job' | 'application' | 'schedule', id?: string) => {
       switch (type) {
         case 'job':
           return id ? createJobDeepLink(id, true) : '';
         case 'application':
+          // deprecated: 지원 상세 화면 없음
           return id ? createApplicationDeepLink(id, true) : '';
         case 'schedule':
+          // deprecated: date 파라미터 무시됨
           return createScheduleDeepLink(id, true);
         default:
           return '';

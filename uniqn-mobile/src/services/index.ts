@@ -253,19 +253,31 @@ export {
   navigateToDeepLink,
   navigateFromNotification,
   getRouteFromNotification,
+  validateNotificationLink,
   createDeepLink,
   createJobDeepLink,
-  createApplicationDeepLink,
-  createScheduleDeepLink,
+  createApplicationDeepLink, // deprecated
+  createScheduleDeepLink, // deprecated
   setupDeepLinkListener,
   getInitialDeepLink,
   openExternalUrl,
-  linkingConfig,
+  linkingConfig, // deprecated
   APP_SCHEME,
   WEB_DOMAIN,
   type DeepLinkRoute,
   type ParsedDeepLink,
 } from './deepLinkService';
+
+// Deep Link Shared Module (v2.0)
+export {
+  RouteMapper,
+  EXPO_ROUTES,
+  NOTIFICATION_ROUTE_MAP,
+  getRouteForNotificationType,
+  isAdminOnlyNotification,
+  isEmployerOnlyNotification,
+  type NavigationContext,
+} from '@/shared/deeplink';
 
 // Crashlytics Service
 export {

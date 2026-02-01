@@ -2,25 +2,35 @@
  * UNIQN Mobile - Deep Link 서비스
  *
  * @description 딥링크 URL 파싱, 네비게이션, 알림 연동
- * @version 1.0.0
+ * @version 2.0.0
+ *
+ * v2.0 변경사항:
+ * - Shared 모듈 기반 SSOT (RouteRegistry, RouteMapper)
+ * - 29개 알림 타입 전체 매핑 (NotificationRouteMap)
+ * - 중복 코드 제거 (executeNavigation)
+ * - 존재하지 않는 라우트 제거/폴백
+ * - 매직 넘버 상수화
  *
  * 지원 스킴:
- * - Custom Scheme: uniqn://
- * - Universal Links: https://uniqn.app (TODO: 도메인 설정 후)
- *
- * 딥링크 경로 예시:
- * - uniqn://jobs/:id - 공고 상세
- * - uniqn://schedule/:date - 스케줄
- * - uniqn://notifications - 알림 목록
- * - uniqn://my-applications - 내 지원 내역
+ * - Custom Scheme: uniqn:// (현재 활성)
+ * - Universal Links: https://uniqn.app (도메인 설정 후 활성화)
  */
 
 import { Linking } from 'react-native';
-import * as ExpoLinking from 'expo-linking';
 import { router } from 'expo-router';
 import { logger } from '@/utils/logger';
 import { trackEvent } from './analyticsService';
 import { toError } from '@/errors';
+
+// Shared 모듈에서 import
+import {
+  RouteMapper,
+  NOTIFICATION_ROUTE_MAP,
+  type DeepLinkRoute,
+  type ParsedDeepLink,
+  type NavigationContext,
+} from '@/shared/deeplink';
+
 import type { NotificationType } from '@/types/notification';
 
 // ============================================================================
@@ -37,63 +47,61 @@ export const WEB_DOMAIN = 'uniqn.app';
 const SCHEME_PREFIX = `${APP_SCHEME}://`;
 const WEB_PREFIX = `https://${WEB_DOMAIN}`;
 
+/** 콜드 스타트 네비게이션 딜레이 (ms) */
+const COLD_START_NAVIGATION_DELAY_MS = 500;
+
+/**
+ * 안전한 알림 링크 패턴
+ * - 상대 경로만 허용 (/)로 시작
+ * - 영문, 숫자, 하이픈, 언더스코어, 슬래시만 허용
+ * - 외부 URL, javascript:, data: 등 차단
+ */
+const SAFE_LINK_PATTERN = /^\/[a-zA-Z0-9\-_/]*$/;
+
 // ============================================================================
-// Types
+// Re-export Types
+// ============================================================================
+
+export type { DeepLinkRoute, ParsedDeepLink };
+
+// ============================================================================
+// Security Functions
 // ============================================================================
 
 /**
- * 딥링크 라우트 정의
+ * 알림 링크 유효성 검증
+ *
+ * @description 외부 URL, javascript:, data: 등 위험한 링크를 차단
+ * @param link - 검증할 링크
+ * @returns 유효한 링크면 그대로 반환, 위험하면 undefined
  */
-export type DeepLinkRoute =
-  // 공개 라우트
-  | { name: 'home' }
-  | { name: 'jobs' }
-  | { name: 'job'; params: { id: string } }
-  // 인증 필요 라우트
-  | { name: 'notifications' }
-  | { name: 'notification'; params: { id: string } }
-  | { name: 'schedule'; params?: { date?: string } }
-  | { name: 'my-applications' }
-  | { name: 'application'; params: { id: string } }
-  | { name: 'profile' }
-  // 구인자 라우트
-  | { name: 'employer/my-postings' }
-  | { name: 'employer/posting'; params: { id: string } }
-  | { name: 'employer/applicants'; params: { jobId: string } }
-  | { name: 'employer/settlement'; params: { jobId: string } }
-  // 설정
-  | { name: 'settings' }
-  | { name: 'settings/notifications' };
+export function validateNotificationLink(link?: string): string | undefined {
+  if (!link) return undefined;
 
-/**
- * 딥링크 파싱 결과
- */
-export interface ParsedDeepLink {
-  /** 원본 URL */
-  url: string;
-  /** 경로 */
-  path: string;
-  /** 쿼리 파라미터 */
-  queryParams: Record<string, string>;
-  /** 파싱된 라우트 */
-  route: DeepLinkRoute | null;
-  /** 유효한 딥링크 여부 */
-  isValid: boolean;
+  // 빈 문자열 처리
+  const trimmedLink = link.trim();
+  if (trimmedLink.length === 0) return undefined;
+
+  // 안전한 패턴 검사 (상대 경로만 허용)
+  if (!SAFE_LINK_PATTERN.test(trimmedLink)) {
+    logger.warn('위험한 알림 링크 차단', {
+      link: trimmedLink.substring(0, 50), // 로깅 시 길이 제한
+      reason: 'pattern_mismatch',
+    });
+    return undefined;
+  }
+
+  return trimmedLink;
 }
 
-/**
- * 알림 타입별 딥링크 매핑
- */
-type NotificationDeepLinkMap = Partial<
-  Record<NotificationType, (data?: Record<string, string>) => DeepLinkRoute>
->;
-
 // ============================================================================
-// Route Mapping
+// Route Parsing
 // ============================================================================
 
 /**
  * 경로 문자열 → 라우트 객체 매핑
+ *
+ * @description v2.0: 실제 존재하는 라우트만 반환
  */
 function pathToRoute(path: string, params: Record<string, string>): DeepLinkRoute | null {
   // 경로 정규화 (앞뒤 슬래시 제거)
@@ -113,39 +121,33 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       return { name: 'jobs' };
 
     case 'notifications':
-      if (segments[1]) {
-        return { name: 'notification', params: { id: segments[1] } };
-      }
+      // v2.0: 개별 알림 상세 화면 없음, 목록으로 이동
       return { name: 'notifications' };
 
     case 'schedule':
-      return { name: 'schedule', params: segments[1] ? { date: segments[1] } : undefined };
-
-    case 'my-applications':
-      return { name: 'my-applications' };
-
-    case 'application':
-    case 'applications':
-      if (segments[1]) {
-        return { name: 'application', params: { id: segments[1] } };
-      }
-      return { name: 'my-applications' };
+      // v2.0: 날짜별 스케줄 라우트 없음, 탭으로 이동
+      return { name: 'schedule' };
 
     case 'profile':
       return { name: 'profile' };
 
     case 'settings':
-      if (segments[1] === 'notifications') {
-        return { name: 'settings/notifications' };
-      }
+      // v2.0: settings/notifications 라우트 없음
       return { name: 'settings' };
 
+    case 'support':
+      return { name: 'support' };
+
+    case 'notices':
+      return { name: 'notices' };
+
     case 'employer':
-      if (segments[1] === 'my-postings') {
+      if (segments[1] === 'my-postings' || segments[1] === 'postings') {
+        if (segments[2]) {
+          // employer/postings/:id, employer/my-postings/:id
+          return { name: 'employer/posting', params: { id: segments[2] } };
+        }
         return { name: 'employer/my-postings' };
-      }
-      if (segments[1] === 'posting' && segments[2]) {
-        return { name: 'employer/posting', params: { id: segments[2] } };
       }
       if (segments[1] === 'applicants' && segments[2]) {
         return { name: 'employer/applicants', params: { jobId: segments[2] } };
@@ -155,123 +157,73 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
       }
       return { name: 'employer/my-postings' };
 
+    case 'admin':
+      if (segments[1] === 'reports') {
+        if (segments[2]) {
+          return { name: 'admin/report', params: { id: segments[2] } };
+        }
+        return { name: 'admin/reports' };
+      }
+      if (segments[1] === 'inquiries') {
+        if (segments[2]) {
+          return { name: 'admin/inquiry', params: { id: segments[2] } };
+        }
+        return { name: 'admin/inquiries' };
+      }
+      if (segments[1] === 'tournaments') {
+        return { name: 'admin/tournaments' };
+      }
+      return { name: 'admin/dashboard' };
+
     default:
       // 쿼리 파라미터에서 경로 힌트 찾기
-      if (params.jobId) {
-        return { name: 'job', params: { id: params.jobId } };
-      }
-      if (params.applicationId) {
-        return { name: 'application', params: { id: params.applicationId } };
+      if (params.jobId || params.jobPostingId) {
+        return { name: 'job', params: { id: params.jobId || params.jobPostingId } };
       }
       if (params.notificationId) {
-        return { name: 'notification', params: { id: params.notificationId } };
+        // v2.0: 알림 상세 없음, 목록으로 이동
+        return { name: 'notifications' };
       }
       return null;
   }
 }
 
+// ============================================================================
+// Core Navigation (중복 코드 제거)
+// ============================================================================
+
 /**
- * 라우트 → Expo Router 경로 변환
+ * 통합 네비게이션 함수 (내부용)
+ *
+ * @description navigateToDeepLink와 navigateFromNotification의 공통 로직
  */
-function routeToExpoPath(route: DeepLinkRoute): string {
-  switch (route.name) {
-    case 'home':
-      return '/';
-    case 'jobs':
-      return '/jobs';
-    case 'job':
-      return `/jobs/${route.params.id}`;
-    case 'notifications':
-      return '/notifications';
-    case 'notification':
-      return `/notifications/${route.params.id}`;
-    case 'schedule':
-      return route.params?.date ? `/schedule/${route.params.date}` : '/schedule';
-    case 'my-applications':
-      return '/my-applications';
-    case 'application':
-      return `/applications/${route.params.id}`;
-    case 'profile':
-      return '/profile';
-    case 'settings':
-      return '/settings';
-    case 'settings/notifications':
-      return '/settings/notifications';
-    case 'employer/my-postings':
-      return '/(app)/(tabs)/employer';
-    case 'employer/posting':
-      return `/employer/postings/${route.params.id}`;
-    case 'employer/applicants':
-      return `/employer/applicants/${route.params.jobId}`;
-    case 'employer/settlement':
-      return `/employer/settlement/${route.params.jobId}`;
-    default:
-      return '/';
+async function executeNavigation(route: DeepLinkRoute, context: NavigationContext): Promise<boolean> {
+  try {
+    const expoPath = RouteMapper.toExpoPath(route);
+
+    // Analytics 이벤트
+    trackEvent(context.source === 'deeplink' ? 'deep_link_navigation' : 'notification_click', {
+      route_name: route.name,
+      ...(context.type && { notification_type: context.type }),
+      ...(context.url && { path: context.url }),
+    });
+
+    // Expo Router 네비게이션
+    router.push(expoPath);
+
+    logger.info(`${context.source} 네비게이션 성공`, {
+      route: route.name,
+      expoPath,
+    });
+
+    return true;
+  } catch (error) {
+    logger.error(`${context.source} 네비게이션 실패`, toError(error), {
+      route: route.name,
+    });
+    return false;
   }
 }
-
-// ============================================================================
-// Notification → DeepLink Mapping
-// ============================================================================
-
-/**
- * 알림 타입별 딥링크 라우트 생성
- */
-const NOTIFICATION_DEEP_LINK_MAP: NotificationDeepLinkMap = {
-  // 지원 관련 → 지원 상세
-  new_application: (data) =>
-    data?.applicationId
-      ? { name: 'application', params: { id: data.applicationId } }
-      : { name: 'employer/my-postings' },
-  application_confirmed: (data) =>
-    data?.applicationId
-      ? { name: 'application', params: { id: data.applicationId } }
-      : { name: 'my-applications' },
-  application_rejected: (data) =>
-    data?.applicationId
-      ? { name: 'application', params: { id: data.applicationId } }
-      : { name: 'my-applications' },
-  application_cancelled: (data) =>
-    data?.jobId
-      ? { name: 'employer/applicants', params: { jobId: data.jobId } }
-      : { name: 'employer/my-postings' },
-  confirmation_cancelled: (data) =>
-    data?.applicationId
-      ? { name: 'application', params: { id: data.applicationId } }
-      : { name: 'my-applications' },
-
-  // 출퇴근 관련 → 스케줄
-  staff_checked_in: (data) => ({ name: 'schedule', params: data?.date ? { date: data.date } : undefined }),
-  staff_checked_out: (data) => ({ name: 'schedule', params: data?.date ? { date: data.date } : undefined }),
-  checkin_reminder: (data) => ({ name: 'schedule', params: data?.date ? { date: data.date } : undefined }),
-  no_show_alert: (data) => ({ name: 'schedule', params: data?.date ? { date: data.date } : undefined }),
-  schedule_change: (data) => ({ name: 'schedule', params: data?.date ? { date: data.date } : undefined }),
-
-  // 정산 관련
-  settlement_completed: () => ({ name: 'schedule' }),
-  settlement_requested: (data) =>
-    data?.jobId
-      ? { name: 'employer/settlement', params: { jobId: data.jobId } }
-      : { name: 'employer/my-postings' },
-
-  // 공고 관련 → 공고 상세
-  job_closing_soon: (data) =>
-    data?.jobId ? { name: 'job', params: { id: data.jobId } } : { name: 'jobs' },
-  new_job_in_area: (data) =>
-    data?.jobId ? { name: 'job', params: { id: data.jobId } } : { name: 'jobs' },
-  job_updated: (data) =>
-    data?.jobId ? { name: 'job', params: { id: data.jobId } } : { name: 'jobs' },
-  job_cancelled: () => ({ name: 'my-applications' }),
-
-  // 시스템 → 알림 목록
-  announcement: () => ({ name: 'notifications' }),
-  maintenance: () => ({ name: 'notifications' }),
-  app_update: () => ({ name: 'notifications' }),
-
-  // 관리자 → 알림 목록
-  inquiry_answered: () => ({ name: 'notifications' }),
-  report_resolved: () => ({ name: 'notifications' }),
-};
 
 // ============================================================================
 // Core Functions
@@ -360,30 +312,7 @@ export async function navigateToDeepLink(url: string): Promise<boolean> {
     return false;
   }
 
-  try {
-    const expoPath = routeToExpoPath(parsed.route);
-
-    // Analytics 이벤트
-    trackEvent('deep_link_navigation', {
-      path: parsed.path,
-      route_name: parsed.route.name,
-    });
-
-    // Expo Router로 네비게이션 (동적 경로는 타입 체크 불가)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push(expoPath as any);
-
-    logger.info('딥링크 네비게이션 성공', {
-      url,
-      route: parsed.route.name,
-      expoPath,
-    });
-
-    return true;
-  } catch (error) {
-    logger.error('딥링크 네비게이션 실패', toError(error), { url });
-    return false;
-  }
+  return executeNavigation(parsed.route, { source: 'deeplink', url });
 }
 
 /**
@@ -394,16 +323,17 @@ export function getRouteFromNotification(
   data?: Record<string, string>,
   link?: string
 ): DeepLinkRoute | null {
-  // 1. link 필드가 있으면 우선 사용
-  if (link) {
-    const parsed = parseDeepLink(link);
+  // 1. link 필드가 있으면 검증 후 사용
+  const validatedLink = validateNotificationLink(link);
+  if (validatedLink) {
+    const parsed = parseDeepLink(validatedLink);
     if (parsed.isValid && parsed.route) {
       return parsed.route;
     }
   }
 
-  // 2. 알림 타입별 매핑 사용
-  const routeGenerator = NOTIFICATION_DEEP_LINK_MAP[type];
+  // 2. 알림 타입별 매핑 사용 (29개 전체 커버)
+  const routeGenerator = NOTIFICATION_ROUTE_MAP[type];
   if (routeGenerator) {
     return routeGenerator(data);
   }
@@ -427,24 +357,7 @@ export async function navigateFromNotification(
     return false;
   }
 
-  try {
-    const expoPath = routeToExpoPath(route);
-
-    // Analytics 이벤트
-    trackEvent('notification_click', {
-      notification_type: type,
-      route_name: route.name,
-    });
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    router.push(expoPath as any);
-
-    logger.info('알림 네비게이션 성공', { type, route: route.name });
-    return true;
-  } catch (error) {
-    logger.error('알림 네비게이션 실패', toError(error), { type });
-    return false;
-  }
+  return executeNavigation(route, { source: 'notification', type });
 }
 
 // ============================================================================
@@ -453,14 +366,16 @@ export async function navigateFromNotification(
 
 /**
  * 딥링크 URL 생성
+ *
+ * @description Expo Router 그룹 경로 (app), (tabs) 등을 제거하여 클린 URL 생성
  */
-export function createDeepLink(
-  route: DeepLinkRoute,
-  options: { useWebUrl?: boolean } = {}
-): string {
-  const path = routeToExpoPath(route).replace(/^\//, '');
+export function createDeepLink(route: DeepLinkRoute, options: { useWebUrl?: boolean } = {}): string {
+  const expoPath = RouteMapper.toExpoPath(route);
+  // 라우트 그룹 제거: /(app)/(tabs)/schedule → /schedule
+  // 빈 경로 폴백: /(app)/(tabs) → home
+  const cleanPath = expoPath.replace(/\/\([^)]+\)/g, '').replace(/^\//, '') || 'home';
   const prefix = options.useWebUrl ? WEB_PREFIX : SCHEME_PREFIX;
-  return `${prefix}${path}`;
+  return `${prefix}${cleanPath}`;
 }
 
 /**
@@ -471,17 +386,24 @@ export function createJobDeepLink(jobId: string, useWebUrl = false): string {
 }
 
 /**
- * 지원 딥링크 생성
+ * 스케줄 딥링크 생성
+ *
+ * @deprecated v2.0 - date 파라미터는 무시됨 (날짜별 스케줄 라우트 없음)
+ * @removeBy v3.0 - 2025년 하반기 제거 예정
  */
-export function createApplicationDeepLink(applicationId: string, useWebUrl = false): string {
-  return createDeepLink({ name: 'application', params: { id: applicationId } }, { useWebUrl });
+export function createScheduleDeepLink(_date?: string, useWebUrl = false): string {
+  return createDeepLink({ name: 'schedule' }, { useWebUrl });
 }
 
 /**
- * 스케줄 딥링크 생성
+ * 지원 딥링크 생성
+ *
+ * @deprecated v2.0 - 지원 상세 화면 없음, 스케줄로 리다이렉트
+ * @removeBy v3.0 - 2025년 하반기 제거 예정
  */
-export function createScheduleDeepLink(date?: string, useWebUrl = false): string {
-  return createDeepLink({ name: 'schedule', params: date ? { date } : undefined }, { useWebUrl });
+export function createApplicationDeepLink(_applicationId: string, useWebUrl = false): string {
+  logger.warn('createApplicationDeepLink는 deprecated됨 - 지원 상세 화면 없음');
+  return createDeepLink({ name: 'schedule' }, { useWebUrl });
 }
 
 // ============================================================================
@@ -507,10 +429,10 @@ export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () =>
     if (url) {
       logger.info('초기 딥링크', { url });
       onDeepLink?.(url);
-      // 콜드 스타트 시에는 약간의 지연 후 네비게이션
+      // 콜드 스타트 시에는 딜레이 후 네비게이션
       setTimeout(() => {
         navigateToDeepLink(url);
-      }, 500);
+      }, COLD_START_NAVIGATION_DELAY_MS);
     }
   });
 
@@ -551,58 +473,19 @@ export async function openExternalUrl(url: string): Promise<boolean> {
 }
 
 // ============================================================================
-// Expo Linking Configuration
+// Deprecated: linkingConfig
 // ============================================================================
 
 /**
  * Expo Router용 링킹 설정
  *
- * @description app/_layout.tsx에서 사용
+ * @deprecated v2.0 - Expo Router가 파일 기반 라우팅 자동 처리
+ * app.config.ts의 scheme 설정만 필요
+ * @removeBy v3.0 - 2025년 하반기 제거 예정
  */
 export const linkingConfig = {
-  prefixes: [
-    ExpoLinking.createURL('/'),
-    SCHEME_PREFIX.slice(0, -3), // 'uniqn://'에서 '//' 제거
-    WEB_PREFIX,
-  ],
-  config: {
-    screens: {
-      '(public)': {
-        screens: {
-          index: '',
-          'jobs/index': 'jobs',
-          'jobs/[id]': 'jobs/:id',
-        },
-      },
-      '(auth)': {
-        screens: {
-          login: 'login',
-          register: 'register',
-          'forgot-password': 'forgot-password',
-        },
-      },
-      '(app)': {
-        screens: {
-          'notifications/index': 'notifications',
-          'notifications/[id]': 'notifications/:id',
-          'schedule/index': 'schedule',
-          'schedule/[date]': 'schedule/:date',
-          'my-applications': 'my-applications',
-          'applications/[id]': 'applications/:id',
-          profile: 'profile',
-          settings: 'settings',
-          'settings/notifications': 'settings/notifications',
-        },
-      },
-      '(employer)': {
-        screens: {
-          'postings/[id]': 'employer/postings/:id',
-          'applicants/[jobId]': 'employer/applicants/:jobId',
-          'settlement/[jobId]': 'employer/settlement/:jobId',
-        },
-      },
-    },
-  },
+  prefixes: [SCHEME_PREFIX.slice(0, -3), WEB_PREFIX],
+  // Expo Router는 파일 기반 라우팅 사용, 별도 config 불필요
 };
 
 // ============================================================================
@@ -610,6 +493,9 @@ export const linkingConfig = {
 // ============================================================================
 
 export const deepLinkService = {
+  // Security
+  validateNotificationLink,
+
   // Parsing
   parseDeepLink,
 
@@ -621,15 +507,15 @@ export const deepLinkService = {
   // URL Generation
   createDeepLink,
   createJobDeepLink,
-  createApplicationDeepLink,
   createScheduleDeepLink,
+  createApplicationDeepLink, // deprecated
 
   // Setup
   setupDeepLinkListener,
   getInitialDeepLink,
   openExternalUrl,
 
-  // Config
+  // Config (deprecated)
   linkingConfig,
 
   // Constants
