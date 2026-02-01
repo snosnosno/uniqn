@@ -1,8 +1,15 @@
 # T-HOLDEM 애플리케이션 가이드
 
-**버전**: v0.2.2 (Production Ready + 인증 시스템 고도화)
-**애플리케이션**: React 18 + TypeScript + Firebase
-**상태**: Production Ready (96% 완성)
+> ⚠️ **[DEPRECATED - 레거시 웹앱]**
+>
+> **이 디렉토리(app2/)는 레거시 웹앱입니다. 개발이 중단되었습니다.**
+>
+> 현재 주력 플랫폼은 **uniqn-mobile/** (React Native + Expo)입니다.
+> 이 웹앱은 **토너먼트 로직 참고용**으로만 보관됩니다.
+
+**버전**: v0.2.2 (레거시 - 개발 중단)
+**애플리케이션**: React 18 + TypeScript + Firebase (Capacitor)
+**상태**: 📁 **개발 중단** - 토너먼트 로직 참고용
 
 ---
 

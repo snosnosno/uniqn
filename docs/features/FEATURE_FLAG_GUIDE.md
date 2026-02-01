@@ -1,8 +1,11 @@
 # Feature Flag 시스템 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: 🚀 **Production Ready**
+
+> ⚠️ **참고**: 현재 주력 플랫폼은 **uniqn-mobile/** (React Native + Expo)입니다.
+> 모바일앱의 Feature Flag는 `featureFlagService.ts`에서 관리됩니다.
 
 T-HOLDEM 프로젝트의 기능 플래그 관리 시스템
 
@@ -550,5 +553,5 @@ Feature Flag 시스템 관련 문의사항은 개발팀에 문의해주세요.
 
 ---
 
-*이 문서는 T-HOLDEM 프로젝트의 Feature Flag 시스템을 설명합니다.*
-*마지막 업데이트: 2025년 1월 23일*
+*이 문서는 UNIQN 프로젝트의 Feature Flag 시스템을 설명합니다.*
+*마지막 업데이트: 2026년 2월 1일*

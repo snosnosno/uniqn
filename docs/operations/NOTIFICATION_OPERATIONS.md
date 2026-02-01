@@ -1,8 +1,11 @@
 # 알림 시스템 운영 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: ✅ **Production Ready**
+
+> ⚠️ **참고**: 모바일앱의 푸시 알림은 **FCM + expo-notifications**을 사용합니다.
+> `pushNotificationService.ts`에서 FCM 토큰을 관리합니다.
 
 > 📚 **관련 문서**:
 > - 📋 **기능 명세**: [NOTIFICATION_IMPLEMENTATION_STATUS.md](../features/NOTIFICATION_IMPLEMENTATION_STATUS.md)

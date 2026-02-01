@@ -1,11 +1,15 @@
 # 📖 T-HOLDEM 사용자 매뉴얼
 
 **최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심)
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: 🚀 **Production Ready**
 
+> ⚠️ **플랫폼 안내**: 현재 주력 플랫폼은 **uniqn-mobile/** (React Native + Expo)입니다.
+> 이 문서의 일부 내용(웹 URL 접속 방법 등)은 레거시 웹앱(app2/) 기준입니다.
+> 모바일앱은 App Store / Google Play에서 다운로드하세요.
+
 > [!SUCCESS]
-> **성과**: 실제 구현된 기능을 기반으로 작성된 사용자 매뉴얼입니다. UnifiedDataContext, Web Worker 급여 계산, Optimistic Updates, 국제화 지원 등 모든 고급 기능이 완전히 구현되어 사용 가능합니다.
+> **성과**: Repository 패턴, Zustand 상태 관리, Optimistic Updates, 국제화 지원 등 모든 고급 기능이 완전히 구현되어 사용 가능합니다.
 
 ## 📋 목차
 
@@ -24,10 +28,13 @@
 T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 Enterprise 수준의 종합 관리 플랫폼입니다. 실시간 데이터 동기화, Web Worker 기반 급여 계산, Optimistic Updates, 다국어 지원 등 고급 기능을 통해 토너먼트 운영을 혁신적으로 개선합니다.
 
 ### 접속 방법
-1. **웹 브라우저**에서 `https://tholdem-ebc18.web.app` 접속
-2. **PWA 지원**: 모바일에서 앱처럼 설치 가능
-3. **다국어 지원**: 한국어/영어 실시간 전환
-4. **278KB 번들**: 초고속 로딩으로 모바일 친화적
+
+> 📱 **모바일앱 (권장)**: App Store / Google Play에서 **UNIQN** 앱을 다운로드하세요.
+
+**[레거시] 웹 브라우저 접속** (참고용):
+1. `https://tholdem-ebc18.web.app` 접속
+2. PWA 지원: 모바일에서 앱처럼 설치 가능
+3. 다국어 지원: 한국어/영어 실시간 전환
 
 ### 화면 구성
 ```

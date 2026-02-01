@@ -7,7 +7,7 @@
 **기술 스택**: React Native + Expo + TypeScript
 **시작일**: 2024년 12월
 **현재 버전**: v1.0.0
-**마지막 업데이트**: 2025년 2월
+**마지막 업데이트**: 2026년 2월
 
 ---
 
@@ -45,7 +45,7 @@
 ## 기술 스택
 
 > ⚠️ **버전 고정 필수**: 호환성 문제 방지를 위해 아래 버전 준수
-> (현재 구현 기준 - 2025년 2월)
+> (현재 구현 기준 - 2026년 2월)
 
 ```yaml
 Core:
@@ -162,15 +162,16 @@ uniqn-mobile/
 │       └── stats/                # 통계
 │
 ├── src/
-│   ├── components/               # 139개 (22개 폴더)
-│   │   ├── ui/                   # 38개 (기본 UI)
-│   │   ├── employer/             # 24개 (구인자 전용)
+│   ├── components/               # 245개 (22개 폴더)
+│   │   ├── ui/                   # 48개 (기본 UI)
+│   │   ├── employer/             # 62개 (구인자 전용) ⭐ 가장 많음
 │   │   ├── jobs/                 # 19개 (공고 관련)
-│   │   ├── auth/                 # 10개 (인증)
-│   │   ├── admin/                # 9개 (관리자)
-│   │   ├── schedule/             # 9개 (스케줄)
+│   │   ├── auth/                 # 15개 (인증)
+│   │   ├── admin/                # 15개 (관리자)
+│   │   ├── schedule/             # 11개 (스케줄)
 │   │   ├── notifications/        # 8개 (알림)
 │   │   ├── support/              # 7개 (고객지원)
+│   │   ├── qr/                   # 4개 (QR 코드)
 │   │   └── ...                   # 기타
 │   │
 │   ├── hooks/                    # 46개 커스텀 훅
@@ -194,7 +195,7 @@ uniqn-mobile/
 │   │   ├── tabFiltersStore.ts    # 탭 필터
 │   │   └── index.ts
 │   │
-│   ├── services/                 # 36개 비즈니스 서비스
+│   ├── services/                 # 44개 비즈니스 서비스
 │   │   ├── authService.ts
 │   │   ├── jobService.ts
 │   │   ├── applicationService.ts # v2.0 Assignment
@@ -206,17 +207,19 @@ uniqn-mobile/
 │   │   ├── deepLinkService.ts
 │   │   └── ...
 │   │
-│   ├── repositories/             # 11개 (Repository 패턴)
-│   │   ├── interfaces/           # 6개 인터페이스
+│   ├── repositories/             # 15개 (Repository 패턴)
+│   │   ├── interfaces/           # 7개 인터페이스
 │   │   │   ├── IApplicationRepository.ts
 │   │   │   ├── IJobPostingRepository.ts
+│   │   │   ├── IWorkLogRepository.ts
 │   │   │   └── ...
-│   │   └── firebase/             # 5개 구현체
+│   │   └── firebase/             # 8개 구현체
 │   │       ├── ApplicationRepository.ts
 │   │       ├── JobPostingRepository.ts
+│   │       ├── WorkLogRepository.ts
 │   │       └── ...
 │   │
-│   ├── shared/                   # 25개 공유 모듈
+│   ├── shared/                   # 33개 공유 모듈
 │   │   ├── id/                   # IdNormalizer
 │   │   ├── role/                 # RoleResolver
 │   │   ├── status/               # StatusMapper
@@ -259,21 +262,23 @@ uniqn-mobile/
 └── package.json
 ```
 
-### 코드 통계 (현재 기준)
+### 코드 통계 (현재 기준 - 2026년 2월)
 
 | 항목 | 개수 |
 |------|------|
-| **라우트 파일** | 64개 |
-| **컴포넌트** | 139개 |
+| **라우트 파일** | 68개 |
+| **컴포넌트** | 245개 |
 | **커스텀 훅** | 46개 |
-| **서비스** | 36개 |
-| **Zustand 스토어** | 9개 |
-| **Repository** | 11개 |
-| **공유 모듈** | 25개 |
-| **도메인 모듈** | 13개 |
+| **서비스** | 44개 |
+| **Zustand 스토어** | 10개 |
+| **Repository** | 15개 |
+| **공유 모듈** | 33개 |
+| **도메인 모듈** | 16개 |
+| **에러 시스템** | 11개 |
 | **타입 파일** | 28개 |
-| **Zod 스키마** | 18개 |
-| **전체 src 파일** | 400+ |
+| **Zod 스키마** | 19개 |
+| **유틸리티** | 36개 |
+| **전체 src 파일** | 539개 |
 
 ---
 

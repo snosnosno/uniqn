@@ -62,12 +62,15 @@ T-HOLDEM은 홀덤 포커 토너먼트 운영을 위한 **종합 관리 플랫�
 | **호스팅** | Firebase Hosting | PWA 지원 |
 
 ### 품질 & 성능
-| 영역 | 기술 | 현재 상태 |
-|------|------|----------|
-| **테스트 커버리지** | Jest, Playwright | 65% (Production Ready) |
-| **성능 지표** | Firebase Performance | 1.2초 로딩 시간 |
-| **캐시 효율** | Smart Cache | 92% 히트율 |
-| **타입 안전성** | TypeScript Strict | any 타입 0개 |
+
+> **참고**: 아래는 레거시 웹앱(app2/) 기준입니다.
+> 모바일앱(uniqn-mobile/)은 [CLAUDE.md](../../CLAUDE.md)의 "품질 지표" 참조.
+
+| 영역 | 기술 | [레거시 웹앱] | [모바일앱] |
+|------|------|--------------|-----------|
+| **테스트 커버리지** | Jest | 65% | 14% → 60% 목표 |
+| **타입 안전성** | TypeScript Strict | any 0개 | any 0개 |
+| **Repository 패턴** | - | 미적용 | 9개 Repository |
 
 ## 🏛️ 핵심 아키텍처
 
@@ -698,4 +701,4 @@ const memoizedActions = useCallback(() => ({
 
 ---
 
-*마지막 업데이트: 2025년 9월 16일 - 코드 정리 및 폴더 구조 체계화 완성*
+*마지막 업데이트: 2026년 2월 1일 - 레거시 웹앱 아키텍처 문서 (모바일앱은 CLAUDE.md 참조)*

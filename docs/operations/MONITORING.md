@@ -23,12 +23,20 @@
 
 ## 🎯 모니터링 개요
 
-### 핵심 모니터링 지표 (실제 성과)
-- **성능**: 1.2초 로딩 시간, 278KB 번들 크기
-- **캐시 효율**: 92% 히트율로 빠른 데이터 접근
-- **안정성**: TypeScript strict (any 타입 0개)로 런타임 에러 최소화
-- **통합 효율**: 5→1 Firebase 구독 통합으로 주리접율 향상
-- **Web Worker**: 백그라운드 급여 계산으로 UI 블로킹 방지
+### 핵심 모니터링 지표
+
+> **참고**: 아래 지표는 레거시 웹앱(app2/) 기준입니다.
+> 모바일앱은 Crashlytics, Performance Monitoring, RevenueCat으로 모니터링합니다.
+
+**[레거시 웹앱]**:
+- 성능: 1.2초 로딩 시간, 278KB 번들 크기
+- 캐시 효율: 92% 히트율
+
+**[모바일앱 현황]**:
+- **안정성**: TypeScript strict (any 타입 0개)
+- **테스트 커버리지**: 14% (MVP 기준, 60% 목표)
+- **Repository 패턴**: 9개 Repository로 데이터 접근 추상화
+- **성능**: FlashList 가상화, expo-image Blurhash 최적화
 
 ### 모니터링 스택
 ```typescript

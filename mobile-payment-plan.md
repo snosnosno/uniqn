@@ -607,3 +607,8 @@ npm run build:web
 - `src/lib/queryClient.ts` - Query Keys 관리
 - `src/errors/AppError.ts` - 에러 클래스 계층
 - `firestore.rules` - Security Rules 패턴
+
+---
+
+*마지막 업데이트: 2026-02-01*
+*버전: v2.0 (💎 하트/다이아 포인트 시스템)*

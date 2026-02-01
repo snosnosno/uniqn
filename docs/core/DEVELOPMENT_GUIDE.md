@@ -704,6 +704,6 @@ const BadComponent = ({ data }) => {
 
 ---
 
-**마지막 업데이트**: 2025년 9월 30일
-**버전**: v1.0.0
-**관리자**: T-HOLDEM Development Team
+**마지막 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심)
+**관리자**: UNIQN Development Team

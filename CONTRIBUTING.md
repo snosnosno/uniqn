@@ -2,18 +2,25 @@
 
 UNIQN 프로젝트에 기여해 주셔서 감사합니다!
 
+**버전**: v0.2.3 (모바일앱 중심)
+**최종 업데이트**: 2026년 2월 2일
+
 ## 개발 환경 설정
 
 ```bash
 # 저장소 클론
 git clone https://github.com/your-org/t-holdem.git
-cd t-holdem/app2
+cd t-holdem/uniqn-mobile  # 📱 모바일앱 (주력)
 
 # 의존성 설치
 npm install
 
-# 개발 서버 시작
+# Expo 개발 서버 시작
 npm start
+
+# 플랫폼별 실행
+npx expo run:ios      # iOS 시뮬레이터
+npx expo run:android  # Android 에뮬레이터
 ```
 
 ## 코드 스타일
@@ -74,4 +81,4 @@ npm run test:e2e       # E2E 테스트
 
 ---
 
-*마지막 업데이트: 2025년 11월*
+*마지막 업데이트: 2026년 2월*

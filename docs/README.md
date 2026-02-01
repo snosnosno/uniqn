@@ -15,7 +15,7 @@ docs/
 ├── README.md              # 문서 인덱스 (이 파일)
 ├── core/                  # 핵심 개발 가이드
 ├── features/              # 기능별 가이드
-│   └── payment/           # 결제/칩 시스템
+│   └── payment/           # 💎 하트/다이아 포인트 시스템
 ├── guides/                # 운영 가이드
 ├── operations/            # 운영 문서
 ├── reference/             # 참조 문서
@@ -35,7 +35,7 @@ docs/
 | 문서 | 설명 |
 |------|------|
 | [DEVELOPMENT_GUIDE.md](core/DEVELOPMENT_GUIDE.md) | 개발 가이드라인, 코딩 규칙, 프로젝트 구조 |
-| [TESTING_GUIDE.md](core/TESTING_GUIDE.md) | 테스트 작성 가이드 (65% 커버리지) |
+| [TESTING_GUIDE.md](core/TESTING_GUIDE.md) | 테스트 작성 가이드 (모바일앱 14% MVP → 60% 목표) |
 | [CAPACITOR_MIGRATION_GUIDE.md](core/CAPACITOR_MIGRATION_GUIDE.md) | Capacitor 마이그레이션 가이드 |
 
 ---
@@ -260,7 +260,7 @@ docs/
 ```markdown
 # 문서 제목
 
-**최종 업데이트**: 2026년 2월 1일
+**최종 업데이트**: 2026년 2월 2일
 **버전**: v0.2.3 (모바일앱 중심 + RevenueCat 연동)
 **상태**: ✅ **Production Ready** (또는 적절한 상태)
 

@@ -4,8 +4,11 @@
 **버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: 🚀 **Production Ready - 관리 시스템 완성**
 
+> ⚠️ **플랫폼 안내**: 현재 주력 플랫폼은 **uniqn-mobile/** (React Native + Expo)입니다.
+> 관리자 기능은 모바일앱 내 (admin)/ 라우트 그룹에서 제공됩니다.
+
 > [!SUCCESS]
-> **성과**: 실제 운영 중인 Production 환경의 관리 기능을 반영합니다. UnifiedDataContext를 통한 실시간 데이터 관리, Web Worker 급여 계산, 고급 인증 시스템 등이 모두 구현되어 있습니다.
+> **성과**: Repository 패턴, Zustand 상태 관리, 고급 인증 시스템 등이 모두 구현되어 있습니다.
 
 ## 📋 목차
 

@@ -1,8 +1,11 @@
 # 배포 롤백 절차 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: ✅ **Production Ready**
+
+> ⚠️ **참고**: 모바일앱은 **EAS Build** (Expo Application Services)로 빌드/배포됩니다.
+> 앱스토어 배포 롤백은 각 스토어 콘솔에서 수행합니다.
 
 > 📚 **관련 문서**:
 > - 📋 **배포 가이드**: [DEPLOYMENT.md](./DEPLOYMENT.md)
