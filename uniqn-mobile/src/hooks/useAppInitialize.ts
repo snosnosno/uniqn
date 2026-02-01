@@ -21,8 +21,10 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
-import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
+import { tryInitializeFirebase, getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
@@ -241,6 +243,88 @@ export function useAppInitialize(): UseAppInitializeReturn {
               uid: authUser.uid,
               nickname: freshProfile.nickname,
             });
+
+            // 🆕 미읽음 알림 카운터 로드 (Firestore 실시간 리스너 대체)
+            try {
+              const db = getFirebaseDb();
+              const counterRef = doc(db, 'users', authUser.uid, 'counters', 'notifications');
+              const counterSnap = await getDoc(counterRef);
+
+              let unreadCount: number;
+
+              if (counterSnap.exists()) {
+                // 카운터 문서가 있으면 그 값 사용
+                unreadCount = counterSnap.data()?.unreadCount ?? 0;
+                logger.info('미읽음 알림 카운터 로드 완료', {
+                  component: 'useAppInitialize',
+                  unreadCount,
+                  source: 'counter_document',
+                });
+              } else {
+                // 🆕 카운터 문서가 없으면 (기존 사용자) 실제 미읽음 수 계산
+                // 클라이언트 debounce: 최근 10초 내 초기화 요청 여부 확인
+                const { getMMKVInstance } = await import('@/lib/mmkvStorage');
+                const storage = getMMKVInstance();
+                const DEBOUNCE_KEY = `counter_init_${authUser.uid}`;
+                const lastInitTimeStr = storage.getString(DEBOUNCE_KEY);
+                const lastInitTime = lastInitTimeStr ? parseInt(lastInitTimeStr, 10) : 0;
+                const now = Date.now();
+                const DEBOUNCE_MS = 10000; // 10초
+
+                if (now - lastInitTime < DEBOUNCE_MS) {
+                  logger.info('카운터 초기화 debounce - 최근 요청됨', {
+                    component: 'useAppInitialize',
+                    uid: authUser.uid,
+                    lastInitAgo: now - lastInitTime,
+                  });
+                  unreadCount = 0; // debounce 중에는 0으로 시작
+                } else {
+                  logger.info('카운터 문서 없음 - 미읽음 알림 수 계산 중...', {
+                    component: 'useAppInitialize',
+                    uid: authUser.uid,
+                  });
+
+                  // Cloud Function으로 카운터 초기화 요청 (실제 미읽음 수 계산)
+                  const { httpsCallable } = await import('firebase/functions');
+                  const { getFirebaseFunctions } = await import('@/lib/firebase');
+                  const functions = getFirebaseFunctions();
+                  const initializeCounter = httpsCallable<void, { unreadCount: number }>(
+                    functions,
+                    'initializeUnreadCounter'
+                  );
+
+                  // debounce 타임스탬프 먼저 저장 (중복 호출 방지)
+                  storage.set(DEBOUNCE_KEY, String(now));
+
+                  try {
+                    const result = await initializeCounter();
+                    unreadCount = result.data.unreadCount;
+                    logger.info('미읽음 카운터 초기화 완료', {
+                      component: 'useAppInitialize',
+                      unreadCount,
+                      source: 'calculated',
+                    });
+                  } catch (initError) {
+                    // Cloud Function 실패 시 0으로 시작 (다음 FCM에서 업데이트됨)
+                    logger.warn('카운터 초기화 실패 - 0으로 시작', {
+                      component: 'useAppInitialize',
+                      error: initError instanceof Error ? initError.message : String(initError),
+                    });
+                    unreadCount = 0;
+                    // 실패 시 debounce 타임스탬프 제거 (재시도 가능하도록)
+                    storage.delete(DEBOUNCE_KEY);
+                  }
+                }
+              }
+
+              useNotificationStore.getState().setUnreadCount(unreadCount);
+            } catch (counterError) {
+              logger.warn('미읽음 카운터 로드 실패', {
+                component: 'useAppInitialize',
+                error: counterError instanceof Error ? counterError.message : String(counterError),
+              });
+              // 카운터 로드 실패해도 앱은 계속 진행
+            }
           }
         } catch (tokenError) {
           // 토큰 갱신 실패해도 앱은 계속 진행

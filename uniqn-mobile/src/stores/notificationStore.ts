@@ -66,6 +66,9 @@ interface NotificationState {
   setLoading: (loading: boolean) => void;
   setHasMore: (hasMore: boolean) => void;
   setLastFetchedAt: (timestamp: number) => void;
+  setUnreadCount: (count: number) => void;
+  /** 미읽음 카운터 감소 (음수 방지) */
+  decrementUnreadCount: (delta?: number) => void;
 
   // 유틸리티
   getFilteredNotifications: () => NotificationData[];
@@ -474,6 +477,16 @@ export const useNotificationStore = create<NotificationState>()(
 
       setLastFetchedAt: (timestamp) => {
         set({ lastFetchedAt: timestamp });
+      },
+
+      setUnreadCount: (count) => {
+        set({ unreadCount: count });
+      },
+
+      decrementUnreadCount: (delta = 1) => {
+        set((state) => ({
+          unreadCount: Math.max(0, state.unreadCount - delta),
+        }));
       },
 
       // ========================================================================

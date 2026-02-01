@@ -134,6 +134,48 @@ export interface UserNotificationSettings {
   };
 }
 
+/**
+ * 미읽음 알림 카운터 문서 타입
+ * @path users/{userId}/counters/notifications
+ */
+export interface UnreadCounterDocument {
+  /** 미읽음 알림 수 */
+  unreadCount: number;
+  /** 마지막 업데이트 시간 */
+  lastUpdatedAt: admin.firestore.Timestamp | admin.firestore.FieldValue;
+  /** 초기화 시간 (initializeUnreadCounter 호출 시) */
+  initializedAt?: admin.firestore.Timestamp | admin.firestore.FieldValue;
+}
+
+/**
+ * 실패한 카운터 연산 기록 타입
+ * @path _failedCounterOps/{docId}
+ */
+export interface FailedCounterOperation {
+  /** 사용자 ID */
+  userId: string;
+  /** 연산 종류 */
+  operation: 'increment' | 'decrement';
+  /** 변경량 */
+  delta: number;
+  /** 관련 알림 ID */
+  notificationId: string | null;
+  /** 에러 메시지 */
+  error: string;
+  /** 생성 시간 */
+  createdAt: admin.firestore.Timestamp | admin.firestore.FieldValue;
+  /** 재시도 횟수 */
+  retryCount: number;
+  /** 상태 */
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  /** 마지막 재시도 시간 */
+  lastRetryAt?: admin.firestore.Timestamp | admin.firestore.FieldValue;
+  /** 마지막 에러 메시지 */
+  lastError?: string;
+  /** 최종 실패 시간 */
+  failedAt?: admin.firestore.Timestamp | admin.firestore.FieldValue;
+}
+
 // ============================================================================
 // Mappings
 // ============================================================================
@@ -425,6 +467,11 @@ export async function createAndSendNotification(
       pushSkipReason: permissionCheck.reason,
     });
 
+    // 🆕 미읽음 카운터 증가 (비동기, 실패 시 _failedCounterOps에 기록됨)
+    updateUnreadCounter(recipientId, 1, notificationId).catch(() => {
+      // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
+    });
+
     return {
       notificationId,
       fcmSent: false,
@@ -458,6 +505,11 @@ export async function createAndSendNotification(
   };
 
   await notificationRef.set(notificationDoc);
+
+  // 🆕 미읽음 카운터 증가 (비동기, 실패 시 _failedCounterOps에 기록됨)
+  updateUnreadCounter(recipientId, 1, notificationId).catch(() => {
+    // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
+  });
 
   functions.logger.info('알림 문서 생성 완료', {
     notificationId,
@@ -631,6 +683,339 @@ export async function sendMulticast(
       invalidTokens: [],
     };
   }
+}
+
+/**
+ * 미읽음 알림 카운터 증가
+ *
+ * @description Firestore 경로: users/{userId}/counters/notifications
+ * @param userId 사용자 ID
+ * @param delta 증가 값 (양수만 사용, 기본값 1)
+ * @param notificationId 알림 ID (실패 시 복구용)
+ *
+ * @note 증가는 FieldValue.increment 사용 (원자적)
+ * @note 실패 시 _failedCounterOps에 기록하여 배치 재동기화 지원
+ */
+export async function updateUnreadCounter(
+  userId: string,
+  delta: number = 1,
+  notificationId?: string
+): Promise<void> {
+  // 증가만 허용 (감소는 decrementUnreadCounter 사용)
+  if (delta <= 0) {
+    functions.logger.warn('updateUnreadCounter는 양수만 허용, decrementUnreadCounter 사용 필요', {
+      userId,
+      delta,
+    });
+    return;
+  }
+
+  const counterRef = db
+    .collection('users')
+    .doc(userId)
+    .collection('counters')
+    .doc('notifications');
+
+  try {
+    await counterRef.set(
+      {
+        unreadCount: admin.firestore.FieldValue.increment(delta),
+        lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      },
+      { merge: true }
+    );
+
+    functions.logger.info('미읽음 카운터 증가', {
+      userId,
+      delta,
+    });
+  } catch (error: unknown) {
+    // 🆕 실패 시 _failedCounterOps에 기록 (배치 재동기화용)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    functions.logger.error('미읽음 카운터 증가 실패 - 복구 대기열에 추가', {
+      userId,
+      delta,
+      notificationId,
+      error: errorMessage,
+    });
+
+    try {
+      await db.collection('_failedCounterOps').add({
+        userId,
+        operation: 'increment',
+        delta,
+        notificationId: notificationId ?? null,
+        error: errorMessage,
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        retryCount: 0,
+        status: 'pending', // pending | processing | completed | failed
+      });
+    } catch (recordError) {
+      // 실패 기록도 실패하면 로깅만 (추가 조치 없음)
+      functions.logger.error('실패 기록 저장 실패', {
+        userId,
+        originalError: errorMessage,
+        recordError: recordError instanceof Error ? recordError.message : 'Unknown',
+      });
+    }
+
+    // 원래 에러를 다시 throw하여 호출자에게 알림
+    throw error;
+  }
+}
+
+/**
+ * 미읽음 알림 카운터 감소 (음수 방지, 재시도 + 실패 기록)
+ *
+ * @description 트랜잭션으로 음수 방지, 재시도 한도 초과 시 실패 기록
+ * @param userId 사용자 ID
+ * @param delta 감소 값 (양수로 입력, 기본값 1)
+ * @param notificationId 알림 ID (실패 시 복구용, 선택)
+ *
+ * @note 알림 읽음 처리 시 사용 (onNotificationRead 트리거)
+ * @note Firestore 트랜잭션은 기본적으로 5회 재시도 (경합 시)
+ */
+export async function decrementUnreadCounter(
+  userId: string,
+  delta: number = 1,
+  notificationId?: string
+): Promise<void> {
+  const counterRef = db
+    .collection('users')
+    .doc(userId)
+    .collection('counters')
+    .doc('notifications');
+
+  const MAX_RETRIES = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      await db.runTransaction(async (transaction) => {
+        const counterDoc = await transaction.get(counterRef);
+        const currentCount = counterDoc.exists ? (counterDoc.data()?.unreadCount ?? 0) : 0;
+
+        // 음수 방지: 최소 0
+        const newCount = Math.max(0, currentCount - delta);
+
+        transaction.set(
+          counterRef,
+          {
+            unreadCount: newCount,
+            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      });
+
+      functions.logger.info('미읽음 카운터 감소 (트랜잭션)', {
+        userId,
+        delta,
+        attempt,
+      });
+
+      return; // 성공 시 함수 종료
+    } catch (error: unknown) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+
+      if (attempt < MAX_RETRIES) {
+        // 재시도 전 대기 (exponential backoff)
+        await new Promise((resolve) => setTimeout(resolve, 100 * Math.pow(2, attempt)));
+        functions.logger.warn('카운터 감소 트랜잭션 재시도', {
+          userId,
+          delta,
+          attempt,
+          error: lastError.message,
+        });
+      }
+    }
+  }
+
+  // 🆕 최대 재시도 초과 시 실패 기록
+  functions.logger.error('미읽음 카운터 감소 최종 실패 - 복구 대기열에 추가', {
+    userId,
+    delta,
+    notificationId,
+    error: lastError?.message,
+  });
+
+  try {
+    await db.collection('_failedCounterOps').add({
+      userId,
+      operation: 'decrement',
+      delta,
+      notificationId: notificationId ?? null,
+      error: lastError?.message ?? 'Max retries exceeded',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      retryCount: 0,
+      status: 'pending',
+    });
+
+    // 사용자 문서에 동기화 필요 플래그 설정
+    await db.collection('users').doc(userId).update({
+      _counterSyncRequired: true,
+      _counterSyncRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (recordError) {
+    functions.logger.error('실패 기록 저장 실패', {
+      userId,
+      originalError: lastError?.message,
+      recordError: recordError instanceof Error ? recordError.message : 'Unknown',
+    });
+  }
+
+  // 원래 에러를 다시 throw
+  throw lastError;
+}
+
+/**
+ * 미읽음 알림 카운터 리셋 (0으로 초기화)
+ *
+ * @description markAllAsRead에서 사용 - 배치 업데이트 후 직접 리셋
+ * @param userId 사용자 ID
+ *
+ * @note 배치 업데이트 시 개별 트리거가 스킵되므로 직접 리셋 필요
+ */
+export async function resetUnreadCounter(userId: string): Promise<void> {
+  const counterRef = db
+    .collection('users')
+    .doc(userId)
+    .collection('counters')
+    .doc('notifications');
+
+  await counterRef.set(
+    {
+      unreadCount: 0,
+      lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    },
+    { merge: true }
+  );
+
+  functions.logger.info('미읽음 카운터 리셋', {
+    userId,
+  });
+}
+
+/**
+ * 실패한 카운터 연산 재처리
+ *
+ * @description 스케줄러에서 호출하여 _failedCounterOps 컬렉션의 실패 기록을 재처리
+ * @param batchSize 한 번에 처리할 최대 건수 (기본값: 100)
+ * @returns 처리 결과 (성공/실패 건수)
+ *
+ * @example
+ * // Cloud Scheduler에서 1시간마다 호출
+ * exports.retryFailedCounterOps = functions.pubsub
+ *   .schedule('every 1 hours')
+ *   .onRun(async () => {
+ *     await retryFailedCounterOps(100);
+ *   });
+ */
+export async function retryFailedCounterOps(
+  batchSize: number = 100
+): Promise<{ success: number; failed: number; skipped: number }> {
+  const MAX_RETRY_COUNT = 3;
+
+  // pending 상태의 실패 기록 조회
+  const failedOpsQuery = db
+    .collection('_failedCounterOps')
+    .where('status', '==', 'pending')
+    .where('retryCount', '<', MAX_RETRY_COUNT)
+    .orderBy('retryCount', 'asc')
+    .orderBy('createdAt', 'asc')
+    .limit(batchSize);
+
+  const snapshot = await failedOpsQuery.get();
+
+  if (snapshot.empty) {
+    functions.logger.info('재처리할 실패 카운터 연산 없음');
+    return { success: 0, failed: 0, skipped: 0 };
+  }
+
+  let success = 0;
+  let failed = 0;
+  let skipped = 0;
+
+  for (const doc of snapshot.docs) {
+    const data = doc.data();
+    const { userId, operation, delta } = data;
+
+    try {
+      // 재처리 중 표시
+      await doc.ref.update({
+        status: 'processing',
+        lastRetryAt: admin.firestore.FieldValue.serverTimestamp(),
+      });
+
+      // 카운터 연산 재시도
+      const counterRef = db
+        .collection('users')
+        .doc(userId)
+        .collection('counters')
+        .doc('notifications');
+
+      if (operation === 'increment') {
+        await counterRef.set(
+          {
+            unreadCount: admin.firestore.FieldValue.increment(delta),
+            lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          },
+          { merge: true }
+        );
+      } else if (operation === 'decrement') {
+        // 감소는 트랜잭션으로 음수 방지
+        await db.runTransaction(async (transaction) => {
+          const counterDoc = await transaction.get(counterRef);
+          const currentCount = counterDoc.exists ? (counterDoc.data()?.unreadCount ?? 0) : 0;
+          const newCount = Math.max(0, currentCount - delta);
+
+          transaction.set(
+            counterRef,
+            {
+              unreadCount: newCount,
+              lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            },
+            { merge: true }
+          );
+        });
+      }
+
+      // 성공 시 삭제
+      await doc.ref.delete();
+      success++;
+    } catch (retryError: unknown) {
+      const newRetryCount = (data.retryCount ?? 0) + 1;
+      const errorMessage = retryError instanceof Error ? retryError.message : 'Unknown error';
+
+      if (newRetryCount >= MAX_RETRY_COUNT) {
+        // 최대 재시도 초과 시 실패로 표시
+        await doc.ref.update({
+          status: 'failed',
+          retryCount: newRetryCount,
+          lastError: errorMessage,
+          failedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        failed++;
+      } else {
+        // 다음 재시도를 위해 대기
+        await doc.ref.update({
+          status: 'pending',
+          retryCount: newRetryCount,
+          lastError: errorMessage,
+        });
+        skipped++;
+      }
+    }
+  }
+
+  functions.logger.info('실패 카운터 연산 재처리 완료', {
+    total: snapshot.size,
+    success,
+    failed,
+    skipped,
+  });
+
+  return { success, failed, skipped };
 }
 
 /**

@@ -44,6 +44,10 @@ export { onJobPostingClosed } from './notifications/onJobPostingClosed';
 export { onReportCreated } from './notifications/onReportCreated';
 export { onInquiryCreated } from './notifications/onInquiryCreated';
 export { onTournamentPostingCreated } from './notifications/onTournamentPostingCreated';
+export { onNotificationRead } from './notifications/onNotificationRead';
+export { resetUnreadCounter } from './notifications/resetUnreadCounter';
+export { initializeUnreadCounter } from './notifications/initializeUnreadCounter';
+export { decrementUnreadCounterCallable as decrementUnreadCounter } from './notifications/decrementUnreadCounterCallable';
 
 // --- Account Management Functions ---
 export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';

@@ -16,6 +16,7 @@ import { useEffect, useCallback, useRef, useState } from 'react';
 import { Platform, AppState, Linking, type AppStateStatus } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { useNotificationStore } from '@/stores/notificationStore';
 import {
   pushNotificationService,
   type NotificationPayload,
@@ -28,7 +29,103 @@ import {
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
+import { getFirebaseDb } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import type { NotificationType } from '@/types/notification';
+
+// ============================================================================
+// Types
+// ============================================================================
+
+/**
+ * 카운터 문서 타입
+ */
+interface CounterDocument {
+  unreadCount: number;
+  lastUpdatedAt?: unknown; // Firestore Timestamp
+  initializedAt?: unknown; // Firestore Timestamp
+}
+
+// ============================================================================
+// Helper Functions
+// ============================================================================
+
+/** 마지막 동기화 시간 캐시 (userId → timestamp) */
+const lastSyncTimeCache = new Map<string, number>();
+
+/** 동기화 캐시 TTL (밀리초) - 30초 */
+const SYNC_CACHE_TTL_MS = 30000;
+
+/**
+ * 서버에서 미읽음 카운터 동기화
+ *
+ * @description 포그라운드 복귀 시 또는 멀티 디바이스 동기화를 위해 서버 카운터 조회
+ * @param userId 사용자 ID
+ * @param forceSync 캐시 무시하고 강제 동기화 (기본값: false)
+ *
+ * @note 알림 목록 화면 진입 시에도 호출 가능하도록 export
+ * @note 30초 캐시 TTL 적용으로 불필요한 Firestore 읽기 방지
+ */
+export async function syncUnreadCounterFromServer(
+  userId: string,
+  forceSync: boolean = false
+): Promise<void> {
+  try {
+    // 🆕 캐시 TTL 체크 (불필요한 Firestore 읽기 방지)
+    const now = Date.now();
+    const lastSyncTime = lastSyncTimeCache.get(userId) ?? 0;
+
+    if (!forceSync && now - lastSyncTime < SYNC_CACHE_TTL_MS) {
+      logger.debug('카운터 동기화 스킵 - 캐시 TTL 내', {
+        userId,
+        lastSyncAgo: now - lastSyncTime,
+      });
+      return;
+    }
+
+    const db = getFirebaseDb();
+    const counterRef = doc(db, 'users', userId, 'counters', 'notifications');
+    const counterSnap = await getDoc(counterRef);
+
+    // 캐시 갱신
+    lastSyncTimeCache.set(userId, now);
+
+    if (counterSnap.exists()) {
+      const data = counterSnap.data() as CounterDocument;
+      const serverCount = data.unreadCount ?? 0;
+      const localCount = useNotificationStore.getState().unreadCount;
+
+      // 서버와 로컬 카운트가 다르면 동기화
+      if (serverCount !== localCount) {
+        useNotificationStore.getState().setUnreadCount(serverCount);
+        logger.info('포그라운드 복귀 - 카운터 동기화', {
+          serverCount,
+          localCount,
+          diff: serverCount - localCount,
+        });
+      }
+    }
+  } catch (error) {
+    logger.warn('카운터 동기화 실패', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    // 동기화 실패해도 앱은 계속 동작
+  }
+}
+
+/**
+ * 카운터 동기화 캐시 초기화
+ *
+ * @description 로그아웃 시 호출하여 다음 로그인 시 새로 동기화
+ * @param userId 사용자 ID (선택, 없으면 전체 캐시 초기화)
+ */
+export function clearCounterSyncCache(userId?: string): void {
+  if (userId) {
+    lastSyncTimeCache.delete(userId);
+  } else {
+    lastSyncTimeCache.clear();
+  }
+}
 
 // ============================================================================
 // Types
@@ -136,6 +233,8 @@ export function useNotificationHandler(
 
   /**
    * 포그라운드 알림 수신 핸들러
+   *
+   * @description FCM 수신 시 로컬 store에 알림 추가 (Firestore 실시간 리스너 대체)
    */
   const handleNotificationReceived = useCallback(
     (notification: NotificationPayload) => {
@@ -150,6 +249,26 @@ export function useNotificationHandler(
         app_state: 'foreground',
       });
 
+      // 🆕 FCM payload로부터 로컬 store에 알림 추가 (Firestore 실시간 리스너 대체)
+      const notificationId = notification.data?.notificationId as string | undefined;
+      if (notificationId) {
+        const notificationData = {
+          id: notificationId,
+          recipientId: userId || '',
+          type: (notification.data?.type as string) || 'announcement',
+          title: notification.title || '',
+          body: notification.body || '',
+          link: notification.data?.link as string | undefined,
+          data: notification.data as Record<string, string> | undefined,
+          isRead: false,
+          createdAt: new Date(),
+        };
+
+        // Zustand store에 알림 추가 (incrementUnreadCounts 자동 호출됨)
+        useNotificationStore.getState().addNotification(notificationData as never);
+        logger.info('FCM 알림을 로컬 store에 추가', { notificationId });
+      }
+
       // 커스텀 콜백
       onNotificationReceived?.(notification);
 
@@ -162,7 +281,7 @@ export function useNotificationHandler(
         });
       }
     },
-    [showForegroundToast, addToast, onNotificationReceived]
+    [showForegroundToast, addToast, onNotificationReceived, userId]
   );
 
   /**
@@ -408,7 +527,7 @@ export function useNotificationHandler(
 
   /**
    * 앱 상태 변경 시 처리
-   * - 포그라운드 복귀: 뱃지 초기화 + 권한 상태 재확인 + 토큰 갱신 확인
+   * - 포그라운드 복귀: 뱃지 초기화 + 권한 상태 재확인 + 토큰 갱신 확인 + 🆕 카운터 동기화
    */
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -434,6 +553,11 @@ export function useNotificationHandler(
             logger.info('포그라운드 복귀 시 토큰 갱신 트리거');
             tokenRefreshService.triggerRefresh();
           }
+        }
+
+        // 🆕 포그라운드 복귀 시 서버 카운터 동기화 (멀티 디바이스 대응)
+        if (userId) {
+          syncUnreadCounterFromServer(userId);
         }
       }
       appStateRef.current = nextAppState;

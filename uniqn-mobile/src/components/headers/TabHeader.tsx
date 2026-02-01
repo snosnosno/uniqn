@@ -12,7 +12,7 @@ import { View, Text, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { BellIcon, QrCodeIcon, SettingsIcon } from '@/components/icons';
 import { NotificationBadge } from '@/components/notifications';
-import { useUnreadCountRealtime } from '@/hooks/useNotifications';
+import { useUnreadCount } from '@/stores/notificationStore';
 
 interface TabHeaderProps {
   /** 헤더 제목 */
@@ -44,8 +44,8 @@ export function TabHeader({
   showSettings = false,
   rightAction,
 }: TabHeaderProps) {
-  // 읽지 않은 알림 수 (실시간)
-  const unreadCount = useUnreadCountRealtime();
+  // 읽지 않은 알림 수 (Zustand store에서 직접 구독 - FCM 기반)
+  const unreadCount = useUnreadCount();
 
   return (
     <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-surface">
