@@ -5,20 +5,12 @@
  * @version 1.0.0
  */
 
-import type { SettlementBreakdown, SalaryType as ScheduleSalaryType, TaxType as ScheduleTaxType } from '@/types/schedule';
-import type { JobPostingCard } from '@/types/jobPosting';
+import type { SettlementBreakdown, TaxType } from '@/types/schedule';
+import type { JobPostingCard, SalaryType, SalaryInfo } from '@/types/jobPosting';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 
-// ============================================================================
-// Types
-// ============================================================================
-
-export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
-
-export interface SalaryInfo {
-  type: SalaryType;
-  amount: number;
-}
+// Re-export for backward compatibility
+export type { SalaryType, SalaryInfo, TaxType };
 
 export interface SettlementResult {
   hoursWorked: number;
@@ -379,8 +371,6 @@ export function getSalaryTypeLabel(type: SalaryType): string {
 // ============================================================================
 // Tax Calculation Functions
 // ============================================================================
-
-export type TaxType = 'none' | 'rate' | 'fixed';
 
 /** 세금 적용 대상 항목 */
 export interface TaxableItems {
@@ -756,7 +746,7 @@ export function calculateSettlementBreakdown(
   return {
     hoursWorked: result.hoursWorked,
     salaryInfo: {
-      type: salaryInfo.type as ScheduleSalaryType,
+      type: salaryInfo.type,
       amount: salaryInfo.amount,
     },
     basePay: result.basePay,
@@ -769,7 +759,7 @@ export function calculateSettlementBreakdown(
     } : undefined,
     allowancePay: result.allowancePay,
     taxSettings: taxSettings.type !== 'none' ? {
-      type: taxSettings.type as ScheduleTaxType,
+      type: taxSettings.type,
       value: taxSettings.value,
     } : undefined,
     taxAmount: result.taxAmount,

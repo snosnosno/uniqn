@@ -2,36 +2,23 @@
  * UNIQN Mobile - ApplicantCard 유틸리티 함수
  *
  * @description 지원자 카드 컴포넌트 헬퍼 함수
- * @version 1.0.0
+ * @version 1.1.0 - formatAppliedDate를 utils/date에서 import
  */
 
 import { getAssignmentRoles } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
+import { formatAppliedDate } from '@/utils/date';
 import type { Assignment } from '@/types';
 import type { AssignmentDisplay } from './types';
+
+// Re-export for backward compatibility
+export { formatAppliedDate };
 
 // ============================================================================
 // Role Helpers
 // ============================================================================
 
 // getRoleDisplayName은 '@/types/unified'에서 직접 import하세요
-
-// ============================================================================
-// Date/Time Formatting
-// ============================================================================
-
-/**
- * 지원 날짜 포맷 (M/D(요일) 형식)
- */
-export const formatAppliedDate = (dateStr?: string): string => {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
-};
 
 /**
  * 시간대 표시 포맷 (미정 시간 사유 포함)

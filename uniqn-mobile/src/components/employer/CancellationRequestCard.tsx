@@ -14,6 +14,7 @@ import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../icons';
 import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatAppliedDate } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';
 
@@ -35,19 +36,6 @@ export interface CancellationRequestCardProps {
 // ============================================================================
 // Constants
 // ============================================================================
-
-/**
- * 지원 날짜 포맷 (M/D 형식 v2.0)
- */
-function formatAppliedDate(dateStr?: string): string {
-  if (!dateStr) return '';
-  const date = new Date(dateStr);
-  if (isNaN(date.getTime())) return dateStr;
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
-  return `${month}/${day}(${dayOfWeek})`;
-}
 
 const STATUS_COLORS: Record<CancellationRequestStatus, { bg: string; text: string }> = {
   pending: { bg: 'bg-warning-100 dark:bg-warning-900/30', text: 'text-warning-700 dark:text-warning-300' },

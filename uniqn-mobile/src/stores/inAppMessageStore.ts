@@ -236,4 +236,66 @@ export const selectIsSessionShown = (
   messageId: string
 ): boolean => state.sessionShownIds.includes(messageId);
 
+// ============================================================================
+// State Selectors (불필요한 리렌더링 방지)
+// ============================================================================
+
+/**
+ * 현재 표시 중인 메시지
+ */
+export const selectCurrentMessage = (state: InAppMessageState) => state.currentMessage;
+
+/**
+ * 대기 중인 메시지 큐
+ */
+export const selectMessageQueue = (state: InAppMessageState) => state.messageQueue;
+
+/**
+ * 전체 메시지 목록
+ */
+export const selectAllMessages = (state: InAppMessageState) => state.allMessages;
+
+/**
+ * 로딩 상태
+ */
+export const selectIsLoading = (state: InAppMessageState) => state.isLoading;
+
+// ============================================================================
+// Action Selectors
+// ============================================================================
+
+export const selectDismissCurrentMessage = (state: InAppMessageState & InAppMessageActions) =>
+  state.dismissCurrentMessage;
+
+export const selectEnqueueMessage = (state: InAppMessageState & InAppMessageActions) =>
+  state.enqueueMessage;
+
+export const selectShowNextMessage = (state: InAppMessageState & InAppMessageActions) =>
+  state.showNextMessage;
+
+// ============================================================================
+// Utility Hooks
+// ============================================================================
+
+/**
+ * 현재 메시지 훅
+ */
+export const useCurrentMessage = () => useInAppMessageStore(selectCurrentMessage);
+
+/**
+ * 메시지 큐 훅
+ */
+export const useMessageQueue = () => useInAppMessageStore(selectMessageQueue);
+
+/**
+ * 인앱 메시지 액션 훅
+ *
+ * @description 전체 store 구독 대신 액션만 구독하여 리렌더링 최소화
+ */
+export const useInAppMessageActions = () => ({
+  dismissCurrentMessage: useInAppMessageStore(selectDismissCurrentMessage),
+  enqueueMessage: useInAppMessageStore(selectEnqueueMessage),
+  showNextMessage: useInAppMessageStore(selectShowNextMessage),
+});
+
 export default useInAppMessageStore;

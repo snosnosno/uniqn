@@ -130,6 +130,75 @@ function calculateUnreadByCategory(
 }
 
 /**
+ * 알림에서 카테고리 추출
+ *
+ * @description 타입 안전하게 카테고리 추출, 유효하지 않으면 'system' 반환
+ */
+function getNotificationCategory(notification: NotificationData): NotificationCategoryType {
+  const category = notification.type.split('_')[0] || 'system';
+  // 유효한 카테고리인지 검증
+  const validCategories = Object.values(NotificationCategory);
+  const isValidCategory = validCategories.includes(category as NotificationCategoryType);
+  return isValidCategory ? (category as NotificationCategoryType) : 'system';
+}
+
+/**
+ * 증분 계산: 읽지 않은 알림 추가 시 카운트 증가 (O(1))
+ *
+ * @description 전체 재계산 대신 단일 알림 추가 시 사용
+ */
+function incrementUnreadCounts(
+  currentCount: number,
+  currentByCategory: Record<NotificationCategoryType, number>,
+  notification: NotificationData
+): { unreadCount: number; unreadByCategory: Record<NotificationCategoryType, number> } {
+  // 이미 읽은 알림이면 카운트 변화 없음
+  if (notification.isRead) {
+    return { unreadCount: currentCount, unreadByCategory: currentByCategory };
+  }
+
+  const category = getNotificationCategory(notification);
+  const newByCategory = { ...currentByCategory };
+
+  if (category in newByCategory) {
+    newByCategory[category]++;
+  }
+
+  return {
+    unreadCount: currentCount + 1,
+    unreadByCategory: newByCategory,
+  };
+}
+
+/**
+ * 증분 계산: 읽지 않은 알림 제거/읽음 처리 시 카운트 감소 (O(1))
+ *
+ * @description 전체 재계산 대신 단일 알림 제거/읽음 처리 시 사용
+ */
+function decrementUnreadCounts(
+  currentCount: number,
+  currentByCategory: Record<NotificationCategoryType, number>,
+  notification: NotificationData
+): { unreadCount: number; unreadByCategory: Record<NotificationCategoryType, number> } {
+  // 이미 읽은 알림이면 카운트 변화 없음
+  if (notification.isRead) {
+    return { unreadCount: currentCount, unreadByCategory: currentByCategory };
+  }
+
+  const category = getNotificationCategory(notification);
+  const newByCategory = { ...currentByCategory };
+
+  if (category in newByCategory && newByCategory[category] > 0) {
+    newByCategory[category]--;
+  }
+
+  return {
+    unreadCount: Math.max(0, currentCount - 1),
+    unreadByCategory: newByCategory,
+  };
+}
+
+/**
  * 알림 필터 적용
  */
 function applyFilter(
@@ -196,10 +265,16 @@ export const useNotificationStore = create<NotificationState>()(
           if (exists) return state;
 
           const newNotifications = [notification, ...state.notifications];
+          // 증분 계산: O(1) - 전체 재계산 O(n) 대신
+          const counts = incrementUnreadCounts(
+            state.unreadCount,
+            state.unreadByCategory,
+            notification
+          );
+
           return {
             notifications: newNotifications,
-            unreadCount: calculateUnreadCount(newNotifications),
-            unreadByCategory: calculateUnreadByCategory(newNotifications),
+            ...counts,
           };
         });
       },
@@ -220,24 +295,57 @@ export const useNotificationStore = create<NotificationState>()(
 
       updateNotification: (id, updates) => {
         set((state) => {
+          const notification = state.notifications.find((n) => n.id === id);
+          if (!notification) return state;
+
           const notifications = state.notifications.map((n) =>
             n.id === id ? { ...n, ...updates } : n
           );
+
+          // isRead 변경 여부에 따라 증분 계산 적용
+          let { unreadCount, unreadByCategory } = state;
+
+          if ('isRead' in updates && updates.isRead !== notification.isRead) {
+            if (updates.isRead) {
+              // 읽음으로 변경: 카운트 감소
+              const counts = decrementUnreadCounts(unreadCount, unreadByCategory, notification);
+              unreadCount = counts.unreadCount;
+              unreadByCategory = counts.unreadByCategory;
+            } else {
+              // 읽지 않음으로 변경: 카운트 증가
+              const counts = incrementUnreadCounts(unreadCount, unreadByCategory, {
+                ...notification,
+                isRead: false,
+              });
+              unreadCount = counts.unreadCount;
+              unreadByCategory = counts.unreadByCategory;
+            }
+          }
+
           return {
             notifications,
-            unreadCount: calculateUnreadCount(notifications),
-            unreadByCategory: calculateUnreadByCategory(notifications),
+            unreadCount,
+            unreadByCategory,
           };
         });
       },
 
       removeNotification: (id) => {
         set((state) => {
+          const notification = state.notifications.find((n) => n.id === id);
+          if (!notification) return state;
+
           const notifications = state.notifications.filter((n) => n.id !== id);
+          // 증분 계산: O(1) - 전체 재계산 O(n) 대신
+          const counts = decrementUnreadCounts(
+            state.unreadCount,
+            state.unreadByCategory,
+            notification
+          );
+
           return {
             notifications,
-            unreadCount: calculateUnreadCount(notifications),
-            unreadByCategory: calculateUnreadByCategory(notifications),
+            ...counts,
           };
         });
       },
@@ -256,13 +364,23 @@ export const useNotificationStore = create<NotificationState>()(
 
       markAsRead: (notificationId) => {
         set((state) => {
+          const notification = state.notifications.find((n) => n.id === notificationId);
+          // 알림이 없거나 이미 읽은 경우 변경 없음
+          if (!notification || notification.isRead) return state;
+
           const notifications = state.notifications.map((n) =>
             n.id === notificationId ? { ...n, isRead: true } : n
           );
+          // 증분 계산: O(1) - 전체 재계산 O(n) 대신
+          const counts = decrementUnreadCounts(
+            state.unreadCount,
+            state.unreadByCategory,
+            notification
+          );
+
           return {
             notifications,
-            unreadCount: calculateUnreadCount(notifications),
-            unreadByCategory: calculateUnreadByCategory(notifications),
+            ...counts,
           };
         });
       },
@@ -446,5 +564,38 @@ export const useNotificationLoading = () => useNotificationStore(selectIsLoading
  * 카테고리별 읽지 않은 알림 수
  */
 export const useUnreadByCategory = () => useNotificationStore(selectUnreadByCategory);
+
+// ============================================================================
+// Action Selectors (불필요한 리렌더링 방지)
+// ============================================================================
+
+export const selectSetNotifications = (state: NotificationState) => state.setNotifications;
+export const selectAddNotification = (state: NotificationState) => state.addNotification;
+export const selectAddNotifications = (state: NotificationState) => state.addNotifications;
+export const selectRemoveNotification = (state: NotificationState) => state.removeNotification;
+export const selectSetLoading = (state: NotificationState) => state.setLoading;
+export const selectSetHasMore = (state: NotificationState) => state.setHasMore;
+export const selectMarkAsRead = (state: NotificationState) => state.markAsRead;
+export const selectMarkAllAsRead = (state: NotificationState) => state.markAllAsRead;
+
+/**
+ * 알림 목록 관리 액션 훅
+ *
+ * @description 전체 store 구독 대신 액션만 구독하여 리렌더링 최소화
+ */
+export const useNotificationListActions = () => ({
+  setNotifications: useNotificationStore(selectSetNotifications),
+  addNotifications: useNotificationStore(selectAddNotifications),
+  setLoading: useNotificationStore(selectSetLoading),
+  setHasMore: useNotificationStore(selectSetHasMore),
+});
+
+/**
+ * 알림 읽음 처리 액션 훅
+ */
+export const useNotificationReadActions = () => ({
+  markAsRead: useNotificationStore(selectMarkAsRead),
+  markAllAsRead: useNotificationStore(selectMarkAllAsRead),
+});
 
 export default useNotificationStore;

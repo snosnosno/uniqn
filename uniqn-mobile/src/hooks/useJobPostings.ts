@@ -2,7 +2,7 @@
  * UNIQN Mobile - 구인공고 목록 훅
  *
  * @description TanStack Query 기반 무한스크롤 공고 목록
- * @version 1.1.0 - 날짜 정렬 추가
+ * @version 1.2.0 - 정렬 로직 외부 유틸리티로 최적화
  */
 
 import { useMemo } from 'react';
@@ -10,6 +10,7 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { getJobPostings, convertToCard } from '@/services';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { stableFilters } from '@/utils/queryUtils';
+import { sortJobPostings } from '@/utils/jobPostingSorter';
 import type { JobPostingFilters, JobPostingCard } from '@/types';
 
 // ============================================================================
@@ -48,84 +49,13 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
   });
 
   // 전체 데이터를 플랫하게 변환 후 정렬
+  // @see utils/jobPostingSorter.ts - 최적화된 정렬 로직
   const jobs: JobPostingCard[] = useMemo(() => {
     const allJobs = query.data?.pages.flatMap((page) =>
       page.items.map(convertToCard)
     ) ?? [];
 
-    if (allJobs.length === 0) return [];
-
-    // 오늘 날짜
-    const today = new Date().toISOString().split('T')[0] ?? '';
-
-    // 공고별 가장 빠른 미래 날짜+시간 계산 (헬퍼 함수)
-    const getEarliestFutureDateTime = (job: JobPostingCard): string => {
-      // dateRequirements에서 가장 빠른 미래 날짜+시간 찾기
-      if (job.dateRequirements?.length) {
-        const futureDateTimes: string[] = [];
-        const pastDateTimes: string[] = [];
-
-        for (const dr of job.dateRequirements) {
-          // 가장 빠른 시작 시간 찾기
-          const times = dr.timeSlots
-            ?.filter((ts) => !ts.isTimeToBeAnnounced && ts.startTime)
-            .map((ts) => ts.startTime)
-            .sort() ?? [];
-          const earliestTime = times[0] ?? '99:99';
-
-          const dateTime = `${dr.date} ${earliestTime}`;
-          if (dr.date >= today) {
-            futureDateTimes.push(dateTime);
-          } else {
-            pastDateTimes.push(dateTime);
-          }
-        }
-
-        if (futureDateTimes.length > 0) {
-          return futureDateTimes.sort()[0] ?? '9999-99-99 99:99';
-        }
-        if (pastDateTimes.length > 0) {
-          return pastDateTimes.sort().reverse()[0] ?? '9999-99-99 99:99';
-        }
-      }
-      // 레거시: workDate + timeSlot
-      const time = job.timeSlot?.split(' - ')[0] ?? '99:99';
-      return `${job.workDate || '9999-99-99'} ${time}`;
-    };
-
-    // 성능 최적화: 정렬 키 사전 계산 (O(n) → O(n log n) 대신 O(n²) 방지)
-    const jobsWithSortKey = allJobs.map((job) => ({
-      job,
-      sortKey: getEarliestFutureDateTime(job),
-    }));
-
-    // 정렬: 오늘 이후 날짜 먼저 (가까운 순), 그 다음 과거 날짜 (최근 순)
-    jobsWithSortKey.sort((a, b) => {
-      const dateTimeA = a.sortKey;
-      const dateTimeB = b.sortKey;
-
-      // 날짜 부분만 추출해서 미래/과거 판단
-      const dateA = dateTimeA.split(' ')[0] ?? '';
-      const dateB = dateTimeB.split(' ')[0] ?? '';
-
-      const aIsFuture = dateA >= today;
-      const bIsFuture = dateB >= today;
-
-      // 미래 날짜가 과거보다 먼저
-      if (aIsFuture && !bIsFuture) return -1;
-      if (!aIsFuture && bIsFuture) return 1;
-
-      // 둘 다 미래: 가까운 날짜+시간 먼저
-      if (aIsFuture && bIsFuture) {
-        return dateTimeA.localeCompare(dateTimeB);
-      }
-
-      // 둘 다 과거: 최근 날짜+시간 먼저
-      return dateTimeB.localeCompare(dateTimeA);
-    });
-
-    // 정렬된 job만 반환
-    return jobsWithSortKey.map((item) => item.job);
+    return sortJobPostings(allJobs);
   }, [query.data]);
 
   const hasMore = query.hasNextPage ?? false;

@@ -28,6 +28,7 @@ export {
   formatRelativeTime,
   formatDateShortWithDay,
   formatDateKoreanWithDay,
+  formatAppliedDate,
 } from './formatting';
 
 // Grouping utilities

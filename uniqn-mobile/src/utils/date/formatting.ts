@@ -145,3 +145,17 @@ export function formatDateKoreanWithDay(date: Date | string | null): string {
   if (!d || isNaN(d.getTime())) return '';
   return format(d, 'yyyy년 M월 d일 (E)', { locale: ko });
 }
+
+/**
+ * 지원 날짜 포맷 (1/28(화) 형식)
+ *
+ * @description ApplicantCard 등에서 지원 날짜를 표시할 때 사용
+ * @param dateStr ISO 날짜 문자열 또는 undefined
+ * @returns 포맷된 날짜 문자열, 빈 값이면 '', 파싱 실패 시 원본 반환
+ */
+export function formatAppliedDate(dateStr?: string | null): string {
+  if (!dateStr) return '';
+  const d = parseISO(dateStr);
+  if (isNaN(d.getTime())) return dateStr;
+  return format(d, 'M/d(E)', { locale: ko });
+}
