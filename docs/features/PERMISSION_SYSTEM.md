@@ -1,10 +1,13 @@
 # 권한 시스템 전체 정리 (Permission System Overview)
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: 🚀 **Production Ready**
 
-T-HOLDEM 프로젝트 권한 관리 체계 문서
+> **참고**: 이 문서는 공통 권한 체계 문서입니다.
+> 모바일앱(uniqn-mobile/) 권한 체계는 [CLAUDE.md](../../CLAUDE.md)의 "역할 체계" 섹션을 참조하세요.
+
+UNIQN 프로젝트 권한 관리 체계 문서
 
 ---
 

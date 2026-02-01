@@ -1,10 +1,12 @@
 # 📊 T-HOLDEM 데이터 스키마 가이드
 
-**최종 업데이트**: 2026년 1월 31일
-**버전**: v3.0.0 (모바일앱 스키마 통합)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v3.1.0 (💎 하트/다이아 포인트 시스템 추가)
 **상태**: 🚀 **Production Ready**
 
 > [!SUCCESS]
+> **v3.1 변경사항**: 💎 하트/다이아 포인트 시스템 스키마 추가 (heartBatches, pointTransactions, purchases)
+>
 > **v3.0 변경사항**: 모바일앱(uniqn-mobile) 스키마와 완전 동기화, Assignment 기반 지원 시스템, 역할 체계 개편(employer 추가), 알림 컬렉션 스키마 추가
 
 ## 📋 목차
@@ -40,7 +42,12 @@ Firebase Firestore
 ├── announcements         # 공지사항 ✅ v3.0 추가
 ├── reports               # 신고 (양방향) ✅ v3.0 추가
 ├── tournaments           # 토너먼트
-└── inquiries             # 문의/신고
+├── inquiries             # 문의/신고
+├── purchases             # RevenueCat 구매 기록 ✅ v3.1 추가
+│
+└── users/{userId}/       # 사용자별 서브컬렉션
+    ├── heartBatches      # 💖 하트 배치 (만료일별) ✅ v3.1 추가
+    └── pointTransactions # 💎 포인트 거래 내역 ✅ v3.1 추가
 ```
 
 ## 🗃️ Firebase 컬렉션
@@ -836,6 +843,106 @@ Document ID: Auto-generated
 - 중복 신고 방지 (같은 건에 대해 1회)
 
 **인덱스**: `reporterId`, `targetId`, `status`, `category`, `createdAt`
+
+---
+
+### 💎 포인트 시스템 컬렉션 (v3.1 추가)
+
+#### purchases (RevenueCat 구매 기록)
+
+```typescript
+Collection: "purchases"
+Document ID: RevenueCat transaction_id
+
+{
+  "transactionId": string,         // RevenueCat 트랜잭션 ID
+  "userId": string,                // 구매자 ID
+  "productId": string,             // 상품 ID (e.g., "diamond_starter")
+  "store": "app_store" | "play_store",  // 스토어
+  "purchaseDate": Timestamp,       // 구매일시
+  "expirationDate"?: Timestamp,    // 만료일 (구독용)
+  "price": number,                 // 결제 금액 (KRW)
+  "currency": string,              // 통화 코드
+  "diamondsGranted": number,       // 지급된 다이아 수
+  "bonusDiamonds": number,         // 보너스 다이아 수
+  "status": "completed" | "refunded" | "pending",
+  "receiptData"?: string,          // 영수증 데이터 (검증용)
+  "createdAt": Timestamp,
+  "updatedAt": Timestamp
+}
+```
+
+**인덱스**: `userId`, `purchaseDate`, `status`, `productId`
+
+#### users/{userId}/heartBatches (하트 배치)
+
+```typescript
+Subcollection: "users/{userId}/heartBatches"
+Document ID: Auto-generated
+
+{
+  "amount": number,                // 하트 수량
+  "source": "signup" | "daily_checkin" | "streak_bonus" | "review" | "referral" | "admin_grant",
+  "sourceDetail"?: string,         // 상세 사유
+  "earnedAt": Timestamp,           // 획득일시
+  "expiresAt": Timestamp,          // 만료일시 (획득 후 90일)
+  "remainingAmount": number,       // 남은 하트 수량
+  "usedAmount": number,            // 사용된 하트 수량
+  "status": "active" | "expired" | "depleted",
+  "createdAt": Timestamp,
+  "updatedAt": Timestamp
+}
+```
+
+**만료 규칙**: 획득 후 90일 자동 만료
+**사용 우선순위**: 만료 임박 순으로 자동 차감
+
+**인덱스**: `expiresAt`, `status`, `earnedAt`
+
+#### users/{userId}/pointTransactions (포인트 거래 내역)
+
+```typescript
+Subcollection: "users/{userId}/pointTransactions"
+Document ID: Auto-generated
+
+{
+  "type": "earn" | "spend" | "expire" | "refund",
+  "pointType": "heart" | "diamond",
+  "amount": number,                // 변동량 (양수: 획득, 음수: 사용)
+  "balanceAfter": {                // 거래 후 잔액
+    "hearts": number,
+    "diamonds": number
+  },
+  "reason": string,                // 거래 사유
+  "reasonCode": string,            // 사유 코드 (e.g., "job_posting_regular")
+  "relatedDocId"?: string,         // 관련 문서 ID (공고 ID 등)
+  "relatedDocType"?: "jobPosting" | "purchase" | "heartBatch",
+  "metadata"?: {                   // 추가 메타데이터
+    [key: string]: any
+  },
+  "createdAt": Timestamp
+}
+```
+
+**거래 사유 코드**:
+| 코드 | 설명 | 포인트 타입 |
+|------|------|-----------|
+| `signup_bonus` | 첫 가입 보너스 | 💖 하트 |
+| `daily_checkin` | 출석 체크 | 💖 하트 |
+| `streak_bonus` | 연속 출석 보너스 | 💖 하트 |
+| `review_reward` | 리뷰 작성 보상 | 💖 하트 |
+| `referral_reward` | 친구 초대 보상 | 💖 하트 |
+| `diamond_purchase` | 다이아 충전 | 💎 다이아 |
+| `job_posting_regular` | 지원 공고 등록 | 💎 다이아 |
+| `job_posting_fixed` | 고정 공고 등록 | 💎 다이아 |
+| `job_posting_urgent` | 긴급 공고 등록 | 💎 다이아 |
+| `heart_expired` | 하트 만료 | 💖 하트 |
+| `admin_grant` | 관리자 지급 | 둘 다 |
+| `admin_deduct` | 관리자 차감 | 둘 다 |
+
+**인덱스**: `createdAt`, `type`, `pointType`, `reasonCode`
+
+---
 
 ## 🔧 TypeScript 인터페이스
 

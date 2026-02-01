@@ -1,11 +1,16 @@
-# 🛡️ T-HOLDEM 보안 가이드라인
+# 🛡️ UNIQN 보안 가이드라인
 
-**최종 업데이트**: 2025년 11월 27일
-**상태**: 🚀 **Production Ready - 보안 시스템 완성**
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**상태**: 🚀 **Production Ready**
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 
-> [!SUCCESS]
-> **성과**: 실제 운영 중인 Production 환경의 보안 시스템을 반영합니다. Firebase Authentication + 2FA, 세션 관리, TypeScript strict mode로 완벽한 보안 체계를 구축했습니다.
+> **참고**: 이 문서는 Firebase 백엔드 및 공통 보안 가이드라인입니다.
+> 모바일앱(uniqn-mobile/) 보안은 [CLAUDE.md](../../CLAUDE.md)의 "보안 규칙" 섹션을 참조하세요.
+>
+> **모바일앱 보안 추가 사항**:
+> - expo-secure-store: 민감 데이터 암호화 저장
+> - RevenueCat: 결제 보안 (App Store/Google Play 정책 준수)
+> - Zod 스키마: 입력 검증 및 XSS 방지
 
 ## 📋 목차
 

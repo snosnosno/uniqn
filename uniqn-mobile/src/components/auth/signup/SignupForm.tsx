@@ -6,7 +6,8 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
+import { View, Platform } from 'react-native';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { StepIndicator, SIGNUP_STEPS } from '@/components/auth/StepIndicator';
 import { SignupStep1 } from './SignupStep1';
 import { SignupStep2 } from './SignupStep2';
@@ -150,27 +151,26 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
   };
 
   return (
-    <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    <KeyboardAwareScrollView
       className="flex-1"
+      contentContainerStyle={{ flexGrow: 1, paddingBottom: 40 }}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+      enableOnAndroid
+      enableAutomaticScroll
+      extraScrollHeight={Platform.OS === 'ios' ? 20 : 100}
+      keyboardOpeningTime={0}
     >
-      <ScrollView
-        className="flex-1"
-        contentContainerStyle={{ flexGrow: 1 }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
-      >
-        <View className="flex-1 p-4">
-          {/* 스텝 인디케이터 */}
-          <View className="mb-8">
-            <StepIndicator currentStep={currentStep} steps={SIGNUP_STEPS} />
-          </View>
-
-          {/* 현재 스텝 폼 */}
-          <View className="flex-1">{renderStep()}</View>
+      <View className="flex-1 p-4">
+        {/* 스텝 인디케이터 */}
+        <View className="mb-8">
+          <StepIndicator currentStep={currentStep} steps={SIGNUP_STEPS} />
         </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+
+        {/* 현재 스텝 폼 */}
+        <View className="flex-1">{renderStep()}</View>
+      </View>
+    </KeyboardAwareScrollView>
   );
 }
 

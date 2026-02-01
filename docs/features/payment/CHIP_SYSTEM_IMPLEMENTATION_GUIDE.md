@@ -1,10 +1,10 @@
-# 🎰 칩 시스템 구현 가이드
+# 💎 하트/다이아 포인트 시스템 구현 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
-**상태**: 📋 **구현 준비 (57% 완료)**
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (Heart/Diamond Point System)
+**상태**: 📋 **구현 준비**
 
-> ⚠️ **마스터 문서 참조**: 칩 정의, 가격표, 시각 디자인은 [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md)를 참조하세요.
+> ⚠️ **마스터 문서 참조**: 포인트 정의, 가격표, 시각 디자인은 [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md)를 참조하세요.
 > 이 문서는 **구현 단계 및 기술 가이드**에 집중합니다.
 
 ---
@@ -14,9 +14,35 @@
 1. [구현 우선순위 로드맵](#-구현-우선순위-로드맵)
 2. [Phase 0: 사전 준비](#-phase-0-사전-준비-1주)
 3. [Phase 1: 핵심 기능](#-phase-1-핵심-기능-2주)
-4. [Phase 2: 구독 시스템](#-phase-2-구독-시스템-1주)
+4. [Phase 2: 하트 획득 시스템](#-phase-2-하트-획득-시스템-1주)
 5. [Phase 3: 알림 시스템](#-phase-3-알림-시스템-1주)
 6. [최종 체크리스트](#-최종-우선순위-체크리스트)
+
+---
+
+## 📊 시스템 요약
+
+### 포인트 타입
+
+| 포인트 | 아이콘 | 획득 방법 | 만료 | 가치 |
+|--------|--------|----------|------|------|
+| 💖 하트 (Heart) | ❤️ | 무료 활동 보상 | 90일 후 만료 | ₩300/개 |
+| 💎 다이아 (Diamond) | 💎 | 유료 충전 | 만료 없음 (영구) | ₩300/개 |
+
+### 사용 우선순위
+
+```
+1. 💖 하트 (만료 임박 순서로 먼저 차감)
+2. 💎 다이아 (하트 부족 시 차감)
+```
+
+### 공고 비용
+
+| 공고 타입 | 비용 | 설명 |
+|-----------|------|------|
+| 일반 공고 | 1💎 | 기본 노출 |
+| 긴급 공고 | 10💎 | 상단 고정 + 뱃지 |
+| 상시 공고 | 5💎 | 30일 노출 |
 
 ---
 
@@ -25,7 +51,7 @@
 ```mermaid
 graph LR
     A[Phase 0: 사전 준비 1주] --> B[Phase 1: 핵심 기능 2주]
-    B --> C[Phase 2: 구독 시스템 1주]
+    B --> C[Phase 2: 하트 획득 1주]
     C --> D[Phase 3: 알림 시스템 1주]
     D --> E[Phase 4: 테스트 & 배포 1주]
 ```
@@ -37,44 +63,51 @@ graph LR
 
 ## ✅ Phase 0: 사전 준비 (1주)
 
-### 1. 결제 시스템 선택 및 계약
+### 1. 결제 시스템 선택 및 설정
 
 **긴급도**: ⭐⭐⭐⭐⭐ (최우선)
 
-#### 해야 할 일
-```yaml
-PG사 선택:
-  - 토스페이먼츠 (추천)
-  - 아임포트
-  - 나이스페이
+#### RevenueCat 설정
 
-계약 절차:
-  1. 사업자등록증 준비
-  2. 통신판매업 신고증 준비
-  3. PG사 가입 신청
-  4. 심사 대기 (3-5일)
-  5. 테스트 계정 발급
-  6. API 키 발급
+```yaml
+RevenueCat (추천):
+  장점:
+    - iOS/Android 앱스토어 통합
+    - Apple/Google 결제 규정 준수
+    - 간편한 구독/단건 결제 연동
+    - 상세한 분석 대시보드
+    - React Native SDK 제공
+
+  설정 절차:
+    1. RevenueCat 계정 생성
+    2. App Store Connect/Google Play Console 연동
+    3. Product 생성 (다이아 패키지 4개)
+    4. Entitlements 설정
+    5. API 키 발급
 ```
 
-#### 추천: 토스페이먼츠
-```yaml
-장점:
-  - 간편한 연동 (SDK 제공)
-  - 낮은 수수료 (3.3% + ₩100)
-  - 좋은 개발 문서
-  - D+1 정산 (영업일 기준)
+#### 필요 정보
 
-필요 정보:
-  - 사업자등록번호
-  - 대표자명
-  - 계좌 정보
-  - 정산 주기 선택
+```yaml
+iOS (App Store Connect):
+  - App Store Connect API Key
+  - Shared Secret
+  - In-App Purchase 상품 등록
+
+Android (Google Play Console):
+  - Service Account JSON
+  - In-App Product 등록
+  - 앱 서명 설정
+
+RevenueCat:
+  - Public API Key (클라이언트용)
+  - Secret API Key (서버용)
+  - Webhook URL 설정
 ```
 
 #### 참고 링크
-- 토스페이먼츠: https://docs.tosspayments.com/
-- 가입 신청: https://www.tosspayments.com/
+- RevenueCat: https://www.revenuecat.com/docs
+- React Native SDK: https://docs.revenuecat.com/docs/reactnative
 
 ---
 
@@ -83,50 +116,43 @@ PG사 선택:
 **긴급도**: ⭐⭐⭐⭐⭐ (최우선)
 
 #### 해야 할 일
+
 ```yaml
 법률 자문 항목:
   1. 전자상거래법 검토
-     - 칩(이용권)의 법적 성격
+     - 포인트(이용권)의 법적 성격
      - 서비스 제공의 전자적 수단 정의
 
   2. 약관 작성
      - 서비스 이용약관
-     - 칩(이용권) 정책
+     - 포인트 정책 (하트/다이아)
      - 개인정보 처리방침
 
   3. 환불 정책
-     - 7일 이내 미사용 100% 환불
-     - 부분 사용 80% 환불 (수수료 20%)
+     - 앱스토어 환불 정책 준수
+     - 미사용 다이아 환불 조건
      - 환불 제한 조건
 
   4. 미성년자 보호
-     - 만 19세 미만 구매 금지
-     - 본인인증 절차
-     - 법정대리인 동의 정책
-```
-
-#### 예산
-```yaml
-비용: ₩300,000 ~ ₩500,000
-기간: 1주
-담당: 법무법인 또는 전문 변호사
+     - 앱스토어 연령 제한 설정
+     - 결제 한도 안내
 ```
 
 #### 주요 약관 내용
 
-**제1조: 칩의 정의**
+**제1조: 포인트의 정의**
 ```
-칩은 T-HOLDEM 플랫폼 내 서비스 제공의 전자적 수단으로,
+하트(💖)와 다이아(💎)는 UNIQN 플랫폼 내 서비스 제공의 전자적 수단으로,
 「전자상거래법」상 서비스 이용권에 해당합니다.
 현금, 재화, 경제적 가치로 환전 불가하며,
-오직 T-HOLDEM 서비스 이용 목적으로만 사용됩니다.
+오직 UNIQN 서비스 이용 목적으로만 사용됩니다.
 ```
 
-**제2조: 환불 정책**
+**제2조: 포인트 만료 정책**
 ```
-- 미사용 칩: 구매 후 7일 이내 100% 환불
-- 부분 사용: 미사용분의 80% 환불 (수수료 20%)
-- 환불 제한: 월 1회, 연 3회까지
+- 하트(💖): 획득일로부터 90일 후 자동 소멸
+- 다이아(💎): 만료 없음 (영구 보유)
+- 소멸 예정 포인트는 앱 내 알림으로 안내됩니다
 ```
 
 ---
@@ -142,58 +168,65 @@ PG사 선택:
 {
   // 기존 필드들...
 
-  // 칩 잔액 (신규)
-  chips: {
-    blue: number;          // 파란칩 잔액
-    red: number;           // 빨간칩 잔액
-    blueExpiry: Timestamp; // 파란칩 소멸일 (월말)
-    redExpiry: Timestamp;  // 빨간칩 소멸일 (구매일 + 1년)
+  // 포인트 잔액 (신규)
+  points: {
+    diamonds: number;        // 💎 다이아 총 잔액
+    lastUpdated: Timestamp;  // 마지막 업데이트 시간
   },
-
-  // 구독 정보 (신규)
-  subscription: {
-    plan: 'free' | 'basic' | 'pro';
-    status: 'active' | 'cancelled' | 'expired';
-    startDate: Timestamp;
-    nextBillingDate: Timestamp;
-  }
 }
 
-// users/{userId}/chipTransactions/{txId}
+// users/{userId}/heartBatches/{batchId}
+// 💖 하트는 배치별로 만료 관리
 {
-  type: 'earn' | 'spend' | 'purchase' | 'expire';
-  chipType: 'blue' | 'red';
-  amount: number;          // 변동 칩 개수
-  balance: number;         // 거래 후 잔액
-  reason: string;          // 사유 (예: "지원 신청", "칩 구매")
-  relatedId?: string;      // 관련 문서 ID (예: 공고 ID)
-  createdAt: Timestamp;
+  amount: number;            // 해당 배치의 하트 개수
+  source: HeartSource;       // 획득 경로
+  acquiredAt: Timestamp;     // 획득일
+  expiresAt: Timestamp;      // 만료일 (획득일 + 90일)
+  remainingAmount: number;   // 남은 하트 개수
 }
 
-// subscriptions/{subscriptionId}
+// HeartSource 타입
+type HeartSource =
+  | 'signup'           // 첫 가입 보상 (+10)
+  | 'daily_attendance' // 일일 출석 (+1)
+  | 'weekly_bonus'     // 7일 연속 보너스 (+3)
+  | 'review_complete'  // 리뷰 작성 (+1)
+  | 'referral'         // 친구 초대 (+5)
+  | 'admin_grant';     // 관리자 지급
+
+// users/{userId}/pointTransactions/{txId}
 {
-  userId: string;
-  plan: 'basic' | 'pro';
-  status: 'active' | 'cancelled' | 'expired';
-  startDate: Timestamp;
-  nextBillingDate: Timestamp;
-  billingKey: string;      // 토스페이먼츠 자동결제 키
-  price: number;           // 월 구독료
+  type: 'earn' | 'spend' | 'purchase' | 'expire' | 'refund';
+  pointType: 'heart' | 'diamond';
+  amount: number;            // 변동 포인트 개수 (양수: 획득, 음수: 사용)
+  balanceAfter: number;      // 거래 후 해당 포인트 잔액
+  reason: string;            // 사유 (예: "공고 등록", "일일 출석")
+  relatedId?: string;        // 관련 문서 ID (예: 공고 ID)
+  metadata?: {
+    batchId?: string;        // 하트 배치 ID (하트 관련 시)
+    packageId?: string;      // 구매 패키지 ID
+  };
   createdAt: Timestamp;
-  updatedAt: Timestamp;
 }
 
 // purchases/{purchaseId}
 {
   userId: string;
-  packageId: 'basic' | 'popular' | 'recommended' | 'best';
-  chips: number;           // 구매한 칩 개수
-  amount: number;          // 결제 금액
+  packageId: 'starter' | 'basic' | 'popular' | 'premium';
+  diamonds: number;          // 구매한 다이아 개수
+  bonusDiamonds: number;     // 보너스 다이아
+  totalDiamonds: number;     // 총 다이아 (구매 + 보너스)
+  price: number;             // 결제 금액 (원)
+  currency: 'KRW';
   status: 'pending' | 'completed' | 'refunded';
-  paymentKey: string;      // 토스페이먼츠 결제 키
-  orderId: string;         // 주문 번호
-  refundedAt?: Timestamp;  // 환불 일자
-  refundAmount?: number;   // 환불 금액
+
+  // RevenueCat 정보
+  revenueCatTransactionId: string;
+  store: 'app_store' | 'play_store';
+  productId: string;         // 앱스토어 상품 ID
+
+  refundedAt?: Timestamp;
+  refundAmount?: number;
   createdAt: Timestamp;
 }
 ```
@@ -211,29 +244,25 @@ service cloud.firestore {
       // 본인만 읽기/쓰기 가능
       allow read, write: if request.auth.uid == userId;
 
-      // 칩 차감은 Functions만 가능
+      // 포인트 직접 수정 금지 (Functions만 가능)
       allow update: if request.auth.uid == userId
-        && !request.resource.data.chips.diff(resource.data.chips).affectedKeys().hasAny(['blue', 'red']);
+        && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['points']);
     }
 
-    // 칩 거래 내역
-    match /users/{userId}/chipTransactions/{txId} {
-      // 본인만 읽기, Functions만 쓰기
+    // 하트 배치 (본인만 읽기, Functions만 쓰기)
+    match /users/{userId}/heartBatches/{batchId} {
       allow read: if request.auth.uid == userId;
       allow write: if false; // Functions only
     }
 
-    // 구독 정보
-    match /subscriptions/{subscriptionId} {
-      // 본인 또는 관리자만
-      allow read: if request.auth.uid == resource.data.userId
-        || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    // 포인트 거래 내역 (본인만 읽기, Functions만 쓰기)
+    match /users/{userId}/pointTransactions/{txId} {
+      allow read: if request.auth.uid == userId;
       allow write: if false; // Functions only
     }
 
-    // 구매 정보
+    // 구매 정보 (본인 또는 관리자만)
     match /purchases/{purchaseId} {
-      // 본인 또는 관리자만
       allow read: if request.auth.uid == resource.data.userId
         || get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
       allow write: if false; // Functions only
@@ -246,195 +275,219 @@ service cloud.firestore {
 
 ## 🚀 Phase 1: 핵심 기능 (2주)
 
-### Week 1: 칩 기본 시스템
+### Week 1: 포인트 기본 시스템
 
-#### Day 1-2: 칩 데이터 모델
+#### Day 1-2: 포인트 데이터 모델
 
-**파일**: `app2/src/types/chip.types.ts`
+**파일**: `uniqn-mobile/src/types/point.types.ts`
 
 ```typescript
 /**
- * 칩 잔액 인터페이스
+ * 포인트 타입
  */
-export interface ChipBalance {
-  blue: number;          // 파란칩 (구독)
-  red: number;           // 빨간칩 (충전)
-  blueExpiry: Date;      // 파란칩 소멸일
-  redExpiry: Date;       // 빨간칩 소멸일
+export type PointType = 'heart' | 'diamond';
+
+/**
+ * 하트 획득 경로
+ */
+export type HeartSource =
+  | 'signup'           // 첫 가입 보상 (+10)
+  | 'daily_attendance' // 일일 출석 (+1)
+  | 'weekly_bonus'     // 7일 연속 보너스 (+3)
+  | 'review_complete'  // 리뷰 작성 (+1)
+  | 'referral'         // 친구 초대 (+5)
+  | 'admin_grant';     // 관리자 지급
+
+/**
+ * 하트 배치 (만료 관리용)
+ */
+export interface HeartBatch {
+  id: string;
+  amount: number;            // 원래 하트 개수
+  remainingAmount: number;   // 남은 하트 개수
+  source: HeartSource;       // 획득 경로
+  acquiredAt: Date;          // 획득일
+  expiresAt: Date;           // 만료일 (획득일 + 90일)
 }
 
 /**
- * 칩 거래 타입
+ * 포인트 잔액
  */
-export type ChipTransactionType = 'earn' | 'spend' | 'purchase' | 'expire';
+export interface PointBalance {
+  hearts: number;            // 💖 하트 총 잔액
+  diamonds: number;          // 💎 다이아 총 잔액
+  heartBatches: HeartBatch[]; // 하트 배치 목록 (만료 임박 순)
+  expiringHearts: {          // 곧 만료될 하트 정보
+    count: number;
+    expiresIn: number;       // 일수
+  } | null;
+}
 
 /**
- * 칩 종류
+ * 포인트 거래 타입
  */
-export type ChipType = 'blue' | 'red';
+export type PointTransactionType = 'earn' | 'spend' | 'purchase' | 'expire' | 'refund';
 
 /**
- * 칩 거래 내역
+ * 포인트 거래 내역
  */
-export interface ChipTransaction {
+export interface PointTransaction {
   id: string;
-  type: ChipTransactionType;
-  chipType: ChipType;
-  amount: number;        // 변동 칩 개수
-  balance: number;       // 거래 후 잔액
-  reason: string;        // 사유
-  relatedId?: string;    // 관련 ID (공고 ID 등)
+  type: PointTransactionType;
+  pointType: PointType;
+  amount: number;            // 변동 포인트 (양수: 획득, 음수: 사용)
+  balanceAfter: number;      // 거래 후 잔액
+  reason: string;            // 사유
+  relatedId?: string;        // 관련 ID (공고 ID 등)
+  metadata?: {
+    batchId?: string;
+    packageId?: string;
+  };
   createdAt: Date;
 }
 
 /**
- * 칩 패키지 정의
+ * 다이아 패키지 정의
  */
-export interface ChipPackage {
-  id: 'basic' | 'popular' | 'recommended' | 'best';
+export interface DiamondPackage {
+  id: 'starter' | 'basic' | 'popular' | 'premium';
   name: string;
-  chips: number;
-  price: number;
-  pricePerChip: number;
-  discount: number;      // 할인율 (%)
-  savings: number;       // 절약 금액
-  badge?: string;        // 배지 (⭐, 🏆, 🔥)
-  description: string;   // 설명
+  diamonds: number;          // 기본 다이아
+  bonusDiamonds: number;     // 보너스 다이아
+  totalDiamonds: number;     // 총 다이아
+  price: number;             // 가격 (원)
+  pricePerDiamond: number;   // 다이아당 가격
+  bonusPercent: number;      // 보너스 %
+  badge?: string;            // 배지
+  description: string;       // 설명
+  productId: string;         // 앱스토어 상품 ID
 }
 
 /**
- * 칩 패키지 목록
+ * 다이아 패키지 목록
  */
-export const CHIP_PACKAGES: ChipPackage[] = [
+export const DIAMOND_PACKAGES: DiamondPackage[] = [
+  {
+    id: 'starter',
+    name: '스타터',
+    diamonds: 3,
+    bonusDiamonds: 0,
+    totalDiamonds: 3,
+    price: 1000,
+    pricePerDiamond: 333,
+    bonusPercent: 0,
+    badge: '💡',
+    description: '첫 체험용',
+    productId: 'com.uniqn.diamond.starter',
+  },
   {
     id: 'basic',
-    name: '기본 패키지',
-    chips: 21,
-    price: 4900,
-    pricePerChip: 233,
-    discount: 0,
-    savings: 0,
-    badge: '🥉',
-    description: '소형 펍 (1주일)',
+    name: '기본',
+    diamonds: 11,
+    bonusDiamonds: 0,
+    totalDiamonds: 11,
+    price: 3300,
+    pricePerDiamond: 300,
+    bonusPercent: 0,
+    badge: '⭐',
+    description: '소규모 채용',
+    productId: 'com.uniqn.diamond.basic',
   },
   {
     id: 'popular',
-    name: '인기 패키지',
-    chips: 50,
-    price: 9900,
-    pricePerChip: 198,
-    discount: 15,
-    savings: 735,
-    badge: '⭐',
-    description: '중형 펍 (2주일) - BEST',
-  },
-  {
-    id: 'recommended',
-    name: '추천 패키지',
-    chips: 115,
-    price: 19900,
-    pricePerChip: 173,
-    discount: 26,
-    savings: 3895,
-    badge: '🏆',
-    description: '대형 펍 (1개월)',
-  },
-  {
-    id: 'best',
-    name: '최대 할인',
-    chips: 310,
-    price: 49900,
-    pricePerChip: 161,
-    discount: 31,
-    savings: 22430,
+    name: '인기',
+    diamonds: 35,
+    bonusDiamonds: 5,
+    totalDiamonds: 40,
+    price: 10000,
+    pricePerDiamond: 250,
+    bonusPercent: 14,
     badge: '🔥',
-    description: '체인점 (3개월)',
+    description: '+5💎 보너스',
+    productId: 'com.uniqn.diamond.popular',
+  },
+  {
+    id: 'premium',
+    name: '프리미엄',
+    diamonds: 333,
+    bonusDiamonds: 67,
+    totalDiamonds: 400,
+    price: 100000,
+    pricePerDiamond: 250,
+    bonusPercent: 20,
+    badge: '👑',
+    description: '+20% 보너스',
+    productId: 'com.uniqn.diamond.premium',
   },
 ];
 
 /**
- * 구독 플랜
+ * 공고 비용 정의
  */
-export type SubscriptionPlan = 'free' | 'basic' | 'pro';
+export const JOB_POSTING_COSTS = {
+  regular: 1,   // 일반 공고
+  urgent: 10,   // 긴급 공고
+  fixed: 5,     // 상시 공고
+} as const;
 
-/**
- * 구독 상태
- */
-export type SubscriptionStatus = 'active' | 'cancelled' | 'expired';
-
-/**
- * 구독 정보
- */
-export interface Subscription {
-  id: string;
-  userId: string;
-  plan: SubscriptionPlan;
-  status: SubscriptionStatus;
-  startDate: Date;
-  nextBillingDate: Date;
-  billingKey?: string;
-  price: number;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-/**
- * 구매 정보
- */
-export interface Purchase {
-  id: string;
-  userId: string;
-  packageId: ChipPackage['id'];
-  chips: number;
-  amount: number;
-  status: 'pending' | 'completed' | 'refunded';
-  paymentKey: string;
-  orderId: string;
-  refundedAt?: Date;
-  refundAmount?: number;
-  createdAt: Date;
-}
+export type JobPostingType = keyof typeof JOB_POSTING_COSTS;
 ```
 
 ---
 
 #### Day 3-4: Zustand Store 생성
 
-**파일**: `app2/src/stores/chipStore.ts`
+**파일**: `uniqn-mobile/src/stores/pointStore.ts`
 
 ```typescript
 import { create } from 'zustand';
-import { doc, onSnapshot, collection, query, orderBy, limit } from 'firebase/firestore';
-import { db } from '@/config/firebase';
-import { ChipBalance, ChipTransaction } from '@/types/chip.types';
+import {
+  doc,
+  onSnapshot,
+  collection,
+  query,
+  orderBy,
+  limit,
+  where,
+} from 'firebase/firestore';
+import { db } from '@/lib/firebase';
+import {
+  PointBalance,
+  PointTransaction,
+  HeartBatch,
+} from '@/types/point.types';
 import { logger } from '@/utils/logger';
+import { differenceInDays } from 'date-fns';
 
-interface ChipStore {
+interface PointStore {
   // State
-  balance: ChipBalance | null;
-  transactions: ChipTransaction[];
+  balance: PointBalance | null;
+  transactions: PointTransaction[];
   loading: boolean;
   error: string | null;
 
   // Actions
   fetchBalance: (userId: string) => void;
   fetchTransactions: (userId: string) => void;
-  spendChip: (userId: string, amount: number, reason: string) => Promise<boolean>;
+  getTotalPoints: () => number;
+  getExpiringHearts: () => { count: number; daysLeft: number } | null;
+  canAfford: (cost: number) => boolean;
   cleanup: () => void;
 }
 
 // 구독 해제 함수 저장
 let balanceUnsubscribe: (() => void) | null = null;
+let heartBatchesUnsubscribe: (() => void) | null = null;
 let transactionsUnsubscribe: (() => void) | null = null;
 
-export const useChipStore = create<ChipStore>((set, get) => ({
+export const usePointStore = create<PointStore>((set, get) => ({
   balance: null,
   transactions: [],
   loading: false,
   error: null,
 
   /**
-   * 칩 잔액 실시간 구독
+   * 포인트 잔액 실시간 구독
    */
   fetchBalance: (userId: string) => {
     if (!userId) {
@@ -446,36 +499,99 @@ export const useChipStore = create<ChipStore>((set, get) => ({
 
     try {
       // 기존 구독 해제
-      if (balanceUnsubscribe) {
-        balanceUnsubscribe();
-      }
+      if (balanceUnsubscribe) balanceUnsubscribe();
+      if (heartBatchesUnsubscribe) heartBatchesUnsubscribe();
 
-      // Firestore 실시간 구독
+      // 1. 다이아 잔액 실시간 구독
       balanceUnsubscribe = onSnapshot(
         doc(db, `users/${userId}`),
         (snapshot) => {
           if (snapshot.exists()) {
             const data = snapshot.data();
-            const chips = data.chips || { blue: 0, red: 0 };
+            const diamonds = data.points?.diamonds || 0;
 
-            set({
-              balance: {
-                blue: chips.blue || 0,
-                red: chips.red || 0,
-                blueExpiry: chips.blueExpiry?.toDate() || new Date(),
-                redExpiry: chips.redExpiry?.toDate() || new Date(),
-              },
+            set((state) => ({
+              balance: state.balance
+                ? { ...state.balance, diamonds }
+                : {
+                    hearts: 0,
+                    diamonds,
+                    heartBatches: [],
+                    expiringHearts: null,
+                  },
               loading: false,
-            });
+            }));
 
-            logger.info('칩 잔액 업데이트', { balance: chips });
-          } else {
-            set({ balance: null, loading: false });
+            logger.info('다이아 잔액 업데이트', { diamonds });
           }
         },
         (error) => {
-          logger.error('칩 잔액 조회 실패', error);
+          logger.error('다이아 잔액 조회 실패', error);
           set({ error: error.message, loading: false });
+        }
+      );
+
+      // 2. 하트 배치 실시간 구독 (만료되지 않은 것만, 만료일 순)
+      const now = new Date();
+      const heartBatchesQuery = query(
+        collection(db, `users/${userId}/heartBatches`),
+        where('expiresAt', '>', now),
+        where('remainingAmount', '>', 0),
+        orderBy('expiresAt', 'asc')
+      );
+
+      heartBatchesUnsubscribe = onSnapshot(
+        heartBatchesQuery,
+        (snapshot) => {
+          const heartBatches: HeartBatch[] = snapshot.docs.map((doc) => {
+            const data = doc.data();
+            return {
+              id: doc.id,
+              amount: data.amount,
+              remainingAmount: data.remainingAmount,
+              source: data.source,
+              acquiredAt: data.acquiredAt?.toDate() || new Date(),
+              expiresAt: data.expiresAt?.toDate() || new Date(),
+            };
+          });
+
+          const totalHearts = heartBatches.reduce(
+            (sum, batch) => sum + batch.remainingAmount,
+            0
+          );
+
+          // 가장 빨리 만료되는 하트 정보
+          let expiringHearts = null;
+          if (heartBatches.length > 0) {
+            const firstBatch = heartBatches[0];
+            const daysLeft = differenceInDays(firstBatch.expiresAt, new Date());
+            if (daysLeft <= 7) {
+              expiringHearts = {
+                count: firstBatch.remainingAmount,
+                expiresIn: daysLeft,
+              };
+            }
+          }
+
+          set((state) => ({
+            balance: state.balance
+              ? { ...state.balance, hearts: totalHearts, heartBatches, expiringHearts }
+              : {
+                  hearts: totalHearts,
+                  diamonds: 0,
+                  heartBatches,
+                  expiringHearts,
+                },
+          }));
+
+          logger.info('하트 잔액 업데이트', {
+            totalHearts,
+            batchCount: heartBatches.length,
+          });
+        },
+        (error) => {
+          logger.error('하트 배치 조회 실패', error);
+          set({ error: error.message });
         }
       );
     } catch (error) {
@@ -485,7 +601,7 @@ export const useChipStore = create<ChipStore>((set, get) => ({
   },
 
   /**
-   * 칩 거래 내역 조회
+   * 포인트 거래 내역 조회
    */
   fetchTransactions: (userId: string) => {
     if (!userId) {
@@ -494,14 +610,12 @@ export const useChipStore = create<ChipStore>((set, get) => ({
     }
 
     try {
-      // 기존 구독 해제
       if (transactionsUnsubscribe) {
         transactionsUnsubscribe();
       }
 
-      // 최근 50개 거래 내역 조회
       const q = query(
-        collection(db, `users/${userId}/chipTransactions`),
+        collection(db, `users/${userId}/pointTransactions`),
         orderBy('createdAt', 'desc'),
         limit(50)
       );
@@ -509,25 +623,26 @@ export const useChipStore = create<ChipStore>((set, get) => ({
       transactionsUnsubscribe = onSnapshot(
         q,
         (snapshot) => {
-          const transactions: ChipTransaction[] = snapshot.docs.map((doc) => {
+          const transactions: PointTransaction[] = snapshot.docs.map((doc) => {
             const data = doc.data();
             return {
               id: doc.id,
               type: data.type,
-              chipType: data.chipType,
+              pointType: data.pointType,
               amount: data.amount,
-              balance: data.balance,
+              balanceAfter: data.balanceAfter,
               reason: data.reason,
               relatedId: data.relatedId,
+              metadata: data.metadata,
               createdAt: data.createdAt?.toDate() || new Date(),
             };
           });
 
           set({ transactions });
-          logger.info('칩 거래 내역 업데이트', { count: transactions.length });
+          logger.info('포인트 거래 내역 업데이트', { count: transactions.length });
         },
         (error) => {
-          logger.error('칩 거래 내역 조회 실패', error);
+          logger.error('포인트 거래 내역 조회 실패', error);
           set({ error: error.message });
         }
       );
@@ -538,43 +653,33 @@ export const useChipStore = create<ChipStore>((set, get) => ({
   },
 
   /**
-   * 칩 사용 (지원 신청 등)
+   * 총 포인트 (하트 + 다이아)
    */
-  spendChip: async (userId: string, amount: number, reason: string): Promise<boolean> => {
+  getTotalPoints: () => {
     const { balance } = get();
+    if (!balance) return 0;
+    return balance.hearts + balance.diamonds;
+  },
 
-    if (!balance) {
-      logger.error('칩 잔액 정보 없음');
-      return false;
-    }
+  /**
+   * 만료 임박 하트 정보
+   */
+  getExpiringHearts: () => {
+    const { balance } = get();
+    if (!balance?.expiringHearts) return null;
+    return {
+      count: balance.expiringHearts.count,
+      daysLeft: balance.expiringHearts.expiresIn,
+    };
+  },
 
-    const totalChips = balance.blue + balance.red;
-
-    if (totalChips < amount) {
-      logger.warn('칩 부족', { required: amount, available: totalChips });
-      return false;
-    }
-
-    try {
-      // Firebase Functions 호출
-      const spendChipFunction = httpsCallable(functions, 'spendChip');
-      const result = await spendChipFunction({
-        userId,
-        amount,
-        reason,
-      });
-
-      if (result.data.success) {
-        logger.info('칩 사용 성공', { amount, reason });
-        return true;
-      } else {
-        logger.error('칩 사용 실패', result.data.error);
-        return false;
-      }
-    } catch (error) {
-      logger.error('spendChip error', error);
-      return false;
-    }
+  /**
+   * 구매 가능 여부 확인
+   */
+  canAfford: (cost: number) => {
+    const { balance } = get();
+    if (!balance) return false;
+    return (balance.hearts + balance.diamonds) >= cost;
   },
 
   /**
@@ -584,6 +689,10 @@ export const useChipStore = create<ChipStore>((set, get) => ({
     if (balanceUnsubscribe) {
       balanceUnsubscribe();
       balanceUnsubscribe = null;
+    }
+    if (heartBatchesUnsubscribe) {
+      heartBatchesUnsubscribe();
+      heartBatchesUnsubscribe = null;
     }
     if (transactionsUnsubscribe) {
       transactionsUnsubscribe();
@@ -596,224 +705,247 @@ export const useChipStore = create<ChipStore>((set, get) => ({
 
 ---
 
-#### Day 5: 칩 UI 컴포넌트
+#### Day 5: 포인트 UI 컴포넌트
 
-**파일**: `app2/src/components/chip/ChipBalance.tsx`
+**파일**: `uniqn-mobile/src/components/points/PointBalance.tsx`
 
 ```typescript
 import React from 'react';
-import { useChipStore } from '@/stores/chipStore';
-import { format, differenceInDays } from 'date-fns';
-import { ko } from 'date-fns/locale';
+import { View, Text, Pressable } from 'react-native';
+import { usePointStore } from '@/stores/pointStore';
+import { useRouter } from 'expo-router';
+import { differenceInDays } from 'date-fns';
 
-export const ChipBalance: React.FC = () => {
-  const { balance, loading } = useChipStore();
+interface PointBalanceProps {
+  compact?: boolean;
+  showChargeButton?: boolean;
+}
+
+export const PointBalance: React.FC<PointBalanceProps> = ({
+  compact = false,
+  showChargeButton = true,
+}) => {
+  const router = useRouter();
+  const { balance, loading } = usePointStore();
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 animate-pulse">
-        <div className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
-        <div className="h-10 bg-gray-200 dark:bg-gray-700 rounded w-1/2 mb-6"></div>
-        <div className="space-y-4">
-          <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-          <div className="h-20 bg-gray-200 dark:bg-gray-700 rounded"></div>
-        </div>
-      </div>
+      <View className="bg-white dark:bg-gray-800 rounded-lg p-4 animate-pulse">
+        <View className="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-2" />
+        <View className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/2" />
+      </View>
     );
   }
 
   if (!balance) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg p-6">
-        <p className="text-gray-500 dark:text-gray-400">칩 정보를 불러올 수 없습니다.</p>
-      </div>
+      <View className="bg-white dark:bg-gray-800 rounded-lg p-4">
+        <Text className="text-gray-500 dark:text-gray-400">
+          포인트 정보를 불러올 수 없습니다.
+        </Text>
+      </View>
     );
   }
 
-  const totalChips = balance.blue + balance.red;
-  const blueExpireDays = differenceInDays(balance.blueExpiry, new Date());
-  const redExpireDays = differenceInDays(balance.redExpiry, new Date());
+  const totalPoints = balance.hearts + balance.diamonds;
+
+  if (compact) {
+    return (
+      <Pressable
+        onPress={() => router.push('/points')}
+        className="flex-row items-center gap-2 bg-gray-100 dark:bg-gray-800 rounded-full px-3 py-1.5"
+      >
+        <Text className="text-pink-500">💖</Text>
+        <Text className="font-semibold text-gray-900 dark:text-white">
+          {balance.hearts}
+        </Text>
+        <View className="w-px h-4 bg-gray-300 dark:bg-gray-600" />
+        <Text className="text-cyan-500">💎</Text>
+        <Text className="font-semibold text-gray-900 dark:text-white">
+          {balance.diamonds}
+        </Text>
+      </Pressable>
+    );
+  }
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-sm">
+    <View className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
       {/* 헤더 */}
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          🎰 보유 칩
-        </h3>
-        <button className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
-          충전하기
-        </button>
-      </div>
+      <View className="flex-row items-center justify-between mb-4">
+        <Text className="text-lg font-bold text-gray-900 dark:text-white">
+          💰 내 포인트
+        </Text>
+        {showChargeButton && (
+          <Pressable
+            onPress={() => router.push('/points/purchase')}
+            className="bg-purple-600 rounded-full px-4 py-2"
+          >
+            <Text className="text-white font-semibold text-sm">충전하기</Text>
+          </Pressable>
+        )}
+      </View>
 
-      {/* 총 칩 개수 */}
-      <div className="mb-6">
-        <div className="text-4xl font-bold text-gray-900 dark:text-gray-100">
-          총 {totalChips}칩
-        </div>
-        <div className="h-2 bg-gray-200 dark:bg-gray-700 rounded-full mt-2">
-          <div
-            className="h-2 bg-gradient-to-r from-blue-500 to-red-500 rounded-full transition-all"
-            style={{ width: `${totalChips > 0 ? 100 : 0}%` }}
-          ></div>
-        </div>
-      </div>
+      {/* 총 포인트 */}
+      <View className="mb-6">
+        <Text className="text-4xl font-bold text-gray-900 dark:text-white">
+          {totalPoints.toLocaleString()}
+          <Text className="text-lg text-gray-500"> 포인트</Text>
+        </Text>
+      </View>
 
-      {/* 칩 상세 */}
-      <div className="space-y-4">
-        {/* 파란칩 */}
-        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <span className="text-3xl">🔵</span>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-gray-100">
-                  파란칩: {balance.blue}개
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  매월 지급 구독 칩
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div
-                className={`text-sm font-medium ${
-                  blueExpireDays <= 3
-                    ? 'text-red-600 dark:text-red-400'
-                    : blueExpireDays <= 7
-                    ? 'text-orange-600 dark:text-orange-400'
-                    : 'text-gray-600 dark:text-gray-400'
-                }`}
-              >
-                ⏰ {format(balance.blueExpiry, 'MM/dd 소멸', { locale: ko })}
-              </div>
-              {blueExpireDays <= 7 && (
-                <div className="text-xs text-red-600 dark:text-red-400 mt-1">
-                  {blueExpireDays}일 남음!
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
+      {/* 포인트 상세 */}
+      <View className="space-y-3">
+        {/* 💖 하트 */}
+        <View className="bg-pink-50 dark:bg-pink-900/20 rounded-xl p-4">
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center gap-3">
+              <Text className="text-2xl">💖</Text>
+              <View>
+                <Text className="font-semibold text-gray-900 dark:text-white">
+                  하트 {balance.hearts}개
+                </Text>
+                <Text className="text-sm text-gray-600 dark:text-gray-400">
+                  무료 획득 포인트
+                </Text>
+              </View>
+            </View>
+            {balance.expiringHearts && (
+              <View className="bg-red-100 dark:bg-red-900/30 rounded-lg px-2 py-1">
+                <Text className="text-xs text-red-600 dark:text-red-400 font-medium">
+                  ⏰ {balance.expiringHearts.count}개
+                  {balance.expiringHearts.expiresIn}일 후 만료
+                </Text>
+              </View>
+            )}
+          </View>
+        </View>
 
-        {/* 빨간칩 */}
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <span className="text-3xl">🔴</span>
-              <div>
-                <div className="font-semibold text-gray-900 dark:text-gray-100">
-                  빨간칩: {balance.red}개
-                </div>
-                <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                  충전 구매 칩
-                </div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                ♾️ {format(balance.redExpiry, 'yyyy/MM/dd까지', { locale: ko })}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                {redExpireDays}일 남음
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        {/* 💎 다이아 */}
+        <View className="bg-cyan-50 dark:bg-cyan-900/20 rounded-xl p-4">
+          <View className="flex-row items-center gap-3">
+            <Text className="text-2xl">💎</Text>
+            <View>
+              <Text className="font-semibold text-gray-900 dark:text-white">
+                다이아 {balance.diamonds}개
+              </Text>
+              <Text className="text-sm text-gray-600 dark:text-gray-400">
+                유료 충전 포인트 • 만료 없음
+              </Text>
+            </View>
+          </View>
+        </View>
+      </View>
 
       {/* 사용 순서 안내 */}
-      <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-        <div className="flex items-start gap-2">
-          <span className="text-lg">💡</span>
-          <div className="text-sm">
-            <div className="font-semibold text-gray-900 dark:text-gray-100 mb-1">
+      <View className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+        <View className="flex-row items-start gap-2">
+          <Text className="text-lg">💡</Text>
+          <View className="flex-1">
+            <Text className="text-sm font-medium text-gray-900 dark:text-white mb-1">
               사용 순서
-            </div>
-            <div className="text-gray-600 dark:text-gray-400">
-              파란칩 먼저 → 빨간칩 나중에
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+            </Text>
+            <Text className="text-sm text-gray-600 dark:text-gray-400">
+              💖 하트 먼저 (만료 임박 순) → 💎 다이아
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
   );
 };
 ```
 
-**파일**: `app2/src/components/chip/ChipTransactionHistory.tsx`
+**파일**: `uniqn-mobile/src/components/points/PointTransactionHistory.tsx`
 
 ```typescript
 import React from 'react';
-import { useChipStore } from '@/stores/chipStore';
+import { View, Text, FlatList } from 'react-native';
+import { usePointStore } from '@/stores/pointStore';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { PointTransaction } from '@/types/point.types';
 
-export const ChipTransactionHistory: React.FC = () => {
-  const { transactions, loading } = useChipStore();
+export const PointTransactionHistory: React.FC = () => {
+  const { transactions, loading } = usePointStore();
 
   if (loading) {
-    return <div className="animate-pulse">로딩 중...</div>;
+    return (
+      <View className="p-4">
+        <Text className="text-gray-500">로딩 중...</Text>
+      </View>
+    );
   }
 
   if (transactions.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-        거래 내역이 없습니다.
-      </div>
+      <View className="p-8 items-center">
+        <Text className="text-6xl mb-4">📭</Text>
+        <Text className="text-gray-500 dark:text-gray-400 text-center">
+          포인트 내역이 없습니다
+        </Text>
+      </View>
     );
   }
 
+  const renderTransaction = ({ item: tx }: { item: PointTransaction }) => {
+    const isPositive = tx.amount > 0;
+    const icon = tx.pointType === 'heart' ? '💖' : '💎';
+
+    const typeLabel = {
+      earn: '획득',
+      spend: '사용',
+      purchase: '충전',
+      expire: '만료',
+      refund: '환불',
+    }[tx.type];
+
+    return (
+      <View className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center gap-3 flex-1">
+            <Text className="text-2xl">{icon}</Text>
+            <View className="flex-1">
+              <Text className="font-medium text-gray-900 dark:text-white">
+                {tx.reason}
+              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                {format(tx.createdAt, 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
+              </Text>
+            </View>
+          </View>
+          <View className="items-end">
+            <Text
+              className={`font-semibold ${
+                isPositive
+                  ? 'text-green-600 dark:text-green-400'
+                  : 'text-red-600 dark:text-red-400'
+              }`}
+            >
+              {isPositive ? '+' : ''}{tx.amount}
+            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">
+              {typeLabel} • 잔액 {tx.balanceAfter}
+            </Text>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm">
-      <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-        <h3 className="text-lg font-bold text-gray-900 dark:text-gray-100">
-          칩 사용 내역
-        </h3>
-      </div>
-
-      <div className="divide-y divide-gray-200 dark:divide-gray-700">
-        {transactions.map((tx) => (
-          <div key={tx.id} className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                {/* 아이콘 */}
-                <div className="text-2xl">
-                  {tx.chipType === 'blue' ? '🔵' : '🔴'}
-                </div>
-
-                {/* 내용 */}
-                <div>
-                  <div className="font-medium text-gray-900 dark:text-gray-100">
-                    {tx.reason}
-                  </div>
-                  <div className="text-sm text-gray-500 dark:text-gray-400">
-                    {format(tx.createdAt, 'yyyy년 MM월 dd일 HH:mm', { locale: ko })}
-                  </div>
-                </div>
-              </div>
-
-              {/* 금액 */}
-              <div className="text-right">
-                <div
-                  className={`font-semibold ${
-                    tx.type === 'earn' || tx.type === 'purchase'
-                      ? 'text-green-600 dark:text-green-400'
-                      : 'text-red-600 dark:text-red-400'
-                  }`}
-                >
-                  {tx.type === 'earn' || tx.type === 'purchase' ? '+' : '-'}
-                  {tx.amount}칩
-                </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400">
-                  잔액: {tx.balance}칩
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
+    <View className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden">
+      <View className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <Text className="text-lg font-bold text-gray-900 dark:text-white">
+          포인트 내역
+        </Text>
+      </View>
+      <FlatList
+        data={transactions}
+        keyExtractor={(item) => item.id}
+        renderItem={renderTransaction}
+        scrollEnabled={false}
+      />
+    </View>
   );
 };
 ```
@@ -822,93 +954,136 @@ export const ChipTransactionHistory: React.FC = () => {
 
 ### Week 2: 결제 연동
 
-#### Day 1-2: 토스페이먼츠 연동
+#### Day 1-2: RevenueCat 연동
 
 **1. 패키지 설치**
 ```bash
-cd app2
-npm install @tosspayments/payment-sdk
+cd uniqn-mobile
+npx expo install react-native-purchases
 ```
 
 **2. 환경 변수 설정**
 
-**파일**: `app2/.env`
+**파일**: `uniqn-mobile/.env`
 ```bash
-# 토스페이먼츠
-VITE_TOSS_CLIENT_KEY=test_ck_xxxxxxxxxx
-VITE_TOSS_SECRET_KEY=test_sk_xxxxxxxxxx
+# RevenueCat
+EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=appl_xxxxx
+EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID=goog_xxxxx
 ```
 
-**3. 결제 서비스 작성**
+**3. RevenueCat 초기화**
 
-**파일**: `app2/src/services/payment.ts`
+**파일**: `uniqn-mobile/src/lib/purchases.ts`
 
 ```typescript
-import { loadTossPayments } from '@tosspayments/payment-sdk';
-import { CHIP_PACKAGES, ChipPackage } from '@/types/chip.types';
+import Purchases, {
+  PurchasesPackage,
+  CustomerInfo,
+  LOG_LEVEL,
+} from 'react-native-purchases';
+import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 
-const CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
+const API_KEY = Platform.select({
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
+  android: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID,
+}) || '';
 
 /**
- * 칩 구매 (토스페이먼츠)
+ * RevenueCat 초기화
  */
-export const purchaseChips = async (
-  userId: string,
-  packageId: ChipPackage['id']
-): Promise<void> => {
-  const pkg = CHIP_PACKAGES.find((p) => p.id === packageId);
-
-  if (!pkg) {
-    throw new Error('Invalid package ID');
-  }
-
+export const initializePurchases = async (userId?: string) => {
   try {
-    // 1. 토스페이먼츠 SDK 로드
-    const tossPayments = await loadTossPayments(CLIENT_KEY);
+    if (__DEV__) {
+      Purchases.setLogLevel(LOG_LEVEL.DEBUG);
+    }
 
-    // 2. 주문 ID 생성
-    const orderId = `chip_${userId}_${Date.now()}`;
-
-    logger.info('칩 구매 시작', { packageId, orderId, amount: pkg.price });
-
-    // 3. 결제 요청
-    await tossPayments.requestPayment('카드', {
-      amount: pkg.price,
-      orderId,
-      orderName: `빨간칩 ${pkg.chips}개`,
-      customerName: userId,
-      successUrl: `${window.location.origin}/payment/success`,
-      failUrl: `${window.location.origin}/payment/fail`,
+    await Purchases.configure({
+      apiKey: API_KEY,
+      appUserID: userId,
     });
+
+    logger.info('RevenueCat 초기화 완료', { userId });
   } catch (error) {
-    logger.error('칩 구매 실패', error);
+    logger.error('RevenueCat 초기화 실패', error);
     throw error;
   }
 };
 
 /**
- * 구독 시작 (자동결제)
+ * 사용자 ID 설정 (로그인 시)
  */
-export const startSubscription = async (
-  userId: string,
-  plan: 'basic' | 'pro'
-): Promise<string> => {
+export const identifyUser = async (userId: string) => {
   try {
-    const tossPayments = await loadTossPayments(CLIENT_KEY);
-
-    logger.info('구독 시작', { plan, userId });
-
-    // 빌링키 발급 요청
-    const billingKey = await tossPayments.requestBillingAuth('카드', {
-      customerKey: userId,
-      successUrl: `${window.location.origin}/subscription/success?plan=${plan}`,
-      failUrl: `${window.location.origin}/subscription/fail`,
-    });
-
-    return billingKey;
+    const { customerInfo } = await Purchases.logIn(userId);
+    logger.info('RevenueCat 사용자 식별', { userId });
+    return customerInfo;
   } catch (error) {
-    logger.error('구독 시작 실패', error);
+    logger.error('RevenueCat 사용자 식별 실패', error);
+    throw error;
+  }
+};
+
+/**
+ * 사용자 로그아웃
+ */
+export const logoutUser = async () => {
+  try {
+    await Purchases.logOut();
+    logger.info('RevenueCat 로그아웃');
+  } catch (error) {
+    logger.error('RevenueCat 로그아웃 실패', error);
+    throw error;
+  }
+};
+
+/**
+ * 다이아 패키지 목록 조회
+ */
+export const getDiamondPackages = async (): Promise<PurchasesPackage[]> => {
+  try {
+    const offerings = await Purchases.getOfferings();
+
+    if (offerings.current?.availablePackages) {
+      return offerings.current.availablePackages;
+    }
+
+    return [];
+  } catch (error) {
+    logger.error('패키지 조회 실패', error);
+    throw error;
+  }
+};
+
+/**
+ * 다이아 구매
+ */
+export const purchaseDiamonds = async (
+  pkg: PurchasesPackage
+): Promise<CustomerInfo> => {
+  try {
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    logger.info('다이아 구매 완료', {
+      packageId: pkg.identifier,
+      productId: pkg.product.identifier,
+    });
+    return customerInfo;
+  } catch (error) {
+    logger.error('다이아 구매 실패', error);
+    throw error;
+  }
+};
+
+/**
+ * 구매 복원
+ */
+export const restorePurchases = async (): Promise<CustomerInfo> => {
+  try {
+    const customerInfo = await Purchases.restorePurchases();
+    logger.info('구매 복원 완료');
+    return customerInfo;
+  } catch (error) {
+    logger.error('구매 복원 실패', error);
     throw error;
   }
 };
@@ -916,9 +1091,9 @@ export const startSubscription = async (
 
 ---
 
-#### Day 3-4: Firebase Functions (결제 승인)
+#### Day 3-4: Firebase Functions (포인트 차감)
 
-**파일**: `functions/src/payments/approvePayment.ts`
+**파일**: `functions/src/points/deductPoints.ts`
 
 ```typescript
 import * as functions from 'firebase-functions';
@@ -928,60 +1103,197 @@ import { logger } from 'firebase-functions';
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 
-const TOSS_SECRET_KEY = functions.config().toss.secret_key;
-
-interface ApprovePaymentData {
-  paymentKey: string;
-  orderId: string;
+interface DeductPointsData {
   amount: number;
-  packageId: 'basic' | 'popular' | 'recommended' | 'best';
-  chips: number;
+  reason: string;
+  relatedId?: string;
 }
 
 /**
- * 결제 승인 (토스페이먼츠)
+ * 포인트 차감 (공고 등록 등)
+ * 하트 먼저 (만료 임박 순) → 다이아 순서로 차감
  */
-export const approvePayment = functions
+export const deductPoints = functions
   .region('asia-northeast3')
-  .https.onCall(async (data: ApprovePaymentData, context) => {
+  .https.onCall(async (data: DeductPointsData, context) => {
     const userId = context.auth?.uid;
 
     if (!userId) {
       throw new functions.https.HttpsError('unauthenticated', '인증이 필요합니다.');
     }
 
-    const { paymentKey, orderId, amount, packageId, chips } = data;
+    const { amount, reason, relatedId } = data;
+
+    if (amount <= 0) {
+      throw new functions.https.HttpsError('invalid-argument', '유효하지 않은 금액입니다.');
+    }
 
     try {
-      logger.info('결제 승인 시작', { userId, orderId, amount });
+      logger.info('포인트 차감 시작', { userId, amount, reason });
 
-      // 1. 토스페이먼츠 결제 승인 API 호출
-      const response = await fetch('https://api.tosspayments.com/v1/payments/confirm', {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${Buffer.from(TOSS_SECRET_KEY + ':').toString('base64')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          paymentKey,
-          orderId,
-          amount,
-        }),
+      await db.runTransaction(async (transaction) => {
+        const userRef = db.doc(`users/${userId}`);
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists) {
+          throw new Error('사용자를 찾을 수 없습니다.');
+        }
+
+        // 1. 하트 배치 조회 (만료 임박 순)
+        const now = new Date();
+        const heartBatchesSnapshot = await transaction.get(
+          db.collection(`users/${userId}/heartBatches`)
+            .where('expiresAt', '>', now)
+            .where('remainingAmount', '>', 0)
+            .orderBy('expiresAt', 'asc')
+        );
+
+        // 2. 총 하트 계산
+        let totalHearts = 0;
+        const heartBatches: { ref: FirebaseFirestore.DocumentReference; remaining: number }[] = [];
+
+        heartBatchesSnapshot.forEach((doc) => {
+          const data = doc.data();
+          totalHearts += data.remainingAmount;
+          heartBatches.push({
+            ref: doc.ref,
+            remaining: data.remainingAmount,
+          });
+        });
+
+        // 3. 다이아 잔액
+        const diamonds = userDoc.data()?.points?.diamonds || 0;
+        const totalPoints = totalHearts + diamonds;
+
+        // 4. 잔액 확인
+        if (totalPoints < amount) {
+          throw new Error(`포인트가 부족합니다. (필요: ${amount}, 보유: ${totalPoints})`);
+        }
+
+        // 5. 차감 로직 (하트 먼저, 만료 임박 순)
+        let remainingAmount = amount;
+        let heartsUsed = 0;
+        let diamondsUsed = 0;
+        const usedBatches: string[] = [];
+
+        // 5-1. 하트 차감
+        for (const batch of heartBatches) {
+          if (remainingAmount <= 0) break;
+
+          const deduct = Math.min(batch.remaining, remainingAmount);
+          transaction.update(batch.ref, {
+            remainingAmount: FieldValue.increment(-deduct),
+          });
+
+          heartsUsed += deduct;
+          remainingAmount -= deduct;
+          usedBatches.push(batch.ref.id);
+        }
+
+        // 5-2. 다이아 차감 (하트로 부족한 경우)
+        if (remainingAmount > 0) {
+          diamondsUsed = remainingAmount;
+          transaction.update(userRef, {
+            'points.diamonds': FieldValue.increment(-diamondsUsed),
+            'points.lastUpdated': FieldValue.serverTimestamp(),
+          });
+          remainingAmount = 0;
+        }
+
+        // 6. 거래 내역 기록
+        const newTotalHearts = totalHearts - heartsUsed;
+        const newDiamonds = diamonds - diamondsUsed;
+
+        // 하트 사용 내역
+        if (heartsUsed > 0) {
+          const heartTxRef = db.collection(`users/${userId}/pointTransactions`).doc();
+          transaction.set(heartTxRef, {
+            type: 'spend',
+            pointType: 'heart',
+            amount: -heartsUsed,
+            balanceAfter: newTotalHearts,
+            reason,
+            relatedId,
+            metadata: { batchIds: usedBatches },
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        // 다이아 사용 내역
+        if (diamondsUsed > 0) {
+          const diamondTxRef = db.collection(`users/${userId}/pointTransactions`).doc();
+          transaction.set(diamondTxRef, {
+            type: 'spend',
+            pointType: 'diamond',
+            amount: -diamondsUsed,
+            balanceAfter: newDiamonds,
+            reason,
+            relatedId,
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        logger.info('포인트 차감 완료', {
+          userId,
+          heartsUsed,
+          diamondsUsed,
+          newBalance: { hearts: newTotalHearts, diamonds: newDiamonds },
+        });
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        logger.error('토스페이먼츠 승인 실패', error);
-        throw new functions.https.HttpsError('internal', '결제 승인 실패');
-      }
+      return { success: true };
+    } catch (error) {
+      logger.error('포인트 차감 오류', error);
+      throw new functions.https.HttpsError('internal', (error as Error).message);
+    }
+  });
+```
 
-      const payment = await response.json();
+**파일**: `functions/src/points/grantDiamonds.ts`
 
-      if (payment.status !== 'DONE') {
-        throw new functions.https.HttpsError('failed-precondition', '결제가 완료되지 않았습니다.');
-      }
+```typescript
+import * as functions from 'firebase-functions';
+import * as admin from 'firebase-admin';
+import { logger } from 'firebase-functions';
 
-      // 2. Firestore 트랜잭션으로 처리
+const db = admin.firestore();
+const FieldValue = admin.firestore.FieldValue;
+
+interface GrantDiamondsData {
+  userId: string;
+  diamonds: number;
+  bonusDiamonds: number;
+  packageId: string;
+  transactionId: string;
+  store: 'app_store' | 'play_store';
+  productId: string;
+  price: number;
+}
+
+/**
+ * 다이아 지급 (구매 완료 시 RevenueCat Webhook에서 호출)
+ */
+export const grantDiamonds = functions
+  .region('asia-northeast3')
+  .https.onCall(async (data: GrantDiamondsData, context) => {
+    // Webhook 인증 확인 (실제 구현 시 RevenueCat Webhook 시크릿 검증)
+
+    const {
+      userId,
+      diamonds,
+      bonusDiamonds,
+      packageId,
+      transactionId,
+      store,
+      productId,
+      price,
+    } = data;
+
+    const totalDiamonds = diamonds + bonusDiamonds;
+
+    try {
+      logger.info('다이아 지급 시작', { userId, totalDiamonds, packageId });
+
       const purchaseRef = db.collection('purchases').doc();
 
       await db.runTransaction(async (transaction) => {
@@ -992,94 +1304,137 @@ export const approvePayment = functions
           throw new Error('사용자를 찾을 수 없습니다.');
         }
 
-        const currentChips = userDoc.data()?.chips || { blue: 0, red: 0 };
+        const currentDiamonds = userDoc.data()?.points?.diamonds || 0;
+        const newDiamonds = currentDiamonds + totalDiamonds;
 
-        // 2-1. 구매 기록 저장
+        // 1. 구매 기록 저장
         transaction.set(purchaseRef, {
           userId,
           packageId,
-          chips,
-          amount,
+          diamonds,
+          bonusDiamonds,
+          totalDiamonds,
+          price,
+          currency: 'KRW',
           status: 'completed',
-          paymentKey,
-          orderId,
+          revenueCatTransactionId: transactionId,
+          store,
+          productId,
           createdAt: FieldValue.serverTimestamp(),
         });
 
-        // 2-2. 사용자에게 빨간칩 지급
+        // 2. 다이아 지급
         transaction.update(userRef, {
-          'chips.red': FieldValue.increment(chips),
-          'chips.redExpiry': new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1년 후
+          'points.diamonds': FieldValue.increment(totalDiamonds),
+          'points.lastUpdated': FieldValue.serverTimestamp(),
         });
 
-        // 2-3. 거래 내역 기록
-        const txRef = db.collection(`users/${userId}/chipTransactions`).doc();
+        // 3. 거래 내역 기록
+        const txRef = db.collection(`users/${userId}/pointTransactions`).doc();
         transaction.set(txRef, {
           type: 'purchase',
-          chipType: 'red',
-          amount: chips,
-          balance: currentChips.blue + currentChips.red + chips,
-          reason: `빨간칩 ${chips}개 구매 (${packageId})`,
+          pointType: 'diamond',
+          amount: totalDiamonds,
+          balanceAfter: newDiamonds,
+          reason: `💎 다이아 ${totalDiamonds}개 충전`,
           relatedId: purchaseRef.id,
+          metadata: { packageId },
           createdAt: FieldValue.serverTimestamp(),
         });
       });
 
-      logger.info('결제 승인 완료', { userId, purchaseId: purchaseRef.id });
+      logger.info('다이아 지급 완료', {
+        userId,
+        purchaseId: purchaseRef.id,
+        totalDiamonds,
+      });
 
       return {
         success: true,
         purchaseId: purchaseRef.id,
-        chips,
+        diamonds: totalDiamonds,
       };
     } catch (error) {
-      logger.error('결제 승인 오류', error);
-      throw new functions.https.HttpsError('internal', '결제 처리 중 오류가 발생했습니다.');
+      logger.error('다이아 지급 오류', error);
+      throw new functions.https.HttpsError('internal', (error as Error).message);
     }
   });
 ```
 
-**파일**: `functions/src/payments/spendChip.ts`
+---
+
+## 💖 Phase 2: 하트 획득 시스템 (1주)
+
+### Day 1-2: 하트 획득 Functions
+
+**파일**: `functions/src/points/grantHearts.ts`
 
 ```typescript
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
+import { addDays } from 'date-fns';
 
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 
-interface SpendChipData {
+type HeartSource =
+  | 'signup'
+  | 'daily_attendance'
+  | 'weekly_bonus'
+  | 'review_complete'
+  | 'referral'
+  | 'admin_grant';
+
+const HEART_AMOUNTS: Record<HeartSource, number> = {
+  signup: 10,
+  daily_attendance: 1,
+  weekly_bonus: 3,
+  review_complete: 1,
+  referral: 5,
+  admin_grant: 0, // 가변
+};
+
+const HEART_EXPIRY_DAYS = 90;
+
+interface GrantHeartsData {
   userId: string;
-  amount: number;
-  reason: string;
-  relatedId?: string;
+  source: HeartSource;
+  amount?: number; // admin_grant용
 }
 
 /**
- * 칩 사용 (지원 신청 등)
+ * 하트 지급
  */
-export const spendChip = functions
+export const grantHearts = functions
   .region('asia-northeast3')
-  .https.onCall(async (data: SpendChipData, context) => {
-    const authUserId = context.auth?.uid;
+  .https.onCall(async (data: GrantHeartsData, context) => {
+    const { userId, source, amount: customAmount } = data;
 
-    if (!authUserId) {
-      throw new functions.https.HttpsError('unauthenticated', '인증이 필요합니다.');
+    // admin_grant는 관리자만 가능
+    if (source === 'admin_grant') {
+      const callerUid = context.auth?.uid;
+      if (!callerUid) {
+        throw new functions.https.HttpsError('unauthenticated', '인증이 필요합니다.');
+      }
+
+      const callerDoc = await db.doc(`users/${callerUid}`).get();
+      if (callerDoc.data()?.role !== 'admin') {
+        throw new functions.https.HttpsError('permission-denied', '관리자만 가능합니다.');
+      }
     }
 
-    const { userId, amount, reason, relatedId } = data;
-
-    if (authUserId !== userId) {
-      throw new functions.https.HttpsError('permission-denied', '권한이 없습니다.');
-    }
+    const amount = source === 'admin_grant' ? (customAmount || 0) : HEART_AMOUNTS[source];
 
     if (amount <= 0) {
-      throw new functions.https.HttpsError('invalid-argument', '유효하지 않은 금액입니다.');
+      throw new functions.https.HttpsError('invalid-argument', '유효하지 않은 하트 개수입니다.');
     }
 
     try {
-      logger.info('칩 사용 시작', { userId, amount, reason });
+      logger.info('하트 지급 시작', { userId, source, amount });
+
+      const now = new Date();
+      const expiresAt = addDays(now, HEART_EXPIRY_DAYS);
 
       await db.runTransaction(async (transaction) => {
         const userRef = db.doc(`users/${userId}`);
@@ -1089,305 +1444,97 @@ export const spendChip = functions
           throw new Error('사용자를 찾을 수 없습니다.');
         }
 
-        const chips = userDoc.data()?.chips || { blue: 0, red: 0 };
-        let blueChips = chips.blue || 0;
-        let redChips = chips.red || 0;
-
-        const totalChips = blueChips + redChips;
-
-        // 칩 부족 확인
-        if (totalChips < amount) {
-          throw new Error('칩이 부족합니다.');
-        }
-
-        // 칩 차감 로직 (파란칩 우선)
-        let remainingAmount = amount;
-
-        if (blueChips >= remainingAmount) {
-          // 파란칩만으로 충분
-          blueChips -= remainingAmount;
-          remainingAmount = 0;
-        } else {
-          // 파란칩 전부 사용 + 빨간칩 사용
-          remainingAmount -= blueChips;
-          blueChips = 0;
-          redChips -= remainingAmount;
-          remainingAmount = 0;
-        }
-
-        // 사용자 칩 업데이트
-        transaction.update(userRef, {
-          'chips.blue': blueChips,
-          'chips.red': redChips,
+        // 1. 하트 배치 생성
+        const batchRef = db.collection(`users/${userId}/heartBatches`).doc();
+        transaction.set(batchRef, {
+          amount,
+          remainingAmount: amount,
+          source,
+          acquiredAt: FieldValue.serverTimestamp(),
+          expiresAt,
         });
 
-        // 거래 내역 기록
-        const txRef = db.collection(`users/${userId}/chipTransactions`).doc();
+        // 2. 거래 내역 기록
+        // 현재 하트 총합 계산 (새 배치 포함 전)
+        const heartBatchesSnapshot = await transaction.get(
+          db.collection(`users/${userId}/heartBatches`)
+            .where('expiresAt', '>', now)
+            .where('remainingAmount', '>', 0)
+        );
+
+        let currentHearts = 0;
+        heartBatchesSnapshot.forEach((doc) => {
+          currentHearts += doc.data().remainingAmount;
+        });
+
+        const txRef = db.collection(`users/${userId}/pointTransactions`).doc();
         transaction.set(txRef, {
-          type: 'spend',
-          chipType: amount <= chips.blue ? 'blue' : 'red',
-          amount: -amount,
-          balance: blueChips + redChips,
-          reason,
-          relatedId,
+          type: 'earn',
+          pointType: 'heart',
+          amount,
+          balanceAfter: currentHearts + amount,
+          reason: getHeartReasonText(source, amount),
+          metadata: { batchId: batchRef.id, source },
           createdAt: FieldValue.serverTimestamp(),
         });
       });
 
-      logger.info('칩 사용 완료', { userId, amount });
+      logger.info('하트 지급 완료', { userId, source, amount });
 
-      return { success: true };
+      return { success: true, amount };
     } catch (error) {
-      logger.error('칩 사용 오류', error);
+      logger.error('하트 지급 오류', error);
       throw new functions.https.HttpsError('internal', (error as Error).message);
     }
   });
+
+function getHeartReasonText(source: HeartSource, amount: number): string {
+  const reasons: Record<HeartSource, string> = {
+    signup: '🎉 회원가입 환영 보상',
+    daily_attendance: '📅 일일 출석 체크',
+    weekly_bonus: '🔥 7일 연속 출석 보너스',
+    review_complete: '⭐ 리뷰 작성 보상',
+    referral: '👥 친구 초대 보상',
+    admin_grant: `🎁 관리자 지급 (+${amount})`,
+  };
+  return reasons[source];
+}
 ```
 
 ---
 
-#### Day 5: 결제 성공/실패 페이지
+### Day 3-4: 출석 체크 시스템
 
-**파일**: `app2/src/pages/PaymentSuccessPage.tsx`
-
-```typescript
-import React, { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { httpsCallable } from 'firebase/functions';
-import { functions } from '@/config/firebase';
-import { toast } from 'react-hot-toast';
-import { logger } from '@/utils/logger';
-
-export const PaymentSuccessPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-  const [processing, setProcessing] = useState(true);
-
-  const paymentKey = searchParams.get('paymentKey');
-  const orderId = searchParams.get('orderId');
-  const amount = searchParams.get('amount');
-
-  useEffect(() => {
-    if (!paymentKey || !orderId || !amount) {
-      toast.error('잘못된 결제 정보입니다.');
-      navigate('/chip/purchase');
-      return;
-    }
-
-    const approvePayment = async () => {
-      try {
-        setProcessing(true);
-
-        // orderId에서 패키지 정보 추출
-        // 예: chip_userId_timestamp_packageId
-        const packageId = orderId.split('_')[3] as 'basic' | 'popular' | 'recommended' | 'best';
-
-        const packages = {
-          basic: 21,
-          popular: 50,
-          recommended: 115,
-          best: 310,
-        };
-
-        const chips = packages[packageId] || 0;
-
-        logger.info('결제 승인 요청', { paymentKey, orderId, amount, chips });
-
-        // Firebase Functions 호출
-        const approvePaymentFn = httpsCallable(functions, 'approvePayment');
-        const result = await approvePaymentFn({
-          paymentKey,
-          orderId,
-          amount: Number(amount),
-          packageId,
-          chips,
-        });
-
-        const data = result.data as { success: boolean; purchaseId: string; chips: number };
-
-        if (data.success) {
-          toast.success(`🎉 빨간칩 ${data.chips}개 충전 완료!`);
-          logger.info('결제 승인 성공', data);
-
-          // 3초 후 대시보드로 이동
-          setTimeout(() => {
-            navigate('/dashboard');
-          }, 3000);
-        } else {
-          throw new Error('결제 승인 실패');
-        }
-      } catch (error) {
-        logger.error('결제 승인 오류', error);
-        toast.error('결제 처리 중 오류가 발생했습니다.');
-        navigate('/chip/purchase');
-      } finally {
-        setProcessing(false);
-      }
-    };
-
-    approvePayment();
-  }, [paymentKey, orderId, amount, navigate]);
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-        {processing ? (
-          <>
-            <div className="text-6xl mb-4 animate-bounce">🎰</div>
-            <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-              결제 처리 중...
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">칩을 충전하고 있습니다.</p>
-            <div className="mt-6">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            </div>
-          </>
-        ) : (
-          <>
-            <div className="text-6xl mb-4">🎉</div>
-            <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-              결제 완료!
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400">칩 충전이 완료되었습니다.</p>
-            <p className="text-sm text-gray-500 dark:text-gray-500 mt-4">
-              잠시 후 대시보드로 이동합니다...
-            </p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-};
-```
-
-**파일**: `app2/src/pages/PaymentFailPage.tsx`
-
-```typescript
-import React from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-
-export const PaymentFailPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
-
-  const code = searchParams.get('code');
-  const message = searchParams.get('message');
-
-  return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 max-w-md w-full text-center">
-        <div className="text-6xl mb-4">😢</div>
-        <h1 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">결제 실패</h1>
-        <p className="text-gray-600 dark:text-gray-400 mb-4">
-          {message || '결제 중 오류가 발생했습니다.'}
-        </p>
-
-        {code && (
-          <div className="text-sm text-gray-500 dark:text-gray-500 mb-6">
-            오류 코드: {code}
-          </div>
-        )}
-
-        <div className="space-y-3">
-          <button
-            onClick={() => navigate('/chip/purchase')}
-            className="w-full btn-primary py-3"
-          >
-            다시 시도
-          </button>
-          <button
-            onClick={() => navigate('/dashboard')}
-            className="w-full btn-secondary py-3"
-          >
-            대시보드로 돌아가기
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-```
-
----
-
-## 💎 Phase 2: 구독 시스템 (1주)
-
-### Day 1-2: 구독 관리 Functions
-
-**파일**: `functions/src/subscriptions/createSubscription.ts`
+**파일**: `functions/src/points/dailyAttendance.ts`
 
 ```typescript
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
-import { endOfMonth } from 'date-fns';
+import { addDays, startOfDay, differenceInDays } from 'date-fns';
 
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
 
-const TOSS_SECRET_KEY = functions.config().toss.secret_key;
-
-interface CreateSubscriptionData {
-  plan: 'basic' | 'pro';
-  billingKey: string;
-}
-
-const PLANS = {
-  basic: { price: 5500, chips: 30 },
-  pro: { price: 14900, chips: 80 },
-};
+const HEART_EXPIRY_DAYS = 90;
 
 /**
- * 구독 생성
+ * 일일 출석 체크
  */
-export const createSubscription = functions
+export const checkDailyAttendance = functions
   .region('asia-northeast3')
-  .https.onCall(async (data: CreateSubscriptionData, context) => {
+  .https.onCall(async (data, context) => {
     const userId = context.auth?.uid;
 
     if (!userId) {
       throw new functions.https.HttpsError('unauthenticated', '인증이 필요합니다.');
     }
 
-    const { plan, billingKey } = data;
-
-    if (!PLANS[plan]) {
-      throw new functions.https.HttpsError('invalid-argument', '유효하지 않은 플랜입니다.');
-    }
-
     try {
-      logger.info('구독 생성 시작', { userId, plan });
-
-      const planInfo = PLANS[plan];
       const now = new Date();
-      const nextBillingDate = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000); // 30일 후
+      const today = startOfDay(now);
 
-      // 1. 첫 결제 (토스페이먼츠 자동결제)
-      const paymentResponse = await fetch('https://api.tosspayments.com/v1/billing/pay', {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${Buffer.from(TOSS_SECRET_KEY + ':').toString('base64')}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          billingKey,
-          customerKey: userId,
-          amount: planInfo.price,
-          orderId: `sub_${userId}_${Date.now()}`,
-          orderName: `${plan} 플랜 구독`,
-        }),
-      });
-
-      if (!paymentResponse.ok) {
-        const error = await paymentResponse.json();
-        logger.error('첫 결제 실패', error);
-        throw new Error('결제에 실패했습니다.');
-      }
-
-      // 2. Firestore 트랜잭션
-      const subscriptionRef = db.collection('subscriptions').doc();
-
-      await db.runTransaction(async (transaction) => {
+      return await db.runTransaction(async (transaction) => {
         const userRef = db.doc(`users/${userId}`);
         const userDoc = await transaction.get(userRef);
 
@@ -1395,52 +1542,114 @@ export const createSubscription = functions
           throw new Error('사용자를 찾을 수 없습니다.');
         }
 
-        // 2-1. 구독 생성
-        transaction.set(subscriptionRef, {
-          userId,
-          plan,
-          status: 'active',
-          startDate: FieldValue.serverTimestamp(),
-          nextBillingDate,
-          billingKey,
-          price: planInfo.price,
-          createdAt: FieldValue.serverTimestamp(),
-          updatedAt: FieldValue.serverTimestamp(),
-        });
+        const userData = userDoc.data()!;
+        const attendance = userData.attendance || {};
+        const lastAttendance = attendance.lastDate?.toDate();
+        const streak = attendance.streak || 0;
 
-        // 2-2. 즉시 파란칩 지급
+        // 이미 오늘 출석했는지 확인
+        if (lastAttendance && startOfDay(lastAttendance).getTime() === today.getTime()) {
+          return {
+            success: false,
+            message: '이미 오늘 출석했습니다.',
+            streak,
+            heartsEarned: 0,
+          };
+        }
+
+        // 연속 출석 계산
+        let newStreak = 1;
+        if (lastAttendance) {
+          const daysDiff = differenceInDays(today, startOfDay(lastAttendance));
+          if (daysDiff === 1) {
+            // 연속 출석
+            newStreak = streak + 1;
+          }
+          // daysDiff > 1이면 연속 끊김, newStreak = 1
+        }
+
+        // 하트 지급량 계산
+        let heartsToGrant = 1; // 기본 1하트
+        let isWeeklyBonus = false;
+
+        if (newStreak % 7 === 0) {
+          // 7일 연속 보너스
+          heartsToGrant += 3;
+          isWeeklyBonus = true;
+        }
+
+        // 출석 정보 업데이트
         transaction.update(userRef, {
-          'chips.blue': planInfo.chips,
-          'chips.blueExpiry': endOfMonth(now),
-          'subscription.plan': plan,
-          'subscription.status': 'active',
-          'subscription.startDate': FieldValue.serverTimestamp(),
-          'subscription.nextBillingDate': nextBillingDate,
+          'attendance.lastDate': FieldValue.serverTimestamp(),
+          'attendance.streak': newStreak,
+          'attendance.totalDays': FieldValue.increment(1),
         });
 
-        // 2-3. 거래 내역 기록
-        const txRef = db.collection(`users/${userId}/chipTransactions`).doc();
-        transaction.set(txRef, {
+        // 하트 배치 생성 (일일 출석)
+        const expiresAt = addDays(now, HEART_EXPIRY_DAYS);
+        const dailyBatchRef = db.collection(`users/${userId}/heartBatches`).doc();
+        transaction.set(dailyBatchRef, {
+          amount: 1,
+          remainingAmount: 1,
+          source: 'daily_attendance',
+          acquiredAt: FieldValue.serverTimestamp(),
+          expiresAt,
+        });
+
+        // 거래 내역 (일일)
+        const dailyTxRef = db.collection(`users/${userId}/pointTransactions`).doc();
+        transaction.set(dailyTxRef, {
           type: 'earn',
-          chipType: 'blue',
-          amount: planInfo.chips,
-          balance: planInfo.chips,
-          reason: `${plan} 플랜 첫 지급`,
-          relatedId: subscriptionRef.id,
+          pointType: 'heart',
+          amount: 1,
+          balanceAfter: 0, // 클라이언트에서 재계산
+          reason: '📅 일일 출석 체크',
+          metadata: { batchId: dailyBatchRef.id, source: 'daily_attendance' },
           createdAt: FieldValue.serverTimestamp(),
         });
+
+        // 7일 연속 보너스 (해당 시)
+        if (isWeeklyBonus) {
+          const bonusBatchRef = db.collection(`users/${userId}/heartBatches`).doc();
+          transaction.set(bonusBatchRef, {
+            amount: 3,
+            remainingAmount: 3,
+            source: 'weekly_bonus',
+            acquiredAt: FieldValue.serverTimestamp(),
+            expiresAt,
+          });
+
+          const bonusTxRef = db.collection(`users/${userId}/pointTransactions`).doc();
+          transaction.set(bonusTxRef, {
+            type: 'earn',
+            pointType: 'heart',
+            amount: 3,
+            balanceAfter: 0,
+            reason: '🔥 7일 연속 출석 보너스!',
+            metadata: { batchId: bonusBatchRef.id, source: 'weekly_bonus' },
+            createdAt: FieldValue.serverTimestamp(),
+          });
+        }
+
+        logger.info('출석 체크 완료', {
+          userId,
+          streak: newStreak,
+          heartsEarned: heartsToGrant,
+          isWeeklyBonus,
+        });
+
+        return {
+          success: true,
+          streak: newStreak,
+          heartsEarned: heartsToGrant,
+          isWeeklyBonus,
+          message: isWeeklyBonus
+            ? `🔥 ${newStreak}일 연속 출석! 보너스 +3💖`
+            : `📅 출석 완료! ${newStreak}일째`,
+        };
       });
-
-      logger.info('구독 생성 완료', { userId, subscriptionId: subscriptionRef.id });
-
-      return {
-        success: true,
-        subscriptionId: subscriptionRef.id,
-        plan,
-        chips: planInfo.chips,
-      };
     } catch (error) {
-      logger.error('구독 생성 오류', error);
+      logger.error('출석 체크 오류', error);
       throw new functions.https.HttpsError('internal', (error as Error).message);
     }
   });
@@ -1448,549 +1657,81 @@ export const createSubscription = functions
 
 ---
 
-### Day 3-4: 월초 자동 칩 지급 (Cron)
-
-**파일**: `functions/src/subscriptions/monthlyChipGrant.ts`
-
-```typescript
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { logger } from 'firebase-functions';
-import { endOfMonth } from 'date-fns';
-
-const db = admin.firestore();
-const FieldValue = admin.firestore.FieldValue;
-
-const PLANS = {
-  basic: { chips: 30 },
-  pro: { chips: 80 },
-};
-
-/**
- * 월초 파란칩 자동 지급
- * 매월 1일 00시 실행
- */
-export const monthlyChipGrant = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('0 0 1 * *') // 매월 1일 00시
-  .timeZone('Asia/Seoul')
-  .onRun(async (context) => {
-    logger.info('월간 칩 지급 시작');
-
-    try {
-      // 1. 활성 구독 조회
-      const subscriptionsSnapshot = await db
-        .collection('subscriptions')
-        .where('status', '==', 'active')
-        .get();
-
-      if (subscriptionsSnapshot.empty) {
-        logger.info('활성 구독 없음');
-        return null;
-      }
-
-      logger.info(`활성 구독 ${subscriptionsSnapshot.size}개 발견`);
-
-      const batch = db.batch();
-      const now = new Date();
-      const expiryDate = endOfMonth(now);
-
-      for (const doc of subscriptionsSnapshot.docs) {
-        const sub = doc.data();
-        const userId = sub.userId;
-        const plan = sub.plan as 'basic' | 'pro';
-
-        if (!PLANS[plan]) {
-          logger.warn('유효하지 않은 플랜', { userId, plan });
-          continue;
-        }
-
-        const chips = PLANS[plan].chips;
-
-        // 2. 파란칩 지급
-        const userRef = db.doc(`users/${userId}`);
-        batch.update(userRef, {
-          'chips.blue': chips,
-          'chips.blueExpiry': expiryDate,
-        });
-
-        // 3. 거래 내역 기록
-        const txRef = db.collection(`users/${userId}/chipTransactions`).doc();
-        batch.set(txRef, {
-          type: 'earn',
-          chipType: 'blue',
-          amount: chips,
-          balance: chips, // 정확한 잔액은 클라이언트에서 계산
-          reason: `${plan} 플랜 월간 칩 지급`,
-          relatedId: doc.id,
-          createdAt: FieldValue.serverTimestamp(),
-        });
-
-        logger.info('칩 지급 예정', { userId, plan, chips });
-      }
-
-      // 4. 배치 커밋
-      await batch.commit();
-
-      logger.info(`월간 칩 지급 완료: ${subscriptionsSnapshot.size}명`);
-
-      return null;
-    } catch (error) {
-      logger.error('월간 칩 지급 오류', error);
-      throw error;
-    }
-  });
-```
-
-**파일**: `functions/src/subscriptions/monthlyBilling.ts`
-
-```typescript
-import * as functions from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { logger } from 'firebase-functions';
-
-const db = admin.firestore();
-const TOSS_SECRET_KEY = functions.config().toss.secret_key;
-
-/**
- * 월간 정기 결제
- * 매일 01시 실행 (결제일 확인)
- */
-export const monthlyBilling = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('0 1 * * *') // 매일 01시
-  .timeZone('Asia/Seoul')
-  .onRun(async (context) => {
-    logger.info('월간 정기 결제 시작');
-
-    try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      // 오늘이 결제일인 구독 조회
-      const subscriptionsSnapshot = await db
-        .collection('subscriptions')
-        .where('status', '==', 'active')
-        .where('nextBillingDate', '<=', today)
-        .get();
-
-      if (subscriptionsSnapshot.empty) {
-        logger.info('결제할 구독 없음');
-        return null;
-      }
-
-      logger.info(`결제 대상 구독 ${subscriptionsSnapshot.size}개`);
-
-      for (const doc of subscriptionsSnapshot.docs) {
-        const sub = doc.data();
-        const { userId, billingKey, plan, price } = sub;
-
-        try {
-          // 자동 결제 시도
-          const response = await fetch('https://api.tosspayments.com/v1/billing/pay', {
-            method: 'POST',
-            headers: {
-              Authorization: `Basic ${Buffer.from(TOSS_SECRET_KEY + ':').toString('base64')}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              billingKey,
-              customerKey: userId,
-              amount: price,
-              orderId: `sub_${userId}_${Date.now()}`,
-              orderName: `${plan} 플랜 정기 결제`,
-            }),
-          });
-
-          if (response.ok) {
-            // 결제 성공
-            const nextBillingDate = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000);
-
-            await doc.ref.update({
-              nextBillingDate,
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            logger.info('정기 결제 성공', { userId, plan, price });
-          } else {
-            // 결제 실패
-            const error = await response.json();
-            logger.error('정기 결제 실패', { userId, error });
-
-            // 구독 상태를 'expired'로 변경
-            await doc.ref.update({
-              status: 'expired',
-              updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-
-            // ⚠️ [PENDING] 사용자에게 결제 실패 알림 발송 구현 필요
-          }
-        } catch (error) {
-          logger.error('정기 결제 오류', { userId, error });
-        }
-      }
-
-      return null;
-    } catch (error) {
-      logger.error('월간 정기 결제 오류', error);
-      throw error;
-    }
-  });
-```
-
----
-
-### Day 5: 구독 관리 UI
-
-**파일**: `app2/src/pages/SubscriptionPage.tsx`
-
-```typescript
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { startSubscription } from '@/services/payment';
-import { toast } from 'react-hot-toast';
-
-export const SubscriptionPage: React.FC = () => {
-  const navigate = useNavigate();
-  const { currentUser } = useAuth();
-  const [selectedPlan, setSelectedPlan] = useState<'basic' | 'pro'>('basic');
-  const [loading, setLoading] = useState(false);
-
-  const handleSubscribe = async () => {
-    if (!currentUser) {
-      toast.error('로그인이 필요합니다.');
-      navigate('/login');
-      return;
-    }
-
-    try {
-      setLoading(true);
-
-      // 자동결제 등록 (빌링키 발급)
-      await startSubscription(currentUser.uid, selectedPlan);
-    } catch (error) {
-      toast.error('구독 시작에 실패했습니다.');
-      console.error(error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  return (
-    <div className="max-w-6xl mx-auto p-6">
-      <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold mb-4 text-gray-900 dark:text-gray-100">
-          구독 플랜 선택
-        </h1>
-        <p className="text-lg text-gray-600 dark:text-gray-400">
-          매월 자동으로 파란칩을 받고 서비스를 이용하세요
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* 프리 플랜 */}
-        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm p-8 border border-gray-200 dark:border-gray-700">
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-              프리 플랜
-            </h3>
-            <div className="text-4xl font-bold my-4 text-gray-900 dark:text-gray-100">
-              ₩0<span className="text-lg text-gray-500">/월</span>
-            </div>
-          </div>
-
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">🔵 파란칩 5개 (1회)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">내 스케줄 조회</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-red-500 mt-1">✗</span>
-              <span className="text-gray-400 dark:text-gray-600">토너먼트 관리 불가</span>
-            </li>
-          </ul>
-
-          <button className="w-full btn-secondary py-3" disabled>
-            현재 플랜
-          </button>
-        </div>
-
-        {/* 일반 플랜 */}
-        <div
-          className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border-2 ${
-            selectedPlan === 'basic'
-              ? 'border-blue-500'
-              : 'border-gray-200 dark:border-gray-700'
-          } cursor-pointer transition-all`}
-          onClick={() => setSelectedPlan('basic')}
-        >
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-              💼 일반 플랜
-            </h3>
-            <div className="text-4xl font-bold my-4 text-gray-900 dark:text-gray-100">
-              ₩5,500<span className="text-lg text-gray-500">/월</span>
-            </div>
-          </div>
-
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">🔵 파란칩 30개 (매월)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">내 스케줄 무제한</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-red-500 mt-1">✗</span>
-              <span className="text-gray-400 dark:text-gray-600">토너먼트 관리 불가</span>
-            </li>
-          </ul>
-
-          {selectedPlan === 'basic' && (
-            <div className="text-center mb-4">
-              <span className="text-sm text-blue-600 dark:text-blue-400 font-semibold">
-                ✓ 선택됨
-              </span>
-            </div>
-          )}
-        </div>
-
-        {/* 프로 플랜 */}
-        <div
-          className={`bg-white dark:bg-gray-800 rounded-xl shadow-lg p-8 border-2 ${
-            selectedPlan === 'pro'
-              ? 'border-blue-500'
-              : 'border-gray-200 dark:border-gray-700'
-          } cursor-pointer transition-all relative`}
-          onClick={() => setSelectedPlan('pro')}
-        >
-          <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-            <span className="bg-blue-500 text-white px-4 py-1 rounded-full text-sm font-semibold">
-              추천
-            </span>
-          </div>
-
-          <div className="text-center mb-6">
-            <h3 className="text-2xl font-bold mb-2 text-gray-900 dark:text-gray-100">
-              🚀 프로 플랜
-            </h3>
-            <div className="text-4xl font-bold my-4 text-gray-900 dark:text-gray-100">
-              ₩14,900<span className="text-lg text-gray-500">/월</span>
-            </div>
-          </div>
-
-          <ul className="space-y-3 mb-8">
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">🔵 파란칩 80개 (매월)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">모든 기능 무제한</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">🎰 토너먼트 관리</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-green-500 mt-1">✓</span>
-              <span className="text-gray-700 dark:text-gray-300">👥 스태프 관리</span>
-            </li>
-          </ul>
-
-          {selectedPlan === 'pro' && (
-            <div className="text-center mb-4">
-              <span className="text-sm text-blue-600 dark:text-blue-400 font-semibold">
-                ✓ 선택됨
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* 구독하기 버튼 */}
-      <div className="mt-12 text-center">
-        <button
-          onClick={handleSubscribe}
-          disabled={loading}
-          className="btn-primary px-12 py-4 text-lg disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {loading ? '처리 중...' : '구독하기'}
-        </button>
-
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-          언제든지 취소할 수 있습니다.
-        </p>
-      </div>
-
-      {/* 안내 사항 */}
-      <div className="mt-16 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6">
-        <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-3">
-          💡 구독 안내
-        </h4>
-        <ul className="space-y-2 text-sm text-gray-700 dark:text-gray-300">
-          <li>• 매월 1일 자동으로 파란칩이 지급됩니다.</li>
-          <li>• 파란칩은 해당 월 말일 24시에 자동 소멸됩니다.</li>
-          <li>• 구독 해지 시 남은 파란칩은 환불되지 않습니다.</li>
-          <li>• 자동 결제는 매월 가입일에 진행됩니다.</li>
-        </ul>
-      </div>
-    </div>
-  );
-};
-```
-
----
-
 ## 🔔 Phase 3: 알림 시스템 (1주)
 
-### Day 1-2: 칩 소멸 알림 Cron
+### Day 1-2: 하트 만료 알림 Cron
 
-**파일**: `functions/src/notifications/chipExpiryNotifications.ts`
+**파일**: `functions/src/notifications/heartExpiryNotifications.ts`
 
 ```typescript
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { logger } from 'firebase-functions';
-import { differenceInDays, startOfDay, endOfDay } from 'date-fns';
+import { addDays, startOfDay, endOfDay } from 'date-fns';
 
 const db = admin.firestore();
 
 /**
- * 파란칩 소멸 30일 전 알림
+ * 하트 만료 7일 전 알림
+ * 매일 오전 9시 실행
  */
-export const chipExpiry30Days = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('0 9 * * *') // 매일 오전 9시
-  .timeZone('Asia/Seoul')
-  .onRun(async () => {
-    logger.info('파란칩 30일 전 알림 시작');
-
-    try {
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + 30);
-
-      const startDate = startOfDay(targetDate);
-      const endDate = endOfDay(targetDate);
-
-      // 30일 후 소멸 예정인 사용자 조회
-      const usersSnapshot = await db
-        .collection('users')
-        .where('chips.blueExpiry', '>=', startDate)
-        .where('chips.blueExpiry', '<=', endDate)
-        .get();
-
-      logger.info(`30일 전 알림 대상: ${usersSnapshot.size}명`);
-
-      for (const doc of usersSnapshot.docs) {
-        const user = doc.data();
-        const blueChips = user.chips?.blue || 0;
-        const fcmToken = user.fcmToken;
-
-        if (!fcmToken || blueChips === 0) {
-          continue;
-        }
-
-        // FCM 푸시 알림 발송
-        await admin.messaging().send({
-          token: fcmToken,
-          notification: {
-            title: '📅 칩 소멸 안내',
-            body: `🔵 파란칩 ${blueChips}개가 30일 후 소멸됩니다. 지금 지원하고 칩을 알차게 사용하세요!`,
-          },
-          data: {
-            type: 'chip_expiry_30d',
-            action: 'open_job_board',
-            chips: String(blueChips),
-          },
-          android: {
-            priority: 'normal',
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-              },
-            },
-          },
-        });
-
-        logger.info('30일 전 알림 발송', { userId: doc.id, chips: blueChips });
-      }
-
-      return null;
-    } catch (error) {
-      logger.error('30일 전 알림 오류', error);
-      throw error;
-    }
-  });
-
-/**
- * 파란칩 소멸 7일 전 알림
- */
-export const chipExpiry7Days = functions
+export const heartExpiry7Days = functions
   .region('asia-northeast3')
   .pubsub.schedule('0 9 * * *')
   .timeZone('Asia/Seoul')
   .onRun(async () => {
-    logger.info('파란칩 7일 전 알림 시작');
+    logger.info('하트 7일 전 만료 알림 시작');
 
     try {
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + 7);
-
+      const targetDate = addDays(new Date(), 7);
       const startDate = startOfDay(targetDate);
       const endDate = endOfDay(targetDate);
 
-      const usersSnapshot = await db
-        .collection('users')
-        .where('chips.blueExpiry', '>=', startDate)
-        .where('chips.blueExpiry', '<=', endDate)
+      // 7일 후 만료되는 하트 배치가 있는 사용자 조회
+      const usersSnapshot = await db.collectionGroup('heartBatches')
+        .where('expiresAt', '>=', startDate)
+        .where('expiresAt', '<=', endDate)
+        .where('remainingAmount', '>', 0)
         .get();
 
-      logger.info(`7일 전 알림 대상: ${usersSnapshot.size}명`);
+      // 사용자별로 그룹화
+      const userHearts = new Map<string, number>();
 
-      for (const doc of usersSnapshot.docs) {
-        const user = doc.data();
-        const blueChips = user.chips?.blue || 0;
-        const fcmToken = user.fcmToken;
-        const email = user.email;
+      usersSnapshot.forEach((doc) => {
+        const pathParts = doc.ref.path.split('/');
+        const userId = pathParts[1]; // users/{userId}/heartBatches/{batchId}
+        const remaining = doc.data().remainingAmount;
 
-        if (blueChips === 0) {
-          continue;
-        }
+        userHearts.set(
+          userId,
+          (userHearts.get(userId) || 0) + remaining
+        );
+      });
 
-        // 1. FCM 푸시 알림
-        if (fcmToken) {
-          await admin.messaging().send({
-            token: fcmToken,
-            notification: {
-              title: '⚠️ 칩 소멸 주의!',
-              body: `🔵 파란칩 ${blueChips}개가 7일 후 소멸됩니다. 이번 주 안에 꼭 사용하세요!`,
-            },
-            data: {
-              type: 'chip_expiry_7d',
-              action: 'open_job_board',
-              chips: String(blueChips),
-            },
-            android: {
-              priority: 'high',
-            },
-          });
-        }
+      logger.info(`7일 전 알림 대상: ${userHearts.size}명`);
 
-        // 2. 이메일 발송 (선택)
-        if (email) {
-          // ⚠️ [PENDING] 이메일 발송 구현 필요 (SendGrid/Nodemailer)
-          logger.info('이메일 발송 예정', { email });
-        }
+      for (const [userId, heartCount] of userHearts) {
+        const userDoc = await db.doc(`users/${userId}`).get();
+        const fcmToken = userDoc.data()?.fcmToken;
+
+        if (!fcmToken) continue;
+
+        await admin.messaging().send({
+          token: fcmToken,
+          notification: {
+            title: '⏰ 하트 만료 예정',
+            body: `💖 하트 ${heartCount}개가 7일 후 만료됩니다. 지금 공고에 지원하세요!`,
+          },
+          data: {
+            type: 'heart_expiry_7d',
+            action: 'open_job_board',
+            hearts: String(heartCount),
+          },
+          android: { priority: 'normal' },
+          apns: { payload: { aps: { sound: 'default' } } },
+        });
+
+        logger.info('7일 전 알림 발송', { userId, heartCount });
       }
 
       return null;
@@ -2001,50 +1742,112 @@ export const chipExpiry7Days = functions
   });
 
 /**
- * 파란칩 소멸 3일 전 알림
+ * 하트 만료 3일 전 알림
  */
-export const chipExpiry3Days = functions
+export const heartExpiry3Days = functions
   .region('asia-northeast3')
   .pubsub.schedule('0 9 * * *')
   .timeZone('Asia/Seoul')
   .onRun(async () => {
-    logger.info('파란칩 3일 전 알림 시작');
+    logger.info('하트 3일 전 만료 알림 시작');
 
     try {
-      const targetDate = new Date();
-      targetDate.setDate(targetDate.getDate() + 3);
-
+      const targetDate = addDays(new Date(), 3);
       const startDate = startOfDay(targetDate);
       const endDate = endOfDay(targetDate);
 
-      const usersSnapshot = await db
-        .collection('users')
-        .where('chips.blueExpiry', '>=', startDate)
-        .where('chips.blueExpiry', '<=', endDate)
+      const usersSnapshot = await db.collectionGroup('heartBatches')
+        .where('expiresAt', '>=', startDate)
+        .where('expiresAt', '<=', endDate)
+        .where('remainingAmount', '>', 0)
         .get();
 
-      logger.info(`3일 전 알림 대상: ${usersSnapshot.size}명`);
+      const userHearts = new Map<string, number>();
 
-      for (const doc of usersSnapshot.docs) {
-        const user = doc.data();
-        const blueChips = user.chips?.blue || 0;
-        const fcmToken = user.fcmToken;
+      usersSnapshot.forEach((doc) => {
+        const pathParts = doc.ref.path.split('/');
+        const userId = pathParts[1];
+        const remaining = doc.data().remainingAmount;
+        userHearts.set(userId, (userHearts.get(userId) || 0) + remaining);
+      });
 
-        if (!fcmToken || blueChips === 0) {
-          continue;
-        }
+      logger.info(`3일 전 알림 대상: ${userHearts.size}명`);
 
-        // 긴급 알림
+      for (const [userId, heartCount] of userHearts) {
+        const userDoc = await db.doc(`users/${userId}`).get();
+        const fcmToken = userDoc.data()?.fcmToken;
+
+        if (!fcmToken) continue;
+
         await admin.messaging().send({
           token: fcmToken,
           notification: {
-            title: '🚨 칩 소멸 임박!',
-            body: `🔵 파란칩 ${blueChips}개가 3일 후 소멸됩니다! 지금 사용하지 않으면 사라집니다!`,
+            title: '🚨 하트 만료 임박!',
+            body: `💖 하트 ${heartCount}개가 3일 후 만료됩니다! 서둘러 사용하세요!`,
           },
           data: {
-            type: 'chip_expiry_3d',
+            type: 'heart_expiry_3d',
             action: 'open_job_board',
-            chips: String(blueChips),
+            hearts: String(heartCount),
+          },
+          android: { priority: 'high' },
+        });
+      }
+
+      return null;
+    } catch (error) {
+      logger.error('3일 전 알림 오류', error);
+      throw error;
+    }
+  });
+
+/**
+ * 하트 만료 당일 알림 (오전 9시)
+ */
+export const heartExpiryToday = functions
+  .region('asia-northeast3')
+  .pubsub.schedule('0 9 * * *')
+  .timeZone('Asia/Seoul')
+  .onRun(async () => {
+    logger.info('하트 당일 만료 알림 시작');
+
+    try {
+      const today = startOfDay(new Date());
+      const endToday = endOfDay(new Date());
+
+      const usersSnapshot = await db.collectionGroup('heartBatches')
+        .where('expiresAt', '>=', today)
+        .where('expiresAt', '<=', endToday)
+        .where('remainingAmount', '>', 0)
+        .get();
+
+      const userHearts = new Map<string, number>();
+
+      usersSnapshot.forEach((doc) => {
+        const pathParts = doc.ref.path.split('/');
+        const userId = pathParts[1];
+        const remaining = doc.data().remainingAmount;
+        userHearts.set(userId, (userHearts.get(userId) || 0) + remaining);
+      });
+
+      logger.info(`당일 알림 대상: ${userHearts.size}명`);
+
+      for (const [userId, heartCount] of userHearts) {
+        const userDoc = await db.doc(`users/${userId}`).get();
+        const fcmToken = userDoc.data()?.fcmToken;
+
+        if (!fcmToken) continue;
+
+        await admin.messaging().send({
+          token: fcmToken,
+          notification: {
+            title: '🔥 오늘 자정에 하트 만료!',
+            body: `💖 하트 ${heartCount}개가 오늘 24시에 사라집니다! 마지막 기회!`,
+          },
+          data: {
+            type: 'heart_expiry_today',
+            action: 'open_job_board',
+            hearts: String(heartCount),
           },
           android: {
             priority: 'high',
@@ -2058,127 +1861,71 @@ export const chipExpiry3Days = functions
 
       return null;
     } catch (error) {
-      logger.error('3일 전 알림 오류', error);
+      logger.error('당일 알림 오류', error);
       throw error;
     }
   });
 
 /**
- * 파란칩 소멸 당일 알림 (오전 9시)
+ * 만료된 하트 자동 정리 (매일 자정)
  */
-export const chipExpiryToday9AM = functions
+export const cleanupExpiredHearts = functions
   .region('asia-northeast3')
-  .pubsub.schedule('0 9 * * *')
+  .pubsub.schedule('0 0 * * *')
   .timeZone('Asia/Seoul')
   .onRun(async () => {
-    logger.info('파란칩 당일 오전 알림 시작');
+    logger.info('만료 하트 정리 시작');
 
     try {
-      const today = startOfDay(new Date());
-      const endToday = endOfDay(new Date());
+      const now = new Date();
 
-      const usersSnapshot = await db
-        .collection('users')
-        .where('chips.blueExpiry', '>=', today)
-        .where('chips.blueExpiry', '<=', endToday)
+      const expiredBatches = await db.collectionGroup('heartBatches')
+        .where('expiresAt', '<=', now)
+        .where('remainingAmount', '>', 0)
         .get();
 
-      logger.info(`당일 오전 알림 대상: ${usersSnapshot.size}명`);
+      logger.info(`만료된 배치: ${expiredBatches.size}개`);
 
-      for (const doc of usersSnapshot.docs) {
-        const user = doc.data();
-        const blueChips = user.chips?.blue || 0;
-        const fcmToken = user.fcmToken;
+      const batch = db.batch();
+      let count = 0;
 
-        if (!fcmToken || blueChips === 0) {
-          continue;
-        }
+      for (const doc of expiredBatches.docs) {
+        const data = doc.data();
+        const pathParts = doc.ref.path.split('/');
+        const userId = pathParts[1];
 
-        // 최종 경고 알림
-        await admin.messaging().send({
-          token: fcmToken,
-          notification: {
-            title: '🔥 오늘 자정에 칩 소멸!',
-            body: `🔵 파란칩 ${blueChips}개가 오늘 24시에 사라집니다! 마지막 기회입니다!`,
-          },
-          data: {
-            type: 'chip_expiry_today_am',
-            action: 'open_job_board',
-            chips: String(blueChips),
-          },
-          android: {
-            priority: 'high',
-            notification: {
-              sound: 'default',
-              vibrationPattern: [0, 500, 500, 500, 500, 500],
-            },
-          },
+        // 배치 잔액 0으로 설정
+        batch.update(doc.ref, { remainingAmount: 0 });
+
+        // 만료 거래 내역 기록
+        const txRef = db.collection(`users/${userId}/pointTransactions`).doc();
+        batch.set(txRef, {
+          type: 'expire',
+          pointType: 'heart',
+          amount: -data.remainingAmount,
+          balanceAfter: 0, // 클라이언트에서 재계산
+          reason: `💔 하트 ${data.remainingAmount}개 만료`,
+          metadata: { batchId: doc.id, source: data.source },
+          createdAt: admin.firestore.FieldValue.serverTimestamp(),
         });
+
+        count++;
+
+        // Batch 500개 제한
+        if (count % 500 === 0) {
+          await batch.commit();
+        }
       }
+
+      if (count % 500 !== 0) {
+        await batch.commit();
+      }
+
+      logger.info(`만료 하트 정리 완료: ${count}개 배치`);
 
       return null;
     } catch (error) {
-      logger.error('당일 오전 알림 오류', error);
-      throw error;
-    }
-  });
-
-/**
- * 파란칩 소멸 당일 알림 (오후 6시)
- */
-export const chipExpiryToday6PM = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('0 18 * * *')
-  .timeZone('Asia/Seoul')
-  .onRun(async () => {
-    logger.info('파란칩 당일 오후 알림 시작');
-
-    try {
-      const today = startOfDay(new Date());
-      const endToday = endOfDay(new Date());
-
-      const usersSnapshot = await db
-        .collection('users')
-        .where('chips.blueExpiry', '>=', today)
-        .where('chips.blueExpiry', '<=', endToday)
-        .get();
-
-      logger.info(`당일 오후 알림 대상: ${usersSnapshot.size}명`);
-
-      for (const doc of usersSnapshot.docs) {
-        const user = doc.data();
-        const blueChips = user.chips?.blue || 0;
-        const fcmToken = user.fcmToken;
-
-        if (!fcmToken || blueChips === 0) {
-          continue;
-        }
-
-        // 최종 최종 경고
-        await admin.messaging().send({
-          token: fcmToken,
-          notification: {
-            title: '🔥🔥 6시간 후 칩 소멸!',
-            body: `🔵 파란칩 ${blueChips}개가 자정에 완전히 사라집니다! 지금 사용하지 않으면 영원히 잃습니다!`,
-          },
-          data: {
-            type: 'chip_expiry_today_pm',
-            action: 'open_job_board',
-            chips: String(blueChips),
-          },
-          android: {
-            priority: 'high',
-            notification: {
-              sound: 'default',
-              vibrationPattern: [0, 500, 500, 500, 500, 500, 500],
-            },
-          },
-        });
-      }
-
-      return null;
-    } catch (error) {
-      logger.error('당일 오후 알림 오류', error);
+      logger.error('만료 하트 정리 오류', error);
       throw error;
     }
   });
@@ -2192,127 +1939,98 @@ export const chipExpiryToday6PM = functions
 
 ```yaml
 Phase 0: 사전 준비
-  [ ] 1. PG사 계약 (토스페이먼츠) ⭐⭐⭐⭐⭐
-      - 사업자등록증 준비
-      - 통신판매업 신고증 준비
-      - 가입 신청 및 심사 (3-5일)
-      - 테스트 계정 발급
+  [ ] 1. RevenueCat 계정 설정 ⭐⭐⭐⭐⭐
+      - App Store Connect 연동
+      - Google Play Console 연동
+      - 상품 4개 등록 (다이아 패키지)
       - API 키 발급
 
   [ ] 2. 법률 자문 (약관/환불정책) ⭐⭐⭐⭐⭐
       - 전자상거래법 검토
-      - 약관 작성 (서비스 이용약관, 칩 정책)
-      - 환불 정책 법률 자문
-      - 미성년자 보호 정책
+      - 포인트 정책 약관 작성
+      - 환불 정책 확정
 
-  [ ] 3. Firestore 스키마 설계 ⭐⭐⭐⭐⭐
-      - 컬렉션 구조 설계
-      - Security Rules 작성
+  [ ] 3. Firestore 스키마 배포 ⭐⭐⭐⭐⭐
+      - 컬렉션 구조 확정
+      - Security Rules 작성 및 테스트
       - 인덱스 설정
 
-  [ ] 4. 칩 데이터 모델 작성 (TypeScript) ⭐⭐⭐⭐
-      - chip.types.ts 작성
-      - 타입 정의
-
-  [ ] 5. Zustand 칩 스토어 생성 ⭐⭐⭐⭐
-      - chipStore.ts 작성
-      - 실시간 구독 로직
+  [ ] 4. 타입 정의 작성 ⭐⭐⭐⭐
+      - point.types.ts 작성
+      - 패키지, 배치, 거래 타입 정의
 ```
 
 ### 🚀 Week 2-3: 핵심 기능
 
 ```yaml
-Phase 1: 칩 기본 시스템
-  [ ] 6. 칩 잔액 UI 컴포넌트 ⭐⭐⭐⭐
-      - ChipBalance.tsx
-      - ChipTransactionHistory.tsx
+Phase 1: 포인트 시스템
+  [ ] 5. Zustand 스토어 생성 ⭐⭐⭐⭐⭐
+      - pointStore.ts
+      - 실시간 구독 (다이아 + 하트 배치)
 
-  [ ] 7. 토스페이먼츠 SDK 연동 ⭐⭐⭐⭐⭐
-      - 패키지 설치
-      - 환경 변수 설정
-      - payment.ts 작성
+  [ ] 6. 포인트 UI 컴포넌트 ⭐⭐⭐⭐
+      - PointBalance.tsx
+      - PointTransactionHistory.tsx
+      - DiamondPurchasePage.tsx
 
-  [ ] 8. 결제 승인 Firebase Functions ⭐⭐⭐⭐⭐
-      - approvePayment.ts
-      - spendChip.ts
+  [ ] 7. RevenueCat SDK 연동 ⭐⭐⭐⭐⭐
+      - purchases.ts 작성
+      - 구매 플로우 구현
 
-  [ ] 9. 결제 성공/실패 페이지 ⭐⭐⭐
-      - PaymentSuccessPage.tsx
-      - PaymentFailPage.tsx
-
-  [ ] 10. 충전 패키지 UI (4개 패키지) ⭐⭐⭐⭐
-      - ChipPurchasePage.tsx
-      - 패키지 카드 컴포넌트
+  [ ] 8. Firebase Functions (포인트) ⭐⭐⭐⭐⭐
+      - deductPoints.ts (차감)
+      - grantDiamonds.ts (지급)
 ```
 
-### 📅 Week 4: 구독 시스템
+### 💖 Week 4: 하트 시스템
 
 ```yaml
-Phase 2: 구독 관리
-  [ ] 11. 구독 생성 Functions ⭐⭐⭐⭐
-      - createSubscription.ts
+Phase 2: 하트 획득
+  [ ] 9. 하트 지급 Functions ⭐⭐⭐⭐
+      - grantHearts.ts
+      - 획득 경로별 로직
 
-  [ ] 12. 월초 자동 칩 지급 Cron ⭐⭐⭐⭐
-      - monthlyChipGrant.ts
-      - monthlyBilling.ts
+  [ ] 10. 출석 체크 시스템 ⭐⭐⭐⭐
+      - dailyAttendance.ts
+      - 7일 연속 보너스
 
-  [ ] 13. 구독 관리 UI ⭐⭐⭐
-      - SubscriptionPage.tsx
-      - 플랜 비교 카드
-
-  [ ] 14. 구독 취소 기능 ⭐⭐⭐
-      - cancelSubscription.ts
-      - UI 추가
+  [ ] 11. 출석 체크 UI ⭐⭐⭐
+      - AttendanceModal.tsx
+      - 연속 출석 표시
 ```
 
-### 🔔 Week 5: 알림 시스템
+### 🔔 Week 5: 알림 & 테스트
 
 ```yaml
 Phase 3: 알림 시스템
-  [ ] 15. 칩 소멸 알림 Cron ⭐⭐⭐⭐
-      - chipExpiry30Days.ts
-      - chipExpiry7Days.ts
-      - chipExpiry3Days.ts
-      - chipExpiryToday9AM.ts
-      - chipExpiryToday6PM.ts
+  [ ] 12. 하트 만료 알림 Cron ⭐⭐⭐⭐
+      - heartExpiry7Days
+      - heartExpiry3Days
+      - heartExpiryToday
 
-  [ ] 16. FCM 토큰 등록 ⭐⭐⭐
-      - 앱 시작 시 FCM 토큰 발급
-      - Firestore에 저장
+  [ ] 13. 만료 하트 정리 Cron ⭐⭐⭐⭐
+      - cleanupExpiredHearts
 
-  [ ] 17. 알림 설정 UI ⭐⭐
-      - NotificationSettingsPage.tsx
-      - 알림 ON/OFF 토글
+  [ ] 14. 알림 설정 UI ⭐⭐⭐
+      - 포인트 알림 ON/OFF
 ```
 
 ### 🧪 Week 6: 테스트 & 배포
 
 ```yaml
 Phase 4: 테스트 & 배포
-  [ ] 18. 단위 테스트 작성 ⭐⭐⭐
-      - chipStore 테스트
-      - payment 테스트
+  [ ] 15. 단위 테스트 ⭐⭐⭐
+      - pointStore 테스트
+      - Functions 테스트
 
-  [ ] 19. 통합 테스트 ⭐⭐⭐
-      - 결제 플로우 테스트
-      - 구독 플로우 테스트
+  [ ] 16. 통합 테스트 ⭐⭐⭐
+      - 구매 플로우
+      - 차감 플로우
+      - 만료 플로우
 
-  [ ] 20. Security Rules 배포 ⭐⭐⭐⭐⭐
-      - firestore.rules 검증
-      - 배포
-
-  [ ] 21. Functions 배포 ⭐⭐⭐⭐⭐
-      - 테스트 환경 배포
-      - 프로덕션 배포
-
-  [ ] 22. 프론트엔드 배포 ⭐⭐⭐⭐
-      - 빌드 테스트
-      - Firebase Hosting 배포
-
-  [ ] 23. 모니터링 설정 ⭐⭐⭐
-      - Sentry 연동
-      - Firebase Analytics
-      - 에러 트래킹
+  [ ] 17. Security Rules 배포 ⭐⭐⭐⭐⭐
+  [ ] 18. Functions 배포 ⭐⭐⭐⭐⭐
+  [ ] 19. 앱 배포 (TestFlight/내부 테스트) ⭐⭐⭐⭐
 ```
 
 ---
@@ -2320,18 +2038,24 @@ Phase 4: 테스트 & 배포
 ## 📚 참고 자료
 
 ### 공식 문서
-- 토스페이먼츠: https://docs.tosspayments.com/
+- RevenueCat: https://docs.revenuecat.com/
+- React Native Purchases: https://docs.revenuecat.com/docs/reactnative
 - Firebase Functions: https://firebase.google.com/docs/functions
 - Firestore: https://firebase.google.com/docs/firestore
-- FCM: https://firebase.google.com/docs/cloud-messaging
 
-### 추가 학습
-- 전자상거래법: https://www.law.go.kr/
-- 결제 보안: PCI DSS 표준
-- 구독 결제 모범 사례
+### 무료 기간 정책
+
+```yaml
+무료 기간: 2026년 7월 1일까지 (6개월)
+정책:
+  - 모든 공고 비용 0다이아
+  - 하트 획득 시스템 정상 운영
+  - 다이아 충전 UI 표시 (선결제 가능)
+  - 7/1 이후 자동으로 과금 시작
+```
 
 ---
 
 **문서 종료**
 
-이 문서는 UNIQN 칩 시스템 구현을 위한 종합 가이드입니다.
+이 문서는 UNIQN 하트/다이아 포인트 시스템 구현을 위한 종합 가이드입니다.

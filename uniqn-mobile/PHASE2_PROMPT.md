@@ -106,7 +106,7 @@ P1 항목:
 ### 2.4 비즈니스 에러 클래스 추가
 ```typescript
 // src/errors/BusinessError.ts
-export class InsufficientChipsError extends AppError {}  // 칩 부족
+export class InsufficientPointsError extends AppError {}  // 포인트(하트/다이아) 부족
 export class AlreadyAppliedError extends AppError {}     // 중복 지원
 export class ApplicationClosedError extends AppError {}  // 지원 마감
 export class MaxCapacityReachedError extends AppError {} // 정원 초과

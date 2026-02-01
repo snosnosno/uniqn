@@ -694,41 +694,105 @@ interface Notification {
 }
 ```
 
-### 2.8 payments (결제 기록)
+### 2.8 purchases (다이아 충전 기록)
 
 ```typescript
-interface Payment {
+interface Purchase {
   // === 기본 정보 ===
   id: string
   userId: string
 
-  // === 결제 정보 ===
-  type: 'subscription' | 'refund'
-  amount: number                // 결제 금액 (원)
+  // === 패키지 정보 ===
+  packageId: 'starter' | 'basic' | 'popular' | 'premium'
+  diamonds: number              // 기본 다이아 수량
+  bonusDiamonds: number         // 보너스 다이아 수량
+  totalDiamonds: number         // 총 지급 다이아
+  price: number                 // 결제 금액 (원)
 
-  // === 결제 수단 ===
-  method: 'card' | 'transfer' | 'virtual_account' | 'phone'
+  // === RevenueCat 연동 ===
+  revenueCatTransactionId: string
+  store: 'app_store' | 'play_store'
+  productId: string             // com.uniqn.diamond.{packageId}
+  environment: 'sandbox' | 'production'
 
   // === 상태 ===
-  status: 'pending' | 'completed' | 'failed' | 'cancelled' | 'refunded'
-
-  // === 토스페이먼츠 연동 ===
-  tossPaymentKey?: string
-  tossOrderId?: string
-  tossReceipt?: string
+  status: 'pending' | 'completed' | 'failed' | 'refunded'
 
   // === 환불 정보 ===
   refund?: {
     amount: number
+    diamondsDeducted: number
     reason: string
     refundedAt: Timestamp
-    refundedBy?: string
   }
 
   // === 메타데이터 ===
   createdAt: Timestamp
-  updatedAt: Timestamp
   completedAt?: Timestamp
+}
+```
+
+### 2.9 users/{userId}/heartBatches (하트 배치)
+
+```typescript
+interface HeartBatch {
+  // === 기본 정보 ===
+  id: string                    // 자동 생성
+
+  // === 하트 정보 ===
+  amount: number                // 획득 수량
+  remainingAmount: number       // 남은 수량
+  source: HeartSource           // 획득 경로
+
+  // === 기간 ===
+  acquiredAt: Timestamp
+  expiresAt: Timestamp          // 획득일 + 90일
+
+  // === 메타데이터 ===
+  metadata?: {
+    referrerId?: string         // 추천인 ID (초대 보상 시)
+    workLogId?: string          // 근무 기록 ID (리뷰 작성 시)
+    [key: string]: string | undefined
+  }
+}
+
+type HeartSource =
+  | 'signup_bonus'      // 가입 보너스 (+10)
+  | 'daily_attendance'  // 일일 출석 (+1)
+  | 'weekly_streak'     // 7일 연속 출석 (+3)
+  | 'review_bonus'      // 리뷰 작성 (+1)
+  | 'referral_bonus'    // 친구 초대 (+5)
+  | 'admin_grant'       // 관리자 지급
+```
+
+### 2.10 users/{userId}/pointTransactions (포인트 거래 기록)
+
+```typescript
+interface PointTransaction {
+  // === 기본 정보 ===
+  id: string
+  userId: string
+
+  // === 거래 정보 ===
+  type: 'earn' | 'spend' | 'refund' | 'expire'
+  pointType: 'heart' | 'diamond'
+  amount: number                // 양수: 획득, 음수: 차감
+
+  // === 상세 정보 ===
+  source?: HeartSource          // 하트 획득 시
+  purchaseId?: string           // 다이아 충전 시
+  jobPostingId?: string         // 공고 등록 차감 시
+  postingType?: 'regular' | 'urgent' | 'fixed'  // 공고 타입
+
+  // === 잔액 스냅샷 ===
+  balanceAfter: {
+    hearts: number
+    diamonds: number
+  }
+
+  // === 메타데이터 ===
+  createdAt: Timestamp
+  description?: string          // 거래 설명
 }
 ```
 
@@ -1351,40 +1415,96 @@ export const onNewApplication = functions.firestore
     }
   })
 
-// === 결제 웹훅 ===
+// === RevenueCat 웹훅 ===
 
-// 토스페이먼츠 결제 확인
-export const confirmTossPayment = functions.https.onCall(async (data, context) => {
-  if (!context.auth) {
-    throw new functions.https.HttpsError('unauthenticated', '로그인이 필요합니다')
+// RevenueCat 결제 웹훅 처리
+export const handleRevenueCatWebhook = functions.https.onRequest(async (req, res) => {
+  // 서명 검증
+  const signature = req.headers['x-revenuecat-signature']
+  if (!verifyRevenueCatSignature(req.body, signature)) {
+    res.status(401).send('Invalid signature')
+    return
   }
 
-  const { paymentKey, orderId, amount } = data
+  const event = req.body
+  const userId = event.app_user_id
 
   try {
-    // 토스페이먼츠 API 호출
-    const response = await axios.post(
-      'https://api.tosspayments.com/v1/payments/confirm',
-      { paymentKey, orderId, amount },
-      {
-        headers: {
-          Authorization: `Basic ${Buffer.from(TOSS_SECRET_KEY + ':').toString('base64')}`,
-        }
-      }
-    )
+    switch (event.type) {
+      case 'INITIAL_PURCHASE':
+      case 'NON_RENEWING_PURCHASE':
+        await handleDiamondPurchase(userId, event)
+        break
 
-    // 결제 기록 저장
-    await admin.firestore().collection('payments').doc(orderId).update({
-      status: 'completed',
-      tossPaymentKey: paymentKey,
-      completedAt: admin.firestore.FieldValue.serverTimestamp(),
-    })
+      case 'REFUND':
+        await handleRefund(userId, event)
+        break
 
-    return { success: true }
+      default:
+        logger.info('Unhandled RevenueCat event', { type: event.type })
+    }
+
+    res.status(200).send('OK')
   } catch (error) {
-    throw new functions.https.HttpsError('internal', '결제 처리 실패')
+    logger.error('RevenueCat webhook error', { error })
+    res.status(500).send('Internal error')
   }
 })
+
+// 다이아 충전 처리
+async function handleDiamondPurchase(userId: string, event: any) {
+  const productId = event.product_id
+  const transactionId = event.transaction_id
+  const store = event.store as 'app_store' | 'play_store'
+
+  // 패키지별 다이아 수량 매핑
+  const packages: Record<string, { diamonds: number; bonus: number }> = {
+    'com.uniqn.diamond.starter': { diamonds: 3, bonus: 0 },
+    'com.uniqn.diamond.basic': { diamonds: 8, bonus: 3 },
+    'com.uniqn.diamond.popular': { diamonds: 30, bonus: 10 },
+    'com.uniqn.diamond.premium': { diamonds: 333, bonus: 67 },
+  }
+
+  const pkg = packages[productId]
+  if (!pkg) {
+    throw new Error(`Unknown product: ${productId}`)
+  }
+
+  const totalDiamonds = pkg.diamonds + pkg.bonus
+
+  await admin.firestore().runTransaction(async (transaction) => {
+    const userRef = admin.firestore().collection('users').doc(userId)
+    const userDoc = await transaction.get(userRef)
+
+    if (!userDoc.exists) {
+      throw new Error('User not found')
+    }
+
+    const currentDiamonds = userDoc.data()?.points?.diamonds || 0
+
+    // 다이아 지급
+    transaction.update(userRef, {
+      'points.diamonds': currentDiamonds + totalDiamonds,
+      'points.updatedAt': admin.firestore.FieldValue.serverTimestamp(),
+    })
+
+    // 구매 기록 저장
+    const purchaseRef = admin.firestore().collection('purchases').doc()
+    transaction.set(purchaseRef, {
+      userId,
+      packageId: productId.split('.').pop(),
+      diamonds: pkg.diamonds,
+      bonusDiamonds: pkg.bonus,
+      totalDiamonds,
+      revenueCatTransactionId: transactionId,
+      store,
+      productId,
+      status: 'completed',
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      completedAt: admin.firestore.FieldValue.serverTimestamp(),
+    })
+  })
+}
 
 // === 스케줄 함수 ===
 

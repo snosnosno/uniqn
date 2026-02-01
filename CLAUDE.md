@@ -9,10 +9,10 @@
 1. [최우선 지침](#최우선-지침)
 2. [프로젝트 개요](#프로젝트-개요)
 3. [공통 규칙](#공통-규칙)
-4. [웹앱 개발 가이드 (app2/)](#웹앱-개발-가이드-app2)
-5. [모바일앱 개발 가이드 (uniqn-mobile/)](#모바일앱-개발-가이드-uniqn-mobile)
-6. [품질 지표](#품질-지표-통합)
-7. [주요 문서 참조](#주요-문서-참조)
+4. [모바일앱 개발 가이드 (uniqn-mobile/)](#모바일앱-개발-가이드-uniqn-mobile)
+5. [품질 지표](#품질-지표)
+6. [주요 문서 참조](#주요-문서-참조)
+7. [레거시 웹앱 참고 (app2/)](#레거시-웹앱-참고-app2)
 
 ---
 
@@ -22,9 +22,8 @@
 
 ```yaml
 언어: 항상 한글로 답변
-작업 디렉토리:
-  - app2/: 기존 웹앱 (React + Capacitor)
-  - uniqn-mobile/: 신규 모바일앱 (React Native + Expo) ⭐ 주력
+작업 디렉토리: uniqn-mobile/  # React Native + Expo (주력)
+레거시 참고: app2/            # 토너먼트 로직 참고용 (개발 중단)
 배포 전 검증: npm run type-check && npm run lint && npm run build
 ```
 
@@ -44,27 +43,13 @@
 **UNIQN** - 홀덤 포커 토너먼트 운영을 위한 종합 관리 플랫폼
 
 - **프로젝트 ID**: tholdem-ebc18
-- **배포 URL**: https://tholdem-ebc18.web.app
-- **웹앱 버전**: v0.2.3
 - **모바일앱 버전**: v1.0.0
+- **플랫폼**: iOS, Android, Web (Expo)
 
 ### 프로젝트 구조
 
 ```
 T-HOLDEM/
-├── app2/                    # 웹앱 (React + Capacitor)
-│   └── src/
-│       ├── components/      # UI 컴포넌트 (40+ 폴더)
-│       ├── contexts/        # Context Providers (6개)
-│       ├── hooks/           # Custom Hooks (20+)
-│       ├── stores/          # Zustand Stores (5개)
-│       ├── pages/           # 페이지 컴포넌트 (20+)
-│       ├── services/        # 비즈니스 로직 (20+)
-│       ├── utils/           # 유틸리티 함수 (50+)
-│       ├── types/           # TypeScript 타입 정의
-│       ├── schemas/         # Zod 검증 스키마
-│       └── config/          # 설정 파일
-│
 ├── uniqn-mobile/            # 모바일앱 (React Native + Expo) ⭐ 주력
 │   ├── app/                 # Expo Router (64개 라우트)
 │   └── src/                 # 소스 코드 (460+ 파일)
@@ -78,26 +63,40 @@ T-HOLDEM/
 │       ├── schemas/         # Zod 스키마 (18개)
 │       └── errors/          # 에러 시스템 (6개)
 │
+├── functions/               # Firebase Functions
 ├── specs/                   # 스펙 문서
 │   └── react-native-app/    # RN 앱 스펙 (23개 문서)
-├── functions/               # Firebase Functions
-└── docs/                    # 운영 문서 (46개)
+├── docs/                    # 운영 문서 (46개)
+└── app2/                    # [레거시] 웹앱 - 토너먼트 로직 참고용
 ```
 
-### 기술 스택 비교
+### 기술 스택
 
-| 항목 | app2 (웹앱) | uniqn-mobile (모바일앱) |
-|------|------------|------------------------|
-| **Framework** | React 18.2 | React Native 0.81.5 + Expo 54 |
-| **React** | 18.2 | 19.1.0 |
-| **TypeScript** | 4.9 | 5.9.2 (strict) |
-| **스타일링** | Tailwind CSS 3.3 | NativeWind 4.2.1 |
-| **상태관리** | Zustand 5.0 | Zustand 5.0.9 |
-| **서버 상태** | React Query 5.17 | TanStack Query 5.90.12 |
-| **Firebase** | 11.9 | 12.6.0 (Modular API) |
-| **Zod** | 3.23 | 4.1.13 |
-| **라우팅** | React Router | Expo Router 6.0.19 |
-| **폼** | - | React Hook Form 7.68.0 |
+```yaml
+Core:
+  - Expo SDK: 54
+  - React Native: 0.81.5
+  - React: 19.1.0
+  - TypeScript: 5.9.2 (strict 모드)
+
+Navigation & State:
+  - Expo Router: 6.0.19 (파일 기반 라우팅)
+  - Zustand: 5.0.9 (전역 상태)
+  - TanStack Query: 5.90.12 (서버 상태)
+
+UI/Styling:
+  - NativeWind: 4.2.1 (Tailwind CSS)
+  - @shopify/flash-list: 가상화 리스트
+  - expo-image: 3.0.11 (이미지 최적화)
+  - @gorhom/bottom-sheet: 5.2.8
+
+Backend:
+  - Firebase: 12.6.0 (Modular API)
+
+Forms & Validation:
+  - React Hook Form: 7.68.0
+  - Zod: 4.1.13
+```
 
 ---
 
@@ -126,13 +125,13 @@ function hasPermission(userRole: UserRole | null, required: UserRole): boolean {
 ```
 
 **역할별 기능**:
-| 역할 | 웹앱 기능 | 모바일앱 기능 |
-|------|----------|--------------|
-| `admin` | 전체 관리 | 사용자/신고/공지/대회 관리 |
-| `employer` | 구인공고 관리 | 공고 CRUD, 지원자 관리, 정산 |
-| `manager` | 이벤트 관리 | (미구현) |
-| `staff` | 근무 관리 | 지원, 스케줄, QR 출퇴근 |
-| `user` | 읽기 전용 | 공고 열람만 |
+| 역할 | 기능 |
+|------|------|
+| `admin` | 사용자/신고/공지/대회 관리 |
+| `employer` | 공고 CRUD, 지원자 관리, 정산 |
+| `manager` | (미구현) |
+| `staff` | 지원, 스케줄, QR 출퇴근 |
+| `user` | 공고 열람만 |
 
 ---
 
@@ -297,278 +296,9 @@ await runTransaction(db, async (transaction) => {
 
 ---
 
-## 웹앱 개발 가이드 (app2/)
-
-> 이 섹션은 React + Capacitor 기반 웹앱 개발에 적용됩니다.
-
-### 기술 스택
-
-```typescript
-// 코어
-React 18.2 + TypeScript 4.9 (Strict Mode)
-Tailwind CSS 3.3 + Zustand 5.0 + React Query 5.17
-Firebase 11.9 (Auth, Firestore, Functions)
-
-// UI/UX
-@heroicons/react 2.2 + @tanstack/react-table 8.21
-다크모드: class 기반 (dark: prefix)
-
-// 유효성 검증
-Zod 3.23 (스키마 검증) + DOMPurify 3.2 (XSS 방지)
-
-// 모바일
-Capacitor 7.4 (iOS/Android)
-```
-
-### 아키텍처 레이어
-
-```typescript
-// Layer 1: Zustand Store (전역 상태)
-// - unifiedDataStore: staff, workLogs, applications, attendance
-// - toastStore: 토스트 알림
-// - jobPostingStore: 구인공고
-// - dateFilterStore: 날짜 필터
-// - tournamentStore: 토너먼트
-
-// Layer 2: Context API (Provider 패턴)
-// - AuthContext: 인증 상태 + 역할
-// - ThemeContext: 다크모드
-// - ChipContext: 칩 잔액
-// - TournamentContext: 토너먼트 데이터
-
-// Layer 3: React Query (서버 상태)
-// - 캐싱 (staleTime: 5분)
-// - 자동 리프레시
-// - 에러 핸들링
-```
-
-### 데이터 흐름 패턴
-
-```typescript
-// Firebase 실시간 구독 (onSnapshot 필수)
-useEffect(() => {
-  const unsubscribe = onSnapshot(
-    collection(db, 'staff'),
-    (snapshot) => {
-      const data = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setStaff(data);
-    },
-    (error) => {
-      logger.error('구독 실패', error, { component: 'StaffList' });
-    }
-  );
-  return () => unsubscribe(); // 클린업 필수
-}, []);
-
-// Index Map 패턴 (O(1) 조회)
-const staffById = useMemo(() =>
-  new Map(staff.map(s => [s.id, s])),
-  [staff]
-);
-```
-
-### 컴포넌트 구조
-
-```typescript
-// 권장 패턴
-const MyComponent: React.FC<Props> = React.memo(({ data, onAction }) => {
-  // 1. 메모이제이션
-  const processedData = useMemo(() =>
-    processExpensive(data),
-    [data]
-  );
-
-  const handleClick = useCallback(() => {
-    onAction(processedData);
-  }, [onAction, processedData]);
-
-  // 2. 조건부 렌더링
-  if (!data) return <EmptyState />;
-
-  // 3. JSX (다크모드 필수)
-  return (
-    <div className="bg-white dark:bg-gray-800 p-4">
-      <button onClick={handleClick}>
-        {processedData.label}
-      </button>
-    </div>
-  );
-});
-
-MyComponent.displayName = 'MyComponent';
-```
-
-### UI/UX 규칙 (웹)
-
-#### 다크모드 (필수)
-
-```tsx
-// 모든 UI 요소에 적용
-<div className="
-  bg-white dark:bg-gray-800
-  text-gray-900 dark:text-gray-100
-  border-gray-200 dark:border-gray-700
-">
-  <p className="text-gray-600 dark:text-gray-400">
-    보조 텍스트
-  </p>
-  <button className="
-    bg-blue-600 hover:bg-blue-700
-    dark:bg-blue-700 dark:hover:bg-blue-600
-  ">
-    버튼
-  </button>
-</div>
-```
-
-#### 반응형 디자인
-
-```tsx
-// 모바일 퍼스트
-<div className="
-  px-4 md:px-6 lg:px-8
-  grid grid-cols-1 md:grid-cols-2
-  text-sm md:text-base
-">
-  ...
-</div>
-
-// 터치 타겟: 최소 44px (WCAG)
-<button className="min-h-[44px] min-w-[44px]">
-```
-
-#### 로딩/에러 상태
-
-```tsx
-// 모든 비동기 작업에 적용
-if (loading) return <LoadingSpinner />;
-if (error) return <ErrorState message={error.message} />;
-if (!data?.length) return <EmptyState />;
-```
-
-#### 접근성
-
-```tsx
-// 시맨틱 HTML + ARIA
-<button
-  aria-label="메뉴 열기"
-  aria-expanded={isOpen}
-  onClick={toggleMenu}
->
-  <MenuIcon aria-hidden="true" />
-</button>
-
-// 키보드 네비게이션
-<FocusTrap active={isModalOpen}>
-  <Modal />
-</FocusTrap>
-```
-
-### 에러 처리 (웹)
-
-```typescript
-import { logger } from '@/utils/logger';
-
-// 컨텍스트와 함께 로깅
-logger.info('작업 시작', {
-  component: 'StaffList',
-  operation: 'fetchStaff',
-  userId
-});
-
-// 에러 로깅 (Error 객체 포함)
-logger.error('작업 실패', error, {
-  component: 'StaffList',
-  staffId,
-  errorCode: error.code
-});
-
-// 사용자 피드백
-import { useToastStore } from '@/stores/toastStore';
-const { addToast } = useToastStore();
-addToast({ type: 'success', message: '저장되었습니다' });
-```
-
-### 성능 규칙 (웹)
-
-```typescript
-// 페이지 단위 Lazy Loading
-const TournamentPage = lazy(() => import('@/pages/TournamentPage'));
-
-// 청크 그룹화 (lazyChunks.ts)
-// - adminChunk: 관리자 페이지
-// - tournamentChunk: 토너먼트 관련
-// - jobManagementChunk: 구인공고 관리
-```
-
-**성능 예산**:
-| 메트릭 | 목표 | 현재 |
-|--------|------|------|
-| 번들 크기 | < 300KB | 299KB |
-| LCP | < 2.5s | - |
-| FID | < 100ms | - |
-| CLS | < 0.1 | - |
-
-### 개발 명령어 (웹)
-
-```bash
-cd app2
-
-# 개발
-npm start                    # 개발 서버
-npm run type-check          # TypeScript 검증
-npm run lint                # ESLint 검사
-npm run lint:fix            # ESLint 자동 수정
-npm run format              # Prettier 포맷팅
-
-# 품질 검사 (커밋 전 필수)
-npm run quality             # lint + format:check + type-check
-
-# 빌드 & 배포
-npm run build               # 프로덕션 빌드
-npm run deploy:all          # Firebase 전체 배포
-npx cap sync               # 모바일 동기화
-
-# 테스트
-npm test                    # Jest 테스트
-npm run test:e2e           # Playwright E2E
-npm run test:coverage      # 커버리지 리포트
-
-# 분석
-npm run analyze:bundle     # 번들 분석
-```
-
-### 코드 리뷰 체크리스트 (웹)
-
-**기능 추가 시**:
-- [ ] TypeScript strict mode 준수 (any 타입 없음)
-- [ ] logger 사용 (console.log 없음)
-- [ ] 다크모드 적용 (dark: 클래스)
-- [ ] 로딩/에러 상태 처리
-- [ ] 메모이제이션 적용 (필요한 경우)
-- [ ] 접근성 고려 (ARIA, 키보드)
-- [ ] Zod 스키마로 입력 검증
-
-**Firebase 작업 시**:
-- [ ] onSnapshot으로 실시간 구독
-- [ ] 클린업 함수 반환
-- [ ] 에러 핸들링 + 로깅
-- [ ] 배치 작업 사용 (다중 문서)
-
-**배포 전**:
-- [ ] `npm run type-check` 통과
-- [ ] `npm run lint` 통과
-- [ ] `npm run build` 성공
-- [ ] 테스트 통과
-
----
-
 ## 모바일앱 개발 가이드 (uniqn-mobile/)
 
-> ⚠️ **중요**: 이 섹션은 React Native + Expo 기반 모바일앱 개발에 적용됩니다.
+> React Native + Expo 기반 모바일앱 개발 가이드
 
 ### 프로젝트 현황
 
@@ -590,36 +320,6 @@ npm run analyze:bundle     # 번들 분석
 | **Shared** | 22 | 공유 유틸리티 (ID, Role, Status, Time) |
 | **Errors** | 6 | 에러 시스템 (AppError 계층) |
 | **전체 TypeScript** | **460+** | src + app 합계 |
-
-### 기술 스택 (실제 버전)
-
-```yaml
-Core:
-  - Expo SDK: 54
-  - React Native: 0.81.5
-  - React: 19.1.0
-  - TypeScript: 5.9.2 (strict 모드)
-
-Navigation & State:
-  - Expo Router: 6.0.19 (파일 기반 라우팅)
-  - Zustand: 5.0.9 (전역 상태)
-  - TanStack Query: 5.90.12 (서버 상태)
-
-UI/Styling:
-  - NativeWind: 4.2.1 (Tailwind CSS)
-  - @shopify/flash-list: 가상화 리스트
-  - expo-image: 3.0.11 (이미지 최적화)
-  - @gorhom/bottom-sheet: 5.2.8
-
-Backend:
-  - Firebase: 12.6.0 (Modular API)
-  # @react-native-firebase 대신 Firebase Modular API 사용
-
-Forms & Validation:
-  - React Hook Form: 7.68.0
-  - Zod: 4.1.13
-  - @hookform/resolvers: 5.2.2
-```
 
 ### 폴더 구조
 
@@ -1262,20 +962,7 @@ eas build --platform android    # Android 빌드
 
 ---
 
-## 품질 지표 (통합)
-
-### 웹앱 (app2/)
-
-| 항목 | 목표 | 현재 |
-|------|:----:|:----:|
-| TypeScript 에러 | 0개 | 0개 |
-| ESLint 경고 | < 10개 | - |
-| 번들 크기 | < 300KB | 299KB |
-| 테스트 커버리지 | 80% | 65% |
-| 다크모드 적용 | 100% | 100% |
-| 메모이제이션 | 필수 적용 | 236+ |
-
-### 모바일앱 (uniqn-mobile/)
+## 품질 지표
 
 | 항목 | MVP 기준 | 출시 기준 | 현재 |
 |------|:--------:|:---------:|:----:|
@@ -1314,6 +1001,30 @@ eas build --platform android    # Android 빌드
 
 ---
 
-*마지막 업데이트: 2025-01-30*
-*웹앱 버전: v0.2.3 | 모바일앱 버전: v1.0.0*
-*문서 기준: 통합 구조 재편 + Repository 패턴 + Shared 모듈 적용 완료*
+## 레거시 웹앱 참고 (app2/)
+
+> ⚠️ **개발 중단**: app2는 더 이상 개발되지 않습니다. 토너먼트 로직 참고용으로만 보관합니다.
+
+### 참고 가능한 로직
+
+| 기능 | 파일 위치 | 설명 |
+|------|----------|------|
+| 토너먼트 관리 | `app2/src/contexts/TournamentContext.tsx` | 토너먼트 상태 관리 |
+| 토너먼트 스토어 | `app2/src/stores/tournamentStore.ts` | Zustand 스토어 |
+| 칩 관리 | `app2/src/contexts/ChipContext.tsx` | 칩 잔액 관리 |
+| 토너먼트 서비스 | `app2/src/services/tournament*.ts` | 비즈니스 로직 |
+| 토너먼트 타입 | `app2/src/types/tournament.ts` | 타입 정의 |
+
+### 기술 스택 (참고용)
+
+```yaml
+React 18.2 + TypeScript 4.9 + Tailwind CSS 3.3
+Zustand 5.0 + React Query 5.17 + Firebase 11.9
+Capacitor 7.4 (iOS/Android 하이브리드)
+```
+
+---
+
+*마지막 업데이트: 2025-02-01*
+*모바일앱 버전: v1.0.0*
+*문서 기준: 모바일앱 중심 개발 전환*

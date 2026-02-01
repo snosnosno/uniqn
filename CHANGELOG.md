@@ -5,6 +5,80 @@
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며,
 이 프로젝트는 [Semantic Versioning](https://semver.org/spec/v2.0.0.html)을 준수합니다.
 
+## [1.0.0] - 2026-02-01
+
+### 🚀 모바일앱 중심 전환 및 RevenueCat 연동 (Production Ready)
+
+#### 플랫폼 전환
+- **주력 플랫폼 변경**: 레거시 웹앱(app2/) → 모바일앱(uniqn-mobile/)
+- **기술 스택**: React Native + Expo SDK 54
+- **개발 중단**: app2/ 웹앱 개발 중단, 토너먼트 로직 참고용으로만 보관
+
+#### 💎 하트/다이아 포인트 시스템 (신규)
+- **💖 하트 (Heart)**: 무료 획득 (활동 보상), 90일 만료, ₩300/개 가치
+  - 첫 가입: +10💖
+  - 매일 출석: +1💖
+  - 7일 연속 출석: +3💖 보너스
+  - 리뷰 작성: +1💖
+  - 친구 초대: +5💖
+- **💎 다이아 (Diamond)**: 유료 충전 (RevenueCat), 영구 보유, ₩300/개 가치
+- **사용 우선순위**: 하트(만료 임박 순) → 다이아
+- **공고 비용**:
+  - 📋 지원 공고 (regular): 💎 1다이아
+  - 📌 고정 공고 (fixed): 💎 5다이아/주
+  - 🏆 대회 공고 (tournament): 무료 (관리자 승인 필요)
+  - 🚨 긴급 공고 (urgent): 💎 10다이아
+
+#### 💎 다이아 패키지 (RevenueCat)
+| 패키지 | 가격 | 다이아 | 보너스 |
+|--------|------|--------|--------|
+| 스타터 | ₩1,000 | 3💎 | - |
+| 베이직 | ₩3,300 | 8💎 | +3 (27%) |
+| 인기 | ₩10,000 | 30💎 | +10 (33%) |
+| 프리미엄 | ₩100,000 | 333💎 | +67 (20%) |
+
+#### 결제 시스템 전환
+- **이전**: 토스페이먼츠 (웹앱용 칩 시스템)
+- **이후**: RevenueCat (모바일앱용 인앱 결제)
+- **연동 완료**: App Store Connect, Google Play Console
+
+#### Repository 패턴 도입
+- **ApplicationRepository**: 지원 관리 데이터 접근 추상화
+- **JobPostingRepository**: 공고 관리 데이터 접근 추상화
+- **WorkLogRepository**: 근무 기록 데이터 접근 추상화
+- **의존성 규칙**: Service → Repository → Firebase
+
+#### Firestore 스키마 변경
+- **users/{userId}/heartBatches**: 하트 배치 (만료일별 관리)
+- **users/{userId}/pointTransactions**: 포인트 거래 내역
+- **purchases/**: RevenueCat 구매 기록
+
+#### 문서 최신화
+- **DEPRECATED 표시**: 토스페이먼츠 관련 레거시 문서
+- **신규 문서 작성**: 하트/다이아 포인트 시스템 가이드
+- **스펙 폴더 정리**: 레거시 specs 폴더 LEGACY_NOTICE.md 추가
+
+#### 기술 지표
+- **TypeScript 파일**: 460+ 개 (src + app)
+- **컴포넌트**: 198개 (UI 48개 + 기능별 150개)
+- **커스텀 훅**: 40개
+- **서비스**: 33개
+- **Repository**: 9개 (인터페이스 + 구현체)
+- **테스트 커버리지**: 14%+ (MVP 기준)
+
+### 삭제
+- 토스페이먼츠 연동 코드 (레거시 웹앱용)
+- 파란칩/빨간칩 시스템 (하트/다이아로 대체)
+- chipBalance, chipTransactions 컬렉션 (heartBatches, pointTransactions로 대체)
+
+### 변경
+- 모든 결제 관련 문서: 토스페이먼츠 → RevenueCat
+- 모든 포인트 문서: 칩 시스템 → 하트/다이아 시스템
+- CLAUDE.md: 모바일앱 중심 개발 가이드로 업데이트
+- README.md: v1.0.0 모바일앱 중심으로 전면 개편
+
+---
+
 ## [Unreleased]
 
 ### 📌 고정공고 Phase 4: 상세보기 및 Firestore 인덱스 설정 완료 (2025-11-23)

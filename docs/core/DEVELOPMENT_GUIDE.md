@@ -1,8 +1,11 @@
 # T-HOLDEM 개발 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**프로젝트 버전**: v0.2.4 (Production Ready)
-**대상**: T-HOLDEM 개발팀, Claude Code 사용자
+**최종 업데이트**: 2026년 2월 1일
+**프로젝트 버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**대상**: UNIQN 개발팀, Claude Code 사용자
+
+> **참고**: 이 문서는 레거시 웹앱(app2/)용 개발 가이드입니다.
+> 모바일앱(uniqn-mobile/) 개발은 [CLAUDE.md](../../CLAUDE.md)를 참조하세요.
 
 ---
 

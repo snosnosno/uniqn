@@ -1,11 +1,16 @@
-# ⚡ T-HOLDEM 성능 최적화 가이드
+# ⚡ UNIQN 성능 최적화 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
-**상태**: ✅ **완성 - Production Ready**
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**상태**: ✅ **Production Ready**
 
-> [!NOTE]
-> **안내**: 이 문서는 v0.2.2에서 달성된 성능 최적화 결과와 추가 최적화 방법을 설명합니다. 번들 크기 279KB, React.memo 적용, TypeScript strict mode 등 Enterprise 수준의 성능을 달성했습니다.
+> **참고**: 이 문서는 레거시 웹앱(app2/) 성능 최적화 가이드입니다.
+> 모바일앱(uniqn-mobile/) 성능 최적화는 [CLAUDE.md](../../CLAUDE.md)의 "성능 규칙" 섹션을 참조하세요.
+>
+> **모바일앱 성능 목표**:
+> - 첫 로드: < 2초
+> - 화면 전환: < 300ms
+> - 리스트 스크롤: 60fps (FlashList 사용)
 
 ---
 

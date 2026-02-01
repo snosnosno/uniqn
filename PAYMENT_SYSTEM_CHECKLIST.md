@@ -1,8 +1,21 @@
 # 🎯 T-HOLDEM 결제 시스템 구현 체크리스트
 
-> **프로젝트**: T-HOLDEM 토스페이먼츠 결제 시스템
+> ⚠️ **[DEPRECATED - 레거시 문서]**
+>
+> **이 문서는 레거시 웹앱(app2/)용 토스페이먼츠 체크리스트입니다.**
+>
+> 현재 모바일앱(uniqn-mobile/)은 **RevenueCat** 기반의 새로운 **💎 하트/다이아 포인트 시스템**을 사용합니다.
+>
+> **새로운 결제 시스템 문서:**
+> - [PAYMENT_OPERATIONS.md](docs/operations/PAYMENT_OPERATIONS.md) - 운영 가이드
+> - [MODEL_B_CHIP_SYSTEM_FINAL.md](docs/features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 시스템 설계
+> - [18-app-store-guide.md](specs/react-native-app/18-app-store-guide.md) - 앱스토어 가이드
+>
+> ---
+
+> **프로젝트**: T-HOLDEM 토스페이먼츠 결제 시스템 (레거시)
 > **시작일**: 2025-01-23
-> **현재 상태**: 보안 테스트 완료 (71% 완성)
+> **현재 상태**: 보안 테스트 완료 (71% 완성) - **개발 중단**
 > **마지막 업데이트**: 2025-01-24
 
 ---

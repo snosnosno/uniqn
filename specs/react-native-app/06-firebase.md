@@ -1,49 +1,103 @@
 # 06. Firebase 연동 전략
 
+> **마지막 업데이트**: 2025년 2월
+
 ## Firebase 설정
 
-### 패키지 선택
+### 패키지 선택 (현재 구현)
 ```yaml
-# React Native Firebase (권장)
-@react-native-firebase/app: ^20.0.0
-@react-native-firebase/auth: ^20.0.0
-@react-native-firebase/firestore: ^20.0.0
-@react-native-firebase/storage: ^20.0.0
-@react-native-firebase/messaging: ^20.0.0  # FCM
-@react-native-firebase/analytics: ^20.0.0
+# Firebase Web SDK (Modular API)
+firebase: ^12.6.0
 
-# 이유:
-# - 네이티브 모듈 사용 (성능 우수)
-# - Expo와 호환 (expo-dev-client 필요)
+# 선택 이유:
+# - Expo SDK 54와 완벽한 호환성
+# - expo-dev-client 없이도 Expo Go에서 테스트 가능
+# - Web, iOS, Android 단일 코드베이스
+# - Tree-shaking으로 번들 크기 최적화
 # - 기존 Firebase 프로젝트와 호환
 ```
 
-### 초기화 설정
+### 초기화 설정 (지연 초기화 + Proxy 패턴)
 ```typescript
 // src/lib/firebase.ts
-import { initializeApp, getApps, getApp } from '@react-native-firebase/app';
-import auth from '@react-native-firebase/auth';
-import firestore from '@react-native-firebase/firestore';
-import storage from '@react-native-firebase/storage';
-import messaging from '@react-native-firebase/messaging';
+import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';
+import { getAuth, Auth, connectAuthEmulator } from 'firebase/auth';
+import { getFirestore, Firestore, connectFirestoreEmulator } from 'firebase/firestore';
+import { getStorage, FirebaseStorage, connectStorageEmulator } from 'firebase/storage';
+import { getFunctions, Functions, connectFunctionsEmulator } from 'firebase/functions';
+import Constants from 'expo-constants';
 
-// Firebase 자동 초기화 (google-services.json / GoogleService-Info.plist)
-// 별도 config 불필요
+// 환경변수에서 Firebase 설정 가져오기
+const firebaseConfig = {
+  apiKey: Constants.expoConfig?.extra?.FIREBASE_API_KEY,
+  authDomain: Constants.expoConfig?.extra?.FIREBASE_AUTH_DOMAIN,
+  projectId: Constants.expoConfig?.extra?.FIREBASE_PROJECT_ID,
+  storageBucket: Constants.expoConfig?.extra?.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: Constants.expoConfig?.extra?.FIREBASE_MESSAGING_SENDER_ID,
+  appId: Constants.expoConfig?.extra?.FIREBASE_APP_ID,
+};
 
-// Firestore 설정
-firestore().settings({
-  persistence: true, // 오프라인 지원
-  cacheSizeBytes: firestore.CACHE_SIZE_UNLIMITED,
+// 지연 초기화 (앱 시작 시점 최적화)
+let _app: FirebaseApp | null = null;
+let _auth: Auth | null = null;
+let _db: Firestore | null = null;
+let _storage: FirebaseStorage | null = null;
+let _functions: Functions | null = null;
+
+const getFirebaseApp = (): FirebaseApp => {
+  if (!_app) {
+    _app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+  }
+  return _app;
+};
+
+// Proxy 패턴으로 지연 접근
+export const auth = new Proxy({} as Auth, {
+  get(_, prop) {
+    if (!_auth) {
+      _auth = getAuth(getFirebaseApp());
+    }
+    return (_auth as any)[prop];
+  },
 });
 
-export const db = firestore();
-export const authInstance = auth();
-export const storageInstance = storage();
-export const messagingInstance = messaging();
+export const db = new Proxy({} as Firestore, {
+  get(_, prop) {
+    if (!_db) {
+      _db = getFirestore(getFirebaseApp());
+    }
+    return (_db as any)[prop];
+  },
+});
 
-// 타입 내보내기
-export type FirebaseUser = ReturnType<typeof auth>['currentUser'];
-export type DocumentData = FirebaseFirestoreTypes.DocumentData;
+export const storage = new Proxy({} as FirebaseStorage, {
+  get(_, prop) {
+    if (!_storage) {
+      _storage = getStorage(getFirebaseApp());
+    }
+    return (_storage as any)[prop];
+  },
+});
+
+export const functions = new Proxy({} as Functions, {
+  get(_, prop) {
+    if (!_functions) {
+      _functions = getFunctions(getFirebaseApp(), 'asia-northeast3');
+    }
+    return (_functions as any)[prop];
+  },
+});
+
+// 실제 인스턴스 반환 함수 (필요한 경우)
+export const getAuthInstance = () => {
+  if (!_auth) _auth = getAuth(getFirebaseApp());
+  return _auth;
+};
+
+export const getDbInstance = () => {
+  if (!_db) _db = getFirestore(getFirebaseApp());
+  return _db;
+};
 ```
 
 ### Expo 설정
@@ -52,8 +106,7 @@ export type DocumentData = FirebaseFirestoreTypes.DocumentData;
 {
   "expo": {
     "plugins": [
-      "@react-native-firebase/app",
-      "@react-native-firebase/auth",
+      "expo-secure-store",
       [
         "expo-build-properties",
         {
@@ -63,11 +116,14 @@ export type DocumentData = FirebaseFirestoreTypes.DocumentData;
         }
       ]
     ],
-    "ios": {
-      "googleServicesFile": "./GoogleService-Info.plist"
-    },
-    "android": {
-      "googleServicesFile": "./google-services.json"
+    "extra": {
+      "eas": { "projectId": "..." },
+      "FIREBASE_API_KEY": "...",
+      "FIREBASE_AUTH_DOMAIN": "...",
+      "FIREBASE_PROJECT_ID": "tholdem-ebc18",
+      "FIREBASE_STORAGE_BUCKET": "...",
+      "FIREBASE_MESSAGING_SENDER_ID": "...",
+      "FIREBASE_APP_ID": "..."
     }
   }
 }

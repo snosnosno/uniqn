@@ -1,8 +1,10 @@
 # 03. 상태 관리 전략
 
+> **마지막 업데이트**: 2025년 2월
+
 ## 상태 관리 개요
 
-### 기존 문제점
+### 기존 웹앱 문제점
 ```
 ❌ 3가지 상태 관리 혼용
    - Context API (AuthContext, ThemeContext)
@@ -14,69 +16,82 @@
 ❌ 불명확한 책임 분리
 ```
 
-### 개선된 구조
+### 현재 구현 구조 (개선 완료)
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │                    State Architecture                        │
 ├─────────────────────────────────────────────────────────────┤
 │                                                             │
 │  ┌─────────────────────────┐  ┌─────────────────────────┐  │
-│  │      Zustand Stores     │  │    TanStack Query       │  │
-│  │    (Client State)       │  │    (Server State)       │  │
+│  │   Zustand Stores (9개)  │  │   TanStack Query        │  │
+│  │    (Client State)       │  │   (Server State)        │  │
 │  ├─────────────────────────┤  ├─────────────────────────┤  │
-│  │ • authStore             │  │ • jobPostings           │  │
-│  │ • themeStore            │  │ • applications          │  │
-│  │ • toastStore            │  │ • schedules             │  │
-│  │ • modalStore            │  │ • notifications         │  │
-│  │ • filterStore           │  │ • users (admin)         │  │
-│  │                         │  │ • inquiries (admin)     │  │
+│  │ • authStore (12.8KB)    │  │ • jobPostings           │  │
+│  │ • themeStore (5.6KB)    │  │ • applications          │  │
+│  │ • toastStore (4.0KB)    │  │ • schedules             │  │
+│  │ • modalStore (5.2KB)    │  │ • notifications         │  │
+│  │ • notificationStore     │  │ • workLogs              │  │
+│  │   (13.8KB)              │  │ • settlements           │  │
+│  │ • inAppMessageStore     │  │ • confirmedStaff        │  │
+│  │   (6.7KB)               │  │ • templates             │  │
+│  │ • bookmarkStore (5.7KB) │  │ • eventQR               │  │
+│  │ • tabFiltersStore(5.6KB)│  │ • admin (users, reports)│  │
 │  └─────────────────────────┘  └─────────────────────────┘  │
 │                                                             │
 │  책임 분리:                                                  │
-│  • Zustand: UI 상태, 세션 데이터, 사용자 설정               │
-│  • Query: 서버 데이터 캐싱, 동기화, 무효화                   │
+│  • Zustand: UI 상태, 세션 데이터, 사용자 설정 (MMKV 영구저장)│
+│  • Query: 서버 데이터 캐싱, 동기화, 무효화 (14개 도메인)     │
 │                                                             │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## Zustand Stores
+## Zustand Stores (9개 - 현재 구현)
 
-### 1. authStore - 인증 상태
+### 스토어 목록 요약
+| 스토어 | 크기 | 용도 | 영구저장 |
+|--------|------|------|----------|
+| authStore | 12.8KB | 인증 상태, 프로필 | MMKV |
+| themeStore | 5.6KB | 테마 (light/dark/system) | MMKV |
+| toastStore | 4.0KB | Toast 알림 (최대 3개) | - |
+| modalStore | 5.2KB | 모달 스택 관리 | - |
+| notificationStore | 13.8KB | 알림, 카테고리별 필터 | MMKV |
+| inAppMessageStore | 6.7KB | 우선순위 큐 기반 메시지 | MMKV |
+| bookmarkStore | 5.7KB | 북마크/즐겨찾기 | MMKV |
+| tabFiltersStore | 5.6KB | 탭별 필터 상태 | - |
+
+### 1. authStore - 인증 상태 (12.8KB)
 ```typescript
 // src/stores/authStore.ts
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { MMKVStorage } from '@/lib/mmkvStorage';
 
-interface User {
-  uid: string;
-  email: string | null;
-  displayName: string | null;
-  photoURL: string | null;
-  role: 'admin' | 'employer' | 'staff';  // employer: 구인자, staff: 스태프
-  consentCompleted: boolean;
-  profileCompleted: boolean;
-}
+type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 
 interface AuthState {
   // State
-  user: User | null;
+  user: FirebaseUser | null;
+  profile: UserProfile | null;
+  status: AuthStatus;
+  error: string | null;
+  _hasHydrated: boolean;
+
+  // Computed (프로필에서 직접 계산)
+  isAdmin: boolean;
+  isEmployer: boolean;
+  isStaff: boolean;
   isAuthenticated: boolean;
   isLoading: boolean;
-  error: string | null;
 
   // Actions
-  setUser: (user: User | null) => void;
-  setLoading: (loading: boolean) => void;
+  setUser: (user: FirebaseUser | null) => void;
+  setProfile: (profile: UserProfile | null) => void;
+  setStatus: (status: AuthStatus) => void;
   setError: (error: string | null) => void;
   logout: () => void;
-
-  // Derived (computed)
-  isAdmin: () => boolean;
-  isEmployer: () => boolean;  // employer 이상 (구인자)
+  setHasHydrated: (state: boolean) => void;
 }
 
 export const useAuthStore = create<AuthState>()(
@@ -84,56 +99,51 @@ export const useAuthStore = create<AuthState>()(
     (set, get) => ({
       // Initial State
       user: null,
-      isAuthenticated: false,
-      isLoading: true,
+      profile: null,
+      status: 'idle',
       error: null,
+      _hasHydrated: false,
 
-      // Actions
-      setUser: (user) =>
-        set({
-          user,
-          isAuthenticated: !!user,
-          isLoading: false,
-          error: null,
-        }),
-
-      setLoading: (isLoading) => set({ isLoading }),
-
-      setError: (error) => set({ error, isLoading: false }),
-
-      logout: () =>
-        set({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          error: null,
-        }),
-
-      // Computed
-      isAdmin: () => get().user?.role === 'admin',
-      isEmployer: () => {
-        const role = get().user?.role;
+      // Computed getters (profile.role에서 직접 계산)
+      get isAdmin() { return get().profile?.role === 'admin'; },
+      get isEmployer() {
+        const role = get().profile?.role;
         return role === 'admin' || role === 'employer';
       },
+      get isStaff() {
+        const role = get().profile?.role;
+        return role === 'admin' || role === 'employer' || role === 'staff';
+      },
+      get isAuthenticated() { return get().status === 'authenticated'; },
+      get isLoading() { return get().status === 'loading'; },
+
+      // Actions
+      setUser: (user) => set({ user }),
+      setProfile: (profile) => set({ profile }),
+      setStatus: (status) => set({ status }),
+      setError: (error) => set({ error }),
+      logout: () => set({
+        user: null,
+        profile: null,
+        status: 'unauthenticated',
+        error: null,
+      }),
+      setHasHydrated: (state) => set({ _hasHydrated: state }),
     }),
     {
       name: 'auth-storage',
-      storage: createJSONStorage(() => AsyncStorage),
+      storage: createJSONStorage(() => MMKVStorage),
       partialize: (state) => ({
         user: state.user,
-        isAuthenticated: state.isAuthenticated,
+        profile: state.profile,
+        status: state.status,
       }),
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
     }
   )
 );
-
-// Selectors (컴포넌트 외부에서 사용)
-export const authSelectors = {
-  user: (state: AuthState) => state.user,
-  isAuthenticated: (state: AuthState) => state.isAuthenticated,
-  isLoading: (state: AuthState) => state.isLoading,
-  role: (state: AuthState) => state.user?.role,
-};
 ```
 
 ### 2. themeStore - 테마 상태

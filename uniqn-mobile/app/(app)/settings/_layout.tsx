@@ -34,6 +34,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="my-data" options={{ title: '내 데이터' }} />
       <Stack.Screen name="terms" options={{ title: '이용약관' }} />
       <Stack.Screen name="privacy" options={{ title: '개인정보처리방침' }} />
+      <Stack.Screen name="business-info" options={{ title: '사업자정보' }} />
     </Stack>
   );
 }

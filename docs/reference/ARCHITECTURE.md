@@ -1,11 +1,16 @@
 # 🏗️ T-HOLDEM 아키텍처 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready - 100% 완성)
-**상태**: ✅ **Enterprise 수준 완성** (구인공고 4타입 시스템 포함)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**상태**: ✅ **Production Ready**
 
-> [!NOTE]
-> **실제 프로젝트 분석 기반**: UnifiedDataContext 중심의 모던 아키텍처로 5개 Firebase 구독을 1개로 통합하여 80% 성능 향상을 달성했습니다.
+> **참고**: 이 문서는 레거시 웹앱(app2/)의 아키텍처 문서입니다.
+> 모바일앱(uniqn-mobile/) 아키텍처는 [CLAUDE.md](../../CLAUDE.md)의 "아키텍처 레이어 구조" 섹션을 참조하세요.
+>
+> **모바일앱 핵심 변경점**:
+> - UnifiedDataContext → Repository 패턴 + Zustand
+> - Capacitor → React Native + Expo
+> - 토스페이먼츠 → RevenueCat (💎 하트/다이아 포인트)
 
 ## 📋 목차
 

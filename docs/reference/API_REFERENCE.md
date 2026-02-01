@@ -1,10 +1,14 @@
 # ☁️ API Reference (Firebase Functions)
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: 🚀 **Production Ready**
 
-This document provides a reference for all Firebase Cloud Functions used in the T-HOLDEM project.
+> **참고**: 이 문서는 Firebase Cloud Functions API 레퍼런스입니다.
+> - 결제 시스템: 모바일앱(uniqn-mobile/)은 **RevenueCat** 기반의 💎 하트/다이아 포인트 시스템 사용
+> - 레거시 결제 API (confirmPayment 등): app2/ 웹앱 전용, 모바일앱에서는 사용하지 않음
+
+This document provides a reference for all Firebase Cloud Functions used in the UNIQN project.
 
 ## 📋 Functions Overview
 
@@ -209,6 +213,10 @@ This document provides a reference for all Firebase Cloud Functions used in the 
 ## 💳 Payment System Functions
 
 ### `confirmPayment`
+
+> ⚠️ **[DEPRECATED - 레거시 웹앱 전용]**
+> 이 API는 app2/ 웹앱의 토스페이먼츠 연동용입니다.
+> 모바일앱(uniqn-mobile/)은 **RevenueCat 웹훅**을 통해 결제를 처리합니다.
 
 - **Trigger**: HTTPS (onCall)
 - **Description**: Confirms a Toss Payments transaction and grants red chips to the user's balance. Includes comprehensive security validation (signature verification, amount validation, duplicate prevention).

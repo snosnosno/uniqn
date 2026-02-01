@@ -2,14 +2,17 @@
  * 알림 유틸리티
  *
  * @description 알림 생성 및 FCM 전송 공통 함수
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * @changelog
+ * - 1.1.0: 알림 설정 확인 로직 추가, 토큰 만료 자동 정리
  *
  * @note 개발 단계이므로 레거시 호환 코드 없음
  */
 
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
-import { getFcmTokens } from './fcmTokenUtils';
+import { getFcmTokens, removeInvalidTokens, isTokenInvalidError } from './fcmTokenUtils';
 
 const db = admin.firestore();
 
@@ -101,7 +104,34 @@ export interface NotificationResult {
 export interface MulticastResult {
   success: number;
   failure: number;
-  responses: Array<{ success: boolean; messageId?: string; error?: string }>;
+  responses: Array<{
+    success: boolean;
+    messageId?: string;
+    error?: string;
+    errorCode?: string;
+  }>;
+  /** 만료/무효화된 토큰 목록 (자동 정리용) */
+  invalidTokens: string[];
+}
+
+/** 알림 설정 (카테고리별) */
+export interface NotificationCategorySettings {
+  enabled: boolean;
+  pushEnabled: boolean;
+}
+
+/** 사용자 알림 설정 */
+export interface UserNotificationSettings {
+  enabled: boolean;
+  pushEnabled?: boolean;
+  categories: {
+    [key in NotificationCategory]?: NotificationCategorySettings;
+  };
+  quietHours?: {
+    enabled: boolean;
+    start: string; // "22:00"
+    end: string; // "08:00"
+  };
 }
 
 // ============================================================================
@@ -174,8 +204,145 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
   tournament_approval_request: 'default',
 };
 
+/**
+ * 방해 금지 시간에도 전송되는 긴급 알림 타입
+ *
+ * @description urgent 우선순위 알림은 사용자가 방해 금지 모드를 설정해도 전송됨
+ */
+const URGENT_NOTIFICATION_TYPES: NotificationType[] = [
+  'checkin_reminder',
+  'no_show_alert',
+];
+
 // ============================================================================
-// Functions
+// Notification Settings Functions
+// ============================================================================
+
+/**
+ * 사용자 알림 설정 조회
+ *
+ * @param userId 사용자 ID
+ * @returns 알림 설정 또는 null (설정이 없으면 기본값 사용)
+ *
+ * @description Firestore 경로: users/{userId}/notificationSettings/default
+ */
+async function getUserNotificationSettings(
+  userId: string
+): Promise<UserNotificationSettings | null> {
+  try {
+    const settingsDoc = await db
+      .collection('users')
+      .doc(userId)
+      .collection('notificationSettings')
+      .doc('default')
+      .get();
+
+    if (!settingsDoc.exists) {
+      return null;
+    }
+
+    return settingsDoc.data() as UserNotificationSettings;
+  } catch (error: any) {
+    functions.logger.warn('알림 설정 조회 실패', {
+      userId,
+      error: error.message,
+    });
+    return null;
+  }
+}
+
+/**
+ * 방해 금지 시간인지 확인
+ *
+ * @param quietHours 방해 금지 설정
+ * @returns 현재 방해 금지 시간인지 여부
+ */
+function isQuietHoursActive(
+  quietHours: UserNotificationSettings['quietHours']
+): boolean {
+  if (!quietHours?.enabled) {
+    return false;
+  }
+
+  const now = new Date();
+  // 한국 시간 (UTC+9)
+  const koreaTime = new Date(now.getTime() + 9 * 60 * 60 * 1000);
+  const currentHour = koreaTime.getUTCHours();
+  const currentMinute = koreaTime.getUTCMinutes();
+  const currentTime = currentHour * 60 + currentMinute;
+
+  const [startHour, startMinute] = quietHours.start.split(':').map(Number);
+  const [endHour, endMinute] = quietHours.end.split(':').map(Number);
+  const startTime = startHour * 60 + startMinute;
+  const endTime = endHour * 60 + endMinute;
+
+  // 자정을 넘어가는 경우 (예: 22:00 ~ 08:00)
+  if (startTime > endTime) {
+    return currentTime >= startTime || currentTime < endTime;
+  }
+
+  // 같은 날 내 (예: 14:00 ~ 18:00)
+  return currentTime >= startTime && currentTime < endTime;
+}
+
+/**
+ * 푸시 알림 전송 가능 여부 확인
+ *
+ * @param userId 사용자 ID
+ * @param type 알림 타입
+ * @returns 전송 가능 여부와 사유
+ */
+async function checkNotificationPermission(
+  userId: string,
+  type: NotificationType
+): Promise<{ allowed: boolean; reason?: string }> {
+  const settings = await getUserNotificationSettings(userId);
+
+  // 설정이 없으면 기본적으로 허용
+  if (!settings) {
+    return { allowed: true };
+  }
+
+  // 전체 알림 비활성화
+  if (!settings.enabled) {
+    return { allowed: false, reason: 'notifications_disabled' };
+  }
+
+  // 전체 푸시 비활성화
+  if (settings.pushEnabled === false) {
+    return { allowed: false, reason: 'push_disabled' };
+  }
+
+  // 카테고리별 설정 확인
+  const category = TYPE_TO_CATEGORY[type];
+  const categorySettings = settings.categories?.[category];
+
+  if (categorySettings) {
+    // 카테고리 알림 비활성화
+    if (!categorySettings.enabled) {
+      return { allowed: false, reason: `category_${category}_disabled` };
+    }
+
+    // 카테고리 푸시 비활성화
+    if (!categorySettings.pushEnabled) {
+      return { allowed: false, reason: `category_${category}_push_disabled` };
+    }
+  }
+
+  // 방해 금지 시간 확인 (urgent 우선순위는 예외)
+  if (isQuietHoursActive(settings.quietHours)) {
+    // urgent 알림은 방해 금지 시간에도 전송
+    const isUrgent = URGENT_NOTIFICATION_TYPES.includes(type);
+    if (!isUrgent) {
+      return { allowed: false, reason: 'quiet_hours' };
+    }
+  }
+
+  return { allowed: true };
+}
+
+// ============================================================================
+// Core Functions
 // ============================================================================
 
 /**
@@ -221,6 +388,51 @@ export async function createAndSendNotification(
 
   const category = TYPE_TO_CATEGORY[type];
 
+  // 0. 알림 설정 확인 + 사용자 문서 조회 (병렬 처리로 성능 최적화)
+  const [permissionCheck, userDoc] = await Promise.all([
+    checkNotificationPermission(recipientId, type),
+    db.collection('users').doc(recipientId).get(),
+  ]);
+
+  if (!permissionCheck.allowed) {
+    functions.logger.info('사용자 알림 설정에 의해 푸시 전송 생략', {
+      recipientId,
+      type,
+      category,
+      reason: permissionCheck.reason,
+    });
+
+    // Firestore에는 알림 문서 생성 (인앱 알림용), FCM만 생략
+    const notificationRef = db.collection('notifications').doc();
+    const notificationId = notificationRef.id;
+
+    await notificationRef.set({
+      id: notificationId,
+      recipientId,
+      type,
+      category,
+      priority,
+      title,
+      body,
+      link,
+      data: { ...data, type, notificationId },
+      relatedId: relatedId ?? null,
+      senderId: senderId ?? null,
+      isRead: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      // 푸시 전송 생략 사유 기록
+      pushSkipped: true,
+      pushSkipReason: permissionCheck.reason,
+    });
+
+    return {
+      notificationId,
+      fcmSent: false,
+      successCount: 0,
+      failureCount: 0,
+    };
+  }
+
   // 1. Firestore 알림 문서 생성
   const notificationRef = db.collection('notifications').doc();
   const notificationId = notificationRef.id;
@@ -253,8 +465,7 @@ export async function createAndSendNotification(
     type,
   });
 
-  // 2. 수신자의 FCM 토큰 조회
-  const userDoc = await db.collection('users').doc(recipientId).get();
+  // 2. 수신자의 FCM 토큰 조회 (이미 병렬로 조회됨)
   const userData = userDoc.data();
   const tokens = getFcmTokens(userData);
 
@@ -295,11 +506,24 @@ export async function createAndSendNotification(
     });
   }
 
+  // 5. 만료된 토큰 자동 정리
+  if (fcmResult.invalidTokens.length > 0) {
+    // 비동기로 처리 (알림 전송 결과에 영향 주지 않음)
+    removeInvalidTokens(recipientId, fcmResult.invalidTokens).catch((error) => {
+      functions.logger.error('만료 토큰 정리 실패', {
+        recipientId,
+        tokenCount: fcmResult.invalidTokens.length,
+        error: error.message,
+      });
+    });
+  }
+
   functions.logger.info('알림 전송 완료', {
     notificationId,
     recipientId,
     success: fcmResult.success,
     failure: fcmResult.failure,
+    invalidTokensRemoved: fcmResult.invalidTokens.length,
   });
 
   return {
@@ -360,16 +584,36 @@ export async function sendMulticast(
   try {
     const response = await admin.messaging().sendEachForMulticast(message);
 
-    const responses = response.responses.map((r, index) => ({
-      success: r.success,
-      messageId: r.success ? r.messageId : undefined,
-      error: r.error?.message,
-    }));
+    const invalidTokens: string[] = [];
+    const responses = response.responses.map((r, index) => {
+      const errorCode = r.error?.code;
+
+      // 토큰 만료/무효 에러 감지
+      if (!r.success && isTokenInvalidError(errorCode)) {
+        invalidTokens.push(tokens[index]);
+      }
+
+      return {
+        success: r.success,
+        messageId: r.success ? r.messageId : undefined,
+        error: r.error?.message,
+        errorCode,
+      };
+    });
+
+    // 만료된 토큰이 있으면 로깅
+    if (invalidTokens.length > 0) {
+      functions.logger.info('만료/무효 FCM 토큰 감지', {
+        invalidCount: invalidTokens.length,
+        totalTokens: tokens.length,
+      });
+    }
 
     return {
       success: response.successCount,
       failure: response.failureCount,
       responses,
+      invalidTokens,
     };
   } catch (error: any) {
     functions.logger.error('FCM 멀티캐스트 전송 실패', {
@@ -384,6 +628,7 @@ export async function sendMulticast(
         success: false,
         error: error.message,
       })),
+      invalidTokens: [],
     };
   }
 }

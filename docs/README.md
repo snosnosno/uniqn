@@ -2,8 +2,8 @@
 
 UNIQN (구 T-HOLDEM) 프로젝트의 모든 개발 문서 모음입니다.
 
-**마지막 업데이트**: 2025년 11월 27일
-**프로젝트 버전**: v0.2.4 (Production Ready)
+**마지막 업데이트**: 2026년 2월 1일
+**프로젝트 버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **총 문서 수**: 46개 (13개 폴더)
 
 ---
@@ -52,14 +52,14 @@ docs/
 | [ACCOUNT_MANAGEMENT_SYSTEM.md](features/ACCOUNT_MANAGEMENT_SYSTEM.md) | 계정 관리 시스템 |
 | [PERMISSION_SYSTEM.md](features/PERMISSION_SYSTEM.md) | 권한 시스템 전체 정리 |
 
-### [features/payment/](features/payment/) - 결제/칩 시스템
+### [features/payment/](features/payment/) - 💎 하트/다이아 포인트 시스템
 
 | 문서 | 설명 |
 |------|------|
-| [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) | 칩 기반 크레딧 시스템 최종 설계 |
-| [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) | 칩 시스템 구현 가이드 |
+| [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) | 💎 하트/다이아 포인트 시스템 최종 설계 (RevenueCat 기반) |
+| [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) | 포인트 시스템 구현 가이드 |
 | [REVENUE_MODEL_ANALYSIS.md](features/payment/REVENUE_MODEL_ANALYSIS.md) | 수익 모델 분석 |
-| [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) | 결제 시스템 개발 문서 |
+| [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) | RevenueCat 결제 시스템 개발 문서 |
 
 ---
 
@@ -180,8 +180,8 @@ docs/
 2. [MONITORING.md](operations/MONITORING.md) - 모니터링 설정
 3. [TROUBLESHOOTING.md](operations/TROUBLESHOOTING.md) - 문제 해결
 
-### 결제/칩 시스템 개발
-1. [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 시스템 설계
+### 💎 포인트 시스템 개발 (하트/다이아 + RevenueCat)
+1. [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 하트/다이아 시스템 설계
 2. [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) - 구현 가이드
 3. [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 운영 가이드
 
@@ -190,12 +190,13 @@ docs/
 ## 주요 프로젝트 정보
 
 ### 기술 스택
-- **Frontend**: React 18 + TypeScript (Strict Mode)
-- **State**: Context API + Zustand
-- **Styling**: Tailwind CSS
-- **Backend**: Firebase v11 (Auth, Firestore, Functions)
-- **Testing**: Jest + React Testing Library (65% 커버리지)
-- **Mobile**: Capacitor 7.4
+- **Mobile**: React Native 0.81.5 + Expo SDK 54 (주력 플랫폼)
+- **Frontend**: React 19 + TypeScript 5.9 (Strict Mode)
+- **State**: Zustand 5.0 + TanStack Query 5.90
+- **Styling**: NativeWind 4.2 (Tailwind CSS for RN)
+- **Backend**: Firebase 12.6 (Auth, Firestore, Functions)
+- **결제**: RevenueCat (App Store Connect, Google Play Console)
+- **Testing**: Jest + React Native Testing Library (14% → 60% 목표)
 
 ### 프로젝트 상태
 | 기능 | 상태 | 완성도 |
@@ -205,9 +206,10 @@ docs/
 | 멀티테넌트 | Production | 100% (Phase 1-6) |
 | 토너먼트 시스템 | Production | 100% |
 | 국제화(i18n) | Production | 100% (한국어/영어) |
-| 결제/칩 시스템 | Development | 57% (토스페이먼츠 연동 중) |
+| 💎 포인트 시스템 | Production | 100% (RevenueCat 연동) |
 
 ### 최근 업데이트
+- **v1.0.0** (2026-02-01): 모바일앱 전환 + 💎 하트/다이아 포인트 시스템 (RevenueCat)
 - **v0.2.4** (2025-10-31): 기능 확장 및 안정화
 - **v0.2.3** (2025-10-18): 알림/멀티테넌트/테이블 관리 고도화
 - **v0.2.2** (2025-09-19): 인증 시스템 고도화 완료
@@ -227,10 +229,10 @@ docs/
 - [PERMISSION_SYSTEM.md](features/PERMISSION_SYSTEM.md) - 권한 시스템
 - [ACCOUNT_MANAGEMENT_SYSTEM.md](features/ACCOUNT_MANAGEMENT_SYSTEM.md) - 계정 관리
 
-### 결제 시스템
-- [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 칩 시스템 설계
-- [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) - 개발 문서
-- [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 운영 가이드
+### 💎 포인트 시스템 (하트/다이아)
+- [MODEL_B_CHIP_SYSTEM_FINAL.md](features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md) - 하트/다이아 포인트 시스템 설계
+- [PAYMENT_SYSTEM_DEVELOPMENT.md](features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md) - RevenueCat 연동 개발 문서
+- [PAYMENT_OPERATIONS.md](operations/PAYMENT_OPERATIONS.md) - 포인트 시스템 운영 가이드
 - [REVENUE_MODEL_ANALYSIS.md](features/payment/REVENUE_MODEL_ANALYSIS.md) - 수익 분석
 
 ### 테스트 & 품질
@@ -259,7 +261,7 @@ docs/
 # 문서 제목
 
 **최종 업데이트**: 2026년 2월 1일
-**버전**: v0.2.3 (Production Ready)
+**버전**: v0.2.3 (모바일앱 중심 + RevenueCat 연동)
 **상태**: ✅ **Production Ready** (또는 적절한 상태)
 
 ---

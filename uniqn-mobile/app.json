@@ -28,6 +28,7 @@
         "backgroundColor": "#1a1625"
       },
       "edgeToEdgeEnabled": true,
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.uniqn.mobile",
       "googleServicesFile": "./google-services.json"
     },

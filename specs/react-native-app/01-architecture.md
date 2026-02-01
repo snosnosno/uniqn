@@ -1,6 +1,8 @@
 # 01. 아키텍처 설계
 
-## 전체 아키텍처
+> **마지막 업데이트**: 2025년 2월
+
+## 전체 아키텍처 (7단계 레이어)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
@@ -8,43 +10,71 @@
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                 │
 │  ┌─────────────────────────────────────────────────────────┐   │
-│  │                    Presentation Layer                    │   │
+│  │                  Presentation Layer                      │   │
 │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐    │   │
-│  │  │ Screens │  │  Modals │  │  Forms  │  │   UI    │    │   │
+│  │  │ app/    │  │Components│  │  Modals │  │   UI    │    │   │
+│  │  │ (64개)  │  │ (139개) │  │         │  │         │    │   │
 │  │  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘    │   │
 │  └───────┼────────────┼────────────┼────────────┼──────────┘   │
 │          │            │            │            │               │
 │  ┌───────┴────────────┴────────────┴────────────┴──────────┐   │
-│  │                      Hooks Layer                         │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐              │   │
-│  │  │ useAuth  │  │ useJobs  │  │useSchedule│  ...        │   │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘              │   │
-│  └───────┼─────────────┼─────────────┼─────────────────────┘   │
-│          │             │             │                          │
-│  ┌───────┴─────────────┴─────────────┴─────────────────────┐   │
-│  │                    State Layer                           │   │
-│  │  ┌────────────────┐  ┌────────────────────────────┐     │   │
-│  │  │  Zustand Store │  │    TanStack Query Cache    │     │   │
-│  │  │  (Client State)│  │      (Server State)        │     │   │
-│  │  └────────┬───────┘  └────────────┬───────────────┘     │   │
-│  └───────────┼───────────────────────┼──────────────────────┘   │
+│  │                      Hooks Layer (46개)                  │   │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐│   │
+│  │  │ useAuth  │  │ useJobs  │  │useSchedule│  │useSettle ││   │
+│  │  │ +Guard   │  │ +Detail  │  │ (8함수)  │  │ (10함수) ││   │
+│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘  └────┬─────┘│   │
+│  └───────┼─────────────┼─────────────┼─────────────┼───────┘   │
+│          │             │             │             │            │
+│  ┌───────┴─────────────┴─────────────┴─────────────┴────────┐  │
+│  │                    State Layer                            │  │
+│  │  ┌────────────────┐  ┌────────────────────────────┐      │  │
+│  │  │ Zustand (9개)  │  │  TanStack Query (14도메인)  │      │  │
+│  │  │ auth, theme,   │  │  Query Keys 중앙 관리      │      │  │
+│  │  │ toast, modal.. │  │  캐싱 정책 적용            │      │  │
+│  │  └────────┬───────┘  └────────────┬───────────────┘      │  │
+│  └───────────┼───────────────────────┼───────────────────────┘  │
 │              │                       │                          │
-│  ┌───────────┴───────────────────────┴──────────────────────┐   │
-│  │                    Service Layer                          │   │
-│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐     │   │
-│  │  │  Auth   │  │   Job   │  │Schedule │  │  Admin  │     │   │
-│  │  │ Service │  │ Service │  │ Service │  │ Service │     │   │
-│  │  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘     │   │
-│  └───────┼────────────┼────────────┼────────────┼───────────┘   │
+│  ┌───────────┴───────────────────────┴──────────────────────┐  │
+│  │                   Shared Layer (25개)                     │  │
+│  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ │  │
+│  │  │IdNormalizer│ │RoleResolver│ │StatusMapper│ │TimeNorm │ │  │
+│  │  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └────┬─────┘ │  │
+│  └────────┼─────────────┼─────────────┼────────────┼────────┘  │
+│           │             │             │            │            │
+│  ┌────────┴─────────────┴─────────────┴────────────┴────────┐  │
+│  │                   Service Layer (36개)                    │  │
+│  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐     │  │
+│  │  │  Auth   │  │   Job   │  │Schedule │  │Settlement│     │  │
+│  │  │ Service │  │ Service │  │ Service │  │ Service │     │  │
+│  │  └────┬────┘  └────┬────┘  └────┬────┘  └────┬────┘     │  │
+│  └───────┼────────────┼────────────┼────────────┼───────────┘  │
 │          │            │            │            │               │
-│  ┌───────┴────────────┴────────────┴────────────┴───────────┐   │
-│  │                    Firebase Layer                         │   │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐               │   │
-│  │  │   Auth   │  │ Firestore│  │ Storage  │               │   │
-│  │  └──────────┘  └──────────┘  └──────────┘               │   │
-│  └──────────────────────────────────────────────────────────┘   │
+│  ┌───────┴────────────┴────────────┴────────────┴───────────┐  │
+│  │                  Repository Layer (11개)                  │  │
+│  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │  │
+│  │  │ Application │  │ JobPosting  │  │  WorkLog    │      │  │
+│  │  │ Repository  │  │ Repository  │  │ Repository  │      │  │
+│  │  └──────┬──────┘  └──────┬──────┘  └──────┬──────┘      │  │
+│  └─────────┼────────────────┼────────────────┼──────────────┘  │
+│            │                │                │                  │
+│  ┌─────────┴────────────────┴────────────────┴──────────────┐  │
+│  │              Firebase Layer (Web SDK 12.6.0)              │  │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐ │  │
+│  │  │   Auth   │  │ Firestore│  │ Storage  │  │ Functions│ │  │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘ │  │
+│  └──────────────────────────────────────────────────────────┘  │
 │                                                                 │
 └─────────────────────────────────────────────────────────────────┘
+```
+
+### Domains Layer (비즈니스 로직 분리)
+
+```
+domains/
+├── application/         # ApplicationStatusMachine, Validator
+├── schedule/           # ScheduleMerger, ScheduleConverter, WorkLogCreator
+├── settlement/         # SettlementCalculator, TaxCalculator, Cache
+└── staff/              # 스태프 도메인 로직
 ```
 
 ---
@@ -170,39 +200,83 @@ import { JobCardSkeleton } from './JobCardSkeleton';
 
 ---
 
-## 의존성 규칙
+## 의존성 규칙 (현재 구현)
 
 ```
-┌─────────────────────────────────────────────┐
-│              Presentation                    │
-│  (components, screens)                       │
-│         │                                    │
-│         ▼                                    │
-│        Hooks ◄──────────────────────────┐   │
-│         │                               │   │
-│         ▼                               │   │
-│       Stores ◄────── Services           │   │
-│         │               │               │   │
-│         ▼               ▼               │   │
-│              Firebase/API               │   │
-│                   │                     │   │
-│                   ▼                     │   │
-│           Types, Schemas, Utils ────────┘   │
-│           (모든 레이어에서 사용 가능)         │
-└─────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│                   Presentation                        │
+│  (app/, components/)                                  │
+│         │                                             │
+│         ▼                                             │
+│        Hooks (46개) ◄────────────────────────────┐   │
+│         │                                        │   │
+│         ▼                                        │   │
+│       Stores (9개) ◄────── TanStack Query        │   │
+│         │                        │               │   │
+│         ▼                        ▼               │   │
+│        Shared (25개) ◄─────────────────────────  │   │
+│  (IdNormalizer, RoleResolver, StatusMapper...)   │   │
+│         │                        │               │   │
+│         ▼                        ▼               │   │
+│       Services (36개) ─────► Domains (13개)      │   │
+│         │                                        │   │
+│         ▼                                        │   │
+│    Repositories (11개)                           │   │
+│         │                                        │   │
+│         ▼                                        │   │
+│       Firebase Layer (Web SDK)                   │   │
+│         │                                        │   │
+│         ▼                                        │   │
+│    Types, Schemas, Utils, Errors ────────────────┘   │
+│    (모든 레이어에서 사용 가능)                         │
+└──────────────────────────────────────────────────────┘
 
-규칙:
+의존성 규칙:
 ✅ 상위 레이어 → 하위 레이어 의존 가능
 ✅ 같은 레이어 내 의존 가능
 ❌ 하위 레이어 → 상위 레이어 의존 금지
 ❌ Presentation → Firebase 직접 호출 금지
+❌ Hooks → Firebase 직접 호출 금지
+❌ Service → Firebase 직접 호출 금지 (Repository 통해서만)
 ```
+
+### Repository 패턴 (현재 구현)
+```typescript
+// 인터페이스 정의 (repositories/interfaces/)
+interface IApplicationRepository {
+  findByJobPosting(jobId: string): Promise<Application[]>;
+  findByUser(userId: string): Promise<Application[]>;
+  create(data: CreateApplicationDTO): Promise<Application>;
+  updateStatus(id: string, status: ApplicationStatus): Promise<void>;
+  delete(id: string): Promise<void>;
+}
+
+// Firebase 구현체 (repositories/firebase/)
+class ApplicationRepository implements IApplicationRepository {
+  // Firestore Modular API 사용
+}
+
+// 사용 규칙
+✅ Service → Repository → Firebase (권장)
+❌ Service → Firebase 직접 호출 (금지)
+❌ Hooks → Firebase 직접 호출 (금지)
+```
+
+### 구현된 Repository 목록
+| Repository | 담당 컬렉션 | 주요 메서드 |
+|------------|-----------|------------|
+| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus |
+| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update |
+| WorkLogRepository | workLogs | findBySchedule, checkIn, checkOut |
+| NotificationRepository | notifications | findUnread, markAsRead, subscribeToChanges |
+| UserRepository | users | findById, findByEmail, create, update |
+| EventQRRepository | qrMetadata | create, validate, deactivate |
 
 ---
 
-## Provider 구조 (단순화)
+## Provider 구조 (현재 구현 - 5단계)
 
-### 기존 (문제점)
+### 기존 웹앱 (문제점)
 ```tsx
 // ❌ 8단계 중첩 - 복잡하고 디버깅 어려움
 <ErrorBoundary>
@@ -226,44 +300,55 @@ import { JobCardSkeleton } from './JobCardSkeleton';
 </ErrorBoundary>
 ```
 
-### 개선 (React Native)
+### 현재 구현 (React Native)
 ```tsx
-// ✅ 3단계로 단순화
-// app/_layout.tsx
-export default function RootLayout() {
-  return (
+// ✅ 5단계로 최적화 - app/_layout.tsx 실제 구조
+<GestureHandlerRootView style={{ flex: 1 }}>
+  <SafeAreaProvider>
     <QueryClientProvider client={queryClient}>
-      <GestureHandlerRootView style={{ flex: 1 }}>
+      <BottomSheetModalProvider>
         <AppContent />
-      </GestureHandlerRootView>
+        {/* 전역 UI 매니저들 */}
+        <ModalManager />
+        <ToastManager />
+        <InAppMessageManager />
+        <OfflineBanner />
+      </BottomSheetModalProvider>
     </QueryClientProvider>
-  );
-}
+  </SafeAreaProvider>
+</GestureHandlerRootView>
 
 function AppContent() {
-  // Zustand로 테마, 인증 상태 관리 (Provider 불필요)
-  const theme = useThemeStore((s) => s.theme);
-  const isReady = useAppInitialize(); // 초기화 훅
+  // Zustand로 상태 관리 (Provider 불필요)
+  const isReady = useAppInitialize();  // Firebase 인증 초기화
+
+  // 전역 훅들
+  useAuthGuard();                      // 권한 가드
+  useNotificationHandler();            // 푸시 알림 처리
+  useDeepLinkSetup();                  // 딥링크 설정
 
   if (!isReady) return <SplashScreen />;
 
-  return (
-    <ThemeProvider value={theme}>
-      <Stack />
-      <ModalManager />
-      <ToastManager />
-    </ThemeProvider>
-  );
+  return <Stack screenOptions={{ headerShown: false }} />;
 }
 ```
 
-### Provider 제거 방안
+### Provider 제거 및 대체
 | 기존 Provider | 대체 방안 |
 |--------------|----------|
-| AuthProvider | `useAuthStore` (Zustand) |
-| ThemeProvider | `useThemeStore` (Zustand) |
+| AuthProvider | `useAuthStore` (Zustand + MMKV persist) |
+| ThemeProvider | `useThemeStore` (Zustand + NativeWind colorScheme) |
+| NotificationProvider | `useNotificationStore` (Zustand) |
 | TournamentProvider | 제외 (Phase 2) |
 | UnifiedDataInitializer | `useAppInitialize` 훅 |
+
+### 전역 UI 매니저
+| 매니저 | 역할 |
+|--------|------|
+| `ModalManager` | Zustand 기반 모달 스택 관리 |
+| `ToastManager` | 최대 3개 동시 표시, 자동 제거 |
+| `InAppMessageManager` | 우선순위 큐 기반 인앱 메시지 |
+| `OfflineBanner` | 네트워크 상태 표시 |
 
 ---
 

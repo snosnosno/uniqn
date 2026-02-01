@@ -1,5 +1,64 @@
 # 05. 컴포넌트 시스템 설계
 
+> **마지막 업데이트**: 2025년 2월
+
+## 컴포넌트 현황 (현재 구현 기준)
+
+### 폴더별 컴포넌트 개수
+| 폴더 | 개수 | 설명 |
+|------|------|------|
+| **ui/** | 38개 | 기본 UI 컴포넌트 |
+| **employer/** | 24개 | 구인자 전용 |
+| **jobs/** | 19개 | 공고 관련 |
+| **auth/** | 10개 | 인증 |
+| **admin/** | 9개 | 관리자 |
+| **schedule/** | 9개 | 스케줄 |
+| **notifications/** | 8개 | 알림 |
+| **support/** | 7개 | 고객지원 |
+| **qr/** | 4개 | QR 코드 |
+| **headers/** | 3개 | 헤더 |
+| **기타** | 8개 | applicant, notices, navigation 등 |
+| **전체** | **139개** | |
+
+### UI 컴포넌트 목록 (38개)
+```yaml
+기본 (6개):
+  - Button (5 variant), Input (5 type), Card (3 variant)
+  - Badge (6 variant), Avatar, Divider
+
+상태 표시 (5개):
+  - Loading, LoadingOverlay
+  - EmptyState (3 variant), ErrorState (5 variant)
+  - ErrorBoundary (5가지 세분화)
+
+스켈레톤 (1개):
+  - Skeleton (shimmer 애니메이션, 10+ 프리셋 포함)
+
+피드백 (4개):
+  - Toast, ToastManager
+  - InAppBanner, InAppModal
+
+모달 & 시트 (4개):
+  - Modal (Reanimated)
+  - BottomSheet, ActionSheet, SheetModal
+  - ModalManager
+
+폼 (8개):
+  - FormField, FormSection, FormSelect
+  - Checkbox, Radio
+  - DatePicker, TimePicker, TimeWheelPicker
+  - CalendarPicker
+
+레이아웃 (3개):
+  - MobileHeader, OptimizedImage, CircularProgress
+
+기타 (4개):
+  - InAppMessageManager, OfflineBanner
+  - Accordion, index.ts (배럴 export)
+```
+
+---
+
 ## 디자인 시스템 개요
 
 ### 디자인 토큰

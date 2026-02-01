@@ -1,12 +1,12 @@
 /**
  * UNIQN Mobile - 회원가입 Step 3: 프로필 정보
  *
- * @description 닉네임, 역할 선택
- * @version 1.0.0
+ * @description 닉네임 입력 (역할은 스태프로 고정, 구인자는 로그인 후 별도 등록)
+ * @version 1.1.0
  */
 
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
@@ -24,34 +24,6 @@ interface SignupStep3Props {
   isLoading?: boolean;
 }
 
-type UserRole = 'staff' | 'employer';
-
-interface RoleOption {
-  value: UserRole;
-  label: string;
-  description: string;
-  icon: string;
-}
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const ROLE_OPTIONS: RoleOption[] = [
-  {
-    value: 'staff',
-    label: '스태프',
-    description: '구인공고에 지원하고 일할 수 있어요',
-    icon: '👤',
-  },
-  {
-    value: 'employer',
-    label: '구인자',
-    description: '구인공고를 등록하고 스태프를 모집할 수 있어요',
-    icon: '🏢',
-  },
-];
-
 // ============================================================================
 // Component
 // ============================================================================
@@ -60,22 +32,14 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
   const {
     control,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors },
   } = useForm<SignUpStep3Data>({
     resolver: zodResolver(signUpStep3Schema),
     defaultValues: {
       nickname: initialData?.nickname || '',
-      role: initialData?.role || undefined,
+      role: 'staff', // 모든 사용자는 스태프로 가입
     },
   });
-
-  const selectedRole = watch('role');
-
-  const handleRoleSelect = (role: UserRole) => {
-    setValue('role', role, { shouldValidate: true });
-  };
 
   return (
     <View className="w-full flex-col gap-4">
@@ -105,91 +69,13 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
         </Text>
       </View>
 
-      {/* 역할 선택 */}
-      <View className="mt-4">
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          역할 선택 <Text className="text-error-500">*</Text>
-        </Text>
-
-        <View className="flex-col gap-3">
-          {ROLE_OPTIONS.map((option) => {
-            const isSelected = selectedRole === option.value;
-
-            return (
-              <Pressable
-                key={option.value}
-                onPress={() => handleRoleSelect(option.value)}
-                disabled={isLoading}
-                className={`
-                  flex-row items-center p-4 rounded-lg border-2
-                  ${isSelected
-                    ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                    : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
-                  }
-                  ${isLoading ? 'opacity-50' : ''}
-                `}
-              >
-                {/* 아이콘 */}
-                <View
-                  className={`
-                    w-12 h-12 rounded-full items-center justify-center mr-4
-                    ${isSelected
-                      ? 'bg-primary-100 dark:bg-primary-800'
-                      : 'bg-gray-100 dark:bg-surface'
-                    }
-                  `}
-                >
-                  <Text className="text-2xl">{option.icon}</Text>
-                </View>
-
-                {/* 텍스트 */}
-                <View className="flex-1">
-                  <Text
-                    className={`
-                      font-semibold text-base
-                      ${isSelected
-                        ? 'text-primary-700 dark:text-primary-300'
-                        : 'text-gray-900 dark:text-white'
-                      }
-                    `}
-                  >
-                    {option.label}
-                  </Text>
-                  <Text
-                    className={`
-                      text-sm mt-0.5
-                      ${isSelected
-                        ? 'text-primary-600 dark:text-primary-400'
-                        : 'text-gray-500 dark:text-gray-400'
-                      }
-                    `}
-                  >
-                    {option.description}
-                  </Text>
-                </View>
-
-                {/* 체크 표시 */}
-                {isSelected && (
-                  <View className="w-6 h-6 rounded-full bg-primary-500 items-center justify-center">
-                    <Text className="text-white text-sm font-bold">✓</Text>
-                  </View>
-                )}
-              </Pressable>
-            );
-          })}
-        </View>
-
-        {errors.role && (
-          <Text className="mt-2 text-sm text-error-500">
-            {errors.role.message}
-          </Text>
-        )}
-      </View>
-
       {/* 안내 문구 */}
-      <View className="mt-2 p-3 bg-gray-50 dark:bg-surface/50 rounded-lg">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
-          역할은 나중에 설정에서 변경할 수 있습니다.
+      <View className="mt-4 p-4 bg-primary-50 dark:bg-primary-900/20 rounded-lg border border-primary-200 dark:border-primary-800">
+        <Text className="text-sm font-medium text-primary-700 dark:text-primary-300 mb-1">
+          💼 구인자로 활동하고 싶으신가요?
+        </Text>
+        <Text className="text-xs text-primary-600 dark:text-primary-400">
+          회원가입 후 '내 공고' 탭에서 구인자로 등록할 수 있습니다.
         </Text>
       </View>
 

@@ -1,12 +1,12 @@
-# 💳 T-HOLDEM 결제 시스템 개발 문서
+# 💳 UNIQN 결제 시스템 개발 문서
 
-**최종 업데이트**: 2025년 11월 27일
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
-**상태**: 🔧 **개발 중 (57% 완료)**
-**프로젝트**: T-HOLDEM 토스페이먼츠 결제 시스템
+**최종 업데이트**: 2026년 2월 1일
+**버전**: v1.0.0 (Heart/Diamond Point System)
+**상태**: 📋 **구현 준비**
+**프로젝트**: UNIQN 하트/다이아 포인트 시스템
 
 > ⚠️ **관련 문서**:
-> - 📊 **칩 정의 & 가격표**: [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md) (마스터 문서)
+> - 📊 **포인트 정의 & 가격표**: [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md) (마스터 문서)
 > - 🔧 **구현 가이드**: [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](./CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md)
 > - 💰 **수익 분석**: [REVENUE_MODEL_ANALYSIS.md](./REVENUE_MODEL_ANALYSIS.md)
 
@@ -20,9 +20,9 @@
 4. [API 명세](#api-명세)
 5. [결제 플로우](#결제-플로우)
 6. [보안](#보안)
-7. [칩 시스템](#칩-시스템)
+7. [포인트 시스템](#포인트-시스템)
 8. [환불 시스템](#환불-시스템)
-9. [구독 시스템](#구독-시스템)
+9. [하트 획득 시스템](#하트-획득-시스템)
 10. [알림 시스템](#알림-시스템)
 11. [배포 가이드](#배포-가이드)
 12. [문제 해결](#문제-해결)
@@ -33,35 +33,44 @@
 
 ### 목적
 
-T-HOLDEM 플랫폼에서 **칩 충전 결제** 및 **구독 서비스** 제공을 위한 통합 결제 시스템
+UNIQN 플랫폼에서 **💎 다이아 충전 결제** 및 **💖 하트 획득 시스템** 제공을 위한 통합 포인트 시스템
+
+### 핵심 포인트 구조
+
+| 포인트 | 아이콘 | 획득 방법 | 만료 | 가치 |
+|--------|--------|----------|------|------|
+| 💖 하트 (Heart) | ❤️ | 무료 활동 보상 | 90일 후 만료 | ₩300/개 |
+| 💎 다이아 (Diamond) | 💎 | 유료 충전 | 만료 없음 | ₩300/개 |
 
 ### 주요 기능
 
-- ✅ **칩 충전**: 토스페이먼츠를 통한 빨간칩 구매
-- ✅ **구독 플랜**: 월 정기 파란칩 지급 (Free/Standard/Pro)
-- ✅ **칩 관리**: 칩 지급, 차감, 만료 처리
-- ✅ **환불 시스템**: 7일 이내 환불 요청 및 승인
-- ✅ **영수증 발급**: HTML/이메일 영수증 제공
-- ✅ **인증 시스템**: 전화번호/이메일 인증
-- ✅ **보안**: Rate Limiting, 시그니처 검증, 남용 탐지
+- ✅ **다이아 충전**: RevenueCat을 통한 앱스토어 결제
+- ✅ **하트 획득**: 출석, 리뷰, 초대 등 무료 활동
+- ✅ **포인트 관리**: 포인트 지급, 차감, 만료 처리
+- ✅ **배치 만료 관리**: 하트 배치별 90일 만료
+- ✅ **알림 시스템**: 만료 임박 알림 (7일/3일/당일)
+- ✅ **환불 시스템**: 앱스토어 정책 준수
+- ✅ **보안**: Rate Limiting, 남용 탐지
 
 ### 기술 스택
 
-```typescript
-// Frontend
-React 18.2 + TypeScript 4.9
-TailwindCSS 3.3
-Zustand 5.0 (상태 관리)
-React Router 6.x
+```yaml
+Frontend (모바일앱):
+  - React Native + Expo SDK 54
+  - TypeScript 5.9.2
+  - NativeWind 4.2.1 (Tailwind CSS)
+  - Zustand 5.0.9 (상태 관리)
+  - TanStack Query 5.x (서버 상태)
 
-// Backend
-Firebase Cloud Functions (Node.js 18)
-Firebase Firestore (NoSQL)
-Firebase Authentication
-Cloud Scheduler (Cron Jobs)
+Backend:
+  - Firebase Cloud Functions (Node.js 18)
+  - Firebase Firestore (NoSQL)
+  - Firebase Authentication
+  - Cloud Scheduler (Cron Jobs)
 
-// Payment Gateway
-토스페이먼츠 API v1
+Payment Gateway:
+  - RevenueCat (iOS/Android 앱스토어 통합)
+  - react-native-purchases SDK
 ```
 
 ---
@@ -72,132 +81,98 @@ Cloud Scheduler (Cron Jobs)
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      사용자 (Browser)                        │
+│                    사용자 (Mobile App)                       │
 └────────────┬────────────────────────────────────────────────┘
              │
-             │ HTTPS
+             │ React Native
              ▼
 ┌─────────────────────────────────────────────────────────────┐
-│                   React App (Frontend)                       │
-│  - ChipRechargePackages (패키지 선택)                        │
-│  - PaymentTermsPage (약관 동의)                              │
-│  - TossPaymentCheckout (결제 위젯)                           │
-│  - PaymentSuccessPage (결제 완료)                            │
-└────────────┬────────────────────────────────────────────────┘
-             │
-             │ Firebase SDK
-             ▼
-┌─────────────────────────────────────────────────────────────┐
-│              Firebase Cloud Functions (Backend)              │
-│                                                               │
-│  [결제]                                                       │
-│  - confirmPayment()        결제 승인                          │
-│  - manualGrantChips()      수동 칩 지급                       │
-│                                                               │
-│  [환불]                                                       │
-│  - refundPayment()         환불 요청                          │
-│  - approveRefund()         환불 승인                          │
-│  - rejectRefund()          환불 거부                          │
-│                                                               │
-│  [구독]                                                       │
-│  - grantMonthlyBlueChips() 월 칩 지급 (Cron)                 │
-│                                                               │
-│  [Scheduled]                                                  │
-│  - expireChips()           칩 만료 처리 (매일 00:00)          │
-│  - chipExpiryNotification() 만료 알림 (매일 09:00)           │
-│                                                               │
-│  [인증]                                                       │
-│  - sendPhoneVerificationCode() 전화번호 인증 코드 발송        │
-│  - verifyPhoneCode()       인증 코드 확인                     │
-│                                                               │
-│  [영수증]                                                     │
-│  - sendReceiptEmail()      영수증 이메일 발송                 │
+│                   Expo App (Frontend)                        │
+│  - PointBalance (잔액 표시)                                  │
+│  - DiamondPurchasePage (패키지 선택)                         │
+│  - AttendanceModal (출석 체크)                               │
+│  - PointTransactionHistory (내역 조회)                       │
 └────────────┬───────────────────────────┬────────────────────┘
              │                           │
-             │                           │ API Call
+             │ Firebase SDK              │ RevenueCat SDK
              ▼                           ▼
-┌──────────────────────┐    ┌────────────────────────────────┐
-│  Firebase Firestore  │    │   토스페이먼츠 API              │
-│  - users/            │    │   - POST /confirm              │
-│  - chipBalance/      │    │   - POST /refund               │
-│  - chipTransactions/ │    │                                │
-│  - paymentTransactions/   │                                │
-│  - refundRequests/   │    │                                │
-│  - subscriptions/    │    │                                │
-└──────────────────────┘    └────────────────────────────────┘
+┌──────────────────────────┐    ┌────────────────────────────┐
+│  Firebase Cloud Functions │    │   RevenueCat               │
+│                          │    │   - App Store Connect      │
+│  [포인트 관리]            │    │   - Google Play Console    │
+│  - deductPoints()        │◄───│   - Webhook (구매 완료)    │
+│  - grantDiamonds()       │    │                            │
+│  - grantHearts()         │    └────────────────────────────┘
+│                          │
+│  [하트 획득]              │
+│  - checkDailyAttendance()│
+│  - grantSignupBonus()    │
+│  - grantReferralBonus()  │
+│                          │
+│  [Scheduled]             │
+│  - cleanupExpiredHearts()│    (매일 00:00)
+│  - heartExpiry7Days()    │    (매일 09:00)
+│  - heartExpiry3Days()    │    (매일 09:00)
+│  - heartExpiryToday()    │    (매일 09:00)
+│                          │
+└────────────┬─────────────┘
+             │
+             ▼
+┌──────────────────────────┐
+│  Firebase Firestore      │
+│  - users/{userId}        │
+│    └─ points.diamonds    │
+│  - users/{userId}/       │
+│    └─ heartBatches/      │
+│    └─ pointTransactions/ │
+│  - purchases/            │
+└──────────────────────────┘
 ```
 
 ### 디렉토리 구조
 
 ```
-T-HOLDEM-payment/
-├── app2/                           # Frontend (React)
+T-HOLDEM/
+├── uniqn-mobile/                      # Frontend (React Native)
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── payment/
-│   │   │   │   ├── ChipBalance.tsx              # 칩 잔액 표시
-│   │   │   │   ├── ChipRechargePackages.tsx     # 패키지 선택
-│   │   │   │   ├── TossPaymentCheckout.tsx      # 결제 위젯
-│   │   │   │   ├── PaymentStepIndicator.tsx     # 결제 단계 표시
-│   │   │   │   └── ReceiptActions.tsx           # 영수증 액션
-│   │   │   └── auth/
-│   │   │       ├── PhoneVerification.tsx        # 전화번호 인증
-│   │   │       └── EmailVerification.tsx        # 이메일 인증
-│   │   ├── pages/
-│   │   │   ├── payment/
-│   │   │   │   ├── PaymentTermsPage.tsx         # 약관 동의
-│   │   │   │   ├── PaymentSuccessPage.tsx       # 결제 완료
-│   │   │   │   ├── PaymentFailPage.tsx          # 결제 실패
-│   │   │   │   └── PaymentHistoryPage.tsx       # 결제 내역
-│   │   │   ├── subscription/
-│   │   │   │   └── SubscriptionPage.tsx         # 구독 플랜
-│   │   │   ├── chip/
-│   │   │   │   └── ChipHistoryPage.tsx          # 칩 사용 내역
-│   │   │   ├── admin/
-│   │   │   │   ├── ChipManagementPage.tsx       # 칩 관리
-│   │   │   │   └── RefundBlacklistPage.tsx      # 환불 블랙리스트
-│   │   │   └── settings/
-│   │   │       └── VerificationSettingsPage.tsx # 인증 설정
-│   │   ├── contexts/
-│   │   │   └── ChipContext.tsx                  # 칩 상태 관리
+│   │   │   └── points/
+│   │   │       ├── PointBalance.tsx           # 포인트 잔액 표시
+│   │   │       ├── PointTransactionHistory.tsx # 거래 내역
+│   │   │       ├── DiamondPackageCard.tsx     # 패키지 카드
+│   │   │       └── AttendanceModal.tsx        # 출석 체크 모달
+│   │   ├── stores/
+│   │   │   └── pointStore.ts                  # Zustand 스토어
 │   │   ├── types/
-│   │   │   ├── payment/
-│   │   │   │   ├── chip.ts                      # 칩 타입
-│   │   │   │   ├── subscription.ts              # 구독 타입
-│   │   │   │   └── receipt.ts                   # 영수증 타입
-│   │   │   └── auth/
-│   │   │       └── verification.ts              # 인증 타입
-│   │   └── utils/
-│   │       └── receiptGenerator.ts              # 영수증 생성
-│   └── .env.local                               # 환경변수 (Client Key)
+│   │   │   └── point.types.ts                 # 타입 정의
+│   │   ├── lib/
+│   │   │   └── purchases.ts                   # RevenueCat 연동
+│   │   └── hooks/
+│   │       └── usePoints.ts                   # 포인트 훅
+│   └── app/
+│       └── (app)/
+│           └── points/
+│               ├── index.tsx                  # 포인트 메인
+│               └── purchase.tsx               # 다이아 충전
 │
-├── functions/                      # Backend (Firebase Functions)
-│   ├── src/
-│   │   ├── payment/
-│   │   │   ├── confirmPayment.ts                # 결제 승인 ✅
-│   │   │   ├── grantChips.ts                    # 칩 지급 ✅
-│   │   │   ├── refundPayment.ts                 # 환불 처리 ✅
-│   │   │   └── verifySignature.ts               # 시그니처 검증 ✅
-│   │   ├── subscription/
-│   │   │   └── grantBlueChips.ts                # 구독 칩 지급 ✅
-│   │   ├── scheduled/
-│   │   │   ├── expireChips.ts                   # 칩 만료 처리 ✅
-│   │   │   └── cleanupRateLimits.ts             # Rate Limit 정리 ✅
-│   │   ├── notifications/
-│   │   │   └── chipExpiryNotification.ts        # 칩 만료 알림 ✅
-│   │   ├── email/
-│   │   │   └── sendReceipt.ts                   # 영수증 이메일 ✅
-│   │   ├── auth/
-│   │   │   └── phoneVerification.ts             # 전화번호 인증 ✅
-│   │   ├── middleware/
-│   │   │   └── rateLimiter.ts                   # Rate Limiting ✅
-│   │   └── index.ts                             # Functions Export
-│   └── .env                                     # 환경변수 (Secret Key)
+├── functions/                         # Backend (Firebase Functions)
+│   └── src/
+│       ├── points/
+│       │   ├── deductPoints.ts                # 포인트 차감
+│       │   ├── grantDiamonds.ts               # 다이아 지급
+│       │   └── grantHearts.ts                 # 하트 지급
+│       ├── attendance/
+│       │   └── dailyAttendance.ts             # 일일 출석
+│       ├── notifications/
+│       │   └── heartExpiryNotifications.ts    # 만료 알림
+│       └── scheduled/
+│           └── cleanupExpiredHearts.ts        # 만료 하트 정리
 │
-├── docs/
-│   └── PAYMENT_SYSTEM_DEVELOPMENT.md           # 이 문서
-│
-└── PAYMENT_SYSTEM_CHECKLIST.md                # 진행 상황 체크리스트
+└── docs/features/payment/
+    ├── MODEL_B_CHIP_SYSTEM_FINAL.md           # 마스터 문서
+    ├── CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md    # 구현 가이드
+    ├── REVENUE_MODEL_ANALYSIS.md              # 수익 분석
+    └── PAYMENT_SYSTEM_DEVELOPMENT.md          # 이 문서
 ```
 
 ---
@@ -206,50 +181,80 @@ T-HOLDEM-payment/
 
 ### Firestore 컬렉션 구조
 
-#### 1. users/{userId}/chipBalance/current
+#### 1. users/{userId}
 
-**칩 잔액 정보**
+**사용자 포인트 정보**
 
 ```typescript
 {
-  userId: string;
-  redChips: number;        // 빨간칩 (유료)
-  blueChips: number;       // 파란칩 (구독)
-  redChipExpiry: Timestamp;  // 빨간칩 만료일 (구매일 + 1년)
-  blueChipExpiry: Timestamp; // 파란칩 만료일 (다음 달 1일)
-  lastUpdated: Timestamp;
+  // 기존 필드들...
+
+  // 💎 다이아 잔액
+  points: {
+    diamonds: number;          // 다이아 총 잔액
+    lastUpdated: Timestamp;    // 마지막 업데이트
+  },
+
+  // 출석 정보
+  attendance: {
+    lastDate: Timestamp;       // 마지막 출석일
+    streak: number;            // 연속 출석 일수
+    totalDays: number;         // 총 출석 일수
+  },
 }
+```
+
+#### 2. users/{userId}/heartBatches/{batchId}
+
+**💖 하트 배치 (만료 관리)**
+
+```typescript
+{
+  amount: number;              // 원래 하트 개수
+  remainingAmount: number;     // 남은 하트 개수
+  source: HeartSource;         // 획득 경로
+  acquiredAt: Timestamp;       // 획득일
+  expiresAt: Timestamp;        // 만료일 (획득일 + 90일)
+}
+
+// HeartSource 타입
+type HeartSource =
+  | 'signup'           // 첫 가입 보상 (+10)
+  | 'daily_attendance' // 일일 출석 (+1)
+  | 'weekly_bonus'     // 7일 연속 보너스 (+3)
+  | 'review_complete'  // 리뷰 작성 (+1)
+  | 'referral'         // 친구 초대 (+5)
+  | 'admin_grant';     // 관리자 지급
 ```
 
 **예시**:
 ```json
 {
-  "userId": "abc123",
-  "redChips": 50,
-  "blueChips": 30,
-  "redChipExpiry": "2026-01-23T00:00:00Z",
-  "blueChipExpiry": "2025-02-01T00:00:00Z",
-  "lastUpdated": "2025-01-24T10:30:00Z"
+  "amount": 10,
+  "remainingAmount": 8,
+  "source": "signup",
+  "acquiredAt": "2025-01-15T10:00:00Z",
+  "expiresAt": "2025-04-15T10:00:00Z"
 }
 ```
 
-#### 2. users/{userId}/chipTransactions/{transactionId}
+#### 3. users/{userId}/pointTransactions/{txId}
 
-**칩 거래 내역**
+**포인트 거래 내역**
 
 ```typescript
 {
   id: string;
-  userId: string;
-  type: 'grant' | 'purchase' | 'use' | 'expire' | 'refund';
-  chipType: 'red' | 'blue';
-  amount: number;            // 증감 칩 수량
-  balance: number;           // 거래 후 잔액
-  reason: string;
+  type: 'earn' | 'spend' | 'purchase' | 'expire' | 'refund';
+  pointType: 'heart' | 'diamond';
+  amount: number;              // 변동 포인트 (양수: 획득, 음수: 사용)
+  balanceAfter: number;        // 거래 후 잔액
+  reason: string;              // 사유
+  relatedId?: string;          // 관련 문서 ID
   metadata?: {
-    orderId?: string;        // 결제 주문번호
-    packageId?: string;      // 패키지 ID
-    subscriptionId?: string; // 구독 ID
+    batchId?: string;          // 하트 배치 ID
+    packageId?: string;        // 구매 패키지 ID
+    batchIds?: string[];       // 사용된 배치 ID 목록
   };
   createdAt: Timestamp;
 }
@@ -259,173 +264,60 @@ T-HOLDEM-payment/
 ```json
 {
   "id": "tx_abc123",
-  "userId": "abc123",
-  "type": "purchase",
-  "chipType": "red",
-  "amount": 50,
-  "balance": 50,
-  "reason": "빨간칩 50개 패키지 구매",
+  "type": "spend",
+  "pointType": "heart",
+  "amount": -1,
+  "balanceAfter": 9,
+  "reason": "일반 공고 등록",
+  "relatedId": "job_xyz789",
   "metadata": {
-    "orderId": "ORD_abc123_pkg2_1737689400000",
-    "packageId": "pkg2"
+    "batchIds": ["batch_001"]
   },
+  "createdAt": "2025-01-20T14:30:00Z"
+}
+```
+
+#### 4. purchases/{purchaseId}
+
+**다이아 구매 기록**
+
+```typescript
+{
+  userId: string;
+  packageId: 'starter' | 'basic' | 'popular' | 'premium';
+  diamonds: number;            // 기본 다이아
+  bonusDiamonds: number;       // 보너스 다이아
+  totalDiamonds: number;       // 총 다이아
+  price: number;               // 결제 금액 (원)
+  currency: 'KRW';
+  status: 'pending' | 'completed' | 'refunded';
+
+  // RevenueCat 정보
+  revenueCatTransactionId: string;
+  store: 'app_store' | 'play_store';
+  productId: string;           // 앱스토어 상품 ID
+
+  refundedAt?: Timestamp;
+  refundAmount?: number;
+  createdAt: Timestamp;
+}
+```
+
+**예시**:
+```json
+{
+  "userId": "user_abc123",
+  "packageId": "popular",
+  "diamonds": 35,
+  "bonusDiamonds": 5,
+  "totalDiamonds": 40,
+  "price": 10000,
+  "currency": "KRW",
+  "status": "completed",
+  "revenueCatTransactionId": "rc_tx_xyz",
+  "store": "app_store",
+  "productId": "com.uniqn.diamond.popular",
   "createdAt": "2025-01-24T10:30:00Z"
-}
-```
-
-#### 3. paymentTransactions/{transactionId}
-
-**결제 거래 내역**
-
-```typescript
-{
-  id: string;
-  userId: string;
-  orderId: string;           // ORD_{userId}_{packageId}_{timestamp}
-  paymentKey: string;        // 토스페이먼츠 결제 키
-  packageId: string;
-  amount: number;            // 결제 금액
-  chipAmount: number;        // 지급된 칩 수량
-  chipType: 'red' | 'blue';
-  status: 'pending' | 'success' | 'failed';
-  method?: string;           // 결제 수단 (카드/계좌이체/가상계좌)
-  approvedAt?: Timestamp;
-  createdAt: Timestamp;
-}
-```
-
-**예시**:
-```json
-{
-  "id": "pay_abc123",
-  "userId": "abc123",
-  "orderId": "ORD_abc123_pkg2_1737689400000",
-  "paymentKey": "tgen_abc123xyz",
-  "packageId": "pkg2",
-  "amount": 5500,
-  "chipAmount": 50,
-  "chipType": "red",
-  "status": "success",
-  "method": "카드",
-  "approvedAt": "2025-01-24T10:30:00Z",
-  "createdAt": "2025-01-24T10:29:00Z"
-}
-```
-
-#### 4. refundRequests/{requestId}
-
-**환불 요청 내역**
-
-```typescript
-{
-  id: string;
-  userId: string;
-  transactionId: string;     // 원본 결제 거래 ID
-  orderId: string;
-  paymentKey: string;
-  amount: number;            // 결제 금액
-  refundAmount: number;      // 실제 환불 금액 (수수료 차감 후)
-  chipAmount: number;        // 회수할 칩 수량
-  reason: string;            // 환불 사유
-  status: 'pending' | 'approved' | 'rejected' | 'completed';
-  adminNotes?: string;
-  processedBy?: string;      // 처리한 관리자 ID
-  processedAt?: Timestamp;
-  createdAt: Timestamp;
-}
-```
-
-**예시**:
-```json
-{
-  "id": "refund_abc123",
-  "userId": "abc123",
-  "transactionId": "pay_abc123",
-  "orderId": "ORD_abc123_pkg2_1737689400000",
-  "paymentKey": "tgen_abc123xyz",
-  "amount": 5500,
-  "refundAmount": 4400,
-  "chipAmount": 50,
-  "reason": "단순 변심",
-  "status": "approved",
-  "adminNotes": "승인",
-  "processedBy": "admin_xyz",
-  "processedAt": "2025-01-25T14:00:00Z",
-  "createdAt": "2025-01-25T10:00:00Z"
-}
-```
-
-#### 5. subscriptions/{subscriptionId}
-
-**구독 정보**
-
-```typescript
-{
-  id: string;
-  userId: string;
-  planType: 'free' | 'standard' | 'pro';
-  status: 'active' | 'cancelled' | 'expired';
-  monthlyChips: number;      // 월 지급 칩 수량
-  price: number;             // 월 구독료
-  autoRenew: boolean;
-  lastChipGrantMonth?: string;  // "2025-01" (중복 지급 방지)
-  startedAt: Timestamp;
-  expiresAt?: Timestamp;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-```
-
-**예시**:
-```json
-{
-  "id": "sub_abc123",
-  "userId": "abc123",
-  "planType": "standard",
-  "status": "active",
-  "monthlyChips": 30,
-  "price": 5500,
-  "autoRenew": true,
-  "lastChipGrantMonth": "2025-01",
-  "startedAt": "2025-01-01T00:00:00Z",
-  "createdAt": "2025-01-01T00:00:00Z",
-  "updatedAt": "2025-01-24T10:00:00Z"
-}
-```
-
-#### 6. users/{userId}/receipts/{orderId}
-
-**영수증 발송 기록**
-
-```typescript
-{
-  id: string;
-  userId: string;
-  type: 'payment' | 'subscription' | 'refund';
-  orderId: string;
-  amount: number;
-  emailSent: boolean;
-  emailSentAt?: Timestamp;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-```
-
-#### 7. phoneVerifications/{verificationId}
-
-**전화번호 인증 기록**
-
-```typescript
-{
-  userId: string;
-  phoneNumber: string;
-  verificationCode: string;  // 6자리
-  status: 'pending' | 'verified' | 'failed' | 'expired';
-  attempts: number;          // 시도 횟수
-  maxAttempts: number;       // 3회
-  expiresAt: Timestamp;      // 발송 후 5분
-  verifiedAt?: Timestamp;
-  createdAt: Timestamp;
 }
 ```
 
@@ -433,179 +325,129 @@ T-HOLDEM-payment/
 
 ## 🔌 API 명세
 
-### 1. confirmPayment
+### 1. deductPoints
 
-**결제 승인 및 칩 지급**
+**포인트 차감 (공고 등록 등)**
 
 ```typescript
 // Request
 {
-  orderId: string;      // ORD_{userId}_{packageId}_{timestamp}
-  paymentKey: string;   // 토스페이먼츠 결제 키
-  amount: number;       // 결제 금액
+  amount: number;        // 차감할 포인트 수
+  reason: string;        // 사유
+  relatedId?: string;    // 관련 문서 ID (공고 ID 등)
 }
 
 // Response
 {
   success: boolean;
-  message: string;
-  chipBalance: {
-    redChips: number;
-    blueChips: number;
+  heartsUsed: number;    // 차감된 하트 수
+  diamondsUsed: number;  // 차감된 다이아 수
+  newBalance: {
+    hearts: number;
+    diamonds: number;
   };
 }
 
 // Error Codes
 - unauthenticated: 로그인 필요
-- invalid-argument: 필수 파라미터 누락
-- permission-denied: 본인 결제 아님
-- already-exists: 중복 결제
-- failed-precondition: 금액 불일치
-- internal: 서버 에러
+- invalid-argument: 유효하지 않은 금액
+- failed-precondition: 포인트 부족
 ```
 
 **호출 예시**:
 ```typescript
-const confirmPayment = httpsCallable(functions, 'confirmPayment');
-const result = await confirmPayment({
-  orderId: 'ORD_abc123_pkg2_1737689400000',
-  paymentKey: 'tgen_abc123xyz',
-  amount: 5500,
+const deductPoints = httpsCallable(functions, 'deductPoints');
+const result = await deductPoints({
+  amount: 1,
+  reason: '일반 공고 등록',
+  relatedId: 'job_xyz789',
 });
 ```
 
-### 2. manualGrantChips
+### 2. grantDiamonds
 
-**관리자 수동 칩 지급**
+**다이아 지급 (RevenueCat Webhook)**
+
+```typescript
+// Request (RevenueCat Webhook에서 호출)
+{
+  userId: string;
+  diamonds: number;
+  bonusDiamonds: number;
+  packageId: string;
+  transactionId: string;
+  store: 'app_store' | 'play_store';
+  productId: string;
+  price: number;
+}
+
+// Response
+{
+  success: boolean;
+  purchaseId: string;
+  diamonds: number;      // 총 지급된 다이아
+}
+```
+
+### 3. grantHearts
+
+**하트 지급 (다양한 획득 경로)**
 
 ```typescript
 // Request
 {
   userId: string;
-  chipType: 'red' | 'blue';
-  amount: number;
-  reason: string;
+  source: HeartSource;
+  amount?: number;       // admin_grant용
 }
 
 // Response
 {
   success: boolean;
-  message: string;
-  transaction: ChipTransaction;
+  amount: number;        // 지급된 하트 수
+  batchId: string;       // 생성된 배치 ID
 }
-
-// 권한: admin만 호출 가능
 ```
 
-### 3. refundPayment
+### 4. checkDailyAttendance
 
-**환불 요청**
+**일일 출석 체크**
 
 ```typescript
 // Request
-{
-  orderId: string;
-  reason: string;
-}
+{} // 인증된 사용자 자동 감지
 
 // Response
 {
   success: boolean;
+  streak: number;        // 현재 연속 출석 일수
+  heartsEarned: number;  // 획득한 하트 (1 또는 4)
+  isWeeklyBonus: boolean;
   message: string;
-  refundRequestId: string;
 }
 
 // 제한사항
-- 결제 후 7일 이내
-- 월 1회, 연 3회 한도
-- 블랙리스트 제외
+- 하루 1회만 가능
+- 연속 출석 7일마다 +3 보너스
 ```
 
-### 4. approveRefund / rejectRefund
+### 5. getPointBalance
 
-**환불 승인/거부 (관리자)**
+**포인트 잔액 조회**
 
 ```typescript
 // Request
-{
-  refundRequestId: string;
-  adminNotes?: string;
-}
+{} // 인증된 사용자 자동 감지
 
 // Response
 {
-  success: boolean;
-  message: string;
-}
-
-// 권한: admin만 호출 가능
-```
-
-### 5. sendPhoneVerificationCode
-
-**전화번호 인증 코드 발송**
-
-```typescript
-// Request
-{
-  phoneNumber: string;  // "010-1234-5678"
-  userId: string;
-}
-
-// Response
-{
-  success: boolean;
-  message: string;
-  expiresIn: number;    // 300 (5분)
-  code?: string;        // 개발 환경에서만
-}
-
-// 제한사항
-- 1분 쿨다운
-- 중복 전화번호 방지
-```
-
-### 6. verifyPhoneCode
-
-**전화번호 인증 코드 확인**
-
-```typescript
-// Request
-{
-  phoneNumber: string;
-  code: string;         // "123456"
-  userId: string;
-}
-
-// Response
-{
-  success: boolean;
-  message: string;
-  phoneNumber: string;
-}
-
-// 제한사항
-- 3회 시도 제한
-- 5분 만료
-```
-
-### 7. sendReceiptEmail
-
-**영수증 이메일 발송**
-
-```typescript
-// Request
-{
-  orderId: string;
-  userId: string;
-  receiptType: 'payment' | 'subscription' | 'refund';
-}
-
-// Response
-{
-  success: boolean;
-  message: string;
-  email: string;
+  hearts: number;
+  diamonds: number;
+  heartBatches: HeartBatch[];
+  expiringHearts: {
+    count: number;
+    expiresIn: number;   // 일수
+  } | null;
 }
 ```
 
@@ -613,437 +455,401 @@ const result = await confirmPayment({
 
 ## 🔄 결제 플로우
 
-### 전체 흐름도
+### 다이아 충전 흐름도
 
 ```
-[사용자] → 패키지 선택 → 약관 동의 → 결제 정보 입력 → 결제 승인 → 칩 지급 → 완료
-   ↓           ↓            ↓              ↓             ↓          ↓         ↓
-[UI]    ChipRecharge  PaymentTerms  TossPayment    Success     ChipBalance  Success
-        Packages      Page          Checkout       Page        Update       Page
+[사용자] → 패키지 선택 → RevenueCat 결제 → Webhook → 다이아 지급 → 완료
+   ↓           ↓              ↓              ↓          ↓           ↓
+[UI]    DiamondPurchase  purchaseDiamonds  Firebase   grantDiamonds  Toast
+        Page             (RevenueCat SDK)  Functions  Function       알림
 ```
 
 ### 단계별 상세
 
 #### Step 1: 패키지 선택
 
-**컴포넌트**: `ChipRechargePackages.tsx`
+**화면**: `DiamondPurchasePage.tsx`
 
 ```typescript
-// 패키지 정의 (CHIP_PACKAGES)
-const CHIP_PACKAGES = [
-  { id: 'pkg1', name: '빨간칩 10개', amount: 10, price: 1100 },
-  { id: 'pkg2', name: '빨간칩 50개', amount: 50, price: 5500 },
-  { id: 'pkg3', name: '빨간칩 100개', amount: 100, price: 11000, bonus: 10 },
-  { id: 'pkg4', name: '빨간칩 500개', amount: 500, price: 55000, bonus: 100 },
+// 다이아 패키지 정의
+const DIAMOND_PACKAGES = [
+  { id: 'starter', name: '스타터', diamonds: 3, price: 1000, badge: '💡' },
+  { id: 'basic', name: '기본', diamonds: 11, price: 3300, badge: '⭐' },
+  { id: 'popular', name: '인기', diamonds: 40, price: 10000, badge: '🔥', bonus: 5 },
+  { id: 'premium', name: '프리미엄', diamonds: 400, price: 100000, badge: '👑', bonus: 67 },
 ];
 
-// 선택 후 이동
-navigate('/payment/terms', { state: { selectedPackage } });
+// 패키지 선택 후 결제 진행
+const handlePurchase = async (pkg: DiamondPackage) => {
+  try {
+    const offerings = await Purchases.getOfferings();
+    const purchasePackage = offerings.current?.availablePackages
+      .find(p => p.product.identifier === pkg.productId);
+
+    if (purchasePackage) {
+      await Purchases.purchasePackage(purchasePackage);
+      // Webhook에서 자동으로 다이아 지급
+    }
+  } catch (error) {
+    handlePurchaseError(error);
+  }
+};
 ```
 
-#### Step 2: 약관 동의
+#### Step 2: RevenueCat 결제
 
-**컴포넌트**: `PaymentTermsPage.tsx`
+**파일**: `src/lib/purchases.ts`
 
 ```typescript
-// 필수 약관
-const requiredTerms = [
-  'termsOfService',      // 결제 약관
-  'refundPolicy',        // 환불 정책
-  'privacyPolicy',       // 개인정보 수집 및 이용
-];
+import Purchases from 'react-native-purchases';
 
-// 선택 약관
-const optionalTerms = [
-  'marketingConsent',    // 마케팅 수신 동의
-];
-
-// 모두 동의 후 이동
-navigate('/chip/recharge', { state: { selectedPackage, consents } });
+// 결제 실행
+export const purchaseDiamonds = async (pkg: PurchasesPackage) => {
+  try {
+    const { customerInfo } = await Purchases.purchasePackage(pkg);
+    logger.info('다이아 구매 완료', {
+      packageId: pkg.identifier,
+      productId: pkg.product.identifier,
+    });
+    return customerInfo;
+  } catch (error) {
+    if (error.userCancelled) {
+      logger.info('사용자가 결제를 취소했습니다');
+    } else {
+      logger.error('다이아 구매 실패', error);
+    }
+    throw error;
+  }
+};
 ```
 
-#### Step 3: 결제 정보 입력
+#### Step 3: Webhook 처리 (다이아 지급)
 
-**컴포넌트**: `TossPaymentCheckout.tsx`
+**RevenueCat → Firebase Functions**
 
-```typescript
-// 토스페이먼츠 SDK 초기화
-const clientKey = process.env.REACT_APP_TOSS_CLIENT_KEY;
-const tossPayments = await loadTossPayments(clientKey);
-
-// 결제 위젯 렌더링
-await tossPayments.requestPayment('카드', {
-  amount: selectedPackage.price,
-  orderId: `ORD_${userId}_${packageId}_${Date.now()}`,
-  orderName: selectedPackage.name,
-  customerName: currentUser.displayName,
-  customerEmail: currentUser.email,
-  successUrl: `${window.location.origin}/payment/success`,
-  failUrl: `${window.location.origin}/payment/fail`,
-});
+RevenueCat 대시보드에서 Webhook URL 설정:
+```
+https://asia-northeast3-{project-id}.cloudfunctions.net/revenueCatWebhook
 ```
 
-#### Step 4: 결제 승인
-
-**컴포넌트**: `PaymentSuccessPage.tsx`
+**파일**: `functions/src/webhooks/revenueCatWebhook.ts`
 
 ```typescript
-// URL 파라미터 추출
-const searchParams = new URLSearchParams(window.location.search);
-const orderId = searchParams.get('orderId');
-const paymentKey = searchParams.get('paymentKey');
-const amount = searchParams.get('amount');
+export const revenueCatWebhook = functions
+  .region('asia-northeast3')
+  .https.onRequest(async (req, res) => {
+    // 1. 시그니처 검증
+    const signature = req.headers['x-revenuecat-signature'];
+    if (!verifySignature(req.body, signature)) {
+      res.status(401).send('Invalid signature');
+      return;
+    }
 
-// Cloud Function 호출
-const confirmPayment = httpsCallable(functions, 'confirmPayment');
-const result = await confirmPayment({ orderId, paymentKey, amount });
+    // 2. 이벤트 타입 확인
+    const { event } = req.body;
 
-// 성공 시 칩 잔액 자동 업데이트 (ChipContext)
-```
+    if (event.type === 'INITIAL_PURCHASE' || event.type === 'RENEWAL') {
+      const { app_user_id, product_id, price } = event;
 
-#### Step 5: 칩 지급
+      // 3. 다이아 지급
+      await grantDiamondsFromPurchase({
+        userId: app_user_id,
+        productId: product_id,
+        price,
+        transactionId: event.transaction_id,
+        store: event.store,
+      });
+    }
 
-**Cloud Function**: `confirmPayment.ts`
-
-```typescript
-// 1. 토스페이먼츠 API 호출
-const response = await fetch('https://api.tosspayments.com/v1/payments/confirm', {
-  method: 'POST',
-  headers: {
-    'Authorization': `Basic ${Buffer.from(secretKey + ':').toString('base64')}`,
-    'Content-Type': 'application/json',
-  },
-  body: JSON.stringify({ orderId, paymentKey, amount }),
-});
-
-// 2. Firestore 트랜잭션으로 칩 지급
-await db.runTransaction(async (transaction) => {
-  const balanceRef = db.collection('users').doc(userId).collection('chipBalance').doc('current');
-  const balanceDoc = await transaction.get(balanceRef);
-
-  const currentBalance = balanceDoc.data() || { redChips: 0, blueChips: 0 };
-  const newRedChips = currentBalance.redChips + chipAmount;
-
-  transaction.set(balanceRef, {
-    redChips: newRedChips,
-    redChipExpiry: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // +1년
-    lastUpdated: FieldValue.serverTimestamp(),
-  }, { merge: true });
-
-  // 거래 내역 기록
-  transaction.set(transactionRef, {
-    userId, type: 'purchase', chipType: 'red', amount: chipAmount,
-    balance: newRedChips, reason: `${packageName} 구매`, createdAt: FieldValue.serverTimestamp(),
+    res.status(200).send('OK');
   });
-});
 ```
 
 ---
 
 ## 🔒 보안
 
-### 1. 시그니처 검증
-
-**파일**: `functions/src/payment/verifySignature.ts`
+### 1. RevenueCat Webhook 시그니처 검증
 
 ```typescript
-// HMAC-SHA256 시그니처 검증
+import crypto from 'crypto';
+
 function verifyWebhookSignature(
   payload: string,
-  signature: string,
-  secretKey: string
+  signature: string
 ): boolean {
-  const hash = crypto
-    .createHmac('sha256', secretKey)
+  const webhookSecret = functions.config().revenuecat.webhook_secret;
+  const expectedSignature = crypto
+    .createHmac('sha256', webhookSecret)
     .update(payload)
     .digest('hex');
 
-  return hash === signature;
+  return crypto.timingSafeEqual(
+    Buffer.from(signature),
+    Buffer.from(expectedSignature)
+  );
 }
 ```
 
 ### 2. Rate Limiting
 
-**파일**: `functions/src/middleware/rateLimiter.ts`
-
 ```typescript
-// IP 기반 Rate Limiting
+// 포인트 차감 제한
 const RATE_LIMITS = {
-  confirmPayment: { maxRequests: 5, windowMs: 60000 },  // 1분에 5회
-  refundPayment: { maxRequests: 3, windowMs: 300000 },  // 5분에 3회
+  deductPoints: { maxRequests: 10, windowMs: 60000 },    // 1분에 10회
+  checkAttendance: { maxRequests: 5, windowMs: 300000 }, // 5분에 5회
 };
 
 // 남용 패턴 감지
-function detectAbusePattern(userId: string, action: string): number {
-  // 위험도 점수 계산 (0.0 ~ 1.0)
-  // 0.7 이상 시 차단
+async function detectAbusePattern(userId: string): Promise<boolean> {
+  // 최근 1시간 내 비정상적 활동 감지
+  const recentTransactions = await getRecentTransactions(userId, 1);
+
+  if (recentTransactions.length > 50) {
+    return true; // 비정상적으로 많은 거래
+  }
+
+  return false;
 }
 ```
 
-### 3. 금액 검증
+### 3. 포인트 직접 수정 방지 (Security Rules)
 
-```typescript
-// 서버 측 금액 검증
-const expectedAmount = CHIP_PACKAGES[packageId].price;
-if (amount !== expectedAmount) {
-  throw new functions.https.HttpsError(
-    'failed-precondition',
-    '금액이 일치하지 않습니다.'
-  );
+```javascript
+// firestore.rules
+match /users/{userId} {
+  // 포인트 필드는 클라이언트에서 직접 수정 불가
+  allow update: if request.auth.uid == userId
+    && !request.resource.data.diff(resource.data).affectedKeys().hasAny(['points']);
+}
+
+match /users/{userId}/heartBatches/{batchId} {
+  allow read: if request.auth.uid == userId;
+  allow write: if false; // Functions만 가능
 }
 ```
 
 ### 4. 본인 확인
 
 ```typescript
-// orderId에서 userId 추출 후 검증
-const orderUserId = extractUserIdFromOrderId(orderId);
-if (context.auth.uid !== orderUserId) {
-  throw new functions.https.HttpsError(
-    'permission-denied',
-    '본인의 결제만 승인할 수 있습니다.'
-  );
+// Cloud Function에서 인증 확인
+const userId = context.auth?.uid;
+if (!userId) {
+  throw new functions.https.HttpsError('unauthenticated', '인증이 필요합니다.');
 }
-```
 
-### 5. 중복 결제 방지
-
-```typescript
-// orderId 유니크 체크
-const existingPayment = await db
-  .collection('paymentTransactions')
-  .where('orderId', '==', orderId)
-  .limit(1)
-  .get();
-
-if (!existingPayment.empty) {
-  throw new functions.https.HttpsError(
-    'already-exists',
-    '이미 처리된 결제입니다.'
-  );
+// 타인의 포인트 조작 방지
+if (data.targetUserId && data.targetUserId !== userId) {
+  // admin 권한 확인
+  const isAdmin = await checkAdminRole(userId);
+  if (!isAdmin) {
+    throw new functions.https.HttpsError('permission-denied', '권한이 없습니다.');
+  }
 }
 ```
 
 ---
 
-## 🎰 칩 시스템
+## 💎 포인트 시스템
 
-### 칩 종류
+### 포인트 종류
 
-| 칩 종류 | 획득 방법 | 만료 기간 | 용도 |
-|---------|----------|----------|------|
-| **빨간칩** (redChips) | 유료 구매 | 구매일 + 1년 | 토너먼트 참가 |
-| **파란칩** (blueChips) | 구독 (월 지급) | 다음 달 1일 | 토너먼트 참가 |
+| 포인트 | 획득 방법 | 만료 기간 | 용도 |
+|--------|----------|----------|------|
+| **💖 하트** | 무료 활동 | 획득일 + 90일 | 공고 등록 |
+| **💎 다이아** | 유료 충전 | 만료 없음 | 공고 등록 |
 
-### 칩 사용 우선순위
+### 사용 우선순위
 
-**파란칩 → 빨간칩** 순서로 차감
+**💖 하트 (만료 임박 순) → 💎 다이아**
 
 ```typescript
-// 칩 차감 로직
-function deductChips(userId: string, amount: number) {
-  const balance = getCurrentBalance(userId);
+// 포인트 차감 로직 (deductPoints.ts)
+async function deductPointsLogic(
+  userId: string,
+  amount: number,
+  transaction: FirebaseFirestore.Transaction
+) {
+  // 1. 하트 배치 조회 (만료 임박 순)
+  const heartBatches = await getActiveHeartBatches(userId, transaction);
 
-  if (balance.blueChips >= amount) {
-    // 파란칩만 차감
-    balance.blueChips -= amount;
-  } else if (balance.blueChips + balance.redChips >= amount) {
-    // 파란칩 전부 + 빨간칩 일부 차감
-    const remaining = amount - balance.blueChips;
-    balance.blueChips = 0;
-    balance.redChips -= remaining;
-  } else {
-    // 잔액 부족
-    throw new Error('칩이 부족합니다.');
+  // 2. 하트 먼저 차감
+  let remainingAmount = amount;
+  let heartsUsed = 0;
+
+  for (const batch of heartBatches) {
+    if (remainingAmount <= 0) break;
+
+    const deduct = Math.min(batch.remainingAmount, remainingAmount);
+    transaction.update(batch.ref, {
+      remainingAmount: FieldValue.increment(-deduct),
+    });
+
+    heartsUsed += deduct;
+    remainingAmount -= deduct;
   }
-}
-```
 
-### 칩 만료 처리
-
-**Scheduled Function**: `expireChips` (매일 00:00 실행)
-
-```typescript
-// 빨간칩 만료 (구매일 + 1년)
-const now = new Date();
-const usersSnapshot = await db
-  .collection('users')
-  .where('chipBalance.redChipExpiry', '<=', now)
-  .get();
-
-for (const userDoc of usersSnapshot.docs) {
-  await db.runTransaction(async (transaction) => {
-    // 빨간칩 0으로 설정
-    // 만료 트랜잭션 기록 생성
-  });
-}
-
-// 파란칩 만료 (다음 달 1일)
-const nextMonthFirstDay = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-if (now >= nextMonthFirstDay) {
-  // 모든 사용자의 파란칩 0으로 설정
-}
-```
-
-### 칩 만료 알림
-
-**Scheduled Function**: `chipExpiryNotification` (매일 09:00 실행)
-
-```typescript
-// 30일 전, 7일 전, 3일 전, 당일 알림
-const thresholds = [30, 7, 3, 0];
-
-for (const days of thresholds) {
-  const targetDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
-
-  // 해당 날짜에 만료되는 사용자 조회
-  const usersSnapshot = await db
-    .collection('users')
-    .where('chipBalance.redChipExpiry', '>=', startOfDay(targetDate))
-    .where('chipBalance.redChipExpiry', '<', endOfDay(targetDate))
-    .get();
-
-  // 알림 발송
-  for (const userDoc of usersSnapshot.docs) {
-    await db.collection('notifications').add({
-      userId: userDoc.id,
-      type: 'finance',
-      title: `칩 만료 ${days}일 전 알림`,
-      message: `${userDoc.data().chipBalance.redChips}개의 빨간칩이 ${days}일 후 만료됩니다.`,
-      isRead: false,
-      createdAt: FieldValue.serverTimestamp(),
+  // 3. 하트로 부족하면 다이아 차감
+  if (remainingAmount > 0) {
+    const userRef = db.doc(`users/${userId}`);
+    transaction.update(userRef, {
+      'points.diamonds': FieldValue.increment(-remainingAmount),
     });
   }
+
+  return { heartsUsed, diamondsUsed: remainingAmount };
 }
 ```
+
+### 공고 비용
+
+| 공고 타입 | 비용 | 설명 |
+|-----------|------|------|
+| 일반 공고 | 1💎 | 기본 노출 |
+| 긴급 공고 | 10💎 | 상단 고정 + 뱃지 |
+| 상시 공고 | 5💎 | 30일 노출 |
 
 ---
 
 ## 💸 환불 시스템
 
-### 환불 정책
+### 앱스토어 환불 정책
 
-- ✅ **기간**: 결제 후 7일 이내
-- ✅ **수수료**: 20% (부분 사용 시)
-- ✅ **한도**: 월 1회, 연 3회
-- ✅ **제외**: 블랙리스트, 전액 사용
+RevenueCat을 통한 앱스토어 결제는 **Apple/Google 환불 정책**을 따릅니다.
 
-### 환불 플로우
+```yaml
+iOS (App Store):
+  - Apple을 통한 환불 요청
+  - 앱 내 환불 버튼 제공 불가 (App Store 정책)
+  - RevenueCat Webhook으로 환불 이벤트 수신
 
+Android (Google Play):
+  - Google Play를 통한 환불 요청
+  - 48시간 이내 자동 환불 가능
+  - RevenueCat Webhook으로 환불 이벤트 수신
 ```
-[사용자] → 환불 요청 → [관리자] → 승인/거부 → 토스 API 호출 → 칩 회수 → 완료
-   ↓           ↓            ↓           ↓              ↓            ↓         ↓
-[UI]    Refund      refundPayment  ChipManagement  approveRefund  Transaction Success
-        Button      Function       Page            Function       Record
-```
 
-### 환불 수수료 계산
+### 환불 처리 (Webhook)
 
 ```typescript
-function calculateRefundAmount(
-  originalAmount: number,
-  totalChips: number,
-  usedChips: number
-): number {
-  if (usedChips === 0) {
-    // 전액 환불
-    return originalAmount;
-  } else {
-    // 부분 환불 (20% 수수료)
-    const usageRate = usedChips / totalChips;
-    const refundableAmount = originalAmount * (1 - usageRate);
-    return Math.floor(refundableAmount * 0.8);
+// 환불 이벤트 처리
+if (event.type === 'CANCELLATION' || event.type === 'REFUND') {
+  const { app_user_id, product_id, transaction_id } = event;
+
+  // 1. 구매 기록 조회
+  const purchase = await findPurchaseByTransactionId(transaction_id);
+
+  if (purchase) {
+    // 2. 다이아 회수
+    await db.runTransaction(async (transaction) => {
+      const userRef = db.doc(`users/${app_user_id}`);
+      const userDoc = await transaction.get(userRef);
+      const currentDiamonds = userDoc.data()?.points?.diamonds || 0;
+
+      // 회수할 다이아 (보유량 초과 방지)
+      const deductAmount = Math.min(purchase.totalDiamonds, currentDiamonds);
+
+      transaction.update(userRef, {
+        'points.diamonds': FieldValue.increment(-deductAmount),
+      });
+
+      // 3. 거래 내역 기록
+      const txRef = db.collection(`users/${app_user_id}/pointTransactions`).doc();
+      transaction.set(txRef, {
+        type: 'refund',
+        pointType: 'diamond',
+        amount: -deductAmount,
+        balanceAfter: currentDiamonds - deductAmount,
+        reason: '환불로 인한 다이아 회수',
+        relatedId: purchase.id,
+        createdAt: FieldValue.serverTimestamp(),
+      });
+
+      // 4. 구매 상태 업데이트
+      transaction.update(db.doc(`purchases/${purchase.id}`), {
+        status: 'refunded',
+        refundedAt: FieldValue.serverTimestamp(),
+      });
+    });
   }
-}
-```
-
-### 환불 한도 검증
-
-```typescript
-async function checkRefundLimit(userId: string): Promise<boolean> {
-  const now = new Date();
-
-  // 월 1회 체크
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const monthlyRefunds = await db
-    .collection('refundRequests')
-    .where('userId', '==', userId)
-    .where('createdAt', '>=', monthStart)
-    .where('status', '==', 'completed')
-    .get();
-
-  if (monthlyRefunds.size >= 1) return false;
-
-  // 연 3회 체크
-  const yearStart = new Date(now.getFullYear(), 0, 1);
-  const yearlyRefunds = await db
-    .collection('refundRequests')
-    .where('userId', '==', userId)
-    .where('createdAt', '>=', yearStart)
-    .where('status', '==', 'completed')
-    .get();
-
-  if (yearlyRefunds.size >= 3) return false;
-
-  return true;
 }
 ```
 
 ---
 
-## 📅 구독 시스템
+## 💖 하트 획득 시스템
 
-### 구독 플랜
+### 획득 경로
 
-| 플랜 | 가격 | 월 지급 칩 | 특징 |
-|------|------|-----------|------|
-| **Free** | 0원 | 파란칩 5개 | 기본 플랜 |
-| **Standard** | 5,500원 | 파란칩 30개 | 인기 플랜 |
-| **Pro** | 14,900원 | 파란칩 80개 | 최고 가성비 |
+| 활동 | 하트 | 조건 |
+|------|------|------|
+| 첫 가입 | +10💖 | 회원가입 시 1회 |
+| 일일 출석 | +1💖 | 하루 1회 |
+| 7일 연속 출석 | +3💖 | 7일 연속 시 추가 |
+| 리뷰 작성 | +1💖 | 근무 후 리뷰 작성 |
+| 친구 초대 | +5💖 | 초대 코드로 가입 시 |
 
-### 월 칩 지급 로직
-
-**Scheduled Function**: `grantMonthlyBlueChips` (매월 1일 00:00 실행)
+### 출석 체크 시스템
 
 ```typescript
-// 1. 활성 구독 조회
-const subscriptionsSnapshot = await db
-  .collection('subscriptions')
-  .where('status', '==', 'active')
-  .where('autoRenew', '==', true)
-  .get();
+// 일일 출석 체크 (dailyAttendance.ts)
+export const checkDailyAttendance = functions
+  .region('asia-northeast3')
+  .https.onCall(async (data, context) => {
+    const userId = context.auth?.uid;
+    if (!userId) throw new functions.https.HttpsError('unauthenticated', '인증 필요');
 
-// 2. 중복 지급 방지
-const currentMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const now = new Date();
+    const today = startOfDay(now);
 
-for (const subscriptionDoc of subscriptionsSnapshot.docs) {
-  const subscription = subscriptionDoc.data();
+    return await db.runTransaction(async (transaction) => {
+      const userRef = db.doc(`users/${userId}`);
+      const userDoc = await transaction.get(userRef);
+      const attendance = userDoc.data()?.attendance || {};
 
-  if (subscription.lastChipGrantMonth === currentMonth) {
-    continue; // 이미 지급됨
-  }
+      // 중복 출석 확인
+      const lastDate = attendance.lastDate?.toDate();
+      if (lastDate && startOfDay(lastDate).getTime() === today.getTime()) {
+        return { success: false, message: '이미 오늘 출석했습니다.' };
+      }
 
-  // 3. Firestore 트랜잭션으로 칩 지급
-  await db.runTransaction(async (transaction) => {
-    const balanceRef = db.collection('users').doc(subscription.userId)
-      .collection('chipBalance').doc('current');
+      // 연속 출석 계산
+      let newStreak = 1;
+      if (lastDate && differenceInDays(today, startOfDay(lastDate)) === 1) {
+        newStreak = (attendance.streak || 0) + 1;
+      }
 
-    const balanceDoc = await transaction.get(balanceRef);
-    const currentBalance = balanceDoc.data() || { blueChips: 0 };
+      // 하트 지급
+      let heartsToGrant = 1;
+      const isWeeklyBonus = newStreak % 7 === 0;
+      if (isWeeklyBonus) heartsToGrant += 3;
 
-    transaction.set(balanceRef, {
-      blueChips: currentBalance.blueChips + subscription.monthlyChips,
-      blueChipExpiry: getNextMonthFirstDay(),
-      lastUpdated: FieldValue.serverTimestamp(),
-    }, { merge: true });
+      // 하트 배치 생성
+      const expiresAt = addDays(now, 90);
+      const batchRef = db.collection(`users/${userId}/heartBatches`).doc();
+      transaction.set(batchRef, {
+        amount: heartsToGrant,
+        remainingAmount: heartsToGrant,
+        source: isWeeklyBonus ? 'weekly_bonus' : 'daily_attendance',
+        acquiredAt: FieldValue.serverTimestamp(),
+        expiresAt,
+      });
 
-    // 4. 구독 문서 업데이트
-    transaction.update(subscriptionDoc.ref, {
-      lastChipGrantMonth: currentMonth,
-      updatedAt: FieldValue.serverTimestamp(),
+      // 출석 정보 업데이트
+      transaction.update(userRef, {
+        'attendance.lastDate': FieldValue.serverTimestamp(),
+        'attendance.streak': newStreak,
+        'attendance.totalDays': FieldValue.increment(1),
+      });
+
+      return {
+        success: true,
+        streak: newStreak,
+        heartsEarned: heartsToGrant,
+        isWeeklyBonus,
+      };
     });
   });
-}
 ```
 
 ---
@@ -1052,36 +858,60 @@ for (const subscriptionDoc of subscriptionsSnapshot.docs) {
 
 ### 알림 타입
 
-| 타입 | 제목 예시 | 용도 |
-|------|----------|------|
-| `finance` | "칩 만료 7일 전 알림" | 칩 만료, 결제 완료 |
-| `system` | "환불 요청이 승인되었습니다" | 환불 승인/거부 |
+| 타입 | 제목 예시 | 발송 시점 |
+|------|----------|----------|
+| `heart_expiry_7d` | "⏰ 하트 만료 예정" | 7일 전 |
+| `heart_expiry_3d` | "🚨 하트 만료 임박!" | 3일 전 |
+| `heart_expiry_today` | "🔥 오늘 자정에 하트 만료!" | 당일 |
+| `attendance_remind` | "📅 출석 체크를 잊지 마세요" | 오후 6시 |
+| `purchase_complete` | "💎 다이아 충전 완료!" | 구매 직후 |
 
-### 알림 발송
+### 만료 알림 Cron
 
 ```typescript
-// Firestore에 알림 문서 추가
-await db.collection('notifications').add({
-  userId: 'abc123',
-  type: 'finance',
-  title: '칩 만료 7일 전 알림',
-  message: '50개의 빨간칩이 7일 후 만료됩니다.',
-  isRead: false,
-  createdAt: FieldValue.serverTimestamp(),
-});
+// 하트 만료 7일 전 알림 (매일 09:00)
+export const heartExpiry7Days = functions
+  .region('asia-northeast3')
+  .pubsub.schedule('0 9 * * *')
+  .timeZone('Asia/Seoul')
+  .onRun(async () => {
+    const targetDate = addDays(new Date(), 7);
 
-// 프론트엔드에서 실시간 구독
-const unsubscribe = onSnapshot(
-  query(
-    collection(db, 'notifications'),
-    where('userId', '==', currentUser.uid),
-    orderBy('createdAt', 'desc')
-  ),
-  (snapshot) => {
-    const notifications = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    setNotifications(notifications);
-  }
-);
+    // 7일 후 만료되는 하트 배치 조회
+    const batchesSnapshot = await db.collectionGroup('heartBatches')
+      .where('expiresAt', '>=', startOfDay(targetDate))
+      .where('expiresAt', '<=', endOfDay(targetDate))
+      .where('remainingAmount', '>', 0)
+      .get();
+
+    // 사용자별로 그룹화
+    const userHearts = new Map<string, number>();
+    batchesSnapshot.forEach((doc) => {
+      const userId = doc.ref.path.split('/')[1];
+      const remaining = doc.data().remainingAmount;
+      userHearts.set(userId, (userHearts.get(userId) || 0) + remaining);
+    });
+
+    // 푸시 알림 발송
+    for (const [userId, heartCount] of userHearts) {
+      const userDoc = await db.doc(`users/${userId}`).get();
+      const fcmToken = userDoc.data()?.fcmToken;
+
+      if (fcmToken) {
+        await admin.messaging().send({
+          token: fcmToken,
+          notification: {
+            title: '⏰ 하트 만료 예정',
+            body: `💖 하트 ${heartCount}개가 7일 후 만료됩니다. 지금 공고에 지원하세요!`,
+          },
+          data: {
+            type: 'heart_expiry_7d',
+            action: 'open_job_board',
+          },
+        });
+      }
+    }
+  });
 ```
 
 ---
@@ -1090,53 +920,84 @@ const unsubscribe = onSnapshot(
 
 ### 1. 환경 변수 설정
 
-#### Frontend (.env.local)
-```bash
-# 토스페이먼츠 Client Key
-REACT_APP_TOSS_CLIENT_KEY=test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq
+#### Mobile App (.env)
 
-# Firebase Config (자동 생성됨)
-REACT_APP_FIREBASE_API_KEY=...
+```bash
+# RevenueCat API Keys
+EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=appl_xxxxx
+EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID=goog_xxxxx
 ```
 
-#### Backend (Firebase Functions Config)
+#### Firebase Functions Config
+
 ```bash
-# 토스페이먼츠 Secret Key 설정
-firebase functions:config:set toss.secret_key="test_sk_zXLkKEypNArWmo50nX3lmeaxYG5R"
+# RevenueCat Webhook Secret
+firebase functions:config:set revenuecat.webhook_secret="your_webhook_secret"
 
 # 확인
 firebase functions:config:get
 ```
 
-### 2. Cloud Scheduler 배포
+### 2. RevenueCat 설정
+
+```yaml
+1. RevenueCat 계정 생성
+   - https://app.revenuecat.com/
+
+2. App Store Connect 연동
+   - API Key 생성
+   - Shared Secret 입력
+   - In-App Purchase 상품 등록 (4개)
+
+3. Google Play Console 연동
+   - Service Account JSON 업로드
+   - In-App Product 등록 (4개)
+
+4. Webhook 설정
+   - URL: https://asia-northeast3-{project}.cloudfunctions.net/revenueCatWebhook
+   - Events: INITIAL_PURCHASE, RENEWAL, CANCELLATION, REFUND
+
+5. Offerings 설정
+   - default offering 생성
+   - 4개 패키지 추가
+```
+
+### 3. Cloud Scheduler 배포
 
 ```bash
-# 칩 만료 처리 (매일 00:00)
-gcloud scheduler jobs create pubsub expireChips \
+# 하트 만료 정리 (매일 00:00)
+gcloud scheduler jobs create pubsub cleanupExpiredHearts \
   --schedule="0 0 * * *" \
   --time-zone="Asia/Seoul" \
-  --topic="expire-chips" \
+  --topic="cleanup-expired-hearts" \
   --message-body="{}"
 
-# 칩 만료 알림 (매일 09:00)
-gcloud scheduler jobs create pubsub chipExpiryNotification \
+# 하트 만료 7일 전 알림 (매일 09:00)
+gcloud scheduler jobs create pubsub heartExpiry7Days \
   --schedule="0 9 * * *" \
   --time-zone="Asia/Seoul" \
-  --topic="chip-expiry-notification" \
+  --topic="heart-expiry-7days" \
   --message-body="{}"
 
-# 월 칩 지급 (매월 1일 00:00)
-gcloud scheduler jobs create pubsub grantMonthlyBlueChips \
-  --schedule="0 0 1 * *" \
+# 하트 만료 3일 전 알림 (매일 09:00)
+gcloud scheduler jobs create pubsub heartExpiry3Days \
+  --schedule="0 9 * * *" \
   --time-zone="Asia/Seoul" \
-  --topic="grant-monthly-blue-chips" \
+  --topic="heart-expiry-3days" \
+  --message-body="{}"
+
+# 하트 만료 당일 알림 (매일 09:00)
+gcloud scheduler jobs create pubsub heartExpiryToday \
+  --schedule="0 9 * * *" \
+  --time-zone="Asia/Seoul" \
+  --topic="heart-expiry-today" \
   --message-body="{}"
 
 # 확인
 gcloud scheduler jobs list
 ```
 
-### 3. Functions 배포
+### 4. Functions 배포
 
 ```bash
 cd functions
@@ -1151,136 +1012,183 @@ npm run lint
 npm run deploy
 
 # 특정 함수만 배포
-firebase deploy --only functions:confirmPayment
-firebase deploy --only functions:refundPayment
-firebase deploy --only functions:expireChips
+firebase deploy --only functions:deductPoints
+firebase deploy --only functions:grantDiamonds
+firebase deploy --only functions:checkDailyAttendance
+firebase deploy --only functions:revenueCatWebhook
 ```
 
-### 4. Firestore Security Rules 배포
+### 5. Firestore Security Rules 배포
 
 ```bash
 firebase deploy --only firestore:rules
 ```
 
-### 5. Frontend 배포
+### 6. Mobile App 배포
 
 ```bash
-cd app2
+cd uniqn-mobile
 
-# 빌드
-npm run build
+# iOS 빌드
+eas build --platform ios
 
-# 배포
-firebase deploy --only hosting
+# Android 빌드
+eas build --platform android
+
+# TestFlight / 내부 테스트 배포
+eas submit --platform ios
+eas submit --platform android
 ```
 
 ---
 
 ## 🛠️ 문제 해결
 
-### 1. 결제 승인 실패
+### 1. 다이아 지급 안 됨
 
-**증상**: `confirmPayment` 호출 시 에러
+**증상**: RevenueCat 결제 완료 후 다이아 미지급
 
 **원인**:
-- 토스페이먼츠 Secret Key 미설정
-- 금액 불일치
-- 중복 결제
+- Webhook URL 미설정
+- Webhook Secret 불일치
+- Functions 에러
 
 **해결**:
 ```bash
-# 1. Secret Key 확인
-firebase functions:config:get toss.secret_key
+# 1. Webhook 설정 확인 (RevenueCat 대시보드)
 
 # 2. Functions 로그 확인
-firebase functions:log --only confirmPayment
+firebase functions:log --only revenueCatWebhook
 
-# 3. 로컬 테스트
-cd functions
-npm run serve
+# 3. 수동 다이아 지급 (관리자)
+# Admin Dashboard에서 수동 지급
 ```
 
-### 2. 칩 지급 안 됨
+### 2. 하트 만료 처리 안 됨
 
-**증상**: 결제 완료 후 칩 잔액 변화 없음
-
-**원인**:
-- Firestore 트랜잭션 실패
-- 권한 부족
-
-**해결**:
-```typescript
-// ChipBalance 컴포넌트에서 강제 새로고침
-const refreshBalance = async () => {
-  await loadChipBalance();
-};
-```
-
-### 3. 환불 실패
-
-**증상**: `approveRefund` 호출 시 에러
+**증상**: 만료된 하트가 여전히 표시됨
 
 **원인**:
-- 토스페이먼츠 API 호출 실패
-- 칩 부족 (회수 불가)
+- Cloud Scheduler Job 미작동
+- cleanupExpiredHearts 에러
 
 **해결**:
 ```bash
-# 로그 확인
-firebase functions:log --only approveRefund
-
-# 수동 칩 차감
-# ChipManagementPage에서 "칩 차감" 기능 사용
-```
-
-### 4. Cloud Scheduler 미작동
-
-**증상**: 칩 만료 처리가 자동 실행되지 않음
-
-**원인**:
-- Cloud Scheduler Job 미생성
-- Pub/Sub 토픽 미생성
-
-**해결**:
-```bash
-# Job 확인
+# 1. Job 확인
 gcloud scheduler jobs list
 
-# Job 재생성
-gcloud scheduler jobs delete expireChips
-gcloud scheduler jobs create pubsub expireChips \
-  --schedule="0 0 * * *" \
-  --time-zone="Asia/Seoul" \
-  --topic="expire-chips" \
-  --message-body="{}"
+# 2. 수동 실행
+gcloud scheduler jobs run cleanupExpiredHearts
 
-# 수동 실행 테스트
-gcloud scheduler jobs run expireChips
+# 3. 로그 확인
+firebase functions:log --only cleanupExpiredHearts
 ```
 
-### 5. 전화번호 인증 코드 미발송
+### 3. 출석 체크 실패
 
-**증상**: SMS 미수신
+**증상**: 출석 버튼 클릭해도 반응 없음
 
 **원인**:
-- Twilio/AWS SNS 미연동 ⚠️ **[PENDING]** 실제 SMS 서비스 연동 필요
+- 네트워크 에러
+- 이미 오늘 출석함
+- Functions 에러
 
 **해결**:
 ```typescript
-// 개발 환경에서는 응답에 코드 포함됨
-const result = await sendPhoneVerificationCode({ phoneNumber, userId });
-console.log('개발 환경 인증 코드:', result.data.code);
+// 에러 처리 개선
+try {
+  const result = await checkDailyAttendance();
+  if (result.data.success) {
+    toast.success(result.data.message);
+  } else {
+    toast.info(result.data.message); // 이미 출석한 경우
+  }
+} catch (error) {
+  if (error.code === 'already-exists') {
+    toast.info('이미 오늘 출석했습니다.');
+  } else {
+    toast.error('출석 체크 중 오류가 발생했습니다.');
+  }
+}
+```
+
+### 4. 포인트 차감 실패
+
+**증상**: 공고 등록 시 "포인트 부족" 에러
+
+**원인**:
+- 실제 포인트 부족
+- 하트 배치 조회 실패
+- 트랜잭션 충돌
+
+**해결**:
+```typescript
+// 포인트 부족 사전 확인
+const { canAfford } = usePointStore();
+
+if (!canAfford(postingCost)) {
+  toast.error('포인트가 부족합니다. 다이아를 충전해주세요.');
+  router.push('/points/purchase');
+  return;
+}
+```
+
+### 5. RevenueCat 초기화 실패
+
+**증상**: "RevenueCat 초기화 실패" 에러
+
+**원인**:
+- API Key 미설정
+- 잘못된 API Key
+
+**해결**:
+```typescript
+// 1. .env 파일 확인
+EXPO_PUBLIC_REVENUECAT_API_KEY_IOS=appl_xxxxx
+EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID=goog_xxxxx
+
+// 2. 초기화 코드 확인
+const API_KEY = Platform.select({
+  ios: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_IOS,
+  android: process.env.EXPO_PUBLIC_REVENUECAT_API_KEY_ANDROID,
+});
+
+if (!API_KEY) {
+  logger.error('RevenueCat API Key가 설정되지 않았습니다');
+}
 ```
 
 ---
 
-## 📝 추가 문서
+## 📝 무료 기간 정책
 
-- [API_REFERENCE.md](../../reference/API_REFERENCE.md) - API 명세서
-- [SECURITY.md](../../operations/SECURITY.md) - 보안 가이드
+```yaml
+무료 기간: 2026년 7월 1일까지 (6개월)
+정책:
+  - 모든 공고 비용 0다이아
+  - 하트 획득 시스템 정상 운영
+  - 다이아 충전 UI 표시 (선결제 가능)
+  - 7/1 이후 자동으로 과금 시작
+
+구현:
+  const FREE_PERIOD_END = new Date('2026-07-01T00:00:00+09:00');
+  const isFreePeriod = () => new Date() < FREE_PERIOD_END;
+
+  const getPostingCost = (type: PostingType) => {
+    if (isFreePeriod()) return 0;
+    return JOB_POSTING_COSTS[type];
+  };
+```
 
 ---
 
-**마지막 업데이트**: 2025-01-24
-**버전**: 1.0.0
-**작성자**: Claude (AI)
+## 📚 추가 문서
+
+- [MODEL_B_CHIP_SYSTEM_FINAL.md](./MODEL_B_CHIP_SYSTEM_FINAL.md) - 포인트 시스템 마스터 문서
+- [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](./CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) - 구현 가이드
+- [REVENUE_MODEL_ANALYSIS.md](./REVENUE_MODEL_ANALYSIS.md) - 수익 분석
+
+---
+
+**마지막 업데이트**: 2025-02-01
+**버전**: v1.0.0 (Heart/Diamond Point System)

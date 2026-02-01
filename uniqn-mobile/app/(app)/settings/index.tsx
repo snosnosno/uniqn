@@ -308,6 +308,12 @@ export default function SettingsScreen() {
             label="개인정보처리방침"
             onPress={() => router.push('/(app)/settings/privacy')}
           />
+          <Divider spacing="sm" />
+          <SettingItem
+            icon={<View className="h-[22px] w-[22px]" />}
+            label="사업자정보"
+            onPress={() => router.push('/(app)/settings/business-info')}
+          />
           {isAuthenticated && (
             <>
               <Divider spacing="sm" />

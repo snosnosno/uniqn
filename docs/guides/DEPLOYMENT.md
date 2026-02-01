@@ -1,11 +1,18 @@
 # 🚀 T-HOLDEM 배포 가이드
 
-**최종 업데이트**: 2025년 11월 27일
-**상태**: 🚀 **Production Ready 100% 완성**
-**버전**: v0.2.4 (Production Ready + 구인공고 4타입)
+**최종 업데이트**: 2026년 2월 1일
+**상태**: 🚀 **Production Ready**
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 
-> [!SUCCESS]
-> **성과**: 실제 배포된 Production 환경을 기반으로 작성되었습니다. 278KB 번들 크기, 92% 캐시 효율, Web Worker 급여 계산, 국제화 지원 등 모든 고급 기능이 실제 운영 중입니다.
+> **참고**: 이 문서는 레거시 웹앱(app2/) 및 Firebase 배포 가이드입니다.
+> 모바일앱(uniqn-mobile/) 빌드 및 배포는 [CLAUDE.md](../../CLAUDE.md)의 "개발 명령어" 섹션을 참조하세요.
+>
+> **모바일앱 배포 명령어**:
+> ```bash
+> cd uniqn-mobile
+> eas build --platform ios     # iOS 빌드
+> eas build --platform android # Android 빌드
+> ```
 
 ## 📋 목차
 
