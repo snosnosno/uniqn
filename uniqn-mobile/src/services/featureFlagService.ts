@@ -4,13 +4,16 @@
  * @description Firebase Remote Config 기반 Feature Flag 관리
  * @version 1.0.0
  *
+ * 현재 상태: Firebase Remote Config 연동 완료
+ * - 웹: Firebase Remote Config 사용
+ * - 네이티브: 기본값 폴백 (EAS Build 후 활성화)
+ *
  * 기능:
- * - Feature Flag 조회 및 캐싱
+ * - Feature Flag 조회 및 캐싱 (12시간)
  * - 기본값 폴백 처리
- * - 실시간 업데이트 지원
  * - 타입 안전한 Feature Flag 접근
  *
- * TODO [출시 전]: Firebase Remote Config 실제 연동
+ * @see lib/firebase.ts - fetchAndActivateRemoteConfig, getRemoteConfigBoolean
  */
 
 import { logger } from '@/utils/logger';

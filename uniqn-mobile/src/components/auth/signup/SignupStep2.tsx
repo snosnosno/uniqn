@@ -83,9 +83,9 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
     setError(null);
 
     try {
-      // TODO: 실제 본인인증 SDK 연동
-      // - PASS: react-native-nice-pass 또는 WebView
-      // - Kakao: 카카오 본인인증 SDK
+      // 현재: 모의 인증 (개발용)
+      // 실제 연동 시: PASS 또는 카카오 본인인증 SDK 구현 필요
+      // @see IdentityVerification.tsx
 
       // 임시: 모의 본인인증 결과 (개발용)
       await new Promise((resolve) => setTimeout(resolve, 1500));

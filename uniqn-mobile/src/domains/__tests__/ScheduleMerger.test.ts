@@ -1,10 +1,8 @@
 /**
  * ScheduleMerger 테스트
  *
- * @description Phase 5 - 스케줄 병합 로직 분리
+ * @description 스케줄 병합 로직 테스트
  * WorkLog + Application 병합, 중복 제거, 그룹핑 테스트
- *
- * Phase 2: eventId → jobPostingId 정규화 완료
  */
 
 import { ScheduleMerger } from '../schedule/ScheduleMerger';

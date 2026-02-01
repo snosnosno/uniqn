@@ -34,13 +34,16 @@ export { sendSystemAnnouncement } from './notifications/sendSystemAnnouncement';
 export { onApplicationSubmitted } from './notifications/onApplicationSubmitted';
 export { onApplicationStatusChanged } from './notifications/onApplicationStatusChanged';
 export { onWorkTimeChanged } from './notifications/onWorkTimeChanged';
-export { broadcastNewJobPosting } from './notifications/broadcastNewJobPosting';
 export { onScheduleCreated, onScheduleCancelled } from './notifications/onScheduleChanged';
 export { onCheckInOut } from './notifications/onCheckInOut';
 export { onJobPostingUpdated } from './notifications/onJobPostingUpdated';
 export { onJobPostingCancelled } from './notifications/onJobPostingCancelled';
 export { onNoShow } from './notifications/onNoShow';
 export { onSettlementCompleted } from './notifications/onSettlementCompleted';
+export { onJobPostingClosed } from './notifications/onJobPostingClosed';
+export { onReportCreated } from './notifications/onReportCreated';
+export { onInquiryCreated } from './notifications/onInquiryCreated';
+export { onTournamentPostingCreated } from './notifications/onTournamentPostingCreated';
 
 // --- Account Management Functions ---
 export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';

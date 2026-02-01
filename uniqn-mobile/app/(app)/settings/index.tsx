@@ -3,6 +3,7 @@
  * 설정 메인 화면
  */
 
+import { useState } from 'react';
 import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -13,11 +14,11 @@ import {
   LockIcon,
   ChevronRightIcon,
   TrashIcon,
-  ShieldCheckIcon,
-  DocumentIcon,
 } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
+import { useAuthStore } from '@/stores/authStore';
+import { useToastStore } from '@/stores/toastStore';
 import {
   useNotificationSettingsQuery,
   useSaveNotificationSettings,
@@ -25,6 +26,8 @@ import {
 import { useAuth } from '@/hooks/useAuth';
 import { useClearCache } from '@/hooks/useClearCache';
 import { useAutoLogin, useBiometricAuth } from '@/hooks';
+import { updateMarketingConsent } from '@/services/authService';
+import { logger } from '@/utils/logger';
 
 // 태양 아이콘 (다크모드용)
 const SunIcon = ({ size = 24, color = '#6B7280' }: { size?: number; color?: string }) => (
@@ -69,10 +72,15 @@ function SettingItem({ icon, label, value, onPress, rightElement }: SettingItemP
 }
 
 export default function SettingsScreen() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, profile, user } = useAuth();
 
   // 테마 설정
   const { isDarkMode, setTheme } = useThemeStore();
+
+  // 마케팅 동의 상태
+  const [isMarketingUpdating, setIsMarketingUpdating] = useState(false);
+  const setProfile = useAuthStore((state) => state.setProfile);
+  const addToast = useToastStore((state) => state.addToast);
 
   // 모달 스토어
   const { showConfirm } = useModalStore();
@@ -137,6 +145,36 @@ export default function SettingsScreen() {
     );
   };
 
+  // 마케팅 정보 수신 토글 핸들러
+  const handleMarketingConsentChange = async (value: boolean) => {
+    if (!user?.uid || !profile) return;
+
+    setIsMarketingUpdating(true);
+    try {
+      await updateMarketingConsent(user.uid, value);
+
+      // 로컬 상태 업데이트
+      setProfile({
+        ...profile,
+        marketingAgreed: value,
+        updatedAt: new Date(),
+      });
+
+      addToast({
+        type: 'success',
+        message: value ? '마케팅 수신에 동의했습니다.' : '마케팅 수신 동의를 철회했습니다.',
+      });
+    } catch (error) {
+      logger.error('마케팅 동의 업데이트 실패', error as Error);
+      addToast({
+        type: 'error',
+        message: '동의 상태 변경에 실패했습니다.',
+      });
+    } finally {
+      setIsMarketingUpdating(false);
+    }
+  };
+
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
@@ -165,18 +203,6 @@ export default function SettingsScreen() {
           <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
             계정
           </Text>
-          <SettingItem
-            icon={<ShieldCheckIcon size={22} color="#6B7280" />}
-            label="본인인증"
-            onPress={() => router.push('/(app)/settings/identity-verification')}
-          />
-          <Divider spacing="sm" />
-          <SettingItem
-            icon={<DocumentIcon size={22} color="#6B7280" />}
-            label="동의 정보 관리"
-            onPress={() => router.push('/(app)/settings/consent-management')}
-          />
-          <Divider spacing="sm" />
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"
@@ -282,6 +308,24 @@ export default function SettingsScreen() {
             label="개인정보처리방침"
             onPress={() => router.push('/(app)/settings/privacy')}
           />
+          {isAuthenticated && (
+            <>
+              <Divider spacing="sm" />
+              <SettingItem
+                icon={<BellIcon size={22} color="#6B7280" />}
+                label="마케팅 정보 수신"
+                rightElement={
+                  <Switch
+                    value={profile?.marketingAgreed ?? false}
+                    onValueChange={handleMarketingConsentChange}
+                    disabled={isMarketingUpdating}
+                    trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
+                    thumbColor={profile?.marketingAgreed ? '#3B82F6' : '#f4f3f4'}
+                  />
+                }
+              />
+            </>
+          )}
         </Card>
 
         {/* 위험 영역 - 계정 삭제 */}

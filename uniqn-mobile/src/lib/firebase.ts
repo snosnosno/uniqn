@@ -7,10 +7,13 @@
  * - 환경변수 검증 후 Firebase 초기화 수행
  * - 기존 코드와 100% 호환 (doc(db, ...), auth.currentUser 등)
  *
- * TODO [출시 전]: 환경별 Firebase 프로젝트 분리 (dev/staging/prod)
- * TODO [출시 전]: Firebase Analytics 초기화 추가
- * TODO [출시 전]: Crashlytics 초기화 추가
- * TODO [출시 전]: Firebase Performance Monitoring 추가
+ * 현재 상태:
+ * - Firebase Auth, Firestore, Storage, Functions, Remote Config: 활성
+ * - Crashlytics: Sentry로 대체됨 (@sentry/react-native)
+ *
+ * TODO [P2]: 환경별 Firebase 프로젝트 분리 (dev/staging/prod)
+ * TODO [P3]: Firebase Analytics 초기화 추가
+ * TODO [P3]: Firebase Performance Monitoring 추가
  */
 
 import { initializeApp, getApps, getApp, FirebaseApp } from 'firebase/app';

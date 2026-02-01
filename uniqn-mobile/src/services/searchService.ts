@@ -189,7 +189,7 @@ export class AlgoliaSearchProvider implements SearchProvider<JobPosting> {
   }
 
   async search(_query: string, _options?: SearchOptions): Promise<SearchResult<JobPosting>> {
-    // TODO: Algolia 검색 구현
+    // Algolia 검색 구현 예정 (P3: 검색 고도화)
     throw new Error(`Algolia 프로바이더(${this.indexName})는 아직 구현되지 않았습니다.`);
   }
 }

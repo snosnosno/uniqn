@@ -43,7 +43,7 @@ const ENV_CONFIG = {
     appName: 'UNIQN (Dev)',
     bundleIdentifier: 'com.uniqn.mobile.dev',
     androidPackage: 'com.uniqn.mobile.dev',
-    // Firebase 개발용 프로젝트 (TODO: 환경 분리 시 변경)
+    // Firebase: tholdem-ebc18 사용 (환경 분리 시 별도 프로젝트 생성 권장)
   },
   staging: {
     appName: 'UNIQN (Staging)',
@@ -91,7 +91,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       NSPhotoLibraryUsageDescription: '프로필 사진 등록을 위해 사진 라이브러리 접근이 필요합니다.',
       NSFaceIDUsageDescription: '빠른 로그인을 위해 Face ID를 사용합니다.',
     },
-    // Universal Links (TODO: 도메인 설정 후 활성화)
+    // Universal Links (uniqn.app 도메인 설정 + apple-app-site-association 파일 배포 후 활성화)
     // associatedDomains: [
     //   'applinks:uniqn.app',
     //   'webcredentials:uniqn.app',
@@ -111,7 +111,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'android.permission.CAMERA',
       'android.permission.VIBRATE',
     ],
-    // App Links (TODO: 도메인 설정 후 활성화)
+    // App Links (uniqn.app 도메인 설정 + assetlinks.json 파일 배포 후 활성화)
     // intentFilters: [
     //   {
     //     action: 'VIEW',

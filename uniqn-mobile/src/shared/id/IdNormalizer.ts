@@ -1,17 +1,12 @@
 /**
  * UNIQN Mobile - ID 정규화 유틸리티
  *
- * @description eventId/jobPostingId, staffId/applicantId 혼용 문제 해결
- * @version 1.0.0
+ * @description jobPostingId, staffId/applicantId 정규화
+ * @version 2.0.0
  *
- * ## 문제 상황
- * - WorkLog: eventId 필드 사용
- * - Application: jobPostingId 필드 사용
- * - 실제로는 같은 JobPosting ID를 가리킴
- *
- * ## 해결 방안
- * - 읽기 시: 자동 정규화 (normalizeJobId)
- * - 쓰기 시: 레거시 필드 포함 (withLegacyFields - Phase 9에서 구현)
+ * ## 역할
+ * - WorkLog/Application에서 통합 jobPostingId 추출
+ * - staffId/applicantId 정규화
  */
 
 import type { WorkLog, Application } from '@/types';
@@ -222,7 +217,7 @@ export class IdNormalizer {
   /**
    * 문서 배열에서 공고 ID 배열 추출 (중복 제거)
    *
-   * @param docs - eventId 또는 jobPostingId를 가진 문서 배열
+   * @param docs - jobPostingId를 가진 문서 배열
    * @returns 정규화된 공고 ID 배열 (중복 제거됨)
    */
   static extractJobIds(docs: JobIdDocument[]): string[] {

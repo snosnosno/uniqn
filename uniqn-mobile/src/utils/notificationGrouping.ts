@@ -45,7 +45,7 @@ function timestampToMs(ts: Timestamp | Date | undefined): number {
  * 알림에서 그룹핑 컨텍스트 키 추출
  *
  * @description 알림 타입에 따라 적절한 컨텍스트 키 반환
- * - 모든 그룹핑 가능 타입 → jobId 사용
+ * - 모든 그룹핑 가능 타입 → jobPostingId 사용
  */
 function extractContextKey(notification: NotificationData): string | null {
   const { type, data } = notification;
@@ -55,8 +55,8 @@ function extractContextKey(notification: NotificationData): string | null {
     return null;
   }
 
-  // 모든 알림 타입에서 jobId 사용 (통합)
-  return data?.jobId || null;
+  // 모든 알림 타입에서 jobPostingId 사용 (통합)
+  return data?.jobPostingId || null;
 }
 
 /**
@@ -127,7 +127,7 @@ function extractGroupContext(
   if (!firstNotification) return {};
 
   return {
-    jobId: firstNotification.data?.jobId,
+    jobPostingId: firstNotification.data?.jobPostingId,
     jobTitle: firstNotification.data?.jobTitle,
   };
 }

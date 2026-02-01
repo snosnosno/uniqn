@@ -29,12 +29,20 @@ export const NotificationType = {
   CONFIRMATION_CANCELLED: 'confirmation_cancelled',
   /** 거절됨 */
   APPLICATION_REJECTED: 'application_rejected',
+  /** 취소 요청 승인됨 (지원자에게) */
+  CANCELLATION_APPROVED: 'cancellation_approved',
+  /** 취소 요청 거절됨 (지원자에게) */
+  CANCELLATION_REJECTED: 'cancellation_rejected',
 
   // === 출퇴근/스케줄 관련 ===
   /** 출근 체크인 알림 (구인자에게) */
   STAFF_CHECKED_IN: 'staff_checked_in',
   /** 퇴근 체크아웃 알림 (구인자에게) */
   STAFF_CHECKED_OUT: 'staff_checked_out',
+  /** 출근 확인 알림 (스태프 본인에게) */
+  CHECK_IN_CONFIRMED: 'check_in_confirmed',
+  /** 퇴근 확인 알림 (스태프 본인에게) */
+  CHECK_OUT_CONFIRMED: 'check_out_confirmed',
   /** 출근 리마인더 (스태프에게) */
   CHECKIN_REMINDER: 'checkin_reminder',
   /** 노쇼 알림 */
@@ -53,14 +61,12 @@ export const NotificationType = {
   SETTLEMENT_REQUESTED: 'settlement_requested',
 
   // === 공고 관련 ===
-  /** 공고 마감 임박 */
-  JOB_CLOSING_SOON: 'job_closing_soon',
-  /** 새 공고 (관심 지역) */
-  NEW_JOB_IN_AREA: 'new_job_in_area',
   /** 공고 수정됨 */
   JOB_UPDATED: 'job_updated',
   /** 공고 취소됨 */
   JOB_CANCELLED: 'job_cancelled',
+  /** 공고 마감됨 */
+  JOB_CLOSED: 'job_closed',
 
   // === 시스템 ===
   /** 공지사항 */
@@ -75,6 +81,12 @@ export const NotificationType = {
   INQUIRY_ANSWERED: 'inquiry_answered',
   /** 신고 처리 완료 */
   REPORT_RESOLVED: 'report_resolved',
+  /** 새로운 신고 접수 (관리자에게) */
+  NEW_REPORT: 'new_report',
+  /** 새로운 문의 접수 (관리자에게) */
+  NEW_INQUIRY: 'new_inquiry',
+  /** 대회공고 승인 요청 (관리자에게) */
+  TOURNAMENT_APPROVAL_REQUEST: 'tournament_approval_request',
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
@@ -110,10 +122,14 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.APPLICATION_CONFIRMED]: NotificationCategory.APPLICATION,
   [NotificationType.CONFIRMATION_CANCELLED]: NotificationCategory.APPLICATION,
   [NotificationType.APPLICATION_REJECTED]: NotificationCategory.APPLICATION,
+  [NotificationType.CANCELLATION_APPROVED]: NotificationCategory.APPLICATION,
+  [NotificationType.CANCELLATION_REJECTED]: NotificationCategory.APPLICATION,
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: NotificationCategory.ATTENDANCE,
   [NotificationType.STAFF_CHECKED_OUT]: NotificationCategory.ATTENDANCE,
+  [NotificationType.CHECK_IN_CONFIRMED]: NotificationCategory.ATTENDANCE,
+  [NotificationType.CHECK_OUT_CONFIRMED]: NotificationCategory.ATTENDANCE,
   [NotificationType.CHECKIN_REMINDER]: NotificationCategory.ATTENDANCE,
   [NotificationType.NO_SHOW_ALERT]: NotificationCategory.ATTENDANCE,
   [NotificationType.SCHEDULE_CHANGE]: NotificationCategory.ATTENDANCE,
@@ -125,10 +141,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.SETTLEMENT_REQUESTED]: NotificationCategory.SETTLEMENT,
 
   // 공고 관련
-  [NotificationType.JOB_CLOSING_SOON]: NotificationCategory.JOB,
-  [NotificationType.NEW_JOB_IN_AREA]: NotificationCategory.JOB,
   [NotificationType.JOB_UPDATED]: NotificationCategory.JOB,
   [NotificationType.JOB_CANCELLED]: NotificationCategory.JOB,
+  [NotificationType.JOB_CLOSED]: NotificationCategory.JOB,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: NotificationCategory.SYSTEM,
@@ -138,6 +153,9 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: NotificationCategory.ADMIN,
   [NotificationType.REPORT_RESOLVED]: NotificationCategory.ADMIN,
+  [NotificationType.NEW_REPORT]: NotificationCategory.ADMIN,
+  [NotificationType.NEW_INQUIRY]: NotificationCategory.ADMIN,
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: NotificationCategory.ADMIN,
 };
 
 // ============================================================================
@@ -159,10 +177,14 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.APPLICATION_CONFIRMED]: 'high',
   [NotificationType.CONFIRMATION_CANCELLED]: 'high',
   [NotificationType.APPLICATION_REJECTED]: 'normal',
+  [NotificationType.CANCELLATION_APPROVED]: 'normal',
+  [NotificationType.CANCELLATION_REJECTED]: 'high',
 
   // 출퇴근/스케줄 관련 - 리마인더/노쇼는 urgent
   [NotificationType.STAFF_CHECKED_IN]: 'normal',
   [NotificationType.STAFF_CHECKED_OUT]: 'normal',
+  [NotificationType.CHECK_IN_CONFIRMED]: 'normal',
+  [NotificationType.CHECK_OUT_CONFIRMED]: 'normal',
   [NotificationType.CHECKIN_REMINDER]: 'urgent',
   [NotificationType.NO_SHOW_ALERT]: 'urgent',
   [NotificationType.SCHEDULE_CHANGE]: 'high',
@@ -174,10 +196,9 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.SETTLEMENT_REQUESTED]: 'normal',
 
   // 공고 관련
-  [NotificationType.JOB_CLOSING_SOON]: 'normal',
-  [NotificationType.NEW_JOB_IN_AREA]: 'low',
   [NotificationType.JOB_UPDATED]: 'low',
   [NotificationType.JOB_CANCELLED]: 'high',
+  [NotificationType.JOB_CLOSED]: 'normal',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: 'normal',
@@ -187,6 +208,9 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: 'normal',
   [NotificationType.REPORT_RESOLVED]: 'normal',
+  [NotificationType.NEW_REPORT]: 'high',
+  [NotificationType.NEW_INQUIRY]: 'normal',
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: 'high',
 };
 
 // ============================================================================
@@ -249,6 +273,15 @@ export interface NotificationSettings {
     start: string; // "22:00"
     end: string; // "08:00"
   };
+  /** 알림 그룹화 설정 */
+  grouping?: {
+    /** 그룹화 활성화 여부 (기본: true) */
+    enabled: boolean;
+    /** 최소 그룹 크기 (기본: 2) */
+    minGroupSize: number;
+    /** 그룹화 시간 윈도우 (시간 단위, 기본: 24) */
+    timeWindowHours: number;
+  };
   /** 업데이트 시간 */
   updatedAt?: Timestamp;
 }
@@ -301,10 +334,14 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.APPLICATION_CONFIRMED]: AndroidChannelId.APPLICATIONS,
   [NotificationType.CONFIRMATION_CANCELLED]: AndroidChannelId.APPLICATIONS,
   [NotificationType.APPLICATION_REJECTED]: AndroidChannelId.APPLICATIONS,
+  [NotificationType.CANCELLATION_APPROVED]: AndroidChannelId.APPLICATIONS,
+  [NotificationType.CANCELLATION_REJECTED]: AndroidChannelId.APPLICATIONS,
 
   // 출퇴근/스케줄 관련
-  [NotificationType.STAFF_CHECKED_IN]: AndroidChannelId.DEFAULT,
-  [NotificationType.STAFF_CHECKED_OUT]: AndroidChannelId.DEFAULT,
+  [NotificationType.STAFF_CHECKED_IN]: AndroidChannelId.REMINDERS,
+  [NotificationType.STAFF_CHECKED_OUT]: AndroidChannelId.REMINDERS,
+  [NotificationType.CHECK_IN_CONFIRMED]: AndroidChannelId.DEFAULT,
+  [NotificationType.CHECK_OUT_CONFIRMED]: AndroidChannelId.DEFAULT,
   [NotificationType.CHECKIN_REMINDER]: AndroidChannelId.REMINDERS,
   [NotificationType.NO_SHOW_ALERT]: AndroidChannelId.REMINDERS,
   [NotificationType.SCHEDULE_CHANGE]: AndroidChannelId.REMINDERS,
@@ -316,10 +353,9 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.SETTLEMENT_REQUESTED]: AndroidChannelId.SETTLEMENT,
 
   // 공고 관련
-  [NotificationType.JOB_CLOSING_SOON]: AndroidChannelId.DEFAULT,
-  [NotificationType.NEW_JOB_IN_AREA]: AndroidChannelId.DEFAULT,
-  [NotificationType.JOB_UPDATED]: AndroidChannelId.DEFAULT,
-  [NotificationType.JOB_CANCELLED]: AndroidChannelId.DEFAULT,
+  [NotificationType.JOB_UPDATED]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.JOB_CANCELLED]: AndroidChannelId.ANNOUNCEMENTS,
+  [NotificationType.JOB_CLOSED]: AndroidChannelId.ANNOUNCEMENTS,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: AndroidChannelId.ANNOUNCEMENTS,
@@ -329,6 +365,9 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: AndroidChannelId.DEFAULT,
   [NotificationType.REPORT_RESOLVED]: AndroidChannelId.DEFAULT,
+  [NotificationType.NEW_REPORT]: AndroidChannelId.DEFAULT,
+  [NotificationType.NEW_INQUIRY]: AndroidChannelId.DEFAULT,
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: AndroidChannelId.DEFAULT,
 };
 
 // ============================================================================
@@ -345,10 +384,14 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.APPLICATION_CONFIRMED]: '지원 확정',
   [NotificationType.CONFIRMATION_CANCELLED]: '확정 취소',
   [NotificationType.APPLICATION_REJECTED]: '지원 거절',
+  [NotificationType.CANCELLATION_APPROVED]: '취소 승인',
+  [NotificationType.CANCELLATION_REJECTED]: '취소 거절',
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: '출근 알림',
   [NotificationType.STAFF_CHECKED_OUT]: '퇴근 알림',
+  [NotificationType.CHECK_IN_CONFIRMED]: '출근 확인',
+  [NotificationType.CHECK_OUT_CONFIRMED]: '퇴근 확인',
   [NotificationType.CHECKIN_REMINDER]: '출근 리마인더',
   [NotificationType.NO_SHOW_ALERT]: '노쇼 알림',
   [NotificationType.SCHEDULE_CHANGE]: '근무 시간 변경',
@@ -360,10 +403,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.SETTLEMENT_REQUESTED]: '정산 요청',
 
   // 공고 관련
-  [NotificationType.JOB_CLOSING_SOON]: '공고 마감 임박',
-  [NotificationType.NEW_JOB_IN_AREA]: '새 공고',
   [NotificationType.JOB_UPDATED]: '공고 수정',
   [NotificationType.JOB_CANCELLED]: '공고 취소',
+  [NotificationType.JOB_CLOSED]: '공고 마감',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: '공지사항',
@@ -373,6 +415,9 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: '문의 답변',
   [NotificationType.REPORT_RESOLVED]: '신고 처리 완료',
+  [NotificationType.NEW_REPORT]: '새 신고',
+  [NotificationType.NEW_INQUIRY]: '새 문의',
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '대회 승인 요청',
 };
 
 /**
@@ -441,6 +486,11 @@ export function createDefaultNotificationSettings(): NotificationSettings {
       start: '22:00',
       end: '08:00',
     },
+    grouping: {
+      enabled: true,
+      minGroupSize: 2,
+      timeWindowHours: 24,
+    },
   };
 }
 
@@ -451,7 +501,7 @@ export function createDefaultNotificationSettings(): NotificationSettings {
 /**
  * 그룹핑 가능한 알림 타입
  *
- * @description 같은 컨텍스트(jobId)에서 여러 번 발생할 수 있는 타입만 포함
+ * @description 같은 컨텍스트(jobPostingId)에서 여러 번 발생할 수 있는 타입만 포함
  */
 export const GROUPABLE_NOTIFICATION_TYPES: NotificationType[] = [
   NotificationType.NEW_APPLICATION,
@@ -471,7 +521,7 @@ export interface GroupedNotificationData {
   type: NotificationType;
   /** 그룹핑 컨텍스트 */
   context: {
-    jobId?: string;
+    jobPostingId?: string;
     jobTitle?: string;
   };
   /** 그룹 내 알림 목록 (최신순 정렬) */

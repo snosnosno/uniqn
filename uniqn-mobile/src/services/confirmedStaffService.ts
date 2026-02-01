@@ -569,8 +569,6 @@ export function subscribeToConfirmedStaff(
   logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
   const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-  // NOTE: 새 데이터는 jobPostingId와 eventId 둘 다 저장됨
-  // 기존 eventId만 있는 데이터는 마이그레이션 필요
   const q = query(
     workLogsRef,
     where('jobPostingId', '==', jobPostingId),

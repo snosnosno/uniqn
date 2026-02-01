@@ -116,39 +116,55 @@ export interface NotificationChannel {
 
 /**
  * 기본 알림 채널 (Android)
+ *
+ * @description notification.ts의 AndroidChannelId와 일치해야 함
+ * - default: 기본 알림
+ * - applications: 지원 관련 알림
+ * - reminders: 출퇴근, 스케줄 리마인더
+ * - settlement: 정산 관련 알림
+ * - announcements: 공지, 시스템 알림
  */
 export const DEFAULT_CHANNELS: NotificationChannel[] = [
   {
-    id: 'schedule',
-    name: '스케줄 알림',
-    description: '스케줄 변경, 확정, 취소 관련 알림',
-    importance: 'high',
-    sound: 'default',
-    vibrate: true,
-    badge: true,
-  },
-  {
-    id: 'job',
-    name: '구인 알림',
-    description: '새 공고, 지원 결과 관련 알림',
-    importance: 'high',
-    sound: 'default',
-    vibrate: true,
-    badge: true,
-  },
-  {
-    id: 'worklog',
-    name: '근무 알림',
-    description: '출퇴근, 정산 관련 알림',
+    id: 'default',
+    name: '기본 알림',
+    description: '일반 알림',
     importance: 'default',
     sound: 'default',
     vibrate: true,
     badge: true,
   },
   {
-    id: 'system',
-    name: '시스템 알림',
-    description: '공지사항, 업데이트 알림',
+    id: 'applications',
+    name: '지원 알림',
+    description: '새 지원자, 지원 확정/거절 관련 알림',
+    importance: 'high',
+    sound: 'default',
+    vibrate: true,
+    badge: true,
+  },
+  {
+    id: 'reminders',
+    name: '출퇴근/스케줄 알림',
+    description: '출퇴근 확인, 스케줄 변경, 리마인더 알림',
+    importance: 'high',
+    sound: 'default',
+    vibrate: true,
+    badge: true,
+  },
+  {
+    id: 'settlement',
+    name: '정산 알림',
+    description: '정산 완료, 정산 요청 관련 알림',
+    importance: 'default',
+    sound: 'default',
+    vibrate: true,
+    badge: true,
+  },
+  {
+    id: 'announcements',
+    name: '공지/시스템 알림',
+    description: '공지사항, 시스템 점검, 앱 업데이트 알림',
     importance: 'default',
     sound: 'default',
     vibrate: false,
@@ -447,7 +463,7 @@ export async function getToken(): Promise<PushTokenResult | null> {
       });
 
       currentToken = expoPushToken;
-      logger.info('Expo Push Token 발급', { tokenPrefix: expoPushToken.substring(0, 20) });
+      logger.info('Expo Push Token 발급', { tokenLength: expoPushToken.length, type: 'expo' });
 
       return {
         token: expoPushToken,
@@ -459,7 +475,7 @@ export async function getToken(): Promise<PushTokenResult | null> {
     const { data: fcmToken } = await Notifications.getDevicePushTokenAsync();
 
     currentToken = fcmToken;
-    logger.info('FCM Token 발급', { tokenPrefix: fcmToken.substring(0, 20) });
+    logger.info('FCM Token 발급', { tokenLength: fcmToken.length, type: 'fcm' });
 
     return {
       token: fcmToken,

@@ -1,7 +1,7 @@
 /**
  * IdNormalizer 테스트
  *
- * @description Phase 2 - ID 정규화 테스트 (레거시 eventId/postId 제거됨)
+ * @description ID 정규화 유틸리티 테스트
  */
 
 import { IdNormalizer } from '../id/IdNormalizer';

@@ -1,21 +1,13 @@
 /**
  * UNIQN Mobile - 지원서 관련 타입 정의
  *
- * @version 3.0.0
+ * @version 3.1.0
  * @description Assignment 필수화 + confirmationHistory 이력 관리 + 취소 요청 시스템 지원
  *
- * ## v3.0 변경사항
- * - `assignments` 필드 필수화 (레거시 appliedRole, appliedDate, appliedTimeSlot 제거)
- * - `eventId` 제거 → `jobPostingId` 사용
- * - `postTitle` 제거 → `jobPostingTitle` 사용
- * - 역할 정보는 `assignments[0].roleIds[0]`에서 추출 (getPrimaryRole 헬퍼 사용)
- *
- * ## 레거시 필드 (Firestore에 존재할 수 있음, 읽기 전용)
- * - `eventId`: jobPostingId로 대체됨
- * - `postId`: jobPostingId로 대체됨
- * - `postTitle`: jobPostingTitle로 대체됨
- * - `appliedRoles`: assignments[].roleIds로 대체됨
- * - `preferredDates`: assignments[].dates로 대체됨
+ * ## 주요 필드
+ * - `jobPostingId`: 공고 ID
+ * - `jobPostingTitle`: 공고 제목
+ * - `assignments`: 역할/날짜/시간대 배열
  *
  * ## 상태 흐름
  * applied → pending → confirmed → completed

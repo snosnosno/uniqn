@@ -19,4 +19,15 @@ export {
   type LoggingConfig,
 } from './env';
 
+export {
+  getNotificationConfig,
+  generateDeepLink,
+  isValidNotificationType,
+  parseNotificationType,
+  getFCMOptions,
+  NOTIFICATION_CONFIG_MAP,
+  type NotificationTypeConfig,
+  type NotificationLinkData,
+} from './notificationConfig';
+
 export { default } from './env';

@@ -172,7 +172,7 @@ export default function EmployerRegisterScreen() {
   }, [canSubmit, isSubmitting, setProfile, toast]);
 
   // 본인인증 안내 (현재 별도 화면 없음 - 프로필에서 안내)
-  // TODO: 본인인증 전용 화면 구현 시 경로 변경
+  // 본인인증 전용 화면 구현 시 경로 변경 필요
   const handleGoToVerification = useCallback(() => {
     toast.info('회원가입 시 본인인증이 완료되어야 합니다');
     router.push('/(app)/settings/profile');

@@ -76,7 +76,7 @@ export const CONFIRMED_STAFF_STATUS_COLORS: Record<
 /**
  * 확정 스태프 정보 (WorkLog 기반)
  *
- * @description workLogs 컬렉션에서 eventId로 필터링하여 조회
+ * @description workLogs 컬렉션에서 jobPostingId로 필터링하여 조회
  */
 export interface ConfirmedStaff {
   /** WorkLog ID */

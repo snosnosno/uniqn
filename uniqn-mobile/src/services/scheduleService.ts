@@ -84,18 +84,18 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
 }
 
 /**
- * 이벤트 정보 일괄 조회 (부분 실패 허용)
+ * 공고 정보 일괄 조회 (부분 실패 허용)
  * @description JobPostingCard 전체 데이터를 반환하여 스케줄 탭에서 JobCard 사용 가능
  */
-async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string, JobPostingCardWithMeta>> {
+async function fetchJobPostingCardBatch(jobPostingIds: string[]): Promise<Map<string, JobPostingCardWithMeta>> {
   const cardMap = new Map<string, JobPostingCardWithMeta>();
 
-  if (eventIds.length === 0) {
+  if (jobPostingIds.length === 0) {
     return cardMap;
   }
 
   // Firestore whereIn 최대 30개 제한 → 청크 분할
-  const uniqueIds = [...new Set(eventIds)]; // 중복 제거
+  const uniqueIds = [...new Set(jobPostingIds)]; // 중복 제거
   const chunks: string[][] = [];
   for (let i = 0; i < uniqueIds.length; i += FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS) {
     chunks.push(uniqueIds.slice(i, i + FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS));
@@ -152,7 +152,7 @@ async function fetchJobPostingCardBatch(eventIds: string[]): Promise<Map<string,
  * WorkLogs와 Applications 스케줄을 병합하고 중복 제거
  *
  * @description Phase 5 - ScheduleMerger로 위임
- * 중복 판별 기준: 같은 eventId + 같은 date
+ * 중복 판별 기준: 같은 jobPostingId + 같은 date
  * 우선순위: workLogs > applications (확정된 WorkLog가 있으면 Application은 제외)
  */
 function mergeAndDeduplicateSchedules(
@@ -406,7 +406,7 @@ export async function getMySchedules(
     // ========================================
     // 5. 공고 정보 일괄 조회 (JobPostingCard 포함)
     // ========================================
-    // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
+    // IdNormalizer로 통합 ID 추출
     const allJobPostingIds = IdNormalizer.extractUnifiedIds(workLogs, applications);
     const jobPostingCardMap = await fetchJobPostingCardBatch(Array.from(allJobPostingIds));
 
@@ -553,7 +553,6 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
     }
 
     // 공고 정보 조회 (JobPostingCard 포함)
-    // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
     let cardInfo: JobPostingCardWithMeta | undefined;
     try {
@@ -662,7 +661,6 @@ export function subscribeToSchedules(
             );
 
             // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
-            // IdNormalizer로 통합 ID 추출 (eventId/jobPostingId 혼용 해결)
             const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
             const cardInfoMap = await fetchJobPostingCardBatch(jobPostingIds);
 

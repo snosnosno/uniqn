@@ -4,8 +4,10 @@
  * @description 알림 관리 서비스 (Firestore + Expo Notifications)
  * @version 1.0.0
  *
- * TODO [출시 전]: FCM 네이티브 통합 (EAS Build 설정 후)
- * TODO [출시 전]: 알림 그룹핑 기능 추가
+ * 현재 상태: expo-notifications 설치 완료
+ *
+ * TODO [출시 전]: EAS Build 후 실제 디바이스에서 FCM 테스트
+ * TODO [P2]: 알림 그룹핑 기능 추가 (Android Notification Channels)
  */
 
 import {
@@ -300,7 +302,8 @@ export async function saveNotificationSettings(
  * 푸시 알림 권한 확인
  *
  * @description Expo Notifications를 사용한 권한 확인
- * TODO [출시 전]: expo-notifications 설치 후 구현
+ * 현재 상태: expo-notifications 설치 완료, pushNotificationService에서 구현됨
+ * @see pushNotificationService.getPermissionStatus
  */
 export async function checkNotificationPermission(): Promise<NotificationPermissionStatus> {
   // 웹에서는 기본적으로 거부 처리
@@ -312,10 +315,8 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
     };
   }
 
-  // TODO: expo-notifications 설치 후 실제 구현
-  // import * as Notifications from 'expo-notifications';
-  // const { status } = await Notifications.getPermissionsAsync();
-
+  // pushNotificationService로 위임 (EAS Build 후 활성화)
+  // 현재는 기본값 반환
   return {
     granted: false,
     canAskAgain: true,
@@ -327,7 +328,8 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
  * 푸시 알림 권한 요청
  *
  * @description Expo Notifications를 사용한 권한 요청
- * TODO [출시 전]: expo-notifications 설치 후 구현
+ * 현재 상태: expo-notifications 설치 완료, pushNotificationService에서 구현됨
+ * @see pushNotificationService.requestPermissions
  */
 export async function requestNotificationPermission(): Promise<NotificationPermissionStatus> {
   // 웹에서는 기본적으로 거부 처리
@@ -339,10 +341,8 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
     };
   }
 
-  // TODO: expo-notifications 설치 후 실제 구현
-  // import * as Notifications from 'expo-notifications';
-  // const { status } = await Notifications.requestPermissionsAsync();
-
+  // pushNotificationService로 위임 (EAS Build 후 활성화)
+  // 현재는 기본값 반환
   logger.info('푸시 알림 권한 요청');
 
   return {

@@ -24,7 +24,6 @@ export type NotificationType =
   | 'application_rejected'
   | 'application_cancelled'
   | 'confirmation_cancelled'
-  | 'application_withdrawn'     // 지원 철회 (구인자에게)
   | 'cancellation_approved'     // 취소 요청 승인
   | 'cancellation_rejected'     // 취소 요청 거절
   | 'staff_checked_in'
@@ -38,15 +37,17 @@ export type NotificationType =
   | 'schedule_cancelled'
   | 'settlement_completed'
   | 'settlement_requested'
-  | 'job_closing_soon'
-  | 'new_job_in_area'
   | 'job_updated'
   | 'job_cancelled'
+  | 'job_closed'
   | 'announcement'
   | 'maintenance'
   | 'app_update'
   | 'inquiry_answered'
-  | 'report_resolved';
+  | 'report_resolved'
+  | 'new_report'
+  | 'new_inquiry'
+  | 'tournament_approval_request';
 
 /** 알림 카테고리 */
 export type NotificationCategory =
@@ -114,7 +115,6 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   application_rejected: 'application',
   application_cancelled: 'application',
   confirmation_cancelled: 'application',
-  application_withdrawn: 'application',
   cancellation_approved: 'application',
   cancellation_rejected: 'application',
   staff_checked_in: 'attendance',
@@ -128,15 +128,17 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   schedule_cancelled: 'attendance',
   settlement_completed: 'settlement',
   settlement_requested: 'settlement',
-  job_closing_soon: 'job',
-  new_job_in_area: 'job',
   job_updated: 'job',
   job_cancelled: 'job',
+  job_closed: 'job',
   announcement: 'system',
   maintenance: 'system',
   app_update: 'system',
   inquiry_answered: 'admin',
   report_resolved: 'admin',
+  new_report: 'admin',
+  new_inquiry: 'admin',
+  tournament_approval_request: 'admin',
 };
 
 /** 알림 타입 → Android 채널 매핑 */
@@ -146,7 +148,6 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
   application_rejected: 'applications',
   application_cancelled: 'applications',
   confirmation_cancelled: 'applications',
-  application_withdrawn: 'applications',
   cancellation_approved: 'applications',
   cancellation_rejected: 'applications',
   staff_checked_in: 'reminders',
@@ -160,15 +161,17 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
   schedule_cancelled: 'reminders',
   settlement_completed: 'settlement',
   settlement_requested: 'settlement',
-  job_closing_soon: 'announcements',
-  new_job_in_area: 'announcements',
   job_updated: 'announcements',
   job_cancelled: 'announcements',
+  job_closed: 'announcements',
   announcement: 'announcements',
   maintenance: 'announcements',
   app_update: 'announcements',
   inquiry_answered: 'default',
   report_resolved: 'default',
+  new_report: 'default',
+  new_inquiry: 'default',
+  tournament_approval_request: 'default',
 };
 
 // ============================================================================

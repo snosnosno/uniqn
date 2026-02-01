@@ -6,7 +6,6 @@
  * - applied → confirmed: 확정 알림 (지원자)
  * - confirmed → cancelled: 확정 취소 알림 (지원자)
  * - applied → rejected: 지원 거절 알림 (지원자)
- * - applied → withdrawn: 지원 철회 알림 (구인자)
  * - cancellation.status → approved: 취소 승인 알림 (지원자)
  * - cancellation.status → rejected: 취소 거절 알림 (지원자)
  *
@@ -153,14 +152,6 @@ export const onApplicationStatusChanged = functions.firestore
               after,
               jobPosting,
               applicant
-            );
-            break;
-
-          case 'withdrawn':
-            await sendWithdrawnNotification(
-              applicationId,
-              after,
-              jobPosting
             );
             break;
         }
@@ -404,98 +395,6 @@ async function sendRejectionNotification(
     }
 
     functions.logger.info('거절 알림 FCM 전송 완료', {
-      applicationId,
-      success: result.success,
-      failure: result.failure,
-    });
-  }
-}
-
-/**
- * 지원 철회 알림 전송 (구인자에게)
- */
-async function sendWithdrawnNotification(
-  applicationId: string,
-  application: ApplicationData,
-  jobPosting: JobPostingData
-): Promise<void> {
-  // 구인자에게 알림
-  if (!jobPosting.createdBy) {
-    functions.logger.warn('구인자 ID를 찾을 수 없습니다', { applicationId });
-    return;
-  }
-
-  const employerDoc = await db
-    .collection('users')
-    .doc(jobPosting.createdBy)
-    .get();
-
-  if (!employerDoc.exists) {
-    functions.logger.warn('구인자를 찾을 수 없습니다', {
-      applicationId,
-      employerId: jobPosting.createdBy,
-    });
-    return;
-  }
-
-  const employer = employerDoc.data() as UserData;
-
-  const applicantName = application.applicantName || '지원자';
-  const notificationTitle = '지원 철회 알림';
-  const notificationBody = `${applicantName}님이 '${jobPosting.title}' 지원을 철회했습니다.`;
-
-  functions.logger.info('철회 알림 전송 시작', {
-    applicationId,
-    employerId: jobPosting.createdBy,
-  });
-
-  const notificationRef = db.collection('notifications').doc();
-  const notificationId = notificationRef.id;
-
-  await notificationRef.set({
-    id: notificationId,
-    recipientId: jobPosting.createdBy,
-    type: 'application_withdrawn',
-    category: 'application',
-    priority: 'normal',
-    title: notificationTitle,
-    body: notificationBody,
-    link: `/employer/applicants/${application.eventId}`,
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: {
-      applicationId,
-      eventId: application.eventId,
-      jobPostingTitle: jobPosting.title || '',
-      applicantId: application.applicantId,
-      applicantName,
-    },
-  });
-
-  const fcmTokens = getFcmTokens(employer);
-
-  if (fcmTokens.length > 0) {
-    const result = await sendMulticast(fcmTokens, {
-      title: notificationTitle,
-      body: notificationBody,
-      data: {
-        type: 'application_withdrawn',
-        notificationId,
-        applicationId,
-        eventId: application.eventId,
-        target: `/employer/applicants/${application.eventId}`,
-      },
-      channelId: 'applications',
-      priority: 'normal',
-    });
-
-    if (result.success > 0) {
-      await notificationRef.update({
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
-    }
-
-    functions.logger.info('철회 알림 FCM 전송 완료', {
       applicationId,
       success: result.success,
       failure: result.failure,

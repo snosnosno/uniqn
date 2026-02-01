@@ -172,7 +172,7 @@ export function formatRolesDisplay(
  *
  * 그룹핑 기준:
  * 1. applicationId (같은 지원)
- * 2. eventId (같은 이벤트)
+ * 2. jobPostingId (같은 공고)
  * 3. type (같은 상태)
  * 4. timeSlot (같은 시간대)
  */

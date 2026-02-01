@@ -4,8 +4,11 @@
  * @description 구조화된 에러 처리를 위한 에러 클래스 계층
  * @version 1.0.0
  *
- * TODO [출시 전]: Crashlytics에 에러 자동 보고 연동
- * TODO [출시 전]: 에러 클래스 단위 테스트 추가
+ * 현재 상태:
+ * - Sentry 연동 완료 (@sentry/react-native, crashlyticsService.ts)
+ * - 에러 자동 보고 활성화됨
+ *
+ * TODO [P2]: 에러 클래스 단위 테스트 추가 (커버리지 향상)
  */
 
 // ============================================================================
@@ -113,6 +116,12 @@ export const ERROR_CODES = {
   BUSINESS_ALREADY_REQUESTED: 'E6043',
   BUSINESS_PREVIOUSLY_REJECTED: 'E6044',
 
+  // 알림 관련 (E6050~)
+  NOTIFICATION_PERMISSION_DENIED: 'E6050',
+  NOTIFICATION_TOKEN_FAILED: 'E6051',
+  NOTIFICATION_SEND_FAILED: 'E6052',
+  NOTIFICATION_INVALID_LINK: 'E6053',
+
   // 알 수 없는 에러 (E7xxx)
   UNKNOWN: 'E7000',
 } as const;
@@ -187,6 +196,12 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.BUSINESS_INVALID_STATE]: '현재 상태에서는 이 작업을 수행할 수 없습니다',
   [ERROR_CODES.BUSINESS_ALREADY_REQUESTED]: '이미 취소 요청이 진행 중입니다',
   [ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED]: '이전에 거절된 요청입니다',
+
+  // 알림 관련
+  [ERROR_CODES.NOTIFICATION_PERMISSION_DENIED]: '알림 권한이 필요합니다',
+  [ERROR_CODES.NOTIFICATION_TOKEN_FAILED]: '푸시 토큰 발급에 실패했습니다',
+  [ERROR_CODES.NOTIFICATION_SEND_FAILED]: '알림 전송에 실패했습니다',
+  [ERROR_CODES.NOTIFICATION_INVALID_LINK]: '유효하지 않은 알림 링크입니다',
 
   // 알 수 없는 에러
   [ERROR_CODES.UNKNOWN]: '알 수 없는 오류가 발생했습니다',

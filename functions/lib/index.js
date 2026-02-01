@@ -22,22 +22,12 @@ var __importStar = (this && this.__importStar) || function (mod) {
     __setModuleDefault(result, mod);
     return result;
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
-            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
-                t[p[i]] = s[p[i]];
-        }
-    return t;
-};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserData = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.broadcastNewJobPosting = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.cleanupRateLimitsScheduled = void 0;
+exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.cleanupRateLimitsScheduled = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -72,8 +62,6 @@ var onApplicationStatusChanged_1 = require("./notifications/onApplicationStatusC
 Object.defineProperty(exports, "onApplicationStatusChanged", { enumerable: true, get: function () { return onApplicationStatusChanged_1.onApplicationStatusChanged; } });
 var onWorkTimeChanged_1 = require("./notifications/onWorkTimeChanged");
 Object.defineProperty(exports, "onWorkTimeChanged", { enumerable: true, get: function () { return onWorkTimeChanged_1.onWorkTimeChanged; } });
-var broadcastNewJobPosting_1 = require("./notifications/broadcastNewJobPosting");
-Object.defineProperty(exports, "broadcastNewJobPosting", { enumerable: true, get: function () { return broadcastNewJobPosting_1.broadcastNewJobPosting; } });
 var onScheduleChanged_1 = require("./notifications/onScheduleChanged");
 Object.defineProperty(exports, "onScheduleCreated", { enumerable: true, get: function () { return onScheduleChanged_1.onScheduleCreated; } });
 Object.defineProperty(exports, "onScheduleCancelled", { enumerable: true, get: function () { return onScheduleChanged_1.onScheduleCancelled; } });
@@ -81,6 +69,20 @@ var onCheckInOut_1 = require("./notifications/onCheckInOut");
 Object.defineProperty(exports, "onCheckInOut", { enumerable: true, get: function () { return onCheckInOut_1.onCheckInOut; } });
 var onJobPostingUpdated_1 = require("./notifications/onJobPostingUpdated");
 Object.defineProperty(exports, "onJobPostingUpdated", { enumerable: true, get: function () { return onJobPostingUpdated_1.onJobPostingUpdated; } });
+var onJobPostingCancelled_1 = require("./notifications/onJobPostingCancelled");
+Object.defineProperty(exports, "onJobPostingCancelled", { enumerable: true, get: function () { return onJobPostingCancelled_1.onJobPostingCancelled; } });
+var onNoShow_1 = require("./notifications/onNoShow");
+Object.defineProperty(exports, "onNoShow", { enumerable: true, get: function () { return onNoShow_1.onNoShow; } });
+var onSettlementCompleted_1 = require("./notifications/onSettlementCompleted");
+Object.defineProperty(exports, "onSettlementCompleted", { enumerable: true, get: function () { return onSettlementCompleted_1.onSettlementCompleted; } });
+var onJobPostingClosed_1 = require("./notifications/onJobPostingClosed");
+Object.defineProperty(exports, "onJobPostingClosed", { enumerable: true, get: function () { return onJobPostingClosed_1.onJobPostingClosed; } });
+var onReportCreated_1 = require("./notifications/onReportCreated");
+Object.defineProperty(exports, "onReportCreated", { enumerable: true, get: function () { return onReportCreated_1.onReportCreated; } });
+var onInquiryCreated_1 = require("./notifications/onInquiryCreated");
+Object.defineProperty(exports, "onInquiryCreated", { enumerable: true, get: function () { return onInquiryCreated_1.onInquiryCreated; } });
+var onTournamentPostingCreated_1 = require("./notifications/onTournamentPostingCreated");
+Object.defineProperty(exports, "onTournamentPostingCreated", { enumerable: true, get: function () { return onTournamentPostingCreated_1.onTournamentPostingCreated; } });
 // --- Account Management Functions ---
 var scheduledDeletion_1 = require("./account/scheduledDeletion");
 Object.defineProperty(exports, "processScheduledDeletions", { enumerable: true, get: function () { return scheduledDeletion_1.processScheduledDeletions; } });
@@ -258,25 +260,40 @@ exports.requestRegistration = functions.region('asia-northeast3').https.onCall(a
         functions.logger.error("Validation failed: Missing required fields.", { data });
         throw new functions.https.HttpsError('invalid-argument', 'Missing required fields for registration.');
     }
-    if (role !== 'manager') {
+    // 웹앱에서는 employer로 가입
+    const validRoles = ['employer', 'staff'];
+    if (!validRoles.includes(role)) {
         functions.logger.error("Validation failed: Invalid role.", { role });
-        throw new functions.https.HttpsError('invalid-argument', 'Role must be "manager".');
+        throw new functions.https.HttpsError('invalid-argument', `Role must be one of: ${validRoles.join(', ')}`);
     }
     try {
-        // Combine extra profile data into a parsable JSON string.
-        const extraData = JSON.stringify(Object.assign(Object.assign(Object.assign({ role }, (phone && { phone })), (gender && { gender })), (nickname && { nickname })));
-        // Build the displayName with embedded markers for the trigger to parse.
-        // Format: "Real Name [{...extraData}]"
-        const displayNameForAuth = `${name} [${extraData}]`;
+        // 1. Firebase Auth 사용자 생성
         const userRecord = await admin.auth().createUser({
             email,
             password,
-            displayName: displayNameForAuth,
+            displayName: name,
             disabled: false,
-            emailVerified: false, // 이메일 미인증 상태로 생성
+            emailVerified: false,
         });
-        // 이메일 인증은 클라이언트에서 sendEmailVerification() 호출로 처리
-        functions.logger.info(`User created successfully: ${email}. Email verification will be sent from client.`);
+        const uid = userRecord.uid;
+        functions.logger.info(`User created successfully: ${email} (UID: ${uid})`);
+        // 2. Firestore에 프로필 생성
+        const userRef = db.collection("users").doc(uid);
+        await userRef.set({
+            uid,
+            email,
+            name,
+            nickname: nickname || name,
+            phone: phone || null,
+            role,
+            gender: gender || null,
+            isActive: true,
+            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        // 3. Custom Claims 설정
+        await admin.auth().setCustomUserClaims(uid, { role });
+        functions.logger.info(`Profile created and claims set for UID: ${uid}`);
         // Save consent data to Firestore if provided
         if (consents && userRecord.uid) {
             try {
@@ -398,58 +415,6 @@ exports.createUserAccount = functions.region('asia-northeast3').https.onCall(asy
         console.error("Error creating new user:", error);
         throw new functions.https.HttpsError('internal', error.message, error);
     }
-});
-/**
- * Firestore trigger that automatically creates a user document in Firestore
- * when a new user is created in Firebase Authentication.
- * This handles all user creation sources and parses extra data from the displayName.
- */
-exports.createUserData = functions.region('asia-northeast3').auth.user().onCreate(async (user) => {
-    const { uid, email, displayName, phoneNumber } = user;
-    const userRef = db.collection("users").doc(uid);
-    functions.logger.info(`New user: ${email} (UID: ${uid}). Parsing displayName: "${displayName}"`);
-    let initialRole = 'manager';
-    let finalDisplayName = "Unnamed User";
-    let extraData = { phone: phoneNumber || null };
-    if (displayName) {
-        const extraDataMatch = displayName.match(/\[(\{.*\})\]/);
-        const pendingManagerMatch = displayName.includes('[PENDING_MANAGER]');
-        finalDisplayName = displayName
-            .replace(/\[PENDING_MANAGER\]/g, '')
-            .replace(/\[(\{.*\})\]/g, '')
-            .trim();
-        if (finalDisplayName === "")
-            finalDisplayName = "Unnamed User";
-        if (pendingManagerMatch)
-            initialRole = 'pending_manager';
-        if (extraDataMatch && extraDataMatch[1]) {
-            try {
-                const parsedData = JSON.parse(extraDataMatch[1]);
-                extraData = Object.assign(Object.assign({}, extraData), parsedData);
-                // extraData에 role이 있으면 우선 사용
-                if (parsedData.role) {
-                    initialRole = parsedData.role;
-                    functions.logger.info(`Using role from extraData: ${initialRole}`);
-                }
-            }
-            catch (e) {
-                functions.logger.error(`Failed to parse extra data from displayName for UID ${uid}`, { displayName, e });
-            }
-        }
-    }
-    // role은 Firestore 문서에 저장하지만 extraData에서는 제거 (중복 방지)
-    const { role: _ } = extraData, extraDataWithoutRole = __rest(extraData, ["role"]);
-    try {
-        await userRef.set(Object.assign({ name: finalDisplayName, email: email, role: initialRole, createdAt: admin.firestore.FieldValue.serverTimestamp() }, extraDataWithoutRole));
-        await admin.auth().setCustomUserClaims(uid, { role: initialRole });
-        // displayName을 정상적인 이름으로 업데이트 (JSON 데이터 제거)
-        await admin.auth().updateUser(uid, Object.assign({ displayName: finalDisplayName }, (initialRole === 'pending_manager' && { disabled: true })));
-        functions.logger.info(`Successfully created Firestore document/claims for UID: ${uid}`);
-    }
-    catch (error) {
-        functions.logger.error(`Failed to create Firestore document for UID: ${uid}`, error);
-    }
-    return null;
 });
 /**
  * Firestore trigger that automatically sets a custom user claim whenever a user's role is

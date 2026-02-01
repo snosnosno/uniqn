@@ -47,10 +47,14 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   [NotificationType.APPLICATION_CONFIRMED]: CheckCircleIcon,
   [NotificationType.CONFIRMATION_CANCELLED]: XCircleIcon,
   [NotificationType.APPLICATION_REJECTED]: XCircleIcon,
+  [NotificationType.CANCELLATION_APPROVED]: CheckCircleIcon,
+  [NotificationType.CANCELLATION_REJECTED]: XCircleIcon,
 
   // 출퇴근/스케줄 관련
   [NotificationType.STAFF_CHECKED_IN]: ClockIcon,
   [NotificationType.STAFF_CHECKED_OUT]: ClockIcon,
+  [NotificationType.CHECK_IN_CONFIRMED]: CheckCircleIcon,
+  [NotificationType.CHECK_OUT_CONFIRMED]: CheckCircleIcon,
   [NotificationType.CHECKIN_REMINDER]: CalendarDaysIcon,
   [NotificationType.NO_SHOW_ALERT]: ExclamationCircleIcon,
   [NotificationType.SCHEDULE_CHANGE]: CalendarDaysIcon,
@@ -62,10 +66,9 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   [NotificationType.SETTLEMENT_REQUESTED]: BanknotesIcon,
 
   // 공고 관련
-  [NotificationType.JOB_CLOSING_SOON]: BriefcaseIcon,
-  [NotificationType.NEW_JOB_IN_AREA]: BriefcaseIcon,
   [NotificationType.JOB_UPDATED]: BriefcaseIcon,
   [NotificationType.JOB_CANCELLED]: XCircleIcon,
+  [NotificationType.JOB_CLOSED]: BriefcaseIcon,
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: MegaphoneIcon,
@@ -75,6 +78,9 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: ChatBubbleLeftIcon,
   [NotificationType.REPORT_RESOLVED]: ShieldCheckIcon,
+  [NotificationType.NEW_REPORT]: ExclamationCircleIcon,
+  [NotificationType.NEW_INQUIRY]: ChatBubbleLeftIcon,
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: BriefcaseIcon,
 };
 
 // 타입별 이모지 매핑
@@ -85,10 +91,14 @@ const typeEmojis: Record<NotificationType, string> = {
   [NotificationType.APPLICATION_CONFIRMED]: '✅',
   [NotificationType.CONFIRMATION_CANCELLED]: '🚫',
   [NotificationType.APPLICATION_REJECTED]: '❌',
+  [NotificationType.CANCELLATION_APPROVED]: '✅',
+  [NotificationType.CANCELLATION_REJECTED]: '❌',
 
   // 출퇴근 관련
   [NotificationType.STAFF_CHECKED_IN]: '🟢',
   [NotificationType.STAFF_CHECKED_OUT]: '🔴',
+  [NotificationType.CHECK_IN_CONFIRMED]: '✅',
+  [NotificationType.CHECK_OUT_CONFIRMED]: '✅',
   [NotificationType.CHECKIN_REMINDER]: '⏰',
   [NotificationType.NO_SHOW_ALERT]: '⚠️',
   [NotificationType.SCHEDULE_CHANGE]: '📅',
@@ -100,10 +110,9 @@ const typeEmojis: Record<NotificationType, string> = {
   [NotificationType.SETTLEMENT_REQUESTED]: '📝',
 
   // 공고 관련
-  [NotificationType.JOB_CLOSING_SOON]: '⏳',
-  [NotificationType.NEW_JOB_IN_AREA]: '📢',
   [NotificationType.JOB_UPDATED]: '📋',
   [NotificationType.JOB_CANCELLED]: '❌',
+  [NotificationType.JOB_CLOSED]: '📋',
 
   // 시스템
   [NotificationType.ANNOUNCEMENT]: '📢',
@@ -113,6 +122,9 @@ const typeEmojis: Record<NotificationType, string> = {
   // 관리자
   [NotificationType.INQUIRY_ANSWERED]: '💬',
   [NotificationType.REPORT_RESOLVED]: '✅',
+  [NotificationType.NEW_REPORT]: '🚨',
+  [NotificationType.NEW_INQUIRY]: '💬',
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '🏆',
 };
 
 // 카테고리별 색상

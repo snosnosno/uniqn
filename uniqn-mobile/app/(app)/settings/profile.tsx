@@ -150,7 +150,7 @@ export default function ProfileEditScreen() {
               <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">
                 기본 정보
               </Text>
-              {/* TODO: 본인인증 활성화 시 인증 버튼 추가 */}
+              {/* 본인인증 SDK 연동 후 인증 버튼 추가 */}
               {/* <Pressable className="rounded-full bg-primary-100 px-3 py-1 dark:bg-primary-900/30">
                 <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
                   본인인증

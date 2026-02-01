@@ -70,14 +70,16 @@ export const UPDATE_POLICY = {
   /**
    * 강제 업데이트 필요 최소 버전
    * 이 버전보다 낮으면 앱 사용 불가
-   * TODO [출시 전]: Firebase Remote Config에서 관리
+   * 출시 후: Firebase Remote Config에서 동적 관리 가능
+   * @see featureFlagService.ts
    */
   MINIMUM_VERSION: '1.0.0',
 
   /**
    * 권장 업데이트 버전
    * 이 버전보다 낮으면 업데이트 권장 팝업 표시
-   * TODO [출시 전]: Firebase Remote Config에서 관리
+   * 출시 후: Firebase Remote Config에서 동적 관리 가능
+   * @see featureFlagService.ts
    */
   RECOMMENDED_VERSION: '1.0.0',
 
@@ -88,10 +90,11 @@ export const UPDATE_POLICY = {
 
   /**
    * 앱스토어 링크
+   * 스토어 등록 후 실제 ID로 교체 필요
    */
   STORE_URLS: {
-    ios: 'https://apps.apple.com/app/uniqn/idXXXXXXXXXX', // TODO [출시 전]: 실제 앱스토어 링크
-    android: 'https://play.google.com/store/apps/details?id=com.uniqn.mobile', // TODO [출시 전]: 실제 플레이스토어 링크
+    ios: 'https://apps.apple.com/app/uniqn/idXXXXXXXXXX', // 스토어 등록 후 실제 앱 ID로 교체
+    android: 'https://play.google.com/store/apps/details?id=com.uniqn.mobile', // 스토어 등록 후 확인
     web: 'https://uniqn.app',
   },
 } as const;

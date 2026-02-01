@@ -4,9 +4,13 @@
  * @description 재사용 가능한 본인인증 UI (PASS/카카오)
  * @version 1.0.0
  *
- * TODO [Phase 6]: 실제 본인인증 SDK 연동
+ * 현재 상태: Mock 구현 (UI 스텁)
+ *
+ * 실제 연동 시 구현 필요:
  * - PASS: react-native-nice-pass 또는 WebView
  * - Kakao: 카카오 본인인증 SDK
+ *
+ * @see docs/IDENTITY_VERIFICATION.md (구현 가이드 예정)
  */
 
 import React, { useState, useCallback } from 'react';
@@ -119,8 +123,8 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
             setStatus('success');
             onVerified(mockResult);
           } else {
-            // 프로덕션: 실제 SDK 연동
-            // TODO [Phase 6]: 실제 본인인증 SDK 연동
+            // 프로덕션: 실제 SDK 연동 필요
+            // PASS 또는 카카오 본인인증 SDK 구현 예정
             throw new Error('본인인증 서비스가 준비 중입니다.');
           }
         } catch (err) {

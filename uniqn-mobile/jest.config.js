@@ -48,7 +48,7 @@ module.exports = {
   // Coverage thresholds
   // MVP 단계: 현실적 임계값 설정 (점진적으로 올릴 예정)
   // 현재 수준: global ~14%, utils ~17%, services ~43%
-  // TODO [출시 전]: global 60%, utils 80%, services 70% 달성
+  // 목표 [P2]: global 60%, utils 80%, services 70% 달성
   coverageThreshold: {
     global: {
       branches: 7,

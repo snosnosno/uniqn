@@ -4,7 +4,7 @@
  */
 
 import '../global.css';
-import { useEffect } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, ActivityIndicator, Text, LogBox } from 'react-native';
@@ -27,7 +27,11 @@ import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useThemeStore } from '@/stores/themeStore';
+import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
+import * as tokenRefreshService from '@/services/tokenRefreshService';
+import { logger } from '@/utils/logger';
 
 // LogBox 경고 억제 (써드파티 라이브러리 이슈)
 if (__DEV__) {
@@ -63,6 +67,26 @@ function MainNavigator() {
 
   // 푸시 알림 수신 및 딥링크 처리
   useNotificationHandler();
+
+  // 전역 네트워크 상태 연동
+  const { isOnline } = useNetworkStatus();
+  const prevOnlineRef = useRef(isOnline);
+
+  useEffect(() => {
+    const wasOnline = prevOnlineRef.current;
+    prevOnlineRef.current = isOnline;
+
+    if (!wasOnline && isOnline) {
+      // 오프라인 → 온라인: 재연결 처리
+      logger.info('네트워크 복귀 - 전역 재연결 처리');
+      RealtimeManager.onNetworkReconnect();
+      tokenRefreshService.onNetworkReconnect();
+    } else if (wasOnline && !isOnline) {
+      // 온라인 → 오프라인: 연결 끊김 처리
+      logger.info('네트워크 끊김 - 전역 연결 해제 처리');
+      RealtimeManager.onNetworkDisconnect();
+    }
+  }, [isOnline]);
 
   return (
     <>
@@ -132,7 +156,7 @@ function AppContent() {
 /**
  * 웹용 빈 Provider (BottomSheetModalProvider 대체)
  */
-function WebSheetProvider({ children }: { children: React.ReactNode }) {
+function WebSheetProvider({ children }: { children: ReactNode }) {
   return <>{children}</>;
 }
 

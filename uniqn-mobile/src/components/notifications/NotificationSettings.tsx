@@ -12,6 +12,8 @@ import {
   BellSlashIcon,
   MoonIcon,
   DevicePhoneMobileIcon,
+  ChevronRightIcon,
+  Squares2X2Icon,
 } from '@/components/icons';
 import { Card } from '@/components/ui/Card';
 import {
@@ -32,6 +34,8 @@ export interface NotificationSettingsProps {
   };
   /** 권한 요청 핸들러 */
   onRequestPermission?: () => void;
+  /** 설정 앱 열기 핸들러 (권한 거부 + 재요청 불가 시) */
+  onOpenSettings?: () => void;
   /** 저장 중 상태 */
   isSaving?: boolean;
 }
@@ -72,6 +76,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
   onSettingsChange,
   pushPermission,
   onRequestPermission,
+  onOpenSettings,
   isSaving = false,
 }: NotificationSettingsProps) {
   // 전체 알림 토글
@@ -135,6 +140,22 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
     [settings, onSettingsChange]
   );
 
+  // 알림 그룹화 토글
+  const handleGroupingToggle = useCallback(
+    (enabled: boolean) => {
+      onSettingsChange({
+        ...settings,
+        grouping: {
+          ...settings.grouping,
+          enabled,
+          minGroupSize: settings.grouping?.minGroupSize || 2,
+          timeWindowHours: settings.grouping?.timeWindowHours || 24,
+        },
+      });
+    },
+    [settings, onSettingsChange]
+  );
+
   const categoryKeys = Object.values(NotificationCategory);
 
   return (
@@ -142,7 +163,26 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
       className="flex-1 bg-gray-50 dark:bg-gray-900"
       contentContainerClassName="p-4"
     >
-      {/* 푸시 알림 권한 배너 */}
+      {/* 푸시 알림 권한 영구 거부 배너 */}
+      {pushPermission && !pushPermission.granted && !pushPermission.canAskAgain && (
+        <Pressable
+          onPress={onOpenSettings}
+          className="mb-4 p-4 bg-error-100 dark:bg-error-900/30 rounded-xl flex-row items-center"
+        >
+          <BellSlashIcon size={24} color="#dc2626" />
+          <View className="flex-1 ml-3">
+            <Text className="text-error-800 dark:text-error-200 font-medium">
+              알림 권한이 거부되었습니다
+            </Text>
+            <Text className="text-error-600 dark:text-error-400 text-sm">
+              설정에서 알림 권한을 직접 허용해주세요
+            </Text>
+          </View>
+          <ChevronRightIcon size={20} color="#dc2626" />
+        </Pressable>
+      )}
+
+      {/* 푸시 알림 권한 요청 배너 */}
       {pushPermission && !pushPermission.granted && pushPermission.canAskAgain && (
         <Pressable
           onPress={onRequestPermission}
@@ -205,6 +245,30 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.quietHours?.enabled || false}
             onValueChange={handleQuietHoursToggle}
+            trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+            thumbColor="#ffffff"
+            disabled={isSaving || !settings.enabled}
+          />
+        </View>
+      </Card>
+
+      {/* 알림 그룹화 */}
+      <Card className="mb-4">
+        <View className="flex-row items-center justify-between">
+          <View className="flex-row items-center">
+            <Squares2X2Icon size={24} color="#6b7280" />
+            <View className="ml-3">
+              <Text className="text-base font-medium text-gray-900 dark:text-white">
+                알림 그룹화
+              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                같은 공고의 알림을 묶어서 표시
+              </Text>
+            </View>
+          </View>
+          <Switch
+            value={settings.grouping?.enabled ?? true}
+            onValueChange={handleGroupingToggle}
             trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
             thumbColor="#ffffff"
             disabled={isSaving || !settings.enabled}

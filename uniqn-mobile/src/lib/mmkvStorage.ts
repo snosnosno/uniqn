@@ -310,6 +310,9 @@ export const STORAGE_KEYS = {
   FORM_DRAFT: 'form-draft',
   SEARCH_HISTORY: 'search-history',
   RECENT_JOBS: 'recent-jobs',
+
+  // 토큰 갱신
+  TOKEN_REFRESH_STATE: 'token-refresh-state',
 } as const;
 
 export type StorageKey = (typeof STORAGE_KEYS)[keyof typeof STORAGE_KEYS];

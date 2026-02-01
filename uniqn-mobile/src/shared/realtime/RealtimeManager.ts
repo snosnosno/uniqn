@@ -52,10 +52,17 @@ interface SubscriptionStats {
  * - 같은 키에 대한 중복 구독 방지
  * - 참조 카운팅으로 마지막 사용자가 해제될 때만 실제 구독 해제
  * - 구독 상태 추적 및 디버깅 지원
+ * - 네트워크 재연결 시 자동 복구
  */
 export class RealtimeManager {
   private static subscriptions = new Map<string, SubscriptionEntry>();
   private static isDebugMode = __DEV__;
+
+  /** 네트워크 연결 상태 */
+  private static connectionState: 'connected' | 'disconnected' = 'connected';
+
+  /** 재연결 콜백 */
+  private static reconnectCallbacks = new Map<string, () => void>();
 
   // ==========================================================================
   // Core Methods
@@ -157,6 +164,111 @@ export class RealtimeManager {
    */
   static getRefCount(key: string): number {
     return this.subscriptions.get(key)?.refCount ?? 0;
+  }
+
+  // ==========================================================================
+  // Network State Methods
+  // ==========================================================================
+
+  /**
+   * 네트워크 복귀 시 호출
+   *
+   * - 모든 paused 구독을 active로 변경
+   * - 등록된 재연결 콜백 실행
+   */
+  static onNetworkReconnect(): void {
+    if (this.connectionState === 'connected') return;
+
+    this.connectionState = 'connected';
+    logger.info('RealtimeManager: 네트워크 재연결');
+
+    // paused 구독을 active로 변경
+    for (const [key, entry] of this.subscriptions) {
+      if (entry.status === 'paused') {
+        entry.status = 'active';
+        entry.lastUpdate = Date.now();
+
+        if (this.isDebugMode) {
+          logger.debug('RealtimeManager: 구독 재활성화', { key });
+        }
+      }
+    }
+
+    // 재연결 콜백 실행
+    for (const [key, callback] of this.reconnectCallbacks) {
+      try {
+        callback();
+
+        if (this.isDebugMode) {
+          logger.debug('RealtimeManager: 재연결 콜백 실행', { key });
+        }
+      } catch (error) {
+        logger.error('RealtimeManager: 재연결 콜백 실패', error as Error, { key });
+      }
+    }
+  }
+
+  /**
+   * 네트워크 끊김 시 호출
+   *
+   * - 모든 active 구독을 paused로 변경
+   */
+  static onNetworkDisconnect(): void {
+    if (this.connectionState === 'disconnected') return;
+
+    this.connectionState = 'disconnected';
+    logger.info('RealtimeManager: 네트워크 끊김');
+
+    // 모든 active 구독을 paused로 변경
+    for (const entry of this.subscriptions.values()) {
+      if (entry.status === 'active') {
+        entry.status = 'paused';
+      }
+    }
+  }
+
+  /**
+   * 재연결 콜백 등록
+   *
+   * @param key - 콜백 식별 키
+   * @param callback - 재연결 시 호출될 함수
+   * @returns 콜백 해제 함수
+   *
+   * @example
+   * ```ts
+   * const unregister = RealtimeManager.registerReconnectCallback(
+   *   'sync-notifications',
+   *   () => syncMissedNotifications()
+   * );
+   *
+   * // 컴포넌트 언마운트 시
+   * unregister();
+   * ```
+   */
+  static registerReconnectCallback(
+    key: string,
+    callback: () => void
+  ): () => void {
+    this.reconnectCallbacks.set(key, callback);
+
+    if (this.isDebugMode) {
+      logger.debug('RealtimeManager: 재연결 콜백 등록', { key });
+    }
+
+    return () => {
+      this.reconnectCallbacks.delete(key);
+
+      if (this.isDebugMode) {
+        logger.debug('RealtimeManager: 재연결 콜백 해제', { key });
+      }
+    };
+  }
+
+  /**
+   * 현재 네트워크 연결 상태 조회
+   */
+  static isConnected(): boolean {
+    return this.connectionState === 'connected';
   }
 
   // ==========================================================================

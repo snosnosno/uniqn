@@ -4,9 +4,21 @@
  * @description Firebase Auth 기반 인증 서비스
  * @version 1.0.0
  *
- * TODO [출시 전]: Apple 소셜 로그인 구현
- * TODO [출시 전]: Google 소셜 로그인 구현
- * TODO [출시 전]: 카카오 소셜 로그인 구현
+ * ============================================================================
+ * 소셜 로그인 구현 상태
+ * ============================================================================
+ * 현재: Mock 구현 (개발 모드에서만 동작)
+ *
+ * TODO [P1]: Apple 소셜 로그인 구현 (expo-apple-authentication)
+ * TODO [P1]: Google 소셜 로그인 구현 (@react-native-google-signin/google-signin)
+ * TODO [P2]: 카카오 소셜 로그인 구현 (@react-native-seoul/kakao-login + Cloud Functions)
+ *
+ * 필요 작업:
+ * 1. 각 SDK 설치 및 네이티브 설정 (EAS Build 필요)
+ * 2. Firebase Console에서 제공자 활성화
+ * 3. Apple/Google: Developer Console에서 앱 등록
+ * 4. 카카오: Kakao Developers에서 앱 등록 + Cloud Functions 연동
+ * ============================================================================
  */
 
 import {
@@ -414,7 +426,7 @@ const IS_DEV_MODE = __DEV__ || process.env.NODE_ENV === 'development';
  * Mock 소셜 로그인 결과 생성
  *
  * @description 개발 환경에서 소셜 로그인 테스트용 Mock 데이터 생성
- * TODO [출시 전]: 실제 소셜 로그인으로 교체 필수
+ * @warning 프로덕션에서는 실제 SDK 연동 필요 (파일 상단 구현 가이드 참조)
  */
 async function createMockSocialLoginResult(
   provider: 'apple' | 'google' | 'kakao',
@@ -543,9 +555,13 @@ async function createMockProfile(
  *
  * @description
  * - 개발 모드: Mock 데이터로 테스트
- * - 프로덕션: 실제 Apple 인증 필요 (TODO)
+ * - 프로덕션: expo-apple-authentication 필요
  *
- * TODO [출시 전]: expo-apple-authentication 사용 구현
+ * 구현 가이드:
+ * 1. expo-apple-authentication 설치
+ * 2. app.config.ts에 usesAppleSignIn: true 설정
+ * 3. EAS Build 실행
+ * 4. Apple Developer Console에서 Sign in with Apple 활성화
  */
 export async function signInWithApple(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
@@ -556,7 +572,7 @@ export async function signInWithApple(): Promise<AuthResult> {
     );
   }
 
-  // TODO [출시 전]: 실제 Apple 로그인 구현
+  // 구현 예정:
   // import * as AppleAuthentication from 'expo-apple-authentication';
   // const credential = await AppleAuthentication.signInAsync({...});
   // const oAuthCredential = OAuthProvider.credential('apple.com', credential.identityToken);
@@ -572,9 +588,13 @@ export async function signInWithApple(): Promise<AuthResult> {
  *
  * @description
  * - 개발 모드: Mock 데이터로 테스트
- * - 프로덕션: 실제 Google 인증 필요 (TODO)
+ * - 프로덕션: @react-native-google-signin/google-signin 필요
  *
- * TODO [P1]: @react-native-google-signin/google-signin 사용 구현
+ * 구현 가이드:
+ * 1. @react-native-google-signin/google-signin 설치
+ * 2. google-services.json (Android) / GoogleService-Info.plist (iOS) 추가
+ * 3. EAS Build 실행
+ * 4. Firebase Console에서 Google 로그인 활성화
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
@@ -585,7 +605,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
     );
   }
 
-  // TODO [P1]: 실제 Google 로그인 구현
+  // 구현 예정:
   // import { GoogleSignin } from '@react-native-google-signin/google-signin';
   // await GoogleSignin.hasPlayServices();
   // const { idToken } = await GoogleSignin.signIn();
@@ -602,9 +622,13 @@ export async function signInWithGoogle(): Promise<AuthResult> {
  *
  * @description
  * - 개발 모드: Mock 데이터로 테스트
- * - 프로덕션: 실제 카카오 인증 필요 (TODO)
+ * - 프로덕션: @react-native-seoul/kakao-login + Cloud Functions 필요
  *
- * TODO [P1]: @react-native-seoul/kakao-login 사용 구현
+ * 구현 가이드:
+ * 1. @react-native-seoul/kakao-login 설치
+ * 2. Kakao Developers에서 앱 등록 및 네이티브 키 발급
+ * 3. Cloud Functions에서 Custom Token 발급 엔드포인트 구현
+ * 4. EAS Build 실행
  */
 export async function signInWithKakao(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
@@ -615,7 +639,7 @@ export async function signInWithKakao(): Promise<AuthResult> {
     );
   }
 
-  // TODO [P1]: 실제 카카오 로그인 구현
+  // 구현 예정:
   // import { login as kakaoLogin } from '@react-native-seoul/kakao-login';
   // const token = await kakaoLogin();
   // Firebase Custom Token 방식 또는 Functions 연동 필요

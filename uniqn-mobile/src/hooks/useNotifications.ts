@@ -20,9 +20,11 @@ import {
   checkNotificationPermission,
   requestNotificationPermission,
 } from '@/services/notificationService';
+import { syncMissedNotifications, shouldSync } from '@/services/notificationSyncService';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
+import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { cachingPolicies, queryKeys } from '@/lib/queryClient';
@@ -68,16 +70,26 @@ interface UseNotificationListResult {
 }
 
 /**
- * 알림 목록 조회 훅
+ * 알림 목록 조회 훅 (오프라인 지원)
  */
 export function useNotificationList(
   options: UseNotificationListOptions = {}
 ): UseNotificationListResult {
   const { filter, enabled = true } = options;
   const user = useAuthStore((state) => state.user);
-  const { setNotifications, addNotifications, setLoading, setHasMore } = useNotificationStore();
+  const {
+    notifications: cachedNotifications,
+    setNotifications,
+    addNotifications,
+    setLoading,
+    setHasMore,
+    lastFetchedAt,
+  } = useNotificationStore();
+  const { addToast } = useToastStore();
+  const { isOnline, isOffline } = useNetworkStatus();
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
+  const hasSyncedRef = useRef(false);
 
   const query = useQuery({
     queryKey: notificationKeys.list(filter ?? {}),
@@ -93,7 +105,8 @@ export function useNotificationList(
       setHasMore(result.hasMore);
       return result.notifications;
     },
-    enabled: enabled && !!user?.uid,
+    // 오프라인 시 쿼리 비활성화
+    enabled: enabled && !!user?.uid && isOnline,
     staleTime: cachingPolicies.frequent, // 2분
   });
 
@@ -106,12 +119,51 @@ export function useNotificationList(
 
   // 로딩 상태 동기화
   useEffect(() => {
-    setLoading(query.isLoading);
-  }, [query.isLoading, setLoading]);
+    // 오프라인 시 로딩 상태 false
+    setLoading(isOnline ? query.isLoading : false);
+  }, [query.isLoading, setLoading, isOnline]);
+
+  // 온라인 복귀 시 놓친 알림 동기화
+  useEffect(() => {
+    if (!isOnline || !user?.uid) return;
+    if (hasSyncedRef.current) return;
+    if (!shouldSync(lastFetchedAt)) return;
+
+    hasSyncedRef.current = true;
+
+    const sync = async () => {
+      try {
+        const result = await syncMissedNotifications(
+          user.uid,
+          lastFetchedAt,
+          cachedNotifications.map((n) => n.id)
+        );
+
+        if (result.success && result.syncedCount > 0) {
+          addNotifications(result.notifications);
+          addToast({
+            type: 'info',
+            message: `새 알림 ${result.syncedCount}개가 도착했습니다`,
+            duration: 4000,
+          });
+          logger.info('놓친 알림 동기화 완료', { count: result.syncedCount });
+        }
+      } catch (error) {
+        logger.error('놓친 알림 동기화 실패', toError(error));
+      }
+    };
+
+    sync();
+
+    // 다음 온라인 복귀 시 다시 동기화 허용
+    return () => {
+      hasSyncedRef.current = false;
+    };
+  }, [isOnline, user?.uid, lastFetchedAt, cachedNotifications, addNotifications, addToast]);
 
   // 다음 페이지 가져오기
   const fetchNextPage = useCallback(async () => {
-    if (!user?.uid || !lastDoc || isFetchingNextPage) return;
+    if (!user?.uid || !lastDoc || isFetchingNextPage || isOffline) return;
 
     setIsFetchingNextPage(true);
     try {
@@ -129,17 +181,26 @@ export function useNotificationList(
     } finally {
       setIsFetchingNextPage(false);
     }
-  }, [user?.uid, lastDoc, filter, isFetchingNextPage, addNotifications, setHasMore]);
+  }, [user?.uid, lastDoc, filter, isFetchingNextPage, isOffline, addNotifications, setHasMore]);
+
+  // 오프라인 시 캐시된 데이터 반환
+  const effectiveNotifications = useMemo(() => {
+    if (isOffline && cachedNotifications.length > 0) {
+      return cachedNotifications;
+    }
+    return query.data ?? cachedNotifications;
+  }, [isOffline, cachedNotifications, query.data]);
 
   return {
-    notifications: query.data ?? [],
-    isLoading: query.isLoading,
+    notifications: effectiveNotifications,
+    isLoading: isOnline ? query.isLoading : false,
     isError: query.isError,
     error: query.error ? toError(query.error) : null,
     hasMore: useNotificationStore((state) => state.hasMore),
     fetchNextPage,
     isFetchingNextPage,
     refetch: async () => {
+      if (isOffline) return;
       setLastDoc(null);
       await query.refetch();
     },

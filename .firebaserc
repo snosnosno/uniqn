@@ -3,6 +3,17 @@
     "default": "tholdem-ebc18",
     "tholdem": "tholdem-ebc18"
   },
-  "targets": {},
+  "targets": {
+    "tholdem-ebc18": {
+      "hosting": {
+        "web": [
+          "tholdem-ebc18"
+        ],
+        "mobile": [
+          "m-tholdem-ebc18"
+        ]
+      }
+    }
+  },
   "etags": {}
 }

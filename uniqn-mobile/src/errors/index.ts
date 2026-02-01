@@ -137,6 +137,23 @@ export {
 } from './BusinessErrors';
 
 // ============================================================================
+// Notification Error Classes
+// ============================================================================
+
+export {
+  // Classes
+  NotificationPermissionError,
+  FCMTokenError,
+  NotificationSendError,
+  InvalidNotificationLinkError,
+  // Type Guards
+  isNotificationPermissionError,
+  isFCMTokenError,
+  isNotificationSendError,
+  isInvalidNotificationLinkError,
+} from './NotificationErrors';
+
+// ============================================================================
 // Service Error Handler
 // ============================================================================
 

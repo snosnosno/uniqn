@@ -1,18 +1,26 @@
 /**
- * UNIQN Mobile - 알림 핸들러 훅
+ * UNIQN Mobile - 통합 알림 핸들러 훅
  *
- * @description 푸시 알림 수신/터치 처리 + 딥링크 네비게이션
- * @version 1.0.0
+ * @description 푸시 알림 수신/터치 처리 + 권한/토큰 관리 + 딥링크 네비게이션
+ * @version 2.0.0
+ *
+ * @changelog
+ * - v2.0.0: usePushNotifications 기능 통합
+ *   - 상태 반환 (isInitialized, permissionStatus, isTokenRegistered)
+ *   - 액션 메서드 (requestPermission, registerToken, unregisterToken, setBadge, clearBadge, openSettings)
+ *   - 24시간 토큰 자동 갱신
+ *   - 앱 포그라운드 복귀 시 뱃지 초기화
  */
 
-import { useEffect, useCallback, useRef } from 'react';
-import { Platform } from 'react-native';
+import { useEffect, useCallback, useRef, useState } from 'react';
+import { Platform, AppState, Linking, type AppStateStatus } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import {
   pushNotificationService,
   type NotificationPayload,
 } from '@/services/pushNotificationService';
+import * as tokenRefreshService from '@/services/tokenRefreshService';
 import {
   deepLinkService,
   navigateFromNotification,
@@ -26,13 +34,43 @@ import type { NotificationType } from '@/types/notification';
 // Types
 // ============================================================================
 
-interface UseNotificationHandlerOptions {
+export interface UseNotificationHandlerOptions {
   /** 포그라운드 알림 수신 시 토스트 표시 여부 (기본: true) */
   showForegroundToast?: boolean;
   /** 알림 수신 콜백 */
   onNotificationReceived?: (notification: NotificationPayload) => void;
   /** 알림 터치 콜백 (네비게이션 전) */
   onNotificationTapped?: (notification: NotificationPayload) => void;
+  /** 자동 초기화 여부 (기본: true) */
+  autoInitialize?: boolean;
+  /** 로그인 시 토큰 자동 등록 여부 (기본: true) */
+  autoRegisterToken?: boolean;
+}
+
+export interface UseNotificationHandlerReturn {
+  // ========== 상태 ==========
+  /** 초기화 완료 여부 */
+  isInitialized: boolean;
+  /** 권한 상태 */
+  permissionStatus: 'granted' | 'denied' | 'undetermined' | null;
+  /** 권한 요청 중 */
+  isRequestingPermission: boolean;
+  /** 토큰 등록 완료 여부 */
+  isTokenRegistered: boolean;
+
+  // ========== 액션 ==========
+  /** 권한 요청 */
+  requestPermission: () => Promise<boolean>;
+  /** 토큰 등록 */
+  registerToken: () => Promise<boolean>;
+  /** 토큰 해제 */
+  unregisterToken: () => Promise<boolean>;
+  /** 뱃지 수 설정 */
+  setBadge: (count: number) => Promise<void>;
+  /** 뱃지 초기화 */
+  clearBadge: () => Promise<void>;
+  /** 설정 앱 열기 (권한 거부 시) */
+  openSettings: () => Promise<void>;
 }
 
 // ============================================================================
@@ -40,30 +78,61 @@ interface UseNotificationHandlerOptions {
 // ============================================================================
 
 /**
- * 알림 핸들러 훅
+ * 통합 알림 핸들러 훅
  *
  * @description MainNavigator에서 사용하여 푸시 알림과 딥링크 처리
  *
  * @example
  * function MainNavigator() {
- *   useNotificationHandler({
+ *   const {
+ *     isInitialized,
+ *     permissionStatus,
+ *     requestPermission,
+ *     openSettings,
+ *   } = useNotificationHandler({
  *     showForegroundToast: true,
  *     onNotificationReceived: (n) => console.log('알림 수신:', n),
  *   });
  *
+ *   // 권한 거부 시 설정 앱으로 이동
+ *   if (permissionStatus === 'denied') {
+ *     return <PermissionDeniedScreen onOpenSettings={openSettings} />;
+ *   }
+ *
  *   return <Stack />;
  * }
  */
-export function useNotificationHandler(options: UseNotificationHandlerOptions = {}) {
+export function useNotificationHandler(
+  options: UseNotificationHandlerOptions = {}
+): UseNotificationHandlerReturn {
   const {
     showForegroundToast = true,
     onNotificationReceived,
     onNotificationTapped,
+    autoInitialize = true,
+    autoRegisterToken = true,
   } = options;
 
+  // ========== Store ==========
   const { user } = useAuthStore();
   const { addToast } = useToastStore();
-  const isSetup = useRef(false);
+  const userId = user?.uid;
+
+  // ========== State ==========
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [permissionStatus, setPermissionStatus] = useState<
+    'granted' | 'denied' | 'undetermined' | null
+  >(null);
+  const [isRequestingPermission, setIsRequestingPermission] = useState(false);
+  const [isTokenRegistered, setIsTokenRegistered] = useState(false);
+
+  // ========== Refs ==========
+  const isInitializingRef = useRef(false);
+  const appStateRef = useRef(AppState.currentState);
+
+  // ============================================================================
+  // Handlers
+  // ============================================================================
 
   /**
    * 포그라운드 알림 수신 핸들러
@@ -72,7 +141,7 @@ export function useNotificationHandler(options: UseNotificationHandlerOptions = 
     (notification: NotificationPayload) => {
       logger.info('포그라운드 알림 수신', {
         title: notification.title,
-        data: notification.data,
+        type: notification.data?.type,
       });
 
       // Analytics 이벤트
@@ -104,11 +173,12 @@ export function useNotificationHandler(options: UseNotificationHandlerOptions = 
       logger.info('알림 터치', {
         title: notification.title,
         actionIdentifier,
-        data: notification.data,
+        type: notification.data?.type,
       });
 
       // Analytics 이벤트
-      const notificationType = (notification.data?.type as NotificationType) ?? 'announcement';
+      const notificationType =
+        (notification.data?.type as NotificationType) ?? 'announcement';
       trackEvent('notification_tapped', {
         notification_type: notificationType,
         action: actionIdentifier,
@@ -131,64 +201,247 @@ export function useNotificationHandler(options: UseNotificationHandlerOptions = 
     [onNotificationTapped]
   );
 
+  // ============================================================================
+  // Actions
+  // ============================================================================
+
   /**
-   * 푸시 알림 초기화 및 토큰 등록
+   * 초기화
    */
-  useEffect(() => {
-    if (isSetup.current) return;
+  const initialize = useCallback(async () => {
+    if (isInitializingRef.current || isInitialized) return;
     if (Platform.OS === 'web') return;
 
-    const setup = async () => {
-      try {
-        // 푸시 알림 서비스 초기화
-        await pushNotificationService.initialize();
+    isInitializingRef.current = true;
 
-        // 알림 핸들러 등록
-        pushNotificationService.setNotificationReceivedHandler(handleNotificationReceived);
-        pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
+    try {
+      // 푸시 알림 서비스 초기화
+      await pushNotificationService.initialize();
 
-        isSetup.current = true;
-        logger.info('알림 핸들러 설정 완료');
-      } catch (error) {
-        logger.error('알림 핸들러 설정 실패', toError(error));
+      // 알림 핸들러 등록
+      pushNotificationService.setNotificationReceivedHandler(handleNotificationReceived);
+      pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
+
+      // 권한 상태 확인
+      const permission = await pushNotificationService.checkPermission();
+      setPermissionStatus(permission.status);
+
+      setIsInitialized(true);
+      logger.info('알림 핸들러 초기화 완료');
+    } catch (error) {
+      logger.error('알림 핸들러 초기화 실패', toError(error));
+    } finally {
+      isInitializingRef.current = false;
+    }
+  }, [isInitialized, handleNotificationReceived, handleNotificationResponse]);
+
+  /**
+   * 권한 요청
+   */
+  const requestPermission = useCallback(async (): Promise<boolean> => {
+    if (Platform.OS === 'web') return false;
+
+    setIsRequestingPermission(true);
+
+    try {
+      const result = await pushNotificationService.requestPermission();
+      setPermissionStatus(result.status);
+
+      if (result.granted) {
+        trackEvent('notification_permission_granted');
+      } else {
+        trackEvent('notification_permission_denied', {
+          can_ask_again: result.canAskAgain,
+        });
       }
-    };
 
-    setup();
+      return result.granted;
+    } catch (error) {
+      logger.error('권한 요청 실패', toError(error));
+      return false;
+    } finally {
+      setIsRequestingPermission(false);
+    }
+  }, []);
+
+  /**
+   * 토큰 등록
+   */
+  const registerToken = useCallback(async (): Promise<boolean> => {
+    if (!userId) {
+      logger.warn('토큰 등록 실패 - 로그인 필요');
+      return false;
+    }
+
+    if (Platform.OS === 'web') return false;
+
+    try {
+      const success = await pushNotificationService.registerToken(userId);
+      setIsTokenRegistered(success);
+
+      if (success) {
+        logger.info('FCM 토큰 등록 완료');
+      }
+
+      return success;
+    } catch (error) {
+      logger.error('토큰 등록 실패', toError(error));
+      return false;
+    }
+  }, [userId]);
+
+  /**
+   * 토큰 해제
+   */
+  const unregisterToken = useCallback(async (): Promise<boolean> => {
+    if (!userId) return true;
+    if (Platform.OS === 'web') return true;
+
+    try {
+      const success = await pushNotificationService.unregisterToken(userId);
+      setIsTokenRegistered(false);
+      logger.info('FCM 토큰 해제 완료');
+      return success;
+    } catch (error) {
+      logger.error('토큰 해제 실패', toError(error));
+      return false;
+    }
+  }, [userId]);
+
+  /**
+   * 뱃지 설정
+   */
+  const setBadge = useCallback(async (count: number): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await pushNotificationService.setBadge(count);
+  }, []);
+
+  /**
+   * 뱃지 초기화
+   */
+  const clearBadge = useCallback(async (): Promise<void> => {
+    if (Platform.OS === 'web') return;
+    await pushNotificationService.clearBadge();
+  }, []);
+
+  /**
+   * 설정 앱 열기 (권한 거부 시)
+   */
+  const openSettings = useCallback(async (): Promise<void> => {
+    try {
+      if (Platform.OS === 'ios') {
+        await Linking.openURL('app-settings:');
+      } else {
+        await Linking.openSettings();
+      }
+      trackEvent('notification_settings_opened');
+    } catch (error) {
+      logger.error('설정 앱 열기 실패', toError(error));
+    }
+  }, []);
+
+  // ============================================================================
+  // Effects
+  // ============================================================================
+
+  /**
+   * 자동 초기화
+   */
+  useEffect(() => {
+    if (autoInitialize) {
+      initialize();
+    }
+  }, [autoInitialize, initialize]);
+
+  /**
+   * 로그인 시 토큰 자동 등록
+   */
+  useEffect(() => {
+    if (autoRegisterToken && isInitialized && userId && permissionStatus === 'granted') {
+      registerToken();
+    }
+  }, [autoRegisterToken, isInitialized, userId, permissionStatus, registerToken]);
+
+  /**
+   * 토큰 갱신 서비스 (Exponential Backoff 기반)
+   *
+   * - 12시간마다 정기 갱신
+   * - 실패 시 Exponential Backoff 재시도 (30초 → 30분 max)
+   * - 네트워크/앱 상태 연동
+   */
+  useEffect(() => {
+    if (!isTokenRegistered || !userId) return;
+    if (Platform.OS === 'web') return;
+
+    tokenRefreshService.start(
+      {
+        userId,
+        onRefresh: async () => {
+          const success = await registerToken();
+          return success;
+        },
+        onFailure: (failureCount) => {
+          logger.warn('토큰 갱신 실패', { failureCount });
+        },
+        onSuccess: () => {
+          logger.info('토큰 갱신 성공 (tokenRefreshService)');
+        },
+      },
+      {
+        baseInterval: 12 * 60 * 60 * 1000, // 12시간
+      }
+    );
 
     return () => {
-      // 클린업
-      pushNotificationService.setNotificationReceivedHandler(null);
-      pushNotificationService.setNotificationResponseHandler(null);
-      isSetup.current = false;
+      tokenRefreshService.stop();
     };
-  }, [handleNotificationReceived, handleNotificationResponse]);
+  }, [isTokenRegistered, userId, registerToken]);
 
   /**
-   * 사용자 로그인 시 토큰 등록
+   * 로그아웃 시 토큰 상태 초기화
    */
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!userId && isTokenRegistered) {
+      setIsTokenRegistered(false);
+    }
+  }, [userId, isTokenRegistered]);
+
+  /**
+   * 앱 상태 변경 시 처리
+   * - 포그라운드 복귀: 뱃지 초기화 + 권한 상태 재확인 + 토큰 갱신 확인
+   */
+  useEffect(() => {
     if (Platform.OS === 'web') return;
 
-    const registerToken = async () => {
-      const permission = await pushNotificationService.checkPermission();
+    const handleAppStateChange = async (nextAppState: AppStateStatus) => {
+      if (
+        appStateRef.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        // 앱이 포그라운드로 돌아올 때
+        clearBadge();
 
-      if (!permission.granted) {
-        // 권한이 없으면 요청
-        const result = await pushNotificationService.requestPermission();
-        if (!result.granted) {
-          logger.info('푸시 알림 권한 거부');
-          return;
+        // 권한 상태 재확인 (설정 앱에서 변경했을 수 있음)
+        const permission = await pushNotificationService.checkPermission();
+        setPermissionStatus(permission.status);
+
+        // 권한이 새로 부여되었으면 토큰 등록
+        if (permission.granted && !isTokenRegistered && userId) {
+          registerToken();
+        } else if (permission.granted && isTokenRegistered) {
+          // 포그라운드 복귀 시 토큰 갱신 필요 여부 확인
+          if (tokenRefreshService.shouldRefreshOnForeground()) {
+            logger.info('포그라운드 복귀 시 토큰 갱신 트리거');
+            tokenRefreshService.triggerRefresh();
+          }
         }
       }
-
-      // 토큰 등록
-      await pushNotificationService.registerToken(user.uid);
+      appStateRef.current = nextAppState;
     };
 
-    registerToken();
-  }, [user?.uid]);
+    const subscription = AppState.addEventListener('change', handleAppStateChange);
+    return () => subscription.remove();
+  }, [clearBadge, isTokenRegistered, userId, registerToken]);
 
   /**
    * 딥링크 리스너 설정
@@ -201,6 +454,36 @@ export function useNotificationHandler(options: UseNotificationHandlerOptions = 
 
     return cleanup;
   }, []);
+
+  /**
+   * 클린업
+   */
+  useEffect(() => {
+    return () => {
+      pushNotificationService.setNotificationReceivedHandler(null);
+      pushNotificationService.setNotificationResponseHandler(null);
+    };
+  }, []);
+
+  // ============================================================================
+  // Return
+  // ============================================================================
+
+  return {
+    // 상태
+    isInitialized,
+    permissionStatus,
+    isRequestingPermission,
+    isTokenRegistered,
+
+    // 액션
+    requestPermission,
+    registerToken,
+    unregisterToken,
+    setBadge,
+    clearBadge,
+    openSettings,
+  };
 }
 
 export default useNotificationHandler;

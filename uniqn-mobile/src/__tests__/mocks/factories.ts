@@ -363,7 +363,7 @@ export interface MockScheduleEvent {
   date: string;
   startTime: { toMillis: () => number; toDate: () => Date } | null;
   endTime: { toMillis: () => number; toDate: () => Date } | null;
-  // 정규화된 필드 (Phase 2 - eventId/eventName 제거됨)
+  // 공고 정보
   jobPostingId: string;
   jobPostingName: string;
   location: string;
@@ -402,7 +402,7 @@ export function createMockScheduleEvent(
     id: `schedule-${scheduleCounter}`,
     type: 'confirmed',
     date: new Date().toISOString().split('T')[0],
-    // 정규화된 필드 (Phase 2 - eventId/eventName 제거됨)
+    // 공고 정보
     jobPostingId,
     jobPostingName,
     location: '서울 강남구',

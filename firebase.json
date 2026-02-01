@@ -1,29 +1,86 @@
 {
-  "hosting": {
-    "public": "app2/build",
-    "ignore": [
-      "firebase.json",
-      "**/.*",
-      "**/node_modules/**"
-    ],
-    "rewrites": [
-      {
-        "source": "**",
-        "destination": "/index.html"
-      }
-    ],
-    "headers": [
-      {
-        "source": "/static/**",
-        "headers": [
-          {
-            "key": "Cache-Control",
-            "value": "public, max-age=31536000"
-          }
-        ]
-      }
-    ]
-  },
+  "hosting": [
+    {
+      "target": "web",
+      "public": "app2/build",
+      "ignore": [
+        "firebase.json",
+        "**/.*",
+        "**/node_modules/**"
+      ],
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "/static/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "target": "mobile",
+      "public": "uniqn-mobile/dist",
+      "ignore": [
+        "firebase.json",
+        "**/.*"
+      ],
+      "cleanUrls": true,
+      "trailingSlash": false,
+      "rewrites": [
+        {
+          "source": "**",
+          "destination": "/index.html"
+        }
+      ],
+      "headers": [
+        {
+          "source": "**/*.@(ttf|woff|woff2|eot|otf)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000"
+            }
+          ]
+        },
+        {
+          "source": "**/*.@(js|css|map)",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000"
+            }
+          ]
+        },
+        {
+          "source": "/_expo/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000"
+            }
+          ]
+        },
+        {
+          "source": "/assets/**",
+          "headers": [
+            {
+              "key": "Cache-Control",
+              "value": "public, max-age=31536000"
+            }
+          ]
+        }
+      ]
+    }
+  ],
   "storage": {
     "rules": "storage.rules"
   },

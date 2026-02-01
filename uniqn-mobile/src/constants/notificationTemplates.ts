@@ -71,6 +71,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     icon: '😢',
   },
 
+  [NotificationType.CANCELLATION_APPROVED]: {
+    title: '취소 요청 승인',
+    body: (d) => `"${d.jobTitle}" 취소 요청이 승인되었습니다.`,
+    link: () => '/schedule',
+    icon: '✅',
+  },
+
+  [NotificationType.CANCELLATION_REJECTED]: {
+    title: '취소 요청 거절',
+    body: (d) => `"${d.jobTitle}" 취소 요청이 거절되었습니다.${d.reason ? ` 사유: ${d.reason}` : ''}`,
+    link: () => '/schedule',
+    icon: '❌',
+  },
+
   // =========================================================================
   // 출퇴근 관련
   // =========================================================================
@@ -87,6 +101,20 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: (d) => `${d.staffName}님이 퇴근했습니다. 근무시간: ${d.workHours}`,
     link: (d) => `/employer/postings/${d.jobPostingId}/settlement`,
     icon: '🔴',
+  },
+
+  [NotificationType.CHECK_IN_CONFIRMED]: {
+    title: '✅ 출근 확인',
+    body: (d) => `"${d.jobTitle}" 출근이 확인되었습니다. (${d.checkInTime || ''})`,
+    link: (d) => `/schedule?date=${d.workDate}`,
+    icon: '✅',
+  },
+
+  [NotificationType.CHECK_OUT_CONFIRMED]: {
+    title: '✅ 퇴근 확인',
+    body: (d) => `"${d.jobTitle}" 퇴근이 확인되었습니다. 근무시간: ${d.workHours || ''}`,
+    link: (d) => `/schedule?date=${d.workDate}`,
+    icon: '✅',
   },
 
   [NotificationType.CHECKIN_REMINDER]: {
@@ -146,20 +174,6 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
   // 공고 관련
   // =========================================================================
 
-  [NotificationType.JOB_CLOSING_SOON]: {
-    title: '⏳ 마감 임박',
-    body: (d) => `"${d.jobTitle}" 공고가 ${d.remainingTime}에 마감됩니다.`,
-    link: (d) => `/jobs/${d.jobPostingId}`,
-    icon: '⏳',
-  },
-
-  [NotificationType.NEW_JOB_IN_AREA]: {
-    title: '📍 새 공고',
-    body: (d) => `${d.location}에 새로운 공고가 등록되었습니다. "${d.jobTitle}"`,
-    link: (d) => `/jobs/${d.jobPostingId}`,
-    icon: '📍',
-  },
-
   [NotificationType.JOB_UPDATED]: {
     title: '공고 수정',
     body: (d) => `"${d.jobTitle}" 공고가 수정되었습니다.`,
@@ -172,6 +186,13 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: (d) => `"${d.jobTitle}" 공고가 취소되었습니다.`,
     link: () => '/jobs',
     icon: '🚫',
+  },
+
+  [NotificationType.JOB_CLOSED]: {
+    title: '📋 공고 마감 안내',
+    body: (d) => `"${d.jobTitle}" 공고가 마감되었습니다.`,
+    link: () => '/my-applications',
+    icon: '📋',
   },
 
   // =========================================================================
@@ -215,6 +236,27 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     body: () => '신고가 처리되었습니다.',
     link: (d) => `/support/reports/${d.reportId}`,
     icon: '✅',
+  },
+
+  [NotificationType.NEW_REPORT]: {
+    title: '🚨 새로운 신고 접수',
+    body: (d) => `${d.reporterName}님이 ${d.targetName}님을 신고했습니다.`,
+    link: (d) => `/admin/reports/${d.reportId}`,
+    icon: '🚨',
+  },
+
+  [NotificationType.NEW_INQUIRY]: {
+    title: '💬 새로운 문의 접수',
+    body: (d) => `${d.userName}님의 문의: ${d.subject}`,
+    link: (d) => `/admin/inquiries/${d.inquiryId}`,
+    icon: '💬',
+  },
+
+  [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: {
+    title: '🏆 대회공고 승인 요청',
+    body: (d) => `${d.employerName}님이 "${d.jobTitle}" 대회공고 승인을 요청했습니다.`,
+    link: (d) => `/admin/tournaments/${d.jobPostingId}`,
+    icon: '🏆',
   },
 };
 

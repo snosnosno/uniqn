@@ -374,11 +374,34 @@ export const useNotificationStore = create<NotificationState>()(
     {
       name: 'notification-storage',
       storage: createJSONStorage(() => mmkvStorage),
-      // 캐싱할 데이터 선택 (알림 목록은 제외, 설정만 저장)
+      // 캐싱할 데이터 선택
       partialize: (state) => ({
         settings: state.settings,
         lastFetchedAt: state.lastFetchedAt,
+        // 오프라인 지원: 최신 50개 알림 캐시
+        cachedNotifications: state.notifications.slice(0, 50),
       }),
+      // 상태 복원 시 캐시된 알림 복원
+      onRehydrateStorage: () => {
+        return (state, error) => {
+          if (error) {
+            // eslint-disable-next-line no-console
+            console.warn('[NotificationStore] 복원 실패:', error);
+            return;
+          }
+
+          // cachedNotifications가 있고 현재 notifications가 비어있으면 복원
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const persistedState = state as any;
+          if (
+            persistedState?.cachedNotifications?.length > 0 &&
+            (!state?.notifications || state.notifications.length === 0)
+          ) {
+            // 캐시된 알림으로 초기화
+            state?.setNotifications?.(persistedState.cachedNotifications);
+          }
+        };
+      },
     }
   )
 );

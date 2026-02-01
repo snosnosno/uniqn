@@ -88,6 +88,12 @@ export { useQRCodeScanner, useQRScannerModal, useQRDisplayModal } from './useQRC
 // ============================================================================
 
 export {
+  useNotificationHandler,
+  type UseNotificationHandlerOptions,
+  type UseNotificationHandlerReturn,
+} from './useNotificationHandler';
+
+export {
   useNotificationList,
   useNotificationRealtime,
   useUnreadCountRealtime,
