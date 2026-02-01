@@ -41,10 +41,7 @@ export interface NotificationSettingsProps {
 }
 
 // 카테고리별 아이콘과 설명
-const categoryInfo: Record<
-  NotificationCategory,
-  { description: string; color: string }
-> = {
+const categoryInfo: Record<NotificationCategory, { description: string; color: string }> = {
   [NotificationCategory.APPLICATION]: {
     description: '지원, 확정, 거절 관련 알림',
     color: 'bg-primary-500',
@@ -159,10 +156,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
   const categoryKeys = Object.values(NotificationCategory);
 
   return (
-    <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-surface-dark"
-      contentContainerClassName="p-4"
-    >
+    <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark" contentContainerClassName="p-4">
       {/* 푸시 알림 권한 영구 거부 배너 */}
       {pushPermission && !pushPermission.granted && !pushPermission.canAskAgain && (
         <Pressable
@@ -210,9 +204,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               <BellSlashIcon size={24} color="#9ca3af" />
             )}
             <View className="ml-3">
-              <Text className="text-base font-medium text-gray-900 dark:text-white">
-                알림 받기
-              </Text>
+              <Text className="text-base font-medium text-gray-900 dark:text-white">알림 받기</Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
                 모든 알림을 켜거나 끕니다
               </Text>
@@ -315,9 +307,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
               {/* 푸시 알림 토글 (서브 옵션) */}
               {categorySettings?.enabled && (
                 <View className="flex-row items-center justify-between mt-3 ml-5 pt-3 border-t border-gray-100 dark:border-surface">
-                  <Text className="text-sm text-gray-600 dark:text-gray-400">
-                    푸시 알림 받기
-                  </Text>
+                  <Text className="text-sm text-gray-600 dark:text-gray-400">푸시 알림 받기</Text>
                   <Switch
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}

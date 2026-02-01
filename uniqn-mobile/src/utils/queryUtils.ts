@@ -60,10 +60,7 @@ export function stableFilters<T extends object>(
  *
  * @description 두 Query Key가 동일한지 비교
  */
-export function areQueryKeysEqual(
-  keyA: readonly unknown[],
-  keyB: readonly unknown[]
-): boolean {
+export function areQueryKeysEqual(keyA: readonly unknown[], keyB: readonly unknown[]): boolean {
   if (keyA.length !== keyB.length) return false;
 
   return keyA.every((item, index) => {

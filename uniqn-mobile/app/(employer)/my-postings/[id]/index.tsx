@@ -124,9 +124,7 @@ function ActionCard({ icon, title, description, badge, onPress }: ActionCardProp
               </Badge>
             )}
           </View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-            {description}
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">{description}</Text>
         </View>
         <ChevronRightIcon size={20} color="#9CA3AF" />
       </Card>
@@ -192,7 +190,7 @@ export default function JobPostingDetailScreen() {
 
   // 정보 섹션 토글
   const handleToggleInfo = useCallback(() => {
-    setIsInfoExpanded(prev => !prev);
+    setIsInfoExpanded((prev) => !prev);
   }, []);
 
   // 수당 정보 (v2.0) - hooks는 조건부 반환 전에 호출해야 함
@@ -244,15 +242,16 @@ export default function JobPostingDetailScreen() {
 
   // 안전한 값 추출
   const safeTitle = String(posting.title || '제목 없음');
-  const safeLocationName = typeof posting.location === 'string'
-    ? posting.location
-    : (posting.location?.name || '장소 미정');
+  const safeLocationName =
+    typeof posting.location === 'string' ? posting.location : posting.location?.name || '장소 미정';
 
   // dateSpecificRequirements 유무 확인 (v2.0)
-  const hasDateRequirements = posting.dateSpecificRequirements && posting.dateSpecificRequirements.length > 0;
+  const hasDateRequirements =
+    posting.dateSpecificRequirements && posting.dateSpecificRequirements.length > 0;
 
   // 사전질문 개수 (v2.0)
-  const preQuestionCount = posting.usesPreQuestions && posting.preQuestions ? posting.preQuestions.length : 0;
+  const preQuestionCount =
+    posting.usesPreQuestions && posting.preQuestions ? posting.preQuestions.length : 0;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -263,27 +262,28 @@ export default function JobPostingDetailScreen() {
             {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
             {posting.postingType && posting.postingType !== 'regular' && (
               <View className="flex-row items-center flex-wrap mb-1.5">
-                <PostingTypeBadge
-                  type={posting.postingType as PostingType}
-                  size="sm"
-                />
+                <PostingTypeBadge type={posting.postingType as PostingType} size="sm" />
                 {/* 대회공고 승인 상태 뱃지 */}
-                {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus && (
-                  <View className="ml-2">
-                    <TournamentStatusBadge
-                      status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
-                      rejectionReason={posting.tournamentConfig.rejectionReason}
-                      size="sm"
-                    />
-                  </View>
-                )}
+                {posting.postingType === 'tournament' &&
+                  posting.tournamentConfig?.approvalStatus && (
+                    <View className="ml-2">
+                      <TournamentStatusBadge
+                        status={posting.tournamentConfig.approvalStatus as TournamentApprovalStatus}
+                        rejectionReason={posting.tournamentConfig.rejectionReason}
+                        size="sm"
+                      />
+                    </View>
+                  )}
               </View>
             )}
 
             {/* 헤더: 제목 + 상태뱃지 + 접기버튼 */}
             <View className="flex-row items-start justify-between mb-2">
               {/* 제목 */}
-              <Text className="flex-1 text-lg font-bold text-gray-900 dark:text-white mr-3" numberOfLines={2}>
+              <Text
+                className="flex-1 text-lg font-bold text-gray-900 dark:text-white mr-3"
+                numberOfLines={2}
+              >
                 {safeTitle}
               </Text>
               {/* 상태뱃지 + 접기/펼치기 버튼 */}
@@ -312,105 +312,107 @@ export default function JobPostingDetailScreen() {
             {isInfoExpanded && (
               <>
                 {/* 장소 */}
-            <View className="flex-row items-center mb-3">
-              <MapPinIcon size={18} color="#9333EA" />
-              <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                {safeLocationName}
-              </Text>
-            </View>
-
-            {/* 날짜/시간 (v2.0: 날짜별 요구사항 또는 고정공고 일정) */}
-            {posting.postingType === 'fixed' ? (
-              // 고정공고: FixedScheduleDisplay 사용
-              <View className="mb-4">
-                <View className="flex-row items-center mb-2">
-                  <ClockIcon size={18} color="#9333EA" />
-                  <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
-                    근무 일정
+                <View className="flex-row items-center mb-3">
+                  <MapPinIcon size={18} color="#9333EA" />
+                  <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
+                    {safeLocationName}
                   </Text>
                 </View>
-                <View className="ml-6">
-                  <FixedScheduleDisplay
-                    daysPerWeek={posting.daysPerWeek}
-                    startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
-                    roles={posting.requiredRolesWithCount?.map((r) => ({
-                      role: r.role,
-                      count: r.count,
-                    }))}
-                    showRoles={true}
-                    showFilledCount={true}
-                  />
-                </View>
-              </View>
-            ) : hasDateRequirements ? (
-              <View className="mb-4">
-                <View className="flex-row items-center mb-2">
-                  <ClockIcon size={18} color="#9333EA" />
-                  <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
-                    근무 일정
-                  </Text>
-                </View>
-                <View className="ml-6">
-                  <GroupedDateRequirementDisplay
-                    requirements={posting.dateSpecificRequirements!}
-                    showFilledCount={true}
-                  />
-                </View>
-              </View>
-            ) : (
-              <View className="flex-row items-center mb-3">
-                <ClockIcon size={18} color="#9333EA" />
-                <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                  {`${posting.workDate || ''} ${posting.timeSlot || ''}`.trim() || '일정 미정'}
-                </Text>
-              </View>
-            )}
 
-            {/* 급여 (v2.0: 역할별 급여) */}
-            <View className="mb-4">
-              <View className="flex-row items-center mb-2">
-                <CurrencyDollarIcon size={18} color="#9333EA" />
-                <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
-                  급여
-                </Text>
-              </View>
-              <View className="ml-6">
-                <RoleSalaryDisplay
-                  roles={posting.roles}
-                  useSameSalary={posting.useSameSalary}
-                  defaultSalary={posting.defaultSalary}
-                  compact={false}
-                />
-              </View>
-            </View>
+                {/* 날짜/시간 (v2.0: 날짜별 요구사항 또는 고정공고 일정) */}
+                {posting.postingType === 'fixed' ? (
+                  // 고정공고: FixedScheduleDisplay 사용
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <ClockIcon size={18} color="#9333EA" />
+                      <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
+                        근무 일정
+                      </Text>
+                    </View>
+                    <View className="ml-6">
+                      <FixedScheduleDisplay
+                        daysPerWeek={posting.daysPerWeek}
+                        startTime={posting.timeSlot?.split(/[-~]/)[0]?.trim()}
+                        roles={posting.requiredRolesWithCount?.map((r) => ({
+                          role: r.role,
+                          count: r.count,
+                        }))}
+                        showRoles={true}
+                        showFilledCount={true}
+                      />
+                    </View>
+                  </View>
+                ) : hasDateRequirements ? (
+                  <View className="mb-4">
+                    <View className="flex-row items-center mb-2">
+                      <ClockIcon size={18} color="#9333EA" />
+                      <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
+                        근무 일정
+                      </Text>
+                    </View>
+                    <View className="ml-6">
+                      <GroupedDateRequirementDisplay
+                        requirements={posting.dateSpecificRequirements!}
+                        showFilledCount={true}
+                      />
+                    </View>
+                  </View>
+                ) : (
+                  <View className="flex-row items-center mb-3">
+                    <ClockIcon size={18} color="#9333EA" />
+                    <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
+                      {`${posting.workDate || ''} ${posting.timeSlot || ''}`.trim() || '일정 미정'}
+                    </Text>
+                  </View>
+                )}
 
-            {/* 수당 (v2.0) */}
-            {allowanceItems.length > 0 && (
-              <View className="flex-row flex-wrap mb-4 ml-6">
-                {allowanceItems.map((item, idx) => (
-                  <Badge key={idx} variant="default" size="sm" className="mr-2 mb-1">
-                    {item}
-                  </Badge>
-                ))}
-              </View>
-            )}
+                {/* 급여 (v2.0: 역할별 급여) */}
+                <View className="mb-4">
+                  <View className="flex-row items-center mb-2">
+                    <CurrencyDollarIcon size={18} color="#9333EA" />
+                    <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
+                      급여
+                    </Text>
+                  </View>
+                  <View className="ml-6">
+                    <RoleSalaryDisplay
+                      roles={posting.roles}
+                      useSameSalary={posting.useSameSalary}
+                      defaultSalary={posting.defaultSalary}
+                      compact={false}
+                    />
+                  </View>
+                </View>
 
-            {/* 사전질문 설정 (v2.0) */}
-            {preQuestionCount > 0 && (
-              <View className="flex-row items-center mb-4">
-                <DocumentIcon size={18} color="#9333EA" />
-                <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
-                  사전질문 {preQuestionCount}개 설정됨
-                </Text>
-              </View>
-            )}
+                {/* 수당 (v2.0) */}
+                {allowanceItems.length > 0 && (
+                  <View className="flex-row flex-wrap mb-4 ml-6">
+                    {allowanceItems.map((item, idx) => (
+                      <Badge key={idx} variant="default" size="sm" className="mr-2 mb-1">
+                        {item}
+                      </Badge>
+                    ))}
+                  </View>
+                )}
+
+                {/* 사전질문 설정 (v2.0) */}
+                {preQuestionCount > 0 && (
+                  <View className="flex-row items-center mb-4">
+                    <DocumentIcon size={18} color="#9333EA" />
+                    <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
+                      사전질문 {preQuestionCount}개 설정됨
+                    </Text>
+                  </View>
+                )}
               </>
             )}
 
             {/* 모집 현황 - 지원자(사람) + 배정(슬롯) 구분 표시 */}
             <View className="px-3 pt-3 pb-2 bg-gray-50 dark:bg-surface rounded-lg">
               {/* 지원자 현황 (사람 수) */}
-              <View className={`flex-row justify-around ${posting.postingType === 'tournament' ? 'mb-2 pb-2 border-b border-gray-200 dark:border-surface-overlay' : ''}`}>
+              <View
+                className={`flex-row justify-around ${posting.postingType === 'tournament' ? 'mb-2 pb-2 border-b border-gray-200 dark:border-surface-overlay' : ''}`}
+              >
                 <View className="items-center flex-1">
                   <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
                     {totalApplicants}
@@ -452,9 +454,7 @@ export default function JobPostingDetailScreen() {
 
         {/* 관리 메뉴 */}
         <View className="px-4 pt-3 pb-4">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
-            관리
-          </Text>
+          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">관리</Text>
 
           <View className="gap-3">
             {/* 지원자 관리 */}
@@ -462,7 +462,11 @@ export default function JobPostingDetailScreen() {
               icon={<UsersIcon size={24} color="#9333EA" />}
               title="지원자 관리"
               description={`${pendingApplicants}명의 지원자가 대기중입니다`}
-              badge={pendingApplicants > 0 ? { label: `${pendingApplicants}명`, variant: 'warning' } : undefined}
+              badge={
+                pendingApplicants > 0
+                  ? { label: `${pendingApplicants}명`, variant: 'warning' }
+                  : undefined
+              }
               onPress={handleApplicants}
             />
 
@@ -471,7 +475,11 @@ export default function JobPostingDetailScreen() {
               icon={<XCircleIcon size={24} color="#EF4444" />}
               title="취소 요청 관리"
               description="스태프의 취소 요청 검토"
-              badge={cancellationPendingCount > 0 ? { label: `${cancellationPendingCount}건`, variant: 'error' } : undefined}
+              badge={
+                cancellationPendingCount > 0
+                  ? { label: `${cancellationPendingCount}건`, variant: 'error' }
+                  : undefined
+              }
               onPress={handleCancellationRequests}
             />
 
@@ -480,7 +488,11 @@ export default function JobPostingDetailScreen() {
               icon={<BanknotesIcon size={24} color="#10B981" />}
               title="스태프/정산 관리"
               description="확정 스태프 관리 및 정산"
-              badge={filledPositions > 0 ? { label: `${filledPositions}건`, variant: 'success' } : undefined}
+              badge={
+                filledPositions > 0
+                  ? { label: `${filledPositions}건`, variant: 'success' }
+                  : undefined
+              }
               onPress={handleSettlements}
             />
 
@@ -510,52 +522,56 @@ export default function JobPostingDetailScreen() {
 
         {/* 대회공고 거부 안내 및 재제출 (거부된 경우에만 표시) */}
         {posting.postingType === 'tournament' &&
-         posting.tournamentConfig?.approvalStatus === 'rejected' && (
-          <View className="px-4 pb-4">
-            <Card variant="outlined" padding="md" className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20">
-              <View className="flex-row items-start mb-3">
-                <XCircleIcon size={20} color="#EF4444" />
-                <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
-                  승인이 거부되었습니다
+          posting.tournamentConfig?.approvalStatus === 'rejected' && (
+            <View className="px-4 pb-4">
+              <Card
+                variant="outlined"
+                padding="md"
+                className="border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20"
+              >
+                <View className="flex-row items-start mb-3">
+                  <XCircleIcon size={20} color="#EF4444" />
+                  <Text className="ml-2 text-base font-semibold text-red-700 dark:text-red-400">
+                    승인이 거부되었습니다
+                  </Text>
+                </View>
+
+                {posting.tournamentConfig.rejectionReason && (
+                  <View className="mb-4 p-3 bg-white dark:bg-surface rounded-lg">
+                    <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      거부 사유
+                    </Text>
+                    <Text className="text-base text-gray-700 dark:text-gray-300">
+                      {posting.tournamentConfig.rejectionReason}
+                    </Text>
+                  </View>
+                )}
+
+                <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                  공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
                 </Text>
-              </View>
 
-              {posting.tournamentConfig.rejectionReason && (
-                <View className="mb-4 p-3 bg-white dark:bg-surface rounded-lg">
-                  <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
-                    거부 사유
-                  </Text>
-                  <Text className="text-base text-gray-700 dark:text-gray-300">
-                    {posting.tournamentConfig.rejectionReason}
-                  </Text>
+                <View className="flex-row">
+                  <Pressable
+                    onPress={handleEdit}
+                    className="flex-1 mr-2 py-3 rounded-xl border border-primary-600 dark:border-primary-500 items-center justify-center"
+                  >
+                    <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
+                      수정하기
+                    </Text>
+                  </Pressable>
+                  <View className="flex-1 ml-2">
+                    <ResubmitButton
+                      postingId={posting.id}
+                      size="md"
+                      fullWidth
+                      onSuccess={refresh}
+                    />
+                  </View>
                 </View>
-              )}
-
-              <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                공고 내용을 수정한 후 재제출하시면 다시 검토됩니다.
-              </Text>
-
-              <View className="flex-row">
-                <Pressable
-                  onPress={handleEdit}
-                  className="flex-1 mr-2 py-3 rounded-xl border border-primary-600 dark:border-primary-500 items-center justify-center"
-                >
-                  <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
-                    수정하기
-                  </Text>
-                </Pressable>
-                <View className="flex-1 ml-2">
-                  <ResubmitButton
-                    postingId={posting.id}
-                    size="md"
-                    fullWidth
-                    onSuccess={refresh}
-                  />
-                </View>
-              </View>
-            </Card>
-          </View>
-        )}
+              </Card>
+            </View>
+          )}
 
         {/* 공고 삭제 버튼 */}
         <View className="px-4 pb-8 pt-4 border-t border-gray-200 dark:border-surface-overlay">

@@ -15,11 +15,7 @@
 // ============================================================================
 
 // 공통 타입 (스태프 관련)
-export type {
-  UserRole,
-  StaffRole,
-  Staff,
-} from '@/types/common';
+export type { UserRole, StaffRole, Staff } from '@/types/common';
 
 // 사용자 프로필
 export type {

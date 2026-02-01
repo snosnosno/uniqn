@@ -10,10 +10,7 @@
 // ============================================================================
 
 import { renderHook, act } from '@testing-library/react-native';
-import {
-  createMockApplication,
-  resetCounters,
-} from '../mocks/factories';
+import { createMockApplication, resetCounters } from '../mocks/factories';
 
 // ============================================================================
 // Import After Mocks
@@ -107,69 +104,70 @@ let mockData: unknown = undefined;
 let mockError: Error | null = null;
 
 jest.mock('@tanstack/react-query', () => ({
-  useQuery: jest.fn((options: {
-    queryKey: string[];
-    queryFn: () => Promise<unknown>;
-    enabled?: boolean;
-  }) => {
-    if (options.enabled === false) {
+  useQuery: jest.fn(
+    (options: { queryKey: string[]; queryFn: () => Promise<unknown>; enabled?: boolean }) => {
+      if (options.enabled === false) {
+        return {
+          data: undefined,
+          isLoading: false,
+          error: null,
+          refetch: mockRefetch,
+        };
+      }
       return {
-        data: undefined,
-        isLoading: false,
-        error: null,
+        data: mockData,
+        isLoading: mockIsLoading,
+        error: mockError,
         refetch: mockRefetch,
       };
     }
-    return {
-      data: mockData,
-      isLoading: mockIsLoading,
-      error: mockError,
-      refetch: mockRefetch,
-    };
-  }),
-  useMutation: jest.fn((options: {
-    mutationFn: (...args: unknown[]) => Promise<unknown>;
-    onSuccess?: (data: unknown, variables: unknown) => void;
-    onError?: (error: Error) => void;
-  }) => {
-    // mutate doesn't throw - errors are handled via onError callback
-    mockMutate.mockImplementation((args: unknown) => {
-      mockIsPending = true;
-      options.mutationFn(args)
-        .then((result) => {
+  ),
+  useMutation: jest.fn(
+    (options: {
+      mutationFn: (...args: unknown[]) => Promise<unknown>;
+      onSuccess?: (data: unknown, variables: unknown) => void;
+      onError?: (error: Error) => void;
+    }) => {
+      // mutate doesn't throw - errors are handled via onError callback
+      mockMutate.mockImplementation((args: unknown) => {
+        mockIsPending = true;
+        options
+          .mutationFn(args)
+          .then((result) => {
+            options.onSuccess?.(result, args);
+            mockIsPending = false;
+          })
+          .catch((error) => {
+            mockError = error as Error;
+            options.onError?.(error as Error);
+            mockIsPending = false;
+          });
+      });
+      // mutateAsync does throw
+      mockMutateAsync.mockImplementation(async (args: unknown) => {
+        try {
+          mockIsPending = true;
+          const result = await options.mutationFn(args);
           options.onSuccess?.(result, args);
           mockIsPending = false;
-        })
-        .catch((error) => {
+          return result;
+        } catch (error) {
           mockError = error as Error;
           options.onError?.(error as Error);
           mockIsPending = false;
-        });
-    });
-    // mutateAsync does throw
-    mockMutateAsync.mockImplementation(async (args: unknown) => {
-      try {
-        mockIsPending = true;
-        const result = await options.mutationFn(args);
-        options.onSuccess?.(result, args);
-        mockIsPending = false;
-        return result;
-      } catch (error) {
-        mockError = error as Error;
-        options.onError?.(error as Error);
-        mockIsPending = false;
-        throw error;
-      }
-    });
+          throw error;
+        }
+      });
 
-    return {
-      mutate: mockMutate,
-      mutateAsync: mockMutateAsync,
-      data: mockData,
-      isPending: mockIsPending,
-      error: mockError,
-    };
-  }),
+      return {
+        mutate: mockMutate,
+        mutateAsync: mockMutateAsync,
+        data: mockData,
+        isPending: mockIsPending,
+        error: mockError,
+      };
+    }
+  ),
   useQueryClient: () => mockQueryClient,
 }));
 
@@ -208,7 +206,7 @@ function createMockApplicantWithDetails(overrides: Record<string, unknown> = {})
   // assignments 기본값 (overrides에서 role을 받으면 해당 role 사용)
   const defaultRole = 'dealer';
   const defaultAssignments = [
-    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: [defaultRole] }
+    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: [defaultRole] },
   ];
   return {
     ...base,
@@ -322,10 +320,7 @@ describe('useApplicantManagement Hooks', () => {
         result.current.mutate({ applicationId: 'app-1' });
       });
 
-      expect(mockConfirmApplication).toHaveBeenCalledWith(
-        { applicationId: 'app-1' },
-        'employer-1'
-      );
+      expect(mockConfirmApplication).toHaveBeenCalledWith({ applicationId: 'app-1' }, 'employer-1');
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '지원자가 확정되었습니다.',
@@ -511,9 +506,18 @@ describe('useApplicantManagement Hooks', () => {
 
     it('should filter applicants by role', () => {
       const mockApplicantList = createMockApplicantListResult([
-        createMockApplicantWithDetails({ id: 'app-1', assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }] }),
-        createMockApplicantWithDetails({ id: 'app-2', assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['floor'] }] }),
-        createMockApplicantWithDetails({ id: 'app-3', assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }] }),
+        createMockApplicantWithDetails({
+          id: 'app-1',
+          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
+        }),
+        createMockApplicantWithDetails({
+          id: 'app-2',
+          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['floor'] }],
+        }),
+        createMockApplicantWithDetails({
+          id: 'app-3',
+          assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
+        }),
       ]);
       mockData = mockApplicantList;
 

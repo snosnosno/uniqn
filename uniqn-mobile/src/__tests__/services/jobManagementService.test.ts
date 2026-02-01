@@ -5,10 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  createMockJobPosting,
-  resetCounters,
-} from '../mocks/factories';
+import { createMockJobPosting, resetCounters } from '../mocks/factories';
 import type { CreateJobPostingInput, StaffRole } from '@/types';
 
 // Import after mocks
@@ -142,8 +139,18 @@ function createTestJobPostingInput(): CreateJobPostingInput {
     workDate: '2024-02-01',
     timeSlot: '09:00-18:00',
     roles: [
-      { role: 'dealer' as StaffRole, count: 3, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
-      { role: 'manager' as StaffRole, count: 1, filled: 0, salary: { type: 'hourly' as const, amount: 15000 } },
+      {
+        role: 'dealer' as StaffRole,
+        count: 3,
+        filled: 0,
+        salary: { type: 'hourly' as const, amount: 15000 },
+      },
+      {
+        role: 'manager' as StaffRole,
+        count: 1,
+        filled: 0,
+        salary: { type: 'hourly' as const, amount: 15000 },
+      },
     ],
     defaultSalary: {
       type: 'hourly' as const,
@@ -240,9 +247,7 @@ describe('jobManagementService', () => {
       const input = createTestJobPostingInput();
       mockSetDoc.mockRejectedValueOnce(new Error('Firebase error'));
 
-      await expect(
-        createJobPosting(input, 'employer-1', '테스트 구인자')
-      ).rejects.toThrow();
+      await expect(createJobPosting(input, 'employer-1', '테스트 구인자')).rejects.toThrow();
     });
   });
 
@@ -265,11 +270,7 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      const result = await updateJobPosting(
-        'job-1',
-        { title: '수정된 제목' },
-        'employer-1'
-      );
+      const result = await updateJobPosting('job-1', { title: '수정된 제목' }, 'employer-1');
 
       expect(result.title).toBe('수정된 제목');
     });
@@ -307,9 +308,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        updateJobPosting('job-1', { title: '수정' }, 'employer-1')
-      ).rejects.toThrow('본인의 공고만 수정할 수 있습니다');
+      await expect(updateJobPosting('job-1', { title: '수정' }, 'employer-1')).rejects.toThrow(
+        '본인의 공고만 수정할 수 있습니다'
+      );
     });
 
     it('should throw error when modifying schedule with confirmed applicants', async () => {
@@ -330,11 +331,7 @@ describe('jobManagementService', () => {
       });
 
       await expect(
-        updateJobPosting(
-          'job-1',
-          { workDate: '2024-03-01' },
-          'employer-1'
-        )
+        updateJobPosting('job-1', { workDate: '2024-03-01' }, 'employer-1')
       ).rejects.toThrow('확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다');
     });
 
@@ -407,9 +404,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        deleteJobPosting('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(deleteJobPosting('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -429,9 +426,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        deleteJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('본인의 공고만 삭제할 수 있습니다');
+      await expect(deleteJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '본인의 공고만 삭제할 수 있습니다'
+      );
     });
 
     it('should throw error when deleting with confirmed applicants', async () => {
@@ -451,9 +448,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        deleteJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('확정된 지원자가 있는 공고는 삭제할 수 없습니다');
+      await expect(deleteJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '확정된 지원자가 있는 공고는 삭제할 수 없습니다'
+      );
     });
   });
 
@@ -498,9 +495,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        closeJobPosting('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(closeJobPosting('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -520,9 +517,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        closeJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('본인의 공고만 마감할 수 있습니다');
+      await expect(closeJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '본인의 공고만 마감할 수 있습니다'
+      );
     });
 
     it('should throw error if already closed', async () => {
@@ -542,9 +539,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        closeJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('이미 마감된 공고입니다');
+      await expect(closeJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '이미 마감된 공고입니다'
+      );
     });
   });
 
@@ -589,9 +586,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        reopenJobPosting('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(reopenJobPosting('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -612,9 +609,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        reopenJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('본인의 공고만 재오픈할 수 있습니다');
+      await expect(reopenJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '본인의 공고만 재오픈할 수 있습니다'
+      );
     });
 
     it('should throw error if already active', async () => {
@@ -634,9 +631,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        reopenJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('이미 활성 상태인 공고입니다');
+      await expect(reopenJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '이미 활성 상태인 공고입니다'
+      );
     });
 
     it('should throw error for cancelled job posting', async () => {
@@ -656,9 +653,9 @@ describe('jobManagementService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        reopenJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('삭제된 공고는 재오픈할 수 없습니다');
+      await expect(reopenJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '삭제된 공고는 재오픈할 수 없습니다'
+      );
     });
   });
 

@@ -91,16 +91,20 @@ const output = (level: LogLevel, entry: LogEntry): void => {
 
   // 프로덕션에서 error 레벨은 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
   if (isProduction && level === 'error' && entry.error) {
-    import('@/services/crashlyticsService').then(({ crashlyticsService }) => {
-      crashlyticsService.recordError(entry.error!, {
-        logMessage: entry.message,
-        ...entry.context,
-      }).catch(() => {
-        // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+    import('@/services/crashlyticsService')
+      .then(({ crashlyticsService }) => {
+        crashlyticsService
+          .recordError(entry.error!, {
+            logMessage: entry.message,
+            ...entry.context,
+          })
+          .catch(() => {
+            // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+          });
+      })
+      .catch(() => {
+        // 동적 import 실패 시 무시
       });
-    }).catch(() => {
-      // 동적 import 실패 시 무시
-    });
   }
 };
 
@@ -108,12 +112,18 @@ const output = (level: LogLevel, entry: LogEntry): void => {
  * LogContext를 CrashContext-호환 형식으로 변환
  * unknown 타입을 string | number | boolean | undefined로 필터링
  */
-const toCrashContext = (context: LogContext): Record<string, string | number | boolean | undefined> => {
+const toCrashContext = (
+  context: LogContext
+): Record<string, string | number | boolean | undefined> => {
   const result: Record<string, string | number | boolean | undefined> = {};
   for (const [key, value] of Object.entries(context)) {
     if (value === undefined || value === null) {
       result[key] = undefined;
-    } else if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    } else if (
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
       result[key] = value;
     } else {
       // 복잡한 타입은 JSON 문자열로 변환
@@ -258,14 +268,19 @@ export const logger = {
    */
   appError: (error: AppError | Error | unknown, context?: LogContext): void => {
     if (isAppError(error)) {
-      const entry = createEntry('error', error.message, {
-        ...context,
-        code: error.code,
-        category: error.category,
-        severity: error.severity,
-        isRetryable: error.isRetryable,
-        ...error.metadata,
-      }, error.originalError);
+      const entry = createEntry(
+        'error',
+        error.message,
+        {
+          ...context,
+          code: error.code,
+          category: error.category,
+          severity: error.severity,
+          isRetryable: error.isRetryable,
+          ...error.metadata,
+        },
+        error.originalError
+      );
 
       output('error', entry);
 
@@ -273,13 +288,15 @@ export const logger = {
       if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
         // LogContext를 CrashContext-호환 형식으로 변환
         const crashContext = context ? toCrashContext(context) : undefined;
-        import('@/services/crashlyticsService').then(({ crashlyticsService }) => {
-          crashlyticsService.recordAppError(error, crashContext).catch(() => {
-            // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+        import('@/services/crashlyticsService')
+          .then(({ crashlyticsService }) => {
+            crashlyticsService.recordAppError(error, crashContext).catch(() => {
+              // Crashlytics 전송 실패 시 무시 (무한 루프 방지)
+            });
+          })
+          .catch(() => {
+            // 동적 import 실패 시 무시
           });
-        }).catch(() => {
-          // 동적 import 실패 시 무시
-        });
       }
     } else if (error instanceof Error) {
       logger.error(error.message, error, context);
@@ -301,13 +318,16 @@ export const logger = {
     const level: LogLevel = status && status >= 400 ? 'error' : 'info';
     const message = `[Network] ${method} ${url}${status ? ` - ${status}` : ''}`;
 
-    output(level, createEntry(level, message, {
-      ...context,
-      method,
-      url,
-      status,
-      duration: duration ? `${duration.toFixed(2)}ms` : undefined,
-    }));
+    output(
+      level,
+      createEntry(level, message, {
+        ...context,
+        method,
+        url,
+        status,
+        duration: duration ? `${duration.toFixed(2)}ms` : undefined,
+      })
+    );
   },
 
   /**
@@ -321,12 +341,15 @@ export const logger = {
   ): void => {
     const message = `[Firebase] ${operation.toUpperCase()} ${collection}${docId ? `/${docId}` : ''}`;
 
-    output('debug', createEntry('debug', message, {
-      ...context,
-      operation,
-      collection,
-      docId,
-    }));
+    output(
+      'debug',
+      createEntry('debug', message, {
+        ...context,
+        operation,
+        collection,
+        docId,
+      })
+    );
   },
 };
 

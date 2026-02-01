@@ -67,39 +67,52 @@ const QuestionCard = memo(function QuestionCard({
 }: QuestionCardProps) {
   const [showTypeSelector, setShowTypeSelector] = useState(false);
 
-  const handleQuestionTextChange = useCallback((text: string) => {
-    onUpdate({ ...question, question: text });
-  }, [question, onUpdate]);
+  const handleQuestionTextChange = useCallback(
+    (text: string) => {
+      onUpdate({ ...question, question: text });
+    },
+    [question, onUpdate]
+  );
 
-  const handleTypeChange = useCallback((type: QuestionType) => {
-    onUpdate({
-      ...question,
-      type,
-      options: type === 'select' ? [''] : undefined,
-    });
-    setShowTypeSelector(false);
-  }, [question, onUpdate]);
+  const handleTypeChange = useCallback(
+    (type: QuestionType) => {
+      onUpdate({
+        ...question,
+        type,
+        options: type === 'select' ? [''] : undefined,
+      });
+      setShowTypeSelector(false);
+    },
+    [question, onUpdate]
+  );
 
-  const handleRequiredChange = useCallback((required: boolean) => {
-    onUpdate({ ...question, required });
-  }, [question, onUpdate]);
+  const handleRequiredChange = useCallback(
+    (required: boolean) => {
+      onUpdate({ ...question, required });
+    },
+    [question, onUpdate]
+  );
 
   const handleAddOption = useCallback(() => {
     const options = [...(question.options || []), ''];
     onUpdate({ ...question, options });
   }, [question, onUpdate]);
 
-  const handleDeleteOption = useCallback((optionIndex: number) => {
-    const options = question.options?.filter((_, i) => i !== optionIndex) || [];
-    onUpdate({ ...question, options: options.length > 0 ? options : [''] });
-  }, [question, onUpdate]);
+  const handleDeleteOption = useCallback(
+    (optionIndex: number) => {
+      const options = question.options?.filter((_, i) => i !== optionIndex) || [];
+      onUpdate({ ...question, options: options.length > 0 ? options : [''] });
+    },
+    [question, onUpdate]
+  );
 
-  const handleOptionChange = useCallback((optionIndex: number, value: string) => {
-    const options = question.options?.map((opt, i) =>
-      i === optionIndex ? value : opt
-    ) || [];
-    onUpdate({ ...question, options });
-  }, [question, onUpdate]);
+  const handleOptionChange = useCallback(
+    (optionIndex: number, value: string) => {
+      const options = question.options?.map((opt, i) => (i === optionIndex ? value : opt)) || [];
+      onUpdate({ ...question, options });
+    },
+    [question, onUpdate]
+  );
 
   return (
     <Card variant="outlined" padding="md" className="mb-3">
@@ -111,9 +124,7 @@ const QuestionCard = memo(function QuestionCard({
               {index + 1}
             </Text>
           </View>
-          <Text className="ml-2 font-medium text-gray-900 dark:text-white">
-            질문 {index + 1}
-          </Text>
+          <Text className="ml-2 font-medium text-gray-900 dark:text-white">질문 {index + 1}</Text>
         </View>
         <Pressable
           onPress={onDelete}
@@ -164,9 +175,7 @@ const QuestionCard = memo(function QuestionCard({
 
         {/* 필수 여부 */}
         <View className="flex-row items-center">
-          <Text className="text-sm text-gray-600 dark:text-gray-400 mr-2">
-            필수
-          </Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400 mr-2">필수</Text>
           <Switch
             value={question.required}
             onValueChange={handleRequiredChange}
@@ -179,14 +188,9 @@ const QuestionCard = memo(function QuestionCard({
       {/* 선택형 옵션 */}
       {question.type === 'select' && (
         <View className="mt-3">
-          <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-            선택지
-          </Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400 mb-2">선택지</Text>
           {question.options?.map((option, optionIndex) => (
-            <View
-              key={optionIndex}
-              className="flex-row items-center mb-2"
-            >
+            <View key={optionIndex} className="flex-row items-center mb-2">
               <View className="w-6 h-6 rounded-full border-2 border-gray-300 dark:border-surface-overlay mr-2" />
               <TextInput
                 value={option}
@@ -212,9 +216,7 @@ const QuestionCard = memo(function QuestionCard({
             className="flex-row items-center justify-center py-2 border border-dashed border-gray-300 dark:border-surface-overlay rounded-lg"
           >
             <PlusIcon size={16} color="#6B7280" />
-            <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">
-              선택지 추가
-            </Text>
+            <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">선택지 추가</Text>
           </Pressable>
         </View>
       )}
@@ -232,18 +234,21 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
   errors = {},
 }: PreQuestionsSectionProps) {
   // 사전질문 사용 토글
-  const handleUsesPreQuestionsToggle = useCallback((value: boolean) => {
-    onUpdate({ usesPreQuestions: value });
-    if (value && data.preQuestions.length === 0) {
-      const newQuestion: PreQuestion = {
-        id: generateId(),
-        question: '',
-        required: false,
-        type: 'text',
-      };
-      onUpdate({ preQuestions: [newQuestion] });
-    }
-  }, [data.preQuestions.length, onUpdate]);
+  const handleUsesPreQuestionsToggle = useCallback(
+    (value: boolean) => {
+      onUpdate({ usesPreQuestions: value });
+      if (value && data.preQuestions.length === 0) {
+        const newQuestion: PreQuestion = {
+          id: generateId(),
+          question: '',
+          required: false,
+          type: 'text',
+        };
+        onUpdate({ preQuestions: [newQuestion] });
+      }
+    },
+    [data.preQuestions.length, onUpdate]
+  );
 
   // 질문 추가
   const handleAddQuestion = useCallback(() => {
@@ -260,20 +265,26 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
   }, [data.preQuestions, onUpdate]);
 
   // 질문 업데이트
-  const handleUpdateQuestion = useCallback((index: number, question: PreQuestion) => {
-    const newQuestions = [...data.preQuestions];
-    newQuestions[index] = question;
-    onUpdate({ preQuestions: newQuestions });
-  }, [data.preQuestions, onUpdate]);
+  const handleUpdateQuestion = useCallback(
+    (index: number, question: PreQuestion) => {
+      const newQuestions = [...data.preQuestions];
+      newQuestions[index] = question;
+      onUpdate({ preQuestions: newQuestions });
+    },
+    [data.preQuestions, onUpdate]
+  );
 
   // 질문 삭제
-  const handleDeleteQuestion = useCallback((index: number) => {
-    const newQuestions = data.preQuestions.filter((_, i) => i !== index);
-    onUpdate({ preQuestions: newQuestions });
-    if (newQuestions.length === 0) {
-      onUpdate({ usesPreQuestions: false });
-    }
-  }, [data.preQuestions, onUpdate]);
+  const handleDeleteQuestion = useCallback(
+    (index: number) => {
+      const newQuestions = data.preQuestions.filter((_, i) => i !== index);
+      onUpdate({ preQuestions: newQuestions });
+      if (newQuestions.length === 0) {
+        onUpdate({ usesPreQuestions: false });
+      }
+    },
+    [data.preQuestions, onUpdate]
+  );
 
   return (
     <View>
@@ -293,9 +304,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       {/* 사전질문 사용 토글 */}
       <View className="flex-row items-center justify-between p-4 bg-white dark:bg-surface rounded-lg border border-gray-200 dark:border-surface-overlay mb-4">
         <View>
-          <Text className="text-gray-900 dark:text-white font-medium">
-            사전질문 사용
-          </Text>
+          <Text className="text-gray-900 dark:text-white font-medium">사전질문 사용</Text>
           <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
             지원자에게 추가 질문을 할 수 있습니다
           </Text>
@@ -336,9 +345,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
               accessibilityLabel="질문 추가"
             >
               <PlusIcon size={20} color="#6B7280" />
-              <Text className="ml-2 text-gray-600 dark:text-gray-400 font-medium">
-                질문 추가
-              </Text>
+              <Text className="ml-2 text-gray-600 dark:text-gray-400 font-medium">질문 추가</Text>
             </Pressable>
           )}
         </>
@@ -346,9 +353,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
 
       {/* 에러 메시지 */}
       {errors.preQuestions && (
-        <Text className="mt-3 text-sm text-red-500">
-          {errors.preQuestions}
-        </Text>
+        <Text className="mt-3 text-sm text-red-500">{errors.preQuestions}</Text>
       )}
     </View>
   );

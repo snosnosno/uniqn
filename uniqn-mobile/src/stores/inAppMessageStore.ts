@@ -203,16 +203,12 @@ export const selectHasMessage = (state: InAppMessageState): boolean =>
 /**
  * 큐에 대기 중인 메시지 수
  */
-export const selectQueueCount = (state: InAppMessageState): number =>
-  state.messageQueue.length;
+export const selectQueueCount = (state: InAppMessageState): number => state.messageQueue.length;
 
 /**
  * 특정 메시지가 이미 표시되었는지 확인
  */
-export const selectIsMessageShown = (
-  state: InAppMessageState,
-  messageId: string
-): boolean => {
+export const selectIsMessageShown = (state: InAppMessageState, messageId: string): boolean => {
   const history = state.history[messageId];
   return history ? history.shownCount > 0 : false;
 };
@@ -220,10 +216,7 @@ export const selectIsMessageShown = (
 /**
  * 특정 메시지가 영구 닫힘 처리되었는지 확인
  */
-export const selectIsMessageDismissed = (
-  state: InAppMessageState,
-  messageId: string
-): boolean => {
+export const selectIsMessageDismissed = (state: InAppMessageState, messageId: string): boolean => {
   const history = state.history[messageId];
   return history?.dismissed ?? false;
 };
@@ -231,10 +224,8 @@ export const selectIsMessageDismissed = (
 /**
  * 특정 메시지가 현재 세션에서 이미 표시되었는지 확인
  */
-export const selectIsSessionShown = (
-  state: InAppMessageState,
-  messageId: string
-): boolean => state.sessionShownIds.includes(messageId);
+export const selectIsSessionShown = (state: InAppMessageState, messageId: string): boolean =>
+  state.sessionShownIds.includes(messageId);
 
 // ============================================================================
 // State Selectors (불필요한 리렌더링 방지)

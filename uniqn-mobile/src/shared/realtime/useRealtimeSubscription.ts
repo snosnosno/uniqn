@@ -32,9 +32,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 /**
  * 문서 파서 함수 타입
  */
-export type DocumentParser<T> = (
-  docs: { id: string; [key: string]: unknown }[]
-) => T[];
+export type DocumentParser<T> = (docs: { id: string; [key: string]: unknown }[]) => T[];
 
 /**
  * useRealtimeSubscription 옵션
@@ -169,49 +167,46 @@ export function useRealtimeSubscription<T>(
 
     try {
       // RealtimeManager를 통해 구독 (중복 방지)
-      unsubscribeRef.current = RealtimeManager.subscribe(
-        key,
-        () => {
-          logger.debug('useRealtimeSubscription: 구독 시작', { key });
+      unsubscribeRef.current = RealtimeManager.subscribe(key, () => {
+        logger.debug('useRealtimeSubscription: 구독 시작', { key });
 
-          return onSnapshot(
-            q,
-            (snapshot: QuerySnapshot<DocumentData>) => {
-              const docs = snapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data(),
-              }));
+        return onSnapshot(
+          q,
+          (snapshot: QuerySnapshot<DocumentData>) => {
+            const docs = snapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
 
-              const parsed = parser(docs);
+            const parsed = parser(docs);
 
-              setData(parsed);
-              setIsLoading(false);
-              setError(null);
-              setIsSubscribed(true);
+            setData(parsed);
+            setIsLoading(false);
+            setError(null);
+            setIsSubscribed(true);
 
-              onData?.(parsed);
-            },
-            (err: Error) => {
-              const appError = handleServiceError(err, {
-                operation: '실시간 구독',
-                component: 'useRealtimeSubscription',
-                context: { key },
-              }) as Error;
+            onData?.(parsed);
+          },
+          (err: Error) => {
+            const appError = handleServiceError(err, {
+              operation: '실시간 구독',
+              component: 'useRealtimeSubscription',
+              context: { key },
+            }) as Error;
 
-              setError(appError);
-              setIsLoading(false);
-              setIsSubscribed(false);
+            setError(appError);
+            setIsLoading(false);
+            setIsSubscribed(false);
 
-              onError?.(appError);
+            onError?.(appError);
 
-              // 자동 재연결 시도
-              if (autoReconnect) {
-                scheduleReconnect();
-              }
+            // 자동 재연결 시도
+            if (autoReconnect) {
+              scheduleReconnect();
             }
-          );
-        }
-      );
+          }
+        );
+      });
 
       setIsSubscribed(true);
     } catch (err) {

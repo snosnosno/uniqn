@@ -89,10 +89,7 @@ export function useJobRoles(job: JobPosting | null): UseJobRolesResult {
   }, [allRoles]);
 
   // 역할 ID로 찾기
-  const getRoleById = useCallback(
-    (roleId: string) => findRole(allRoles, roleId),
-    [allRoles]
-  );
+  const getRoleById = useCallback((roleId: string) => findRole(allRoles, roleId), [allRoles]);
 
   // 특정 날짜-시간대의 역할 목록
   const getRolesForSlot = useCallback(

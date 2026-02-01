@@ -189,7 +189,10 @@ export function getUserRoleLabel(role: UserRole | null | undefined): string {
  * @param customRole - 커스텀 역할명 (role === 'other'일 때)
  * @returns 한글 표시명
  */
-export function getStaffRoleLabel(role: StaffRole | string | null | undefined, customRole?: string | null): string {
+export function getStaffRoleLabel(
+  role: StaffRole | string | null | undefined,
+  customRole?: string | null
+): string {
   if (!role) return '';
   if (role === 'other' && customRole) return customRole;
   return STAFF_ROLE_LABELS[role as StaffRole] ?? role;

@@ -43,7 +43,14 @@ export function getTodayString(): string {
  * 다양한 날짜 형식을 YYYY-MM-DD 문자열로 변환
  */
 export function toDateString(
-  dateInput: string | Date | Timestamp | { toDate?: () => Date } | { seconds: number } | null | undefined
+  dateInput:
+    | string
+    | Date
+    | Timestamp
+    | { toDate?: () => Date }
+    | { seconds: number }
+    | null
+    | undefined
 ): string {
   if (!dateInput) return '';
 

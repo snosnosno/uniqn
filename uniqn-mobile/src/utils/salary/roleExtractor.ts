@@ -85,9 +85,7 @@ export function extractRolesFromPosting(
         // 커스텀 역할이면 customRole을 키로 사용
         const roleKey = isCustomRole ? roleReq.customRole! : getRoleKey(rawRole);
         // 커스텀 역할이면 customRole을 표시명으로 사용
-        const displayName = isCustomRole
-          ? roleReq.customRole!
-          : getRoleDisplayName(rawRole);
+        const displayName = isCustomRole ? roleReq.customRole! : getRoleDisplayName(rawRole);
         const existing = roleMap.get(roleKey);
         const headcount = roleReq.headcount ?? 0;
 
@@ -135,22 +133,16 @@ export function syncRolesWithExtracted(
   const existingRoleKeys = existingRoles.map((r) => getRoleKey(r.name));
 
   // 새로운 역할 찾기
-  const newRoles = extractedRoles.filter(
-    (r) => !existingRoleKeys.includes(r.key)
-  );
+  const newRoles = extractedRoles.filter((r) => !existingRoleKeys.includes(r.key));
   // 삭제된 역할 찾기
-  const deletedRoleKeys = existingRoleKeys.filter(
-    (key) => !currentRoleKeys.includes(key)
-  );
+  const deletedRoleKeys = existingRoleKeys.filter((key) => !currentRoleKeys.includes(key));
 
   // 변경이 없으면 null 반환
   if (newRoles.length === 0 && deletedRoleKeys.length === 0) {
     // 인원 변경 확인
     let hasCountChange = false;
     extractedRoles.forEach((extracted) => {
-      const existing = existingRoles.find(
-        (r) => getRoleKey(r.name) === extracted.key
-      );
+      const existing = existingRoles.find((r) => getRoleKey(r.name) === extracted.key);
       if (existing && existing.count !== extracted.count) {
         hasCountChange = true;
       }
@@ -189,9 +181,7 @@ export function syncRolesWithExtracted(
 
   // 인원수 업데이트 (역할은 같지만 인원이 변경된 경우)
   extractedRoles.forEach((extracted) => {
-    const existing = updatedRoles.find(
-      (r) => getRoleKey(r.name) === extracted.key
-    );
+    const existing = updatedRoles.find((r) => getRoleKey(r.name) === extracted.key);
     if (existing && existing.count !== extracted.count) {
       existing.count = extracted.count;
     }

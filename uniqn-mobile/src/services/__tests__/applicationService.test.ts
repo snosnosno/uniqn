@@ -178,9 +178,7 @@ describe('ApplicationService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        cancelApplication(applicationId, applicantId)
-      ).resolves.not.toThrow();
+      await expect(cancelApplication(applicationId, applicantId)).resolves.not.toThrow();
 
       expect(mockTransactionUpdate).toHaveBeenCalledTimes(2);
     });
@@ -195,9 +193,7 @@ describe('ApplicationService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        cancelApplication(applicationId, applicantId)
-      ).rejects.toThrow();
+      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when not the applicant', async () => {
@@ -214,9 +210,7 @@ describe('ApplicationService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        cancelApplication(applicationId, applicantId)
-      ).rejects.toThrow();
+      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when already cancelled', async () => {
@@ -233,9 +227,7 @@ describe('ApplicationService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        cancelApplication(applicationId, applicantId)
-      ).rejects.toThrow();
+      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when confirmed', async () => {
@@ -252,9 +244,7 @@ describe('ApplicationService', () => {
         return callback(transaction);
       });
 
-      await expect(
-        cancelApplication(applicationId, applicantId)
-      ).rejects.toThrow();
+      await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
   });
 

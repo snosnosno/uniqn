@@ -115,9 +115,7 @@ export const useThemeStore = create<ThemeState>()(
           const isDark = computeIsDarkMode(state.mode);
 
           // NativeWind colorScheme 적용 (system 모드는 실제 값으로 변환)
-          const effectiveMode = state.mode === 'system'
-            ? (isDark ? 'dark' : 'light')
-            : state.mode;
+          const effectiveMode = state.mode === 'system' ? (isDark ? 'dark' : 'light') : state.mode;
           nativeWindColorScheme.set(effectiveMode);
 
           // ⚠️ queueMicrotask로 렌더링 사이클 이후 상태 업데이트

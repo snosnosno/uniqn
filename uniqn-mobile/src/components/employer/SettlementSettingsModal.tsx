@@ -8,25 +8,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { SheetModal } from '../ui/SheetModal';
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '../icons';
-import {
-  type SalaryInfo,
-  type Allowances,
-  DEFAULT_SALARY_INFO,
-} from '@/utils/settlement';
-import {
-  SalaryTypeSelector,
-} from './SalaryTypeSelector';
-import {
-  AllowanceEditor,
-} from './AllowanceEditor';
-import {
-  TaxSettingsEditor,
-  type TaxSettings,
-} from './TaxSettingsEditor';
+import { ChevronDownIcon, ChevronUpIcon } from '../icons';
+import { type SalaryInfo, type Allowances, DEFAULT_SALARY_INFO } from '@/utils/settlement';
+import { SalaryTypeSelector } from './SalaryTypeSelector';
+import { AllowanceEditor } from './AllowanceEditor';
+import { TaxSettingsEditor, type TaxSettings } from './TaxSettingsEditor';
 import { logger } from '@/utils/logger';
 import { getRoleDisplayName } from '@/types/unified';
 
@@ -120,13 +106,9 @@ function AccordionSection({
         className="flex-row items-center justify-between px-4 py-4 active:bg-gray-50 dark:active:bg-gray-800"
       >
         <View className="flex-1">
-          <Text className="text-base font-semibold text-gray-900 dark:text-white">
-            {title}
-          </Text>
+          <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
           {subtitle && (
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-              {subtitle}
-            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">{subtitle}</Text>
           )}
         </View>
         {expanded ? (
@@ -135,11 +117,7 @@ function AccordionSection({
           <ChevronDownIcon size={20} color="#6B7280" />
         )}
       </Pressable>
-      {expanded && (
-        <View className="px-4 pb-4">
-          {children}
-        </View>
-      )}
+      {expanded && <View className="px-4 pb-4">{children}</View>}
     </View>
   );
 }
@@ -238,7 +216,7 @@ export function SettlementSettingsModal({
 
   // 핸들러
   const toggleSection = useCallback((section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
@@ -246,7 +224,7 @@ export function SettlementSettingsModal({
 
   // 역할별 급여 변경 핸들러 (v2.0 - roles[] 구조)
   const handleRoleSalaryChange = useCallback((roleIndex: number, salaryInfo: SalaryInfo) => {
-    setRoles(prev => {
+    setRoles((prev) => {
       const updated = [...prev];
       updated[roleIndex] = { ...updated[roleIndex], salary: salaryInfo };
       return updated;
@@ -255,10 +233,12 @@ export function SettlementSettingsModal({
 
   // 모든 역할에 급여 적용 (v2.0)
   const handleApplyToAllRoles = useCallback((sourceSalaryInfo: SalaryInfo) => {
-    setRoles(prev => prev.map(role => ({
-      ...role,
-      salary: { ...sourceSalaryInfo },
-    })));
+    setRoles((prev) =>
+      prev.map((role) => ({
+        ...role,
+        salary: { ...sourceSalaryInfo },
+      }))
+    );
   }, []);
 
   const handleSave = useCallback(async () => {
@@ -273,7 +253,9 @@ export function SettlementSettingsModal({
       });
       onClose();
     } catch (error) {
-      logger.error('정산 설정 저장 실패', error instanceof Error ? error : undefined, { component: 'SettlementSettingsModal' });
+      logger.error('정산 설정 저장 실패', error instanceof Error ? error : undefined, {
+        component: 'SettlementSettingsModal',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -345,11 +327,7 @@ export function SettlementSettingsModal({
           expanded={expandedSections.allowances}
           onToggle={() => toggleSection('allowances')}
         >
-          <AllowanceEditor
-            allowances={allowances}
-            onChange={setAllowances}
-            showLabel={false}
-          />
+          <AllowanceEditor allowances={allowances} onChange={setAllowances} showLabel={false} />
         </AccordionSection>
 
         {/* 세금 설정 섹션 */}

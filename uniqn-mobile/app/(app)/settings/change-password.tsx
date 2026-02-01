@@ -264,9 +264,7 @@ export default function ChangePasswordScreen() {
             {isSubmitting ? (
               <ActivityIndicator color="#ffffff" />
             ) : (
-              <Text className="text-center text-base font-semibold text-white">
-                비밀번호 변경
-              </Text>
+              <Text className="text-center text-base font-semibold text-white">비밀번호 변경</Text>
             )}
           </Pressable>
         </ScrollView>

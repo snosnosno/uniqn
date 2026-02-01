@@ -80,7 +80,8 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
 
   [NotificationType.CANCELLATION_REJECTED]: {
     title: '취소 요청 거절',
-    body: (d) => `"${d.jobTitle}" 취소 요청이 거절되었습니다.${d.reason ? ` 사유: ${d.reason}` : ''}`,
+    body: (d) =>
+      `"${d.jobTitle}" 취소 요청이 거절되었습니다.${d.reason ? ` 사유: ${d.reason}` : ''}`,
     link: () => '/schedule',
     icon: '❌',
   },
@@ -133,7 +134,8 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
 
   [NotificationType.SCHEDULE_CHANGE]: {
     title: '⏰ 근무 시간 변경',
-    body: (d) => `"${d.jobTitle}" 근무 시간이 변경되었습니다.${d.changeDescription ? `\n${d.changeDescription}` : ''}`,
+    body: (d) =>
+      `"${d.jobTitle}" 근무 시간이 변경되었습니다.${d.changeDescription ? `\n${d.changeDescription}` : ''}`,
     link: (d) => `/schedule?date=${d.workDate}`,
     icon: '📝',
   },
@@ -147,7 +149,8 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
 
   [NotificationType.SCHEDULE_CANCELLED]: {
     title: '🚫 근무 취소',
-    body: (d) => `"${d.jobTitle}" ${d.workDate} 근무가 취소되었습니다.${d.reason ? ` 사유: ${d.reason}` : ''}`,
+    body: (d) =>
+      `"${d.jobTitle}" ${d.workDate} 근무가 취소되었습니다.${d.reason ? ` 사유: ${d.reason}` : ''}`,
     link: (d) => `/schedule?date=${d.workDate}`,
     icon: '🚫',
   },

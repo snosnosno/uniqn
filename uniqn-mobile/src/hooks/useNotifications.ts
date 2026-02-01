@@ -263,13 +263,9 @@ export function useUnreadCountRealtime() {
       return;
     }
 
-    unsubscribeRef.current = subscribeToUnreadCount(
-      user.uid,
-      setCount,
-      (error) => {
-        logger.error('읽지 않은 알림 수 구독 에러', error);
-      }
-    );
+    unsubscribeRef.current = subscribeToUnreadCount(user.uid, setCount, (error) => {
+      logger.error('읽지 않은 알림 수 구독 에러', error);
+    });
 
     return () => {
       unsubscribeRef.current?.();
@@ -577,11 +573,7 @@ interface UseGroupedNotificationsResult {
 export function useGroupedNotifications(
   options: UseGroupedNotificationsOptions = {}
 ): UseGroupedNotificationsResult {
-  const {
-    categoryFilter = 'all',
-    groupingOptions,
-    enabled = true,
-  } = options;
+  const { categoryFilter = 'all', groupingOptions, enabled = true } = options;
 
   // 사용자 설정에서 그룹핑 옵션 가져오기
   const userGroupingSettings = useNotificationStore((state) => state.settings.grouping);
@@ -630,9 +622,7 @@ export function useGroupedNotifications(
   // 그룹 내 모든 알림 읽음 처리
   const markGroupAsRead = useCallback(
     (group: GroupedNotificationData) => {
-      const unreadIds = group.notifications
-        .filter((n) => !n.isRead)
-        .map((n) => n.id);
+      const unreadIds = group.notifications.filter((n) => !n.isRead).map((n) => n.id);
 
       // 병렬로 읽음 처리
       unreadIds.forEach((id) => markAsRead(id));

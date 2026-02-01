@@ -61,15 +61,18 @@ export default function CreateJobPostingScreen() {
   }, [templateManager, formData]);
 
   // 템플릿 불러오기
-  const handleLoadTemplateFromModal = useCallback(async (template: Parameters<typeof templateManager.handleLoadTemplate>[0]) => {
-    const loadedData = await templateManager.handleLoadTemplate(template);
-    // 불러온 템플릿 데이터를 폼에 병합
-    setFormData((prev) => ({
-      ...prev,
-      ...loadedData,
-    }));
-    return loadedData;
-  }, [templateManager]);
+  const handleLoadTemplateFromModal = useCallback(
+    async (template: Parameters<typeof templateManager.handleLoadTemplate>[0]) => {
+      const loadedData = await templateManager.handleLoadTemplate(template);
+      // 불러온 템플릿 데이터를 폼에 병합
+      setFormData((prev) => ({
+        ...prev,
+        ...loadedData,
+      }));
+      return loadedData;
+    },
+    [templateManager]
+  );
 
   // 공고 등록
   const handleSubmit = useCallback(async () => {
@@ -82,9 +85,10 @@ export default function CreateJobPostingScreen() {
       // useSameSalary일 때 defaultSalary 결정
       // roles[].salary에서 첫 번째 역할의 급여를 defaultSalary로 사용
       const firstRoleWithSalary = formData.roles.find((r) => r.salary);
-      const defaultSalary = formData.useSameSalary && firstRoleWithSalary?.salary
-        ? firstRoleWithSalary.salary
-        : formData.defaultSalary;
+      const defaultSalary =
+        formData.useSameSalary && firstRoleWithSalary?.salary
+          ? firstRoleWithSalary.salary
+          : formData.defaultSalary;
 
       // Firebase는 undefined 값을 허용하지 않으므로 빈 문자열 또는 필드 제외 처리
       const input: CreateJobPostingInput = {
@@ -100,7 +104,8 @@ export default function CreateJobPostingScreen() {
         startTime: formData.startTime,
         tournamentDates: formData.tournamentDates,
         // v2.0: 날짜별 요구사항 (일정 데이터) - 새 형식을 레거시 형식으로 캐스팅
-        dateSpecificRequirements: formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],
+        dateSpecificRequirements:
+          formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],
         daysPerWeek: formData.daysPerWeek,
         isStartTimeNegotiable: formData.isStartTimeNegotiable,
         roles: formData.roles,
@@ -114,23 +119,23 @@ export default function CreateJobPostingScreen() {
 
       await createJobPosting.mutateAsync({ input });
 
-      const successMessage = formData.postingType === 'tournament'
-        ? '공고가 등록되었습니다. 관리자 승인 후 게시됩니다.'
-        : '공고가 등록되었습니다';
+      const successMessage =
+        formData.postingType === 'tournament'
+          ? '공고가 등록되었습니다. 관리자 승인 후 게시됩니다.'
+          : '공고가 등록되었습니다';
       addToast({ type: 'success', message: successMessage });
       router.replace('/(app)/(tabs)/employer');
     } catch (error) {
       logger.error('공고 등록 실패', error as Error);
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 등록에 실패했습니다'
+        message: error instanceof Error ? error.message : '공고 등록에 실패했습니다',
       });
     }
   }, [user, formData, createJobPosting, addToast, router]);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
-
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"

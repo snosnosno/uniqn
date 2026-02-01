@@ -5,19 +5,8 @@
  * @version 1.0.0
  */
 
-export {
-  formatTime,
-  formatTimeRange,
-  calculateDuration,
-  formatDate,
-} from './timeHelpers';
+export { formatTime, formatTimeRange, calculateDuration, formatDate } from './timeHelpers';
 
-export {
-  getRoleSalaryFromCard,
-  formatSalaryDisplay,
-} from './salaryHelpers';
+export { getRoleSalaryFromCard, formatSalaryDisplay } from './salaryHelpers';
 
-export {
-  statusConfig,
-  attendanceConfig,
-} from './statusConfig';
+export { statusConfig, attendanceConfig } from './statusConfig';

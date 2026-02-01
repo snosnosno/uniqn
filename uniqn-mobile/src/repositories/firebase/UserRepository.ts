@@ -26,11 +26,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import type {
-  IUserRepository,
-  DeletionRequest,
-  UserDataExport,
-} from '../interfaces';
+import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 
 // ============================================================================
@@ -118,10 +114,7 @@ export class FirebaseUserRepository implements IUserRepository {
   // 변경 (Write)
   // ==========================================================================
 
-  async updateProfile(
-    userId: string,
-    updates: Partial<MyDataEditableFields>
-  ): Promise<void> {
+  async updateProfile(userId: string, updates: Partial<MyDataEditableFields>): Promise<void> {
     try {
       logger.info('프로필 업데이트', { userId, fields: Object.keys(updates) });
 
@@ -142,10 +135,7 @@ export class FirebaseUserRepository implements IUserRepository {
     }
   }
 
-  async requestDeletion(
-    userId: string,
-    request: Omit<DeletionRequest, 'userId'>
-  ): Promise<void> {
+  async requestDeletion(userId: string, request: Omit<DeletionRequest, 'userId'>): Promise<void> {
     try {
       logger.info('회원탈퇴 요청 저장', { userId, reason: request.reason });
 
@@ -242,10 +232,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 2. 지원 내역
       const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-      const applicationsQuery = query(
-        applicationsRef,
-        where('applicantId', '==', userId)
-      );
+      const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       const applications = applicationsSnapshot.docs.map((docSnapshot) => {
@@ -308,10 +295,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 1. 지원 내역 익명화
       const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-      const applicationsQuery = query(
-        applicationsRef,
-        where('applicantId', '==', userId)
-      );
+      const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       applicationsSnapshot.docs.forEach((docSnapshot) => {
@@ -336,10 +320,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 3. 알림 삭제
       const notificationsRef = collection(getFirebaseDb(), NOTIFICATIONS_COLLECTION);
-      const notificationsQuery = query(
-        notificationsRef,
-        where('userId', '==', userId)
-      );
+      const notificationsQuery = query(notificationsRef, where('userId', '==', userId));
       const notificationsSnapshot = await getDocs(notificationsQuery);
 
       notificationsSnapshot.docs.forEach((docSnapshot) => {

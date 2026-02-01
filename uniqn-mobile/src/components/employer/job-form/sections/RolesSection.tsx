@@ -7,12 +7,7 @@
 
 import React, { useCallback, useMemo, memo, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
-import {
-  PlusIcon,
-  MinusIcon,
-  TrashIcon,
-  BriefcaseIcon,
-} from '@/components/icons';
+import { PlusIcon, MinusIcon, TrashIcon, BriefcaseIcon } from '@/components/icons';
 import { STAFF_ROLES, ROLE_ICONS, DEFAULT_ROLE_ICON } from '@/constants';
 import { RoleSelectModal } from '../modals';
 import type { JobPostingFormData, FormRoleWithCount } from '@/types';
@@ -28,9 +23,7 @@ interface RolesSectionProps {
 }
 
 /** 기본 역할 (폼 초기값) */
-const DEFAULT_ROLES: FormRoleWithCount[] = [
-  { name: '딜러', count: 1, isCustom: false },
-];
+const DEFAULT_ROLES: FormRoleWithCount[] = [{ name: '딜러', count: 1, isCustom: false }];
 
 // ============================================================================
 // RoleCard Component
@@ -73,9 +66,7 @@ const RoleCard = memo(function RoleCard({
               className="font-medium text-gray-900 dark:text-white text-base px-0 py-1 border-b border-gray-300 dark:border-surface-overlay"
             />
           ) : (
-            <Text className="font-medium text-gray-900 dark:text-white text-base">
-              {role.name}
-            </Text>
+            <Text className="font-medium text-gray-900 dark:text-white text-base">{role.name}</Text>
           )}
         </View>
 
@@ -94,9 +85,7 @@ const RoleCard = memo(function RoleCard({
           </Pressable>
 
           <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-gray-200 dark:border-surface-overlay">
-            <Text className="font-bold text-gray-900 dark:text-white">
-              {role.count}
-            </Text>
+            <Text className="font-bold text-gray-900 dark:text-white">{role.count}</Text>
           </View>
 
           <Pressable
@@ -116,9 +105,7 @@ const RoleCard = memo(function RoleCard({
             onPress={onDelete}
             disabled={!canDelete}
             className={`ml-2 p-2 rounded-lg ${
-              canDelete
-                ? 'bg-red-50 dark:bg-red-900/20'
-                : 'bg-gray-100 dark:bg-surface opacity-50'
+              canDelete ? 'bg-red-50 dark:bg-red-900/20' : 'bg-gray-100 dark:bg-surface opacity-50'
             }`}
             accessibilityRole="button"
             accessibilityLabel="역할 삭제"
@@ -152,10 +139,7 @@ export const RolesSection = memo(function RolesSection({
   }, [data.roles]);
 
   // 이미 추가된 역할명 목록 (중복 방지용)
-  const existingRoleNames = useMemo(
-    () => roles.map((r) => r.name),
-    [roles]
-  );
+  const existingRoleNames = useMemo(() => roles.map((r) => r.name), [roles]);
 
   // 인원 수 변경
   const handleCountChange = useCallback(
@@ -185,7 +169,7 @@ export const RolesSection = memo(function RolesSection({
       if (!roleOption) return;
 
       const newRole: FormRoleWithCount = {
-        name: roleKey === 'other' ? (customName || '') : roleOption.name,
+        name: roleKey === 'other' ? customName || '' : roleOption.name,
         count: 1,
         isCustom: roleKey === 'other',
       };
@@ -205,10 +189,7 @@ export const RolesSection = memo(function RolesSection({
   );
 
   // 총 인원
-  const totalCount = useMemo(
-    () => roles.reduce((sum, r) => sum + r.count, 0),
-    [roles]
-  );
+  const totalCount = useMemo(() => roles.reduce((sum, r) => sum + r.count, 0), [roles]);
 
   // 삭제 가능 여부 (최소 1개 이상 유지)
   const canDelete = roles.length > 1;
@@ -221,9 +202,7 @@ export const RolesSection = memo(function RolesSection({
           key={`role-${index}-${role.name}`}
           role={role}
           onCountChange={(delta) => handleCountChange(index, delta)}
-          onNameChange={
-            role.isCustom ? (name) => handleNameChange(index, name) : undefined
-          }
+          onNameChange={role.isCustom ? (name) => handleNameChange(index, name) : undefined}
           onDelete={() => handleDeleteRole(index)}
           canDelete={canDelete}
         />
@@ -237,15 +216,11 @@ export const RolesSection = memo(function RolesSection({
         accessibilityLabel="역할 추가"
       >
         <PlusIcon size={18} color="#6B7280" />
-        <Text className="ml-2 text-gray-600 dark:text-gray-400 font-medium text-sm">
-          역할 추가
-        </Text>
+        <Text className="ml-2 text-gray-600 dark:text-gray-400 font-medium text-sm">역할 추가</Text>
       </Pressable>
 
       {/* 에러 메시지 */}
-      {errors.roles && (
-        <Text className="mt-2 text-sm text-red-500">{errors.roles}</Text>
-      )}
+      {errors.roles && <Text className="mt-2 text-sm text-red-500">{errors.roles}</Text>}
 
       {/* 총 인원 표시 */}
       {totalCount > 0 && (

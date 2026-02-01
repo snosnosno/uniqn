@@ -20,13 +20,20 @@ export { SettlementActionButtons } from './SettlementActionButtons';
 export { SettlementCompletedBanner } from './SettlementCompletedBanner';
 
 // Types
-export type { SettlementDetailModalProps, InfoRowProps, ModificationHistoryItemProps } from './types';
+export type {
+  SettlementDetailModalProps,
+  InfoRowProps,
+  ModificationHistoryItemProps,
+} from './types';
 export type { DateNavigationHeaderProps } from './DateNavigationHeader';
 export type { StaffProfileHeaderProps } from './StaffProfileHeader';
 export type { WorkTimeSectionProps } from './WorkTimeSection';
 export type { SettlementAmountSectionProps } from './SettlementAmountSection';
 export type { TimeModificationHistoryProps } from './TimeModificationHistory';
-export type { AmountModificationHistoryProps, SettlementModification } from './AmountModificationHistory';
+export type {
+  AmountModificationHistoryProps,
+  SettlementModification,
+} from './AmountModificationHistory';
 export type { SettlementActionButtonsProps } from './SettlementActionButtons';
 export type { SettlementCompletedBannerProps } from './SettlementCompletedBanner';
 

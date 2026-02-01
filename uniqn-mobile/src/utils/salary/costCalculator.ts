@@ -66,9 +66,7 @@ export const parseCurrency = (value: string): number => {
  * calculateEstimatedCost(roles);
  * // => 240000 + 100000 = 340000
  */
-export function calculateEstimatedCost(
-  roles: FormRoleWithCount[]
-): number | null {
+export function calculateEstimatedCost(roles: FormRoleWithCount[]): number | null {
   let total = 0;
   let hasValidSalary = false;
 

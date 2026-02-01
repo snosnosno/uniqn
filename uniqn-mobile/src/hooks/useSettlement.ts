@@ -235,13 +235,7 @@ export function useUpdateSettlementStatus() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({
-      workLogId,
-      status,
-    }: {
-      workLogId: string;
-      status: PayrollStatus;
-    }) => {
+    mutationFn: ({ workLogId, status }: { workLogId: string; status: PayrollStatus }) => {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
@@ -288,7 +282,9 @@ export function useSettlement(jobPostingId: string) {
   const updateStatusMutation = useUpdateSettlementStatus();
 
   // 필터링 헬퍼
-  const filterWorkLogs = (filters: Omit<SettlementFilters, 'jobPostingId'>): SettlementWorkLog[] => {
+  const filterWorkLogs = (
+    filters: Omit<SettlementFilters, 'jobPostingId'>
+  ): SettlementWorkLog[] => {
     let result = workLogsQuery.data ?? [];
 
     if (filters.payrollStatus) {

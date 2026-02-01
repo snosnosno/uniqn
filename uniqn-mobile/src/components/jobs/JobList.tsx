@@ -46,9 +46,7 @@ export function JobList({
 }: JobListProps) {
   // Hooks must be called before any conditional returns
   const renderItem = useCallback(
-    ({ item }: { item: JobPostingCard }) => (
-      <JobCard job={item} onPress={onJobPress} />
-    ),
+    ({ item }: { item: JobPostingCard }) => <JobCard job={item} onPress={onJobPress} />,
     [onJobPress]
   );
 
@@ -82,13 +80,7 @@ export function JobList({
 
   // 빈 상태
   if (!isLoading && jobs.length === 0) {
-    return (
-      <EmptyState
-        title="공고 없음"
-        description={emptyMessage}
-        icon="📋"
-      />
-    );
+    return <EmptyState title="공고 없음" description={emptyMessage} icon="📋" />;
   }
 
   return (
@@ -101,22 +93,12 @@ export function JobList({
       contentContainerStyle={{ padding: 16 }}
       showsVerticalScrollIndicator={false}
       refreshControl={
-        <RefreshControl
-          refreshing={isRefreshing}
-          onRefresh={onRefresh}
-          tintColor="#6366f1"
-        />
+        <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#6366f1" />
       }
       onEndReached={handleEndReached}
       onEndReachedThreshold={0.5}
       ListFooterComponent={renderFooter}
-      ListEmptyComponent={
-        <EmptyState
-          title="공고 없음"
-          description={emptyMessage}
-          icon="📋"
-        />
-      }
+      ListEmptyComponent={<EmptyState title="공고 없음" description={emptyMessage} icon="📋" />}
     />
   );
 }

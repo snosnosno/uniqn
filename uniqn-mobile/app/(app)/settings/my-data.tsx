@@ -34,9 +34,7 @@ function DataRow({ label, value, editable, onEdit }: DataRowProps) {
     <View className="flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-surface-overlay">
       <Text className="text-gray-600 dark:text-gray-400 text-sm">{label}</Text>
       <View className="flex-row items-center">
-        <Text className="text-gray-900 dark:text-white font-medium mr-2">
-          {value || '-'}
-        </Text>
+        <Text className="text-gray-900 dark:text-white font-medium mr-2">{value || '-'}</Text>
         {editable && onEdit && (
           <Pressable onPress={onEdit}>
             <Text className="text-primary-600 dark:text-primary-400 text-sm">수정</Text>
@@ -85,11 +83,14 @@ export default function MyDataScreen() {
   }, [loadData]);
 
   // 수정 모달 열기 (닉네임만 수정 가능)
-  const handleEdit = useCallback((field: 'nickname') => {
-    setEditField(field);
-    setEditValue(userData?.[field] ?? '');
-    setShowEditModal(true);
-  }, [userData]);
+  const handleEdit = useCallback(
+    (field: 'nickname') => {
+      setEditField(field);
+      setEditValue(userData?.[field] ?? '');
+      setShowEditModal(true);
+    },
+    [userData]
+  );
 
   // 수정 저장
   const handleSave = useCallback(async () => {
@@ -171,9 +172,7 @@ export default function MyDataScreen() {
         />
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#6366f1" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">
-            정보를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-gray-500 dark:text-gray-400">정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -238,10 +237,7 @@ export default function MyDataScreen() {
             본인인증 정보
           </Text>
 
-          <DataRow
-            label="인증 상태"
-            value={userData?.identityVerified ? '인증 완료' : '미인증'}
-          />
+          <DataRow label="인증 상태" value={userData?.identityVerified ? '인증 완료' : '미인증'} />
           {userData?.identityVerified && (
             <>
               <DataRow
@@ -284,18 +280,9 @@ export default function MyDataScreen() {
             동의 정보
           </Text>
 
-          <DataRow
-            label="이용약관"
-            value={userData?.termsAgreed ? '동의함' : '미동의'}
-          />
-          <DataRow
-            label="개인정보처리방침"
-            value={userData?.privacyAgreed ? '동의함' : '미동의'}
-          />
-          <DataRow
-            label="마케팅 수신"
-            value={userData?.marketingAgreed ? '동의함' : '미동의'}
-          />
+          <DataRow label="이용약관" value={userData?.termsAgreed ? '동의함' : '미동의'} />
+          <DataRow label="개인정보처리방침" value={userData?.privacyAgreed ? '동의함' : '미동의'} />
+          <DataRow label="마케팅 수신" value={userData?.marketingAgreed ? '동의함' : '미동의'} />
         </Card>
 
         {/* 데이터 내보내기 */}
@@ -304,27 +291,18 @@ export default function MyDataScreen() {
             데이터 내보내기
           </Text>
           <Text className="text-gray-500 dark:text-gray-400 text-sm mb-4">
-            저장된 모든 개인정보를 JSON 형식으로 내보낼 수 있습니다.
-            지원 내역, 근무 기록 등이 포함됩니다.
+            저장된 모든 개인정보를 JSON 형식으로 내보낼 수 있습니다. 지원 내역, 근무 기록 등이
+            포함됩니다.
           </Text>
 
-          <Button
-            onPress={handleExport}
-            variant="outline"
-            fullWidth
-            disabled={isExporting}
-          >
+          <Button onPress={handleExport} variant="outline" fullWidth disabled={isExporting}>
             {isExporting ? (
               <View className="flex-row items-center">
                 <ActivityIndicator size="small" color="#6366f1" />
-                <Text className="ml-2 text-primary-600 dark:text-primary-400">
-                  내보내는 중...
-                </Text>
+                <Text className="ml-2 text-primary-600 dark:text-primary-400">내보내는 중...</Text>
               </View>
             ) : (
-              <Text className="text-primary-600 dark:text-primary-400">
-                📥 내 데이터 내보내기
-              </Text>
+              <Text className="text-primary-600 dark:text-primary-400">📥 내 데이터 내보내기</Text>
             )}
           </Button>
         </Card>
@@ -332,18 +310,14 @@ export default function MyDataScreen() {
         {/* 개인정보 삭제 안내 */}
         <Card className="bg-gray-100 dark:bg-surface">
           <Text className="text-gray-600 dark:text-gray-400 text-sm leading-5">
-            개인정보 삭제를 원하시면 회원탈퇴를 진행해주세요.
-            탈퇴 시 30일간의 유예 기간이 있으며, 이 기간 동안 복구가 가능합니다.
+            개인정보 삭제를 원하시면 회원탈퇴를 진행해주세요. 탈퇴 시 30일간의 유예 기간이 있으며,
+            이 기간 동안 복구가 가능합니다.
           </Text>
         </Card>
       </ScrollView>
 
       {/* 수정 모달 */}
-      <Modal
-        visible={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        title="닉네임 수정"
-      >
+      <Modal visible={showEditModal} onClose={() => setShowEditModal(false)} title="닉네임 수정">
         <View className="p-4">
           <Input
             label="닉네임"
@@ -365,16 +339,8 @@ export default function MyDataScreen() {
               </Button>
             </View>
             <View className="flex-1">
-              <Button
-                onPress={handleSave}
-                fullWidth
-                disabled={isSaving}
-              >
-                {isSaving ? (
-                  <ActivityIndicator size="small" color="#ffffff" />
-                ) : (
-                  '저장'
-                )}
+              <Button onPress={handleSave} fullWidth disabled={isSaving}>
+                {isSaving ? <ActivityIndicator size="small" color="#ffffff" /> : '저장'}
               </Button>
             </View>
           </View>

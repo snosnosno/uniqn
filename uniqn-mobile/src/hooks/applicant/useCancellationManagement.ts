@@ -6,10 +6,7 @@
  */
 
 import { useMutation, useQuery } from '@tanstack/react-query';
-import {
-  getCancellationRequests,
-  reviewCancellationRequest,
-} from '@/services';
+import { getCancellationRequests, reviewCancellationRequest } from '@/services';
 import { queryKeys, cachingPolicies, invalidateRelated } from '@/lib';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -57,7 +54,11 @@ export function useReviewCancellation() {
         throw new Error('로그인이 필요합니다');
       }
       return reviewCancellationRequest(
-        { applicationId: input.applicationId, approved: input.approved, rejectionReason: input.rejectionReason },
+        {
+          applicationId: input.applicationId,
+          approved: input.approved,
+          rejectionReason: input.rejectionReason,
+        },
         user.uid
       );
     },

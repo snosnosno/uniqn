@@ -22,12 +22,7 @@ import {
 } from '@/components/icons';
 import { TimePicker } from '@/components/ui/TimePicker';
 import { RoleSelectModal, NumberPickerModal } from '../modals';
-import {
-  ROLE_ICONS,
-  DEFAULT_ROLE_ICON,
-  STAFF_ROLES,
-  MAX_ROLES_PER_SLOT,
-} from '@/constants';
+import { ROLE_ICONS, DEFAULT_ROLE_ICON, STAFF_ROLES, MAX_ROLES_PER_SLOT } from '@/constants';
 import type { TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -74,9 +69,10 @@ const RoleCard = React.memo(function RoleCard({
 
   // 역할명 가져오기
   const roleKey = role.role ?? 'dealer';
-  const roleName = roleKey === 'other' && role.customRole
-    ? role.customRole
-    : STAFF_ROLES.find(r => r.key === roleKey)?.name || roleKey;
+  const roleName =
+    roleKey === 'other' && role.customRole
+      ? role.customRole
+      : STAFF_ROLES.find((r) => r.key === roleKey)?.name || roleKey;
 
   const icon = ROLE_ICONS[roleName] || DEFAULT_ROLE_ICON;
   // 인원수
@@ -84,10 +80,13 @@ const RoleCard = React.memo(function RoleCard({
   const isCustom = roleKey === 'other';
 
   // 휠 피커 확인 핸들러
-  const handlePickerConfirm = useCallback((value: number) => {
-    onCountSet(roleIndex, value);
-    setShowNumberPicker(false);
-  }, [roleIndex, onCountSet]);
+  const handlePickerConfirm = useCallback(
+    (value: number) => {
+      onCountSet(roleIndex, value);
+      setShowNumberPicker(false);
+    },
+    [roleIndex, onCountSet]
+  );
 
   return (
     <View className="flex-row items-center py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0">
@@ -106,9 +105,7 @@ const RoleCard = React.memo(function RoleCard({
             className="text-sm text-gray-900 dark:text-white py-1 px-0 border-b border-gray-300 dark:border-surface-overlay"
           />
         ) : (
-          <Text className="text-sm font-medium text-gray-900 dark:text-white">
-            {roleName}
-          </Text>
+          <Text className="text-sm font-medium text-gray-900 dark:text-white">{roleName}</Text>
         )}
       </View>
 
@@ -133,9 +130,7 @@ const RoleCard = React.memo(function RoleCard({
           accessibilityRole="button"
           accessibilityLabel="인원 선택"
         >
-          <Text className="font-bold text-sm text-gray-900 dark:text-white">
-            {headcount}
-          </Text>
+          <Text className="font-bold text-sm text-gray-900 dark:text-white">{headcount}</Text>
         </Pressable>
 
         <Pressable
@@ -198,7 +193,7 @@ export function TimeSlotCard({
       if (roleKey === 'other' && r.customRole) {
         return r.customRole;
       }
-      return STAFF_ROLES.find(sr => sr.key === roleKey)?.name || roleKey;
+      return STAFF_ROLES.find((sr) => sr.key === roleKey)?.name || roleKey;
     });
   }, [timeSlot.roles]);
 
@@ -356,9 +351,7 @@ export function TimeSlotCard({
         <View className="gap-4">
           {/* 시간 미정 토글 */}
           <View className="flex-row items-center justify-between">
-            <Text className="text-sm text-gray-700 dark:text-gray-300">
-              시간 미정
-            </Text>
+            <Text className="text-sm text-gray-700 dark:text-gray-300">시간 미정</Text>
             <Switch
               value={timeSlot.isTimeToBeAnnounced}
               onValueChange={handleTimeToBeAnnouncedToggle}
@@ -426,7 +419,9 @@ export function TimeSlotCard({
                   onCountChange={handleRoleCountChange}
                   onCountSet={handleRoleCountSet}
                   onRemove={handleRemoveRole}
-                  onCustomNameChange={role.role === 'other' ? handleCustomRoleNameChange : undefined}
+                  onCustomNameChange={
+                    role.role === 'other' ? handleCustomRoleNameChange : undefined
+                  }
                 />
               ))}
             </View>

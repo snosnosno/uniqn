@@ -122,10 +122,7 @@ export interface IApplicationRepository {
    * @returns 생성된 지원서
    * @throws AlreadyAppliedError, ApplicationClosedError, MaxCapacityReachedError
    */
-  applyWithTransaction(
-    input: CreateApplicationInput,
-    context: ApplyContext
-  ): Promise<Application>;
+  applyWithTransaction(input: CreateApplicationInput, context: ApplyContext): Promise<Application>;
 
   /**
    * 지원 취소 (트랜잭션)
@@ -193,10 +190,7 @@ export interface IApplicationRepository {
    * @param reviewerId - 검토자 ID (권한 확인용)
    * @throws PermissionError (소유자 아님), MaxCapacityReachedError (정원 초과)
    */
-  confirmWithTransaction(
-    input: ConfirmApplicationInputV2,
-    reviewerId: string
-  ): Promise<void>;
+  confirmWithTransaction(input: ConfirmApplicationInputV2, reviewerId: string): Promise<void>;
 
   /**
    * 지원 거절 (트랜잭션)
@@ -211,10 +205,7 @@ export interface IApplicationRepository {
    * @param reviewerId - 검토자 ID (권한 확인용)
    * @throws PermissionError (소유자 아님), BusinessError (이미 확정/거절됨)
    */
-  rejectWithTransaction(
-    input: RejectApplicationInput,
-    reviewerId: string
-  ): Promise<void>;
+  rejectWithTransaction(input: RejectApplicationInput, reviewerId: string): Promise<void>;
 
   /**
    * 지원 읽음 처리 (트랜잭션)

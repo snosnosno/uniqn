@@ -14,12 +14,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  BusinessError,
-  PermissionError,
-  ERROR_CODES,
-  AlreadySettledError,
-} from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES, AlreadySettledError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
@@ -145,12 +140,10 @@ export async function updateWorkTimeForSettlement(
 
       // 4. 수정 데이터 준비 (checkInTime/checkOutTime 사용, null = 미정)
       // TimeInput을 Date로 변환
-      const checkInDate = input.checkInTime !== undefined
-        ? TimeNormalizer.parseTime(input.checkInTime)
-        : undefined;
-      const checkOutDate = input.checkOutTime !== undefined
-        ? TimeNormalizer.parseTime(input.checkOutTime)
-        : undefined;
+      const checkInDate =
+        input.checkInTime !== undefined ? TimeNormalizer.parseTime(input.checkInTime) : undefined;
+      const checkOutDate =
+        input.checkOutTime !== undefined ? TimeNormalizer.parseTime(input.checkOutTime) : undefined;
 
       const updateData: Record<string, unknown> = {
         updatedAt: serverTimestamp(),

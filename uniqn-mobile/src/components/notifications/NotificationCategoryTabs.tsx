@@ -7,10 +7,7 @@
 
 import React, { useCallback } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
-import {
-  NotificationCategory,
-  NOTIFICATION_CATEGORY_LABELS,
-} from '@/types/notification';
+import { NotificationCategory, NOTIFICATION_CATEGORY_LABELS } from '@/types/notification';
 
 // ============================================================================
 // Types
@@ -35,11 +32,23 @@ export interface NotificationCategoryTabsProps {
 
 const CATEGORY_OPTIONS: { key: NotificationCategoryFilter; label: string }[] = [
   { key: 'all', label: '전체' },
-  { key: NotificationCategory.APPLICATION, label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.APPLICATION] },
-  { key: NotificationCategory.ATTENDANCE, label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.ATTENDANCE] },
-  { key: NotificationCategory.SETTLEMENT, label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.SETTLEMENT] },
+  {
+    key: NotificationCategory.APPLICATION,
+    label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.APPLICATION],
+  },
+  {
+    key: NotificationCategory.ATTENDANCE,
+    label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.ATTENDANCE],
+  },
+  {
+    key: NotificationCategory.SETTLEMENT,
+    label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.SETTLEMENT],
+  },
   { key: NotificationCategory.JOB, label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.JOB] },
-  { key: NotificationCategory.SYSTEM, label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.SYSTEM] },
+  {
+    key: NotificationCategory.SYSTEM,
+    label: NOTIFICATION_CATEGORY_LABELS[NotificationCategory.SYSTEM],
+  },
 ];
 
 // ============================================================================
@@ -78,9 +87,7 @@ export function NotificationCategoryTabs({
               key={option.key}
               onPress={() => handleSelect(option.key)}
               className={`flex-row items-center rounded-full px-4 py-2 ${
-                isSelected
-                  ? 'bg-primary-500 dark:bg-primary-600'
-                  : 'bg-gray-100 dark:bg-surface'
+                isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
               }`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
@@ -90,9 +97,7 @@ export function NotificationCategoryTabs({
             >
               <Text
                 className={`text-sm font-medium ${
-                  isSelected
-                    ? 'text-white'
-                    : 'text-gray-700 dark:text-gray-300'
+                  isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'
                 }`}
               >
                 {option.label}
@@ -104,11 +109,7 @@ export function NotificationCategoryTabs({
                     isSelected ? 'bg-white/20' : 'bg-error-500'
                   }`}
                 >
-                  <Text
-                    className={`text-xs font-bold ${
-                      isSelected ? 'text-white' : 'text-white'
-                    }`}
-                  >
+                  <Text className={`text-xs font-bold ${isSelected ? 'text-white' : 'text-white'}`}>
                     {unreadCount > 99 ? '99+' : unreadCount}
                   </Text>
                 </View>

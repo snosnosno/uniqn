@@ -6,14 +6,7 @@
  */
 
 import { useState, useCallback, useMemo, memo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useMyJobPostings } from '@/hooks/useJobManagement';
@@ -21,10 +14,7 @@ import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
-import {
-  groupRequirementsToDateRanges,
-  formatDateRangeWithCount,
-} from '@/utils/dateRangeUtils';
+import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { useThemeStore } from '@/stores/themeStore';
@@ -157,11 +147,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 상단: 배지들 */}
       <View className="flex-row items-center flex-wrap mb-2">
         {posting.postingType && posting.postingType !== 'regular' && (
-          <PostingTypeBadge
-            type={posting.postingType as PostingType}
-            size="sm"
-            className="mr-2"
-          />
+          <PostingTypeBadge type={posting.postingType as PostingType} size="sm" className="mr-2" />
         )}
         {isTournament && tournamentStatus && (
           <TournamentStatusBadge
@@ -195,9 +181,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
       {/* 일정 */}
       <View className="flex-row items-center mb-1">
         <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
-        <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-          {getDateRange}
-        </Text>
+        <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{getDateRange}</Text>
       </View>
 
       {/* 모집 현황 */}
@@ -274,9 +258,7 @@ export default function MyPostingsPage() {
     return (
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#A855F7" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-          공고 목록을 불러오는 중...
-        </Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 목록을 불러오는 중...</Text>
       </View>
     );
   }
@@ -301,9 +283,7 @@ export default function MyPostingsPage() {
       {/* 헤더 */}
       <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between mb-1">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">
-            내 공고 관리
-          </Text>
+          <Text className="text-xl font-bold text-gray-900 dark:text-white">내 공고 관리</Text>
           <Pressable
             onPress={handleCreatePress}
             className="bg-primary-600 dark:bg-primary-500 px-4 py-2 rounded-lg flex-row items-center"
@@ -360,10 +340,10 @@ export default function MyPostingsPage() {
               selectedFilter === 'all'
                 ? '등록된 공고가 없습니다'
                 : selectedFilter === 'active'
-                ? '진행중인 공고가 없습니다'
-                : selectedFilter === 'closed'
-                ? '마감된 공고가 없습니다'
-                : '대회 공고가 없습니다'
+                  ? '진행중인 공고가 없습니다'
+                  : selectedFilter === 'closed'
+                    ? '마감된 공고가 없습니다'
+                    : '대회 공고가 없습니다'
             }
             description={
               selectedFilter === 'all'

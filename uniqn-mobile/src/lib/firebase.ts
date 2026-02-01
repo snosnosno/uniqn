@@ -123,16 +123,12 @@ function initializeFirebaseApp(): FirebaseApp {
     };
 
     // Firebase 앱 초기화 (중복 방지)
-    firebaseApp = getApps().length === 0
-      ? initializeApp(firebaseConfig)
-      : getApp();
+    firebaseApp = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
     isInitialized = true;
     return firebaseApp;
   } catch (error) {
-    initializationError = error instanceof Error
-      ? error
-      : new Error('Firebase 초기화 실패');
+    initializationError = error instanceof Error ? error : new Error('Firebase 초기화 실패');
     throw initializationError;
   }
 }

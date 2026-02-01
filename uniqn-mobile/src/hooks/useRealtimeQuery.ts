@@ -46,10 +46,7 @@ interface UseRealtimeQueryOptions<TData> {
    * @param onError 에러 발생 시 호출
    * @returns 구독 해제 함수
    */
-  subscribe: (
-    onData: (data: TData) => void,
-    onError?: (error: Error) => void
-  ) => () => void;
+  subscribe: (onData: (data: TData) => void, onError?: (error: Error) => void) => () => void;
 
   /**
    * 구독 활성화 여부
@@ -186,10 +183,7 @@ interface UseRealtimeCollectionOptions<TItem> {
   /**
    * Firestore 컬렉션 구독 함수
    */
-  subscribe: (
-    onData: (items: TItem[]) => void,
-    onError?: (error: Error) => void
-  ) => () => void;
+  subscribe: (onData: (items: TItem[]) => void, onError?: (error: Error) => void) => () => void;
 
   /**
    * 구독 활성화 여부
@@ -217,13 +211,10 @@ export function useRealtimeCollection<TItem>({
 }: UseRealtimeCollectionOptions<TItem>) {
   const wrappedSubscribe = useCallback(
     (onData: (data: TItem[]) => void, onError?: (error: Error) => void) => {
-      return subscribe(
-        (items) => {
-          const sortedItems = sortFn ? [...items].sort(sortFn) : items;
-          onData(sortedItems);
-        },
-        onError
-      );
+      return subscribe((items) => {
+        const sortedItems = sortFn ? [...items].sort(sortFn) : items;
+        onData(sortedItems);
+      }, onError);
     },
     [subscribe, sortFn]
   );
@@ -248,10 +239,7 @@ interface UseRealtimeDocumentOptions<TDoc> {
   /**
    * Firestore 문서 구독 함수
    */
-  subscribe: (
-    onData: (doc: TDoc | null) => void,
-    onError?: (error: Error) => void
-  ) => () => void;
+  subscribe: (onData: (doc: TDoc | null) => void, onError?: (error: Error) => void) => () => void;
 
   /**
    * 구독 활성화 여부

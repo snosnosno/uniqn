@@ -99,8 +99,7 @@ export const NotificationList = memo(function NotificationList({
 
   // 키 추출 (그룹 또는 개별)
   const keyExtractor = useCallback(
-    (item: NotificationListItem) =>
-      isGroupedNotification(item) ? item.groupId : item.id,
+    (item: NotificationListItem) => (isGroupedNotification(item) ? item.groupId : item.id),
     []
   );
 
@@ -135,15 +134,14 @@ export const NotificationList = memo(function NotificationList({
   // 에러 상태
   if (error) {
     return (
-      <View className={`flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center p-4 ${className}`}>
+      <View
+        className={`flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center p-4 ${className}`}
+      >
         <Text className="text-error-600 dark:text-error-400 text-center">
           알림을 불러오는데 실패했습니다.
         </Text>
         {onRefresh && (
-          <Pressable
-            onPress={onRefresh}
-            className="mt-4 px-4 py-2 bg-primary-500 rounded-lg"
-          >
+          <Pressable onPress={onRefresh} className="mt-4 px-4 py-2 bg-primary-500 rounded-lg">
             <Text className="text-white font-medium">다시 시도</Text>
           </Pressable>
         )}
@@ -166,19 +164,11 @@ export const NotificationList = memo(function NotificationList({
       {showHeader && notifications.length > 0 && (
         <View className="px-4 py-2 flex-row justify-between items-center border-b border-gray-100 dark:border-surface bg-white dark:bg-surface-dark">
           <Text className="text-sm text-gray-500 dark:text-gray-400">
-            {unreadCount > 0
-              ? `읽지 않음 ${unreadCount}개`
-              : '모든 알림을 확인했습니다'}
+            {unreadCount > 0 ? `읽지 않음 ${unreadCount}개` : '모든 알림을 확인했습니다'}
           </Text>
           {unreadCount > 0 && onMarkAllAsRead && (
-            <Pressable
-              onPress={onMarkAllAsRead}
-              hitSlop={8}
-              className="py-1"
-            >
-              <Text className="text-primary-600 dark:text-primary-400 font-medium">
-                모두 읽음
-              </Text>
+            <Pressable onPress={onMarkAllAsRead} hitSlop={8} className="py-1">
+              <Text className="text-primary-600 dark:text-primary-400 font-medium">모두 읽음</Text>
             </Pressable>
           )}
         </View>
@@ -246,9 +236,7 @@ export function SimpleNotificationList({
     return (
       <View className="py-8 items-center">
         <BellSlashIcon size={32} color="#d1d5db" />
-        <Text className="text-gray-500 dark:text-gray-400 mt-2 text-sm">
-          {emptyMessage}
-        </Text>
+        <Text className="text-gray-500 dark:text-gray-400 mt-2 text-sm">{emptyMessage}</Text>
       </View>
     );
   }

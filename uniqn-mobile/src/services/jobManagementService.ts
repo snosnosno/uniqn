@@ -37,13 +37,13 @@ export type { CreateJobPostingResult, JobPostingStats };
  * @description 커스텀 역할은 원본 이름을 사용하므로 여기에 없어도 됨
  */
 const ROLE_NAME_TO_CODE: Record<string, string> = {
-  '딜러': 'dealer',
-  '매니저': 'manager',
-  '칩러너': 'chiprunner',
-  '관리자': 'admin',
-  '플로어': 'floor',
-  '서빙': 'serving',
-  '직원': 'staff',
+  딜러: 'dealer',
+  매니저: 'manager',
+  칩러너: 'chiprunner',
+  관리자: 'admin',
+  플로어: 'floor',
+  서빙: 'serving',
+  직원: 'staff',
 };
 
 /**
@@ -53,9 +53,7 @@ const ROLE_NAME_TO_CODE: Record<string, string> = {
  * - 일반 역할: 한글명 → 영어 코드 (딜러 → dealer)
  * - 커스텀 역할: 이름 그대로 사용
  */
-function getRoleKeyFromFormRole(
-  role: { name?: string; isCustom?: boolean }
-): string {
+function getRoleKeyFromFormRole(role: { name?: string; isCustom?: boolean }): string {
   const name = role.name || '';
   // 커스텀 역할이면 이름 그대로 반환
   if (role.isCustom) {
@@ -81,9 +79,7 @@ function extractRoleKeysFromDateReq(
       slot.roles?.forEach((roleReq) => {
         const rawRole = roleReq.role ?? 'dealer';
         // 커스텀 역할이면 customRole을 키로 사용
-        const roleKey = rawRole === 'other' && roleReq.customRole
-          ? roleReq.customRole
-          : rawRole;
+        const roleKey = rawRole === 'other' && roleReq.customRole ? roleReq.customRole : rawRole;
         roleKeys.add(roleKey as string);
       });
     });
@@ -100,7 +96,15 @@ function extractRoleKeysFromDateReq(
  * salary 정보도 함께 포함
  */
 function convertToRoleRequirements(
-  roles: { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo; customRole?: string }[]
+  roles: {
+    role?: string;
+    name?: string;
+    count: number;
+    filled?: number;
+    isCustom?: boolean;
+    salary?: SalaryInfo;
+    customRole?: string;
+  }[]
 ): RoleRequirement[] {
   return roles.map((r) => {
     // 이미 RoleRequirement 형식인 경우 (role 필드가 있음)
@@ -170,7 +174,14 @@ async function createSinglePosting(
 ): Promise<CreateJobPostingResult> {
   // 역할 변환 (FormRoleWithCount → RoleRequirement) - salary 포함
   const convertedRoles = convertToRoleRequirements(
-    input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
+    input.roles as {
+      role?: string;
+      name?: string;
+      count: number;
+      filled?: number;
+      isCustom?: boolean;
+      salary?: SalaryInfo;
+    }[]
   );
 
   // input에서 roles 분리 (변환된 roles 사용)
@@ -216,8 +227,10 @@ async function createMultiplePostingsByDate(
       dateStr = (dateReq.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
     } else if (dateReq.date && 'seconds' in dateReq.date) {
       // Firestore 직렬화된 타입
-      dateStr = new Date((dateReq.date as { seconds: number }).seconds * 1000)
-        .toISOString().split('T')[0] ?? '';
+      dateStr =
+        new Date((dateReq.date as { seconds: number }).seconds * 1000)
+          .toISOString()
+          .split('T')[0] ?? '';
     } else {
       dateStr = '';
     }
@@ -271,13 +284,14 @@ export async function createJobPosting(
 
     // regular/urgent 타입이고 다중 날짜인 경우 분리 생성
     const isMultiDateType = input.postingType === 'regular' || input.postingType === 'urgent';
-    const hasMultipleDates = input.dateSpecificRequirements && input.dateSpecificRequirements.length > 1;
+    const hasMultipleDates =
+      input.dateSpecificRequirements && input.dateSpecificRequirements.length > 1;
 
     if (isMultiDateType && hasMultipleDates) {
       const results = await createMultiplePostingsByDate(input, ownerId, ownerName);
       logger.info('다중 공고 생성 완료', {
         count: results.length,
-        ids: results.map(r => r.id),
+        ids: results.map((r) => r.id),
       });
       return results;
     }
@@ -318,7 +332,14 @@ export async function updateJobPosting(
     let convertedRoles: RoleRequirement[] | undefined;
     if (input.roles) {
       convertedRoles = convertToRoleRequirements(
-        input.roles as { role?: string; name?: string; count: number; filled?: number; isCustom?: boolean; salary?: SalaryInfo }[]
+        input.roles as {
+          role?: string;
+          name?: string;
+          count: number;
+          filled?: number;
+          isCustom?: boolean;
+          salary?: SalaryInfo;
+        }[]
       );
     }
 
@@ -363,10 +384,7 @@ export async function updateJobPosting(
  * - 본인 공고만 삭제 가능
  * - 확정된 지원자가 있으면 삭제 불가 (마감으로 변경 권장)
  */
-export async function deleteJobPosting(
-  jobPostingId: string,
-  ownerId: string
-): Promise<void> {
+export async function deleteJobPosting(jobPostingId: string, ownerId: string): Promise<void> {
   try {
     logger.info('공고 삭제 시작', { jobPostingId, ownerId });
 
@@ -387,10 +405,7 @@ export async function deleteJobPosting(
  *
  * @description Repository 패턴 사용
  */
-export async function closeJobPosting(
-  jobPostingId: string,
-  ownerId: string
-): Promise<void> {
+export async function closeJobPosting(jobPostingId: string, ownerId: string): Promise<void> {
   try {
     logger.info('공고 마감 시작', { jobPostingId, ownerId });
 
@@ -411,10 +426,7 @@ export async function closeJobPosting(
  *
  * @description Repository 패턴 사용
  */
-export async function reopenJobPosting(
-  jobPostingId: string,
-  ownerId: string
-): Promise<void> {
+export async function reopenJobPosting(jobPostingId: string, ownerId: string): Promise<void> {
   try {
     logger.info('공고 재오픈 시작', { jobPostingId, ownerId });
 
@@ -435,9 +447,7 @@ export async function reopenJobPosting(
  *
  * @description Repository 패턴 사용
  */
-export async function getMyJobPostingStats(
-  ownerId: string
-): Promise<JobPostingStats> {
+export async function getMyJobPostingStats(ownerId: string): Promise<JobPostingStats> {
   try {
     logger.info('내 공고 통계 조회', { ownerId });
 

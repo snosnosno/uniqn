@@ -165,9 +165,7 @@ function WebSheetModal({
           >
             {/* Header */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                {title}
-              </Text>
+              <Text className="text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
               {showCloseButton && (
                 <Pressable
                   onPress={handleClose}
@@ -282,19 +280,11 @@ function NativeSheetModal({
             accessibilityRole="button"
             accessibilityLabel="모달 닫기"
           >
-            <Animated.View
-              style={backdropAnimatedStyle}
-              className="flex-1 bg-black/50"
-            />
+            <Animated.View style={backdropAnimatedStyle} className="flex-1 bg-black/50" />
           </Pressable>
 
           {/* Modal Content */}
-          <Animated.View
-            style={[
-              modalAnimatedStyle,
-              { maxHeight: windowHeight * 0.95, flex: 1 },
-            ]}
-          >
+          <Animated.View style={[modalAnimatedStyle, { maxHeight: windowHeight * 0.95, flex: 1 }]}>
             <SafeAreaView
               edges={['bottom']}
               style={{ flex: 1 }}
@@ -302,9 +292,7 @@ function NativeSheetModal({
             >
               {/* Header */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-                <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                  {title}
-                </Text>
+                <Text className="text-lg font-semibold text-gray-900 dark:text-white">{title}</Text>
                 {showCloseButton && (
                   <Pressable
                     onPress={handleClose}

@@ -8,11 +8,7 @@
 import React, { memo, useMemo, useCallback } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  type Allowances,
-  PROVIDED_FLAG,
-  formatCurrency,
-} from '@/utils/settlement';
+import { type Allowances, PROVIDED_FLAG, formatCurrency } from '@/utils/settlement';
 
 // ============================================================================
 // Types
@@ -91,10 +87,18 @@ function calculateTotalAllowance(allowances: Allowances): number {
   if (allowances.meal && allowances.meal !== PROVIDED_FLAG && allowances.meal > 0) {
     total += allowances.meal;
   }
-  if (allowances.transportation && allowances.transportation !== PROVIDED_FLAG && allowances.transportation > 0) {
+  if (
+    allowances.transportation &&
+    allowances.transportation !== PROVIDED_FLAG &&
+    allowances.transportation > 0
+  ) {
     total += allowances.transportation;
   }
-  if (allowances.accommodation && allowances.accommodation !== PROVIDED_FLAG && allowances.accommodation > 0) {
+  if (
+    allowances.accommodation &&
+    allowances.accommodation !== PROVIDED_FLAG &&
+    allowances.accommodation > 0
+  ) {
     total += allowances.accommodation;
   }
   // 추가 수당
@@ -138,23 +142,29 @@ const AllowanceItem = memo(function AllowanceItem({
   }, [disabled, isEnabled, onChange]);
 
   // 제공/금액 전환
-  const handleModeChange = useCallback((mode: 'provided' | 'amount') => {
-    if (disabled) return;
-    if (mode === 'provided') {
-      onChange(PROVIDED_FLAG);
-    } else {
-      // 금액 모드로 전환 시 기본값 설정
-      onChange(10000);
-    }
-  }, [disabled, onChange]);
+  const handleModeChange = useCallback(
+    (mode: 'provided' | 'amount') => {
+      if (disabled) return;
+      if (mode === 'provided') {
+        onChange(PROVIDED_FLAG);
+      } else {
+        // 금액 모드로 전환 시 기본값 설정
+        onChange(10000);
+      }
+    },
+    [disabled, onChange]
+  );
 
   // 금액 변경
-  const handleAmountChange = useCallback((text: string) => {
-    if (disabled) return;
-    const numericValue = text.replace(/[^0-9]/g, '');
-    const amount = parseInt(numericValue, 10) || 0;
-    onChange(amount);
-  }, [disabled, onChange]);
+  const handleAmountChange = useCallback(
+    (text: string) => {
+      if (disabled) return;
+      const numericValue = text.replace(/[^0-9]/g, '');
+      const amount = parseInt(numericValue, 10) || 0;
+      onChange(amount);
+    },
+    [disabled, onChange]
+  );
 
   // 포맷된 금액
   const formattedAmount = useMemo(() => {
@@ -177,29 +187,22 @@ const AllowanceItem = memo(function AllowanceItem({
         <View
           className={`
             h-5 w-5 rounded border-2 items-center justify-center mr-3
-            ${isEnabled
-              ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
-              : 'bg-transparent border-gray-300 dark:border-surface-overlay'
+            ${
+              isEnabled
+                ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
+                : 'bg-transparent border-gray-300 dark:border-surface-overlay'
             }
           `}
         >
-          {isEnabled && (
-            <Ionicons name="checkmark" size={14} color="white" />
-          )}
+          {isEnabled && <Ionicons name="checkmark" size={14} color="white" />}
         </View>
 
         {/* 아이콘 + 라벨 */}
         <View className="flex-row items-center flex-1">
-          <Ionicons
-            name={config.icon}
-            size={18}
-            color={isEnabled ? '#4F46E5' : '#9CA3AF'}
-          />
+          <Ionicons name={config.icon} size={18} color={isEnabled ? '#4F46E5' : '#9CA3AF'} />
           <Text
             className={`ml-2 text-base font-medium ${
-              isEnabled
-                ? 'text-gray-900 dark:text-white'
-                : 'text-gray-500 dark:text-gray-400'
+              isEnabled ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400'
             }`}
           >
             {config.label}
@@ -301,9 +304,7 @@ const AllowanceItem = memo(function AllowanceItem({
                 className="flex-1 text-base text-gray-900 dark:text-white"
                 accessibilityLabel={`${config.label} 금액`}
               />
-              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-                원
-              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">원</Text>
             </View>
           )}
         </View>
@@ -342,10 +343,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
   );
 
   // 총 수당 계산
-  const totalAllowance = useMemo(
-    () => calculateTotalAllowance(allowances),
-    [allowances]
-  );
+  const totalAllowance = useMemo(() => calculateTotalAllowance(allowances), [allowances]);
 
   // 제공 항목 수
   const providedCount = useMemo(() => {
@@ -360,9 +358,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">
-          수당 설정
-        </Text>
+        <Text className="mb-3 text-sm font-medium text-gray-700 dark:text-gray-300">수당 설정</Text>
       )}
 
       {/* 수당 항목들 */}
@@ -403,9 +399,11 @@ export const AllowanceEditor = memo(function AllowanceEditor({
           `}
         >
           <TextInput
-            value={allowances.additional && allowances.additional > 0
-              ? allowances.additional.toLocaleString('ko-KR')
-              : ''}
+            value={
+              allowances.additional && allowances.additional > 0
+                ? allowances.additional.toLocaleString('ko-KR')
+                : ''
+            }
             onChangeText={(text) => {
               if (disabled) return;
               const numericValue = text.replace(/[^0-9]/g, '');
@@ -422,9 +420,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
             className="flex-1 text-base text-gray-900 dark:text-white"
             accessibilityLabel="추가 수당 금액"
           />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-            원
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">원</Text>
         </View>
         <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">
           기타 수당 금액을 직접 입력하세요
@@ -442,9 +438,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
           <View className="flex-row items-center justify-between">
             <Text className="text-sm text-gray-600 dark:text-gray-400">
               총 수당
-              {workDays && workDays > 1 && (
-                <Text className="text-xs"> ({workDays}일 기준)</Text>
-              )}
+              {workDays && workDays > 1 && <Text className="text-xs"> ({workDays}일 기준)</Text>}
             </Text>
             <View className="items-end">
               {totalAllowance > 0 && (

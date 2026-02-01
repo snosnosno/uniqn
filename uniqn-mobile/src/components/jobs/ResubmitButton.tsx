@@ -70,7 +70,8 @@ export function ResubmitButton({
 
   // 재제출 확인
   const handleConfirm = useCallback(() => {
-    resubmit.mutateAsync({ postingId })
+    resubmit
+      .mutateAsync({ postingId })
       .then(() => {
         setShowConfirmModal(false);
         onSuccess?.();
@@ -106,9 +107,7 @@ export function ResubmitButton({
         ) : (
           <>
             <RefreshIcon size={iconSize} color="#ffffff" />
-            <Text className={`ml-2 font-medium text-white ${textClass}`}>
-              재제출
-            </Text>
+            <Text className={`ml-2 font-medium text-white ${textClass}`}>재제출</Text>
           </>
         )}
       </Pressable>

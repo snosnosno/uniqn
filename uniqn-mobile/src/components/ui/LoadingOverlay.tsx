@@ -203,9 +203,7 @@ export function LoadingOverlay({
               accessibilityRole="button"
               accessibilityLabel="취소"
             >
-              <Text className="text-gray-500 dark:text-gray-400 text-sm underline">
-                취소
-              </Text>
+              <Text className="text-gray-500 dark:text-gray-400 text-sm underline">취소</Text>
             </Pressable>
           )}
         </Animated.View>

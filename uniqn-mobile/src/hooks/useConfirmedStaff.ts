@@ -122,13 +122,7 @@ export function useConfirmedStaff(
   // Query - 확정 스태프 조회
   // ============================================================================
 
-  const {
-    data,
-    isLoading,
-    error,
-    refetch,
-    isRefetching,
-  } = useQuery({
+  const { data, isLoading, error, refetch, isRefetching } = useQuery({
     queryKey: date
       ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
       : queryKeys.confirmedStaff.byJobPosting(jobPostingId),

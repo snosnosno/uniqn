@@ -50,9 +50,7 @@ export function TabHeader({
   return (
     <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-surface">
       {/* 제목 */}
-      <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">
-        {title}
-      </Text>
+      <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">{title}</Text>
 
       {/* 오른쪽 액션 버튼들 */}
       <View className="flex-row items-center gap-2">

@@ -42,7 +42,4 @@ export type {
 export type { IEventQRRepository } from './IEventQRRepository';
 
 // Notification Repository
-export type {
-  INotificationRepository,
-  GetNotificationsOptions,
-} from './INotificationRepository';
+export type { INotificationRepository, GetNotificationsOptions } from './INotificationRepository';

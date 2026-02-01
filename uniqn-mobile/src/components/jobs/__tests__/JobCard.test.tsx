@@ -12,13 +12,7 @@ import type { JobPostingCard } from '@/types';
 
 // Mock Badge component
 jest.mock('@/components/ui/Badge', () => ({
-  Badge: ({
-    children,
-    variant,
-  }: {
-    children: React.ReactNode;
-    variant?: string;
-  }) => {
+  Badge: ({ children, variant }: { children: React.ReactNode; variant?: string }) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text } = require('react-native');
     return <Text testID={`badge-${variant || 'default'}`}>{children}</Text>;
@@ -27,13 +21,7 @@ jest.mock('@/components/ui/Badge', () => ({
 
 // Mock PostingTypeBadge component
 jest.mock('../PostingTypeBadge', () => ({
-  PostingTypeBadge: ({
-    type,
-  }: {
-    type: string;
-    size?: string;
-    className?: string;
-  }) => {
+  PostingTypeBadge: ({ type }: { type: string; size?: string; className?: string }) => {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { Text } = require('react-native');
     return <Text testID={`posting-type-${type}`}>{type}</Text>;
@@ -79,25 +67,19 @@ describe('JobCard', () => {
   });
 
   it('should render job title', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(getByText('테스트 공고')).toBeTruthy();
   });
 
   it('should render location', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(getByText(/서울 강남구/)).toBeTruthy();
   });
 
   it('should render date from dateRequirements', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     // Date format: M/D(요일)
     // 2025-01-15 is Wednesday
@@ -105,17 +87,13 @@ describe('JobCard', () => {
   });
 
   it('should render start time from dateRequirements', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(getByText(/18:00/)).toBeTruthy();
   });
 
   it('should render salary correctly for daily type', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(getByText(/일급 150,000원/)).toBeTruthy();
   });
@@ -129,9 +107,7 @@ describe('JobCard', () => {
       },
     };
 
-    const { getByText } = render(
-      <JobCard job={hourlyJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={hourlyJob} onPress={mockOnPress} />);
 
     expect(getByText(/시급 15,000원/)).toBeTruthy();
   });
@@ -145,17 +121,13 @@ describe('JobCard', () => {
       },
     };
 
-    const { getByText } = render(
-      <JobCard job={monthlyJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={monthlyJob} onPress={mockOnPress} />);
 
     expect(getByText(/월급 3,000,000원/)).toBeTruthy();
   });
 
   it('should render role with count and filled status', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     // 딜러 3명 (1/3), 매니저 2명 (0/2) 형식으로 표시
     expect(getByText(/딜러/)).toBeTruthy();
@@ -172,25 +144,19 @@ describe('JobCard', () => {
       isUrgent: true,
     };
 
-    const { getByText } = render(
-      <JobCard job={urgentJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={urgentJob} onPress={mockOnPress} />);
 
     expect(getByText('긴급')).toBeTruthy();
   });
 
   it('should not render urgent badge when isUrgent is false', () => {
-    const { queryByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { queryByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(queryByText('긴급')).toBeNull();
   });
 
   it('should call onPress with job id when pressed', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     const title = getByText('테스트 공고');
     fireEvent.press(title);
@@ -223,9 +189,7 @@ describe('JobCard', () => {
       ],
     };
 
-    const { getByText } = render(
-      <JobCard job={multiDateJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={multiDateJob} onPress={mockOnPress} />);
 
     expect(getByText(/1\/15\(수\)/)).toBeTruthy();
     expect(getByText(/1\/16\(목\)/)).toBeTruthy();
@@ -240,18 +204,14 @@ describe('JobCard', () => {
       },
     };
 
-    const { getByText } = render(
-      <JobCard job={jobWithAllowances} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={jobWithAllowances} onPress={mockOnPress} />);
 
     expect(getByText(/식비 10,000원/)).toBeTruthy();
     expect(getByText(/교통비 5,000원/)).toBeTruthy();
   });
 
   it('should not render allowances when not provided', () => {
-    const { queryByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { queryByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     expect(queryByText(/식비/)).toBeNull();
     expect(queryByText(/교통비/)).toBeNull();
@@ -337,7 +297,9 @@ describe('JobCard accessibility', () => {
         timeSlots: [
           {
             startTime: '18:00',
-            roles: [{ role: 'dealer', count: 1, filled: 0, salary: { type: 'daily', amount: 150000 } }],
+            roles: [
+              { role: 'dealer', count: 1, filled: 0, salary: { type: 'daily', amount: 150000 } },
+            ],
           },
         ],
       },
@@ -349,9 +311,7 @@ describe('JobCard accessibility', () => {
   };
 
   it('should be pressable', () => {
-    const { getByText } = render(
-      <JobCard job={mockJob} onPress={mockOnPress} />
-    );
+    const { getByText } = render(<JobCard job={mockJob} onPress={mockOnPress} />);
 
     const card = getByText('테스트 공고');
     fireEvent.press(card);

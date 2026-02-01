@@ -134,9 +134,7 @@ function restoreState(): void {
       state.failureCount = parsed.failureCount ?? 0;
       state.nextScheduledAt = parsed.nextScheduledAt ?? null;
       logger.info('토큰 갱신 상태 복원', {
-        lastRefreshAt: state.lastRefreshAt
-          ? new Date(state.lastRefreshAt).toISOString()
-          : null,
+        lastRefreshAt: state.lastRefreshAt ? new Date(state.lastRefreshAt).toISOString() : null,
         failureCount: state.failureCount,
       });
     }
@@ -357,7 +355,10 @@ function cancelPendingRetry(): void {
 /**
  * 서비스 시작
  */
-export function start(startOptions: StartOptions, customConfig?: Partial<TokenRefreshConfig>): void {
+export function start(
+  startOptions: StartOptions,
+  customConfig?: Partial<TokenRefreshConfig>
+): void {
   if (Platform.OS === 'web') {
     logger.info('웹 환경에서는 토큰 갱신 서비스 비활성화');
     return;

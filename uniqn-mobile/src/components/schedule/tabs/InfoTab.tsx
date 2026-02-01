@@ -43,10 +43,13 @@ export interface InfoTabProps {
 // Constants
 // ============================================================================
 
-const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
-  label: string;
-  variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
-}> = {
+const PAYROLL_STATUS_CONFIG: Record<
+  PayrollStatus,
+  {
+    label: string;
+    variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
+  }
+> = {
   pending: { label: '미정산', variant: 'warning' },
   processing: { label: '처리중', variant: 'primary' },
   completed: { label: '정산완료', variant: 'success' },
@@ -109,7 +112,6 @@ function formatFullDate(dateString: string): string {
   });
 }
 
-
 // ============================================================================
 // Sub Components
 // ============================================================================
@@ -125,9 +127,7 @@ function Section({ icon, title, children }: SectionProps) {
     <View className="mb-5">
       <View className="flex-row items-center mb-2">
         {icon}
-        <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
-          {title}
-        </Text>
+        <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">{title}</Text>
       </View>
       <View className="ml-6">{children}</View>
     </View>
@@ -156,14 +156,15 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
     // 3. 역할별 급여 조회: dateRequirements에서 해당 날짜/역할의 급여 찾기
     const card = schedule.jobPostingCard;
     if (card?.dateRequirements) {
-      const dateReq = card.dateRequirements.find(
-        (dr) => dr.date === schedule.date
-      );
+      const dateReq = card.dateRequirements.find((dr) => dr.date === schedule.date);
       if (dateReq) {
         for (const timeSlot of dateReq.timeSlots || []) {
           const roleInfo = timeSlot.roles?.find(
-            (r) => r.role === schedule.role ||
-              (schedule.role === 'other' && r.role === 'other' && r.customRole === schedule.customRole)
+            (r) =>
+              r.role === schedule.role ||
+              (schedule.role === 'other' &&
+                r.role === 'other' &&
+                r.customRole === schedule.customRole)
           );
           if (roleInfo?.salary) {
             return roleInfo.salary;
@@ -176,7 +177,14 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       return card.defaultSalary;
     }
     return null;
-  }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, schedule.jobPostingCard, schedule.date, schedule.role, schedule.customRole]);
+  }, [
+    schedule.settlementBreakdown?.salaryInfo,
+    schedule.customSalaryInfo,
+    schedule.jobPostingCard,
+    schedule.date,
+    schedule.role,
+    schedule.customRole,
+  ]);
 
   // 수당 정보 (settlementBreakdown > customAllowances > jobPostingCard)
   const allowances: Allowances | undefined = useMemo(() => {
@@ -184,17 +192,25 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       return schedule.settlementBreakdown.allowances;
     }
     return schedule.customAllowances || schedule.jobPostingCard?.allowances;
-  }, [schedule.settlementBreakdown?.allowances, schedule.customAllowances, schedule.jobPostingCard?.allowances]);
+  }, [
+    schedule.settlementBreakdown?.allowances,
+    schedule.customAllowances,
+    schedule.jobPostingCard?.allowances,
+  ]);
 
   // 세금 설정 (settlementBreakdown > customTaxSettings > jobPostingCard)
   const taxSettings: TaxSettings = useMemo(() => {
     if (schedule.settlementBreakdown?.taxSettings) {
       return schedule.settlementBreakdown.taxSettings;
     }
-    return schedule.customTaxSettings ||
-      schedule.jobPostingCard?.taxSettings ||
-      DEFAULT_TAX_SETTINGS;
-  }, [schedule.settlementBreakdown?.taxSettings, schedule.customTaxSettings, schedule.jobPostingCard?.taxSettings]);
+    return (
+      schedule.customTaxSettings || schedule.jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS
+    );
+  }, [
+    schedule.settlementBreakdown?.taxSettings,
+    schedule.customTaxSettings,
+    schedule.jobPostingCard?.taxSettings,
+  ]);
 
   // 수당이 있는지 확인 (보장시간 제외)
   const hasAllowances = useMemo(() => {
@@ -250,9 +266,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       {/* 공고 설명 (있으면) */}
       {description && (
         <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="공고 설명">
-          <Text className="text-sm text-gray-700 dark:text-gray-300 leading-5">
-            {description}
-          </Text>
+          <Text className="text-sm text-gray-700 dark:text-gray-300 leading-5">{description}</Text>
         </Section>
       )}
 
@@ -369,12 +383,16 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 {allowances?.meal !== undefined && allowances.meal !== 0 && (
                   <View className="flex-row justify-between items-center py-1">
                     <Text className="text-sm text-gray-600 dark:text-gray-400">식비</Text>
-                    <Text className={`text-sm font-medium ${
-                      allowances.meal === PROVIDED_FLAG
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {allowances.meal === PROVIDED_FLAG ? '제공' : `${allowances.meal.toLocaleString()}원`}
+                    <Text
+                      className={`text-sm font-medium ${
+                        allowances.meal === PROVIDED_FLAG
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {allowances.meal === PROVIDED_FLAG
+                        ? '제공'
+                        : `${allowances.meal.toLocaleString()}원`}
                     </Text>
                   </View>
                 )}
@@ -382,12 +400,16 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 {allowances?.transportation !== undefined && allowances.transportation !== 0 && (
                   <View className="flex-row justify-between items-center py-1">
                     <Text className="text-sm text-gray-600 dark:text-gray-400">교통비</Text>
-                    <Text className={`text-sm font-medium ${
-                      allowances.transportation === PROVIDED_FLAG
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {allowances.transportation === PROVIDED_FLAG ? '제공' : `${allowances.transportation.toLocaleString()}원`}
+                    <Text
+                      className={`text-sm font-medium ${
+                        allowances.transportation === PROVIDED_FLAG
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {allowances.transportation === PROVIDED_FLAG
+                        ? '제공'
+                        : `${allowances.transportation.toLocaleString()}원`}
                     </Text>
                   </View>
                 )}
@@ -395,12 +417,16 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 {allowances?.accommodation !== undefined && allowances.accommodation !== 0 && (
                   <View className="flex-row justify-between items-center py-1">
                     <Text className="text-sm text-gray-600 dark:text-gray-400">숙박비</Text>
-                    <Text className={`text-sm font-medium ${
-                      allowances.accommodation === PROVIDED_FLAG
-                        ? 'text-green-600 dark:text-green-400'
-                        : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {allowances.accommodation === PROVIDED_FLAG ? '제공' : `${allowances.accommodation.toLocaleString()}원`}
+                    <Text
+                      className={`text-sm font-medium ${
+                        allowances.accommodation === PROVIDED_FLAG
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-900 dark:text-white'
+                      }`}
+                    >
+                      {allowances.accommodation === PROVIDED_FLAG
+                        ? '제공'
+                        : `${allowances.accommodation.toLocaleString()}원`}
                     </Text>
                   </View>
                 )}
@@ -413,7 +439,9 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 <View className="flex-row justify-between items-center py-1">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">세금</Text>
                   <Text className="text-sm font-medium text-red-600 dark:text-red-400">
-                    {taxSettings.type === 'rate' ? `${taxSettings.value}%` : `${taxSettings.value.toLocaleString()}원`}
+                    {taxSettings.type === 'rate'
+                      ? `${taxSettings.value}%`
+                      : `${taxSettings.value.toLocaleString()}원`}
                   </Text>
                 </View>
               </View>
@@ -448,9 +476,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       {/* 메모 */}
       {schedule.notes && (
         <Section icon={<DocumentIcon size={18} color="#6B7280" />} title="메모">
-          <Text className="text-sm text-gray-600 dark:text-gray-400">
-            {schedule.notes}
-          </Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400">{schedule.notes}</Text>
         </Section>
       )}
     </View>

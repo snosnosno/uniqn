@@ -10,16 +10,8 @@ import { View, Text, Pressable } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { ConfirmationHistoryTimeline } from './ConfirmationHistoryTimeline';
-import type {
-  Application,
-  ApplicationStatus,
-  Assignment,
-  
-} from '@/types';
-import {
-  APPLICATION_STATUS_LABELS,
-  
-} from '@/types';
+import type { Application, ApplicationStatus, Assignment } from '@/types';
+import { APPLICATION_STATUS_LABELS } from '@/types';
 
 // ============================================================================
 // Types
@@ -114,9 +106,7 @@ const getAssignmentsSummary = (assignments: Assignment[]): string => {
   assignments.forEach((a) => a.dates.forEach((d) => uniqueDates.add(d)));
 
   // v3.0: roleIds 사용
-  const roles = [
-    ...new Set(assignments.map((a) => a.roleIds[0] ?? '').filter(Boolean)),
-  ];
+  const roles = [...new Set(assignments.map((a) => a.roleIds[0] ?? '').filter(Boolean))];
   const roleLabels = roles.map((r) => getRoleLabel(r)).join(', ');
 
   return `${roleLabels} / ${uniqueDates.size}일`;
@@ -145,9 +135,10 @@ const ApplicantHeader = memo(function ApplicantHeader({
   application: Application;
   compact?: boolean;
 }) {
-  const roles = application.assignments.length > 0
-    ? getUniqueRolesFromAssignments(application.assignments)
-    : ['other'];
+  const roles =
+    application.assignments.length > 0
+      ? getUniqueRolesFromAssignments(application.assignments)
+      : ['other'];
 
   return (
     <View className="flex-row items-start justify-between mb-2">
@@ -161,11 +152,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
           >
             {application.applicantName}
           </Text>
-          <Badge
-            variant={getStatusBadgeVariant(application.status)}
-            size="sm"
-            className="ml-2"
-          >
+          <Badge variant={getStatusBadgeVariant(application.status)} size="sm" className="ml-2">
             {APPLICATION_STATUS_LABELS[application.status]}
           </Badge>
         </View>
@@ -173,11 +160,7 @@ const ApplicantHeader = memo(function ApplicantHeader({
         {/* 역할 뱃지 */}
         <View className="flex-row flex-wrap gap-1">
           {roles.map((role, index) => (
-            <Badge
-              key={`${role}-${index}`}
-              variant={getRoleBadgeVariant(role)}
-              size="sm"
-            >
+            <Badge key={`${role}-${index}`} variant={getRoleBadgeVariant(role)} size="sm">
               {getRoleLabel(role)}
             </Badge>
           ))}
@@ -217,9 +200,7 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
       });
     });
 
-    return [...groups.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
-      .slice(0, compact ? 2 : 5);
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b)).slice(0, compact ? 2 : 5);
   }, [assignments, compact]);
 
   // Early return after all hooks
@@ -237,14 +218,10 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
 
   return (
     <View className="mt-3 bg-gray-50 dark:bg-surface rounded-lg p-3">
-      <Text className="text-sm font-medium text-gray-900 dark:text-white mb-2">
-        지원 일정
-      </Text>
+      <Text className="text-sm font-medium text-gray-900 dark:text-white mb-2">지원 일정</Text>
       {dateGroups.map(([date, { roles, timeSlots }]) => (
         <View key={date} className="flex-row items-center mb-1.5 last:mb-0">
-          <Text className="text-sm text-gray-600 dark:text-gray-400 w-20">
-            {formatDate(date)}
-          </Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400 w-20">{formatDate(date)}</Text>
           <Text className="text-sm text-gray-500 dark:text-gray-400 flex-1">
             {[...roles].map((r) => getRoleLabel(r)).join(', ')}
           </Text>
@@ -289,10 +266,7 @@ const PreQuestionPreview = memo(function PreQuestionPreview({
       </Text>
       {answers.slice(0, 2).map((answer) => (
         <View key={answer.questionId} className="mb-1.5 last:mb-0">
-          <Text
-            className="text-xs text-primary-700 dark:text-primary-300"
-            numberOfLines={2}
-          >
+          <Text className="text-xs text-primary-700 dark:text-primary-300" numberOfLines={2}>
             {answer.answer}
           </Text>
         </View>
@@ -339,12 +313,7 @@ const ActionButtons = memo(function ActionButtons({
         </Button>
       )}
       {onReject && (
-        <Button
-          variant="ghost"
-          size="sm"
-          onPress={onReject}
-          disabled={isLoading}
-        >
+        <Button variant="ghost" size="sm" onPress={onReject} disabled={isLoading}>
           거절
         </Button>
       )}
@@ -404,9 +373,7 @@ export const ApplicantCard = memo(function ApplicantCard({
   }, [application.id, onReject]);
 
   // 히스토리 존재 여부
-  const hasHistory =
-    application.confirmationHistory?.length ||
-    application.originalApplication;
+  const hasHistory = application.confirmationHistory?.length || application.originalApplication;
 
   // 접근성 라벨
   const accessibilityLabel = `${application.applicantName}, ${
@@ -427,28 +394,19 @@ export const ApplicantCard = memo(function ApplicantCard({
 
       {/* v2.0 Assignment 요약 */}
       {application.assignments?.length ? (
-        <AssignmentsSummary
-          assignments={application.assignments}
-          compact={compact}
-        />
+        <AssignmentsSummary assignments={application.assignments} compact={compact} />
       ) : null}
 
       {/* 지원 메시지 */}
       {application.message && (
-        <View
-          className={`mt-2 ${
-            compact ? '' : 'bg-gray-50 dark:bg-surface rounded-lg p-3'
-          }`}
-        >
+        <View className={`mt-2 ${compact ? '' : 'bg-gray-50 dark:bg-surface rounded-lg p-3'}`}>
           {!compact && (
             <Text className="text-sm font-medium text-gray-900 dark:text-white mb-1">
               지원 메시지
             </Text>
           )}
           <Text
-            className={`text-gray-600 dark:text-gray-400 ${
-              compact ? 'text-xs' : 'text-sm'
-            }`}
+            className={`text-gray-600 dark:text-gray-400 ${compact ? 'text-xs' : 'text-sm'}`}
             numberOfLines={compact ? 2 : undefined}
           >
             {application.message}
@@ -458,10 +416,7 @@ export const ApplicantCard = memo(function ApplicantCard({
 
       {/* 사전질문 답변 미리보기 */}
       {application.preQuestionAnswers?.length ? (
-        <PreQuestionPreview
-          answers={application.preQuestionAnswers}
-          compact={compact}
-        />
+        <PreQuestionPreview answers={application.preQuestionAnswers} compact={compact} />
       ) : null}
 
       {/* 확정/취소 이력 타임라인 */}

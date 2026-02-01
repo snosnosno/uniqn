@@ -50,9 +50,6 @@ export type SeoulDistrict = (typeof SEOUL_DISTRICTS)[number];
 /**
  * 수도권 도시 목록 (서울 외)
  */
-export const METRO_CITIES = [
-  '인천',
-  '경기도',
-] as const;
+export const METRO_CITIES = ['인천', '경기도'] as const;
 
 export type MetroCity = (typeof METRO_CITIES)[number];

@@ -13,16 +13,8 @@
 import { ROLE_LABELS, STAFF_ROLES } from '@/constants';
 import { PermissionError, ERROR_CODES } from '@/errors';
 import type { UserRole } from '@/types';
-import type {
-  ResolvedRole,
-  StaffRoleInput,
-  AssignmentRoleInput,
-} from './types';
-import {
-  USER_ROLE_HIERARCHY,
-  USER_ROLE_DISPLAY_NAMES,
-  VALID_USER_ROLES,
-} from './types';
+import type { ResolvedRole, StaffRoleInput, AssignmentRoleInput } from './types';
+import { USER_ROLE_HIERARCHY, USER_ROLE_DISPLAY_NAMES, VALID_USER_ROLES } from './types';
 
 // ============================================================================
 // RoleResolver Class
@@ -87,8 +79,7 @@ export class RoleResolver {
     if (!userRole) return false;
 
     // 문자열인 경우 정규화
-    const normalized =
-      typeof userRole === 'string' ? this.normalizeUserRole(userRole) : userRole;
+    const normalized = typeof userRole === 'string' ? this.normalizeUserRole(userRole) : userRole;
 
     if (!normalized) return false;
 
@@ -131,10 +122,7 @@ export class RoleResolver {
    * RoleResolver.requireRole('employer', 'staff') // OK
    * RoleResolver.requireRole('staff', 'employer') // throws PermissionError
    */
-  static requireRole(
-    userRole: UserRole | string | null | undefined,
-    requiredRole: UserRole
-  ): void {
+  static requireRole(userRole: UserRole | string | null | undefined, requiredRole: UserRole): void {
     if (!this.hasPermission(userRole, requiredRole)) {
       const roleName = USER_ROLE_DISPLAY_NAMES[requiredRole] ?? requiredRole;
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {

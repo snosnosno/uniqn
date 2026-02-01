@@ -14,11 +14,7 @@ import type { ModificationHistoryItemProps } from './types';
  * 시간 변경 내용 포맷팅
  * @returns "출근시간 미정 → 11:00" 형식의 문자열 또는 null
  */
-function formatTimeChange(
-  prevValue: unknown,
-  newValue: unknown,
-  label: string
-): string | null {
+function formatTimeChange(prevValue: unknown, newValue: unknown, label: string): string | null {
   // 둘 다 undefined면 변경 없음
   if (prevValue === undefined && newValue === undefined) {
     return null;
@@ -80,14 +76,10 @@ export function ModificationHistoryItem({ modification, index }: ModificationHis
         {(startTimeChange || endTimeChange) && (
           <View className="mt-1.5 bg-gray-100 dark:bg-surface rounded px-2 py-1.5">
             {startTimeChange && (
-              <Text className="text-xs text-gray-600 dark:text-gray-300">
-                • {startTimeChange}
-              </Text>
+              <Text className="text-xs text-gray-600 dark:text-gray-300">• {startTimeChange}</Text>
             )}
             {endTimeChange && (
-              <Text className="text-xs text-gray-600 dark:text-gray-300">
-                • {endTimeChange}
-              </Text>
+              <Text className="text-xs text-gray-600 dark:text-gray-300">• {endTimeChange}</Text>
             )}
           </View>
         )}

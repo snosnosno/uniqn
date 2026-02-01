@@ -103,7 +103,9 @@ export function SettlementAmountSection({
 
         <InfoRow
           label="총 정산 금액"
-          value={formatCurrency(settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay)}
+          value={formatCurrency(
+            settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay
+          )}
           highlight
         />
       </View>

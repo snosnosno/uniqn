@@ -109,8 +109,7 @@ export const NotificationCategory = {
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
-export type NotificationCategory =
-  (typeof NotificationCategory)[keyof typeof NotificationCategory];
+export type NotificationCategory = (typeof NotificationCategory)[keyof typeof NotificationCategory];
 
 /**
  * 알림 타입 → 카테고리 매핑
@@ -546,9 +545,7 @@ export type NotificationListItem = NotificationData | GroupedNotificationData;
 /**
  * 그룹 여부 타입 가드
  */
-export function isGroupedNotification(
-  item: NotificationListItem
-): item is GroupedNotificationData {
+export function isGroupedNotification(item: NotificationListItem): item is GroupedNotificationData {
   return 'groupId' in item && 'notifications' in item;
 }
 

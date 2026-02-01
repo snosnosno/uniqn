@@ -208,9 +208,7 @@ export async function trackEvent(
 
     // 이벤트 파라미터 정제 (undefined 값 제거)
     const cleanParams = params
-      ? Object.fromEntries(
-          Object.entries(params).filter(([, v]) => v !== undefined)
-        )
+      ? Object.fromEntries(Object.entries(params).filter(([, v]) => v !== undefined))
       : {};
 
     if (Platform.OS === 'web' && analyticsInstance) {
@@ -237,10 +235,7 @@ export async function trackEvent(
 /**
  * 화면 조회 추적
  */
-export async function trackScreenView(
-  screenName: string,
-  screenClass?: string
-): Promise<void> {
+export async function trackScreenView(screenName: string, screenClass?: string): Promise<void> {
   if (!isAnalyticsEnabled) return;
 
   try {
@@ -272,9 +267,7 @@ export async function trackScreenView(
 /**
  * 사용자 속성 설정
  */
-export async function setUserProperties(
-  properties: UserProperties
-): Promise<void> {
+export async function setUserProperties(properties: UserProperties): Promise<void> {
   if (!isAnalyticsEnabled) return;
 
   try {
@@ -370,11 +363,7 @@ export function trackJobView(jobId: string, jobTitle?: string): void {
 /**
  * 공고 지원 이벤트
  */
-export function trackJobApply(
-  jobId: string,
-  jobTitle?: string,
-  role?: string
-): void {
+export function trackJobApply(jobId: string, jobTitle?: string, role?: string): void {
   trackEvent('job_apply', {
     job_id: jobId,
     job_title: jobTitle,
@@ -416,10 +405,7 @@ export function trackCheckOut(scheduleDate: string, workHours?: number): void {
 /**
  * 정산 완료 이벤트
  */
-export function trackSettlementComplete(
-  amount: number,
-  count: number = 1
-): void {
+export function trackSettlementComplete(amount: number, count: number = 1): void {
   trackEvent('settlement_complete', {
     settlement_amount: amount,
     settlement_count: count,
@@ -438,11 +424,7 @@ export function trackSearch(searchTerm: string): void {
 /**
  * 에러 이벤트
  */
-export function trackError(
-  errorCode: string,
-  errorMessage: string,
-  category?: string
-): void {
+export function trackError(errorCode: string, errorMessage: string, category?: string): void {
   trackEvent('error', {
     error_code: errorCode,
     error_message: errorMessage,

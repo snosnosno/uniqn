@@ -106,11 +106,7 @@ export function AccordionItem({
       </Pressable>
 
       {/* Content */}
-      {isExpanded && (
-        <View className="pb-3">
-          {children}
-        </View>
-      )}
+      {isExpanded && <View className="pb-3">{children}</View>}
     </View>
   );
 }
@@ -165,9 +161,7 @@ export function AccordionGroup({
       {childrenArray.map((child, index) => {
         if (!React.isValidElement(child)) return null;
 
-        const isExpanded = allowMultiple
-          ? expandedIndices.has(index)
-          : expandedIndex === index;
+        const isExpanded = allowMultiple ? expandedIndices.has(index) : expandedIndex === index;
 
         const isLast = index === childrenArray.length - 1;
 
@@ -177,9 +171,7 @@ export function AccordionGroup({
               expanded: isExpanded,
               onToggle: (expanded: boolean) => handleToggle(index, expanded),
             })}
-            {showDivider && !isLast && (
-              <View className="h-px bg-gray-200 dark:bg-surface" />
-            )}
+            {showDivider && !isLast && <View className="h-px bg-gray-200 dark:bg-surface" />}
           </View>
         );
       })}

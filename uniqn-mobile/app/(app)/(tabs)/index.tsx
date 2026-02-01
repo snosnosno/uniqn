@@ -61,18 +61,11 @@ export default function JobsScreen() {
   }, [selectedType, selectedDate]);
 
   // 구인공고 목록 훅 (필터 적용, 타입 선택 전까지 비활성화)
-  const {
-    jobs,
-    isLoading,
-    isRefreshing,
-    isFetchingMore,
-    hasMore,
-    refresh,
-    loadMore,
-  } = useJobPostings({
-    filters,
-    enabled: selectedType !== null, // 타입 선택 전까지 쿼리 비활성화
-  });
+  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, refresh, loadMore } =
+    useJobPostings({
+      filters,
+      enabled: selectedType !== null, // 타입 선택 전까지 쿼리 비활성화
+    });
 
   // 타입 변경 핸들러 (타입 변경 시 날짜 초기화)
   const handleTypeChange = useCallback((type: PostingType | null) => {
@@ -94,17 +87,11 @@ export default function JobsScreen() {
       <TabHeader title="구인구직" />
 
       {/* 공고 타입 칩 필터 */}
-      <PostingTypeChips
-        selected={selectedType}
-        onChange={handleTypeChange}
-      />
+      <PostingTypeChips selected={selectedType} onChange={handleTypeChange} />
 
       {/* 날짜 슬라이더 (지원 타입 선택 시만 표시) */}
       {selectedType === 'regular' && (
-        <DateSlider
-          selectedDate={selectedDate}
-          onDateSelect={setSelectedDate}
-        />
+        <DateSlider selectedDate={selectedDate} onDateSelect={setSelectedDate} />
       )}
 
       {/* 공고 목록 - JobCard 사용 */}

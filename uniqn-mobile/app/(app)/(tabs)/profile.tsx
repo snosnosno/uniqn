@@ -3,7 +3,15 @@
  * 프로필 화면
  */
 
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Alert, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Alert,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Avatar, Divider, SkeletonProfileHeader, SkeletonListItem } from '@/components/ui';
@@ -81,18 +89,14 @@ export default function ProfileScreen() {
       }
     } else {
       // 네이티브에서는 Alert.alert 사용
-      Alert.alert(
-        '로그아웃',
-        '정말 로그아웃 하시겠습니까?',
-        [
-          { text: '취소', style: 'cancel' },
-          {
-            text: '로그아웃',
-            style: 'destructive',
-            onPress: performLogout,
-          },
-        ]
-      );
+      Alert.alert('로그아웃', '정말 로그아웃 하시겠습니까?', [
+        { text: '취소', style: 'cancel' },
+        {
+          text: '로그아웃',
+          style: 'destructive',
+          onPress: performLogout,
+        },
+      ]);
     }
   };
 

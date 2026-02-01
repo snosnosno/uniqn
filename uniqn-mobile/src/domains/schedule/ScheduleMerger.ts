@@ -145,9 +145,7 @@ export class ScheduleMerger {
 
     // 3. WorkLogs에도 날짜 범위 필터 적용
     const filteredWorkLogs = dateRange
-      ? workLogSchedules.filter(
-          (s) => s.date >= dateRange.start && s.date <= dateRange.end
-        )
+      ? workLogSchedules.filter((s) => s.date >= dateRange.start && s.date <= dateRange.end)
       : workLogSchedules;
 
     // 4. 병합 후 정렬
@@ -261,9 +259,7 @@ export class ScheduleMerger {
       const prev = parseDate(sorted[i - 1]);
       const curr = parseDate(sorted[i]);
 
-      const diffDays = Math.round(
-        (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-      );
+      const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
 
       if (diffDays !== 1) {
         return false;

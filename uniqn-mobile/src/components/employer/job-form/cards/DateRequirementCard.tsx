@@ -172,7 +172,8 @@ export function DateRequirementCard({
               : 'text-gray-400 dark:text-gray-600'
           }`}
         >
-          시간대 추가 {canAddTimeSlot && `(${requirement.timeSlots.length}/${MAX_TIME_SLOTS_PER_DATE})`}
+          시간대 추가{' '}
+          {canAddTimeSlot && `(${requirement.timeSlots.length}/${MAX_TIME_SLOTS_PER_DATE})`}
         </Text>
       </Pressable>
     </View>

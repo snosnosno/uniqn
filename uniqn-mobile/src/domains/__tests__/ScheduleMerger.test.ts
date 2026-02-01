@@ -51,10 +51,20 @@ describe('ScheduleMerger', () => {
   describe('merge', () => {
     it('WorkLogs와 Applications를 병합', () => {
       const workLogs: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1', type: 'confirmed' }),
+        createMockScheduleEvent({
+          id: 'wl1',
+          date: '2025-01-20',
+          jobPostingId: 'job1',
+          type: 'confirmed',
+        }),
       ];
       const applications: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: 'app1', date: '2025-01-21', jobPostingId: 'job1', type: 'applied' }),
+        createMockScheduleEvent({
+          id: 'app1',
+          date: '2025-01-21',
+          jobPostingId: 'job1',
+          type: 'applied',
+        }),
       ];
 
       const result = ScheduleMerger.merge(workLogs, applications);
@@ -139,8 +149,18 @@ describe('ScheduleMerger', () => {
 
     it('빈 배열 처리', () => {
       expect(ScheduleMerger.merge([], [])).toEqual([]);
-      expect(ScheduleMerger.merge([createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1' })], [])).toHaveLength(1);
-      expect(ScheduleMerger.merge([], [createMockScheduleEvent({ id: 'app1', date: '2025-01-20', jobPostingId: 'job1' })])).toHaveLength(1);
+      expect(
+        ScheduleMerger.merge(
+          [createMockScheduleEvent({ id: 'wl1', date: '2025-01-20', jobPostingId: 'job1' })],
+          []
+        )
+      ).toHaveLength(1);
+      expect(
+        ScheduleMerger.merge(
+          [],
+          [createMockScheduleEvent({ id: 'app1', date: '2025-01-20', jobPostingId: 'job1' })]
+        )
+      ).toHaveLength(1);
     });
   });
 
@@ -257,7 +277,9 @@ describe('ScheduleMerger', () => {
   // ==========================================================================
   describe('isConsecutiveDates', () => {
     it('연속 날짜 확인', () => {
-      expect(ScheduleMerger.isConsecutiveDates(['2025-01-20', '2025-01-21', '2025-01-22'])).toBe(true);
+      expect(ScheduleMerger.isConsecutiveDates(['2025-01-20', '2025-01-21', '2025-01-22'])).toBe(
+        true
+      );
     });
 
     it('비연속 날짜 확인', () => {
@@ -273,7 +295,9 @@ describe('ScheduleMerger', () => {
     });
 
     it('정렬되지 않은 배열도 처리', () => {
-      expect(ScheduleMerger.isConsecutiveDates(['2025-01-22', '2025-01-20', '2025-01-21'])).toBe(true);
+      expect(ScheduleMerger.isConsecutiveDates(['2025-01-22', '2025-01-20', '2025-01-21'])).toBe(
+        true
+      );
     });
   });
 
@@ -299,10 +323,30 @@ describe('ScheduleMerger', () => {
   describe('calculateStats', () => {
     it('스케줄 타입별 카운트', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ id: '1', date: '2025-01-20', jobPostingId: 'job1', type: 'applied' }),
-        createMockScheduleEvent({ id: '2', date: '2025-01-21', jobPostingId: 'job2', type: 'confirmed' }),
-        createMockScheduleEvent({ id: '3', date: '2025-01-22', jobPostingId: 'job3', type: 'confirmed' }),
-        createMockScheduleEvent({ id: '4', date: '2025-01-15', jobPostingId: 'job4', type: 'completed' }),
+        createMockScheduleEvent({
+          id: '1',
+          date: '2025-01-20',
+          jobPostingId: 'job1',
+          type: 'applied',
+        }),
+        createMockScheduleEvent({
+          id: '2',
+          date: '2025-01-21',
+          jobPostingId: 'job2',
+          type: 'confirmed',
+        }),
+        createMockScheduleEvent({
+          id: '3',
+          date: '2025-01-22',
+          jobPostingId: 'job3',
+          type: 'confirmed',
+        }),
+        createMockScheduleEvent({
+          id: '4',
+          date: '2025-01-15',
+          jobPostingId: 'job4',
+          type: 'completed',
+        }),
       ];
 
       const stats = ScheduleMerger.calculateStats(schedules);

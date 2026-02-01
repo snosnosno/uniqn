@@ -25,10 +25,7 @@ export const WORK_LOG_STATUS_FLOW: Record<WorkLogStatus, WorkLogStatus[]> = {
  *
  * @description 각 상태에서 전이할 수 있는 유효한 상태 목록
  */
-export const APPLICATION_STATUS_FLOW: Record<
-  ApplicationStatus,
-  ApplicationStatus[]
-> = {
+export const APPLICATION_STATUS_FLOW: Record<ApplicationStatus, ApplicationStatus[]> = {
   applied: ['pending', 'confirmed', 'rejected', 'cancelled'],
   pending: ['confirmed', 'rejected', 'cancelled'],
   confirmed: ['completed', 'cancellation_pending'],
@@ -41,10 +38,7 @@ export const APPLICATION_STATUS_FLOW: Record<
 /**
  * WorkLog 종료 상태
  */
-export const WORK_LOG_TERMINAL_STATUSES: WorkLogStatus[] = [
-  'completed',
-  'cancelled',
-];
+export const WORK_LOG_TERMINAL_STATUSES: WorkLogStatus[] = ['completed', 'cancelled'];
 
 /**
  * Application 종료 상태

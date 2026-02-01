@@ -84,9 +84,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
 
   // 포맷된 금액 (천 단위 콤마)
   const formattedAmount = useMemo(() => {
-    return salaryInfo.amount > 0
-      ? salaryInfo.amount.toLocaleString('ko-KR')
-      : '';
+    return salaryInfo.amount > 0 ? salaryInfo.amount.toLocaleString('ko-KR') : '';
   }, [salaryInfo.amount]);
 
   // 예상 급여 계산
@@ -115,9 +113,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
     <View className={className}>
       {/* 레이블 */}
       {showLabel && (
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          급여 유형
-        </Text>
+        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">급여 유형</Text>
       )}
 
       {/* 급여 타입 선택 (수평 라디오) */}
@@ -134,9 +130,10 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
               accessibilityLabel={SALARY_TYPE_LABELS[type]}
               className={`
                 px-4 py-2 rounded-lg border min-w-[60px] items-center
-                ${isSelected
-                  ? 'bg-primary-500 border-primary-500'
-                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                ${
+                  isSelected
+                    ? 'bg-primary-500 border-primary-500'
+                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }
                 ${disabled ? 'opacity-50' : 'active:opacity-80'}
                 ${error && !isSelected ? 'border-red-500' : ''}
@@ -145,10 +142,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
               <Text
                 className={`
                   text-sm font-medium
-                  ${isSelected
-                    ? 'text-white'
-                    : 'text-gray-700 dark:text-gray-300'
-                  }
+                  ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}
                 `}
               >
                 {SALARY_TYPE_LABELS[type]}
@@ -160,17 +154,12 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
 
       {/* 금액 입력 */}
       <View className="mb-2">
-        <Text className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">
-          금액
-        </Text>
+        <Text className="mb-1 text-sm font-medium text-gray-700 dark:text-gray-300">금액</Text>
         <View
           className={`
             flex-row items-center rounded-lg border px-3 h-12
             bg-white dark:bg-surface
-            ${error
-              ? 'border-red-500'
-              : 'border-gray-300 dark:border-surface-overlay'
-            }
+            ${error ? 'border-red-500' : 'border-gray-300 dark:border-surface-overlay'}
             ${disabled ? 'opacity-50' : ''}
           `}
         >
@@ -184,18 +173,12 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             className="flex-1 text-base text-gray-900 dark:text-white"
             accessibilityLabel="급여 금액"
           />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">
-            {unitText}
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">{unitText}</Text>
         </View>
       </View>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && (
-        <Text className="text-sm text-red-500 mb-2">
-          {errorMessage}
-        </Text>
-      )}
+      {error && errorMessage && <Text className="text-sm text-red-500 mb-2">{errorMessage}</Text>}
 
       {/* 예상 급여 미리보기 */}
       {estimatedPay !== null && (
@@ -204,9 +187,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
             <Text className="text-sm text-gray-600 dark:text-gray-400">
               예상 급여
               {salaryInfo.type === 'hourly' && hoursWorked && (
-                <Text className="text-xs">
-                  {' '}({hoursWorked.toFixed(1)}시간 기준)
-                </Text>
+                <Text className="text-xs"> ({hoursWorked.toFixed(1)}시간 기준)</Text>
               )}
             </Text>
             <Text className="text-base font-bold text-primary-600 dark:text-primary-400">

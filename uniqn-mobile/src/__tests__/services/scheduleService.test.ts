@@ -220,10 +220,22 @@ describe('scheduleService', () => {
   describe('getCalendarMarkedDates', () => {
     it('should return marked dates with correct colors', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ date: '2025-01-15', type: 'confirmed' }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({ date: '2025-01-16', type: 'applied' }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({ date: '2025-01-17', type: 'completed' }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({ date: '2025-01-18', type: 'cancelled' }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-15',
+          type: 'confirmed',
+        }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-16',
+          type: 'applied',
+        }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-17',
+          type: 'completed',
+        }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-18',
+          type: 'cancelled',
+        }) as unknown as ScheduleEvent,
       ];
 
       const markedDates = getCalendarMarkedDates(schedules);
@@ -240,8 +252,14 @@ describe('scheduleService', () => {
 
     it('should prioritize confirmed over other types for same date', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ date: '2025-01-15', type: 'applied' }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({ date: '2025-01-15', type: 'confirmed' }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-15',
+          type: 'applied',
+        }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-15',
+          type: 'confirmed',
+        }) as unknown as ScheduleEvent,
       ];
 
       const markedDates = getCalendarMarkedDates(schedules);
@@ -252,8 +270,14 @@ describe('scheduleService', () => {
 
     it('should prioritize applied over completed for same date', () => {
       const schedules: ScheduleEvent[] = [
-        createMockScheduleEvent({ date: '2025-01-15', type: 'completed' }) as unknown as ScheduleEvent,
-        createMockScheduleEvent({ date: '2025-01-15', type: 'applied' }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-15',
+          type: 'completed',
+        }) as unknown as ScheduleEvent,
+        createMockScheduleEvent({
+          date: '2025-01-15',
+          type: 'applied',
+        }) as unknown as ScheduleEvent,
       ];
 
       const markedDates = getCalendarMarkedDates(schedules);
@@ -470,8 +494,16 @@ describe('scheduleService', () => {
 
       // Check that date range query is made with a valid date format (YYYY-MM-DD)
       expect(mockWhere).toHaveBeenCalledWith('staffId', '==', 'staff-123');
-      expect(mockWhere).toHaveBeenCalledWith('date', '>=', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
-      expect(mockWhere).toHaveBeenCalledWith('date', '<=', expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/));
+      expect(mockWhere).toHaveBeenCalledWith(
+        'date',
+        '>=',
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      );
+      expect(mockWhere).toHaveBeenCalledWith(
+        'date',
+        '<=',
+        expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/)
+      );
     });
   });
 
@@ -526,7 +558,8 @@ describe('scheduleService', () => {
 
       mockOnSnapshot.mockImplementation((_query, successCallback, _errorCallback) => {
         // Simulate snapshot (query and errorCallback available for error scenarios)
-        void _query; void _errorCallback;
+        void _query;
+        void _errorCallback;
         successCallback({
           docs: mockWorkLogs.map((wl) => ({
             id: wl.id,

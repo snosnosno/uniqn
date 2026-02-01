@@ -17,7 +17,11 @@ import type {
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import type { PreQuestion } from './preQuestion';
 import type { FormRoleWithCount, TournamentDay } from './jobPostingForm';
-import type { TaxSettings as SettlementTaxSettings, TaxType, TaxableItems } from '@/utils/settlement';
+import type {
+  TaxSettings as SettlementTaxSettings,
+  TaxType,
+  TaxableItems,
+} from '@/utils/settlement';
 
 // Re-export for convenience
 export type { PostingType } from './postingConfig';
@@ -226,12 +230,12 @@ export interface CreateJobPostingInput {
   contactPhone?: string;
 
   // 일정 (타입별 분기)
-  workDate?: string;              // regular/urgent
-  timeSlot?: string;              // 기존 호환용 (deprecated)
-  startTime?: string;             // 출근시간
-  tournamentDates?: TournamentDay[];  // tournament (deprecated, v2.0에서 dateSpecificRequirements로 대체)
+  workDate?: string; // regular/urgent
+  timeSlot?: string; // 기존 호환용 (deprecated)
+  startTime?: string; // 출근시간
+  tournamentDates?: TournamentDay[]; // tournament (deprecated, v2.0에서 dateSpecificRequirements로 대체)
   dateSpecificRequirements?: DateSpecificRequirement[]; // v2.0: 날짜별 요구사항 (regular/urgent/tournament 공통)
-  daysPerWeek?: number;           // fixed (0 = 협의, 1-7 = 일수)
+  daysPerWeek?: number; // fixed (0 = 협의, 1-7 = 일수)
   isStartTimeNegotiable?: boolean; // fixed: 출근시간 협의 여부
 
   // 역할 (급여 정보 포함)
@@ -252,7 +256,7 @@ export interface CreateJobPostingInput {
 
   // 기타
   tags?: string[];
-  isUrgent?: boolean;  // deprecated (postingType으로 대체)
+  isUrgent?: boolean; // deprecated (postingType으로 대체)
 }
 
 /**
@@ -350,7 +354,8 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
     // customRole이 있는 경우 (기타 역할)
     if (roleId === 'other' && customRole) {
       const found = posting.roles.find(
-        (r) => (r.role as string) === 'other' && (r as { customRole?: string }).customRole === customRole
+        (r) =>
+          (r.role as string) === 'other' && (r as { customRole?: string }).customRole === customRole
       );
       return (found as { salary?: SalaryInfo } | undefined)?.salary;
     }
@@ -360,9 +365,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
   };
 
   // dateSpecificRequirements → CardDateRequirement 변환
-  const dateRequirements: CardDateRequirement[] = (
-    posting.dateSpecificRequirements ?? []
-  )
+  const dateRequirements: CardDateRequirement[] = (posting.dateSpecificRequirements ?? [])
     .map((req) => {
       // 날짜 문자열 추출
       let dateStr: string;
@@ -371,8 +374,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
       } else if (req.date instanceof Timestamp) {
         dateStr = req.date.toDate().toISOString().split('T')[0] ?? '';
       } else if (req.date && 'seconds' in req.date) {
-        dateStr =
-          new Date(req.date.seconds * 1000).toISOString().split('T')[0] ?? '';
+        dateStr = new Date(req.date.seconds * 1000).toISOString().split('T')[0] ?? '';
       } else {
         dateStr = '';
       }
@@ -386,8 +388,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
             (ts as { startTime?: string; time?: string }).time ||
             '',
           isTimeToBeAnnounced:
-            (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ??
-            false,
+            (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
           roles: (ts.roles ?? []).map((r) => {
             const roleId =
               (r as { role?: string; name?: string }).role ||
@@ -436,7 +437,9 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
   // defaultSalary 결정: 명시적 defaultSalary 또는 첫 번째 역할의 급여
   const resolvedDefaultSalary: SalaryInfo | undefined =
     posting.defaultSalary ??
-    posting.roles.find((r) => (r as { salary?: SalaryInfo }).salary)?.salary as SalaryInfo | undefined;
+    (posting.roles.find((r) => (r as { salary?: SalaryInfo }).salary)?.salary as
+      | SalaryInfo
+      | undefined);
 
   return {
     id: posting.id,

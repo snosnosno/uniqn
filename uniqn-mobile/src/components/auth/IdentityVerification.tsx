@@ -96,9 +96,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
     disabled = false,
     devMode = __DEV__,
   }) => {
-    const [status, setStatus] = useState<VerificationStatus>(
-      initialResult ? 'success' : 'idle'
-    );
+    const [status, setStatus] = useState<VerificationStatus>(initialResult ? 'success' : 'idle');
     const [result, setResult] = useState<VerificationResult | null>(initialResult);
     const [error, setError] = useState<string | null>(null);
     const [activeProvider, setActiveProvider] = useState<IdentityProvider | null>(null);
@@ -128,8 +126,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
             throw new Error('본인인증 서비스가 준비 중입니다.');
           }
         } catch (err) {
-          const errorMessage =
-            err instanceof Error ? err.message : '본인인증에 실패했습니다.';
+          const errorMessage = err instanceof Error ? err.message : '본인인증에 실패했습니다.';
           setError(errorMessage);
           setStatus('error');
           onError?.(err instanceof Error ? err : new Error(errorMessage));
@@ -158,9 +155,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
             본인인증 완료 ({result.name})
           </Text>
           <Pressable onPress={handleReset} className="ml-auto">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 underline">
-              재인증
-            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400 underline">재인증</Text>
           </Pressable>
         </View>
       );
@@ -174,9 +169,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
             <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full items-center justify-center mb-3">
               <ShieldCheckIcon size={32} color="#6366f1" />
             </View>
-            <Text className="text-xl font-bold text-gray-900 dark:text-white">
-              {title}
-            </Text>
+            <Text className="text-xl font-bold text-gray-900 dark:text-white">{title}</Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
               {description}
             </Text>
@@ -203,22 +196,15 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
             <View className="bg-white dark:bg-surface rounded-lg p-3 flex-col gap-2">
               <View className="flex-row justify-between">
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">이름</Text>
-                <Text className="text-gray-900 dark:text-white font-medium">
-                  {result.name}
-                </Text>
+                <Text className="text-gray-900 dark:text-white font-medium">{result.name}</Text>
               </View>
               <View className="flex-row justify-between">
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">휴대폰</Text>
-                <Text className="text-gray-900 dark:text-white font-medium">
-                  {result.phone}
-                </Text>
+                <Text className="text-gray-900 dark:text-white font-medium">{result.phone}</Text>
               </View>
             </View>
 
-            <Pressable
-              onPress={handleReset}
-              className="mt-4 py-2 items-center"
-            >
+            <Pressable onPress={handleReset} className="mt-4 py-2 items-center">
               <Text className="text-sm text-gray-500 dark:text-gray-400 underline">
                 다시 인증하기
               </Text>
@@ -289,9 +275,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
         {error && (
           <View className="flex-row items-center bg-error-50 dark:bg-error-900/20 rounded-lg p-3 mt-4">
             <XCircleIcon size={18} color="#ef4444" />
-            <Text className="ml-2 text-error-600 dark:text-error-400 text-sm flex-1">
-              {error}
-            </Text>
+            <Text className="ml-2 text-error-600 dark:text-error-400 text-sm flex-1">{error}</Text>
           </View>
         )}
 

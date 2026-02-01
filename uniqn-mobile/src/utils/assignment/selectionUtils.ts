@@ -9,7 +9,11 @@ import type { TimeSlotInfo, DatedScheduleInfo } from '@/types/unified';
 import type { PostingType } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { formatDateDisplay } from '@/types/unified';
-import { areDatesConsecutive, formatDateRangeWithCount, toDateString } from '@/utils/dateRangeUtils';
+import {
+  areDatesConsecutive,
+  formatDateRangeWithCount,
+  toDateString,
+} from '@/utils/dateRangeUtils';
 
 // ============================================================================
 // Types
@@ -54,11 +58,7 @@ export interface ScheduleGroup {
  * makeSelectionKey('2024-01-17', '09:00', 'dealer')
  * // => '2024-01-17|09:00|dealer'
  */
-export const makeSelectionKey = (
-  date: string,
-  slotTime: string,
-  role: string
-): SelectionKey => {
+export const makeSelectionKey = (date: string, slotTime: string, role: string): SelectionKey => {
   return `${date}|${slotTime}|${role}`;
 };
 
@@ -82,9 +82,7 @@ export const areTimeSlotsStructureEqual = (
 
   // 시작시간 기준 정렬
   const sort = (slots: TimeSlotInfo[]) =>
-    [...slots].sort((a, b) =>
-      (a.startTime ?? '').localeCompare(b.startTime ?? '')
-    );
+    [...slots].sort((a, b) => (a.startTime ?? '').localeCompare(b.startTime ?? ''));
 
   const sorted1 = sort(slots1);
   const sorted2 = sort(slots2);
@@ -117,9 +115,7 @@ export const areTimeSlotsStructureEqual = (
  * @param schedules - 그룹화할 스케줄 배열
  * @returns 생성된 ScheduleGroup
  */
-export const createGroupFromSchedules = (
-  schedules: DatedScheduleInfo[]
-): ScheduleGroup => {
+export const createGroupFromSchedules = (schedules: DatedScheduleInfo[]): ScheduleGroup => {
   const sortedDates = schedules.map((s) => s.date).sort();
   const startDate = sortedDates[0]!;
   const endDate = sortedDates[sortedDates.length - 1]!;

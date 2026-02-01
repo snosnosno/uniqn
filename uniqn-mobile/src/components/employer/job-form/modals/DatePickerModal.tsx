@@ -80,22 +80,25 @@ export function DatePickerModal({
   }, [postingType]);
 
   // 캘린더에서 날짜 선택/해제
-  const handleMultiSelectChange = useCallback((dates: Date[]) => {
-    // 최대 선택 개수 확인
-    if (dates.length > remainingSlots) {
-      addToast({
-        type: 'warning',
-        message: `최대 ${remainingSlots}개까지 선택할 수 있습니다`,
-      });
-      return;
-    }
-    setSelectedDates(dates);
-  }, [remainingSlots, addToast]);
+  const handleMultiSelectChange = useCallback(
+    (dates: Date[]) => {
+      // 최대 선택 개수 확인
+      if (dates.length > remainingSlots) {
+        addToast({
+          type: 'warning',
+          message: `최대 ${remainingSlots}개까지 선택할 수 있습니다`,
+        });
+        return;
+      }
+      setSelectedDates(dates);
+    },
+    [remainingSlots, addToast]
+  );
 
   // 선택된 날짜 개별 제거
   const handleRemoveDate = useCallback((dateToRemove: Date) => {
-    setSelectedDates(prev =>
-      prev.filter(d => format(d, 'yyyy-MM-dd') !== format(dateToRemove, 'yyyy-MM-dd'))
+    setSelectedDates((prev) =>
+      prev.filter((d) => format(d, 'yyyy-MM-dd') !== format(dateToRemove, 'yyyy-MM-dd'))
     );
   }, []);
 
@@ -112,9 +115,7 @@ export function DatePickerModal({
     }
 
     // YYYY-MM-DD 형식으로 변환
-    const dateStrings = selectedDates
-      .map(date => format(date, 'yyyy-MM-dd'))
-      .sort(); // 날짜순 정렬
+    const dateStrings = selectedDates.map((date) => format(date, 'yyyy-MM-dd')).sort(); // 날짜순 정렬
 
     // 선택 완료
     onSelectDates(dateStrings);
@@ -134,16 +135,12 @@ export function DatePickerModal({
   }, [selectedDates]);
 
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title="날짜 선택"
-      size="lg"
-    >
+    <Modal visible={visible} onClose={handleClose} title="날짜 선택" size="lg">
       {/* 제약사항 안내 */}
       <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
         <Text className="text-sm text-primary-700 dark:text-primary-300">
-          최대 {constraints.maxDates}개 날짜 추가 가능 (현재: {existingDates.length}개, 추가 가능: {remainingSlots}개)
+          최대 {constraints.maxDates}개 날짜 추가 가능 (현재: {existingDates.length}개, 추가 가능:{' '}
+          {remainingSlots}개)
         </Text>
         {postingType === 'urgent' && (
           <Text className="text-sm text-primary-700 dark:text-primary-300 mt-1">
@@ -163,23 +160,15 @@ export function DatePickerModal({
           </Text>
           {selectedDates.length > 0 && (
             <Pressable onPress={handleClearAll} accessibilityLabel="전체 해제">
-              <Text className="text-xs text-red-500 dark:text-red-400">
-                전체 해제
-              </Text>
+              <Text className="text-xs text-red-500 dark:text-red-400">전체 해제</Text>
             </Pressable>
           )}
         </View>
 
         {selectedDates.length === 0 ? (
-          <Text className="text-gray-400 dark:text-gray-500">
-            캘린더에서 날짜를 선택하세요
-          </Text>
+          <Text className="text-gray-400 dark:text-gray-500">캘린더에서 날짜를 선택하세요</Text>
         ) : (
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            className="flex-row"
-          >
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} className="flex-row">
             {sortedSelectedDates.map((date) => (
               <View
                 key={date.toISOString()}
@@ -235,9 +224,7 @@ export function DatePickerModal({
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
-          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">
-            취소
-          </Text>
+          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">취소</Text>
         </Pressable>
         <Pressable
           onPress={handleConfirm}
@@ -251,9 +238,7 @@ export function DatePickerModal({
           accessibilityLabel="확인"
         >
           <Text className="text-white text-center font-semibold">
-            {selectedDates.length > 0
-              ? `${selectedDates.length}개 추가`
-              : '확인'}
+            {selectedDates.length > 0 ? `${selectedDates.length}개 추가` : '확인'}
           </Text>
         </Pressable>
       </View>

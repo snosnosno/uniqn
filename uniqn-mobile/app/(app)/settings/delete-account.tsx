@@ -56,9 +56,7 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
                   : 'border-gray-300 dark:border-surface-overlay'
               }`}
             >
-              {selectedReason === key && (
-                <View className="w-2 h-2 rounded-full bg-white" />
-              )}
+              {selectedReason === key && <View className="w-2 h-2 rounded-full bg-white" />}
             </View>
             <Text
               className={`flex-1 ${
@@ -166,10 +164,9 @@ export default function DeleteAccountScreen() {
                 회원탈퇴 안내
               </Text>
               <Text className="text-red-700 dark:text-red-300 text-sm leading-5">
-                • 탈퇴 요청 후 {DELETION_GRACE_PERIOD_DAYS}일간 복구 가능합니다{'\n'}
-                • {DELETION_GRACE_PERIOD_DAYS}일 후 모든 데이터가 영구 삭제됩니다{'\n'}
-                • 진행 중인 지원 내역이 모두 취소됩니다{'\n'}
-                • 삭제된 데이터는 복구할 수 없습니다
+                • 탈퇴 요청 후 {DELETION_GRACE_PERIOD_DAYS}일간 복구 가능합니다{'\n'}•{' '}
+                {DELETION_GRACE_PERIOD_DAYS}일 후 모든 데이터가 영구 삭제됩니다{'\n'}• 진행 중인
+                지원 내역이 모두 취소됩니다{'\n'}• 삭제된 데이터는 복구할 수 없습니다
               </Text>
             </View>
           </View>
@@ -177,10 +174,7 @@ export default function DeleteAccountScreen() {
 
         {/* 탈퇴 사유 선택 */}
         <View className="mb-6">
-          <ReasonSelect
-            selectedReason={selectedReason}
-            onSelect={setSelectedReason}
-          />
+          <ReasonSelect selectedReason={selectedReason} onSelect={setSelectedReason} />
         </View>
 
         {/* 기타 사유 입력 */}
@@ -213,10 +207,7 @@ export default function DeleteAccountScreen() {
         </View>
 
         {/* 데이터 확인 링크 */}
-        <Pressable
-          onPress={() => router.push('/(app)/settings/my-data')}
-          className="mb-6"
-        >
+        <Pressable onPress={() => router.push('/(app)/settings/my-data')} className="mb-6">
           <Text className="text-primary-600 dark:text-primary-400 text-center underline">
             탈퇴 전 내 데이터 확인하기 →
           </Text>
@@ -230,9 +221,7 @@ export default function DeleteAccountScreen() {
           disabled={!canSubmit}
           className="border-red-500"
         >
-          <Text className="text-red-600 dark:text-red-400 font-semibold">
-            회원탈퇴 요청
-          </Text>
+          <Text className="text-red-600 dark:text-red-400 font-semibold">회원탈퇴 요청</Text>
         </Button>
       </ScrollView>
 
@@ -265,11 +254,7 @@ export default function DeleteAccountScreen() {
               )}
             </Button>
 
-            <Button
-              onPress={() => setShowConfirmModal(false)}
-              fullWidth
-              disabled={isSubmitting}
-            >
+            <Button onPress={() => setShowConfirmModal(false)} fullWidth disabled={isSubmitting}>
               취소
             </Button>
           </View>

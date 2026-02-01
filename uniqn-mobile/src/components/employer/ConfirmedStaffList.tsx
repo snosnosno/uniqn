@@ -73,9 +73,8 @@ function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps)
       <View className="flex-row bg-gray-100 dark:bg-surface rounded-lg p-1">
         {FILTER_OPTIONS.map((option) => {
           const isSelected = selectedFilter === option.value;
-          const count = option.value === 'all'
-            ? counts?.all
-            : counts?.[option.value as ConfirmedStaffStatus];
+          const count =
+            option.value === 'all' ? counts?.all : counts?.[option.value as ConfirmedStaffStatus];
 
           return (
             <Pressable
@@ -121,12 +120,16 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
     >
       <View className="flex-row items-center">
         <CalendarIcon size={18} color={group.isToday ? '#9333EA' : '#6B7280'} />
-        <Text className={`
+        <Text
+          className={`
           ml-2 text-base font-semibold
-          ${group.isToday
-            ? 'text-primary-600 dark:text-primary-400'
-            : 'text-gray-900 dark:text-white'}
-        `}>
+          ${
+            group.isToday
+              ? 'text-primary-600 dark:text-primary-400'
+              : 'text-gray-900 dark:text-white'
+          }
+        `}
+        >
           {group.formattedDate}
           {group.isToday && ' (오늘)'}
         </Text>
@@ -135,9 +138,7 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
       <View className="flex-row items-center">
         {/* 통계 배지 */}
         <View className="flex-row items-center mr-2">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            {group.stats.total}명
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400">{group.stats.total}명</Text>
           {group.stats.checkedIn > 0 && (
             <View className="ml-1 px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 rounded">
               <Text className="text-xs text-green-600 dark:text-green-400">
@@ -260,7 +261,16 @@ export function ConfirmedStaffList({
         />
       </View>
     ),
-    [onStaffPress, onViewProfile, onEditTime, onChangeRole, onReport, onDelete, onStatusChange, showActions]
+    [
+      onStaffPress,
+      onViewProfile,
+      onEditTime,
+      onChangeRole,
+      onReport,
+      onDelete,
+      onStatusChange,
+      showActions,
+    ]
   );
 
   // 섹션 헤더 렌더
@@ -282,9 +292,7 @@ export function ConfirmedStaffList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-          스태프 목록을 불러오는 중...
-        </Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">스태프 목록을 불러오는 중...</Text>
       </View>
     );
   }

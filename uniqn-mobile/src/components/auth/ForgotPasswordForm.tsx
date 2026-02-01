@@ -67,11 +67,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
         </Text>
 
         <View className="w-full flex-col gap-3">
-          <Button
-            onPress={() => setIsSubmitted(false)}
-            variant="outline"
-            fullWidth
-          >
+          <Button onPress={() => setIsSubmitted(false)} variant="outline" fullWidth>
             다시 시도하기
           </Button>
 
@@ -100,9 +96,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 이메일 입력 */}
       <View>
-        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-          이메일
-        </Text>
+        <Text className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">이메일</Text>
         <Controller
           control={control}
           name="email"
@@ -124,11 +118,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 제출 버튼 */}
       <View className="mt-6">
-        <Button
-          onPress={handleSubmit(handleFormSubmit)}
-          disabled={loading}
-          fullWidth
-        >
+        <Button onPress={handleSubmit(handleFormSubmit)} disabled={loading} fullWidth>
           {loading ? (
             <View className="flex-row items-center justify-center">
               <ActivityIndicator color="white" size="small" />
@@ -142,14 +132,10 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
 
       {/* 로그인 링크 */}
       <View className="mt-4 flex-row justify-center">
-        <Text className="text-gray-600 dark:text-gray-400">
-          비밀번호가 기억나셨나요?{' '}
-        </Text>
+        <Text className="text-gray-600 dark:text-gray-400">비밀번호가 기억나셨나요? </Text>
         <Link href="/login" asChild>
           <Pressable>
-            <Text className="font-medium text-primary-600 dark:text-primary-400">
-              로그인
-            </Text>
+            <Text className="font-medium text-primary-600 dark:text-primary-400">로그인</Text>
           </Pressable>
         </Link>
       </View>

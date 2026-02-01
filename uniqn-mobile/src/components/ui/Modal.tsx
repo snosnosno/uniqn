@@ -134,8 +134,7 @@ function WebModal({
 
   if (!shouldRender) return null;
 
-  const containerStyle =
-    position === 'center' ? 'justify-center items-center' : 'justify-end';
+  const containerStyle = position === 'center' ? 'justify-center items-center' : 'justify-end';
 
   const modalClassName =
     position === 'center'
@@ -156,78 +155,75 @@ function WebModal({
           { position: 'fixed', zIndex: 9999 },
         ]}
       >
-      {/* Backdrop */}
-      <Pressable
-        onPress={closeOnBackdrop ? onClose : undefined}
-        style={[
-          StyleSheet.absoluteFill,
-          {
-            backgroundColor: 'rgba(0,0,0,0.5)',
-            opacity: isAnimating ? 1 : 0,
-            // @ts-expect-error - 웹 전용 스타일
-            transition: 'opacity 200ms ease',
-          },
-        ]}
-        accessibilityRole="button"
-        accessibilityLabel="모달 닫기"
-      />
-
-      {/* Modal Container */}
-      <View
-        className={`flex-1 ${containerStyle}`}
-        style={{ pointerEvents: 'box-none' }}
-      >
-        <View
+        {/* Backdrop */}
+        <Pressable
+          onPress={closeOnBackdrop ? onClose : undefined}
           style={[
-            modalMaxHeightStyle,
-            position === 'center'
-              ? {
-                  opacity: isAnimating ? 1 : 0,
-                  transform: [{ scale: isAnimating ? 1 : 0.9 }],
-                  // @ts-expect-error - 웹 전용 스타일
-                  transition:
-                    'opacity 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
-                  pointerEvents: 'auto' as const,
-                }
-              : {
-                  opacity: isAnimating ? 1 : 0,
-                  transform: [{ translateY: isAnimating ? 0 : 100 }],
-                  transition: 'opacity 200ms ease, transform 300ms ease-out',
-                  pointerEvents: 'auto' as const,
-                },
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: 'rgba(0,0,0,0.5)',
+              opacity: isAnimating ? 1 : 0,
+              // @ts-expect-error - 웹 전용 스타일
+              transition: 'opacity 200ms ease',
+            },
           ]}
-          className={modalClassName}
-        >
-          {/* Header */}
-          {(title || showCloseButton) && (
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                {title || ''}
-              </Text>
-              {showCloseButton && (
-                <Pressable
-                  onPress={onClose}
-                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
-                  accessibilityRole="button"
-                  accessibilityLabel="닫기"
-                >
-                  <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
-                </Pressable>
-              )}
-            </View>
-          )}
+          accessibilityRole="button"
+          accessibilityLabel="모달 닫기"
+        />
 
-          {/* Content */}
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ flexGrow: 1 }}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
+        {/* Modal Container */}
+        <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
+          <View
+            style={[
+              modalMaxHeightStyle,
+              position === 'center'
+                ? {
+                    opacity: isAnimating ? 1 : 0,
+                    transform: [{ scale: isAnimating ? 1 : 0.9 }],
+                    // @ts-expect-error - 웹 전용 스타일
+                    transition:
+                      'opacity 200ms ease, transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+                    pointerEvents: 'auto' as const,
+                  }
+                : {
+                    opacity: isAnimating ? 1 : 0,
+                    transform: [{ translateY: isAnimating ? 0 : 100 }],
+                    transition: 'opacity 200ms ease, transform 300ms ease-out',
+                    pointerEvents: 'auto' as const,
+                  },
+            ]}
+            className={modalClassName}
           >
-            <View className="p-5">{children}</View>
-          </ScrollView>
+            {/* Header */}
+            {(title || showCloseButton) && (
+              <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
+                <Text className="text-lg font-semibold text-gray-900 dark:text-white">
+                  {title || ''}
+                </Text>
+                {showCloseButton && (
+                  <Pressable
+                    onPress={onClose}
+                    className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                    accessibilityRole="button"
+                    accessibilityLabel="닫기"
+                  >
+                    <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
+                  </Pressable>
+                )}
+              </View>
+            )}
+
+            {/* Content */}
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ flexGrow: 1 }}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+            >
+              <View className="p-5">{children}</View>
+            </ScrollView>
+          </View>
         </View>
-      </View>
       </View>
     </WebModalPortal>
   );
@@ -323,8 +319,7 @@ function NativeModal({
     }
   });
 
-  const containerStyle =
-    position === 'center' ? 'justify-center items-center' : 'justify-end';
+  const containerStyle = position === 'center' ? 'justify-center items-center' : 'justify-end';
 
   const modalClassName =
     position === 'center'
@@ -356,16 +351,11 @@ function NativeModal({
             accessibilityRole="button"
             accessibilityLabel="모달 닫기"
           >
-            <Animated.View
-              style={backdropAnimatedStyle}
-              className="flex-1 bg-black/50"
-            />
+            <Animated.View style={backdropAnimatedStyle} className="flex-1 bg-black/50" />
           </Pressable>
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <Animated.View
-            style={[modalAnimatedStyle, modalMaxHeightStyle, { flexShrink: 1 }]}
-          >
+          <Animated.View style={[modalAnimatedStyle, modalMaxHeightStyle, { flexShrink: 1 }]}>
             <View className={modalClassName}>
               {/* Header */}
               {(title || showCloseButton) && (
@@ -434,24 +424,14 @@ export function AlertModal({
   confirmText = '확인',
 }: AlertModalProps) {
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      title={title}
-      size="sm"
-      showCloseButton={false}
-    >
-      <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">
-        {message}
-      </Text>
+    <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
+      <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</Text>
       <Pressable
         onPress={onClose}
         className="bg-primary-600 py-3 rounded-xl"
         accessibilityRole="button"
       >
-        <Text className="text-white text-center font-semibold">
-          {confirmText}
-        </Text>
+        <Text className="text-white text-center font-semibold">{confirmText}</Text>
       </Pressable>
     </Modal>
   );
@@ -479,16 +459,8 @@ export function ConfirmModal({
   isDestructive = false,
 }: ConfirmModalProps) {
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      title={title}
-      size="sm"
-      showCloseButton={false}
-    >
-      <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">
-        {message}
-      </Text>
+    <Modal visible={visible} onClose={onClose} title={title} size="sm" showCloseButton={false}>
+      <Text className="text-gray-600 dark:text-gray-300 text-center mb-6">{message}</Text>
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
@@ -504,14 +476,10 @@ export function ConfirmModal({
             onConfirm();
             onClose();
           }}
-          className={`flex-1 py-3 rounded-xl ${
-            isDestructive ? 'bg-red-600' : 'bg-primary-600'
-          }`}
+          className={`flex-1 py-3 rounded-xl ${isDestructive ? 'bg-red-600' : 'bg-primary-600'}`}
           accessibilityRole="button"
         >
-          <Text className="text-white text-center font-semibold">
-            {confirmText}
-          </Text>
+          <Text className="text-white text-center font-semibold">{confirmText}</Text>
         </Pressable>
       </View>
     </Modal>

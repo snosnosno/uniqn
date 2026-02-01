@@ -14,22 +14,14 @@ import { z } from 'zod';
 
 import { Input, FormSelect, Button, Avatar, Loading } from '@/components/ui';
 import { UserIcon, PhoneIcon, ShieldIcon, CheckIcon } from '@/components/icons';
-import {
-  USER_ROLE_LABELS,
-  COUNTRIES,
-  type AdminUserProfile,
-  type UserRole,
-} from '@/types';
+import { USER_ROLE_LABELS, COUNTRIES, type AdminUserProfile, type UserRole } from '@/types';
 
 // ============================================================================
 // Schema
 // ============================================================================
 
 const userEditSchema = z.object({
-  name: z
-    .string()
-    .min(2, '이름은 2자 이상이어야 합니다')
-    .max(50, '이름은 50자 이하여야 합니다'),
+  name: z.string().min(2, '이름은 2자 이상이어야 합니다').max(50, '이름은 50자 이하여야 합니다'),
   phone: z
     .string()
     .regex(/^01[0-9]-?[0-9]{4}-?[0-9]{4}$/, '올바른 전화번호 형식이 아닙니다')
@@ -133,15 +125,8 @@ export const UserEditForm = React.memo(function UserEditForm({
     >
       {/* 프로필 헤더 */}
       <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-100 dark:border-surface-overlay">
-        <Avatar
-          name={user.name}
-          source={user.photoURL}
-          size="xl"
-          className="mb-3"
-        />
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          {user.email}
-        </Text>
+        <Avatar name={user.name} source={user.photoURL} size="xl" className="mb-3" />
+        <Text className="text-sm text-gray-500 dark:text-gray-400">{user.email}</Text>
       </View>
 
       <View className="p-4">
@@ -230,9 +215,7 @@ export const UserEditForm = React.memo(function UserEditForm({
                   placeholder="역할 선택"
                 />
                 {errors.role?.message && (
-                  <Text className="text-xs text-red-500 mt-1">
-                    {errors.role.message}
-                  </Text>
+                  <Text className="text-xs text-red-500 mt-1">{errors.role.message}</Text>
                 )}
               </View>
             )}
@@ -246,9 +229,7 @@ export const UserEditForm = React.memo(function UserEditForm({
               <View className="flex-row items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
                 <View className="flex-row items-center">
                   <ShieldIcon size={18} color="#9CA3AF" />
-                  <Text className="ml-2 text-sm text-gray-700 dark:text-gray-300">
-                    계정 활성화
-                  </Text>
+                  <Text className="ml-2 text-sm text-gray-700 dark:text-gray-300">계정 활성화</Text>
                 </View>
                 <Switch
                   value={value}
@@ -292,9 +273,7 @@ export const UserEditForm = React.memo(function UserEditForm({
             className="flex-1 py-3 bg-gray-200 dark:bg-surface rounded-xl items-center active:opacity-70"
             disabled={isSubmitting}
           >
-            <Text className="font-semibold text-gray-700 dark:text-gray-300">
-              취소
-            </Text>
+            <Text className="font-semibold text-gray-700 dark:text-gray-300">취소</Text>
           </Pressable>
 
           <Button

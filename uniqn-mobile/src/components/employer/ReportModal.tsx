@@ -13,13 +13,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import {
-  AlertTriangleIcon,
-  CheckIcon,
-  AlertCircleIcon,
-  UserIcon,
-  BriefcaseIcon,
-} from '../icons';
+import { AlertTriangleIcon, CheckIcon, AlertCircleIcon, UserIcon, BriefcaseIcon } from '../icons';
 import {
   EMPLOYEE_REPORT_TYPES,
   EMPLOYER_REPORT_TYPES,
@@ -70,11 +64,7 @@ interface ReportTypeOptionProps {
   onSelect: () => void;
 }
 
-function ReportTypeOption({
-  typeInfo,
-  isSelected,
-  onSelect,
-}: ReportTypeOptionProps) {
+function ReportTypeOption({ typeInfo, isSelected, onSelect }: ReportTypeOptionProps) {
   const severityColors = REPORT_SEVERITY_COLORS[typeInfo.severity];
   const severityLabel =
     typeInfo.severity === 'critical'
@@ -94,9 +84,10 @@ function ReportTypeOption({
       accessibilityHint={`심각도: ${severityLabel}`}
       className={`
         p-4 rounded-xl mb-2
-        ${isSelected
-          ? 'border-2 border-red-500 bg-red-50 dark:bg-red-900/20'
-          : 'border border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
+        ${
+          isSelected
+            ? 'border-2 border-red-500 bg-red-50 dark:bg-red-900/20'
+            : 'border border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
         }
       `}
     >
@@ -106,10 +97,7 @@ function ReportTypeOption({
             <Text
               className={`
                 text-base font-semibold
-                ${isSelected
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-900 dark:text-white'
-                }
+                ${isSelected ? 'text-red-600 dark:text-red-400' : 'text-gray-900 dark:text-white'}
               `}
             >
               {typeInfo.label}
@@ -119,10 +107,10 @@ function ReportTypeOption({
                 {typeInfo.severity === 'critical'
                   ? '심각'
                   : typeInfo.severity === 'high'
-                  ? '높음'
-                  : typeInfo.severity === 'medium'
-                  ? '보통'
-                  : '낮음'}
+                    ? '높음'
+                    : typeInfo.severity === 'medium'
+                      ? '보통'
+                      : '낮음'}
               </Text>
             </View>
           </View>
@@ -169,9 +157,7 @@ function SeverityIndicator({ type, reporterType }: SeverityIndicatorProps) {
   return (
     <View className={`flex-row items-center p-3 rounded-lg ${severityColors.bg}`}>
       <AlertTriangleIcon size={16} color={severityIcons[severity]} />
-      <Text className={`ml-2 text-sm ${severityColors.text}`}>
-        {severityLabels[severity]}
-      </Text>
+      <Text className={`ml-2 text-sm ${severityColors.text}`}>{severityLabels[severity]}</Text>
     </View>
   );
 }
@@ -243,15 +229,26 @@ export function ReportModal({
       jobPostingId,
       jobPostingTitle,
       // 구인자→스태프 신고만 workLog 정보 포함
-      ...(mode === 'employer' && staff && {
-        workLogId: staff.id,
-        workDate: staff.date,
-      }),
+      ...(mode === 'employer' &&
+        staff && {
+          workLogId: staff.id,
+          workDate: staff.date,
+        }),
       description: description.trim(),
     };
 
     onSubmit(input);
-  }, [isValid, reportTarget, selectedType, mode, staff, jobPostingId, jobPostingTitle, description, onSubmit]);
+  }, [
+    isValid,
+    reportTarget,
+    selectedType,
+    mode,
+    staff,
+    jobPostingId,
+    jobPostingTitle,
+    description,
+    onSubmit,
+  ]);
 
   // 닫기
   const handleClose = useCallback(() => {
@@ -264,19 +261,10 @@ export function ReportModal({
   if (!reportTarget) return null;
 
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title={modalTitle}
-      position="bottom"
-    >
+    <Modal visible={visible} onClose={handleClose} title={modalTitle} position="bottom">
       <View>
         {/* 신고 대상 정보 */}
-        <Card
-          variant="filled"
-          padding="sm"
-          className="mb-3 bg-red-50 dark:bg-red-900/20"
-        >
+        <Card variant="filled" padding="sm" className="mb-3 bg-red-50 dark:bg-red-900/20">
           <View className="flex-row items-center">
             <View className="h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30 items-center justify-center">
               {mode === 'employee' ? (
@@ -365,8 +353,8 @@ export function ReportModal({
               신고 시 유의사항
             </Text>
             <Text className="text-xs text-yellow-600 dark:text-yellow-400 leading-4">
-              • 허위 신고는 제재의 대상이 될 수 있습니다{'\n'}
-              • 신고 내용은 관리자가 검토 후 처리됩니다
+              • 허위 신고는 제재의 대상이 될 수 있습니다{'\n'}• 신고 내용은 관리자가 검토 후
+              처리됩니다
             </Text>
           </View>
         </View>
@@ -392,9 +380,7 @@ export function ReportModal({
             icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
             accessibilityLabel="신고 제출"
             accessibilityHint={
-              isValid
-                ? '선택한 유형으로 신고를 제출합니다'
-                : '신고 유형과 설명을 모두 입력해주세요'
+              isValid ? '선택한 유형으로 신고를 제출합니다' : '신고 유형과 설명을 모두 입력해주세요'
             }
           >
             신고하기

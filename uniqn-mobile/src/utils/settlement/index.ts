@@ -14,9 +14,9 @@ export type { SalaryType, SalaryInfo, TaxType };
 
 export interface SettlementResult {
   hoursWorked: number;
-  basePay: number;      // 기본 급여
+  basePay: number; // 기본 급여
   allowancePay: number; // 수당
-  totalPay: number;     // 총 금액 (basePay + allowancePay)
+  totalPay: number; // 총 금액 (basePay + allowancePay)
 }
 
 /** 수당 정보 */
@@ -68,10 +68,7 @@ export function parseTimestamp(value: unknown): Date | null {
 /**
  * 근무 시간 계산 (시간 단위)
  */
-export function calculateHoursWorked(
-  startTime: TimeInput,
-  endTime: TimeInput
-): number {
+export function calculateHoursWorked(startTime: TimeInput, endTime: TimeInput): number {
   const start = TimeNormalizer.parseTime(startTime);
   const end = TimeNormalizer.parseTime(endTime);
 
@@ -86,10 +83,7 @@ export function calculateHoursWorked(
  * - 시급: 근무시간 × 시급
  * - 일급/월급: 출근 시 전액
  */
-export function calculatePayByType(
-  salaryInfo: SalaryInfo,
-  hoursWorked: number
-): number {
+export function calculatePayByType(salaryInfo: SalaryInfo, hoursWorked: number): number {
   switch (salaryInfo.type) {
     case 'hourly':
       return Math.round(hoursWorked * salaryInfo.amount);
@@ -125,7 +119,7 @@ export function getRoleSalaryFromRoles(
   const effectiveRole = targetRole === 'other' && customRole ? customRole : targetRole;
 
   // roles 배열에서 해당 역할 찾기
-  const roleData = roles.find(r => {
+  const roleData = roles.find((r) => {
     // role 또는 name 필드 확인 (FormRoleWithCount와 RoleRequirement 호환)
     const roleKey = r.role || r.name;
 
@@ -156,12 +150,20 @@ export function calculateAllowanceAmount(allowances?: Allowances): number {
   }
 
   // 교통비 (금액이 있는 경우만)
-  if (allowances.transportation && allowances.transportation !== PROVIDED_FLAG && allowances.transportation > 0) {
+  if (
+    allowances.transportation &&
+    allowances.transportation !== PROVIDED_FLAG &&
+    allowances.transportation > 0
+  ) {
     amount += allowances.transportation;
   }
 
   // 숙박비 (금액이 있는 경우만)
-  if (allowances.accommodation && allowances.accommodation !== PROVIDED_FLAG && allowances.accommodation > 0) {
+  if (
+    allowances.accommodation &&
+    allowances.accommodation !== PROVIDED_FLAG &&
+    allowances.accommodation > 0
+  ) {
     amount += allowances.accommodation;
   }
 
@@ -289,7 +291,9 @@ export function calculateTotalSettlementFromRoles(
 ): number {
   return workLogs.reduce((total, log) => {
     // 개별 오버라이드가 있으면 우선 사용
-    const salaryInfo = log.customSalaryInfo || getRoleSalaryFromRoles(roles, log.role, log.customRole, defaultSalary);
+    const salaryInfo =
+      log.customSalaryInfo ||
+      getRoleSalaryFromRoles(roles, log.role, log.customRole, defaultSalary);
     const effectiveAllowances = log.customAllowances || allowances;
     const effectiveTaxSettings = log.customTaxSettings || taxSettings || DEFAULT_TAX_SETTINGS;
 
@@ -413,10 +417,7 @@ export const DEFAULT_TAX_SETTINGS: TaxSettings = {
 /**
  * 세금 금액 계산 (기본 - 전체 금액에 적용)
  */
-export function calculateTaxAmount(
-  taxSettings: TaxSettings,
-  totalAmount: number
-): number {
+export function calculateTaxAmount(taxSettings: TaxSettings, totalAmount: number): number {
   if (taxSettings.type === 'none') return 0;
   if (taxSettings.type === 'fixed') return taxSettings.value;
   // rate
@@ -458,17 +459,32 @@ export function calculateTaxAmountByItems(
   }
 
   // 식비 (PROVIDED_FLAG 제외)
-  if (taxableItems.meal !== false && amounts.meal && amounts.meal !== PROVIDED_FLAG && amounts.meal > 0) {
+  if (
+    taxableItems.meal !== false &&
+    amounts.meal &&
+    amounts.meal !== PROVIDED_FLAG &&
+    amounts.meal > 0
+  ) {
     taxableAmount += amounts.meal;
   }
 
   // 교통비 (PROVIDED_FLAG 제외)
-  if (taxableItems.transportation !== false && amounts.transportation && amounts.transportation !== PROVIDED_FLAG && amounts.transportation > 0) {
+  if (
+    taxableItems.transportation !== false &&
+    amounts.transportation &&
+    amounts.transportation !== PROVIDED_FLAG &&
+    amounts.transportation > 0
+  ) {
     taxableAmount += amounts.transportation;
   }
 
   // 숙박비 (PROVIDED_FLAG 제외)
-  if (taxableItems.accommodation !== false && amounts.accommodation && amounts.accommodation !== PROVIDED_FLAG && amounts.accommodation > 0) {
+  if (
+    taxableItems.accommodation !== false &&
+    amounts.accommodation &&
+    amounts.accommodation !== PROVIDED_FLAG &&
+    amounts.accommodation > 0
+  ) {
     taxableAmount += amounts.accommodation;
   }
 
@@ -484,10 +500,7 @@ export function calculateTaxAmountByItems(
 /**
  * 세후 금액 계산
  */
-export function calculateAfterTaxAmount(
-  taxSettings: TaxSettings,
-  totalAmount: number
-): number {
+export function calculateAfterTaxAmount(taxSettings: TaxSettings, totalAmount: number): number {
   const taxAmount = calculateTaxAmount(taxSettings, totalAmount);
   return totalAmount - taxAmount;
 }
@@ -565,8 +578,8 @@ export function getEffectiveTaxSettings(
 // ============================================================================
 
 export interface ExtendedSettlementResult extends SettlementResult {
-  taxAmount: number;      // 세금 금액
-  afterTaxPay: number;    // 세후 금액
+  taxAmount: number; // 세금 금액
+  afterTaxPay: number; // 세후 금액
 }
 
 /**
@@ -667,8 +680,7 @@ export function getRoleSalaryFromJobPostingCard(
         for (const r of timeSlot.roles || []) {
           // 역할 매칭
           const isMatch =
-            (role === 'other' && customRole && r.customRole === customRole) ||
-            (r.role === role);
+            (role === 'other' && customRole && r.customRole === customRole) || r.role === role;
 
           if (isMatch && r.salary) {
             return r.salary;
@@ -721,17 +733,17 @@ export function calculateSettlementBreakdown(
   }
 
   // 2. 급여 정보 결정 (오버라이드 우선)
-  const salaryInfo: SalaryInfo = workLogData.customSalaryInfo ||
+  const salaryInfo: SalaryInfo =
+    workLogData.customSalaryInfo ||
     getRoleSalaryFromJobPostingCard(jobPostingCard, workLogData.role, workLogData.customRole);
 
   // 3. 수당 정보 결정 (오버라이드 우선)
-  const allowances: Allowances | undefined = workLogData.customAllowances ||
-    jobPostingCard?.allowances;
+  const allowances: Allowances | undefined =
+    workLogData.customAllowances || jobPostingCard?.allowances;
 
   // 4. 세금 설정 결정 (오버라이드 우선)
-  const taxSettings: TaxSettings = workLogData.customTaxSettings ||
-    jobPostingCard?.taxSettings ||
-    DEFAULT_TAX_SETTINGS;
+  const taxSettings: TaxSettings =
+    workLogData.customTaxSettings || jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS;
 
   // 5. 정산 계산
   const result = calculateSettlementWithTax(
@@ -750,18 +762,23 @@ export function calculateSettlementBreakdown(
       amount: salaryInfo.amount,
     },
     basePay: result.basePay,
-    allowances: allowances ? {
-      guaranteedHours: allowances.guaranteedHours,
-      meal: allowances.meal,
-      transportation: allowances.transportation,
-      accommodation: allowances.accommodation,
-      additional: allowances.additional,
-    } : undefined,
+    allowances: allowances
+      ? {
+          guaranteedHours: allowances.guaranteedHours,
+          meal: allowances.meal,
+          transportation: allowances.transportation,
+          accommodation: allowances.accommodation,
+          additional: allowances.additional,
+        }
+      : undefined,
     allowancePay: result.allowancePay,
-    taxSettings: taxSettings.type !== 'none' ? {
-      type: taxSettings.type,
-      value: taxSettings.value,
-    } : undefined,
+    taxSettings:
+      taxSettings.type !== 'none'
+        ? {
+            type: taxSettings.type,
+            value: taxSettings.value,
+          }
+        : undefined,
     taxAmount: result.taxAmount,
     totalPay: result.totalPay,
     afterTaxPay: result.afterTaxPay,

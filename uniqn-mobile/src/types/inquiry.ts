@@ -231,7 +231,8 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-general-2',
     category: 'general',
     question: '앱 사용료가 있나요?',
-    answer: '기본 기능은 무료로 이용 가능합니다. 일부 프리미엄 기능은 추후 유료로 제공될 수 있습니다.',
+    answer:
+      '기본 기능은 무료로 이용 가능합니다. 일부 프리미엄 기능은 추후 유료로 제공될 수 있습니다.',
     order: 2,
   },
   // 계정 문의
@@ -282,7 +283,8 @@ export const FAQ_DATA: FAQItem[] = [
     id: 'faq-other-1',
     category: 'other',
     question: '문의에 대한 답변은 얼마나 걸리나요?',
-    answer: '문의 접수 후 영업일 기준 1-2일 내에 답변드립니다. 주말 및 공휴일에는 답변이 지연될 수 있습니다.',
+    answer:
+      '문의 접수 후 영업일 기준 1-2일 내에 답변드립니다. 주말 및 공휴일에는 답변이 지연될 수 있습니다.',
     order: 1,
   },
 ];

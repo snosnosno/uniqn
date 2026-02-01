@@ -13,10 +13,7 @@ import { DateRequirementDisplay } from './DateRequirementDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import { useJobSchedule } from '@/hooks';
-import {
-  groupRequirementsToDateRanges,
-  formatDateRangeWithCount,
-} from '@/utils/dateRangeUtils';
+import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
 import type { JobPosting, PostingType } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
@@ -35,18 +32,22 @@ interface JobDetailProps {
 // Sub Components
 // ============================================================================
 
-function InfoRow({ label, value, icon }: { label: string; value: string | React.ReactNode; icon: string }) {
+function InfoRow({
+  label,
+  value,
+  icon,
+}: {
+  label: string;
+  value: string | React.ReactNode;
+  icon: string;
+}) {
   return (
     <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
       <Text className="text-lg mr-3">{icon}</Text>
       <View className="flex-1">
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-          {label}
-        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
         {typeof value === 'string' ? (
-          <Text className="text-sm text-gray-900 dark:text-white">
-            {value}
-          </Text>
+          <Text className="text-sm text-gray-900 dark:text-white">{value}</Text>
         ) : (
           value
         )}
@@ -83,9 +84,7 @@ function DateRequirementsGroupedDisplay({
         <View className="flex-row items-start">
           <Text className="text-lg mr-3">📅</Text>
           <View className="flex-1">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-              근무 일정
-            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
             {dateGroups.map((group, groupIdx) => (
               <View
                 key={group.id || groupIdx}
@@ -153,9 +152,7 @@ function DateRequirementsGroupedDisplay({
       <View className="flex-row items-start">
         <Text className="text-lg mr-3">📅</Text>
         <View className="flex-1">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-            근무 일정
-          </Text>
+          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
           {dateRequirements.map((req, idx) => (
             <DateRequirementDisplay
               key={idx}
@@ -176,11 +173,7 @@ function DateRequirementsGroupedDisplay({
 
 export function JobDetail({ job }: JobDetailProps) {
   // v3.0: 통합 타입 Hook 사용
-  const {
-    isFixed,
-    isDated,
-    fixedSchedule,
-  } = useJobSchedule(job);
+  const { isFixed, isDated, fixedSchedule } = useJobSchedule(job);
 
   const handleCall = () => {
     if (job.contactPhone) {
@@ -189,7 +182,10 @@ export function JobDetail({ job }: JobDetailProps) {
   };
 
   // 수당 정보 (v2.0)
-  const allowanceItems = useMemo(() => getAllowanceItems(job.allowances, { includeEmoji: true }), [job.allowances]);
+  const allowanceItems = useMemo(
+    () => getAllowanceItems(job.allowances, { includeEmoji: true }),
+    [job.allowances]
+  );
 
   // 안전한 값 추출
   const safeTitle = String(job.title || '제목 없음');
@@ -204,9 +200,7 @@ export function JobDetail({ job }: JobDetailProps) {
   // location 안전하게 처리
   const getLocationValue = (): string => {
     if (!job.location) return '정보 없음';
-    const locationName = typeof job.location === 'string'
-      ? job.location
-      : (job.location?.name || '');
+    const locationName = typeof job.location === 'string' ? job.location : job.location?.name || '';
     const address = job.detailedAddress ? ` ${job.detailedAddress}` : '';
     const result = `${locationName}${address}`.trim();
     return result || '정보 없음';
@@ -220,28 +214,19 @@ export function JobDetail({ job }: JobDetailProps) {
         <View className="flex-row items-center flex-wrap mb-2">
           {/* 공고 타입 뱃지 (regular 제외) */}
           {job.postingType && job.postingType !== 'regular' && (
-            <PostingTypeBadge
-              type={job.postingType as PostingType}
-              size="sm"
-              className="mr-2"
-            />
+            <PostingTypeBadge type={job.postingType as PostingType} size="sm" className="mr-2" />
           )}
           {job.isUrgent === true && !job.postingType && (
             <Badge variant="error" size="sm" className="mr-2">
               긴급
             </Badge>
           )}
-          <Badge
-            variant={job.status === 'active' ? 'success' : 'default'}
-            size="sm"
-          >
+          <Badge variant={job.status === 'active' ? 'success' : 'default'} size="sm">
             {job.status === 'active' ? '모집중' : '마감'}
           </Badge>
         </View>
 
-        <Text className="text-xl font-bold text-gray-900 dark:text-white mb-3">
-          {safeTitle}
-        </Text>
+        <Text className="text-xl font-bold text-gray-900 dark:text-white mb-3">{safeTitle}</Text>
 
         {/* 급여 (v2.0: 역할별 급여 지원) */}
         <RoleSalaryDisplay
@@ -278,9 +263,7 @@ export function JobDetail({ job }: JobDetailProps) {
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">📅</Text>
               <View className="flex-1">
-                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  근무 일정
-                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 일정</Text>
                 <FixedScheduleDisplay
                   daysPerWeek={fixedSchedule.daysPerWeek}
                   startTime={fixedSchedule.startTime ?? undefined}
@@ -321,9 +304,7 @@ export function JobDetail({ job }: JobDetailProps) {
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">💰</Text>
               <View className="flex-1">
-                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
-                  추가 수당
-                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">추가 수당</Text>
                 <View className="flex-row flex-wrap">
                   {allowanceItems.map((item, idx) => (
                     <Text key={idx} className="text-sm text-gray-900 dark:text-white mr-3 mb-1">

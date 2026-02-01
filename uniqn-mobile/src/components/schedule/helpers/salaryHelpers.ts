@@ -25,8 +25,7 @@ export function getRoleSalaryFromCard(
   for (const timeSlot of dateReq.timeSlots || []) {
     const roleInfo = timeSlot.roles?.find(
       (r) =>
-        r.role === role ||
-        (role === 'other' && r.role === 'other' && r.customRole === customRole)
+        r.role === role || (role === 'other' && r.role === 'other' && r.customRole === customRole)
     );
     if (roleInfo?.salary) {
       return roleInfo.salary;

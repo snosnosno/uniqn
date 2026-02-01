@@ -24,11 +24,7 @@ import {
   ShieldCheckIcon,
   XCircleIcon,
 } from '@/components/icons';
-import {
-  useAdminUserDetail,
-  useUpdateUserRole,
-  useSetUserActive,
-} from '@/hooks/useAdminDashboard';
+import { useAdminUserDetail, useUpdateUserRole, useSetUserActive } from '@/hooks/useAdminDashboard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
@@ -82,29 +78,25 @@ export default function AdminUserDetailPage() {
   const handleRoleChange = useCallback(async () => {
     if (!id || !selectedRole || selectedRole === user?.role) return;
 
-    Alert.alert(
-      '역할 변경',
-      '사용자의 역할을 변경하시겠습니까?',
-      [
-        { text: '취소', style: 'cancel' },
-        {
-          text: '변경',
-          onPress: async () => {
-            try {
-              await updateRoleMutation.mutateAsync({
-                userId: id,
-                newRole: selectedRole,
-                reason: '관리자에 의한 역할 변경',
-              });
-              addToast({ type: 'success', message: '역할이 변경되었습니다.' });
-              setSelectedRole(null);
-            } catch {
-              addToast({ type: 'error', message: '역할 변경에 실패했습니다.' });
-            }
-          },
+    Alert.alert('역할 변경', '사용자의 역할을 변경하시겠습니까?', [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '변경',
+        onPress: async () => {
+          try {
+            await updateRoleMutation.mutateAsync({
+              userId: id,
+              newRole: selectedRole,
+              reason: '관리자에 의한 역할 변경',
+            });
+            addToast({ type: 'success', message: '역할이 변경되었습니다.' });
+            setSelectedRole(null);
+          } catch {
+            addToast({ type: 'error', message: '역할 변경에 실패했습니다.' });
+          }
         },
-      ]
-    );
+      },
+    ]);
   }, [id, selectedRole, user?.role, updateRoleMutation, addToast]);
 
   const handleToggleActive = useCallback(() => {
@@ -142,17 +134,23 @@ export default function AdminUserDetailPage() {
 
   const getRoleBadgeVariant = (role: UserRole): 'error' | 'primary' | 'success' => {
     switch (role) {
-      case 'admin': return 'error';
-      case 'employer': return 'primary';
-      default: return 'success';
+      case 'admin':
+        return 'error';
+      case 'employer':
+        return 'primary';
+      default:
+        return 'success';
     }
   };
 
   const getRoleLabel = (role: UserRole): string => {
     switch (role) {
-      case 'admin': return '관리자';
-      case 'employer': return '구인자';
-      default: return '스태프';
+      case 'admin':
+        return '관리자';
+      case 'employer':
+        return '구인자';
+      default:
+        return '스태프';
     }
   };
 
@@ -170,9 +168,7 @@ export default function AdminUserDetailPage() {
     return (
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#A855F7" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-          사용자 정보를 불러오는 중...
-        </Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">사용자 정보를 불러오는 중...</Text>
       </View>
     );
   }
@@ -195,11 +191,7 @@ export default function AdminUserDetailPage() {
     <ScrollView
       className="flex-1 bg-gray-50 dark:bg-surface-dark"
       refreshControl={
-        <RefreshControl
-          refreshing={isRefetching}
-          onRefresh={() => refetch()}
-          tintColor="#A855F7"
-        />
+        <RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#A855F7" />
       }
     >
       {/* Profile Header */}
@@ -211,9 +203,7 @@ export default function AdminUserDetailPage() {
             <UserIcon size={40} color="#9CA3AF" />
           )}
         </View>
-        <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">
-          {user.name}
-        </Text>
+        <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">{user.name}</Text>
         <View className="flex-row items-center">
           <Badge variant={getRoleBadgeVariant(user.role)} size="md">
             {getRoleLabel(user.role)}
@@ -261,7 +251,13 @@ export default function AdminUserDetailPage() {
           />
         )}
         <InfoRow
-          icon={user.isVerified ? <ShieldCheckIcon size={20} color="#10B981" /> : <XCircleIcon size={20} color="#EF4444" />}
+          icon={
+            user.isVerified ? (
+              <ShieldCheckIcon size={20} color="#10B981" />
+            ) : (
+              <XCircleIcon size={20} color="#EF4444" />
+            )
+          }
           label="본인인증"
           value={user.isVerified ? '인증 완료' : '미인증'}
         />
@@ -279,9 +275,21 @@ export default function AdminUserDetailPage() {
           <Pressable
             key={option.role}
             onPress={() => setSelectedRole(option.role)}
-            className={'flex-row items-center p-3 rounded-lg mb-2 border ' + ((selectedRole ?? user.role) === option.role ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-surface-overlay')}
+            className={
+              'flex-row items-center p-3 rounded-lg mb-2 border ' +
+              ((selectedRole ?? user.role) === option.role
+                ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                : 'border-gray-200 dark:border-surface-overlay')
+            }
           >
-            <View className={'w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ' + ((selectedRole ?? user.role) === option.role ? 'border-primary-500' : 'border-gray-300 dark:border-surface-overlay')}>
+            <View
+              className={
+                'w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ' +
+                ((selectedRole ?? user.role) === option.role
+                  ? 'border-primary-500'
+                  : 'border-gray-300 dark:border-surface-overlay')
+              }
+            >
               {(selectedRole ?? user.role) === option.role && (
                 <View className="w-2.5 h-2.5 rounded-full bg-primary-500" />
               )}
@@ -290,9 +298,7 @@ export default function AdminUserDetailPage() {
               <Text className="text-base font-medium text-gray-900 dark:text-white">
                 {option.label}
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {option.description}
-              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">{option.description}</Text>
             </View>
           </Pressable>
         ))}
@@ -316,12 +322,21 @@ export default function AdminUserDetailPage() {
           <Pressable
             onPress={handleToggleActive}
             disabled={setActiveMutation.isPending}
-            className={'py-3 px-4 rounded-lg items-center ' + (user.isActive ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20')}
+            className={
+              'py-3 px-4 rounded-lg items-center ' +
+              (user.isActive ? 'bg-red-50 dark:bg-red-900/20' : 'bg-green-50 dark:bg-green-900/20')
+            }
           >
             {setActiveMutation.isPending ? (
               <ActivityIndicator size="small" color={user.isActive ? '#EF4444' : '#10B981'} />
             ) : (
-              <Text className={user.isActive ? 'text-red-600 dark:text-red-400 font-medium' : 'text-green-600 dark:text-green-400 font-medium'}>
+              <Text
+                className={
+                  user.isActive
+                    ? 'text-red-600 dark:text-red-400 font-medium'
+                    : 'text-green-600 dark:text-green-400 font-medium'
+                }
+              >
                 {user.isActive ? '계정 비활성화' : '계정 활성화'}
               </Text>
             )}

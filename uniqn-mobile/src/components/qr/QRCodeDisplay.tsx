@@ -106,12 +106,7 @@ export function QRCodeDisplay({
   const actionLabel = action === 'checkIn' ? '출근' : action === 'checkOut' ? '퇴근' : '';
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      position="center"
-      showCloseButton
-    >
+    <Modal visible={visible} onClose={onClose} position="center" showCloseButton>
       <View className="items-center px-4 py-6">
         {/* 제목 */}
         <View className="flex-row items-center mb-2">
@@ -155,12 +150,7 @@ export function QRCodeDisplay({
               )}
             </View>
           ) : (
-            <QRCode
-              value={qrValue}
-              size={QR_SIZE}
-              backgroundColor="white"
-              color="black"
-            />
+            <QRCode value={qrValue} size={QR_SIZE} backgroundColor="white" color="black" />
           )}
         </View>
 
@@ -170,9 +160,7 @@ export function QRCodeDisplay({
             <ClockIcon size={16} color={isExpired ? '#EF4444' : '#6B7280'} />
             <Text
               className={`ml-1 text-sm ${
-                isExpired
-                  ? 'text-red-500'
-                  : 'text-gray-500 dark:text-gray-400'
+                isExpired ? 'text-red-500' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               {remainingTime}
@@ -183,9 +171,8 @@ export function QRCodeDisplay({
         {/* 안내 문구 */}
         <View className="mt-6 bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 w-full">
           <Text className="text-sm text-primary-700 dark:text-primary-300 text-center">
-            • QR 코드는 3분간 유효합니다{'\n'}
-            • 만료 시 새로고침하여 재생성해주세요{'\n'}
-            • 스태프가 스캔하면 자동으로 출퇴근 처리
+            • QR 코드는 3분간 유효합니다{'\n'}• 만료 시 새로고침하여 재생성해주세요{'\n'}• 스태프가
+            스캔하면 자동으로 출퇴근 처리
           </Text>
         </View>
 
@@ -197,9 +184,7 @@ export function QRCodeDisplay({
             accessibilityLabel="QR 코드 새로고침"
           >
             <RefreshIcon size={16} color="#6B7280" />
-            <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-              새로고침
-            </Text>
+            <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">새로고침</Text>
           </Pressable>
         )}
       </View>

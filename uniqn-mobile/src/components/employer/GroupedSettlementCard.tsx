@@ -146,9 +146,7 @@ const DateStatusRow = memo(function DateStatusRow({
         <Text className="text-sm font-medium text-gray-800 dark:text-gray-200">
           {status.formattedDate}
         </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
-          {roleDisplay}
-        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">{roleDisplay}</Text>
       </View>
 
       {/* 금액 */}
@@ -306,21 +304,14 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           )}
 
           {/* 아바타 */}
-          <Avatar
-            source={profilePhotoURL}
-            name={displayName}
-            size="md"
-            className="mr-3"
-          />
+          <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
 
           {/* 이름 + 역할 */}
           <View className="flex-1">
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
               {displayName}
             </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {rolesDisplay}
-            </Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400">{rolesDisplay}</Text>
           </View>
 
           {/* 금액/건수 */}
@@ -338,9 +329,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 날짜 범위 */}
       <View className="flex-row items-center mt-3">
         <CalendarIcon size={14} color="#6B7280" />
-        <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
-          {dateDisplay}
-        </Text>
+        <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">{dateDisplay}</Text>
       </View>
 
       {/* 정산 요약 (미정산/완료 건수) */}
@@ -357,7 +346,8 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           <View className="flex-row items-center px-2 py-1 bg-green-50 dark:bg-green-900/20 rounded-lg">
             <CheckCircleIcon size={12} color="#059669" />
             <Text className="ml-1 text-xs text-green-700 dark:text-green-300">
-              완료 {group.summary.completedCount}건 ({formatCurrency(group.summary.completedAmount)})
+              완료 {group.summary.completedCount}건 ({formatCurrency(group.summary.completedAmount)}
+              )
             </Text>
           </View>
         )}
@@ -377,9 +367,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
         className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-surface-overlay"
         accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
       >
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">
-          날짜별 상세
-        </Text>
+        <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">날짜별 상세</Text>
         {isExpanded ? (
           <ChevronUpIcon size={16} color="#6B7280" />
         ) : (

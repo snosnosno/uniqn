@@ -9,12 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
 import { DangerZone } from '@/components/settings';
-import {
-  BellIcon,
-  LockIcon,
-  ChevronRightIcon,
-  TrashIcon,
-} from '@/components/icons';
+import { BellIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -136,13 +131,9 @@ export default function SettingsScreen() {
 
   // 캐시 삭제 핸들러
   const handleClearCache = () => {
-    showConfirm(
-      '캐시 삭제',
-      '저장된 캐시 데이터를 삭제합니다.\n로그인 정보는 유지됩니다.',
-      () => {
-        clearCache({ keepAuth: true });
-      }
-    );
+    showConfirm('캐시 삭제', '저장된 캐시 데이터를 삭제합니다.\n로그인 정보는 유지됩니다.', () => {
+      clearCache({ keepAuth: true });
+    });
   };
 
   // 마케팅 정보 수신 토글 핸들러
@@ -180,9 +171,7 @@ export default function SettingsScreen() {
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-            알림
-          </Text>
+          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">알림</Text>
           <SettingItem
             icon={<BellIcon size={22} color="#6B7280" />}
             label="푸시 알림"
@@ -200,9 +189,7 @@ export default function SettingsScreen() {
 
         {/* 계정 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-            계정
-          </Text>
+          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">계정</Text>
           <SettingItem
             icon={<LockIcon size={22} color="#6B7280" />}
             label="비밀번호 변경"
@@ -248,9 +235,7 @@ export default function SettingsScreen() {
 
         {/* 앱 설정 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-            앱 설정
-          </Text>
+          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">앱 설정</Text>
           <SettingItem
             icon={<SunIcon size={22} color="#6B7280" />}
             label="다크 모드"
@@ -288,14 +273,8 @@ export default function SettingsScreen() {
 
         {/* 앱 정보 */}
         <Card className="mb-4">
-          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">
-            정보
-          </Text>
-          <SettingItem
-            icon={<View className="h-[22px] w-[22px]" />}
-            label="버전"
-            value="1.0.0"
-          />
+          <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">정보</Text>
+          <SettingItem icon={<View className="h-[22px] w-[22px]" />} label="버전" value="1.0.0" />
           <Divider spacing="sm" />
           <SettingItem
             icon={<View className="h-[22px] w-[22px]" />}
@@ -336,9 +315,7 @@ export default function SettingsScreen() {
 
         {/* 위험 영역 - 계정 삭제 */}
         {isAuthenticated && (
-          <DangerZone
-            onDeleteAccount={() => router.push('/(app)/settings/delete-account')}
-          />
+          <DangerZone onDeleteAccount={() => router.push('/(app)/settings/delete-account')} />
         )}
       </ScrollView>
     </SafeAreaView>

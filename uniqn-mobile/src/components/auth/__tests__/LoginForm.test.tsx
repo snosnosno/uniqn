@@ -30,7 +30,13 @@ jest.mock('react-hook-form', () => ({
       isSubmitting: false,
     },
   }),
-  Controller: ({ render: renderProp }: { render: (props: { field: { onChange: () => void; onBlur: () => void; value: string } }) => React.ReactNode }) =>
+  Controller: ({
+    render: renderProp,
+  }: {
+    render: (props: {
+      field: { onChange: () => void; onBlur: () => void; value: string };
+    }) => React.ReactNode;
+  }) =>
     renderProp({
       field: {
         onChange: jest.fn(),
@@ -58,9 +64,7 @@ describe('LoginForm', () => {
   });
 
   it('should render correctly', () => {
-    const { getByText, getByPlaceholderText } = render(
-      <LoginForm onSubmit={mockOnSubmit} />
-    );
+    const { getByText, getByPlaceholderText } = render(<LoginForm onSubmit={mockOnSubmit} />);
 
     expect(getByText('이메일')).toBeTruthy();
     expect(getByText('비밀번호')).toBeTruthy();
@@ -106,17 +110,13 @@ describe('LoginForm', () => {
   });
 
   it('should show loading state when isLoading is true', () => {
-    const { getByText } = render(
-      <LoginForm onSubmit={mockOnSubmit} isLoading={true} />
-    );
+    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} isLoading={true} />);
 
     expect(getByText('로그인 중...')).toBeTruthy();
   });
 
   it('should disable button when loading', () => {
-    const { getByText } = render(
-      <LoginForm onSubmit={mockOnSubmit} isLoading={true} />
-    );
+    const { getByText } = render(<LoginForm onSubmit={mockOnSubmit} isLoading={true} />);
 
     // Button should show loading text
     expect(getByText('로그인 중...')).toBeTruthy();
@@ -131,18 +131,14 @@ describe('LoginForm validation', () => {
   });
 
   it('should render email input with correct props', () => {
-    const { getByPlaceholderText } = render(
-      <LoginForm onSubmit={mockOnSubmit} />
-    );
+    const { getByPlaceholderText } = render(<LoginForm onSubmit={mockOnSubmit} />);
 
     const emailInput = getByPlaceholderText('이메일을 입력하세요');
     expect(emailInput).toBeTruthy();
   });
 
   it('should render password input with correct props', () => {
-    const { getByPlaceholderText } = render(
-      <LoginForm onSubmit={mockOnSubmit} />
-    );
+    const { getByPlaceholderText } = render(<LoginForm onSubmit={mockOnSubmit} />);
 
     const passwordInput = getByPlaceholderText('비밀번호를 입력하세요');
     expect(passwordInput).toBeTruthy();

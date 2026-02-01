@@ -77,9 +77,12 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
       // v2.0: dateSpecificRequirements 기반 검증
       if (hasDateRequirements) {
         // 모든 날짜의 타임슬롯에 역할이 있는지 확인
-        const hasIncomplete = data.dateSpecificRequirements!.some(req => {
-          return !req.timeSlots || req.timeSlots.length === 0 ||
-            req.timeSlots.some(slot => !slot.roles || slot.roles.length === 0);
+        const hasIncomplete = data.dateSpecificRequirements!.some((req) => {
+          return (
+            !req.timeSlots ||
+            req.timeSlots.length === 0 ||
+            req.timeSlots.some((slot) => !slot.roles || slot.roles.length === 0)
+          );
         });
         if (hasIncomplete) {
           errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
@@ -108,9 +111,12 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
       // v2.0: dateSpecificRequirements 기반 검증
       if (hasDateRequirements) {
         // 모든 날짜의 타임슬롯에 역할이 있는지 확인
-        const hasIncomplete = data.dateSpecificRequirements!.some(req => {
-          return !req.timeSlots || req.timeSlots.length === 0 ||
-            req.timeSlots.some(slot => !slot.roles || slot.roles.length === 0);
+        const hasIncomplete = data.dateSpecificRequirements!.some((req) => {
+          return (
+            !req.timeSlots ||
+            req.timeSlots.length === 0 ||
+            req.timeSlots.some((slot) => !slot.roles || slot.roles.length === 0)
+          );
         });
         if (hasIncomplete) {
           errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
@@ -120,7 +126,7 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
         if (!data.tournamentDates || data.tournamentDates.length === 0) {
           errors.tournamentDates = '최소 1일 이상의 대회 일정을 추가해주세요';
         } else {
-          const hasIncomplete = data.tournamentDates.some(d => !d.date || !d.startTime);
+          const hasIncomplete = data.tournamentDates.some((d) => !d.date || !d.startTime);
           if (hasIncomplete) {
             errors.tournamentDates = '모든 대회 일정의 날짜와 시간을 입력해주세요';
           }
@@ -144,7 +150,7 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
       if (totalCount === 0) {
         errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
       }
-      const hasEmptyName = data.roles.some(r => r.isCustom && !r.name.trim());
+      const hasEmptyName = data.roles.some((r) => r.isCustom && !r.name.trim());
       if (hasEmptyName) {
         errors.roles = '모든 역할의 이름을 입력해주세요';
       }
@@ -183,13 +189,13 @@ function validatePreQuestions(data: JobPostingFormData): Record<string, string> 
   const errors: Record<string, string> = {};
 
   if (data.usesPreQuestions) {
-    const hasEmptyQuestion = data.preQuestions.some(q => !q.question.trim());
+    const hasEmptyQuestion = data.preQuestions.some((q) => !q.question.trim());
     if (hasEmptyQuestion) {
       errors.preQuestions = '질문 내용을 입력해주세요';
     }
 
-    const hasEmptyOption = data.preQuestions.some(q =>
-      q.type === 'select' && q.options?.some(opt => !opt.trim())
+    const hasEmptyOption = data.preQuestions.some(
+      (q) => q.type === 'select' && q.options?.some((opt) => !opt.trim())
     );
     if (hasEmptyOption) {
       errors.preQuestions = '선택지 내용을 입력해주세요';
@@ -281,27 +287,19 @@ export function JobPostingScrollForm({
         showsVerticalScrollIndicator={false}
       >
         {/* 기본 정보 섹션 */}
-        <View
-          onLayout={(e) => handleSectionLayout('basicInfo', e.nativeEvent.layout.y)}
-        >
+        <View onLayout={(e) => handleSectionLayout('basicInfo', e.nativeEvent.layout.y)}>
           <SectionCard
             title="기본 정보"
             required
             hasError={getErrorCount(errors.basicInfo) > 0}
             errorCount={getErrorCount(errors.basicInfo)}
           >
-            <BasicInfoSection
-              data={data}
-              onUpdate={onUpdate}
-              errors={errors.basicInfo}
-            />
+            <BasicInfoSection data={data} onUpdate={onUpdate} errors={errors.basicInfo} />
           </SectionCard>
         </View>
 
         {/* 일정 섹션 */}
-        <View
-          onLayout={(e) => handleSectionLayout('schedule', e.nativeEvent.layout.y)}
-        >
+        <View onLayout={(e) => handleSectionLayout('schedule', e.nativeEvent.layout.y)}>
           <SectionCard
             title="일정"
             required
@@ -309,17 +307,9 @@ export function JobPostingScrollForm({
             errorCount={getErrorCount(errors.schedule)}
           >
             {data.postingType === 'fixed' ? (
-              <ScheduleSection
-                data={data}
-                onUpdate={onUpdate}
-                errors={errors.schedule}
-              />
+              <ScheduleSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
             ) : (
-              <DateRequirementsSection
-                data={data}
-                onUpdate={onUpdate}
-                errors={errors.schedule}
-              />
+              <DateRequirementsSection data={data} onUpdate={onUpdate} errors={errors.schedule} />
             )}
           </SectionCard>
         </View>
@@ -327,57 +317,39 @@ export function JobPostingScrollForm({
         {/* 역할/인원 섹션 (fixed 타입만 표시) */}
         {/* regular/urgent/tournament는 DateRequirementsSection의 TimeSlot에서 역할 관리 */}
         {data.postingType === 'fixed' && (
-          <View
-            onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}
-          >
+          <View onLayout={(e) => handleSectionLayout('roles', e.nativeEvent.layout.y)}>
             <SectionCard
               title="역할/인원"
               required
               hasError={getErrorCount(errors.roles) > 0}
               errorCount={getErrorCount(errors.roles)}
             >
-              <RolesSection
-                data={data}
-                onUpdate={onUpdate}
-                errors={errors.roles}
-              />
+              <RolesSection data={data} onUpdate={onUpdate} errors={errors.roles} />
             </SectionCard>
           </View>
         )}
 
         {/* 급여 섹션 */}
-        <View
-          onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}
-        >
+        <View onLayout={(e) => handleSectionLayout('salary', e.nativeEvent.layout.y)}>
           <SectionCard
             title="급여"
             required
             hasError={getErrorCount(errors.salary) > 0}
             errorCount={getErrorCount(errors.salary)}
           >
-            <SalarySection
-              data={data}
-              onUpdate={onUpdate}
-              errors={errors.salary}
-            />
+            <SalarySection data={data} onUpdate={onUpdate} errors={errors.salary} />
           </SectionCard>
         </View>
 
         {/* 사전질문 섹션 */}
-        <View
-          onLayout={(e) => handleSectionLayout('preQuestions', e.nativeEvent.layout.y)}
-        >
+        <View onLayout={(e) => handleSectionLayout('preQuestions', e.nativeEvent.layout.y)}>
           <SectionCard
             title="사전질문"
             optional
             hasError={getErrorCount(errors.preQuestions) > 0}
             errorCount={getErrorCount(errors.preQuestions)}
           >
-            <PreQuestionsSection
-              data={data}
-              onUpdate={onUpdate}
-              errors={errors.preQuestions}
-            />
+            <PreQuestionsSection data={data} onUpdate={onUpdate} errors={errors.preQuestions} />
           </SectionCard>
         </View>
 
@@ -401,24 +373,15 @@ export function JobPostingScrollForm({
         <View className="flex-row items-center gap-2">
           {/* 템플릿 버튼들 */}
           {onLoadTemplate && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onPress={onLoadTemplate}
-            >
-              <Text className="text-sm text-primary-600 dark:text-primary-400">
-                불러오기
-              </Text>
+            <Button variant="ghost" size="sm" onPress={onLoadTemplate}>
+              <Text className="text-sm text-primary-600 dark:text-primary-400">불러오기</Text>
             </Button>
           )}
           {onSaveTemplate && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onPress={onSaveTemplate}
-              disabled={isSavingTemplate}
-            >
-              <Text className={`text-sm ${isSavingTemplate ? 'text-gray-400' : 'text-primary-600 dark:text-primary-400'}`}>
+            <Button variant="ghost" size="sm" onPress={onSaveTemplate} disabled={isSavingTemplate}>
+              <Text
+                className={`text-sm ${isSavingTemplate ? 'text-gray-400' : 'text-primary-600 dark:text-primary-400'}`}
+              >
                 {isSavingTemplate ? '저장 중...' : '저장'}
               </Text>
             </Button>

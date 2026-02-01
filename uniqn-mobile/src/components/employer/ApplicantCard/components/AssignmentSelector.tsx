@@ -67,8 +67,12 @@ export const AssignmentSelector = React.memo(function AssignmentSelector({
           const isChecked = selectedKeys.has(key);
 
           const bgClass = isChecked
-            ? (isDark ? 'bg-primary-900 border-primary-700' : 'bg-primary-100 border-primary-300')
-            : (isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200');
+            ? isDark
+              ? 'bg-primary-900 border-primary-700'
+              : 'bg-primary-100 border-primary-300'
+            : isDark
+              ? 'bg-gray-700 border-gray-600'
+              : 'bg-gray-100 border-gray-200';
 
           return (
             <Pressable
@@ -77,23 +81,39 @@ export const AssignmentSelector = React.memo(function AssignmentSelector({
               className={`flex-row items-center rounded-lg px-3 py-2.5 border active:opacity-70 ${bgClass}`}
             >
               {/* 체크박스 */}
-              <View className={`
+              <View
+                className={`
                 h-5 w-5 rounded border-2 items-center justify-center mr-3
-                ${isChecked
-                  ? 'bg-primary-500 border-primary-500'
-                  : (isDark ? 'border-gray-500' : 'border-gray-400')}
-              `}>
+                ${
+                  isChecked
+                    ? 'bg-primary-500 border-primary-500'
+                    : isDark
+                      ? 'border-gray-500'
+                      : 'border-gray-400'
+                }
+              `}
+              >
                 {isChecked && <CheckIcon size={12} color="#fff" />}
               </View>
 
               {/* 일정 정보 */}
-              <CalendarIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
-              <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <CalendarIcon
+                size={16}
+                color={isChecked ? iconColors.checked : iconColors.unchecked}
+              />
+              <Text
+                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+              >
                 {display.formattedDate} {display.timeSlotDisplay}
               </Text>
               <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
-              <BriefcaseIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
-              <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              <BriefcaseIcon
+                size={16}
+                color={isChecked ? iconColors.checked : iconColors.unchecked}
+              />
+              <Text
+                className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+              >
                 {display.roleLabel}
               </Text>
             </Pressable>

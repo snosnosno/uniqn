@@ -93,7 +93,7 @@ export {
   DELETION_REASONS,
   type DeletionReason,
   type DeletionRequest,
-  type UserData,  // @deprecated - FirestoreUserProfile 사용 권장
+  type UserData, // @deprecated - FirestoreUserProfile 사용 권장
   type UserDataExport,
 } from './accountDeletionService';
 
@@ -417,7 +417,7 @@ export {
   updateUserRole,
   setUserActive,
   getSystemMetrics,
-} from "./adminService";
+} from './adminService';
 
 // Report Service (스태프 신고 관리)
 export {
@@ -452,11 +452,7 @@ export type {
 } from '../domains/schedule';
 
 // Settlement Domain (Phase 6)
-export {
-  SettlementCalculator,
-  TaxCalculator,
-  SettlementCache,
-} from '../domains/settlement';
+export { SettlementCalculator, TaxCalculator, SettlementCache } from '../domains/settlement';
 export type {
   CalculationInput,
   SettlementResult as CalculatorSettlementResult,
@@ -465,4 +461,3 @@ export type {
   TaxableAmounts,
   CachedSettlement,
 } from '../domains/settlement';
-

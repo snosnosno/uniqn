@@ -153,9 +153,7 @@ export default function CancellationRequestsScreen() {
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">
-            취소 요청을 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-gray-500 dark:text-gray-400">취소 요청을 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -243,11 +241,7 @@ export default function CancellationRequestsScreen() {
 
             {/* 버튼 */}
             <View className="flex-row gap-3">
-              <Button
-                onPress={handleCancelApprove}
-                variant="outline"
-                className="flex-1"
-              >
+              <Button onPress={handleCancelApprove} variant="outline" className="flex-1">
                 취소
               </Button>
               <Button

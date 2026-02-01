@@ -28,14 +28,14 @@ import type { ApplicationStatus } from '@/types';
  * 상태 전이 액션
  */
 export type StatusAction =
-  | 'APPLY'           // 지원하기
-  | 'CONFIRM'         // 확정하기 (구인자)
-  | 'REJECT'          // 거절하기 (구인자)
-  | 'CANCEL'          // 취소하기 (스태프, applied/pending만)
-  | 'REQUEST_CANCEL'  // 취소 요청 (스태프, confirmed만)
-  | 'APPROVE_CANCEL'  // 취소 요청 승인 (구인자)
-  | 'REJECT_CANCEL'   // 취소 요청 거절 (구인자)
-  | 'COMPLETE';       // 완료 처리 (시스템)
+  | 'APPLY' // 지원하기
+  | 'CONFIRM' // 확정하기 (구인자)
+  | 'REJECT' // 거절하기 (구인자)
+  | 'CANCEL' // 취소하기 (스태프, applied/pending만)
+  | 'REQUEST_CANCEL' // 취소 요청 (스태프, confirmed만)
+  | 'APPROVE_CANCEL' // 취소 요청 승인 (구인자)
+  | 'REJECT_CANCEL' // 취소 요청 거절 (구인자)
+  | 'COMPLETE'; // 완료 처리 (시스템)
 
 /**
  * 상태 전이 결과
@@ -70,7 +70,10 @@ export interface StatusMetadata {
  * 키: 현재 상태
  * 값: 액션 → 다음 상태 매핑
  */
-const TRANSITION_TABLE: Record<ApplicationStatus, Partial<Record<StatusAction, ApplicationStatus>>> = {
+const TRANSITION_TABLE: Record<
+  ApplicationStatus,
+  Partial<Record<StatusAction, ApplicationStatus>>
+> = {
   applied: {
     CONFIRM: 'confirmed',
     REJECT: 'rejected',

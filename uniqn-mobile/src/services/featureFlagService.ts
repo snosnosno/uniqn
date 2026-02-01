@@ -18,10 +18,7 @@
 
 import { logger } from '@/utils/logger';
 import { Platform } from 'react-native';
-import {
-  fetchAndActivateRemoteConfig,
-  getRemoteConfigBoolean,
-} from '@/lib/firebase';
+import { fetchAndActivateRemoteConfig, getRemoteConfigBoolean } from '@/lib/firebase';
 import { toError } from '@/errors';
 
 // ============================================================================

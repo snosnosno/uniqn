@@ -257,20 +257,29 @@ export function useDeepLinkNavigation() {
   }, []);
 
   // 공고로 네비게이션
-  const navigateToJob = useCallback((jobId: string) => {
-    return navigate({ name: 'job', params: { id: jobId } });
-  }, [navigate]);
+  const navigateToJob = useCallback(
+    (jobId: string) => {
+      return navigate({ name: 'job', params: { id: jobId } });
+    },
+    [navigate]
+  );
 
   // 지원서로 네비게이션 (v2.0: 지원 상세 화면 없음, 스케줄로 이동)
-  const navigateToApplication = useCallback((_applicationId: string) => {
-    logger.warn('navigateToApplication: 지원 상세 화면 없음, 스케줄로 이동');
-    return navigate({ name: 'schedule' });
-  }, [navigate]);
+  const navigateToApplication = useCallback(
+    (_applicationId: string) => {
+      logger.warn('navigateToApplication: 지원 상세 화면 없음, 스케줄로 이동');
+      return navigate({ name: 'schedule' });
+    },
+    [navigate]
+  );
 
   // 스케줄로 네비게이션 (v2.0: date 파라미터 무시됨)
-  const navigateToSchedule = useCallback((_date?: string) => {
-    return navigate({ name: 'schedule' });
-  }, [navigate]);
+  const navigateToSchedule = useCallback(
+    (_date?: string) => {
+      return navigate({ name: 'schedule' });
+    },
+    [navigate]
+  );
 
   // 알림 목록으로 네비게이션
   const navigateToNotifications = useCallback(() => {
@@ -286,23 +295,20 @@ export function useDeepLinkNavigation() {
    *
    * @deprecated 'application', 'schedule' 타입은 v3.0에서 제거 예정
    */
-  const createShareUrl = useCallback(
-    (type: 'job' | 'application' | 'schedule', id?: string) => {
-      switch (type) {
-        case 'job':
-          return id ? createJobDeepLink(id, true) : '';
-        case 'application':
-          // deprecated: 지원 상세 화면 없음
-          return id ? createApplicationDeepLink(id, true) : '';
-        case 'schedule':
-          // deprecated: date 파라미터 무시됨
-          return createScheduleDeepLink(id, true);
-        default:
-          return '';
-      }
-    },
-    []
-  );
+  const createShareUrl = useCallback((type: 'job' | 'application' | 'schedule', id?: string) => {
+    switch (type) {
+      case 'job':
+        return id ? createJobDeepLink(id, true) : '';
+      case 'application':
+        // deprecated: 지원 상세 화면 없음
+        return id ? createApplicationDeepLink(id, true) : '';
+      case 'schedule':
+        // deprecated: date 파라미터 무시됨
+        return createScheduleDeepLink(id, true);
+      default:
+        return '';
+    }
+  }, []);
 
   return {
     navigate,

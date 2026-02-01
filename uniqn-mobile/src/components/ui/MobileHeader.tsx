@@ -77,7 +77,7 @@ const SCROLL_THRESHOLD = 100;
 /** 검색 입력 플레이스홀더 색상 (다크모드 지원) */
 const SEARCH_PLACEHOLDER_COLORS = {
   light: '#6B7280', // gray-500
-  dark: '#9CA3AF',  // gray-400
+  dark: '#9CA3AF', // gray-400
 } as const;
 
 // ============================================================================
@@ -200,12 +200,7 @@ export function MobileHeader({
       return { fontSize: 18 };
     }
 
-    const fontSize = interpolate(
-      scrollY.value,
-      [0, SCROLL_THRESHOLD],
-      [18, 16],
-      Extrapolate.CLAMP
-    );
+    const fontSize = interpolate(scrollY.value, [0, SCROLL_THRESHOLD], [18, 16], Extrapolate.CLAMP);
 
     return { fontSize };
   });
@@ -250,13 +245,17 @@ export function MobileHeader({
             <View className="flex-1 flex-row items-center bg-gray-100 dark:bg-surface-elevated rounded-lg px-3 py-2">
               <MagnifyingGlassIcon
                 size={20}
-                color={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
+                color={
+                  isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light
+                }
               />
               <TextInput
                 value={searchQuery}
                 onChangeText={handleSearchChange}
                 placeholder={searchPlaceholder}
-                placeholderTextColor={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
+                placeholderTextColor={
+                  isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light
+                }
                 className="flex-1 ml-2 text-base text-gray-900 dark:text-white"
                 autoFocus
                 autoCapitalize="none"
@@ -273,7 +272,9 @@ export function MobileHeader({
                 >
                   <XMarkIcon
                     size={16}
-                    color={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
+                    color={
+                      isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light
+                    }
                   />
                 </Pressable>
               )}
@@ -366,13 +367,7 @@ interface HeaderActionProps {
   badge?: number;
 }
 
-export function HeaderAction({
-  icon,
-  onPress,
-  label,
-  disabled = false,
-  badge,
-}: HeaderActionProps) {
+export function HeaderAction({ icon, onPress, label, disabled = false, badge }: HeaderActionProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -389,9 +384,7 @@ export function HeaderAction({
       {/* 뱃지 */}
       {badge !== undefined && badge > 0 && (
         <View className="absolute -top-0.5 -right-0.5 bg-red-500 rounded-full min-w-[18px] h-[18px] items-center justify-center px-1">
-          <Text className="text-white text-xs font-bold">
-            {badge > 99 ? '99+' : badge}
-          </Text>
+          <Text className="text-white text-xs font-bold">{badge > 99 ? '99+' : badge}</Text>
         </View>
       )}
     </Pressable>
@@ -428,13 +421,9 @@ export function LargeHeader({
     >
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
-          <Text className="text-3xl font-bold text-gray-900 dark:text-white">
-            {title}
-          </Text>
+          <Text className="text-3xl font-bold text-gray-900 dark:text-white">{title}</Text>
           {subtitle && (
-            <Text className="text-base text-gray-500 dark:text-gray-400 mt-1">
-              {subtitle}
-            </Text>
+            <Text className="text-base text-gray-500 dark:text-gray-400 mt-1">{subtitle}</Text>
           )}
         </View>
         {rightAction && <View className="ml-4">{rightAction}</View>}

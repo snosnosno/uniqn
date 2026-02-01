@@ -63,7 +63,10 @@ interface TabConfig {
 // Constants
 // ============================================================================
 
-const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
+const statusConfig: Record<
+  ScheduleType,
+  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
+> = {
   applied: { label: '지원 중', variant: 'warning' },
   confirmed: { label: '확정', variant: 'success' },
   completed: { label: '완료', variant: 'default' },
@@ -115,7 +118,7 @@ export function ScheduleDetailModal({
   const handlePrevDate = useCallback(() => {
     if (!isGroupMode || currentDateIndex === 0 || !groupedSchedule) return;
     const prevDate = groupedSchedule.dateRange.dates[currentDateIndex - 1];
-    const prevSchedule = groupedSchedule.originalEvents.find(e => e.date === prevDate);
+    const prevSchedule = groupedSchedule.originalEvents.find((e) => e.date === prevDate);
     if (prevSchedule && onDateChange) {
       onDateChange(prevDate, prevSchedule);
     }
@@ -126,7 +129,7 @@ export function ScheduleDetailModal({
     const totalDates = groupedSchedule.dateRange.dates.length;
     if (currentDateIndex >= totalDates - 1) return;
     const nextDate = groupedSchedule.dateRange.dates[currentDateIndex + 1];
-    const nextSchedule = groupedSchedule.originalEvents.find(e => e.date === nextDate);
+    const nextSchedule = groupedSchedule.originalEvents.find((e) => e.date === nextDate);
     if (nextSchedule && onDateChange) {
       onDateChange(nextDate, nextSchedule);
     }
@@ -152,13 +155,16 @@ export function ScheduleDetailModal({
     }
   }, [visible, triggerRefresh]);
 
-  const handleTabPress = useCallback((tabId: TabId) => {
-    setActiveTab(tabId);
-    // 정산탭으로 전환 시 데이터 리프레시 요청 (쿨다운 적용)
-    if (tabId === 'settlement') {
-      triggerRefresh();
-    }
-  }, [triggerRefresh]);
+  const handleTabPress = useCallback(
+    (tabId: TabId) => {
+      setActiveTab(tabId);
+      // 정산탭으로 전환 시 데이터 리프레시 요청 (쿨다운 적용)
+      if (tabId === 'settlement') {
+        triggerRefresh();
+      }
+    },
+    [triggerRefresh]
+  );
 
   // 지원 취소 핸들러 (확인 모달)
   const handleCancelApplication = useCallback(() => {
@@ -221,24 +227,27 @@ export function ScheduleDetailModal({
   }, []);
 
   // 신고 제출
-  const handleReportSubmit = useCallback(async (input: CreateReportInput) => {
-    setIsReportLoading(true);
-    try {
-      await createReport(input);
-      addToast({ type: 'success', message: '신고가 접수되었습니다.' });
-      handleCloseReportModal();
-    } catch (error) {
-      const err = error as Error & { code?: string; message?: string };
-      logger.error('Failed to submit report', err, {
-        input,
-        errorCode: err.code,
-        errorMessage: err.message,
-      });
-      addToast({ type: 'error', message: '신고 접수에 실패했습니다. 다시 시도해주세요.' });
-    } finally {
-      setIsReportLoading(false);
-    }
-  }, [addToast, handleCloseReportModal]);
+  const handleReportSubmit = useCallback(
+    async (input: CreateReportInput) => {
+      setIsReportLoading(true);
+      try {
+        await createReport(input);
+        addToast({ type: 'success', message: '신고가 접수되었습니다.' });
+        handleCloseReportModal();
+      } catch (error) {
+        const err = error as Error & { code?: string; message?: string };
+        logger.error('Failed to submit report', err, {
+          input,
+          errorCode: err.code,
+          errorMessage: err.message,
+        });
+        addToast({ type: 'error', message: '신고 접수에 실패했습니다. 다시 시도해주세요.' });
+      } finally {
+        setIsReportLoading(false);
+      }
+    },
+    [addToast, handleCloseReportModal]
+  );
 
   // 탭 설정 (상태에 따라 동적으로 구성)
   const tabs: TabConfig[] = [
@@ -264,12 +273,7 @@ export function ScheduleDetailModal({
   const status = statusConfig[schedule.type];
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      position="bottom"
-      showCloseButton={false}
-    >
+    <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
       {/* Handle Bar */}
       <View className="items-center mb-2">
         <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
@@ -346,10 +350,7 @@ export function ScheduleDetailModal({
               </View>
             )}
           </View>
-          <Text
-            className="text-lg font-bold text-gray-900 dark:text-gray-100"
-            numberOfLines={2}
-          >
+          <Text className="text-lg font-bold text-gray-900 dark:text-gray-100" numberOfLines={2}>
             {schedule.jobPostingName}
           </Text>
         </View>
@@ -422,48 +423,50 @@ export function ScheduleDetailModal({
 
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
         <View className="pt-4 border-t border-gray-200 dark:border-surface-overlay flex-row gap-3">
-        {/* 지원 취소 버튼 (지원중 상태) */}
-        {schedule.type === 'applied' && onCancelApplication && schedule.applicationId && (
-          <View className="flex-1">
-            <Button
-              variant="outline"
-              size="md"
-              onPress={handleCancelApplication}
-              className="border-red-300 dark:border-red-700"
-            >
-              <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
-            </Button>
-          </View>
-        )}
+          {/* 지원 취소 버튼 (지원중 상태) */}
+          {schedule.type === 'applied' && onCancelApplication && schedule.applicationId && (
+            <View className="flex-1">
+              <Button
+                variant="outline"
+                size="md"
+                onPress={handleCancelApplication}
+                className="border-red-300 dark:border-red-700"
+              >
+                <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
+              </Button>
+            </View>
+          )}
 
-        {/* 취소 요청 버튼 (확정 상태) */}
-        {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && (
-          <View className="flex-1">
-            <Button
-              variant="outline"
-              size="md"
-              onPress={handleRequestCancellation}
-              className="border-orange-300 dark:border-orange-700"
-            >
-              <Text className="text-orange-600 dark:text-orange-400 font-semibold">취소 요청</Text>
-            </Button>
-          </View>
-        )}
+          {/* 취소 요청 버튼 (확정 상태) */}
+          {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && (
+            <View className="flex-1">
+              <Button
+                variant="outline"
+                size="md"
+                onPress={handleRequestCancellation}
+                className="border-orange-300 dark:border-orange-700"
+              >
+                <Text className="text-orange-600 dark:text-orange-400 font-semibold">
+                  취소 요청
+                </Text>
+              </Button>
+            </View>
+          )}
 
-        {/* 신고 버튼 */}
-        {schedule.ownerId && (
-          <View className="flex-1">
-            <Button
-              variant="outline"
-              size="md"
-              onPress={handleOpenReportModal}
-              className="border-gray-300 dark:border-surface-overlay"
-              icon={<AlertTriangleIcon size={16} color="#6B7280" />}
-            >
-              <Text className="text-gray-600 dark:text-gray-400">신고</Text>
-            </Button>
-          </View>
-        )}
+          {/* 신고 버튼 */}
+          {schedule.ownerId && (
+            <View className="flex-1">
+              <Button
+                variant="outline"
+                size="md"
+                onPress={handleOpenReportModal}
+                className="border-gray-300 dark:border-surface-overlay"
+                icon={<AlertTriangleIcon size={16} color="#6B7280" />}
+              >
+                <Text className="text-gray-600 dark:text-gray-400">신고</Text>
+              </Button>
+            </View>
+          )}
         </View>
       </View>
 

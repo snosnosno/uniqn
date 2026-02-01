@@ -12,10 +12,7 @@ import { queryKeys } from '@/lib/queryClient';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import {
-  BanknotesIcon,
-  ChevronRightIcon,
-} from '../icons';
+import { BanknotesIcon, ChevronRightIcon } from '../icons';
 import { getUserProfile } from '@/services';
 import {
   type SalaryType,
@@ -51,10 +48,13 @@ export interface SettlementCardProps {
 // Constants
 // ============================================================================
 
-const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
-  label: string;
-  variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
-}> = {
+const PAYROLL_STATUS_CONFIG: Record<
+  PayrollStatus,
+  {
+    label: string;
+    variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
+  }
+> = {
   pending: { label: '미정산', variant: 'warning' },
   processing: { label: '처리중', variant: 'primary' },
   completed: { label: '정산완료', variant: 'success' },
@@ -85,15 +85,14 @@ export const SettlementCard = React.memo(function SettlementCard({
   const baseName = userProfile?.name || (workLog as WorkLog & { staffName?: string }).staffName;
   const displayName = useMemo(() => {
     if (!baseName) return `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}`;
-    const nickname = userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string }).staffNickname;
-    return nickname && nickname !== baseName
-      ? `${baseName}(${nickname})`
-      : baseName;
+    const nickname =
+      userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string }).staffNickname;
+    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
   }, [baseName, userProfile?.nickname, workLog]);
 
   // 정산 계산 (수당 + 세금 포함)
-  const settlement = useMemo(() =>
-    calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings),
+  const settlement = useMemo(
+    () => calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings),
     [workLog, salaryInfo, allowances, taxSettings]
   );
 
@@ -120,18 +119,18 @@ export const SettlementCard = React.memo(function SettlementCard({
       <Pressable onPress={handlePress} className="active:opacity-80">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
-            <Avatar
-              source={profilePhotoURL}
-              name={displayName}
-              size="sm"
-              className="mr-3"
-            />
+            <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
             <View className="flex-1">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
                 {displayName}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {workLog.role ? getRoleDisplayName(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole) : '역할 없음'}
+                {workLog.role
+                  ? getRoleDisplayName(
+                      workLog.role,
+                      (workLog as WorkLog & { customRole?: string }).customRole
+                    )
+                  : '역할 없음'}
               </Text>
             </View>
           </View>
@@ -141,7 +140,9 @@ export const SettlementCard = React.memo(function SettlementCard({
             </Badge>
             {hasValidTimes && (
               <Text className="text-base font-bold text-primary-600 dark:text-primary-400 mt-1">
-                {formatCurrency(settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay)}
+                {formatCurrency(
+                  settlement.taxAmount > 0 ? settlement.afterTaxPay : settlement.totalPay
+                )}
               </Text>
             )}
           </View>
@@ -177,9 +178,7 @@ export const SettlementCard = React.memo(function SettlementCard({
             className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
           >
             <BanknotesIcon size={16} color="#fff" />
-            <Text className="ml-1 text-sm font-medium text-white">
-              정산하기
-            </Text>
+            <Text className="ml-1 text-sm font-medium text-white">정산하기</Text>
           </Pressable>
         )}
       </View>

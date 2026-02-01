@@ -46,7 +46,9 @@ export function TrendChart({
 
   // 색상 함수 메모이제이션 (hooks는 항상 동일한 순서로 호출되어야 함)
   const colorFn = useMemo(
-    () => (opacity: number = 1) => hexToRgba(color, opacity),
+    () =>
+      (opacity: number = 1) =>
+        hexToRgba(color, opacity),
     [color]
   );
 
@@ -65,50 +67,52 @@ export function TrendChart({
     return { labels: lbls, values: vals, total: sum };
   }, [data]);
 
-  const chartConfig = useMemo(() => ({
-    backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
-    backgroundGradientFrom: isDarkMode ? '#1A1625' : '#ffffff',
-    backgroundGradientTo: isDarkMode ? '#1A1625' : '#ffffff',
-    decimalPlaces: 0,
-    color: colorFn,
-    labelColor: () => (isDarkMode ? '#9ca3af' : '#6b7280'),
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '4',
-      strokeWidth: '2',
-      stroke: color,
-    },
-    propsForBackgroundLines: {
-      strokeDasharray: '',
-      stroke: isDarkMode ? '#3D3350' : '#e5e7eb',
-      strokeWidth: 1,
-    },
-  }), [isDarkMode, color, colorFn]);
-
-  const chartData = useMemo(() => ({
-    labels,
-    datasets: [
-      {
-        data: values.length > 0 ? values : [0],
-        color: colorFn,
-        strokeWidth: 2,
+  const chartConfig = useMemo(
+    () => ({
+      backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+      backgroundGradientFrom: isDarkMode ? '#1A1625' : '#ffffff',
+      backgroundGradientTo: isDarkMode ? '#1A1625' : '#ffffff',
+      decimalPlaces: 0,
+      color: colorFn,
+      labelColor: () => (isDarkMode ? '#9ca3af' : '#6b7280'),
+      style: {
+        borderRadius: 16,
       },
-    ],
-  }), [labels, values, colorFn]);
+      propsForDots: {
+        r: '4',
+        strokeWidth: '2',
+        stroke: color,
+      },
+      propsForBackgroundLines: {
+        strokeDasharray: '',
+        stroke: isDarkMode ? '#3D3350' : '#e5e7eb',
+        strokeWidth: 1,
+      },
+    }),
+    [isDarkMode, color, colorFn]
+  );
+
+  const chartData = useMemo(
+    () => ({
+      labels,
+      datasets: [
+        {
+          data: values.length > 0 ? values : [0],
+          color: colorFn,
+          strokeWidth: 2,
+        },
+      ],
+    }),
+    [labels, values, colorFn]
+  );
 
   // 데이터가 없거나 빈 경우 (hooks 호출 이후에 early return)
   if (!data || data.length === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          {title}
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
         <View className="h-[180px] items-center justify-center">
-          <Text className="text-gray-500 dark:text-gray-400">
-            데이터가 없습니다
-          </Text>
+          <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
         </View>
       </View>
     );
@@ -117,9 +121,7 @@ export function TrendChart({
   return (
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          {title}
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
         <Text className="text-sm text-gray-500 dark:text-gray-400">
           총 {total.toLocaleString()}
           {suffix}

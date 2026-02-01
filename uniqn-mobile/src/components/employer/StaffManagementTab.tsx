@@ -42,11 +42,7 @@ interface QuickActionsProps {
   isRefreshing: boolean;
 }
 
-function QuickActions({
-  onShowQR,
-  onRefresh,
-  isRefreshing,
-}: QuickActionsProps) {
+function QuickActions({ onShowQR, onRefresh, isRefreshing }: QuickActionsProps) {
   return (
     <View className="px-4 pt-4 mb-4">
       {/* 빠른 액션 버튼 */}
@@ -56,9 +52,7 @@ function QuickActions({
           className="flex-1 flex-row items-center justify-center p-4 bg-primary-600 dark:bg-primary-700 rounded-xl active:opacity-80"
         >
           <QRCodeIcon size={24} color="#FFFFFF" />
-          <Text className="ml-2 text-base font-semibold text-white">
-            현장 QR 표시
-          </Text>
+          <Text className="ml-2 text-base font-semibold text-white">현장 QR 표시</Text>
         </Pressable>
 
         <Pressable
@@ -85,7 +79,6 @@ export function StaffManagementTab({
   onShowRoleChange,
   onShowReport,
 }: StaffManagementTabProps) {
-
   // 스태프 데이터
   const {
     grouped,
@@ -227,7 +220,10 @@ export function StaffManagementTab({
       if (!statusSheetTarget) return;
 
       try {
-        await changeStatus(statusSheetTarget.id, value as 'scheduled' | 'checked_in' | 'checked_out');
+        await changeStatus(
+          statusSheetTarget.id,
+          value as 'scheduled' | 'checked_in' | 'checked_out'
+        );
       } catch {
         // 에러는 훅의 onError에서 처리됨
       }
@@ -281,9 +277,7 @@ export function StaffManagementTab({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-          스태프 목록을 불러오는 중...
-        </Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">스태프 목록을 불러오는 중...</Text>
       </View>
     );
   }
@@ -312,11 +306,7 @@ export function StaffManagementTab({
   return (
     <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
       {/* 빠른 액션 */}
-      <QuickActions
-        onShowQR={handleShowQR}
-        onRefresh={handleRefresh}
-        isRefreshing={isRefetching}
-      />
+      <QuickActions onShowQR={handleShowQR} onRefresh={handleRefresh} isRefreshing={isRefetching} />
 
       {/* 스태프 목록 */}
       <View className="flex-1">
@@ -377,7 +367,11 @@ export function StaffManagementTab({
           setStatusSheetTarget(null);
         }}
         title="상태 변경"
-        description={statusSheetTarget ? `${statusSheetTarget.staffName}님의 근무 상태를 변경합니다.` : undefined}
+        description={
+          statusSheetTarget
+            ? `${statusSheetTarget.staffName}님의 근무 상태를 변경합니다.`
+            : undefined
+        }
         options={getStatusOptions()}
         onSelect={handleStatusSelect}
       />

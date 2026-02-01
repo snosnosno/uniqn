@@ -40,8 +40,10 @@ export const BUILD_NUMBER = Platform.select({
 /**
  * 환경 정보
  */
-export const ENVIRONMENT = (Constants.expoConfig?.extra?.environment ??
-  'development') as 'development' | 'staging' | 'production';
+export const ENVIRONMENT = (Constants.expoConfig?.extra?.environment ?? 'development') as
+  | 'development'
+  | 'staging'
+  | 'production';
 
 /**
  * 빌드 일시
@@ -111,9 +113,7 @@ export function parseVersion(version: string): {
   minor: number;
   patch: number;
 } {
-  const [major = 0, minor = 0, patch = 0] = version
-    .split('.')
-    .map((n) => parseInt(n, 10) || 0);
+  const [major = 0, minor = 0, patch = 0] = version.split('.').map((n) => parseInt(n, 10) || 0);
 
   return { major, minor, patch };
 }
@@ -144,10 +144,7 @@ export function compareVersions(a: string, b: string): -1 | 0 | 1 {
 /**
  * 현재 버전이 최소 버전 이상인지 확인
  */
-export function isVersionAtLeast(
-  currentVersion: string,
-  minimumVersion: string
-): boolean {
+export function isVersionAtLeast(currentVersion: string, minimumVersion: string): boolean {
   return compareVersions(currentVersion, minimumVersion) >= 0;
 }
 

@@ -49,9 +49,7 @@ export const ContactInfo = React.memo(function ContactInfo({
       {phone && (
         <View className="flex-row items-center mb-2">
           <PhoneIcon size={14} color="#9CA3AF" />
-          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-            {phone}
-          </Text>
+          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">{phone}</Text>
         </View>
       )}
 
@@ -59,10 +57,7 @@ export const ContactInfo = React.memo(function ContactInfo({
       {message && (
         <View className="flex-row items-start mb-2">
           <MessageIcon size={14} color="#9CA3AF" />
-          <Text
-            className="ml-2 text-sm text-gray-600 dark:text-gray-400 flex-1"
-            numberOfLines={3}
-          >
+          <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400 flex-1" numberOfLines={3}>
             {message}
           </Text>
         </View>

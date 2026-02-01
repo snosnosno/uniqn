@@ -35,9 +35,7 @@ import { logger } from '@/utils/logger';
 /**
  * 기본 로딩 폴백 UI
  */
-export const DefaultFallback: React.FC<{ message?: string }> = ({
-  message = '로딩 중...',
-}) => (
+export const DefaultFallback: React.FC<{ message?: string }> = ({ message = '로딩 중...' }) => (
   <View style={styles.fallbackContainer}>
     <ActivityIndicator size="large" color="#A855F7" />
     <Text style={styles.fallbackText}>{message}</Text>
@@ -77,8 +75,8 @@ export function withSuspense<P extends object>(
 
   // displayName 설정 (디버깅용)
   const componentName =
-    (LazyComponent as unknown as { _payload?: { _result?: { name?: string } } })
-      ?._payload?._result?.name || 'LazyComponent';
+    (LazyComponent as unknown as { _payload?: { _result?: { name?: string } } })?._payload?._result
+      ?.name || 'LazyComponent';
   SuspenseWrapper.displayName = `withSuspense(${componentName})`;
 
   return SuspenseWrapper;
@@ -110,16 +108,12 @@ export function withErrorBoundary<P extends object>(
 /**
  * CalendarView - 스케줄 캘린더 (무거운 react-native-calendars 포함)
  */
-export const LazyCalendarView = lazy(
-  () => import('@/components/schedule/CalendarView')
-);
+export const LazyCalendarView = lazy(() => import('@/components/schedule/CalendarView'));
 
 /**
  * QRCodeScanner - QR 스캐너 (expo-camera 포함)
  */
-export const LazyQRCodeScanner = lazy(
-  () => import('@/components/qr/QRCodeScanner')
-);
+export const LazyQRCodeScanner = lazy(() => import('@/components/qr/QRCodeScanner'));
 
 /**
  * ScheduleDetailSheet - 스케줄 상세 BottomSheet
@@ -131,16 +125,12 @@ export const LazyScheduleDetailSheet = lazy(
 /**
  * SettlementList - 정산 목록 (구인자용)
  */
-export const LazySettlementList = lazy(
-  () => import('@/components/employer/SettlementList')
-);
+export const LazySettlementList = lazy(() => import('@/components/employer/SettlementList'));
 
 /**
  * ApplicantList - 지원자 목록 (구인자용)
  */
-export const LazyApplicantList = lazy(
-  () => import('@/components/employer/ApplicantList')
-);
+export const LazyApplicantList = lazy(() => import('@/components/employer/ApplicantList'));
 
 /**
  * JobFilters - 공고 필터
@@ -150,9 +140,7 @@ export const LazyJobFilters = lazy(() => import('@/components/jobs/JobFilters'))
 /**
  * ApplicationForm - 지원 폼 (Assignment 선택 포함)
  */
-export const LazyApplicationForm = lazy(
-  () => import('@/components/jobs/ApplicationForm')
-);
+export const LazyApplicationForm = lazy(() => import('@/components/jobs/ApplicationForm'));
 
 /**
  * Job Posting Scroll Form - 공고 작성 스크롤 폼
@@ -191,7 +179,10 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo): void {
-    logger.error('LazyComponent 렌더링 오류', error, { component: 'LazyComponent', componentStack: errorInfo.componentStack });
+    logger.error('LazyComponent 렌더링 오류', error, {
+      component: 'LazyComponent',
+      componentStack: errorInfo.componentStack,
+    });
   }
 
   render(): ReactNode {

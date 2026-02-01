@@ -106,20 +106,14 @@ export interface IUserRepository {
    * @param userId - 사용자 ID
    * @param updates - 변경할 필드
    */
-  updateProfile(
-    userId: string,
-    updates: Partial<MyDataEditableFields>
-  ): Promise<void>;
+  updateProfile(userId: string, updates: Partial<MyDataEditableFields>): Promise<void>;
 
   /**
    * 회원탈퇴 요청 저장
    * @param userId - 사용자 ID
    * @param request - 탈퇴 요청 정보
    */
-  requestDeletion(
-    userId: string,
-    request: Omit<DeletionRequest, 'userId'>
-  ): Promise<void>;
+  requestDeletion(userId: string, request: Omit<DeletionRequest, 'userId'>): Promise<void>;
 
   /**
    * 회원탈퇴 요청 취소

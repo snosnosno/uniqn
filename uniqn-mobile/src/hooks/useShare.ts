@@ -61,11 +61,7 @@ export function useShare(): UseShareReturn {
    * 일반 콘텐츠 공유
    */
   const share = useCallback(
-    async (options: {
-      title: string;
-      message: string;
-      url?: string;
-    }): Promise<ShareResult> => {
+    async (options: { title: string; message: string; url?: string }): Promise<ShareResult> => {
       if (isSharing) {
         return { success: false, error: new Error('이미 공유 중입니다') };
       }
@@ -85,8 +81,7 @@ export function useShare(): UseShareReturn {
         );
 
         // Android는 항상 'sharedAction', iOS는 실제 액션 반환
-        const action =
-          result.action === Share.sharedAction ? 'shared' : 'dismissed';
+        const action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
 
         logger.info('콘텐츠 공유 완료', { action, title: options.title });
 
@@ -133,8 +128,7 @@ export function useShare(): UseShareReturn {
           }
         );
 
-        const action =
-          result.action === Share.sharedAction ? 'shared' : 'dismissed';
+        const action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
 
         // Analytics 이벤트
         if (action === 'shared') {

@@ -15,7 +15,7 @@ import { useThemeStore } from '@/stores/themeStore';
 
 const LOADING_COLORS = {
   light: '#A855F7', // primary-500
-  dark: '#C084FC',  // primary-400 (다크모드에서 더 밝게)
+  dark: '#C084FC', // primary-400 (다크모드에서 더 밝게)
 } as const;
 
 export interface LoadingProps {
@@ -25,21 +25,14 @@ export interface LoadingProps {
   fullScreen?: boolean;
 }
 
-export function Loading({
-  size = 'large',
-  color,
-  message,
-  fullScreen = false,
-}: LoadingProps) {
+export function Loading({ size = 'large', color, message, fullScreen = false }: LoadingProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const resolvedColor = color ?? (isDarkMode ? LOADING_COLORS.dark : LOADING_COLORS.light);
 
   const content = (
     <View className="items-center justify-center">
       <ActivityIndicator size={size} color={resolvedColor} />
-      {message && (
-        <Text className="mt-3 text-sm text-gray-600 dark:text-gray-400">{message}</Text>
-      )}
+      {message && <Text className="mt-3 text-sm text-gray-600 dark:text-gray-400">{message}</Text>}
     </View>
   );
 

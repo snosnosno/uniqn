@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { xssValidation } from '@/utils/security';
 
 // ============================================================================
 // Approval Status Schema
@@ -14,15 +15,9 @@ import { z } from 'zod';
 /**
  * 대회공고 승인 상태
  */
-export const tournamentApprovalStatusSchema = z.enum([
-  'pending',
-  'approved',
-  'rejected',
-]);
+export const tournamentApprovalStatusSchema = z.enum(['pending', 'approved', 'rejected']);
 
-export type TournamentApprovalStatusSchema = z.infer<
-  typeof tournamentApprovalStatusSchema
->;
+export type TournamentApprovalStatusSchema = z.infer<typeof tournamentApprovalStatusSchema>;
 
 // ============================================================================
 // Rejection Reason Schema
@@ -42,7 +37,8 @@ export const rejectionReasonSchema = z
   .refine(
     (value) => value.replace(/\s/g, '').length >= 10,
     '공백을 제외한 내용이 10자 이상이어야 합니다'
-  );
+  )
+  .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
 
 // ============================================================================
 // Request Schemas
@@ -95,6 +91,4 @@ export const tournamentPostingFilterSchema = z.object({
     .optional(),
 });
 
-export type TournamentPostingFilterData = z.infer<
-  typeof tournamentPostingFilterSchema
->;
+export type TournamentPostingFilterData = z.infer<typeof tournamentPostingFilterSchema>;

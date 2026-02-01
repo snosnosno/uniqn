@@ -195,36 +195,33 @@ export function subscribeToNotifications(
   onNotifications: (notifications: NotificationData[]) => void,
   onError?: (error: Error) => void
 ): () => void {
-  return RealtimeManager.subscribe(
-    RealtimeManager.Keys.notifications(userId),
-    () => {
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const q = query(
-        notificationsRef,
-        where('recipientId', '==', userId),
-        orderBy('createdAt', 'desc'),
-        limit(50)
-      );
+  return RealtimeManager.subscribe(RealtimeManager.Keys.notifications(userId), () => {
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+    const q = query(
+      notificationsRef,
+      where('recipientId', '==', userId),
+      orderBy('createdAt', 'desc'),
+      limit(50)
+    );
 
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          const notifications = snapshot.docs.map(docToNotification);
-          onNotifications(notifications);
-        },
-        (error) => {
-          const appError = normalizeError(error);
-          logger.error('알림 구독 에러', appError, {
-            code: appError.code,
-          });
-          onError?.(appError);
-        }
-      );
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const notifications = snapshot.docs.map(docToNotification);
+        onNotifications(notifications);
+      },
+      (error) => {
+        const appError = normalizeError(error);
+        logger.error('알림 구독 에러', appError, {
+          code: appError.code,
+        });
+        onError?.(appError);
+      }
+    );
 
-      logger.info('알림 구독 시작', { userId });
-      return unsubscribe;
-    }
-  );
+    logger.info('알림 구독 시작', { userId });
+    return unsubscribe;
+  });
 }
 
 /**
@@ -237,34 +234,31 @@ export function subscribeToUnreadCount(
   onCount: (count: number) => void,
   onError?: (error: Error) => void
 ): () => void {
-  return RealtimeManager.subscribe(
-    RealtimeManager.Keys.unreadCount(userId),
-    () => {
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const q = query(
-        notificationsRef,
-        where('recipientId', '==', userId),
-        where('isRead', '==', false)
-      );
+  return RealtimeManager.subscribe(RealtimeManager.Keys.unreadCount(userId), () => {
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+    const q = query(
+      notificationsRef,
+      where('recipientId', '==', userId),
+      where('isRead', '==', false)
+    );
 
-      const unsubscribe = onSnapshot(
-        q,
-        (snapshot) => {
-          onCount(snapshot.size);
-        },
-        (error) => {
-          const appError = normalizeError(error);
-          logger.error('읽지 않은 알림 수 구독 에러', appError, {
-            code: appError.code,
-          });
-          onError?.(appError);
-        }
-      );
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        onCount(snapshot.size);
+      },
+      (error) => {
+        const appError = normalizeError(error);
+        logger.error('읽지 않은 알림 수 구독 에러', appError, {
+          code: appError.code,
+        });
+        onError?.(appError);
+      }
+    );
 
-      logger.info('읽지 않은 알림 수 구독 시작', { userId });
-      return unsubscribe;
-    }
-  );
+    logger.info('읽지 않은 알림 수 구독 시작', { userId });
+    return unsubscribe;
+  });
 }
 
 // ============================================================================

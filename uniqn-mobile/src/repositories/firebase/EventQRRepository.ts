@@ -153,10 +153,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
   async create(data: Omit<EventQRCode, 'id'>): Promise<string> {
     try {
-      const docRef = await addDoc(
-        collection(getFirebaseDb(), EVENT_QR_COLLECTION),
-        data
-      );
+      const docRef = await addDoc(collection(getFirebaseDb(), EVENT_QR_COLLECTION), data);
 
       logger.info('QR 코드 생성 완료', { qrId: docRef.id });
       return docRef.id;
@@ -234,11 +231,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
       const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
       const now = Timestamp.now();
 
-      const q = query(
-        qrRef,
-        where('isActive', '==', true),
-        where('expiresAt', '<', now)
-      );
+      const q = query(qrRef, where('isActive', '==', true), where('expiresAt', '<', now));
 
       const snapshot = await getDocs(q);
       let count = 0;

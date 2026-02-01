@@ -41,8 +41,7 @@ import { stableFilters } from '@/utils/queryUtils';
 export const inquiryKeys = {
   all: queryKeys.inquiries.all,
   mine: () => queryKeys.inquiries.mine(),
-  adminList: (filters?: InquiryFilters) =>
-    queryKeys.inquiries.adminList(stableFilters(filters)),
+  adminList: (filters?: InquiryFilters) => queryKeys.inquiries.adminList(stableFilters(filters)),
   detail: (id: string) => queryKeys.inquiries.detail(id),
   unansweredCount: () => queryKeys.inquiries.unansweredCount(),
   faq: (category?: InquiryCategory | 'all') => queryKeys.inquiries.faq(category),
@@ -93,10 +92,7 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
   }, [hasMore, user?.uid, lastDoc, pageSize]);
 
   // 쿼리 결과와 추가 로드 데이터 합침
-  const allInquiries = [
-    ...(query.data?.inquiries || []),
-    ...additionalInquiries,
-  ];
+  const allInquiries = [...(query.data?.inquiries || []), ...additionalInquiries];
 
   return {
     inquiries: allInquiries,

@@ -5,7 +5,17 @@
  */
 
 import { useEffect, useState } from 'react';
-import { View, Text, ScrollView, ActivityIndicator, Pressable, Dimensions, Modal, NativeSyntheticEvent, NativeScrollEvent } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  Pressable,
+  Dimensions,
+  Modal,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -37,7 +47,10 @@ const CATEGORY_LABELS: Record<AnnouncementCategory, string> = {
 };
 
 // 카테고리별 배지 스타일 (BadgeVariant: default, primary, secondary, success, warning, error)
-const CATEGORY_BADGE_VARIANT: Record<AnnouncementCategory, 'primary' | 'success' | 'warning' | 'default'> = {
+const CATEGORY_BADGE_VARIANT: Record<
+  AnnouncementCategory,
+  'primary' | 'success' | 'warning' | 'default'
+> = {
   notice: 'primary',
   update: 'success',
   event: 'warning',
@@ -152,13 +165,9 @@ export default function NoticeDetailPage() {
 
             {/* 메타 정보 */}
             <View className="flex-row items-center flex-wrap gap-x-3 gap-y-1">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {notice.authorName}
-              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">{notice.authorName}</Text>
               <Text className="text-sm text-gray-400 dark:text-gray-500">•</Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {publishedDate}
-              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">{publishedDate}</Text>
               <Text className="text-sm text-gray-400 dark:text-gray-500">•</Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
                 조회 {notice.viewCount.toLocaleString()}
@@ -256,11 +265,7 @@ export default function NoticeDetailPage() {
             <View className="flex-1 bg-black">
               {/* 헤더 */}
               <View className="flex-row items-center justify-between px-4 pt-12 pb-4">
-                <Pressable
-                  onPress={() => setImageViewerVisible(false)}
-                  className="p-2"
-                  hitSlop={8}
-                >
+                <Pressable onPress={() => setImageViewerVisible(false)} className="p-2" hitSlop={8}>
                   <Ionicons name="close" size={28} color="white" />
                 </Pressable>
                 <Text className="text-white text-base font-medium">
@@ -303,9 +308,7 @@ export default function NoticeDetailPage() {
                     <View
                       key={index}
                       className={`w-2 h-2 rounded-full ${
-                        index === selectedImageIndex
-                          ? 'bg-white'
-                          : 'bg-white/40'
+                        index === selectedImageIndex ? 'bg-white' : 'bg-white/40'
                       }`}
                     />
                   ))}

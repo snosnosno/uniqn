@@ -58,9 +58,7 @@ export function NotificationBadge({
         ${className}
       `}
     >
-      <Text className={`text-white font-bold ${styles.text}`}>
-        {displayCount}
-      </Text>
+      <Text className={`text-white font-bold ${styles.text}`}>{displayCount}</Text>
     </Animated.View>
   );
 }
@@ -88,9 +86,7 @@ export function NotificationBadgeInline({
         ${className}
       `}
     >
-      <Text className={`text-white font-bold ${styles.text}`}>
-        {displayCount}
-      </Text>
+      <Text className={`text-white font-bold ${styles.text}`}>{displayCount}</Text>
     </View>
   );
 }

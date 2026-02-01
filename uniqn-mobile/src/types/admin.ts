@@ -109,12 +109,7 @@ export interface AdminUserFilters {
 /**
  * 정렬 가능 필드
  */
-export type AdminUserSortField =
-  | 'name'
-  | 'email'
-  | 'role'
-  | 'createdAt'
-  | 'lastLoginAt';
+export type AdminUserSortField = 'name' | 'email' | 'role' | 'createdAt' | 'lastLoginAt';
 
 /**
  * 정렬 필드 레이블

@@ -100,10 +100,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         accessibilityLabel="출근 모드"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <LogInIcon
-          size={18}
-          color={checkInActive ? '#FFFFFF' : '#9CA3AF'}
-        />
+        <LogInIcon size={18} color={checkInActive ? '#FFFFFF' : '#9CA3AF'} />
         <Text
           style={{
             marginLeft: 8,
@@ -135,10 +132,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
         accessibilityLabel="퇴근 모드"
         hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
       >
-        <LogOutIcon
-          size={18}
-          color={checkOutActive ? '#FFFFFF' : '#9CA3AF'}
-        />
+        <LogOutIcon size={18} color={checkOutActive ? '#FFFFFF' : '#9CA3AF'} />
         <Text
           style={{
             marginLeft: 8,
@@ -278,10 +272,13 @@ export function EventQRModal({
   const isExpired = remainingSeconds <= 0 && hasQRData;
 
   // 모드 변경 핸들러
-  const handleModeChange = useCallback((newMode: QRMode) => {
-    setMode(newMode);
-    generate(newMode);
-  }, [generate]);
+  const handleModeChange = useCallback(
+    (newMode: QRMode) => {
+      setMode(newMode);
+      generate(newMode);
+    },
+    [generate]
+  );
 
   // 새로고침 핸들러
   const handleRefresh = useCallback(() => {
@@ -299,13 +296,7 @@ export function EventQRModal({
   const modeLabel = mode === 'checkIn' ? '출근' : '퇴근';
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      position="center"
-      size="lg"
-      showCloseButton={false}
-    >
+    <Modal visible={visible} onClose={onClose} position="center" size="lg" showCloseButton={false}>
       <View>
         {/* 커스텀 닫기 버튼 */}
         <View className="flex-row justify-end mb-2">
@@ -335,9 +326,7 @@ export function EventQRModal({
               {jobTitle}
             </Text>
           )}
-          <Text className="text-sm text-gray-400 dark:text-gray-500 mb-5">
-            {formattedDate}
-          </Text>
+          <Text className="text-sm text-gray-400 dark:text-gray-500 mb-5">{formattedDate}</Text>
 
           {/* 모드 토글 */}
           <View className="w-full mb-5">
@@ -359,9 +348,7 @@ export function EventQRModal({
                 className="items-center justify-center"
               >
                 <ActivityIndicator size="large" color={modeColor} />
-                <Text className="text-gray-500 mt-4 text-sm">
-                  QR 코드 생성 중...
-                </Text>
+                <Text className="text-gray-500 mt-4 text-sm">QR 코드 생성 중...</Text>
               </View>
             ) : isExpired ? (
               <View
@@ -382,12 +369,7 @@ export function EventQRModal({
                 </Button>
               </View>
             ) : hasQRData ? (
-              <QRCode
-                value={qrValue || ''}
-                size={QR_SIZE}
-                backgroundColor="white"
-                color="black"
-              />
+              <QRCode value={qrValue || ''} size={QR_SIZE} backgroundColor="white" color="black" />
             ) : (
               <View
                 style={{ width: QR_SIZE, height: QR_SIZE }}

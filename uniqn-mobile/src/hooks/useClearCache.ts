@@ -8,11 +8,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import {
-  cacheService,
-  type CacheStats,
-  type ClearCacheOptions,
-} from '@/services/cacheService';
+import { cacheService, type CacheStats, type ClearCacheOptions } from '@/services/cacheService';
 import { useToastStore } from '@/stores';
 
 // ============================================================================

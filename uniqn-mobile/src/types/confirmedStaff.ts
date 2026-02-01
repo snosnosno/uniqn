@@ -17,12 +17,12 @@ import type { TimeInput } from '@/shared/time/types';
  * 확정 스태프 출퇴근 상태 (WorkLog.status 확장)
  */
 export type ConfirmedStaffStatus =
-  | 'scheduled'    // 출근 예정
-  | 'checked_in'   // 출근 완료
-  | 'checked_out'  // 퇴근 완료
-  | 'completed'    // 근무 완료 (정산 대기)
-  | 'cancelled'    // 취소됨
-  | 'no_show';     // 노쇼
+  | 'scheduled' // 출근 예정
+  | 'checked_in' // 출근 완료
+  | 'checked_out' // 퇴근 완료
+  | 'completed' // 근무 완료 (정산 대기)
+  | 'cancelled' // 취소됨
+  | 'no_show'; // 노쇼
 
 /**
  * 확정 스태프 상태 라벨
@@ -264,7 +264,12 @@ export interface ConfirmedStaffStats {
  * WorkLog에서 ConfirmedStaff로 변환
  */
 export function workLogToConfirmedStaff(
-  workLog: WorkLog & { timeSlot?: string; checkInTime?: TimeInput; checkOutTime?: TimeInput; customRole?: string },
+  workLog: WorkLog & {
+    timeSlot?: string;
+    checkInTime?: TimeInput;
+    checkOutTime?: TimeInput;
+    customRole?: string;
+  },
   staffName?: string
 ): ConfirmedStaff {
   return {
@@ -290,9 +295,7 @@ export function workLogToConfirmedStaff(
 /**
  * 스태프를 날짜별로 그룹화
  */
-export function groupStaffByDate(
-  staffList: ConfirmedStaff[]
-): ConfirmedStaffGroup[] {
+export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGroup[] {
   const today = new Date().toISOString().split('T')[0];
   const groupMap = new Map<string, ConfirmedStaff[]>();
 
@@ -317,9 +320,8 @@ export function groupStaffByDate(
         stats: {
           total: staffInDate.length,
           checkedIn: staffInDate.filter((s) => s.status === 'checked_in').length,
-          completed: staffInDate.filter((s) =>
-            ['checked_out', 'completed'].includes(s.status)
-          ).length,
+          completed: staffInDate.filter((s) => ['checked_out', 'completed'].includes(s.status))
+            .length,
           noShow: staffInDate.filter((s) => s.status === 'no_show').length,
         },
       };
@@ -344,9 +346,7 @@ function formatDateKorean(date: Date): string {
 /**
  * 스태프 통계 계산
  */
-export function calculateStaffStats(
-  staffList: ConfirmedStaff[]
-): ConfirmedStaffStats {
+export function calculateStaffStats(staffList: ConfirmedStaff[]): ConfirmedStaffStats {
   return {
     total: staffList.length,
     scheduled: staffList.filter((s) => s.status === 'scheduled').length,

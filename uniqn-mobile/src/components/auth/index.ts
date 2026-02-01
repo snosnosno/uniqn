@@ -14,13 +14,7 @@ export { ForgotPasswordForm } from './ForgotPasswordForm';
 // Signup
 export { StepIndicator, SIGNUP_STEPS } from './StepIndicator';
 export type { StepInfo } from './StepIndicator';
-export {
-  SignupForm,
-  SignupStep1,
-  SignupStep2,
-  SignupStep3,
-  SignupStep4,
-} from './signup';
+export { SignupForm, SignupStep1, SignupStep2, SignupStep3, SignupStep4 } from './signup';
 
 // Social Login
 export { SocialLoginButtons } from './SocialLoginButtons';

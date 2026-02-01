@@ -76,12 +76,7 @@ export function CancellationRequestForm({
   // Footer 컨텐츠
   const footerContent = (
     <View className="flex-row gap-3">
-      <Button
-        onPress={handleClose}
-        variant="outline"
-        disabled={isSubmitting}
-        className="flex-1"
-      >
+      <Button onPress={handleClose} variant="outline" disabled={isSubmitting} className="flex-1">
         취소
       </Button>
       <Button
@@ -104,70 +99,69 @@ export function CancellationRequestForm({
       isLoading={isSubmitting}
     >
       <View className="px-4">
-          {/* 안내 문구 */}
-          <View className="bg-warning-50 dark:bg-warning-900/30 rounded-lg p-4 mb-6">
-            <Text className="text-warning-700 dark:text-warning-300 text-sm leading-5">
-              확정된 지원을 취소하려면 사유를 입력해주세요.{'\n'}
-              구인자가 검토 후 승인/거절합니다.
+        {/* 안내 문구 */}
+        <View className="bg-warning-50 dark:bg-warning-900/30 rounded-lg p-4 mb-6">
+          <Text className="text-warning-700 dark:text-warning-300 text-sm leading-5">
+            확정된 지원을 취소하려면 사유를 입력해주세요.{'\n'}
+            구인자가 검토 후 승인/거절합니다.
+          </Text>
+        </View>
+
+        {/* 지원 정보 요약 */}
+        <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+            {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
+          </Text>
+          <View className="flex-row items-center mb-1">
+            <Text className="text-sm text-gray-500 dark:text-gray-400">
+              📅 {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
             </Text>
           </View>
-
-          {/* 지원 정보 요약 */}
-          <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-              {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
+          <View className="flex-row items-center">
+            <Text className="text-sm text-gray-500 dark:text-gray-400">
+              👤{' '}
+              {getRoleDisplayName(
+                application.assignments[0]?.roleIds?.[0] || 'other',
+                application.customRole
+              )}{' '}
+              역할
             </Text>
-            <View className="flex-row items-center mb-1">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                📅 {application.jobPostingDate ?? application.jobPosting?.workDate ?? '-'}
-              </Text>
-            </View>
-            <View className="flex-row items-center">
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                👤 {getRoleDisplayName(application.assignments[0]?.roleIds?.[0] || 'other', application.customRole)} 역할
-              </Text>
-            </View>
           </View>
+        </View>
 
-          {/* 취소 사유 입력 */}
-          <FormField
-            label="취소 사유"
-            required
-            error={error}
-            hint="최소 5자 이상, 최대 500자"
-          >
-            <TextInput
-              value={reason}
-              onChangeText={(text) => {
-                setReason(text);
-                if (error) setError(null);
-              }}
-              placeholder="취소하려는 이유를 상세히 입력해주세요"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={5}
-              maxLength={500}
-              editable={!isSubmitting}
-              className={`
+        {/* 취소 사유 입력 */}
+        <FormField label="취소 사유" required error={error} hint="최소 5자 이상, 최대 500자">
+          <TextInput
+            value={reason}
+            onChangeText={(text) => {
+              setReason(text);
+              if (error) setError(null);
+            }}
+            placeholder="취소하려는 이유를 상세히 입력해주세요"
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={5}
+            maxLength={500}
+            editable={!isSubmitting}
+            className={`
                 bg-gray-50 dark:bg-surface rounded-lg p-4
                 text-gray-900 dark:text-white text-base min-h-[140px]
                 ${error ? 'border-2 border-red-500' : 'border border-gray-200 dark:border-surface-overlay'}
               `}
-              textAlignVertical="top"
-            />
-            <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
-              {reason.length}/500
-            </Text>
-          </FormField>
+            textAlignVertical="top"
+          />
+          <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
+            {reason.length}/500
+          </Text>
+        </FormField>
 
-          {/* 주의사항 */}
-          <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mt-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 leading-5">
-              • 취소 요청이 승인되면 지원이 취소됩니다.{'\n'}
-              • 구인자가 거절하면 지원은 유지됩니다.{'\n'}
-              • 무단 취소는 평판에 영향을 줄 수 있습니다.
-            </Text>
-          </View>
+        {/* 주의사항 */}
+        <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mt-4">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 leading-5">
+            • 취소 요청이 승인되면 지원이 취소됩니다.{'\n'}• 구인자가 거절하면 지원은 유지됩니다.
+            {'\n'}• 무단 취소는 평판에 영향을 줄 수 있습니다.
+          </Text>
+        </View>
       </View>
     </SheetModal>
   );

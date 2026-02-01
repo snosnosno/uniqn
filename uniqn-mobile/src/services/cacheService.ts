@@ -7,11 +7,7 @@
 
 import { logger } from '@/utils/logger';
 import { queryClient } from '@/lib/queryClient';
-import {
-  getMMKVInstance,
-  STORAGE_KEYS,
-  removeStorageItem,
-} from '@/lib/mmkvStorage';
+import { getMMKVInstance, STORAGE_KEYS, removeStorageItem } from '@/lib/mmkvStorage';
 import { toError } from '@/errors';
 import { handleSilentError } from '@/errors/serviceErrorHandler';
 
@@ -78,9 +74,8 @@ export function getCacheStats(): CacheStats {
 
   // MMKV 캐시 키 수 (삭제 가능한 것만)
   const allKeys = storage.getAllKeys();
-  const cacheKeys = allKeys.filter(
-    (key) =>
-      CACHE_KEYS_TO_CLEAR.includes(key as (typeof CACHE_KEYS_TO_CLEAR)[number])
+  const cacheKeys = allKeys.filter((key) =>
+    CACHE_KEYS_TO_CLEAR.includes(key as (typeof CACHE_KEYS_TO_CLEAR)[number])
   );
 
   return {

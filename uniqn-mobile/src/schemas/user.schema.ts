@@ -7,6 +7,7 @@
 
 import { z } from 'zod';
 import { passwordSchema, passwordConfirmSchema } from './auth.schema';
+import { xssValidation } from '@/utils/security';
 
 // ============================================================================
 // 사용자 역할 스키마
@@ -50,7 +51,11 @@ export const updateProfileSchema = z.object({
     .trim()
     .optional(),
   photoURL: z.string().url({ message: '올바른 URL 형식이 아닙니다' }).optional(),
-  bio: z.string().max(200, { message: '자기소개는 200자를 초과할 수 없습니다' }).optional(),
+  bio: z
+    .string()
+    .max(200, { message: '자기소개는 200자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
   // 추가 정보 (본인인증 정보가 아닌 필드만)
   region: z.string().max(50, { message: '지역은 50자를 초과할 수 없습니다' }).optional(),
   experienceYears: z
@@ -58,8 +63,16 @@ export const updateProfileSchema = z.object({
     .min(0, { message: '경력은 0년 이상이어야 합니다' })
     .max(50, { message: '경력은 50년을 초과할 수 없습니다' })
     .optional(),
-  career: z.string().max(500, { message: '이력은 500자를 초과할 수 없습니다' }).optional(),
-  note: z.string().max(300, { message: '기타사항은 300자를 초과할 수 없습니다' }).optional(),
+  career: z
+    .string()
+    .max(500, { message: '이력은 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
+  note: z
+    .string()
+    .max(300, { message: '기타사항은 300자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type UpdateProfileData = z.infer<typeof updateProfileSchema>;
@@ -80,13 +93,23 @@ export type StaffProfileData = z.infer<typeof staffProfileSchema>;
  * 구인자 프로필 스키마
  */
 export const employerProfileSchema = z.object({
-  companyName: z.string().min(1, { message: '업체명은 필수입니다' }).max(50, { message: '업체명은 50자를 초과할 수 없습니다' }),
+  companyName: z
+    .string()
+    .min(1, { message: '업체명은 필수입니다' })
+    .max(50, { message: '업체명은 50자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
   businessNumber: z
     .string()
-    .regex(/^\d{3}-\d{2}-\d{5}$/, { message: '사업자등록번호 형식이 올바르지 않습니다 (예: 123-45-67890)' })
+    .regex(/^\d{3}-\d{2}-\d{5}$/, {
+      message: '사업자등록번호 형식이 올바르지 않습니다 (예: 123-45-67890)',
+    })
     .optional(),
   address: z.string().max(200, { message: '주소는 200자를 초과할 수 없습니다' }).optional(),
-  description: z.string().max(500, { message: '업체 설명은 500자를 초과할 수 없습니다' }).optional(),
+  description: z
+    .string()
+    .max(500, { message: '업체 설명은 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type EmployerProfileData = z.infer<typeof employerProfileSchema>;
@@ -116,17 +139,22 @@ export type EmployerRegisterData = z.infer<typeof employerRegisterSchema>;
 export const notificationSettingsSchema = z.object({
   enabled: z.boolean(),
   pushEnabled: z.boolean().optional(),
-  categories: z.record(z.string(),
-    z.object({
+  categories: z
+    .record(
+      z.string(),
+      z.object({
+        enabled: z.boolean(),
+        pushEnabled: z.boolean(),
+      })
+    )
+    .optional(),
+  quietHours: z
+    .object({
       enabled: z.boolean(),
-      pushEnabled: z.boolean(),
+      start: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
+      end: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
     })
-  ).optional(),
-  quietHours: z.object({
-    enabled: z.boolean(),
-    start: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-    end: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-  }).optional(),
+    .optional(),
 });
 
 export type NotificationSettingsData = z.infer<typeof notificationSettingsSchema>;

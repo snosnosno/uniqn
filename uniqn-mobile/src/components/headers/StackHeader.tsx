@@ -73,11 +73,7 @@ export function StackHeader({
       </View>
 
       {/* 오른쪽: 액션 */}
-      {rightAction && (
-        <View className="mr-2">
-          {rightAction}
-        </View>
-      )}
+      {rightAction && <View className="mr-2">{rightAction}</View>}
     </View>
   );
 }

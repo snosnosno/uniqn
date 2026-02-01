@@ -5,15 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-} from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
@@ -24,7 +16,11 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
-import { parseWorkLogDocuments, parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
+import {
+  parseWorkLogDocuments,
+  parseJobPostingDocument,
+  parseJobPostingDocuments,
+} from '@/schemas';
 import type { WorkLog } from '@/types';
 import {
   WORK_LOGS_COLLECTION,
@@ -121,7 +117,11 @@ export async function getWorkLogsByJobPosting(
     // 4. 근무 시간 및 예상 정산액 계산 (Phase 6 - SettlementCalculator 사용)
     workLogs = workLogs.map((wl) => {
       const wlWithOverrides = wl as WorkLogWithOverrides;
-      const salaryInfo = getEffectiveSalaryInfoFromRoles(wlWithOverrides, jobPosting.roles, jobPosting.defaultSalary);
+      const salaryInfo = getEffectiveSalaryInfoFromRoles(
+        wlWithOverrides,
+        jobPosting.roles,
+        jobPosting.defaultSalary
+      );
       const allowances = getEffectiveAllowances(wlWithOverrides, jobPosting.allowances);
       const taxSettings = getEffectiveTaxSettings(wlWithOverrides, jobPosting.taxSettings);
 

@@ -92,10 +92,7 @@ export const WORK_LOG_STATUS_LABELS: Record<WorkLogStatus, string> = {
 /**
  * 확정 스태프 상태 라벨
  */
-export const CONFIRMED_STAFF_STATUS_LABELS: Record<
-  ConfirmedStaffStatus,
-  string
-> = {
+export const CONFIRMED_STAFF_STATUS_LABELS: Record<ConfirmedStaffStatus, string> = {
   scheduled: '출근 예정',
   checked_in: '근무 중',
   checked_out: '퇴근 완료',

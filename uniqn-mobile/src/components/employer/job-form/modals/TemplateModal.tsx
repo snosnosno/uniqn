@@ -48,12 +48,7 @@ export function TemplateModal({
   };
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      title="템플릿으로 저장"
-      size="md"
-    >
+    <Modal visible={visible} onClose={onClose} title="템플릿으로 저장" size="md">
       {/* 템플릿 이름 */}
       <View className="mb-4">
         <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -73,9 +68,7 @@ export function TemplateModal({
           editable={!isSaving}
         />
         {isTooShort && (
-          <Text className="text-red-500 text-xs mt-1">
-            템플릿 이름은 2자 이상 입력해주세요
-          </Text>
+          <Text className="text-red-500 text-xs mt-1">템플릿 이름은 2자 이상 입력해주세요</Text>
         )}
       </View>
 
@@ -109,12 +102,8 @@ export function TemplateModal({
           <Text className="text-primary-700 dark:text-primary-300 text-xs">
             - 급여 정보, 복리후생
           </Text>
-          <Text className="text-primary-700 dark:text-primary-300 text-xs">
-            - 사전질문 설정
-          </Text>
-          <Text className="text-primary-700 dark:text-primary-300 text-xs">
-            - 역할/인원 정보
-          </Text>
+          <Text className="text-primary-700 dark:text-primary-300 text-xs">- 사전질문 설정</Text>
+          <Text className="text-primary-700 dark:text-primary-300 text-xs">- 역할/인원 정보</Text>
         </View>
         <View className="mt-2 pt-2 border-t border-primary-200 dark:border-primary-700">
           <Text className="text-primary-600 dark:text-primary-400 text-xs">
@@ -132,9 +121,7 @@ export function TemplateModal({
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
-          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">
-            취소
-          </Text>
+          <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">취소</Text>
         </Pressable>
 
         <Pressable
@@ -149,9 +136,7 @@ export function TemplateModal({
           {isSaving ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-white text-center font-semibold">
-              저장
-            </Text>
+            <Text className="text-white text-center font-semibold">저장</Text>
           )}
         </Pressable>
       </View>

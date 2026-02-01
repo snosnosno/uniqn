@@ -102,7 +102,9 @@ const RoleSalaryRow = memo(function RoleSalaryRow({
       <Text className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 dark:text-gray-400`}>
         {label}
       </Text>
-      <Text className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white`}>
+      <Text
+        className={`${compact ? 'text-xs' : 'text-sm'} font-medium text-gray-900 dark:text-white`}
+      >
         {salaryText}
       </Text>
     </View>
@@ -146,7 +148,9 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
     if (!displaySalary) {
       return (
         <View className={compact ? '' : 'py-1'}>
-          <Text className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-gray-500 dark:text-gray-400`}>
+          <Text
+            className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-gray-500 dark:text-gray-400`}
+          >
             💰 급여 미설정
           </Text>
         </View>
@@ -155,7 +159,9 @@ export const RoleSalaryDisplay = memo(function RoleSalaryDisplay({
 
     return (
       <View className={compact ? '' : 'py-1'}>
-        <Text className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-primary-600 dark:text-primary-400`}>
+        <Text
+          className={`${compact ? 'text-sm' : 'text-lg'} font-bold text-primary-600 dark:text-primary-400`}
+        >
           💰 {formatSalary(displaySalary.type, displaySalary.amount)}
         </Text>
       </View>
@@ -215,9 +221,7 @@ export const SalarySummary = memo(function SalarySummary({
   if (useSameSalary || rolesWithSalary.length === 0) {
     if (!displaySalary) {
       return (
-        <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">
-          💰 급여 미설정
-        </Text>
+        <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">💰 급여 미설정</Text>
       );
     }
 
@@ -234,16 +238,13 @@ export const SalarySummary = memo(function SalarySummary({
     .map((r) => r.salary!.amount);
 
   if (amounts.length === 0) {
-    return (
-      <Text className="text-sm font-medium text-gray-900 dark:text-white">
-        💰 협의
-      </Text>
-    );
+    return <Text className="text-sm font-medium text-gray-900 dark:text-white">💰 협의</Text>;
   }
 
   const min = Math.min(...amounts);
   const max = Math.max(...amounts);
-  const firstType = rolesWithSalary.find((r) => r.salary && r.salary.type !== 'other')?.salary?.type || 'hourly';
+  const firstType =
+    rolesWithSalary.find((r) => r.salary && r.salary.type !== 'other')?.salary?.type || 'hourly';
 
   if (min === max) {
     return (

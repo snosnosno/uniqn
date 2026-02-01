@@ -11,16 +11,8 @@ import { Badge } from '@/components/ui/Badge';
 import { BookmarkFilledIcon, BookmarkOutlineIcon } from '@/components/icons';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
-import {
-  groupRequirementsToDateRanges,
-  formatDateRangeWithCount,
-} from '@/utils/dateRangeUtils';
-import type {
-  JobPostingCard,
-  PostingType,
-  CardRole,
-  SalaryInfo,
-} from '@/types';
+import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import type { JobPostingCard, PostingType, CardRole, SalaryInfo } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
@@ -42,7 +34,10 @@ interface JobCardProps {
 }
 
 /** 지원 상태별 뱃지 설정 */
-const applicationStatusConfig: Record<ApplicationStatusType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
+const applicationStatusConfig: Record<
+  ApplicationStatusType,
+  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
+> = {
   applied: { label: '지원 중', variant: 'warning' },
   confirmed: { label: '확정', variant: 'success' },
   completed: { label: '완료', variant: 'default' },
@@ -119,9 +114,7 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
 
             {/* 시간대별 */}
             {group.timeSlots.map((slot, slotIdx) => {
-              const displayTime = slot.isTimeToBeAnnounced
-                ? '미정'
-                : slot.startTime || '-';
+              const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
 
               return (
                 <View key={slot.id || slotIdx} className="ml-5 mt-1">
@@ -163,19 +156,12 @@ const DateRequirementsDisplay = memo(function DateRequirementsDisplay({
 
           {/* 시간대별 */}
           {dateReq.timeSlots.map((slot, slotIdx) => {
-            const displayTime = slot.isTimeToBeAnnounced
-              ? '미정'
-              : slot.startTime || '-';
+            const displayTime = slot.isTimeToBeAnnounced ? '미정' : slot.startTime || '-';
 
             return (
               <View key={slotIdx} className="ml-5 mt-1">
                 {slot.roles.map((role, roleIdx) => (
-                  <RoleLine
-                    key={roleIdx}
-                    role={role}
-                    showTime={roleIdx === 0}
-                    time={displayTime}
-                  />
+                  <RoleLine key={roleIdx} role={role} showTime={roleIdx === 0} time={displayTime} />
                 ))}
               </View>
             );
@@ -209,8 +195,7 @@ const RoleLine = memo(function RoleLine({
       }`}
     >
       {showTime ? `${time} ` : '       '}
-      {getRoleDisplayName(role.role, role.customRole)} {role.count}명 ({role.filled}/
-      {role.count})
+      {getRoleDisplayName(role.role, role.customRole)} {role.count}명 ({role.filled}/{role.count})
     </Text>
   );
 });
@@ -265,8 +250,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
 
   // 표시할 급여 결정
   const displaySalary: SalaryInfo = job.defaultSalary ??
-    rolesWithSalary[0]?.salary ??
-    { type: 'hourly', amount: 0 };
+    rolesWithSalary[0]?.salary ?? { type: 'hourly', amount: 0 };
 
   // 접근성을 위한 설명 텍스트 생성
   const accessibilityLabel = `${job.title}, ${job.location}, ${formatDateShortWithDay(job.workDate)}, ${formatSalary(displaySalary.type, displaySalary.amount)}`;
@@ -295,11 +279,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         <View className="flex-1 flex-row items-center flex-wrap">
           {/* 공고 타입 뱃지 (regular는 표시 안 함) */}
           {job.postingType && job.postingType !== 'regular' && (
-            <PostingTypeBadge
-              type={job.postingType as PostingType}
-              size="sm"
-              className="mr-2"
-            />
+            <PostingTypeBadge type={job.postingType as PostingType} size="sm" className="mr-2" />
           )}
           {job.isUrgent && (
             <Badge variant="error" size="sm" className="mr-2">
@@ -349,9 +329,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       </View>
 
       {/* 장소 */}
-      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-        📍 {job.location}
-      </Text>
+      <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">📍 {job.location}</Text>
 
       {/* 일정 + 급여/수당 그리드 */}
       <View className="flex-row">
@@ -388,22 +366,26 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
           {!job.useSameSalary && rolesWithSalary.length > 0 ? (
             // 역할별 급여 표시 (useSameSalary === false && 역할별 급여 존재)
             rolesWithSalary.slice(0, 3).map((roleData, idx) => {
-              const roleLabel = roleData.role === 'other' && roleData.customRole
-                ? roleData.customRole
-                : getRoleDisplayName(roleData.role);
+              const roleLabel =
+                roleData.role === 'other' && roleData.customRole
+                  ? roleData.customRole
+                  : getRoleDisplayName(roleData.role);
               return (
-                <Text
-                  key={idx}
-                  className="text-sm text-gray-900 dark:text-white"
-                >
-                  💰 {roleLabel}: {roleData.salary.type === 'other' ? '협의' : formatSalary(roleData.salary.type, roleData.salary.amount)}
+                <Text key={idx} className="text-sm text-gray-900 dark:text-white">
+                  💰 {roleLabel}:{' '}
+                  {roleData.salary.type === 'other'
+                    ? '협의'
+                    : formatSalary(roleData.salary.type, roleData.salary.amount)}
                 </Text>
               );
             })
           ) : (
             // 단일 급여 표시 (useSameSalary === true 또는 역할별 급여 없음)
             <Text className="text-sm font-medium text-gray-900 dark:text-white">
-              💰 {displaySalary.type === 'other' ? '협의' : formatSalary(displaySalary.type, displaySalary.amount)}
+              💰{' '}
+              {displaySalary.type === 'other'
+                ? '협의'
+                : formatSalary(displaySalary.type, displaySalary.amount)}
             </Text>
           )}
 
@@ -423,9 +405,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       {/* 하단: 구인자 이름 */}
       {job.ownerName && (
         <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
-            구인자: {job.ownerName}
-          </Text>
+          <Text className="text-xs text-gray-500 dark:text-gray-400">구인자: {job.ownerName}</Text>
         </View>
       )}
     </Pressable>

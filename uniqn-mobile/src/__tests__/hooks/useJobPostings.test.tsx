@@ -52,11 +52,7 @@ function createWrapper() {
   });
 
   return function Wrapper({ children }: { children: React.ReactNode }) {
-    return (
-      <QueryClientProvider client={queryClient}>
-        {children}
-      </QueryClientProvider>
-    );
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
   };
 }
 
@@ -74,13 +70,14 @@ function createMockJobPosting(
     postingType: 'regular',
     workDate,
     timeSlot: '10:00 - 18:00',
-    dateRequirements: dateRequirements?.map(dr => ({
-      date: dr.date,
-      timeSlots: dr.timeSlots.map(ts => ({
-        startTime: ts.startTime,
-        roles: [defaultRole],
-      })),
-    })) ?? [],
+    dateRequirements:
+      dateRequirements?.map((dr) => ({
+        date: dr.date,
+        timeSlots: dr.timeSlots.map((ts) => ({
+          startTime: ts.startTime,
+          roles: [defaultRole],
+        })),
+      })) ?? [],
     location: '서울 강남구',
     roles: ['dealer'],
   } as JobPostingCard;
@@ -121,10 +118,9 @@ describe('useJobPostings', () => {
     });
 
     it('enabled=false일 때 조회하지 않는다', async () => {
-      const { result } = renderHook(
-        () => useJobPostings({ enabled: false }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useJobPostings({ enabled: false }), {
+        wrapper: createWrapper(),
+      });
 
       // 짧은 대기 후 확인
       await new Promise((resolve) => setTimeout(resolve, 100));

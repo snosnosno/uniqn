@@ -9,11 +9,7 @@ import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text } from 'react-native';
 import { useJobSchedule } from '@/hooks';
 import type { Assignment, StaffRole } from '@/types';
-import {
-  createSimpleAssignment,
-  FIXED_DATE_MARKER,
-  FIXED_TIME_MARKER,
-} from '@/types';
+import { createSimpleAssignment, FIXED_DATE_MARKER, FIXED_TIME_MARKER } from '@/types';
 import { isStaffRole } from '@/types/role';
 import { getRoleDisplayName } from '@/types/unified';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
@@ -190,9 +186,8 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
         <View className="flex-row flex-wrap">
           {fixedSchedule.roles.map((role, index) => {
-            const effectiveRoleId = role.roleId === 'other' && role.customName
-              ? role.customName
-              : role.roleId;
+            const effectiveRoleId =
+              role.roleId === 'other' && role.customName ? role.customName : role.roleId;
             const selectionKey = makeSelectionKey(
               FIXED_DATE_MARKER,
               FIXED_TIME_MARKER,
@@ -205,7 +200,9 @@ export const AssignmentSelector = memo(function AssignmentSelector({
                 key={role.roleId || index}
                 role={role}
                 isSelected={isSelected}
-                onToggle={() => handleRoleToggle(FIXED_DATE_MARKER, FIXED_TIME_MARKER, effectiveRoleId)}
+                onToggle={() =>
+                  handleRoleToggle(FIXED_DATE_MARKER, FIXED_TIME_MARKER, effectiveRoleId)
+                }
                 disabled={disabled}
               />
             );
@@ -221,11 +218,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
           </View>
         )}
 
-        {error && (
-          <Text className="text-sm text-red-500 dark:text-red-400 mt-2">
-            {error}
-          </Text>
-        )}
+        {error && <Text className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</Text>}
       </View>
     );
   }
@@ -245,32 +238,30 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
       {/* 날짜별 시간대/역할 선택 (v3.1: 대회 공고는 그룹 단위) */}
       <View>
-        {isTournament ? (
-          // 대회 공고: 그룹 기반 렌더링
-          scheduleGroups.map((group) => (
-            <DateGroupSelection
-              key={group.id}
-              group={group}
-              selectedKeys={selectedKeys}
-              onGroupRoleToggle={handleGroupRoleToggle}
-              disabled={disabled}
-            />
-          ))
-        ) : (
-          // 일반/긴급 공고: 개별 날짜 렌더링
-          datedSchedules.map((schedule, index) => (
-            <DateSelection
-              key={schedule.date || index}
-              date={schedule.date}
-              timeSlots={schedule.timeSlots}
-              isMainDate={schedule.isMainDate}
-              description={schedule.description}
-              selectedKeys={selectedKeys}
-              onRoleToggle={handleRoleToggle}
-              disabled={disabled}
-            />
-          ))
-        )}
+        {isTournament
+          ? // 대회 공고: 그룹 기반 렌더링
+            scheduleGroups.map((group) => (
+              <DateGroupSelection
+                key={group.id}
+                group={group}
+                selectedKeys={selectedKeys}
+                onGroupRoleToggle={handleGroupRoleToggle}
+                disabled={disabled}
+              />
+            ))
+          : // 일반/긴급 공고: 개별 날짜 렌더링
+            datedSchedules.map((schedule, index) => (
+              <DateSelection
+                key={schedule.date || index}
+                date={schedule.date}
+                timeSlots={schedule.timeSlots}
+                isMainDate={schedule.isMainDate}
+                description={schedule.description}
+                selectedKeys={selectedKeys}
+                onRoleToggle={handleRoleToggle}
+                disabled={disabled}
+              />
+            ))}
       </View>
 
       {/* 선택 요약 */}
@@ -283,11 +274,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
       )}
 
       {/* 에러 메시지 */}
-      {error && (
-        <Text className="text-sm text-red-500 dark:text-red-400 mt-2">
-          {error}
-        </Text>
-      )}
+      {error && <Text className="text-sm text-red-500 dark:text-red-400 mt-2">{error}</Text>}
     </View>
   );
 });

@@ -22,11 +22,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import { toError } from '@/errors';
-import type {
-  CreateJobPostingInput,
-  UpdateJobPostingInput,
-  JobPostingStatus,
-} from '@/types';
+import type { CreateJobPostingInput, UpdateJobPostingInput, JobPostingStatus } from '@/types';
 
 // ============================================================================
 // Types
@@ -105,11 +101,7 @@ export function useCreateJobPosting() {
       }
       // Firestore profile의 name/nickname 우선 사용, 없으면 Firebase Auth displayName
       const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
-      return createJobPosting(
-        params.input,
-        user.uid,
-        ownerName
-      );
+      return createJobPosting(params.input, user.uid, ownerName);
     },
     onSuccess: (data) => {
       // 다중 공고 생성 여부 확인
@@ -316,11 +308,7 @@ export function useBulkUpdateStatus() {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
-      return bulkUpdateJobPostingStatus(
-        params.jobPostingIds,
-        params.status,
-        user.uid
-      );
+      return bulkUpdateJobPostingStatus(params.jobPostingIds, params.status, user.uid);
     },
     onSuccess: (successCount) => {
       logger.info('공고 일괄 상태 변경 완료', { successCount });

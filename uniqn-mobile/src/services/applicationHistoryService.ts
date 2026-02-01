@@ -125,7 +125,9 @@ export function updateDateSpecificRequirementsFilled(
       if (!timeSlot) {
         logger.warn('dateSpecificRequirements에서 시간대 매칭 실패', {
           targetTime: assignmentStartTime,
-          availableTimes: dateReq.timeSlots.map((ts) => ts.startTime ?? (ts as { time?: string }).time),
+          availableTimes: dateReq.timeSlots.map(
+            (ts) => ts.startTime ?? (ts as { time?: string }).time
+          ),
         });
         continue;
       }
@@ -223,7 +225,10 @@ export async function confirmApplicationWithHistory(
         });
       }
 
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      const applicationData = parseApplicationDocument({
+        id: applicationDoc.id,
+        ...applicationDoc.data(),
+      });
 
       if (!applicationData) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
@@ -277,10 +282,7 @@ export async function confirmApplicationWithHistory(
 
       // 4. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
       const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
-      const assignmentCount = assignmentsToConfirm.reduce(
-        (sum, a) => sum + a.dates.length,
-        0
-      );
+      const assignmentCount = assignmentsToConfirm.reduce((sum, a) => sum + a.dates.length, 0);
 
       if (totalPositions > 0 && currentFilled + assignmentCount > totalPositions) {
         throw new MaxCapacityReachedError({
@@ -302,10 +304,7 @@ export async function confirmApplicationWithHistory(
 
       // 6. confirmationHistory 엔트리 생성
       const historyEntry = createHistoryEntry(assignmentsToConfirm, ownerId);
-      const confirmationHistory = [
-        ...(applicationData.confirmationHistory ?? []),
-        historyEntry,
-      ];
+      const confirmationHistory = [...(applicationData.confirmationHistory ?? []), historyEntry];
 
       // 7. Assignment별 WorkLog 생성
       const workLogIds: string[] = [];
@@ -371,8 +370,8 @@ export async function confirmApplicationWithHistory(
       const updatedRoles = jobData.roles.map((r) => {
         // v3.0: roleIds는 StaffRole[] 타입
         // 역할 매칭: roleIds에 해당 역할이 포함되어 있는지 확인
-        const roleAssignments = assignmentsToConfirm.filter(
-          (a) => a.roleIds.includes(r.role as StaffRole)
+        const roleAssignments = assignmentsToConfirm.filter((a) =>
+          a.roleIds.includes(r.role as StaffRole)
         );
         const addedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: r.filled + addedCount };
@@ -463,7 +462,10 @@ export async function cancelConfirmation(
         });
       }
 
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      const applicationData = parseApplicationDocument({
+        id: applicationDoc.id,
+        ...applicationDoc.data(),
+      });
 
       if (!applicationData) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
@@ -523,17 +525,14 @@ export async function cancelConfirmation(
 
       // 4. 감소할 수량 계산
       const cancelledAssignments = activeConfirmation.assignments;
-      const decrementCount = cancelledAssignments.reduce(
-        (sum, a) => sum + a.dates.length,
-        0
-      );
+      const decrementCount = cancelledAssignments.reduce((sum, a) => sum + a.dates.length, 0);
 
       // 5. 공고 filledPositions 감소
       const updatedRoles = jobData.roles.map((r) => {
         // v3.0: roleIds는 StaffRole[] 타입
         // 역할 매칭: roleIds에 해당 역할이 포함되어 있는지 확인
-        const roleAssignments = cancelledAssignments.filter(
-          (a) => a.roleIds.includes(r.role as StaffRole)
+        const roleAssignments = cancelledAssignments.filter((a) =>
+          a.roleIds.includes(r.role as StaffRole)
         );
         const removedCount = roleAssignments.reduce((sum, a) => sum + a.dates.length, 0);
         return { ...r, filled: Math.max(0, r.filled - removedCount) };
@@ -639,17 +638,13 @@ export function getConfirmedSelections(application: Application): Assignment[] {
  * 지원서가 v2.0 형식인지 확인
  */
 export function isV2Application(application: Application): boolean {
-  return (
-    Array.isArray(application.assignments) && application.assignments.length > 0
-  );
+  return Array.isArray(application.assignments) && application.assignments.length > 0;
 }
 
 /**
  * 확정 이력 요약 조회
  */
-export async function getApplicationHistorySummary(
-  applicationId: string
-): Promise<{
+export async function getApplicationHistorySummary(applicationId: string): Promise<{
   totalConfirmations: number;
   cancellations: number;
   isCurrentlyConfirmed: boolean;
@@ -664,7 +659,10 @@ export async function getApplicationHistorySummary(
       return null;
     }
 
-    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+    const applicationData = parseApplicationDocument({
+      id: applicationDoc.id,
+      ...applicationDoc.data(),
+    });
 
     if (!applicationData) {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {

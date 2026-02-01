@@ -50,11 +50,7 @@ interface ChipItemProps {
   onPress: () => void;
 }
 
-const ChipItem = memo(function ChipItem({
-  chip,
-  isSelected,
-  onPress,
-}: ChipItemProps) {
+const ChipItem = memo(function ChipItem({ chip, isSelected, onPress }: ChipItemProps) {
   return (
     <Pressable
       onPress={onPress}
@@ -62,18 +58,12 @@ const ChipItem = memo(function ChipItem({
       accessibilityLabel={`${chip.label} 공고 필터`}
       accessibilityState={{ selected: isSelected }}
       className={`flex-row items-center px-4 py-2 rounded-full ${
-        isSelected
-          ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-surface'
+        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
       }`}
     >
       <Text className="mr-1.5">{chip.icon}</Text>
       <Text
-        className={`font-medium ${
-          isSelected
-            ? 'text-white'
-            : 'text-gray-700 dark:text-gray-300'
-        }`}
+        className={`font-medium ${isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300'}`}
       >
         {chip.label}
       </Text>

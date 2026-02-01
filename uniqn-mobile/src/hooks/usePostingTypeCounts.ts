@@ -27,12 +27,7 @@ export interface PostingTypeAvailability {
 // ============================================================================
 
 /** 자동 탭 선택 우선순위 (공고가 있는 첫 번째 타입 선택) */
-export const AUTO_SELECT_PRIORITY: PostingType[] = [
-  'urgent',
-  'tournament',
-  'regular',
-  'fixed',
-];
+export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'regular', 'fixed'];
 
 // ============================================================================
 // Helper Functions

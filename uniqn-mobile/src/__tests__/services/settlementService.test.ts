@@ -5,11 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  createMockJobPosting,
-  createMockWorkLog,
-  resetCounters,
-} from '../mocks/factories';
+import { createMockJobPosting, createMockWorkLog, resetCounters } from '../mocks/factories';
 
 // Import after mocks
 import {
@@ -266,9 +262,9 @@ describe('settlementService', () => {
         exists: () => false,
       });
 
-      await expect(
-        getWorkLogsByJobPosting('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(getWorkLogsByJobPosting('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -282,9 +278,9 @@ describe('settlementService', () => {
         data: () => jobPosting,
       });
 
-      await expect(
-        getWorkLogsByJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('본인의 공고만 조회할 수 있습니다');
+      await expect(getWorkLogsByJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '본인의 공고만 조회할 수 있습니다'
+      );
     });
 
     it('should filter by date range', async () => {
@@ -359,10 +355,7 @@ describe('settlementService', () => {
           data: () => jobPosting,
         });
 
-      const result = await calculateSettlement(
-        { workLogId: 'worklog-1' },
-        'employer-1'
-      );
+      const result = await calculateSettlement({ workLogId: 'worklog-1' }, 'employer-1');
 
       expect(result.workLogId).toBe('worklog-1');
       expect(result.salaryType).toBe('hourly');
@@ -375,7 +368,12 @@ describe('settlementService', () => {
       const jobPosting = createMockJobPostingWithSalary({
         id: 'job-1',
         roles: [
-          { role: 'dealer', count: 3, filled: 0, salary: { type: 'daily' as const, amount: 150000 } },
+          {
+            role: 'dealer',
+            count: 3,
+            filled: 0,
+            salary: { type: 'daily' as const, amount: 150000 },
+          },
         ],
         defaultSalary: { type: 'daily', amount: 150000 },
         useSameSalary: true,
@@ -392,10 +390,7 @@ describe('settlementService', () => {
           data: () => jobPosting,
         });
 
-      const result = await calculateSettlement(
-        { workLogId: 'worklog-1' },
-        'employer-1'
-      );
+      const result = await calculateSettlement({ workLogId: 'worklog-1' }, 'employer-1');
 
       expect(result.salaryType).toBe('daily');
       expect(result.grossPay).toBe(150000); // 일급 전액
@@ -406,7 +401,12 @@ describe('settlementService', () => {
       const jobPosting = createMockJobPostingWithSalary({
         id: 'job-1',
         roles: [
-          { role: 'dealer', count: 3, filled: 0, salary: { type: 'monthly' as const, amount: 3300000 } },
+          {
+            role: 'dealer',
+            count: 3,
+            filled: 0,
+            salary: { type: 'monthly' as const, amount: 3300000 },
+          },
         ],
         defaultSalary: { type: 'monthly', amount: 3300000 },
         useSameSalary: true,
@@ -423,10 +423,7 @@ describe('settlementService', () => {
           data: () => jobPosting,
         });
 
-      const result = await calculateSettlement(
-        { workLogId: 'worklog-1' },
-        'employer-1'
-      );
+      const result = await calculateSettlement({ workLogId: 'worklog-1' }, 'employer-1');
 
       expect(result.salaryType).toBe('monthly');
       expect(result.grossPay).toBe(3300000); // 월급 전액
@@ -481,7 +478,8 @@ describe('settlementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => workLog,
@@ -495,10 +493,7 @@ describe('settlementService', () => {
         await callback(transaction);
       });
 
-      const result = await settleWorkLog(
-        { workLogId: 'worklog-1', amount: 120000 },
-        'employer-1'
-      );
+      const result = await settleWorkLog({ workLogId: 'worklog-1', amount: 120000 }, 'employer-1');
 
       expect(result.success).toBe(true);
       expect(result.amount).toBe(120000);
@@ -515,7 +510,8 @@ describe('settlementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => workLog,
@@ -529,10 +525,7 @@ describe('settlementService', () => {
         await callback(transaction);
       });
 
-      const result = await settleWorkLog(
-        { workLogId: 'worklog-1', amount: 120000 },
-        'employer-1'
-      );
+      const result = await settleWorkLog({ workLogId: 'worklog-1', amount: 120000 }, 'employer-1');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('출퇴근이 완료된 근무 기록만');
@@ -548,7 +541,8 @@ describe('settlementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => workLog,
@@ -562,10 +556,7 @@ describe('settlementService', () => {
         await callback(transaction);
       });
 
-      const result = await settleWorkLog(
-        { workLogId: 'worklog-1', amount: 120000 },
-        'employer-1'
-      );
+      const result = await settleWorkLog({ workLogId: 'worklog-1', amount: 120000 }, 'employer-1');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('이미 정산 완료된');
@@ -622,10 +613,7 @@ describe('settlementService', () => {
       // Mock doc to return proper reference with id
       mockDoc.mockImplementation((_db, _collection, id) => ({ id }));
 
-      const result = await bulkSettlement(
-        { workLogIds: ['worklog-1', 'worklog-2'] },
-        'employer-1'
-      );
+      const result = await bulkSettlement({ workLogIds: ['worklog-1', 'worklog-2'] }, 'employer-1');
 
       expect(result.totalCount).toBe(2);
       expect(result.successCount).toBeGreaterThanOrEqual(0);
@@ -675,10 +663,7 @@ describe('settlementService', () => {
 
       mockDoc.mockImplementation((_db, _collection, id) => ({ id }));
 
-      const result = await bulkSettlement(
-        { workLogIds: ['worklog-1', 'worklog-2'] },
-        'employer-1'
-      );
+      const result = await bulkSettlement({ workLogIds: ['worklog-1', 'worklog-2'] }, 'employer-1');
 
       expect(result.totalCount).toBe(2);
       // At least one should fail (already completed)
@@ -700,7 +685,8 @@ describe('settlementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => workLog,
@@ -728,7 +714,8 @@ describe('settlementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => workLog,
@@ -742,9 +729,9 @@ describe('settlementService', () => {
         await callback(transaction);
       });
 
-      await expect(
-        updateSettlementStatus('worklog-1', 'completed', 'employer-1')
-      ).rejects.toThrow('본인의 공고에 대한 정산만 처리할 수 있습니다');
+      await expect(updateSettlementStatus('worklog-1', 'completed', 'employer-1')).rejects.toThrow(
+        '본인의 공고에 대한 정산만 처리할 수 있습니다'
+      );
     });
   });
 
@@ -800,9 +787,9 @@ describe('settlementService', () => {
         data: () => null,
       });
 
-      await expect(
-        getJobPostingSettlementSummary('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(getJobPostingSettlementSummary('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -821,9 +808,9 @@ describe('settlementService', () => {
       // 하지만 mock 설정이 필요함 (코드 경로 보호)
       mockGetDocs.mockResolvedValueOnce({ docs: [] });
 
-      await expect(
-        getJobPostingSettlementSummary('job-1', 'employer-1')
-      ).rejects.toThrow('본인의 공고만 조회할 수 있습니다');
+      await expect(getJobPostingSettlementSummary('job-1', 'employer-1')).rejects.toThrow(
+        '본인의 공고만 조회할 수 있습니다'
+      );
     });
   });
 });

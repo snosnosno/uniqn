@@ -168,9 +168,7 @@ export const OptimizedImage = memo(function OptimizedImage({
 export const AvatarImage = memo(function AvatarImage(
   props: Omit<OptimizedImageProps, 'rounded' | 'blurhashPreset'>
 ) {
-  return (
-    <OptimizedImage {...props} rounded blurhashPreset="avatar" />
-  );
+  return <OptimizedImage {...props} rounded blurhashPreset="avatar" />;
 });
 
 /**
@@ -179,9 +177,7 @@ export const AvatarImage = memo(function AvatarImage(
 export const BannerImage = memo(function BannerImage(
   props: Omit<OptimizedImageProps, 'blurhashPreset'>
 ) {
-  return (
-    <OptimizedImage {...props} blurhashPreset="landscape" />
-  );
+  return <OptimizedImage {...props} blurhashPreset="landscape" />;
 });
 
 /**
@@ -190,9 +186,7 @@ export const BannerImage = memo(function BannerImage(
 export const ProductImage = memo(function ProductImage(
   props: Omit<OptimizedImageProps, 'blurhashPreset'>
 ) {
-  return (
-    <OptimizedImage {...props} blurhashPreset="product" />
-  );
+  return <OptimizedImage {...props} blurhashPreset="product" />;
 });
 
 // ============================================================================

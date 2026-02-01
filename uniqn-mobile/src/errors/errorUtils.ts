@@ -5,13 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  AppError,
-  NetworkError,
-  ERROR_CODES,
-  ERROR_MESSAGES,
-  isAppError,
-} from './AppError';
+import { AppError, NetworkError, ERROR_CODES, ERROR_MESSAGES, isAppError } from './AppError';
 import { mapFirebaseError, isFirebaseError } from './firebaseErrorMapper';
 
 // ============================================================================
@@ -253,17 +247,13 @@ export function withSyncErrorHandling<T, Args extends unknown[]>(
 /**
  * Result 타입 (에러 핸들링용)
  */
-export type Result<T, E = AppError> =
-  | { success: true; data: T }
-  | { success: false; error: E };
+export type Result<T, E = AppError> = { success: true; data: T } | { success: false; error: E };
 
 /**
  * 비동기 함수를 Result 패턴으로 래핑
  * 에러를 throw하지 않고 Result 객체로 반환
  */
-export async function tryCatch<T>(
-  fn: () => Promise<T>
-): Promise<Result<T>> {
+export async function tryCatch<T>(fn: () => Promise<T>): Promise<Result<T>> {
   try {
     const data = await fn();
     return { success: true, data };
@@ -345,10 +335,7 @@ const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
  * - Exponential backoff (지수 백오프) 적용
  * - Jitter (지터) 추가로 서버 부하 분산
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options?: RetryOptions
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
   const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
   let lastError: AppError | null = null;
 
@@ -375,10 +362,13 @@ export async function withRetry<T>(
   }
 
   // 이론적으로 여기 도달하지 않지만, TypeScript를 위해
-  throw lastError || new AppError({
-    code: ERROR_CODES.UNKNOWN,
-    category: 'unknown',
-  });
+  throw (
+    lastError ||
+    new AppError({
+      code: ERROR_CODES.UNKNOWN,
+      category: 'unknown',
+    })
+  );
 }
 
 /**
@@ -405,7 +395,7 @@ export function isRetryableError(error: unknown): boolean {
     ERROR_CODES.AUTH_TOO_MANY_REQUESTS,
   ];
 
-  return retryableCodes.includes(appError.code as typeof retryableCodes[number]);
+  return retryableCodes.includes(appError.code as (typeof retryableCodes)[number]);
 }
 
 /**
@@ -440,7 +430,7 @@ export function requiresReauthentication(error: unknown): boolean {
       ERROR_CODES.AUTH_SESSION_EXPIRED,
       ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN,
     ];
-    return authCodes.includes(error.code as typeof authCodes[number]);
+    return authCodes.includes(error.code as (typeof authCodes)[number]);
   }
   return false;
 }

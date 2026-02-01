@@ -496,7 +496,12 @@ export async function getAllReports(filters: GetAllReportsFilters = {}): Promise
     const q = new QueryBuilder(reportsRef)
       .whereIf(filters.status && filters.status !== 'all', 'status', '==', filters.status)
       .whereIf(filters.severity && filters.severity !== 'all', 'severity', '==', filters.severity)
-      .whereIf(filters.reporterType && filters.reporterType !== 'all', 'reporterType', '==', filters.reporterType)
+      .whereIf(
+        filters.reporterType && filters.reporterType !== 'all',
+        'reporterType',
+        '==',
+        filters.reporterType
+      )
       .orderByDesc('createdAt')
       .build();
 

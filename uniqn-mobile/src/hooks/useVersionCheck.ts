@@ -109,8 +109,7 @@ export function useVersionCheck(): UseVersionCheckReturn {
       if (!dismissedAt) return false;
 
       const dismissedTime = parseInt(dismissedAt, 10);
-      const expiryTime =
-        dismissedTime + UPDATE_POLICY.RECOMMENDED_DISMISS_DAYS * DAY_IN_MS;
+      const expiryTime = dismissedTime + UPDATE_POLICY.RECOMMENDED_DISMISS_DAYS * DAY_IN_MS;
 
       // 무시 기간이 지났으면 다시 표시
       if (Date.now() > expiryTime) {

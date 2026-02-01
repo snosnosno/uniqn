@@ -53,16 +53,18 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   const isFixedMode = effectivePostingType === 'fixed';
   // 고정공고용 근무 정보 (props 우선, 없으면 jobPosting에서 추출)
   const effectiveDaysPerWeek = daysPerWeek ?? applicant.jobPosting?.daysPerWeek;
-  const effectiveStartTime = startTime
-    ?? applicant.jobPosting?.timeSlot?.split(/[-~]/)[0]?.trim();
+  const effectiveStartTime = startTime ?? applicant.jobPosting?.timeSlot?.split(/[-~]/)[0]?.trim();
   // 다크모드 감지 (앱 테마 스토어 사용)
   const { isDarkMode: isDark } = useThemeStore();
 
   // 아이콘 색상 (다크모드 대응)
-  const iconColors = useMemo<IconColors>(() => ({
-    checked: isDark ? '#93C5FD' : '#1D4ED8',
-    unchecked: isDark ? '#D1D5DB' : '#374151',
-  }), [isDark]);
+  const iconColors = useMemo<IconColors>(
+    () => ({
+      checked: isDark ? '#93C5FD' : '#1D4ED8',
+      unchecked: isDark ? '#D1D5DB' : '#374151',
+    }),
+    [isDark]
+  );
 
   // 펼침/접힘 상태
   const [isExpanded, setIsExpanded] = useState(initialExpanded);
@@ -96,19 +98,21 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   // 표시 이름: Firestore 프로필 우선, Firebase Auth displayName 폴백
   const baseName = userProfile?.name || applicant.applicantName;
   // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
-  const displayName = userProfile?.nickname && userProfile.nickname !== baseName
-    ? `${baseName}(${userProfile.nickname})`
-    : baseName;
+  const displayName =
+    userProfile?.nickname && userProfile.nickname !== baseName
+      ? `${baseName}(${userProfile.nickname})`
+      : baseName;
 
   // 지원일 계산
   const appliedTimeAgo = useMemo(() => {
     if (!applicant.createdAt) return '';
 
-    const date = typeof applicant.createdAt === 'string'
-      ? new Date(applicant.createdAt)
-      : applicant.createdAt instanceof Date
-        ? applicant.createdAt
-        : applicant.createdAt.toDate();
+    const date =
+      typeof applicant.createdAt === 'string'
+        ? new Date(applicant.createdAt)
+        : applicant.createdAt instanceof Date
+          ? applicant.createdAt
+          : applicant.createdAt.toDate();
 
     return formatRelativeTime(date);
   }, [applicant.createdAt]);
@@ -155,9 +159,8 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   }, [applicant, onConvertToStaff]);
 
   // 확정 상태 액션 표시 여부
-  const canShowConfirmedActions = showActions &&
-    applicant.status === 'confirmed' &&
-    (onCancelConfirmation || onConvertToStaff);
+  const canShowConfirmedActions =
+    showActions && applicant.status === 'confirmed' && (onCancelConfirmation || onConvertToStaff);
 
   // 액션 버튼 표시 여부
   const canShowActions = showActions && applicant.status === 'applied';
@@ -180,17 +183,21 @@ export const ApplicantCard = React.memo(function ApplicantCard({
         <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
           {/* 지원 역할 & 시간 요약 */}
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-            {getRoleDisplayName(applicant.assignments[0]?.roleIds?.[0] || 'other', applicant.customRole)} 지원 · {appliedTimeAgo}
+            {getRoleDisplayName(
+              applicant.assignments[0]?.roleIds?.[0] || 'other',
+              applicant.customRole
+            )}{' '}
+            지원 · {appliedTimeAgo}
           </Text>
 
           {/* 고정공고: 근무 조건 표시 (날짜 선택 없음) */}
           {isFixedMode && (
-            <View className={`mb-3 p-3 rounded-lg border ${
-              isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
-            }`}>
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                근무 조건
-              </Text>
+            <View
+              className={`mb-3 p-3 rounded-lg border ${
+                isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 조건</Text>
               <FixedScheduleDisplay
                 daysPerWeek={effectiveDaysPerWeek}
                 startTime={effectiveStartTime}

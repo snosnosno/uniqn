@@ -44,13 +44,7 @@ export interface DateRangeCardProps {
 // Component
 // ============================================================================
 
-export function DateRangeCard({
-  group,
-  index,
-  canRemove,
-  onUpdate,
-  onRemove,
-}: DateRangeCardProps) {
+export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: DateRangeCardProps) {
   // 날짜 범위 표시 텍스트
   const dateRangeLabel = useMemo(() => {
     return formatDateRangeWithCount(group.startDate, group.endDate);

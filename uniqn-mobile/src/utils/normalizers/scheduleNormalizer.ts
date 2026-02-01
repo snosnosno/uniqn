@@ -32,24 +32,16 @@ function normalizeTimeSlot(slot: TimeSlot, index: number): TimeSlotInfo {
   // startTime 필드에서 시간 추출
   const startTime = slot.startTime ?? null;
 
-  return createTimeSlotInfo(
-    slot.id ?? `slot-${index}`,
-    startTime,
-    roles,
-    {
-      isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
-      tentativeDescription: slot.tentativeDescription,
-    }
-  );
+  return createTimeSlotInfo(slot.id ?? `slot-${index}`, startTime, roles, {
+    isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+    tentativeDescription: slot.tentativeDescription,
+  });
 }
 
 /**
  * DateSpecificRequirement -> DatedScheduleInfo 변환
  */
-function normalizeDateRequirement(
-  req: DateSpecificRequirement,
-  _index: number
-): DatedScheduleInfo {
+function normalizeDateRequirement(req: DateSpecificRequirement, _index: number): DatedScheduleInfo {
   const dateStr = getDateFromRequirement(req);
   const timeSlots = (req.timeSlots ?? []).map(normalizeTimeSlot);
 
@@ -72,9 +64,7 @@ function normalizeFixedScheduleFromJob(job: JobPosting): FixedScheduleInfo {
   }));
 
   // 출근 시간 추출
-  const startTime =
-    job.timeSlot?.split(/[-~]/)[0]?.trim() ??
-    null;
+  const startTime = job.timeSlot?.split(/[-~]/)[0]?.trim() ?? null;
 
   return createFixedSchedule(job.daysPerWeek ?? 0, roles, {
     startTime,
@@ -92,12 +82,7 @@ function normalizeLegacySchedule(job: JobPosting): DatedScheduleInfo {
   const startTime = job.timeSlot?.split(/[-~]/)[0]?.trim() ?? null;
   const endTime = job.timeSlot?.split(/[-~]/)[1]?.trim() ?? null;
 
-  const timeSlot: TimeSlotInfo = createTimeSlotInfo(
-    'legacy-slot',
-    startTime,
-    roles,
-    { endTime }
-  );
+  const timeSlot: TimeSlotInfo = createTimeSlotInfo('legacy-slot', startTime, roles, { endTime });
 
   return createDatedSchedule(job.workDate, [timeSlot]);
 }
@@ -198,9 +183,7 @@ export function isFixedJobPosting(job: JobPosting): boolean {
  * @returns dateSpecificRequirements 존재 여부
  */
 export function hasDatedRequirements(job: JobPosting): boolean {
-  return Boolean(
-    job.postingType !== 'fixed' && job.dateSpecificRequirements?.length
-  );
+  return Boolean(job.postingType !== 'fixed' && job.dateSpecificRequirements?.length);
 }
 
 /**
@@ -211,8 +194,6 @@ export function hasDatedRequirements(job: JobPosting): boolean {
  */
 export function isLegacyJobPosting(job: JobPosting): boolean {
   return Boolean(
-    job.postingType !== 'fixed' &&
-      !job.dateSpecificRequirements?.length &&
-      job.workDate
+    job.postingType !== 'fixed' && !job.dateSpecificRequirements?.length && job.workDate
   );
 }

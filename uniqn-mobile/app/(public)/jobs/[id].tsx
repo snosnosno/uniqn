@@ -6,14 +6,7 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  RefreshControl,
-  ActivityIndicator,
-  Pressable,
-} from 'react-native';
+import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeftIcon } from '@/components/icons';
@@ -38,21 +31,13 @@ function CustomHeader({ title }: { title?: string }) {
         className="p-2 -ml-2 mr-2"
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <ChevronLeftIcon
-          size={24}
-          color={isDarkMode ? '#ffffff' : '#1A1625'}
-        />
+        <ChevronLeftIcon size={24} color={isDarkMode ? '#ffffff' : '#1A1625'} />
       </Pressable>
-      <Text className="text-base font-semibold text-gray-900 dark:text-white">
-        공고 상세
-      </Text>
+      <Text className="text-base font-semibold text-gray-900 dark:text-white">공고 상세</Text>
       {title && (
         <>
           <Text className="mx-2 text-gray-400 dark:text-gray-500">|</Text>
-          <Text
-            className="flex-1 text-base text-gray-600 dark:text-gray-400"
-            numberOfLines={1}
-          >
+          <Text className="flex-1 text-base text-gray-600 dark:text-gray-400" numberOfLines={1}>
             {title}
           </Text>
         </>
@@ -69,9 +54,7 @@ function LoadingState() {
   return (
     <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
       <ActivityIndicator size="large" color="#6366f1" />
-      <Text className="mt-4 text-gray-500 dark:text-gray-400">
-        공고 정보를 불러오는 중...
-      </Text>
+      <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
     </View>
   );
 }
@@ -87,9 +70,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         오류가 발생했습니다
       </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">
-        {message}
-      </Text>
+      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">{message}</Text>
       <Button onPress={onRetry} variant="outline">
         다시 시도
       </Button>
@@ -106,13 +87,7 @@ export default function JobDetailScreen() {
   const { user } = useAuthStore();
   const { hasApplied, getApplicationStatus } = useApplications();
 
-  const {
-    job,
-    isLoading,
-    isRefreshing,
-    error,
-    refresh,
-  } = useJobDetail(id ?? '');
+  const { job, isLoading, isRefreshing, error, refresh } = useJobDetail(id ?? '');
 
   // 공고 조회 추적
   useEffect(() => {
@@ -152,10 +127,7 @@ export default function JobDetailScreen() {
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <CustomHeader />
-        <ErrorState
-          message={error?.message ?? '공고를 찾을 수 없습니다'}
-          onRetry={refresh}
-        />
+        <ErrorState message={error?.message ?? '공고를 찾을 수 없습니다'} onRetry={refresh} />
       </SafeAreaView>
     );
   }
@@ -174,11 +146,7 @@ export default function JobDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={refresh}
-            tintColor="#6366f1"
-          />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />
         }
       >
         <JobDetail job={job} />

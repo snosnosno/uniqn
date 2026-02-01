@@ -50,8 +50,12 @@ export function InquiryForm({
   // 다크모드 대응 입력 필드 스타일
   const getInputStyle = (hasError: boolean) => ({
     backgroundColor: hasError
-      ? isDark ? 'rgba(127, 29, 29, 0.2)' : '#FEF2F2'
-      : isDark ? '#1A1625' : '#FFFFFF',
+      ? isDark
+        ? 'rgba(127, 29, 29, 0.2)'
+        : '#FEF2F2'
+      : isDark
+        ? '#1A1625'
+        : '#FFFFFF',
   });
 
   const validateField = useCallback((field: string, value: string) => {
@@ -109,12 +113,7 @@ export function InquiryForm({
         keyboardShouldPersistTaps="handled"
       >
         {/* 카테고리 선택 */}
-        <FormField
-          label="문의 유형"
-          required
-          error={errors.category}
-          className="mb-4"
-        >
+        <FormField label="문의 유형" required error={errors.category} className="mb-4">
           <FormSelect
             options={categoryOptions}
             value={category}
@@ -128,13 +127,7 @@ export function InquiryForm({
         </FormField>
 
         {/* 제목 입력 */}
-        <FormField
-          label="제목"
-          required
-          error={errors.subject}
-          hint="2~100자"
-          className="mb-4"
-        >
+        <FormField label="제목" required error={errors.subject} hint="2~100자" className="mb-4">
           <TextInput
             value={subject}
             onChangeText={(text) => {
@@ -147,9 +140,7 @@ export function InquiryForm({
             placeholder="문의 제목을 입력해주세요"
             placeholderTextColor={isDark ? '#6B7280' : '#9CA3AF'}
             className={`rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
-              errors.subject
-                ? 'border-error-500'
-                : 'border-gray-300 dark:border-surface-overlay'
+              errors.subject ? 'border-error-500' : 'border-gray-300 dark:border-surface-overlay'
             }`}
             style={getInputStyle(!!errors.subject)}
             maxLength={100}
@@ -179,27 +170,18 @@ export function InquiryForm({
             numberOfLines={8}
             textAlignVertical="top"
             className={`min-h-[200px] rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
-              errors.message
-                ? 'border-error-500'
-                : 'border-gray-300 dark:border-surface-overlay'
+              errors.message ? 'border-error-500' : 'border-gray-300 dark:border-surface-overlay'
             }`}
             style={getInputStyle(!!errors.message)}
             maxLength={2000}
           />
-          <Text className="mt-1 text-right text-xs text-gray-400">
-            {message.length}/2000
-          </Text>
+          <Text className="mt-1 text-right text-xs text-gray-400">{message.length}/2000</Text>
         </FormField>
 
         {/* 버튼 */}
         <View className="flex-row gap-3">
           {onCancel && (
-            <Button
-              variant="outline"
-              onPress={onCancel}
-              disabled={isSubmitting}
-              className="flex-1"
-            >
+            <Button variant="outline" onPress={onCancel} disabled={isSubmitting} className="flex-1">
               취소
             </Button>
           )}

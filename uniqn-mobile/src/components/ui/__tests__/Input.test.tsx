@@ -37,13 +37,7 @@ describe('Input', () => {
     });
 
     it('should show error instead of hint when both provided', () => {
-      render(
-        <Input
-          error="에러 메시지"
-          hint="힌트 메시지"
-          placeholder="입력"
-        />
-      );
+      render(<Input error="에러 메시지" hint="힌트 메시지" placeholder="입력" />);
 
       expect(screen.getByText('에러 메시지')).toBeTruthy();
       expect(screen.queryByText('힌트 메시지')).toBeNull();
@@ -52,27 +46,21 @@ describe('Input', () => {
 
   describe('Input types', () => {
     it('should set email keyboard type for email input', () => {
-      const { getByPlaceholderText } = render(
-        <Input type="email" placeholder="이메일" />
-      );
+      const { getByPlaceholderText } = render(<Input type="email" placeholder="이메일" />);
 
       const input = getByPlaceholderText('이메일');
       expect(input.props.keyboardType).toBe('email-address');
     });
 
     it('should set numeric keyboard type for number input', () => {
-      const { getByPlaceholderText } = render(
-        <Input type="number" placeholder="숫자" />
-      );
+      const { getByPlaceholderText } = render(<Input type="number" placeholder="숫자" />);
 
       const input = getByPlaceholderText('숫자');
       expect(input.props.keyboardType).toBe('numeric');
     });
 
     it('should set phone-pad keyboard type for phone input', () => {
-      const { getByPlaceholderText } = render(
-        <Input type="phone" placeholder="전화번호" />
-      );
+      const { getByPlaceholderText } = render(<Input type="phone" placeholder="전화번호" />);
 
       const input = getByPlaceholderText('전화번호');
       expect(input.props.keyboardType).toBe('phone-pad');
@@ -81,9 +69,7 @@ describe('Input', () => {
 
   describe('Password type', () => {
     it('should hide password by default', () => {
-      const { getByPlaceholderText } = render(
-        <Input type="password" placeholder="비밀번호" />
-      );
+      const { getByPlaceholderText } = render(<Input type="password" placeholder="비밀번호" />);
 
       const input = getByPlaceholderText('비밀번호');
       expect(input.props.secureTextEntry).toBe(true);
@@ -103,7 +89,9 @@ describe('Input', () => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
       const pressables = UNSAFE_root.findAllByType(require('react-native').Pressable);
       // The password toggle is a Pressable with hitSlop=8
-      const toggleButton = pressables.find((p: { props: { hitSlop?: number } }) => p.props.hitSlop === 8);
+      const toggleButton = pressables.find(
+        (p: { props: { hitSlop?: number } }) => p.props.hitSlop === 8
+      );
 
       if (toggleButton) {
         fireEvent.press(toggleButton);
@@ -121,9 +109,7 @@ describe('Input', () => {
   describe('User interactions', () => {
     it('should call onChangeText when text changes', () => {
       const onChangeText = jest.fn();
-      render(
-        <Input placeholder="입력" onChangeText={onChangeText} />
-      );
+      render(<Input placeholder="입력" onChangeText={onChangeText} />);
 
       const input = screen.getByPlaceholderText('입력');
       fireEvent.changeText(input, '새 텍스트');
@@ -181,9 +167,7 @@ describe('Input', () => {
           <Text>R</Text>
         </View>
       );
-      render(
-        <Input type="password" rightIcon={rightIcon} placeholder="비밀번호" />
-      );
+      render(<Input type="password" rightIcon={rightIcon} placeholder="비밀번호" />);
 
       // Custom right icon should not be rendered for password inputs
       expect(screen.queryByTestId('custom-right-icon')).toBeNull();
@@ -217,9 +201,7 @@ describe('Input', () => {
     });
 
     it('should support editable prop', () => {
-      const { getByPlaceholderText } = render(
-        <Input placeholder="읽기 전용" editable={false} />
-      );
+      const { getByPlaceholderText } = render(<Input placeholder="읽기 전용" editable={false} />);
 
       expect(getByPlaceholderText('읽기 전용').props.editable).toBe(false);
     });

@@ -22,16 +22,9 @@ import {
 import { useAuthStore } from '@/stores/authStore';
 import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
-import {
-  groupScheduleEvents,
-  filterSchedulesByDate,
-} from '@/utils/scheduleGrouping';
+import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
 import { stableFilters } from '@/utils/queryUtils';
-import type {
-  ScheduleEvent,
-  ScheduleFilters,
-  CalendarView,
-} from '@/types';
+import type { ScheduleEvent, ScheduleFilters, CalendarView } from '@/types';
 
 // ============================================================================
 // Types
@@ -95,7 +88,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
 
   // 스케줄 데이터 (실시간 또는 쿼리)
   const schedules = useMemo(
-    () => (realtime ? realtimeSchedules : query.data?.schedules ?? []),
+    () => (realtime ? realtimeSchedules : (query.data?.schedules ?? [])),
     [realtime, realtimeSchedules, query.data?.schedules]
   );
   const stats = query.data?.stats;
@@ -146,10 +139,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     gcTime: queryCachingOptions.schedules.gcTime,
   });
 
-  const schedules = useMemo(
-    () => query.data?.schedules ?? [],
-    [query.data?.schedules]
-  );
+  const schedules = useMemo(() => query.data?.schedules ?? [], [query.data?.schedules]);
   const stats = query.data?.stats;
 
   // 날짜별 그룹화
@@ -330,9 +320,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   const { initialView = 'month', enableGrouping = true } = normalizedOptions;
 
   const [view, setView] = useState<CalendarView>(initialView);
-  const [selectedDate, setSelectedDate] = useState<string>(
-    new Date().toISOString().split('T')[0]
-  );
+  const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [currentMonth, setCurrentMonth] = useState({
     year: new Date().getFullYear(),
     month: new Date().getMonth() + 1,

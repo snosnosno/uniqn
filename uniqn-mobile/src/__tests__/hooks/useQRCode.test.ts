@@ -9,11 +9,7 @@ import { renderHook, act } from '@testing-library/react-native';
 import type { QRCodeScanResult, EventQRDisplayData, QRCodeAction } from '@/types';
 
 // Import after mocks
-import {
-  useQRCodeScanner,
-  useQRScannerModal,
-  useQRDisplayModal,
-} from '@/hooks/useQRCode';
+import { useQRCodeScanner, useQRScannerModal, useQRDisplayModal } from '@/hooks/useQRCode';
 
 // Mock eventQRService
 const mockProcessEventQRCheckIn = jest.fn();
@@ -121,9 +117,7 @@ describe('useQRCode Hooks', () => {
       mockProcessEventQRCheckIn.mockResolvedValueOnce(mockScanResult);
 
       const onSuccess = jest.fn();
-      const { result } = renderHook(() =>
-        useQRCodeScanner({ onSuccess })
-      );
+      const { result } = renderHook(() => useQRCodeScanner({ onSuccess }));
 
       const scanResult: QRCodeScanResult = {
         success: true,
@@ -134,10 +128,7 @@ describe('useQRCode Hooks', () => {
         await result.current.handleScanResult(scanResult);
       });
 
-      expect(mockProcessEventQRCheckIn).toHaveBeenCalledWith(
-        scanResult.qrString,
-        'test-user-id'
-      );
+      expect(mockProcessEventQRCheckIn).toHaveBeenCalledWith(scanResult.qrString, 'test-user-id');
       expect(mockAddToast).toHaveBeenCalledWith({
         type: 'success',
         message: '출근이 완료되었습니다.',
@@ -177,9 +168,7 @@ describe('useQRCode Hooks', () => {
       mockProcessEventQRCheckIn.mockRejectedValueOnce(new Error('처리 실패'));
 
       const onError = jest.fn();
-      const { result } = renderHook(() =>
-        useQRCodeScanner({ onError })
-      );
+      const { result } = renderHook(() => useQRCodeScanner({ onError }));
 
       const scanResult: QRCodeScanResult = {
         success: true,

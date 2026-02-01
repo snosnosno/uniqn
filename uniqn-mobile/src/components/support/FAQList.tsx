@@ -35,9 +35,7 @@ export function FAQList({
     if (selectedCategory === 'all') {
       return items.filter((item) => item.isActive !== false);
     }
-    return items.filter(
-      (item) => item.category === selectedCategory && item.isActive !== false
-    );
+    return items.filter((item) => item.category === selectedCategory && item.isActive !== false);
   }, [items, selectedCategory]);
 
   // 카테고리별 그룹화

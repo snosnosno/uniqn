@@ -27,12 +27,7 @@ export {
 export type { AuthUser, UserProfile, AuthStatus } from './authStore';
 
 // Toast Store
-export {
-  useToastStore,
-  useToast,
-  selectToasts,
-  selectHasToasts,
-} from './toastStore';
+export { useToastStore, useToast, selectToasts, selectHasToasts } from './toastStore';
 export type { Toast, ToastType } from './toastStore';
 
 // Modal Store
@@ -87,8 +82,4 @@ export {
   useEmployerFilters,
   useScheduleFilters,
 } from './tabFiltersStore';
-export type {
-  JobTabFilters,
-  EmployerTabFilters,
-  ScheduleTabFilters,
-} from './tabFiltersStore';
+export type { JobTabFilters, EmployerTabFilters, ScheduleTabFilters } from './tabFiltersStore';

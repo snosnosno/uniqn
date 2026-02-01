@@ -20,9 +20,7 @@ function LoadingModalContent({ message }: { message?: string }) {
     <View className="items-center py-4">
       <ActivityIndicator size="large" color="#A855F7" />
       {message && (
-        <Text className="text-gray-600 dark:text-gray-300 mt-4 text-center">
-          {message}
-        </Text>
+        <Text className="text-gray-600 dark:text-gray-300 mt-4 text-center">{message}</Text>
       )}
     </View>
   );
@@ -107,18 +105,12 @@ function ModalRenderer({ modal }: { modal: ModalConfig }) {
           {(modal.confirmButton || modal.cancelButton) && (
             <View className="flex-row justify-end gap-2 mt-4">
               {modal.cancelButton && (
-                <Button
-                  variant={modal.cancelButton.variant || 'ghost'}
-                  onPress={handleCancel}
-                >
+                <Button variant={modal.cancelButton.variant || 'ghost'} onPress={handleCancel}>
                   {modal.cancelButton.label}
                 </Button>
               )}
               {modal.confirmButton && (
-                <Button
-                  variant={modal.confirmButton.variant || 'primary'}
-                  onPress={handleConfirm}
-                >
+                <Button variant={modal.confirmButton.variant || 'primary'} onPress={handleConfirm}>
                   {modal.confirmButton.label}
                 </Button>
               )}

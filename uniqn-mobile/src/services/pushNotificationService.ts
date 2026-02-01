@@ -372,11 +372,13 @@ export async function checkPermission(): Promise<NotificationPermissionStatus> {
       granted: status === 'granted',
       canAskAgain: canAskAgain ?? false,
       status: status as NotificationPermissionStatus['status'],
-      ios: ios ? {
-        allowsAlert: ios.allowsAlert ?? false,
-        allowsBadge: ios.allowsBadge ?? false,
-        allowsSound: ios.allowsSound ?? false,
-      } : undefined,
+      ios: ios
+        ? {
+            allowsAlert: ios.allowsAlert ?? false,
+            allowsBadge: ios.allowsBadge ?? false,
+            allowsSound: ios.allowsSound ?? false,
+          }
+        : undefined,
     };
   } catch (error) {
     logger.error('알림 권한 확인 실패', toError(error));
@@ -415,11 +417,13 @@ export async function requestPermission(): Promise<NotificationPermissionStatus>
       granted: status === 'granted',
       canAskAgain: canAskAgain ?? false,
       status: status as NotificationPermissionStatus['status'],
-      ios: ios ? {
-        allowsAlert: ios.allowsAlert ?? false,
-        allowsBadge: ios.allowsBadge ?? false,
-        allowsSound: ios.allowsSound ?? false,
-      } : undefined,
+      ios: ios
+        ? {
+            allowsAlert: ios.allowsAlert ?? false,
+            allowsBadge: ios.allowsBadge ?? false,
+            allowsSound: ios.allowsSound ?? false,
+          }
+        : undefined,
     };
 
     logger.info('푸시 알림 권한 요청 결과', { status: result.status, granted: result.granted });
@@ -599,12 +603,12 @@ export async function scheduleLocalNotification(
       if ('seconds' in options.trigger) {
         trigger = {
           type: Notifications!.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: options.trigger.seconds
+          seconds: options.trigger.seconds,
         } as NotificationsTypes.TimeIntervalTriggerInput;
       } else if ('date' in options.trigger) {
         trigger = {
           type: Notifications!.SchedulableTriggerInputTypes.DATE,
-          date: options.trigger.date
+          date: options.trigger.date,
         } as NotificationsTypes.DateTriggerInput;
       }
     }
@@ -676,18 +680,14 @@ export async function dismissAllNotifications(): Promise<void> {
 /**
  * 포그라운드 알림 수신 핸들러 설정
  */
-export function setNotificationReceivedHandler(
-  handler: NotificationReceivedHandler | null
-): void {
+export function setNotificationReceivedHandler(handler: NotificationReceivedHandler | null): void {
   notificationReceivedHandler = handler;
 }
 
 /**
  * 알림 응답 핸들러 설정 (알림 터치 시)
  */
-export function setNotificationResponseHandler(
-  handler: NotificationResponseHandler | null
-): void {
+export function setNotificationResponseHandler(handler: NotificationResponseHandler | null): void {
   notificationResponseHandler = handler;
 }
 

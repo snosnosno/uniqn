@@ -5,10 +5,7 @@
  */
 
 // Role Extractor
-export {
-  extractRolesFromPosting,
-  syncRolesWithExtracted,
-} from './roleExtractor';
+export { extractRolesFromPosting, syncRolesWithExtracted } from './roleExtractor';
 export type { ExtractedRole } from './roleExtractor';
 
 // Cost Calculator

@@ -131,18 +131,12 @@ function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
  * @param jobPostingId 공고 ID
  * @returns 확정 스태프 목록, 날짜별 그룹, 통계
  */
-export async function getConfirmedStaff(
-  jobPostingId: string
-): Promise<GetConfirmedStaffResult> {
+export async function getConfirmedStaff(jobPostingId: string): Promise<GetConfirmedStaffResult> {
   try {
     logger.info('확정 스태프 목록 조회', { jobPostingId });
 
     const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('jobPostingId', '==', jobPostingId),
-      orderBy('date', 'asc')
-    );
+    const q = query(workLogsRef, where('jobPostingId', '==', jobPostingId), orderBy('date', 'asc'));
     const snapshot = await getDocs(q);
     const workLogs = parseWorkLogDocuments(
       snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
@@ -161,10 +155,7 @@ export async function getConfirmedStaff(
 
     // WorkLog를 ConfirmedStaff로 변환
     const staff: ConfirmedStaff[] = workLogs.map((workLog) => {
-      const confirmedStaff = workLogToConfirmedStaff(
-        workLog,
-        nameMap.get(workLog.staffId)
-      );
+      const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
       // 상태 정규화
       confirmedStaff.status = mapWorkLogStatus(workLog.status);
       return confirmedStaff;
@@ -226,10 +217,7 @@ export async function getConfirmedStaffByDate(
 
     // 변환
     const staff: ConfirmedStaff[] = workLogs.map((workLog) => {
-      const confirmedStaff = workLogToConfirmedStaff(
-        workLog,
-        nameMap.get(workLog.staffId)
-      );
+      const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
       confirmedStaff.status = mapWorkLogStatus(workLog.status);
       return confirmedStaff;
     });
@@ -345,8 +333,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
       }
 
       // 시간 수정 이력 저장
-      const modificationHistory: WorkTimeModification[] =
-        workLog.modificationHistory || [];
+      const modificationHistory: WorkTimeModification[] = workLog.modificationHistory || [];
 
       // 이전 시간
       const prevCheckIn = workLog.checkInTime ?? null;
@@ -409,9 +396,7 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
  * - Application 상태 복원
  * - JobPosting filledPositions 감소
  */
-export async function deleteConfirmedStaff(
-  input: DeleteConfirmedStaffInput
-): Promise<void> {
+export async function deleteConfirmedStaff(input: DeleteConfirmedStaffInput): Promise<void> {
   try {
     logger.info('확정 스태프 삭제', { ...input });
 
@@ -495,10 +480,7 @@ export async function deleteConfirmedStaff(
  *
  * @description 스태프 노쇼 상태로 변경
  */
-export async function markAsNoShow(
-  workLogId: string,
-  reason?: string
-): Promise<void> {
+export async function markAsNoShow(workLogId: string, reason?: string): Promise<void> {
   try {
     logger.info('노쇼 처리', { workLogId, reason });
 
@@ -569,11 +551,7 @@ export function subscribeToConfirmedStaff(
   logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
   const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-  const q = query(
-    workLogsRef,
-    where('jobPostingId', '==', jobPostingId),
-    orderBy('date', 'asc')
-  );
+  const q = query(workLogsRef, where('jobPostingId', '==', jobPostingId), orderBy('date', 'asc'));
 
   const unsubscribe = onSnapshot(
     q,
@@ -596,10 +574,7 @@ export function subscribeToConfirmedStaff(
 
         // 변환
         const staff: ConfirmedStaff[] = workLogs.map((workLog) => {
-          const confirmedStaff = workLogToConfirmedStaff(
-            workLog,
-            nameMap.get(workLog.staffId)
-          );
+          const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
           confirmedStaff.status = mapWorkLogStatus(workLog.status);
           return confirmedStaff;
         });

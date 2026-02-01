@@ -20,10 +20,10 @@ import { z } from 'zod';
  * 정산 상태 스키마
  */
 export const settlementStatusSchema = z.enum([
-  'pending',       // 정산 대기
-  'processing',    // 정산 진행 중
-  'completed',     // 정산 완료
-  'cancelled',     // 정산 취소
+  'pending', // 정산 대기
+  'processing', // 정산 진행 중
+  'completed', // 정산 완료
+  'cancelled', // 정산 취소
 ]);
 
 export type SettlementStatusSchema = z.infer<typeof settlementStatusSchema>;
@@ -32,8 +32,8 @@ export type SettlementStatusSchema = z.infer<typeof settlementStatusSchema>;
  * 정산 타입 스키마
  */
 export const settlementTypeSchema = z.enum([
-  'individual',    // 개별 정산
-  'batch',         // 일괄 정산
+  'individual', // 개별 정산
+  'batch', // 일괄 정산
 ]);
 
 export type SettlementTypeSchema = z.infer<typeof settlementTypeSchema>;
@@ -79,10 +79,12 @@ export type CreateSettlementData = z.infer<typeof createSettlementSchema>;
  * 정산 필터 스키마
  */
 export const settlementFiltersSchema = z.object({
-  dateRange: z.object({
-    start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-    end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-  }).optional(),
+  dateRange: z
+    .object({
+      start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
+      end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
+    })
+    .optional(),
   status: settlementStatusSchema.optional(),
   staffId: z.string().optional(),
   jobPostingId: z.string().optional(),

@@ -11,10 +11,7 @@ import { SheetModal } from '../ui/SheetModal';
 import { useQuery } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryClient';
 import { Avatar } from '../ui/Avatar';
-import {
-  ChevronDownIcon,
-  ChevronUpIcon,
-} from '../icons';
+import { ChevronDownIcon, ChevronUpIcon } from '../icons';
 import { formatDate } from '@/utils/dateUtils';
 import { logger } from '@/utils/logger';
 import { getUserProfile } from '@/services';
@@ -26,16 +23,9 @@ import {
   formatCurrency,
   formatDuration,
 } from '@/utils/settlement';
-import {
-  SalaryTypeSelector,
-} from './SalaryTypeSelector';
-import {
-  AllowanceEditor,
-} from './AllowanceEditor';
-import {
-  TaxSettingsEditor,
-  type TaxSettings,
-} from './TaxSettingsEditor';
+import { SalaryTypeSelector } from './SalaryTypeSelector';
+import { AllowanceEditor } from './AllowanceEditor';
+import { TaxSettingsEditor, type TaxSettings } from './TaxSettingsEditor';
 import { getRoleDisplayName } from '@/types/unified';
 import type { UserProfile } from '@/services';
 import type { WorkLog } from '@/types';
@@ -86,13 +76,7 @@ interface AccordionSectionProps {
   children: React.ReactNode;
 }
 
-function AccordionSection({
-  title,
-  icon,
-  expanded,
-  onToggle,
-  children,
-}: AccordionSectionProps) {
+function AccordionSection({ title, icon, expanded, onToggle, children }: AccordionSectionProps) {
   return (
     <View className="border-b border-gray-100 dark:border-surface-overlay">
       <Pressable
@@ -111,11 +95,7 @@ function AccordionSection({
           <ChevronDownIcon size={20} color="#6B7280" />
         )}
       </Pressable>
-      {expanded && (
-        <View className="px-4 pb-4">
-          {children}
-        </View>
-      )}
+      {expanded && <View className="px-4 pb-4">{children}</View>}
     </View>
   );
 }
@@ -173,17 +153,17 @@ export function SettlementEditModal({
   const baseName = userProfile?.name || (workLog as WorkLog & { staffName?: string })?.staffName;
   const displayName = useMemo(() => {
     if (!baseName) return workLog ? `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}` : '';
-    const nickname = userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string })?.staffNickname;
-    return nickname && nickname !== baseName
-      ? `${baseName}(${nickname})`
-      : baseName;
+    const nickname =
+      userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string })?.staffNickname;
+    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
   }, [baseName, userProfile?.nickname, workLog]);
 
-  const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog]);
+  const workDate = useMemo(() => (workLog ? parseTimestamp(workLog.date) : null), [workLog]);
 
   // 정산 계산 (taxSettings 포함하여 세금도 함께 계산)
-  const settlement = useMemo(() =>
-    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
+  const settlement = useMemo(
+    () =>
+      workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
     [workLog, salaryInfo, allowances, taxSettings]
   );
 
@@ -193,7 +173,7 @@ export function SettlementEditModal({
 
   // 핸들러
   const toggleSection = useCallback((section: keyof typeof expandedSections) => {
-    setExpandedSections(prev => ({
+    setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
     }));
@@ -213,7 +193,9 @@ export function SettlementEditModal({
       onClose();
     } catch (error) {
       // 에러 처리는 상위 컴포넌트에서
-      logger.error('정산 금액 수정 실패', error instanceof Error ? error : undefined, { component: 'SettlementEditModal' });
+      logger.error('정산 금액 수정 실패', error instanceof Error ? error : undefined, {
+        component: 'SettlementEditModal',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -260,146 +242,141 @@ export function SettlementEditModal({
       <View>
         {/* 프로필 헤더 */}
         <View className="flex-row items-center p-4 bg-gray-50 dark:bg-surface -mx-5 -mt-5">
-            <Avatar
-              source={profilePhotoURL}
-              name={displayName}
-              size="md"
-              className="mr-3"
-            />
-            <View className="flex-1">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {displayName}
-              </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {workLog.role ? getRoleDisplayName(workLog.role, (workLog as WorkLog & { customRole?: string }).customRole) : '역할 없음'} • {workDate ? formatDate(workDate) : '날짜 없음'}
-              </Text>
-            </View>
+          <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
+          <View className="flex-1">
+            <Text className="text-base font-semibold text-gray-900 dark:text-white">
+              {displayName}
+            </Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400">
+              {workLog.role
+                ? getRoleDisplayName(
+                    workLog.role,
+                    (workLog as WorkLog & { customRole?: string }).customRole
+                  )
+                : '역할 없음'}{' '}
+              • {workDate ? formatDate(workDate) : '날짜 없음'}
+            </Text>
           </View>
+        </View>
 
-          {/* 급여 설정 섹션 */}
-          <AccordionSection
-            title="급여 설정"
-            expanded={expandedSections.salary}
-            onToggle={() => toggleSection('salary')}
-          >
-            <SalaryTypeSelector
-              salaryInfo={salaryInfo}
-              onChange={setSalaryInfo}
-              hoursWorked={settlement?.hoursWorked}
-              showLabel={false}
-            />
-          </AccordionSection>
+        {/* 급여 설정 섹션 */}
+        <AccordionSection
+          title="급여 설정"
+          expanded={expandedSections.salary}
+          onToggle={() => toggleSection('salary')}
+        >
+          <SalaryTypeSelector
+            salaryInfo={salaryInfo}
+            onChange={setSalaryInfo}
+            hoursWorked={settlement?.hoursWorked}
+            showLabel={false}
+          />
+        </AccordionSection>
 
-          {/* 수당 설정 섹션 */}
-          <AccordionSection
-            title="수당 설정"
-            expanded={expandedSections.allowances}
-            onToggle={() => toggleSection('allowances')}
-          >
-            <AllowanceEditor
-              allowances={allowances}
-              onChange={setAllowances}
-              showLabel={false}
-            />
-          </AccordionSection>
+        {/* 수당 설정 섹션 */}
+        <AccordionSection
+          title="수당 설정"
+          expanded={expandedSections.allowances}
+          onToggle={() => toggleSection('allowances')}
+        >
+          <AllowanceEditor allowances={allowances} onChange={setAllowances} showLabel={false} />
+        </AccordionSection>
 
-          {/* 세금 설정 섹션 */}
-          <AccordionSection
-            title="세금 설정"
-            expanded={expandedSections.tax}
-            onToggle={() => toggleSection('tax')}
-          >
-            <TaxSettingsEditor
-              taxSettings={taxSettings}
-              onChange={setTaxSettings}
-              totalAmount={settlement?.totalPay}
-              showLabel={false}
-              showPreview={false}
-            />
-          </AccordionSection>
+        {/* 세금 설정 섹션 */}
+        <AccordionSection
+          title="세금 설정"
+          expanded={expandedSections.tax}
+          onToggle={() => toggleSection('tax')}
+        >
+          <TaxSettingsEditor
+            taxSettings={taxSettings}
+            onChange={setTaxSettings}
+            totalAmount={settlement?.totalPay}
+            showLabel={false}
+            showPreview={false}
+          />
+        </AccordionSection>
 
-          {/* 정산 금액 요약 */}
-          {settlement && (
-            <View className="px-4 py-4 bg-gray-50 dark:bg-surface">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-                정산 금액 요약
-              </Text>
+        {/* 정산 금액 요약 */}
+        {settlement && (
+          <View className="px-4 py-4 bg-gray-50 dark:bg-surface">
+            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+              정산 금액 요약
+            </Text>
 
-              <View className="bg-white dark:bg-surface-dark rounded-lg p-4 flex-col gap-2">
-                {/* 기본 급여 */}
+            <View className="bg-white dark:bg-surface-dark rounded-lg p-4 flex-col gap-2">
+              {/* 기본 급여 */}
+              <View className="flex-row items-center justify-between">
+                <Text className="text-sm text-gray-600 dark:text-gray-400">
+                  기본급
+                  {settlement.hoursWorked > 0 && (
+                    <Text className="text-xs"> ({formatDuration(settlement.hoursWorked)})</Text>
+                  )}
+                </Text>
+                <Text className="text-sm font-medium text-gray-900 dark:text-white">
+                  {formatCurrency(settlement.basePay)}
+                </Text>
+              </View>
+
+              {/* 수당 */}
+              {settlement.allowancePay > 0 && (
+                <View className="flex-row items-center justify-between">
+                  <Text className="text-sm text-gray-600 dark:text-gray-400">수당</Text>
+                  <Text className="text-sm font-medium text-green-600 dark:text-green-400">
+                    +{formatCurrency(settlement.allowancePay)}
+                  </Text>
+                </View>
+              )}
+
+              {/* 세금 */}
+              {taxSettings.type !== 'none' && taxAmount > 0 && (
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">
-                    기본급
-                    {settlement.hoursWorked > 0 && (
-                      <Text className="text-xs"> ({formatDuration(settlement.hoursWorked)})</Text>
+                    세금
+                    {taxSettings.type === 'rate' && (
+                      <Text className="text-xs"> ({taxSettings.value}%)</Text>
                     )}
                   </Text>
-                  <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                    {formatCurrency(settlement.basePay)}
+                  <Text className="text-sm font-medium text-red-500 dark:text-red-400">
+                    -{formatCurrency(taxAmount)}
                   </Text>
                 </View>
+              )}
 
-                {/* 수당 */}
-                {settlement.allowancePay > 0 && (
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-sm text-gray-600 dark:text-gray-400">
-                      수당
-                    </Text>
-                    <Text className="text-sm font-medium text-green-600 dark:text-green-400">
-                      +{formatCurrency(settlement.allowancePay)}
-                    </Text>
-                  </View>
-                )}
+              {/* 구분선 */}
+              <View className="h-px bg-gray-200 dark:bg-surface my-2" />
 
-                {/* 세금 */}
-                {taxSettings.type !== 'none' && taxAmount > 0 && (
-                  <View className="flex-row items-center justify-between">
-                    <Text className="text-sm text-gray-600 dark:text-gray-400">
-                      세금
-                      {taxSettings.type === 'rate' && (
-                        <Text className="text-xs"> ({taxSettings.value}%)</Text>
-                      )}
-                    </Text>
-                    <Text className="text-sm font-medium text-red-500 dark:text-red-400">
-                      -{formatCurrency(taxAmount)}
-                    </Text>
-                  </View>
-                )}
-
-                {/* 구분선 */}
-                <View className="h-px bg-gray-200 dark:bg-surface my-2" />
-
-                {/* 세후 금액 */}
-                <View className="flex-row items-center justify-between">
-                  <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                    {taxSettings.type !== 'none' ? '세후 금액' : '총 정산 금액'}
-                  </Text>
-                  <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
-                    {formatCurrency(afterTaxAmount)}
-                  </Text>
-                </View>
+              {/* 세후 금액 */}
+              <View className="flex-row items-center justify-between">
+                <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                  {taxSettings.type !== 'none' ? '세후 금액' : '총 정산 금액'}
+                </Text>
+                <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
+                  {formatCurrency(afterTaxAmount)}
+                </Text>
               </View>
             </View>
-          )}
-
-          {/* 수정 사유 입력 */}
-          <View className="px-4 py-4">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              수정 사유 (선택)
-            </Text>
-            <TextInput
-              value={reason}
-              onChangeText={setReason}
-              placeholder="예: 역할 변경으로 인한 조정"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={2}
-              className="bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white"
-              accessibilityLabel="수정 사유"
-            />
           </View>
+        )}
 
-          <View className="h-4" />
+        {/* 수정 사유 입력 */}
+        <View className="px-4 py-4">
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            수정 사유 (선택)
+          </Text>
+          <TextInput
+            value={reason}
+            onChangeText={setReason}
+            placeholder="예: 역할 변경으로 인한 조정"
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={2}
+            className="bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white"
+            accessibilityLabel="수정 사유"
+          />
+        </View>
+
+        <View className="h-4" />
       </View>
     </SheetModal>
   );

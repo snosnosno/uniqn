@@ -121,8 +121,8 @@ function formatSingleDate(dateStr: string): string {
 function calculateTimeSlotStats(timeSlots: TimeSlotCompat[]): { total: number; filled: number } {
   let total = 0;
   let filled = 0;
-  timeSlots.forEach(slot => {
-    slot.roles.forEach(role => {
+  timeSlots.forEach((slot) => {
+    slot.roles.forEach((role) => {
       total += role.headcount ?? role.count ?? 0;
       filled += role.filled ?? 0;
     });
@@ -152,7 +152,7 @@ const GroupItem = memo(function GroupItem({
 
   const toggleExpand = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsExpanded(prev => !prev);
+    setIsExpanded((prev) => !prev);
   }, []);
 
   const isSingleDay = group.stats.dayCount === 1;
@@ -165,17 +165,18 @@ const GroupItem = memo(function GroupItem({
     : firstTimeSlot?.startTime || '-';
 
   // 역할 표시
-  const rolesDisplay = firstTimeSlot?.roles
-    .map(r => {
-      const label = getRoleLabel(r.role, undefined, r.customRole);
-      const headcount = r.headcount ?? 0;
-      if (showFilledCount) {
-        const filled = r.filled ?? 0;
-        return `${label} ${filled}/${headcount}명`;
-      }
-      return `${label} ${headcount}명`;
-    })
-    .join(', ') || '-';
+  const rolesDisplay =
+    firstTimeSlot?.roles
+      .map((r) => {
+        const label = getRoleLabel(r.role, undefined, r.customRole);
+        const headcount = r.headcount ?? 0;
+        if (showFilledCount) {
+          const filled = r.filled ?? 0;
+          return `${label} ${filled}/${headcount}명`;
+        }
+        return `${label} ${headcount}명`;
+      })
+      .join(', ') || '-';
 
   return (
     <View className="mb-3">
@@ -239,10 +240,7 @@ const GroupItem = memo(function GroupItem({
                   {formatSingleDate(dateStr)}
                 </Text>
                 {showFilledCount && (
-                  <Badge
-                    variant={stats.filled >= stats.total ? 'success' : 'default'}
-                    size="sm"
-                  >
+                  <Badge variant={stats.filled >= stats.total ? 'success' : 'default'} size="sm">
                     {stats.filled}/{stats.total}
                   </Badge>
                 )}
@@ -272,13 +270,13 @@ export const GroupedDateRequirementDisplay = memo(function GroupedDateRequiremen
     if (!requirements || requirements.length === 0) return [];
 
     // DateSpecificRequirement로 변환 (타입 호환성)
-    const converted = requirements.map(req => ({
+    const converted = requirements.map((req) => ({
       date: toDateString(req.date),
       isGrouped: req.isGrouped,
-      timeSlots: req.timeSlots.map(slot => ({
+      timeSlots: req.timeSlots.map((slot) => ({
         ...slot,
         startTime: slot.startTime || slot.time,
-        roles: slot.roles.map(role => ({
+        roles: slot.roles.map((role) => ({
           ...role,
           role: role.role || role.name,
           headcount: role.headcount ?? role.count ?? 0,
@@ -290,9 +288,9 @@ export const GroupedDateRequirementDisplay = memo(function GroupedDateRequiremen
     const groups = groupRequirementsToDateRanges(converted as DateSpecificRequirement[]);
 
     // 각 그룹에 원본 요구사항 및 통계 추가
-    return groups.map(group => {
+    return groups.map((group) => {
       const groupDates = getDatesBetween(group.startDate, group.endDate);
-      const originalRequirements = requirements.filter(req => {
+      const originalRequirements = requirements.filter((req) => {
         const dateStr = toDateString(req.date);
         return groupDates.includes(dateStr);
       });
@@ -301,8 +299,8 @@ export const GroupedDateRequirementDisplay = memo(function GroupedDateRequiremen
       let totalPerDay = 0;
       if (originalRequirements.length > 0) {
         const firstReq = originalRequirements[0]!;
-        firstReq.timeSlots.forEach(slot => {
-          slot.roles.forEach(role => {
+        firstReq.timeSlots.forEach((slot) => {
+          slot.roles.forEach((role) => {
             totalPerDay += role.headcount ?? role.count ?? 0;
           });
         });
@@ -316,11 +314,17 @@ export const GroupedDateRequirementDisplay = memo(function GroupedDateRequiremen
         stats: {
           total: totalPerDay * dayCount,
           filled: originalRequirements.reduce((acc, req) => {
-            return acc + req.timeSlots.reduce((slotAcc, slot) => {
-              return slotAcc + slot.roles.reduce((roleAcc, role) => {
-                return roleAcc + (role.filled ?? 0);
-              }, 0);
-            }, 0);
+            return (
+              acc +
+              req.timeSlots.reduce((slotAcc, slot) => {
+                return (
+                  slotAcc +
+                  slot.roles.reduce((roleAcc, role) => {
+                    return roleAcc + (role.filled ?? 0);
+                  }, 0)
+                );
+              }, 0)
+            );
           }, 0),
           dayCount,
         },

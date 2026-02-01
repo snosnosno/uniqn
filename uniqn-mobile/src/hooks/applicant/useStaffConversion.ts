@@ -122,12 +122,9 @@ export function useConvertToStaff() {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }
-      return convertApplicantToStaff(
-        input.applicationId,
-        input.jobPostingId,
-        user.uid,
-        { notes: input.notes }
-      );
+      return convertApplicantToStaff(input.applicationId, input.jobPostingId, user.uid, {
+        notes: input.notes,
+      });
     },
     onSuccess: (result, variables) => {
       logger.info('스태프 변환 완료', {
@@ -155,7 +152,13 @@ export function useBatchConvertToStaff() {
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: ({ applicationIds, jobPostingId }: { applicationIds: string[]; jobPostingId: string }) => {
+    mutationFn: ({
+      applicationIds,
+      jobPostingId,
+    }: {
+      applicationIds: string[];
+      jobPostingId: string;
+    }) => {
       if (!user) {
         throw new Error('로그인이 필요합니다');
       }

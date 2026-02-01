@@ -42,7 +42,10 @@ interface TournamentStatusBadgePropsWithStatus {
   tournamentConfig?: never;
 }
 
-type TournamentStatusBadgeProps = (TournamentStatusBadgePropsWithConfig | TournamentStatusBadgePropsWithStatus) & {
+type TournamentStatusBadgeProps = (
+  | TournamentStatusBadgePropsWithConfig
+  | TournamentStatusBadgePropsWithStatus
+) & {
   /** 거부 사유 표시 여부 (기본: true) */
   showRejectionReason?: boolean;
   /** 크기 */
@@ -141,28 +144,31 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   const { resubmit } = useTournamentApproval();
 
   // tournamentConfig 또는 status/rejectionReason에서 값 추출
-  const approvalStatus: ApprovalStatus = 'tournamentConfig' in props && props.tournamentConfig
-    ? props.tournamentConfig.approvalStatus
-    : (props.status ?? 'pending');
+  const approvalStatus: ApprovalStatus =
+    'tournamentConfig' in props && props.tournamentConfig
+      ? props.tournamentConfig.approvalStatus
+      : (props.status ?? 'pending');
 
-  const rejectionReason = 'tournamentConfig' in props && props.tournamentConfig
-    ? props.tournamentConfig.rejectionReason
-    : props.rejectionReason;
+  const rejectionReason =
+    'tournamentConfig' in props && props.tournamentConfig
+      ? props.tournamentConfig.rejectionReason
+      : props.rejectionReason;
 
-  const rejectedAt = 'tournamentConfig' in props && props.tournamentConfig
-    ? props.tournamentConfig.rejectedAt
-    : undefined;
+  const rejectedAt =
+    'tournamentConfig' in props && props.tournamentConfig
+      ? props.tournamentConfig.rejectedAt
+      : undefined;
 
-  const resubmittedAt = 'tournamentConfig' in props && props.tournamentConfig
-    ? props.tournamentConfig.resubmittedAt
-    : undefined;
+  const resubmittedAt =
+    'tournamentConfig' in props && props.tournamentConfig
+      ? props.tournamentConfig.resubmittedAt
+      : undefined;
 
   const config = STATUS_CONFIG[approvalStatus];
   const sizeConfig = SIZE_CONFIG[size];
 
   // 거부 상태이고 사유가 있을 때만 모달 표시 가능
-  const canShowReason =
-    showRejectionReason && approvalStatus === 'rejected' && rejectionReason;
+  const canShowReason = showRejectionReason && approvalStatus === 'rejected' && rejectionReason;
 
   const rejectedDate = toDate(rejectedAt);
   const formattedDate = formatDateTime(rejectedDate);
@@ -197,7 +203,8 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   const handleResubmitConfirm = useCallback(() => {
     if (!postingId) return;
 
-    resubmit.mutateAsync({ postingId })
+    resubmit
+      .mutateAsync({ postingId })
       .then(() => {
         setShowConfirmModal(false);
         setShowModal(false);
@@ -242,11 +249,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
           {badgeContent}
         </Pressable>
       ) : (
-        <View
-          accessibilityRole="text"
-          accessibilityLabel={config.label}
-          className={badgeClassName}
-        >
+        <View accessibilityRole="text" accessibilityLabel={config.label} className={badgeClassName}>
           {badgeContent}
         </View>
       )}
@@ -262,9 +265,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
         >
           <View className="-mt-2">
             {formattedDate && (
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-3">
-                {formattedDate}
-              </Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-3">{formattedDate}</Text>
             )}
 
             {/* 거부 사유 */}
@@ -272,9 +273,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
               <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                 거부 사유
               </Text>
-              <Text className="text-base text-gray-700 dark:text-gray-300">
-                {rejectionReason}
-              </Text>
+              <Text className="text-base text-gray-700 dark:text-gray-300">{rejectionReason}</Text>
             </View>
 
             <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
@@ -302,9 +301,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
                   ) : (
                     <>
                       <RefreshIcon size={18} color="#ffffff" />
-                      <Text className="ml-2 text-base font-medium text-white">
-                        재제출
-                      </Text>
+                      <Text className="ml-2 text-base font-medium text-white">재제출</Text>
                     </>
                   )}
                 </Pressable>

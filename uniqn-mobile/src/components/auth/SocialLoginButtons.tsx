@@ -79,8 +79,7 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
  *
  * SDK 구현 완료 후 이 플래그를 true로 변경
  */
-const SOCIAL_LOGIN_ENABLED =
-  __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
+const SOCIAL_LOGIN_ENABLED = __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
 
 // ============================================================================
 // Component
@@ -114,9 +113,7 @@ export function SocialLoginButtons({
     }
   };
 
-  const visibleButtons = SOCIAL_BUTTONS.filter((button) =>
-    button.showOn.includes(currentPlatform)
-  );
+  const visibleButtons = SOCIAL_BUTTONS.filter((button) => button.showOn.includes(currentPlatform));
 
   if (visibleButtons.length === 0) {
     return null;
@@ -150,11 +147,7 @@ export function SocialLoginButtons({
             ) : (
               <>
                 <Text className="text-lg mr-2">{button.icon}</Text>
-                <Text
-                  className={`font-medium text-base ${button.textColor}`}
-                >
-                  {button.label}
-                </Text>
+                <Text className={`font-medium text-base ${button.textColor}`}>{button.label}</Text>
               </>
             )}
           </Pressable>

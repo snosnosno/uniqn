@@ -95,12 +95,9 @@ export function useAllowances(
   );
 
   // 수당 값이 "제공" 상태인지 확인
-  const isAllowanceProvided = useCallback(
-    (value: number | undefined): boolean => {
-      return value === PROVIDED_FLAG;
-    },
-    []
-  );
+  const isAllowanceProvided = useCallback((value: number | undefined): boolean => {
+    return value === PROVIDED_FLAG;
+  }, []);
 
   return {
     handleGuaranteedHoursChange,

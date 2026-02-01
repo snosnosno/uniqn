@@ -104,8 +104,7 @@ export class WorkTimeDisplay {
       TimeNormalizer.parseTime(source.startTime) ??
       TimeNormalizer.parseTime(source.scheduledStartTime);
     const scheduledEnd =
-      TimeNormalizer.parseTime(source.endTime) ??
-      TimeNormalizer.parseTime(source.scheduledEndTime);
+      TimeNormalizer.parseTime(source.endTime) ?? TimeNormalizer.parseTime(source.scheduledEndTime);
 
     // 3. timeSlot 폴백 (source.timeSlot 우선, jobPostingCard.timeSlot 폴백)
     let timeSlotStart: Date | null = null;

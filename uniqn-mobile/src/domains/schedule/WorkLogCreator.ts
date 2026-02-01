@@ -117,7 +117,10 @@ export class WorkLogCreator {
 
     // "~" 또는 " - " 로 분리
     const separators = /[-~]/;
-    const parts = trimmed.split(separators).map((p) => p.trim()).filter(Boolean);
+    const parts = trimmed
+      .split(separators)
+      .map((p) => p.trim())
+      .filter(Boolean);
 
     return {
       startTime: parts[0] || null,
@@ -144,10 +147,7 @@ export class WorkLogCreator {
    * @param time - 시간 (HH:mm)
    * @returns Timestamp 또는 null (파싱 실패 시)
    */
-  static createTimestampFromDateTime(
-    date: string,
-    time: string
-  ): Timestamp | null {
+  static createTimestampFromDateTime(date: string, time: string): Timestamp | null {
     if (!date || !time) return null;
 
     // 시간 형식 검증 (HH:mm 또는 H:mm)
@@ -273,9 +273,7 @@ export class WorkLogCreator {
    * @param assignments - Assignment 배열
    * @returns 총 날짜 개수 (= 생성될 WorkLog 수)
    */
-  static countAssignments(
-    assignments: { dates: string[] }[]
-  ): number {
+  static countAssignments(assignments: { dates: string[] }[]): number {
     return assignments.reduce((sum, a) => sum + a.dates.length, 0);
   }
 }

@@ -207,13 +207,17 @@ export class SettlementCalculator {
 
     // 세금 계산
     const taxSettings = input.taxSettings || DEFAULT_TAX_SETTINGS;
-    const taxResult = TaxCalculator.calculateByItems(totalPay, {
-      basePay,
-      meal: input.allowances?.meal,
-      transportation: input.allowances?.transportation,
-      accommodation: input.allowances?.accommodation,
-      additional: input.allowances?.additional,
-    }, taxSettings);
+    const taxResult = TaxCalculator.calculateByItems(
+      totalPay,
+      {
+        basePay,
+        meal: input.allowances?.meal,
+        transportation: input.allowances?.transportation,
+        accommodation: input.allowances?.accommodation,
+        additional: input.allowances?.additional,
+      },
+      taxSettings
+    );
 
     const afterTaxPay = totalPay - taxResult.taxAmount;
 
@@ -275,9 +279,7 @@ export class SettlementCalculator {
   static calculateBatch(
     inputs: { workLogId: string; input: CalculationInput }[]
   ): SettlementResult[] {
-    return inputs.map(({ workLogId, input }) =>
-      this.calculateWithCache(workLogId, input)
-    );
+    return inputs.map(({ workLogId, input }) => this.calculateWithCache(workLogId, input));
   }
 
   // ==========================================================================
@@ -313,13 +315,12 @@ export class SettlementCalculator {
 
     // dateRequirements > timeSlots > roles 구조에서 역할별 급여 조회 (flatMap으로 평탄화)
     const allRoles = (jobPostingCard.dateRequirements ?? [])
-      .flatMap(dateReq => dateReq.timeSlots ?? [])
-      .flatMap(timeSlot => timeSlot.roles ?? []);
+      .flatMap((dateReq) => dateReq.timeSlots ?? [])
+      .flatMap((timeSlot) => timeSlot.roles ?? []);
 
-    const matchedRole = allRoles.find(r => {
+    const matchedRole = allRoles.find((r) => {
       const isMatch =
-        (role === 'other' && customRole && r.customRole === customRole) ||
-        r.role === role;
+        (role === 'other' && customRole && r.customRole === customRole) || r.role === role;
       return isMatch && r.salary;
     });
 
@@ -381,9 +382,7 @@ export class SettlementCalculator {
 
     // 세금 설정 결정 (오버라이드 우선)
     const taxSettings: TaxSettings =
-      workLogData.customTaxSettings ||
-      jobPostingCard?.taxSettings ||
-      DEFAULT_TAX_SETTINGS;
+      workLogData.customTaxSettings || jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS;
 
     // 정산 계산
     const result = this.calculate({

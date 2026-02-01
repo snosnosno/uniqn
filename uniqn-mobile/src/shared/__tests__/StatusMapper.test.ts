@@ -19,12 +19,9 @@ describe('StatusMapper', () => {
       ['checked_out', 'checked_out'],
       ['completed', 'checked_out'],
       ['cancelled', 'not_started'],
-    ] as const)(
-      'WorkLogStatus %s → AttendanceStatus %s',
-      (input, expected) => {
-        expect(StatusMapper.toAttendance(input as WorkLogStatus)).toBe(expected);
-      }
-    );
+    ] as const)('WorkLogStatus %s → AttendanceStatus %s', (input, expected) => {
+      expect(StatusMapper.toAttendance(input as WorkLogStatus)).toBe(expected);
+    });
   });
 
   // ==========================================================================
@@ -37,14 +34,9 @@ describe('StatusMapper', () => {
       ['checked_out', 'completed'],
       ['completed', 'completed'],
       ['cancelled', 'cancelled'],
-    ] as const)(
-      'WorkLogStatus %s → ScheduleType %s',
-      (input, expected) => {
-        expect(StatusMapper.workLogToSchedule(input as WorkLogStatus)).toBe(
-          expected
-        );
-      }
-    );
+    ] as const)('WorkLogStatus %s → ScheduleType %s', (input, expected) => {
+      expect(StatusMapper.workLogToSchedule(input as WorkLogStatus)).toBe(expected);
+    });
   });
 
   // ==========================================================================
@@ -59,14 +51,9 @@ describe('StatusMapper', () => {
       ['cancelled', 'cancelled'],
       ['completed', 'completed'],
       ['cancellation_pending', 'confirmed'], // 취소 요청 중이지만 아직 확정 상태
-    ] as const)(
-      'ApplicationStatus %s → ScheduleType %s',
-      (input, expected) => {
-        expect(
-          StatusMapper.applicationToSchedule(input as ApplicationStatus)
-        ).toBe(expected);
-      }
-    );
+    ] as const)('ApplicationStatus %s → ScheduleType %s', (input, expected) => {
+      expect(StatusMapper.applicationToSchedule(input as ApplicationStatus)).toBe(expected);
+    });
   });
 
   // ==========================================================================
@@ -79,14 +66,9 @@ describe('StatusMapper', () => {
       ['checked_out', 'checked_out'],
       ['completed', 'completed'],
       ['cancelled', 'cancelled'],
-    ] as const)(
-      'WorkLogStatus %s → ConfirmedStaffStatus %s',
-      (input, expected) => {
-        expect(StatusMapper.toConfirmedStaff(input as WorkLogStatus)).toBe(
-          expected
-        );
-      }
-    );
+    ] as const)('WorkLogStatus %s → ConfirmedStaffStatus %s', (input, expected) => {
+      expect(StatusMapper.toConfirmedStaff(input as WorkLogStatus)).toBe(expected);
+    });
   });
 
   // ==========================================================================
@@ -100,9 +82,7 @@ describe('StatusMapper', () => {
       ['checked_out', 'completed'],
       ['scheduled', 'cancelled'],
     ] as const)('✅ %s → %s 허용', (from, to) => {
-      expect(
-        StatusMapper.canTransition(from as WorkLogStatus, to as WorkLogStatus)
-      ).toBe(true);
+      expect(StatusMapper.canTransition(from as WorkLogStatus, to as WorkLogStatus)).toBe(true);
     });
 
     // 무효한 전이
@@ -113,9 +93,7 @@ describe('StatusMapper', () => {
       ['checked_out', 'checked_in'], // 퇴근 후 출근
       ['completed', 'cancelled'], // 완료 후 취소 불가
     ] as const)('❌ %s → %s 거부', (from, to) => {
-      expect(
-        StatusMapper.canTransition(from as WorkLogStatus, to as WorkLogStatus)
-      ).toBe(false);
+      expect(StatusMapper.canTransition(from as WorkLogStatus, to as WorkLogStatus)).toBe(false);
     });
   });
 
@@ -193,12 +171,9 @@ describe('StatusMapper', () => {
   // isTerminalStatus: 종료 상태 확인
   // ==========================================================================
   describe('isTerminalStatus', () => {
-    it.each(['completed', 'cancelled'] as const)(
-      '%s는 종료 상태',
-      (status) => {
-        expect(StatusMapper.isTerminalStatus(status)).toBe(true);
-      }
-    );
+    it.each(['completed', 'cancelled'] as const)('%s는 종료 상태', (status) => {
+      expect(StatusMapper.isTerminalStatus(status)).toBe(true);
+    });
 
     it.each(['scheduled', 'checked_in', 'checked_out'] as const)(
       '%s는 종료 상태 아님',

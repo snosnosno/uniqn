@@ -43,9 +43,7 @@ export function InquiryCard({
   const isDarkMode = colorScheme === 'dark';
 
   const createdDate = toDate(inquiry.createdAt);
-  const formattedDate = createdDate
-    ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko })
-    : '';
+  const formattedDate = createdDate ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : '';
 
   const categoryLabel = INQUIRY_CATEGORY_LABELS[inquiry.category] || inquiry.category;
 
@@ -56,9 +54,7 @@ export function InquiryCard({
           <View className="flex-1">
             {/* 카테고리 + 상태 */}
             <View className="mb-2 flex-row items-center gap-2">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
-                {categoryLabel}
-              </Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">{categoryLabel}</Text>
               <InquiryStatusBadge status={inquiry.status} size="sm" />
             </View>
 
@@ -78,17 +74,13 @@ export function InquiryCard({
             )}
 
             {/* 날짜 */}
-            <Text className="text-xs text-gray-400 dark:text-gray-500">
-              {formattedDate}
-            </Text>
+            <Text className="text-xs text-gray-400 dark:text-gray-500">{formattedDate}</Text>
 
             {/* 답변 여부 */}
             {inquiry.status === 'closed' && inquiry.response && (
               <View className="mt-2 flex-row items-center">
                 <View className="mr-1 h-2 w-2 rounded-full bg-green-500" />
-                <Text className="text-xs text-green-600 dark:text-green-400">
-                  답변 완료
-                </Text>
+                <Text className="text-xs text-green-600 dark:text-green-400">답변 완료</Text>
               </View>
             )}
           </View>

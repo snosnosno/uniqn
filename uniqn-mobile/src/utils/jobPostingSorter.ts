@@ -36,10 +36,7 @@ interface JobWithSortKey {
  * @param today 오늘 날짜 (YYYY-MM-DD)
  * @returns 정렬 키 문자열 (YYYY-MM-DD HH:mm)
  */
-export function getEarliestFutureDateTime(
-  job: JobPostingCard,
-  today: string
-): string {
+export function getEarliestFutureDateTime(job: JobPostingCard, today: string): string {
   // dateRequirements가 없는 레거시 공고
   if (!job.dateRequirements?.length) {
     const time = job.timeSlot?.split(' - ')[0] ?? '99:99';

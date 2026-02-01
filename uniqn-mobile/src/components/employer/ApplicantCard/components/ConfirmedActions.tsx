@@ -56,9 +56,7 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
           className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-primary-500 active:opacity-70"
         >
           <UserPlusIcon size={16} color="#fff" />
-          <Text className="ml-1 text-sm font-medium text-white">
-            스태프 변환
-          </Text>
+          <Text className="ml-1 text-sm font-medium text-white">스태프 변환</Text>
         </Pressable>
       )}
     </View>

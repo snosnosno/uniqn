@@ -38,11 +38,7 @@ export const SIGNUP_STEPS: StepInfo[] = [
 // Component
 // ============================================================================
 
-export function StepIndicator({
-  currentStep,
-  steps,
-  showLabels = true,
-}: StepIndicatorProps) {
+export function StepIndicator({ currentStep, steps, showLabels = true }: StepIndicatorProps) {
   return (
     <View className="w-full">
       {/* 스텝 원형 및 연결선 */}
@@ -71,9 +67,7 @@ export function StepIndicator({
                   ) : (
                     <Text
                       className={`text-sm font-bold ${
-                        isActive
-                          ? 'text-white'
-                          : 'text-gray-500 dark:text-gray-400'
+                        isActive ? 'text-white' : 'text-gray-500 dark:text-gray-400'
                       }`}
                     >
                       {stepNumber}
@@ -102,9 +96,10 @@ export function StepIndicator({
                 <View
                   className={`
                     flex-1 h-0.5 mx-2 mb-5
-                    ${stepNumber < currentStep
-                      ? 'bg-success-500 dark:bg-success-600'
-                      : 'bg-gray-200 dark:bg-surface'
+                    ${
+                      stepNumber < currentStep
+                        ? 'bg-success-500 dark:bg-success-600'
+                        : 'bg-gray-200 dark:bg-surface'
                     }
                   `}
                 />

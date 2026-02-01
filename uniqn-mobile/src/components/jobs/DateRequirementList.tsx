@@ -73,17 +73,13 @@ const getTotalPositions = (slots: TimeSlot[]): number => {
 const TimeSlotItem = memo(function TimeSlotItem({ slot, compact }: TimeSlotItemProps) {
   if (compact) {
     return (
-      <Text className="text-xs text-gray-500 dark:text-gray-400">
-        {formatTimeRange(slot)}
-      </Text>
+      <Text className="text-xs text-gray-500 dark:text-gray-400">{formatTimeRange(slot)}</Text>
     );
   }
 
   return (
     <View className="ml-4 mb-2">
-      <Text className="text-sm text-gray-700 dark:text-gray-300 mb-1">
-        {formatTimeRange(slot)}
-      </Text>
+      <Text className="text-sm text-gray-700 dark:text-gray-300 mb-1">{formatTimeRange(slot)}</Text>
       <View className="flex-row flex-wrap gap-1">
         {slot.roles.map((role, index) => (
           <Badge key={index} variant="default" size="sm">
@@ -131,9 +127,7 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
             </Badge>
           )}
         </View>
-        <Text className="text-sm text-gray-500 dark:text-gray-400">
-          {totalPositions}명 모집
-        </Text>
+        <Text className="text-sm text-gray-500 dark:text-gray-400">{totalPositions}명 모집</Text>
       </View>
 
       {requirement.description && (
@@ -166,18 +160,13 @@ export const DateRequirementList = memo(function DateRequirementList({
   compact = false,
   className = '',
 }: DateRequirementListProps) {
-  const sortedRequirements = useMemo(
-    () => sortDateRequirements(requirements),
-    [requirements]
-  );
+  const sortedRequirements = useMemo(() => sortDateRequirements(requirements), [requirements]);
 
   const displayRequirements = maxDisplay
     ? sortedRequirements.slice(0, maxDisplay)
     : sortedRequirements;
 
-  const remainingCount = maxDisplay
-    ? Math.max(0, sortedRequirements.length - maxDisplay)
-    : 0;
+  const remainingCount = maxDisplay ? Math.max(0, sortedRequirements.length - maxDisplay) : 0;
 
   if (requirements.length === 0) {
     return null;
@@ -190,9 +179,7 @@ export const DateRequirementList = memo(function DateRequirementList({
           <DateItem key={index} requirement={req} compact />
         ))}
         {remainingCount > 0 && (
-          <Text className="text-xs text-gray-400 dark:text-gray-500">
-            +{remainingCount}일
-          </Text>
+          <Text className="text-xs text-gray-400 dark:text-gray-500">+{remainingCount}일</Text>
         )}
       </View>
     );

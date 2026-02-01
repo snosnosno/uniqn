@@ -136,17 +136,13 @@ export default function NotificationsScreen() {
       <StackHeader
         title="알림"
         titleSuffix={
-          unreadCount > 0 ? (
-            <Text className="text-primary-600"> ({unreadCount})</Text>
-          ) : null
+          unreadCount > 0 ? <Text className="text-primary-600"> ({unreadCount})</Text> : null
         }
         fallbackHref="/(app)/(tabs)"
         rightAction={
           unreadCount > 0 ? (
             <Pressable onPress={handleMarkAllAsRead} className="px-3 py-1">
-              <Text className="text-sm text-primary-600 dark:text-primary-400">
-                모두 읽음
-              </Text>
+              <Text className="text-sm text-primary-600 dark:text-primary-400">모두 읽음</Text>
             </Pressable>
           ) : null
         }

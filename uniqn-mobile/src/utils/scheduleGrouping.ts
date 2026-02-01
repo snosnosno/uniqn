@@ -57,9 +57,7 @@ export function isConsecutiveDates(dates: string[]): boolean {
     const curr = parseDate(sorted[i]);
 
     // 하루 차이인지 확인
-    const diffDays = Math.round(
-      (curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const diffDays = Math.round((curr.getTime() - prev.getTime()) / (1000 * 60 * 60 * 24));
 
     if (diffDays !== 1) {
       return false;
@@ -106,12 +104,8 @@ export function formatDateDisplay(dates: string[]): string {
     const startDate = parseDate(sorted[0]);
     const endDate = parseDate(sorted[sorted.length - 1]);
 
-    const startDayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][
-      startDate.getDay()
-    ];
-    const endDayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][
-      endDate.getDay()
-    ];
+    const startDayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][startDate.getDay()];
+    const endDayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][endDate.getDay()];
 
     const startMonth = startDate.getMonth() + 1;
     const startDay = startDate.getDate();
@@ -150,10 +144,7 @@ export function formatDateDisplay(dates: string[]): string {
  * formatRolesDisplay(['dealer', 'floor']) // "딜러, 플로어맨"
  * formatRolesDisplay(['dealer', 'other'], [undefined, '조명담당']) // "딜러, 조명담당"
  */
-export function formatRolesDisplay(
-  roles: string[],
-  customRoles?: (string | undefined)[]
-): string {
+export function formatRolesDisplay(roles: string[], customRoles?: (string | undefined)[]): string {
   if (roles.length === 0) return '';
 
   const displayNames = roles.map((role, index) => {
@@ -191,9 +182,7 @@ function createGroupKey(schedule: ScheduleEvent): string | null {
 /**
  * ScheduleEvent 배열을 GroupedScheduleEvent로 변환
  */
-function createGroupedScheduleEvent(
-  events: ScheduleEvent[]
-): GroupedScheduleEvent {
+function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEvent {
   if (events.length === 0) {
     throw new Error('Cannot create grouped event from empty array');
   }
@@ -244,9 +233,7 @@ function createGroupedScheduleEvent(
       isConsecutive: isConsecutiveDates(dates),
     },
     roles,
-    customRoles: alignedCustomRoles.some((v) => v !== undefined)
-      ? alignedCustomRoles
-      : undefined,
+    customRoles: alignedCustomRoles.some((v) => v !== undefined) ? alignedCustomRoles : undefined,
     timeSlot,
     dateStatuses,
     originalEvents: events,
@@ -350,9 +337,7 @@ export function filterSchedulesByDate(
 /**
  * 그룹화된 스케줄에서 통계 계산
  */
-export function calculateGroupedStats(
-  schedules: (ScheduleEvent | GroupedScheduleEvent)[]
-): {
+export function calculateGroupedStats(schedules: (ScheduleEvent | GroupedScheduleEvent)[]): {
   totalEvents: number;
   appliedCount: number;
   confirmedCount: number;

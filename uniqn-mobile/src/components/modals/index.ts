@@ -9,7 +9,4 @@
 // Update Modals
 // ============================================================================
 
-export {
-  ForceUpdateModal,
-  type ForceUpdateModalProps,
-} from './ForceUpdateModal';
+export { ForceUpdateModal, type ForceUpdateModalProps } from './ForceUpdateModal';

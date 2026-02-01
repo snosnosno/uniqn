@@ -99,11 +99,7 @@ export interface OptimisticUpdateOptions {
 export async function runSingleDocTransaction<T>(
   collectionName: string,
   docId: string,
-  processor: (
-    transaction: Transaction,
-    currentData: T,
-    docRef: DocumentReference
-  ) => Promise<T>
+  processor: (transaction: Transaction, currentData: T, docRef: DocumentReference) => Promise<T>
 ): Promise<TransactionResult<T>> {
   try {
     const db = getFirebaseDb();
@@ -384,9 +380,7 @@ export async function runBatchWrite(
       const batch = writeBatch(db);
 
       for (const op of batchOps) {
-        const docRef = op.docId
-          ? doc(db, op.collection, op.docId)
-          : doc(db, op.collection);
+        const docRef = op.docId ? doc(db, op.collection, op.docId) : doc(db, op.collection);
 
         switch (op.operation) {
           case 'set':
@@ -428,10 +422,7 @@ export async function runBatchWrite(
 /**
  * 문서 존재 여부 확인
  */
-export async function documentExists(
-  collectionName: string,
-  docId: string
-): Promise<boolean> {
+export async function documentExists(collectionName: string, docId: string): Promise<boolean> {
   try {
     const db = getFirebaseDb();
     const docRef = doc(db, collectionName, docId);

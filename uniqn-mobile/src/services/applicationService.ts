@@ -85,10 +85,7 @@ export async function getApplicationById(
 /**
  * 지원 취소 (트랜잭션)
  */
-export async function cancelApplication(
-  applicationId: string,
-  applicantId: string
-): Promise<void> {
+export async function cancelApplication(applicationId: string, applicantId: string): Promise<void> {
   try {
     logger.info('지원 취소 시작', { applicationId, applicantId });
 
@@ -110,10 +107,7 @@ export async function cancelApplication(
 /**
  * 특정 공고의 지원 여부 확인
  */
-export async function hasAppliedToJob(
-  jobPostingId: string,
-  applicantId: string
-): Promise<boolean> {
+export async function hasAppliedToJob(jobPostingId: string, applicantId: string): Promise<boolean> {
   try {
     return await applicationRepository.hasApplied(jobPostingId, applicantId);
   } catch (error) {
@@ -338,4 +332,3 @@ export async function getCancellationRequests(
     });
   }
 }
-

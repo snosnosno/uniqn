@@ -54,10 +54,7 @@ export const StatusInfo = React.memo(function StatusInfo({
         confirmationHistory &&
         confirmationHistory.length > 0 && (
           <View className="mb-2">
-            <ConfirmationHistoryTimeline
-              history={confirmationHistory}
-              compact
-            />
+            <ConfirmationHistoryTimeline history={confirmationHistory} compact />
           </View>
         )}
     </>

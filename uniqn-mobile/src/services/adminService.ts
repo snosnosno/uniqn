@@ -21,20 +21,20 @@ import {
   Timestamp,
   type QueryConstraint,
   type DocumentSnapshot,
-} from "firebase/firestore";
-import { getFirebaseDb } from "@/lib/firebase";
-import { logger } from "@/utils/logger";
-import { BusinessError, ERROR_CODES } from "@/errors";
-import { handleServiceError } from "@/errors/serviceErrorHandler";
-import { TimeNormalizer, type TimeInput } from "@/shared/time";
+} from 'firebase/firestore';
+import { getFirebaseDb } from '@/lib/firebase';
+import { logger } from '@/utils/logger';
+import { BusinessError, ERROR_CODES } from '@/errors';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type {
   AdminUser,
   AdminUserFilters,
   DashboardStats,
   PaginatedUsers,
   SystemMetrics,
-} from "@/types/admin";
-import type { UserRole } from "@/types/common";
+} from '@/types/admin';
+import type { UserRole } from '@/types/common';
 
 // ============================================================================
 // Helper Functions
@@ -56,9 +56,9 @@ function docToAdminUser(docSnap: DocumentSnapshot): AdminUser | null {
   return {
     id: docSnap.id,
     uid: data.uid || docSnap.id,
-    name: data.name || "",
-    email: data.email || "",
-    role: data.role || "staff",
+    name: data.name || '',
+    email: data.email || '',
+    role: data.role || 'staff',
     phone: data.phone,
     photoURL: data.photoURL,
     createdAt: toDate(data.createdAt),
@@ -75,7 +75,7 @@ function docToAdminUser(docSnap: DocumentSnapshot): AdminUser | null {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   try {
-    logger.info("대시보드 통계 조회 시작");
+    logger.info('대시보드 통계 조회 시작');
     const db = getFirebaseDb();
     const todayStart = getTodayStart();
 
@@ -90,31 +90,22 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       staffCountSnap,
       recentUsersSnap,
     ] = await Promise.all([
-      getCountFromServer(collection(db, "users")),
+      getCountFromServer(collection(db, 'users')),
       getCountFromServer(
-        query(collection(db, "users"), where("createdAt", ">=", Timestamp.fromDate(todayStart)))
+        query(collection(db, 'users'), where('createdAt', '>=', Timestamp.fromDate(todayStart)))
       ),
+      getCountFromServer(query(collection(db, 'jobPostings'), where('status', '==', 'active'))),
       getCountFromServer(
-        query(collection(db, "jobPostings"), where("status", "==", "active"))
+        query(
+          collection(db, 'applications'),
+          where('createdAt', '>=', Timestamp.fromDate(todayStart))
+        )
       ),
-      getCountFromServer(
-        query(collection(db, "applications"), where("createdAt", ">=", Timestamp.fromDate(todayStart)))
-      ),
-      getCountFromServer(
-        query(collection(db, "reports"), where("status", "==", "pending"))
-      ),
-      getCountFromServer(
-        query(collection(db, "users"), where("role", "==", "admin"))
-      ),
-      getCountFromServer(
-        query(collection(db, "users"), where("role", "==", "employer"))
-      ),
-      getCountFromServer(
-        query(collection(db, "users"), where("role", "==", "staff"))
-      ),
-      getDocs(
-        query(collection(db, "users"), orderBy("createdAt", "desc"), limit(5))
-      ),
+      getCountFromServer(query(collection(db, 'reports'), where('status', '==', 'pending'))),
+      getCountFromServer(query(collection(db, 'users'), where('role', '==', 'admin'))),
+      getCountFromServer(query(collection(db, 'users'), where('role', '==', 'employer'))),
+      getCountFromServer(query(collection(db, 'users'), where('role', '==', 'staff'))),
+      getDocs(query(collection(db, 'users'), orderBy('createdAt', 'desc'), limit(5))),
     ]);
 
     const recentUsers: AdminUser[] = [];
@@ -138,7 +129,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
       fetchedAt: new Date(),
     };
 
-    logger.info("대시보드 통계 조회 완료", { totalUsers: stats.totalUsers });
+    logger.info('대시보드 통계 조회 완료', { totalUsers: stats.totalUsers });
     return stats;
   } catch (error) {
     throw handleServiceError(error, {
@@ -158,36 +149,41 @@ export async function getUsers(
   pageSize: number = 20
 ): Promise<PaginatedUsers> {
   try {
-    logger.info("사용자 목록 조회", { filters, page, pageSize });
+    logger.info('사용자 목록 조회', { filters, page, pageSize });
     const db = getFirebaseDb();
     const constraints: QueryConstraint[] = [];
 
-    if (filters.role && filters.role !== "all") {
-      constraints.push(where("role", "==", filters.role));
+    if (filters.role && filters.role !== 'all') {
+      constraints.push(where('role', '==', filters.role));
     }
     if (filters.isActive !== undefined) {
-      constraints.push(where("isActive", "==", filters.isActive));
+      constraints.push(where('isActive', '==', filters.isActive));
     }
     if (filters.isVerified !== undefined) {
-      constraints.push(where("identityVerified", "==", filters.isVerified));
+      constraints.push(where('identityVerified', '==', filters.isVerified));
     }
 
-    const sortField = filters.sortBy || "createdAt";
-    const sortOrder = filters.sortOrder || "desc";
+    const sortField = filters.sortBy || 'createdAt';
+    const sortOrder = filters.sortOrder || 'desc';
     constraints.push(orderBy(sortField, sortOrder));
 
-    const totalSnap = await getCountFromServer(query(collection(db, "users"), ...constraints));
+    const totalSnap = await getCountFromServer(query(collection(db, 'users'), ...constraints));
     const total = totalSnap.data().count;
     const totalPages = Math.ceil(total / pageSize);
     const offset = (page - 1) * pageSize;
 
-    let dataQuery = query(collection(db, "users"), ...constraints, limit(pageSize));
+    let dataQuery = query(collection(db, 'users'), ...constraints, limit(pageSize));
 
     if (offset > 0) {
-      const prevSnap = await getDocs(query(collection(db, "users"), ...constraints, limit(offset)));
+      const prevSnap = await getDocs(query(collection(db, 'users'), ...constraints, limit(offset)));
       const lastDoc = prevSnap.docs[prevSnap.docs.length - 1];
       if (lastDoc) {
-        dataQuery = query(collection(db, "users"), ...constraints, startAfter(lastDoc), limit(pageSize));
+        dataQuery = query(
+          collection(db, 'users'),
+          ...constraints,
+          startAfter(lastDoc),
+          limit(pageSize)
+        );
       }
     }
 
@@ -202,7 +198,8 @@ export async function getUsers(
     if (filters.search) {
       const searchLower = filters.search.toLowerCase();
       filteredUsers = users.filter(
-        (u) => u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower)
+        (u) =>
+          u.name.toLowerCase().includes(searchLower) || u.email.toLowerCase().includes(searchLower)
       );
     }
 
@@ -216,7 +213,7 @@ export async function getUsers(
       hasPrevPage: page > 1,
     };
 
-    logger.info("사용자 목록 조회 완료", { total, returned: filteredUsers.length });
+    logger.info('사용자 목록 조회 완료', { total, returned: filteredUsers.length });
     return result;
   } catch (error) {
     throw handleServiceError(error, {
@@ -229,13 +226,13 @@ export async function getUsers(
 
 export async function getUserById(userId: string): Promise<AdminUser> {
   try {
-    logger.info("사용자 조회", { userId });
+    logger.info('사용자 조회', { userId });
     const db = getFirebaseDb();
-    const userDoc = await getDoc(doc(db, "users", userId));
+    const userDoc = await getDoc(doc(db, 'users', userId));
 
     if (!userDoc.exists()) {
       throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: "사용자를 찾을 수 없습니다",
+        userMessage: '사용자를 찾을 수 없습니다',
         metadata: { userId },
       });
     }
@@ -243,12 +240,12 @@ export async function getUserById(userId: string): Promise<AdminUser> {
     const user = docToAdminUser(userDoc);
     if (!user) {
       throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: "사용자 정보를 변환할 수 없습니다",
+        userMessage: '사용자 정보를 변환할 수 없습니다',
         metadata: { userId },
       });
     }
 
-    logger.info("사용자 조회 완료", { userId, userName: user.name });
+    logger.info('사용자 조회 완료', { userId, userName: user.name });
     return user;
   } catch (error) {
     throw handleServiceError(error, {
@@ -265,24 +262,24 @@ export async function updateUserRole(
   reason?: string
 ): Promise<void> {
   try {
-    logger.info("사용자 역할 변경", { userId, newRole, reason });
+    logger.info('사용자 역할 변경', { userId, newRole, reason });
     const db = getFirebaseDb();
-    const userDoc = await getDoc(doc(db, "users", userId));
+    const userDoc = await getDoc(doc(db, 'users', userId));
 
     if (!userDoc.exists()) {
       throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: "사용자를 찾을 수 없습니다",
+        userMessage: '사용자를 찾을 수 없습니다',
         metadata: { userId },
       });
     }
 
     const currentRole = userDoc.data()?.role;
-    await updateDoc(doc(db, "users", userId), {
+    await updateDoc(doc(db, 'users', userId), {
       role: newRole,
       updatedAt: serverTimestamp(),
     });
 
-    logger.info("사용자 역할 변경 완료", { userId, previousRole: currentRole, newRole, reason });
+    logger.info('사용자 역할 변경 완료', { userId, previousRole: currentRole, newRole, reason });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '사용자 역할 변경',
@@ -298,23 +295,23 @@ export async function setUserActive(
   reason?: string
 ): Promise<void> {
   try {
-    logger.info("사용자 상태 변경", { userId, isActive, reason });
+    logger.info('사용자 상태 변경', { userId, isActive, reason });
     const db = getFirebaseDb();
-    const userDoc = await getDoc(doc(db, "users", userId));
+    const userDoc = await getDoc(doc(db, 'users', userId));
 
     if (!userDoc.exists()) {
       throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: "사용자를 찾을 수 없습니다",
+        userMessage: '사용자를 찾을 수 없습니다',
         metadata: { userId },
       });
     }
 
-    await updateDoc(doc(db, "users", userId), {
+    await updateDoc(doc(db, 'users', userId), {
       isActive,
       updatedAt: serverTimestamp(),
     });
 
-    logger.info("사용자 상태 변경 완료", { userId, isActive, reason });
+    logger.info('사용자 상태 변경 완료', { userId, isActive, reason });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '사용자 상태 변경',
@@ -330,7 +327,7 @@ export async function setUserActive(
 
 export async function getSystemMetrics(): Promise<SystemMetrics> {
   try {
-    logger.info("시스템 메트릭스 조회 시작");
+    logger.info('시스템 메트릭스 조회 시작');
     const db = getFirebaseDb();
     const dates: string[] = [];
     const dateRanges: { start: Date; end: Date }[] = [];
@@ -339,7 +336,7 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
       const date = new Date();
       date.setDate(date.getDate() - i);
       date.setHours(0, 0, 0, 0);
-      dates.push(date.toISOString().split("T")[0]);
+      dates.push(date.toISOString().split('T')[0]);
       const endDate = new Date(date);
       endDate.setHours(23, 59, 59, 999);
       dateRanges.push({ start: date, end: endDate });
@@ -350,9 +347,9 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
         dateRanges.map(async ({ start, end }, i) => {
           const snap = await getCountFromServer(
             query(
-              collection(db, "users"),
-              where("createdAt", ">=", Timestamp.fromDate(start)),
-              where("createdAt", "<=", Timestamp.fromDate(end))
+              collection(db, 'users'),
+              where('createdAt', '>=', Timestamp.fromDate(start)),
+              where('createdAt', '<=', Timestamp.fromDate(end))
             )
           );
           return { date: dates[i], count: snap.data().count };
@@ -362,9 +359,9 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
         dateRanges.map(async ({ start, end }, i) => {
           const snap = await getCountFromServer(
             query(
-              collection(db, "applications"),
-              where("createdAt", ">=", Timestamp.fromDate(start)),
-              where("createdAt", "<=", Timestamp.fromDate(end))
+              collection(db, 'applications'),
+              where('createdAt', '>=', Timestamp.fromDate(start)),
+              where('createdAt', '<=', Timestamp.fromDate(end))
             )
           );
           return { date: dates[i], count: snap.data().count };
@@ -374,11 +371,11 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
 
     const dailyActiveUsers = dates.map((date) => ({ date, count: 0 }));
 
-    let systemStatus: "healthy" | "degraded" | "down" = "healthy";
+    let systemStatus: 'healthy' | 'degraded' | 'down' = 'healthy';
     try {
-      await getDoc(doc(db, "_health", "check"));
+      await getDoc(doc(db, '_health', 'check'));
     } catch {
-      systemStatus = "degraded";
+      systemStatus = 'degraded';
     }
 
     const metrics: SystemMetrics = {
@@ -389,7 +386,7 @@ export async function getSystemMetrics(): Promise<SystemMetrics> {
       fetchedAt: new Date(),
     };
 
-    logger.info("시스템 메트릭스 조회 완료", { daysCount: 7, systemStatus });
+    logger.info('시스템 메트릭스 조회 완료', { daysCount: 7, systemStatus });
     return metrics;
   } catch (error) {
     throw handleServiceError(error, {

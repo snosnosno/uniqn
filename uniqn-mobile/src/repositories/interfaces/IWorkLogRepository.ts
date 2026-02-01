@@ -90,10 +90,7 @@ export interface IWorkLogRepository {
    * @param options - 필터 옵션
    * @returns 필터링된 근무 기록 목록
    */
-  getByStaffIdWithFilters(
-    staffId: string,
-    options?: WorkLogFilterOptions
-  ): Promise<WorkLog[]>;
+  getByStaffIdWithFilters(staffId: string, options?: WorkLogFilterOptions): Promise<WorkLog[]>;
 
   /**
    * 특정 날짜의 근무 기록 조회

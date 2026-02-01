@@ -18,24 +18,24 @@ import type { FirebaseDocument } from './common';
  * 스태프 신고 유형 (구인자 → 스태프)
  */
 export type EmployeeReportType =
-  | 'tardiness'           // 지각
-  | 'negligence'          // 근무태만
-  | 'no_show'             // 노쇼
-  | 'early_leave'         // 조퇴 (무단)
-  | 'inappropriate'       // 부적절한 행동
-  | 'dress_code'          // 복장 불량
-  | 'communication'       // 소통 문제
-  | 'other';              // 기타
+  | 'tardiness' // 지각
+  | 'negligence' // 근무태만
+  | 'no_show' // 노쇼
+  | 'early_leave' // 조퇴 (무단)
+  | 'inappropriate' // 부적절한 행동
+  | 'dress_code' // 복장 불량
+  | 'communication' // 소통 문제
+  | 'other'; // 기타
 
 /**
  * 구인자 신고 유형 (구직자 → 구인자)
  */
 export type EmployerReportType =
-  | 'false_posting'           // 허위공고
-  | 'employer_negligence'     // 근무 관리 태만
-  | 'unfair_treatment'        // 부당한 대우
-  | 'inappropriate_behavior'  // 부적절한 행동
-  | 'other';                  // 기타
+  | 'false_posting' // 허위공고
+  | 'employer_negligence' // 근무 관리 태만
+  | 'unfair_treatment' // 부당한 대우
+  | 'inappropriate_behavior' // 부적절한 행동
+  | 'other'; // 기타
 
 /**
  * 통합 신고 유형
@@ -219,10 +219,7 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
 /**
  * 신고 상태별 색상 (NativeWind)
  */
-export const REPORT_STATUS_COLORS: Record<
-  ReportStatus,
-  { bg: string; text: string }
-> = {
+export const REPORT_STATUS_COLORS: Record<ReportStatus, { bg: string; text: string }> = {
   pending: {
     bg: 'bg-gray-100 dark:bg-surface',
     text: 'text-gray-600 dark:text-gray-300',
@@ -372,10 +369,7 @@ export function getEmployerReportTypeInfo(
  * 신고 유형 정보 조회 (통합)
  * @deprecated 구체적인 함수 사용 권장: getEmployeeReportTypeInfo, getEmployerReportTypeInfo
  */
-export function getReportTypeInfo(
-  type: ReportType,
-  reporterType?: ReporterType
-): ReportTypeInfo {
+export function getReportTypeInfo(type: ReportType, reporterType?: ReporterType): ReportTypeInfo {
   if (reporterType === 'employee') {
     return getEmployerReportTypeInfo(type as EmployerReportType);
   }

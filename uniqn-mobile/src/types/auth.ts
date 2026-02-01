@@ -21,7 +21,7 @@ export interface AuthUser {
   email: string | null;
   displayName: string | null;
   photoURL: string | null;
-  emailVerified: boolean;  // Firebase 기본 필드 (미사용, 휴대폰 본인인증으로 대체)
+  emailVerified: boolean; // Firebase 기본 필드 (미사용, 휴대폰 본인인증으로 대체)
   phoneNumber: string | null;
 }
 
@@ -46,9 +46,9 @@ export interface SignUpRequest {
 
   // Step 2: 본인인증 (필수)
   identityVerified: boolean;
-  identityProvider?: 'pass' | 'kakao';  // 본인인증 제공자
-  verifiedName?: string;  // 본인인증된 실명
-  verifiedPhone?: string;  // 본인인증된 휴대폰 번호
+  identityProvider?: 'pass' | 'kakao'; // 본인인증 제공자
+  verifiedName?: string; // 본인인증된 실명
+  verifiedPhone?: string; // 본인인증된 휴대폰 번호
 
   // Step 3: 프로필 정보
   nickname: string;
@@ -98,8 +98,8 @@ export interface PhoneVerification {
  */
 export interface UserVerificationStatus {
   userId: string;
-  emailVerified: boolean;  // Firebase 기본 필드 (미사용)
-  phoneVerified: boolean;  // 휴대폰 본인인증 완료 여부 (필수)
+  emailVerified: boolean; // Firebase 기본 필드 (미사용)
+  phoneVerified: boolean; // 휴대폰 본인인증 완료 여부 (필수)
   phoneNumber?: string;
   verifiedAt?: Timestamp;
   updatedAt: Timestamp;

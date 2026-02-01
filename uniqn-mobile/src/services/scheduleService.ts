@@ -87,7 +87,9 @@ function getMonthRange(year: number, month: number): { start: string; end: strin
  * 공고 정보 일괄 조회 (부분 실패 허용)
  * @description JobPostingCard 전체 데이터를 반환하여 스케줄 탭에서 JobCard 사용 가능
  */
-async function fetchJobPostingCardBatch(jobPostingIds: string[]): Promise<Map<string, JobPostingCardWithMeta>> {
+async function fetchJobPostingCardBatch(
+  jobPostingIds: string[]
+): Promise<Map<string, JobPostingCardWithMeta>> {
   const cardMap = new Map<string, JobPostingCardWithMeta>();
 
   if (jobPostingIds.length === 0) {
@@ -126,7 +128,7 @@ async function fetchJobPostingCardBatch(jobPostingIds: string[]): Promise<Map<st
         cardMap.set(docSnap.id, {
           card,
           title: data.title || '이벤트',
-          location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+          location: typeof data.location === 'string' ? data.location : data.location?.name || '',
           contactPhone: data.contactPhone,
           ownerId: data.ownerId,
         });
@@ -197,9 +199,7 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
         // 2순위: 미리 계산된 정산 세부 내역
         const breakdown = schedule.settlementBreakdown;
         amount =
-          breakdown.taxSettings?.type !== 'none'
-            ? breakdown.afterTaxPay
-            : breakdown.totalPay;
+          breakdown.taxSettings?.type !== 'none' ? breakdown.afterTaxPay : breakdown.totalPay;
       }
 
       if (amount > 0) {
@@ -487,10 +487,7 @@ export async function getMySchedules(
 /**
  * 특정 날짜의 스케줄 조회
  */
-export async function getSchedulesByDate(
-  staffId: string,
-  date: string
-): Promise<ScheduleEvent[]> {
+export async function getSchedulesByDate(staffId: string, date: string): Promise<ScheduleEvent[]> {
   try {
     logger.info('날짜별 스케줄 조회', { staffId, date });
 
@@ -564,7 +561,7 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
           cardInfo = {
             card: toJobPostingCard(jobPosting),
             title: data.title || '이벤트',
-            location: typeof data.location === 'string' ? data.location : (data.location?.name || ''),
+            location: typeof data.location === 'string' ? data.location : data.location?.name || '',
             contactPhone: data.contactPhone,
             ownerId: data.ownerId,
           };
@@ -636,52 +633,49 @@ export function subscribeToSchedules(
   onUpdate: (schedules: ScheduleEvent[]) => void,
   onError?: (error: Error) => void
 ): Unsubscribe {
-  return RealtimeManager.subscribe(
-    RealtimeManager.Keys.schedules(staffId),
-    () => {
-      logger.info('스케줄 구독 시작', { staffId });
+  return RealtimeManager.subscribe(RealtimeManager.Keys.schedules(staffId), () => {
+    logger.info('스케줄 구독 시작', { staffId });
 
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-      const q = query(
-        workLogsRef,
-        where('staffId', '==', staffId),
-        orderBy('date', 'desc'),
-        limit(50)
-      );
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+    const q = query(
+      workLogsRef,
+      where('staffId', '==', staffId),
+      orderBy('date', 'desc'),
+      limit(50)
+    );
 
-      return onSnapshot(
-        q,
-        async (snapshot) => {
-          try {
-            const workLogs: WorkLog[] = parseWorkLogDocuments(
-              snapshot.docs.map((docSnap) => ({
-                id: docSnap.id,
-                ...docSnap.data(),
-              }))
-            );
+    return onSnapshot(
+      q,
+      async (snapshot) => {
+        try {
+          const workLogs: WorkLog[] = parseWorkLogDocuments(
+            snapshot.docs.map((docSnap) => ({
+              id: docSnap.id,
+              ...docSnap.data(),
+            }))
+          );
 
-            // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
-            const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
-            const cardInfoMap = await fetchJobPostingCardBatch(jobPostingIds);
+          // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
+          const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
+          const cardInfoMap = await fetchJobPostingCardBatch(jobPostingIds);
 
-            const schedules = workLogs.map((workLog) => {
-              const normalizedId = IdNormalizer.normalizeJobId(workLog);
-              return ScheduleConverter.workLogToScheduleEvent(workLog, cardInfoMap.get(normalizedId));
-            });
+          const schedules = workLogs.map((workLog) => {
+            const normalizedId = IdNormalizer.normalizeJobId(workLog);
+            return ScheduleConverter.workLogToScheduleEvent(workLog, cardInfoMap.get(normalizedId));
+          });
 
-            onUpdate(schedules);
-          } catch (error) {
-            logger.error('스케줄 구독 처리 실패', toError(error));
-            onError?.(toError(error));
-          }
-        },
-        (error) => {
-          logger.error('스케줄 구독 에러', error);
-          onError?.(error);
+          onUpdate(schedules);
+        } catch (error) {
+          logger.error('스케줄 구독 처리 실패', toError(error));
+          onError?.(toError(error));
         }
-      );
-    }
-  );
+      },
+      (error) => {
+        logger.error('스케줄 구독 에러', error);
+        onError?.(error);
+      }
+    );
+  });
 }
 
 /**
@@ -690,10 +684,8 @@ export function subscribeToSchedules(
 export function getCalendarMarkedDates(
   schedules: ScheduleEvent[]
 ): Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }> {
-  const markedDates: Record<
-    string,
-    { marked: boolean; dotColor: string; type?: ScheduleType }
-  > = {};
+  const markedDates: Record<string, { marked: boolean; dotColor: string; type?: ScheduleType }> =
+    {};
 
   const colorMap: Record<ScheduleType, string> = {
     applied: '#f59e0b', // yellow-500

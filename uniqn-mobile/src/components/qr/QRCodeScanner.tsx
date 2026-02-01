@@ -10,11 +10,7 @@ import { View, Text, Pressable, StyleSheet, Dimensions, Modal as RNModal } from 
 import { CameraView, useCameraPermissions, BarcodeScanningResult } from 'expo-camera';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui';
-import {
-  XMarkIcon,
-  RefreshIcon,
-  ScanIcon,
-} from '@/components/icons';
+import { XMarkIcon, RefreshIcon, ScanIcon } from '@/components/icons';
 import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
 // @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
@@ -139,9 +135,7 @@ export function QRCodeScanner({
             <Text className="text-gray-400 text-center mt-2 mb-6">
               QR 코드를 스캔하려면 카메라 접근 권한을 허용해주세요.
             </Text>
-            <Button onPress={requestPermission}>
-              권한 허용하기
-            </Button>
+            <Button onPress={requestPermission}>권한 허용하기</Button>
             <Pressable onPress={onClose} className="mt-4">
               <Text className="text-gray-400">닫기</Text>
             </Pressable>

@@ -78,9 +78,7 @@ export function createTimeSlotInfo(
     startTime: isTimeToBeAnnounced ? null : startTime,
     endTime: options?.endTime,
     isTimeToBeAnnounced,
-    tentativeDescription: isTimeToBeAnnounced
-      ? options?.tentativeDescription
-      : undefined,
+    tentativeDescription: isTimeToBeAnnounced ? options?.tentativeDescription : undefined,
     isFullDay: options?.isFullDay,
     roles,
   };
@@ -105,9 +103,7 @@ export function formatTimeSlotDisplay(slot: TimeSlotInfo): string {
   }
 
   if (slot.isTimeToBeAnnounced) {
-    return slot.tentativeDescription
-      ? `미정 (${slot.tentativeDescription})`
-      : '미정';
+    return slot.tentativeDescription ? `미정 (${slot.tentativeDescription})` : '미정';
   }
 
   if (slot.startTime && slot.endTime) {

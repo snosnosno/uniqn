@@ -168,9 +168,7 @@ export async function generateEventQR(
  *
  * @description 스태프가 스캔한 QR 코드 검증
  */
-export async function validateEventQR(
-  qrString: string
-): Promise<EventQRValidationResult> {
+export async function validateEventQR(qrString: string): Promise<EventQRValidationResult> {
   try {
     // 1. QR 데이터 파싱
     const qrData = parseQRData(qrString);
@@ -384,7 +382,11 @@ export async function processEventQRCheckIn(
     // 4. Analytics (트랜잭션 외부 - 실패해도 출퇴근은 성공)
     if (result.action === 'checkIn') {
       trackCheckIn(toISODateString(checkTime) || '');
-      logger.info('QR 출근 처리 완료', { workLogId, staffId, hasExistingCheckInTime: result.hasExistingCheckInTime });
+      logger.info('QR 출근 처리 완료', {
+        workLogId,
+        staffId,
+        hasExistingCheckInTime: result.hasExistingCheckInTime,
+      });
     } else {
       trackCheckOut(toISODateString(checkTime) || '', result.workDuration);
       logger.info('QR 퇴근 처리 완료', { workLogId, staffId, workDuration: result.workDuration });

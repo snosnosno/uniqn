@@ -12,10 +12,7 @@ import type {
   AttendanceStatus,
   ConfirmedStaffStatus,
 } from './types';
-import {
-  WORK_LOG_STATUS_FLOW,
-  WORK_LOG_TERMINAL_STATUSES,
-} from './statusFlow';
+import { WORK_LOG_STATUS_FLOW, WORK_LOG_TERMINAL_STATUSES } from './statusFlow';
 
 /**
  * 취소 요청 상태 확인을 위한 인터페이스
@@ -106,9 +103,7 @@ export class StatusMapper {
    * - cancelled → cancelled
    * - completed → completed
    */
-  static applicationToSchedule(
-    status: ApplicationStatus
-  ): ScheduleType | null {
+  static applicationToSchedule(status: ApplicationStatus): ScheduleType | null {
     switch (status) {
       case 'applied':
       case 'pending':

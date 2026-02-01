@@ -9,13 +9,7 @@ import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 
 import { Card, Badge, Avatar } from '@/components/ui';
-import {
-  UserIcon,
-  PhoneIcon,
-  ClockIcon,
-  CheckIcon,
-  ChevronRightIcon,
-} from '@/components/icons';
+import { UserIcon, PhoneIcon, ClockIcon, CheckIcon, ChevronRightIcon } from '@/components/icons';
 import { USER_ROLE_LABELS, USER_ROLE_BADGE_VARIANT } from '@/types';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import type { AdminUser } from '@/types';
@@ -85,17 +79,10 @@ export const UserCard = React.memo(function UserCard({
       >
         <Avatar name={user.name} source={user.photoURL} size="sm" />
         <View className="flex-1 ml-3">
-          <Text className="text-sm font-medium text-gray-900 dark:text-white">
-            {user.name}
-          </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
-            {user.email}
-          </Text>
+          <Text className="text-sm font-medium text-gray-900 dark:text-white">{user.name}</Text>
+          <Text className="text-xs text-gray-500 dark:text-gray-400">{user.email}</Text>
         </View>
-        <Badge
-          variant={USER_ROLE_BADGE_VARIANT[user.role]}
-          size="sm"
-        >
+        <Badge variant={USER_ROLE_BADGE_VARIANT[user.role]} size="sm">
           {USER_ROLE_LABELS[user.role]}
         </Badge>
         <View className="ml-2">
@@ -109,28 +96,17 @@ export const UserCard = React.memo(function UserCard({
     <Card variant="elevated" padding="md" onPress={handlePress}>
       {/* 헤더: 프로필 + 이름 + 역할 */}
       <View className="flex-row items-center mb-3">
-        <Avatar
-          name={user.name}
-          source={user.photoURL}
-          size="md"
-          className="mr-3"
-        />
+        <Avatar name={user.name} source={user.photoURL} size="md" className="mr-3" />
         <View className="flex-1">
           <View className="flex-row items-center justify-between">
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
               {user.name}
             </Text>
-            <Badge
-              variant={USER_ROLE_BADGE_VARIANT[user.role]}
-              size="sm"
-              dot
-            >
+            <Badge variant={USER_ROLE_BADGE_VARIANT[user.role]} size="sm" dot>
               {USER_ROLE_LABELS[user.role]}
             </Badge>
           </View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            {user.email}
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400">{user.email}</Text>
         </View>
       </View>
 
@@ -140,9 +116,7 @@ export const UserCard = React.memo(function UserCard({
         {user.phone && (
           <View className="flex-row items-center">
             <PhoneIcon size={14} color="#9CA3AF" />
-            <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-              {user.phone}
-            </Text>
+            <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">{user.phone}</Text>
           </View>
         )}
 
@@ -182,9 +156,7 @@ export const UserCard = React.memo(function UserCard({
           {user.isVerified ? (
             <>
               <CheckIcon size={12} color="#22C55E" />
-              <Text className="ml-1 text-xs text-green-600 dark:text-green-400">
-                인증됨
-              </Text>
+              <Text className="ml-1 text-xs text-green-600 dark:text-green-400">인증됨</Text>
             </>
           ) : (
             <Text className="text-xs text-gray-400">미인증</Text>
@@ -197,9 +169,7 @@ export const UserCard = React.memo(function UserCard({
             onPress={handleEdit}
             className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
           >
-            <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">
-              수정
-            </Text>
+            <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">수정</Text>
           </Pressable>
         )}
       </View>

@@ -48,10 +48,7 @@ export interface UploadResult {
  * @param uri 로컬 이미지 URI
  * @returns 업로드된 이미지의 다운로드 URL
  */
-export async function uploadProfileImage(
-  userId: string,
-  uri: string
-): Promise<UploadResult> {
+export async function uploadProfileImage(userId: string, uri: string): Promise<UploadResult> {
   try {
     logger.info('프로필 이미지 업로드 시작', { userId });
 
@@ -376,9 +373,7 @@ export async function uploadMultipleAnnouncementImages(
  *
  * @param images 삭제할 이미지 배열
  */
-export async function deleteMultipleAnnouncementImages(
-  images: AnnouncementImage[]
-): Promise<void> {
+export async function deleteMultipleAnnouncementImages(images: AnnouncementImage[]): Promise<void> {
   const deletePromises = images.map((image) =>
     deleteAnnouncementImage(image.url).catch((error) => {
       logger.warn('다중 이미지 삭제 중 실패', { url: image.url.substring(0, 50), error });

@@ -12,18 +12,8 @@ import { UserCard } from './UserCard';
 import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { Badge } from '../ui/Badge';
-import {
-  SearchIcon,
-  XMarkIcon,
-  FilterIcon,
-  UsersIcon,
-} from '../icons';
-import {
-  USER_ROLE_LABELS,
-  type AdminUser,
-  type AdminUserFilters,
-  type UserRole,
-} from '@/types';
+import { SearchIcon, XMarkIcon, FilterIcon, UsersIcon } from '../icons';
+import { USER_ROLE_LABELS, type AdminUser, type AdminUserFilters, type UserRole } from '@/types';
 
 // ============================================================================
 // Types
@@ -138,12 +128,7 @@ export const UserList = React.memo(function UserList({
   const renderItem = useCallback(
     ({ item }: { item: AdminUser }) => (
       <View className="px-4 mb-3">
-        <UserCard
-          user={item}
-          onPress={onUserPress}
-          onEdit={onUserEdit}
-          showActions={showActions}
-        />
+        <UserCard user={item} onPress={onUserPress} onEdit={onUserEdit} showActions={showActions} />
       </View>
     ),
     [onUserPress, onUserEdit, showActions]
@@ -183,10 +168,7 @@ export const UserList = React.memo(function UserList({
                 showFilters ? 'bg-primary-100 dark:bg-primary-900/30' : ''
               }`}
             >
-              <FilterIcon
-                size={18}
-                color={showFilters ? '#A855F7' : '#9CA3AF'}
-              />
+              <FilterIcon size={18} color={showFilters ? '#A855F7' : '#9CA3AF'} />
             </Pressable>
           </View>
         </View>
@@ -205,9 +187,7 @@ export const UserList = React.memo(function UserList({
                     key={role.value}
                     onPress={() => handleRoleFilter(role.value)}
                     className={`px-3 py-1.5 rounded-full ${
-                      filters.role === role.value
-                        ? 'bg-primary-500'
-                        : 'bg-gray-200 dark:bg-surface'
+                      filters.role === role.value ? 'bg-primary-500' : 'bg-gray-200 dark:bg-surface'
                     }`}
                   >
                     <Text
@@ -225,10 +205,7 @@ export const UserList = React.memo(function UserList({
 
               {/* 필터 초기화 */}
               {(filters.search || filters.role !== 'all') && (
-                <Pressable
-                  onPress={handleClearFilters}
-                  className="mt-3 self-start"
-                >
+                <Pressable onPress={handleClearFilters} className="mt-3 self-start">
                   <Text className="text-sm text-primary-500">필터 초기화</Text>
                 </Pressable>
               )}
@@ -267,21 +244,14 @@ export const UserList = React.memo(function UserList({
     () => (
       <EmptyState
         icon={<UsersIcon size={48} color="#9CA3AF" />}
-        title={filters.search || filters.role !== 'all'
-          ? '검색 결과 없음'
-          : '사용자 없음'
-        }
+        title={filters.search || filters.role !== 'all' ? '검색 결과 없음' : '사용자 없음'}
         description={
           filters.search || filters.role !== 'all'
             ? '다른 검색어나 필터를 시도해보세요.'
             : '등록된 사용자가 없습니다.'
         }
-        actionLabel={
-          (filters.search || filters.role !== 'all') ? '필터 초기화' : undefined
-        }
-        onAction={
-          (filters.search || filters.role !== 'all') ? handleClearFilters : undefined
-        }
+        actionLabel={filters.search || filters.role !== 'all' ? '필터 초기화' : undefined}
+        onAction={filters.search || filters.role !== 'all' ? handleClearFilters : undefined}
       />
     ),
     [filters.search, filters.role, handleClearFilters]
@@ -300,14 +270,9 @@ export const UserList = React.memo(function UserList({
   if (error) {
     return (
       <View className="flex-1 items-center justify-center p-4">
-        <Text className="text-red-500 dark:text-red-400 text-center">
-          {error}
-        </Text>
+        <Text className="text-red-500 dark:text-red-400 text-center">{error}</Text>
         {onRefresh && (
-          <Pressable
-            onPress={onRefresh}
-            className="mt-4 px-4 py-2 bg-primary-500 rounded-lg"
-          >
+          <Pressable onPress={onRefresh} className="mt-4 px-4 py-2 bg-primary-500 rounded-lg">
             <Text className="text-white font-medium">다시 시도</Text>
           </Pressable>
         )}
@@ -328,11 +293,7 @@ export const UserList = React.memo(function UserList({
         contentContainerStyle={{ paddingBottom: 100 }}
         refreshControl={
           onRefresh ? (
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="#A855F7"
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#A855F7" />
           ) : undefined
         }
       />

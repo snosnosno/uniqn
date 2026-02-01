@@ -44,9 +44,7 @@ export function generateDateRange(startDate: string, endDate: string): string[] 
 /**
  * 이번 달 시작/끝 날짜
  */
-export function getMonthRange(
-  date: Date = new Date()
-): {
+export function getMonthRange(date: Date = new Date()): {
   start: string;
   end: string;
 } {
@@ -80,9 +78,7 @@ export function sortDates(dates: string[]): string[] {
  * @param timeSlot - 시간 슬롯 문자열
  * @returns { start, end } 또는 null (파싱 실패)
  */
-export function parseTimeSlot(
-  timeSlot: string
-): {
+export function parseTimeSlot(timeSlot: string): {
   start: string;
   end: string | null;
 } | null {
@@ -165,9 +161,7 @@ export function calculateWorkDuration(startTime: string, endTime: string): numbe
 /**
  * 분을 시간:분 형식으로 변환
  */
-export function minutesToHoursMinutes(
-  minutes: number
-): {
+export function minutesToHoursMinutes(minutes: number): {
   hours: number;
   minutes: number;
   display: string;

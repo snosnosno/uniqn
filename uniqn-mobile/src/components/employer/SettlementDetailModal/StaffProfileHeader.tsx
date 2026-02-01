@@ -52,22 +52,16 @@ export function StaffProfileHeader({
 
   return (
     <View className="items-center py-6 bg-gray-50 dark:bg-surface">
-      <Avatar
-        source={profilePhotoURL}
-        name={displayName}
-        size="xl"
-        className="mb-3"
-      />
+      <Avatar source={profilePhotoURL} name={displayName} size="xl" className="mb-3" />
       <View className="flex-row items-center gap-2 mb-1">
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
-          {displayName}
-        </Text>
+        <Text className="text-xl font-bold text-gray-900 dark:text-white">{displayName}</Text>
         <Badge variant={statusConfig.variant} size="sm" dot>
           {statusConfig.label}
         </Badge>
       </View>
       <Text className="text-sm text-gray-500 dark:text-gray-400">
-        {role ? getRoleDisplayName(role, customRole) : '역할 없음'} • {workDate ? formatDate(workDate) : '날짜 없음'}
+        {role ? getRoleDisplayName(role, customRole) : '역할 없음'} •{' '}
+        {workDate ? formatDate(workDate) : '날짜 없음'}
       </Text>
     </View>
   );

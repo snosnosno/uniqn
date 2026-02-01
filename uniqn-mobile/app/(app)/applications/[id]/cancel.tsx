@@ -25,9 +25,7 @@ function LoadingState() {
   return (
     <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
       <ActivityIndicator size="large" color="#6366f1" />
-      <Text className="mt-4 text-gray-500 dark:text-gray-400">
-        지원 정보를 불러오는 중...
-      </Text>
+      <Text className="mt-4 text-gray-500 dark:text-gray-400">지원 정보를 불러오는 중...</Text>
     </View>
   );
 }
@@ -36,22 +34,14 @@ function LoadingState() {
 // Error Component
 // ============================================================================
 
-function ErrorState({
-  message,
-  onBack,
-}: {
-  message: string;
-  onBack: () => void;
-}) {
+function ErrorState({ message, onBack }: { message: string; onBack: () => void }) {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">😢</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         오류가 발생했습니다
       </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">
-        {message}
-      </Text>
+      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">{message}</Text>
       <Button onPress={onBack} variant="outline">
         돌아가기
       </Button>
@@ -63,22 +53,14 @@ function ErrorState({
 // Cannot Cancel Component
 // ============================================================================
 
-function CannotCancelState({
-  reason,
-  onBack,
-}: {
-  reason: string;
-  onBack: () => void;
-}) {
+function CannotCancelState({ reason, onBack }: { reason: string; onBack: () => void }) {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">⚠️</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         취소 요청 불가
       </Text>
-      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">
-        {reason}
-      </Text>
+      <Text className="text-gray-500 dark:text-gray-400 text-center mb-6">{reason}</Text>
       <Button onPress={onBack} variant="outline">
         돌아가기
       </Button>
@@ -94,9 +76,7 @@ function SuccessState() {
   return (
     <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-6xl mb-4">📨</Text>
-      <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">
-        취소 요청 완료
-      </Text>
+      <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">취소 요청 완료</Text>
       <Text className="text-gray-500 dark:text-gray-400 text-center">
         구인자가 검토 후 승인/거절합니다.{'\n'}
         결과는 알림으로 안내해드립니다.
@@ -121,10 +101,7 @@ export default function CancellationRequestScreen() {
   const [isLoadingApplication, setIsLoadingApplication] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
 
-  const {
-    requestCancellation,
-    isRequestingCancellation,
-  } = useApplications();
+  const { requestCancellation, isRequestingCancellation } = useApplications();
 
   // Application 직접 조회 (캐시 대신 최신 데이터)
   useEffect(() => {
@@ -172,13 +149,19 @@ export default function CancellationRequestScreen() {
     }
 
     // 이미 취소 요청이 진행 중인 경우
-    if (application.status === 'cancellation_pending' || application.cancellationRequest?.status === 'pending') {
+    if (
+      application.status === 'cancellation_pending' ||
+      application.cancellationRequest?.status === 'pending'
+    ) {
       return { allowed: false, reason: '이미 취소 요청이 진행 중입니다' };
     }
 
     // 이전 취소 요청이 거절된 경우
     if (application.cancellationRequest?.status === 'rejected') {
-      return { allowed: false, reason: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.' };
+      return {
+        allowed: false,
+        reason: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
+      };
     }
 
     return { allowed: true, reason: '' };
@@ -244,10 +227,7 @@ export default function CancellationRequestScreen() {
             headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
-        <ErrorState
-          message={loadError}
-          onBack={handleClose}
-        />
+        <ErrorState message={loadError} onBack={handleClose} />
       </SafeAreaView>
     );
   }
@@ -266,10 +246,7 @@ export default function CancellationRequestScreen() {
             headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
-        <ErrorState
-          message="지원서를 찾을 수 없습니다"
-          onBack={handleClose}
-        />
+        <ErrorState message="지원서를 찾을 수 없습니다" onBack={handleClose} />
       </SafeAreaView>
     );
   }
@@ -288,10 +265,7 @@ export default function CancellationRequestScreen() {
             headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
-        <CannotCancelState
-          reason={canRequestCancel.reason}
-          onBack={handleClose}
-        />
+        <CannotCancelState reason={canRequestCancel.reason} onBack={handleClose} />
       </SafeAreaView>
     );
   }

@@ -8,7 +8,11 @@
 import { differenceInDays, addDays, format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { parseDateString, toDateString, generateId } from './core';
-import type { DateSpecificRequirement, TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';
+import type {
+  DateSpecificRequirement,
+  TimeSlot,
+  RoleRequirement,
+} from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types
@@ -251,12 +255,8 @@ function deepCloneTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
 /**
  * DateSpecificRequirement[] 에서 DateRangeGroup 생성
  */
-function createGroupFromRequirements(
-  requirements: DateSpecificRequirement[]
-): DateRangeGroup {
-  const sortedDates = requirements
-    .map((r) => toDateString(r.date))
-    .sort();
+function createGroupFromRequirements(requirements: DateSpecificRequirement[]): DateRangeGroup {
+  const sortedDates = requirements.map((r) => toDateString(r.date)).sort();
 
   const startDate = sortedDates[0]!;
   const endDate = sortedDates[sortedDates.length - 1]!;
@@ -324,9 +324,7 @@ export function groupRequirementsToDateRanges(
  *
  * @description 날짜 범위를 개별 날짜로 확장
  */
-export function expandDateRangeToRequirements(
-  group: DateRangeGroup
-): DateSpecificRequirement[] {
+export function expandDateRangeToRequirements(group: DateRangeGroup): DateSpecificRequirement[] {
   const requirements: DateSpecificRequirement[] = [];
 
   const start = parseDateString(group.startDate);

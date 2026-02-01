@@ -60,8 +60,7 @@ function getRoleSalary(
       for (const r of timeSlot.roles || []) {
         // 역할 매칭
         const isMatch =
-          (role === 'other' && customRole && r.customRole === customRole) ||
-          (r.role === role);
+          (role === 'other' && customRole && r.customRole === customRole) || r.role === role;
 
         if (isMatch && r.salary) {
           return r.salary;
@@ -78,10 +77,13 @@ function getRoleSalary(
 // Constants
 // ============================================================================
 
-const PAYROLL_STATUS_CONFIG: Record<PayrollStatus, {
-  label: string;
-  variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
-}> = {
+const PAYROLL_STATUS_CONFIG: Record<
+  PayrollStatus,
+  {
+    label: string;
+    variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
+  }
+> = {
   pending: { label: '미정산', variant: 'warning' },
   processing: { label: '처리중', variant: 'primary' },
   completed: { label: '정산완료', variant: 'success' },
@@ -101,8 +103,12 @@ interface RowProps {
 
 function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
   return (
-    <View className={`flex-row justify-between items-center py-2 ${isTotal ? 'pt-3 border-t border-gray-200 dark:border-surface-overlay' : ''}`}>
-      <Text className={`text-sm ${isTotal ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
+    <View
+      className={`flex-row justify-between items-center py-2 ${isTotal ? 'pt-3 border-t border-gray-200 dark:border-surface-overlay' : ''}`}
+    >
+      <Text
+        className={`text-sm ${isTotal ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}
+      >
         {label}
       </Text>
       <Text
@@ -141,12 +147,14 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       return schedule.customSalaryInfo;
     }
     // 없으면 JobPostingCard에서 역할별 급여 조회
-    return getRoleSalary(
-      schedule.jobPostingCard,
-      schedule.role,
-      schedule.customRole
-    );
-  }, [schedule.settlementBreakdown?.salaryInfo, schedule.customSalaryInfo, schedule.jobPostingCard, schedule.role, schedule.customRole]);
+    return getRoleSalary(schedule.jobPostingCard, schedule.role, schedule.customRole);
+  }, [
+    schedule.settlementBreakdown?.salaryInfo,
+    schedule.customSalaryInfo,
+    schedule.jobPostingCard,
+    schedule.role,
+    schedule.customRole,
+  ]);
 
   // 수당 정보: settlementBreakdown > 개별 오버라이드 > JobPostingCard 기본값
   const allowances: Allowances | undefined = useMemo(() => {
@@ -154,17 +162,25 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       return schedule.settlementBreakdown.allowances;
     }
     return schedule.customAllowances || schedule.jobPostingCard?.allowances;
-  }, [schedule.settlementBreakdown?.allowances, schedule.customAllowances, schedule.jobPostingCard?.allowances]);
+  }, [
+    schedule.settlementBreakdown?.allowances,
+    schedule.customAllowances,
+    schedule.jobPostingCard?.allowances,
+  ]);
 
   // 세금 설정: settlementBreakdown > 개별 오버라이드 > JobPostingCard 기본값
   const taxSettings: TaxSettings = useMemo(() => {
     if (schedule.settlementBreakdown?.taxSettings) {
       return schedule.settlementBreakdown.taxSettings;
     }
-    return schedule.customTaxSettings ||
-      schedule.jobPostingCard?.taxSettings ||
-      DEFAULT_TAX_SETTINGS;
-  }, [schedule.settlementBreakdown?.taxSettings, schedule.customTaxSettings, schedule.jobPostingCard?.taxSettings]);
+    return (
+      schedule.customTaxSettings || schedule.jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS
+    );
+  }, [
+    schedule.settlementBreakdown?.taxSettings,
+    schedule.customTaxSettings,
+    schedule.jobPostingCard?.taxSettings,
+  ]);
 
   // 정산 계산 (세금 포함)
   // 우선순위: 실제 시간 재계산 > settlementBreakdown > 예정 시간 계산
@@ -204,7 +220,16 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
     }
 
     return null;
-  }, [schedule.settlementBreakdown, schedule.checkInTime, schedule.checkOutTime, schedule.startTime, schedule.endTime, salaryInfo, allowances, taxSettings]);
+  }, [
+    schedule.settlementBreakdown,
+    schedule.checkInTime,
+    schedule.checkOutTime,
+    schedule.startTime,
+    schedule.endTime,
+    salaryInfo,
+    allowances,
+    taxSettings,
+  ]);
 
   // 근무 시간: settlementBreakdown 우선 사용
   const hoursWorked = useMemo(() => {
@@ -220,7 +245,13 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
       return calculateHoursWorked(schedule.startTime, schedule.endTime);
     }
     return 0;
-  }, [schedule.settlementBreakdown?.hoursWorked, schedule.checkInTime, schedule.checkOutTime, schedule.startTime, schedule.endTime]);
+  }, [
+    schedule.settlementBreakdown?.hoursWorked,
+    schedule.checkInTime,
+    schedule.checkOutTime,
+    schedule.startTime,
+    schedule.endTime,
+  ]);
 
   // 예상 금액 여부: settlementBreakdown 우선 사용
   const isEstimate = hasBreakdown
@@ -242,7 +273,9 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
         {/* 예상 급여 미리보기 */}
         {settlement && (
           <View className="mt-4 w-full p-4 bg-gray-50 dark:bg-surface/50 rounded-xl">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">예상 급여 (참고용)</Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+              예상 급여 (참고용)
+            </Text>
             <Text className="text-lg font-bold text-gray-900 dark:text-white">
               {formatCurrency(settlement.totalPay)}
             </Text>
@@ -321,7 +354,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
               {allowances.meal !== undefined && allowances.meal !== 0 && (
                 <Row
                   label="식비"
-                  value={allowances.meal === PROVIDED_FLAG ? '제공' : `+${formatCurrency(allowances.meal)}`}
+                  value={
+                    allowances.meal === PROVIDED_FLAG
+                      ? '제공'
+                      : `+${formatCurrency(allowances.meal)}`
+                  }
                   isProvided={allowances.meal === PROVIDED_FLAG}
                 />
               )}
@@ -330,7 +367,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
               {allowances.transportation !== undefined && allowances.transportation !== 0 && (
                 <Row
                   label="교통비"
-                  value={allowances.transportation === PROVIDED_FLAG ? '제공' : `+${formatCurrency(allowances.transportation)}`}
+                  value={
+                    allowances.transportation === PROVIDED_FLAG
+                      ? '제공'
+                      : `+${formatCurrency(allowances.transportation)}`
+                  }
                   isProvided={allowances.transportation === PROVIDED_FLAG}
                 />
               )}
@@ -339,7 +380,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
               {allowances.accommodation !== undefined && allowances.accommodation !== 0 && (
                 <Row
                   label="숙박비"
-                  value={allowances.accommodation === PROVIDED_FLAG ? '제공' : `+${formatCurrency(allowances.accommodation)}`}
+                  value={
+                    allowances.accommodation === PROVIDED_FLAG
+                      ? '제공'
+                      : `+${formatCurrency(allowances.accommodation)}`
+                  }
                   isProvided={allowances.accommodation === PROVIDED_FLAG}
                 />
               )}
@@ -356,11 +401,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
               <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 세금 ({taxSettings.type === 'rate' ? `${taxSettings.value}%` : '고정'})
               </Text>
-              <Row
-                label="공제액"
-                value={`-${formatCurrency(settlement.taxAmount)}`}
-                isNegative
-              />
+              <Row label="공제액" value={`-${formatCurrency(settlement.taxAmount)}`} isNegative />
             </View>
           )}
 

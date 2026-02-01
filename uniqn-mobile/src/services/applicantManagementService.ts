@@ -237,7 +237,10 @@ export async function confirmApplication(
       });
     }
 
-    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+    const applicationData = parseApplicationDocument({
+      id: applicationDoc.id,
+      ...applicationDoc.data(),
+    });
     if (!applicationData) {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         userMessage: '데이터가 올바르지 않습니다',
@@ -356,10 +359,7 @@ export async function bulkConfirmApplications(
  *
  * @description Repository의 markAsRead를 활용하여 데이터 접근 추상화
  */
-export async function markApplicationAsRead(
-  applicationId: string,
-  ownerId: string
-): Promise<void> {
+export async function markApplicationAsRead(applicationId: string, ownerId: string): Promise<void> {
   try {
     await applicationRepository.markAsRead(applicationId, ownerId);
   } catch (error) {
@@ -392,9 +392,8 @@ export async function getApplicantStatsByRole(
       // 역할 필터링: assignments 기반 (appliedRole 제거됨)
       const primaryRole = app.assignments[0]?.roleIds?.[0] || 'other';
       // 커스텀 역할 지원: primaryRole이 'other'이면 customRole을 키로 사용
-      const effectiveRole = primaryRole === 'other' && app.customRole
-        ? app.customRole
-        : primaryRole;
+      const effectiveRole =
+        primaryRole === 'other' && app.customRole ? app.customRole : primaryRole;
 
       if (!statsByRole[effectiveRole]) {
         statsByRole[effectiveRole] = {

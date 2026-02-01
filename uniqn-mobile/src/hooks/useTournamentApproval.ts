@@ -106,9 +106,7 @@ export function useTournamentApproval(
   const myPendingQuery = useQuery({
     queryKey: queryKeys.tournaments.myPending(),
     queryFn: () =>
-      user?.uid
-        ? tournamentApprovalService.getMyPending(user.uid)
-        : Promise.resolve([]),
+      user?.uid ? tournamentApprovalService.getMyPending(user.uid) : Promise.resolve([]),
     staleTime: cachingPolicies.frequent,
     gcTime: 10 * 60 * 1000,
     enabled: enabled && !!user?.uid && !isAdmin,
@@ -120,8 +118,7 @@ export function useTournamentApproval(
 
   // 승인 뮤테이션
   const approveMutation = useMutation({
-    mutationFn: (postingId: string) =>
-      tournamentApprovalService.approve({ postingId }),
+    mutationFn: (postingId: string) => tournamentApprovalService.approve({ postingId }),
     onSuccess: (_, postingId) => {
       toast.success('대회공고가 승인되었습니다');
       invalidateQueries.tournamentApproval();
@@ -150,8 +147,7 @@ export function useTournamentApproval(
 
   // 재제출 뮤테이션
   const resubmitMutation = useMutation({
-    mutationFn: (postingId: string) =>
-      tournamentApprovalService.resubmit({ postingId }),
+    mutationFn: (postingId: string) => tournamentApprovalService.resubmit({ postingId }),
     onSuccess: (_, postingId) => {
       toast.success('대회공고가 재제출되었습니다');
       invalidateQueries.tournamentApproval();
@@ -232,9 +228,7 @@ export function useTournamentApproval(
 
     // 처리 중 여부
     isProcessing:
-      approveMutation.isPending ||
-      rejectMutation.isPending ||
-      resubmitMutation.isPending,
+      approveMutation.isPending || rejectMutation.isPending || resubmitMutation.isPending,
   };
 }
 
@@ -257,10 +251,7 @@ export function useTournamentDetail(postingId: string, enabled = true) {
 /**
  * 특정 상태의 대회공고 목록 조회 훅
  */
-export function useTournamentsByStatus(
-  status: TournamentApprovalStatus,
-  enabled = true
-) {
+export function useTournamentsByStatus(status: TournamentApprovalStatus, enabled = true) {
   const queryKey =
     status === 'pending'
       ? queryKeys.tournaments.pending()

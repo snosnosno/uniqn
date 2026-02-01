@@ -6,12 +6,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import {
-  formatTime,
-  formatTimeRange,
-  calculateDuration,
-  formatDate,
-} from '../timeHelpers';
+import { formatTime, formatTimeRange, calculateDuration, formatDate } from '../timeHelpers';
 
 // ============================================================================
 // formatTime Tests

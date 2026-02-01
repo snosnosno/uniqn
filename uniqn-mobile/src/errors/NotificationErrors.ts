@@ -57,7 +57,10 @@ export class FCMTokenError extends AppError {
   readonly reason: 'acquisition_failed' | 'registration_failed' | 'unregistration_failed';
 
   constructor(
-    reason: 'acquisition_failed' | 'registration_failed' | 'unregistration_failed' = 'acquisition_failed',
+    reason:
+      | 'acquisition_failed'
+      | 'registration_failed'
+      | 'unregistration_failed' = 'acquisition_failed',
     originalError?: Error
   ) {
     const messages: Record<string, string> = {
@@ -98,12 +101,14 @@ export class NotificationSendError extends AppError {
   readonly successCount: number;
   readonly failureCount: number;
 
-  constructor(options: {
-    partialSuccess?: boolean;
-    successCount?: number;
-    failureCount?: number;
-    originalError?: Error;
-  } = {}) {
+  constructor(
+    options: {
+      partialSuccess?: boolean;
+      successCount?: number;
+      failureCount?: number;
+      originalError?: Error;
+    } = {}
+  ) {
     const { partialSuccess = false, successCount = 0, failureCount = 0, originalError } = options;
 
     const userMessage = partialSuccess
@@ -159,7 +164,9 @@ export class InvalidNotificationLinkError extends AppError {
 // Type Guards
 // ============================================================================
 
-export const isNotificationPermissionError = (error: unknown): error is NotificationPermissionError => {
+export const isNotificationPermissionError = (
+  error: unknown
+): error is NotificationPermissionError => {
   return error instanceof NotificationPermissionError;
 };
 
@@ -171,6 +178,8 @@ export const isNotificationSendError = (error: unknown): error is NotificationSe
   return error instanceof NotificationSendError;
 };
 
-export const isInvalidNotificationLinkError = (error: unknown): error is InvalidNotificationLinkError => {
+export const isInvalidNotificationLinkError = (
+  error: unknown
+): error is InvalidNotificationLinkError => {
   return error instanceof InvalidNotificationLinkError;
 };

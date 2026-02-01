@@ -8,11 +8,7 @@ import { View, Text, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Button, EmptyState } from '@/components/ui';
-import {
-  FAQCategoryTabs,
-  FAQList,
-  type FAQCategoryFilter,
-} from '@/components/support';
+import { FAQCategoryTabs, FAQList, type FAQCategoryFilter } from '@/components/support';
 import { useFAQ } from '@/hooks/useInquiry';
 
 export default function FAQScreen() {
@@ -49,11 +45,7 @@ export default function FAQScreen() {
             emptyMessage="해당 카테고리에 FAQ가 없습니다."
           />
         ) : (
-          <EmptyState
-            icon="📭"
-            title="FAQ가 없습니다"
-            description="아직 등록된 FAQ가 없습니다."
-          />
+          <EmptyState icon="📭" title="FAQ가 없습니다" description="아직 등록된 FAQ가 없습니다." />
         )}
 
         {/* 문의하기 CTA */}

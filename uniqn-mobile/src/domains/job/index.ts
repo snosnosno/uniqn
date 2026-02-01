@@ -94,11 +94,7 @@ export type {
 export { extractTemplateData, templateToFormData } from '@/types/jobTemplate';
 
 // 폼 타입
-export type {
-  JobPostingFormData,
-  TournamentDay,
-  FormRoleWithCount,
-} from '@/types/jobPostingForm';
+export type { JobPostingFormData, TournamentDay, FormRoleWithCount } from '@/types/jobPostingForm';
 
 export {
   INITIAL_JOB_POSTING_FORM_DATA,

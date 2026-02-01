@@ -7,12 +7,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, useSegments, usePathname } from 'expo-router';
-import {
-  useAuthStore,
-  hasPermission,
-  selectIsLoading,
-  selectProfile,
-} from '@/stores/authStore';
+import { useAuthStore, hasPermission, selectIsLoading, selectProfile } from '@/stores/authStore';
 import type { UserRole } from '@/types';
 import { logger } from '@/utils/logger';
 

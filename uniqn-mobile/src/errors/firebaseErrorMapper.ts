@@ -5,13 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  AppError,
-  AuthError,
-  NetworkError,
-  PermissionError,
-  ERROR_CODES,
-} from './AppError';
+import { AppError, AuthError, NetworkError, PermissionError, ERROR_CODES } from './AppError';
 
 // ============================================================================
 // Firebase Auth Error Codes
@@ -66,20 +60,20 @@ const FIREBASE_FIRESTORE_ERROR_MAP: Record<string, { code: string; message?: str
     code: ERROR_CODES.VALIDATION_SCHEMA,
     message: '요청 조건이 충족되지 않았습니다',
   },
-  'aborted': { code: ERROR_CODES.FIREBASE_ABORTED },
+  aborted: { code: ERROR_CODES.FIREBASE_ABORTED },
   'out-of-range': {
     code: ERROR_CODES.VALIDATION_SCHEMA,
     message: '요청 값이 범위를 벗어났습니다',
   },
-  'unimplemented': {
+  unimplemented: {
     code: ERROR_CODES.UNKNOWN,
     message: '지원되지 않는 기능입니다',
   },
-  'internal': { code: ERROR_CODES.UNKNOWN },
-  'unavailable': { code: ERROR_CODES.FIREBASE_UNAVAILABLE },
+  internal: { code: ERROR_CODES.UNKNOWN },
+  unavailable: { code: ERROR_CODES.FIREBASE_UNAVAILABLE },
   'data-loss': { code: ERROR_CODES.UNKNOWN, message: '데이터 손실이 발생했습니다' },
-  'unauthenticated': { code: ERROR_CODES.AUTH_SESSION_EXPIRED },
-  'cancelled': { code: ERROR_CODES.FIREBASE_ABORTED },
+  unauthenticated: { code: ERROR_CODES.AUTH_SESSION_EXPIRED },
+  cancelled: { code: ERROR_CODES.FIREBASE_ABORTED },
   'deadline-exceeded': { code: ERROR_CODES.NETWORK_TIMEOUT },
 };
 
@@ -194,10 +188,7 @@ export function mapFirebaseFirestoreError(error: unknown): AppError {
     }
 
     // 네트워크 관련 에러
-    if (
-      errorCode === 'unavailable' ||
-      errorCode === 'deadline-exceeded'
-    ) {
+    if (errorCode === 'unavailable' || errorCode === 'deadline-exceeded') {
       return new NetworkError(mapping.code, {
         message: error.message,
         userMessage: mapping.message,

@@ -44,7 +44,9 @@ function HeaderTitle({
       </Text>
       {jobTitle && (
         <>
-          <Text className="mx-2" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>|</Text>
+          <Text className="mx-2" style={{ color: isDark ? '#6B7280' : '#9CA3AF' }}>
+            |
+          </Text>
           <Text
             className="flex-1 text-base"
             style={{ color: isDark ? '#9CA3AF' : '#6B7280' }}
@@ -104,10 +106,7 @@ export default function JobPostingDetailLayout() {
             />
           ),
           headerRight: () => (
-            <HeaderQRButton
-              tintColor={isDark ? '#ffffff' : '#1A1625'}
-              onPress={handleShowQR}
-            />
+            <HeaderQRButton tintColor={isDark ? '#ffffff' : '#1A1625'} onPress={handleShowQR} />
           ),
         }}
       >

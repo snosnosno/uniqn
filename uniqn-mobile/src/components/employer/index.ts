@@ -35,7 +35,10 @@ export { SettlementEditModal } from './SettlementEditModal';
 export type { SettlementEditModalProps, SettlementEditData } from './SettlementEditModal';
 
 export { SettlementSettingsModal } from './SettlementSettingsModal';
-export type { SettlementSettingsModalProps, SettlementSettingsData } from './SettlementSettingsModal';
+export type {
+  SettlementSettingsModalProps,
+  SettlementSettingsData,
+} from './SettlementSettingsModal';
 
 // 정산 서브 컴포넌트
 export { SalaryTypeSelector } from './SalaryTypeSelector';

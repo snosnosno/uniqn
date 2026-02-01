@@ -197,7 +197,10 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
  *
  * @description navigateToDeepLink와 navigateFromNotification의 공통 로직
  */
-async function executeNavigation(route: DeepLinkRoute, context: NavigationContext): Promise<boolean> {
+async function executeNavigation(
+  route: DeepLinkRoute,
+  context: NavigationContext
+): Promise<boolean> {
   try {
     const expoPath = RouteMapper.toExpoPath(route);
 
@@ -369,7 +372,10 @@ export async function navigateFromNotification(
  *
  * @description Expo Router 그룹 경로 (app), (tabs) 등을 제거하여 클린 URL 생성
  */
-export function createDeepLink(route: DeepLinkRoute, options: { useWebUrl?: boolean } = {}): string {
+export function createDeepLink(
+  route: DeepLinkRoute,
+  options: { useWebUrl?: boolean } = {}
+): string {
   const expoPath = RouteMapper.toExpoPath(route);
   // 라우트 그룹 제거: /(app)/(tabs)/schedule → /schedule
   // 빈 경로 폴백: /(app)/(tabs) → home

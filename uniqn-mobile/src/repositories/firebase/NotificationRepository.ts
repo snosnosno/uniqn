@@ -39,7 +39,10 @@ import { QueryBuilder, processPaginatedResults, type PaginatedResult } from '@/u
 import { COLLECTIONS } from '@/constants';
 import { parseNotificationSettingsDocument } from '@/schemas';
 import { createDefaultNotificationSettings } from '@/types/notification';
-import type { INotificationRepository, GetNotificationsOptions } from '../interfaces/INotificationRepository';
+import type {
+  INotificationRepository,
+  GetNotificationsOptions,
+} from '../interfaces/INotificationRepository';
 import type { NotificationData, NotificationSettings } from '@/types/notification';
 
 // ============================================================================
@@ -419,7 +422,13 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
   async getSettings(userId: string): Promise<NotificationSettings> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'notificationSettings', 'default');
+      const docRef = doc(
+        getFirebaseDb(),
+        COLLECTIONS.USERS,
+        userId,
+        'notificationSettings',
+        'default'
+      );
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -445,7 +454,13 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
   async saveSettings(userId: string, settings: NotificationSettings): Promise<void> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'notificationSettings', 'default');
+      const docRef = doc(
+        getFirebaseDb(),
+        COLLECTIONS.USERS,
+        userId,
+        'notificationSettings',
+        'default'
+      );
       await setDoc(
         docRef,
         {

@@ -58,7 +58,10 @@ export function RoleRequirementRow({
   const availableRoles = useMemo(() => {
     const currentRole = role.role ?? 'dealer';
     return STAFF_ROLES.filter(
-      (r) => r.key === currentRole || r.key === 'other' || !usedRoles.includes(r.key as StaffRole | 'other')
+      (r) =>
+        r.key === currentRole ||
+        r.key === 'other' ||
+        !usedRoles.includes(r.key as StaffRole | 'other')
     );
   }, [usedRoles, role.role]);
 
@@ -128,7 +131,10 @@ export function RoleRequirementRow({
           keyExtractor={(item) => item.key}
           renderItem={({ item }) => {
             const isSelected = item.key === currentRoleKey;
-            const isDisabled = item.key !== 'other' && item.key !== currentRoleKey && usedRoles.includes(item.key as StaffRole | 'other');
+            const isDisabled =
+              item.key !== 'other' &&
+              item.key !== currentRoleKey &&
+              usedRoles.includes(item.key as StaffRole | 'other');
 
             return (
               <Pressable

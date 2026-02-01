@@ -33,9 +33,7 @@ export {
 } from './date/formatting';
 
 // Validation
-export {
-  dateChecks,
-} from './date/validation';
+export { dateChecks } from './date/validation';
 
 // Ranges
 export {

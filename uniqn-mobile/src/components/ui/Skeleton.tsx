@@ -114,9 +114,7 @@ export function SkeletonText({
 
 export function SkeletonCard({ className }: SkeletonCardProps) {
   return (
-    <View
-      className={`bg-white dark:bg-surface rounded-xl p-4 ${className || ''}`}
-    >
+    <View className={`bg-white dark:bg-surface rounded-xl p-4 ${className || ''}`}>
       {/* Image placeholder */}
       <Skeleton width="100%" height={160} borderRadius={8} className="mb-4" />
 
@@ -143,12 +141,7 @@ export function SkeletonListItem() {
   return (
     <View className="flex-row items-center py-3 px-4">
       {/* Avatar */}
-      <Skeleton
-        width={48}
-        height={48}
-        borderRadius={24}
-        style={{ marginRight: 12 }}
-      />
+      <Skeleton width={48} height={48} borderRadius={24} style={{ marginRight: 12 }} />
 
       {/* Content */}
       <View className="flex-1">
@@ -251,12 +244,7 @@ export function SkeletonNotificationItem() {
   return (
     <View className="flex-row items-start py-4 px-4 bg-white dark:bg-surface border-b border-gray-100 dark:border-surface-overlay">
       {/* Icon */}
-      <Skeleton
-        width={40}
-        height={40}
-        borderRadius={20}
-        style={{ marginRight: 12 }}
-      />
+      <Skeleton width={40} height={40} borderRadius={20} style={{ marginRight: 12 }} />
 
       {/* Content */}
       <View className="flex-1">

@@ -36,8 +36,7 @@ function toDate(value: Timestamp | Date | unknown): Date {
 type SocialProvider = 'apple' | 'google' | 'kakao';
 
 // 소셜 로그인 활성화 여부 (SocialLoginButtons.tsx와 동일한 조건)
-const SOCIAL_LOGIN_ENABLED =
-  __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
+const SOCIAL_LOGIN_ENABLED = __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
 
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
@@ -64,47 +63,66 @@ export default function LoginScreen() {
   }, [loginWithBiometric]);
 
   // 이메일 로그인
-  const handleLogin = useCallback(async (data: LoginFormData) => {
-    setIsLoading(true);
-    try {
-      const result = await login(data);
-      if (result.user) {
-        // authStore 업데이트 (Timestamp → Date 변환)
-        setUser(result.user);
-        const storeProfile: StoreUserProfile = {
-          uid: result.profile.uid,
-          email: result.profile.email,
-          name: result.profile.name,
-          nickname: result.profile.nickname,
-          phone: result.profile.phone,
-          role: result.profile.role,
-          photoURL: result.profile.photoURL,
-          createdAt: toDate(result.profile.createdAt),
-          updatedAt: toDate(result.profile.updatedAt),
-        };
-        setProfile(storeProfile);
+  const handleLogin = useCallback(
+    async (data: LoginFormData) => {
+      setIsLoading(true);
+      try {
+        const result = await login(data);
+        if (result.user) {
+          // authStore 업데이트 (Timestamp → Date 변환)
+          setUser(result.user);
+          const storeProfile: StoreUserProfile = {
+            uid: result.profile.uid,
+            email: result.profile.email,
+            name: result.profile.name,
+            nickname: result.profile.nickname,
+            phone: result.profile.phone,
+            role: result.profile.role,
+            photoURL: result.profile.photoURL,
+            createdAt: toDate(result.profile.createdAt),
+            updatedAt: toDate(result.profile.updatedAt),
+          };
+          setProfile(storeProfile);
 
-        // 생체 인증 자격 증명 갱신 (활성화된 경우)
-        await updateBiometricCredentials();
+          // 생체 인증 자격 증명 갱신 (활성화된 경우)
+          await updateBiometricCredentials();
 
-        logger.info('로그인 성공', { userId: result.user.uid });
-        addToast({ type: 'success', message: '로그인되었습니다.' });
-        router.replace('/(app)/(tabs)');
+          logger.info('로그인 성공', { userId: result.user.uid });
+          addToast({ type: 'success', message: '로그인되었습니다.' });
+          router.replace('/(app)/(tabs)');
+        }
+      } catch (error) {
+        logger.error('로그인 실패', error as Error);
+        addToast({
+          type: 'error',
+          message: error instanceof Error ? error.message : '로그인에 실패했습니다.',
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      logger.error('로그인 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '로그인에 실패했습니다.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addToast, setUser, setProfile, updateBiometricCredentials]);
+    },
+    [addToast, setUser, setProfile, updateBiometricCredentials]
+  );
 
   // 소셜 로그인 공통 처리
   const handleSocialLoginSuccess = useCallback(
-    async (result: { user: { uid: string }; profile: { uid: string; email: string; name: string; nickname?: string; phone?: string; role: 'staff' | 'employer' | 'admin'; photoURL?: string; createdAt: Timestamp | Date; updatedAt: Timestamp | Date } }, provider: string) => {
+    async (
+      result: {
+        user: { uid: string };
+        profile: {
+          uid: string;
+          email: string;
+          name: string;
+          nickname?: string;
+          phone?: string;
+          role: 'staff' | 'employer' | 'admin';
+          photoURL?: string;
+          createdAt: Timestamp | Date;
+          updatedAt: Timestamp | Date;
+        };
+      },
+      provider: string
+    ) => {
       // authStore 업데이트 (Timestamp → Date 변환)
       setUser(result.user as import('firebase/auth').User);
       const storeProfile: StoreUserProfile = {
@@ -203,12 +221,8 @@ export default function LoginScreen() {
         >
           {/* 로고 */}
           <View className="mb-10 items-center">
-            <Text className="text-4xl font-bold text-primary-600 dark:text-primary-400">
-              UNIQN
-            </Text>
-            <Text className="mt-2 text-gray-500 dark:text-gray-400">
-              홀덤 스태프 플랫폼
-            </Text>
+            <Text className="text-4xl font-bold text-primary-600 dark:text-primary-400">UNIQN</Text>
+            <Text className="mt-2 text-gray-500 dark:text-gray-400">홀덤 스태프 플랫폼</Text>
           </View>
 
           {/* 생체 인증 버튼 */}

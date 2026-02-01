@@ -101,12 +101,16 @@ export default function QRScreen() {
             </View>
             <View
               className={`px-3 py-1.5 rounded-full ${
-                isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary-100 dark:bg-primary-900/30'
+                isWorking
+                  ? 'bg-green-100 dark:bg-green-900/30'
+                  : 'bg-primary-100 dark:bg-primary-900/30'
               }`}
             >
               <Text
                 className={`text-sm font-medium ${
-                  isWorking ? 'text-green-700 dark:text-green-300' : 'text-primary-700 dark:text-primary-300'
+                  isWorking
+                    ? 'text-green-700 dark:text-green-300'
+                    : 'text-primary-700 dark:text-primary-300'
                 }`}
               >
                 {actionLabel} 필요

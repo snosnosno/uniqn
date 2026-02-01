@@ -6,13 +6,7 @@
  */
 
 import React, { useState, useCallback, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  KeyboardAvoidingView,
-  Platform,
-} from 'react-native';
+import { View, Text, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Loading } from '@/components';
@@ -54,7 +48,13 @@ interface SectionErrors {
  * RoleRequirement[] → FormRoleWithCount[] 변환 (급여 포함)
  */
 function convertRolesToFormRolesWithSalary(
-  roles: { role?: string; name?: string; count: number; filled?: number; salary?: { type: string; amount: number } }[]
+  roles: {
+    role?: string;
+    name?: string;
+    count: number;
+    filled?: number;
+    salary?: { type: string; amount: number };
+  }[]
 ): FormRoleWithCount[] {
   const ROLE_LABELS: Record<string, string> = {
     dealer: '딜러',
@@ -68,7 +68,9 @@ function convertRolesToFormRolesWithSalary(
     name: r.name || ROLE_LABELS[r.role || ''] || r.role || '알 수 없음',
     count: r.count,
     isCustom: !!(r.name && !['딜러', '플로어'].includes(r.name)),
-    salary: r.salary ? { type: r.salary.type as 'hourly' | 'daily' | 'monthly' | 'other', amount: r.salary.amount } : undefined,
+    salary: r.salary
+      ? { type: r.salary.type as 'hourly' | 'daily' | 'monthly' | 'other', amount: r.salary.amount }
+      : undefined,
   }));
 }
 
@@ -108,9 +110,12 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
       // v2.0: dateSpecificRequirements 기반 검증
       if (hasDateRequirements) {
         // 모든 날짜의 타임슬롯에 역할이 있는지 확인
-        const hasIncomplete = data.dateSpecificRequirements!.some(req => {
-          return !req.timeSlots || req.timeSlots.length === 0 ||
-            req.timeSlots.some(slot => !slot.roles || slot.roles.length === 0);
+        const hasIncomplete = data.dateSpecificRequirements!.some((req) => {
+          return (
+            !req.timeSlots ||
+            req.timeSlots.length === 0 ||
+            req.timeSlots.some((slot) => !slot.roles || slot.roles.length === 0)
+          );
         });
         if (hasIncomplete) {
           errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
@@ -152,7 +157,7 @@ function validateRoles(data: JobPostingFormData): Record<string, string> {
       if (totalCount === 0) {
         errors.roles = '모집 인원은 최소 1명 이상이어야 합니다';
       }
-      const hasEmptyName = data.roles.some(r => r.isCustom && !r.name.trim());
+      const hasEmptyName = data.roles.some((r) => r.isCustom && !r.name.trim());
       if (hasEmptyName) {
         errors.roles = '모든 역할의 이름을 입력해주세요';
       }
@@ -191,13 +196,13 @@ function validatePreQuestions(data: JobPostingFormData): Record<string, string> 
   const errors: Record<string, string> = {};
 
   if (data.usesPreQuestions) {
-    const hasEmptyQuestion = data.preQuestions.some(q => !q.question.trim());
+    const hasEmptyQuestion = data.preQuestions.some((q) => !q.question.trim());
     if (hasEmptyQuestion) {
       errors.preQuestions = '질문 내용을 입력해주세요';
     }
 
-    const hasEmptyOption = data.preQuestions.some(q =>
-      q.type === 'select' && q.options?.some(opt => !opt.trim())
+    const hasEmptyOption = data.preQuestions.some(
+      (q) => q.type === 'select' && q.options?.some((opt) => !opt.trim())
     );
     if (hasEmptyOption) {
       errors.preQuestions = '선택지 내용을 입력해주세요';
@@ -266,7 +271,15 @@ export default function EditJobPostingScreen() {
         isStartTimeNegotiable: existingJob.isStartTimeNegotiable ?? false,
         // 역할 (급여 정보 포함)
         roles: existingJob.roles
-          ? convertRolesToFormRolesWithSalary(existingJob.roles as { role?: string; name?: string; count: number; filled?: number; salary?: { type: string; amount: number } }[])
+          ? convertRolesToFormRolesWithSalary(
+              existingJob.roles as {
+                role?: string;
+                name?: string;
+                count: number;
+                filled?: number;
+                salary?: { type: string; amount: number };
+              }[]
+            )
           : [...INITIAL_JOB_POSTING_FORM_DATA.roles],
         // 급여
         defaultSalary: existingJob.defaultSalary,
@@ -294,7 +307,7 @@ export default function EditJobPostingScreen() {
 
   // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
-    setFormData((prev) => prev ? { ...prev, ...data } : null);
+    setFormData((prev) => (prev ? { ...prev, ...data } : null));
   }, []);
 
   // 전체 유효성 검증
@@ -348,13 +361,15 @@ export default function EditJobPostingScreen() {
         detailedAddress: formData.detailedAddress || undefined,
         contactPhone: formData.contactPhone || undefined,
         // 확정된 지원자가 있으면 일정/역할 수정 불가
-        ...(hasConfirmedApplicants ? {} : {
-          workDate: formData.workDate,
-          startTime: formData.startTime,
-          daysPerWeek: formData.daysPerWeek,
-          isStartTimeNegotiable: formData.isStartTimeNegotiable,
-          roles: formData.roles,
-        }),
+        ...(hasConfirmedApplicants
+          ? {}
+          : {
+              workDate: formData.workDate,
+              startTime: formData.startTime,
+              daysPerWeek: formData.daysPerWeek,
+              isStartTimeNegotiable: formData.isStartTimeNegotiable,
+              roles: formData.roles,
+            }),
         defaultSalary: formData.defaultSalary,
         useSameSalary: formData.useSameSalary,
         allowances: formData.allowances,
@@ -369,7 +384,7 @@ export default function EditJobPostingScreen() {
       logger.error('공고 수정 실패', error as Error, { jobPostingId: id });
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 수정에 실패했습니다'
+        message: error instanceof Error ? error.message : '공고 수정에 실패했습니다',
       });
     }
   }, [user, formData, hasConfirmedApplicants, id, validateAll, updateJobPosting, addToast, router]);
@@ -390,9 +405,7 @@ export default function EditJobPostingScreen() {
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">
-            공고 정보를 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );
@@ -501,11 +514,7 @@ export default function EditJobPostingScreen() {
                     </Text>
                   </View>
                 ) : (
-                  <RolesSection
-                    data={formData}
-                    onUpdate={updateFormData}
-                    errors={errors.roles}
-                  />
+                  <RolesSection data={formData} onUpdate={updateFormData} errors={errors.roles} />
                 )}
               </SectionCard>
             </View>
@@ -519,11 +528,7 @@ export default function EditJobPostingScreen() {
               hasError={getErrorCount(errors.salary) > 0}
               errorCount={getErrorCount(errors.salary)}
             >
-              <SalarySection
-                data={formData}
-                onUpdate={updateFormData}
-                errors={errors.salary}
-              />
+              <SalarySection data={formData} onUpdate={updateFormData} errors={errors.salary} />
             </SectionCard>
           </View>
 

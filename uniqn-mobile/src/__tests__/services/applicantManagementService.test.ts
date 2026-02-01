@@ -5,11 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  createMockJobPosting,
-  createMockApplication,
-  resetCounters,
-} from '../mocks/factories';
+import { createMockJobPosting, createMockApplication, resetCounters } from '../mocks/factories';
 
 // Import after mocks
 import {
@@ -163,7 +159,7 @@ function createMockApplicationWithDetails(overrides: Record<string, unknown> = {
   const baseApplication = createMockApplication();
   // assignments 기본값 (role 필요 시 overrides에 assignments로 전달)
   const defaultAssignments = [
-    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }
+    { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] },
   ];
   return {
     ...baseApplication,
@@ -237,9 +233,9 @@ describe('applicantManagementService', () => {
         exists: () => false,
       });
 
-      await expect(
-        getApplicantsByJobPosting('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(getApplicantsByJobPosting('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -254,9 +250,9 @@ describe('applicantManagementService', () => {
         data: () => jobPosting,
       });
 
-      await expect(
-        getApplicantsByJobPosting('job-1', 'employer-1')
-      ).rejects.toThrow('본인의 공고만 조회할 수 있습니다');
+      await expect(getApplicantsByJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '본인의 공고만 조회할 수 있습니다'
+      );
     });
 
     it('should filter by status', async () => {
@@ -306,7 +302,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -327,10 +324,7 @@ describe('applicantManagementService', () => {
         return await callback(transaction);
       });
 
-      const result = await confirmApplication(
-        { applicationId: 'app-1' },
-        'employer-1'
-      );
+      const result = await confirmApplication({ applicationId: 'app-1' }, 'employer-1');
 
       expect(result.applicationId).toBe('app-1');
       expect(result.workLogId).toBeDefined();
@@ -361,7 +355,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -376,9 +371,9 @@ describe('applicantManagementService', () => {
         return await callback(transaction);
       });
 
-      await expect(
-        confirmApplication({ applicationId: 'app-1' }, 'employer-1')
-      ).rejects.toThrow('이미 확정된 지원입니다');
+      await expect(confirmApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
+        '이미 확정된 지원입니다'
+      );
     });
 
     it('should throw MaxCapacityReachedError when positions are full', async () => {
@@ -400,7 +395,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -415,9 +411,9 @@ describe('applicantManagementService', () => {
         return await callback(transaction);
       });
 
-      await expect(
-        confirmApplication({ applicationId: 'app-1' }, 'employer-1')
-      ).rejects.toThrow('모집 인원이 마감되었습니다');
+      await expect(confirmApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
+        '모집 인원이 마감되었습니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {
@@ -438,7 +434,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -453,9 +450,9 @@ describe('applicantManagementService', () => {
         return await callback(transaction);
       });
 
-      await expect(
-        confirmApplication({ applicationId: 'app-1' }, 'employer-1')
-      ).rejects.toThrow('본인의 공고만 관리할 수 있습니다');
+      await expect(confirmApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
+        '본인의 공고만 관리할 수 있습니다'
+      );
     });
   });
 
@@ -473,7 +470,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -501,7 +499,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -515,9 +514,9 @@ describe('applicantManagementService', () => {
         await callback(transaction);
       });
 
-      await expect(
-        rejectApplication({ applicationId: 'app-1' }, 'employer-1')
-      ).rejects.toThrow('이미 확정된 지원은 거절할 수 없습니다');
+      await expect(rejectApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
+        '이미 확정된 지원은 거절할 수 없습니다'
+      );
     });
 
     it('should throw error for already rejected application', async () => {
@@ -529,7 +528,8 @@ describe('applicantManagementService', () => {
 
       mockRunTransaction.mockImplementation(async (_db, callback) => {
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => application,
@@ -543,9 +543,9 @@ describe('applicantManagementService', () => {
         await callback(transaction);
       });
 
-      await expect(
-        rejectApplication({ applicationId: 'app-1' }, 'employer-1')
-      ).rejects.toThrow('이미 거절된 지원입니다');
+      await expect(rejectApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
+        '이미 거절된 지원입니다'
+      );
     });
   });
 
@@ -583,7 +583,8 @@ describe('applicantManagementService', () => {
         const workLogId = `worklog-${callCount}`;
 
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => app,
@@ -601,10 +602,7 @@ describe('applicantManagementService', () => {
         return await callback(transaction);
       });
 
-      const result = await bulkConfirmApplications(
-        ['app-1', 'app-2'],
-        'employer-1'
-      );
+      const result = await bulkConfirmApplications(['app-1', 'app-2'], 'employer-1');
 
       expect(result.successCount).toBe(2);
       expect(result.failedCount).toBe(0);
@@ -649,7 +647,8 @@ describe('applicantManagementService', () => {
         const workLogId = `worklog-${callCount}`;
 
         const transaction = {
-          get: jest.fn()
+          get: jest
+            .fn()
             .mockResolvedValueOnce({
               exists: () => true,
               data: () => app,
@@ -667,10 +666,7 @@ describe('applicantManagementService', () => {
         return await callback(transaction);
       });
 
-      const result = await bulkConfirmApplications(
-        ['app-1', 'app-2'],
-        'employer-1'
-      );
+      const result = await bulkConfirmApplications(['app-1', 'app-2'], 'employer-1');
 
       expect(result.successCount).toBe(1);
       expect(result.failedCount).toBe(1);
@@ -707,9 +703,7 @@ describe('applicantManagementService', () => {
         await callback(transaction);
       });
 
-      await expect(
-        markApplicationAsRead('app-1', 'employer-1')
-      ).resolves.not.toThrow();
+      await expect(markApplicationAsRead('app-1', 'employer-1')).resolves.not.toThrow();
     });
 
     it('should throw error for non-existent application', async () => {
@@ -717,9 +711,9 @@ describe('applicantManagementService', () => {
         exists: () => false,
       });
 
-      await expect(
-        markApplicationAsRead('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 지원입니다');
+      await expect(markApplicationAsRead('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 지원입니다'
+      );
     });
   });
 

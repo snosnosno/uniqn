@@ -16,7 +16,7 @@ import { useThemeStore } from '@/stores/themeStore';
 
 const PLACEHOLDER_COLORS = {
   light: '#6B7280', // gray-500 (WCAG AA 준수)
-  dark: '#9CA3AF',  // gray-400 (다크모드에서 더 밝게)
+  dark: '#9CA3AF', // gray-400 (다크모드에서 더 밝게)
 } as const;
 
 type InputType = 'text' | 'email' | 'password' | 'number' | 'phone';
@@ -72,9 +72,7 @@ export function Input({
   return (
     <View className="w-full">
       {label && (
-        <Text className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
-          {label}
-        </Text>
+        <Text className="mb-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">{label}</Text>
       )}
 
       <View
@@ -103,11 +101,7 @@ export function Input({
         />
 
         {isPassword && (
-          <Pressable
-            onPress={() => setShowPassword(!showPassword)}
-            className="p-1"
-            hitSlop={8}
-          >
+          <Pressable onPress={() => setShowPassword(!showPassword)} className="p-1" hitSlop={8}>
             {showPassword ? (
               <EyeSlashIcon size={20} color={placeholderColor} />
             ) : (

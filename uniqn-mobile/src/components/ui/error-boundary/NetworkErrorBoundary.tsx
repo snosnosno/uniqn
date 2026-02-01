@@ -81,10 +81,7 @@ function NetworkErrorFallback({
  *
  * @description 네트워크 관련 에러를 처리하는 에러 경계
  */
-export class NetworkErrorBoundary extends Component<
-  NetworkErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class NetworkErrorBoundary extends Component<NetworkErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: NetworkErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -145,11 +142,7 @@ export class NetworkErrorBoundary extends Component<
     if (hasError) {
       if (fallback) return fallback;
       return (
-        <NetworkErrorFallback
-          error={error}
-          onRetry={this.handleRetry}
-          isOffline={isOffline}
-        />
+        <NetworkErrorFallback error={error} onRetry={this.handleRetry} isOffline={isOffline} />
       );
     }
 

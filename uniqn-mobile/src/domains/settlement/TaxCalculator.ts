@@ -171,11 +171,7 @@ export class TaxCalculator {
     }
 
     // 추가수당
-    if (
-      taxableItems.additional !== false &&
-      amounts.additional &&
-      amounts.additional > 0
-    ) {
+    if (taxableItems.additional !== false && amounts.additional && amounts.additional > 0) {
       taxableAmount += amounts.additional;
     }
 

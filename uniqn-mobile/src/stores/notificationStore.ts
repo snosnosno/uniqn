@@ -13,10 +13,7 @@ import type {
   NotificationSettings,
   NotificationFilter,
 } from '@/types/notification';
-import {
-  NotificationCategory,
-  createDefaultNotificationSettings,
-} from '@/types/notification';
+import { NotificationCategory, createDefaultNotificationSettings } from '@/types/notification';
 
 type NotificationCategoryType = (typeof NotificationCategory)[keyof typeof NotificationCategory];
 

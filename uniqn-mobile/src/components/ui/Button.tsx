@@ -35,7 +35,8 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-primary-600 active:bg-primary-700 dark:bg-primary-500 dark:active:bg-primary-600',
-  secondary: 'bg-gray-100 active:bg-gray-200 dark:bg-surface-elevated dark:active:bg-surface-overlay',
+  secondary:
+    'bg-gray-100 active:bg-gray-200 dark:bg-surface-elevated dark:active:bg-surface-overlay',
   outline:
     'bg-transparent border border-gray-300 active:bg-gray-50 dark:border-surface-overlay dark:active:bg-surface-elevated',
   ghost: 'bg-transparent active:bg-gray-100 dark:active:bg-surface-elevated',
@@ -98,10 +99,10 @@ export const Button = memo(function Button({
 
   // children이 문자열인 경우 자동으로 accessibilityLabel 생성
   const resolvedAccessibilityLabel =
-    accessibilityLabel ??
-    (typeof children === 'string' ? children : undefined);
+    accessibilityLabel ?? (typeof children === 'string' ? children : undefined);
 
-  const buttonClass = `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''}`.trim();
+  const buttonClass =
+    `flex-row items-center justify-center rounded-lg ${variantStyles[variant]} ${sizeStyles[size]} ${fullWidth ? 'w-full' : ''} ${isDisabled ? 'opacity-50' : ''}`.trim();
   const textClass = `font-semibold ${variantTextStyles[variant]} ${sizeTextStyles[size]}`;
 
   return (

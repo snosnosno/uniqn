@@ -62,9 +62,7 @@ interface MigratableData {
  */
 export function needsMigrationForRead(data: Partial<MigratableData>): boolean {
   const hasTournamentDates =
-    data.tournamentDates &&
-    Array.isArray(data.tournamentDates) &&
-    data.tournamentDates.length > 0;
+    data.tournamentDates && Array.isArray(data.tournamentDates) && data.tournamentDates.length > 0;
 
   const hasDateRequirements =
     data.dateSpecificRequirements &&
@@ -256,4 +254,3 @@ export function migrateJobPostingForWrite<T extends Partial<MigratableData>>(
     };
   }
 }
-

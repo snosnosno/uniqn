@@ -15,13 +15,13 @@ import { z } from 'zod';
  * 페널티 타입 스키마
  */
 export const penaltyTypeSchema = z.enum([
-  'no_show',              // 노쇼
-  'late_arrival',         // 지각
-  'early_leave',          // 조퇴
-  'policy_violation',     // 정책 위반
+  'no_show', // 노쇼
+  'late_arrival', // 지각
+  'early_leave', // 조퇴
+  'policy_violation', // 정책 위반
   'inappropriate_behavior', // 부적절한 행동
-  'cancellation',         // 취소
-  'other',                // 기타
+  'cancellation', // 취소
+  'other', // 기타
 ]);
 
 export type PenaltyTypeSchema = z.infer<typeof penaltyTypeSchema>;
@@ -30,11 +30,11 @@ export type PenaltyTypeSchema = z.infer<typeof penaltyTypeSchema>;
  * 페널티 상태 스키마
  */
 export const penaltyStatusSchema = z.enum([
-  'pending',    // 대기 중
-  'active',     // 적용 중
-  'expired',    // 만료됨
-  'appealed',   // 이의 제기
-  'revoked',    // 취소됨
+  'pending', // 대기 중
+  'active', // 적용 중
+  'expired', // 만료됨
+  'appealed', // 이의 제기
+  'revoked', // 취소됨
 ]);
 
 export type PenaltyStatusSchema = z.infer<typeof penaltyStatusSchema>;
@@ -43,11 +43,11 @@ export type PenaltyStatusSchema = z.infer<typeof penaltyStatusSchema>;
  * 페널티 심각도 스키마
  */
 export const penaltySeveritySchema = z.enum([
-  'warning',     // 경고
-  'minor',       // 경미
-  'moderate',    // 중간
-  'severe',      // 심각
-  'critical',    // 치명적
+  'warning', // 경고
+  'minor', // 경미
+  'moderate', // 중간
+  'severe', // 심각
+  'critical', // 치명적
 ]);
 
 export type PenaltySeveritySchema = z.infer<typeof penaltySeveritySchema>;
@@ -63,12 +63,26 @@ export const createPenaltySchema = z.object({
   targetUserId: z.string().min(1, { message: '대상 사용자 ID는 필수입니다' }),
   type: penaltyTypeSchema,
   severity: penaltySeveritySchema,
-  reason: z.string().min(10, { message: '사유는 최소 10자 이상이어야 합니다' }).max(500, { message: '사유는 500자를 초과할 수 없습니다' }),
+  reason: z
+    .string()
+    .min(10, { message: '사유는 최소 10자 이상이어야 합니다' })
+    .max(500, { message: '사유는 500자를 초과할 수 없습니다' }),
   relatedEventId: z.string().optional(),
   relatedWorkLogId: z.string().optional(),
-  points: z.number().min(0, { message: '포인트는 0 이상이어야 합니다' }).max(100, { message: '포인트는 100을 초과할 수 없습니다' }).optional(),
-  expiresInDays: z.number().min(1, { message: '만료 기간은 최소 1일 이상이어야 합니다' }).max(365, { message: '만료 기간은 365일을 초과할 수 없습니다' }).optional(),
-  evidence: z.array(z.string().url()).max(5, { message: '증거 파일은 최대 5개까지 첨부 가능합니다' }).optional(),
+  points: z
+    .number()
+    .min(0, { message: '포인트는 0 이상이어야 합니다' })
+    .max(100, { message: '포인트는 100을 초과할 수 없습니다' })
+    .optional(),
+  expiresInDays: z
+    .number()
+    .min(1, { message: '만료 기간은 최소 1일 이상이어야 합니다' })
+    .max(365, { message: '만료 기간은 365일을 초과할 수 없습니다' })
+    .optional(),
+  evidence: z
+    .array(z.string().url())
+    .max(5, { message: '증거 파일은 최대 5개까지 첨부 가능합니다' })
+    .optional(),
 });
 
 export type CreatePenaltyData = z.infer<typeof createPenaltySchema>;
@@ -78,7 +92,10 @@ export type CreatePenaltyData = z.infer<typeof createPenaltySchema>;
  */
 export const updatePenaltySchema = z.object({
   status: penaltyStatusSchema.optional(),
-  adminNote: z.string().max(500, { message: '관리자 메모는 500자를 초과할 수 없습니다' }).optional(),
+  adminNote: z
+    .string()
+    .max(500, { message: '관리자 메모는 500자를 초과할 수 없습니다' })
+    .optional(),
 });
 
 export type UpdatePenaltyData = z.infer<typeof updatePenaltySchema>;
@@ -91,10 +108,12 @@ export const penaltyFiltersSchema = z.object({
   type: penaltyTypeSchema.optional(),
   status: penaltyStatusSchema.optional(),
   severity: penaltySeveritySchema.optional(),
-  dateRange: z.object({
-    start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-    end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
-  }).optional(),
+  dateRange: z
+    .object({
+      start: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
+      end: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { message: 'YYYY-MM-DD 형식이어야 합니다' }),
+    })
+    .optional(),
 });
 
 export type PenaltyFiltersData = z.infer<typeof penaltyFiltersSchema>;
@@ -108,8 +127,14 @@ export type PenaltyFiltersData = z.infer<typeof penaltyFiltersSchema>;
  */
 export const appealPenaltySchema = z.object({
   penaltyId: z.string().min(1, { message: '페널티 ID는 필수입니다' }),
-  reason: z.string().min(20, { message: '이의 제기 사유는 최소 20자 이상이어야 합니다' }).max(1000, { message: '이의 제기 사유는 1000자를 초과할 수 없습니다' }),
-  evidence: z.array(z.string().url()).max(5, { message: '증거 파일은 최대 5개까지 첨부 가능합니다' }).optional(),
+  reason: z
+    .string()
+    .min(20, { message: '이의 제기 사유는 최소 20자 이상이어야 합니다' })
+    .max(1000, { message: '이의 제기 사유는 1000자를 초과할 수 없습니다' }),
+  evidence: z
+    .array(z.string().url())
+    .max(5, { message: '증거 파일은 최대 5개까지 첨부 가능합니다' })
+    .optional(),
 });
 
 export type AppealPenaltyData = z.infer<typeof appealPenaltySchema>;
@@ -120,7 +145,10 @@ export type AppealPenaltyData = z.infer<typeof appealPenaltySchema>;
 export const processAppealSchema = z.object({
   penaltyId: z.string().min(1, { message: '페널티 ID는 필수입니다' }),
   decision: z.enum(['accepted', 'rejected']),
-  adminNote: z.string().min(1, { message: '처리 사유는 필수입니다' }).max(500, { message: '처리 사유는 500자를 초과할 수 없습니다' }),
+  adminNote: z
+    .string()
+    .min(1, { message: '처리 사유는 필수입니다' })
+    .max(500, { message: '처리 사유는 500자를 초과할 수 없습니다' }),
 });
 
 export type ProcessAppealData = z.infer<typeof processAppealSchema>;

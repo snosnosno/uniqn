@@ -203,7 +203,11 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.gender === 'male' ? '남성' : profile?.gender === 'female' ? '여성' : '본인인증 후 자동 입력'}
+                  {profile?.gender === 'male'
+                    ? '남성'
+                    : profile?.gender === 'female'
+                      ? '여성'
+                      : '본인인증 후 자동 입력'}
                 </Text>
               </View>
             </View>

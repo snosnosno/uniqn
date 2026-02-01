@@ -86,9 +86,7 @@ export function ForceUpdateModal({
           </View>
 
           {/* 제목 */}
-          <Text style={styles.title}>
-            {isRequired ? '업데이트 필요' : '새 버전 안내'}
-          </Text>
+          <Text style={styles.title}>{isRequired ? '업데이트 필요' : '새 버전 안내'}</Text>
 
           {/* 설명 */}
           <Text style={styles.description}>
@@ -104,9 +102,7 @@ export function ForceUpdateModal({
               <Text style={styles.versionValue}>{currentVersion}</Text>
             </View>
             <View style={styles.versionRow}>
-              <Text style={styles.versionLabel}>
-                {isRequired ? '최소 버전' : '권장 버전'}
-              </Text>
+              <Text style={styles.versionLabel}>{isRequired ? '최소 버전' : '권장 버전'}</Text>
               <Text style={styles.versionValueNew}>{targetVersion}</Text>
             </View>
           </View>
@@ -115,10 +111,7 @@ export function ForceUpdateModal({
           <View style={styles.buttonContainer}>
             {/* 업데이트 버튼 */}
             <Pressable
-              style={({ pressed }) => [
-                styles.updateButton,
-                pressed && styles.buttonPressed,
-              ]}
+              style={({ pressed }) => [styles.updateButton, pressed && styles.buttonPressed]}
               onPress={handleUpdate}
               disabled={isLoading}
               accessibilityRole="button"
@@ -134,10 +127,7 @@ export function ForceUpdateModal({
             {/* 닫기 버튼 (권장 업데이트만) */}
             {canDismiss && (
               <Pressable
-                style={({ pressed }) => [
-                  styles.dismissButton,
-                  pressed && styles.buttonPressed,
-                ]}
+                style={({ pressed }) => [styles.dismissButton, pressed && styles.buttonPressed]}
                 onPress={onDismiss}
                 disabled={isLoading}
                 accessibilityRole="button"

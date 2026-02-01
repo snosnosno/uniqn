@@ -100,17 +100,17 @@ export function AmountModificationHistory({
                   <View className="mt-1.5 bg-gray-100 dark:bg-surface rounded px-2 py-1.5">
                     {mod.newSalaryInfo && (
                       <Text className="text-xs text-gray-600 dark:text-gray-300">
-                        • 급여: {mod.previousSalaryInfo?.amount?.toLocaleString() || '-'}원 → {mod.newSalaryInfo.amount.toLocaleString()}원
+                        • 급여: {mod.previousSalaryInfo?.amount?.toLocaleString() || '-'}원 →{' '}
+                        {mod.newSalaryInfo.amount.toLocaleString()}원
                       </Text>
                     )}
                     {mod.newAllowances !== null && mod.newAllowances !== undefined && (
-                      <Text className="text-xs text-gray-600 dark:text-gray-300">
-                        • 수당 변경
-                      </Text>
+                      <Text className="text-xs text-gray-600 dark:text-gray-300">• 수당 변경</Text>
                     )}
                     {mod.newTaxSettings && (
                       <Text className="text-xs text-gray-600 dark:text-gray-300">
-                        • 세금: {mod.previousTaxSettings?.type || 'none'} → {mod.newTaxSettings.type}
+                        • 세금: {mod.previousTaxSettings?.type || 'none'} →{' '}
+                        {mod.newTaxSettings.type}
                       </Text>
                     )}
                   </View>

@@ -125,10 +125,8 @@ export function useApplications() {
       if (previousApplications) {
         queryClient.setQueryData<Application[]>(
           queryKeys.applications.mine(),
-          previousApplications.map(app =>
-            app.id === applicationId
-              ? { ...app, status: 'cancelled' as const }
-              : app
+          previousApplications.map((app) =>
+            app.id === applicationId ? { ...app, status: 'cancelled' as const } : app
           )
         );
       }
@@ -149,10 +147,7 @@ export function useApplications() {
 
       // 롤백: 이전 데이터로 복원
       if (context?.previousApplications) {
-        queryClient.setQueryData(
-          queryKeys.applications.mine(),
-          context.previousApplications
-        );
+        queryClient.setQueryData(queryKeys.applications.mine(), context.previousApplications);
       }
     },
     // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
@@ -191,10 +186,8 @@ export function useApplications() {
       if (previousApplications) {
         queryClient.setQueryData<Application[]>(
           queryKeys.applications.mine(),
-          previousApplications.map(app =>
-            app.id === applicationId
-              ? { ...app, status: 'cancellation_pending' as const }
-              : app
+          previousApplications.map((app) =>
+            app.id === applicationId ? { ...app, status: 'cancellation_pending' as const } : app
           )
         );
       }
@@ -215,10 +208,7 @@ export function useApplications() {
 
       // 롤백: 이전 데이터로 복원
       if (context?.previousApplications) {
-        queryClient.setQueryData(
-          queryKeys.applications.mine(),
-          context.previousApplications
-        );
+        queryClient.setQueryData(queryKeys.applications.mine(), context.previousApplications);
       }
     },
     // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화

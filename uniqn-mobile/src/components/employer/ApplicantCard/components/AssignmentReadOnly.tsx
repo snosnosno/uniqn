@@ -51,12 +51,16 @@ export const AssignmentReadOnly = React.memo(function AssignmentReadOnly({
             }`}
           >
             <CalendarIcon size={16} color={iconColors.unchecked} />
-            <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <Text
+              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+            >
               {display.formattedDate} {display.timeSlotDisplay}
             </Text>
             <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
             <BriefcaseIcon size={16} color={iconColors.unchecked} />
-            <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <Text
+              className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+            >
               {display.roleLabel}
             </Text>
           </View>

@@ -91,8 +91,7 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
     data?.date ? `/schedule/${data.date}` : '/schedule',
   [NotificationType.CHECKIN_REMINDER]: (data) =>
     data?.date ? `/schedule/${data.date}` : '/schedule',
-  [NotificationType.NO_SHOW_ALERT]: (data) =>
-    data?.date ? `/schedule/${data.date}` : '/schedule',
+  [NotificationType.NO_SHOW_ALERT]: (data) => (data?.date ? `/schedule/${data.date}` : '/schedule'),
   [NotificationType.SCHEDULE_CHANGE]: (data) =>
     data?.date ? `/schedule/${data.date}` : '/schedule',
   [NotificationType.SCHEDULE_CREATED]: (data) =>
@@ -155,10 +154,7 @@ export function getNotificationConfig(type: NotificationType): NotificationTypeC
  * @param data - 딥링크 생성에 필요한 데이터
  * @returns 딥링크 경로 (예: '/jobs/abc123')
  */
-export function generateDeepLink(
-  type: NotificationType,
-  data?: NotificationLinkData
-): string {
+export function generateDeepLink(type: NotificationType, data?: NotificationLinkData): string {
   const generator = deepLinkGenerators[type];
   return generator(data);
 }

@@ -16,16 +16,16 @@ export type BadgeSize = 'sm' | 'md';
  * variant + children + size 조합을 사전 정의
  */
 export type BadgePreset =
-  | 'urgent'          // 긴급 (error)
-  | 'important'       // 중요 (primary)
-  | 'pinned'          // 고정 (error)
-  | 'pending'         // 대기 중 (warning)
-  | 'confirmed'       // 확정 (success)
-  | 'completed'       // 완료 (success)
-  | 'cancelled'       // 취소됨 (default)
-  | 'closed'          // 마감 (default)
-  | 'new'             // 신규 (primary)
-  | 'tournament';     // 토너먼트 (primary)
+  | 'urgent' // 긴급 (error)
+  | 'important' // 중요 (primary)
+  | 'pinned' // 고정 (error)
+  | 'pending' // 대기 중 (warning)
+  | 'confirmed' // 확정 (success)
+  | 'completed' // 완료 (success)
+  | 'cancelled' // 취소됨 (default)
+  | 'closed' // 마감 (default)
+  | 'new' // 신규 (primary)
+  | 'tournament'; // 토너먼트 (primary)
 
 /** 프리셋 설정 */
 const BADGE_PRESETS: Record<BadgePreset, { variant: BadgeVariant; label: string }> = {
@@ -134,7 +134,8 @@ export function Badge({
   // 우선순위: children > preset.label
   const displayContent = children ?? presetConfig?.label;
 
-  const containerClass = `flex-row items-center rounded-full ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
+  const containerClass =
+    `flex-row items-center rounded-full ${variantStyles[variant]} ${sizeStyles[size]} ${className}`.trim();
   const dotClass = `mr-2 h-2 w-2 rounded-full ${dotStyles[variant]}`;
   const textClass = `font-medium ${textStyles[variant]} ${textSizeStyles[size]}`;
 

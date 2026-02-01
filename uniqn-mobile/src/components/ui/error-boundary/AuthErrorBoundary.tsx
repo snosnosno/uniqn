@@ -16,11 +16,7 @@ import { crashlyticsService } from '@/services/crashlyticsService';
 import { logger } from '@/utils/logger';
 import { env } from '@/config/env';
 import { isAuthRelatedError } from './helpers';
-import type {
-  AuthErrorBoundaryProps,
-  AuthErrorFallbackProps,
-  ErrorBoundaryState,
-} from './types';
+import type { AuthErrorBoundaryProps, AuthErrorFallbackProps, ErrorBoundaryState } from './types';
 
 // ============================================================================
 // AuthErrorFallback
@@ -94,10 +90,7 @@ function AuthErrorFallback({
  *
  * @description 인증 관련 에러를 처리하는 에러 경계
  */
-export class AuthErrorBoundary extends Component<
-  AuthErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class AuthErrorBoundary extends Component<AuthErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: AuthErrorBoundaryProps) {
     super(props);
     this.state = {
@@ -172,11 +165,7 @@ export class AuthErrorBoundary extends Component<
     if (hasError) {
       if (fallback) return fallback;
       return (
-        <AuthErrorFallback
-          error={error}
-          onLogin={this.handleLogin}
-          onRetry={this.handleRetry}
-        />
+        <AuthErrorFallback error={error} onLogin={this.handleLogin} onRetry={this.handleRetry} />
       );
     }
 

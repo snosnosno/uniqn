@@ -41,41 +41,53 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   }, [data.location]);
 
   // 장소 정보 업데이트
-  const updateLocation = useCallback((name: string, address: string) => {
-    if (name.trim()) {
-      const location: Location = {
-        name: name.trim(),
-        address: address.trim(),
-        district: '',
-      };
-      onUpdate({ location });
-    } else {
-      onUpdate({ location: null });
-    }
-  }, [onUpdate]);
+  const updateLocation = useCallback(
+    (name: string, address: string) => {
+      if (name.trim()) {
+        const location: Location = {
+          name: name.trim(),
+          address: address.trim(),
+          district: '',
+        };
+        onUpdate({ location });
+      } else {
+        onUpdate({ location: null });
+      }
+    },
+    [onUpdate]
+  );
 
   // 장소명 변경
-  const handleLocationNameChange = useCallback((name: string) => {
-    setLocationName(name);
-    updateLocation(name, locationAddress);
-  }, [locationAddress, updateLocation]);
+  const handleLocationNameChange = useCallback(
+    (name: string) => {
+      setLocationName(name);
+      updateLocation(name, locationAddress);
+    },
+    [locationAddress, updateLocation]
+  );
 
   // 장소 주소 변경
-  const handleLocationAddressChange = useCallback((address: string) => {
-    setLocationAddress(address);
-    updateLocation(locationName, address);
-  }, [locationName, updateLocation]);
+  const handleLocationAddressChange = useCallback(
+    (address: string) => {
+      setLocationAddress(address);
+      updateLocation(locationName, address);
+    },
+    [locationName, updateLocation]
+  );
 
   // 공고 타입 변경 핸들러
-  const handlePostingTypeChange = useCallback((type: PostingType) => {
-    onUpdate({
-      postingType: type,
-      workDate: '',
-      startTime: '',
-      tournamentDates: [],
-      daysPerWeek: 5,
-    });
-  }, [onUpdate]);
+  const handlePostingTypeChange = useCallback(
+    (type: PostingType) => {
+      onUpdate({
+        postingType: type,
+        workDate: '',
+        startTime: '',
+        tournamentDates: [],
+        daysPerWeek: 5,
+      });
+    },
+    [onUpdate]
+  );
 
   // 연락처 포맷팅 (숫자만 입력하면 자동으로 - 추가)
   const formatPhoneNumber = useCallback((phoneNumber: string): string => {
@@ -94,18 +106,18 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   }, []);
 
   // 연락처 변경 핸들러
-  const handlePhoneChange = useCallback((phone: string) => {
-    const formatted = formatPhoneNumber(phone);
-    onUpdate({ contactPhone: formatted });
-  }, [formatPhoneNumber, onUpdate]);
+  const handlePhoneChange = useCallback(
+    (phone: string) => {
+      const formatted = formatPhoneNumber(phone);
+      onUpdate({ contactPhone: formatted });
+    },
+    [formatPhoneNumber, onUpdate]
+  );
 
   return (
     <View>
       {/* 공고 타입 선택 */}
-      <PostingTypeSelector
-        value={data.postingType}
-        onChange={handlePostingTypeChange}
-      />
+      <PostingTypeSelector value={data.postingType} onChange={handlePostingTypeChange} />
 
       {/* 제목 */}
       <FormField label="공고 제목" required error={errors.title} className="mt-4">

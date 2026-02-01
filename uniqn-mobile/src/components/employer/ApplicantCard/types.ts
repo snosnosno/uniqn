@@ -46,10 +46,10 @@ export interface ApplicantCardProps {
 export interface AssignmentDisplay {
   date: string;
   formattedDate: string;
-  timeSlot: string;        // 원본 값 (key 생성용)
+  timeSlot: string; // 원본 값 (key 생성용)
   timeSlotDisplay: string; // 표시용 ("미정" 포함)
-  role: string;            // 단일 역할
-  roleLabel: string;       // 단일 역할 라벨
+  role: string; // 단일 역할
+  roleLabel: string; // 단일 역할 라벨
 }
 
 /**

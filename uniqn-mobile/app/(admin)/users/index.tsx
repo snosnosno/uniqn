@@ -32,7 +32,9 @@ interface RoleChipProps {
 
 function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
   const baseClass = 'px-4 py-2 rounded-full mr-2';
-  const selectedClass = isSelected ? 'bg-primary-600 dark:bg-primary-500' : 'bg-gray-200 dark:bg-surface';
+  const selectedClass = isSelected
+    ? 'bg-primary-600 dark:bg-primary-500'
+    : 'bg-gray-200 dark:bg-surface';
   const textClass = isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300';
 
   return (
@@ -50,17 +52,23 @@ interface UserCardProps {
 function UserCard({ user, onPress }: UserCardProps) {
   const getRoleBadgeVariant = (role: UserRole): 'error' | 'primary' | 'success' => {
     switch (role) {
-      case 'admin': return 'error';
-      case 'employer': return 'primary';
-      default: return 'success';
+      case 'admin':
+        return 'error';
+      case 'employer':
+        return 'primary';
+      default:
+        return 'success';
     }
   };
 
   const getRoleLabel = (role: UserRole): string => {
     switch (role) {
-      case 'admin': return '관리자';
-      case 'employer': return '구인자';
-      default: return '스태프';
+      case 'admin':
+        return '관리자';
+      case 'employer':
+        return '구인자';
+      default:
+        return '스태프';
     }
   };
 
@@ -76,7 +84,13 @@ function UserCard({ user, onPress }: UserCardProps) {
     <Pressable
       onPress={onPress}
       className="bg-white dark:bg-surface rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
-      style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}
+      style={{
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
     >
       <View className="w-12 h-12 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mr-3">
         {user.photoURL ? (
@@ -95,9 +109,7 @@ function UserCard({ user, onPress }: UserCardProps) {
             {getRoleLabel(user.role)}
           </Badge>
         </View>
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-          {user.email}
-        </Text>
+        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">{user.email}</Text>
         <View className="flex-row items-center">
           <Text className="text-xs text-gray-400 dark:text-gray-500">
             가입일: {formatDate(user.createdAt)}
@@ -132,12 +144,15 @@ export default function AdminUsersPage() {
   const [selectedRole, setSelectedRole] = useState<UserRole | 'all'>('all');
   const [page, setPage] = useState(1);
 
-  const filters: AdminUserFilters = useMemo(() => ({
-    search: searchQuery || undefined,
-    role: selectedRole,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  }), [searchQuery, selectedRole]);
+  const filters: AdminUserFilters = useMemo(
+    () => ({
+      search: searchQuery || undefined,
+      role: selectedRole,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    }),
+    [searchQuery, selectedRole]
+  );
 
   const { data, isLoading, isRefetching, error, refetch } = useAdminUsers({
     filters,
@@ -170,9 +185,7 @@ export default function AdminUsersPage() {
     return (
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
         <ActivityIndicator size="large" color="#A855F7" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-          사용자 목록을 불러오는 중...
-        </Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">사용자 목록을 불러오는 중...</Text>
       </View>
     );
   }
@@ -233,10 +246,17 @@ export default function AdminUsersPage() {
 
       <ScrollView
         className="flex-1 px-4"
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#A855F7" />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefetching}
+            onRefresh={() => refetch()}
+            tintColor="#A855F7"
+          />
+        }
         onScrollEndDrag={({ nativeEvent }) => {
           const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
-          const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
+          const isEndReached =
+            layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
           if (isEndReached) handleLoadMore();
         }}
       >
@@ -257,7 +277,10 @@ export default function AdminUsersPage() {
                   {data.page} / {data.totalPages} 페이지
                 </Text>
                 {data.hasNextPage && (
-                  <Pressable onPress={handleLoadMore} className="mt-2 px-4 py-2 bg-primary-600 rounded-lg">
+                  <Pressable
+                    onPress={handleLoadMore}
+                    className="mt-2 px-4 py-2 bg-primary-600 rounded-lg"
+                  >
                     <Text className="text-white font-medium">더 보기</Text>
                   </Pressable>
                 )}

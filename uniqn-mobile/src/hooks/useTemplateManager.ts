@@ -19,11 +19,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { templateToFormData } from '@/types';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import type {
-  JobPostingTemplate,
-  CreateTemplateInput,
-  JobPostingFormData,
-} from '@/types';
+import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
 
 // ============================================================================
 // Types

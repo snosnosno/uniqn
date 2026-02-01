@@ -123,9 +123,7 @@ export const BiometricButton = memo(function BiometricButton({
     lg: 'text-lg',
   };
 
-  const buttonLabel = Platform.OS === 'ios'
-    ? biometricTypeName
-    : `${biometricTypeName}으로 로그인`;
+  const buttonLabel = Platform.OS === 'ios' ? biometricTypeName : `${biometricTypeName}으로 로그인`;
 
   return (
     <Pressable
@@ -143,22 +141,13 @@ export const BiometricButton = memo(function BiometricButton({
       `}
     >
       {isLoading ? (
-        <ActivityIndicator
-          size="small"
-          color={variant === 'default' ? '#fff' : '#6366f1'}
-        />
+        <ActivityIndicator size="small" color={variant === 'default' ? '#fff' : '#6366f1'} />
       ) : (
         <>
           {isFaceId ? (
-            <FaceIdIcon
-              size={iconSize}
-              color={variant === 'default' ? '#fff' : '#6366f1'}
-            />
+            <FaceIdIcon size={iconSize} color={variant === 'default' ? '#fff' : '#6366f1'} />
           ) : (
-            <FingerprintIcon
-              size={iconSize}
-              color={variant === 'default' ? '#fff' : '#6366f1'}
-            />
+            <FingerprintIcon size={iconSize} color={variant === 'default' ? '#fff' : '#6366f1'} />
           )}
           <Text
             className={`

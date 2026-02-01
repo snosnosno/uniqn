@@ -15,21 +15,11 @@ import {
 } from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
 import { TabHeader } from '@/components/headers';
-import {
-  CalendarIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
-  MenuIcon,
-} from '@/components/icons';
+import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
 import { formatCurrency } from '@/utils/formatters';
-import type {
-  ScheduleEvent,
-  GroupedScheduleEvent,
-  QRCodeScanResult,
-  QRCodeAction,
-} from '@/types';
+import type { ScheduleEvent, GroupedScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 import { isGroupedScheduleEvent } from '@/types';
 
 // ============================================================================
@@ -61,12 +51,7 @@ interface ScheduleItemProps {
 }
 
 function ScheduleItem({ schedule, onPress }: ScheduleItemProps) {
-  return (
-    <ScheduleCard
-      schedule={schedule}
-      onPress={onPress}
-    />
-  );
+  return <ScheduleCard schedule={schedule} onPress={onPress} />;
 }
 
 interface MonthNavigatorProps {
@@ -137,12 +122,14 @@ function MonthNavigator({
 }
 
 interface StatsCardProps {
-  stats: {
-    upcomingSchedules: number;
-    confirmedSchedules: number;
-    completedSchedules: number;
-    thisMonthEarnings: number;
-  } | undefined;
+  stats:
+    | {
+        upcomingSchedules: number;
+        confirmedSchedules: number;
+        completedSchedules: number;
+        thisMonthEarnings: number;
+      }
+    | undefined;
   isLoading: boolean;
 }
 
@@ -224,7 +211,8 @@ export default function ScheduleScreen() {
   // 스케줄 상세 시트 상태
   const [selectedSchedule, setSelectedSchedule] = useState<ScheduleEvent | null>(null);
   // 그룹 모달 지원을 위해 유지
-  const [selectedGroupedSchedule, setSelectedGroupedSchedule] = useState<GroupedScheduleEvent | null>(null);
+  const [selectedGroupedSchedule, setSelectedGroupedSchedule] =
+    useState<GroupedScheduleEvent | null>(null);
   const [isDetailSheetVisible, setIsDetailSheetVisible] = useState(false);
 
   // QR 스캐너 상태
@@ -271,11 +259,9 @@ export default function ScheduleScreen() {
   }, []);
 
   // 지원 취소 핸들러 (applied 상태)
-  const handleCancelApplication = useCallback((applicationId: string) => {
-    Alert.alert(
-      '지원 취소',
-      '정말 취소하시겠습니까?',
-      [
+  const handleCancelApplication = useCallback(
+    (applicationId: string) => {
+      Alert.alert('지원 취소', '정말 취소하시겠습니까?', [
         { text: '아니오', style: 'cancel' },
         {
           text: '예, 취소합니다',
@@ -286,9 +272,10 @@ export default function ScheduleScreen() {
             refresh();
           },
         },
-      ]
-    );
-  }, [cancelApplication, refresh]);
+      ]);
+    },
+    [cancelApplication, refresh]
+  );
 
   // 취소 요청 핸들러 (confirmed 상태)
   const handleRequestCancellation = useCallback((applicationId: string) => {
@@ -303,27 +290,35 @@ export default function ScheduleScreen() {
   }, []);
 
   // 그룹화된 스케줄 클릭 시 선택된 날짜의 원본 이벤트로 상세 시트 열기
-  const handleOpenGroupedDetailSheet = useCallback((group: GroupedScheduleEvent) => {
-    if (group.originalEvents.length === 0) return;
+  const handleOpenGroupedDetailSheet = useCallback(
+    (group: GroupedScheduleEvent) => {
+      if (group.originalEvents.length === 0) return;
 
-    // 캘린더에서 선택한 날짜(selectedDate)와 일치하는 이벤트 찾기
-    const targetEvent = group.originalEvents.find(e => e.date === selectedDate)
-      || group.originalEvents[0]; // 없으면 첫 번째로 대체
+      // 캘린더에서 선택한 날짜(selectedDate)와 일치하는 이벤트 찾기
+      const targetEvent =
+        group.originalEvents.find((e) => e.date === selectedDate) || group.originalEvents[0]; // 없으면 첫 번째로 대체
 
-    setSelectedSchedule(targetEvent);
-    setSelectedGroupedSchedule(group);
-    setIsDetailSheetVisible(true);
-  }, [selectedDate]);
-
-  // 그룹 내 특정 날짜 클릭 핸들러
-  const handleGroupDatePress = useCallback((date: string, scheduleEventId: string, group: GroupedScheduleEvent) => {
-    const targetEvent = group.originalEvents.find(e => e.id === scheduleEventId || e.date === date);
-    if (targetEvent) {
       setSelectedSchedule(targetEvent);
       setSelectedGroupedSchedule(group);
       setIsDetailSheetVisible(true);
-    }
-  }, []);
+    },
+    [selectedDate]
+  );
+
+  // 그룹 내 특정 날짜 클릭 핸들러
+  const handleGroupDatePress = useCallback(
+    (date: string, scheduleEventId: string, group: GroupedScheduleEvent) => {
+      const targetEvent = group.originalEvents.find(
+        (e) => e.id === scheduleEventId || e.date === date
+      );
+      if (targetEvent) {
+        setSelectedSchedule(targetEvent);
+        setSelectedGroupedSchedule(group);
+        setIsDetailSheetVisible(true);
+      }
+    },
+    []
+  );
 
   // 스케줄 상세 시트 닫기
   const handleCloseDetailSheet = useCallback(() => {
@@ -425,9 +420,7 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-20"
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={refresh} />
-          }
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}
         >
           <View className="mt-4">
             <CalendarView
@@ -476,9 +469,7 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="p-4 pb-20"
-          refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={refresh} />
-          }
+          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}
         >
           {isLoading && schedules.length === 0 ? (
             // 스켈레톤 로딩 (SkeletonScheduleCard 사용)

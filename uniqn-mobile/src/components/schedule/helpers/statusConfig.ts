@@ -10,7 +10,10 @@ import type { ScheduleType, AttendanceStatus } from '@/types';
 /**
  * 스케줄 타입별 상태 표시 설정
  */
-export const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
+export const statusConfig: Record<
+  ScheduleType,
+  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
+> = {
   applied: { label: '지원 중', variant: 'warning' },
   confirmed: { label: '확정', variant: 'success' },
   completed: { label: '완료', variant: 'default' },
@@ -20,7 +23,10 @@ export const statusConfig: Record<ScheduleType, { label: string; variant: 'warni
 /**
  * 출퇴근 상태별 스타일 설정
  */
-export const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: string; textColor: string }> = {
+export const attendanceConfig: Record<
+  AttendanceStatus,
+  { label: string; bgColor: string; textColor: string }
+> = {
   not_started: {
     label: '출근 전',
     bgColor: 'bg-gray-100 dark:bg-surface',

@@ -82,8 +82,14 @@ export type NotificationPrioritySchema = z.infer<typeof notificationPrioritySche
 export const createNotificationSchema = z.object({
   recipientId: z.string().min(1, { message: '수신자 ID는 필수입니다' }),
   type: notificationTypeSchema,
-  title: z.string().min(1, { message: '제목은 필수입니다' }).max(100, { message: '제목은 100자를 초과할 수 없습니다' }),
-  body: z.string().min(1, { message: '본문은 필수입니다' }).max(500, { message: '본문은 500자를 초과할 수 없습니다' }),
+  title: z
+    .string()
+    .min(1, { message: '제목은 필수입니다' })
+    .max(100, { message: '제목은 100자를 초과할 수 없습니다' }),
+  body: z
+    .string()
+    .min(1, { message: '본문은 필수입니다' })
+    .max(500, { message: '본문은 500자를 초과할 수 없습니다' }),
   link: z.string().optional(),
   data: z.record(z.string(), z.string()).optional(),
   priority: notificationPrioritySchema.optional(),
@@ -125,11 +131,13 @@ export const updateNotificationSettingsSchema = z.object({
   enabled: z.boolean().optional(),
   pushEnabled: z.boolean().optional(),
   categories: z.record(z.string(), categoryNotificationSettingSchema).optional(),
-  quietHours: z.object({
-    enabled: z.boolean(),
-    start: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-    end: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
-  }).optional(),
+  quietHours: z
+    .object({
+      enabled: z.boolean(),
+      start: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
+      end: z.string().regex(/^\d{2}:\d{2}$/, { message: 'HH:MM 형식이어야 합니다' }),
+    })
+    .optional(),
 });
 
 export type UpdateNotificationSettingsData = z.infer<typeof updateNotificationSettingsSchema>;
@@ -142,7 +150,9 @@ export type UpdateNotificationSettingsData = z.infer<typeof updateNotificationSe
  * 알림 읽음 처리 스키마
  */
 export const markNotificationReadSchema = z.object({
-  notificationIds: z.array(z.string().min(1)).min(1, { message: '알림 ID가 최소 1개 이상 필요합니다' }),
+  notificationIds: z
+    .array(z.string().min(1))
+    .min(1, { message: '알림 ID가 최소 1개 이상 필요합니다' }),
 });
 
 export type MarkNotificationReadData = z.infer<typeof markNotificationReadSchema>;
@@ -151,7 +161,9 @@ export type MarkNotificationReadData = z.infer<typeof markNotificationReadSchema
  * 알림 삭제 스키마
  */
 export const deleteNotificationsSchema = z.object({
-  notificationIds: z.array(z.string().min(1)).min(1, { message: '알림 ID가 최소 1개 이상 필요합니다' }),
+  notificationIds: z
+    .array(z.string().min(1))
+    .min(1, { message: '알림 ID가 최소 1개 이상 필요합니다' }),
 });
 
 export type DeleteNotificationsData = z.infer<typeof deleteNotificationsSchema>;
@@ -175,26 +187,28 @@ export type MarkAllNotificationsReadData = z.infer<typeof markAllNotificationsRe
  *
  * @description Firestore에서 읽은 알림 데이터의 타입 안전성을 보장
  */
-export const notificationDocumentSchema = z.object({
-  id: z.string(),
-  recipientId: z.string(),
-  type: notificationTypeSchema,
-  category: notificationCategorySchema.optional(),
-  title: z.string(),
-  body: z.string(),
-  isRead: z.boolean(),
+export const notificationDocumentSchema = z
+  .object({
+    id: z.string(),
+    recipientId: z.string(),
+    type: notificationTypeSchema,
+    category: notificationCategorySchema.optional(),
+    title: z.string(),
+    body: z.string(),
+    isRead: z.boolean(),
 
-  // 링크 및 데이터
-  link: z.string().optional(),
-  data: metadataSchema.optional(),
+    // 링크 및 데이터
+    link: z.string().optional(),
+    data: metadataSchema.optional(),
 
-  // 우선순위
-  priority: notificationPrioritySchema.optional(),
+    // 우선순위
+    priority: notificationPrioritySchema.optional(),
 
-  // Timestamps
-  createdAt: timestampSchema,
-  readAt: optionalTimestampSchema,
-}).passthrough();
+    // Timestamps
+    createdAt: timestampSchema,
+    readAt: optionalTimestampSchema,
+  })
+  .passthrough();
 
 export type NotificationDocumentData = z.infer<typeof notificationDocumentSchema>;
 
@@ -254,17 +268,21 @@ const categoriesSettingsSchema = z.object({
 /**
  * NotificationSettings Firestore 문서 스키마
  */
-export const notificationSettingsDocumentSchema = z.object({
-  enabled: z.boolean(),
-  pushEnabled: z.boolean().optional(),
-  categories: categoriesSettingsSchema,
-  quietHours: z.object({
+export const notificationSettingsDocumentSchema = z
+  .object({
     enabled: z.boolean(),
-    start: z.string(),
-    end: z.string(),
-  }).optional(),
-  updatedAt: optionalTimestampSchema,
-}).passthrough();
+    pushEnabled: z.boolean().optional(),
+    categories: categoriesSettingsSchema,
+    quietHours: z
+      .object({
+        enabled: z.boolean(),
+        start: z.string(),
+        end: z.string(),
+      })
+      .optional(),
+    updatedAt: optionalTimestampSchema,
+  })
+  .passthrough();
 
 export type NotificationSettingsDocumentData = z.infer<typeof notificationSettingsDocumentSchema>;
 

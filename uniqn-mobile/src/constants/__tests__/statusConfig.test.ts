@@ -148,10 +148,7 @@ describe('StatusConfig', () => {
     });
 
     it('should return default config for invalid status', () => {
-      const config = getStatusConfig(
-        APPLICATION_STATUS,
-        'invalid' as ApplicationStatusType
-      );
+      const config = getStatusConfig(APPLICATION_STATUS, 'invalid' as ApplicationStatusType);
       expect(config.label).toBe('알 수 없음');
       expect(config.variant).toBe('default');
     });
@@ -164,9 +161,9 @@ describe('StatusConfig', () => {
     });
 
     it('should return "알 수 없음" for invalid status', () => {
-      expect(
-        getStatusLabel(APPLICATION_STATUS, 'invalid' as ApplicationStatusType)
-      ).toBe('알 수 없음');
+      expect(getStatusLabel(APPLICATION_STATUS, 'invalid' as ApplicationStatusType)).toBe(
+        '알 수 없음'
+      );
     });
   });
 
@@ -177,10 +174,7 @@ describe('StatusConfig', () => {
     });
 
     it('should return gray for invalid status', () => {
-      const color = getStatusHexColor(
-        APPLICATION_STATUS,
-        'invalid' as ApplicationStatusType
-      );
+      const color = getStatusHexColor(APPLICATION_STATUS, 'invalid' as ApplicationStatusType);
       expect(color).toBe('#6B7280'); // gray-500
     });
   });
@@ -192,9 +186,9 @@ describe('StatusConfig', () => {
     });
 
     it('should return "default" for invalid status', () => {
-      expect(
-        getStatusVariant(APPLICATION_STATUS, 'invalid' as ApplicationStatusType)
-      ).toBe('default');
+      expect(getStatusVariant(APPLICATION_STATUS, 'invalid' as ApplicationStatusType)).toBe(
+        'default'
+      );
     });
   });
 });

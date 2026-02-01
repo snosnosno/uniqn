@@ -174,7 +174,6 @@ export interface Application extends FirebaseDocument {
   /** 취소 시간 */
   cancelledAt?: Timestamp;
 
-
   // === 메타데이터 ===
   isRead?: boolean;
   notes?: string;
@@ -274,7 +273,10 @@ export const APPLICATION_STATUS_COLORS: Record<
     text: string;
   }
 > = {
-  applied: { bg: 'bg-primary-100 dark:bg-primary-900/30', text: 'text-primary-700 dark:text-primary-300' },
+  applied: {
+    bg: 'bg-primary-100 dark:bg-primary-900/30',
+    text: 'text-primary-700 dark:text-primary-300',
+  },
   pending: {
     bg: 'bg-yellow-100 dark:bg-yellow-900/30',
     text: 'text-yellow-700 dark:text-yellow-300',

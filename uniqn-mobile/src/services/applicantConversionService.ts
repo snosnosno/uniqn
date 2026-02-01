@@ -15,7 +15,6 @@ import {
   runTransaction,
   serverTimestamp,
   Timestamp,
-  
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -116,7 +115,10 @@ export async function convertApplicantToStaff(
         });
       }
 
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      const applicationData = parseApplicationDocument({
+        id: applicationDoc.id,
+        ...applicationDoc.data(),
+      });
 
       if (!applicationData) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
@@ -397,10 +399,7 @@ export async function batchConvertApplicants(
 /**
  * 스태프 존재 여부 확인
  */
-export async function isAlreadyStaff(
-  userId: string,
-  jobPostingId?: string
-): Promise<boolean> {
+export async function isAlreadyStaff(userId: string, jobPostingId?: string): Promise<boolean> {
   try {
     const staffRef = doc(getFirebaseDb(), STAFF_COLLECTION, userId);
     const staffDoc = await getDoc(staffRef);
@@ -442,7 +441,10 @@ export async function canConvertToStaff(applicationId: string): Promise<{
       return { canConvert: false, reason: '존재하지 않는 지원입니다' };
     }
 
-    const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+    const applicationData = parseApplicationDocument({
+      id: applicationDoc.id,
+      ...applicationDoc.data(),
+    });
 
     if (!applicationData) {
       return { canConvert: false, reason: '지원서 데이터 형식이 올바르지 않습니다' };
@@ -491,7 +493,10 @@ export async function revertStaffConversion(
         });
       }
 
-      const applicationData = parseApplicationDocument({ id: applicationDoc.id, ...applicationDoc.data() });
+      const applicationData = parseApplicationDocument({
+        id: applicationDoc.id,
+        ...applicationDoc.data(),
+      });
 
       if (!applicationData) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {

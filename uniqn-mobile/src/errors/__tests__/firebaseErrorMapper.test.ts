@@ -74,13 +74,25 @@ describe('mapFirebaseAuthError', () => {
       { firebaseCode: 'auth/user-disabled', expectedCode: ERROR_CODES.AUTH_ACCOUNT_DISABLED },
       { firebaseCode: 'auth/user-not-found', expectedCode: ERROR_CODES.AUTH_USER_NOT_FOUND },
       { firebaseCode: 'auth/wrong-password', expectedCode: ERROR_CODES.AUTH_INVALID_CREDENTIALS },
-      { firebaseCode: 'auth/invalid-credential', expectedCode: ERROR_CODES.AUTH_INVALID_CREDENTIALS },
-      { firebaseCode: 'auth/email-already-in-use', expectedCode: ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS },
+      {
+        firebaseCode: 'auth/invalid-credential',
+        expectedCode: ERROR_CODES.AUTH_INVALID_CREDENTIALS,
+      },
+      {
+        firebaseCode: 'auth/email-already-in-use',
+        expectedCode: ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS,
+      },
       { firebaseCode: 'auth/weak-password', expectedCode: ERROR_CODES.AUTH_WEAK_PASSWORD },
-      { firebaseCode: 'auth/requires-recent-login', expectedCode: ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN },
+      {
+        firebaseCode: 'auth/requires-recent-login',
+        expectedCode: ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN,
+      },
       { firebaseCode: 'auth/too-many-requests', expectedCode: ERROR_CODES.AUTH_TOO_MANY_REQUESTS },
       { firebaseCode: 'auth/id-token-expired', expectedCode: ERROR_CODES.AUTH_TOKEN_EXPIRED },
-      { firebaseCode: 'auth/session-cookie-expired', expectedCode: ERROR_CODES.AUTH_SESSION_EXPIRED },
+      {
+        firebaseCode: 'auth/session-cookie-expired',
+        expectedCode: ERROR_CODES.AUTH_SESSION_EXPIRED,
+      },
     ];
 
     it.each(authErrorCases)(
@@ -301,13 +313,28 @@ describe('mapFirebaseStorageError', () => {
   describe('기본 Storage 에러 매핑', () => {
     const storageErrorCases = [
       { firebaseCode: 'storage/unknown', expectedCode: ERROR_CODES.UNKNOWN },
-      { firebaseCode: 'storage/object-not-found', expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
-      { firebaseCode: 'storage/bucket-not-found', expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
-      { firebaseCode: 'storage/project-not-found', expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND },
+      {
+        firebaseCode: 'storage/object-not-found',
+        expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+      },
+      {
+        firebaseCode: 'storage/bucket-not-found',
+        expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+      },
+      {
+        firebaseCode: 'storage/project-not-found',
+        expectedCode: ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND,
+      },
       { firebaseCode: 'storage/quota-exceeded', expectedCode: ERROR_CODES.FIREBASE_QUOTA_EXCEEDED },
       { firebaseCode: 'storage/unauthenticated', expectedCode: ERROR_CODES.AUTH_SESSION_EXPIRED },
-      { firebaseCode: 'storage/unauthorized', expectedCode: ERROR_CODES.FIREBASE_PERMISSION_DENIED },
-      { firebaseCode: 'storage/retry-limit-exceeded', expectedCode: ERROR_CODES.NETWORK_REQUEST_FAILED },
+      {
+        firebaseCode: 'storage/unauthorized',
+        expectedCode: ERROR_CODES.FIREBASE_PERMISSION_DENIED,
+      },
+      {
+        firebaseCode: 'storage/retry-limit-exceeded',
+        expectedCode: ERROR_CODES.NETWORK_REQUEST_FAILED,
+      },
       { firebaseCode: 'storage/canceled', expectedCode: ERROR_CODES.FIREBASE_ABORTED },
       { firebaseCode: 'storage/invalid-url', expectedCode: ERROR_CODES.VALIDATION_FORMAT },
     ];

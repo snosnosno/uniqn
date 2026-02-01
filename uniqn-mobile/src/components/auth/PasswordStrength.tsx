@@ -66,9 +66,21 @@ const PASSWORD_CRITERIA: PasswordCriteria[] = [
 
 const STRENGTH_CONFIG: Record<StrengthLevel, { label: string; color: string; bgColor: string }> = {
   weak: { label: '약함', color: 'text-error-600 dark:text-error-400', bgColor: 'bg-error-500' },
-  fair: { label: '보통', color: 'text-warning-600 dark:text-warning-400', bgColor: 'bg-warning-500' },
-  good: { label: '좋음', color: 'text-primary-600 dark:text-primary-400', bgColor: 'bg-primary-500' },
-  strong: { label: '강함', color: 'text-success-600 dark:text-success-400', bgColor: 'bg-success-500' },
+  fair: {
+    label: '보통',
+    color: 'text-warning-600 dark:text-warning-400',
+    bgColor: 'bg-warning-500',
+  },
+  good: {
+    label: '좋음',
+    color: 'text-primary-600 dark:text-primary-400',
+    bgColor: 'bg-primary-500',
+  },
+  strong: {
+    label: '강함',
+    color: 'text-success-600 dark:text-success-400',
+    bgColor: 'bg-success-500',
+  },
 };
 
 // ============================================================================
@@ -139,9 +151,7 @@ export function PasswordStrength({ password, showDetails = true }: PasswordStren
                     : 'bg-gray-300 dark:bg-surface-elevated'
                 }`}
               >
-                <Text className="text-xs text-white font-bold">
-                  {criteria.passed ? '✓' : ''}
-                </Text>
+                <Text className="text-xs text-white font-bold">{criteria.passed ? '✓' : ''}</Text>
               </View>
               <Text
                 className={`text-xs ${

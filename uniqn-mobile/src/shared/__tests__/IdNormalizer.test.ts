@@ -157,10 +157,7 @@ describe('IdNormalizer', () => {
   // ============================================================================
   describe('normalizeWorkLogs', () => {
     it('WorkLog 배열에 normalizedJobPostingId 추가', () => {
-      const workLogs = [
-        { jobPostingId: 'JOB1' },
-        { jobPostingId: 'JOB2' },
-      ];
+      const workLogs = [{ jobPostingId: 'JOB1' }, { jobPostingId: 'JOB2' }];
 
       const normalized = IdNormalizer.normalizeWorkLogs(workLogs);
 

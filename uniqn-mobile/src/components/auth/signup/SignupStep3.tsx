@@ -81,20 +81,11 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
 
       {/* 버튼 영역 */}
       <View className="mt-6 flex-col gap-3">
-        <Button
-          onPress={handleSubmit(onNext)}
-          disabled={isLoading}
-          fullWidth
-        >
+        <Button onPress={handleSubmit(onNext)} disabled={isLoading} fullWidth>
           다음
         </Button>
 
-        <Button
-          onPress={onBack}
-          variant="ghost"
-          disabled={isLoading}
-          fullWidth
-        >
+        <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
           이전
         </Button>
       </View>

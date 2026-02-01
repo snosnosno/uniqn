@@ -67,9 +67,7 @@ export const passwordSchema = z
 /**
  * 비밀번호 확인 검증 (단순)
  */
-export const passwordConfirmSchema = z
-  .string()
-  .min(1, { message: '비밀번호 확인을 입력해주세요' });
+export const passwordConfirmSchema = z.string().min(1, { message: '비밀번호 확인을 입력해주세요' });
 
 /**
  * 이름 검증 스키마
@@ -161,14 +159,14 @@ export const signUpStep2Schema = z.object({
   identityProvider: z.enum(['pass', 'kakao'], {
     error: '본인인증 제공자를 선택해주세요',
   }),
-  verifiedName: nameSchema,  // 본인인증된 실명
-  verifiedPhone: phoneSchema,  // 본인인증된 휴대폰 번호
+  verifiedName: nameSchema, // 본인인증된 실명
+  verifiedPhone: phoneSchema, // 본인인증된 휴대폰 번호
   verifiedBirthDate: z.string().regex(/^\d{8}$/, {
     message: '생년월일 형식이 올바르지 않습니다',
-  }),  // 본인인증된 생년월일 (YYYYMMDD)
+  }), // 본인인증된 생년월일 (YYYYMMDD)
   verifiedGender: z.enum(['male', 'female'], {
     error: '성별 정보가 필요합니다',
-  }),  // 본인인증된 성별
+  }), // 본인인증된 성별
 });
 
 export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
@@ -216,8 +214,8 @@ export const signUpSchema = z.object({
   identityProvider: z.enum(['pass', 'kakao']).optional(),
   verifiedName: z.string().optional(),
   verifiedPhone: z.string().optional(),
-  verifiedBirthDate: z.string().optional(),  // 본인인증된 생년월일 (YYYYMMDD)
-  verifiedGender: z.enum(['male', 'female']).optional(),  // 본인인증된 성별
+  verifiedBirthDate: z.string().optional(), // 본인인증된 생년월일 (YYYYMMDD)
+  verifiedGender: z.enum(['male', 'female']).optional(), // 본인인증된 성별
   // Step 3: 프로필
   nickname: z.string(),
   role: z.enum(['staff', 'employer']),

@@ -123,13 +123,7 @@ export const RoleSelectModal = memo(function RoleSelectModal({
   );
 
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title={title}
-      position="bottom"
-      showCloseButton
-    >
+    <Modal visible={visible} onClose={handleClose} title={title} position="bottom" showCloseButton>
       <View className="-mx-5 -mb-5">
         {showCustomInput ? (
           // 커스텀 역할 입력
@@ -161,16 +155,12 @@ export const RoleSelectModal = memo(function RoleSelectModal({
                 onPress={handleAddCustomRole}
                 disabled={!customRoleName.trim()}
                 className={`flex-1 py-3 rounded-lg ${
-                  customRoleName.trim()
-                    ? 'bg-indigo-500'
-                    : 'bg-gray-300 dark:bg-surface-elevated'
+                  customRoleName.trim() ? 'bg-indigo-500' : 'bg-gray-300 dark:bg-surface-elevated'
                 }`}
               >
                 <Text
                   className={`text-center font-medium ${
-                    customRoleName.trim()
-                      ? 'text-white'
-                      : 'text-gray-500 dark:text-gray-400'
+                    customRoleName.trim() ? 'text-white' : 'text-gray-500 dark:text-gray-400'
                   }`}
                 >
                   추가

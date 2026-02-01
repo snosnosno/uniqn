@@ -36,56 +36,59 @@ export default function SignUpScreen() {
   const { addToast } = useToastStore();
   const { setUser, setProfile } = useAuthStore();
 
-  const handleSignUp = useCallback(async (data: SignUpFormData) => {
-    setIsLoading(true);
-    try {
-      const result = await signUp(data);
+  const handleSignUp = useCallback(
+    async (data: SignUpFormData) => {
+      setIsLoading(true);
+      try {
+        const result = await signUp(data);
 
-      if (result.user) {
-        // authStore 업데이트 (Timestamp → Date 변환)
-        setUser(result.user);
-        const storeProfile: StoreUserProfile = {
-          uid: result.profile.uid,
-          email: result.profile.email,
-          name: result.profile.name,
-          nickname: result.profile.nickname,
-          phone: result.profile.phone,
-          role: result.profile.role,
-          photoURL: result.profile.photoURL,
-          // 본인인증 정보
-          identityVerified: result.profile.identityVerified,
-          identityProvider: result.profile.identityProvider,
-          verifiedName: result.profile.verifiedName,
-          verifiedPhone: result.profile.verifiedPhone,
-          verifiedBirthDate: result.profile.verifiedBirthDate,
-          verifiedGender: result.profile.verifiedGender,
-          // 파생 정보
-          birthYear: result.profile.birthYear,
-          gender: result.profile.gender,
-          // 동의 정보
-          termsAgreed: result.profile.termsAgreed,
-          privacyAgreed: result.profile.privacyAgreed,
-          marketingAgreed: result.profile.marketingAgreed,
-          // 메타데이터
-          createdAt: toDate(result.profile.createdAt),
-          updatedAt: toDate(result.profile.updatedAt),
-        };
-        setProfile(storeProfile);
+        if (result.user) {
+          // authStore 업데이트 (Timestamp → Date 변환)
+          setUser(result.user);
+          const storeProfile: StoreUserProfile = {
+            uid: result.profile.uid,
+            email: result.profile.email,
+            name: result.profile.name,
+            nickname: result.profile.nickname,
+            phone: result.profile.phone,
+            role: result.profile.role,
+            photoURL: result.profile.photoURL,
+            // 본인인증 정보
+            identityVerified: result.profile.identityVerified,
+            identityProvider: result.profile.identityProvider,
+            verifiedName: result.profile.verifiedName,
+            verifiedPhone: result.profile.verifiedPhone,
+            verifiedBirthDate: result.profile.verifiedBirthDate,
+            verifiedGender: result.profile.verifiedGender,
+            // 파생 정보
+            birthYear: result.profile.birthYear,
+            gender: result.profile.gender,
+            // 동의 정보
+            termsAgreed: result.profile.termsAgreed,
+            privacyAgreed: result.profile.privacyAgreed,
+            marketingAgreed: result.profile.marketingAgreed,
+            // 메타데이터
+            createdAt: toDate(result.profile.createdAt),
+            updatedAt: toDate(result.profile.updatedAt),
+          };
+          setProfile(storeProfile);
 
-        logger.info('회원가입 성공', { userId: result.user.uid });
-        addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
-        router.replace('/(app)/(tabs)');
+          logger.info('회원가입 성공', { userId: result.user.uid });
+          addToast({ type: 'success', message: '회원가입이 완료되었습니다!' });
+          router.replace('/(app)/(tabs)');
+        }
+      } catch (error) {
+        logger.error('회원가입 실패', error as Error);
+        addToast({
+          type: 'error',
+          message: error instanceof Error ? error.message : '회원가입에 실패했습니다.',
+        });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      logger.error('회원가입 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '회원가입에 실패했습니다.',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addToast, setUser, setProfile]);
+    },
+    [addToast, setUser, setProfile]
+  );
 
   const handleBack = () => {
     router.back();
@@ -98,17 +101,12 @@ export default function SignUpScreen() {
         <Pressable onPress={handleBack} className="p-2 -ml-2">
           <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
         </Pressable>
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-          회원가입
-        </Text>
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">회원가입</Text>
         <View className="w-8" />
       </View>
 
       {/* 회원가입 폼 */}
-      <SignupForm
-        onSubmit={handleSignUp}
-        isLoading={isLoading}
-      />
+      <SignupForm onSubmit={handleSignUp} isLoading={isLoading} />
     </SafeAreaView>
   );
 }

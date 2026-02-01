@@ -141,24 +141,28 @@ export async function checkBiometricStatus(): Promise<BiometricStatus> {
 
     // 지원되는 인증 타입
     const authTypes = await auth.supportedAuthenticationTypesAsync();
-    const biometricTypes: BiometricType[] = authTypes.map((type: number) => {
-      switch (type) {
-        case auth.AuthenticationType.FINGERPRINT:
-          return 'fingerprint';
-        case auth.AuthenticationType.FACIAL_RECOGNITION:
-          return 'facial';
-        case auth.AuthenticationType.IRIS:
-          return 'iris';
-        default:
-          return 'none';
-      }
-    }).filter((t: BiometricType | 'none'): t is BiometricType => t !== 'none');
+    const biometricTypes: BiometricType[] = authTypes
+      .map((type: number) => {
+        switch (type) {
+          case auth.AuthenticationType.FINGERPRINT:
+            return 'fingerprint';
+          case auth.AuthenticationType.FACIAL_RECOGNITION:
+            return 'facial';
+          case auth.AuthenticationType.IRIS:
+            return 'iris';
+          default:
+            return 'none';
+        }
+      })
+      .filter((t: BiometricType | 'none'): t is BiometricType => t !== 'none');
 
     // 보안 레벨 확인
     const securityLevel = await auth.getEnrolledLevelAsync();
     let level: BiometricStatus['securityLevel'] = 'none';
-    if (securityLevel === auth.SecurityLevel.BIOMETRIC_STRONG ||
-        securityLevel === auth.SecurityLevel.BIOMETRIC_WEAK) {
+    if (
+      securityLevel === auth.SecurityLevel.BIOMETRIC_STRONG ||
+      securityLevel === auth.SecurityLevel.BIOMETRIC_WEAK
+    ) {
       level = 'biometric';
     } else if (securityLevel === auth.SecurityLevel.SECRET) {
       level = 'device';

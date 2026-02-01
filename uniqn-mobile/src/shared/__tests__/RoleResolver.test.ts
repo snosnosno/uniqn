@@ -130,9 +130,7 @@ describe('RoleResolver', () => {
         RoleResolver.requireAdmin('staff');
         fail('에러가 발생해야 합니다');
       } catch (error) {
-        expect((error as { userMessage?: string }).userMessage).toBe(
-          '관리자 권한이 필요합니다'
-        );
+        expect((error as { userMessage?: string }).userMessage).toBe('관리자 권한이 필요합니다');
       }
     });
   });

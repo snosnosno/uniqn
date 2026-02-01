@@ -68,9 +68,7 @@ export function SettlementActionButtons({
           className="flex-row items-center justify-center py-3.5 rounded-lg bg-primary-500 active:opacity-70"
         >
           <BanknotesIcon size={18} color="#fff" />
-          <Text className="ml-2 text-base font-semibold text-white">
-            정산하기
-          </Text>
+          <Text className="ml-2 text-base font-semibold text-white">정산하기</Text>
         </Pressable>
       )}
     </View>

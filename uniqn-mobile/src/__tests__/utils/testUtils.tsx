@@ -41,9 +41,7 @@ export function TestProviders({
   children,
   queryClient = createTestQueryClient(),
 }: TestProvidersProps): ReactElement {
-  return (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
 }
 
 // ============================================================================
@@ -61,9 +59,7 @@ export function customRender(
   const { queryClient, ...renderOptions } = options;
 
   return render(ui, {
-    wrapper: ({ children }) => (
-      <TestProviders queryClient={queryClient}>{children}</TestProviders>
-    ),
+    wrapper: ({ children }) => <TestProviders queryClient={queryClient}>{children}</TestProviders>,
     ...renderOptions,
   });
 }
@@ -109,10 +105,7 @@ export async function waitFor(
 /**
  * Create a mock function that resolves after a delay
  */
-export function createDelayedMock<T>(
-  value: T,
-  delay = 100
-): jest.Mock<Promise<T>> {
+export function createDelayedMock<T>(value: T, delay = 100): jest.Mock<Promise<T>> {
   return jest.fn(() => new Promise((resolve) => setTimeout(() => resolve(value), delay)));
 }
 
@@ -123,9 +116,7 @@ export function createDelayedRejection<T extends Error>(
   error: T,
   delay = 100
 ): jest.Mock<Promise<never>> {
-  return jest.fn(
-    () => new Promise((_, reject) => setTimeout(() => reject(error), delay))
-  );
+  return jest.fn(() => new Promise((_, reject) => setTimeout(() => reject(error), delay)));
 }
 
 /**
@@ -182,9 +173,7 @@ export function assertTextContent(
 
   const actualText = getText(element);
   if (!actualText.includes(expectedText)) {
-    throw new Error(
-      `Expected text "${expectedText}" not found. Actual: "${actualText}"`
-    );
+    throw new Error(`Expected text "${expectedText}" not found. Actual: "${actualText}"`);
   }
 }
 

@@ -141,8 +141,6 @@ export interface GroupSettlementOptions {
 /**
  * GroupedSettlement인지 확인하는 타입 가드
  */
-export function isGroupedSettlement(
-  item: WorkLog | GroupedSettlement
-): item is GroupedSettlement {
+export function isGroupedSettlement(item: WorkLog | GroupedSettlement): item is GroupedSettlement {
   return 'dateRange' in item && 'originalWorkLogs' in item && 'summary' in item;
 }

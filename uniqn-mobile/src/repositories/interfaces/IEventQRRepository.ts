@@ -86,11 +86,7 @@ export interface IEventQRRepository {
    * @description 새 QR 생성 전 기존 활성 QR 비활성화
    * @returns 비활성화된 QR 코드 수
    */
-  deactivateByJobAndDate(
-    jobPostingId: string,
-    date: string,
-    action: QRCodeAction
-  ): Promise<number>;
+  deactivateByJobAndDate(jobPostingId: string, date: string, action: QRCodeAction): Promise<number>;
 
   // ==========================================================================
   // 정리 (Cleanup)

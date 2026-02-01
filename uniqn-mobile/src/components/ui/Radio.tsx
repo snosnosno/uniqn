@@ -154,10 +154,7 @@ const RadioItem = memo(function RadioItem({
           className={`
             font-medium
             ${config.label}
-            ${isDisabled
-              ? 'text-gray-400 dark:text-gray-500'
-              : 'text-gray-900 dark:text-white'
-            }
+            ${isDisabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}
           `}
         >
           {option.label}
@@ -167,10 +164,11 @@ const RadioItem = memo(function RadioItem({
             className={`
               mt-0.5
               ${config.description}
-              ${isDisabled
-                // P1 접근성: WCAG AA 준수를 위해 대비 개선
-                ? 'text-gray-500 dark:text-gray-500'
-                : 'text-gray-600 dark:text-gray-400'
+              ${
+                isDisabled
+                  ? // P1 접근성: WCAG AA 준수를 위해 대비 개선
+                    'text-gray-500 dark:text-gray-500'
+                  : 'text-gray-600 dark:text-gray-400'
               }
             `}
           >
@@ -199,11 +197,14 @@ export const Radio = memo(function Radio({
   className = '',
   testID,
 }: RadioProps) {
-  const handleSelect = useCallback((optionValue: string) => {
-    if (!disabled) {
-      onChange(optionValue);
-    }
-  }, [onChange, disabled]);
+  const handleSelect = useCallback(
+    (optionValue: string) => {
+      if (!disabled) {
+        onChange(optionValue);
+      }
+    },
+    [onChange, disabled]
+  );
 
   return (
     <View
@@ -212,19 +213,9 @@ export const Radio = memo(function Radio({
       accessibilityLabel={label}
       testID={testID}
     >
-      {label && (
-        <Text className="mb-2 font-medium text-gray-900 dark:text-white">
-          {label}
-        </Text>
-      )}
+      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
 
-      <View
-        className={
-          direction === 'horizontal'
-            ? 'flex-row flex-wrap gap-4'
-            : 'flex-col gap-3'
-        }
-      >
+      <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>
         {options.map((option) => (
           <RadioItem
             key={option.value}
@@ -238,11 +229,7 @@ export const Radio = memo(function Radio({
         ))}
       </View>
 
-      {error && errorMessage && (
-        <Text className="mt-2 text-sm text-red-500">
-          {errorMessage}
-        </Text>
-      )}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
     </View>
   );
 });

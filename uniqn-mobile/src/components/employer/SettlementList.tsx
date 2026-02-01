@@ -13,11 +13,7 @@ import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
 import { Card } from '../ui/Card';
-import {
-  BanknotesIcon,
-  CheckIcon,
-  SettingsIcon,
-} from '../icons';
+import { BanknotesIcon, CheckIcon, SettingsIcon } from '../icons';
 import {
   type SalaryType,
   type SalaryInfo,
@@ -111,13 +107,9 @@ function SummaryCard({
   return (
     <Card variant="filled" padding="md" className="mb-4 mx-4">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          정산 현황
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">정산 현황</Text>
         <View className="flex-row items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">
-            총 {totalCount}건
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">총 {totalCount}건</Text>
           {onOpenSettings && (
             <Pressable
               onPress={onOpenSettings}
@@ -127,9 +119,7 @@ function SummaryCard({
               accessibilityRole="button"
             >
               <SettingsIcon size={16} color="#6B7280" />
-              <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
-                정산설정
-              </Text>
+              <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">정산설정</Text>
             </Pressable>
           )}
         </View>
@@ -230,12 +220,16 @@ function BulkActionsBar({
           onPress={isAllSelected ? onClearSelection : onSelectAll}
           className="flex-row items-center mr-4"
         >
-          <View className={`
+          <View
+            className={`
             h-5 w-5 rounded border-2 items-center justify-center mr-2
-            ${isAllSelected
-              ? 'bg-primary-500 border-primary-500'
-              : 'border-gray-400 dark:border-surface-overlay'}
-          `}>
+            ${
+              isAllSelected
+                ? 'bg-primary-500 border-primary-500'
+                : 'border-gray-400 dark:border-surface-overlay'
+            }
+          `}
+          >
             {isAllSelected && <CheckIcon size={12} color="#fff" />}
           </View>
           <Text className="text-sm text-gray-700 dark:text-gray-300">
@@ -256,16 +250,16 @@ function BulkActionsBar({
         disabled={selectedCount === 0}
         className={`
           flex-row items-center px-4 py-2 rounded-lg
-          ${selectedCount > 0
-            ? 'bg-primary-500 active:opacity-70'
-            : 'bg-gray-300 dark:bg-surface'}
+          ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-gray-300 dark:bg-surface'}
         `}
       >
         <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : '#9CA3AF'} />
-        <Text className={`
+        <Text
+          className={`
           ml-1 text-sm font-medium
           ${selectedCount > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}
-        `}>
+        `}
+        >
           일괄 정산
         </Text>
       </Pressable>
@@ -300,12 +294,15 @@ export function SettlementList({
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // 그룹핑 컨텍스트
-  const groupingContext: SettlementGroupingContext = useMemo(() => ({
-    roles,
-    defaultSalary,
-    allowances,
-    taxSettings,
-  }), [roles, defaultSalary, allowances, taxSettings]);
+  const groupingContext: SettlementGroupingContext = useMemo(
+    () => ({
+      roles,
+      defaultSalary,
+      allowances,
+      taxSettings,
+    }),
+    [roles, defaultSalary, allowances, taxSettings]
+  );
 
   // 필터링된 목록
   const filteredWorkLogs = useMemo(() => {
@@ -324,8 +321,7 @@ export function SettlementList({
   // 선택 가능한 항목 (미정산 + 출퇴근 완료)
   const selectableWorkLogs = useMemo(() => {
     return workLogs.filter(
-      (log) => (log.payrollStatus || 'pending') === 'pending' &&
-        log.checkInTime && log.checkOutTime
+      (log) => (log.payrollStatus || 'pending') === 'pending' && log.checkInTime && log.checkOutTime
     );
   }, [workLogs]);
 
@@ -409,10 +405,13 @@ export function SettlementList({
   }, [selectionMode]);
 
   // 그룹 일괄 정산 핸들러
-  const handleGroupBulkSettle = useCallback((settlableWorkLogs: WorkLog[]) => {
-    const handler = onGroupBulkSettle || onBulkSettle;
-    handler?.(settlableWorkLogs);
-  }, [onGroupBulkSettle, onBulkSettle]);
+  const handleGroupBulkSettle = useCallback(
+    (settlableWorkLogs: WorkLog[]) => {
+      const handler = onGroupBulkSettle || onBulkSettle;
+      handler?.(settlableWorkLogs);
+    },
+    [onGroupBulkSettle, onBulkSettle]
+  );
 
   // 렌더 아이템 (그룹화된 카드)
   const renderItem = useCallback(
@@ -442,9 +441,7 @@ export function SettlementList({
     return (
       <View className="flex-1 items-center justify-center">
         <Loading size="large" />
-        <Text className="mt-4 text-gray-500 dark:text-gray-400">
-          정산 목록을 불러오는 중...
-        </Text>
+        <Text className="mt-4 text-gray-500 dark:text-gray-400">정산 목록을 불러오는 중...</Text>
       </View>
     );
   }
@@ -471,8 +468,8 @@ export function SettlementList({
     );
   }
 
-  const isAllSelected = selectedIds.size === selectableWorkLogs.length &&
-    selectableWorkLogs.length > 0;
+  const isAllSelected =
+    selectedIds.size === selectableWorkLogs.length && selectableWorkLogs.length > 0;
 
   return (
     <View className="flex-1">
@@ -494,12 +491,16 @@ export function SettlementList({
             className="flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface"
           >
             <CheckIcon size={16} color={selectionMode ? '#9333EA' : '#6B7280'} />
-            <Text className={`
+            <Text
+              className={`
               ml-2 text-sm font-medium
-              ${selectionMode
-                ? 'text-primary-600 dark:text-primary-400'
-                : 'text-gray-600 dark:text-gray-400'}
-            `}>
+              ${
+                selectionMode
+                  ? 'text-primary-600 dark:text-primary-400'
+                  : 'text-gray-600 dark:text-gray-400'
+              }
+            `}
+            >
               {selectionMode ? '선택 취소' : '일괄 정산 선택'}
             </Text>
           </Pressable>

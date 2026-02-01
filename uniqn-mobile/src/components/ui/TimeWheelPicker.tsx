@@ -81,9 +81,12 @@ function WebTimePicker({
   const minuteListRef = useRef<FlatList>(null);
 
   // 분 값을 interval에 맞게 정규화
-  const normalizeMinute = useCallback((minute: number) => {
-    return Math.round(minute / minuteInterval!) * minuteInterval!;
-  }, [minuteInterval]);
+  const normalizeMinute = useCallback(
+    (minute: number) => {
+      return Math.round(minute / minuteInterval!) * minuteInterval!;
+    },
+    [minuteInterval]
+  );
 
   useEffect(() => {
     setSelectedHour(value.hour);
@@ -91,14 +94,14 @@ function WebTimePicker({
   }, [value, normalizeMinute]);
 
   // 시간 배열 생성 (0~47)
-  const hours = useMemo(() =>
-    Array.from({ length: maxHour! - minHour! + 1 }, (_, i) => minHour! + i),
+  const hours = useMemo(
+    () => Array.from({ length: maxHour! - minHour! + 1 }, (_, i) => minHour! + i),
     [minHour, maxHour]
   );
 
   // 분 배열 생성 (interval 단위)
-  const minutes = useMemo(() =>
-    Array.from({ length: 60 / minuteInterval! }, (_, i) => i * minuteInterval!),
+  const minutes = useMemo(
+    () => Array.from({ length: 60 / minuteInterval! }, (_, i) => i * minuteInterval!),
     [minuteInterval]
   );
 
@@ -111,69 +114,83 @@ function WebTimePicker({
   const isNextDay = selectedHour >= 24;
 
   // 시간 아이템 렌더링
-  const renderHourItem = useCallback(({ item: hour }: { item: number }) => {
-    const isSelected = hour === selectedHour;
-    const isNextDayHour = hour >= 24;
-    return (
-      <Pressable
-        onPress={() => setSelectedHour(hour)}
-        className={`items-center justify-center py-3 mx-1 rounded-lg ${
-          isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
-        }`}
-        style={{ height: ITEM_HEIGHT }}
-      >
-        <Text className={`text-lg ${
-          isSelected
-            ? 'text-primary-600 dark:text-primary-400 font-bold'
-            : 'text-gray-700 dark:text-gray-300'
-        }`}>
-          {hour.toString().padStart(2, '0')}
-        </Text>
-        {isNextDayHour && isSelected && (
-          <Text className="text-xs text-orange-500 dark:text-orange-400">
-            다음날
+  const renderHourItem = useCallback(
+    ({ item: hour }: { item: number }) => {
+      const isSelected = hour === selectedHour;
+      const isNextDayHour = hour >= 24;
+      return (
+        <Pressable
+          onPress={() => setSelectedHour(hour)}
+          className={`items-center justify-center py-3 mx-1 rounded-lg ${
+            isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
+          }`}
+          style={{ height: ITEM_HEIGHT }}
+        >
+          <Text
+            className={`text-lg ${
+              isSelected
+                ? 'text-primary-600 dark:text-primary-400 font-bold'
+                : 'text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {hour.toString().padStart(2, '0')}
           </Text>
-        )}
-      </Pressable>
-    );
-  }, [selectedHour]);
+          {isNextDayHour && isSelected && (
+            <Text className="text-xs text-orange-500 dark:text-orange-400">다음날</Text>
+          )}
+        </Pressable>
+      );
+    },
+    [selectedHour]
+  );
 
   // 분 아이템 렌더링
-  const renderMinuteItem = useCallback(({ item: minute }: { item: number }) => {
-    const isSelected = minute === selectedMinute;
-    return (
-      <Pressable
-        onPress={() => setSelectedMinute(minute)}
-        className={`items-center justify-center py-3 mx-1 rounded-lg ${
-          isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
-        }`}
-        style={{ height: ITEM_HEIGHT }}
-      >
-        <Text className={`text-lg ${
-          isSelected
-            ? 'text-primary-600 dark:text-primary-400 font-bold'
-            : 'text-gray-700 dark:text-gray-300'
-        }`}>
-          {minute.toString().padStart(2, '0')}
-        </Text>
-      </Pressable>
-    );
-  }, [selectedMinute]);
+  const renderMinuteItem = useCallback(
+    ({ item: minute }: { item: number }) => {
+      const isSelected = minute === selectedMinute;
+      return (
+        <Pressable
+          onPress={() => setSelectedMinute(minute)}
+          className={`items-center justify-center py-3 mx-1 rounded-lg ${
+            isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
+          }`}
+          style={{ height: ITEM_HEIGHT }}
+        >
+          <Text
+            className={`text-lg ${
+              isSelected
+                ? 'text-primary-600 dark:text-primary-400 font-bold'
+                : 'text-gray-700 dark:text-gray-300'
+            }`}
+          >
+            {minute.toString().padStart(2, '0')}
+          </Text>
+        </Pressable>
+      );
+    },
+    [selectedMinute]
+  );
 
   const hourKeyExtractor = useCallback((item: number) => `hour-${item}`, []);
   const minuteKeyExtractor = useCallback((item: number) => `minute-${item}`, []);
 
-  const getHourItemLayout = useCallback((_: unknown, index: number) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * index,
-    index,
-  }), []);
+  const getHourItemLayout = useCallback(
+    (_: unknown, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    }),
+    []
+  );
 
-  const getMinuteItemLayout = useCallback((_: unknown, index: number) => ({
-    length: ITEM_HEIGHT,
-    offset: ITEM_HEIGHT * index,
-    index,
-  }), []);
+  const getMinuteItemLayout = useCallback(
+    (_: unknown, index: number) => ({
+      length: ITEM_HEIGHT,
+      offset: ITEM_HEIGHT * index,
+      index,
+    }),
+    []
+  );
 
   // 초기 스크롤 위치
   const initialHourIndex = useMemo(() => {
@@ -193,11 +210,11 @@ function WebTimePicker({
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          {title}
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
-          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">확인</Text>
+          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
+            확인
+          </Text>
         </Pressable>
       </View>
 
@@ -251,7 +268,8 @@ function WebTimePicker({
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
           <AlertCircleIcon size={16} color="#F97316" />
           <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400">
-            다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:{selectedMinute.toString().padStart(2, '0')}
+            다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
+            {selectedMinute.toString().padStart(2, '0')}
           </Text>
         </View>
       )}
@@ -281,21 +299,24 @@ function NativeWheelPicker({
   const [selectedMinute, setSelectedMinute] = useState(value.minute);
 
   // 시간 배열 생성 (0~47)
-  const hours = useMemo(() =>
-    Array.from({ length: maxHour! - minHour! + 1 }, (_, i) => minHour! + i),
+  const hours = useMemo(
+    () => Array.from({ length: maxHour! - minHour! + 1 }, (_, i) => minHour! + i),
     [minHour, maxHour]
   );
 
   // 분 배열 생성 (5분 단위: 0, 5, 10, ... 55)
-  const minutes = useMemo(() =>
-    Array.from({ length: 60 / minuteInterval! }, (_, i) => i * minuteInterval!),
+  const minutes = useMemo(
+    () => Array.from({ length: 60 / minuteInterval! }, (_, i) => i * minuteInterval!),
     [minuteInterval]
   );
 
   // 분 값을 interval에 맞게 정규화
-  const normalizeMinute = useCallback((minute: number) => {
-    return Math.round(minute / minuteInterval!) * minuteInterval!;
-  }, [minuteInterval]);
+  const normalizeMinute = useCallback(
+    (minute: number) => {
+      return Math.round(minute / minuteInterval!) * minuteInterval!;
+    },
+    [minuteInterval]
+  );
 
   // 초기 스크롤 위치 설정
   useEffect(() => {
@@ -367,11 +388,11 @@ function NativeWheelPicker({
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
         </Pressable>
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          {title}
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
-          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">확인</Text>
+          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
+            확인
+          </Text>
         </Pressable>
       </View>
 
@@ -479,7 +500,8 @@ function NativeWheelPicker({
         <View className="flex-row items-center justify-center px-4 py-2 mx-4 mb-2 bg-orange-50 dark:bg-orange-900/20 rounded-lg">
           <AlertCircleIcon size={16} color="#F97316" />
           <Text className="ml-2 text-sm text-orange-600 dark:text-orange-400">
-            다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:{selectedMinute.toString().padStart(2, '0')}
+            다음날 새벽 {(selectedHour - 24).toString().padStart(2, '0')}:
+            {selectedMinute.toString().padStart(2, '0')}
           </Text>
         </View>
       )}
@@ -573,16 +595,8 @@ export function TimeWheelPicker({
 
   // 네이티브에서는 기존 Modal 사용
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="slide"
-      onRequestClose={onClose}
-    >
-      <Pressable
-        className="flex-1 bg-black/50 justify-end"
-        onPress={onClose}
-      >
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
+      <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
         <Pressable onPress={(e) => e.stopPropagation()}>
           <NativeWheelPicker
             value={value}

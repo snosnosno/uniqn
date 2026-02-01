@@ -20,7 +20,7 @@ const DEFAULT_SIZE = 24;
 
 // 다크모드 대응 색상
 const DEFAULT_COLOR_LIGHT = '#6B7280'; // gray-500
-const DEFAULT_COLOR_DARK = '#9CA3AF';  // gray-400
+const DEFAULT_COLOR_DARK = '#9CA3AF'; // gray-400
 
 /**
  * 다크모드 인식 기본 색상 훅
@@ -275,7 +275,13 @@ type BookmarkIconProps = IconProps & { filled?: boolean };
 export const BookmarkIcon = ({ size = DEFAULT_SIZE, color, filled = false }: BookmarkIconProps) => {
   const resolvedColor = useDefaultColor(color);
   // filled일 때는 채워진 아이콘 (bookmark-filled가 없으므로 heart로 대체하거나 다른 방식 사용)
-  return <Feather name={filled ? 'bookmark' : 'bookmark'} size={size} color={filled ? '#F59E0B' : resolvedColor} />;
+  return (
+    <Feather
+      name={filled ? 'bookmark' : 'bookmark'}
+      size={size}
+      color={filled ? '#F59E0B' : resolvedColor}
+    />
+  );
 };
 
 export const BookmarkFilledIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {

@@ -157,9 +157,9 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
     },
     onSuccess: (enabled) => {
       queryClient.invalidateQueries({ queryKey: biometricQueryKeys.enabled });
-      useToastStore.getState().success(
-        enabled ? '생체 인증이 활성화되었습니다' : '생체 인증이 비활성화되었습니다'
-      );
+      useToastStore
+        .getState()
+        .success(enabled ? '생체 인증이 활성화되었습니다' : '생체 인증이 비활성화되었습니다');
     },
     onError: (error) => {
       logger.error('생체 인증 설정 변경 실패', toError(error));
@@ -277,7 +277,9 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
       });
 
       if (!currentUser) {
-        useToastStore.getState().error('인증 세션이 만료되었습니다. 비밀번호로 다시 로그인해주세요.');
+        useToastStore
+          .getState()
+          .error('인증 세션이 만료되었습니다. 비밀번호로 다시 로그인해주세요.');
         await clearBiometricCredentials();
         await setBiometricEnabled(false);
         queryClient.invalidateQueries({ queryKey: biometricQueryKeys.enabled });
@@ -286,7 +288,9 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
 
       // 4. 저장된 사용자 ID와 현재 세션 비교
       if (currentUser.uid !== credentials.userId) {
-        useToastStore.getState().error('다른 계정으로 로그인되어 있습니다. 비밀번호로 로그인해주세요.');
+        useToastStore
+          .getState()
+          .error('다른 계정으로 로그인되어 있습니다. 비밀번호로 로그인해주세요.');
         await clearBiometricCredentials();
         await setBiometricEnabled(false);
         queryClient.invalidateQueries({ queryKey: biometricQueryKeys.enabled });
@@ -305,10 +309,13 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
             ...profile,
             createdAt: profile.createdAt?.toDate?.() ?? new Date(),
             updatedAt: profile.updatedAt?.toDate?.() ?? new Date(),
-            employerAgreements: profile.employerAgreements ? {
-              termsAgreedAt: profile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-              liabilityWaiverAgreedAt: profile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
-            } : undefined,
+            employerAgreements: profile.employerAgreements
+              ? {
+                  termsAgreedAt: profile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+                  liabilityWaiverAgreedAt:
+                    profile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
+                }
+              : undefined,
             employerRegisteredAt: profile.employerRegisteredAt?.toDate?.() ?? undefined,
           });
         }
@@ -381,9 +388,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
   }, [refetchStatus, refetchEnabled]);
 
   // 생체 인증 타입 이름
-  const biometricTypeName = status
-    ? getBiometricTypeName(status.biometricTypes)
-    : '생체 인증';
+  const biometricTypeName = status ? getBiometricTypeName(status.biometricTypes) : '생체 인증';
 
   return {
     status: status ?? null,

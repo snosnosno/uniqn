@@ -7,11 +7,7 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import type { Assignment, TimeSlot, StaffRole } from '@/types';
-import {
-  createSimpleAssignment,
-  isValidAssignment,
-  getAssignmentRole,
-} from '@/types';
+import { createSimpleAssignment, isValidAssignment, getAssignmentRole } from '@/types';
 
 // ============================================================================
 // Types
@@ -87,7 +83,7 @@ export function useAssignmentSelection({
   // 상태
   const [assignments, setAssignments] = useState<Assignment[]>(initialAssignments);
   const [selectedRole, setSelectedRole] = useState<StaffRole | null>(
-    initialAssignments[0] ? getAssignmentRole(initialAssignments[0]) ?? null : null
+    initialAssignments[0] ? (getAssignmentRole(initialAssignments[0]) ?? null) : null
   );
 
   // 선택 맵 (date -> Set<timeSlot>)
@@ -211,15 +207,11 @@ export function useAssignmentSelection({
 
       if (isFullySelected) {
         // 해당 날짜의 모든 선택 해제
-        const newAssignments = assignments.filter(
-          (a) => !a.dates.includes(date)
-        );
+        const newAssignments = assignments.filter((a) => !a.dates.includes(date));
         updateAssignments(newAssignments);
       } else {
         // 해당 날짜의 모든 시간대 선택
-        const existingOtherDates = assignments.filter(
-          (a) => !a.dates.includes(date)
-        );
+        const existingOtherDates = assignments.filter((a) => !a.dates.includes(date));
         const currentSlots = selectionMap.get(date) ?? new Set();
         const newSlots = timeSlots.filter((slot) => {
           const slotTime = slot.startTime ?? '';
@@ -242,14 +234,7 @@ export function useAssignmentSelection({
         updateAssignments([...existingOtherDates, ...newAssignments]);
       }
     },
-    [
-      selectedRole,
-      isDateFullySelected,
-      assignments,
-      selectionMap,
-      maxSelections,
-      updateAssignments,
-    ]
+    [selectedRole, isDateFullySelected, assignments, selectionMap, maxSelections, updateAssignments]
   );
 
   // 전체 초기화

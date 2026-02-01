@@ -114,10 +114,7 @@ export function setEnabled(enabled: boolean): void {
 /**
  * 치명적이지 않은 에러 기록
  */
-export async function recordError(
-  error: Error | AppError,
-  context?: CrashContext
-): Promise<void> {
+export async function recordError(error: Error | AppError, context?: CrashContext): Promise<void> {
   if (!isEnabled) return;
 
   try {
@@ -380,10 +377,7 @@ export function clearBreadcrumbs(): void {
 // Integration Helpers
 // ============================================================================
 
-export async function recordAppError(
-  error: AppError,
-  context?: CrashContext
-): Promise<void> {
+export async function recordAppError(error: AppError, context?: CrashContext): Promise<void> {
   const isFatal = error.severity === 'critical' || error.category === 'unknown';
 
   if (isFatal) {

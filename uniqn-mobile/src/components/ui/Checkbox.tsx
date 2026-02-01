@@ -93,9 +93,7 @@ export const Checkbox = memo(function Checkbox({
         : 'bg-gray-100 dark:bg-surface border-gray-300 dark:border-surface-overlay';
     }
     if (error) {
-      return checked
-        ? 'bg-red-500 border-red-500'
-        : 'bg-transparent border-red-500';
+      return checked ? 'bg-red-500 border-red-500' : 'bg-transparent border-red-500';
     }
     return checked
       ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
@@ -122,13 +120,7 @@ export const Checkbox = memo(function Checkbox({
           ${getBoxStyle()}
         `}
       >
-        {checked && (
-          <Ionicons
-            name="checkmark"
-            size={config.icon}
-            color="white"
-          />
-        )}
+        {checked && <Ionicons name="checkmark" size={config.icon} color="white" />}
       </View>
 
       {/* Label & Description */}
@@ -139,10 +131,7 @@ export const Checkbox = memo(function Checkbox({
               className={`
                 font-medium
                 ${config.label}
-                ${disabled
-                  ? 'text-gray-400 dark:text-gray-500'
-                  : 'text-gray-900 dark:text-white'
-                }
+                ${disabled ? 'text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'}
               `}
             >
               {label}
@@ -153,10 +142,11 @@ export const Checkbox = memo(function Checkbox({
               className={`
                 mt-0.5
                 ${config.description}
-                ${disabled
-                  // P1 접근성: WCAG AA 준수를 위해 대비 개선
-                  ? 'text-gray-500 dark:text-gray-500'
-                  : 'text-gray-600 dark:text-gray-400'
+                ${
+                  disabled
+                    ? // P1 접근성: WCAG AA 준수를 위해 대비 개선
+                      'text-gray-500 dark:text-gray-500'
+                    : 'text-gray-600 dark:text-gray-400'
                 }
               `}
             >
@@ -164,9 +154,7 @@ export const Checkbox = memo(function Checkbox({
             </Text>
           )}
           {error && errorMessage && (
-            <Text className={`mt-1 text-red-500 ${config.description}`}>
-              {errorMessage}
-            </Text>
+            <Text className={`mt-1 text-red-500 ${config.description}`}>{errorMessage}</Text>
           )}
         </View>
       )}
@@ -215,28 +203,21 @@ export const CheckboxGroup = memo(function CheckboxGroup({
   direction = 'vertical',
   className = '',
 }: CheckboxGroupProps) {
-  const handleToggle = useCallback((value: string, checked: boolean) => {
-    if (checked) {
-      onChange([...values, value]);
-    } else {
-      onChange(values.filter(v => v !== value));
-    }
-  }, [values, onChange]);
+  const handleToggle = useCallback(
+    (value: string, checked: boolean) => {
+      if (checked) {
+        onChange([...values, value]);
+      } else {
+        onChange(values.filter((v) => v !== value));
+      }
+    },
+    [values, onChange]
+  );
 
   return (
     <View className={className}>
-      {label && (
-        <Text className="mb-2 font-medium text-gray-900 dark:text-white">
-          {label}
-        </Text>
-      )}
-      <View
-        className={
-          direction === 'horizontal'
-            ? 'flex-row flex-wrap gap-4'
-            : 'flex-col gap-3'
-        }
-      >
+      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
+      <View className={direction === 'horizontal' ? 'flex-row flex-wrap gap-4' : 'flex-col gap-3'}>
         {options.map((option) => (
           <Checkbox
             key={option.value}
@@ -250,11 +231,7 @@ export const CheckboxGroup = memo(function CheckboxGroup({
           />
         ))}
       </View>
-      {error && errorMessage && (
-        <Text className="mt-2 text-sm text-red-500">
-          {errorMessage}
-        </Text>
-      )}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
     </View>
   );
 });

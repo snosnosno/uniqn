@@ -203,10 +203,7 @@ export function isValidEmail(email: string): boolean {
  * @param message - 로그 메시지
  * @param data - 로그 데이터
  */
-export function secureLog(
-  message: string,
-  data?: Record<string, unknown>
-): void {
+export function secureLog(message: string, data?: Record<string, unknown>): void {
   const sensitiveFields = [
     'password',
     'token',
@@ -221,9 +218,7 @@ export function secureLog(
     ? Object.fromEntries(
         Object.entries(data).map(([key, value]) => [
           key,
-          sensitiveFields.some((field) =>
-            key.toLowerCase().includes(field.toLowerCase())
-          )
+          sensitiveFields.some((field) => key.toLowerCase().includes(field.toLowerCase()))
             ? '***REDACTED***'
             : value,
         ])
@@ -243,10 +238,7 @@ export function secureLog(
  * @param cooldownMs - 쿨다운 시간 (밀리초)
  * @returns 쿨다운 중이면 true
  */
-export function isRateLimited(
-  lastAttempt: number | null,
-  cooldownMs: number = 60000
-): boolean {
+export function isRateLimited(lastAttempt: number | null, cooldownMs: number = 60000): boolean {
   if (!lastAttempt) return false;
   return Date.now() - lastAttempt < cooldownMs;
 }
@@ -295,7 +287,13 @@ export function getPasswordStrength(password: string): {
   }
 
   // 연속 문자 체크
-  if (/(.)\1{2,}/.test(password) || /012|123|234|345|456|567|678|789|890/.test(password) || /abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(password)) {
+  if (
+    /(.)\1{2,}/.test(password) ||
+    /012|123|234|345|456|567|678|789|890/.test(password) ||
+    /abc|bcd|cde|def|efg|fgh|ghi|hij|ijk|jkl|klm|lmn|mno|nop|opq|pqr|qrs|rst|stu|tuv|uvw|vwx|wxy|xyz/i.test(
+      password
+    )
+  ) {
     score = Math.max(0, score - 1);
     feedback.push('연속된 문자나 숫자는 피해주세요');
   }

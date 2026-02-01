@@ -128,10 +128,7 @@ export { APPLICATION_STATUS_COLORS, CANCELLATION_STATUS_LABELS } from './applica
 export { APPLICATION_STATUS_LABELS } from '@/shared/status';
 
 // 지원서 v2.0 추가 타입
-export type {
-  RecruitmentType,
-  ConfirmApplicationInputV2,
-} from './application';
+export type { RecruitmentType, ConfirmApplicationInputV2 } from './application';
 
 // Assignment v3.0 타입 (role/roles → roleIds 통합)
 export type {
@@ -266,20 +263,12 @@ export {
 export { SCHEDULE_TYPE_LABELS, ATTENDANCE_STATUS_LABELS } from '@/shared/status';
 
 // 정산 그룹핑 타입
-export type {
-  DateSettlementStatus,
-  GroupedSettlement,
-  GroupSettlementOptions,
-} from './settlement';
+export type { DateSettlementStatus, GroupedSettlement, GroupSettlementOptions } from './settlement';
 
 export { isGroupedSettlement } from './settlement';
 
 // 공고 작성 폼 타입 (v2.0)
-export type {
-  JobPostingFormData,
-  TournamentDay,
-  FormRoleWithCount,
-} from './jobPostingForm';
+export type { JobPostingFormData, TournamentDay, FormRoleWithCount } from './jobPostingForm';
 export {
   INITIAL_JOB_POSTING_FORM_DATA,
   DEFAULT_ROLES,

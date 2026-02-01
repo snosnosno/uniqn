@@ -51,9 +51,7 @@ export interface SearchProvider<T> {
 export class ClientSideSearchProvider implements SearchProvider<JobPosting> {
   readonly name = 'ClientSide';
 
-  constructor(
-    private readonly dataFetcher: () => Promise<JobPosting[]>
-  ) {}
+  constructor(private readonly dataFetcher: () => Promise<JobPosting[]>) {}
 
   async search(query: string, options?: SearchOptions): Promise<SearchResult<JobPosting>> {
     const startTime = Date.now();
@@ -176,14 +174,13 @@ export class AlgoliaSearchProvider implements SearchProvider<JobPosting> {
   readonly name = 'Algolia';
   private indexName: string;
 
-  constructor(
-    appId: string,
-    apiKey: string,
-    indexName: string
-  ) {
+  constructor(appId: string, apiKey: string, indexName: string) {
     // 향후 Algolia 클라이언트 초기화 시 사용
     this.indexName = indexName;
-    logger.info('Algolia 프로바이더 초기화 (스텁)', { appId: appId.slice(0, 4) + '***', indexName });
+    logger.info('Algolia 프로바이더 초기화 (스텁)', {
+      appId: appId.slice(0, 4) + '***',
+      indexName,
+    });
     // apiKey는 민감 정보이므로 로깅하지 않음
     void apiKey; // 사용 예정 표시
   }

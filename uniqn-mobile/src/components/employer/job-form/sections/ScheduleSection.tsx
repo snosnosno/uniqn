@@ -52,7 +52,6 @@ function formatDate(date: Date | null): string {
 // Constants
 // ============================================================================
 
-
 /** 주 출근일수 옵션 (0 = 협의) */
 const DAYS_OPTIONS = [
   { value: 0, label: '협의' },
@@ -184,13 +183,16 @@ const FixedSchedule = memo(function FixedSchedule({
                 onPress={() => onUpdate({ daysPerWeek: option.value })}
                 className={`
                   px-4 py-2 rounded-lg border-2
-                  ${isSelected
-                    ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
-                    : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
+                  ${
+                    isSelected
+                      ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
+                      : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                   }
                 `}
               >
-                <Text className={`font-medium ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-white'}`}>
+                <Text
+                  className={`font-medium ${isSelected ? 'text-indigo-600 dark:text-indigo-400' : 'text-gray-900 dark:text-white'}`}
+                >
                   {option.label}
                 </Text>
               </Pressable>
@@ -203,23 +205,17 @@ const FixedSchedule = memo(function FixedSchedule({
       <View className="mt-4">
         <View className="flex-row items-center justify-between mb-2">
           <View className="flex-row items-center">
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              출근 시간
-            </Text>
-            {!isNegotiable && (
-              <Text className="text-sm text-red-500 ml-1">*</Text>
-            )}
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">출근 시간</Text>
+            {!isNegotiable && <Text className="text-sm text-red-500 ml-1">*</Text>}
           </View>
           {/* 협의 체크박스 */}
-          <Pressable
-            onPress={handleNegotiableToggle}
-            className="flex-row items-center"
-          >
+          <Pressable onPress={handleNegotiableToggle} className="flex-row items-center">
             <View
               className={`w-5 h-5 rounded border items-center justify-center mr-1.5
-                ${isNegotiable
-                  ? 'bg-indigo-600 border-indigo-600'
-                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                ${
+                  isNegotiable
+                    ? 'bg-indigo-600 border-indigo-600'
+                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
             >
               {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}
@@ -242,9 +238,7 @@ const FixedSchedule = memo(function FixedSchedule({
             error={!!errors?.startTime}
           />
         )}
-        {errors?.startTime && (
-          <Text className="mt-1 text-sm text-red-500">{errors.startTime}</Text>
-        )}
+        {errors?.startTime && <Text className="mt-1 text-sm text-red-500">{errors.startTime}</Text>}
       </View>
     </View>
   );
@@ -276,24 +270,33 @@ const TournamentSchedule = memo(function TournamentSchedule({
     onUpdate({ tournamentDates: [...tournamentDates, newDay] });
   }, [tournamentDates, onUpdate]);
 
-  const handleDeleteDay = useCallback((index: number) => {
-    const newDates = tournamentDates
-      .filter((_, i) => i !== index)
-      .map((day, i) => ({ ...day, day: i + 1 }));
-    onUpdate({ tournamentDates: newDates });
-  }, [tournamentDates, onUpdate]);
+  const handleDeleteDay = useCallback(
+    (index: number) => {
+      const newDates = tournamentDates
+        .filter((_, i) => i !== index)
+        .map((day, i) => ({ ...day, day: i + 1 }));
+      onUpdate({ tournamentDates: newDates });
+    },
+    [tournamentDates, onUpdate]
+  );
 
-  const handleDateChange = useCallback((index: number, date: Date | null) => {
-    const newDates = [...tournamentDates];
-    newDates[index] = { ...newDates[index], date: formatDate(date) };
-    onUpdate({ tournamentDates: newDates });
-  }, [tournamentDates, onUpdate]);
+  const handleDateChange = useCallback(
+    (index: number, date: Date | null) => {
+      const newDates = [...tournamentDates];
+      newDates[index] = { ...newDates[index], date: formatDate(date) };
+      onUpdate({ tournamentDates: newDates });
+    },
+    [tournamentDates, onUpdate]
+  );
 
-  const handleTimeChange = useCallback((index: number, time: string) => {
-    const newDates = [...tournamentDates];
-    newDates[index] = { ...newDates[index], startTime: time };
-    onUpdate({ tournamentDates: newDates });
-  }, [tournamentDates, onUpdate]);
+  const handleTimeChange = useCallback(
+    (index: number, time: string) => {
+      const newDates = [...tournamentDates];
+      newDates[index] = { ...newDates[index], startTime: time };
+      onUpdate({ tournamentDates: newDates });
+    },
+    [tournamentDates, onUpdate]
+  );
 
   return (
     <View>
@@ -329,7 +332,8 @@ const TournamentSchedule = memo(function TournamentSchedule({
         <View className="p-6 bg-gray-50 dark:bg-surface/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center">
           <CalendarIcon size={40} color="#9CA3AF" />
           <Text className="mt-2 text-gray-500 dark:text-gray-400 text-center text-sm">
-            아직 추가된 일정이 없습니다.{'\n'}{"'"}Day 추가{"'"} 버튼을 눌러 일정을 추가해주세요.
+            아직 추가된 일정이 없습니다.{'\n'}
+            {"'"}Day 추가{"'"} 버튼을 눌러 일정을 추가해주세요.
           </Text>
         </View>
       ) : (
@@ -412,7 +416,9 @@ export const ScheduleSection = memo(function ScheduleSection({
       return <SingleDateSchedule data={data} onUpdate={onUpdate} errors={errors} isUrgent />;
     case 'regular':
     default:
-      return <SingleDateSchedule data={data} onUpdate={onUpdate} errors={errors} isUrgent={false} />;
+      return (
+        <SingleDateSchedule data={data} onUpdate={onUpdate} errors={errors} isUrgent={false} />
+      );
   }
 });
 

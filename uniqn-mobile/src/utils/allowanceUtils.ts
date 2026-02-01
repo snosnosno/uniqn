@@ -91,10 +91,18 @@ export function calculateTotalAllowance(allowances: Allowances | undefined): num
   if (allowances.meal && allowances.meal !== PROVIDED_FLAG && allowances.meal > 0) {
     total += allowances.meal;
   }
-  if (allowances.transportation && allowances.transportation !== PROVIDED_FLAG && allowances.transportation > 0) {
+  if (
+    allowances.transportation &&
+    allowances.transportation !== PROVIDED_FLAG &&
+    allowances.transportation > 0
+  ) {
     total += allowances.transportation;
   }
-  if (allowances.accommodation && allowances.accommodation !== PROVIDED_FLAG && allowances.accommodation > 0) {
+  if (
+    allowances.accommodation &&
+    allowances.accommodation !== PROVIDED_FLAG &&
+    allowances.accommodation > 0
+  ) {
     total += allowances.accommodation;
   }
   if (allowances.additional && allowances.additional > 0) {

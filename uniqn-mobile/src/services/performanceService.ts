@@ -236,10 +236,7 @@ class PerformanceService {
       return result;
     } catch (error) {
       trace.putAttribute('status', 'error');
-      trace.putAttribute(
-        'error_message',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      trace.putAttribute('error_message', error instanceof Error ? error.message : 'Unknown error');
       throw error;
     } finally {
       trace.stop();
@@ -249,11 +246,7 @@ class PerformanceService {
   /**
    * 동기 작업 시간 측정 래퍼
    */
-  measure<T>(
-    name: string,
-    operation: () => T,
-    attributes?: Record<string, string>
-  ): T {
+  measure<T>(name: string, operation: () => T, attributes?: Record<string, string>): T {
     const trace = this.startTrace(name);
 
     if (attributes) {
@@ -277,11 +270,7 @@ class PerformanceService {
   /**
    * 네비게이션 시간 측정
    */
-  recordNavigationTime(
-    fromScreen: string,
-    toScreen: string,
-    duration: number
-  ): void {
+  recordNavigationTime(fromScreen: string, toScreen: string, duration: number): void {
     if (!this.enabled) return;
 
     const trace = createTrace('navigation');
@@ -338,29 +327,16 @@ class PerformanceService {
 export const performanceService = new PerformanceService();
 
 // 편의 함수 export
-export const startScreenTrace = performanceService.startScreenTrace.bind(
-  performanceService
-);
-export const startApiTrace = performanceService.startApiTrace.bind(
-  performanceService
-);
+export const startScreenTrace = performanceService.startScreenTrace.bind(performanceService);
+export const startApiTrace = performanceService.startApiTrace.bind(performanceService);
 export const startTrace = performanceService.startTrace.bind(performanceService);
 export const stopTrace = performanceService.stopTrace.bind(performanceService);
-export const recordMetric = performanceService.recordMetric.bind(
-  performanceService
-);
-export const measureAsync = performanceService.measureAsync.bind(
-  performanceService
-);
+export const recordMetric = performanceService.recordMetric.bind(performanceService);
+export const measureAsync = performanceService.measureAsync.bind(performanceService);
 export const measure = performanceService.measure.bind(performanceService);
-export const recordNavigationTime = performanceService.recordNavigationTime.bind(
-  performanceService
-);
-export const recordRenderTime = performanceService.recordRenderTime.bind(
-  performanceService
-);
-export const setPerformanceEnabled = performanceService.setEnabled.bind(
-  performanceService
-);
+export const recordNavigationTime =
+  performanceService.recordNavigationTime.bind(performanceService);
+export const recordRenderTime = performanceService.recordRenderTime.bind(performanceService);
+export const setPerformanceEnabled = performanceService.setEnabled.bind(performanceService);
 
 export default performanceService;

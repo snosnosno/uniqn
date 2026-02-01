@@ -155,11 +155,7 @@ export class TimeNormalizer {
     }
 
     // Firebase Timestamp
-    if (
-      typeof value === 'object' &&
-      'toDate' in value &&
-      typeof value.toDate === 'function'
-    ) {
+    if (typeof value === 'object' && 'toDate' in value && typeof value.toDate === 'function') {
       return value.toDate();
     }
 

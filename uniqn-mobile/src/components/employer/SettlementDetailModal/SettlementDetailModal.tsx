@@ -81,12 +81,16 @@ export function SettlementDetailModal({
   } = useSettlementDateNavigation(workLog, groupedSettlement, onDateChange);
 
   // 계산된 값들
-  const startTime = useMemo(() => workLog ? parseTimestamp(workLog.checkInTime) : null, [workLog]);
-  const endTime = useMemo(() => workLog ? parseTimestamp(workLog.checkOutTime) : null, [workLog]);
-  const workDate = useMemo(() => workLog ? parseTimestamp(workLog.date) : null, [workLog]);
+  const startTime = useMemo(
+    () => (workLog ? parseTimestamp(workLog.checkInTime) : null),
+    [workLog]
+  );
+  const endTime = useMemo(() => (workLog ? parseTimestamp(workLog.checkOutTime) : null), [workLog]);
+  const workDate = useMemo(() => (workLog ? parseTimestamp(workLog.date) : null), [workLog]);
 
-  const settlement = useMemo(() =>
-    workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
+  const settlement = useMemo(
+    () =>
+      workLog ? calculateSettlementFromWorkLog(workLog, salaryInfo, allowances, taxSettings) : null,
     [workLog, salaryInfo, allowances, taxSettings]
   );
 
@@ -97,10 +101,9 @@ export function SettlementDetailModal({
   const baseName = userProfile?.name || (workLog as WorkLog & { staffName?: string })?.staffName;
   const displayName = useMemo(() => {
     if (!baseName) return workLog ? `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}` : '';
-    const nickname = userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string })?.staffNickname;
-    return nickname && nickname !== baseName
-      ? `${baseName}(${nickname})`
-      : baseName;
+    const nickname =
+      userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string })?.staffNickname;
+    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
   }, [baseName, userProfile?.nickname, workLog]);
 
   const payrollStatus = (workLog?.payrollStatus || 'pending') as PayrollStatus;
@@ -128,11 +131,7 @@ export function SettlementDetailModal({
   if (!workLog) return null;
 
   return (
-    <SheetModal
-      visible={visible}
-      onClose={onClose}
-      title="정산 상세"
-    >
+    <SheetModal visible={visible} onClose={onClose} title="정산 상세">
       <View className="px-4">
         {/* 날짜 네비게이션 (그룹 모드일 때만) */}
         {isGroupMode && workLog.date && (

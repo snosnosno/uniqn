@@ -218,7 +218,14 @@ export function useNetworkStatus(
     }
 
     wasOnlineRef.current = status.isOnline;
-  }, [status.isOnline, status.isOffline, status.isChecking, status.connectionType, onOffline, onOnline]);
+  }, [
+    status.isOnline,
+    status.isOffline,
+    status.isChecking,
+    status.connectionType,
+    onOffline,
+    onOnline,
+  ]);
 
   // 네트워크 상태 구독
   useEffect(() => {

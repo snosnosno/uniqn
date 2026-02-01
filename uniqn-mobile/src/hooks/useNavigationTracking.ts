@@ -163,59 +163,51 @@ export function useNavigationTracking(): void {
   /**
    * 화면 전환 로깅
    */
-  const logNavigation = useCallback(
-    (screenInfo: ScreenInfo, from: string | null, to: string) => {
-      const duration =
-        navigationState.current.timestamp > 0
-          ? Date.now() - navigationState.current.timestamp
-          : 0;
+  const logNavigation = useCallback((screenInfo: ScreenInfo, from: string | null, to: string) => {
+    const duration =
+      navigationState.current.timestamp > 0 ? Date.now() - navigationState.current.timestamp : 0;
 
-      // 로거로 기록
-      logger.info('화면 전환', {
-        component: 'NavigationTracking',
-        action: 'screen_change',
-        from: from || 'initial',
-        to,
-        screenName: screenInfo.name,
-        screenClass: screenInfo.class,
-        params: screenInfo.params,
-        duration: `${duration}ms`,
-        transitionCount: navigationState.current.transitionCount,
-      });
+    // 로거로 기록
+    logger.info('화면 전환', {
+      component: 'NavigationTracking',
+      action: 'screen_change',
+      from: from || 'initial',
+      to,
+      screenName: screenInfo.name,
+      screenClass: screenInfo.class,
+      params: screenInfo.params,
+      duration: `${duration}ms`,
+      transitionCount: navigationState.current.transitionCount,
+    });
 
-      // 성능 추적: 네비게이션 시간 기록
-      if (from) {
-        recordNavigationTime(from, to, duration);
-      }
-    },
-    []
-  );
+    // 성능 추적: 네비게이션 시간 기록
+    if (from) {
+      recordNavigationTime(from, to, duration);
+    }
+  }, []);
 
   /**
    * Analytics 이벤트 전송
    */
-  const trackScreenView = useCallback(
-    async (screenInfo: ScreenInfo, pathname: string) => {
-      try {
-        // Firebase Analytics
-        await analyticsService.trackScreenView(screenInfo.name, screenInfo.class);
+  const trackScreenView = useCallback(async (screenInfo: ScreenInfo, pathname: string) => {
+    try {
+      // Firebase Analytics
+      await analyticsService.trackScreenView(screenInfo.name, screenInfo.class);
 
-        // Crashlytics breadcrumb
-        crashlyticsService.leaveBreadcrumb('screen_view', {
-          screen_name: screenInfo.name,
-          screen_class: screenInfo.class,
-          path: pathname,
-          ...(screenInfo.params || {}),
-        });
-      } catch (error) {
-        // Analytics 에러는 앱 동작에 영향 없도록 조용히 처리
-        logger.debug('Analytics 전송 실패', {
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
-    },
-    []
-  );
+      // Crashlytics breadcrumb
+      crashlyticsService.leaveBreadcrumb('screen_view', {
+        screen_name: screenInfo.name,
+        screen_class: screenInfo.class,
+        path: pathname,
+        ...(screenInfo.params || {}),
+      });
+    } catch (error) {
+      // Analytics 에러는 앱 동작에 영향 없도록 조용히 처리
+      logger.debug('Analytics 전송 실패', {
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }, []);
 
   /**
    * 경로 변경 감지 및 처리

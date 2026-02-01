@@ -6,13 +6,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-  ScrollView,
-} from 'react-native';
+import { View, Text, Pressable, Modal, ScrollView } from 'react-native';
 import { FilterIcon, XMarkIcon, CalendarIcon, MapPinIcon, BriefcaseIcon } from '@/components/icons';
 import { SEOUL_DISTRICTS, STAFF_ROLES } from '@/constants';
 import type { JobPostingFilters, StaffRole } from '@/types';
@@ -35,8 +29,9 @@ export interface JobFiltersProps {
 // ============================================================================
 
 /** 필터용 역할 목록 (STAFF_ROLES에서 생성) */
-const FILTER_ROLES: { value: StaffRole; label: string }[] = STAFF_ROLES
-  .filter((r) => r.key !== 'other')  // 기타 제외
+const FILTER_ROLES: { value: StaffRole; label: string }[] = STAFF_ROLES.filter(
+  (r) => r.key !== 'other'
+) // 기타 제외
   .map((r) => ({ value: r.key as StaffRole, label: r.name }));
 
 /** 날짜 필터 옵션 */
@@ -120,10 +115,7 @@ function FilterChip({ label, isActive, onPress }: FilterChipProps) {
       onPress={onPress}
       className={`
         px-3 py-2 rounded-full mr-2 mb-2
-        ${isActive
-          ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-surface'
-        }
+        ${isActive ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'}
       `}
       accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
@@ -131,10 +123,7 @@ function FilterChip({ label, isActive, onPress }: FilterChipProps) {
       <Text
         className={`
           text-sm font-medium
-          ${isActive
-            ? 'text-white'
-            : 'text-gray-700 dark:text-gray-300'
-          }
+          ${isActive ? 'text-white' : 'text-gray-700 dark:text-gray-300'}
         `}
       >
         {label}
@@ -210,9 +199,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
 
         return {
           ...prev,
-          roles: hasRole
-            ? currentRoles.filter((r) => r !== role)
-            : [...currentRoles, role],
+          roles: hasRole ? currentRoles.filter((r) => r !== role) : [...currentRoles, role],
         };
       });
     }, []);
@@ -238,14 +225,10 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
           accessibilityHint="공고 필터링 옵션을 설정합니다"
         >
           <FilterIcon size={18} color="#6366f1" />
-          <Text className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">
-            필터
-          </Text>
+          <Text className="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">필터</Text>
           {showActiveCount && activeFilterCount > 0 && (
             <View className="ml-2 bg-primary-600 rounded-full px-2 py-0.5 min-w-[20px] items-center">
-              <Text className="text-white text-xs font-bold">
-                {activeFilterCount}
-              </Text>
+              <Text className="text-white text-xs font-bold">{activeFilterCount}</Text>
             </View>
           )}
         </Pressable>
@@ -257,30 +240,21 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
           animationType="slide"
           onRequestClose={handleCloseModal}
         >
-          <Pressable
-            className="flex-1 bg-black/50 justify-end"
-            onPress={handleCloseModal}
-          >
+          <Pressable className="flex-1 bg-black/50 justify-end" onPress={handleCloseModal}>
             <Pressable
               className="bg-white dark:bg-surface rounded-t-2xl max-h-[85%]"
               onPress={(e) => e.stopPropagation()}
             >
               {/* 헤더 */}
               <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-                <Text className="text-lg font-bold text-gray-900 dark:text-white">
-                  필터
-                </Text>
+                <Text className="text-lg font-bold text-gray-900 dark:text-white">필터</Text>
                 <View className="flex-row items-center gap-4">
                   <Pressable onPress={handleResetFilters}>
                     <Text className="text-primary-600 dark:text-primary-400 font-medium">
                       초기화
                     </Text>
                   </Pressable>
-                  <Pressable
-                    onPress={handleCloseModal}
-                    className="p-1"
-                    accessibilityLabel="닫기"
-                  >
+                  <Pressable onPress={handleCloseModal} className="p-1" accessibilityLabel="닫기">
                     <XMarkIcon size={24} color="#6B7280" />
                   </Pressable>
                 </View>
@@ -359,9 +333,10 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     className={`
                       flex-row items-center justify-between
                       p-4 rounded-xl border
-                      ${tempFilters.isUrgent
-                        ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                        : 'bg-gray-50 dark:bg-surface border-gray-200 dark:border-surface-overlay'
+                      ${
+                        tempFilters.isUrgent
+                          ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                          : 'bg-gray-50 dark:bg-surface border-gray-200 dark:border-surface-overlay'
                       }
                     `}
                   >
@@ -374,15 +349,14 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                     <View
                       className={`
                         w-6 h-6 rounded-full border-2 items-center justify-center
-                        ${tempFilters.isUrgent
-                          ? 'bg-red-500 border-red-500'
-                          : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                        ${
+                          tempFilters.isUrgent
+                            ? 'bg-red-500 border-red-500'
+                            : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                         }
                       `}
                     >
-                      {tempFilters.isUrgent && (
-                        <Text className="text-white text-xs">✓</Text>
-                      )}
+                      {tempFilters.isUrgent && <Text className="text-white text-xs">✓</Text>}
                     </View>
                   </Pressable>
                 </View>
@@ -397,9 +371,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                   onPress={handleApplyFilters}
                   className="bg-primary-600 dark:bg-primary-700 py-4 rounded-xl items-center active:opacity-80"
                 >
-                  <Text className="text-white font-semibold text-base">
-                    필터 적용
-                  </Text>
+                  <Text className="text-white font-semibold text-base">필터 적용</Text>
                 </Pressable>
               </View>
 

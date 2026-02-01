@@ -6,13 +6,7 @@
  */
 
 import React, { useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  RefreshControl,
-  ActivityIndicator,
-  Pressable,
-} from 'react-native';
+import { View, Text, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { Badge, Skeleton, EmptyState } from '@/components/ui';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
@@ -20,7 +14,6 @@ import { formatTime } from './helpers/timeHelpers';
 import {
   CalendarIcon,
   ClockIcon,
-
   BriefcaseIcon,
   CurrencyDollarIcon,
   CheckCircleIcon,
@@ -78,11 +71,22 @@ const PAYROLL_STATUS_CONFIG: Record<
   PayrollStatus,
   { label: string; color: string; bgColor: string }
 > = {
-  pending: { label: '정산 대기', color: 'text-yellow-700 dark:text-yellow-300', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30' },
-  processing: { label: '정산 중', color: 'text-primary-700 dark:text-primary-300', bgColor: 'bg-primary-100 dark:bg-primary-900/30' },
-  completed: { label: '정산 완료', color: 'text-green-700 dark:text-green-300', bgColor: 'bg-green-100 dark:bg-green-900/30' },
+  pending: {
+    label: '정산 대기',
+    color: 'text-yellow-700 dark:text-yellow-300',
+    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
+  },
+  processing: {
+    label: '정산 중',
+    color: 'text-primary-700 dark:text-primary-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+  },
+  completed: {
+    label: '정산 완료',
+    color: 'text-green-700 dark:text-green-300',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+  },
 };
-
 
 // ============================================================================
 // Helper Functions
@@ -104,10 +108,7 @@ function formatDate(dateString: string): string {
 /**
  * 근무 시간 계산
  */
-function calculateWorkHours(
-  startTime: TimeInput,
-  endTime: TimeInput
-): string {
+function calculateWorkHours(startTime: TimeInput, endTime: TimeInput): string {
   const start = TimeNormalizer.parseTime(startTime);
   const end = TimeNormalizer.parseTime(endTime);
 
@@ -155,9 +156,7 @@ interface WorkLogItemProps {
 
 const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLogItemProps) {
   const statusConfig = WORK_STATUS_CONFIG[workLog.status];
-  const payrollConfig = workLog.payrollStatus
-    ? PAYROLL_STATUS_CONFIG[workLog.payrollStatus]
-    : null;
+  const payrollConfig = workLog.payrollStatus ? PAYROLL_STATUS_CONFIG[workLog.payrollStatus] : null;
   const roleLabel = getRoleDisplayName(workLog.role, workLog.customRole);
 
   // 실제 근무 시간 (있으면 사용, 없으면 예정 시간)
@@ -182,18 +181,14 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
             {formatDate(workLog.date)}
           </Text>
         </View>
-        <Badge variant={statusConfig.variant}>
-          {statusConfig.label}
-        </Badge>
+        <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
       </View>
 
       {/* 역할 & 시간 */}
       <View className="flex-row items-center gap-4 mb-3">
         <View className="flex-row items-center">
           <BriefcaseIcon size={14} color="#9CA3AF" />
-          <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">
-            {roleLabel}
-          </Text>
+          <Text className="ml-1 text-sm text-gray-600 dark:text-gray-400">{roleLabel}</Text>
         </View>
         <View className="flex-row items-center">
           <ClockIcon size={14} color="#9CA3AF" />
@@ -212,7 +207,9 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           ) : (
             <PendingIcon size={14} color="#9CA3AF" />
           )}
-          <Text className={`ml-1 text-sm ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}>
+          <Text
+            className={`ml-1 text-sm ${isCompleted ? 'text-green-600 dark:text-green-400' : 'text-gray-500 dark:text-gray-400'}`}
+          >
             {isCompleted ? workHours : '진행 중'}
           </Text>
         </View>
@@ -222,9 +219,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
           <View className="flex-row items-center">
             {payrollConfig && (
               <View className={`px-2 py-0.5 rounded-full mr-2 ${payrollConfig.bgColor}`}>
-                <Text className={`text-xs ${payrollConfig.color}`}>
-                  {payrollConfig.label}
-                </Text>
+                <Text className={`text-xs ${payrollConfig.color}`}>{payrollConfig.label}</Text>
               </View>
             )}
             <View className="flex-row items-center">
@@ -269,10 +264,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
     // 아이템 렌더러
     const renderItem = useCallback(
       ({ item }: { item: WorkLog }) => (
-        <WorkLogItem
-          workLog={item}
-          onPress={() => onItemPress?.(item)}
-        />
+        <WorkLogItem workLog={item} onPress={() => onItemPress?.(item)} />
       ),
       [onItemPress]
     );
@@ -302,10 +294,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
       const completed = workLogs.filter(
         (log) => log.status === 'completed' || log.status === 'checked_out'
       ).length;
-      const totalEarnings = workLogs.reduce(
-        (sum, log) => sum + (log.payrollAmount || 0),
-        0
-      );
+      const totalEarnings = workLogs.reduce((sum, log) => sum + (log.payrollAmount || 0), 0);
       return { completed, totalEarnings };
     }, [workLogs]);
 
@@ -326,11 +315,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
       return (
         <View className="flex-1 px-4 pt-4">
           {ListHeaderComponent}
-          <EmptyState
-            title="근무 기록 없음"
-            description={emptyMessage}
-            icon="📋"
-          />
+          <EmptyState title="근무 기록 없음" description={emptyMessage} icon="📋" />
         </View>
       );
     }
@@ -346,11 +331,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
         showsVerticalScrollIndicator={false}
         refreshControl={
           onRefresh ? (
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="#6366f1"
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#6366f1" />
           ) : undefined
         }
         onEndReached={handleEndReached}
@@ -366,18 +347,14 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
                     <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                       {stats.completed}
                     </Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      완료 건수
-                    </Text>
+                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">완료 건수</Text>
                   </View>
                   <View className="w-px bg-primary-200 dark:bg-primary-700" />
                   <View className="items-center">
                     <Text className="text-2xl font-bold text-primary-600 dark:text-primary-400">
                       {formatCurrency(stats.totalEarnings)}
                     </Text>
-                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      총 수입
-                    </Text>
+                    <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">총 수입</Text>
                   </View>
                 </View>
               </View>
@@ -386,11 +363,7 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
         }
         ListFooterComponent={renderFooter}
         ListEmptyComponent={
-          <EmptyState
-            title="근무 기록 없음"
-            description={emptyMessage}
-            icon="📋"
-          />
+          <EmptyState title="근무 기록 없음" description={emptyMessage} icon="📋" />
         }
       />
     );

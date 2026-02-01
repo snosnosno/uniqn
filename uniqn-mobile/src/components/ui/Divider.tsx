@@ -30,11 +30,7 @@ export function Divider({ label, spacing = 'md' }: DividerProps) {
     );
   }
 
-  return (
-    <View
-      className={`h-px bg-gray-200 dark:bg-surface ${spacingStyles[spacing]}`}
-    />
-  );
+  return <View className={`h-px bg-gray-200 dark:bg-surface ${spacingStyles[spacing]}`} />;
 }
 
 export default Divider;

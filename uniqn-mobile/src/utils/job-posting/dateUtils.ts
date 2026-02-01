@@ -263,11 +263,7 @@ export function calculateTotalFromDateReqs(
       total +
       req.timeSlots.reduce(
         (slotTotal, slot) =>
-          slotTotal +
-          slot.roles.reduce(
-            (roleTotal, role) => roleTotal + (role.headcount ?? 0),
-            0
-          ),
+          slotTotal + slot.roles.reduce((roleTotal, role) => roleTotal + (role.headcount ?? 0), 0),
         0
       ),
     0
@@ -287,8 +283,7 @@ export function calculateFilledFromDateReqs(
       total +
       req.timeSlots.reduce(
         (slotTotal, slot) =>
-          slotTotal +
-          slot.roles.reduce((roleTotal, role) => roleTotal + (role.filled ?? 0), 0),
+          slotTotal + slot.roles.reduce((roleTotal, role) => roleTotal + (role.filled ?? 0), 0),
         0
       ),
     0

@@ -82,9 +82,7 @@ export function useSettlementDateNavigation(
     if (!canGoPrev || !groupedSettlement) return;
 
     const prevDate = groupedSettlement.dateRange.dates[currentDateIndex - 1];
-    const prevWorkLog = groupedSettlement.originalWorkLogs.find(
-      (wl) => wl.date === prevDate
-    );
+    const prevWorkLog = groupedSettlement.originalWorkLogs.find((wl) => wl.date === prevDate);
 
     if (prevWorkLog && onDateChange) {
       onDateChange(prevWorkLog);
@@ -96,9 +94,7 @@ export function useSettlementDateNavigation(
     if (!canGoNext || !groupedSettlement) return;
 
     const nextDate = groupedSettlement.dateRange.dates[currentDateIndex + 1];
-    const nextWorkLog = groupedSettlement.originalWorkLogs.find(
-      (wl) => wl.date === nextDate
-    );
+    const nextWorkLog = groupedSettlement.originalWorkLogs.find((wl) => wl.date === nextDate);
 
     if (nextWorkLog && onDateChange) {
       onDateChange(nextWorkLog);

@@ -75,13 +75,13 @@ interface AuthState {
   status: AuthStatus;
   isInitialized: boolean;
   error: string | null;
-  _hasHydrated: boolean;  // AsyncStorage에서 복원 완료 여부
+  _hasHydrated: boolean; // AsyncStorage에서 복원 완료 여부
 
   // 계산된 값 (getter 역할)
   isAuthenticated: boolean;
   isLoading: boolean;
   isAdmin: boolean;
-  isEmployer: boolean;  // 구인자 이상 권한
+  isEmployer: boolean; // 구인자 이상 권한
   isStaff: boolean;
 
   // 액션
@@ -241,7 +241,7 @@ export const useAuthStore = create<AuthState>()(
           isAdmin: false,
           isEmployer: false,
           isStaff: false,
-          isInitialized: true,  // 초기화는 완료된 상태
+          isInitialized: true, // 초기화는 완료된 상태
           error: null,
         });
         logger.info('자동 로그인 비활성화 - 인증 상태 초기화', { component: 'authStore' });

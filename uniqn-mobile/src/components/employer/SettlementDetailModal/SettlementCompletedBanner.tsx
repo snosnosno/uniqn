@@ -29,9 +29,7 @@ export function SettlementCompletedBanner({ payrollDate }: SettlementCompletedBa
       <View className="flex-row items-center justify-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
         <CheckCircleIcon size={20} color="#10B981" />
         <Text className="ml-2 text-base font-medium text-green-600 dark:text-green-400">
-          {parsedDate
-            ? `${formatDate(parsedDate)} 정산 완료`
-            : '정산 완료'}
+          {parsedDate ? `${formatDate(parsedDate)} 정산 완료` : '정산 완료'}
         </Text>
       </View>
     </View>

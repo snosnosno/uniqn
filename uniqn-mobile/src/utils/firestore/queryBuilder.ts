@@ -355,9 +355,7 @@ export function processPaginatedResultsWithFilter<T>(
   filter?: (item: T) => boolean
 ): PaginatedResult<T> {
   // 먼저 매핑 (null 반환 시 제외)
-  const mappedItems = docs
-    .map(mapper)
-    .filter((item): item is T => item !== null);
+  const mappedItems = docs.map(mapper).filter((item): item is T => item !== null);
 
   // 필터 적용
   const filteredItems = filter ? mappedItems.filter(filter) : mappedItems;

@@ -44,14 +44,20 @@ export interface GroupedScheduleCardProps {
 // Constants
 // ============================================================================
 
-const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
+const statusConfig: Record<
+  ScheduleType,
+  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
+> = {
   applied: { label: '지원 중', variant: 'warning' },
   confirmed: { label: '확정', variant: 'success' },
   completed: { label: '완료', variant: 'default' },
   cancelled: { label: '취소', variant: 'error' },
 };
 
-const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: string; textColor: string }> = {
+const attendanceConfig: Record<
+  AttendanceStatus,
+  { label: string; bgColor: string; textColor: string }
+> = {
   not_started: {
     label: '출근 전',
     bgColor: 'bg-gray-100 dark:bg-surface',
@@ -113,8 +119,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   const attendanceSummary = useMemo(() => {
     if (group.type !== 'confirmed') return null;
 
-    const checkedIn = group.dateStatuses.filter(d => d.status === 'checked_in').length;
-    const checkedOut = group.dateStatuses.filter(d => d.status === 'checked_out').length;
+    const checkedIn = group.dateStatuses.filter((d) => d.status === 'checked_in').length;
+    const checkedOut = group.dateStatuses.filter((d) => d.status === 'checked_out').length;
 
     // 우선순위: 근무 중 > 퇴근 완료 > 출근 전
     if (checkedIn > 0) return { label: '근무 중', status: 'checked_in' as const };
@@ -125,15 +131,18 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   // 펼침/접힘 토글
   const toggleExpanded = useCallback(() => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setIsExpanded(prev => !prev);
+    setIsExpanded((prev) => !prev);
   }, []);
 
   // 개별 날짜 클릭
-  const handleDatePress = useCallback((date: string, scheduleEventId: string) => {
-    if (onDatePress) {
-      onDatePress(date, scheduleEventId);
-    }
-  }, [onDatePress]);
+  const handleDatePress = useCallback(
+    (date: string, scheduleEventId: string) => {
+      if (onDatePress) {
+        onDatePress(date, scheduleEventId);
+      }
+    },
+    [onDatePress]
+  );
 
   return (
     <Pressable
@@ -160,8 +169,12 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
             {/* 확정 상태: 출석 상태 요약 (상태 기반 색상) */}
             {attendanceSummary && (
-              <View className={`ml-2 px-2 py-0.5 rounded-full ${attendanceConfig[attendanceSummary.status].bgColor}`}>
-                <Text className={`text-xs font-medium ${attendanceConfig[attendanceSummary.status].textColor}`}>
+              <View
+                className={`ml-2 px-2 py-0.5 rounded-full ${attendanceConfig[attendanceSummary.status].bgColor}`}
+              >
+                <Text
+                  className={`text-xs font-medium ${attendanceConfig[attendanceSummary.status].textColor}`}
+                >
                   {attendanceSummary.label}
                 </Text>
               </View>
@@ -197,9 +210,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         {/* 날짜 및 시간 정보 */}
         <View className="flex-row items-center mb-2">
           <CalendarIcon size={14} color="#6B7280" />
-          <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
-            {dateDisplay}
-          </Text>
+          <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">{dateDisplay}</Text>
         </View>
 
         {group.timeSlot && (
@@ -216,9 +227,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           {/* 역할 */}
           <View className="flex-row items-center mr-3">
             <BriefcaseIcon size={14} color="#6B7280" />
-            <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">
-              {rolesDisplay}
-            </Text>
+            <Text className="ml-1.5 text-sm text-gray-700 dark:text-gray-300">{rolesDisplay}</Text>
           </View>
 
           {/* 급여 (지원 중 상태) */}
@@ -235,9 +244,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           {ownerName && group.type === 'applied' && (
             <View className="flex-row items-center">
               <UserIcon size={14} color="#9CA3AF" />
-              <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                {ownerName}
-              </Text>
+              <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">{ownerName}</Text>
             </View>
           )}
         </View>
@@ -249,9 +256,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-surface-overlay"
             accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
           >
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">
-              날짜별 상세
-            </Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">날짜별 상세</Text>
             {isExpanded ? (
               <ChevronUpIcon size={16} color="#6B7280" />
             ) : (

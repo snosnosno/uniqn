@@ -9,10 +9,7 @@ import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarIcon } from '@/components/icons';
-import {
-  formatDateRangeWithCount,
-  groupConsecutiveDates,
-} from '@/utils/dateRangeUtils';
+import { formatDateRangeWithCount, groupConsecutiveDates } from '@/utils/dateRangeUtils';
 
 // ============================================================================
 // Types
@@ -103,139 +100,129 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
   }, [onClose]);
 
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title="날짜 그룹화"
-      size="md"
-      position="center"
-    >
+    <Modal visible={visible} onClose={handleClose} title="날짜 그룹화" size="md" position="center">
       <View className="-mt-2">
-            {/* 선택된 날짜 미리보기 (선택 옵션에 따라 변경) */}
-            <View className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-              <View className="flex-row items-center mb-1">
-                <CalendarIcon size={18} color="#F59E0B" />
-                <Text className="ml-2 text-xs text-amber-600 dark:text-amber-400">
-                  {dayCount}일 선택됨
-                </Text>
-              </View>
-              <Text className="text-sm font-semibold text-amber-700 dark:text-amber-300">
-                {selectedOption === 'group' ? groupedPreview : individualPreview}
-              </Text>
-            </View>
-
-            {/* 안내 문구 */}
-            <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-              어떻게 관리하시겠습니까?
+        {/* 선택된 날짜 미리보기 (선택 옵션에 따라 변경) */}
+        <View className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+          <View className="flex-row items-center mb-1">
+            <CalendarIcon size={18} color="#F59E0B" />
+            <Text className="ml-2 text-xs text-amber-600 dark:text-amber-400">
+              {dayCount}일 선택됨
             </Text>
+          </View>
+          <Text className="text-sm font-semibold text-amber-700 dark:text-amber-300">
+            {selectedOption === 'group' ? groupedPreview : individualPreview}
+          </Text>
+        </View>
 
-            {/* 옵션 1: 그룹으로 묶기 */}
-            <Pressable
-              onPress={() => handleOptionSelect('group')}
-              className={`mb-3 p-4 rounded-xl border-2 ${
+        {/* 안내 문구 */}
+        <Text className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          어떻게 관리하시겠습니까?
+        </Text>
+
+        {/* 옵션 1: 그룹으로 묶기 */}
+        <Pressable
+          onPress={() => handleOptionSelect('group')}
+          className={`mb-3 p-4 rounded-xl border-2 ${
+            selectedOption === 'group'
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+              : 'border-gray-200 dark:border-surface-overlay bg-gray-50 dark:bg-surface-dark'
+          }`}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: selectedOption === 'group' }}
+        >
+          <View className="flex-row items-center mb-2">
+            {/* 라디오 버튼 */}
+            <View
+              className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
                 selectedOption === 'group'
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-surface-overlay bg-gray-50 dark:bg-surface-dark'
+                  ? 'border-primary-500 bg-primary-500'
+                  : 'border-gray-400 dark:border-surface-overlay'
               }`}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: selectedOption === 'group' }}
             >
-              <View className="flex-row items-center mb-2">
-                {/* 라디오 버튼 */}
-                <View
-                  className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
-                    selectedOption === 'group'
-                      ? 'border-primary-500 bg-primary-500'
-                      : 'border-gray-400 dark:border-surface-overlay'
-                  }`}
-                >
-                  {selectedOption === 'group' && (
-                    <View className="w-2 h-2 rounded-full bg-white" />
-                  )}
-                </View>
-                <Text
-                  className={`text-base font-semibold ${
-                    selectedOption === 'group'
-                      ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  그룹으로 묶기
-                </Text>
-                <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-800 rounded-full">
-                  <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
-                    권장
-                  </Text>
-                </View>
-              </View>
-              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-8">
-                모든 날짜에 동일한 시간대/인원 적용
-              </Text>
-            </Pressable>
-
-            {/* 옵션 2: 개별로 관리 */}
-            <Pressable
-              onPress={() => handleOptionSelect('individual')}
-              className={`p-4 rounded-xl border-2 ${
-                selectedOption === 'individual'
-                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-                  : 'border-gray-200 dark:border-surface-overlay bg-gray-50 dark:bg-surface-dark'
+              {selectedOption === 'group' && <View className="w-2 h-2 rounded-full bg-white" />}
+            </View>
+            <Text
+              className={`text-base font-semibold ${
+                selectedOption === 'group'
+                  ? 'text-primary-700 dark:text-primary-300'
+                  : 'text-gray-700 dark:text-gray-300'
               }`}
-              accessibilityRole="radio"
-              accessibilityState={{ checked: selectedOption === 'individual' }}
             >
-              <View className="flex-row items-center mb-2">
-                {/* 라디오 버튼 */}
-                <View
-                  className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
-                    selectedOption === 'individual'
-                      ? 'border-primary-500 bg-primary-500'
-                      : 'border-gray-400 dark:border-surface-overlay'
-                  }`}
-                >
-                  {selectedOption === 'individual' && (
-                    <View className="w-2 h-2 rounded-full bg-white" />
-                  )}
-                </View>
-                <Text
-                  className={`text-base font-semibold ${
-                    selectedOption === 'individual'
-                      ? 'text-primary-700 dark:text-primary-300'
-                      : 'text-gray-700 dark:text-gray-300'
-                  }`}
-                >
-                  개별로 관리
-                </Text>
-              </View>
-              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-8">
-                각 날짜마다 다른 시간대/인원 설정 가능
+              그룹으로 묶기
+            </Text>
+            <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-800 rounded-full">
+              <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
+                권장
               </Text>
-            </Pressable>
-
-            {/* 푸터 버튼 */}
-            <View className="flex-row gap-3 mt-4">
-              <Pressable
-                onPress={handleClose}
-                className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-surface active:opacity-80"
-                accessibilityRole="button"
-                accessibilityLabel="취소"
-              >
-                <Text className="text-center text-base font-semibold text-gray-700 dark:text-gray-300">
-                  취소
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={handleConfirm}
-                className="flex-1 py-3 rounded-xl bg-primary-600 dark:bg-primary-500 active:opacity-80"
-                accessibilityRole="button"
-                accessibilityLabel="확인"
-              >
-                <Text className="text-center text-base font-semibold text-white">
-                  확인
-                </Text>
-              </Pressable>
             </View>
           </View>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-8">
+            모든 날짜에 동일한 시간대/인원 적용
+          </Text>
+        </Pressable>
+
+        {/* 옵션 2: 개별로 관리 */}
+        <Pressable
+          onPress={() => handleOptionSelect('individual')}
+          className={`p-4 rounded-xl border-2 ${
+            selectedOption === 'individual'
+              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+              : 'border-gray-200 dark:border-surface-overlay bg-gray-50 dark:bg-surface-dark'
+          }`}
+          accessibilityRole="radio"
+          accessibilityState={{ checked: selectedOption === 'individual' }}
+        >
+          <View className="flex-row items-center mb-2">
+            {/* 라디오 버튼 */}
+            <View
+              className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
+                selectedOption === 'individual'
+                  ? 'border-primary-500 bg-primary-500'
+                  : 'border-gray-400 dark:border-surface-overlay'
+              }`}
+            >
+              {selectedOption === 'individual' && (
+                <View className="w-2 h-2 rounded-full bg-white" />
+              )}
+            </View>
+            <Text
+              className={`text-base font-semibold ${
+                selectedOption === 'individual'
+                  ? 'text-primary-700 dark:text-primary-300'
+                  : 'text-gray-700 dark:text-gray-300'
+              }`}
+            >
+              개별로 관리
+            </Text>
+          </View>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-8">
+            각 날짜마다 다른 시간대/인원 설정 가능
+          </Text>
+        </Pressable>
+
+        {/* 푸터 버튼 */}
+        <View className="flex-row gap-3 mt-4">
+          <Pressable
+            onPress={handleClose}
+            className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-surface active:opacity-80"
+            accessibilityRole="button"
+            accessibilityLabel="취소"
+          >
+            <Text className="text-center text-base font-semibold text-gray-700 dark:text-gray-300">
+              취소
+            </Text>
+          </Pressable>
+          <Pressable
+            onPress={handleConfirm}
+            className="flex-1 py-3 rounded-xl bg-primary-600 dark:bg-primary-500 active:opacity-80"
+            accessibilityRole="button"
+            accessibilityLabel="확인"
+          >
+            <Text className="text-center text-base font-semibold text-white">확인</Text>
+          </Pressable>
+        </View>
+      </View>
     </Modal>
   );
 });

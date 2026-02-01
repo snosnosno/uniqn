@@ -96,9 +96,7 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
     return (
       <View className="flex-row items-center">
         <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
-          지원 {formattedDate}
-        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">지원 {formattedDate}</Text>
       </View>
     );
   }
@@ -117,13 +115,9 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
           <Badge variant="primary" size="sm">
             최초 지원
           </Badge>
-          <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-            {formattedDate}
-          </Text>
+          <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">{formattedDate}</Text>
         </View>
-        <Text className="text-sm text-gray-600 dark:text-gray-400">
-          {summary}
-        </Text>
+        <Text className="text-sm text-gray-600 dark:text-gray-400">{summary}</Text>
       </View>
     </View>
   );
@@ -147,9 +141,7 @@ const TimelineItem = memo(function TimelineItem({
     return (
       <View className="flex-row items-center mb-1">
         <View
-          className={`w-2 h-2 rounded-full mr-2 ${
-            isCancelled ? 'bg-red-500' : 'bg-green-500'
-          }`}
+          className={`w-2 h-2 rounded-full mr-2 ${isCancelled ? 'bg-red-500' : 'bg-green-500'}`}
         />
         <Text className="text-xs text-gray-500 dark:text-gray-400">
           {isCancelled ? '취소' : '확정'} {isCancelled ? cancelledDate : confirmedDate}
@@ -162,14 +154,8 @@ const TimelineItem = memo(function TimelineItem({
     <View className="flex-row mb-4">
       {/* 타임라인 라인 */}
       <View className="items-center mr-3">
-        <View
-          className={`w-3 h-3 rounded-full ${
-            isCancelled ? 'bg-red-500' : 'bg-green-500'
-          }`}
-        />
-        {!isLast && (
-          <View className="w-0.5 flex-1 bg-gray-200 dark:bg-surface mt-1" />
-        )}
+        <View className={`w-3 h-3 rounded-full ${isCancelled ? 'bg-red-500' : 'bg-green-500'}`} />
+        {!isLast && <View className="w-0.5 flex-1 bg-gray-200 dark:bg-surface mt-1" />}
       </View>
 
       {/* 내용 */}
@@ -179,13 +165,9 @@ const TimelineItem = memo(function TimelineItem({
           <Badge variant={isCancelled ? 'default' : 'success'} size="sm">
             {index + 1}차 확정
           </Badge>
-          <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-            {confirmedDate}
-          </Text>
+          <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">{confirmedDate}</Text>
         </View>
-        <Text className="text-sm text-gray-600 dark:text-gray-400 mb-1">
-          {summary}
-        </Text>
+        <Text className="text-sm text-gray-600 dark:text-gray-400 mb-1">{summary}</Text>
 
         {/* 취소 정보 */}
         {isCancelled && (
@@ -194,9 +176,7 @@ const TimelineItem = memo(function TimelineItem({
               <Badge variant="error" size="sm">
                 취소됨
               </Badge>
-              <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">
-                {cancelledDate}
-              </Text>
+              <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">{cancelledDate}</Text>
             </View>
             {entry.cancelReason && (
               <Text className="text-sm text-red-600 dark:text-red-400">
@@ -243,9 +223,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
     return maxDisplay ? sorted.slice(0, maxDisplay) : sorted;
   }, [history, maxDisplay]);
 
-  const remainingCount = maxDisplay
-    ? Math.max(0, (history?.length ?? 0) - maxDisplay)
-    : 0;
+  const remainingCount = maxDisplay ? Math.max(0, (history?.length ?? 0) - maxDisplay) : 0;
 
   // 활성 확정 여부
   const hasActiveConfirmation = useMemo(() => {
@@ -260,9 +238,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
   if (compact) {
     return (
       <View className={`${className}`}>
-        {originalApplication && (
-          <OriginalApplicationItem original={originalApplication} compact />
-        )}
+        {originalApplication && <OriginalApplicationItem original={originalApplication} compact />}
         {displayHistory.map((entry, index) => (
           <TimelineItem
             key={index}
@@ -283,9 +259,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
     <View className={`bg-gray-50 dark:bg-surface-dark rounded-xl p-4 ${className}`}>
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          확정 이력
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">확정 이력</Text>
         <View className="flex-row items-center">
           {hasActiveConfirmation ? (
             <Badge variant="success" size="sm">
@@ -306,34 +280,26 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
             <Text className="text-lg font-bold text-gray-900 dark:text-white">
               {history.length}
             </Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              총 확정
-            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">총 확정</Text>
           </View>
           <View className="flex-1 items-center">
             <Text className="text-lg font-bold text-red-600 dark:text-red-400">
               {history.filter((e) => e.cancelledAt).length}
             </Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              취소
-            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">취소</Text>
           </View>
           <View className="flex-1 items-center">
             <Text className="text-lg font-bold text-green-600 dark:text-green-400">
               {history.filter((e) => !e.cancelledAt).length}
             </Text>
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              활성
-            </Text>
+            <Text className="text-xs text-gray-500 dark:text-gray-400">활성</Text>
           </View>
         </View>
       )}
 
       {/* 타임라인 */}
       <View>
-        {originalApplication && (
-          <OriginalApplicationItem original={originalApplication} />
-        )}
+        {originalApplication && <OriginalApplicationItem original={originalApplication} />}
         {displayHistory.map((entry, index) => (
           <TimelineItem
             key={index}

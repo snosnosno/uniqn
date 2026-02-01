@@ -72,7 +72,16 @@ export interface MockApplication {
   id: string;
   jobPostingId: string;
   applicantId: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'withdrawn' | 'applied' | 'confirmed' | 'cancelled' | 'completed' | 'cancellation_pending';
+  status:
+    | 'pending'
+    | 'accepted'
+    | 'rejected'
+    | 'withdrawn'
+    | 'applied'
+    | 'confirmed'
+    | 'cancelled'
+    | 'completed'
+    | 'cancellation_pending';
   message: string | null;
   /** v3.0 필수 필드 - 지원 일정 정보 */
   assignments: { roleIds: string[]; dates: string[]; timeSlot?: string }[];
@@ -158,9 +167,7 @@ export function createMockStaff(overrides: Partial<MockStaff> = {}): MockStaff {
   };
 }
 
-export function createMockJobPosting(
-  overrides: Partial<MockJobPosting> = {}
-): MockJobPosting {
+export function createMockJobPosting(overrides: Partial<MockJobPosting> = {}): MockJobPosting {
   jobCounter++;
   const now = new Date().toISOString();
   const tomorrow = new Date();
@@ -192,9 +199,7 @@ export function createMockJobPosting(
   };
 }
 
-export function createMockApplication(
-  overrides: Partial<MockApplication> = {}
-): MockApplication {
+export function createMockApplication(overrides: Partial<MockApplication> = {}): MockApplication {
   applicationCounter++;
   const now = new Date().toISOString();
 
@@ -220,9 +225,7 @@ export function createMockApplication(
   };
 }
 
-export function createMockWorkLog(
-  overrides: Partial<MockWorkLog> = {}
-): MockWorkLog {
+export function createMockWorkLog(overrides: Partial<MockWorkLog> = {}): MockWorkLog {
   workLogCounter++;
   const now = new Date().toISOString();
 

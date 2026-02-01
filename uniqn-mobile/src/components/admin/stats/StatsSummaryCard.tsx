@@ -37,9 +37,7 @@ export function StatsSummaryCard({
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            {label}
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
           {isLoading ? (
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (
@@ -48,16 +46,12 @@ export function StatsSummaryCard({
                 {value?.toLocaleString() ?? '--'}
               </Text>
               {suffix && (
-                <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-                  {suffix}
-                </Text>
+                <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{suffix}</Text>
               )}
             </View>
           )}
           {description && (
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {description}
-            </Text>
+            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{description}</Text>
           )}
         </View>
         {icon && (
@@ -106,20 +100,22 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between">
         <View>
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
-            시스템 상태
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">시스템 상태</Text>
           {isLoading ? (
             <ActivityIndicator size="small" className="mt-2 self-start" />
           ) : (
-            <Text className={`text-xl font-bold ${config.color}`}>
-              {config.label}
-            </Text>
+            <Text className={`text-xl font-bold ${config.color}`}>{config.label}</Text>
           )}
         </View>
         <View className={`w-10 h-10 rounded-full items-center justify-center ${config.bgColor}`}>
           <Ionicons
-            name={status === 'healthy' ? 'checkmark-circle' : status === 'degraded' ? 'warning' : 'close-circle'}
+            name={
+              status === 'healthy'
+                ? 'checkmark-circle'
+                : status === 'degraded'
+                  ? 'warning'
+                  : 'close-circle'
+            }
             size={24}
             color={config.iconColor}
           />

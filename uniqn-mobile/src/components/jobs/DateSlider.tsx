@@ -64,11 +64,7 @@ interface DateChipProps {
   onPress: () => void;
 }
 
-const DateChip = memo(function DateChip({
-  date,
-  isSelected,
-  onPress,
-}: DateChipProps) {
+const DateChip = memo(function DateChip({ date, isSelected, onPress }: DateChipProps) {
   const label = getDateLabel(date);
   const dayLabel = getDayLabel(date);
   const today = isToday(date);
@@ -80,9 +76,7 @@ const DateChip = memo(function DateChip({
       accessibilityLabel={`${label} ${dayLabel}`}
       accessibilityState={{ selected: isSelected }}
       className={`items-center px-4 py-2 rounded-lg min-w-[60px] ${
-        isSelected
-          ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-surface'
+        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
       }`}
     >
       <Text
@@ -97,11 +91,7 @@ const DateChip = memo(function DateChip({
         {label}
       </Text>
       <Text
-        className={`text-xs ${
-          isSelected
-            ? 'text-white/70'
-            : 'text-gray-500 dark:text-gray-400'
-        }`}
+        className={`text-xs ${isSelected ? 'text-white/70' : 'text-gray-500 dark:text-gray-400'}`}
       >
         {dayLabel}
       </Text>
@@ -122,9 +112,7 @@ const AllChip = memo(function AllChip({ isSelected, onPress }: AllChipProps) {
       accessibilityLabel="전체 날짜"
       accessibilityState={{ selected: isSelected }}
       className={`items-center justify-center px-4 py-2 rounded-lg min-w-[60px] ${
-        isSelected
-          ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-surface'
+        isSelected ? 'bg-primary-600 dark:bg-primary-700' : 'bg-gray-100 dark:bg-surface'
       }`}
     >
       <Text
@@ -192,7 +180,9 @@ export const DateSlider = memo(function DateSlider({
   );
 
   return (
-    <View className={`bg-white dark:bg-surface border-t border-gray-100 dark:border-surface-overlay ${className}`}>
+    <View
+      className={`bg-white dark:bg-surface border-t border-gray-100 dark:border-surface-overlay ${className}`}
+    >
       <ScrollView
         ref={scrollRef}
         horizontal
@@ -200,10 +190,7 @@ export const DateSlider = memo(function DateSlider({
         contentContainerClassName="px-4 py-3 gap-2"
       >
         {/* 전체 버튼 */}
-        <AllChip
-          isSelected={selectedDate === null}
-          onPress={() => handleDatePress(null)}
-        />
+        <AllChip isSelected={selectedDate === null} onPress={() => handleDatePress(null)} />
 
         {/* 날짜 버튼들 */}
         {dates.map((date) => (

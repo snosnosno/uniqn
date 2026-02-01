@@ -52,10 +52,7 @@ export interface ScheduleCardProps {
 // Component
 // ============================================================================
 
-export const ScheduleCard = memo(function ScheduleCard({
-  schedule,
-  onPress,
-}: ScheduleCardProps) {
+export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: ScheduleCardProps) {
   const status = statusConfig[schedule.type];
   const attendance = attendanceConfig[schedule.status];
 
@@ -68,7 +65,12 @@ export const ScheduleCard = memo(function ScheduleCard({
     if (!card) return null;
 
     // 1. 역할별 급여 조회
-    const roleSalary = getRoleSalaryFromCard(card, schedule.date, schedule.role, schedule.customRole);
+    const roleSalary = getRoleSalaryFromCard(
+      card,
+      schedule.date,
+      schedule.role,
+      schedule.customRole
+    );
     const salary = roleSalary || card.defaultSalary;
 
     if (salary) {
@@ -98,15 +100,15 @@ export const ScheduleCard = memo(function ScheduleCard({
         schedule.role,
         schedule.customRole
       );
-      const salaryInfo: SalaryInfo = schedule.customSalaryInfo ||
+      const salaryInfo: SalaryInfo =
+        schedule.customSalaryInfo ||
         roleSalary ||
         schedule.jobPostingCard?.defaultSalary ||
         DEFAULT_SALARY_INFO;
-      const allowances: Allowances | undefined = schedule.customAllowances ||
-        schedule.jobPostingCard?.allowances;
-      const taxSettings: TaxSettings = schedule.customTaxSettings ||
-        schedule.jobPostingCard?.taxSettings ||
-        DEFAULT_TAX_SETTINGS;
+      const allowances: Allowances | undefined =
+        schedule.customAllowances || schedule.jobPostingCard?.allowances;
+      const taxSettings: TaxSettings =
+        schedule.customTaxSettings || schedule.jobPostingCard?.taxSettings || DEFAULT_TAX_SETTINGS;
 
       const result = calculateSettlementWithTax(
         schedule.checkInTime,
@@ -235,9 +237,7 @@ export const ScheduleCard = memo(function ScheduleCard({
               {ownerName && (
                 <View className="flex-row items-center">
                   <UserIcon size={14} color="#9CA3AF" />
-                  <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">
-                    {ownerName}
-                  </Text>
+                  <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">{ownerName}</Text>
                 </View>
               )}
             </View>

@@ -6,14 +6,7 @@
  */
 
 import React, { memo, useMemo, useCallback, useState } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-  FlatList,
-  Platform,
-} from 'react-native';
+import { View, Text, Pressable, Modal, FlatList, Platform } from 'react-native';
 import { XMarkIcon, CheckIcon, ChevronDownIcon } from '@/components/icons';
 
 // ============================================================================
@@ -56,11 +49,7 @@ interface TimeSlot {
 // Utils
 // ============================================================================
 
-function generateTimeSlots(
-  minTime: string,
-  maxTime: string,
-  interval: number
-): TimeSlot[] {
+function generateTimeSlots(minTime: string, maxTime: string, interval: number): TimeSlot[] {
   const slots: TimeSlot[] = [];
   const [minHour, minMinute] = minTime.split(':').map(Number);
   const [maxHour, maxMinute] = maxTime.split(':').map(Number);
@@ -123,9 +112,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
       >
         {item.label}
       </Text>
-      {isSelected && (
-        <CheckIcon size={20} color="#4F46E5" />
-      )}
+      {isSelected && <CheckIcon size={20} color="#4F46E5" />}
     </Pressable>
   );
 });
@@ -201,11 +188,7 @@ export const TimePicker = memo(function TimePicker({
   // FlatList renderItem
   const renderItem = useCallback(
     ({ item }: { item: TimeSlot }) => (
-      <TimeSlotItem
-        item={item}
-        isSelected={item.value === value}
-        onSelect={handleSelect}
-      />
+      <TimeSlotItem item={item} isSelected={item.value === value} onSelect={handleSelect} />
     ),
     [value, handleSelect]
   );
@@ -226,11 +209,7 @@ export const TimePicker = memo(function TimePicker({
   return (
     <View className={className} testID={testID}>
       {/* 레이블 */}
-      {label && (
-        <Text className="mb-2 font-medium text-gray-900 dark:text-white">
-          {label}
-        </Text>
-      )}
+      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
 
       {/* 트리거 버튼 */}
       <Pressable
@@ -253,16 +232,11 @@ export const TimePicker = memo(function TimePicker({
         >
           {displayText}
         </Text>
-        <ChevronDownIcon
-          size={20}
-          color={disabled ? '#9CA3AF' : '#6B7280'}
-        />
+        <ChevronDownIcon size={20} color={disabled ? '#9CA3AF' : '#6B7280'} />
       </Pressable>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && (
-        <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>
-      )}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
 
       {/* 모달 */}
       <Modal

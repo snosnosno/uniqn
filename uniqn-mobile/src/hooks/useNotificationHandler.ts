@@ -22,10 +22,7 @@ import {
   type NotificationPayload,
 } from '@/services/pushNotificationService';
 import * as tokenRefreshService from '@/services/tokenRefreshService';
-import {
-  deepLinkService,
-  navigateFromNotification,
-} from '@/services/deepLinkService';
+import { deepLinkService, navigateFromNotification } from '@/services/deepLinkService';
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
@@ -296,8 +293,7 @@ export function useNotificationHandler(
       });
 
       // Analytics 이벤트
-      const notificationType =
-        (notification.data?.type as NotificationType) ?? 'announcement';
+      const notificationType = (notification.data?.type as NotificationType) ?? 'announcement';
       trackEvent('notification_tapped', {
         notification_type: notificationType,
         action: actionIdentifier,
@@ -533,10 +529,7 @@ export function useNotificationHandler(
     if (Platform.OS === 'web') return;
 
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-      if (
-        appStateRef.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
+      if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
         // 앱이 포그라운드로 돌아올 때
         clearBadge();
 

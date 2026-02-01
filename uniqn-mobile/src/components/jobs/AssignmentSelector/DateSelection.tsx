@@ -50,18 +50,14 @@ export const DateSelection = memo(function DateSelection({
       </View>
 
       {description && (
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-          {description}
-        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">{description}</Text>
       )}
 
       {/* 시간대별 역할 선택 */}
       <View className="flex-col gap-3">
         {timeSlots.map((slot, slotIndex) => {
           // 시간 미정이면 TBA_TIME_MARKER, 아니면 startTime 사용
-          const slotTime = slot.isTimeToBeAnnounced
-            ? TBA_TIME_MARKER
-            : (slot.startTime ?? '');
+          const slotTime = slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
           const timeDisplay = formatTimeSlotDisplay(slot);
 
           return (
@@ -74,9 +70,8 @@ export const DateSelection = memo(function DateSelection({
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
                   // 커스텀 역할이면 customName을 키로 사용 (roles[].salary 구조와 일치)
-                  const effectiveRoleId = role.roleId === 'other' && role.customName
-                    ? role.customName
-                    : role.roleId;
+                  const effectiveRoleId =
+                    role.roleId === 'other' && role.customName ? role.customName : role.roleId;
                   const selectionKey = makeSelectionKey(date, slotTime, effectiveRoleId);
                   const isSelected = selectedKeys.has(selectionKey);
 
@@ -85,10 +80,12 @@ export const DateSelection = memo(function DateSelection({
                       key={role.roleId || roleIndex}
                       role={role}
                       isSelected={isSelected}
-                      onToggle={() => onRoleToggle(date, slotTime, effectiveRoleId, {
-                        isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
-                        tentativeDescription: slot.tentativeDescription,
-                      })}
+                      onToggle={() =>
+                        onRoleToggle(date, slotTime, effectiveRoleId, {
+                          isTimeToBeAnnounced: slot.isTimeToBeAnnounced,
+                          tentativeDescription: slot.tentativeDescription,
+                        })
+                      }
                       disabled={disabled}
                     />
                   );

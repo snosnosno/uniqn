@@ -13,13 +13,7 @@ import {
   updateProfile,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, updateDoc } from 'firebase/firestore';
-import {
-  login,
-  signUp,
-  signOut,
-  getUserProfile,
-  updateUserProfile,
-} from '../authService';
+import { login, signUp, signOut, getUserProfile, updateUserProfile } from '../authService';
 
 // Mock Firebase modules
 jest.mock('firebase/auth');
@@ -247,18 +241,14 @@ describe('AuthService', () => {
       mockUpdateDoc.mockResolvedValue(undefined);
       mockDoc.mockReturnValue({});
 
-      await expect(
-        updateUserProfile(testUid, { nickname: '새닉네임' })
-      ).resolves.not.toThrow();
+      await expect(updateUserProfile(testUid, { nickname: '새닉네임' })).resolves.not.toThrow();
     });
 
     it('should handle update errors', async () => {
       mockUpdateDoc.mockRejectedValue(new Error('Update failed'));
       mockDoc.mockReturnValue({});
 
-      await expect(
-        updateUserProfile(testUid, { nickname: '새닉네임' })
-      ).rejects.toThrow();
+      await expect(updateUserProfile(testUid, { nickname: '새닉네임' })).rejects.toThrow();
     });
   });
 });

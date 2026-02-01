@@ -24,11 +24,7 @@ export {
   timeStringSchema,
 } from './common';
 
-export type {
-  TimestampInput,
-  DurationInput,
-  MetadataInput,
-} from './common';
+export type { TimestampInput, DurationInput, MetadataInput } from './common';
 
 // 인증 스키마
 export {

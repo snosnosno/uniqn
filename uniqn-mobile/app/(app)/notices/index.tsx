@@ -13,15 +13,8 @@ import { usePublishedAnnouncements } from '@/hooks/useAnnouncement';
 import type { Announcement } from '@/types';
 
 export default function NoticesPage() {
-  const {
-    data,
-    isLoading,
-    isFetchingNextPage,
-    hasNextPage,
-    fetchNextPage,
-    refetch,
-    isRefetching,
-  } = usePublishedAnnouncements();
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage, refetch, isRefetching } =
+    usePublishedAnnouncements();
 
   // 모든 페이지의 공지사항을 평탄화
   const notices = data?.pages.flatMap((page) => page.announcements) ?? [];
@@ -82,9 +75,7 @@ export default function NoticesPage() {
             onEndReachedThreshold={0.5}
             ListFooterComponent={renderFooter}
             ListEmptyComponent={renderEmpty}
-            refreshControl={
-              <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-            }
+            refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
           />
         )}
       </View>

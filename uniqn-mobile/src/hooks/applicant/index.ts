@@ -12,10 +12,7 @@
 
 import type { ApplicantWithDetails } from '@/services';
 
-import {
-  useApplicantsByJobPosting,
-  useApplicantStats,
-} from './useApplicantsByJobPosting';
+import { useApplicantsByJobPosting, useApplicantStats } from './useApplicantsByJobPosting';
 import { getPrimaryRoleId } from './helpers';
 
 import {
@@ -25,10 +22,7 @@ import {
   useMarkAsRead,
 } from './useApplicantMutations';
 
-import {
-  useCancellationRequests,
-  useReviewCancellation,
-} from './useCancellationManagement';
+import { useCancellationRequests, useReviewCancellation } from './useCancellationManagement';
 
 import {
   useConfirmApplicationWithHistory,
@@ -72,10 +66,7 @@ export {
   useMarkAsRead,
 } from './useApplicantMutations';
 
-export {
-  useCancellationRequests,
-  useReviewCancellation,
-} from './useCancellationManagement';
+export { useCancellationRequests, useReviewCancellation } from './useCancellationManagement';
 
 export {
   useConfirmApplicationWithHistory,
@@ -152,10 +143,20 @@ export function useApplicantManagement(
         switch (filters.sortBy) {
           case 'appliedAt': {
             const aTime = a.createdAt
-              ? (typeof a.createdAt === 'string' ? new Date(a.createdAt) : a.createdAt instanceof Date ? a.createdAt : a.createdAt.toDate()).getTime()
+              ? (typeof a.createdAt === 'string'
+                  ? new Date(a.createdAt)
+                  : a.createdAt instanceof Date
+                    ? a.createdAt
+                    : a.createdAt.toDate()
+                ).getTime()
               : 0;
             const bTime = b.createdAt
-              ? (typeof b.createdAt === 'string' ? new Date(b.createdAt) : b.createdAt instanceof Date ? b.createdAt : b.createdAt.toDate()).getTime()
+              ? (typeof b.createdAt === 'string'
+                  ? new Date(b.createdAt)
+                  : b.createdAt instanceof Date
+                    ? b.createdAt
+                    : b.createdAt.toDate()
+                ).getTime()
               : 0;
             comparison = aTime - bTime;
             break;

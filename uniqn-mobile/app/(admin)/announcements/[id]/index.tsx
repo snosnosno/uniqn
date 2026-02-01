@@ -45,9 +45,7 @@ export default function AnnouncementDetailPage() {
     if (!timestamp) return '-';
     try {
       const date =
-        timestamp instanceof Date
-          ? timestamp
-          : (timestamp as { toDate: () => Date }).toDate();
+        timestamp instanceof Date ? timestamp : (timestamp as { toDate: () => Date }).toDate();
       return date.toLocaleString('ko-KR', {
         year: 'numeric',
         month: 'long',
@@ -120,7 +118,9 @@ export default function AnnouncementDetailPage() {
     };
 
     if (Platform.OS === 'web') {
-      if (window.confirm('이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.')) {
+      if (
+        window.confirm('이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.')
+      ) {
         doDelete();
       }
     } else {
@@ -208,9 +208,7 @@ export default function AnnouncementDetailPage() {
 
               {/* Category */}
               <View className="px-2 py-1 rounded bg-gray-100 dark:bg-surface">
-                <Text className="text-xs text-gray-600 dark:text-gray-400">
-                  {categoryLabel}
-                </Text>
+                <Text className="text-xs text-gray-600 dark:text-gray-400">{categoryLabel}</Text>
               </View>
 
               {/* Pinned */}
@@ -248,9 +246,7 @@ export default function AnnouncementDetailPage() {
 
           {/* Content Card */}
           <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
-            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
-              내용
-            </Text>
+            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">내용</Text>
             <Text className="text-base text-gray-900 dark:text-white leading-6">
               {announcement.content}
             </Text>
@@ -297,9 +293,7 @@ export default function AnnouncementDetailPage() {
                             transition={200}
                           />
                           <View className="absolute bottom-1 right-1 bg-black/60 rounded-full px-2 py-0.5">
-                            <Text className="text-white text-xs font-medium">
-                              {index + 1}
-                            </Text>
+                            <Text className="text-white text-xs font-medium">{index + 1}</Text>
                           </View>
                         </View>
                       </View>
@@ -312,9 +306,7 @@ export default function AnnouncementDetailPage() {
 
           {/* Info Card */}
           <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
-            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
-              정보
-            </Text>
+            <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">정보</Text>
 
             {/* Target Audience */}
             <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">

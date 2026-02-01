@@ -77,10 +77,7 @@ export function NotificationPermissionScreen({
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
       <View className="flex-1 px-6 py-8">
         {/* 헤더 */}
-        <Animated.View
-          entering={FadeInUp.delay(100).duration(500)}
-          className="items-center mb-8"
-        >
+        <Animated.View entering={FadeInUp.delay(100).duration(500)} className="items-center mb-8">
           <View className="w-20 h-20 rounded-full bg-purple-100 dark:bg-purple-900/30 items-center justify-center mb-4">
             <Ionicons name="notifications" size={40} color="#A855F7" />
           </View>
@@ -116,10 +113,7 @@ export function NotificationPermissionScreen({
         </View>
 
         {/* 버튼 영역 */}
-        <Animated.View
-          entering={FadeInDown.delay(600).duration(500)}
-          className="mt-auto"
-        >
+        <Animated.View entering={FadeInDown.delay(600).duration(500)} className="mt-auto">
           {/* 허용 버튼 */}
           <Pressable
             onPress={handleRequestPermission}
@@ -147,9 +141,7 @@ export function NotificationPermissionScreen({
             accessibilityState={{ disabled: loading }}
             className="py-4 rounded-xl items-center"
           >
-            <Text className="text-gray-500 dark:text-gray-400 text-base">
-              나중에 하기
-            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 text-base">나중에 하기</Text>
           </Pressable>
 
           {/* 안내 문구 */}

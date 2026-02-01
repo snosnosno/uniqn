@@ -25,20 +25,20 @@ export type InAppMessagePriority = 'low' | 'medium' | 'high' | 'critical';
  * 메시지 표시 빈도
  */
 export type InAppMessageFrequency =
-  | 'once'           // 한 번만
+  | 'once' // 한 번만
   | 'once_per_session' // 세션당 한 번
-  | 'daily'          // 하루에 한 번
-  | 'always';        // 조건 충족 시 항상
+  | 'daily' // 하루에 한 번
+  | 'always'; // 조건 충족 시 항상
 
 /**
  * 메시지 액션 유형
  */
 export type InAppMessageActionType =
-  | 'dismiss'        // 단순 닫기
-  | 'link'           // 내부/외부 링크
-  | 'deeplink'       // 딥링크
-  | 'update'         // 앱 업데이트
-  | 'callback';      // 커스텀 콜백
+  | 'dismiss' // 단순 닫기
+  | 'link' // 내부/외부 링크
+  | 'deeplink' // 딥링크
+  | 'update' // 앱 업데이트
+  | 'callback'; // 커스텀 콜백
 
 // ============================================================================
 // In-App Message

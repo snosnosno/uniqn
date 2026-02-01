@@ -5,10 +5,7 @@
  * @version 1.0.0
  */
 
-import {
-  getRoleSalaryFromCard,
-  formatSalaryDisplay,
-} from '../salaryHelpers';
+import { getRoleSalaryFromCard, formatSalaryDisplay } from '../salaryHelpers';
 import type { JobPostingCard } from '@/types';
 import type { SalaryInfo } from '@/utils/settlement';
 
@@ -16,13 +13,14 @@ import type { SalaryInfo } from '@/utils/settlement';
 // Mock Data
 // ============================================================================
 
-const createMockJobPostingCard = (overrides?: Partial<JobPostingCard>): JobPostingCard => ({
-  id: 'job-1',
-  title: 'Test Job',
-  location: 'Seoul',
-  status: 'active',
-  ...overrides,
-} as JobPostingCard);
+const createMockJobPostingCard = (overrides?: Partial<JobPostingCard>): JobPostingCard =>
+  ({
+    id: 'job-1',
+    title: 'Test Job',
+    location: 'Seoul',
+    status: 'active',
+    ...overrides,
+  }) as JobPostingCard;
 
 // ============================================================================
 // getRoleSalaryFromCard Tests
@@ -66,9 +64,7 @@ describe('getRoleSalaryFromCard', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              roles: [
-                { role: 'dealer', count: 2, filled: 0, salary: expectedSalary },
-              ],
+              roles: [{ role: 'dealer', count: 2, filled: 0, salary: expectedSalary }],
             },
           ],
         },
@@ -106,7 +102,13 @@ describe('getRoleSalaryFromCard', () => {
             {
               startTime: '09:00',
               roles: [
-                { role: 'other', customRole: '매니저', count: 1, filled: 0, salary: expectedSalary },
+                {
+                  role: 'other',
+                  customRole: '매니저',
+                  count: 1,
+                  filled: 0,
+                  salary: expectedSalary,
+                },
               ],
             },
           ],
@@ -131,9 +133,7 @@ describe('getRoleSalaryFromCard', () => {
             },
             {
               startTime: '14:00',
-              roles: [
-                { role: 'floor', count: 3, filled: 0, salary: expectedSalary },
-              ],
+              roles: [{ role: 'floor', count: 3, filled: 0, salary: expectedSalary }],
             },
           ],
         },

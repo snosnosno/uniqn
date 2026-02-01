@@ -34,9 +34,7 @@ export const AllowanceInput = memo(function AllowanceInput({
     <View className="mb-4">
       <View className="flex-row items-center mb-3">
         <GiftIcon size={20} color="#6B7280" />
-        <Text className="ml-2 font-semibold text-gray-900 dark:text-white">
-          추가 수당 (선택)
-        </Text>
+        <Text className="ml-2 font-semibold text-gray-900 dark:text-white">추가 수당 (선택)</Text>
       </View>
 
       <Card variant="outlined" padding="md">
@@ -45,9 +43,7 @@ export const AllowanceInput = memo(function AllowanceInput({
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
               <Text className="text-xl mr-2">⏰</Text>
-              <Text className="text-sm text-gray-900 dark:text-white">
-                보장시간
-              </Text>
+              <Text className="text-sm text-gray-900 dark:text-white">보장시간</Text>
             </View>
             <View className="flex-row items-center">
               <TextInput
@@ -58,16 +54,13 @@ export const AllowanceInput = memo(function AllowanceInput({
                 keyboardType="numeric"
                 className="w-16 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"
               />
-              <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
-                시간
-              </Text>
+              <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">시간</Text>
             </View>
           </View>
         </View>
 
         {ALLOWANCE_TYPES.map((allowance, index) => {
-          const value =
-            allowances?.[allowance.key as keyof typeof allowances];
+          const value = allowances?.[allowance.key as keyof typeof allowances];
           const isProvided = value === PROVIDED_FLAG;
           const displayLabel = isProvided ? allowance.providedLabel : allowance.label;
 
@@ -83,20 +76,20 @@ export const AllowanceInput = memo(function AllowanceInput({
               <View className="flex-row items-center justify-between">
                 <View className="flex-row items-center flex-1">
                   <Text className="text-xl mr-2">{allowance.icon}</Text>
-                  <Text className={`text-sm ${
-                    isProvided
-                      ? 'text-primary-600 dark:text-primary-400 font-medium'
-                      : 'text-gray-900 dark:text-white'
-                  }`}>
+                  <Text
+                    className={`text-sm ${
+                      isProvided
+                        ? 'text-primary-600 dark:text-primary-400 font-medium'
+                        : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
                     {displayLabel}
                   </Text>
                 </View>
 
                 {/* 제공 토글 */}
                 <View className="flex-row items-center">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-2">
-                    제공
-                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mr-2">제공</Text>
                   <Switch
                     value={isProvided}
                     onValueChange={(v) => onAllowanceProvidedToggle(allowance.key, v)}
@@ -109,9 +102,7 @@ export const AllowanceInput = memo(function AllowanceInput({
               {/* 금액 입력 (제공이 아닐 때만) */}
               {!isProvided && (
                 <View className="flex-row items-center justify-end mt-2">
-                  <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">
-                    ₩
-                  </Text>
+                  <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">₩</Text>
                   <TextInput
                     placeholder={allowance.placeholder}
                     placeholderTextColor="#9CA3AF"
@@ -120,9 +111,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     keyboardType="numeric"
                     className="w-32 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"
                   />
-                  <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
-                    원
-                  </Text>
+                  <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">원</Text>
                 </View>
               )}
             </View>

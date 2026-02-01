@@ -48,12 +48,8 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
     >
       {/* 역할명 + 인원 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="font-medium text-gray-900 dark:text-white text-sm">
-          {displayName}
-        </Text>
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
-          {role.count}명
-        </Text>
+        <Text className="font-medium text-gray-900 dark:text-white text-sm">{displayName}</Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">{role.count}명</Text>
       </View>
 
       {/* 급여 타입 선택 */}
@@ -94,16 +90,12 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
       {/* 금액 입력 (협의가 아닐 때만) */}
       {!isOther && (
         <View className="flex-row items-center justify-end">
-          <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">
-            ₩
-          </Text>
+          <Text className="text-gray-500 dark:text-gray-400 text-sm mr-2">₩</Text>
           <TextInput
             placeholder="0"
             placeholderTextColor="#9CA3AF"
             value={
-              roleSalary?.amount && roleSalary.amount > 0
-                ? formatCurrency(roleSalary.amount)
-                : ''
+              roleSalary?.amount && roleSalary.amount > 0 ? formatCurrency(roleSalary.amount) : ''
             }
             onChangeText={(v) => onSalaryAmountChange(index, v)}
             keyboardType="numeric"
@@ -114,9 +106,7 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
                 : 'bg-gray-50 dark:bg-surface text-gray-900 dark:text-white'
             }`}
           />
-          <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
-            원
-          </Text>
+          <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">원</Text>
         </View>
       )}
 

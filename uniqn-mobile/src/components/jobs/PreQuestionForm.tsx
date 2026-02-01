@@ -75,9 +75,7 @@ const SelectOption = memo(function SelectOption({
               : 'border-gray-300 dark:border-surface-overlay'
           }`}
         >
-          {isSelected && (
-            <View className="w-2 h-2 rounded-full bg-white" />
-          )}
+          {isSelected && <View className="w-2 h-2 rounded-full bg-white" />}
         </View>
         <Text
           className={`text-sm ${
@@ -127,9 +125,7 @@ const QuestionItem = memo(function QuestionItem({
       <View className="flex-row items-start mb-2">
         <Text className="text-base font-medium text-gray-900 dark:text-white flex-1">
           {question.question}
-          {question.required && (
-            <Text className="text-red-500"> *</Text>
-          )}
+          {question.required && <Text className="text-red-500"> *</Text>}
         </Text>
         <Text className="text-xs text-gray-400 dark:text-gray-500 ml-2">
           {PRE_QUESTION_TYPE_LABELS[question.type]}
@@ -243,9 +239,7 @@ export const PreQuestionForm = memo(function PreQuestionForm({
     <View className="bg-white dark:bg-surface rounded-xl p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-          사전질문
-        </Text>
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">사전질문</Text>
         {requiredCount > 0 && (
           <Text className="text-sm text-gray-500 dark:text-gray-400">
             필수 {answeredRequiredCount}/{requiredCount}

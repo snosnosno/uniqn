@@ -418,21 +418,45 @@ describe('신고 관련 에러', () => {
 describe('Type Guards', () => {
   const errors = [
     { Error: AlreadyAppliedError, guard: isAlreadyAppliedError, name: 'isAlreadyAppliedError' },
-    { Error: ApplicationClosedError, guard: isApplicationClosedError, name: 'isApplicationClosedError' },
-    { Error: MaxCapacityReachedError, guard: isMaxCapacityReachedError, name: 'isMaxCapacityReachedError' },
-    { Error: AlreadyCheckedInError, guard: isAlreadyCheckedInError, name: 'isAlreadyCheckedInError' },
+    {
+      Error: ApplicationClosedError,
+      guard: isApplicationClosedError,
+      name: 'isApplicationClosedError',
+    },
+    {
+      Error: MaxCapacityReachedError,
+      guard: isMaxCapacityReachedError,
+      name: 'isMaxCapacityReachedError',
+    },
+    {
+      Error: AlreadyCheckedInError,
+      guard: isAlreadyCheckedInError,
+      name: 'isAlreadyCheckedInError',
+    },
     { Error: NotCheckedInError, guard: isNotCheckedInError, name: 'isNotCheckedInError' },
     { Error: InvalidQRCodeError, guard: isInvalidQRCodeError, name: 'isInvalidQRCodeError' },
     { Error: ExpiredQRCodeError, guard: isExpiredQRCodeError, name: 'isExpiredQRCodeError' },
-    { Error: QRSecurityMismatchError, guard: isQRSecurityMismatchError, name: 'isQRSecurityMismatchError' },
+    {
+      Error: QRSecurityMismatchError,
+      guard: isQRSecurityMismatchError,
+      name: 'isQRSecurityMismatchError',
+    },
     { Error: QRWrongEventError, guard: isQRWrongEventError, name: 'isQRWrongEventError' },
     { Error: QRWrongDateError, guard: isQRWrongDateError, name: 'isQRWrongDateError' },
     { Error: AlreadySettledError, guard: isAlreadySettledError, name: 'isAlreadySettledError' },
     { Error: InvalidWorkLogError, guard: isInvalidWorkLogError, name: 'isInvalidWorkLogError' },
     { Error: DuplicateReportError, guard: isDuplicateReportError, name: 'isDuplicateReportError' },
     { Error: ReportNotFoundError, guard: isReportNotFoundError, name: 'isReportNotFoundError' },
-    { Error: ReportAlreadyReviewedError, guard: isReportAlreadyReviewedError, name: 'isReportAlreadyReviewedError' },
-    { Error: CannotReportSelfError, guard: isCannotReportSelfError, name: 'isCannotReportSelfError' },
+    {
+      Error: ReportAlreadyReviewedError,
+      guard: isReportAlreadyReviewedError,
+      name: 'isReportAlreadyReviewedError',
+    },
+    {
+      Error: CannotReportSelfError,
+      guard: isCannotReportSelfError,
+      name: 'isCannotReportSelfError',
+    },
   ];
 
   describe.each(errors)('$name', ({ Error: ErrorClass, guard }) => {

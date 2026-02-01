@@ -130,11 +130,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 공고 상세 (지원자 수, 지원 여부)
    * - 내 스케줄 (지원 완료 시 스케줄에 표시될 수 있음)
    */
-  'application.create': [
-    'applications.mine',
-    'jobPostings.detail',
-    'schedules.mine',
-  ],
+  'application.create': ['applications.mine', 'jobPostings.detail', 'schedules.mine'],
 
   /**
    * 지원 취소
@@ -155,10 +151,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 내 지원 내역 (상태 변경)
    * - 지원자 관리 (취소 요청 목록)
    */
-  'application.requestCancellation': [
-    'applications.mine',
-    'applicantManagement.byJobPosting',
-  ],
+  'application.requestCancellation': ['applications.mine', 'applicantManagement.byJobPosting'],
 
   // ========================================
   // 지원자 관리 이벤트 (구인자)
@@ -185,10 +178,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 지원자 관리 목록
    * - 공고 상세 (지원자 수)
    */
-  'applicant.reject': [
-    'applicantManagement.byJobPosting',
-    'jobPostings.detail',
-  ],
+  'applicant.reject': ['applicantManagement.byJobPosting', 'jobPostings.detail'],
 
   /**
    * 일괄 확정
@@ -229,10 +219,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 전체 공고 목록
    * - 내 공고 목록
    */
-  'jobPosting.create': [
-    'jobPostings.all',
-    'jobPostings.mine',
-  ],
+  'jobPosting.create': ['jobPostings.all', 'jobPostings.mine'],
 
   /**
    * 공고 수정
@@ -240,11 +227,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 전체 공고 목록 (검색/필터 결과)
    * - 내 공고 목록
    */
-  'jobPosting.update': [
-    'jobPostings.detail',
-    'jobPostings.all',
-    'jobPostings.mine',
-  ],
+  'jobPosting.update': ['jobPostings.detail', 'jobPostings.all', 'jobPostings.mine'],
 
   /**
    * 공고 삭제
@@ -252,11 +235,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 내 공고 목록
    * - 관련 지원자 관리 (cleanup)
    */
-  'jobPosting.delete': [
-    'jobPostings.all',
-    'jobPostings.mine',
-    'applicantManagement.all',
-  ],
+  'jobPosting.delete': ['jobPostings.all', 'jobPostings.mine', 'applicantManagement.all'],
 
   /**
    * 공고 마감
@@ -264,11 +243,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 전체 공고 목록
    * - 내 공고 목록
    */
-  'jobPosting.close': [
-    'jobPostings.detail',
-    'jobPostings.all',
-    'jobPostings.mine',
-  ],
+  'jobPosting.close': ['jobPostings.detail', 'jobPostings.all', 'jobPostings.mine'],
 
   // ========================================
   // 근무 기록 이벤트
@@ -307,20 +282,14 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 근무기록
    * - 정산
    */
-  'workLog.create': [
-    'workLogs.all',
-    'settlement.byJobPosting',
-  ],
+  'workLog.create': ['workLogs.all', 'settlement.byJobPosting'],
 
   /**
    * 근무기록 수정
    * - 근무기록
    * - 정산
    */
-  'workLog.update': [
-    'workLogs.all',
-    'settlement.byJobPosting',
-  ],
+  'workLog.update': ['workLogs.all', 'settlement.byJobPosting'],
 
   // ========================================
   // 정산 이벤트
@@ -331,22 +300,14 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 정산 목록
    * - 근무기록 (상태 업데이트)
    */
-  'settlement.process': [
-    'settlement.byJobPosting',
-    'settlement.all',
-    'workLogs.all',
-  ],
+  'settlement.process': ['settlement.byJobPosting', 'settlement.all', 'workLogs.all'],
 
   /**
    * 일괄 정산
    * - 정산 전체
    * - 근무기록
    */
-  'settlement.bulkProcess': [
-    'settlement.all',
-    'settlement.byJobPosting',
-    'workLogs.all',
-  ],
+  'settlement.bulkProcess': ['settlement.all', 'settlement.byJobPosting', 'workLogs.all'],
 
   // ========================================
   // 알림 이벤트
@@ -356,18 +317,12 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * 알림 읽음 처리
    * - 알림 목록 (안 읽은 수)
    */
-  'notification.markAsRead': [
-    'notifications.all',
-    'notifications.unreadCount',
-  ],
+  'notification.markAsRead': ['notifications.all', 'notifications.unreadCount'],
 
   /**
    * 전체 읽음 처리
    */
-  'notification.markAllAsRead': [
-    'notifications.all',
-    'notifications.unreadCount',
-  ],
+  'notification.markAllAsRead': ['notifications.all', 'notifications.unreadCount'],
 
   // ========================================
   // 프로필 이벤트
@@ -377,9 +332,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * 프로필 업데이트
    * - 사용자 프로필
    */
-  'profile.update': [
-    'user.profile',
-  ],
+  'profile.update': ['user.profile'],
 
   // ========================================
   // 관리자 이벤트
@@ -390,44 +343,32 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 대회공고 목록
    * - 전체 공고 목록 (승인된 공고가 노출됨)
    */
-  'admin.tournament.approve': [
-    'tournaments.all',
-    'jobPostings.all',
-  ],
+  'admin.tournament.approve': ['tournaments.all', 'jobPostings.all'],
 
   /**
    * 대회공고 거절
    * - 대회공고 목록
    */
-  'admin.tournament.reject': [
-    'tournaments.all',
-  ],
+  'admin.tournament.reject': ['tournaments.all'],
 
   /**
    * 공지사항 생성
    * - 공지사항 목록
    */
-  'admin.announcement.create': [
-    'announcements.all',
-  ],
+  'admin.announcement.create': ['announcements.all'],
 
   /**
    * 공지사항 수정
    * - 공지사항 목록
    */
-  'admin.announcement.update': [
-    'announcements.all',
-  ],
+  'admin.announcement.update': ['announcements.all'],
 
   /**
    * 사용자 정보 수정 (관리자)
    * - 관리자 대시보드
    * - 사용자 프로필
    */
-  'admin.user.update': [
-    'admin.all',
-    'user.profile',
-  ],
+  'admin.user.update': ['admin.all', 'user.profile'],
 };
 
 // ============================================================================
@@ -506,9 +447,7 @@ function getQueryKeyForTarget(
 
     // 사용자
     case 'user.profile':
-      return context?.userId
-        ? queryKeys.user.profile(context.userId)
-        : queryKeys.user.all;
+      return context?.userId ? queryKeys.user.profile(context.userId) : queryKeys.user.all;
 
     // 관리자
     case 'tournaments.all':
@@ -540,10 +479,7 @@ function getQueryKeyForTarget(
  * // 정산 처리 후
  * invalidateRelated('settlement.process', { jobPostingId: 'job123' });
  */
-export function invalidateRelated(
-  event: InvalidationEvent,
-  context?: InvalidationContext
-): void {
+export function invalidateRelated(event: InvalidationEvent, context?: InvalidationContext): void {
   const targets = invalidationGraph[event];
 
   if (!targets || targets.length === 0) {

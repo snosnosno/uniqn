@@ -24,7 +24,11 @@ import {
   ShieldCheckIcon,
   BellIcon,
 } from '@/components/icons';
-import { NotificationType, NotificationCategory, getNotificationCategory } from '@/types/notification';
+import {
+  NotificationType,
+  NotificationCategory,
+  getNotificationCategory,
+} from '@/types/notification';
 
 export interface NotificationIconProps {
   /** 알림 타입 */

@@ -6,19 +6,10 @@
  */
 
 // 타입
-export type {
-  ResolvedRole,
-  StaffRoleInput,
-  AssignmentRoleInput,
-  UserRole,
-} from './types';
+export type { ResolvedRole, StaffRoleInput, AssignmentRoleInput, UserRole } from './types';
 
 // 상수
-export {
-  USER_ROLE_HIERARCHY,
-  USER_ROLE_DISPLAY_NAMES,
-  VALID_USER_ROLES,
-} from './types';
+export { USER_ROLE_HIERARCHY, USER_ROLE_DISPLAY_NAMES, VALID_USER_ROLES } from './types';
 
 // 역할 처리 유틸리티
 export { RoleResolver } from './RoleResolver';

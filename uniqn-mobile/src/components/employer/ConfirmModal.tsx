@@ -43,15 +43,18 @@ export interface ApplicantConfirmModalProps {
 // Constants
 // ============================================================================
 
-const ACTION_CONFIG: Record<ConfirmModalAction, {
-  title: string;
-  description: string;
-  buttonText: string;
-  buttonVariant: 'primary' | 'danger' | 'secondary';
-  showTextInput: boolean;
-  inputLabel: string;
-  inputPlaceholder: string;
-}> = {
+const ACTION_CONFIG: Record<
+  ConfirmModalAction,
+  {
+    title: string;
+    description: string;
+    buttonText: string;
+    buttonVariant: 'primary' | 'danger' | 'secondary';
+    showTextInput: boolean;
+    inputLabel: string;
+    inputPlaceholder: string;
+  }
+> = {
   confirm: {
     title: '지원자 확정',
     description: '이 지원자를 확정하시겠습니까?',
@@ -107,13 +110,14 @@ export function ApplicantConfirmModal({
 
     return selectedAssignments.map((assignment, idx) => {
       const roleList = getAssignmentRoles(assignment);
-      const roles = roleList.map(r => getRoleDisplayName(r)).join(', ');
+      const roles = roleList.map((r) => getRoleDisplayName(r)).join(', ');
       // dates 배열에서 첫 번째 날짜 사용 (또는 날짜 범위 표시)
-      const dateStr = assignment.dates?.length > 0
-        ? assignment.dates.length === 1
-          ? formatDateShort(assignment.dates[0]!)
-          : `${formatDateShort(assignment.dates[0]!)} ~ ${formatDateShort(assignment.dates[assignment.dates.length - 1]!)}`
-        : '';
+      const dateStr =
+        assignment.dates?.length > 0
+          ? assignment.dates.length === 1
+            ? formatDateShort(assignment.dates[0]!)
+            : `${formatDateShort(assignment.dates[0]!)} ~ ${formatDateShort(assignment.dates[assignment.dates.length - 1]!)}`
+          : '';
       const timeSlot = assignment.timeSlot || '';
 
       return {
@@ -156,27 +160,21 @@ export function ApplicantConfirmModal({
   if (!applicant) return null;
 
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title={config.title}
-      position="center"
-    >
+    <Modal visible={visible} onClose={handleClose} title={config.title} position="center">
       <View>
         {/* 지원자 정보 */}
         <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-xl mb-3">
-          <Avatar
-            source={userProfile?.photoURL}
-            name={displayName}
-            size="lg"
-            className="mr-4"
-          />
+          <Avatar source={userProfile?.photoURL} name={displayName} size="lg" className="mr-4" />
           <View className="flex-1">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white">
               {displayName}
             </Text>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleDisplayName(applicant.assignments[0]?.roleIds?.[0] || 'other', applicant.customRole)} 지원
+              {getRoleDisplayName(
+                applicant.assignments[0]?.roleIds?.[0] || 'other',
+                applicant.customRole
+              )}{' '}
+              지원
             </Text>
             {applicant.applicantPhone && (
               <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
@@ -189,45 +187,43 @@ export function ApplicantConfirmModal({
         {/* 선택된 일정 표시 (확정 시) */}
         {action === 'confirm' && formattedAssignments.length > 0 && (
           <View className="mb-3">
-            <Text className={`text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+            <Text
+              className={`text-sm font-medium mb-1.5 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}
+            >
               확정할 일정 ({formattedAssignments.length}건)
             </Text>
-            <ScrollView
-              className="max-h-36"
-              showsVerticalScrollIndicator={true}
-            >
+            <ScrollView className="max-h-36" showsVerticalScrollIndicator={true}>
               {formattedAssignments.map((item) => (
                 <View
                   key={item.id}
                   className={`flex-row items-center p-3 rounded-lg mb-2 ${
-                    isDark ? 'bg-primary-900 border border-primary-700' : 'bg-primary-50 border border-primary-200'
+                    isDark
+                      ? 'bg-primary-900 border border-primary-700'
+                      : 'bg-primary-50 border border-primary-200'
                   }`}
                 >
-                  <CalendarIcon
-                    size={16}
-                    color={isDark ? '#93C5FD' : '#9333EA'}
-                  />
-                  <Text className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  <CalendarIcon size={16} color={isDark ? '#93C5FD' : '#9333EA'} />
+                  <Text
+                    className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                  >
                     {item.date}
                   </Text>
                   {item.timeSlot && (
                     <View className="flex-row items-center ml-3">
-                      <ClockIcon
-                        size={14}
-                        color={isDark ? '#9CA3AF' : '#6B7280'}
-                      />
-                      <Text className={`ml-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <ClockIcon size={14} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                      <Text
+                        className={`ml-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
+                      >
                         {item.timeSlot}
                       </Text>
                     </View>
                   )}
                   {item.roles && (
                     <View className="flex-row items-center ml-3">
-                      <BriefcaseIcon
-                        size={14}
-                        color={isDark ? '#9CA3AF' : '#6B7280'}
-                      />
-                      <Text className={`ml-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <BriefcaseIcon size={14} color={isDark ? '#9CA3AF' : '#6B7280'} />
+                      <Text
+                        className={`ml-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}
+                      >
                         {item.roles}
                       </Text>
                     </View>
@@ -244,18 +240,13 @@ export function ApplicantConfirmModal({
             <Text className="text-xs text-gray-600 dark:text-gray-300 mb-0.5 font-medium">
               지원 메시지
             </Text>
-            <Text className="text-sm text-gray-700 dark:text-gray-200">
-              {applicant.message}
-            </Text>
+            <Text className="text-sm text-gray-700 dark:text-gray-200">{applicant.message}</Text>
           </View>
         )}
 
         {/* 설명 */}
         <View className="flex-row items-center mb-3">
-          <AlertCircleIcon
-            size={20}
-            color={action === 'reject' ? '#EF4444' : '#9333EA'}
-          />
+          <AlertCircleIcon size={20} color={action === 'reject' ? '#EF4444' : '#9333EA'} />
           <Text className="ml-2 text-sm text-gray-600 dark:text-gray-300">
             {config.description}
           </Text>
@@ -282,12 +273,7 @@ export function ApplicantConfirmModal({
 
         {/* 버튼 */}
         <View className="flex-row gap-3">
-          <Button
-            variant="secondary"
-            onPress={handleClose}
-            disabled={isLoading}
-            className="flex-1"
-          >
+          <Button variant="secondary" onPress={handleClose} disabled={isLoading} className="flex-1">
             취소
           </Button>
           <Button

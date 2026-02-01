@@ -59,25 +59,15 @@ export const SectionCard = memo(function SectionCard({
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
       <View className="flex-row items-center flex-1">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          {title}
-        </Text>
-        {required && (
-          <Text className="ml-1 text-red-500">*</Text>
-        )}
-        {optional && (
-          <Text className="ml-2 text-xs text-gray-400 dark:text-gray-500">
-            (선택)
-          </Text>
-        )}
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+        {required && <Text className="ml-1 text-red-500">*</Text>}
+        {optional && <Text className="ml-2 text-xs text-gray-400 dark:text-gray-500">(선택)</Text>}
       </View>
 
       {/* 에러 배지 */}
       {hasError && errorCount > 0 && (
         <View className="px-2 py-0.5 bg-red-100 dark:bg-red-900/30 rounded-full mr-2">
-          <Text className="text-xs text-red-600 dark:text-red-400">
-            {errorCount}개 오류
-          </Text>
+          <Text className="text-xs text-red-600 dark:text-red-400">{errorCount}개 오류</Text>
         </View>
       )}
 
@@ -120,11 +110,7 @@ export const SectionCard = memo(function SectionCard({
       )}
 
       {/* 내용 */}
-      {(!collapsible || !collapsed) && (
-        <View className="p-4">
-          {children}
-        </View>
-      )}
+      {(!collapsible || !collapsed) && <View className="p-4">{children}</View>}
     </View>
   );
 });

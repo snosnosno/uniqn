@@ -68,9 +68,13 @@ function GroupCheckbox({ state, isDark }: GroupCheckboxProps) {
     <View
       className={`
         h-5 w-5 rounded border-2 items-center justify-center mr-3
-        ${isChecked || isIndeterminate
-          ? 'bg-primary-500 border-primary-500'
-          : isDark ? 'border-gray-500' : 'border-gray-400'}
+        ${
+          isChecked || isIndeterminate
+            ? 'bg-primary-500 border-primary-500'
+            : isDark
+              ? 'border-gray-500'
+              : 'border-gray-400'
+        }
       `}
     >
       {isChecked && <CheckIcon size={12} color="#fff" />}
@@ -99,7 +103,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
 
   const toggleExpand = useCallback((groupId: string) => {
     LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-    setExpandedGroups(prev => {
+    setExpandedGroups((prev) => {
       const next = new Set(prev);
       if (next.has(groupId)) {
         next.delete(groupId);
@@ -118,9 +122,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
     <View className="mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
-          선택된 일정
-        </Text>
+        <Text className="text-xs text-gray-500 dark:text-gray-400">선택된 일정</Text>
         <Text className="text-xs text-primary-500 dark:text-primary-400 font-medium">
           {selectedCount}/{totalCount}개 선택
         </Text>
@@ -140,8 +142,12 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
             const isChecked = selectedKeys.has(key);
 
             const bgClass = isChecked
-              ? isDark ? 'bg-primary-900 border-primary-700' : 'bg-primary-100 border-primary-300'
-              : isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200';
+              ? isDark
+                ? 'bg-primary-900 border-primary-700'
+                : 'bg-primary-100 border-primary-300'
+              : isDark
+                ? 'bg-gray-700 border-gray-600'
+                : 'bg-gray-100 border-gray-200';
 
             return (
               <Pressable
@@ -149,21 +155,37 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                 onPress={() => onToggle(key)}
                 className={`flex-row items-center rounded-lg px-3 py-2.5 border active:opacity-70 ${bgClass}`}
               >
-                <View className={`
+                <View
+                  className={`
                   h-5 w-5 rounded border-2 items-center justify-center mr-3
-                  ${isChecked
-                    ? 'bg-primary-500 border-primary-500'
-                    : isDark ? 'border-gray-500' : 'border-gray-400'}
-                `}>
+                  ${
+                    isChecked
+                      ? 'bg-primary-500 border-primary-500'
+                      : isDark
+                        ? 'border-gray-500'
+                        : 'border-gray-400'
+                  }
+                `}
+                >
                   {isChecked && <CheckIcon size={12} color="#fff" />}
                 </View>
-                <CalendarIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
-                <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <CalendarIcon
+                  size={16}
+                  color={isChecked ? iconColors.checked : iconColors.unchecked}
+                />
+                <Text
+                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                >
                   {item.formattedDate} {item.timeSlotDisplay}
                 </Text>
                 <View className={`mx-2 h-4 w-px ${isDark ? 'bg-gray-500' : 'bg-gray-300'}`} />
-                <BriefcaseIcon size={16} color={isChecked ? iconColors.checked : iconColors.unchecked} />
-                <Text className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                <BriefcaseIcon
+                  size={16}
+                  color={isChecked ? iconColors.checked : iconColors.unchecked}
+                />
+                <Text
+                  className={`ml-1.5 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                >
                   {item.roleLabel}
                 </Text>
               </Pressable>
@@ -173,14 +195,15 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
           // 다중 날짜 그룹
           const hasSelection = selectionState !== 'none';
           const bgClass = hasSelection
-            ? isDark ? 'bg-primary-900/50 border-primary-700' : 'bg-primary-50 border-primary-200'
-            : isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200';
+            ? isDark
+              ? 'bg-primary-900/50 border-primary-700'
+              : 'bg-primary-50 border-primary-200'
+            : isDark
+              ? 'bg-gray-700 border-gray-600'
+              : 'bg-gray-100 border-gray-200';
 
           return (
-            <View
-              key={group.groupId}
-              className={`rounded-lg border overflow-hidden ${bgClass}`}
-            >
+            <View key={group.groupId} className={`rounded-lg border overflow-hidden ${bgClass}`}>
               {/* 그룹 헤더 */}
               <Pressable
                 onPress={() => onToggleGroup(group.groupId)}
@@ -194,7 +217,9 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                       size={14}
                       color={hasSelection ? iconColors.checked : iconColors.unchecked}
                     />
-                    <Text className={`ml-1.5 text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    <Text
+                      className={`ml-1.5 text-sm font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}
+                    >
                       {formatDateDisplay(group.dateRange.dates)}
                     </Text>
                   </View>
@@ -231,7 +256,9 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
 
               {/* 펼침 상태: 개별 날짜 */}
               {isExpanded && (
-                <View className={`border-t ${isDark ? 'border-gray-600' : 'border-gray-200'} px-3 py-2`}>
+                <View
+                  className={`border-t ${isDark ? 'border-gray-600' : 'border-gray-200'} px-3 py-2`}
+                >
                   <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                     개별 날짜 선택
                   </Text>
@@ -241,8 +268,12 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                       const isChecked = selectedKeys.has(key);
 
                       const itemBgClass = isChecked
-                        ? isDark ? 'bg-primary-800 border-primary-600' : 'bg-primary-100 border-primary-300'
-                        : isDark ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-200';
+                        ? isDark
+                          ? 'bg-primary-800 border-primary-600'
+                          : 'bg-primary-100 border-primary-300'
+                        : isDark
+                          ? 'bg-gray-600 border-gray-500'
+                          : 'bg-white border-gray-200';
 
                       return (
                         <Pressable
@@ -250,15 +281,23 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                           onPress={() => onToggle(key)}
                           className={`flex-row items-center px-2.5 py-1.5 rounded-lg border active:opacity-70 ${itemBgClass}`}
                         >
-                          <View className={`
+                          <View
+                            className={`
                             h-4 w-4 rounded border-2 items-center justify-center mr-1.5
-                            ${isChecked
-                              ? 'bg-primary-500 border-primary-500'
-                              : isDark ? 'border-gray-400' : 'border-gray-400'}
-                          `}>
+                            ${
+                              isChecked
+                                ? 'bg-primary-500 border-primary-500'
+                                : isDark
+                                  ? 'border-gray-400'
+                                  : 'border-gray-400'
+                            }
+                          `}
+                          >
                             {isChecked && <CheckIcon size={10} color="#fff" />}
                           </View>
-                          <Text className={`text-xs font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                          <Text
+                            className={`text-xs font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}
+                          >
                             {item.formattedDate}
                           </Text>
                         </Pressable>

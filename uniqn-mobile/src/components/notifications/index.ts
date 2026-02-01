@@ -22,14 +22,8 @@ export { NotificationGroupItem } from './NotificationGroupItem';
 export type { NotificationGroupItemProps } from './NotificationGroupItem';
 
 // List
-export {
-  NotificationList,
-  SimpleNotificationList,
-} from './NotificationList';
-export type {
-  NotificationListProps,
-  SimpleNotificationListProps,
-} from './NotificationList';
+export { NotificationList, SimpleNotificationList } from './NotificationList';
+export type { NotificationListProps, SimpleNotificationListProps } from './NotificationList';
 
 // Settings
 export { NotificationSettings } from './NotificationSettings';

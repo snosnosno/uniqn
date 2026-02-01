@@ -105,9 +105,7 @@ export default function AdminInquiriesScreen() {
                 key={filter.key}
                 onPress={() => setStatusFilter(filter.key)}
                 className={`rounded-full px-4 py-2 ${
-                  isSelected
-                    ? 'bg-primary-500 dark:bg-primary-600'
-                    : 'bg-gray-100 dark:bg-surface'
+                  isSelected ? 'bg-primary-500 dark:bg-primary-600' : 'bg-gray-100 dark:bg-surface'
                 }`}
               >
                 <Text
@@ -141,11 +139,7 @@ export default function AdminInquiriesScreen() {
           ListEmptyComponent={renderEmpty}
           ListFooterComponent={renderFooter}
           refreshControl={
-            <RefreshControl
-              refreshing={isLoading}
-              onRefresh={refetch}
-              tintColor="#A855F7"
-            />
+            <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#A855F7" />
           }
         />
       )}

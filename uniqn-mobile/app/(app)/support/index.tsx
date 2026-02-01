@@ -39,13 +39,9 @@ function MenuItem({ icon, label, description, onPress, badge }: MenuItemProps) {
         <View className="flex-row items-center flex-1">
           <View className="mr-4">{icon}</View>
           <View className="flex-1">
-            <Text className="text-base font-medium text-gray-900 dark:text-gray-100">
-              {label}
-            </Text>
+            <Text className="text-base font-medium text-gray-900 dark:text-gray-100">{label}</Text>
             {description && (
-              <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">
-                {description}
-              </Text>
+              <Text className="mt-0.5 text-sm text-gray-500 dark:text-gray-400">{description}</Text>
             )}
           </View>
         </View>
@@ -109,9 +105,7 @@ export default function SupportScreen() {
 
         {/* 운영 시간 안내 */}
         <View className="mt-6 items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            고객센터 운영시간
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400">고객센터 운영시간</Text>
           <Text className="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             평일 09:00 - 18:00 (주말/공휴일 휴무)
           </Text>

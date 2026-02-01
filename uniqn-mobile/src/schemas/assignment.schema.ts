@@ -102,10 +102,7 @@ export type AssignmentsArrayData = z.infer<typeof assignmentsArraySchema>;
 export const createApplicationV2Schema = z.object({
   jobPostingId: z.string().min(1, { message: '공고 ID가 필요합니다' }),
   assignments: assignmentsArraySchema,
-  message: z
-    .string()
-    .max(200, { message: '메시지는 200자를 초과할 수 없습니다' })
-    .optional(),
+  message: z.string().max(200, { message: '메시지는 200자를 초과할 수 없습니다' }).optional(),
 });
 
 export type CreateApplicationV2FormData = z.infer<typeof createApplicationV2Schema>;

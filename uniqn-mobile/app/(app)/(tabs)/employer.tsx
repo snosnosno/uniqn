@@ -10,23 +10,19 @@ import { Timestamp } from '@/lib/firebase';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
-import { useMyJobPostings, useCloseJobPosting, useReopenJobPosting } from '@/hooks/useJobManagement';
+import {
+  useMyJobPostings,
+  useCloseJobPosting,
+  useReopenJobPosting,
+} from '@/hooks/useJobManagement';
 import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } from '@/components';
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
 import { EventQRModal } from '@/components/employer/EventQRModal';
 import { TabHeader } from '@/components/headers';
-import {
-  PlusIcon,
-  UsersIcon,
-  BriefcaseIcon,
-  QrCodeIcon,
-} from '@/components/icons';
-import {
-  groupRequirementsToDateRanges,
-  formatDateRangeWithCount,
-} from '@/utils/dateRangeUtils';
+import { PlusIcon, UsersIcon, BriefcaseIcon, QrCodeIcon } from '@/components/icons';
+import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import type { JobPosting, PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
@@ -101,9 +97,13 @@ interface JobPostingCardProps {
 // ============================================================================
 
 const formatDate = (dateStr: string): string => {
-  if (!dateStr) { return '-'; }
+  if (!dateStr) {
+    return '-';
+  }
   const date = new Date(dateStr);
-  if (isNaN(date.getTime())) { return dateStr; }
+  if (isNaN(date.getTime())) {
+    return dateStr;
+  }
   const month = date.getMonth() + 1;
   const day = date.getDate();
   const dayOfWeek = ['일', '월', '화', '수', '목', '금', '토'][date.getDay()];
@@ -179,7 +179,9 @@ const getAllowanceItems = (allowances?: Allowances): string[] => {
 };
 
 const getDateString = (dateInput: string | Timestamp | { seconds: number }): string => {
-  if (typeof dateInput === 'string') { return dateInput; }
+  if (typeof dateInput === 'string') {
+    return dateInput;
+  }
   if (dateInput instanceof Timestamp) {
     return dateInput.toDate().toISOString().split('T')[0] ?? '';
   }
@@ -276,8 +278,10 @@ const JobPostingCard = memo(function JobPostingCard({
       date: getDateString(req.date),
       isGrouped: req.isGrouped,
       timeSlots: (req.timeSlots ?? []).map((ts) => ({
-        startTime: (ts as { startTime?: string; time?: string }).startTime ||
-                   (ts as { startTime?: string; time?: string }).time || '',
+        startTime:
+          (ts as { startTime?: string; time?: string }).startTime ||
+          (ts as { startTime?: string; time?: string }).time ||
+          '',
         isTimeToBeAnnounced: (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
         roles: ts.roles ?? [],
       })),
@@ -396,23 +400,23 @@ const JobPostingCard = memo(function JobPostingCard({
           {/* 오른쪽: 급여 + 수당 */}
           <View className="flex-1 pl-3 border-l border-gray-100 dark:border-surface-overlay">
             {/* 급여 - v2.0: roles[].salary 구조 */}
-            {!posting.useSameSalary &&
-            posting.roles?.some((r) => r.salary) ? (
+            {!posting.useSameSalary && posting.roles?.some((r) => r.salary) ? (
               // 역할별 급여 표시
               posting.roles
                 .filter((r) => r.salary)
                 .map((r, idx) => (
-                  <Text
-                    key={idx}
-                    className="text-sm text-gray-900 dark:text-white"
-                  >
-                    💰 {getRoleLabel(r.role, (r as { customRole?: string }).customRole)}: {r.salary?.type === 'other' ? '협의' : formatSalary(r.salary?.type || 'hourly', r.salary?.amount || 0)}
+                  <Text key={idx} className="text-sm text-gray-900 dark:text-white">
+                    💰 {getRoleLabel(r.role, (r as { customRole?: string }).customRole)}:{' '}
+                    {r.salary?.type === 'other'
+                      ? '협의'
+                      : formatSalary(r.salary?.type || 'hourly', r.salary?.amount || 0)}
                   </Text>
                 ))
             ) : (
               // 단일 급여 표시 (useSameSalary 또는 defaultSalary)
               <Text className="text-sm font-medium text-gray-900 dark:text-white">
-                💰 {formatSalary(
+                💰{' '}
+                {formatSalary(
                   posting.defaultSalary?.type || posting.roles?.[0]?.salary?.type || 'hourly',
                   posting.defaultSalary?.amount || posting.roles?.[0]?.salary?.amount || 0
                 )}
@@ -559,8 +563,12 @@ function EmployerView() {
           const dateStr = getDateString(req.date);
           const times = (req.timeSlots ?? [])
             .filter((ts) => !(ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced)
-            .map((ts) => (ts as { startTime?: string; time?: string }).startTime ||
-                         (ts as { startTime?: string; time?: string }).time || '99:99')
+            .map(
+              (ts) =>
+                (ts as { startTime?: string; time?: string }).startTime ||
+                (ts as { startTime?: string; time?: string }).time ||
+                '99:99'
+            )
             .sort();
           const earliestTime = times[0] ?? '99:99';
           const dateTime = `${dateStr} ${earliestTime}`;
@@ -584,9 +592,8 @@ function EmployerView() {
     };
 
     // 필터링
-    const filtered = filter === 'all'
-      ? postings
-      : postings.filter((p: JobPosting) => p.status === filter);
+    const filtered =
+      filter === 'all' ? postings : postings.filter((p: JobPosting) => p.status === filter);
 
     // 정렬: 오늘 이후 날짜 먼저 (가까운 순), 그 다음 과거 날짜 (최근 순)
     return [...filtered].sort((a, b) => {
@@ -689,7 +696,14 @@ function EmployerView() {
         isReopening={reopenMutation.isPending}
       />
     ),
-    [handlePostingPress, handleClosePosting, handleReopenPosting, handleShowQR, closeMutation.isPending, reopenMutation.isPending]
+    [
+      handlePostingPress,
+      handleClosePosting,
+      handleReopenPosting,
+      handleShowQR,
+      closeMutation.isPending,
+      reopenMutation.isPending,
+    ]
   );
 
   const keyExtractor = useCallback((item: JobPosting) => item.id, []);
@@ -701,9 +715,7 @@ function EmployerView() {
         <TabHeader title="내 공고" />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
-          <Text className="mt-4 text-gray-500 dark:text-gray-400">
-            공고 목록을 불러오는 중...
-          </Text>
+          <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 목록을 불러오는 중...</Text>
         </View>
       </SafeAreaView>
     );

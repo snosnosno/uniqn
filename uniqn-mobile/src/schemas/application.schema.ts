@@ -8,11 +8,7 @@
 import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { logger } from '@/utils/logger';
-import {
-  timestampSchema,
-  optionalTimestampSchema,
-  optionalDurationSchema,
-} from './common';
+import { timestampSchema, optionalTimestampSchema, optionalDurationSchema } from './common';
 import type { Application } from '@/types';
 import { VALID_STAFF_ROLES } from '@/types/role';
 
@@ -124,19 +120,21 @@ export type CancellationRequestData = z.infer<typeof cancellationRequestSchema>;
  * - 승인: rejectionReason 불필요
  * - 거절: rejectionReason 필수
  */
-export const reviewCancellationSchema = z.object({
-  applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
-  approved: z.boolean(),
-  rejectionReason: z
-    .string()
-    .min(3, { message: '거절 사유는 최소 3자 이상 입력해주세요' })
-    .max(200, { message: '거절 사유는 200자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-    .optional(),
-}).refine(
-  (data) => data.approved || (data.rejectionReason && data.rejectionReason.length >= 3),
-  { message: '거절 시 거절 사유를 입력해주세요', path: ['rejectionReason'] }
-);
+export const reviewCancellationSchema = z
+  .object({
+    applicationId: z.string().min(1, { message: '지원서 ID가 필요합니다' }),
+    approved: z.boolean(),
+    rejectionReason: z
+      .string()
+      .min(3, { message: '거절 사유는 최소 3자 이상 입력해주세요' })
+      .max(200, { message: '거절 사유는 200자를 초과할 수 없습니다' })
+      .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+      .optional(),
+  })
+  .refine((data) => data.approved || (data.rejectionReason && data.rejectionReason.length >= 3), {
+    message: '거절 시 거절 사유를 입력해주세요',
+    path: ['rejectionReason'],
+  });
 
 export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
 
@@ -156,63 +154,68 @@ export type ReviewCancellationData = z.infer<typeof reviewCancellationSchema>;
  *
  * @description roleIds는 StaffRole 값만 허용 (타입 안전성 강화)
  */
-const assignmentInnerSchema = z.object({
-  roleIds: z.array(staffRoleSchema),
-  timeSlot: z.string(),
-  dates: z.array(z.string()),
-  isGrouped: z.boolean(),
-  groupId: z.string().optional(),
-  checkMethod: z.enum(['group', 'individual']).optional(),
-  requirementId: z.string().optional(),
-  duration: optionalDurationSchema,
-  isTimeToBeAnnounced: z.boolean().optional(),
-  // P1 보안: XSS 검증 추가
-  tentativeDescription: z.string()
-    .refine((val) => !val || xssValidation(val), {
-      message: '위험한 문자열이 포함되어 있습니다',
-    })
-    .optional(),
-}).passthrough();
+const assignmentInnerSchema = z
+  .object({
+    roleIds: z.array(staffRoleSchema),
+    timeSlot: z.string(),
+    dates: z.array(z.string()),
+    isGrouped: z.boolean(),
+    groupId: z.string().optional(),
+    checkMethod: z.enum(['group', 'individual']).optional(),
+    requirementId: z.string().optional(),
+    duration: optionalDurationSchema,
+    isTimeToBeAnnounced: z.boolean().optional(),
+    // P1 보안: XSS 검증 추가
+    tentativeDescription: z
+      .string()
+      .refine((val) => !val || xssValidation(val), {
+        message: '위험한 문자열이 포함되어 있습니다',
+      })
+      .optional(),
+  })
+  .passthrough();
 
-export const applicationDocumentSchema = z.object({
-  id: z.string(),
-  jobPostingId: z.string(),
-  applicantId: z.string(),
-  status: applicationStatusSchema,
+export const applicationDocumentSchema = z
+  .object({
+    id: z.string(),
+    jobPostingId: z.string(),
+    applicantId: z.string(),
+    status: applicationStatusSchema,
 
-  // 지원자 정보
-  applicantName: z.string().optional(),
-  applicantNickname: z.string().optional(),
-  applicantPhone: z.string().optional(),
-  applicantPhotoURL: z.string().optional(),
+    // 지원자 정보
+    applicantName: z.string().optional(),
+    applicantNickname: z.string().optional(),
+    applicantPhone: z.string().optional(),
+    applicantPhotoURL: z.string().optional(),
 
-  // 지원 내용
-  message: z.string().optional(),
+    // 지원 내용
+    message: z.string().optional(),
 
-  // Assignment (v3.0 필수)
-  assignments: z.array(assignmentInnerSchema),
+    // Assignment (v3.0 필수)
+    assignments: z.array(assignmentInnerSchema),
 
-  // 확정 정보
-  confirmedAt: optionalTimestampSchema,
-  confirmedBy: z.string().optional(),
+    // 확정 정보
+    confirmedAt: optionalTimestampSchema,
+    confirmedBy: z.string().optional(),
 
-  // 거절 정보
-  rejectedAt: optionalTimestampSchema,
-  rejectionReason: z.string().optional(),
+    // 거절 정보
+    rejectedAt: optionalTimestampSchema,
+    rejectionReason: z.string().optional(),
 
-  // 취소 정보
-  cancelledAt: optionalTimestampSchema,
-  cancellationReason: z.string().optional(),
+    // 취소 정보
+    cancelledAt: optionalTimestampSchema,
+    cancellationReason: z.string().optional(),
 
-  // 공고 정보 (비정규화)
-  jobPostingTitle: z.string().optional(),
-  jobPostingOwnerId: z.string().optional(),
-  workDate: z.string().optional(),
+    // 공고 정보 (비정규화)
+    jobPostingTitle: z.string().optional(),
+    jobPostingOwnerId: z.string().optional(),
+    workDate: z.string().optional(),
 
-  // Timestamps
-  createdAt: timestampSchema,
-  updatedAt: timestampSchema,
-}).passthrough();
+    // Timestamps
+    createdAt: timestampSchema,
+    updatedAt: timestampSchema,
+  })
+  .passthrough();
 
 export type ApplicationDocumentData = z.infer<typeof applicationDocumentSchema>;
 

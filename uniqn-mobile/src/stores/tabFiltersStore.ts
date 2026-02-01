@@ -73,11 +73,17 @@ interface TabFiltersState {
   resetJobFilters: () => void;
 
   // 내 공고 탭 액션
-  setEmployerFilter: <K extends keyof EmployerTabFilters>(key: K, value: EmployerTabFilters[K]) => void;
+  setEmployerFilter: <K extends keyof EmployerTabFilters>(
+    key: K,
+    value: EmployerTabFilters[K]
+  ) => void;
   resetEmployerFilters: () => void;
 
   // 스케줄 탭 액션
-  setScheduleFilter: <K extends keyof ScheduleTabFilters>(key: K, value: ScheduleTabFilters[K]) => void;
+  setScheduleFilter: <K extends keyof ScheduleTabFilters>(
+    key: K,
+    value: ScheduleTabFilters[K]
+  ) => void;
   resetScheduleFilters: () => void;
 
   // 전체 초기화

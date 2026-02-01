@@ -39,7 +39,10 @@ export type WorkLogStatusSchema = z.infer<typeof workLogStatusSchema>;
 export const workTimeModificationSchema = z.object({
   modifiedAt: z.string(),
   modifiedBy: z.string().min(1, { message: '수정자 ID는 필수입니다' }),
-  reason: z.string().min(1, { message: '수정 사유는 필수입니다' }).max(200, { message: '사유는 200자를 초과할 수 없습니다' }),
+  reason: z
+    .string()
+    .min(1, { message: '수정 사유는 필수입니다' })
+    .max(200, { message: '사유는 200자를 초과할 수 없습니다' }),
   previousStartTime: z.string().optional(),
   previousEndTime: z.string().optional(),
 });
@@ -80,15 +83,19 @@ export type UpdateWorkLogData = z.infer<typeof updateWorkLogSchema>;
 /**
  * 근무 시간 수정 요청 스키마 (구인자가 스태프 시간 수정 시)
  */
-export const modifyWorkTimeSchema = z.object({
-  workLogId: z.string().min(1, { message: '근무 기록 ID는 필수입니다' }),
-  newStartTime: z.string().optional(),
-  newEndTime: z.string().optional(),
-  reason: z.string().min(1, { message: '수정 사유는 필수입니다' }).max(200, { message: '사유는 200자를 초과할 수 없습니다' }),
-}).refine(
-  (data) => data.newStartTime || data.newEndTime,
-  { message: '시작 시간 또는 종료 시간 중 하나는 입력해야 합니다' }
-);
+export const modifyWorkTimeSchema = z
+  .object({
+    workLogId: z.string().min(1, { message: '근무 기록 ID는 필수입니다' }),
+    newStartTime: z.string().optional(),
+    newEndTime: z.string().optional(),
+    reason: z
+      .string()
+      .min(1, { message: '수정 사유는 필수입니다' })
+      .max(200, { message: '사유는 200자를 초과할 수 없습니다' }),
+  })
+  .refine((data) => data.newStartTime || data.newEndTime, {
+    message: '시작 시간 또는 종료 시간 중 하나는 입력해야 합니다',
+  });
 
 export type ModifyWorkTimeData = z.infer<typeof modifyWorkTimeSchema>;
 
@@ -102,43 +109,45 @@ export type ModifyWorkTimeData = z.infer<typeof modifyWorkTimeSchema>;
  * @description Firestore에서 읽은 데이터의 타입 안전성을 보장
  * .passthrough()로 알려지지 않은 필드 허용 (하위 호환성)
  */
-export const workLogDocumentSchema = z.object({
-  id: z.string(),
-  staffId: z.string(),
-  jobPostingId: z.string(),
-  date: z.string(),
+export const workLogDocumentSchema = z
+  .object({
+    id: z.string(),
+    staffId: z.string(),
+    jobPostingId: z.string(),
+    date: z.string(),
 
-  // 스태프 정보
-  staffName: z.string().optional(),
-  staffNickname: z.string().optional(),
-  staffPhotoURL: z.string().optional(),
+    // 스태프 정보
+    staffName: z.string().optional(),
+    staffNickname: z.string().optional(),
+    staffPhotoURL: z.string().optional(),
 
-  // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
-  scheduledStartTime: optionalTimestampSchema.or(z.string()).optional(),
-  scheduledEndTime: optionalTimestampSchema.or(z.string()).optional(),
-  checkInTime: optionalTimestampSchema.or(z.string()).optional(),
-  checkOutTime: optionalTimestampSchema.or(z.string()).optional(),
+    // 시간 정보 (Firebase Timestamp 또는 string 또는 null)
+    scheduledStartTime: optionalTimestampSchema.or(z.string()).optional(),
+    scheduledEndTime: optionalTimestampSchema.or(z.string()).optional(),
+    checkInTime: optionalTimestampSchema.or(z.string()).optional(),
+    checkOutTime: optionalTimestampSchema.or(z.string()).optional(),
 
-  // 상태
-  status: workLogStatusSchema,
-  role: staffRoleSchema,
-  customRole: z.string().optional(),
+    // 상태
+    status: workLogStatusSchema,
+    role: staffRoleSchema,
+    customRole: z.string().optional(),
 
-  // 정산 정보
-  payrollStatus: payrollStatusSchema.optional(),
-  payrollAmount: z.number().nullable().optional(),
-  payrollDate: optionalTimestampSchema,
-  payrollNotes: z.string().nullable().optional(),
+    // 정산 정보
+    payrollStatus: payrollStatusSchema.optional(),
+    payrollAmount: z.number().nullable().optional(),
+    payrollDate: optionalTimestampSchema,
+    payrollNotes: z.string().nullable().optional(),
 
-  // 메타
-  notes: z.string().optional(),
-  timeSlot: z.string().optional(),
-  ownerId: z.string().optional(),
+    // 메타
+    notes: z.string().optional(),
+    timeSlot: z.string().optional(),
+    ownerId: z.string().optional(),
 
-  // Timestamps
-  createdAt: timestampSchema,
-  updatedAt: timestampSchema,
-}).passthrough();
+    // Timestamps
+    createdAt: timestampSchema,
+    updatedAt: timestampSchema,
+  })
+  .passthrough();
 
 export type WorkLogDocumentData = z.infer<typeof workLogDocumentSchema>;
 

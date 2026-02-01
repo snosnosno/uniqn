@@ -128,10 +128,10 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
               {templateData.postingType === 'regular'
                 ? '지원'
                 : templateData.postingType === 'fixed'
-                ? '고정'
-                : templateData.postingType === 'tournament'
-                ? '대회'
-                : '긴급'}
+                  ? '고정'
+                  : templateData.postingType === 'tournament'
+                    ? '대회'
+                    : '긴급'}
             </Text>
           </View>
         )}
@@ -219,19 +219,12 @@ export function LoadTemplateModal({
 
   return (
     <>
-      <Modal
-        visible={visible}
-        onClose={onClose}
-        title="템플릿 불러오기"
-        size="lg"
-      >
+      <Modal visible={visible} onClose={onClose} title="템플릿 불러오기" size="lg">
         {/* 로딩 상태 */}
         {templatesLoading && (
           <View className="items-center justify-center py-12">
             <ActivityIndicator size="large" color="#A855F7" />
-            <Text className="text-gray-500 dark:text-gray-400 mt-3">
-              템플릿 불러오는 중...
-            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 mt-3">템플릿 불러오는 중...</Text>
           </View>
         )}
 

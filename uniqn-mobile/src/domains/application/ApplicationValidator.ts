@@ -295,10 +295,7 @@ export class ApplicationValidator {
     }
 
     // 5. 사전질문 답변 검증
-    const preQuestionValidation = this.validatePreQuestionAnswers(
-      jobData,
-      preQuestionAnswers
-    );
+    const preQuestionValidation = this.validatePreQuestionAnswers(jobData, preQuestionAnswers);
     if (!preQuestionValidation.isValid) {
       errors.push({
         code: preQuestionAnswers?.length

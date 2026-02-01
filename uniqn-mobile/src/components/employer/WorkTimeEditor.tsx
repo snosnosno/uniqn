@@ -25,11 +25,7 @@ export interface WorkTimeEditorProps {
   workLog: WorkLog | null;
   visible: boolean;
   onClose: () => void;
-  onSave: (data: {
-    startTime: Date | null;
-    endTime: Date | null;
-    reason: string;
-  }) => void;
+  onSave: (data: { startTime: Date | null; endTime: Date | null; reason: string }) => void;
   isLoading?: boolean;
 }
 
@@ -78,7 +74,9 @@ function formatEndTimeForInput(endDate: Date, baseDate: Date): string {
   const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
 
   // 퇴근 날짜가 기준 날짜보다 하루 뒤면 24+ 형식
-  const dayDiff = Math.round((endDateOnly.getTime() - baseDateOnly.getTime()) / (1000 * 60 * 60 * 24));
+  const dayDiff = Math.round(
+    (endDateOnly.getTime() - baseDateOnly.getTime()) / (1000 * 60 * 60 * 24)
+  );
 
   if (dayDiff === 1) {
     const hours = (endDate.getHours() + 24).toString().padStart(2, '0');
@@ -156,9 +154,7 @@ function TimeInputField({
   return (
     <View className="mb-4">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-sm font-medium text-gray-600 dark:text-gray-400">
-          {label}
-        </Text>
+        <Text className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</Text>
         {/* 미정 체크박스 */}
         {onUndefinedChange && (
           <Pressable
@@ -167,9 +163,10 @@ function TimeInputField({
           >
             <View
               className={`w-5 h-5 rounded border items-center justify-center mr-1.5
-                ${isUndefined
-                  ? 'bg-primary-600 border-primary-600'
-                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                ${
+                  isUndefined
+                    ? 'bg-primary-600 border-primary-600'
+                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
             >
               {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
@@ -184,9 +181,10 @@ function TimeInputField({
         onPress={() => !isUndefined && onOpenPicker()}
         disabled={isUndefined}
         className={`flex-row items-center justify-between p-3 border rounded-lg min-h-[52px]
-          ${isUndefined
-            ? 'bg-gray-100 dark:bg-surface-dark border-gray-200 dark:border-surface-overlay'
-            : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700'
+          ${
+            isUndefined
+              ? 'bg-gray-100 dark:bg-surface-dark border-gray-200 dark:border-surface-overlay'
+              : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700'
           }`}
       >
         <View className="flex-row items-center flex-1">
@@ -201,9 +199,7 @@ function TimeInputField({
             </Text>
           )}
         </View>
-        {!isUndefined && (
-          <ChevronDownIcon size={20} color="#9CA3AF" />
-        )}
+        {!isUndefined && <ChevronDownIcon size={20} color="#9CA3AF" />}
       </Pressable>
 
       {hasChanged && originalTime && (
@@ -240,14 +236,21 @@ export function WorkTimeEditor({
   React.useEffect(() => {
     if (workLog) {
       // checkInTime/checkOutTime 필드 확인 (확장 타입)
-      const workLogWithCheck = workLog as WorkLog & { checkInTime?: unknown; checkOutTime?: unknown; timeSlot?: string };
+      const workLogWithCheck = workLog as WorkLog & {
+        checkInTime?: unknown;
+        checkOutTime?: unknown;
+        timeSlot?: string;
+      };
 
       // 출근 시간 초기화
       const checkInSource = workLogWithCheck.checkInTime;
       if (checkInSource === null || checkInSource === undefined) {
         // timeSlot에서 기본값 파싱
         if (workLogWithCheck.timeSlot && workLog.date) {
-          const { startTime: parsedStart } = parseTimeSlotToDate(workLogWithCheck.timeSlot, workLog.date);
+          const { startTime: parsedStart } = parseTimeSlotToDate(
+            workLogWithCheck.timeSlot,
+            workLog.date
+          );
           if (parsedStart) {
             setStartTimeStr(formatTimeForInput(parsedStart));
             setIsStartTimeUndefined(false);
@@ -370,9 +373,14 @@ export function WorkTimeEditor({
 
     return false;
   }, [
-    startTime, endTime, originalStartTime, originalEndTime,
-    isStartTimeUndefined, isEndTimeUndefined,
-    wasStartTimeUndefined, wasEndTimeUndefined,
+    startTime,
+    endTime,
+    originalStartTime,
+    originalEndTime,
+    isStartTimeUndefined,
+    isEndTimeUndefined,
+    wasStartTimeUndefined,
+    wasEndTimeUndefined,
   ]);
 
   // 시간 형식 유효성 (미정이면 OK, 아니면 형식 검사)
@@ -391,11 +399,7 @@ export function WorkTimeEditor({
 
   // 전체 유효성 검사
   const isValid = useMemo(() => {
-    return (
-      hasChanges &&
-      isValidTimeFormat &&
-      isValidTimeOrder
-    );
+    return hasChanges && isValidTimeFormat && isValidTimeOrder;
   }, [hasChanges, isValidTimeFormat, isValidTimeOrder]);
 
   // 저장
@@ -416,18 +420,21 @@ export function WorkTimeEditor({
   }, [onClose]);
 
   // 휠 피커에서 선택 완료
-  const handlePickerConfirm = useCallback((timeValue: TimeValue) => {
-    const hourStr = timeValue.hour.toString().padStart(2, '0');
-    const minuteStr = timeValue.minute.toString().padStart(2, '0');
-    const timeStr = `${hourStr}:${minuteStr}`;
+  const handlePickerConfirm = useCallback(
+    (timeValue: TimeValue) => {
+      const hourStr = timeValue.hour.toString().padStart(2, '0');
+      const minuteStr = timeValue.minute.toString().padStart(2, '0');
+      const timeStr = `${hourStr}:${minuteStr}`;
 
-    if (activePicker === 'start') {
-      setStartTimeStr(timeStr);
-    } else if (activePicker === 'end') {
-      setEndTimeStr(timeStr);
-    }
-    setActivePicker(null);
-  }, [activePicker]);
+      if (activePicker === 'start') {
+        setStartTimeStr(timeStr);
+      } else if (activePicker === 'end') {
+        setEndTimeStr(timeStr);
+      }
+      setActivePicker(null);
+    },
+    [activePicker]
+  );
 
   // 현재 활성 피커의 값
   const activePickerValue = useMemo((): TimeValue => {
@@ -456,12 +463,7 @@ export function WorkTimeEditor({
   const footerContent = (
     <View className="flex-row gap-3">
       <View className="flex-1">
-        <Button
-          variant="secondary"
-          onPress={handleClose}
-          disabled={isLoading}
-          fullWidth
-        >
+        <Button variant="secondary" onPress={handleClose} disabled={isLoading} fullWidth>
           취소
         </Button>
       </View>
@@ -480,138 +482,137 @@ export function WorkTimeEditor({
   );
 
   return (
-  <>
-    <SheetModal
-      visible={visible}
-      onClose={handleClose}
-      title="근무 시간 수정"
-      footer={footerContent}
-      isLoading={isLoading}
-    >
-      <View className="px-4">
-        {/* 스태프 정보 */}
-        <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-surface rounded-lg mb-2">
-          {/* 프로필 이미지 */}
-          {workLog.staffPhotoURL ? (
-            <Image
-              source={{ uri: workLog.staffPhotoURL }}
-              className="h-10 w-10 rounded-full"
-              contentFit="cover"
-              transition={200}
+    <>
+      <SheetModal
+        visible={visible}
+        onClose={handleClose}
+        title="근무 시간 수정"
+        footer={footerContent}
+        isLoading={isLoading}
+      >
+        <View className="px-4">
+          {/* 스태프 정보 */}
+          <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-surface rounded-lg mb-2">
+            {/* 프로필 이미지 */}
+            {workLog.staffPhotoURL ? (
+              <Image
+                source={{ uri: workLog.staffPhotoURL }}
+                className="h-10 w-10 rounded-full"
+                contentFit="cover"
+                transition={200}
+              />
+            ) : (
+              <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
+                <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
+                  {workLog.staffName?.charAt(0)?.toUpperCase() || 'U'}
+                </Text>
+              </View>
+            )}
+            <View className="ml-3 flex-1">
+              {/* 이름(닉네임) */}
+              <Text className="text-base font-semibold text-gray-900 dark:text-white">
+                {workLog.staffName || '이름 없음'}
+                {workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
+              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">
+                {workDate ? formatDate(workDate) : '날짜 없음'}
+              </Text>
+            </View>
+          </View>
+
+          {/* 시간 편집 카드 */}
+          <Card variant="outlined" padding="md" className="mb-4">
+            {/* 출근 시간 */}
+            <TimeInputField
+              label="출근 시간"
+              value={startTimeStr}
+              originalTime={originalStartTime}
+              iconColor="#9333EA"
+              isUndefined={isStartTimeUndefined}
+              onUndefinedChange={setIsStartTimeUndefined}
+              onOpenPicker={() => setActivePicker('start')}
             />
-          ) : (
-            <View className="h-10 w-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
-              <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">
-                {workLog.staffName?.charAt(0)?.toUpperCase() || 'U'}
+
+            {/* 퇴근 시간 */}
+            <TimeInputField
+              label="퇴근 시간"
+              value={endTimeStr}
+              originalTime={originalEndTime}
+              iconColor="#EF4444"
+              isUndefined={isEndTimeUndefined}
+              onUndefinedChange={setIsEndTimeUndefined}
+              onOpenPicker={() => setActivePicker('end')}
+            />
+
+            {/* 시간 선택 안내 */}
+            <View className="flex-row items-start p-3 bg-gray-100 dark:bg-surface-dark rounded-lg mb-4">
+              <View className="mt-0.5">
+                <AlertCircleIcon size={16} color="#6B7280" />
+              </View>
+              <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
               </Text>
             </View>
-          )}
-          <View className="ml-3 flex-1">
-            {/* 이름(닉네임) */}
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              {workLog.staffName || '이름 없음'}{workLog.staffNickname ? ` (${workLog.staffNickname})` : ''}
-            </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {workDate ? formatDate(workDate) : '날짜 없음'}
-            </Text>
-          </View>
-        </View>
 
-        {/* 시간 편집 카드 */}
-        <Card variant="outlined" padding="md" className="mb-4">
-          {/* 출근 시간 */}
-          <TimeInputField
-            label="출근 시간"
-            value={startTimeStr}
-            originalTime={originalStartTime}
-            iconColor="#9333EA"
-            isUndefined={isStartTimeUndefined}
-            onUndefinedChange={setIsStartTimeUndefined}
-            onOpenPicker={() => setActivePicker('start')}
-          />
+            {/* 시간 순서 경고 */}
+            {isValidTimeFormat && !isValidTimeOrder && (
+              <View className="flex-row items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
+                <AlertCircleIcon size={16} color="#EF4444" />
+                <Text className="ml-2 text-sm text-red-600 dark:text-red-400">
+                  퇴근 시간이 출근보다 빨라요. 새벽은 25:00 형식으로 입력하세요.
+                </Text>
+              </View>
+            )}
 
-          {/* 퇴근 시간 */}
-          <TimeInputField
-            label="퇴근 시간"
-            value={endTimeStr}
-            originalTime={originalEndTime}
-            iconColor="#EF4444"
-            isUndefined={isEndTimeUndefined}
-            onUndefinedChange={setIsEndTimeUndefined}
-            onOpenPicker={() => setActivePicker('end')}
-          />
-
-          {/* 시간 선택 안내 */}
-          <View className="flex-row items-start p-3 bg-gray-100 dark:bg-surface-dark rounded-lg mb-4">
-            <View className="mt-0.5">
-              <AlertCircleIcon size={16} color="#6B7280" />
-            </View>
-            <Text className="ml-2 text-sm text-gray-600 dark:text-gray-400">
-              탭하여 시간 선택{'\n'}(24시 이상 = 다음날 새벽)
-            </Text>
-          </View>
-
-          {/* 시간 순서 경고 */}
-          {isValidTimeFormat && !isValidTimeOrder && (
-            <View className="flex-row items-center p-3 bg-red-50 dark:bg-red-900/20 rounded-lg mb-4">
-              <AlertCircleIcon size={16} color="#EF4444" />
-              <Text className="ml-2 text-sm text-red-600 dark:text-red-400">
-                퇴근 시간이 출근보다 빨라요. 새벽은 25:00 형식으로 입력하세요.
+            {/* 근무 시간 */}
+            <View className="flex-row items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+              <Text className="text-sm text-gray-600 dark:text-gray-400">총 근무 시간</Text>
+              <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
+                {duration}
               </Text>
             </View>
-          )}
+          </Card>
 
-          {/* 근무 시간 */}
-          <View className="flex-row items-center justify-between p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-            <Text className="text-sm text-gray-600 dark:text-gray-400">
-              총 근무 시간
+          {/* 수정 사유 (선택) */}
+          <View className="mb-4">
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              수정 사유
             </Text>
-            <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
-              {duration}
+            <TextInput
+              value={reason}
+              onChangeText={setReason}
+              placeholder="수정 사유를 입력하세요 (선택)"
+              placeholderTextColor="#9CA3AF"
+              multiline
+              numberOfLines={2}
+              textAlignVertical="top"
+              className="p-3 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[60px]"
+            />
+            <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              예: QR 인식 오류로 실제 출근 시간과 다름
             </Text>
           </View>
-        </Card>
 
-        {/* 수정 사유 (선택) */}
-        <View className="mb-4">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            수정 사유
-          </Text>
-          <TextInput
-            value={reason}
-            onChangeText={setReason}
-            placeholder="수정 사유를 입력하세요 (선택)"
-            placeholderTextColor="#9CA3AF"
-            multiline
-            numberOfLines={2}
-            textAlignVertical="top"
-            className="p-3 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[60px]"
-          />
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-            예: QR 인식 오류로 실제 출근 시간과 다름
-          </Text>
+          {/* 안내 메시지 */}
+          <View className="flex-row items-start p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-4">
+            <AlertCircleIcon size={16} color="#9333EA" />
+            <Text className="ml-2 text-sm text-primary-700 dark:text-primary-300 flex-1">
+              시간 수정 기록은 이력으로 저장되며, 해당 스태프에게 알림이 발송됩니다.
+            </Text>
+          </View>
         </View>
+      </SheetModal>
 
-        {/* 안내 메시지 */}
-        <View className="flex-row items-start p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-4">
-          <AlertCircleIcon size={16} color="#9333EA" />
-          <Text className="ml-2 text-sm text-primary-700 dark:text-primary-300 flex-1">
-            시간 수정 기록은 이력으로 저장되며, 해당 스태프에게 알림이 발송됩니다.
-          </Text>
-        </View>
-      </View>
-    </SheetModal>
-
-    {/* 휠 피커 모달 (메인 모달 바깥에서 렌더링) */}
-    <TimeWheelPicker
-      visible={activePicker !== null}
-      value={activePickerValue}
-      title={activePickerTitle}
-      minuteInterval={15}
-      onConfirm={handlePickerConfirm}
-      onClose={() => setActivePicker(null)}
-    />
-  </>
+      {/* 휠 피커 모달 (메인 모달 바깥에서 렌더링) */}
+      <TimeWheelPicker
+        visible={activePicker !== null}
+        value={activePickerValue}
+        title={activePickerTitle}
+        minuteInterval={15}
+        onConfirm={handlePickerConfirm}
+        onClose={() => setActivePicker(null)}
+      />
+    </>
   );
 }
 

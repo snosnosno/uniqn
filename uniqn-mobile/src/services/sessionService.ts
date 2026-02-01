@@ -392,7 +392,11 @@ export async function incrementLoginAttempts(email: string): Promise<void> {
 
   try {
     const { getItem, setItem } = await import('@/lib/secureStorage');
-    const current = await getItem<LoginAttempts>(key) ?? { count: 0, lockUntil: null, lastAttempt: 0 };
+    const current = (await getItem<LoginAttempts>(key)) ?? {
+      count: 0,
+      lockUntil: null,
+      lastAttempt: 0,
+    };
 
     const newCount = current.count + 1;
     const shouldLock = newCount >= MAX_LOGIN_ATTEMPTS;

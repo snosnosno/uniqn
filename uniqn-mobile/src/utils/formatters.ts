@@ -99,8 +99,7 @@ export const maskEmail = (email: string | undefined | null): string => {
   const [local, domain] = email.split('@');
   if (!local || !domain) return email;
 
-  const maskedLocal =
-    local.length <= 2 ? local[0] + '*' : local[0] + '***';
+  const maskedLocal = local.length <= 2 ? local[0] + '*' : local[0] + '***';
 
   return `${maskedLocal}@${domain}`;
 };

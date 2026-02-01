@@ -39,11 +39,7 @@ export const SalarySection = memo(function SalarySection({
   // 역할 추출 로직 (유틸리티 함수 사용)
   // ============================================================================
   const extractedRoles = useMemo(
-    () => extractRolesFromPosting(
-      data.postingType,
-      data.roles,
-      data.dateSpecificRequirements
-    ),
+    () => extractRolesFromPosting(data.postingType, data.roles, data.dateSpecificRequirements),
     [data.postingType, data.roles, data.dateSpecificRequirements]
   );
 
@@ -154,11 +150,8 @@ export const SalarySection = memo(function SalarySection({
   );
 
   // 수당 관리 (훅 사용)
-  const {
-    handleGuaranteedHoursChange,
-    handleAllowanceChange,
-    handleAllowanceProvidedToggle,
-  } = useAllowances(data.allowances, onUpdate);
+  const { handleGuaranteedHoursChange, handleAllowanceChange, handleAllowanceProvidedToggle } =
+    useAllowances(data.allowances, onUpdate);
 
   // 계산된 값들
   const totalCount = useMemo(() => calculateTotalCount(roles), [roles]);
@@ -170,9 +163,7 @@ export const SalarySection = memo(function SalarySection({
       {roles.length > 1 && (
         <View className="mb-4 flex-row items-center justify-between p-3 bg-gray-50 dark:bg-surface rounded-lg">
           <View>
-            <Text className="text-gray-900 dark:text-white font-medium">
-              전체 동일 급여
-            </Text>
+            <Text className="text-gray-900 dark:text-white font-medium">전체 동일 급여</Text>
             <Text className="text-xs text-gray-500 dark:text-gray-400">
               모든 역할에 같은 급여를 적용합니다
             </Text>
@@ -227,16 +218,11 @@ export const SalarySection = memo(function SalarySection({
 
       {/* 예상 총 비용 */}
       {estimatedCost !== null && (
-        <EstimatedCostCard
-          estimatedCost={estimatedCost}
-          totalCount={totalCount}
-        />
+        <EstimatedCostCard estimatedCost={estimatedCost} totalCount={totalCount} />
       )}
 
       {/* 에러 메시지 */}
-      {errors.salary && (
-        <Text className="mt-2 text-sm text-red-500">{errors.salary}</Text>
-      )}
+      {errors.salary && <Text className="mt-2 text-sm text-red-500">{errors.salary}</Text>}
     </View>
   );
 });

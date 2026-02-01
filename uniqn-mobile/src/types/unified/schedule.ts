@@ -93,9 +93,7 @@ export interface NormalizedScheduleList {
  * @param schedule - NormalizedSchedule 객체
  * @returns DatedScheduleInfo 여부
  */
-export function isDatedSchedule(
-  schedule: NormalizedSchedule
-): schedule is DatedScheduleInfo {
+export function isDatedSchedule(schedule: NormalizedSchedule): schedule is DatedScheduleInfo {
   return schedule.type === 'dated';
 }
 
@@ -105,9 +103,7 @@ export function isDatedSchedule(
  * @param schedule - NormalizedSchedule 객체
  * @returns FixedScheduleInfo 여부
  */
-export function isFixedSchedule(
-  schedule: NormalizedSchedule
-): schedule is FixedScheduleInfo {
+export function isFixedSchedule(schedule: NormalizedSchedule): schedule is FixedScheduleInfo {
   return schedule.type === 'fixed';
 }
 
@@ -180,9 +176,7 @@ export function extractAllDates(scheduleList: NormalizedScheduleList): string[] 
     return [];
   }
 
-  const dates = scheduleList.items
-    .filter(isDatedSchedule)
-    .map((s) => s.date);
+  const dates = scheduleList.items.filter(isDatedSchedule).map((s) => s.date);
 
   return [...new Set(dates)].sort();
 }
@@ -229,13 +223,9 @@ export function extractAllRoles(scheduleList: NormalizedScheduleList): RoleInfo[
  * @returns 표시용 문자열 (예: "주 5일, 19:00 출근")
  */
 export function formatFixedScheduleDisplay(schedule: FixedScheduleInfo): string {
-  const daysText = schedule.daysPerWeek === 0
-    ? '협의'
-    : `주 ${schedule.daysPerWeek}일`;
+  const daysText = schedule.daysPerWeek === 0 ? '협의' : `주 ${schedule.daysPerWeek}일`;
 
-  const timeText = schedule.isStartTimeNegotiable
-    ? '협의'
-    : schedule.startTime ?? '미정';
+  const timeText = schedule.isStartTimeNegotiable ? '협의' : (schedule.startTime ?? '미정');
 
   return `${daysText}, ${timeText} 출근`;
 }

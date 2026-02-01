@@ -142,10 +142,7 @@ function getDotsForSchedules(schedules: ScheduleEvent[]): DotInfo[] {
 /**
  * 스케줄을 MarkedDates 형식으로 변환
  */
-function convertToMarkedDates(
-  schedules: ScheduleEvent[],
-  selectedDate: string
-): MarkedDates {
+function convertToMarkedDates(schedules: ScheduleEvent[], selectedDate: string): MarkedDates {
   const markedDates: MarkedDates = {};
 
   // 날짜별 스케줄 그룹화

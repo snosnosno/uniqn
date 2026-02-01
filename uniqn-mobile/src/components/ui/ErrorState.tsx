@@ -67,9 +67,7 @@ export function ErrorState({
     return (
       <View className="flex-row items-center bg-red-50 dark:bg-red-900/20 px-4 py-3 rounded-xl">
         <Text className="text-red-600 dark:text-red-400 text-lg mr-3">⚠</Text>
-        <Text className="text-red-700 dark:text-red-300 text-sm flex-1">
-          {errorMessage}
-        </Text>
+        <Text className="text-red-700 dark:text-red-300 text-sm flex-1">{errorMessage}</Text>
         {canRetry && (
           <Pressable
             onPress={onRetry}
@@ -77,9 +75,7 @@ export function ErrorState({
             accessibilityRole="button"
             accessibilityLabel={retryText}
           >
-            <Text className="text-red-600 dark:text-red-400 text-sm font-medium">
-              {retryText}
-            </Text>
+            <Text className="text-red-600 dark:text-red-400 text-sm font-medium">{retryText}</Text>
           </Pressable>
         )}
       </View>
@@ -112,11 +108,7 @@ export function ErrorState({
 
       {/* 재시도 버튼 */}
       {canRetry && (
-        <Button
-          variant="primary"
-          onPress={onRetry}
-          accessibilityLabel={retryText}
-        >
+        <Button variant="primary" onPress={onRetry} accessibilityLabel={retryText}>
           {retryText}
         </Button>
       )}

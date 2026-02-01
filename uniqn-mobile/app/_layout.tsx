@@ -53,9 +53,7 @@ function MainNavigator() {
   // 마운트 시 NativeWind colorScheme 확실히 적용
   // (themeStore hydration 타이밍 이슈 해결)
   useEffect(() => {
-    const effectiveMode = mode === 'system'
-      ? (isDark ? 'dark' : 'light')
-      : mode;
+    const effectiveMode = mode === 'system' ? (isDark ? 'dark' : 'light') : mode;
     nativeWindColorScheme.set(effectiveMode);
   }, [mode, isDark]);
 
@@ -136,11 +134,7 @@ function AppContent() {
   if (error) {
     return (
       <View className="flex-1 bg-white dark:bg-surface-dark">
-        <ErrorState
-          error={error}
-          title="앱을 불러올 수 없습니다"
-          onRetry={retry}
-        />
+        <ErrorState error={error} title="앱을 불러올 수 없습니다" onRetry={retry} />
       </View>
     );
   }

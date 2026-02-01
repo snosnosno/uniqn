@@ -14,11 +14,11 @@ import { getRoleDisplayName } from '@/types/unified';
 // 역할 요구사항 호환 타입 (postingConfig + dateRequirement 양쪽 지원)
 interface RoleRequirementCompat {
   id?: string;
-  role?: string;       // v2.0 필드
-  name?: string;       // 레거시 필드 (역할 이름)
+  role?: string; // v2.0 필드
+  name?: string; // 레거시 필드 (역할 이름)
   customRole?: string;
-  headcount?: number;  // v2.0 필드
-  count?: number;      // 레거시 필드 (인원)
+  headcount?: number; // v2.0 필드
+  count?: number; // 레거시 필드 (인원)
   filled?: number;
 }
 
@@ -123,10 +123,7 @@ function getRoleLabel(role?: string, name?: string, customRole?: string): string
 /**
  * 역할 표시 컴포넌트
  */
-const RoleDisplay = memo(function RoleDisplay({
-  role,
-  showFilledCount,
-}: RoleDisplayProps) {
+const RoleDisplay = memo(function RoleDisplay({ role, showFilledCount }: RoleDisplayProps) {
   const label = getRoleLabel(role.role, role.name, role.customRole);
   const filled = role.filled ?? 0;
   const headcount = role.headcount ?? role.count ?? 0;
@@ -134,9 +131,7 @@ const RoleDisplay = memo(function RoleDisplay({
   return (
     <View className="flex-row items-center mr-2 mb-1">
       <Badge variant="primary" size="sm">
-        {showFilledCount
-          ? `${label} ${filled}/${headcount}명`
-          : `${label} ${headcount}명`}
+        {showFilledCount ? `${label} ${filled}/${headcount}명` : `${label} ${headcount}명`}
       </Badge>
     </View>
   );
@@ -160,7 +155,8 @@ const TimeSlotDisplay = memo(function TimeSlotDisplay({
   if (compact) {
     return (
       <Text className="text-sm text-gray-600 dark:text-gray-400">
-        {timeDisplay} • {timeSlot.roles.map(r => getRoleLabel(r.role, r.name, r.customRole)).join(', ')}
+        {timeDisplay} •{' '}
+        {timeSlot.roles.map((r) => getRoleLabel(r.role, r.name, r.customRole)).join(', ')}
       </Text>
     );
   }
@@ -172,11 +168,7 @@ const TimeSlotDisplay = memo(function TimeSlotDisplay({
       </Text>
       <View className="flex-row flex-wrap ml-4">
         {timeSlot.roles.map((role, idx) => (
-          <RoleDisplay
-            key={role.id || idx}
-            role={role}
-            showFilledCount={showFilledCount}
-          />
+          <RoleDisplay key={role.id || idx} role={role} showFilledCount={showFilledCount} />
         ))}
       </View>
     </View>
@@ -196,22 +188,16 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
   compact = false,
   // index는 더 이상 사용하지 않음 (Day N 표시 제거)
 }: DateRequirementDisplayProps) {
-  const dateStr = useMemo(
-    () => getDateString(requirement.date),
-    [requirement.date]
-  );
+  const dateStr = useMemo(() => getDateString(requirement.date), [requirement.date]);
 
-  const formattedDate = useMemo(
-    () => formatDate(dateStr),
-    [dateStr]
-  );
+  const formattedDate = useMemo(() => formatDate(dateStr), [dateStr]);
 
   // 전체 인원 합계 (호환성 처리)
   const totalStats = useMemo(() => {
     let total = 0;
     let filled = 0;
-    requirement.timeSlots.forEach(slot => {
-      slot.roles.forEach(role => {
+    requirement.timeSlots.forEach((slot) => {
+      slot.roles.forEach((role) => {
         total += role.headcount ?? role.count ?? 0;
         filled += role.filled ?? 0;
       });
@@ -257,10 +243,7 @@ export const DateRequirementDisplay = memo(function DateRequirementDisplay({
           📅 {formattedDate}
         </Text>
         {showFilledCount && (
-          <Badge
-            variant={totalStats.filled >= totalStats.total ? 'success' : 'warning'}
-            size="sm"
-          >
+          <Badge variant={totalStats.filled >= totalStats.total ? 'success' : 'warning'} size="sm">
             {totalStats.filled}/{totalStats.total}명
           </Badge>
         )}

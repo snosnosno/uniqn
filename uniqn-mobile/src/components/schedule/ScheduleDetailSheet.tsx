@@ -45,17 +45,31 @@ interface ScheduleDetailSheetProps {
 // Constants
 // ============================================================================
 
-const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | 'success' | 'default' | 'error' }> = {
+const statusConfig: Record<
+  ScheduleType,
+  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
+> = {
   applied: { label: '지원 중', variant: 'warning' },
   confirmed: { label: '확정', variant: 'success' },
   completed: { label: '완료', variant: 'default' },
   cancelled: { label: '취소', variant: 'error' },
 };
 
-const attendanceConfig: Record<AttendanceStatus, { label: string; color: string; bgColor: string }> = {
+const attendanceConfig: Record<
+  AttendanceStatus,
+  { label: string; color: string; bgColor: string }
+> = {
   not_started: { label: '출근 전', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-surface' },
-  checked_in: { label: '근무 중', color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/30' },
-  checked_out: { label: '퇴근 완료', color: 'text-primary-600', bgColor: 'bg-primary-100 dark:bg-primary-900/30' },
+  checked_in: {
+    label: '근무 중',
+    color: 'text-green-600',
+    bgColor: 'bg-green-100 dark:bg-green-900/30',
+  },
+  checked_out: {
+    label: '퇴근 완료',
+    color: 'text-primary-600',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+  },
 };
 
 // ============================================================================
@@ -148,12 +162,7 @@ export function ScheduleDetailSheet({
   const canCheckInOut = isConfirmed && schedule.workLogId;
 
   return (
-    <Modal
-      visible={visible}
-      onClose={onClose}
-      position="bottom"
-      showCloseButton={false}
-    >
+    <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
       {/* Handle Bar */}
       <View className="items-center mb-4">
         <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
@@ -168,9 +177,7 @@ export function ScheduleDetailSheet({
             </Badge>
             {isConfirmed && (
               <View className={`px-2 py-0.5 rounded-full ${attendance.bgColor}`}>
-                <Text className={`text-xs ${attendance.color}`}>
-                  {attendance.label}
-                </Text>
+                <Text className={`text-xs ${attendance.color}`}>{attendance.label}</Text>
               </View>
             )}
           </View>
@@ -235,12 +242,8 @@ export function ScheduleDetailSheet({
       {/* 메모 */}
       {schedule.notes && (
         <View className="bg-gray-50 dark:bg-surface/50 rounded-xl p-4 mb-6">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            메모
-          </Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-400">
-            {schedule.notes}
-          </Text>
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">메모</Text>
+          <Text className="text-sm text-gray-600 dark:text-gray-400">{schedule.notes}</Text>
         </View>
       )}
 
@@ -251,8 +254,13 @@ export function ScheduleDetailSheet({
           onPress={handleQRScan}
           className="flex-row items-center justify-center"
         >
-          <QrCodeIcon size={20} color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'} />
-          <Text className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}>
+          <QrCodeIcon
+            size={20}
+            color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'}
+          />
+          <Text
+            className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}
+          >
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>
         </Button>
@@ -281,26 +289,25 @@ export function ScheduleDetailSheet({
               onPress={handleCancelApplication}
               className="border-red-300 dark:border-red-700"
             >
-              <Text className="text-red-600 dark:text-red-400 font-semibold">
-                지원 취소
-              </Text>
+              <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
             </Button>
           )}
         </View>
       )}
 
       {/* 확정 상태: 취소 요청 버튼 */}
-      {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && !canCheckInOut && (
-        <Button
-          variant="outline"
-          onPress={handleRequestCancellation}
-          className="border-orange-300 dark:border-orange-700"
-        >
-          <Text className="text-orange-600 dark:text-orange-400 font-semibold">
-            취소 요청
-          </Text>
-        </Button>
-      )}
+      {schedule.type === 'confirmed' &&
+        onRequestCancellation &&
+        schedule.applicationId &&
+        !canCheckInOut && (
+          <Button
+            variant="outline"
+            onPress={handleRequestCancellation}
+            className="border-orange-300 dark:border-orange-700"
+          >
+            <Text className="text-orange-600 dark:text-orange-400 font-semibold">취소 요청</Text>
+          </Button>
+        )}
     </Modal>
   );
 }

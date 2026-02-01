@@ -31,8 +31,8 @@ export default function EmployerTermsScreen() {
             </Text>
             <Text className="text-sm leading-6 text-gray-600 dark:text-gray-400">
               이 약관은 UNIQN(이하 "회사")이 제공하는 구인자 서비스 이용에 관한 사항을 규정함을
-              목적으로 합니다. 구인자란 UNIQN 플랫폼을 통해 홀덤 토너먼트 스태프를 모집하는
-              회원을 의미합니다.
+              목적으로 합니다. 구인자란 UNIQN 플랫폼을 통해 홀덤 토너먼트 스태프를 모집하는 회원을
+              의미합니다.
             </Text>
           </View>
 

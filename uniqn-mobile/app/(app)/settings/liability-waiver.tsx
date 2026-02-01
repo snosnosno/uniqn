@@ -38,8 +38,8 @@ export default function LiabilityWaiverScreen() {
               제1조 (책임의 귀속)
             </Text>
             <Text className="text-sm leading-6 text-gray-600 dark:text-gray-400">
-              UNIQN은 구인자와 스태프 간의 중개 서비스만을 제공하며, 다음 사항에 대한 책임은
-              구인자 또는 해당 업체에게 있습니다.{'\n\n'}
+              UNIQN은 구인자와 스태프 간의 중개 서비스만을 제공하며, 다음 사항에 대한 책임은 구인자
+              또는 해당 업체에게 있습니다.{'\n\n'}
               1. 스태프 채용 및 근로 관계에서 발생하는 모든 법적 책임{'\n'}
               2. 근무 현장에서 발생하는 안전사고 및 인명피해{'\n'}
               3. 급여 지급 및 4대 보험 등 근로 관련 의무 이행{'\n'}
@@ -52,13 +52,10 @@ export default function LiabilityWaiverScreen() {
               제2조 (불법행위에 대한 책임)
             </Text>
             <Text className="text-sm leading-6 text-gray-600 dark:text-gray-400">
-              구인자 또는 업체의 불법적인 행위나 사고에 대한 모든 민형사상 책임은 UNIQN이 아닌
-              해당 구인자 또는 업체에게 있습니다.{'\n\n'}
-              불법행위의 예시:{'\n'}
-              - 불법 도박장 운영 또는 방조{'\n'}
-              - 스태프에 대한 성희롱, 폭행 등 위법 행위{'\n'}
-              - 임금 체불 또는 부당 노동행위{'\n'}
-              - 기타 관련 법령 위반 행위
+              구인자 또는 업체의 불법적인 행위나 사고에 대한 모든 민형사상 책임은 UNIQN이 아닌 해당
+              구인자 또는 업체에게 있습니다.{'\n\n'}
+              불법행위의 예시:{'\n'}- 불법 도박장 운영 또는 방조{'\n'}- 스태프에 대한 성희롱, 폭행
+              등 위법 행위{'\n'}- 임금 체불 또는 부당 노동행위{'\n'}- 기타 관련 법령 위반 행위
             </Text>
           </View>
 
@@ -104,8 +101,8 @@ export default function LiabilityWaiverScreen() {
 
           <View className="mb-6 rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
             <Text className="text-sm font-medium leading-6 text-red-800 dark:text-red-200">
-              본 서약서에 동의함으로써, 구인자는 위 내용을 충분히 이해하였으며, 관련 책임이
-              구인자 본인 또는 해당 업체에게 있음을 인정합니다.
+              본 서약서에 동의함으로써, 구인자는 위 내용을 충분히 이해하였으며, 관련 책임이 구인자
+              본인 또는 해당 업체에게 있음을 인정합니다.
             </Text>
           </View>
 

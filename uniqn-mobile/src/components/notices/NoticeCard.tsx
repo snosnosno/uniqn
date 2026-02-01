@@ -42,7 +42,10 @@ const CATEGORY_LABELS: Record<AnnouncementCategory, string> = {
 };
 
 // 카테고리별 배지 스타일 (BadgeVariant: default, primary, secondary, success, warning, error)
-const CATEGORY_BADGE_VARIANT: Record<AnnouncementCategory, 'primary' | 'success' | 'warning' | 'default'> = {
+const CATEGORY_BADGE_VARIANT: Record<
+  AnnouncementCategory,
+  'primary' | 'success' | 'warning' | 'default'
+> = {
   notice: 'primary',
   update: 'success',
   event: 'warning',
@@ -117,17 +120,12 @@ export function NoticeCard({ notice }: NoticeCardProps) {
               </Text>
 
               {/* 내용 미리보기 */}
-              <Text
-                className="mt-1 text-sm text-gray-600 dark:text-gray-400"
-                numberOfLines={2}
-              >
+              <Text className="mt-1 text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
                 {notice.content}
               </Text>
 
               {/* 날짜 */}
-              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-500">
-                {formattedDate}
-              </Text>
+              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-500">{formattedDate}</Text>
             </View>
           </View>
         </View>

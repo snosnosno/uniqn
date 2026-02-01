@@ -56,9 +56,7 @@ export const AppliedActions = React.memo(function AppliedActions({
         className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
       >
         <XMarkIcon size={16} color="#EF4444" />
-        <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">
-          거절
-        </Text>
+        <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">거절</Text>
       </Pressable>
 
       {/* 확정 버튼 */}
@@ -66,15 +64,11 @@ export const AppliedActions = React.memo(function AppliedActions({
         onPress={onConfirm}
         disabled={isConfirmDisabled}
         className={`flex-1 flex-row items-center justify-center py-2 rounded-lg active:opacity-70 ${
-          isConfirmDisabled
-            ? 'bg-gray-300 dark:bg-surface-elevated'
-            : 'bg-primary-500'
+          isConfirmDisabled ? 'bg-gray-300 dark:bg-surface-elevated' : 'bg-primary-500'
         }`}
       >
         <CheckIcon size={16} color="#fff" />
-        <Text className="ml-1 text-sm font-medium text-white">
-          {confirmButtonText}
-        </Text>
+        <Text className="ml-1 text-sm font-medium text-white">{confirmButtonText}</Text>
       </Pressable>
     </View>
   );

@@ -65,11 +65,7 @@ export function TimeModificationHistory({
       {isExpanded && (
         <View className="mt-3 bg-gray-50 dark:bg-surface rounded-lg p-3">
           {modificationHistory.map((mod, idx) => (
-            <ModificationHistoryItem
-              key={idx}
-              modification={mod}
-              index={idx}
-            />
+            <ModificationHistoryItem key={idx} modification={mod} index={idx} />
           ))}
         </View>
       )}

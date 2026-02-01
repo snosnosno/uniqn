@@ -23,11 +23,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import type {
-  JobPostingTemplate,
-  CreateTemplateInput,
-  JobPostingFormData,
-} from '@/types';
+import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
 import { extractTemplateData } from '@/types';
 
 // ============================================================================
@@ -51,11 +47,7 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
     logger.info('템플릿 목록 조회', { userId });
 
     const templatesRef = collection(getFirebaseDb(), COLLECTION_NAME);
-    const q = query(
-      templatesRef,
-      where('createdBy', '==', userId),
-      orderBy('createdAt', 'desc')
-    );
+    const q = query(templatesRef, where('createdBy', '==', userId), orderBy('createdAt', 'desc'));
 
     const snapshot = await getDocs(q);
 
@@ -89,10 +81,7 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
  * @param userId 사용자 ID
  * @returns 생성된 템플릿 ID
  */
-export async function saveTemplate(
-  input: CreateTemplateInput,
-  userId: string
-): Promise<string> {
+export async function saveTemplate(input: CreateTemplateInput, userId: string): Promise<string> {
   try {
     logger.info('템플릿 저장 시작', { userId, name: input.name });
 
@@ -192,10 +181,7 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
  * @param templateId 템플릿 ID
  * @param userId 사용자 ID (권한 확인용)
  */
-export async function deleteTemplate(
-  templateId: string,
-  userId: string
-): Promise<void> {
+export async function deleteTemplate(templateId: string, userId: string): Promise<void> {
   try {
     logger.info('템플릿 삭제 시작', { templateId, userId });
 
@@ -241,7 +227,9 @@ export async function deleteTemplate(
  */
 export async function updateTemplate(
   templateId: string,
-  input: Partial<Pick<CreateTemplateInput, 'name' | 'description'> & { formData?: JobPostingFormData }>,
+  input: Partial<
+    Pick<CreateTemplateInput, 'name' | 'description'> & { formData?: JobPostingFormData }
+  >,
   userId: string
 ): Promise<void> {
   try {

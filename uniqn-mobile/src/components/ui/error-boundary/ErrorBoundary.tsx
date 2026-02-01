@@ -125,9 +125,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
       return fallback;
     }
 
-    const containerClass = fullScreen
-      ? 'flex-1 bg-white dark:bg-surface-dark'
-      : 'p-4';
+    const containerClass = fullScreen ? 'flex-1 bg-white dark:bg-surface-dark' : 'p-4';
 
     return (
       <View className={containerClass}>
@@ -156,7 +154,8 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
               showsVerticalScrollIndicator={true}
             >
               <Text className="text-xs text-red-600 dark:text-red-400 font-mono mb-2">
-                {name && `[${name}] `}{error.name}: {error.message}
+                {name && `[${name}] `}
+                {error.name}: {error.message}
               </Text>
               {errorInfo?.componentStack && (
                 <Text className="text-xs text-gray-500 dark:text-gray-400 font-mono">

@@ -19,11 +19,7 @@ import { Platform } from 'react-native';
 import { doc, getDoc } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  APP_VERSION,
-  compareVersions,
-  type UpdateType,
-} from '@/constants/version';
+import { APP_VERSION, compareVersions, type UpdateType } from '@/constants/version';
 
 // ============================================================================
 // Types
@@ -96,9 +92,13 @@ export async function getRemoteVersionConfig(): Promise<RemoteVersionConfig | nu
 
     return data;
   } catch (error) {
-    logger.error('원격 버전 설정 로드 실패', error instanceof Error ? error : new Error(String(error)), {
-      component: 'versionService',
-    });
+    logger.error(
+      '원격 버전 설정 로드 실패',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'versionService',
+      }
+    );
     return null;
   }
 }

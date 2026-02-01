@@ -2,7 +2,7 @@
  * UNIQN Mobile - 구인공고 목록 훅
  *
  * @description TanStack Query 기반 무한스크롤 공고 목록
- * @version 1.2.0 - 정렬 로직 외부 유틸리티로 최적화
+ * @version 1.3.0 - gcTime 단축 및 useMemo 의존성 최적화 (메모리 누수 방지)
  */
 
 import { useMemo } from 'react';
@@ -37,26 +37,37 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
       const result = await getJobPostings(
         filters,
         limit,
-        pageParam as import('firebase/firestore').QueryDocumentSnapshot<import('firebase/firestore').DocumentData> | undefined
+        pageParam as
+          | import('firebase/firestore').QueryDocumentSnapshot<
+              import('firebase/firestore').DocumentData
+            >
+          | undefined
       );
       return result;
     },
-    initialPageParam: undefined as import('firebase/firestore').QueryDocumentSnapshot<import('firebase/firestore').DocumentData> | undefined,
+    initialPageParam: undefined as
+      | import('firebase/firestore').QueryDocumentSnapshot<
+          import('firebase/firestore').DocumentData
+        >
+      | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     enabled,
     staleTime: cachingPolicies.frequent, // 2분
-    gcTime: cachingPolicies.standard * 2, // 10분
+    gcTime: cachingPolicies.frequent, // 2분 (메모리 누수 방지)
   });
 
   // 전체 데이터를 플랫하게 변환 후 정렬
   // @see utils/jobPostingSorter.ts - 최적화된 정렬 로직
-  const jobs: JobPostingCard[] = useMemo(() => {
-    const allJobs = query.data?.pages.flatMap((page) =>
-      page.items.map(convertToCard)
-    ) ?? [];
+  // 의존성: pages.length로 최적화 (불필요한 재계산 방지)
+  const jobs: JobPostingCard[] = useMemo(
+    () => {
+      const allJobs = query.data?.pages.flatMap((page) => page.items.map(convertToCard)) ?? [];
 
-    return sortJobPostings(allJobs);
-  }, [query.data]);
+      return sortJobPostings(allJobs);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [query.data?.pages.length]
+  );
 
   const hasMore = query.hasNextPage ?? false;
 

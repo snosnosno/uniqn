@@ -63,12 +63,7 @@ export interface DateSelectionProps {
   /** 선택된 키 Set */
   selectedKeys: Set<SelectionKey>;
   /** 역할 토글 콜백 */
-  onRoleToggle: (
-    date: string,
-    slotTime: string,
-    role: string,
-    timeOptions?: TimeOptions
-  ) => void;
+  onRoleToggle: (date: string, slotTime: string, role: string, timeOptions?: TimeOptions) => void;
   /** 비활성화 여부 */
   disabled?: boolean;
 }

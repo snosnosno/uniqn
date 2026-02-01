@@ -94,8 +94,10 @@ function getCalendarDays(
 
     // 선택 여부 확인 (다중 선택 모드 vs 단일 선택 모드)
     const isSelected = multiSelect
-      ? selectedDates.some(d => isSameDay(d, day))
-      : (selectedDate ? isSameDay(day, selectedDate) : false);
+      ? selectedDates.some((d) => isSameDay(d, day))
+      : selectedDate
+        ? isSameDay(day, selectedDate)
+        : false;
 
     // 이미 추가된 날짜인지 확인
     const dateString = format(day, 'yyyy-MM-dd');
@@ -237,15 +239,16 @@ export const CalendarPicker = memo(function CalendarPicker({
 
   // 캘린더 날짜 계산
   const calendarDays = useMemo(
-    () => getCalendarDays(
-      currentMonth,
-      value ?? null,
-      selectedDates,
-      multiSelect,
-      disabledDates,
-      minimumDate,
-      maximumDate
-    ),
+    () =>
+      getCalendarDays(
+        currentMonth,
+        value ?? null,
+        selectedDates,
+        multiSelect,
+        disabledDates,
+        minimumDate,
+        maximumDate
+      ),
     [currentMonth, value, selectedDates, multiSelect, disabledDates, minimumDate, maximumDate]
   );
 
@@ -282,11 +285,11 @@ export const CalendarPicker = memo(function CalendarPicker({
     (date: Date) => {
       if (multiSelect && onMultiSelectChange) {
         // 다중 선택 모드
-        const isAlreadySelected = selectedDates.some(d => isSameDay(d, date));
+        const isAlreadySelected = selectedDates.some((d) => isSameDay(d, date));
 
         if (isAlreadySelected) {
           // 이미 선택된 날짜면 제거
-          onMultiSelectChange(selectedDates.filter(d => !isSameDay(d, date)));
+          onMultiSelectChange(selectedDates.filter((d) => !isSameDay(d, date)));
         } else {
           // 최대 선택 개수 확인
           if (maxSelections && selectedDates.length >= maxSelections) {
@@ -365,11 +368,7 @@ export const CalendarPicker = memo(function CalendarPicker({
         {weeks.map((week, weekIndex) => (
           <View key={weekIndex} className="flex-row">
             {week.map((day) => (
-              <CalendarDayCell
-                key={day.date.toISOString()}
-                day={day}
-                onSelect={handleDaySelect}
-              />
+              <CalendarDayCell key={day.date.toISOString()} day={day} onSelect={handleDaySelect} />
             ))}
           </View>
         ))}
@@ -381,8 +380,7 @@ export const CalendarPicker = memo(function CalendarPicker({
           <View className="flex-row items-center">
             <View className="w-3 h-3 rounded-full bg-indigo-500 mr-2" />
             <Text className="text-xs text-gray-500 dark:text-gray-400">
-              선택 가능:{' '}
-              {minimumDate && format(minimumDate, 'M/d', { locale: ko })}
+              선택 가능: {minimumDate && format(minimumDate, 'M/d', { locale: ko })}
               {minimumDate && maximumDate && ' ~ '}
               {maximumDate && format(maximumDate, 'M/d', { locale: ko })}
             </Text>

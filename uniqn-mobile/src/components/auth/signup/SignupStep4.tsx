@@ -128,9 +128,10 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
         <View
           className={`
             w-6 h-6 rounded border-2 items-center justify-center mr-3
-            ${checked
-              ? 'bg-primary-500 border-primary-500'
-              : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+            ${
+              checked
+                ? 'bg-primary-500 border-primary-500'
+                : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
             }
             ${disabled ? 'opacity-50' : ''}
           `}
@@ -138,12 +139,8 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
           {checked && <Text className="text-white text-sm font-bold">✓</Text>}
         </View>
         <View className="flex-row items-center">
-          {required && (
-            <Text className="text-error-500 mr-1">[필수]</Text>
-          )}
-          {!required && (
-            <Text className="text-gray-400 mr-1">[선택]</Text>
-          )}
+          {required && <Text className="text-error-500 mr-1">[필수]</Text>}
+          {!required && <Text className="text-gray-400 mr-1">[선택]</Text>}
           <Text className="text-gray-900 dark:text-white">{label}</Text>
         </View>
       </Pressable>
@@ -161,7 +158,12 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
 // Component
 // ============================================================================
 
-export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }: SignupStep4Props) {
+export function SignupStep4({
+  onSubmit,
+  onBack,
+  initialData,
+  isLoading = false,
+}: SignupStep4Props) {
   const [modalContent, setModalContent] = useState<TermItem | null>(null);
 
   const {
@@ -208,17 +210,16 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
         <View
           className={`
             w-6 h-6 rounded border-2 items-center justify-center mr-3
-            ${allChecked
-              ? 'bg-primary-500 border-primary-500'
-              : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
+            ${
+              allChecked
+                ? 'bg-primary-500 border-primary-500'
+                : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
             }
           `}
         >
           {allChecked && <Text className="text-white text-sm font-bold">✓</Text>}
         </View>
-        <Text className="text-gray-900 dark:text-white font-semibold">
-          전체 동의하기
-        </Text>
+        <Text className="text-gray-900 dark:text-white font-semibold">전체 동의하기</Text>
       </Pressable>
 
       {/* 구분선 */}
@@ -265,12 +266,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
           가입 완료
         </Button>
 
-        <Button
-          onPress={onBack}
-          variant="ghost"
-          disabled={isLoading}
-          fullWidth
-        >
+        <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
           이전
         </Button>
       </View>

@@ -9,12 +9,7 @@
  * - authStore의 계산된 값을 직접 사용 (RoleResolver 단일 소스)
  */
 
-import {
-  useAuthStore,
-  type AuthUser,
-  type UserProfile,
-  type AuthStatus,
-} from '@/stores/authStore';
+import { useAuthStore, type AuthUser, type UserProfile, type AuthStatus } from '@/stores/authStore';
 
 // ============================================================================
 // Types

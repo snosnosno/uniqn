@@ -15,13 +15,7 @@ import { PreQuestionForm } from './PreQuestionForm';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
-import type {
-  JobPosting,
-  Assignment,
-  PreQuestionAnswer,
-  PostingType,
-  StaffRole,
-} from '@/types';
+import type { JobPosting, Assignment, PreQuestionAnswer, PostingType, StaffRole } from '@/types';
 import { isStaffRole } from '@/types/role';
 import {
   initializePreQuestionAnswers,
@@ -83,8 +77,8 @@ export function ApplicationForm({
 
   // 다중 날짜 모드 상태
   const [selectedAssignments, setSelectedAssignments] = useState<Assignment[]>([]);
-  const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(
-    () => initializePreQuestionAnswers(job.preQuestions ?? [])
+  const [preQuestionAnswers, setPreQuestionAnswers] = useState<PreQuestionAnswer[]>(() =>
+    initializePreQuestionAnswers(job.preQuestions ?? [])
   );
   const [errorQuestionIds, setErrorQuestionIds] = useState<string[]>([]);
 
@@ -101,21 +95,24 @@ export function ApplicationForm({
       const fixedRoles = job.requiredRolesWithCount || [];
 
       if (fixedRoles.length > 0) {
-        return fixedRoles.map((r, idx): RoleDisplayItem => ({
-          key: r.name || r.role || `role-${idx}`,
-          displayName: r.name || getRoleDisplayName(r.role || ''),
-          count: r.count,
-          filled: r.filled ?? 0,
-        }));
+        return fixedRoles.map(
+          (r, idx): RoleDisplayItem => ({
+            key: r.name || r.role || `role-${idx}`,
+            displayName: r.name || getRoleDisplayName(r.role || ''),
+            count: r.count,
+            filled: r.filled ?? 0,
+          })
+        );
       }
 
       // fallback: roles 필드 사용
       const legacyRoles = job.roles || [];
       return legacyRoles.map((r, idx): RoleDisplayItem => {
         const roleWithCustom = r as typeof r & { customRole?: string };
-        const effectiveKey = (r.role as string) === 'other' && roleWithCustom.customRole
-          ? roleWithCustom.customRole
-          : r.role || `role-${idx}`;
+        const effectiveKey =
+          (r.role as string) === 'other' && roleWithCustom.customRole
+            ? roleWithCustom.customRole
+            : r.role || `role-${idx}`;
         return {
           key: effectiveKey,
           displayName: getRoleDisplayName(r.role || '', roleWithCustom.customRole),
@@ -131,9 +128,10 @@ export function ApplicationForm({
       .map((r, idx): RoleDisplayItem => {
         // 커스텀 역할이면 customRole을 키로 사용
         const roleWithCustom = r as typeof r & { customRole?: string };
-        const effectiveKey = (r.role as string) === 'other' && roleWithCustom.customRole
-          ? roleWithCustom.customRole
-          : r.role || `role-${idx}`;
+        const effectiveKey =
+          (r.role as string) === 'other' && roleWithCustom.customRole
+            ? roleWithCustom.customRole
+            : r.role || `role-${idx}`;
         return {
           key: effectiveKey,
           displayName: getRoleDisplayName(r.role || '', roleWithCustom.customRole),
@@ -242,12 +240,7 @@ export function ApplicationForm({
 
   // Footer 컨텐츠
   const footerContent = (
-    <Button
-      onPress={handleSubmit}
-      disabled={!canSubmit}
-      loading={isSubmitting}
-      fullWidth
-    >
+    <Button onPress={handleSubmit} disabled={!canSubmit} loading={isSubmitting} fullWidth>
       지원하기
     </Button>
   );
@@ -261,189 +254,183 @@ export function ApplicationForm({
       isLoading={isSubmitting}
     >
       <View className="px-4">
-          {/* 공고 정보 */}
-          <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
-            {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
-            {job.postingType && job.postingType !== 'regular' && (
-              <View className="mb-2">
-                <PostingTypeBadge
-                  type={job.postingType as PostingType}
-                  size="sm"
-                />
-              </View>
-            )}
-
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-              {job.title}
-            </Text>
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-              📍 {job.location.name}
-            </Text>
-
-            {/* 급여 표시 (v2.0: 역할별 급여) - 크게 표시 */}
+        {/* 공고 정보 */}
+        <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
+          {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
+          {job.postingType && job.postingType !== 'regular' && (
             <View className="mb-2">
-              <RoleSalaryDisplay
-                roles={job.roles}
-                useSameSalary={job.useSameSalary}
-                defaultSalary={job.defaultSalary}
-                compact={false}
-              />
+              <PostingTypeBadge type={job.postingType as PostingType} size="sm" />
             </View>
+          )}
 
-            {/* 수당 표시 (v2.0) */}
-            {(() => {
-              const allowanceItems = getAllowanceItems(job.allowances);
-              if (allowanceItems.length === 0) return null;
-              return (
-                <View className="flex-row flex-wrap mt-1">
-                  {allowanceItems.map((item, idx) => (
-                    <Badge key={idx} variant="default" size="sm" className="mr-1 mb-1">
-                      {item}
-                    </Badge>
-                  ))}
-                </View>
-              );
-            })()}
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+            {job.title}
+          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
+            📍 {job.location.name}
+          </Text>
 
-            {/* 고정공고: 근무 일정 표시 (읽기 전용) */}
-            {isFixedMode && (
-              <View className="mt-3 pt-3 border-t border-gray-200 dark:border-surface-overlay">
-                <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                  근무 조건
-                </Text>
-                <FixedScheduleDisplay
-                  daysPerWeek={job.daysPerWeek}
-                  startTime={job.timeSlot?.split(/[-~]/)[0]?.trim()}
-                  isStartTimeNegotiable={job.isStartTimeNegotiable}
-                  compact={true}
-                />
-              </View>
-            )}
+          {/* 급여 표시 (v2.0: 역할별 급여) - 크게 표시 */}
+          <View className="mb-2">
+            <RoleSalaryDisplay
+              roles={job.roles}
+              useSameSalary={job.useSameSalary}
+              defaultSalary={job.defaultSalary}
+              compact={false}
+            />
           </View>
 
-          {/* 고정공고: 역할만 선택 */}
-          {isFixedMode ? (
-            <View className="mb-6">
-              <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
-                지원할 역할 선택 <Text className="text-error-500">*</Text>
-              </Text>
+          {/* 수당 표시 (v2.0) */}
+          {(() => {
+            const allowanceItems = getAllowanceItems(job.allowances);
+            if (allowanceItems.length === 0) return null;
+            return (
+              <View className="flex-row flex-wrap mt-1">
+                {allowanceItems.map((item, idx) => (
+                  <Badge key={idx} variant="default" size="sm" className="mr-1 mb-1">
+                    {item}
+                  </Badge>
+                ))}
+              </View>
+            );
+          })()}
 
-              {availableRoles.length === 0 ? (
-                <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4 border border-error-200 dark:border-error-800">
-                  <Text className="text-error-600 dark:text-error-400 text-center font-medium">
-                    현재 모집 중인 역할이 없습니다
-                  </Text>
-                  <Text className="text-error-500 dark:text-error-500 text-center text-xs mt-1">
-                    다른 공고를 확인해주세요
-                  </Text>
-                </View>
-              ) : (
-                <View className="flex-col gap-2">
-                  {availableRoles.map((roleItem, index) => {
-                    const isSelected = selectedRole === roleItem.key;
+          {/* 고정공고: 근무 일정 표시 (읽기 전용) */}
+          {isFixedMode && (
+            <View className="mt-3 pt-3 border-t border-gray-200 dark:border-surface-overlay">
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">근무 조건</Text>
+              <FixedScheduleDisplay
+                daysPerWeek={job.daysPerWeek}
+                startTime={job.timeSlot?.split(/[-~]/)[0]?.trim()}
+                isStartTimeNegotiable={job.isStartTimeNegotiable}
+                compact={true}
+              />
+            </View>
+          )}
+        </View>
 
-                    return (
-                      <Pressable
-                        key={`${roleItem.key}-${index}`}
-                        onPress={() => setSelectedRole(roleItem.key)}
-                        disabled={isSubmitting}
-                        className={`
+        {/* 고정공고: 역할만 선택 */}
+        {isFixedMode ? (
+          <View className="mb-6">
+            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
+              지원할 역할 선택 <Text className="text-error-500">*</Text>
+            </Text>
+
+            {availableRoles.length === 0 ? (
+              <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-4 border border-error-200 dark:border-error-800">
+                <Text className="text-error-600 dark:text-error-400 text-center font-medium">
+                  현재 모집 중인 역할이 없습니다
+                </Text>
+                <Text className="text-error-500 dark:text-error-500 text-center text-xs mt-1">
+                  다른 공고를 확인해주세요
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-col gap-2">
+                {availableRoles.map((roleItem, index) => {
+                  const isSelected = selectedRole === roleItem.key;
+
+                  return (
+                    <Pressable
+                      key={`${roleItem.key}-${index}`}
+                      onPress={() => setSelectedRole(roleItem.key)}
+                      disabled={isSubmitting}
+                      className={`
                           flex-row items-center justify-between p-4 rounded-lg border-2
-                          ${isSelected
-                            ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                            : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
+                          ${
+                            isSelected
+                              ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
+                              : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
                           }
                           ${isSubmitting ? 'opacity-50' : ''}
                         `}
-                      >
-                        <View className="flex-row items-center">
-                          <View
-                            className={`
+                    >
+                      <View className="flex-row items-center">
+                        <View
+                          className={`
                               w-5 h-5 rounded-full border-2 mr-3 items-center justify-center
-                              ${isSelected
-                                ? 'border-primary-500 bg-primary-500'
-                                : 'border-gray-300 dark:border-surface-overlay'
+                              ${
+                                isSelected
+                                  ? 'border-primary-500 bg-primary-500'
+                                  : 'border-gray-300 dark:border-surface-overlay'
                               }
                             `}
-                          >
-                            {isSelected && (
-                              <View className="w-2 h-2 rounded-full bg-white" />
-                            )}
-                          </View>
-                          <Text
-                            className={`text-base font-medium ${
-                              isSelected
-                                ? 'text-primary-700 dark:text-primary-300'
-                                : 'text-gray-900 dark:text-white'
-                            }`}
-                          >
-                            {roleItem.displayName}
-                          </Text>
+                        >
+                          {isSelected && <View className="w-2 h-2 rounded-full bg-white" />}
                         </View>
-                        <Badge variant="primary" size="sm">
-                          {roleItem.count}명 모집
-                        </Badge>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              )}
-            </View>
-          ) : (
-            /* 다중 날짜 모드: AssignmentSelector */
-            <View className="mb-6">
-              <AssignmentSelector
-                jobPosting={job}
-                selectedAssignments={selectedAssignments}
-                onSelectionChange={setSelectedAssignments}
-                disabled={isSubmitting}
-              />
-            </View>
-          )}
-
-          {/* 사전질문 폼 (v2.0) */}
-          {hasPreQuestions && (
-            <View className="mb-6">
-              <PreQuestionForm
-                questions={job.preQuestions ?? []}
-                answers={preQuestionAnswers}
-                onAnswersChange={setPreQuestionAnswers}
-                disabled={isSubmitting}
-                errorQuestionIds={errorQuestionIds}
-              />
-            </View>
-          )}
-
-          {/* 메시지 입력 (선택) */}
+                        <Text
+                          className={`text-base font-medium ${
+                            isSelected
+                              ? 'text-primary-700 dark:text-primary-300'
+                              : 'text-gray-900 dark:text-white'
+                          }`}
+                        >
+                          {roleItem.displayName}
+                        </Text>
+                      </View>
+                      <Badge variant="primary" size="sm">
+                        {roleItem.count}명 모집
+                      </Badge>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            )}
+          </View>
+        ) : (
+          /* 다중 날짜 모드: AssignmentSelector */
           <View className="mb-6">
-            <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
-              자기소개 <Text className="text-gray-400">(선택)</Text>
-            </Text>
-            <TextInput
-              value={message}
-              onChangeText={setMessage}
-              placeholder="간단한 자기소개나 경력을 입력하세요"
-              placeholderTextColor="#9CA3AF"
-              multiline
-              numberOfLines={4}
-              maxLength={500}
-              editable={!isSubmitting}
-              className="bg-gray-50 dark:bg-surface rounded-lg p-4 text-gray-900 dark:text-white text-base min-h-[120px]"
-              textAlignVertical="top"
+            <AssignmentSelector
+              jobPosting={job}
+              selectedAssignments={selectedAssignments}
+              onSelectionChange={setSelectedAssignments}
+              disabled={isSubmitting}
             />
-            <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
-              {message.length}/500
-            </Text>
           </View>
+        )}
 
-          {/* 안내 문구 */}
-          <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
-            <Text className="text-xs text-gray-500 dark:text-gray-400 leading-5">
-              • 지원 후에는 구인자가 지원서를 확인합니다.{'\n'}
-              • 수락 시 알림으로 안내해드립니다.{'\n'}
-              • 지원 후 취소는 마이페이지에서 가능합니다.
-            </Text>
+        {/* 사전질문 폼 (v2.0) */}
+        {hasPreQuestions && (
+          <View className="mb-6">
+            <PreQuestionForm
+              questions={job.preQuestions ?? []}
+              answers={preQuestionAnswers}
+              onAnswersChange={setPreQuestionAnswers}
+              disabled={isSubmitting}
+              errorQuestionIds={errorQuestionIds}
+            />
           </View>
+        )}
+
+        {/* 메시지 입력 (선택) */}
+        <View className="mb-6">
+          <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
+            자기소개 <Text className="text-gray-400">(선택)</Text>
+          </Text>
+          <TextInput
+            value={message}
+            onChangeText={setMessage}
+            placeholder="간단한 자기소개나 경력을 입력하세요"
+            placeholderTextColor="#9CA3AF"
+            multiline
+            numberOfLines={4}
+            maxLength={500}
+            editable={!isSubmitting}
+            className="bg-gray-50 dark:bg-surface rounded-lg p-4 text-gray-900 dark:text-white text-base min-h-[120px]"
+            textAlignVertical="top"
+          />
+          <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
+            {message.length}/500
+          </Text>
+        </View>
+
+        {/* 안내 문구 */}
+        <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 leading-5">
+            • 지원 후에는 구인자가 지원서를 확인합니다.{'\n'}• 수락 시 알림으로 안내해드립니다.
+            {'\n'}• 지원 후 취소는 마이페이지에서 가능합니다.
+          </Text>
+        </View>
       </View>
     </SheetModal>
   );

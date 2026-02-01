@@ -217,14 +217,19 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
           // Custom Claims가 없으면 경고
           if (!claims.role) {
-            logger.warn('Custom Claims에 role이 없습니다! Firestore Rules에서 거부될 수 있습니다.', {
-              component: 'useAppInitialize',
-              uid: authUser.uid,
-            });
+            logger.warn(
+              'Custom Claims에 role이 없습니다! Firestore Rules에서 거부될 수 있습니다.',
+              {
+                component: 'useAppInitialize',
+                uid: authUser.uid,
+              }
+            );
           }
 
           // Firestore에서 최신 프로필 가져오기
-          logger.debug('Firestore에서 최신 프로필 가져오는 중...', { component: 'useAppInitialize' });
+          logger.debug('Firestore에서 최신 프로필 가져오는 중...', {
+            component: 'useAppInitialize',
+          });
           const freshProfile = await getUserProfile(authUser.uid);
           if (freshProfile) {
             // Timestamp를 Date로 변환하여 authStore에 저장
@@ -232,10 +237,15 @@ export function useAppInitialize(): UseAppInitializeReturn {
               ...freshProfile,
               createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
               updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
-              employerAgreements: freshProfile.employerAgreements ? {
-                termsAgreedAt: freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-                liabilityWaiverAgreedAt: freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
-              } : undefined,
+              employerAgreements: freshProfile.employerAgreements
+                ? {
+                    termsAgreedAt:
+                      freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+                    liabilityWaiverAgreedAt:
+                      freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ??
+                      new Date(),
+                  }
+                : undefined,
               employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
             });
             logger.info('최신 프로필 로드 완료', {
@@ -437,16 +447,13 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
   // 앱 상태 변화 감지 (포그라운드 복귀 시 인증 상태 확인)
   useEffect(() => {
-    const subscription = AppState.addEventListener(
-      'change',
-      (nextAppState: AppStateStatus) => {
-        if (nextAppState === 'active' && state.isInitialized) {
-          logger.debug('앱 포그라운드 복귀', { component: 'useAppInitialize' });
-          // getState()로 안정적인 함수 참조 획득
-          useAuthStore.getState().checkAuthState();
-        }
+    const subscription = AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+      if (nextAppState === 'active' && state.isInitialized) {
+        logger.debug('앱 포그라운드 복귀', { component: 'useAppInitialize' });
+        // getState()로 안정적인 함수 참조 획득
+        useAuthStore.getState().checkAuthState();
       }
-    );
+    });
 
     return () => {
       subscription.remove();

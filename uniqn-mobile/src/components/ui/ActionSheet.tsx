@@ -73,9 +73,7 @@ export function ActionSheet({
       {(title || description) && (
         <View className="items-center pb-4 mb-2 border-b border-gray-200 dark:border-surface-overlay">
           {title && (
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              {title}
-            </Text>
+            <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
           )}
           {description && (
             <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400 text-center">
@@ -94,24 +92,20 @@ export function ActionSheet({
             disabled={option.disabled}
             className={`
               flex-row items-center justify-center py-4 rounded-xl
-              ${option.disabled
-                ? 'opacity-50'
-                : 'active:bg-gray-100 dark:active:bg-gray-700'}
+              ${option.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
             `}
             accessibilityRole="button"
             accessibilityLabel={option.label}
           >
-            {option.icon && (
-              <View className="mr-2">
-                {option.icon}
-              </View>
-            )}
+            {option.icon && <View className="mr-2">{option.icon}</View>}
             <Text
               className={`
                 text-base font-medium
-                ${option.destructive
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-900 dark:text-white'}
+                ${
+                  option.destructive
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-gray-900 dark:text-white'
+                }
                 ${option.disabled ? 'text-gray-400 dark:text-gray-600' : ''}
               `}
             >

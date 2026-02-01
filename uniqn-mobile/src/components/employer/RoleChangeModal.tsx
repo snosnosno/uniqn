@@ -11,12 +11,7 @@ import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
-import {
-  UserIcon,
-  CheckIcon,
-  AlertCircleIcon,
-  EditIcon,
-} from '../icons';
+import { UserIcon, CheckIcon, AlertCircleIcon, EditIcon } from '../icons';
 import type { ConfirmedStaff, JobPosting } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { STAFF_ROLES } from '@/constants';
@@ -63,11 +58,12 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
       disabled={isCurrentRole}
       className={`
         flex-row items-center justify-between p-4 rounded-xl mb-2
-        ${isCurrentRole
-          ? 'bg-gray-100 dark:bg-surface opacity-50'
-          : isSelected
-          ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500'
-          : 'bg-white dark:bg-surface border border-gray-200 dark:border-surface-overlay'
+        ${
+          isCurrentRole
+            ? 'bg-gray-100 dark:bg-surface opacity-50'
+            : isSelected
+              ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500'
+              : 'bg-white dark:bg-surface border border-gray-200 dark:border-surface-overlay'
         }
       `}
     >
@@ -75,10 +71,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         <View
           className={`
             h-10 w-10 rounded-full items-center justify-center
-            ${isSelected
-              ? 'bg-primary-600'
-              : 'bg-gray-200 dark:bg-surface'
-            }
+            ${isSelected ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'}
           `}
         >
           <UserIcon size={20} color={isSelected ? '#FFFFFF' : '#6B7280'} />
@@ -86,9 +79,10 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
         <Text
           className={`
             ml-3 text-base font-medium
-            ${isSelected
-              ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-900 dark:text-white'
+            ${
+              isSelected
+                ? 'text-primary-600 dark:text-primary-400'
+                : 'text-gray-900 dark:text-white'
             }
           `}
         >
@@ -151,19 +145,18 @@ export function RoleChangeModal({
   const currentRole = staff?.role || '';
 
   // 역할 선택 핸들러
-  const handleSelectRole = useCallback((role: string) => {
-    if (role !== currentRole) {
-      setSelectedRole(role);
-    }
-  }, [currentRole]);
+  const handleSelectRole = useCallback(
+    (role: string) => {
+      if (role !== currentRole) {
+        setSelectedRole(role);
+      }
+    },
+    [currentRole]
+  );
 
   // 저장 유효성
   const isValid = useMemo(() => {
-    return (
-      selectedRole.length > 0 &&
-      selectedRole !== currentRole &&
-      reason.trim().length > 0
-    );
+    return selectedRole.length > 0 && selectedRole !== currentRole && reason.trim().length > 0;
   }, [selectedRole, currentRole, reason]);
 
   // 저장 핸들러
@@ -188,12 +181,7 @@ export function RoleChangeModal({
   if (!staff) return null;
 
   return (
-    <Modal
-      visible={visible}
-      onClose={handleClose}
-      title="역할 변경"
-      position="bottom"
-    >
+    <Modal visible={visible} onClose={handleClose} title="역할 변경" position="bottom">
       <View>
         {/* 스태프 정보 */}
         <Card variant="filled" padding="sm" className="mb-3">
@@ -205,15 +193,14 @@ export function RoleChangeModal({
             </View>
             <View className="ml-3 flex-1">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
-                {staff.staffName}{staff.staffNickname ? ` (${staff.staffNickname})` : ''}
+                {staff.staffName}
+                {staff.staffNickname ? ` (${staff.staffNickname})` : ''}
               </Text>
               <View className="flex-row items-center mt-1">
                 <Badge variant="default" size="sm">
                   {getRoleDisplayName(currentRole, staff?.customRole)}
                 </Badge>
-                <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
-                  {staff.date}
-                </Text>
+                <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">{staff.date}</Text>
               </View>
             </View>
           </View>
@@ -224,10 +211,7 @@ export function RoleChangeModal({
           변경할 역할 선택
         </Text>
 
-        <ScrollView
-          className="max-h-56 mb-3"
-          showsVerticalScrollIndicator={true}
-        >
+        <ScrollView className="max-h-56 mb-3" showsVerticalScrollIndicator={true}>
           {roles.map((role) => (
             <RoleOption
               key={role}
@@ -266,12 +250,7 @@ export function RoleChangeModal({
 
         {/* 버튼 */}
         <View className="flex-row gap-3">
-          <Button
-            variant="secondary"
-            onPress={handleClose}
-            disabled={isLoading}
-            className="flex-1"
-          >
+          <Button variant="secondary" onPress={handleClose} disabled={isLoading} className="flex-1">
             취소
           </Button>
           <Button

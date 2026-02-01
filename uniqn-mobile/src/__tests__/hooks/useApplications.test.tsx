@@ -239,7 +239,9 @@ describe('useApplications', () => {
       });
 
       // mutation의 isPending 상태가 false이거나 undefined일 수 있음
-      expect(result.current.isSubmitting === false || result.current.isSubmitting === undefined).toBe(true);
+      expect(
+        result.current.isSubmitting === false || result.current.isSubmitting === undefined
+      ).toBe(true);
     });
 
     it('초기 isCancelling이 boolean이다', async () => {
@@ -252,7 +254,9 @@ describe('useApplications', () => {
       });
 
       // mutation의 isPending 상태가 false이거나 undefined일 수 있음
-      expect(result.current.isCancelling === false || result.current.isCancelling === undefined).toBe(true);
+      expect(
+        result.current.isCancelling === false || result.current.isCancelling === undefined
+      ).toBe(true);
     });
   });
 });

@@ -28,7 +28,11 @@ import {
   type DateRangeGroup,
 } from '@/utils/dateRangeUtils';
 import type { JobPostingFormData } from '@/types';
-import type { DateSpecificRequirement, TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';
+import type {
+  DateSpecificRequirement,
+  TimeSlot,
+  RoleRequirement,
+} from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
 // Types
@@ -44,11 +48,7 @@ interface DateRequirementsSectionProps {
 // Component
 // ============================================================================
 
-export function DateRequirementsSection({
-  data,
-  onUpdate,
-  errors,
-}: DateRequirementsSectionProps) {
+export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirementsSectionProps) {
   const { postingType } = data;
 
   // 모달 상태
@@ -142,26 +142,24 @@ export function DateRequirementsSection({
   // 개별로 날짜 추가 (독립 timeSlots)
   const addDatesIndividually = useCallback(
     (dates: string[]) => {
-      const newRequirements: DateSpecificRequirement[] = dates.map(
-        (date, index) => ({
-          date,
-          timeSlots: [
-            {
-              id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
-              startTime: '09:00',
-              isTimeToBeAnnounced: false,
-              roles: [
-                {
-                  id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
-                  role: 'dealer',
-                  headcount: 1,
-                } as RoleRequirement,
-              ],
-            },
-          ],
-          isGrouped: false, // 개별로 표시
-        })
-      );
+      const newRequirements: DateSpecificRequirement[] = dates.map((date, index) => ({
+        date,
+        timeSlots: [
+          {
+            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+            startTime: '09:00',
+            isTimeToBeAnnounced: false,
+            roles: [
+              {
+                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+                role: 'dealer',
+                headcount: 1,
+              } as RoleRequirement,
+            ],
+          },
+        ],
+        isGrouped: false, // 개별로 표시
+      }));
 
       const updated = [...dateRequirements, ...newRequirements];
       onUpdate({ dateSpecificRequirements: updated });
@@ -298,7 +296,8 @@ export function DateRequirementsSection({
           최대 {constraints.maxDates}개 날짜 추가 가능
           {isTournament && totalGroupCount > 0 && (
             <Text className="text-gray-500 dark:text-gray-500">
-              {' '}(현재 {totalGroupCount}개 일정, {totalDateCount}일)
+              {' '}
+              (현재 {totalGroupCount}개 일정, {totalDateCount}일)
             </Text>
           )}
         </Text>
@@ -312,9 +311,7 @@ export function DateRequirementsSection({
       {/* 날짜 목록 */}
       {dateRequirements.length === 0 ? (
         <View className="p-8 items-center">
-          <Text className="text-gray-500 dark:text-gray-400">
-            날짜를 추가해주세요
-          </Text>
+          <Text className="text-gray-500 dark:text-gray-400">날짜를 추가해주세요</Text>
         </View>
       ) : isTournament ? (
         // 대회 공고: 그룹 기반 렌더링
@@ -357,9 +354,7 @@ export function DateRequirementsSection({
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"
-        accessibilityHint={
-          canAddDate ? '새 날짜를 추가합니다' : '더 이상 추가할 수 없습니다'
-        }
+        accessibilityHint={canAddDate ? '새 날짜를 추가합니다' : '더 이상 추가할 수 없습니다'}
       >
         <View className="mr-2">
           <PlusIcon size={20} color={canAddDate ? '#A855F7' : '#9CA3AF'} />

@@ -32,11 +32,7 @@ export default function MyInquiriesScreen() {
 
   const renderItem = useCallback(
     ({ item }: { item: Inquiry }) => (
-      <InquiryCard
-        inquiry={item}
-        onPress={() => handleInquiryPress(item)}
-        className="mx-4 mb-3"
-      />
+      <InquiryCard inquiry={item} onPress={() => handleInquiryPress(item)} className="mx-4 mb-3" />
     ),
     [handleInquiryPress]
   );
@@ -88,11 +84,7 @@ export default function MyInquiriesScreen() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         refreshControl={
-          <RefreshControl
-            refreshing={isLoading}
-            onRefresh={refetch}
-            tintColor="#A855F7"
-          />
+          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#A855F7" />
         }
       />
     </SafeAreaView>

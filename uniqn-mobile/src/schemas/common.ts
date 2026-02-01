@@ -86,7 +86,9 @@ function isServerTimestampSentinel(value: unknown): value is { _methodName: 'ser
  * { createdAt: { seconds: 1234567890, nanoseconds: 0 } }
  */
 export const timestampSchema = z
-  .custom<Timestamp | Date | { seconds: number; nanoseconds: number } | { _methodName: 'serverTimestamp' }>(
+  .custom<
+    Timestamp | Date | { seconds: number; nanoseconds: number } | { _methodName: 'serverTimestamp' }
+  >(
     (val) =>
       isTimestampLike(val) ||
       val instanceof Date ||
@@ -195,9 +197,7 @@ export const emailSchema = z.string().email('올바른 이메일 형식이 아�
 /**
  * 한국 전화번호 스키마
  */
-export const phoneSchema = z
-  .string()
-  .regex(/^01[0-9]{8,9}$/, '올바른 휴대폰 번호 형식이 아닙니다');
+export const phoneSchema = z.string().regex(/^01[0-9]{8,9}$/, '올바른 휴대폰 번호 형식이 아닙니다');
 
 /**
  * 날짜 문자열 스키마 (YYYY-MM-DD)
@@ -209,9 +209,7 @@ export const dateStringSchema = z
 /**
  * 시간 문자열 스키마 (HH:MM)
  */
-export const timeStringSchema = z
-  .string()
-  .regex(/^\d{1,2}:\d{2}$/, 'HH:MM 형식이어야 합니다');
+export const timeStringSchema = z.string().regex(/^\d{1,2}:\d{2}$/, 'HH:MM 형식이어야 합니다');
 
 // ============================================================================
 // Type Exports

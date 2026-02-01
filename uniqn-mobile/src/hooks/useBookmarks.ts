@@ -80,10 +80,7 @@ export function useBookmarks(): UseBookmarksReturn {
 
   // 최근 북마크 메모이제이션 (매번 새 배열 생성 방지)
   const recentBookmarks = useMemo(
-    () =>
-      [...bookmarks]
-        .sort((a, b) => b.bookmarkedAt - a.bookmarkedAt)
-        .slice(0, 10),
+    () => [...bookmarks].sort((a, b) => b.bookmarkedAt - a.bookmarkedAt).slice(0, 10),
     [bookmarks]
   );
 

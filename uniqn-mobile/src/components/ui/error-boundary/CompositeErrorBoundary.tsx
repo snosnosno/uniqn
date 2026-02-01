@@ -78,9 +78,5 @@ export function CompositeErrorBoundary({
   }
 
   // 최상위에 기본 에러 경계 추가
-  return (
-    <ErrorBoundary {...props}>
-      {wrappedChildren}
-    </ErrorBoundary>
-  );
+  return <ErrorBoundary {...props}>{wrappedChildren}</ErrorBoundary>;
 }

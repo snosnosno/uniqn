@@ -131,9 +131,7 @@ export const SURFACE_COLORS = {
 /**
  * 서피스 색상 반환 헬퍼
  */
-export function getSurfaceColor(
-  variant: keyof typeof SURFACE_COLORS = 'DEFAULT'
-): string {
+export function getSurfaceColor(variant: keyof typeof SURFACE_COLORS = 'DEFAULT'): string {
   return SURFACE_COLORS[variant];
 }
 

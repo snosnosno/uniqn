@@ -31,11 +31,7 @@ export default function CreateInquiryScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
-      <InquiryForm
-        onSubmit={handleSubmit}
-        isSubmitting={isPending}
-        onCancel={handleCancel}
-      />
+      <InquiryForm onSubmit={handleSubmit} isSubmitting={isPending} onCancel={handleCancel} />
     </SafeAreaView>
   );
 }

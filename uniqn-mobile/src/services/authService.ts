@@ -44,11 +44,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  AuthError,
-  BusinessError,
-  ERROR_CODES,
-} from '@/errors';
+import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
   trackLogin,
@@ -311,10 +307,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 /**
  * 마케팅 동의 상태 업데이트
  */
-export async function updateMarketingConsent(
-  uid: string,
-  marketingAgreed: boolean
-): Promise<void> {
+export async function updateMarketingConsent(uid: string, marketingAgreed: boolean): Promise<void> {
   try {
     logger.info('마케팅 동의 업데이트', { uid, marketingAgreed });
 
@@ -407,9 +400,7 @@ export function getCurrentUser(): FirebaseUser | null {
 /**
  * 인증 상태 변경 리스너
  */
-export function onAuthStateChanged(
-  callback: (user: FirebaseUser | null) => void
-): () => void {
+export function onAuthStateChanged(callback: (user: FirebaseUser | null) => void): () => void {
   return getFirebaseAuth().onAuthStateChanged(callback);
 }
 
@@ -496,7 +487,9 @@ async function createMockSocialLoginResult(
         email: mockEmail,
         errorCode,
       });
-      throw new Error(`Mock 계정 비밀번호가 변경되었습니다. Firebase Console에서 비밀번호를 재설정하거나 계정을 삭제해주세요.`);
+      throw new Error(
+        `Mock 계정 비밀번호가 변경되었습니다. Firebase Console에서 비밀번호를 재설정하거나 계정을 삭제해주세요.`
+      );
     }
 
     // 이메일 중복 (계정 생성 시)
@@ -506,11 +499,15 @@ async function createMockSocialLoginResult(
     }
 
     // 기타 에러: 상세 로깅 후 재throw
-    logger.error(`[MOCK] ${provider} 소셜 로그인 실패`, error instanceof Error ? error : new Error(String(error)), {
-      email: mockEmail,
-      errorCode,
-      errorMessage: firebaseError.message,
-    });
+    logger.error(
+      `[MOCK] ${provider} 소셜 로그인 실패`,
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        email: mockEmail,
+        errorCode,
+        errorMessage: firebaseError.message,
+      }
+    );
     throw error;
   }
 }
@@ -565,11 +562,7 @@ async function createMockProfile(
  */
 export async function signInWithApple(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
-    return createMockSocialLoginResult(
-      'apple',
-      'mock-apple@uniqn.dev',
-      'Apple 테스트 사용자'
-    );
+    return createMockSocialLoginResult('apple', 'mock-apple@uniqn.dev', 'Apple 테스트 사용자');
   }
 
   // 구현 예정:
@@ -598,11 +591,7 @@ export async function signInWithApple(): Promise<AuthResult> {
  */
 export async function signInWithGoogle(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
-    return createMockSocialLoginResult(
-      'google',
-      'mock-google@uniqn.dev',
-      'Google 테스트 사용자'
-    );
+    return createMockSocialLoginResult('google', 'mock-google@uniqn.dev', 'Google 테스트 사용자');
   }
 
   // 구현 예정:
@@ -632,11 +621,7 @@ export async function signInWithGoogle(): Promise<AuthResult> {
  */
 export async function signInWithKakao(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
-    return createMockSocialLoginResult(
-      'kakao',
-      'mock-kakao@uniqn.dev',
-      '카카오 테스트 사용자'
-    );
+    return createMockSocialLoginResult('kakao', 'mock-kakao@uniqn.dev', '카카오 테스트 사용자');
   }
 
   // 구현 예정:
@@ -659,10 +644,7 @@ export async function signInWithKakao(): Promise<AuthResult> {
  * @param currentPassword 현재 비밀번호
  * @param newPassword 새 비밀번호
  */
-export async function changePassword(
-  currentPassword: string,
-  newPassword: string
-): Promise<void> {
+export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
   try {
     const user = getFirebaseAuth().currentUser;
 
@@ -797,10 +779,7 @@ export async function registerAsEmployer(): Promise<UserProfile> {
  * @param uid 사용자 ID
  * @param photoURL 새 프로필 사진 URL (null이면 삭제)
  */
-export async function updateProfilePhotoURL(
-  uid: string,
-  photoURL: string | null
-): Promise<void> {
+export async function updateProfilePhotoURL(uid: string, photoURL: string | null): Promise<void> {
   try {
     const user = getFirebaseAuth().currentUser;
 

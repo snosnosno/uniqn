@@ -5,7 +5,14 @@
  * @version 2.0.0 - 웹 호환성 추가
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, forwardRef, useImperativeHandle } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import { View, Text, Pressable, StyleSheet, Platform, Keyboard, ScrollView } from 'react-native';
 import {
   BottomSheetModal,
@@ -177,10 +184,7 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
     const { isDarkMode } = useThemeStore();
 
     // 스냅 포인트 메모이제이션
-    const snapPoints = useMemo(
-      () => customSnapPoints ?? ['50%', '90%'],
-      [customSnapPoints]
-    );
+    const snapPoints = useMemo(() => customSnapPoints ?? ['50%', '90%'], [customSnapPoints]);
 
     // ref 메서드 노출
     useImperativeHandle(ref, () => ({
@@ -301,15 +305,13 @@ NativeBottomSheet.displayName = 'NativeBottomSheet';
  * - 웹: Modal (position="bottom") 사용
  * - 네이티브: @gorhom/bottom-sheet 사용
  */
-export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
-  (props, ref) => {
-    // 플랫폼별 컴포넌트 분기 (Hooks 호출 없음 - ESLint 규칙 준수)
-    if (isWeb) {
-      return <WebBottomSheet {...props} ref={ref} />;
-    }
-    return <NativeBottomSheet {...props} ref={ref} />;
+export const BottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>((props, ref) => {
+  // 플랫폼별 컴포넌트 분기 (Hooks 호출 없음 - ESLint 규칙 준수)
+  if (isWeb) {
+    return <WebBottomSheet {...props} ref={ref} />;
   }
-);
+  return <NativeBottomSheet {...props} ref={ref} />;
+});
 
 BottomSheet.displayName = 'BottomSheet';
 
@@ -387,9 +389,11 @@ export function SelectBottomSheet({
             <Text
               className={`
                 text-base font-medium flex-1
-                ${option.destructive
-                  ? 'text-red-600 dark:text-red-400'
-                  : 'text-gray-900 dark:text-white'}
+                ${
+                  option.destructive
+                    ? 'text-red-600 dark:text-red-400'
+                    : 'text-gray-900 dark:text-white'
+                }
               `}
             >
               {option.label}

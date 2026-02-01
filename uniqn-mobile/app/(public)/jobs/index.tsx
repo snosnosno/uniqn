@@ -41,19 +41,13 @@ function FilterBar({ selectedFilter, onFilterChange }: FilterBarProps) {
             onPress={() => onFilterChange(filter.key)}
             className={`
               px-4 py-2 rounded-full
-              ${isSelected
-                ? 'bg-primary-500'
-                : 'bg-gray-100 dark:bg-surface'
-              }
+              ${isSelected ? 'bg-primary-500' : 'bg-gray-100 dark:bg-surface'}
             `}
           >
             <Text
               className={`
                 text-sm font-medium
-                ${isSelected
-                  ? 'text-white'
-                  : 'text-gray-600 dark:text-gray-400'
-                }
+                ${isSelected ? 'text-white' : 'text-gray-600 dark:text-gray-400'}
               `}
             >
               {filter.label}
@@ -86,15 +80,8 @@ export default function JobListScreen() {
     return filters;
   }, [selectedFilter]);
 
-  const {
-    jobs,
-    isLoading,
-    isRefreshing,
-    isFetchingMore,
-    hasMore,
-    refresh,
-    loadMore,
-  } = useJobPostings({ filters: getFilters() });
+  const { jobs, isLoading, isRefreshing, isFetchingMore, hasMore, refresh, loadMore } =
+    useJobPostings({ filters: getFilters() });
 
   const handleJobPress = useCallback((jobId: string) => {
     router.push(`/(public)/jobs/${jobId}`);
@@ -117,10 +104,7 @@ export default function JobListScreen() {
       />
 
       {/* 필터 바 */}
-      <FilterBar
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-      />
+      <FilterBar selectedFilter={selectedFilter} onFilterChange={setSelectedFilter} />
 
       {/* 공고 목록 */}
       <View className="flex-1 bg-gray-50 dark:bg-surface-dark">

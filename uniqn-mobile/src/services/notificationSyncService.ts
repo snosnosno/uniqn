@@ -93,9 +93,7 @@ export async function syncMissedNotifications(
 
     // 중복 필터링 (이미 존재하는 알림 제외)
     const existingIdSet = new Set(existingIds);
-    const newNotifications = result.notifications.filter(
-      (n) => !existingIdSet.has(n.id)
-    );
+    const newNotifications = result.notifications.filter((n) => !existingIdSet.has(n.id));
 
     logger.info('놓친 알림 동기화 완료', {
       totalFetched: result.notifications.length,

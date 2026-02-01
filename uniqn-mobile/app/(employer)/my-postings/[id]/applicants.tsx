@@ -43,20 +43,25 @@ export default function ApplicantsScreen() {
   const [modalAction, setModalAction] = useState<ConfirmModalAction>('confirm');
   const [isModalVisible, setIsModalVisible] = useState(false);
   // 선택된 일정 (확정 시 전달)
-  const [selectedAssignmentsForConfirm, setSelectedAssignmentsForConfirm] = useState<Assignment[] | undefined>(undefined);
+  const [selectedAssignmentsForConfirm, setSelectedAssignmentsForConfirm] = useState<
+    Assignment[] | undefined
+  >(undefined);
 
   // 프로필 모달 상태
   const [profileApplicant, setProfileApplicant] = useState<ApplicantWithDetails | null>(null);
   const [isProfileModalVisible, setIsProfileModalVisible] = useState(false);
 
   // 프로필 상세보기
-  const handleViewProfile = useCallback((applicant: ApplicantWithDetails) => {
-    if (!applicant.isRead) {
-      markAsRead(applicant.id);
-    }
-    setProfileApplicant(applicant);
-    setIsProfileModalVisible(true);
-  }, [markAsRead]);
+  const handleViewProfile = useCallback(
+    (applicant: ApplicantWithDetails) => {
+      if (!applicant.isRead) {
+        markAsRead(applicant.id);
+      }
+      setProfileApplicant(applicant);
+      setIsProfileModalVisible(true);
+    },
+    [markAsRead]
+  );
 
   // 프로필 모달 닫기
   const handleCloseProfileModal = useCallback(() => {
@@ -65,12 +70,15 @@ export default function ApplicantsScreen() {
   }, []);
 
   // 확정 버튼 클릭
-  const handleConfirm = useCallback((applicant: ApplicantWithDetails, selectedAssignments?: Assignment[]) => {
-    setSelectedApplicant(applicant);
-    setSelectedAssignmentsForConfirm(selectedAssignments);
-    setModalAction('confirm');
-    setIsModalVisible(true);
-  }, []);
+  const handleConfirm = useCallback(
+    (applicant: ApplicantWithDetails, selectedAssignments?: Assignment[]) => {
+      setSelectedApplicant(applicant);
+      setSelectedAssignmentsForConfirm(selectedAssignments);
+      setModalAction('confirm');
+      setIsModalVisible(true);
+    },
+    []
+  );
 
   // 거절 버튼 클릭
   const handleReject = useCallback((applicant: ApplicantWithDetails) => {
@@ -80,30 +88,36 @@ export default function ApplicantsScreen() {
   }, []);
 
   // 모달에서 확정 처리
-  const handleModalConfirm = useCallback((notes?: string) => {
-    if (!selectedApplicant) return;
+  const handleModalConfirm = useCallback(
+    (notes?: string) => {
+      if (!selectedApplicant) return;
 
-    confirmWithHistory({
-      applicationId: selectedApplicant.id,
-      selectedAssignments: selectedAssignmentsForConfirm,
-      notes,
-    });
-    setIsModalVisible(false);
-    setSelectedApplicant(null);
-    setSelectedAssignmentsForConfirm(undefined);
-  }, [selectedApplicant, selectedAssignmentsForConfirm, confirmWithHistory]);
+      confirmWithHistory({
+        applicationId: selectedApplicant.id,
+        selectedAssignments: selectedAssignmentsForConfirm,
+        notes,
+      });
+      setIsModalVisible(false);
+      setSelectedApplicant(null);
+      setSelectedAssignmentsForConfirm(undefined);
+    },
+    [selectedApplicant, selectedAssignmentsForConfirm, confirmWithHistory]
+  );
 
   // 모달에서 거절 처리
-  const handleModalReject = useCallback((reason?: string) => {
-    if (!selectedApplicant) return;
+  const handleModalReject = useCallback(
+    (reason?: string) => {
+      if (!selectedApplicant) return;
 
-    rejectApplication({
-      applicationId: selectedApplicant.id,
-      reason,
-    });
-    setIsModalVisible(false);
-    setSelectedApplicant(null);
-  }, [selectedApplicant, rejectApplication]);
+      rejectApplication({
+        applicationId: selectedApplicant.id,
+        reason,
+      });
+      setIsModalVisible(false);
+      setSelectedApplicant(null);
+    },
+    [selectedApplicant, rejectApplication]
+  );
 
   // 모달 닫기
   const handleCloseModal = useCallback(() => {

@@ -25,10 +25,7 @@ export type TemplateExcludedFields =
 /**
  * 템플릿에 저장되는 폼 데이터 타입
  */
-export type TemplateFormData = Omit<
-  Partial<JobPostingFormData>,
-  TemplateExcludedFields
->;
+export type TemplateFormData = Omit<Partial<JobPostingFormData>, TemplateExcludedFields>;
 
 // ============================================================================
 // 템플릿 타입 정의
@@ -128,8 +125,7 @@ function removeUndefinedValues<T>(obj: T): T {
  */
 export function extractTemplateData(formData: JobPostingFormData): TemplateFormData {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { workDate, tournamentDates, dateSpecificRequirements, ...templateData } =
-    formData;
+  const { workDate, tournamentDates, dateSpecificRequirements, ...templateData } = formData;
 
   // Firebase는 undefined 값을 허용하지 않으므로 제거
   return removeUndefinedValues(templateData);
@@ -140,9 +136,7 @@ export function extractTemplateData(formData: JobPostingFormData): TemplateFormD
  *
  * @description 템플릿 데이터 + 기본 날짜/일정 값으로 폼 데이터 생성
  */
-export function templateToFormData(
-  template: JobPostingTemplate
-): Partial<JobPostingFormData> {
+export function templateToFormData(template: JobPostingTemplate): Partial<JobPostingFormData> {
   return {
     ...template.templateData,
     // 날짜/일정 관련 필드는 기본값으로 설정

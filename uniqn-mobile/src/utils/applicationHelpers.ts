@@ -36,9 +36,7 @@ export function getAppliedDateInfo(app: Application): {
 
   return {
     dates: app.assignments.flatMap((a) => a.dates ?? []),
-    timeSlots: app.assignments
-      .map((a) => a.timeSlot)
-      .filter((t): t is string => Boolean(t)),
+    timeSlots: app.assignments.map((a) => a.timeSlot).filter((t): t is string => Boolean(t)),
   };
 }
 

@@ -46,10 +46,7 @@ export interface RoleInfo {
  * @param customName - 커스텀 역할명 (roleId === 'other'일 때)
  * @returns 표시용 역할명
  */
-export function getRoleDisplayName(
-  roleId: string,
-  customName?: string
-): string {
+export function getRoleDisplayName(roleId: string, customName?: string): string {
   if (roleId === 'other' && customName) {
     return customName;
   }
@@ -118,10 +115,7 @@ export function getRemainingCount(role: RoleInfo): number {
  * @param roleId - 찾을 역할 ID
  * @returns 찾은 RoleInfo 또는 undefined
  */
-export function findRoleById(
-  roles: RoleInfo[],
-  roleId: string
-): RoleInfo | undefined {
+export function findRoleById(roles: RoleInfo[], roleId: string): RoleInfo | undefined {
   return roles.find((r) => r.roleId === roleId);
 }
 

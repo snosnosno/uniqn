@@ -61,7 +61,10 @@ export interface ConfirmedStaffCardProps {
 // Constants
 // ============================================================================
 
-const STATUS_BADGE_VARIANT: Record<ConfirmedStaffStatus, 'default' | 'primary' | 'success' | 'warning' | 'error'> = {
+const STATUS_BADGE_VARIANT: Record<
+  ConfirmedStaffStatus,
+  'default' | 'primary' | 'success' | 'warning' | 'error'
+> = {
   scheduled: 'default',
   checked_in: 'success',
   checked_out: 'primary',
@@ -102,14 +105,14 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   // 표시 이름: Firestore 프로필 우선, 기존 staffName 폴백
   const baseName = userProfile?.name || staff.staffName;
   // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
-  const displayName = userProfile?.nickname && userProfile.nickname !== baseName
-    ? `${baseName}(${userProfile.nickname})`
-    : baseName;
+  const displayName =
+    userProfile?.nickname && userProfile.nickname !== baseName
+      ? `${baseName}(${userProfile.nickname})`
+      : baseName;
 
   // 출석 체크 여부 (QR 출근 찍었는지)
-  const isCheckedIn = staff.status === 'checked_in' ||
-                      staff.status === 'checked_out' ||
-                      staff.status === 'completed';
+  const isCheckedIn =
+    staff.status === 'checked_in' || staff.status === 'checked_out' || staff.status === 'completed';
 
   // 시간 표시 정보 (WorkTimeDisplay 사용 - 직원 화면과 일관성 확보)
   const timeInfo = useMemo(() => {
@@ -131,14 +134,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   ]);
 
   // 출근 시간: 예정 상태면 예정 시간, 출근 후면 실제 시간
-  const startTimeStr = staff.status === 'scheduled'
-    ? timeInfo.scheduledStart
-    : timeInfo.checkIn;
+  const startTimeStr = staff.status === 'scheduled' ? timeInfo.scheduledStart : timeInfo.checkIn;
 
   // 퇴근 시간: 예정 상태면 예정 시간, 퇴근 후면 실제 시간
-  const endTimeStr = staff.status === 'scheduled'
-    ? timeInfo.scheduledEnd
-    : timeInfo.checkOut;
+  const endTimeStr = staff.status === 'scheduled' ? timeInfo.scheduledEnd : timeInfo.checkOut;
 
   // 근무 시간 계산 (실제 시간 기반, 없으면 '-')
   const workDuration = timeInfo.hasActualTime ? timeInfo.duration : null;
@@ -177,7 +176,8 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   }, [staff, onStatusChange]);
 
   // 상태 변경 가능 여부 (scheduled, checked_in, checked_out 간 자유 전환)
-  const canChangeStatus = staff.status === 'scheduled' || staff.status === 'checked_in' || staff.status === 'checked_out';
+  const canChangeStatus =
+    staff.status === 'scheduled' || staff.status === 'checked_in' || staff.status === 'checked_out';
 
   return (
     <Card variant="elevated" padding={compact ? 'sm' : 'md'}>
@@ -218,16 +218,11 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
             disabled={!canChangeStatus || !onStatusChange}
             className={canChangeStatus && onStatusChange ? 'active:opacity-70' : ''}
           >
-            <Badge
-              variant={STATUS_BADGE_VARIANT[staff.status]}
-              size="sm"
-            >
+            <Badge variant={STATUS_BADGE_VARIANT[staff.status]} size="sm">
               {CONFIRMED_STAFF_STATUS_LABELS[staff.status]}
             </Badge>
           </Pressable>
-          {onPress && (
-            <ChevronRightIcon size={20} color="#9CA3AF" />
-          )}
+          {onPress && <ChevronRightIcon size={20} color="#9CA3AF" />}
         </View>
 
         {/* 시간 정보 (컴팩트 아닐 때) */}
@@ -316,9 +311,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
               className="flex-row items-center justify-center py-2 px-3 rounded-lg bg-red-50 dark:bg-red-900/20 active:opacity-70"
             >
               <ExclamationTriangleIcon size={14} color="#EF4444" />
-              <Text className="ml-1 text-sm font-medium text-red-600 dark:text-red-400">
-                신고
-              </Text>
+              <Text className="ml-1 text-sm font-medium text-red-600 dark:text-red-400">신고</Text>
             </Pressable>
           )}
 

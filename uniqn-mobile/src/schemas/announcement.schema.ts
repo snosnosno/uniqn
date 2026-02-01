@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { xssValidation } from '@/utils/security';
 
 // ============================================================================
 // 기본 스키마
@@ -14,12 +15,9 @@ import { z } from 'zod';
 /**
  * 공지사항 카테고리 스키마
  */
-export const announcementCategorySchema = z.enum(
-  ['notice', 'update', 'event', 'maintenance'],
-  {
-    error: '카테고리를 선택해주세요',
-  }
-);
+export const announcementCategorySchema = z.enum(['notice', 'update', 'event', 'maintenance'], {
+  error: '카테고리를 선택해주세요',
+});
 
 export type AnnouncementCategorySchema = z.infer<typeof announcementCategorySchema>;
 
@@ -86,7 +84,8 @@ export const announcementTitleSchema = z
   .string()
   .min(2, { message: '제목은 최소 2자 이상 입력해주세요' })
   .max(100, { message: '제목은 100자를 초과할 수 없습니다' })
-  .trim();
+  .trim()
+  .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
 
 /**
  * 공지사항 내용 스키마
@@ -95,7 +94,8 @@ export const announcementContentSchema = z
   .string()
   .min(10, { message: '내용은 최소 10자 이상 입력해주세요' })
   .max(5000, { message: '내용은 5000자를 초과할 수 없습니다' })
-  .trim();
+  .trim()
+  .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' });
 
 /**
  * 공지사항 이미지 스키마 (다중 이미지)
@@ -121,7 +121,10 @@ export const createAnnouncementSchema = z.object({
   targetAudience: targetAudienceSchema,
   imageUrl: z.string().url('올바른 이미지 URL이 아닙니다').optional().nullable(),
   imageStoragePath: z.string().optional().nullable(),
-  images: z.array(announcementImageSchema).max(10, '이미지는 최대 10장까지 첨부할 수 있습니다').optional(),
+  images: z
+    .array(announcementImageSchema)
+    .max(10, '이미지는 최대 10장까지 첨부할 수 있습니다')
+    .optional(),
 });
 
 export type CreateAnnouncementFormData = z.infer<typeof createAnnouncementSchema>;
@@ -142,7 +145,10 @@ export const updateAnnouncementSchema = z.object({
   targetAudience: targetAudienceSchema.optional(),
   imageUrl: z.string().url('올바른 이미지 URL이 아닙니다').optional().nullable(),
   imageStoragePath: z.string().optional().nullable(),
-  images: z.array(announcementImageSchema).max(10, '이미지는 최대 10장까지 첨부할 수 있습니다').optional(),
+  images: z
+    .array(announcementImageSchema)
+    .max(10, '이미지는 최대 10장까지 첨부할 수 있습니다')
+    .optional(),
 });
 
 export type UpdateAnnouncementFormData = z.infer<typeof updateAnnouncementSchema>;
@@ -155,14 +161,8 @@ export type UpdateAnnouncementFormData = z.infer<typeof updateAnnouncementSchema
  * 공지사항 필터 스키마 (관리자)
  */
 export const announcementFilterSchema = z.object({
-  status: z
-    .enum(['all', 'draft', 'published', 'archived'])
-    .optional()
-    .default('all'),
-  category: z
-    .enum(['all', 'notice', 'update', 'event', 'maintenance'])
-    .optional()
-    .default('all'),
+  status: z.enum(['all', 'draft', 'published', 'archived']).optional().default('all'),
+  category: z.enum(['all', 'notice', 'update', 'event', 'maintenance']).optional().default('all'),
 });
 
 export type AnnouncementFilterData = z.infer<typeof announcementFilterSchema>;

@@ -7,10 +7,7 @@
 import { View, ActivityIndicator, Text, Pressable } from 'react-native';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import {
-  useAnnouncementDetail,
-  useUpdateAnnouncement,
-} from '@/hooks/useAnnouncement';
+import { useAnnouncementDetail, useUpdateAnnouncement } from '@/hooks/useAnnouncement';
 import { AnnouncementForm } from '@/components/admin/announcements';
 import type { CreateAnnouncementInput } from '@/types';
 

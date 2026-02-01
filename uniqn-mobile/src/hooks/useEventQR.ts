@@ -126,150 +126,156 @@ export function useEventQR(
   // 카운트다운 시작
   // ============================================================================
 
-  const startCountdown = useCallback((expiresAt: number) => {
-    clearTimers();
+  const startCountdown = useCallback(
+    (expiresAt: number) => {
+      clearTimers();
 
-    // 1초마다 남은 시간 업데이트
-    timerRef.current = setInterval(() => {
-      // 타이머 콜백에서 마운트 체크
-      if (!isMountedRef.current) {
-        clearTimers();
-        return;
+      // 1초마다 남은 시간 업데이트
+      timerRef.current = setInterval(() => {
+        // 타이머 콜백에서 마운트 체크
+        if (!isMountedRef.current) {
+          clearTimers();
+          return;
+        }
+
+        const remaining = getQRRemainingSeconds(expiresAt);
+        setRemainingSeconds(remaining);
+
+        if (remaining <= 0) {
+          clearTimers();
+          setIsActive(false);
+        }
+      }, 1000);
+
+      // 초기 값 설정
+      if (isMountedRef.current) {
+        setRemainingSeconds(getQRRemainingSeconds(expiresAt));
       }
-
-      const remaining = getQRRemainingSeconds(expiresAt);
-      setRemainingSeconds(remaining);
-
-      if (remaining <= 0) {
-        clearTimers();
-        setIsActive(false);
-      }
-    }, 1000);
-
-    // 초기 값 설정
-    if (isMountedRef.current) {
-      setRemainingSeconds(getQRRemainingSeconds(expiresAt));
-    }
-  }, [clearTimers]);
+    },
+    [clearTimers]
+  );
 
   // ============================================================================
   // QR 생성
   // ============================================================================
 
-  const generate = useCallback(async (action: QRCodeAction) => {
-    // 마운트 체크
-    if (!isMountedRef.current) {
-      logger.warn('QR 생성 스킵 (컴포넌트 미마운트)');
-      return;
-    }
-
-    // 기존 타이머 먼저 정리 (race condition 방지)
-    clearTimers();
-
-    // 최초 생성인지 갱신인지 구분
-    const isRefresh = isActive;
-
-    try {
-      if (isRefresh) {
-        setIsRefreshing(true);
-      } else {
-        setIsLoading(true);
-      }
-      setError(null);
-
-      logger.info('이벤트 QR 생성 시작', { jobPostingId, date, action, isRefresh });
-
-      const result = await generateEventQR({
-        jobPostingId,
-        date,
-        action,
-        createdBy,
-      });
-
-      // 비동기 작업 후 마운트 체크
+  const generate = useCallback(
+    async (action: QRCodeAction) => {
+      // 마운트 체크
       if (!isMountedRef.current) {
-        logger.warn('QR 생성 완료 후 상태 업데이트 스킵 (컴포넌트 언마운트됨)');
+        logger.warn('QR 생성 스킵 (컴포넌트 미마운트)');
         return;
       }
 
-      qrIdRef.current = result.qrId;
-      setDisplayData(result.displayData);
-      setQrValue(stringifyQRData(result.displayData));
-      setCurrentAction(action);
-      setIsActive(true);
+      // 기존 타이머 먼저 정리 (race condition 방지)
+      clearTimers();
 
-      // 카운트다운 시작
-      startCountdown(result.displayData.expiresAt);
+      // 최초 생성인지 갱신인지 구분
+      const isRefresh = isActive;
 
-      // 성공 시 재시도 카운트 초기화
-      retryCountRef.current = 0;
+      try {
+        if (isRefresh) {
+          setIsRefreshing(true);
+        } else {
+          setIsLoading(true);
+        }
+        setError(null);
 
-      // 자동 갱신 설정
-      if (autoRefresh) {
-        const currentTimerId = setTimeout(async () => {
-          // 마운트 및 타이머 ID 일치 확인 (race condition 방지)
-          if (!isMountedRef.current || refreshTimerRef.current !== currentTimerId) {
-            logger.info('QR 자동 갱신 스킵 (미마운트 또는 타이머 변경됨)');
-            return;
-          }
+        logger.info('이벤트 QR 생성 시작', { jobPostingId, date, action, isRefresh });
 
-          try {
-            await generate(action);
-          } catch (err) {
-            logger.error('QR 자동 갱신 실패', err as Error);
+        const result = await generateEventQR({
+          jobPostingId,
+          date,
+          action,
+          createdBy,
+        });
 
-            // 재시도 로직
-            if (retryCountRef.current < MAX_RETRY_COUNT && isMountedRef.current) {
-              retryCountRef.current++;
-              logger.info('QR 자동 갱신 재시도 예약', {
-                retryCount: retryCountRef.current,
-                maxRetry: MAX_RETRY_COUNT,
-                delayMs: RETRY_DELAY_MS,
-              });
+        // 비동기 작업 후 마운트 체크
+        if (!isMountedRef.current) {
+          logger.warn('QR 생성 완료 후 상태 업데이트 스킵 (컴포넌트 언마운트됨)');
+          return;
+        }
 
-              const retryTimerId = setTimeout(() => {
-                // 재시도 타이머 ID 및 마운트 확인
-                if (!isMountedRef.current || refreshTimerRef.current !== retryTimerId) return;
+        qrIdRef.current = result.qrId;
+        setDisplayData(result.displayData);
+        setQrValue(stringifyQRData(result.displayData));
+        setCurrentAction(action);
+        setIsActive(true);
 
-                generate(action).catch(() => {
-                  // 재시도 실패 시 사용자에게 알림
-                  if (retryCountRef.current >= MAX_RETRY_COUNT && isMountedRef.current) {
-                    addToast({
-                      type: 'error',
-                      message: 'QR 코드 갱신에 실패했습니다. 수동으로 새로고침 해주세요.',
-                    });
-                  }
-                });
-              }, RETRY_DELAY_MS);
-              refreshTimerRef.current = retryTimerId;
-            } else if (isMountedRef.current) {
-              addToast({
-                type: 'error',
-                message: 'QR 코드 갱신에 실패했습니다. 수동으로 새로고침 해주세요.',
-              });
+        // 카운트다운 시작
+        startCountdown(result.displayData.expiresAt);
+
+        // 성공 시 재시도 카운트 초기화
+        retryCountRef.current = 0;
+
+        // 자동 갱신 설정
+        if (autoRefresh) {
+          const currentTimerId = setTimeout(async () => {
+            // 마운트 및 타이머 ID 일치 확인 (race condition 방지)
+            if (!isMountedRef.current || refreshTimerRef.current !== currentTimerId) {
+              logger.info('QR 자동 갱신 스킵 (미마운트 또는 타이머 변경됨)');
+              return;
             }
-          }
-        }, QR_REFRESH_INTERVAL_MS);
-        refreshTimerRef.current = currentTimerId;
-      }
 
-      logger.info('이벤트 QR 생성 완료', { qrId: result.qrId });
-    } catch (err) {
-      const error = err as Error;
-      // 에러 처리 시에도 마운트 체크
-      if (isMountedRef.current) {
-        setError(error);
-        addToast({ type: 'error', message: 'QR 코드 생성에 실패했습니다.' });
+            try {
+              await generate(action);
+            } catch (err) {
+              logger.error('QR 자동 갱신 실패', err as Error);
+
+              // 재시도 로직
+              if (retryCountRef.current < MAX_RETRY_COUNT && isMountedRef.current) {
+                retryCountRef.current++;
+                logger.info('QR 자동 갱신 재시도 예약', {
+                  retryCount: retryCountRef.current,
+                  maxRetry: MAX_RETRY_COUNT,
+                  delayMs: RETRY_DELAY_MS,
+                });
+
+                const retryTimerId = setTimeout(() => {
+                  // 재시도 타이머 ID 및 마운트 확인
+                  if (!isMountedRef.current || refreshTimerRef.current !== retryTimerId) return;
+
+                  generate(action).catch(() => {
+                    // 재시도 실패 시 사용자에게 알림
+                    if (retryCountRef.current >= MAX_RETRY_COUNT && isMountedRef.current) {
+                      addToast({
+                        type: 'error',
+                        message: 'QR 코드 갱신에 실패했습니다. 수동으로 새로고침 해주세요.',
+                      });
+                    }
+                  });
+                }, RETRY_DELAY_MS);
+                refreshTimerRef.current = retryTimerId;
+              } else if (isMountedRef.current) {
+                addToast({
+                  type: 'error',
+                  message: 'QR 코드 갱신에 실패했습니다. 수동으로 새로고침 해주세요.',
+                });
+              }
+            }
+          }, QR_REFRESH_INTERVAL_MS);
+          refreshTimerRef.current = currentTimerId;
+        }
+
+        logger.info('이벤트 QR 생성 완료', { qrId: result.qrId });
+      } catch (err) {
+        const error = err as Error;
+        // 에러 처리 시에도 마운트 체크
+        if (isMountedRef.current) {
+          setError(error);
+          addToast({ type: 'error', message: 'QR 코드 생성에 실패했습니다.' });
+        }
+        logger.error('이벤트 QR 생성 실패', error, { jobPostingId, date, action });
+      } finally {
+        // finally 블록에서도 마운트 체크
+        if (isMountedRef.current) {
+          setIsLoading(false);
+          setIsRefreshing(false);
+        }
       }
-      logger.error('이벤트 QR 생성 실패', error, { jobPostingId, date, action });
-    } finally {
-      // finally 블록에서도 마운트 체크
-      if (isMountedRef.current) {
-        setIsLoading(false);
-        setIsRefreshing(false);
-      }
-    }
-  }, [jobPostingId, date, createdBy, autoRefresh, isActive, startCountdown, addToast, clearTimers]);
+    },
+    [jobPostingId, date, createdBy, autoRefresh, isActive, startCountdown, addToast, clearTimers]
+  );
 
   // ============================================================================
   // QR 갱신

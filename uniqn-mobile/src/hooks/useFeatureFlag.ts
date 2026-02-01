@@ -145,9 +145,7 @@ export function useFeatureFlagWithStatus(key: FeatureFlagKey): FeatureFlagStatus
  * }
  * ```
  */
-export function useFeatureFlags<K extends FeatureFlagKey>(
-  keys: K[],
-): Pick<FeatureFlags, K> {
+export function useFeatureFlags<K extends FeatureFlagKey>(keys: K[]): Pick<FeatureFlags, K> {
   // 키 배열을 문자열로 안정화 (참조 변경에도 내용이 같으면 동일)
   const keysString = useMemo(() => keys.join(','), [keys]);
 

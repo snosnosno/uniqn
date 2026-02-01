@@ -104,12 +104,7 @@ export const ApprovalModal = memo(function ApprovalModal({
   }, []);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={handleCancel}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={handleCancel}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -206,9 +201,7 @@ export const ApprovalModal = memo(function ApprovalModal({
               {/* 에러 메시지 */}
               {error && (
                 <View className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-lg p-3 mb-4">
-                  <Text className="text-sm text-red-800 dark:text-red-300">
-                    {error}
-                  </Text>
+                  <Text className="text-sm text-red-800 dark:text-red-300">{error}</Text>
                 </View>
               )}
             </View>
@@ -216,12 +209,7 @@ export const ApprovalModal = memo(function ApprovalModal({
             {/* 버튼 */}
             <View className="flex-row gap-3 p-4 border-t border-gray-200 dark:border-surface-overlay">
               <View className="flex-1">
-                <Button
-                  variant="outline"
-                  onPress={handleCancel}
-                  disabled={isProcessing}
-                  fullWidth
-                >
+                <Button variant="outline" onPress={handleCancel} disabled={isProcessing} fullWidth>
                   취소
                 </Button>
               </View>
@@ -235,9 +223,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                   {isProcessing ? (
                     <ActivityIndicator size="small" color="white" />
                   ) : (
-                    <Text className="text-white font-medium">
-                      {isApprove ? '승인' : '거부'}
-                    </Text>
+                    <Text className="text-white font-medium">{isApprove ? '승인' : '거부'}</Text>
                   )}
                 </Button>
               </View>

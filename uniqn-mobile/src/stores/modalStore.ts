@@ -11,12 +11,7 @@ import { create } from 'zustand';
 // Types
 // ============================================================================
 
-export type ModalType =
-  | 'confirm'
-  | 'alert'
-  | 'custom'
-  | 'bottomSheet'
-  | 'loading';
+export type ModalType = 'confirm' | 'alert' | 'custom' | 'bottomSheet' | 'loading';
 
 export interface ModalButton {
   label: string;
@@ -100,9 +95,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
         modalToClose.onClose();
       }
 
-      const newModals = id
-        ? state.modals.filter((m) => m.id !== id)
-        : state.modals.slice(0, -1);
+      const newModals = id ? state.modals.filter((m) => m.id !== id) : state.modals.slice(0, -1);
 
       return {
         modals: newModals,
@@ -197,9 +190,24 @@ export const selectIsAnyModalOpen = (state: ModalState) => state.isAnyModalOpen;
  * modal.showConfirm('확인', '삭제하시겠습니까?', handleDelete);
  */
 export const useModal = () => {
-  const { showAlert, showConfirm, showLoading, hideLoading, openModal, closeModal, closeAllModals } =
-    useModalStore();
-  return { showAlert, showConfirm, showLoading, hideLoading, open: openModal, close: closeModal, closeAll: closeAllModals };
+  const {
+    showAlert,
+    showConfirm,
+    showLoading,
+    hideLoading,
+    openModal,
+    closeModal,
+    closeAllModals,
+  } = useModalStore();
+  return {
+    showAlert,
+    showConfirm,
+    showLoading,
+    hideLoading,
+    open: openModal,
+    close: closeModal,
+    closeAll: closeAllModals,
+  };
 };
 
 export default useModalStore;

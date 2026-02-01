@@ -62,9 +62,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
       {/* 시간대별 역할 선택 */}
       <View className="flex-col gap-3">
         {group.timeSlots.map((slot, slotIndex) => {
-          const slotTime = slot.isTimeToBeAnnounced
-            ? TBA_TIME_MARKER
-            : (slot.startTime ?? '');
+          const slotTime = slot.isTimeToBeAnnounced ? TBA_TIME_MARKER : (slot.startTime ?? '');
           const timeDisplay = formatTimeSlotDisplay(slot);
 
           return (
@@ -77,9 +75,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
               <View className="flex-row flex-wrap pl-4">
                 {slot.roles.map((role, roleIndex) => {
                   const effectiveRoleId =
-                    role.roleId === 'other' && role.customName
-                      ? role.customName
-                      : role.roleId;
+                    role.roleId === 'other' && role.customName ? role.customName : role.roleId;
                   const isSelected = isGroupRoleSelected(slotTime, effectiveRoleId);
 
                   return (

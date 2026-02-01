@@ -72,8 +72,7 @@ export interface UseOnboardingReturn {
 export function useOnboarding(): UseOnboardingReturn {
   const { user, isAuthenticated } = useAuthStore();
   const [isLoading, setIsLoading] = useState(true);
-  const [needsNotificationOnboarding, setNeedsNotificationOnboarding] =
-    useState(false);
+  const [needsNotificationOnboarding, setNeedsNotificationOnboarding] = useState(false);
 
   // 온보딩 상태 확인
   useEffect(() => {
@@ -100,8 +99,7 @@ export function useOnboarding(): UseOnboardingReturn {
         const savedVersion = versionStr ? parseInt(versionStr, 10) : 0;
 
         // 버전이 변경되었거나 완료하지 않은 경우 온보딩 필요
-        const needsOnboarding =
-          !isCompleted || savedVersion < CURRENT_ONBOARDING_VERSION;
+        const needsOnboarding = !isCompleted || savedVersion < CURRENT_ONBOARDING_VERSION;
 
         setNeedsNotificationOnboarding(needsOnboarding);
 

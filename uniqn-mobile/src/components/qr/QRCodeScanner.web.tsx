@@ -98,13 +98,9 @@ export function QRCodeScanner({
 
       logger.info('웹 카메라 시작됨');
     } catch (err) {
-      const errorMessage =
-        err instanceof Error ? err.message : '카메라 접근에 실패했습니다.';
+      const errorMessage = err instanceof Error ? err.message : '카메라 접근에 실패했습니다.';
 
-      if (
-        errorMessage.includes('NotAllowedError') ||
-        errorMessage.includes('Permission denied')
-      ) {
+      if (errorMessage.includes('NotAllowedError') || errorMessage.includes('Permission denied')) {
         setPermission('denied');
         setError('카메라 접근이 거부되었습니다. 브라우저 설정에서 허용해주세요.');
       } else {
@@ -258,11 +254,7 @@ export function QRCodeScanner({
       return (
         <SafeAreaView style={styles.container}>
           <View style={styles.header}>
-            <Pressable
-              onPress={onClose}
-              style={styles.closeButton}
-              accessibilityLabel="닫기"
-            >
+            <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel="닫기">
               <XMarkIcon size={24} color="#FFFFFF" />
             </Pressable>
             <Text style={styles.title}>{title}</Text>
@@ -274,17 +266,11 @@ export function QRCodeScanner({
             <Text style={styles.permissionTitle}>
               {permission === 'denied' ? '카메라 권한이 필요합니다' : '오류 발생'}
             </Text>
-            <Text style={styles.permissionText}>
-              {error || '카메라 접근 권한을 허용해주세요.'}
-            </Text>
+            <Text style={styles.permissionText}>{error || '카메라 접근 권한을 허용해주세요.'}</Text>
             <View style={styles.buttonContainer}>
               <Button onPress={handleRetryPermission}>다시 시도</Button>
             </View>
-            <Pressable
-              onPress={onClose}
-              style={styles.closeTextButton}
-              accessibilityLabel="닫기"
-            >
+            <Pressable onPress={onClose} style={styles.closeTextButton} accessibilityLabel="닫기">
               <Text style={styles.closeText}>닫기</Text>
             </Pressable>
           </View>
@@ -296,11 +282,7 @@ export function QRCodeScanner({
       <SafeAreaView style={styles.container}>
         {/* 헤더 */}
         <View style={styles.header}>
-          <Pressable
-            onPress={onClose}
-            style={styles.closeButton}
-            accessibilityLabel="닫기"
-          >
+          <Pressable onPress={onClose} style={styles.closeButton} accessibilityLabel="닫기">
             <XMarkIcon size={24} color="#FFFFFF" />
           </Pressable>
           <Text style={styles.title}>{title}</Text>
@@ -319,10 +301,7 @@ export function QRCodeScanner({
           />
 
           {/* 캔버스 (숨김, 스캔용) */}
-          <canvas
-            ref={canvasRef as React.RefObject<HTMLCanvasElement>}
-            style={styles.canvas}
-          />
+          <canvas ref={canvasRef as React.RefObject<HTMLCanvasElement>} style={styles.canvas} />
 
           {/* 오버레이 */}
           <View style={styles.overlay}>
@@ -335,10 +314,18 @@ export function QRCodeScanner({
               ]}
             >
               {/* 코너 장식 */}
-              <View style={[styles.corner, styles.cornerTopLeft, scanned && styles.cornerSuccess]} />
-              <View style={[styles.corner, styles.cornerTopRight, scanned && styles.cornerSuccess]} />
-              <View style={[styles.corner, styles.cornerBottomLeft, scanned && styles.cornerSuccess]} />
-              <View style={[styles.corner, styles.cornerBottomRight, scanned && styles.cornerSuccess]} />
+              <View
+                style={[styles.corner, styles.cornerTopLeft, scanned && styles.cornerSuccess]}
+              />
+              <View
+                style={[styles.corner, styles.cornerTopRight, scanned && styles.cornerSuccess]}
+              />
+              <View
+                style={[styles.corner, styles.cornerBottomLeft, scanned && styles.cornerSuccess]}
+              />
+              <View
+                style={[styles.corner, styles.cornerBottomRight, scanned && styles.cornerSuccess]}
+              />
             </View>
 
             {/* 안내 문구 */}
@@ -346,10 +333,10 @@ export function QRCodeScanner({
               {scanned
                 ? '스캔 완료!'
                 : expectedAction === 'checkIn'
-                ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
-                : expectedAction === 'checkOut'
-                ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
-                : 'QR 코드를 영역 안에 맞춰주세요'}
+                  ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
+                  : expectedAction === 'checkOut'
+                    ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
+                    : 'QR 코드를 영역 안에 맞춰주세요'}
             </Text>
           </View>
         </View>

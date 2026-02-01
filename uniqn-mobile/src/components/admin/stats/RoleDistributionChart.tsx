@@ -31,10 +31,13 @@ export function RoleDistributionChart({
   const total = data.admin + data.employer + data.staff;
 
   // 퍼센트 계산
-  const getPercent = useCallback((value: number) => {
-    if (total === 0) return 0;
-    return Math.round((value / total) * 100);
-  }, [total]);
+  const getPercent = useCallback(
+    (value: number) => {
+      if (total === 0) return 0;
+      return Math.round((value / total) * 100);
+    },
+    [total]
+  );
 
   const chartData = useMemo(() => {
     const legendColor = isDarkMode ? '#9ca3af' : '#6b7280';
@@ -63,21 +66,20 @@ export function RoleDistributionChart({
     ];
   }, [data.admin, data.employer, data.staff, isDarkMode]);
 
-  const chartConfig = useMemo(() => ({
-    color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-  }), []);
+  const chartConfig = useMemo(
+    () => ({
+      color: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    }),
+    []
+  );
 
   return (
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
-      <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-        {title}
-      </Text>
+      <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
 
       {total === 0 ? (
         <View className="h-[200px] items-center justify-center">
-          <Text className="text-gray-500 dark:text-gray-400">
-            데이터가 없습니다
-          </Text>
+          <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
         </View>
       ) : (
         <>
@@ -102,9 +104,7 @@ export function RoleDistributionChart({
               <Text className="text-lg font-bold text-gray-900 dark:text-white">
                 {data.admin.toLocaleString()}
               </Text>
-              <Text className="text-xs text-gray-400">
-                {getPercent(data.admin)}%
-              </Text>
+              <Text className="text-xs text-gray-400">{getPercent(data.admin)}%</Text>
             </View>
 
             <View className="items-center flex-1">
@@ -115,9 +115,7 @@ export function RoleDistributionChart({
               <Text className="text-lg font-bold text-gray-900 dark:text-white">
                 {data.employer.toLocaleString()}
               </Text>
-              <Text className="text-xs text-gray-400">
-                {getPercent(data.employer)}%
-              </Text>
+              <Text className="text-xs text-gray-400">{getPercent(data.employer)}%</Text>
             </View>
 
             <View className="items-center flex-1">
@@ -128,9 +126,7 @@ export function RoleDistributionChart({
               <Text className="text-lg font-bold text-gray-900 dark:text-white">
                 {data.staff.toLocaleString()}
               </Text>
-              <Text className="text-xs text-gray-400">
-                {getPercent(data.staff)}%
-              </Text>
+              <Text className="text-xs text-gray-400">{getPercent(data.staff)}%</Text>
             </View>
           </View>
         </>

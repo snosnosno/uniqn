@@ -101,7 +101,11 @@ function getRequiredEnvVar(name: string, value: string | undefined): string {
  * 선택적 환경 변수 가져오기 (추후 활용 예정)
  * export for future use - suppresses unused warning
  */
-export function getOptionalEnvVar(name: string, value: string | undefined, defaultValue: string): string {
+export function getOptionalEnvVar(
+  name: string,
+  value: string | undefined,
+  defaultValue: string
+): string {
   void name; // 변수명 로깅에 사용 가능
   return value || defaultValue;
 }
@@ -111,11 +115,26 @@ export function getOptionalEnvVar(name: string, value: string | undefined, defau
 // ============================================================================
 
 const firebaseConfig: FirebaseConfig = {
-  apiKey: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_API_KEY', process.env.EXPO_PUBLIC_FIREBASE_API_KEY),
-  authDomain: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN', process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN),
-  projectId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_PROJECT_ID', process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID),
-  storageBucket: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET', process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET),
-  messagingSenderId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID', process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID),
+  apiKey: getRequiredEnvVar(
+    'EXPO_PUBLIC_FIREBASE_API_KEY',
+    process.env.EXPO_PUBLIC_FIREBASE_API_KEY
+  ),
+  authDomain: getRequiredEnvVar(
+    'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
+    process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN
+  ),
+  projectId: getRequiredEnvVar(
+    'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
+    process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID
+  ),
+  storageBucket: getRequiredEnvVar(
+    'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
+    process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET
+  ),
+  messagingSenderId: getRequiredEnvVar(
+    'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
+    process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
+  ),
   appId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_APP_ID', process.env.EXPO_PUBLIC_FIREBASE_APP_ID),
 };
 

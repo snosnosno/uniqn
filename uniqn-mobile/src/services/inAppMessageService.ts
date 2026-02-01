@@ -140,7 +140,11 @@ function checkFrequencyCondition(
       const now = new Date();
 
       // 날짜만 비교 (시간 무시)
-      const lastShownDate = new Date(lastShown.getFullYear(), lastShown.getMonth(), lastShown.getDate());
+      const lastShownDate = new Date(
+        lastShown.getFullYear(),
+        lastShown.getMonth(),
+        lastShown.getDate()
+      );
       const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
       return lastShownDate < todayDate;

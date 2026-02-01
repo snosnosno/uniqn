@@ -39,9 +39,7 @@ export function normalizeJobRoleStats(role: {
  * @description 날짜별 요구사항의 역할 타입 변환
  * role/name, headcount/count 등 혼용된 필드 처리
  */
-export function normalizeFormRoleRequirement(
-  role: DateRoleRequirement
-): RoleInfo {
+export function normalizeFormRoleRequirement(role: DateRoleRequirement): RoleInfo {
   // 역할 ID 추출
   const roleId = role.role ?? 'other';
 

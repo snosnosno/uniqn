@@ -124,10 +124,7 @@ const DEFAULT_OPTIONS: Required<Omit<RetryOptions, 'shouldRetry' | 'onRetry' | '
  * );
  * ```
  */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  options: RetryOptions = {}
-): Promise<T> {
+export async function withRetry<T>(fn: () => Promise<T>, options: RetryOptions = {}): Promise<T> {
   const config = { ...DEFAULT_OPTIONS, ...options };
   const {
     maxRetries,
@@ -166,13 +163,7 @@ export async function withRetry<T>(
       }
 
       // 딜레이 계산
-      const delay = calculateDelay(
-        attempt,
-        initialDelay,
-        maxDelay,
-        backoffMultiplier,
-        useJitter
-      );
+      const delay = calculateDelay(attempt, initialDelay, maxDelay, backoffMultiplier, useJitter);
 
       // 재시도 콜백
       if (onRetry) {
@@ -307,4 +298,3 @@ function defaultShouldRetry(error: Error | AppError, _attempt: number): boolean 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
-

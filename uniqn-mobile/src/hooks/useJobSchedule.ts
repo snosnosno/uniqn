@@ -114,12 +114,8 @@ export function useJobSchedule(job: JobPosting | null): UseJobScheduleResult {
     const isClosed = isAllRolesFilled(allRoles);
 
     // 타입별 일정 분리
-    const fixedSchedule = isFixed
-      ? (schedule.items[0] as FixedScheduleInfo)
-      : null;
-    const datedSchedules = isFixed
-      ? []
-      : (schedule.items as DatedScheduleInfo[]);
+    const fixedSchedule = isFixed ? (schedule.items[0] as FixedScheduleInfo) : null;
+    const datedSchedules = isFixed ? [] : (schedule.items as DatedScheduleInfo[]);
 
     return {
       schedule,

@@ -38,8 +38,14 @@ export interface CancellationRequestCardProps {
 // ============================================================================
 
 const STATUS_COLORS: Record<CancellationRequestStatus, { bg: string; text: string }> = {
-  pending: { bg: 'bg-warning-100 dark:bg-warning-900/30', text: 'text-warning-700 dark:text-warning-300' },
-  approved: { bg: 'bg-success-100 dark:bg-success-900/30', text: 'text-success-700 dark:text-success-300' },
+  pending: {
+    bg: 'bg-warning-100 dark:bg-warning-900/30',
+    text: 'text-warning-700 dark:text-warning-300',
+  },
+  approved: {
+    bg: 'bg-success-100 dark:bg-success-900/30',
+    text: 'text-success-700 dark:text-success-300',
+  },
   rejected: { bg: 'bg-error-100 dark:bg-error-900/30', text: 'text-error-700 dark:text-error-300' },
 };
 
@@ -107,18 +113,20 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
       <Card variant="elevated" padding="md">
         {/* 헤더: 지원자 정보 + 상태 */}
         <View className="flex-row items-center mb-3">
-          <Avatar
-            name={application.applicantName}
-            size="md"
-            className="mr-3"
-          />
+          <Avatar name={application.applicantName} size="md" className="mr-3" />
           <View className="flex-1">
             <View className="flex-row items-center justify-between">
               <Text className="text-base font-semibold text-gray-900 dark:text-white">
                 {application.applicantName}
               </Text>
               <Badge
-                variant={isPending ? 'warning' : cancellationRequest.status === 'approved' ? 'success' : 'error'}
+                variant={
+                  isPending
+                    ? 'warning'
+                    : cancellationRequest.status === 'approved'
+                      ? 'success'
+                      : 'error'
+                }
                 size="sm"
                 dot
               >
@@ -126,7 +134,11 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               </Badge>
             </View>
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {getRoleDisplayName(application.assignments[0]?.roleIds?.[0] || 'other', application.customRole)} 역할
+              {getRoleDisplayName(
+                application.assignments[0]?.roleIds?.[0] || 'other',
+                application.customRole
+              )}{' '}
+              역할
             </Text>
           </View>
         </View>
@@ -170,9 +182,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         {/* 요청 시간 */}
         <View className="flex-row items-center mb-3">
           <ClockIcon size={14} color="#9CA3AF" />
-          <Text className="ml-2 text-sm text-gray-500 dark:text-gray-400">
-            {requestTimeAgo}
-          </Text>
+          <Text className="ml-2 text-sm text-gray-500 dark:text-gray-400">{requestTimeAgo}</Text>
         </View>
 
         {/* 검토 결과 표시 (처리 완료 시) */}
@@ -214,9 +224,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
               `}
             >
               <CheckIcon size={16} color="#fff" />
-              <Text className="ml-1 text-sm font-medium text-white">
-                승인
-              </Text>
+              <Text className="ml-1 text-sm font-medium text-white">승인</Text>
             </Pressable>
           </View>
         )}
@@ -253,11 +261,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
           {/* 버튼 */}
           <View className="flex-row gap-3">
-            <Button
-              onPress={handleCloseRejectModal}
-              variant="outline"
-              className="flex-1"
-            >
+            <Button onPress={handleCloseRejectModal} variant="outline" className="flex-1">
               취소
             </Button>
             <Button

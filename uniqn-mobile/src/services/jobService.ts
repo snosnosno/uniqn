@@ -96,7 +96,12 @@ export async function getJobPostings(
     }
 
     // 단일 날짜 필터 (workDates 배열에서 array-contains 쿼리)
-    qb.whereIf(!!filters?.workDate && !filters?.dateRange, 'workDates', 'array-contains', filters?.workDate);
+    qb.whereIf(
+      !!filters?.workDate && !filters?.dateRange,
+      'workDates',
+      'array-contains',
+      filters?.workDate
+    );
 
     // 정렬 및 페이지네이션
     const q = qb
@@ -111,7 +116,7 @@ export async function getJobPostings(
     const { items, lastDoc, hasMore } = processPaginatedResults(
       snapshot.docs,
       pageSize,
-      (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() } as JobPosting)
+      (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }) as JobPosting
     );
 
     // 복수 타입 필터에 tournament 포함 시: 미승인 대회공고 제외 (클라이언트 필터링)
@@ -217,12 +222,10 @@ export async function searchJobPostings(
     // 지연 로딩으로 순환 참조 방지
     const { ClientSideSearchProvider } = await import('./searchService');
 
-    const searchProvider = new ClientSideSearchProvider(
-      async () => {
-        const { items } = await getJobPostings({ status: 'active' }, 100);
-        return items;
-      }
-    );
+    const searchProvider = new ClientSideSearchProvider(async () => {
+      const { items } = await getJobPostings({ status: 'active' }, 100);
+      return items;
+    });
 
     const result = await searchProvider.search(searchTerm, {
       limit: pageSize,
@@ -242,9 +245,7 @@ export async function searchJobPostings(
 /**
  * 긴급 공고 목록 조회
  */
-export async function getUrgentJobPostings(
-  pageSize: number = 10
-): Promise<JobPosting[]> {
+export async function getUrgentJobPostings(pageSize: number = 10): Promise<JobPosting[]> {
   try {
     const { items } = await getJobPostings({ status: 'active', isUrgent: true }, pageSize);
     return items;
@@ -290,7 +291,7 @@ export async function getMyJobPostings(
     throw handleServiceError(error, {
       operation: '내 공고 조회',
       component: 'jobService',
-      context: { ownerId },  // ownerId 자동 마스킹
+      context: { ownerId }, // ownerId 자동 마스킹
     });
   }
 }

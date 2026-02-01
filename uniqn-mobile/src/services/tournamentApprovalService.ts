@@ -11,18 +11,18 @@
  */
 
 import { httpsCallable } from 'firebase/functions';
-import {
-  collection,
-  query,
-  where,
-  orderBy,
-  getDocs,
-  getDoc,
-  doc,
-} from 'firebase/firestore';
+import { collection, query, where, orderBy, getDocs, getDoc, doc } from 'firebase/firestore';
 import { getFirebaseFunctions, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { mapFirebaseError, BusinessError, AuthError, PermissionError, ValidationError, ERROR_CODES, toError } from '@/errors';
+import {
+  mapFirebaseError,
+  BusinessError,
+  AuthError,
+  PermissionError,
+  ValidationError,
+  ERROR_CODES,
+  toError,
+} from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import type {
@@ -107,10 +107,10 @@ export async function approveTournamentPosting(
     logger.info('대회공고 승인 요청', { postingId: data.postingId });
 
     const functions = getFirebaseFunctions();
-    const approveFunction = httpsCallable<
-      ApproveTournamentData,
-      ApprovalResponse
-    >(functions, 'approveJobPosting');
+    const approveFunction = httpsCallable<ApproveTournamentData, ApprovalResponse>(
+      functions,
+      'approveJobPosting'
+    );
 
     const result = await approveFunction(data);
     logger.info('대회공고 승인 완료', {
@@ -179,10 +179,10 @@ export async function resubmitTournamentPosting(
     logger.info('대회공고 재제출 요청', { postingId: data.postingId });
 
     const functions = getFirebaseFunctions();
-    const resubmitFunction = httpsCallable<
-      ResubmitTournamentData,
-      ApprovalResponse
-    >(functions, 'resubmitJobPosting');
+    const resubmitFunction = httpsCallable<ResubmitTournamentData, ApprovalResponse>(
+      functions,
+      'resubmitJobPosting'
+    );
 
     const result = await resubmitFunction(data);
     logger.info('대회공고 재제출 완료', {
@@ -271,9 +271,7 @@ export async function getTournamentPostingsByStatus(
 /**
  * 내 대회공고 중 승인 대기/거부된 목록 조회 (구인자용)
  */
-export async function getMyPendingTournamentPostings(
-  ownerId: string
-): Promise<JobPosting[]> {
+export async function getMyPendingTournamentPostings(ownerId: string): Promise<JobPosting[]> {
   try {
     logger.info('내 대회공고 목록 조회', { ownerId });
 
@@ -310,9 +308,7 @@ export async function getMyPendingTournamentPostings(
 /**
  * 대회공고 상세 조회
  */
-export async function getTournamentPostingById(
-  postingId: string
-): Promise<JobPosting | null> {
+export async function getTournamentPostingById(postingId: string): Promise<JobPosting | null> {
   try {
     logger.info('대회공고 상세 조회', { postingId });
 

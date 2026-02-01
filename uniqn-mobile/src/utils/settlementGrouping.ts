@@ -19,10 +19,7 @@ import {
   type Allowances,
   type TaxSettings,
 } from './settlement';
-import {
-  isConsecutiveDates,
-  formatSingleDate,
-} from './scheduleGrouping';
+import { isConsecutiveDates, formatSingleDate } from './scheduleGrouping';
 
 // ============================================================================
 // Re-export date formatting functions from scheduleGrouping
@@ -186,9 +183,7 @@ function createGroupedSettlement(
       isConsecutive: isConsecutiveDates(dates),
     },
     roles,
-    customRoles: alignedCustomRoles.some((v) => v !== undefined)
-      ? alignedCustomRoles
-      : undefined,
+    customRoles: alignedCustomRoles.some((v) => v !== undefined) ? alignedCustomRoles : undefined,
     dateStatuses,
     originalWorkLogs: workLogs,
     summary: {

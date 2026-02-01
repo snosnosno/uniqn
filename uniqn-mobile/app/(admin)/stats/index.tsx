@@ -28,9 +28,7 @@ export default function AdminStatsPage() {
 
       <ScrollView
         className="flex-1 bg-gray-50 dark:bg-surface-dark"
-        refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
-        }
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
       >
         <View className="p-4">
           {/* Header */}
@@ -38,9 +36,7 @@ export default function AdminStatsPage() {
             <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
               서비스 통계
             </Text>
-            <Text className="text-gray-500 dark:text-gray-400">
-              UNIQN 서비스 이용 현황 및 분석
-            </Text>
+            <Text className="text-gray-500 dark:text-gray-400">UNIQN 서비스 이용 현황 및 분석</Text>
           </View>
 
           {/* Error Message */}
@@ -138,10 +134,7 @@ export default function AdminStatsPage() {
                   />
                 </View>
                 <View className="flex-1">
-                  <SystemStatusCard
-                    status={metrics?.systemStatus}
-                    isLoading={isLoading}
-                  />
+                  <SystemStatusCard status={metrics?.systemStatus} isLoading={isLoading} />
                 </View>
               </View>
 
@@ -223,8 +216,8 @@ export default function AdminStatsPage() {
                             user.role === 'admin'
                               ? 'bg-red-100 dark:bg-red-900/30'
                               : user.role === 'employer'
-                              ? 'bg-primary-100 dark:bg-primary-900/30'
-                              : 'bg-green-100 dark:bg-green-900/30'
+                                ? 'bg-primary-100 dark:bg-primary-900/30'
+                                : 'bg-green-100 dark:bg-green-900/30'
                           }`}
                         >
                           <Text
@@ -232,15 +225,15 @@ export default function AdminStatsPage() {
                               user.role === 'admin'
                                 ? 'text-red-700 dark:text-red-300'
                                 : user.role === 'employer'
-                                ? 'text-primary-700 dark:text-primary-300'
-                                : 'text-green-700 dark:text-green-300'
+                                  ? 'text-primary-700 dark:text-primary-300'
+                                  : 'text-green-700 dark:text-green-300'
                             }`}
                           >
                             {user.role === 'admin'
                               ? '관리자'
                               : user.role === 'employer'
-                              ? '구인자'
-                              : '스태프'}
+                                ? '구인자'
+                                : '스태프'}
                           </Text>
                         </View>
                       </View>

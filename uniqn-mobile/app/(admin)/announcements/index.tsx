@@ -5,14 +5,7 @@
  */
 
 import { useState, useCallback, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
@@ -33,17 +26,8 @@ export default function AdminAnnouncementsPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');
 
-  const {
-    data,
-    isLoading,
-    isRefetching,
-    refetch,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage,
-  } = useAllAnnouncements(
-    statusFilter === 'all' ? undefined : { status: statusFilter }
-  );
+  const { data, isLoading, isRefetching, refetch, fetchNextPage, hasNextPage, isFetchingNextPage } =
+    useAllAnnouncements(statusFilter === 'all' ? undefined : { status: statusFilter });
 
   const { data: stats } = useAnnouncementStats();
 
@@ -132,17 +116,13 @@ export default function AdminAnnouncementsPage() {
                 key={tab.key}
                 onPress={() => setStatusFilter(tab.key)}
                 className={`px-4 py-3 mr-2 border-b-2 ${
-                  isActive
-                    ? 'border-primary-600'
-                    : 'border-transparent'
+                  isActive ? 'border-primary-600' : 'border-transparent'
                 }`}
               >
                 <View className="flex-row items-center">
                   <Text
                     className={`text-sm font-medium ${
-                      isActive
-                        ? 'text-primary-600'
-                        : 'text-gray-500 dark:text-gray-400'
+                      isActive ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'
                     }`}
                   >
                     {tab.label}
@@ -157,9 +137,7 @@ export default function AdminAnnouncementsPage() {
                     >
                       <Text
                         className={`text-xs ${
-                          isActive
-                            ? 'text-primary-600'
-                            : 'text-gray-500 dark:text-gray-400'
+                          isActive ? 'text-primary-600' : 'text-gray-500 dark:text-gray-400'
                         }`}
                       >
                         {count}
@@ -176,9 +154,7 @@ export default function AdminAnnouncementsPage() {
         {isLoading && !data ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" />
-            <Text className="text-gray-500 dark:text-gray-400 mt-4">
-              공지사항을 불러오는 중...
-            </Text>
+            <Text className="text-gray-500 dark:text-gray-400 mt-4">공지사항을 불러오는 중...</Text>
           </View>
         ) : announcements.length === 0 ? (
           <View className="flex-1 items-center justify-center px-8">
@@ -189,10 +165,7 @@ export default function AdminAnnouncementsPage() {
             <Text className="text-gray-500 dark:text-gray-400 text-center mt-2">
               새 공지사항을 작성해보세요
             </Text>
-            <Pressable
-              onPress={handleCreate}
-              className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
-            >
+            <Pressable onPress={handleCreate} className="mt-6 bg-primary-600 px-6 py-3 rounded-lg">
               <Text className="text-white font-medium">공지사항 작성</Text>
             </Pressable>
           </View>
@@ -203,9 +176,7 @@ export default function AdminAnnouncementsPage() {
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{ paddingTop: 16, paddingBottom: 32 }}
-              refreshControl={
-                <RefreshControl refreshing={isRefetching} onRefresh={refetch} />
-              }
+              refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} />}
               onEndReached={handleLoadMore}
               onEndReachedThreshold={0.5}
               ListFooterComponent={

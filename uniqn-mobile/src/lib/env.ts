@@ -10,24 +10,14 @@ import { z } from 'zod';
  */
 const envSchema = z.object({
   // Firebase 필수 설정
-  EXPO_PUBLIC_FIREBASE_API_KEY: z
-    .string()
-    .min(1, 'Firebase API Key가 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: z
-    .string()
-    .min(1, 'Firebase Auth Domain이 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_PROJECT_ID: z
-    .string()
-    .min(1, 'Firebase Project ID가 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: z
-    .string()
-    .min(1, 'Firebase Storage Bucket이 필요합니다'),
+  EXPO_PUBLIC_FIREBASE_API_KEY: z.string().min(1, 'Firebase API Key가 필요합니다'),
+  EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN: z.string().min(1, 'Firebase Auth Domain이 필요합니다'),
+  EXPO_PUBLIC_FIREBASE_PROJECT_ID: z.string().min(1, 'Firebase Project ID가 필요합니다'),
+  EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: z.string().min(1, 'Firebase Storage Bucket이 필요합니다'),
   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: z
     .string()
     .min(1, 'Firebase Messaging Sender ID가 필요합니다'),
-  EXPO_PUBLIC_FIREBASE_APP_ID: z
-    .string()
-    .min(1, 'Firebase App ID가 필요합니다'),
+  EXPO_PUBLIC_FIREBASE_APP_ID: z.string().min(1, 'Firebase App ID가 필요합니다'),
 
   // 선택적 설정
   EXPO_PUBLIC_RELEASE_CHANNEL: z
@@ -81,7 +71,7 @@ export function getEnv(): Env {
 
     validationError = new Error(
       `환경변수 검증 실패:\n${errorMessages}\n\n` +
-      `.env.local 파일을 확인하세요. .env.example을 참고하여 필수 환경변수를 설정해주세요.`
+        `.env.local 파일을 확인하세요. .env.example을 참고하여 필수 환경변수를 설정해주세요.`
     );
 
     throw validationError;

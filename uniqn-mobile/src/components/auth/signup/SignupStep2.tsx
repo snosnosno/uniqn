@@ -26,7 +26,7 @@ interface SignupStep2Props {
 interface VerificationResult {
   name: string;
   phone: string;
-  birthDate: string;  // YYYYMMDD 형식
+  birthDate: string; // YYYYMMDD 형식
   gender: 'male' | 'female';
   provider: IdentityProvider;
 }
@@ -94,8 +94,8 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
       const mockResult: VerificationResult = {
         name: '홍길동',
         phone: '010-1234-5678',
-        birthDate: '19900101',  // 본인인증에서 받은 생년월일
-        gender: 'male',  // 본인인증에서 받은 성별
+        birthDate: '19900101', // 본인인증에서 받은 생년월일
+        gender: 'male', // 본인인증에서 받은 성별
         provider,
       };
 
@@ -159,9 +159,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
           <View className="flex-col gap-2 ml-11">
             <View className="flex-row">
               <Text className="text-gray-500 dark:text-gray-400 w-16">이름</Text>
-              <Text className="text-gray-900 dark:text-white font-medium">
-                {verifiedData.name}
-              </Text>
+              <Text className="text-gray-900 dark:text-white font-medium">{verifiedData.name}</Text>
             </View>
             <View className="flex-row">
               <Text className="text-gray-500 dark:text-gray-400 w-16">휴대폰</Text>
@@ -189,10 +187,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
             </View>
           </View>
 
-          <Pressable
-            onPress={handleResetVerification}
-            className="mt-4 ml-11"
-          >
+          <Pressable onPress={handleResetVerification} className="mt-4 ml-11">
             <Text className="text-sm text-gray-500 dark:text-gray-400 underline">
               다시 인증하기
             </Text>
@@ -248,28 +243,17 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
       {/* 에러 메시지 */}
       {error && (
         <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-3">
-          <Text className="text-error-600 dark:text-error-400 text-sm text-center">
-            {error}
-          </Text>
+          <Text className="text-error-600 dark:text-error-400 text-sm text-center">{error}</Text>
         </View>
       )}
 
       {/* 버튼 영역 */}
       <View className="mt-6 flex-col gap-3">
-        <Button
-          onPress={handleNext}
-          disabled={!verifiedData || isLoading}
-          fullWidth
-        >
+        <Button onPress={handleNext} disabled={!verifiedData || isLoading} fullWidth>
           다음
         </Button>
 
-        <Button
-          onPress={onBack}
-          variant="ghost"
-          disabled={isLoading}
-          fullWidth
-        >
+        <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
           이전
         </Button>
       </View>

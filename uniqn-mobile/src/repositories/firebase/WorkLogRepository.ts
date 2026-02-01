@@ -95,10 +95,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     }
   }
 
-  async getByStaffId(
-    staffId: string,
-    pageSize: number = DEFAULT_PAGE_SIZE
-  ): Promise<WorkLog[]> {
+  async getByStaffId(staffId: string, pageSize: number = DEFAULT_PAGE_SIZE): Promise<WorkLog[]> {
     try {
       logger.info('스태프별 근무 기록 조회', { staffId, pageSize });
 
@@ -150,8 +147,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
 
-      const queryBuilder = new QueryBuilder(workLogsRef)
-        .whereEqual('staffId', staffId);
+      const queryBuilder = new QueryBuilder(workLogsRef).whereEqual('staffId', staffId);
 
       // 날짜 범위 필터
       if (options?.dateRange) {
@@ -449,7 +445,10 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       summary.workLogs = workLogs;
 
-      logger.info('월별 정산 요약 조회 완료', { staffId, summary: { ...summary, workLogs: undefined } });
+      logger.info('월별 정산 요약 조회 완료', {
+        staffId,
+        summary: { ...summary, workLogs: undefined },
+      });
 
       return summary;
     } catch (error) {
@@ -466,11 +465,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     }
   }
 
-  async getByDateRange(
-    staffId: string,
-    startDate: string,
-    endDate: string
-  ): Promise<WorkLog[]> {
+  async getByDateRange(staffId: string, startDate: string, endDate: string): Promise<WorkLog[]> {
     try {
       logger.info('날짜 범위 근무 기록 조회', { staffId, startDate, endDate });
 
@@ -678,10 +673,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
   // 변경 (Write)
   // ==========================================================================
 
-  async updatePayrollStatus(
-    workLogId: string,
-    status: PayrollStatus
-  ): Promise<void> {
+  async updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void> {
     try {
       logger.info('정산 상태 변경', { workLogId, status });
 

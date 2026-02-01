@@ -34,11 +34,7 @@ interface SelectOptionItemProps<T> {
 // SelectOptionItem Component (메모이제이션)
 // ============================================================================
 
-function SelectOptionItemComponent<T>({
-  item,
-  isSelected,
-  onSelect,
-}: SelectOptionItemProps<T>) {
+function SelectOptionItemComponent<T>({ item, isSelected, onSelect }: SelectOptionItemProps<T>) {
   const handlePress = useCallback(() => {
     if (!item.disabled) {
       onSelect(item);
@@ -68,9 +64,7 @@ function SelectOptionItemComponent<T>({
         >
           {item.label}
         </Text>
-        {isSelected && (
-          <Text className="text-primary-600 dark:text-primary-400">✓</Text>
-        )}
+        {isSelected && <Text className="text-primary-600 dark:text-primary-400">✓</Text>}
       </View>
     </Pressable>
   );
@@ -175,9 +169,7 @@ export function FormSelect<T = string>({
       {/* 레이블 */}
       {label && (
         <View className="flex-row mb-2">
-          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-            {label}
-          </Text>
+          <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</Text>
           {required && <Text className="text-red-500 ml-0.5">*</Text>}
         </View>
       )}
@@ -252,9 +244,7 @@ export function FormSelect<T = string>({
               ListEmptyComponent={
                 <View className="py-8 items-center">
                   <Text className="text-gray-500 dark:text-gray-400">
-                    {searchQuery.trim()
-                      ? '검색 결과가 없습니다'
-                      : '선택 가능한 옵션이 없습니다'}
+                    {searchQuery.trim() ? '검색 결과가 없습니다' : '선택 가능한 옵션이 없습니다'}
                   </Text>
                   {searchQuery.trim() && (
                     <Pressable
@@ -263,9 +253,7 @@ export function FormSelect<T = string>({
                       accessibilityRole="button"
                       accessibilityLabel="검색어 초기화"
                     >
-                      <Text className="text-primary-600 dark:text-primary-400">
-                        검색어 초기화
-                      </Text>
+                      <Text className="text-primary-600 dark:text-primary-400">검색어 초기화</Text>
                     </Pressable>
                   )}
                 </View>

@@ -16,11 +16,7 @@ import { QueryClient, QueryCache, MutationCache, onlineManager } from '@tanstack
 import { Platform, AppState, type AppStateStatus } from 'react-native';
 import NetInfo from '@react-native-community/netinfo';
 import { logger } from '@/utils/logger';
-import {
-  normalizeError,
-  isRetryableError,
-  requiresReauthentication,
-} from '@/errors';
+import { normalizeError, isRetryableError, requiresReauthentication } from '@/errors';
 
 // ============================================================================
 // 오프라인 지원
@@ -362,8 +358,7 @@ export const queryKeys = {
       [...queryKeys.confirmedStaff.all, 'byJobPosting', jobPostingId] as const,
     byDate: (jobPostingId: string, date: string) =>
       [...queryKeys.confirmedStaff.all, 'byDate', jobPostingId, date] as const,
-    detail: (workLogId: string) =>
-      [...queryKeys.confirmedStaff.all, 'detail', workLogId] as const,
+    detail: (workLogId: string) => [...queryKeys.confirmedStaff.all, 'detail', workLogId] as const,
     grouped: (jobPostingId: string) =>
       [...queryKeys.confirmedStaff.all, 'grouped', jobPostingId] as const,
   },
@@ -373,8 +368,7 @@ export const queryKeys = {
     all: ['eventQR'] as const,
     current: (jobPostingId: string, date: string, action: 'checkIn' | 'checkOut') =>
       [...queryKeys.eventQR.all, 'current', jobPostingId, date, action] as const,
-    history: (jobPostingId: string) =>
-      [...queryKeys.eventQR.all, 'history', jobPostingId] as const,
+    history: (jobPostingId: string) => [...queryKeys.eventQR.all, 'history', jobPostingId] as const,
   },
 
   // 신고 관리 (구인자)
@@ -382,10 +376,8 @@ export const queryKeys = {
     all: ['reports'] as const,
     byJobPosting: (jobPostingId: string) =>
       [...queryKeys.reports.all, 'byJobPosting', jobPostingId] as const,
-    byStaff: (staffId: string) =>
-      [...queryKeys.reports.all, 'byStaff', staffId] as const,
-    detail: (reportId: string) =>
-      [...queryKeys.reports.all, 'detail', reportId] as const,
+    byStaff: (staffId: string) => [...queryKeys.reports.all, 'byStaff', staffId] as const,
+    detail: (reportId: string) => [...queryKeys.reports.all, 'detail', reportId] as const,
     myReports: () => [...queryKeys.reports.all, 'myReports'] as const,
   },
 
@@ -399,8 +391,7 @@ export const queryKeys = {
     dashboard: () => [...queryKeys.admin.all, 'dashboard'] as const,
     users: (filters: Record<string, unknown>) =>
       [...queryKeys.admin.all, 'users', filters] as const,
-    userDetail: (userId: string) =>
-      [...queryKeys.admin.all, 'userDetail', userId] as const,
+    userDetail: (userId: string) => [...queryKeys.admin.all, 'userDetail', userId] as const,
     metrics: () => [...queryKeys.admin.all, 'metrics'] as const,
   },
 
@@ -558,7 +549,9 @@ export const invalidateQueries = {
   settlement: () => queryClient.invalidateQueries({ queryKey: queryKeys.settlement.all }),
   /** 스태프 관리 관련 모든 쿼리 무효화 (스태프 + 정산 + 근무기록) */
   staffManagement: (jobPostingId: string) => {
-    queryClient.invalidateQueries({ queryKey: queryKeys.confirmedStaff.byJobPosting(jobPostingId) });
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.confirmedStaff.byJobPosting(jobPostingId),
+    });
     queryClient.invalidateQueries({ queryKey: queryKeys.settlement.byJobPosting(jobPostingId) });
     queryClient.invalidateQueries({ queryKey: queryKeys.workLogs.all });
   },
@@ -600,13 +593,11 @@ export const invalidationGraph: Record<string, string[]> = {
 /** 인자 없이 호출 가능한 무효화 함수 타입 */
 type NoArgInvalidator = () => void | Promise<void>;
 
-export async function invalidateRelated(
-  primaryKey: keyof typeof invalidationGraph
-): Promise<void> {
+export async function invalidateRelated(primaryKey: keyof typeof invalidationGraph): Promise<void> {
   // 주 데이터 무효화 (invalidationGraph 키는 모두 인자 없는 함수)
-  const primaryInvalidate = invalidateQueries[
-    primaryKey as keyof typeof invalidateQueries
-  ] as NoArgInvalidator | undefined;
+  const primaryInvalidate = invalidateQueries[primaryKey as keyof typeof invalidateQueries] as
+    | NoArgInvalidator
+    | undefined;
   if (typeof primaryInvalidate === 'function') {
     await primaryInvalidate();
   }
@@ -614,9 +605,9 @@ export async function invalidateRelated(
   // 관련 데이터 무효화
   const relatedKeys = invalidationGraph[primaryKey] || [];
   for (const relatedKey of relatedKeys) {
-    const relatedInvalidate = invalidateQueries[
-      relatedKey as keyof typeof invalidateQueries
-    ] as NoArgInvalidator | undefined;
+    const relatedInvalidate = invalidateQueries[relatedKey as keyof typeof invalidateQueries] as
+      | NoArgInvalidator
+      | undefined;
     if (typeof relatedInvalidate === 'function') {
       await relatedInvalidate();
     }

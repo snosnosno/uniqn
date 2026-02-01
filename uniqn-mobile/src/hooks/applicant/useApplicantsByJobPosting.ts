@@ -155,8 +155,8 @@ export function useApplicantsByJobPosting(
         unsubscribeRef.current = null;
       }
     };
-  // statusFilterKey로 안정적인 의존성 사용 (배열 참조 변경 무시)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // statusFilterKey로 안정적인 의존성 사용 (배열 참조 변경 무시)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startSubscription, statusFilterKey]);
 
   // 폴링 모드 (기존)

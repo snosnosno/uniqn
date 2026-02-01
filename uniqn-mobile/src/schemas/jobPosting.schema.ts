@@ -82,10 +82,7 @@ export const basicInfoSchema = z.object({
       message: '위험한 문자열이 포함되어 있습니다',
     }),
 
-  location: z
-    .string()
-    .min(1, { message: '근무 장소를 선택해주세요' })
-    .trim(),
+  location: z.string().min(1, { message: '근무 장소를 선택해주세요' }).trim(),
 
   district: z.string().trim().optional(),
 
@@ -202,51 +199,57 @@ export const applicationMessageSchema = z
  * @description Firestore에서 읽은 데이터의 타입 안전성을 보장
  * .passthrough()로 알려지지 않은 필드 허용 (하위 호환성)
  */
-export const jobPostingDocumentSchema = z.object({
-  id: z.string(),
-  title: z.string(),
-  status: z.enum(['active', 'closed', 'cancelled']),
+export const jobPostingDocumentSchema = z
+  .object({
+    id: z.string(),
+    title: z.string(),
+    status: z.enum(['active', 'closed', 'cancelled']),
 
-  // 장소 정보
-  location: z.object({
-    name: z.string(),
-    district: z.string().optional(),
-  }),
-  detailedAddress: z.string().optional(),
-  contactPhone: z.string().optional(),
+    // 장소 정보
+    location: z.object({
+      name: z.string(),
+      district: z.string().optional(),
+    }),
+    detailedAddress: z.string().optional(),
+    contactPhone: z.string().optional(),
 
-  // 일정 정보 (쿼리용 필수 필드)
-  workDate: z.string(),
-  timeSlot: z.string(),
+    // 일정 정보 (쿼리용 필수 필드)
+    workDate: z.string(),
+    timeSlot: z.string(),
 
-  // 모집 정보
-  roles: z.array(z.object({
-    role: z.string(),
-    count: z.number(),
-    filled: z.number().optional(),
-    customRole: z.string().optional(),
-    salary: z.object({
-      type: salaryTypeSchema,
-      amount: z.number(),
-    }).optional(),
-  })),
-  totalPositions: z.number(),
-  filledPositions: z.number(),
+    // 모집 정보
+    roles: z.array(
+      z.object({
+        role: z.string(),
+        count: z.number(),
+        filled: z.number().optional(),
+        customRole: z.string().optional(),
+        salary: z
+          .object({
+            type: salaryTypeSchema,
+            amount: z.number(),
+          })
+          .optional(),
+      })
+    ),
+    totalPositions: z.number(),
+    filledPositions: z.number(),
 
-  // 소유자 정보
-  ownerId: z.string(),
-  ownerName: z.string().optional(),
+    // 소유자 정보
+    ownerId: z.string(),
+    ownerName: z.string().optional(),
 
-  // 메타데이터
-  postingType: postingTypeSchema.optional(),
-  isUrgent: z.boolean().optional(),
-  viewCount: z.number().optional(),
-  applicationCount: z.number().optional(),
+    // 메타데이터
+    postingType: postingTypeSchema.optional(),
+    isUrgent: z.boolean().optional(),
+    viewCount: z.number().optional(),
+    applicationCount: z.number().optional(),
 
-  // Timestamps (Firebase Timestamp)
-  createdAt: timestampSchema,
-  updatedAt: timestampSchema,
-}).passthrough();
+    // Timestamps (Firebase Timestamp)
+    createdAt: timestampSchema,
+    updatedAt: timestampSchema,
+  })
+  .passthrough();
 
 export type JobPostingDocumentData = z.infer<typeof jobPostingDocumentSchema>;
 

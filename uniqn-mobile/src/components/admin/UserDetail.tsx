@@ -64,13 +64,9 @@ const InfoRow = React.memo(function InfoRow({
   return (
     <View className={`flex-row py-2 ${isMultiline ? 'flex-wrap' : 'items-center'}`}>
       {icon && <View className="mr-2">{icon}</View>}
-      <Text className="text-sm text-gray-500 dark:text-gray-400 w-20">
-        {label}
-      </Text>
+      <Text className="text-sm text-gray-500 dark:text-gray-400 w-20">{label}</Text>
       <Text
-        className={`flex-1 text-sm text-gray-900 dark:text-white ${
-          isMultiline ? 'mt-1' : ''
-        }`}
+        className={`flex-1 text-sm text-gray-900 dark:text-white ${isMultiline ? 'mt-1' : ''}`}
         numberOfLines={isMultiline ? undefined : 1}
       >
         {value || '-'}
@@ -87,9 +83,7 @@ interface SectionProps {
 const Section = React.memo(function Section({ title, children }: SectionProps) {
   return (
     <Card variant="outlined" padding="md" className="mb-4">
-      <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-        {title}
-      </Text>
+      <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">{title}</Text>
       {children}
     </Card>
   );
@@ -150,9 +144,7 @@ export const UserDetail = React.memo(function UserDetail({
   if (!user) {
     return (
       <View className="flex-1 items-center justify-center p-8">
-        <Text className="text-gray-500 dark:text-gray-400">
-          사용자 정보를 찾을 수 없습니다.
-        </Text>
+        <Text className="text-gray-500 dark:text-gray-400">사용자 정보를 찾을 수 없습니다.</Text>
       </View>
     );
   }
@@ -165,26 +157,13 @@ export const UserDetail = React.memo(function UserDetail({
     >
       {/* 프로필 헤더 */}
       <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-100 dark:border-surface-overlay">
-        <Avatar
-          name={user.name}
-          source={user.photoURL}
-          size="xl"
-          className="mb-3"
-        />
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
-          {user.name}
-        </Text>
+        <Avatar name={user.name} source={user.photoURL} size="xl" className="mb-3" />
+        <Text className="text-xl font-bold text-gray-900 dark:text-white">{user.name}</Text>
         {user.nickname && (
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-            @{user.nickname}
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">@{user.nickname}</Text>
         )}
         <View className="flex-row items-center mt-2 gap-2">
-          <Badge
-            variant={USER_ROLE_BADGE_VARIANT[user.role]}
-            size="md"
-            dot
-          >
+          <Badge variant={USER_ROLE_BADGE_VARIANT[user.role]} size="md" dot>
             {USER_ROLE_LABELS[user.role]}
           </Badge>
           {user.isVerified && (
@@ -207,26 +186,20 @@ export const UserDetail = React.memo(function UserDetail({
               <Text className="text-lg font-bold text-gray-900 dark:text-white">
                 {user.totalApplications || 0}
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
-                총 지원
-              </Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">총 지원</Text>
             </View>
             <View className="items-center px-6 border-l border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-bold text-green-600 dark:text-green-400">
                 {user.completedJobs || 0}
               </Text>
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
-                완료
-              </Text>
+              <Text className="text-xs text-gray-500 dark:text-gray-400">완료</Text>
             </View>
             {user.averageRating !== undefined && (
               <View className="items-center px-6 border-l border-gray-200 dark:border-surface-overlay">
                 <Text className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
                   {user.averageRating.toFixed(1)}
                 </Text>
-                <Text className="text-xs text-gray-500 dark:text-gray-400">
-                  평점
-                </Text>
+                <Text className="text-xs text-gray-500 dark:text-gray-400">평점</Text>
               </View>
             )}
           </View>
@@ -281,9 +254,7 @@ export const UserDetail = React.memo(function UserDetail({
             )}
             {user.specialties && user.specialties.length > 0 && (
               <View className="py-2">
-                <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                  전문 분야
-                </Text>
+                <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">전문 분야</Text>
                 <View className="flex-row flex-wrap gap-2">
                   {user.specialties.map((specialty, index) => (
                     <Badge key={index} variant="default" size="sm">
@@ -317,19 +288,12 @@ export const UserDetail = React.memo(function UserDetail({
                 className="py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0"
               >
                 <View className="flex-row items-center justify-between mb-1">
-                  <Badge
-                    variant={penalty.isActive ? 'error' : 'default'}
-                    size="sm"
-                  >
+                  <Badge variant={penalty.isActive ? 'error' : 'default'} size="sm">
                     {PENALTY_TYPE_LABELS[penalty.type]}
                   </Badge>
-                  <Text className="text-xs text-gray-400">
-                    {formatDate(penalty.createdAt)}
-                  </Text>
+                  <Text className="text-xs text-gray-400">{formatDate(penalty.createdAt)}</Text>
                 </View>
-                <Text className="text-sm text-gray-700 dark:text-gray-300">
-                  {penalty.reason}
-                </Text>
+                <Text className="text-sm text-gray-700 dark:text-gray-300">{penalty.reason}</Text>
               </View>
             ))}
           </Section>
@@ -338,18 +302,14 @@ export const UserDetail = React.memo(function UserDetail({
         {/* 관리자 메모 */}
         {user.adminNotes && (
           <Section title="관리자 메모">
-            <Text className="text-sm text-gray-700 dark:text-gray-300">
-              {user.adminNotes}
-            </Text>
+            <Text className="text-sm text-gray-700 dark:text-gray-300">{user.adminNotes}</Text>
           </Section>
         )}
 
         {/* 히스토리 */}
         {user.history && (
           <Section title="히스토리">
-            <Text className="text-sm text-gray-700 dark:text-gray-300">
-              {user.history}
-            </Text>
+            <Text className="text-sm text-gray-700 dark:text-gray-300">{user.history}</Text>
           </Section>
         )}
 

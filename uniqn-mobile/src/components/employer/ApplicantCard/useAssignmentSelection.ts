@@ -102,10 +102,7 @@ export function useAssignmentSelection({
   const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
 
   // Assignments 정보 포맷
-  const assignmentDisplays = useMemo(
-    () => formatAssignments(assignments),
-    [assignments]
-  );
+  const assignmentDisplays = useMemo(() => formatAssignments(assignments), [assignments]);
 
   // 그룹화된 일정 (같은 timeSlot + role 묶음)
   const groupedAssignments = useMemo<GroupedAssignmentDisplay[]>(() => {
@@ -127,7 +124,7 @@ export function useAssignmentSelection({
     for (const [groupId, items] of groupMap.entries()) {
       // 날짜순 정렬
       const sortedItems = [...items].sort((a, b) => a.date.localeCompare(b.date));
-      const dates = sortedItems.map(item => item.date);
+      const dates = sortedItems.map((item) => item.date);
       const firstItem = sortedItems[0];
 
       groups.push({
@@ -171,29 +168,32 @@ export function useAssignmentSelection({
    * - 이미 선택된 항목 클릭 시: 해제
    * - 새로 선택 시: 같은 날짜의 다른 항목 자동 제거
    */
-  const toggleAssignment = useCallback((key: string) => {
-    if (isFixedMode) return; // 고정공고 모드에서는 선택 불가
+  const toggleAssignment = useCallback(
+    (key: string) => {
+      if (isFixedMode) return; // 고정공고 모드에서는 선택 불가
 
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) {
-        // 이미 선택된 항목 클릭 시 해제
-        next.delete(key);
-      } else {
-        // 새로 선택 시, 같은 날짜의 다른 항목들 제거
-        const selectedDate = getDateFromKey(key);
-        // 같은 날짜의 기존 선택 항목 제거
-        for (const existingKey of prev) {
-          const existingDate = getDateFromKey(existingKey);
-          if (existingDate === selectedDate) {
-            next.delete(existingKey);
+      setSelectedKeys((prev) => {
+        const next = new Set(prev);
+        if (next.has(key)) {
+          // 이미 선택된 항목 클릭 시 해제
+          next.delete(key);
+        } else {
+          // 새로 선택 시, 같은 날짜의 다른 항목들 제거
+          const selectedDate = getDateFromKey(key);
+          // 같은 날짜의 기존 선택 항목 제거
+          for (const existingKey of prev) {
+            const existingDate = getDateFromKey(existingKey);
+            if (existingDate === selectedDate) {
+              next.delete(existingKey);
+            }
           }
+          next.add(key);
         }
-        next.add(key);
-      }
-      return next;
-    });
-  }, [isFixedMode]);
+        return next;
+      });
+    },
+    [isFixedMode]
+  );
 
   /**
    * 선택된 일정으로 Assignment 배열 생성 (역할별로 분리)
@@ -224,20 +224,23 @@ export function useAssignmentSelection({
   /**
    * 그룹 선택 상태 확인
    */
-  const getGroupSelectionState = useCallback((groupId: string): GroupSelectionState => {
-    const group = groupedAssignments.find(g => g.groupId === groupId);
-    if (!group) return 'none';
+  const getGroupSelectionState = useCallback(
+    (groupId: string): GroupSelectionState => {
+      const group = groupedAssignments.find((g) => g.groupId === groupId);
+      if (!group) return 'none';
 
-    const groupKeys = group.items.map(item =>
-      createAssignmentKey(item.date, item.timeSlot, item.role)
-    );
+      const groupKeys = group.items.map((item) =>
+        createAssignmentKey(item.date, item.timeSlot, item.role)
+      );
 
-    const selectedInGroup = groupKeys.filter(key => selectedKeys.has(key)).length;
+      const selectedInGroup = groupKeys.filter((key) => selectedKeys.has(key)).length;
 
-    if (selectedInGroup === 0) return 'none';
-    if (selectedInGroup === groupKeys.length) return 'all';
-    return 'some';
-  }, [groupedAssignments, selectedKeys]);
+      if (selectedInGroup === 0) return 'none';
+      if (selectedInGroup === groupKeys.length) return 'all';
+      return 'some';
+    },
+    [groupedAssignments, selectedKeys]
+  );
 
   /**
    * 그룹 전체 선택/해제 토글
@@ -247,43 +250,46 @@ export function useAssignmentSelection({
    * - 일부/미선택 상태: 전체 선택
    * - 같은 날짜의 다른 그룹 항목은 자동 제거됨
    */
-  const toggleGroup = useCallback((groupId: string) => {
-    if (isFixedMode) return;
+  const toggleGroup = useCallback(
+    (groupId: string) => {
+      if (isFixedMode) return;
 
-    const group = groupedAssignments.find(g => g.groupId === groupId);
-    if (!group) return;
+      const group = groupedAssignments.find((g) => g.groupId === groupId);
+      if (!group) return;
 
-    const state = getGroupSelectionState(groupId);
+      const state = getGroupSelectionState(groupId);
 
-    setSelectedKeys((prev) => {
-      const next = new Set(prev);
+      setSelectedKeys((prev) => {
+        const next = new Set(prev);
 
-      if (state === 'all') {
-        // 전체 해제
-        for (const item of group.items) {
-          const key = createAssignmentKey(item.date, item.timeSlot, item.role);
-          next.delete(key);
-        }
-      } else {
-        // 전체 선택 (같은 날짜의 다른 항목 제거)
-        for (const item of group.items) {
-          const key = createAssignmentKey(item.date, item.timeSlot, item.role);
-
-          // 같은 날짜의 기존 선택 항목 제거
-          for (const existingKey of prev) {
-            const existingDate = getDateFromKey(existingKey);
-            if (existingDate === item.date && !next.has(key)) {
-              next.delete(existingKey);
-            }
+        if (state === 'all') {
+          // 전체 해제
+          for (const item of group.items) {
+            const key = createAssignmentKey(item.date, item.timeSlot, item.role);
+            next.delete(key);
           }
+        } else {
+          // 전체 선택 (같은 날짜의 다른 항목 제거)
+          for (const item of group.items) {
+            const key = createAssignmentKey(item.date, item.timeSlot, item.role);
 
-          next.add(key);
+            // 같은 날짜의 기존 선택 항목 제거
+            for (const existingKey of prev) {
+              const existingDate = getDateFromKey(existingKey);
+              if (existingDate === item.date && !next.has(key)) {
+                next.delete(existingKey);
+              }
+            }
+
+            next.add(key);
+          }
         }
-      }
 
-      return next;
-    });
-  }, [isFixedMode, groupedAssignments, getGroupSelectionState]);
+        return next;
+      });
+    },
+    [isFixedMode, groupedAssignments, getGroupSelectionState]
+  );
 
   /**
    * 선택 초기화

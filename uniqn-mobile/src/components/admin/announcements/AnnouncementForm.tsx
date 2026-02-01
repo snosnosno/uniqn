@@ -65,12 +65,8 @@ export function AnnouncementForm({
   // Form State
   const [title, setTitle] = useState(initialData?.title ?? '');
   const [content, setContent] = useState(initialData?.content ?? '');
-  const [category, setCategory] = useState<AnnouncementCategory | ''>(
-    initialData?.category ?? ''
-  );
-  const [priority, setPriority] = useState<AnnouncementPriority>(
-    initialData?.priority ?? 0
-  );
+  const [category, setCategory] = useState<AnnouncementCategory | ''>(initialData?.category ?? '');
+  const [priority, setPriority] = useState<AnnouncementPriority>(initialData?.priority ?? 0);
   const [isPinned, setIsPinned] = useState(initialData?.isPinned ?? false);
   const [targetType, setTargetType] = useState<'all' | 'roles'>(
     initialData?.targetAudience?.type ?? 'all'
@@ -87,12 +83,14 @@ export function AnnouncementForm({
       return initialData.images;
     }
     if (initialData?.imageUrl) {
-      return [{
-        id: 'legacy-0',
-        url: initialData.imageUrl,
-        storagePath: initialData.imageStoragePath ?? '',
-        order: 0,
-      }];
+      return [
+        {
+          id: 'legacy-0',
+          url: initialData.imageUrl,
+          storagePath: initialData.imageStoragePath ?? '',
+          order: 0,
+        },
+      ];
     }
     return [];
   });
@@ -151,7 +149,10 @@ export function AnnouncementForm({
     // 추가 가능한 이미지 수 확인
     const remainingSlots = MAX_ANNOUNCEMENT_IMAGES - images.length;
     if (remainingSlots <= 0) {
-      addToast({ type: 'warning', message: `이미지는 최대 ${MAX_ANNOUNCEMENT_IMAGES}장까지 첨부할 수 있습니다` });
+      addToast({
+        type: 'warning',
+        message: `이미지는 최대 ${MAX_ANNOUNCEMENT_IMAGES}장까지 첨부할 수 있습니다`,
+      });
       return;
     }
 
@@ -206,7 +207,10 @@ export function AnnouncementForm({
         });
 
         if (uploadedImages.length === selectedCount) {
-          addToast({ type: 'success', message: `${uploadedImages.length}장의 이미지가 업로드되었습니다` });
+          addToast({
+            type: 'success',
+            message: `${uploadedImages.length}장의 이미지가 업로드되었습니다`,
+          });
         } else {
           addToast({
             type: 'warning',
@@ -243,9 +247,7 @@ export function AnnouncementForm({
   const handleSubmit = useCallback(() => {
     // Build target audience
     const targetAudience: TargetAudience =
-      targetType === 'all'
-        ? { type: 'all' }
-        : { type: 'roles', roles: targetRoles };
+      targetType === 'all' ? { type: 'all' } : { type: 'roles', roles: targetRoles };
 
     // 호환성: 첫 번째 이미지를 단일 imageUrl로도 설정
     const firstImage = images.length > 0 ? images[0] : null;
@@ -316,18 +318,12 @@ export function AnnouncementForm({
             placeholder="공지사항 제목을 입력해주세요"
             placeholderTextColor={isDarkMode ? '#6b7280' : '#9ca3af'}
             className={`${inputBaseClass} ${
-              errors.title
-                ? 'border-red-500'
-                : 'border-gray-300 dark:border-surface-overlay'
+              errors.title ? 'border-red-500' : 'border-gray-300 dark:border-surface-overlay'
             }`}
             maxLength={100}
           />
-          {errors.title && (
-            <Text className="text-xs text-red-500 mt-1">{errors.title}</Text>
-          )}
-          <Text className="text-xs text-gray-400 mt-1 text-right">
-            {title.length}/100
-          </Text>
+          {errors.title && <Text className="text-xs text-red-500 mt-1">{errors.title}</Text>}
+          <Text className="text-xs text-gray-400 mt-1 text-right">{title.length}/100</Text>
         </View>
 
         {/* Category */}
@@ -378,24 +374,21 @@ export function AnnouncementForm({
             numberOfLines={10}
             textAlignVertical="top"
             className={`${inputBaseClass} min-h-[200px] ${
-              errors.content
-                ? 'border-red-500'
-                : 'border-gray-300 dark:border-surface-overlay'
+              errors.content ? 'border-red-500' : 'border-gray-300 dark:border-surface-overlay'
             }`}
             maxLength={5000}
           />
-          {errors.content && (
-            <Text className="text-xs text-red-500 mt-1">{errors.content}</Text>
-          )}
-          <Text className="text-xs text-gray-400 mt-1 text-right">
-            {content.length}/5000
-          </Text>
+          {errors.content && <Text className="text-xs text-red-500 mt-1">{errors.content}</Text>}
+          <Text className="text-xs text-gray-400 mt-1 text-right">{content.length}/5000</Text>
         </View>
 
         {/* Image Upload (다중 이미지) */}
         <View className="mb-4">
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-            이미지 첨부 <Text className="text-gray-400 font-normal">(선택, 최대 {MAX_ANNOUNCEMENT_IMAGES}장)</Text>
+            이미지 첨부{' '}
+            <Text className="text-gray-400 font-normal">
+              (선택, 최대 {MAX_ANNOUNCEMENT_IMAGES}장)
+            </Text>
           </Text>
           <AnnouncementImagePicker
             images={images}
@@ -423,16 +416,14 @@ export function AnnouncementForm({
                     ? p === 2
                       ? 'bg-red-600 border-red-600'
                       : p === 1
-                      ? 'bg-primary-600 border-primary-600'
-                      : 'bg-gray-600 border-gray-600'
+                        ? 'bg-primary-600 border-primary-600'
+                        : 'bg-gray-600 border-gray-600'
                     : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
               >
                 <Text
                   className={`text-sm ${
-                    priority === p
-                      ? 'text-white font-medium'
-                      : 'text-gray-700 dark:text-gray-300'
+                    priority === p ? 'text-white font-medium' : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {ANNOUNCEMENT_PRIORITY_LABELS[p]}
@@ -445,12 +436,8 @@ export function AnnouncementForm({
         {/* Pinned */}
         <View className="mb-4 flex-row items-center justify-between bg-white dark:bg-surface rounded-lg border border-gray-300 dark:border-surface-overlay px-4 py-3">
           <View>
-            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-              상단 고정
-            </Text>
-            <Text className="text-xs text-gray-400">
-              목록 최상단에 고정됩니다
-            </Text>
+            <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">상단 고정</Text>
+            <Text className="text-xs text-gray-400">목록 최상단에 고정됩니다</Text>
           </View>
           <Switch
             value={isPinned}
@@ -547,25 +534,19 @@ export function AnnouncementForm({
               disabled={isSubmitting}
               className="flex-1 bg-gray-200 dark:bg-surface rounded-lg py-3 items-center"
             >
-              <Text className="text-gray-700 dark:text-gray-300 font-medium">
-                취소
-              </Text>
+              <Text className="text-gray-700 dark:text-gray-300 font-medium">취소</Text>
             </Pressable>
           )}
           <Pressable
             onPress={handleSubmit}
             disabled={!isValid || isSubmitting}
             className={`flex-1 rounded-lg py-3 items-center ${
-              isValid && !isSubmitting
-                ? 'bg-primary-600'
-                : 'bg-gray-300 dark:bg-surface-elevated'
+              isValid && !isSubmitting ? 'bg-primary-600' : 'bg-gray-300 dark:bg-surface-elevated'
             }`}
           >
             <Text
               className={`font-medium ${
-                isValid && !isSubmitting
-                  ? 'text-white'
-                  : 'text-gray-500 dark:text-gray-400'
+                isValid && !isSubmitting ? 'text-white' : 'text-gray-500 dark:text-gray-400'
               }`}
             >
               {isSubmitting ? '저장 중...' : submitLabel}

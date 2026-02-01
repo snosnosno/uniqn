@@ -374,47 +374,44 @@ export function subscribeToWorkLog(
     onError?: (error: Error) => void;
   }
 ): Unsubscribe {
-  return RealtimeManager.subscribe(
-    RealtimeManager.Keys.workLog(workLogId),
-    () => {
-      logger.info('근무 기록 실시간 구독 시작', { workLogId });
+  return RealtimeManager.subscribe(RealtimeManager.Keys.workLog(workLogId), () => {
+    logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
 
-      return onSnapshot(
-        workLogRef,
-        (docSnap) => {
-          if (!docSnap.exists()) {
-            logger.warn('구독 중인 근무 기록이 존재하지 않음', { workLogId });
-            callbacks.onUpdate(null);
-            return;
-          }
-
-          const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
-          if (!workLog) {
-            logger.warn('근무 기록 데이터 파싱 실패', { workLogId });
-            callbacks.onUpdate(null);
-            return;
-          }
-
-          logger.debug('근무 기록 업데이트 수신', {
-            workLogId,
-            status: workLog.status,
-          });
-
-          callbacks.onUpdate(workLog);
-        },
-        (error) => {
-          const appError = handleServiceError(error, {
-            operation: '근무 기록 구독',
-            component: 'workLogService',
-            context: { workLogId },
-          });
-          callbacks.onError?.(appError as Error);
+    return onSnapshot(
+      workLogRef,
+      (docSnap) => {
+        if (!docSnap.exists()) {
+          logger.warn('구독 중인 근무 기록이 존재하지 않음', { workLogId });
+          callbacks.onUpdate(null);
+          return;
         }
-      );
-    }
-  );
+
+        const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
+        if (!workLog) {
+          logger.warn('근무 기록 데이터 파싱 실패', { workLogId });
+          callbacks.onUpdate(null);
+          return;
+        }
+
+        logger.debug('근무 기록 업데이트 수신', {
+          workLogId,
+          status: workLog.status,
+        });
+
+        callbacks.onUpdate(workLog);
+      },
+      (error) => {
+        const appError = handleServiceError(error, {
+          operation: '근무 기록 구독',
+          component: 'workLogService',
+          context: { workLogId },
+        });
+        callbacks.onError?.(appError as Error);
+      }
+    );
+  });
 }
 
 /**
@@ -447,7 +444,10 @@ export function subscribeToMyWorkLogs(
   return RealtimeManager.subscribe(
     RealtimeManager.Keys.workLogsByRange(staffId, dateRange?.start, dateRange?.end),
     () => {
-      logger.info('근무 기록 목록 실시간 구독 시작', { staffId: maskSensitiveId(staffId), dateRange });
+      logger.info('근무 기록 목록 실시간 구독 시작', {
+        staffId: maskSensitiveId(staffId),
+        dateRange,
+      });
 
       const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
 
@@ -510,52 +510,49 @@ export function subscribeToTodayWorkStatus(
 ): Unsubscribe {
   const today = toDateString(new Date());
 
-  return RealtimeManager.subscribe(
-    RealtimeManager.Keys.todayWorkStatus(staffId, today),
-    () => {
-      logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
+  return RealtimeManager.subscribe(RealtimeManager.Keys.todayWorkStatus(staffId, today), () => {
+    logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
 
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-      const q = query(
-        workLogsRef,
-        where('staffId', '==', staffId),
-        where('date', '==', today),
-        where('status', 'in', ['confirmed', 'checked_in']),
-        limit(1)
-      );
+    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+    const q = query(
+      workLogsRef,
+      where('staffId', '==', staffId),
+      where('date', '==', today),
+      where('status', 'in', ['confirmed', 'checked_in']),
+      limit(1)
+    );
 
-      return onSnapshot(
-        q,
-        (snapshot) => {
-          if (snapshot.empty) {
-            callbacks.onUpdate(null);
-            return;
-          }
-
-          const docSnap = snapshot.docs[0];
-          const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
-          if (!workLog) {
-            logger.warn('오늘 근무 기록 파싱 실패', { staffId: maskSensitiveId(staffId) });
-            callbacks.onUpdate(null);
-            return;
-          }
-
-          logger.debug('오늘 근무 상태 업데이트', {
-            staffId: maskSensitiveId(staffId),
-            status: workLog.status,
-          });
-
-          callbacks.onUpdate(workLog);
-        },
-        (error) => {
-          const appError = handleServiceError(error, {
-            operation: '오늘 근무 상태 구독',
-            component: 'workLogService',
-            context: { staffId: maskSensitiveId(staffId) },
-          });
-          callbacks.onError?.(appError as Error);
+    return onSnapshot(
+      q,
+      (snapshot) => {
+        if (snapshot.empty) {
+          callbacks.onUpdate(null);
+          return;
         }
-      );
-    }
-  );
+
+        const docSnap = snapshot.docs[0];
+        const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
+        if (!workLog) {
+          logger.warn('오늘 근무 기록 파싱 실패', { staffId: maskSensitiveId(staffId) });
+          callbacks.onUpdate(null);
+          return;
+        }
+
+        logger.debug('오늘 근무 상태 업데이트', {
+          staffId: maskSensitiveId(staffId),
+          status: workLog.status,
+        });
+
+        callbacks.onUpdate(workLog);
+      },
+      (error) => {
+        const appError = handleServiceError(error, {
+          operation: '오늘 근무 상태 구독',
+          component: 'workLogService',
+          context: { staffId: maskSensitiveId(staffId) },
+        });
+        callbacks.onError?.(appError as Error);
+      }
+    );
+  });
 }

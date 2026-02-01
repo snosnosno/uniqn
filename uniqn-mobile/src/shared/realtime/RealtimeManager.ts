@@ -75,10 +75,7 @@ export class RealtimeManager {
    * @param subscribeFn - 구독 함수 (onSnapshot 등)
    * @returns 구독 해제 함수
    */
-  static subscribe(
-    key: string,
-    subscribeFn: () => () => void
-  ): () => void {
+  static subscribe(key: string, subscribeFn: () => () => void): () => void {
     const existing = this.subscriptions.get(key);
 
     if (existing) {
@@ -245,10 +242,7 @@ export class RealtimeManager {
    * unregister();
    * ```
    */
-  static registerReconnectCallback(
-    key: string,
-    callback: () => void
-  ): () => void {
+  static registerReconnectCallback(key: string, callback: () => void): () => void {
     this.reconnectCallbacks.set(key, callback);
 
     if (this.isDebugMode) {

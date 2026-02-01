@@ -6,12 +6,7 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  Pressable,
-  Modal,
-} from 'react-native';
+import { View, Text, Pressable, Modal } from 'react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { XMarkIcon, ChevronDownIcon } from '@/components/icons';
@@ -98,9 +93,7 @@ export const DatePicker = memo(function DatePicker({
   }, [onChange]);
 
   // 표시할 텍스트
-  const displayText = value
-    ? format(value, dateFormat, { locale: ko })
-    : placeholder;
+  const displayText = value ? format(value, dateFormat, { locale: ko }) : placeholder;
 
   // 입력 필드 스타일
   const getInputStyle = () => {
@@ -128,11 +121,7 @@ export const DatePicker = memo(function DatePicker({
   return (
     <View className={className} testID={testID}>
       {/* 레이블 */}
-      {label && (
-        <Text className="mb-2 font-medium text-gray-900 dark:text-white">
-          {label}
-        </Text>
-      )}
+      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
 
       {/* 트리거 영역 - 버튼 중첩 방지를 위해 flex 구조 변경 */}
       <View className={getInputStyle()}>
@@ -171,32 +160,20 @@ export const DatePicker = memo(function DatePicker({
             <XMarkIcon size={20} color="#9CA3AF" />
           </Pressable>
         ) : (
-          <ChevronDownIcon
-            size={20}
-            color={disabled ? '#9CA3AF' : '#6B7280'}
-          />
+          <ChevronDownIcon size={20} color={disabled ? '#9CA3AF' : '#6B7280'} />
         )}
       </View>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && (
-        <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>
-      )}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
 
       {/* 모달 */}
-      <Modal
-        visible={showModal}
-        transparent
-        animationType="slide"
-        onRequestClose={closeModal}
-      >
+      <Modal visible={showModal} transparent animationType="slide" onRequestClose={closeModal}>
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white dark:bg-surface rounded-t-2xl">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
-              <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-                날짜 선택
-              </Text>
+              <Text className="text-lg font-semibold text-gray-900 dark:text-white">날짜 선택</Text>
               <Pressable
                 onPress={closeModal}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -294,11 +271,7 @@ export const DateRangePicker = memo(function DateRangePicker({
 
   return (
     <View className={className} testID={testID}>
-      {label && (
-        <Text className="mb-2 font-medium text-gray-900 dark:text-white">
-          {label}
-        </Text>
-      )}
+      {label && <Text className="mb-2 font-medium text-gray-900 dark:text-white">{label}</Text>}
 
       <View className="flex-row items-center gap-2">
         {/* 시작 날짜 */}
@@ -331,9 +304,7 @@ export const DateRangePicker = memo(function DateRangePicker({
       </View>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && (
-        <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>
-      )}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
     </View>
   );
 });

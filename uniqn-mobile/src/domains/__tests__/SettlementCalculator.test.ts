@@ -122,8 +122,8 @@ describe('TaxCalculator', () => {
 describe('SettlementCalculator', () => {
   describe('calculateHours', () => {
     it('8시간 근무 계산', () => {
-      const start = createDate(9, 0);  // 09:00
-      const end = createDate(18, 0);   // 18:00 (9시간이지만 휴게시간 제외 시 8시간)
+      const start = createDate(9, 0); // 09:00
+      const end = createDate(18, 0); // 18:00 (9시간이지만 휴게시간 제외 시 8시간)
       const hours = SettlementCalculator.calculateHours(start, end);
       expect(hours).toBe(9); // 실제 9시간 (휴게시간 별도 처리 없음)
     });
@@ -200,7 +200,7 @@ describe('SettlementCalculator', () => {
 
     it('PROVIDED_FLAG(-1)는 금액에 포함 안 함', () => {
       const allowances: Allowances = {
-        meal: -1,          // 제공
+        meal: -1, // 제공
         transportation: 5000,
         accommodation: -1, // 제공
       };
@@ -331,7 +331,11 @@ describe('SettlementCalculator', () => {
               roles: [
                 { role: 'dealer', salary: { type: 'hourly' as const, amount: 20000 } },
                 { role: 'floor', salary: { type: 'hourly' as const, amount: 18000 } },
-                { role: 'other', customRole: '조명', salary: { type: 'hourly' as const, amount: 25000 } },
+                {
+                  role: 'other',
+                  customRole: '조명',
+                  salary: { type: 'hourly' as const, amount: 25000 },
+                },
               ],
             },
           ],
@@ -372,11 +376,7 @@ describe('SettlementCalculator', () => {
         useSameSalary: true,
         defaultSalary: { type: 'daily' as const, amount: 200000 },
       };
-      const salary = SettlementCalculator.getSalaryForRole(
-        'dealer',
-        undefined,
-        posting as never
-      );
+      const salary = SettlementCalculator.getSalaryForRole('dealer', undefined, posting as never);
       expect(salary.amount).toBe(200000);
     });
   });
@@ -417,7 +417,14 @@ describe('SettlementCache', () => {
 
   describe('invalidate', () => {
     it('단일 키 무효화', () => {
-      const breakdown = { hoursWorked: 8, basePay: 120000, allowancePay: 0, totalPay: 120000, taxAmount: 0, afterTaxPay: 120000 };
+      const breakdown = {
+        hoursWorked: 8,
+        basePay: 120000,
+        allowancePay: 0,
+        totalPay: 120000,
+        taxAmount: 0,
+        afterTaxPay: 120000,
+      };
       SettlementCache.set('workLog1', breakdown, 'hash1');
 
       SettlementCache.invalidate('workLog1');
@@ -426,7 +433,14 @@ describe('SettlementCache', () => {
     });
 
     it('clear()로 전체 무효화', () => {
-      const breakdown = { hoursWorked: 8, basePay: 120000, allowancePay: 0, totalPay: 120000, taxAmount: 0, afterTaxPay: 120000 };
+      const breakdown = {
+        hoursWorked: 8,
+        basePay: 120000,
+        allowancePay: 0,
+        totalPay: 120000,
+        taxAmount: 0,
+        afterTaxPay: 120000,
+      };
       SettlementCache.set('workLog1', breakdown, 'hash1');
       SettlementCache.set('workLog2', breakdown, 'hash2');
 
@@ -439,14 +453,28 @@ describe('SettlementCache', () => {
 
   describe('isStale', () => {
     it('inputHash가 다르면 stale', () => {
-      const breakdown = { hoursWorked: 8, basePay: 120000, allowancePay: 0, totalPay: 120000, taxAmount: 0, afterTaxPay: 120000 };
+      const breakdown = {
+        hoursWorked: 8,
+        basePay: 120000,
+        allowancePay: 0,
+        totalPay: 120000,
+        taxAmount: 0,
+        afterTaxPay: 120000,
+      };
       SettlementCache.set('workLog1', breakdown, 'hash1');
 
       expect(SettlementCache.isStale('workLog1', 'hash2')).toBe(true);
     });
 
     it('inputHash가 같으면 fresh', () => {
-      const breakdown = { hoursWorked: 8, basePay: 120000, allowancePay: 0, totalPay: 120000, taxAmount: 0, afterTaxPay: 120000 };
+      const breakdown = {
+        hoursWorked: 8,
+        basePay: 120000,
+        allowancePay: 0,
+        totalPay: 120000,
+        taxAmount: 0,
+        afterTaxPay: 120000,
+      };
       SettlementCache.set('workLog1', breakdown, 'hash1');
 
       expect(SettlementCache.isStale('workLog1', 'hash1')).toBe(false);

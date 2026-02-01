@@ -19,23 +19,26 @@ export default function ForgotPasswordScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const { addToast } = useToastStore();
 
-  const handleSubmit = useCallback(async (data: ResetPasswordFormData) => {
-    setIsLoading(true);
-    try {
-      await resetPassword(data.email);
-      logger.info('비밀번호 재설정 이메일 발송', { email: data.email });
-      // 성공 시 ForgotPasswordForm 내부에서 성공 상태로 전환됨
-    } catch (error) {
-      logger.error('비밀번호 재설정 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: error instanceof Error ? error.message : '이메일 발송에 실패했습니다.',
-      });
-      throw error; // Form에서 에러 상태 처리를 위해 다시 throw
-    } finally {
-      setIsLoading(false);
-    }
-  }, [addToast]);
+  const handleSubmit = useCallback(
+    async (data: ResetPasswordFormData) => {
+      setIsLoading(true);
+      try {
+        await resetPassword(data.email);
+        logger.info('비밀번호 재설정 이메일 발송', { email: data.email });
+        // 성공 시 ForgotPasswordForm 내부에서 성공 상태로 전환됨
+      } catch (error) {
+        logger.error('비밀번호 재설정 실패', error as Error);
+        addToast({
+          type: 'error',
+          message: error instanceof Error ? error.message : '이메일 발송에 실패했습니다.',
+        });
+        throw error; // Form에서 에러 상태 처리를 위해 다시 throw
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [addToast]
+  );
 
   const handleBack = () => {
     router.back();
@@ -48,9 +51,7 @@ export default function ForgotPasswordScreen() {
         <Pressable onPress={handleBack} className="p-2 -ml-2">
           <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
         </Pressable>
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white">
-          비밀번호 찾기
-        </Text>
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white">비밀번호 찾기</Text>
         <View className="w-8" />
       </View>
 
@@ -64,10 +65,7 @@ export default function ForgotPasswordScreen() {
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
-          <ForgotPasswordForm
-            onSubmit={handleSubmit}
-            isLoading={isLoading}
-          />
+          <ForgotPasswordForm onSubmit={handleSubmit} isLoading={isLoading} />
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

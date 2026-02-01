@@ -129,10 +129,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       // 병렬 처리
       const results = await Promise.allSettled(
         chunks.map(async (chunk) => {
-          const q = query(
-            jobPostingsRef,
-            where(documentId(), 'in', chunk)
-          );
+          const q = query(jobPostingsRef, where(documentId(), 'in', chunk));
           return getDocs(q);
         })
       );
@@ -183,8 +180,10 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
 
       // QueryBuilder로 쿼리 구성
-      let builder = new QueryBuilder(jobPostingsRef)
-        .whereEqual('status', filters?.status ?? 'active');
+      let builder = new QueryBuilder(jobPostingsRef).whereEqual(
+        'status',
+        filters?.status ?? 'active'
+      );
 
       // 공고 타입 필터
       if (filters?.postingType) {
@@ -250,17 +249,13 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async getByOwnerId(
-    ownerId: string,
-    status?: JobPostingStatus
-  ): Promise<JobPosting[]> {
+  async getByOwnerId(ownerId: string, status?: JobPostingStatus): Promise<JobPosting[]> {
     try {
       logger.info('소유자별 공고 조회', { ownerId, status });
 
       const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
 
-      let builder = new QueryBuilder(jobPostingsRef)
-        .whereEqual('ownerId', ownerId);
+      let builder = new QueryBuilder(jobPostingsRef).whereEqual('ownerId', ownerId);
 
       if (status) {
         builder = builder.whereEqual('status', status);
@@ -298,19 +293,14 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async getTypeCounts(
-    filters?: Pick<JobPostingFilters, 'status'>
-  ): Promise<PostingTypeCounts> {
+  async getTypeCounts(filters?: Pick<JobPostingFilters, 'status'>): Promise<PostingTypeCounts> {
     try {
       logger.info('공고 타입별 개수 조회', { filters });
 
       const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
       const status = filters?.status ?? 'active';
 
-      const q = query(
-        jobPostingsRef,
-        where('status', '==', status)
-      );
+      const q = query(jobPostingsRef, where('status', '==', status));
 
       const snapshot = await getDocs(q);
 
@@ -376,10 +366,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async updateStatus(
-    jobPostingId: string,
-    status: JobPostingStatus
-  ): Promise<void> {
+  async updateStatus(jobPostingId: string, status: JobPostingStatus): Promise<void> {
     try {
       logger.info('공고 상태 변경', { jobPostingId, status });
 
@@ -426,10 +413,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       const { startTime: inputStartTime, ...restInput } = input;
 
       // 서비스 레이어에서 변환된 roles 사용 (roles는 RoleRequirement[] 형태로 전달됨)
-      const totalPositions = restInput.roles.reduce(
-        (sum, role) => sum + role.count,
-        0
-      );
+      const totalPositions = restInput.roles.reduce((sum, role) => sum + role.count, 0);
 
       // dateSpecificRequirements에서 날짜만 추출 (array-contains 쿼리용)
       const workDates = (restInput.dateSpecificRequirements ?? [])
@@ -439,8 +423,11 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
             return (req.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
           }
           if (req.date && 'seconds' in req.date) {
-            return new Date((req.date as { seconds: number }).seconds * 1000)
-              .toISOString().split('T')[0] ?? '';
+            return (
+              new Date((req.date as { seconds: number }).seconds * 1000)
+                .toISOString()
+                .split('T')[0] ?? ''
+            );
           }
           return '';
         })
@@ -489,9 +476,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
           fixedConfig: {
             durationDays: 7 as const,
             createdAt: Timestamp.now(),
-            expiresAt: Timestamp.fromDate(
-              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            ),
+            expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
           },
         }),
         createdAt: now as Timestamp,
@@ -560,8 +545,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         if (hasConfirmedApplicants) {
           if (input.workDate || input.timeSlot || input.roles) {
             throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-              userMessage:
-                '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
+              userMessage: '확정된 지원자가 있는 경우 일정 및 역할을 수정할 수 없습니다',
             });
           }
         }
@@ -574,9 +558,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
         // undefined 필드 제거
         const removeUndefined = <T extends Record<string, unknown>>(obj: T): T => {
-          return Object.fromEntries(
-            Object.entries(obj).filter(([, v]) => v !== undefined)
-          ) as T;
+          return Object.fromEntries(Object.entries(obj).filter(([, v]) => v !== undefined)) as T;
         };
 
         const updateData = removeUndefined({
@@ -610,10 +592,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async deleteWithTransaction(
-    jobPostingId: string,
-    ownerId: string
-  ): Promise<void> {
+  async deleteWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
     try {
       logger.info('공고 삭제 (트랜잭션)', { jobPostingId, ownerId });
 
@@ -648,8 +627,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         const hasConfirmedApplicants = (currentData.filledPositions ?? 0) > 0;
         if (hasConfirmedApplicants) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-            userMessage:
-              '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
+            userMessage: '확정된 지원자가 있는 공고는 삭제할 수 없습니다. 마감 처리를 해주세요',
           });
         }
 
@@ -674,10 +652,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async closeWithTransaction(
-    jobPostingId: string,
-    ownerId: string
-  ): Promise<void> {
+  async closeWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
     try {
       logger.info('공고 마감 (트랜잭션)', { jobPostingId, ownerId });
 
@@ -735,10 +710,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     }
   }
 
-  async reopenWithTransaction(
-    jobPostingId: string,
-    ownerId: string
-  ): Promise<void> {
+  async reopenWithTransaction(jobPostingId: string, ownerId: string): Promise<void> {
     try {
       logger.info('공고 재오픈 (트랜잭션)', { jobPostingId, ownerId });
 
@@ -793,9 +765,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
           updateData.fixedConfig = {
             ...currentData.fixedConfig,
             durationDays: 7,
-            expiresAt: Timestamp.fromDate(
-              new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)
-            ),
+            expiresAt: Timestamp.fromDate(new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)),
           };
         }
 
@@ -886,15 +856,8 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       let successCount = 0;
 
       // Firestore 배치 작업 제한
-      for (
-        let i = 0;
-        i < jobPostingIds.length;
-        i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS
-      ) {
-        const batch = jobPostingIds.slice(
-          i,
-          i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS
-        );
+      for (let i = 0; i < jobPostingIds.length; i += FIREBASE_LIMITS.BATCH_MAX_OPERATIONS) {
+        const batch = jobPostingIds.slice(i, i + FIREBASE_LIMITS.BATCH_MAX_OPERATIONS);
 
         await runTransaction(getFirebaseDb(), async (transaction) => {
           for (const jobPostingId of batch) {

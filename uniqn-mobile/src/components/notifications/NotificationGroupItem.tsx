@@ -85,9 +85,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
         onPress={handleGroupPress}
         accessibilityRole="button"
         accessibilityLabel={accessibilityLabel}
-        accessibilityHint={
-          isExpanded ? '접으려면 탭하세요' : '펼치려면 탭하세요'
-        }
+        accessibilityHint={isExpanded ? '접으려면 탭하세요' : '펼치려면 탭하세요'}
         className="px-4 py-3 active:bg-gray-50 dark:active:bg-gray-800"
       >
         <View className="flex-row items-start">
@@ -98,9 +96,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           <View className="flex-1">
             {/* 제목 (그룹 카운트 포함) */}
             <View className="flex-row items-center">
-              {hasUnread && (
-                <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
-              )}
+              {hasUnread && <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />}
               <Text
                 className={`text-base flex-1 ${
                   hasUnread
@@ -123,26 +119,18 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
 
             {/* 컨텍스트 (공고명/이벤트명) */}
             {contextLabel && (
-              <Text
-                className="text-sm text-gray-600 dark:text-gray-400 mt-0.5"
-                numberOfLines={1}
-              >
+              <Text className="text-sm text-gray-600 dark:text-gray-400 mt-0.5" numberOfLines={1}>
                 {contextLabel}
               </Text>
             )}
 
             {/* 본문 (요약) */}
-            <Text
-              className="text-sm text-gray-500 dark:text-gray-400 mt-1"
-              numberOfLines={1}
-            >
+            <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1" numberOfLines={1}>
               {group.groupBody}
             </Text>
 
             {/* 시간 */}
-            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
-              {timeAgo}
-            </Text>
+            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{timeAgo}</Text>
           </View>
 
           {/* 펼침/접힘 아이콘 */}
@@ -162,11 +150,7 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
           {group.notifications.map((notification, index) => (
             <View
               key={notification.id}
-              className={
-                index > 0
-                  ? 'border-t border-gray-100 dark:border-surface-overlay/50'
-                  : ''
-              }
+              className={index > 0 ? 'border-t border-gray-100 dark:border-surface-overlay/50' : ''}
             >
               <NotificationItem
                 notification={notification}

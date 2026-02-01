@@ -94,10 +94,7 @@ function createGroupTitle(type: NotificationType, count: number): string {
 /**
  * 그룹 본문 생성 (최근 알림들 요약)
  */
-function createGroupBody(
-  notifications: NotificationData[],
-  maxPreview: number = 3
-): string {
+function createGroupBody(notifications: NotificationData[], maxPreview: number = 3): string {
   const previewItems = notifications.slice(0, maxPreview);
   const remaining = notifications.length - maxPreview;
 
@@ -206,10 +203,7 @@ export function groupNotifications(
         count: sortedNotifications.length,
         unreadCount,
         latestCreatedAt: firstNotification.createdAt,
-        groupTitle: createGroupTitle(
-          firstNotification.type,
-          sortedNotifications.length
-        ),
+        groupTitle: createGroupTitle(firstNotification.type, sortedNotifications.length),
         groupBody: createGroupBody(sortedNotifications),
       };
 

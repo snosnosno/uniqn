@@ -85,9 +85,7 @@ const SENSITIVE_FIELDS = [
  * maskSensitiveData({ userId: 'abc123xyz', name: 'John' })
  * // { userId: 'abc***xyz', name: 'John' }
  */
-export function maskSensitiveData(
-  data: Record<string, unknown>
-): Record<string, unknown> {
+export function maskSensitiveData(data: Record<string, unknown>): Record<string, unknown> {
   const masked: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(data)) {
@@ -136,10 +134,7 @@ export function maskSensitiveData(
  *   });
  * }
  */
-export function handleServiceError(
-  error: unknown,
-  options: ServiceErrorOptions
-): AppError {
+export function handleServiceError(error: unknown, options: ServiceErrorOptions): AppError {
   const { operation, component, context = {} } = options;
 
   // 1. 민감정보 마스킹
@@ -192,10 +187,7 @@ export function handleServiceError(
  *   handleSilentError(error, { operation: 'Analytics 이벤트', component: 'analyticsService' });
  * }
  */
-export function handleSilentError(
-  error: unknown,
-  options: SilentErrorOptions
-): void {
+export function handleSilentError(error: unknown, options: SilentErrorOptions): void {
   const { operation, component, context = {}, logLevel = 'warn' } = options;
 
   // 민감정보 마스킹

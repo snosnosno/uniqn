@@ -38,13 +38,7 @@ export type EmployeeReportTypeSchema = z.infer<typeof employeeReportTypeSchema>;
  * 구인자 신고 유형 스키마 (구직자 → 구인자)
  */
 export const employerReportTypeSchema = z.enum(
-  [
-    'false_posting',
-    'employer_negligence',
-    'unfair_treatment',
-    'inappropriate_behavior',
-    'other',
-  ],
+  ['false_posting', 'employer_negligence', 'unfair_treatment', 'inappropriate_behavior', 'other'],
   {
     error: '올바른 신고 유형을 선택해주세요',
   }
@@ -55,10 +49,7 @@ export type EmployerReportTypeSchema = z.infer<typeof employerReportTypeSchema>;
 /**
  * 통합 신고 유형 스키마
  */
-export const reportTypeUnionSchema = z.union([
-  employeeReportTypeSchema,
-  employerReportTypeSchema,
-]);
+export const reportTypeUnionSchema = z.union([employeeReportTypeSchema, employerReportTypeSchema]);
 
 export type ReportTypeUnionSchema = z.infer<typeof reportTypeUnionSchema>;
 
@@ -74,12 +65,9 @@ export type ReporterTypeSchemaData = z.infer<typeof reporterTypeSchema>;
 /**
  * 신고 상태 스키마
  */
-export const reportStatusUnionSchema = z.enum(
-  ['pending', 'reviewed', 'resolved', 'dismissed'],
-  {
-    error: '올바른 신고 상태를 선택해주세요',
-  }
-);
+export const reportStatusUnionSchema = z.enum(['pending', 'reviewed', 'resolved', 'dismissed'], {
+  error: '올바른 신고 상태를 선택해주세요',
+});
 
 export type ReportStatusUnionSchema = z.infer<typeof reportStatusUnionSchema>;
 

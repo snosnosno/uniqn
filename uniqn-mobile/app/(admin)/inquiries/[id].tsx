@@ -48,9 +48,7 @@ export default function AdminInquiryDetailScreen() {
   if (isError || !inquiry) {
     return (
       <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-        <Text className="text-gray-500 dark:text-gray-400">
-          문의를 찾을 수 없습니다
-        </Text>
+        <Text className="text-gray-500 dark:text-gray-400">문의를 찾을 수 없습니다</Text>
       </SafeAreaView>
     );
   }
@@ -71,9 +69,7 @@ export default function AdminInquiryDetailScreen() {
               <Text className="text-base font-medium text-gray-900 dark:text-gray-100">
                 {inquiry.userName}
               </Text>
-              <Text className="text-sm text-gray-500 dark:text-gray-400">
-                {inquiry.userEmail}
-              </Text>
+              <Text className="text-sm text-gray-500 dark:text-gray-400">{inquiry.userEmail}</Text>
             </View>
             <InquiryStatusBadge status={inquiry.status} />
           </View>
@@ -86,9 +82,7 @@ export default function AdminInquiryDetailScreen() {
               {INQUIRY_CATEGORY_LABELS[inquiry.category]}
             </Text>
             <Text className="text-sm text-gray-400 dark:text-gray-500">
-              {createdDate
-                ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko })
-                : ''}
+              {createdDate ? format(createdDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : ''}
             </Text>
           </View>
 
@@ -97,9 +91,7 @@ export default function AdminInquiryDetailScreen() {
           </Text>
 
           <View className="rounded-lg bg-gray-50 p-4 dark:bg-surface/50">
-            <Text className="leading-6 text-gray-700 dark:text-gray-300">
-              {inquiry.message}
-            </Text>
+            <Text className="leading-6 text-gray-700 dark:text-gray-300">{inquiry.message}</Text>
           </View>
 
           {/* 첨부파일 */}
@@ -109,10 +101,7 @@ export default function AdminInquiryDetailScreen() {
                 첨부파일 ({inquiry.attachments.length})
               </Text>
               {inquiry.attachments.map((attachment, index) => (
-                <View
-                  key={index}
-                  className="mb-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-surface"
-                >
+                <View key={index} className="mb-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-surface">
                   <Text className="text-sm text-gray-700 dark:text-gray-300">
                     {attachment.name}
                   </Text>
@@ -128,14 +117,10 @@ export default function AdminInquiryDetailScreen() {
             <View className="mb-3 flex-row items-center justify-between">
               <View className="flex-row items-center">
                 <View className="mr-2 h-2 w-2 rounded-full bg-green-500" />
-                <Text className="font-medium text-gray-900 dark:text-gray-100">
-                  답변 완료
-                </Text>
+                <Text className="font-medium text-gray-900 dark:text-gray-100">답변 완료</Text>
               </View>
               <Text className="text-sm text-gray-400 dark:text-gray-500">
-                {respondedDate
-                  ? format(respondedDate, 'yyyy.MM.dd HH:mm', { locale: ko })
-                  : ''}
+                {respondedDate ? format(respondedDate, 'yyyy.MM.dd HH:mm', { locale: ko }) : ''}
               </Text>
             </View>
 
@@ -146,9 +131,7 @@ export default function AdminInquiryDetailScreen() {
             )}
 
             <View className="rounded-lg bg-green-50 p-4 dark:bg-green-900/20">
-              <Text className="leading-6 text-gray-700 dark:text-gray-300">
-                {inquiry.response}
-              </Text>
+              <Text className="leading-6 text-gray-700 dark:text-gray-300">{inquiry.response}</Text>
             </View>
           </Card>
         )}

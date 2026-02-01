@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getDashboardStats,
   getUsers,
@@ -13,18 +13,18 @@ import {
   updateUserRole,
   setUserActive,
   getSystemMetrics,
-} from "@/services/adminService";
-import { queryKeys, cachingPolicies } from "@/lib/queryClient";
-import { toError } from "@/errors";
-import { logger } from "@/utils/logger";
+} from '@/services/adminService';
+import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { toError } from '@/errors';
+import { logger } from '@/utils/logger';
 import type {
   AdminUserFilters,
   DashboardStats,
   PaginatedUsers,
   AdminUser,
   SystemMetrics,
-} from "@/types/admin";
-import type { UserRole } from "@/types/common";
+} from '@/types/admin';
+import type { UserRole } from '@/types/common';
 
 // ============================================================================
 // Dashboard Stats Hook
@@ -89,12 +89,12 @@ export function useUpdateUserRole() {
       reason?: string;
     }) => updateUserRole(userId, newRole, reason),
     onSuccess: (_data, variables) => {
-      logger.info("사용자 역할 변경 성공", { userId: variables.userId });
+      logger.info('사용자 역할 변경 성공', { userId: variables.userId });
       // 캐시 무효화
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
     onError: (error, variables) => {
-      logger.error("사용자 역할 변경 실패", toError(error), {
+      logger.error('사용자 역할 변경 실패', toError(error), {
         userId: variables.userId,
       });
     },
@@ -115,7 +115,7 @@ export function useSetUserActive() {
       reason?: string;
     }) => setUserActive(userId, isActive, reason),
     onSuccess: (_data, variables) => {
-      logger.info("사용자 상태 변경 성공", {
+      logger.info('사용자 상태 변경 성공', {
         userId: variables.userId,
         isActive: variables.isActive,
       });
@@ -123,7 +123,7 @@ export function useSetUserActive() {
       queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
     },
     onError: (error, variables) => {
-      logger.error("사용자 상태 변경 실패", toError(error), {
+      logger.error('사용자 상태 변경 실패', toError(error), {
         userId: variables.userId,
       });
     },

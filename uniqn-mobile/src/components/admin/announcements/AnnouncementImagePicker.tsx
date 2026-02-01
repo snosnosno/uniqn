@@ -67,7 +67,8 @@ export function AnnouncementImagePicker({
   // 렌더 아이템
   const renderItem = useCallback(
     ({ item, drag, isActive }: RenderItemParams<AnnouncementImage>) => {
-      const isCurrentlyUploading = uploadingIndex !== null && item.id === `uploading-${uploadingIndex}`;
+      const isCurrentlyUploading =
+        uploadingIndex !== null && item.id === `uploading-${uploadingIndex}`;
 
       return (
         <ScaleDecorator>
@@ -84,9 +85,7 @@ export function AnnouncementImagePicker({
           >
             <View
               className={`w-full h-full rounded-xl overflow-hidden border-2 ${
-                isActive
-                  ? 'border-primary-500'
-                  : 'border-gray-200 dark:border-surface-overlay'
+                isActive ? 'border-primary-500' : 'border-gray-200 dark:border-surface-overlay'
               }`}
             >
               {/* 이미지 */}
@@ -176,9 +175,7 @@ export function AnnouncementImagePicker({
                   className="rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
                 >
                   <Ionicons name="add" size={32} color="#9CA3AF" />
-                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                    이미지 추가
-                  </Text>
+                  <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">이미지 추가</Text>
                 </Pressable>
               ) : null
             }

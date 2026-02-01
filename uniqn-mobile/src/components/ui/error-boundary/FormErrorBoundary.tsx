@@ -14,11 +14,7 @@ import React, { Component, type ReactNode, type ErrorInfo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { logger } from '@/utils/logger';
 import { isFormRelatedError } from './helpers';
-import type {
-  FormErrorBoundaryProps,
-  FormErrorFallbackProps,
-  ErrorBoundaryState,
-} from './types';
+import type { FormErrorBoundaryProps, FormErrorFallbackProps, ErrorBoundaryState } from './types';
 
 // ============================================================================
 // FormErrorFallback
@@ -34,7 +30,8 @@ function FormErrorFallback({
   onRetry,
   onReset,
 }: FormErrorFallbackProps): React.ReactElement {
-  const isValidationError = error?.message.includes('validation') || error?.message.includes('검증');
+  const isValidationError =
+    error?.message.includes('validation') || error?.message.includes('검증');
 
   return (
     <View className="p-4 bg-red-50 dark:bg-red-900/20 rounded-xl border border-red-200 dark:border-red-800">
@@ -67,7 +64,9 @@ function FormErrorFallback({
           accessibilityRole="button"
           accessibilityLabel="초기화"
         >
-          <Text className="text-gray-700 dark:text-gray-200 font-medium text-center text-sm">초기화</Text>
+          <Text className="text-gray-700 dark:text-gray-200 font-medium text-center text-sm">
+            초기화
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -83,10 +82,7 @@ function FormErrorFallback({
  *
  * @description 폼 관련 에러를 처리하는 에러 경계
  */
-export class FormErrorBoundary extends Component<
-  FormErrorBoundaryProps,
-  ErrorBoundaryState
-> {
+export class FormErrorBoundary extends Component<FormErrorBoundaryProps, ErrorBoundaryState> {
   constructor(props: FormErrorBoundaryProps) {
     super(props);
     this.state = {

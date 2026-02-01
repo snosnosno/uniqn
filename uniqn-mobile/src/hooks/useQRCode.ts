@@ -156,14 +156,11 @@ export function useQRDisplayModal() {
   const [displayData, setDisplayData] = useState<EventQRDisplayData | null>(null);
   const [action, setAction] = useState<QRCodeAction | undefined>();
 
-  const openDisplay = useCallback(
-    (data: EventQRDisplayData, displayAction?: QRCodeAction) => {
-      setDisplayData(data);
-      setAction(displayAction);
-      setIsVisible(true);
-    },
-    []
-  );
+  const openDisplay = useCallback((data: EventQRDisplayData, displayAction?: QRCodeAction) => {
+    setDisplayData(data);
+    setAction(displayAction);
+    setIsVisible(true);
+  }, []);
 
   const closeDisplay = useCallback(() => {
     setIsVisible(false);

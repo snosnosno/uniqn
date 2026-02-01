@@ -275,10 +275,7 @@ export async function respondToInquiry(
 /**
  * 문의 상태 변경 (관리자)
  */
-export async function updateInquiryStatus(
-  inquiryId: string,
-  status: InquiryStatus
-): Promise<void> {
+export async function updateInquiryStatus(inquiryId: string, status: InquiryStatus): Promise<void> {
   return withErrorHandling(async () => {
     const db = getFirebaseDb();
     const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
@@ -306,10 +303,7 @@ export async function updateInquiryStatus(
 export async function getUnansweredCount(): Promise<number> {
   return withErrorHandling(async () => {
     const db = getFirebaseDb();
-    const q = query(
-      collection(db, COLLECTIONS.INQUIRIES),
-      where('status', '==', 'open')
-    );
+    const q = query(collection(db, COLLECTIONS.INQUIRIES), where('status', '==', 'open'));
 
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;

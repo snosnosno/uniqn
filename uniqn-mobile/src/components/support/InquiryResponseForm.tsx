@@ -75,17 +75,10 @@ export function InquiryResponseForm({
 
   return (
     <View className="rounded-xl bg-white p-4 dark:bg-surface">
-      <Text className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
-        답변 작성
-      </Text>
+      <Text className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">답변 작성</Text>
 
       {/* 답변 내용 */}
-      <FormField
-        label="답변 내용"
-        required
-        error={errors.response}
-        className="mb-4"
-      >
+      <FormField label="답변 내용" required error={errors.response} className="mb-4">
         <TextInput
           value={response}
           onChangeText={(text) => {
@@ -107,9 +100,7 @@ export function InquiryResponseForm({
           }`}
           maxLength={2000}
         />
-        <Text className="mt-1 text-right text-xs text-gray-400">
-          {response.length}/2000
-        </Text>
+        <Text className="mt-1 text-right text-xs text-gray-400">{response.length}/2000</Text>
       </FormField>
 
       {/* 상태 선택 */}

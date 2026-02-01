@@ -83,15 +83,10 @@ export const useBookmarkStore = create<BookmarkStore>()(
         if (bookmarks.length >= MAX_BOOKMARKS) {
           logger.warn('북마크 최대 개수 초과', { max: MAX_BOOKMARKS });
           // 가장 오래된 북마크 제거
-          const sortedBookmarks = [...bookmarks].sort(
-            (a, b) => a.bookmarkedAt - b.bookmarkedAt
-          );
+          const sortedBookmarks = [...bookmarks].sort((a, b) => a.bookmarkedAt - b.bookmarkedAt);
           sortedBookmarks.shift();
           set({
-            bookmarks: [
-              ...sortedBookmarks,
-              { ...job, bookmarkedAt: Date.now() },
-            ],
+            bookmarks: [...sortedBookmarks, { ...job, bookmarkedAt: Date.now() }],
           });
           return;
         }
@@ -156,8 +151,7 @@ export const useBookmarkStore = create<BookmarkStore>()(
 /**
  * 북마크 개수 선택자
  */
-export const selectBookmarkCount = (state: BookmarkStore) =>
-  state.bookmarks.length;
+export const selectBookmarkCount = (state: BookmarkStore) => state.bookmarks.length;
 
 /**
  * 북마크 목록 선택자 (캐싱됨)
@@ -172,8 +166,7 @@ export const selectIsBookmarked = (state: BookmarkStore) => state.isBookmarked;
 /**
  * 북마크 토글 액션 선택자
  */
-export const selectToggleBookmark = (state: BookmarkStore) =>
-  state.toggleBookmark;
+export const selectToggleBookmark = (state: BookmarkStore) => state.toggleBookmark;
 
 /**
  * 북마크 추가 액션 선택자
@@ -183,21 +176,18 @@ export const selectAddBookmark = (state: BookmarkStore) => state.addBookmark;
 /**
  * 북마크 제거 액션 선택자
  */
-export const selectRemoveBookmark = (state: BookmarkStore) =>
-  state.removeBookmark;
+export const selectRemoveBookmark = (state: BookmarkStore) => state.removeBookmark;
 
 /**
  * 전체 북마크 삭제 액션 선택자
  */
-export const selectClearAllBookmarks = (state: BookmarkStore) =>
-  state.clearAllBookmarks;
+export const selectClearAllBookmarks = (state: BookmarkStore) => state.clearAllBookmarks;
 
 /**
  * 북마크 ID 목록 선택자
  * @deprecated 매번 새 배열 생성으로 인해 selectBookmarks 사용 권장
  */
-export const selectBookmarkIds = (state: BookmarkStore) =>
-  state.bookmarks.map((b) => b.id);
+export const selectBookmarkIds = (state: BookmarkStore) => state.bookmarks.map((b) => b.id);
 
 // ============================================================================
 // Export

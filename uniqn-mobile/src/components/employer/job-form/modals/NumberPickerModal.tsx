@@ -100,16 +100,8 @@ export function NumberPickerModal({
   }, [selectedValue, onConfirm]);
 
   return (
-    <Modal
-      visible={visible}
-      transparent
-      animationType="fade"
-      onRequestClose={onClose}
-    >
-      <Pressable
-        className="flex-1 bg-black/50 justify-end"
-        onPress={onClose}
-      >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
         <Pressable
           className="bg-white dark:bg-surface rounded-t-2xl"
           onPress={(e) => e.stopPropagation()}
@@ -117,13 +109,9 @@ export function NumberPickerModal({
           {/* 헤더 */}
           <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
             <Pressable onPress={onClose} className="py-2 px-3">
-              <Text className="text-gray-500 dark:text-gray-400 text-base">
-                취소
-              </Text>
+              <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
             </Pressable>
-            <Text className="text-base font-semibold text-gray-900 dark:text-white">
-              {title}
-            </Text>
+            <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
             <Pressable onPress={handleConfirm} className="py-2 px-3">
               <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
                 확인
@@ -132,10 +120,7 @@ export function NumberPickerModal({
           </View>
 
           {/* 휠 피커 */}
-          <View
-            style={{ height: PICKER_HEIGHT }}
-            className="relative overflow-hidden"
-          >
+          <View style={{ height: PICKER_HEIGHT }} className="relative overflow-hidden">
             {/* 선택 영역 하이라이트 */}
             <View
               className="absolute left-4 right-4 bg-gray-100 dark:bg-surface rounded-lg"

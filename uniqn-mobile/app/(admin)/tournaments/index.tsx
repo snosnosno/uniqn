@@ -6,14 +6,7 @@
  */
 
 import { useState, useCallback, memo, useMemo } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useTournamentApproval, useTournamentsByStatus } from '@/hooks/useTournamentApproval';
@@ -81,9 +74,7 @@ const StatusTab = memo(function StatusTab({
             backgroundColor: isSelected ? 'rgba(255,255,255,0.2)' : '#9CA3AF',
           }}
         >
-          <Text className="text-xs font-medium text-white">
-            {count}
-          </Text>
+          <Text className="text-xs font-medium text-white">{count}</Text>
         </View>
       )}
     </Pressable>
@@ -168,9 +159,7 @@ const TournamentCard = memo(function TournamentCard({
 
         <View className="flex-row items-center mb-1">
           <Ionicons name="calendar-outline" size={14} color="#9CA3AF" />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">
-            {dateRange}
-          </Text>
+          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-1">{dateRange}</Text>
         </View>
 
         <View className="flex-row items-center">
@@ -249,11 +238,7 @@ export default function AdminTournamentsPage() {
     posting: null,
   });
 
-  const {
-    approve,
-    reject,
-    isProcessing,
-  } = useTournamentApproval();
+  const { approve, reject, isProcessing } = useTournamentApproval();
 
   const {
     data: postings,
@@ -388,15 +373,15 @@ export default function AdminTournamentsPage() {
               selectedStatus === 'pending'
                 ? '승인 대기 공고 없음'
                 : selectedStatus === 'approved'
-                ? '승인된 공고 없음'
-                : '거부된 공고 없음'
+                  ? '승인된 공고 없음'
+                  : '거부된 공고 없음'
             }
             description={
               selectedStatus === 'pending'
                 ? '현재 승인 대기 중인 대회공고가 없습니다'
                 : selectedStatus === 'approved'
-                ? '아직 승인된 대회공고가 없습니다'
-                : '거부된 대회공고가 없습니다'
+                  ? '아직 승인된 대회공고가 없습니다'
+                  : '거부된 대회공고가 없습니다'
             }
             icon={selectedStatus === 'pending' ? '📋' : selectedStatus === 'approved' ? '✅' : '❌'}
           />

@@ -33,9 +33,7 @@ function InfoRow({ label, value }: InfoRowProps) {
   return (
     <View className="flex-row justify-between py-2">
       <Text className="text-sm text-gray-500 dark:text-gray-400">{label}</Text>
-      <Text className="text-sm font-medium text-gray-900 dark:text-white">
-        {value || '-'}
-      </Text>
+      <Text className="text-sm font-medium text-gray-900 dark:text-white">{value || '-'}</Text>
     </View>
   );
 }
@@ -74,21 +72,15 @@ function AgreementCheckbox({
         </View>
         <View className="flex-1">
           <View className="flex-row items-center">
-            <Text className="text-base font-medium text-gray-900 dark:text-white">
-              {title}
-            </Text>
+            <Text className="text-base font-medium text-gray-900 dark:text-white">{title}</Text>
             {onViewDetail && (
               <Pressable onPress={onViewDetail} className="ml-2">
-                <Text className="text-sm text-primary-600 dark:text-primary-400">
-                  [보기]
-                </Text>
+                <Text className="text-sm text-primary-600 dark:text-primary-400">[보기]</Text>
               </Pressable>
             )}
           </View>
           {description && (
-            <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {description}
-            </Text>
+            <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">{description}</Text>
           )}
         </View>
       </Pressable>
@@ -150,10 +142,14 @@ export default function EmployerRegisterScreen() {
         ...updatedProfile,
         createdAt: updatedProfile.createdAt?.toDate?.() ?? new Date(),
         updatedAt: updatedProfile.updatedAt?.toDate?.() ?? new Date(),
-        employerAgreements: updatedProfile.employerAgreements ? {
-          termsAgreedAt: updatedProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-          liabilityWaiverAgreedAt: updatedProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
-        } : undefined,
+        employerAgreements: updatedProfile.employerAgreements
+          ? {
+              termsAgreedAt:
+                updatedProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+              liabilityWaiverAgreedAt:
+                updatedProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ?? new Date(),
+            }
+          : undefined,
         employerRegisteredAt: updatedProfile.employerRegisteredAt?.toDate?.() ?? undefined,
       });
 
@@ -163,9 +159,7 @@ export default function EmployerRegisterScreen() {
       router.replace('/(app)/(tabs)/employer');
     } catch (error) {
       logger.error('구인자 등록 실패', error instanceof Error ? error : new Error(String(error)));
-      toast.error(
-        error instanceof Error ? error.message : '구인자 등록에 실패했습니다'
-      );
+      toast.error(error instanceof Error ? error.message : '구인자 등록에 실패했습니다');
     } finally {
       setIsSubmitting(false);
     }
@@ -220,14 +214,8 @@ export default function EmployerRegisterScreen() {
               <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
                 구인자 등록을 위해 본인인증이 필요합니다
               </Text>
-              <Button
-                variant="outline"
-                size="sm"
-                onPress={handleGoToVerification}
-              >
-                <Text className="text-primary-600 dark:text-primary-400">
-                  본인인증 하러가기
-                </Text>
+              <Button variant="outline" size="sm" onPress={handleGoToVerification}>
+                <Text className="text-primary-600 dark:text-primary-400">본인인증 하러가기</Text>
               </Button>
             </View>
           )}

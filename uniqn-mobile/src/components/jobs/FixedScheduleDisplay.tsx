@@ -63,7 +63,6 @@ function getRoleLabel(role?: string, name?: string, customRole?: string): string
   return '-';
 }
 
-
 /**
  * 주 출근일수 포맷
  */
@@ -129,7 +128,10 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
 }: FixedScheduleDisplayProps) {
   // 표시 문자열 계산
   const daysText = useMemo(() => formatDaysPerWeek(daysPerWeek), [daysPerWeek]);
-  const timeText = useMemo(() => formatStartTime(startTime, isStartTimeNegotiable), [startTime, isStartTimeNegotiable]);
+  const timeText = useMemo(
+    () => formatStartTime(startTime, isStartTimeNegotiable),
+    [startTime, isStartTimeNegotiable]
+  );
 
   // 역할 요약 텍스트
   const rolesText = useMemo(() => {
@@ -137,9 +139,7 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
     return roles
       .map((r) => {
         const label = getRoleLabel(r.role, r.name, r.customRole);
-        return showFilledCount
-          ? `${label} ${r.filled ?? 0}/${r.count}명`
-          : `${label} ${r.count}명`;
+        return showFilledCount ? `${label} ${r.filled ?? 0}/${r.count}명` : `${label} ${r.count}명`;
       })
       .join(', ');
   }, [roles, showFilledCount]);
@@ -169,21 +169,11 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
   // Compact 모드
   if (compact) {
     return (
-      <View
-        className="py-1"
-        accessibilityLabel={accessibilityLabel}
-        accessibilityRole="text"
-      >
-        <Text className="text-sm text-gray-700 dark:text-gray-300 mb-0.5">
-          📅 {daysText} 출근
-        </Text>
-        <Text className="text-sm text-gray-700 dark:text-gray-300">
-          🕐 출근시간 {timeText}
-        </Text>
+      <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
+        <Text className="text-sm text-gray-700 dark:text-gray-300 mb-0.5">📅 {daysText} 출근</Text>
+        <Text className="text-sm text-gray-700 dark:text-gray-300">🕐 출근시간 {timeText}</Text>
         {showRoles && rolesText && (
-          <Text className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
-            👥 {rolesText}
-          </Text>
+          <Text className="text-sm text-gray-700 dark:text-gray-300 mt-0.5">👥 {rolesText}</Text>
         )}
       </View>
     );
@@ -191,23 +181,15 @@ export const FixedScheduleDisplay = memo(function FixedScheduleDisplay({
 
   // 기본 모드
   return (
-    <View
-      className="py-1"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityRole="text"
-    >
+    <View className="py-1" accessibilityLabel={accessibilityLabel} accessibilityRole="text">
       {/* 주 출근일수 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-gray-900 dark:text-white">
-          📅 {daysText}
-        </Text>
+        <Text className="text-sm font-medium text-gray-900 dark:text-white">📅 {daysText}</Text>
       </View>
 
       {/* 출근 시간 */}
       <View className="flex-row items-center mb-2">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          🕐 {timeText}
-        </Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">🕐 {timeText}</Text>
       </View>
 
       {/* 역할별 인원 */}
