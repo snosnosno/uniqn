@@ -107,8 +107,8 @@ const STATUS_METADATA: Record<ApplicationStatus, StatusMetadata> = {
   applied: {
     label: '지원 완료',
     labelEn: 'Applied',
-    color: '#3B82F6', // blue-500
-    bgColor: '#DBEAFE', // blue-100
+    color: '#A855F7', // primary-500
+    bgColor: '#DBEAFE', // primary-100
     description: '지원이 완료되었습니다. 구인자의 검토를 기다리고 있습니다.',
     isFinal: false,
     canStaffCancel: true,

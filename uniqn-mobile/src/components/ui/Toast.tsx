@@ -50,7 +50,7 @@ const TOAST_STYLES = {
     IconComponent: ExclamationTriangleIcon,
   },
   info: {
-    container: 'bg-blue-600 dark:bg-blue-700',
+    container: 'bg-primary-600 dark:bg-primary-700',
     IconComponent: InformationCircleIcon,
   },
 };

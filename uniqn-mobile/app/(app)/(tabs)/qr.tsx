@@ -60,9 +60,9 @@ export default function QRScreen() {
   const actionLabel = selectedAction === 'checkIn' ? '출근' : '퇴근';
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
-      <View className="bg-white px-4 py-3 dark:bg-gray-800">
+      <View className="bg-white px-4 py-3 dark:bg-surface">
         <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">QR 스캔</Text>
         <Text className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           구인자의 QR 코드를 스캔하여 출퇴근하세요
@@ -78,7 +78,7 @@ export default function QRScreen() {
           <View className="flex-row items-center">
             <View
               className={`w-12 h-12 rounded-full items-center justify-center ${
-                isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-700'
+                isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-surface'
               }`}
             >
               {isWorking ? (
@@ -101,12 +101,12 @@ export default function QRScreen() {
             </View>
             <View
               className={`px-3 py-1.5 rounded-full ${
-                isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-blue-100 dark:bg-blue-900/30'
+                isWorking ? 'bg-green-100 dark:bg-green-900/30' : 'bg-primary-100 dark:bg-primary-900/30'
               }`}
             >
               <Text
                 className={`text-sm font-medium ${
-                  isWorking ? 'text-green-700 dark:text-green-300' : 'text-blue-700 dark:text-blue-300'
+                  isWorking ? 'text-green-700 dark:text-green-300' : 'text-primary-700 dark:text-primary-300'
                 }`}
               >
                 {actionLabel} 필요
@@ -117,7 +117,7 @@ export default function QRScreen() {
 
         {/* QR 스캔 메인 카드 */}
         <Card padding="lg" className="flex-1 items-center justify-center">
-          <View className="mb-8 h-56 w-56 items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700">
+          <View className="mb-8 h-56 w-56 items-center justify-center rounded-3xl border-2 border-dashed border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface">
             <ScanIcon size={80} color="#9CA3AF" />
           </View>
 

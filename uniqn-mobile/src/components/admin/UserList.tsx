@@ -160,7 +160,7 @@ export const UserList = React.memo(function UserList({
 
         {/* 검색 바 */}
         <View className="px-4 py-3">
-          <View className="flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-xl px-3">
+          <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-xl px-3">
             <SearchIcon size={18} color="#9CA3AF" />
             <TextInput
               value={filters.search}
@@ -185,7 +185,7 @@ export const UserList = React.memo(function UserList({
             >
               <FilterIcon
                 size={18}
-                color={showFilters ? '#3B82F6' : '#9CA3AF'}
+                color={showFilters ? '#A855F7' : '#9CA3AF'}
               />
             </Pressable>
           </View>
@@ -194,7 +194,7 @@ export const UserList = React.memo(function UserList({
         {/* 필터 패널 */}
         {showFilters && (
           <View className="px-4 pb-3">
-            <View className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+            <View className="bg-gray-50 dark:bg-surface rounded-xl p-3">
               {/* 역할 필터 */}
               <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
                 역할
@@ -207,7 +207,7 @@ export const UserList = React.memo(function UserList({
                     className={`px-3 py-1.5 rounded-full ${
                       filters.role === role.value
                         ? 'bg-primary-500'
-                        : 'bg-gray-200 dark:bg-gray-700'
+                        : 'bg-gray-200 dark:bg-surface'
                     }`}
                   >
                     <Text
@@ -316,7 +316,7 @@ export const UserList = React.memo(function UserList({
   }
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <FlashList
         data={filteredUsers}
         renderItem={renderItem}
@@ -331,7 +331,7 @@ export const UserList = React.memo(function UserList({
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={onRefresh}
-              tintColor="#3B82F6"
+              tintColor="#A855F7"
             />
           ) : undefined
         }

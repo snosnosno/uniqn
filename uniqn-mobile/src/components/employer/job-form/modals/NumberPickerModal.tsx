@@ -111,11 +111,11 @@ export function NumberPickerModal({
         onPress={onClose}
       >
         <Pressable
-          className="bg-white dark:bg-gray-800 rounded-t-2xl"
+          className="bg-white dark:bg-surface rounded-t-2xl"
           onPress={(e) => e.stopPropagation()}
         >
           {/* 헤더 */}
-          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+          <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
             <Pressable onPress={onClose} className="py-2 px-3">
               <Text className="text-gray-500 dark:text-gray-400 text-base">
                 취소
@@ -125,7 +125,7 @@ export function NumberPickerModal({
               {title}
             </Text>
             <Pressable onPress={handleConfirm} className="py-2 px-3">
-              <Text className="text-blue-600 dark:text-blue-400 text-base font-semibold">
+              <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">
                 확인
               </Text>
             </Pressable>
@@ -138,7 +138,7 @@ export function NumberPickerModal({
           >
             {/* 선택 영역 하이라이트 */}
             <View
-              className="absolute left-4 right-4 bg-gray-100 dark:bg-gray-700 rounded-lg"
+              className="absolute left-4 right-4 bg-gray-100 dark:bg-surface rounded-lg"
               style={{
                 top: ITEM_HEIGHT * 2,
                 height: ITEM_HEIGHT,

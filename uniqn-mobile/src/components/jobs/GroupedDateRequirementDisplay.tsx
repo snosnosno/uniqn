@@ -228,7 +228,7 @@ const GroupItem = memo(function GroupItem({
 
       {/* 펼침 상태: 개별 날짜 목록 */}
       {isExpanded && !isSingleDay && (
-        <View className="mt-2 ml-4 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
+        <View className="mt-2 ml-4 pl-3 border-l-2 border-gray-200 dark:border-surface-overlay">
           {group.originalRequirements.map((req, idx) => {
             const dateStr = toDateString(req.date);
             const stats = calculateTimeSlotStats(req.timeSlots);

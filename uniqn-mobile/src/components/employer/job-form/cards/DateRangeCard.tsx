@@ -123,9 +123,9 @@ export function DateRangeCard({
   const canAddTimeSlot = group.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="mb-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden shadow-sm">
+    <View className="mb-4 bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay overflow-hidden shadow-sm">
       {/* 헤더 - 날짜 범위 표시 */}
-      <View className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-b border-gray-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             <View className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center mr-3">
@@ -185,19 +185,19 @@ export function DateRangeCard({
           disabled={!canAddTimeSlot}
           className={`flex-row items-center justify-center p-3 rounded-lg border border-dashed ${
             canAddTimeSlot
-              ? 'border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/10'
-              : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50'
+              ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10'
+              : 'border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface opacity-50'
           }`}
           accessibilityRole="button"
           accessibilityLabel="시간대 추가"
         >
           <View className="mr-2">
-            <PlusIcon size={16} color={canAddTimeSlot ? '#3B82F6' : '#9CA3AF'} />
+            <PlusIcon size={16} color={canAddTimeSlot ? '#A855F7' : '#9CA3AF'} />
           </View>
           <Text
             className={`text-sm font-medium ${
               canAddTimeSlot
-                ? 'text-blue-600 dark:text-blue-400'
+                ? 'text-primary-600 dark:text-primary-400'
                 : 'text-gray-400 dark:text-gray-600'
             }`}
           >
@@ -208,7 +208,7 @@ export function DateRangeCard({
 
       {/* 하단 정보 - 여러 날짜인 경우 안내 */}
       {!isSingle && (
-        <View className="px-4 py-2 bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+        <View className="px-4 py-2 bg-gray-50 dark:bg-surface/50 border-t border-gray-200 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
             위 시간대와 인원은 {dayCount}일 모든 날짜에 동일하게 적용됩니다
           </Text>

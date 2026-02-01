@@ -17,8 +17,8 @@ export default function EmployerLayout() {
   // 로딩 중
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
+        <ActivityIndicator size="large" color="#A855F7" />
       </View>
     );
   }
@@ -38,19 +38,19 @@ export default function EmployerLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: isDark ? '#111827' : '#ffffff',
+          backgroundColor: isDark ? '#1A1625' : '#ffffff',
         },
-        headerTintColor: isDark ? '#ffffff' : '#111827',
+        headerTintColor: isDark ? '#ffffff' : '#1A1625',
         headerTitleStyle: {
           fontWeight: '600',
         },
         animation: 'slide_from_right',
         contentStyle: {
-          backgroundColor: isDark ? '#111827' : '#f9fafb',
+          backgroundColor: isDark ? '#1A1625' : '#f9fafb',
         },
         headerLeft: () => (
           <HeaderBackButton
-            tintColor={isDark ? '#ffffff' : '#111827'}
+            tintColor={isDark ? '#ffffff' : '#1A1625'}
             fallbackHref="/(app)/(tabs)/employer"
           />
         ),

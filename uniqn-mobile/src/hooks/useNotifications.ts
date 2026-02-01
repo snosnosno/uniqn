@@ -572,15 +572,32 @@ interface UseGroupedNotificationsResult {
  * 그룹화된 알림 목록 훅
  *
  * @description 알림을 그룹화하고 카테고리 필터를 적용한 목록 제공
+ * @note 사용자 설정(notificationStore.settings.grouping)이 우선 적용됨
  */
 export function useGroupedNotifications(
   options: UseGroupedNotificationsOptions = {}
 ): UseGroupedNotificationsResult {
   const {
     categoryFilter = 'all',
-    groupingOptions = { enabled: true, minGroupSize: 2 },
+    groupingOptions,
     enabled = true,
   } = options;
+
+  // 사용자 설정에서 그룹핑 옵션 가져오기
+  const userGroupingSettings = useNotificationStore((state) => state.settings.grouping);
+
+  // 사용자 설정 우선 적용 (효과적인 옵션 계산)
+  const effectiveGroupingOptions: NotificationGroupingOptions = useMemo(
+    () => ({
+      enabled: userGroupingSettings?.enabled ?? groupingOptions?.enabled ?? true,
+      minGroupSize: userGroupingSettings?.minGroupSize ?? groupingOptions?.minGroupSize ?? 2,
+      timeWindowMs:
+        userGroupingSettings?.timeWindowHours !== undefined
+          ? userGroupingSettings.timeWindowHours * 60 * 60 * 1000
+          : groupingOptions?.timeWindowMs,
+    }),
+    [userGroupingSettings, groupingOptions]
+  );
 
   // 기존 알림 목록 훅
   const {
@@ -596,14 +613,14 @@ export function useGroupedNotifications(
   // 읽음 처리 훅
   const { markAsRead } = useMarkAsRead();
 
-  // 그룹핑 적용 (메모이제이션)
+  // 그룹핑 적용 (메모이제이션) - 사용자 설정 반영
   const groupedNotifications = useMemo(() => {
     return groupNotificationsWithCategoryFilter(
       rawNotifications,
       categoryFilter === 'all' ? null : categoryFilter,
-      groupingOptions
+      effectiveGroupingOptions
     );
-  }, [rawNotifications, categoryFilter, groupingOptions]);
+  }, [rawNotifications, categoryFilter, effectiveGroupingOptions]);
 
   // 읽지 않은 수 계산 (그룹 포함)
   const unreadCount = useMemo(() => {

@@ -54,7 +54,7 @@ export const SectionCard = memo(function SectionCard({
 }: SectionCardProps) {
   const borderColor = hasError
     ? 'border-red-300 dark:border-red-700'
-    : 'border-gray-200 dark:border-gray-700';
+    : 'border-gray-200 dark:border-surface-overlay';
 
   const HeaderContent = (
     <View className="flex-row items-center justify-between">
@@ -97,7 +97,7 @@ export const SectionCard = memo(function SectionCard({
   return (
     <View
       className={`
-        bg-white dark:bg-gray-800
+        bg-white dark:bg-surface
         rounded-xl border ${borderColor}
         mb-4 overflow-hidden
         ${className}
@@ -107,14 +107,14 @@ export const SectionCard = memo(function SectionCard({
       {collapsible ? (
         <Pressable
           onPress={onToggle}
-          className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700"
+          className="px-4 py-3 bg-gray-50 dark:bg-surface/50 border-b border-gray-100 dark:border-surface-overlay"
           accessibilityRole="button"
           accessibilityLabel={`${title} 섹션 ${collapsed ? '펼치기' : '접기'}`}
         >
           {HeaderContent}
         </Pressable>
       ) : (
-        <View className="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-700">
+        <View className="px-4 py-3 bg-gray-50 dark:bg-surface/50 border-b border-gray-100 dark:border-surface-overlay">
           {HeaderContent}
         </View>
       )}

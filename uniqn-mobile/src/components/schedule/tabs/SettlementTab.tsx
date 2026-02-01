@@ -101,7 +101,7 @@ interface RowProps {
 
 function Row({ label, value, isTotal, isNegative, isProvided }: RowProps) {
   return (
-    <View className={`flex-row justify-between items-center py-2 ${isTotal ? 'pt-3 border-t border-gray-200 dark:border-gray-600' : ''}`}>
+    <View className={`flex-row justify-between items-center py-2 ${isTotal ? 'pt-3 border-t border-gray-200 dark:border-surface-overlay' : ''}`}>
       <Text className={`text-sm ${isTotal ? 'font-semibold text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
         {label}
       </Text>
@@ -241,7 +241,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
         {/* 예상 급여 미리보기 */}
         {settlement && (
-          <View className="mt-4 w-full p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl">
+          <View className="mt-4 w-full p-4 bg-gray-50 dark:bg-surface/50 rounded-xl">
             <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">예상 급여 (참고용)</Text>
             <Text className="text-lg font-bold text-gray-900 dark:text-white">
               {formatCurrency(settlement.totalPay)}
@@ -282,15 +282,15 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
       {/* 예상 금액 안내 */}
       {isEstimate && (
-        <View className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <Text className="text-xs text-blue-700 dark:text-blue-300 text-center">
+        <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+          <Text className="text-xs text-primary-700 dark:text-primary-300 text-center">
             출퇴근 기록이 없어 예정 시간 기준으로 계산된 예상 금액입니다.
           </Text>
         </View>
       )}
 
       {settlement ? (
-        <View className="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4">
+        <View className="bg-gray-50 dark:bg-surface/30 rounded-xl p-4">
           {/* 급여 계산 */}
           <View className="mb-4">
             <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">급여 계산</Text>
@@ -309,7 +309,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
           {/* 수당 */}
           {allowances && (
-            <View className="mb-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <View className="mb-4 pt-3 border-t border-gray-200 dark:border-surface-overlay">
               <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">수당</Text>
 
               {/* 보장시간 */}
@@ -352,7 +352,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
 
           {/* 세금 */}
           {taxSettings.type !== 'none' && settlement.taxAmount > 0 && (
-            <View className="mb-4 pt-3 border-t border-gray-200 dark:border-gray-600">
+            <View className="mb-4 pt-3 border-t border-gray-200 dark:border-surface-overlay">
               <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                 세금 ({taxSettings.type === 'rate' ? `${taxSettings.value}%` : '고정'})
               </Text>
@@ -376,7 +376,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
           />
         </View>
       ) : (
-        <View className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+        <View className="bg-gray-50 dark:bg-surface/50 rounded-xl p-4">
           <Text className="text-sm text-gray-500 dark:text-gray-400 text-center">
             정산 정보를 계산할 수 없습니다.
           </Text>

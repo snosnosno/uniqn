@@ -124,7 +124,7 @@ export const NotificationList = memo(function NotificationList({
   // 스켈레톤 렌더링
   if (isLoading && notifications.length === 0) {
     return (
-      <View className={`flex-1 bg-gray-50 dark:bg-gray-900 ${className}`}>
+      <View className={`flex-1 bg-gray-50 dark:bg-surface-dark ${className}`}>
         {[...Array(SKELETON_COUNT)].map((_, index) => (
           <NotificationItemSkeleton key={`skeleton-${index}`} />
         ))}
@@ -135,7 +135,7 @@ export const NotificationList = memo(function NotificationList({
   // 에러 상태
   if (error) {
     return (
-      <View className={`flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center p-4 ${className}`}>
+      <View className={`flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center p-4 ${className}`}>
         <Text className="text-error-600 dark:text-error-400 text-center">
           알림을 불러오는데 실패했습니다.
         </Text>
@@ -161,10 +161,10 @@ export const NotificationList = memo(function NotificationList({
   );
 
   return (
-    <View className={`flex-1 bg-gray-50 dark:bg-gray-900 ${className}`}>
+    <View className={`flex-1 bg-gray-50 dark:bg-surface-dark ${className}`}>
       {/* 헤더 (모두 읽음 버튼) */}
       {showHeader && notifications.length > 0 && (
-        <View className="px-4 py-2 flex-row justify-between items-center border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <View className="px-4 py-2 flex-row justify-between items-center border-b border-gray-100 dark:border-surface bg-white dark:bg-surface-dark">
           <Text className="text-sm text-gray-500 dark:text-gray-400">
             {unreadCount > 0
               ? `읽지 않음 ${unreadCount}개`
@@ -198,7 +198,7 @@ export const NotificationList = memo(function NotificationList({
             <RefreshControl
               refreshing={isLoading && notifications.length > 0}
               onRefresh={onRefresh}
-              tintColor="#3b82f6"
+              tintColor="#A855F7"
             />
           ) : undefined
         }
@@ -210,7 +210,7 @@ export const NotificationList = memo(function NotificationList({
             </View>
           ) : null
         }
-        contentContainerClassName="bg-white dark:bg-gray-900"
+        contentContainerClassName="bg-white dark:bg-surface-dark"
       />
     </View>
   );
@@ -267,7 +267,7 @@ export function SimpleNotificationList({
       {(hasMore || onSeeAll) && (
         <Pressable
           onPress={onSeeAll}
-          className="py-3 items-center border-t border-gray-100 dark:border-gray-800"
+          className="py-3 items-center border-t border-gray-100 dark:border-surface"
         >
           <Text className="text-primary-600 dark:text-primary-400 font-medium">
             {hasMore ? `${notifications.length - maxItems}개 더 보기` : '전체 보기'}

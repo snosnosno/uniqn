@@ -63,8 +63,8 @@ export function ModificationHistoryItem({ modification, index }: ModificationHis
   );
 
   return (
-    <View className="flex-row items-start py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
-      <View className="w-6 h-6 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center mr-2">
+    <View className="flex-row items-start py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0">
+      <View className="w-6 h-6 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mr-2">
         <Text className="text-xs text-gray-500 dark:text-gray-400">{index + 1}</Text>
       </View>
       <View className="flex-1">
@@ -78,7 +78,7 @@ export function ModificationHistoryItem({ modification, index }: ModificationHis
         )}
         {/* 상세 변경 내용 표시 */}
         {(startTimeChange || endTimeChange) && (
-          <View className="mt-1.5 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1.5">
+          <View className="mt-1.5 bg-gray-100 dark:bg-surface rounded px-2 py-1.5">
             {startTimeChange && (
               <Text className="text-xs text-gray-600 dark:text-gray-300">
                 • {startTimeChange}

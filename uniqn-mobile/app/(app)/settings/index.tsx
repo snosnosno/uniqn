@@ -176,7 +176,7 @@ export default function SettingsScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 알림 설정 */}
         <Card className="mb-4">
@@ -192,7 +192,7 @@ export default function SettingsScreen() {
                 onValueChange={handlePushToggle}
                 disabled={isSaving || !isAuthenticated}
                 trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={notificationSettings?.pushEnabled ? '#3B82F6' : '#f4f3f4'}
+                thumbColor={notificationSettings?.pushEnabled ? '#A855F7' : '#f4f3f4'}
               />
             }
           />
@@ -220,7 +220,7 @@ export default function SettingsScreen() {
                     onValueChange={handleAutoLoginToggle}
                     disabled={isAutoLoginLoading}
                     trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                    thumbColor={autoLoginEnabled ? '#3B82F6' : '#f4f3f4'}
+                    thumbColor={autoLoginEnabled ? '#A855F7' : '#f4f3f4'}
                   />
                 }
               />
@@ -236,7 +236,7 @@ export default function SettingsScreen() {
                         onValueChange={handleBiometricToggle}
                         disabled={isBiometricLoading || isBiometricAuthenticating}
                         trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                        thumbColor={isBiometricEnabled ? '#3B82F6' : '#f4f3f4'}
+                        thumbColor={isBiometricEnabled ? '#A855F7' : '#f4f3f4'}
                       />
                     }
                   />
@@ -259,7 +259,7 @@ export default function SettingsScreen() {
                 value={isDarkMode}
                 onValueChange={handleDarkModeToggle}
                 trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                thumbColor={isDarkMode ? '#3B82F6' : '#f4f3f4'}
+                thumbColor={isDarkMode ? '#A855F7' : '#f4f3f4'}
               />
             }
           />
@@ -320,7 +320,7 @@ export default function SettingsScreen() {
                     onValueChange={handleMarketingConsentChange}
                     disabled={isMarketingUpdating}
                     trackColor={{ false: '#E5E7EB', true: '#93C5FD' }}
-                    thumbColor={profile?.marketingAgreed ? '#3B82F6' : '#f4f3f4'}
+                    thumbColor={profile?.marketingAgreed ? '#A855F7' : '#f4f3f4'}
                   />
                 }
               />

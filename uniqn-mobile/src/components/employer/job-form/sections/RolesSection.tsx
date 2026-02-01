@@ -55,7 +55,7 @@ const RoleCard = memo(function RoleCard({
   const isCustom = role.isCustom;
 
   return (
-    <View className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-3">
+    <View className="p-4 bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay mb-3">
       <View className="flex-row items-center">
         {/* 역할 아이콘 */}
         <View className="w-10 h-10 rounded-full bg-primary-100 dark:bg-primary-900/30 items-center justify-center">
@@ -70,7 +70,7 @@ const RoleCard = memo(function RoleCard({
               onChangeText={onNameChange}
               placeholder="역할 이름 입력"
               placeholderTextColor="#9CA3AF"
-              className="font-medium text-gray-900 dark:text-white text-base px-0 py-1 border-b border-gray-300 dark:border-gray-600"
+              className="font-medium text-gray-900 dark:text-white text-base px-0 py-1 border-b border-gray-300 dark:border-surface-overlay"
             />
           ) : (
             <Text className="font-medium text-gray-900 dark:text-white text-base">
@@ -84,7 +84,7 @@ const RoleCard = memo(function RoleCard({
           <Pressable
             onPress={() => onCountChange(-1)}
             disabled={role.count <= 1}
-            className={`w-9 h-9 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-l-lg ${
+            className={`w-9 h-9 items-center justify-center bg-gray-100 dark:bg-surface rounded-l-lg ${
               role.count <= 1 ? 'opacity-50' : ''
             }`}
             accessibilityRole="button"
@@ -93,7 +93,7 @@ const RoleCard = memo(function RoleCard({
             <MinusIcon size={18} color="#6B7280" />
           </Pressable>
 
-          <View className="w-10 h-9 items-center justify-center bg-white dark:bg-gray-800 border-y border-gray-200 dark:border-gray-600">
+          <View className="w-10 h-9 items-center justify-center bg-white dark:bg-surface border-y border-gray-200 dark:border-surface-overlay">
             <Text className="font-bold text-gray-900 dark:text-white">
               {role.count}
             </Text>
@@ -102,7 +102,7 @@ const RoleCard = memo(function RoleCard({
           <Pressable
             onPress={() => onCountChange(1)}
             disabled={role.count >= 99}
-            className={`w-9 h-9 items-center justify-center bg-gray-100 dark:bg-gray-700 rounded-r-lg ${
+            className={`w-9 h-9 items-center justify-center bg-gray-100 dark:bg-surface rounded-r-lg ${
               role.count >= 99 ? 'opacity-50' : ''
             }`}
             accessibilityRole="button"
@@ -118,7 +118,7 @@ const RoleCard = memo(function RoleCard({
             className={`ml-2 p-2 rounded-lg ${
               canDelete
                 ? 'bg-red-50 dark:bg-red-900/20'
-                : 'bg-gray-100 dark:bg-gray-700 opacity-50'
+                : 'bg-gray-100 dark:bg-surface opacity-50'
             }`}
             accessibilityRole="button"
             accessibilityLabel="역할 삭제"
@@ -232,7 +232,7 @@ export const RolesSection = memo(function RolesSection({
       {/* 역할 추가 버튼 */}
       <Pressable
         onPress={() => setShowModal(true)}
-        className="mt-2 flex-row items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl"
+        className="mt-2 flex-row items-center justify-center p-3 border-2 border-dashed border-gray-300 dark:border-surface-overlay rounded-xl"
         accessibilityRole="button"
         accessibilityLabel="역할 추가"
       >
@@ -250,7 +250,7 @@ export const RolesSection = memo(function RolesSection({
       {/* 총 인원 표시 */}
       {totalCount > 0 && (
         <View className="mt-4 flex-row items-center justify-center py-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
-          <BriefcaseIcon size={18} color="#2563EB" />
+          <BriefcaseIcon size={18} color="#9333EA" />
           <Text className="ml-2 text-base font-bold text-primary-600 dark:text-primary-400">
             총 {totalCount}명 모집
           </Text>

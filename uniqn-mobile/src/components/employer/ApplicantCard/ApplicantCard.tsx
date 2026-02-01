@@ -177,7 +177,7 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
       {/* === 펼침 영역 === */}
       {isExpanded && (
-        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
           {/* 지원 역할 & 시간 요약 */}
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
             {getRoleDisplayName(applicant.assignments[0]?.roleIds?.[0] || 'other', applicant.customRole)} 지원 · {appliedTimeAgo}

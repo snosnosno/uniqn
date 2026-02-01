@@ -204,7 +204,7 @@ export default function JobPostingDetailScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
         </View>
@@ -215,7 +215,7 @@ export default function JobPostingDetailScreen() {
   // 에러 상태
   if (error || !posting) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="공고를 불러올 수 없습니다"
           message={error?.message || '공고 정보를 찾을 수 없습니다.'}
@@ -255,7 +255,7 @@ export default function JobPostingDetailScreen() {
   const preQuestionCount = posting.usesPreQuestions && posting.preQuestions ? posting.preQuestions.length : 0;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
         {/* 공고 정보 카드 */}
         <View className="px-4 pt-3">
@@ -313,7 +313,7 @@ export default function JobPostingDetailScreen() {
               <>
                 {/* 장소 */}
             <View className="flex-row items-center mb-3">
-              <MapPinIcon size={18} color="#2563EB" />
+              <MapPinIcon size={18} color="#9333EA" />
               <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                 {safeLocationName}
               </Text>
@@ -324,7 +324,7 @@ export default function JobPostingDetailScreen() {
               // 고정공고: FixedScheduleDisplay 사용
               <View className="mb-4">
                 <View className="flex-row items-center mb-2">
-                  <ClockIcon size={18} color="#2563EB" />
+                  <ClockIcon size={18} color="#9333EA" />
                   <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                     근무 일정
                   </Text>
@@ -345,7 +345,7 @@ export default function JobPostingDetailScreen() {
             ) : hasDateRequirements ? (
               <View className="mb-4">
                 <View className="flex-row items-center mb-2">
-                  <ClockIcon size={18} color="#2563EB" />
+                  <ClockIcon size={18} color="#9333EA" />
                   <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                     근무 일정
                   </Text>
@@ -359,7 +359,7 @@ export default function JobPostingDetailScreen() {
               </View>
             ) : (
               <View className="flex-row items-center mb-3">
-                <ClockIcon size={18} color="#2563EB" />
+                <ClockIcon size={18} color="#9333EA" />
                 <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                   {`${posting.workDate || ''} ${posting.timeSlot || ''}`.trim() || '일정 미정'}
                 </Text>
@@ -369,7 +369,7 @@ export default function JobPostingDetailScreen() {
             {/* 급여 (v2.0: 역할별 급여) */}
             <View className="mb-4">
               <View className="flex-row items-center mb-2">
-                <CurrencyDollarIcon size={18} color="#2563EB" />
+                <CurrencyDollarIcon size={18} color="#9333EA" />
                 <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
                   급여
                 </Text>
@@ -398,7 +398,7 @@ export default function JobPostingDetailScreen() {
             {/* 사전질문 설정 (v2.0) */}
             {preQuestionCount > 0 && (
               <View className="flex-row items-center mb-4">
-                <DocumentIcon size={18} color="#2563EB" />
+                <DocumentIcon size={18} color="#9333EA" />
                 <Text className="ml-2 text-base text-gray-700 dark:text-gray-300">
                   사전질문 {preQuestionCount}개 설정됨
                 </Text>
@@ -408,23 +408,23 @@ export default function JobPostingDetailScreen() {
             )}
 
             {/* 모집 현황 - 지원자(사람) + 배정(슬롯) 구분 표시 */}
-            <View className="px-3 pt-3 pb-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <View className="px-3 pt-3 pb-2 bg-gray-50 dark:bg-surface rounded-lg">
               {/* 지원자 현황 (사람 수) */}
-              <View className={`flex-row justify-around ${posting.postingType === 'tournament' ? 'mb-2 pb-2 border-b border-gray-200 dark:border-gray-700' : ''}`}>
+              <View className={`flex-row justify-around ${posting.postingType === 'tournament' ? 'mb-2 pb-2 border-b border-gray-200 dark:border-surface-overlay' : ''}`}>
                 <View className="items-center flex-1">
                   <Text className="text-xl font-bold text-primary-600 dark:text-primary-400">
                     {totalApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">지원자</Text>
                 </View>
-                <View className="w-px bg-gray-200 dark:bg-gray-700" />
+                <View className="w-px bg-gray-200 dark:bg-surface" />
                 <View className="items-center flex-1">
                   <Text className="text-xl font-bold text-success-600 dark:text-success-400">
                     {confirmedApplicants}
                   </Text>
                   <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
                 </View>
-                <View className="w-px bg-gray-200 dark:bg-gray-700" />
+                <View className="w-px bg-gray-200 dark:bg-surface" />
                 <View className="items-center flex-1">
                   <Text className="text-xl font-bold text-warning-600 dark:text-warning-400">
                     {pendingApplicants}
@@ -459,7 +459,7 @@ export default function JobPostingDetailScreen() {
           <View className="gap-3">
             {/* 지원자 관리 */}
             <ActionCard
-              icon={<UsersIcon size={24} color="#2563EB" />}
+              icon={<UsersIcon size={24} color="#9333EA" />}
               title="지원자 관리"
               description={`${pendingApplicants}명의 지원자가 대기중입니다`}
               badge={pendingApplicants > 0 ? { label: `${pendingApplicants}명`, variant: 'warning' } : undefined}
@@ -521,7 +521,7 @@ export default function JobPostingDetailScreen() {
               </View>
 
               {posting.tournamentConfig.rejectionReason && (
-                <View className="mb-4 p-3 bg-white dark:bg-gray-800 rounded-lg">
+                <View className="mb-4 p-3 bg-white dark:bg-surface rounded-lg">
                   <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                     거부 사유
                   </Text>
@@ -538,9 +538,9 @@ export default function JobPostingDetailScreen() {
               <View className="flex-row">
                 <Pressable
                   onPress={handleEdit}
-                  className="flex-1 mr-2 py-3 rounded-xl border border-blue-600 dark:border-blue-500 items-center justify-center"
+                  className="flex-1 mr-2 py-3 rounded-xl border border-primary-600 dark:border-primary-500 items-center justify-center"
                 >
-                  <Text className="text-base font-medium text-blue-600 dark:text-blue-400">
+                  <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
                     수정하기
                   </Text>
                 </Pressable>
@@ -558,7 +558,7 @@ export default function JobPostingDetailScreen() {
         )}
 
         {/* 공고 삭제 버튼 */}
-        <View className="px-4 pb-8 pt-4 border-t border-gray-200 dark:border-gray-700">
+        <View className="px-4 pb-8 pt-4 border-t border-gray-200 dark:border-surface-overlay">
           <Pressable
             onPress={handleDeletePress}
             disabled={isDeleting}

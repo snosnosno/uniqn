@@ -64,10 +64,10 @@ export function TemplateModal({
           onChangeText={onTemplateNameChange}
           placeholder="예: 서울 딜러 모집"
           placeholderTextColor="#9CA3AF"
-          className={`bg-gray-50 dark:bg-gray-700 border rounded-xl px-4 py-3 text-gray-900 dark:text-white ${
+          className={`bg-gray-50 dark:bg-surface border rounded-xl px-4 py-3 text-gray-900 dark:text-white ${
             isTooShort
               ? 'border-red-400 dark:border-red-500'
-              : 'border-gray-200 dark:border-gray-600'
+              : 'border-gray-200 dark:border-surface-overlay'
           }`}
           maxLength={50}
           editable={!isSaving}
@@ -89,7 +89,7 @@ export function TemplateModal({
           onChangeText={onTemplateDescriptionChange}
           placeholder="예: 보장시간 3시간 기본 템플릿"
           placeholderTextColor="#9CA3AF"
-          className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl px-4 py-3 text-gray-900 dark:text-white"
+          className="bg-gray-50 dark:bg-surface border border-gray-200 dark:border-surface-overlay rounded-xl px-4 py-3 text-gray-900 dark:text-white"
           maxLength={100}
           editable={!isSaving}
           multiline
@@ -98,26 +98,26 @@ export function TemplateModal({
       </View>
 
       {/* 안내 문구 */}
-      <View className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-4 mb-6">
-        <Text className="text-blue-800 dark:text-blue-200 text-sm font-medium mb-2">
+      <View className="bg-primary-50 dark:bg-primary-900/30 rounded-xl p-4 mb-6">
+        <Text className="text-primary-800 dark:text-primary-200 text-sm font-medium mb-2">
           저장되는 내용
         </Text>
         <View className="flex-col gap-1">
-          <Text className="text-blue-700 dark:text-blue-300 text-xs">
+          <Text className="text-primary-700 dark:text-primary-300 text-xs">
             - 제목, 공고 타입, 지역 정보
           </Text>
-          <Text className="text-blue-700 dark:text-blue-300 text-xs">
+          <Text className="text-primary-700 dark:text-primary-300 text-xs">
             - 급여 정보, 복리후생
           </Text>
-          <Text className="text-blue-700 dark:text-blue-300 text-xs">
+          <Text className="text-primary-700 dark:text-primary-300 text-xs">
             - 사전질문 설정
           </Text>
-          <Text className="text-blue-700 dark:text-blue-300 text-xs">
+          <Text className="text-primary-700 dark:text-primary-300 text-xs">
             - 역할/인원 정보
           </Text>
         </View>
-        <View className="mt-2 pt-2 border-t border-blue-200 dark:border-blue-700">
-          <Text className="text-blue-600 dark:text-blue-400 text-xs">
+        <View className="mt-2 pt-2 border-t border-primary-200 dark:border-primary-700">
+          <Text className="text-primary-600 dark:text-primary-400 text-xs">
             * 날짜 및 일정은 저장되지 않습니다
           </Text>
         </View>
@@ -128,7 +128,7 @@ export function TemplateModal({
         <Pressable
           onPress={onClose}
           disabled={isSaving}
-          className="flex-1 bg-gray-200 dark:bg-gray-700 py-3 rounded-xl"
+          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
@@ -141,7 +141,7 @@ export function TemplateModal({
           onPress={handleSave}
           disabled={!isValid || isSaving}
           className={`flex-1 py-3 rounded-xl ${
-            isValid && !isSaving ? 'bg-blue-600' : 'bg-gray-400'
+            isValid && !isSaving ? 'bg-primary-600' : 'bg-gray-400'
           }`}
           accessibilityRole="button"
           accessibilityLabel="템플릿 저장"

@@ -96,7 +96,7 @@ function ReportTypeOption({
         p-4 rounded-xl mb-2
         ${isSelected
           ? 'border-2 border-red-500 bg-red-50 dark:bg-red-900/20'
-          : 'border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+          : 'border border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
         }
       `}
     >
@@ -350,7 +350,7 @@ export function ReportModal({
             textAlignVertical="top"
             accessibilityLabel="신고 상세 설명"
             accessibilityHint="구체적인 상황을 최소 10자 이상 입력해주세요"
-            className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[80px]"
+            className="p-2.5 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[80px]"
           />
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             {description.length}/500자 (최소 10자)

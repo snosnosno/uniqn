@@ -37,7 +37,7 @@ function NetworkErrorFallback({
   isOffline = false,
 }: NetworkErrorFallbackProps): React.ReactElement {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
       <View className="w-20 h-20 rounded-full bg-orange-100 dark:bg-orange-900/30 items-center justify-center mb-6">
         <Text className="text-4xl">{isOffline ? '📡' : '🌐'}</Text>
       </View>
@@ -53,7 +53,7 @@ function NetworkErrorFallback({
       </Text>
 
       {env.isDevelopment && error && (
-        <View className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6">
+        <View className="w-full bg-gray-100 dark:bg-surface rounded-xl p-4 mb-6">
           <Text className="text-xs text-orange-600 dark:text-orange-400 font-mono">
             {error.message}
           </Text>

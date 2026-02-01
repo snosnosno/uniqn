@@ -53,9 +53,9 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
     provider: 'google',
     label: 'Google로 계속하기',
     icon: 'G',
-    bgColor: 'bg-white dark:bg-gray-800',
+    bgColor: 'bg-white dark:bg-surface',
     textColor: 'text-gray-900 dark:text-white',
-    borderColor: 'border border-gray-300 dark:border-gray-600',
+    borderColor: 'border border-gray-300 dark:border-surface-overlay',
     showOn: ['ios', 'android', 'web'],
   },
   {

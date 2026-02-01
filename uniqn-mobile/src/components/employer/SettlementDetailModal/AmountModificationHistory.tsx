@@ -52,7 +52,7 @@ export function AmountModificationHistory({
   }
 
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
         className="flex-row items-center justify-between active:opacity-70"
@@ -76,13 +76,13 @@ export function AmountModificationHistory({
       </Pressable>
 
       {isExpanded && (
-        <View className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+        <View className="mt-3 bg-gray-50 dark:bg-surface rounded-lg p-3">
           {settlementModificationHistory.map((mod, idx) => {
             const modifiedAt = parseTimestamp(mod.modifiedAt);
             return (
               <View
                 key={idx}
-                className="flex-row items-start py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                className="flex-row items-start py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0"
               >
                 <View className="w-6 h-6 rounded-full bg-indigo-100 dark:bg-indigo-900/30 items-center justify-center mr-2">
                   <Text className="text-xs text-indigo-600 dark:text-indigo-400">{idx + 1}</Text>
@@ -97,7 +97,7 @@ export function AmountModificationHistory({
                     </Text>
                   )}
                   {/* 변경 내용 표시 */}
-                  <View className="mt-1.5 bg-gray-100 dark:bg-gray-700 rounded px-2 py-1.5">
+                  <View className="mt-1.5 bg-gray-100 dark:bg-surface rounded px-2 py-1.5">
                     {mod.newSalaryInfo && (
                       <Text className="text-xs text-gray-600 dark:text-gray-300">
                         • 급여: {mod.previousSalaryInfo?.amount?.toLocaleString() || '-'}원 → {mod.newSalaryInfo.amount.toLocaleString()}원

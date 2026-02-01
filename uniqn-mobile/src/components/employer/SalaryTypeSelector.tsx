@@ -136,7 +136,7 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
                 px-4 py-2 rounded-lg border min-w-[60px] items-center
                 ${isSelected
                   ? 'bg-primary-500 border-primary-500'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }
                 ${disabled ? 'opacity-50' : 'active:opacity-80'}
                 ${error && !isSelected ? 'border-red-500' : ''}
@@ -166,10 +166,10 @@ export const SalaryTypeSelector = memo(function SalaryTypeSelector({
         <View
           className={`
             flex-row items-center rounded-lg border px-3 h-12
-            bg-white dark:bg-gray-800
+            bg-white dark:bg-surface
             ${error
               ? 'border-red-500'
-              : 'border-gray-300 dark:border-gray-600'
+              : 'border-gray-300 dark:border-surface-overlay'
             }
             ${disabled ? 'opacity-50' : ''}
           `}

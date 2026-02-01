@@ -52,7 +52,7 @@ export function StackHeader({
   };
 
   return (
-    <View className="flex-row items-center justify-between bg-white px-2 py-3 dark:bg-gray-800">
+    <View className="flex-row items-center justify-between bg-white px-2 py-3 dark:bg-surface">
       {/* 왼쪽: 뒤로가기 + 제목 */}
       <View className="flex-row items-center flex-1">
         {showBack && (

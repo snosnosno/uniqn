@@ -82,7 +82,7 @@ const DateChip = memo(function DateChip({
       className={`items-center px-4 py-2 rounded-lg min-w-[60px] ${
         isSelected
           ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-gray-700'
+          : 'bg-gray-100 dark:bg-surface'
       }`}
     >
       <Text
@@ -124,7 +124,7 @@ const AllChip = memo(function AllChip({ isSelected, onPress }: AllChipProps) {
       className={`items-center justify-center px-4 py-2 rounded-lg min-w-[60px] ${
         isSelected
           ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-gray-700'
+          : 'bg-gray-100 dark:bg-surface'
       }`}
     >
       <Text
@@ -192,7 +192,7 @@ export const DateSlider = memo(function DateSlider({
   );
 
   return (
-    <View className={`bg-white dark:bg-gray-800 border-t border-gray-100 dark:border-gray-700 ${className}`}>
+    <View className={`bg-white dark:bg-surface border-t border-gray-100 dark:border-surface-overlay ${className}`}>
       <ScrollView
         ref={scrollRef}
         horizontal

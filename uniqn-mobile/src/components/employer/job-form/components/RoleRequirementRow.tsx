@@ -101,7 +101,7 @@ export function RoleRequirementRow({
       {/* 역할 선택 버튼 */}
       <Pressable
         onPress={() => setIsRoleModalOpen(true)}
-        className="flex-1 flex-row items-center justify-between bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 active:bg-gray-100 dark:active:bg-gray-700"
+        className="flex-1 flex-row items-center justify-between bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg px-3 py-2 active:bg-gray-100 dark:active:bg-gray-700"
         accessibilityRole="button"
         accessibilityLabel={`역할 선택: ${getRoleDisplayName(currentRoleKey, role.customRole)}`}
         accessibilityHint="탭하여 역할 변경"
@@ -134,8 +134,8 @@ export function RoleRequirementRow({
               <Pressable
                 onPress={() => !isDisabled && handleRoleChange(item.key as StaffRole | 'other')}
                 disabled={isDisabled}
-                className={`flex-row items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-700 ${
-                  isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
+                className={`flex-row items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-surface-overlay ${
+                  isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''
                 } ${isDisabled ? 'opacity-40' : 'active:bg-gray-100 dark:active:bg-gray-700'}`}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: isSelected, disabled: isDisabled }}
@@ -146,14 +146,14 @@ export function RoleRequirementRow({
                   <Text
                     className={`text-base ${
                       isSelected
-                        ? 'text-blue-600 dark:text-blue-400 font-medium'
+                        ? 'text-primary-600 dark:text-primary-400 font-medium'
                         : 'text-gray-900 dark:text-white'
                     }`}
                   >
                     {item.name}
                   </Text>
                 </View>
-                {isSelected && <CheckIcon size={20} color="#3B82F6" />}
+                {isSelected && <CheckIcon size={20} color="#A855F7" />}
               </Pressable>
             );
           }}
@@ -167,7 +167,7 @@ export function RoleRequirementRow({
           value={role.customRole || ''}
           onChangeText={handleCustomRoleChange}
           placeholder="역할명 입력"
-          className="flex-1 px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm"
+          className="flex-1 px-3 py-2 bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg text-gray-900 dark:text-white text-sm"
           placeholderTextColor="#9CA3AF"
           maxLength={20}
         />
@@ -179,7 +179,7 @@ export function RoleRequirementRow({
           value={String(role.headcount)}
           onChangeText={handleHeadcountChange}
           placeholder="1"
-          className="px-3 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-900 dark:text-white text-sm text-center"
+          className="px-3 py-2 bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg text-gray-900 dark:text-white text-sm text-center"
           placeholderTextColor="#9CA3AF"
           keyboardType="number-pad"
           maxLength={3}

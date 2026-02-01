@@ -51,7 +51,7 @@ export function StaffProfileHeader({
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 
   return (
-    <View className="items-center py-6 bg-gray-50 dark:bg-gray-800">
+    <View className="items-center py-6 bg-gray-50 dark:bg-surface">
       <Avatar
         source={profilePhotoURL}
         name={displayName}

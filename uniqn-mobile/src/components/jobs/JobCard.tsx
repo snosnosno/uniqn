@@ -279,7 +279,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
       accessibilityHint="탭하면 공고 상세 페이지로 이동합니다"
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700 active:opacity-80"
+      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay active:opacity-80"
     >
       {/* 지원 상태 뱃지 (스케줄 탭에서만 표시) */}
       {applicationStatus && (
@@ -383,7 +383,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         </View>
 
         {/* 오른쪽: 급여 + 수당 */}
-        <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
+        <View className="flex-1 pl-3 border-l border-gray-100 dark:border-surface-overlay">
           {/* 급여 */}
           {!job.useSameSalary && rolesWithSalary.length > 0 ? (
             // 역할별 급여 표시 (useSameSalary === false && 역할별 급여 존재)
@@ -422,7 +422,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
 
       {/* 하단: 구인자 이름 */}
       {job.ownerName && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400">
             구인자: {job.ownerName}
           </Text>

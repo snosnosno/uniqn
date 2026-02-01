@@ -144,7 +144,7 @@ export function getDayCount(startDate: string, endDate: string): number {
  *
  * @example
  * formatDateRangeWithCount('2025-01-17', '2025-01-19')
- * // => "1/17(금) ~ 1/19(일) (3일간)"
+ * // => "1/17(금) ~ 1/19(일)\n    (3일)"
  */
 export function formatDateRangeWithCount(startDate: string, endDate: string): string {
   const rangeStr = formatDateRange(startDate, endDate);
@@ -154,7 +154,7 @@ export function formatDateRangeWithCount(startDate: string, endDate: string): st
     return rangeStr;
   }
 
-  return `${rangeStr} (${dayCount}일간)`;
+  return `${rangeStr}\n    (${dayCount}일)`;
 }
 
 // ============================================================================

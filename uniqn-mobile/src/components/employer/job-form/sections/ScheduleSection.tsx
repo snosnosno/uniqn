@@ -186,7 +186,7 @@ const FixedSchedule = memo(function FixedSchedule({
                   px-4 py-2 rounded-lg border-2
                   ${isSelected
                     ? 'border-indigo-500 bg-indigo-50 dark:border-indigo-400 dark:bg-indigo-900/30'
-                    : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+                    : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                   }
                 `}
               >
@@ -219,7 +219,7 @@ const FixedSchedule = memo(function FixedSchedule({
               className={`w-5 h-5 rounded border items-center justify-center mr-1.5
                 ${isNegotiable
                   ? 'bg-indigo-600 border-indigo-600'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
             >
               {isNegotiable && <CheckIcon size={14} color="#FFFFFF" />}
@@ -229,7 +229,7 @@ const FixedSchedule = memo(function FixedSchedule({
         </View>
 
         {isNegotiable ? (
-          <View className="p-3 bg-gray-100 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+          <View className="p-3 bg-gray-100 dark:bg-surface rounded-lg border border-gray-200 dark:border-surface-overlay">
             <Text className="text-gray-500 dark:text-gray-400 text-center">
               출근 시간은 협의 후 결정됩니다
             </Text>
@@ -326,7 +326,7 @@ const TournamentSchedule = memo(function TournamentSchedule({
       </View>
 
       {tournamentDates.length === 0 ? (
-        <View className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 items-center">
+        <View className="p-6 bg-gray-50 dark:bg-surface/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center">
           <CalendarIcon size={40} color="#9CA3AF" />
           <Text className="mt-2 text-gray-500 dark:text-gray-400 text-center text-sm">
             아직 추가된 일정이 없습니다.{'\n'}{"'"}Day 추가{"'"} 버튼을 눌러 일정을 추가해주세요.
@@ -336,7 +336,7 @@ const TournamentSchedule = memo(function TournamentSchedule({
         tournamentDates.map((day, index) => (
           <View
             key={`day-${index}`}
-            className="p-4 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 mb-3"
+            className="p-4 bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay mb-3"
           >
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">

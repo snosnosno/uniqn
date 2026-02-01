@@ -17,7 +17,7 @@ export default function AdminLayout() {
   // 로딩 중
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
+      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
         <ActivityIndicator size="large" color="#DC2626" />
       </View>
     );
@@ -38,21 +38,21 @@ export default function AdminLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: isDark ? '#111827' : '#ffffff',
+          backgroundColor: isDark ? '#1A1625' : '#ffffff',
         },
-        headerTintColor: isDark ? '#ffffff' : '#111827',
+        headerTintColor: isDark ? '#ffffff' : '#1A1625',
         headerTitleStyle: {
           fontWeight: '600',
         },
         headerLeft: () => (
           <HeaderBackButton
-            tintColor={isDark ? '#ffffff' : '#111827'}
+            tintColor={isDark ? '#ffffff' : '#1A1625'}
             fallbackHref="/(app)/(tabs)"
           />
         ),
         animation: 'slide_from_right',
         contentStyle: {
-          backgroundColor: isDark ? '#111827' : '#f9fafb',
+          backgroundColor: isDark ? '#1A1625' : '#f9fafb',
         },
       }}
     >

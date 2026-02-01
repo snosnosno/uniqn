@@ -71,7 +71,7 @@ export default function SupportScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 안내 문구 */}
         <View className="mb-4 rounded-xl bg-primary-50 p-4 dark:bg-primary-900/20">
@@ -85,7 +85,7 @@ export default function SupportScreen() {
         {/* 메뉴 */}
         <Card>
           <MenuItem
-            icon={<QuestionIcon size={24} color="#3B82F6" />}
+            icon={<QuestionIcon size={24} color="#A855F7" />}
             label="자주 묻는 질문"
             description="FAQ에서 빠르게 답을 찾아보세요"
             onPress={() => router.push('/(app)/support/faq')}

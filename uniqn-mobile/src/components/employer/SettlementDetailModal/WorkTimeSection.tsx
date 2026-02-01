@@ -33,7 +33,7 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
   const hasValidTimes = startTime && endTime;
 
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
         <ClockIcon size={18} color="#6B7280" />
         <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
@@ -42,21 +42,21 @@ export function WorkTimeSection({ startTime, endTime, hoursWorked }: WorkTimeSec
       </View>
 
       {hasValidTimes ? (
-        <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-surface rounded-lg">
           <View className="items-center">
             <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">출근</Text>
             <Text className="text-lg font-semibold text-green-600 dark:text-green-400">
               {formatTime(startTime)}
             </Text>
           </View>
-          <View className="h-0.5 flex-1 mx-4 bg-gray-200 dark:bg-gray-700" />
+          <View className="h-0.5 flex-1 mx-4 bg-gray-200 dark:bg-surface" />
           <View className="items-center">
             <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">퇴근</Text>
             <Text className="text-lg font-semibold text-red-600 dark:text-red-400">
               {formatTime(endTime)}
             </Text>
           </View>
-          <View className="h-0.5 flex-1 mx-4 bg-gray-200 dark:bg-gray-700" />
+          <View className="h-0.5 flex-1 mx-4 bg-gray-200 dark:bg-surface" />
           <View className="items-center">
             <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">근무</Text>
             <Text className="text-lg font-semibold text-primary-600 dark:text-primary-400">

@@ -42,8 +42,8 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
     <View
       className={`mb-3 p-3 border rounded-lg ${
         isReadOnly
-          ? 'bg-gray-50 dark:bg-gray-800/50 border-gray-100 dark:border-gray-700/50'
-          : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+          ? 'bg-gray-50 dark:bg-surface/50 border-gray-100 dark:border-surface-overlay/50'
+          : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay'
       }`}
     >
       {/* 역할명 + 인원 */}
@@ -69,8 +69,8 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
                 isSelected
                   ? 'bg-primary-500'
                   : isReadOnly
-                    ? 'bg-gray-100 dark:bg-gray-700/50'
-                    : 'bg-gray-100 dark:bg-gray-700'
+                    ? 'bg-gray-100 dark:bg-surface/50'
+                    : 'bg-gray-100 dark:bg-surface'
               }`}
               accessibilityRole="radio"
               accessibilityState={{ checked: isSelected, disabled: isReadOnly }}
@@ -110,8 +110,8 @@ export const RoleSalaryInput = memo(function RoleSalaryInput({
             editable={!isReadOnly}
             className={`w-32 py-2 px-2 text-right text-sm rounded-md ${
               isReadOnly
-                ? 'bg-gray-100 dark:bg-gray-700/50 text-gray-400'
-                : 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white'
+                ? 'bg-gray-100 dark:bg-surface/50 text-gray-400'
+                : 'bg-gray-50 dark:bg-surface text-gray-900 dark:text-white'
             }`}
           />
           <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">

@@ -27,7 +27,7 @@ interface NoticeCardProps {
 
 // 카테고리별 아이콘
 const CATEGORY_ICONS: Record<AnnouncementCategory, React.ReactNode> = {
-  notice: <MegaphoneIcon size={18} color="#3B82F6" />,
+  notice: <MegaphoneIcon size={18} color="#A855F7" />,
   update: <ArrowPathIcon size={18} color="#8B5CF6" />,
   event: <GiftIcon size={18} color="#F59E0B" />,
   maintenance: <WrenchScrewdriverIcon size={18} color="#6B7280" />,
@@ -52,7 +52,7 @@ const CATEGORY_BADGE_VARIANT: Record<AnnouncementCategory, 'primary' | 'success'
 // 우선순위별 스타일
 const PRIORITY_STYLES: Record<AnnouncementPriority, { bg: string; border: string }> = {
   0: { bg: '', border: '' },
-  1: { bg: 'bg-blue-50 dark:bg-blue-900/10', border: 'border-l-4 border-l-blue-500' },
+  1: { bg: 'bg-primary-50 dark:bg-primary-900/10', border: 'border-l-4 border-l-primary-500' },
   2: { bg: 'bg-red-50 dark:bg-red-900/10', border: 'border-l-4 border-l-red-500' },
 };
 

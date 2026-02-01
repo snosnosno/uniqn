@@ -57,7 +57,7 @@ const getInitials = (name?: string): string => {
 /** 이름 기반 배경색 선택 */
 const getBackgroundColor = (name?: string): string => {
   const colors = [
-    'bg-blue-500',
+    'bg-primary-500',
     'bg-green-500',
     'bg-yellow-500',
     'bg-purple-500',

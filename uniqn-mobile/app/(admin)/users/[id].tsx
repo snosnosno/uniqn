@@ -49,7 +49,7 @@ interface InfoRowProps {
 
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <View className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row items-center py-3 border-b border-gray-100 dark:border-surface-overlay">
       <View className="w-10">{icon}</View>
       <View className="flex-1">
         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
@@ -168,8 +168,8 @@ export default function AdminUserDetailPage() {
 
   if (isLoading) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">
           사용자 정보를 불러오는 중...
         </Text>
@@ -179,7 +179,7 @@ export default function AdminUserDetailPage() {
 
   if (error || !user) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <EmptyState
           title="사용자를 찾을 수 없음"
           description="요청하신 사용자 정보를 찾을 수 없습니다."
@@ -193,18 +193,18 @@ export default function AdminUserDetailPage() {
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      className="flex-1 bg-gray-50 dark:bg-surface-dark"
       refreshControl={
         <RefreshControl
           refreshing={isRefetching}
           onRefresh={() => refetch()}
-          tintColor="#3B82F6"
+          tintColor="#A855F7"
         />
       }
     >
       {/* Profile Header */}
-      <View className="bg-white dark:bg-gray-800 px-4 py-6 items-center border-b border-gray-200 dark:border-gray-700">
-        <View className="w-20 h-20 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mb-3">
+      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-200 dark:border-surface-overlay">
+        <View className="w-20 h-20 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-3">
           {user.photoURL ? (
             <Text className="text-3xl">{user.name.charAt(0)}</Text>
           ) : (
@@ -232,8 +232,8 @@ export default function AdminUserDetailPage() {
       </View>
 
       {/* Basic Info */}
-      <View className="bg-white dark:bg-gray-800 mt-3 px-4">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-gray-700">
+      <View className="bg-white dark:bg-surface mt-3 px-4">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-surface-overlay">
           기본 정보
         </Text>
         <InfoRow
@@ -268,8 +268,8 @@ export default function AdminUserDetailPage() {
       </View>
 
       {/* Role Management */}
-      <View className="bg-white dark:bg-gray-800 mt-3 px-4 pb-4">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-gray-700">
+      <View className="bg-white dark:bg-surface mt-3 px-4 pb-4">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-surface-overlay">
           역할 관리
         </Text>
         <Text className="text-sm text-gray-500 dark:text-gray-400 mt-3 mb-3">
@@ -279,11 +279,11 @@ export default function AdminUserDetailPage() {
           <Pressable
             key={option.role}
             onPress={() => setSelectedRole(option.role)}
-            className={'flex-row items-center p-3 rounded-lg mb-2 border ' + ((selectedRole ?? user.role) === option.role ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'border-gray-200 dark:border-gray-700')}
+            className={'flex-row items-center p-3 rounded-lg mb-2 border ' + ((selectedRole ?? user.role) === option.role ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20' : 'border-gray-200 dark:border-surface-overlay')}
           >
-            <View className={'w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ' + ((selectedRole ?? user.role) === option.role ? 'border-blue-500' : 'border-gray-300 dark:border-gray-600')}>
+            <View className={'w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ' + ((selectedRole ?? user.role) === option.role ? 'border-primary-500' : 'border-gray-300 dark:border-surface-overlay')}>
               {(selectedRole ?? user.role) === option.role && (
-                <View className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                <View className="w-2.5 h-2.5 rounded-full bg-primary-500" />
               )}
             </View>
             <View className="flex-1">
@@ -308,8 +308,8 @@ export default function AdminUserDetailPage() {
       </View>
 
       {/* Account Actions */}
-      <View className="bg-white dark:bg-gray-800 mt-3 px-4 pb-4 mb-8">
-        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-gray-700">
+      <View className="bg-white dark:bg-surface mt-3 px-4 pb-4 mb-8">
+        <Text className="text-lg font-semibold text-gray-900 dark:text-white py-4 border-b border-gray-100 dark:border-surface-overlay">
           계정 관리
         </Text>
         <View className="mt-4">

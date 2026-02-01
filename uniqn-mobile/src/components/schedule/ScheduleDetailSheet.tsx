@@ -24,6 +24,7 @@ import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -52,9 +53,9 @@ const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | '
 };
 
 const attendanceConfig: Record<AttendanceStatus, { label: string; color: string; bgColor: string }> = {
-  not_started: { label: '출근 전', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-700' },
+  not_started: { label: '출근 전', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-surface' },
   checked_in: { label: '근무 중', color: 'text-green-600', bgColor: 'bg-green-100 dark:bg-green-900/30' },
-  checked_out: { label: '퇴근 완료', color: 'text-blue-600', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+  checked_out: { label: '퇴근 완료', color: 'text-primary-600', bgColor: 'bg-primary-100 dark:bg-primary-900/30' },
 };
 
 // ============================================================================
@@ -90,7 +91,7 @@ interface DetailRowProps {
 
 function DetailRow({ icon, label, value }: DetailRowProps) {
   return (
-    <View className="flex-row items-center py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row items-center py-3 border-b border-gray-100 dark:border-surface-overlay">
       <View className="w-8">{icon}</View>
       <View className="flex-1 ml-2">
         <Text className="text-xs text-gray-500 dark:text-gray-400">{label}</Text>
@@ -114,6 +115,7 @@ export function ScheduleDetailSheet({
 }: ScheduleDetailSheetProps) {
   // 현재 근무 상태 확인
   const { isWorking } = useCurrentWorkStatus();
+  const { isDarkMode } = useThemeStore();
 
   // QR 스캔 핸들러
   const handleQRScan = useCallback(() => {
@@ -154,7 +156,7 @@ export function ScheduleDetailSheet({
     >
       {/* Handle Bar */}
       <View className="items-center mb-4">
-        <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+        <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
       </View>
 
       {/* Header */}
@@ -178,7 +180,7 @@ export function ScheduleDetailSheet({
         </View>
         <Pressable
           onPress={onClose}
-          className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700"
+          className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface"
           accessibilityLabel="닫기"
         >
           <XMarkIcon size={18} color="#9CA3AF" />
@@ -220,11 +222,11 @@ export function ScheduleDetailSheet({
 
       {/* 실제 출퇴근 시간 (근무 완료인 경우) */}
       {schedule.status === 'checked_out' && schedule.checkInTime && schedule.checkOutTime && (
-        <View className="bg-blue-50 dark:bg-blue-900/20 rounded-xl p-4 mb-6">
-          <Text className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">
+        <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 mb-6">
+          <Text className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
             실제 근무 시간
           </Text>
-          <Text className="text-sm text-blue-600 dark:text-blue-300">
+          <Text className="text-sm text-primary-600 dark:text-primary-300">
             {formatTime(schedule.checkInTime)} - {formatTime(schedule.checkOutTime)}
           </Text>
         </View>
@@ -232,7 +234,7 @@ export function ScheduleDetailSheet({
 
       {/* 메모 */}
       {schedule.notes && (
-        <View className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4 mb-6">
+        <View className="bg-gray-50 dark:bg-surface/50 rounded-xl p-4 mb-6">
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             메모
           </Text>
@@ -249,7 +251,7 @@ export function ScheduleDetailSheet({
           onPress={handleQRScan}
           className="flex-row items-center justify-center"
         >
-          <QrCodeIcon size={20} color={isWorking ? '#374151' : '#FFFFFF'} />
+          <QrCodeIcon size={20} color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'} />
           <Text className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}>
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>

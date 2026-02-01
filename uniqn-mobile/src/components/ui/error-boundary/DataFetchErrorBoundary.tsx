@@ -38,7 +38,7 @@ function DataFetchErrorFallback({
 }: DataFetchErrorFallbackProps): React.ReactElement {
   return (
     <View className="flex-1 items-center justify-center p-6">
-      <View className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 items-center justify-center mb-4">
+      <View className="w-16 h-16 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mb-4">
         <Text className="text-3xl">📭</Text>
       </View>
 
@@ -58,7 +58,7 @@ function DataFetchErrorFallback({
 
       <Pressable
         onPress={onRetry}
-        className="bg-gray-200 dark:bg-gray-700 px-5 min-h-[44px] py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 items-center justify-center"
+        className="bg-gray-200 dark:bg-surface px-5 min-h-[44px] py-2.5 rounded-lg active:bg-gray-300 dark:active:bg-gray-600 items-center justify-center"
         accessibilityRole="button"
         accessibilityLabel="새로고침"
       >

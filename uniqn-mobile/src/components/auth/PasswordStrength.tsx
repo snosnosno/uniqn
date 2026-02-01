@@ -107,7 +107,7 @@ export function PasswordStrength({ password, showDetails = true }: PasswordStren
     <View className="mt-2 flex-col gap-2">
       {/* 강도 바 */}
       <View className="flex-row items-center gap-2">
-        <View className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+        <View className="flex-1 h-2 bg-gray-200 dark:bg-surface rounded-full overflow-hidden">
           <View className="flex-row h-full">
             {[0, 1, 2, 3].map((index) => {
               const isActive = (passedCount / PASSWORD_CRITERIA.length) * 4 > index;
@@ -136,7 +136,7 @@ export function PasswordStrength({ password, showDetails = true }: PasswordStren
                 className={`w-4 h-4 rounded-full items-center justify-center mr-2 ${
                   criteria.passed
                     ? 'bg-success-500 dark:bg-success-600'
-                    : 'bg-gray-300 dark:bg-gray-600'
+                    : 'bg-gray-300 dark:bg-surface-elevated'
                 }`}
               >
                 <Text className="text-xs text-white font-bold">

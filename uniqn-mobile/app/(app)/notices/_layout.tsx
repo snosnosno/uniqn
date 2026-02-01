@@ -15,20 +15,20 @@ export default function NoticesLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          backgroundColor: isDark ? '#1A1625' : '#ffffff',
         },
-        headerTintColor: isDark ? '#ffffff' : '#111827',
+        headerTintColor: isDark ? '#ffffff' : '#1A1625',
         headerTitleStyle: {
           fontWeight: '600',
         },
         headerLeft: () => (
           <HeaderBackButton
-            tintColor={isDark ? '#ffffff' : '#111827'}
+            tintColor={isDark ? '#ffffff' : '#1A1625'}
             fallbackHref="/(app)/(tabs)"
           />
         ),
         contentStyle: {
-          backgroundColor: isDark ? '#111827' : '#f9fafb',
+          backgroundColor: isDark ? '#1A1625' : '#f9fafb',
         },
       }}
     />

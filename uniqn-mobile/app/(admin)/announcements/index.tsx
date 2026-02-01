@@ -108,18 +108,18 @@ export default function AdminAnnouncementsPage() {
           headerBackTitle: '뒤로',
           headerRight: () => (
             <Pressable onPress={handleCreate} className="mr-2">
-              <Ionicons name="add-circle-outline" size={24} color="#2563eb" />
+              <Ionicons name="add-circle-outline" size={24} color="#9333EA" />
             </Pressable>
           ),
         }}
       />
 
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         {/* Status Tabs */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800"
+          className="border-b border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface"
           style={{ flexGrow: 0 }}
           contentContainerStyle={{ paddingHorizontal: 16 }}
         >
@@ -133,7 +133,7 @@ export default function AdminAnnouncementsPage() {
                 onPress={() => setStatusFilter(tab.key)}
                 className={`px-4 py-3 mr-2 border-b-2 ${
                   isActive
-                    ? 'border-blue-600'
+                    ? 'border-primary-600'
                     : 'border-transparent'
                 }`}
               >
@@ -141,7 +141,7 @@ export default function AdminAnnouncementsPage() {
                   <Text
                     className={`text-sm font-medium ${
                       isActive
-                        ? 'text-blue-600'
+                        ? 'text-primary-600'
                         : 'text-gray-500 dark:text-gray-400'
                     }`}
                   >
@@ -151,14 +151,14 @@ export default function AdminAnnouncementsPage() {
                     <View
                       className={`ml-2 px-1.5 py-0.5 rounded ${
                         isActive
-                          ? 'bg-blue-100 dark:bg-blue-900/30'
-                          : 'bg-gray-100 dark:bg-gray-700'
+                          ? 'bg-primary-100 dark:bg-primary-900/30'
+                          : 'bg-gray-100 dark:bg-surface'
                       }`}
                     >
                       <Text
                         className={`text-xs ${
                           isActive
-                            ? 'text-blue-600'
+                            ? 'text-primary-600'
                             : 'text-gray-500 dark:text-gray-400'
                         }`}
                       >
@@ -191,7 +191,7 @@ export default function AdminAnnouncementsPage() {
             </Text>
             <Pressable
               onPress={handleCreate}
-              className="mt-6 bg-blue-600 px-6 py-3 rounded-lg"
+              className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
             >
               <Text className="text-white font-medium">공지사항 작성</Text>
             </Pressable>

@@ -39,7 +39,7 @@ function HeaderTitle({
 }) {
   return (
     <View className="flex-row items-center flex-1">
-      <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#111827' }}>
+      <Text className="text-base font-semibold" style={{ color: isDark ? '#ffffff' : '#1A1625' }}>
         {screenTitle}
       </Text>
       {jobTitle && (
@@ -82,30 +82,30 @@ export default function JobPostingDetailLayout() {
   }, [isLoading, job?.title]);
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <Stack
         screenOptions={{
           headerShown: true,
           headerStyle: {
-            backgroundColor: isDark ? '#111827' : '#ffffff',
+            backgroundColor: isDark ? '#1A1625' : '#ffffff',
           },
-          headerTintColor: isDark ? '#ffffff' : '#111827',
+          headerTintColor: isDark ? '#ffffff' : '#1A1625',
           headerTitleStyle: {
             fontWeight: '600',
           },
           animation: 'slide_from_right',
           contentStyle: {
-            backgroundColor: isDark ? '#111827' : '#f9fafb',
+            backgroundColor: isDark ? '#1A1625' : '#f9fafb',
           },
           headerLeft: () => (
             <HeaderBackButton
-              tintColor={isDark ? '#ffffff' : '#111827'}
+              tintColor={isDark ? '#ffffff' : '#1A1625'}
               fallbackHref="/(app)/(tabs)/employer"
             />
           ),
           headerRight: () => (
             <HeaderQRButton
-              tintColor={isDark ? '#ffffff' : '#111827'}
+              tintColor={isDark ? '#ffffff' : '#1A1625'}
               onPress={handleShowQR}
             />
           ),

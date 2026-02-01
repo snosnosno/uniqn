@@ -67,7 +67,7 @@ export default function NoticesPage() {
         }}
       />
 
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         {isLoading ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" />

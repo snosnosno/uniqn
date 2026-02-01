@@ -48,7 +48,7 @@ export function SettlementAmountSection({
   allowanceItems,
 }: SettlementAmountSectionProps) {
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center mb-3">
         <BanknotesIcon size={18} color="#6B7280" />
         <Text className="ml-2 text-base font-semibold text-gray-900 dark:text-white">
@@ -99,7 +99,7 @@ export function SettlementAmountSection({
           />
         )}
 
-        <View className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
+        <View className="h-px bg-gray-200 dark:bg-surface my-2" />
 
         <InfoRow
           label="총 정산 금액"

@@ -134,8 +134,8 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               onPress={() => handleOptionSelect('group')}
               className={`mb-3 p-4 rounded-xl border-2 ${
                 selectedOption === 'group'
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-gray-200 dark:border-surface-overlay bg-gray-50 dark:bg-surface-dark'
               }`}
               accessibilityRole="radio"
               accessibilityState={{ checked: selectedOption === 'group' }}
@@ -145,8 +145,8 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
                 <View
                   className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
                     selectedOption === 'group'
-                      ? 'border-blue-500 bg-blue-500'
-                      : 'border-gray-400 dark:border-gray-500'
+                      ? 'border-primary-500 bg-primary-500'
+                      : 'border-gray-400 dark:border-surface-overlay'
                   }`}
                 >
                   {selectedOption === 'group' && (
@@ -156,14 +156,14 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
                 <Text
                   className={`text-base font-semibold ${
                     selectedOption === 'group'
-                      ? 'text-blue-700 dark:text-blue-300'
+                      ? 'text-primary-700 dark:text-primary-300'
                       : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   그룹으로 묶기
                 </Text>
-                <View className="ml-2 px-2 py-0.5 bg-blue-100 dark:bg-blue-800 rounded-full">
-                  <Text className="text-xs font-medium text-blue-700 dark:text-blue-300">
+                <View className="ml-2 px-2 py-0.5 bg-primary-100 dark:bg-primary-800 rounded-full">
+                  <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
                     권장
                   </Text>
                 </View>
@@ -178,8 +178,8 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               onPress={() => handleOptionSelect('individual')}
               className={`p-4 rounded-xl border-2 ${
                 selectedOption === 'individual'
-                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
-                  : 'border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900'
+                  ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
+                  : 'border-gray-200 dark:border-surface-overlay bg-gray-50 dark:bg-surface-dark'
               }`}
               accessibilityRole="radio"
               accessibilityState={{ checked: selectedOption === 'individual' }}
@@ -189,8 +189,8 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
                 <View
                   className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
                     selectedOption === 'individual'
-                      ? 'border-blue-500 bg-blue-500'
-                      : 'border-gray-400 dark:border-gray-500'
+                      ? 'border-primary-500 bg-primary-500'
+                      : 'border-gray-400 dark:border-surface-overlay'
                   }`}
                 >
                   {selectedOption === 'individual' && (
@@ -200,7 +200,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
                 <Text
                   className={`text-base font-semibold ${
                     selectedOption === 'individual'
-                      ? 'text-blue-700 dark:text-blue-300'
+                      ? 'text-primary-700 dark:text-primary-300'
                       : 'text-gray-700 dark:text-gray-300'
                   }`}
                 >
@@ -216,7 +216,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
             <View className="flex-row gap-3 mt-4">
               <Pressable
                 onPress={handleClose}
-                className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-gray-700 active:opacity-80"
+                className="flex-1 py-3 rounded-xl bg-gray-200 dark:bg-surface active:opacity-80"
                 accessibilityRole="button"
                 accessibilityLabel="취소"
               >
@@ -226,7 +226,7 @@ export const GroupingConfirmModal = memo(function GroupingConfirmModal({
               </Pressable>
               <Pressable
                 onPress={handleConfirm}
-                className="flex-1 py-3 rounded-xl bg-blue-600 dark:bg-blue-500 active:opacity-80"
+                className="flex-1 py-3 rounded-xl bg-primary-600 dark:bg-primary-500 active:opacity-80"
                 accessibilityRole="button"
                 accessibilityLabel="확인"
               >

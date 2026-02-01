@@ -98,7 +98,7 @@ function MaintenanceModeSection({ enabled }: { enabled: boolean }) {
         className={`p-4 rounded-xl ${
           enabled
             ? 'bg-red-100 dark:bg-red-900/30 border-2 border-red-500'
-            : 'bg-white dark:bg-gray-800'
+            : 'bg-white dark:bg-surface'
         }`}
       >
         <View className="flex-row items-center justify-between">
@@ -146,7 +146,7 @@ function FeatureFlagItem({
   return (
     <View
       className={`flex-row items-center justify-between p-4 ${
-        !isLast ? 'border-b border-gray-100 dark:border-gray-700' : ''
+        !isLast ? 'border-b border-gray-100 dark:border-surface-overlay' : ''
       }`}
     >
       <View className="flex-1 mr-4">
@@ -178,7 +178,7 @@ function FeatureFlagSection({ flags }: { flags: Record<FeatureFlagKey, boolean> 
       <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
         Firebase Remote Config에서 관리되는 기능 플래그입니다.
       </Text>
-      <View className="bg-white dark:bg-gray-800 rounded-xl overflow-hidden">
+      <View className="bg-white dark:bg-surface rounded-xl overflow-hidden">
         {flagKeys.map((key, index) => (
           <FeatureFlagItem
             key={key}
@@ -199,7 +199,7 @@ function AppInfoSection() {
   return (
     <View className="mx-4 mt-6">
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">앱 정보</Text>
-      <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+      <View className="bg-white dark:bg-surface rounded-xl p-4">
         <View className="flex-row justify-between mb-3">
           <Text className="text-gray-500 dark:text-gray-400">앱 버전</Text>
           <Text className="font-medium text-gray-900 dark:text-white">{APP_VERSION}</Text>
@@ -238,7 +238,7 @@ function CacheManagementSection({
   return (
     <View className="mx-4 mt-6 mb-8">
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">캐시 관리</Text>
-      <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+      <View className="bg-white dark:bg-surface rounded-xl p-4">
         <Text className="text-sm text-gray-500 dark:text-gray-400 mb-3">
           Feature Flag 캐시를 초기화하고 최신 설정을 가져옵니다.
         </Text>
@@ -246,7 +246,7 @@ function CacheManagementSection({
           onPress={onRefresh}
           disabled={isRefreshing}
           className={`flex-row items-center justify-center py-3 px-4 rounded-lg ${
-            isRefreshing ? 'bg-gray-200 dark:bg-gray-700' : 'bg-blue-600 active:bg-blue-700'
+            isRefreshing ? 'bg-gray-200 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'
           }`}
         >
           <Text
@@ -295,7 +295,7 @@ export default function AdminSettingsPage() {
           },
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <ScrollView
           showsVerticalScrollIndicator={false}
           refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} />}

@@ -141,22 +141,22 @@ export function DatePickerModal({
       size="lg"
     >
       {/* 제약사항 안내 */}
-      <View className="mb-4 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-        <Text className="text-sm text-blue-700 dark:text-blue-300">
+      <View className="mb-4 p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg">
+        <Text className="text-sm text-primary-700 dark:text-primary-300">
           최대 {constraints.maxDates}개 날짜 추가 가능 (현재: {existingDates.length}개, 추가 가능: {remainingSlots}개)
         </Text>
         {postingType === 'urgent' && (
-          <Text className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+          <Text className="text-sm text-primary-700 dark:text-primary-300 mt-1">
             긴급 공고는 오늘부터 7일 이내만 선택할 수 있습니다
           </Text>
         )}
-        <Text className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+        <Text className="text-xs text-primary-600 dark:text-primary-400 mt-2">
           💡 캘린더에서 여러 날짜를 탭하여 선택/해제할 수 있습니다
         </Text>
       </View>
 
       {/* 선택된 날짜 목록 */}
-      <View className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+      <View className="mb-4 p-3 bg-gray-50 dark:bg-surface rounded-lg">
         <View className="flex-row justify-between items-center mb-2">
           <Text className="text-sm text-gray-500 dark:text-gray-400">
             선택한 날짜 ({selectedDates.length}개)
@@ -216,7 +216,7 @@ export function DatePickerModal({
 
       {/* 이미 추가된 날짜 안내 */}
       {existingDates.length > 0 && (
-        <View className="mb-4 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
+        <View className="mb-4 p-3 bg-gray-50 dark:bg-surface rounded-lg">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
             이미 추가된 날짜 ({existingDates.length}개) - 취소선 표시
           </Text>
@@ -231,7 +231,7 @@ export function DatePickerModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={handleClose}
-          className="flex-1 bg-gray-200 dark:bg-gray-700 py-3 rounded-xl"
+          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
           accessibilityRole="button"
           accessibilityLabel="취소"
         >
@@ -244,8 +244,8 @@ export function DatePickerModal({
           disabled={!canAddMore || selectedDates.length === 0}
           className={`flex-1 py-3 rounded-xl ${
             canAddMore && selectedDates.length > 0
-              ? 'bg-blue-600'
-              : 'bg-gray-300 dark:bg-gray-600 opacity-50'
+              ? 'bg-primary-600'
+              : 'bg-gray-300 dark:bg-surface-elevated opacity-50'
           }`}
           accessibilityRole="button"
           accessibilityLabel="확인"

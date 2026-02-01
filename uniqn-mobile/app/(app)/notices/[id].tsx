@@ -22,7 +22,7 @@ const SCREEN_WIDTH = Dimensions.get('window').width;
 
 // 카테고리별 아이콘
 const CATEGORY_ICONS: Record<AnnouncementCategory, React.ReactNode> = {
-  notice: <MegaphoneIcon size={24} color="#3B82F6" />,
+  notice: <MegaphoneIcon size={24} color="#A855F7" />,
   update: <ArrowPathIcon size={24} color="#8B5CF6" />,
   event: <GiftIcon size={24} color="#F59E0B" />,
   maintenance: <WrenchScrewdriverIcon size={24} color="#6B7280" />,
@@ -65,7 +65,7 @@ export default function NoticeDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </>
@@ -76,7 +76,7 @@ export default function NoticeDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center px-8">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center px-8">
           <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
           <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
             공지사항을 찾을 수 없습니다
@@ -86,7 +86,7 @@ export default function NoticeDetailPage() {
           </Text>
           <Pressable
             onPress={() => router.back()}
-            className="mt-6 bg-blue-600 px-6 py-3 rounded-lg"
+            className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
           >
             <Text className="text-white font-medium">돌아가기</Text>
           </Pressable>
@@ -111,7 +111,7 @@ export default function NoticeDetailPage() {
         }}
       />
 
-      <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <View className="p-4">
           {/* 헤더 카드 */}
           <Card className="mb-4">

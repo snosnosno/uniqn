@@ -60,7 +60,7 @@ interface FilterTabsProps {
 function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps) {
   return (
     <View className="px-4 mb-4">
-      <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <View className="flex-row bg-gray-100 dark:bg-surface rounded-lg p-1">
         {FILTER_OPTIONS.map((option) => {
           const isSelected = selectedFilter === option.value;
           const count = option.value === 'all'

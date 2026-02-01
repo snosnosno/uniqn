@@ -64,7 +64,7 @@ function QuickActions({
         <Pressable
           onPress={onRefresh}
           disabled={isRefreshing}
-          className={`p-4 bg-gray-100 dark:bg-gray-800 rounded-xl active:opacity-80 ${isRefreshing ? 'opacity-50' : ''}`}
+          className={`p-4 bg-gray-100 dark:bg-surface rounded-xl active:opacity-80 ${isRefreshing ? 'opacity-50' : ''}`}
         >
           <RefreshIcon size={24} color="#6B7280" />
         </Pressable>
@@ -265,7 +265,7 @@ export function StaffManagementTab({
       options.push({
         label: '퇴근 처리',
         value: 'checked_out',
-        icon: <ClockIcon size={20} color="#3B82F6" />,
+        icon: <ClockIcon size={20} color="#A855F7" />,
       });
     }
 
@@ -310,7 +310,7 @@ export function StaffManagementTab({
     : null;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
       {/* 빠른 액션 */}
       <QuickActions
         onShowQR={handleShowQR}

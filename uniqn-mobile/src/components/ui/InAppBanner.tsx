@@ -48,7 +48,7 @@ const PRIORITY_STYLES: Record<
   }
 > = {
   low: {
-    container: 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600',
+    container: 'bg-gray-100 dark:bg-surface border-gray-300 dark:border-surface-overlay',
     text: 'text-gray-700 dark:text-gray-300',
     icon: '#6B7280',
     IconComponent: InformationCircleIcon,
@@ -56,7 +56,7 @@ const PRIORITY_STYLES: Record<
   medium: {
     container: 'bg-primary-50 dark:bg-primary-900/30 border-primary-200 dark:border-primary-700',
     text: 'text-primary-700 dark:text-primary-300',
-    icon: '#3B82F6',
+    icon: '#A855F7',
     IconComponent: MegaphoneIcon,
   },
   high: {

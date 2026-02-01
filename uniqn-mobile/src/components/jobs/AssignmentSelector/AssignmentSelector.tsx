@@ -177,7 +177,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   // 고정공고: 역할만 선택 (날짜/시간 없음)
   if (isFixed && fixedSchedule) {
     return (
-      <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+      <View className="bg-white dark:bg-surface rounded-xl p-4">
         <View className="mb-3">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
             역할 선택 <Text className="text-error-500">*</Text>
@@ -214,7 +214,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
         {/* 선택 요약 */}
         {selectedAssignments.length > 0 && (
-          <View className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
             <Text className="text-sm text-primary-600 dark:text-primary-400 font-medium">
               ✓ 선택됨: {selectionSummary}
             </Text>
@@ -231,7 +231,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
   }
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+    <View className="bg-white dark:bg-surface rounded-xl p-4">
       {/* 헤더 */}
       <View className="mb-3">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-1">
@@ -275,7 +275,7 @@ export const AssignmentSelector = memo(function AssignmentSelector({
 
       {/* 선택 요약 */}
       {selectedAssignments.length > 0 && (
-        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-sm text-primary-600 dark:text-primary-400 font-medium">
             ✓ 선택됨: {selectionSummary}
           </Text>

@@ -40,7 +40,7 @@ export default function EditAnnouncementPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 수정' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </>
@@ -51,14 +51,14 @@ export default function EditAnnouncementPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 수정' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center px-8">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center px-8">
           <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
           <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
           <Pressable
             onPress={() => router.back()}
-            className="mt-6 bg-blue-600 px-6 py-3 rounded-lg"
+            className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
           >
             <Text className="text-white font-medium">돌아가기</Text>
           </Pressable>
@@ -76,7 +76,7 @@ export default function EditAnnouncementPage() {
         }}
       />
 
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <AnnouncementForm
           initialData={{
             title: announcement.title,

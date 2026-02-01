@@ -161,10 +161,10 @@ function WebSheetModal({
                 pointerEvents: 'auto' as const,
               },
             ]}
-            className="bg-white dark:bg-gray-900 rounded-t-3xl w-full"
+            className="bg-white dark:bg-surface-dark rounded-t-3xl w-full"
           >
             {/* Header */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                 {title}
               </Text>
@@ -172,7 +172,7 @@ function WebSheetModal({
                 <Pressable
                   onPress={handleClose}
                   disabled={isLoading}
-                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -193,7 +193,7 @@ function WebSheetModal({
 
             {/* Footer */}
             {footer && (
-              <View className="px-4 py-4 border-t border-gray-200 dark:border-gray-700 pb-8">
+              <View className="px-4 py-4 border-t border-gray-200 dark:border-surface-overlay pb-8">
                 {footer}
               </View>
             )}
@@ -298,10 +298,10 @@ function NativeSheetModal({
             <SafeAreaView
               edges={['bottom']}
               style={{ flex: 1 }}
-              className="bg-white dark:bg-gray-900 rounded-t-3xl"
+              className="bg-white dark:bg-surface-dark rounded-t-3xl"
             >
               {/* Header */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+              <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
                 <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                   {title}
                 </Text>
@@ -309,7 +309,7 @@ function NativeSheetModal({
                   <Pressable
                     onPress={handleClose}
                     disabled={isLoading}
-                    className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+                    className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
                     hitSlop={8}
@@ -331,7 +331,7 @@ function NativeSheetModal({
 
               {/* Footer */}
               {footer && (
-                <View className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+                <View className="px-4 py-4 border-t border-gray-200 dark:border-surface-overlay">
                   {footer}
                 </View>
               )}

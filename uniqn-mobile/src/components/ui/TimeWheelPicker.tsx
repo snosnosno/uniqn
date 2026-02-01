@@ -118,13 +118,13 @@ function WebTimePicker({
       <Pressable
         onPress={() => setSelectedHour(hour)}
         className={`items-center justify-center py-3 mx-1 rounded-lg ${
-          isSelected ? 'bg-blue-100 dark:bg-blue-900/50' : ''
+          isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
         }`}
         style={{ height: ITEM_HEIGHT }}
       >
         <Text className={`text-lg ${
           isSelected
-            ? 'text-blue-600 dark:text-blue-400 font-bold'
+            ? 'text-primary-600 dark:text-primary-400 font-bold'
             : 'text-gray-700 dark:text-gray-300'
         }`}>
           {hour.toString().padStart(2, '0')}
@@ -145,13 +145,13 @@ function WebTimePicker({
       <Pressable
         onPress={() => setSelectedMinute(minute)}
         className={`items-center justify-center py-3 mx-1 rounded-lg ${
-          isSelected ? 'bg-blue-100 dark:bg-blue-900/50' : ''
+          isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
         }`}
         style={{ height: ITEM_HEIGHT }}
       >
         <Text className={`text-lg ${
           isSelected
-            ? 'text-blue-600 dark:text-blue-400 font-bold'
+            ? 'text-primary-600 dark:text-primary-400 font-bold'
             : 'text-gray-700 dark:text-gray-300'
         }`}>
           {minute.toString().padStart(2, '0')}
@@ -187,9 +187,9 @@ function WebTimePicker({
   }, [minutes, selectedMinute]);
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-t-2xl">
+    <View className="bg-white dark:bg-surface rounded-t-2xl">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
         </Pressable>
@@ -197,7 +197,7 @@ function WebTimePicker({
           {title}
         </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
-          <Text className="text-blue-600 dark:text-blue-400 text-base font-semibold">확인</Text>
+          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">확인</Text>
         </Pressable>
       </View>
 
@@ -361,9 +361,9 @@ function NativeWheelPicker({
   const isNextDay = selectedHour >= 24;
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-t-2xl">
+    <View className="bg-white dark:bg-surface rounded-t-2xl">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+      <View className="flex-row items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
         <Pressable onPress={onClose} className="py-2 px-3 min-w-[60px]">
           <Text className="text-gray-500 dark:text-gray-400 text-base">취소</Text>
         </Pressable>
@@ -371,7 +371,7 @@ function NativeWheelPicker({
           {title}
         </Text>
         <Pressable onPress={handleConfirm} className="py-2 px-3 min-w-[60px] items-end">
-          <Text className="text-blue-600 dark:text-blue-400 text-base font-semibold">확인</Text>
+          <Text className="text-primary-600 dark:text-primary-400 text-base font-semibold">확인</Text>
         </Pressable>
       </View>
 
@@ -382,7 +382,7 @@ function NativeWheelPicker({
       >
         {/* 선택 영역 하이라이트 */}
         <View
-          className="absolute left-4 right-4 bg-gray-100 dark:bg-gray-700 rounded-lg"
+          className="absolute left-4 right-4 bg-gray-100 dark:bg-surface rounded-lg"
           style={{
             top: ITEM_HEIGHT * 2,
             height: ITEM_HEIGHT,

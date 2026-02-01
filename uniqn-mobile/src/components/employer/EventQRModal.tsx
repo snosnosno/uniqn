@@ -77,7 +77,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
 
   return (
     <View
-      className="flex-row bg-gray-100 dark:bg-gray-800 rounded-2xl p-1.5"
+      className="flex-row bg-gray-100 dark:bg-surface rounded-2xl p-1.5"
       accessibilityRole="tablist"
       accessibilityLabel="출퇴근 모드 선택"
     >
@@ -126,7 +126,7 @@ function ModeToggle({ mode, onModeChange, disabled }: ModeToggleProps) {
           justifyContent: 'center',
           paddingVertical: 14,
           borderRadius: 12,
-          backgroundColor: checkOutActive ? '#2563EB' : 'transparent',
+          backgroundColor: checkOutActive ? '#9333EA' : 'transparent',
           opacity: disabled ? 0.5 : 1,
           minHeight: 48,
         }}
@@ -204,10 +204,10 @@ function QRRefreshOverlay({ visible }: QRRefreshOverlayProps) {
   return (
     <Animated.View
       style={{ opacity: fadeAnim }}
-      className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 rounded-2xl items-center justify-center z-10"
+      className="absolute inset-0 bg-white/80 dark:bg-surface/80 rounded-2xl items-center justify-center z-10"
     >
       <Animated.View style={{ transform: [{ rotate }] }}>
-        <RefreshIcon size={32} color="#3B82F6" />
+        <RefreshIcon size={32} color="#A855F7" />
       </Animated.View>
       <Text className="mt-3 text-sm text-gray-600 dark:text-gray-400 font-medium">
         QR 갱신 중...
@@ -295,7 +295,7 @@ export function EventQRModal({
   }, [targetDate]);
 
   // 모드별 색상
-  const modeColor = mode === 'checkIn' ? '#16A34A' : '#2563EB';
+  const modeColor = mode === 'checkIn' ? '#16A34A' : '#9333EA';
   const modeLabel = mode === 'checkIn' ? '출근' : '퇴근';
 
   return (
@@ -311,7 +311,7 @@ export function EventQRModal({
         <View className="flex-row justify-end mb-2">
           <Pressable
             onPress={onClose}
-            className="w-9 h-9 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center"
+            className="w-9 h-9 rounded-full bg-gray-100 dark:bg-surface items-center justify-center"
             accessibilityRole="button"
             accessibilityLabel="닫기"
             hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
@@ -412,7 +412,7 @@ export function EventQRModal({
               <Pressable
                 onPress={handleRefresh}
                 disabled={isLoading || isRefreshing}
-                className={`flex-row items-center px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-gray-800 active:opacity-70 ${
+                className={`flex-row items-center px-4 py-2.5 rounded-xl bg-gray-100 dark:bg-surface active:opacity-70 ${
                   isRefreshing ? 'opacity-50' : ''
                 }`}
               >
@@ -428,23 +428,23 @@ export function EventQRModal({
           <Card
             variant="filled"
             padding="md"
-            className="w-full bg-blue-50 dark:bg-blue-900/20"
+            className="w-full bg-primary-50 dark:bg-primary-900/20"
           >
             <View className="flex-row items-start mb-2">
-              <CheckCircleIcon size={16} color="#2563EB" />
-              <Text className="ml-2 text-sm font-medium text-blue-800 dark:text-blue-300">
+              <CheckCircleIcon size={16} color="#9333EA" />
+              <Text className="ml-2 text-sm font-medium text-primary-800 dark:text-primary-300">
                 스태프 {modeLabel} 방법
               </Text>
             </View>
 
             <View className="ml-6 gap-1">
-              <Text className="text-xs text-blue-600 dark:text-blue-400">
+              <Text className="text-xs text-primary-600 dark:text-primary-400">
                 1. 스태프가 앱 하단의 QR 탭 선택
               </Text>
-              <Text className="text-xs text-blue-600 dark:text-blue-400">
+              <Text className="text-xs text-primary-600 dark:text-primary-400">
                 2. 카메라로 이 QR 코드 스캔
               </Text>
-              <Text className="text-xs text-blue-600 dark:text-blue-400">
+              <Text className="text-xs text-primary-600 dark:text-primary-400">
                 3. {modeLabel} 자동 처리 완료
               </Text>
             </View>

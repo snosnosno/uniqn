@@ -51,7 +51,7 @@ export default function ChangePasswordScreen() {
 
   // 입력 필드 스타일
   const getInputClassName = (hasError: boolean) =>
-    `rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'}`;
+    `rounded-lg border px-4 py-3 pr-12 text-gray-900 dark:text-gray-100 ${hasError ? 'border-error-500 bg-error-50 dark:bg-error-900/20' : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'}`;
 
   // 비밀번호 변경 핸들러
   const onSubmit = async (data: PasswordChangeData) => {
@@ -83,7 +83,7 @@ export default function ChangePasswordScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -259,7 +259,7 @@ export default function ChangePasswordScreen() {
           <Pressable
             onPress={handleSubmit(onSubmit)}
             disabled={isSubmitting}
-            className={`rounded-lg py-4 ${isSubmitting ? 'bg-gray-300 dark:bg-gray-700' : 'bg-primary-600 active:bg-primary-700'}`}
+            className={`rounded-lg py-4 ${isSubmitting ? 'bg-gray-300 dark:bg-surface' : 'bg-primary-600 active:bg-primary-700'}`}
           >
             {isSubmitting ? (
               <ActivityIndicator color="#ffffff" />

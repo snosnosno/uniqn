@@ -51,7 +51,7 @@ const PRIORITY_STYLES: Record<
   }
 > = {
   low: {
-    header: 'bg-gray-100 dark:bg-gray-700',
+    header: 'bg-gray-100 dark:bg-surface',
     headerText: 'text-gray-700 dark:text-gray-300',
     icon: '#6B7280',
     primaryButton: 'bg-gray-600 dark:bg-gray-500',
@@ -61,7 +61,7 @@ const PRIORITY_STYLES: Record<
   medium: {
     header: 'bg-primary-100 dark:bg-primary-900/50',
     headerText: 'text-primary-700 dark:text-primary-300',
-    icon: '#3B82F6',
+    icon: '#A855F7',
     primaryButton: 'bg-primary-600 dark:bg-primary-500',
     primaryButtonText: 'text-white',
     IconComponent: MegaphoneIcon,
@@ -155,7 +155,7 @@ export function InAppModal({ message, onDismiss, onDismissPermanently }: InAppMo
       <Animated.View
         entering={FadeIn.duration(200)}
         exiting={FadeOut.duration(200)}
-        className="absolute inset-0 z-50 bg-white dark:bg-gray-900"
+        className="absolute inset-0 z-50 bg-white dark:bg-surface-dark"
       >
         <ScrollView
           className="flex-1"
@@ -219,7 +219,7 @@ export function InAppModal({ message, onDismiss, onDismissPermanently }: InAppMo
                   onPressOut={() => {
                     secondaryPressed.value = false;
                   }}
-                  className="w-full py-4 rounded-xl items-center bg-gray-100 dark:bg-gray-800"
+                  className="w-full py-4 rounded-xl items-center bg-gray-100 dark:bg-surface"
                 >
                   <Text className="text-base font-semibold text-gray-700 dark:text-gray-300">
                     {message.secondaryAction.buttonText ?? '나중에'}
@@ -260,7 +260,7 @@ export function InAppModal({ message, onDismiss, onDismissPermanently }: InAppMo
         entering={ZoomIn.springify().damping(15)}
         exiting={ZoomOut.duration(200)}
         style={{ width: width - 48 }}
-        className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-2xl"
+        className="bg-white dark:bg-surface rounded-2xl overflow-hidden shadow-2xl"
       >
         {/* Header with icon */}
         <View className={`px-4 py-3 flex-row items-center ${styles.header}`}>
@@ -334,7 +334,7 @@ export function InAppModal({ message, onDismiss, onDismissPermanently }: InAppMo
                 onPressOut={() => {
                   secondaryPressed.value = false;
                 }}
-                className="w-full py-3 rounded-lg items-center bg-gray-100 dark:bg-gray-700"
+                className="w-full py-3 rounded-lg items-center bg-gray-100 dark:bg-surface"
               >
                 <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300">
                   {message.secondaryAction.buttonText ?? '나중에'}

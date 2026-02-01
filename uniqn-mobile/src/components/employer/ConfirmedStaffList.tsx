@@ -70,7 +70,7 @@ interface FilterTabsProps {
 function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps) {
   return (
     <View className="px-4 mb-4">
-      <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <View className="flex-row bg-gray-100 dark:bg-surface rounded-lg p-1">
         {FILTER_OPTIONS.map((option) => {
           const isSelected = selectedFilter === option.value;
           const count = option.value === 'all'
@@ -115,12 +115,12 @@ function SectionHeader({ group, isExpanded, onToggle }: SectionHeaderProps) {
       onPress={onToggle}
       className={`
         flex-row items-center justify-between px-4 py-3 mb-2
-        bg-gray-50 dark:bg-gray-800/50 rounded-lg mx-4
+        bg-gray-50 dark:bg-surface/50 rounded-lg mx-4
         ${group.isToday ? 'border border-primary-200 dark:border-primary-700' : ''}
       `}
     >
       <View className="flex-row items-center">
-        <CalendarIcon size={18} color={group.isToday ? '#2563EB' : '#6B7280'} />
+        <CalendarIcon size={18} color={group.isToday ? '#9333EA' : '#6B7280'} />
         <Text className={`
           ml-2 text-base font-semibold
           ${group.isToday

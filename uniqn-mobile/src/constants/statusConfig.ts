@@ -72,9 +72,9 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
   applied: {
     label: '지원완료',
     variant: 'primary',
-    textColor: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    hexColor: '#3B82F6',
+    textColor: 'text-primary-600 dark:text-primary-400',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    hexColor: '#A855F7',
   },
   pending: {
     label: '검토중',
@@ -101,7 +101,7 @@ export const APPLICATION_STATUS: Record<ApplicationStatusType, StatusConfig> = {
     label: '취소',
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
   completed: {
@@ -155,7 +155,7 @@ export const SCHEDULE_STATUS: Record<ScheduleStatusType, StatusConfig> = {
     label: '완료',
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
   cancelled: {
@@ -183,7 +183,7 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
   not_started: {
     label: '출근 전',
     variant: 'default',
-    bgColor: 'bg-gray-100 dark:bg-gray-700',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     textColor: 'text-gray-600 dark:text-gray-400',
     hexColor: '#6B7280',
   },
@@ -197,9 +197,9 @@ export const ATTENDANCE_STATUS: Record<AttendanceStatusType, AttendanceStatusCon
   checked_out: {
     label: '퇴근 완료',
     variant: 'primary',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    textColor: 'text-blue-700 dark:text-blue-300',
-    hexColor: '#3B82F6',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    textColor: 'text-primary-700 dark:text-primary-300',
+    hexColor: '#A855F7',
   },
 };
 
@@ -226,9 +226,9 @@ export const PAYROLL_STATUS: Record<PayrollStatusType, StatusConfig> = {
   processing: {
     label: '정산 진행',
     variant: 'primary',
-    textColor: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    hexColor: '#3B82F6',
+    textColor: 'text-primary-600 dark:text-primary-400',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    hexColor: '#A855F7',
   },
   completed: {
     label: '정산 완료',
@@ -263,7 +263,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     label: '마감',
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
   cancelled: {
@@ -277,7 +277,7 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
     label: '임시저장',
     variant: 'secondary',
     textColor: 'text-gray-500 dark:text-gray-400',
-    bgColor: 'bg-gray-50 dark:bg-gray-800',
+    bgColor: 'bg-gray-50 dark:bg-surface',
     hexColor: '#9CA3AF',
   },
 };
@@ -305,9 +305,9 @@ export const INQUIRY_STATUS: Record<InquiryStatusType, StatusConfig> = {
   in_progress: {
     label: '처리 중',
     variant: 'primary',
-    textColor: 'text-blue-600 dark:text-blue-400',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    hexColor: '#3B82F6',
+    textColor: 'text-primary-600 dark:text-primary-400',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    hexColor: '#A855F7',
   },
   resolved: {
     label: '해결됨',
@@ -320,7 +320,7 @@ export const INQUIRY_STATUS: Record<InquiryStatusType, StatusConfig> = {
     label: '종료',
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
 };
@@ -356,7 +356,7 @@ export const ANNOUNCEMENT_PRIORITY: Record<AnnouncementPriorityType, StatusConfi
     label: '일반',
     variant: 'default',
     textColor: 'text-gray-600 dark:text-gray-400',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     hexColor: '#6B7280',
   },
 };
@@ -385,7 +385,7 @@ export function getStatusConfig<T extends string>(
       label: '알 수 없음',
       variant: 'default',
       textColor: 'text-gray-500 dark:text-gray-400',
-      bgColor: 'bg-gray-100 dark:bg-gray-800',
+      bgColor: 'bg-gray-100 dark:bg-surface',
       hexColor: '#6B7280',
     };
   }

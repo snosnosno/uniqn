@@ -124,7 +124,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
                   flex-row items-center p-4 rounded-lg border-2
                   ${isSelected
                     ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                    : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                    : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
                   }
                   ${isLoading ? 'opacity-50' : ''}
                 `}
@@ -135,7 +135,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
                     w-12 h-12 rounded-full items-center justify-center mr-4
                     ${isSelected
                       ? 'bg-primary-100 dark:bg-primary-800'
-                      : 'bg-gray-100 dark:bg-gray-700'
+                      : 'bg-gray-100 dark:bg-surface'
                     }
                   `}
                 >
@@ -187,7 +187,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
       </View>
 
       {/* 안내 문구 */}
-      <View className="mt-2 p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+      <View className="mt-2 p-3 bg-gray-50 dark:bg-surface/50 rounded-lg">
         <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
           역할은 나중에 설정에서 변경할 수 있습니다.
         </Text>

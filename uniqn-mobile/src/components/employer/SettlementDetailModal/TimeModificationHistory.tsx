@@ -39,7 +39,7 @@ export function TimeModificationHistory({
   }
 
   return (
-    <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+    <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
         className="flex-row items-center justify-between active:opacity-70"
@@ -63,7 +63,7 @@ export function TimeModificationHistory({
       </Pressable>
 
       {isExpanded && (
-        <View className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+        <View className="mt-3 bg-gray-50 dark:bg-surface rounded-lg p-3">
           {modificationHistory.map((mod, idx) => (
             <ModificationHistoryItem
               key={idx}

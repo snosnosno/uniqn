@@ -318,7 +318,7 @@ export function AnnouncementForm({
             className={`${inputBaseClass} ${
               errors.title
                 ? 'border-red-500'
-                : 'border-gray-300 dark:border-gray-600'
+                : 'border-gray-300 dark:border-surface-overlay'
             }`}
             maxLength={100}
           />
@@ -342,8 +342,8 @@ export function AnnouncementForm({
                 onPress={() => handleCategorySelect(cat.key)}
                 className={`px-4 py-2 rounded-lg border ${
                   category === cat.key
-                    ? 'bg-blue-600 border-blue-600'
-                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                    ? 'bg-primary-600 border-primary-600'
+                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
               >
                 <Text
@@ -380,7 +380,7 @@ export function AnnouncementForm({
             className={`${inputBaseClass} min-h-[200px] ${
               errors.content
                 ? 'border-red-500'
-                : 'border-gray-300 dark:border-gray-600'
+                : 'border-gray-300 dark:border-surface-overlay'
             }`}
             maxLength={5000}
           />
@@ -423,9 +423,9 @@ export function AnnouncementForm({
                     ? p === 2
                       ? 'bg-red-600 border-red-600'
                       : p === 1
-                      ? 'bg-blue-600 border-blue-600'
+                      ? 'bg-primary-600 border-primary-600'
                       : 'bg-gray-600 border-gray-600'
-                    : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
               >
                 <Text
@@ -443,7 +443,7 @@ export function AnnouncementForm({
         </View>
 
         {/* Pinned */}
-        <View className="mb-4 flex-row items-center justify-between bg-white dark:bg-gray-800 rounded-lg border border-gray-300 dark:border-gray-600 px-4 py-3">
+        <View className="mb-4 flex-row items-center justify-between bg-white dark:bg-surface rounded-lg border border-gray-300 dark:border-surface-overlay px-4 py-3">
           <View>
             <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
               상단 고정
@@ -455,7 +455,7 @@ export function AnnouncementForm({
           <Switch
             value={isPinned}
             onValueChange={setIsPinned}
-            trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
             thumbColor={isPinned ? '#ffffff' : '#f4f4f5'}
           />
         </View>
@@ -472,8 +472,8 @@ export function AnnouncementForm({
               onPress={handleTargetTypeAll}
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'all'
-                  ? 'bg-blue-600 border-blue-600'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                  ? 'bg-primary-600 border-primary-600'
+                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
               }`}
             >
               <Text
@@ -490,8 +490,8 @@ export function AnnouncementForm({
               onPress={handleTargetTypeRoles}
               className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                 targetType === 'roles'
-                  ? 'bg-blue-600 border-blue-600'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                  ? 'bg-primary-600 border-primary-600'
+                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
               }`}
             >
               <Text
@@ -516,7 +516,7 @@ export function AnnouncementForm({
                   className={`flex-1 px-4 py-2 rounded-lg border items-center ${
                     targetRoles.includes(role)
                       ? 'bg-green-600 border-green-600'
-                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                      : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                   }`}
                 >
                   <Text
@@ -545,7 +545,7 @@ export function AnnouncementForm({
             <Pressable
               onPress={onCancel}
               disabled={isSubmitting}
-              className="flex-1 bg-gray-200 dark:bg-gray-700 rounded-lg py-3 items-center"
+              className="flex-1 bg-gray-200 dark:bg-surface rounded-lg py-3 items-center"
             >
               <Text className="text-gray-700 dark:text-gray-300 font-medium">
                 취소
@@ -557,8 +557,8 @@ export function AnnouncementForm({
             disabled={!isValid || isSubmitting}
             className={`flex-1 rounded-lg py-3 items-center ${
               isValid && !isSubmitting
-                ? 'bg-blue-600'
-                : 'bg-gray-300 dark:bg-gray-600'
+                ? 'bg-primary-600'
+                : 'bg-gray-300 dark:bg-surface-elevated'
             }`}
           >
             <Text

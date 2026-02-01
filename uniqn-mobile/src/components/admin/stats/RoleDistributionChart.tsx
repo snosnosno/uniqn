@@ -49,7 +49,7 @@ export function RoleDistributionChart({
       {
         name: '구인자',
         population: data.employer,
-        color: '#2563eb',
+        color: '#9333EA',
         legendFontColor: legendColor,
         legendFontSize: 12,
       },
@@ -68,7 +68,7 @@ export function RoleDistributionChart({
   }), []);
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
         {title}
       </Text>
@@ -93,7 +93,7 @@ export function RoleDistributionChart({
           />
 
           {/* 상세 통계 */}
-          <View className="flex-row justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <View className="flex-row justify-between mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
             <View className="items-center flex-1">
               <View className="flex-row items-center mb-1">
                 <View className="w-3 h-3 rounded-full bg-red-600 mr-2" />
@@ -109,7 +109,7 @@ export function RoleDistributionChart({
 
             <View className="items-center flex-1">
               <View className="flex-row items-center mb-1">
-                <View className="w-3 h-3 rounded-full bg-blue-600 mr-2" />
+                <View className="w-3 h-3 rounded-full bg-primary-600 mr-2" />
                 <Text className="text-sm text-gray-500 dark:text-gray-400">구인자</Text>
               </View>
               <Text className="text-lg font-bold text-gray-900 dark:text-white">

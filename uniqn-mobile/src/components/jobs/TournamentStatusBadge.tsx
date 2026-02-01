@@ -222,7 +222,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
       </Text>
       {/* 재제출 표시 */}
       {isResubmitted && approvalStatus === 'pending' && (
-        <Text className="ml-1 text-blue-600 dark:text-blue-400">🔄</Text>
+        <Text className="ml-1 text-primary-600 dark:text-primary-400">🔄</Text>
       )}
     </>
   );
@@ -268,7 +268,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
             )}
 
             {/* 거부 사유 */}
-            <View className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg mb-3">
+            <View className="p-3 bg-gray-50 dark:bg-surface rounded-lg mb-3">
               <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
                 거부 사유
               </Text>
@@ -286,16 +286,16 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
               <View className="flex-row">
                 <Pressable
                   onPress={handleEdit}
-                  className="flex-1 mr-2 py-3 rounded-xl border border-blue-600 dark:border-blue-500 items-center justify-center active:opacity-70"
+                  className="flex-1 mr-2 py-3 rounded-xl border border-primary-600 dark:border-primary-500 items-center justify-center active:opacity-70"
                 >
-                  <Text className="text-base font-medium text-blue-600 dark:text-blue-400">
+                  <Text className="text-base font-medium text-primary-600 dark:text-primary-400">
                     수정하기
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={handleResubmitPress}
                   disabled={resubmit.isPending}
-                  className="flex-1 ml-2 py-3 rounded-xl bg-blue-600 dark:bg-blue-500 flex-row items-center justify-center active:opacity-80"
+                  className="flex-1 ml-2 py-3 rounded-xl bg-primary-600 dark:bg-primary-500 flex-row items-center justify-center active:opacity-80"
                 >
                   {resubmit.isPending ? (
                     <ActivityIndicator size="small" color="#ffffff" />

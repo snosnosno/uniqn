@@ -294,7 +294,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
               <View className="flex-row items-center">
-                <ClockIcon size={14} color="#2563EB" />
+                <ClockIcon size={14} color="#9333EA" />
                 <Text className="ml-1.5 text-sm text-primary-600 dark:text-primary-400 font-medium">
                   실제: {getActualTimeDisplay(schedule)}
                 </Text>
@@ -343,7 +343,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 {formatPhoneNumber(schedule.ownerPhone!)}
               </Text>
               <View className="ml-auto flex-row items-center">
-                <PhoneIcon size={16} color="#2563EB" />
+                <PhoneIcon size={16} color="#9333EA" />
                 <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">
                   전화하기
                 </Text>
@@ -356,7 +356,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       {/* 급여 정보 (모든 상태) */}
       {salaryInfo && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="급여 정보">
-          <View className="p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+          <View className="p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
             {/* 급여 타입 + 금액 */}
             <Text className="text-base text-gray-900 dark:text-white font-medium">
               {SALARY_TYPE_LABELS[salaryInfo.type]} {salaryInfo.amount.toLocaleString()}원
@@ -364,7 +364,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
             {/* 수당 정보 (있는 것만 표시, 보장시간 제외) */}
             {hasAllowances && (
-              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-surface-overlay">
                 {/* 식비 */}
                 {allowances?.meal !== undefined && allowances.meal !== 0 && (
                   <View className="flex-row justify-between items-center py-1">
@@ -409,7 +409,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
 
             {/* 세금 정보 (설정 있으면 표시) */}
             {hasTax && (
-              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-600">
+              <View className="mt-2 pt-2 border-t border-gray-200 dark:border-surface-overlay">
                 <View className="flex-row justify-between items-center py-1">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">세금</Text>
                   <Text className="text-sm font-medium text-red-600 dark:text-red-400">
@@ -425,7 +425,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       {/* 정산 현황 (완료 상태만) */}
       {schedule.type === 'completed' && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="정산 현황">
-          <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+          <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
             <View>
               {schedule.settlementBreakdown && (
                 <Text className="text-base text-gray-900 dark:text-white font-medium">

@@ -233,7 +233,7 @@ describe('scheduleService', () => {
 
       expect(markedDates['2025-01-16'].dotColor).toBe('#f59e0b'); // yellow for applied
 
-      expect(markedDates['2025-01-17'].dotColor).toBe('#3b82f6'); // blue for completed
+      expect(markedDates['2025-01-17'].dotColor).toBe('#A855F7'); // blue for completed
 
       expect(markedDates['2025-01-18'].dotColor).toBe('#ef4444'); // red for cancelled
     });

@@ -89,7 +89,7 @@ export const CardHeader = React.memo(function CardHeader({
       {/* 펼침/접힘 버튼 */}
       <Pressable
         onPress={onToggleExpand}
-        className="ml-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-700 active:opacity-60 flex-row items-center"
+        className="ml-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-surface active:opacity-60 flex-row items-center"
         hitSlop={8}
       >
         <Text className="text-xs font-medium text-gray-600 dark:text-gray-300">

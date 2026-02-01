@@ -122,7 +122,7 @@ function FilterChip({ label, isActive, onPress }: FilterChipProps) {
         px-3 py-2 rounded-full mr-2 mb-2
         ${isActive
           ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-gray-700'
+          : 'bg-gray-100 dark:bg-surface'
         }
       `}
       accessibilityRole="button"
@@ -233,7 +233,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
         {/* 필터 버튼 */}
         <Pressable
           onPress={handleOpenModal}
-          className="flex-row items-center px-4 py-2 bg-white dark:bg-gray-800 rounded-full border border-gray-200 dark:border-gray-700"
+          className="flex-row items-center px-4 py-2 bg-white dark:bg-surface rounded-full border border-gray-200 dark:border-surface-overlay"
           accessibilityLabel="필터 열기"
           accessibilityHint="공고 필터링 옵션을 설정합니다"
         >
@@ -262,11 +262,11 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
             onPress={handleCloseModal}
           >
             <Pressable
-              className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[85%]"
+              className="bg-white dark:bg-surface rounded-t-2xl max-h-[85%]"
               onPress={(e) => e.stopPropagation()}
             >
               {/* 헤더 */}
-              <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+              <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
                 <Text className="text-lg font-bold text-gray-900 dark:text-white">
                   필터
                 </Text>
@@ -361,7 +361,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                       p-4 rounded-xl border
                       ${tempFilters.isUrgent
                         ? 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
-                        : 'bg-gray-50 dark:bg-gray-700 border-gray-200 dark:border-gray-600'
+                        : 'bg-gray-50 dark:bg-surface border-gray-200 dark:border-surface-overlay'
                       }
                     `}
                   >
@@ -376,7 +376,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
                         w-6 h-6 rounded-full border-2 items-center justify-center
                         ${tempFilters.isUrgent
                           ? 'bg-red-500 border-red-500'
-                          : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-500'
+                          : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                         }
                       `}
                     >
@@ -392,7 +392,7 @@ export const JobFilters: React.FC<JobFiltersProps> = React.memo(
               </ScrollView>
 
               {/* 적용 버튼 */}
-              <View className="px-4 py-4 border-t border-gray-200 dark:border-gray-700">
+              <View className="px-4 py-4 border-t border-gray-200 dark:border-surface-overlay">
                 <Pressable
                   onPress={handleApplyFilters}
                   className="bg-primary-600 dark:bg-primary-700 py-4 rounded-xl items-center active:opacity-80"

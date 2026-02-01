@@ -224,19 +224,19 @@ export const REPORT_STATUS_COLORS: Record<
   { bg: string; text: string }
 > = {
   pending: {
-    bg: 'bg-gray-100 dark:bg-gray-700',
+    bg: 'bg-gray-100 dark:bg-surface',
     text: 'text-gray-600 dark:text-gray-300',
   },
   reviewed: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-300',
+    bg: 'bg-primary-100 dark:bg-primary-900/30',
+    text: 'text-primary-600 dark:text-primary-300',
   },
   resolved: {
     bg: 'bg-green-100 dark:bg-green-900/30',
     text: 'text-green-600 dark:text-green-300',
   },
   dismissed: {
-    bg: 'bg-gray-100 dark:bg-gray-700',
+    bg: 'bg-gray-100 dark:bg-surface',
     text: 'text-gray-500 dark:text-gray-400',
   },
 };

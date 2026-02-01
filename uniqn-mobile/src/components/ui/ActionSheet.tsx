@@ -71,7 +71,7 @@ export function ActionSheet({
     >
       {/* Header */}
       {(title || description) && (
-        <View className="items-center pb-4 mb-2 border-b border-gray-200 dark:border-gray-700">
+        <View className="items-center pb-4 mb-2 border-b border-gray-200 dark:border-surface-overlay">
           {title && (
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
               {title}
@@ -122,10 +122,10 @@ export function ActionSheet({
       </View>
 
       {/* Cancel Button */}
-      <View className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <View className="mt-4 pt-4 border-t border-gray-200 dark:border-surface-overlay">
         <Pressable
           onPress={onClose}
-          className="items-center justify-center py-4 rounded-xl bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+          className="items-center justify-center py-4 rounded-xl bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
           accessibilityRole="button"
           accessibilityLabel={cancelText}
         >

@@ -179,7 +179,7 @@ const AllowanceItem = memo(function AllowanceItem({
             h-5 w-5 rounded border-2 items-center justify-center mr-3
             ${isEnabled
               ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
-              : 'bg-transparent border-gray-300 dark:border-gray-500'
+              : 'bg-transparent border-gray-300 dark:border-surface-overlay'
             }
           `}
         >
@@ -221,14 +221,14 @@ const AllowanceItem = memo(function AllowanceItem({
               className={`flex-row items-center px-3 py-1.5 rounded-full ${
                 status === 'provided'
                   ? 'bg-indigo-100 dark:bg-indigo-900/30'
-                  : 'bg-gray-100 dark:bg-gray-700'
+                  : 'bg-gray-100 dark:bg-surface'
               }`}
             >
               <View
                 className={`h-4 w-4 rounded-full border-2 mr-2 items-center justify-center ${
                   status === 'provided'
                     ? 'border-indigo-600 dark:border-indigo-400'
-                    : 'border-gray-400 dark:border-gray-500'
+                    : 'border-gray-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'provided' && (
@@ -255,14 +255,14 @@ const AllowanceItem = memo(function AllowanceItem({
               className={`flex-row items-center px-3 py-1.5 rounded-full ${
                 status === 'amount'
                   ? 'bg-indigo-100 dark:bg-indigo-900/30'
-                  : 'bg-gray-100 dark:bg-gray-700'
+                  : 'bg-gray-100 dark:bg-surface'
               }`}
             >
               <View
                 className={`h-4 w-4 rounded-full border-2 mr-2 items-center justify-center ${
                   status === 'amount'
                     ? 'border-indigo-600 dark:border-indigo-400'
-                    : 'border-gray-400 dark:border-gray-500'
+                    : 'border-gray-400 dark:border-surface-overlay'
                 }`}
               >
                 {status === 'amount' && (
@@ -286,8 +286,8 @@ const AllowanceItem = memo(function AllowanceItem({
             <View
               className={`
                 flex-row items-center rounded-lg border px-3 h-10
-                bg-white dark:bg-gray-800
-                border-gray-300 dark:border-gray-600
+                bg-white dark:bg-surface
+                border-gray-300 dark:border-surface-overlay
                 ${disabled ? 'opacity-50' : ''}
               `}
             >
@@ -397,8 +397,8 @@ export const AllowanceEditor = memo(function AllowanceEditor({
         <View
           className={`
             flex-row items-center rounded-lg border px-3 h-10
-            bg-white dark:bg-gray-800
-            border-gray-300 dark:border-gray-600
+            bg-white dark:bg-surface
+            border-gray-300 dark:border-surface-overlay
             ${disabled ? 'opacity-50' : ''}
           `}
         >
@@ -433,7 +433,7 @@ export const AllowanceEditor = memo(function AllowanceEditor({
 
       {/* 구분선 */}
       {showTotal && (totalAllowance > 0 || providedCount > 0) && (
-        <View className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
+        <View className="h-px bg-gray-200 dark:bg-surface my-2" />
       )}
 
       {/* 총 수당 요약 */}

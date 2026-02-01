@@ -76,8 +76,8 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
       exiting={FadeOut.duration(200)}
       layout={Layout.duration(200)}
       className={`
-        border-b border-gray-100 dark:border-gray-800
-        ${hasUnread ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-white dark:bg-gray-900'}
+        border-b border-gray-100 dark:border-surface
+        ${hasUnread ? 'bg-primary-50 dark:bg-primary-900/20' : 'bg-white dark:bg-surface-dark'}
       `}
     >
       {/* 그룹 헤더 (항상 표시) */}
@@ -158,13 +158,13 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
 
       {/* 펼침 상태: 개별 알림 목록 */}
       {isExpanded && (
-        <View className="bg-gray-50 dark:bg-gray-800/50">
+        <View className="bg-gray-50 dark:bg-surface/50">
           {group.notifications.map((notification, index) => (
             <View
               key={notification.id}
               className={
                 index > 0
-                  ? 'border-t border-gray-100 dark:border-gray-700/50'
+                  ? 'border-t border-gray-100 dark:border-surface-overlay/50'
                   : ''
               }
             >

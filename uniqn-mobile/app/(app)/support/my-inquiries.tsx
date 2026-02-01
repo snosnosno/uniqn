@@ -45,7 +45,7 @@ export default function MyInquiriesScreen() {
     if (!hasMore) return null;
     return (
       <View className="items-center py-4">
-        <ActivityIndicator size="small" color="#3B82F6" />
+        <ActivityIndicator size="small" color="#A855F7" />
       </View>
     );
   }, [hasMore]);
@@ -68,14 +68,14 @@ export default function MyInquiriesScreen() {
 
   if (isLoading && inquiries.length === 0) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
+        <ActivityIndicator size="large" color="#A855F7" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <FlashList
         data={inquiries}
         renderItem={renderItem}
@@ -91,7 +91,7 @@ export default function MyInquiriesScreen() {
           <RefreshControl
             refreshing={isLoading}
             onRefresh={refetch}
-            tintColor="#3B82F6"
+            tintColor="#A855F7"
           />
         }
       />

@@ -140,7 +140,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
             const isChecked = selectedKeys.has(key);
 
             const bgClass = isChecked
-              ? isDark ? 'bg-blue-900 border-blue-700' : 'bg-blue-100 border-blue-300'
+              ? isDark ? 'bg-primary-900 border-primary-700' : 'bg-primary-100 border-primary-300'
               : isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200';
 
             return (
@@ -173,7 +173,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
           // 다중 날짜 그룹
           const hasSelection = selectionState !== 'none';
           const bgClass = hasSelection
-            ? isDark ? 'bg-blue-900/50 border-blue-700' : 'bg-blue-50 border-blue-200'
+            ? isDark ? 'bg-primary-900/50 border-primary-700' : 'bg-primary-50 border-primary-200'
             : isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200';
 
           return (
@@ -241,7 +241,7 @@ export const GroupedAssignmentSelector = React.memo(function GroupedAssignmentSe
                       const isChecked = selectedKeys.has(key);
 
                       const itemBgClass = isChecked
-                        ? isDark ? 'bg-blue-800 border-blue-600' : 'bg-blue-100 border-blue-300'
+                        ? isDark ? 'bg-primary-800 border-primary-600' : 'bg-primary-100 border-primary-300'
                         : isDark ? 'bg-gray-600 border-gray-500' : 'bg-white border-gray-200';
 
                       return (

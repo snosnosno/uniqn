@@ -186,8 +186,8 @@ export const INQUIRY_STATUS_CONFIG: Record<
 > = {
   open: {
     label: '접수됨',
-    color: 'text-blue-700 dark:text-blue-300',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    color: 'text-primary-700 dark:text-primary-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
   },
   in_progress: {
     label: '처리중',

@@ -39,7 +39,7 @@ export function SettlementActionButtons({
         {onEditTime && (
           <Pressable
             onPress={onEditTime}
-            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
           >
             <ClockIcon size={18} color="#6B7280" />
             <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">
@@ -51,7 +51,7 @@ export function SettlementActionButtons({
         {onEditAmount && (
           <Pressable
             onPress={onEditAmount}
-            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+            className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
           >
             <EditIcon size={18} color="#6B7280" />
             <Text className="ml-2 text-base font-medium text-gray-700 dark:text-gray-300">

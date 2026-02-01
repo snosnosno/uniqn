@@ -55,7 +55,7 @@ export function DateNavigationHeader({
   isDark,
 }: DateNavigationHeaderProps) {
   return (
-    <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+    <View className="flex-row items-center justify-center py-3 mx-4 mt-4 bg-gray-50 dark:bg-surface rounded-lg">
       <Pressable
         onPress={onPrevDate}
         disabled={!canGoPrev}

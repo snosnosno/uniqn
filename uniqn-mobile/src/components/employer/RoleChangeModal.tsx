@@ -64,10 +64,10 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
       className={`
         flex-row items-center justify-between p-4 rounded-xl mb-2
         ${isCurrentRole
-          ? 'bg-gray-100 dark:bg-gray-800 opacity-50'
+          ? 'bg-gray-100 dark:bg-surface opacity-50'
           : isSelected
           ? 'bg-primary-100 dark:bg-primary-900/30 border-2 border-primary-500'
-          : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
+          : 'bg-white dark:bg-surface border border-gray-200 dark:border-surface-overlay'
         }
       `}
     >
@@ -77,7 +77,7 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
             h-10 w-10 rounded-full items-center justify-center
             ${isSelected
               ? 'bg-primary-600'
-              : 'bg-gray-200 dark:bg-gray-700'
+              : 'bg-gray-200 dark:bg-surface'
             }
           `}
         >
@@ -252,7 +252,7 @@ export function RoleChangeModal({
             multiline
             numberOfLines={2}
             textAlignVertical="top"
-            className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[48px]"
+            className="p-2.5 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[48px]"
           />
         </View>
 

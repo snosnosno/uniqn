@@ -35,6 +35,8 @@ import {
   ClockIcon,
   CheckCircleIcon,
 } from '@/components/icons';
+import { useThemeStore } from '@/stores/themeStore';
+import { getIconColor } from '@/constants';
 import {
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
@@ -100,7 +102,7 @@ function ReportInfoSection({ report }: { report: Report }) {
   const typeLabel = getReportTypeLabel(report);
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
       {/* 상태 및 심각도 배지 */}
       <View className="flex-row items-center gap-2 mb-4">
         <View className={`px-3 py-1 rounded-full ${severityColor.bg}`}>
@@ -149,9 +151,9 @@ function ReportInfoSection({ report }: { report: Report }) {
  */
 function ReportContentSection({ report }: { report: Report }) {
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
-        <DocumentIcon size={18} color="#3B82F6" />
+        <DocumentIcon size={18} color="#A855F7" />
         <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
           신고 내용
         </Text>
@@ -163,7 +165,7 @@ function ReportContentSection({ report }: { report: Report }) {
 
       {/* 관련 공고 */}
       {report.jobPostingTitle && (
-        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">관련 공고</Text>
           <Text className="text-sm text-gray-900 dark:text-white">{report.jobPostingTitle}</Text>
         </View>
@@ -179,14 +181,14 @@ function ReportContentSection({ report }: { report: Report }) {
 
       {/* 증거 자료 */}
       {report.evidenceUrls && report.evidenceUrls.length > 0 && (
-        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
             첨부 자료 ({report.evidenceUrls.length}개)
           </Text>
           {report.evidenceUrls.map((url, index) => (
             <Text
               key={index}
-              className="text-sm text-blue-600 dark:text-blue-400 mb-1"
+              className="text-sm text-primary-600 dark:text-primary-400 mb-1"
               numberOfLines={1}
             >
               {url}
@@ -205,7 +207,7 @@ function ReviewHistorySection({ report }: { report: Report }) {
   if (report.status === 'pending') return null;
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-3">
         <CheckCircleIcon size={18} color="#10B981" />
         <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
@@ -264,7 +266,7 @@ function ReviewFormSection({
   };
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mx-4 mb-4">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
       <View className="flex-row items-center mb-4">
         <AlertTriangleIcon size={18} color="#F59E0B" />
         <Text className="text-base font-semibold text-gray-900 dark:text-white ml-2">
@@ -283,14 +285,14 @@ function ReviewFormSection({
             onPress={() => setSelectedStatus(option.value)}
             className={`p-3 rounded-lg border-2 ${
               selectedStatus === option.value
-                ? 'border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                : 'border-gray-200 dark:border-gray-700'
+                ? 'border-primary-600 bg-primary-50 dark:bg-primary-900/20'
+                : 'border-gray-200 dark:border-surface-overlay'
             }`}
           >
             <Text
               className={`font-medium ${
                 selectedStatus === option.value
-                  ? 'text-blue-600 dark:text-blue-400'
+                  ? 'text-primary-600 dark:text-primary-400'
                   : 'text-gray-900 dark:text-white'
               }`}
             >
@@ -314,7 +316,7 @@ function ReviewFormSection({
         placeholderTextColor="#9CA3AF"
         multiline
         numberOfLines={4}
-        className="bg-gray-100 dark:bg-gray-700 rounded-lg p-3 text-sm text-gray-900 dark:text-white mb-4"
+        className="bg-gray-100 dark:bg-surface rounded-lg p-3 text-sm text-gray-900 dark:text-white mb-4"
         style={{ minHeight: 100, textAlignVertical: 'top' }}
       />
 
@@ -341,6 +343,7 @@ export default function AdminReportDetailPage() {
 
   const { data: report, isLoading, error } = useReportDetail(reportId);
   const { mutateAsync: reviewReport, isPending: isReviewing } = useReviewReport();
+  const { isDarkMode } = useThemeStore();
 
   const handleBack = useCallback(() => {
     router.back();
@@ -373,12 +376,12 @@ export default function AdminReportDetailPage() {
             title: '신고 상세',
             headerLeft: () => (
               <Pressable onPress={handleBack} hitSlop={8}>
-                <ChevronLeftIcon size={24} color="#374151" />
+                <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
               </Pressable>
             ),
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
           <Loading size="large" message="신고 정보를 불러오는 중..." />
         </View>
       </>
@@ -395,12 +398,12 @@ export default function AdminReportDetailPage() {
             title: '신고 상세',
             headerLeft: () => (
               <Pressable onPress={handleBack} hitSlop={8}>
-                <ChevronLeftIcon size={24} color="#374151" />
+                <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
               </Pressable>
             ),
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
           <EmptyState
             title="신고를 찾을 수 없습니다"
             description="해당 신고가 존재하지 않거나 삭제되었습니다."
@@ -421,12 +424,12 @@ export default function AdminReportDetailPage() {
           title: '신고 상세',
           headerLeft: () => (
             <Pressable onPress={handleBack} hitSlop={8}>
-              <ChevronLeftIcon size={24} color="#374151" />
+              <ChevronLeftIcon size={24} color={getIconColor(isDarkMode, 'contrast')} />
             </Pressable>
           ),
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
           className="flex-1"

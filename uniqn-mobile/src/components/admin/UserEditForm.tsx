@@ -126,13 +126,13 @@ export const UserEditForm = React.memo(function UserEditForm({
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      className="flex-1 bg-gray-50 dark:bg-surface-dark"
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
       keyboardShouldPersistTaps="handled"
     >
       {/* 프로필 헤더 */}
-      <View className="bg-white dark:bg-gray-800 px-4 py-6 items-center border-b border-gray-100 dark:border-gray-700">
+      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-100 dark:border-surface-overlay">
         <Avatar
           name={user.name}
           source={user.photoURL}
@@ -146,7 +146,7 @@ export const UserEditForm = React.memo(function UserEditForm({
 
       <View className="p-4">
         {/* 기본 정보 */}
-        <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4">
+        <View className="bg-white dark:bg-surface rounded-xl p-4 mb-4">
           <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
             기본 정보
           </Text>
@@ -209,7 +209,7 @@ export const UserEditForm = React.memo(function UserEditForm({
         </View>
 
         {/* 권한 설정 */}
-        <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4">
+        <View className="bg-white dark:bg-surface rounded-xl p-4 mb-4">
           <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
             권한 설정
           </Text>
@@ -243,7 +243,7 @@ export const UserEditForm = React.memo(function UserEditForm({
             control={control}
             name="isActive"
             render={({ field: { onChange, value } }) => (
-              <View className="flex-row items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              <View className="flex-row items-center justify-between mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
                 <View className="flex-row items-center">
                   <ShieldIcon size={18} color="#9CA3AF" />
                   <Text className="ml-2 text-sm text-gray-700 dark:text-gray-300">
@@ -253,7 +253,7 @@ export const UserEditForm = React.memo(function UserEditForm({
                 <Switch
                   value={value}
                   onValueChange={onChange}
-                  trackColor={{ false: '#D1D5DB', true: '#3B82F6' }}
+                  trackColor={{ false: '#D1D5DB', true: '#A855F7' }}
                   thumbColor={value ? '#fff' : '#fff'}
                 />
               </View>
@@ -262,7 +262,7 @@ export const UserEditForm = React.memo(function UserEditForm({
         </View>
 
         {/* 관리자 메모 */}
-        <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-4">
+        <View className="bg-white dark:bg-surface rounded-xl p-4 mb-4">
           <Text className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">
             관리자 메모
           </Text>
@@ -289,7 +289,7 @@ export const UserEditForm = React.memo(function UserEditForm({
         <View className="flex-row gap-3 mt-4">
           <Pressable
             onPress={onCancel}
-            className="flex-1 py-3 bg-gray-200 dark:bg-gray-700 rounded-xl items-center active:opacity-70"
+            className="flex-1 py-3 bg-gray-200 dark:bg-surface rounded-xl items-center active:opacity-70"
             disabled={isSubmitting}
           >
             <Text className="font-semibold text-gray-700 dark:text-gray-300">

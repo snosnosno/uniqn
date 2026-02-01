@@ -236,7 +236,7 @@ const AssignmentsSummary = memo(function AssignmentsSummary({
   }
 
   return (
-    <View className="mt-3 bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+    <View className="mt-3 bg-gray-50 dark:bg-surface rounded-lg p-3">
       <Text className="text-sm font-medium text-gray-900 dark:text-white mb-2">
         지원 일정
       </Text>
@@ -283,14 +283,14 @@ const PreQuestionPreview = memo(function PreQuestionPreview({
   }
 
   return (
-    <View className="mt-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
-      <Text className="text-sm font-medium text-blue-900 dark:text-blue-200 mb-2">
+    <View className="mt-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
+      <Text className="text-sm font-medium text-primary-900 dark:text-primary-200 mb-2">
         사전질문 답변
       </Text>
       {answers.slice(0, 2).map((answer) => (
         <View key={answer.questionId} className="mb-1.5 last:mb-0">
           <Text
-            className="text-xs text-blue-700 dark:text-blue-300"
+            className="text-xs text-primary-700 dark:text-primary-300"
             numberOfLines={2}
           >
             {answer.answer}
@@ -298,7 +298,7 @@ const PreQuestionPreview = memo(function PreQuestionPreview({
         </View>
       ))}
       {answers.length > 2 && (
-        <Text className="text-xs text-blue-400 dark:text-blue-500 mt-1">
+        <Text className="text-xs text-primary-400 dark:text-primary-500 mt-1">
           +{answers.length - 2}개 답변 더 있음
         </Text>
       )}
@@ -326,7 +326,7 @@ const ActionButtons = memo(function ActionButtons({
   if (!canProcess) return null;
 
   return (
-    <View className="flex-row gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+    <View className="flex-row gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-surface-overlay">
       {onConfirm && (
         <Button
           variant="primary"
@@ -437,7 +437,7 @@ export const ApplicantCard = memo(function ApplicantCard({
       {application.message && (
         <View
           className={`mt-2 ${
-            compact ? '' : 'bg-gray-50 dark:bg-gray-800 rounded-lg p-3'
+            compact ? '' : 'bg-gray-50 dark:bg-surface rounded-lg p-3'
           }`}
         >
           {!compact && (
@@ -497,9 +497,9 @@ export const ApplicantCard = memo(function ApplicantCard({
         accessibilityLabel={accessibilityLabel}
         accessibilityHint="탭하면 지원자 상세 정보를 볼 수 있습니다"
         className={`
-          bg-white dark:bg-gray-800 rounded-xl
+          bg-white dark:bg-surface rounded-xl
           ${compact ? 'p-3' : 'p-4'}
-          border border-gray-100 dark:border-gray-700
+          border border-gray-100 dark:border-surface-overlay
           active:opacity-80
           ${className}
         `}
@@ -513,9 +513,9 @@ export const ApplicantCard = memo(function ApplicantCard({
   return (
     <View
       className={`
-        bg-white dark:bg-gray-800 rounded-xl
+        bg-white dark:bg-surface rounded-xl
         ${compact ? 'p-3' : 'p-4'}
-        border border-gray-100 dark:border-gray-700
+        border border-gray-100 dark:border-surface-overlay
         ${className}
       `}
     >

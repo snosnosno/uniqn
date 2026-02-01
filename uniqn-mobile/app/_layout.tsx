@@ -97,7 +97,7 @@ function MainNavigator() {
           headerShown: false,
           animation: 'slide_from_right',
           contentStyle: {
-            backgroundColor: isDark ? '#111827' : '#f9fafb',
+            backgroundColor: isDark ? '#1A1625' : '#f9fafb',
           },
         }}
       >
@@ -125,8 +125,8 @@ function AppContent() {
   // 초기화 중 로딩 표시
   if (isLoading || !isInitialized) {
     return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
+        <ActivityIndicator size="large" color="#A855F7" />
         <Text className="mt-4 text-gray-600 dark:text-gray-400">앱 로딩 중...</Text>
       </View>
     );
@@ -135,7 +135,7 @@ function AppContent() {
   // 초기화 실패 시 에러 표시
   if (error) {
     return (
-      <View className="flex-1 bg-white dark:bg-gray-900">
+      <View className="flex-1 bg-white dark:bg-surface-dark">
         <ErrorState
           error={error}
           title="앱을 불러올 수 없습니다"

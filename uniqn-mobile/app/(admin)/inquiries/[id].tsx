@@ -39,15 +39,15 @@ export default function AdminInquiryDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
+        <ActivityIndicator size="large" color="#A855F7" />
       </SafeAreaView>
     );
   }
 
   if (isError || !inquiry) {
     return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
         <Text className="text-gray-500 dark:text-gray-400">
           문의를 찾을 수 없습니다
         </Text>
@@ -59,7 +59,7 @@ export default function AdminInquiryDetailScreen() {
   const respondedDate = toDate(inquiry.respondedAt);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <ScrollView className="flex-1" contentContainerClassName="p-4">
         {/* 문의자 정보 */}
         <Card className="mb-4">
@@ -96,7 +96,7 @@ export default function AdminInquiryDetailScreen() {
             {inquiry.subject}
           </Text>
 
-          <View className="rounded-lg bg-gray-50 p-4 dark:bg-gray-700/50">
+          <View className="rounded-lg bg-gray-50 p-4 dark:bg-surface/50">
             <Text className="leading-6 text-gray-700 dark:text-gray-300">
               {inquiry.message}
             </Text>
@@ -111,7 +111,7 @@ export default function AdminInquiryDetailScreen() {
               {inquiry.attachments.map((attachment, index) => (
                 <View
                   key={index}
-                  className="mb-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-gray-700"
+                  className="mb-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-surface"
                 >
                   <Text className="text-sm text-gray-700 dark:text-gray-300">
                     {attachment.name}

@@ -31,7 +31,7 @@ interface DataRowProps {
 
 function DataRow({ label, value, editable, onEdit }: DataRowProps) {
   return (
-    <View className="flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row items-center justify-between py-3 border-b border-gray-100 dark:border-surface-overlay">
       <Text className="text-gray-600 dark:text-gray-400 text-sm">{label}</Text>
       <View className="flex-row items-center">
         <Text className="text-gray-900 dark:text-white font-medium mr-2">
@@ -158,15 +158,15 @@ export default function MyDataScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '내 정보',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <View className="flex-1 items-center justify-center">
@@ -180,15 +180,15 @@ export default function MyDataScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
           title: '내 정보',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+            backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+          headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
         }}
       />
 
@@ -198,14 +198,14 @@ export default function MyDataScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* 안내 카드 */}
-        <Card className="mb-6 bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800">
+        <Card className="mb-6 bg-primary-50 dark:bg-primary-900/20 border-primary-200 dark:border-primary-800">
           <View className="flex-row items-start">
             <Text className="text-2xl mr-3">ℹ️</Text>
             <View className="flex-1">
-              <Text className="text-blue-800 dark:text-blue-200 font-semibold mb-1">
+              <Text className="text-primary-800 dark:text-primary-200 font-semibold mb-1">
                 개인정보 처리방침
               </Text>
-              <Text className="text-blue-700 dark:text-blue-300 text-sm">
+              <Text className="text-primary-700 dark:text-primary-300 text-sm">
                 개인정보보호법에 따라 수집된 개인정보를 열람하고 수정할 수 있습니다.
               </Text>
             </View>
@@ -330,7 +330,7 @@ export default function MyDataScreen() {
         </Card>
 
         {/* 개인정보 삭제 안내 */}
-        <Card className="bg-gray-100 dark:bg-gray-800">
+        <Card className="bg-gray-100 dark:bg-surface">
           <Text className="text-gray-600 dark:text-gray-400 text-sm leading-5">
             개인정보 삭제를 원하시면 회원탈퇴를 진행해주세요.
             탈퇴 시 30일간의 유예 기간이 있으며, 이 기간 동안 복구가 가능합니다.

@@ -13,7 +13,7 @@
 
 import { Platform, AppState, type AppStateStatus } from 'react-native';
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
-import { mmkvStorage, STORAGE_KEYS } from '@/lib/mmkvStorage';
+import { getMMKVInstance, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 
@@ -114,7 +114,8 @@ function persistState(): void {
       failureCount: state.failureCount,
       nextScheduledAt: state.nextScheduledAt,
     };
-    mmkvStorage.set(STORAGE_KEYS.TOKEN_REFRESH_STATE, JSON.stringify(persistData));
+    const storage = getMMKVInstance();
+    storage.set(STORAGE_KEYS.TOKEN_REFRESH_STATE, JSON.stringify(persistData));
   } catch (error) {
     logger.warn('토큰 갱신 상태 저장 실패', { error: toError(error).message });
   }
@@ -125,7 +126,8 @@ function persistState(): void {
  */
 function restoreState(): void {
   try {
-    const stored = mmkvStorage.getString(STORAGE_KEYS.TOKEN_REFRESH_STATE);
+    const storage = getMMKVInstance();
+    const stored = storage.getString(STORAGE_KEYS.TOKEN_REFRESH_STATE);
     if (stored) {
       const parsed = JSON.parse(stored);
       state.lastRefreshAt = parsed.lastRefreshAt ?? null;
@@ -510,7 +512,8 @@ export function updateConfig(updates: Partial<TokenRefreshConfig>): void {
 export function resetState(): void {
   state = { ...INITIAL_STATE };
   try {
-    mmkvStorage.delete(STORAGE_KEYS.TOKEN_REFRESH_STATE);
+    const storage = getMMKVInstance();
+    storage.delete(STORAGE_KEYS.TOKEN_REFRESH_STATE);
   } catch {
     // 무시
   }

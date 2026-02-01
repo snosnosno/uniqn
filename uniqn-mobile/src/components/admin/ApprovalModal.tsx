@@ -119,11 +119,11 @@ export const ApprovalModal = memo(function ApprovalModal({
           onPress={handleCancel}
         >
           <Pressable
-            className="bg-white dark:bg-gray-800 rounded-xl w-full max-w-md"
+            className="bg-white dark:bg-surface rounded-xl w-full max-w-md"
             onPress={(e) => e.stopPropagation()}
           >
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+            <View className="flex-row items-center justify-between p-4 border-b border-gray-200 dark:border-surface-overlay">
               <Text
                 className={`text-lg font-semibold ${
                   isApprove
@@ -149,7 +149,7 @@ export const ApprovalModal = memo(function ApprovalModal({
               <Text className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                 다음 공고를 {isApprove ? '승인' : '거부'}하시겠습니까?
               </Text>
-              <View className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 mb-4">
+              <View className="bg-gray-50 dark:bg-surface rounded-lg p-3 mb-4">
                 <Text
                   className="text-sm font-medium text-gray-900 dark:text-gray-100"
                   numberOfLines={2}
@@ -173,7 +173,7 @@ export const ApprovalModal = memo(function ApprovalModal({
                     numberOfLines={4}
                     editable={!isProcessing}
                     textAlignVertical="top"
-                    className="border border-gray-300 dark:border-gray-600 rounded-lg p-3 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 min-h-[100px]"
+                    className="border border-gray-300 dark:border-surface-overlay rounded-lg p-3 bg-white dark:bg-surface text-gray-900 dark:text-gray-100 min-h-[100px]"
                     accessibilityLabel="거부 사유 입력"
                     accessibilityHint="최소 10자 이상 입력해주세요"
                   />
@@ -214,7 +214,7 @@ export const ApprovalModal = memo(function ApprovalModal({
             </View>
 
             {/* 버튼 */}
-            <View className="flex-row gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+            <View className="flex-row gap-3 p-4 border-t border-gray-200 dark:border-surface-overlay">
               <View className="flex-1">
                 <Button
                   variant="outline"

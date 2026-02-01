@@ -42,7 +42,7 @@ export function DangerZone({ onDeleteAccount }: DangerZoneProps) {
       {/* 계정 삭제 버튼 */}
       <Pressable
         onPress={onDeleteAccount}
-        className="flex-row items-center justify-between rounded-lg border border-error-300 bg-white px-4 py-3 active:bg-error-50 dark:border-error-700 dark:bg-gray-800 dark:active:bg-error-900/30"
+        className="flex-row items-center justify-between rounded-lg border border-error-300 bg-white px-4 py-3 active:bg-error-50 dark:border-error-700 dark:bg-surface dark:active:bg-error-900/30"
         accessibilityLabel="계정 삭제"
         accessibilityRole="button"
       >

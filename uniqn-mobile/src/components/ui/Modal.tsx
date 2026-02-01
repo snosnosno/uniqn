@@ -139,8 +139,8 @@ function WebModal({
 
   const modalClassName =
     position === 'center'
-      ? `bg-white dark:bg-gray-800 rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
-      : 'bg-white dark:bg-gray-800 rounded-t-3xl w-full pb-8';
+      ? `bg-white dark:bg-surface rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
+      : 'bg-white dark:bg-surface rounded-t-3xl w-full pb-8';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
   const modalMaxHeightStyle = {
@@ -200,14 +200,14 @@ function WebModal({
         >
           {/* Header */}
           {(title || showCloseButton) && (
-            <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+            <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                 {title || ''}
               </Text>
               {showCloseButton && (
                 <Pressable
                   onPress={onClose}
-                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >
@@ -328,8 +328,8 @@ function NativeModal({
 
   const modalClassName =
     position === 'center'
-      ? `bg-white dark:bg-gray-800 rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
-      : 'bg-white dark:bg-gray-800 rounded-t-3xl w-full pb-8';
+      ? `bg-white dark:bg-surface rounded-2xl overflow-hidden ${MODAL_SIZES[size]}`
+      : 'bg-white dark:bg-surface rounded-t-3xl w-full pb-8';
 
   // 모달 최대 높이 스타일 (숫자값으로 계산)
   const modalMaxHeightStyle = {
@@ -369,14 +369,14 @@ function NativeModal({
             <View className={modalClassName}>
               {/* Header */}
               {(title || showCloseButton) && (
-                <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-gray-700">
+                <View className="flex-row items-center justify-between px-5 py-4 border-b border-gray-200 dark:border-surface-overlay">
                   <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                     {title || ''}
                   </Text>
                   {showCloseButton && (
                     <Pressable
                       onPress={onClose}
-                      className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+                      className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                       accessibilityRole="button"
                       accessibilityLabel="닫기"
                       hitSlop={8}
@@ -446,7 +446,7 @@ export function AlertModal({
       </Text>
       <Pressable
         onPress={onClose}
-        className="bg-blue-600 py-3 rounded-xl"
+        className="bg-primary-600 py-3 rounded-xl"
         accessibilityRole="button"
       >
         <Text className="text-white text-center font-semibold">
@@ -492,7 +492,7 @@ export function ConfirmModal({
       <View className="flex-row gap-3">
         <Pressable
           onPress={onClose}
-          className="flex-1 bg-gray-200 dark:bg-gray-700 py-3 rounded-xl"
+          className="flex-1 bg-gray-200 dark:bg-surface py-3 rounded-xl"
           accessibilityRole="button"
         >
           <Text className="text-gray-700 dark:text-gray-200 text-center font-medium">
@@ -505,7 +505,7 @@ export function ConfirmModal({
             onClose();
           }}
           className={`flex-1 py-3 rounded-xl ${
-            isDestructive ? 'bg-red-600' : 'bg-blue-600'
+            isDestructive ? 'bg-red-600' : 'bg-primary-600'
           }`}
           accessibilityRole="button"
         >

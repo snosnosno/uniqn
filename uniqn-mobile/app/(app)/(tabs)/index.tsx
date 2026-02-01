@@ -89,7 +89,7 @@ export default function JobsScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="구인구직" />
 

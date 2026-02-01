@@ -46,7 +46,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
   );
 
   return (
-    <View className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
+    <View className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-surface-dark">
       {/* 그룹 헤더 */}
       <View className="flex-row items-center flex-wrap mb-3">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">
@@ -105,7 +105,7 @@ export const DateGroupSelection = memo(function DateGroupSelection({
 
       {/* 안내 문구 (여러 날짜인 경우) */}
       {!isSingleDate && (
-        <View className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-700">
+        <View className="mt-3 pt-2 border-t border-gray-200 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
             ⓘ 선택 시 {dayCount}일 모두 지원됩니다
           </Text>

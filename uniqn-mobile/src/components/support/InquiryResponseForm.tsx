@@ -74,7 +74,7 @@ export function InquiryResponseForm({
   const isValid = response.trim().length > 0;
 
   return (
-    <View className="rounded-xl bg-white p-4 dark:bg-gray-800">
+    <View className="rounded-xl bg-white p-4 dark:bg-surface">
       <Text className="mb-4 text-lg font-semibold text-gray-900 dark:text-gray-100">
         답변 작성
       </Text>
@@ -103,7 +103,7 @@ export function InquiryResponseForm({
           className={`min-h-[150px] rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
             errors.response
               ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-              : 'border-gray-300 bg-gray-50 dark:border-gray-600 dark:bg-gray-700'
+              : 'border-gray-300 bg-gray-50 dark:border-surface-overlay dark:bg-surface'
           }`}
           maxLength={2000}
         />

@@ -94,7 +94,7 @@ interface InfoRowProps {
 
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
       <View className="w-6 mt-0.5">{icon}</View>
       <View className="flex-1 ml-2">
         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
@@ -112,8 +112,8 @@ interface GridInfoItemProps {
 
 function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
   return (
-    <View className="flex-row items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center mr-2">
+    <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-lg">
+      <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mr-2">
         {icon}
       </View>
       <View className="flex-1">
@@ -189,9 +189,9 @@ export function StaffProfileModal({
     >
       <View>
           {/* 프로필 헤더 */}
-          <View className="items-center py-4 bg-gray-50 dark:bg-gray-800">
+          <View className="items-center py-4 bg-gray-50 dark:bg-surface">
             {isProfileLoading ? (
-              <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mb-2">
+              <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
                 <ActivityIndicator size="small" color="#6B7280" />
               </View>
             ) : (
@@ -221,7 +221,7 @@ export function StaffProfileModal({
           </View>
 
           {/* 근무 정보 */}
-          <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+          <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
             <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
               근무 정보
             </Text>
@@ -236,7 +236,7 @@ export function StaffProfileModal({
             )}
 
             {/* 근무 시간 */}
-            <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
               <View className="w-6 mt-0.5">
                 <ClockIcon size={16} color="#6B7280" />
               </View>
@@ -265,7 +265,7 @@ export function StaffProfileModal({
 
           {/* 프로필 정보 (사용자가 설정한 정보) */}
           {userProfile && (
-            <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+            <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
                 프로필 정보
               </Text>
@@ -361,7 +361,7 @@ export function StaffProfileModal({
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
                 비고
               </Text>
-              <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
                 <Text className="text-sm text-gray-700 dark:text-gray-300">
                   {staff.notes}
                 </Text>

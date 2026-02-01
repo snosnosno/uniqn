@@ -208,7 +208,7 @@ export const ScheduleCard = memo(function ScheduleCard({
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 {formatDate(schedule.date)}
               </Text>
-              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-gray-600" />
+              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 {formatTime(schedule.startTime)}
@@ -250,7 +250,7 @@ export const ScheduleCard = memo(function ScheduleCard({
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 {formatDate(schedule.date)}
               </Text>
-              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-gray-600" />
+              <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
                 {schedule.type === 'completed'

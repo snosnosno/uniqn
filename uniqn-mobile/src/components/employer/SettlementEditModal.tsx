@@ -94,7 +94,7 @@ function AccordionSection({
   children,
 }: AccordionSectionProps) {
   return (
-    <View className="border-b border-gray-100 dark:border-gray-700">
+    <View className="border-b border-gray-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
         className="flex-row items-center justify-between px-4 py-4 active:bg-gray-50 dark:active:bg-gray-800"
@@ -227,7 +227,7 @@ export function SettlementEditModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-3.5 rounded-xl bg-gray-100 dark:bg-gray-700 ${
+        className={`flex-1 py-3.5 rounded-xl bg-gray-100 dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >
@@ -259,7 +259,7 @@ export function SettlementEditModal({
     >
       <View>
         {/* 프로필 헤더 */}
-        <View className="flex-row items-center p-4 bg-gray-50 dark:bg-gray-800 -mx-5 -mt-5">
+        <View className="flex-row items-center p-4 bg-gray-50 dark:bg-surface -mx-5 -mt-5">
             <Avatar
               source={profilePhotoURL}
               name={displayName}
@@ -320,12 +320,12 @@ export function SettlementEditModal({
 
           {/* 정산 금액 요약 */}
           {settlement && (
-            <View className="px-4 py-4 bg-gray-50 dark:bg-gray-800">
+            <View className="px-4 py-4 bg-gray-50 dark:bg-surface">
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
                 정산 금액 요약
               </Text>
 
-              <View className="bg-white dark:bg-gray-900 rounded-lg p-4 flex-col gap-2">
+              <View className="bg-white dark:bg-surface-dark rounded-lg p-4 flex-col gap-2">
                 {/* 기본 급여 */}
                 <View className="flex-row items-center justify-between">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">
@@ -367,7 +367,7 @@ export function SettlementEditModal({
                 )}
 
                 {/* 구분선 */}
-                <View className="h-px bg-gray-200 dark:bg-gray-700 my-2" />
+                <View className="h-px bg-gray-200 dark:bg-surface my-2" />
 
                 {/* 세후 금액 */}
                 <View className="flex-row items-center justify-between">
@@ -394,7 +394,7 @@ export function SettlementEditModal({
               placeholderTextColor="#9CA3AF"
               multiline
               numberOfLines={2}
-              className="bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white"
+              className="bg-white dark:bg-surface border border-gray-300 dark:border-surface-overlay rounded-lg px-4 py-3 text-base text-gray-900 dark:text-white"
               accessibilityLabel="수정 사유"
             />
           </View>

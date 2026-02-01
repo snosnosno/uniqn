@@ -464,7 +464,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 4,
     borderLeftWidth: 4,
     borderTopLeftRadius: 12,
-    borderColor: '#3B82F6',
+    borderColor: '#A855F7',
   },
   cornerTopRight: {
     top: -2,
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 4,
     borderRightWidth: 4,
     borderTopRightRadius: 12,
-    borderColor: '#3B82F6',
+    borderColor: '#A855F7',
   },
   cornerBottomLeft: {
     bottom: -2,
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 4,
     borderLeftWidth: 4,
     borderBottomLeftRadius: 12,
-    borderColor: '#3B82F6',
+    borderColor: '#A855F7',
   },
   cornerBottomRight: {
     bottom: -2,
@@ -488,7 +488,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 4,
     borderRightWidth: 4,
     borderBottomRightRadius: 12,
-    borderColor: '#3B82F6',
+    borderColor: '#A855F7',
   },
   cornerSuccess: {
     borderColor: '#22C55E',

@@ -64,7 +64,7 @@ const ChipItem = memo(function ChipItem({
       className={`flex-row items-center px-4 py-2 rounded-full ${
         isSelected
           ? 'bg-primary-600 dark:bg-primary-700'
-          : 'bg-gray-100 dark:bg-gray-700'
+          : 'bg-gray-100 dark:bg-surface'
       }`}
     >
       <Text className="mr-1.5">{chip.icon}</Text>
@@ -107,7 +107,7 @@ export const PostingTypeChips = memo(function PostingTypeChips({
   );
 
   return (
-    <View className={`bg-white dark:bg-gray-800 ${className}`}>
+    <View className={`bg-white dark:bg-surface ${className}`}>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}

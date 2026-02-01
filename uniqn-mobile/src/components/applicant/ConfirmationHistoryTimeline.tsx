@@ -95,7 +95,7 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
   if (compact) {
     return (
       <View className="flex-row items-center">
-        <View className="w-2 h-2 rounded-full bg-blue-500 mr-2" />
+        <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
         <Text className="text-xs text-gray-500 dark:text-gray-400">
           지원 {formattedDate}
         </Text>
@@ -107,8 +107,8 @@ const OriginalApplicationItem = memo(function OriginalApplicationItem({
     <View className="flex-row mb-4">
       {/* 타임라인 라인 */}
       <View className="items-center mr-3">
-        <View className="w-3 h-3 rounded-full bg-blue-500" />
-        <View className="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700 mt-1" />
+        <View className="w-3 h-3 rounded-full bg-primary-500" />
+        <View className="w-0.5 flex-1 bg-gray-200 dark:bg-surface mt-1" />
       </View>
 
       {/* 내용 */}
@@ -168,7 +168,7 @@ const TimelineItem = memo(function TimelineItem({
           }`}
         />
         {!isLast && (
-          <View className="w-0.5 flex-1 bg-gray-200 dark:bg-gray-700 mt-1" />
+          <View className="w-0.5 flex-1 bg-gray-200 dark:bg-surface mt-1" />
         )}
       </View>
 
@@ -280,7 +280,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
   }
 
   return (
-    <View className={`bg-gray-50 dark:bg-gray-900 rounded-xl p-4 ${className}`}>
+    <View className={`bg-gray-50 dark:bg-surface-dark rounded-xl p-4 ${className}`}>
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">
@@ -301,7 +301,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
 
       {/* 통계 */}
       {history && history.length > 0 && (
-        <View className="flex-row mb-4 pb-4 border-b border-gray-200 dark:border-gray-700">
+        <View className="flex-row mb-4 pb-4 border-b border-gray-200 dark:border-surface-overlay">
           <View className="flex-1 items-center">
             <Text className="text-lg font-bold text-gray-900 dark:text-white">
               {history.length}
@@ -344,7 +344,7 @@ export const ConfirmationHistoryTimeline = memo(function ConfirmationHistoryTime
         ))}
         {remainingCount > 0 && (
           <View className="flex-row items-center">
-            <View className="w-3 h-3 rounded-full bg-gray-300 dark:bg-gray-600 mr-3" />
+            <View className="w-3 h-3 rounded-full bg-gray-300 dark:bg-surface-elevated mr-3" />
             <Text className="text-sm text-gray-400 dark:text-gray-500">
               +{remainingCount}개 더보기
             </Text>

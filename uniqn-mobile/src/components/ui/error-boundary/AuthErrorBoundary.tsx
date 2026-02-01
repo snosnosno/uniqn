@@ -39,7 +39,7 @@ function AuthErrorFallback({
   const isSessionExpired = error?.message.includes('expired') || error?.message.includes('만료');
 
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-white dark:bg-surface-dark">
       <View className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 items-center justify-center mb-6">
         <Text className="text-4xl">🔐</Text>
       </View>
@@ -55,7 +55,7 @@ function AuthErrorFallback({
       </Text>
 
       {env.isDevelopment && error && (
-        <View className="w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6">
+        <View className="w-full bg-gray-100 dark:bg-surface rounded-xl p-4 mb-6">
           <Text className="text-xs text-yellow-600 dark:text-yellow-400 font-mono">
             {error.message}
           </Text>
@@ -74,7 +74,7 @@ function AuthErrorFallback({
 
         <Pressable
           onPress={onRetry}
-          className="bg-gray-200 dark:bg-gray-700 px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
+          className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
           accessibilityRole="button"
           accessibilityLabel="다시 시도"
         >

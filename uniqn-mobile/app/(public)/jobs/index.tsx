@@ -32,7 +32,7 @@ const FILTERS = [
 
 function FilterBar({ selectedFilter, onFilterChange }: FilterBarProps) {
   return (
-    <View className="flex-row px-4 py-2 gap-2 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+    <View className="flex-row px-4 py-2 gap-2 bg-white dark:bg-surface-dark border-b border-gray-100 dark:border-surface">
       {FILTERS.map((filter) => {
         const isSelected = selectedFilter === filter.key;
         return (
@@ -43,7 +43,7 @@ function FilterBar({ selectedFilter, onFilterChange }: FilterBarProps) {
               px-4 py-2 rounded-full
               ${isSelected
                 ? 'bg-primary-500'
-                : 'bg-gray-100 dark:bg-gray-800'
+                : 'bg-gray-100 dark:bg-surface'
               }
             `}
           >
@@ -101,15 +101,15 @@ export default function JobListScreen() {
   }, []);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen
         options={{
           headerShown: true,
           title: '구인공고',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+            backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+          headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           headerTitleStyle: {
             fontWeight: '600',
           },
@@ -123,7 +123,7 @@ export default function JobListScreen() {
       />
 
       {/* 공고 목록 */}
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <JobList
           jobs={jobs}
           isLoading={isLoading}

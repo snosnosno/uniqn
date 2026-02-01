@@ -54,7 +54,7 @@ const statusConfig: Record<ScheduleType, { label: string; variant: 'warning' | '
 const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: string; textColor: string }> = {
   not_started: {
     label: '출근 전',
-    bgColor: 'bg-gray-100 dark:bg-gray-700',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     textColor: 'text-gray-600 dark:text-gray-400',
   },
   checked_in: {
@@ -64,8 +64,8 @@ const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: strin
   },
   checked_out: {
     label: '퇴근 완료',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    textColor: 'text-blue-700 dark:text-blue-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    textColor: 'text-primary-700 dark:text-primary-300',
   },
 };
 
@@ -246,7 +246,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         {group.dateRange.totalDays > 1 && (
           <Pressable
             onPress={toggleExpanded}
-            className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-gray-700"
+            className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-surface-overlay"
             accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
           >
             <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">
@@ -262,7 +262,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
         {/* 펼침 상태: 날짜별 출석 상태 */}
         {isExpanded && (
-          <View className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+          <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
             {group.dateStatuses.map((dateStatus, index) => {
               const attendance = attendanceConfig[dateStatus.status];
               return (
@@ -271,7 +271,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
                   onPress={() => handleDatePress(dateStatus.date, dateStatus.scheduleEventId)}
                   className={`flex-row items-center justify-between py-2 ${
                     index < group.dateStatuses.length - 1
-                      ? 'border-b border-gray-100 dark:border-gray-700/50'
+                      ? 'border-b border-gray-100 dark:border-surface-overlay/50'
                       : ''
                   }`}
                   accessibilityLabel={`${dateStatus.formattedDate} ${attendance.label}`}

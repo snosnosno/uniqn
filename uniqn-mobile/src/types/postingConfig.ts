@@ -236,14 +236,14 @@ export const POSTING_TYPE_BADGE_STYLES: Record<
   regular: {
     bgClass: 'bg-gray-100',
     textClass: 'text-gray-700',
-    darkBgClass: 'dark:bg-gray-800',
+    darkBgClass: 'dark:bg-surface',
     darkTextClass: 'dark:text-gray-300',
   },
   fixed: {
-    bgClass: 'bg-blue-100',
-    textClass: 'text-blue-700',
-    darkBgClass: 'dark:bg-blue-900/30',
-    darkTextClass: 'dark:text-blue-300',
+    bgClass: 'bg-primary-100',
+    textClass: 'text-primary-700',
+    darkBgClass: 'dark:bg-primary-900/30',
+    darkTextClass: 'dark:text-primary-300',
   },
   tournament: {
     bgClass: 'bg-purple-100',

@@ -67,7 +67,7 @@ export const AssignmentSelector = React.memo(function AssignmentSelector({
           const isChecked = selectedKeys.has(key);
 
           const bgClass = isChecked
-            ? (isDark ? 'bg-blue-900 border-blue-700' : 'bg-blue-100 border-blue-300')
+            ? (isDark ? 'bg-primary-900 border-primary-700' : 'bg-primary-100 border-primary-300')
             : (isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-100 border-gray-200');
 
           return (

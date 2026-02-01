@@ -201,7 +201,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: '#1A1625',
     marginBottom: 8,
   },
   description: {
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
   },
   versionValueNew: {
     fontSize: 13,
-    color: '#2563EB',
+    color: '#9333EA',
     fontWeight: '600',
   },
   buttonContainer: {
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
   updateButton: {
     width: '100%',
     height: 48,
-    backgroundColor: '#2563EB',
+    backgroundColor: '#9333EA',
     borderRadius: 12,
     justifyContent: 'center',
     alignItems: 'center',

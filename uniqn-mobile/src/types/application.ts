@@ -274,7 +274,7 @@ export const APPLICATION_STATUS_COLORS: Record<
     text: string;
   }
 > = {
-  applied: { bg: 'bg-blue-100 dark:bg-blue-900/30', text: 'text-blue-700 dark:text-blue-300' },
+  applied: { bg: 'bg-primary-100 dark:bg-primary-900/30', text: 'text-primary-700 dark:text-primary-300' },
   pending: {
     bg: 'bg-yellow-100 dark:bg-yellow-900/30',
     text: 'text-yellow-700 dark:text-yellow-300',
@@ -284,7 +284,7 @@ export const APPLICATION_STATUS_COLORS: Record<
     text: 'text-green-700 dark:text-green-300',
   },
   rejected: { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-700 dark:text-red-300' },
-  cancelled: { bg: 'bg-gray-100 dark:bg-gray-800', text: 'text-gray-500 dark:text-gray-400' },
+  cancelled: { bg: 'bg-gray-100 dark:bg-surface', text: 'text-gray-500 dark:text-gray-400' },
   completed: {
     bg: 'bg-emerald-100 dark:bg-emerald-900/30',
     text: 'text-emerald-700 dark:text-emerald-300',

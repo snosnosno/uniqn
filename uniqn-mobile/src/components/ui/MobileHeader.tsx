@@ -163,14 +163,14 @@ export function MobileHeader({
   // 배경 스타일
   const getBackgroundStyle = () => {
     if (transparent) return 'bg-transparent';
-    return 'bg-white dark:bg-gray-900';
+    return 'bg-white dark:bg-surface-dark';
   };
 
   // 테두리/그림자 스타일
   const getBorderStyle = () => {
     const styles: string[] = [];
     if (border && !transparent) {
-      styles.push('border-b border-gray-200 dark:border-gray-800');
+      styles.push('border-b border-gray-200 dark:border-surface-overlay');
     }
     if (shadow && !transparent) {
       styles.push('shadow-sm');
@@ -247,7 +247,7 @@ export function MobileHeader({
         {isSearchActive ? (
           // 검색 모드 UI
           <Animated.View className="flex-1 flex-row items-center" style={searchContainerStyle}>
-            <View className="flex-1 flex-row items-center bg-gray-100 dark:bg-gray-800 rounded-lg px-3 py-2">
+            <View className="flex-1 flex-row items-center bg-gray-100 dark:bg-surface-elevated rounded-lg px-3 py-2">
               <MagnifyingGlassIcon
                 size={20}
                 color={isDarkMode ? SEARCH_PLACEHOLDER_COLORS.dark : SEARCH_PLACEHOLDER_COLORS.light}
@@ -295,7 +295,7 @@ export function MobileHeader({
               {showBack ? (
                 <Pressable
                   onPress={handleBack}
-                  className="p-2 -ml-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+                  className="p-2 -ml-2 rounded-full active:bg-gray-100 dark:active:bg-surface-elevated"
                   accessibilityRole="button"
                   accessibilityLabel="뒤로 가기"
                 >
@@ -333,7 +333,7 @@ export function MobileHeader({
               {showSearchButton && onSearch && (
                 <Pressable
                   onPress={toggleSearchMode}
-                  className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+                  className="p-2 rounded-full active:bg-gray-100 dark:active:bg-surface-elevated"
                   accessibilityRole="button"
                   accessibilityLabel="검색"
                 >
@@ -379,7 +379,7 @@ export function HeaderAction({
       disabled={disabled}
       className={`
         p-2 rounded-full relative
-        ${disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-800'}
+        ${disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-surface-elevated'}
       `}
       accessibilityRole="button"
       accessibilityLabel={label}
@@ -422,7 +422,7 @@ export function LargeHeader({
 
   return (
     <View
-      className={`bg-white dark:bg-gray-900 px-4 pb-4 ${className || ''}`}
+      className={`bg-white dark:bg-surface-dark px-4 pb-4 ${className || ''}`}
       style={{ paddingTop: insets.top + 8 }}
       {...props}
     >

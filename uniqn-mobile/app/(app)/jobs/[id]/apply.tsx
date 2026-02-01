@@ -23,7 +23,7 @@ import type { Assignment, PreQuestionAnswer } from '@/types';
 
 function LoadingState() {
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
       <ActivityIndicator size="large" color="#6366f1" />
       <Text className="mt-4 text-gray-500 dark:text-gray-400">
         공고 정보를 불러오는 중...
@@ -38,7 +38,7 @@ function LoadingState() {
 
 function ErrorState({ message, onRetry }: { message: string; onRetry: () => void }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">😢</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         오류가 발생했습니다
@@ -59,7 +59,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 function AlreadyAppliedState() {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">✅</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         이미 지원한 공고입니다
@@ -148,15 +148,15 @@ export default function ApplyScreen() {
 
   if (isLoadingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '지원하기',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <LoadingState />
@@ -166,15 +166,15 @@ export default function ApplyScreen() {
 
   if (jobError || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '지원하기',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <ErrorState
@@ -188,15 +188,15 @@ export default function ApplyScreen() {
   // 이미 지원한 경우
   if (hasApplied(job.id)) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '지원하기',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <AlreadyAppliedState />
@@ -207,15 +207,15 @@ export default function ApplyScreen() {
   // 지원 완료 상태
   if (!showForm) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '지원 완료',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <View className="flex-1 items-center justify-center p-6">
@@ -234,7 +234,7 @@ export default function ApplyScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <Stack.Screen
         options={{
           headerShown: false,

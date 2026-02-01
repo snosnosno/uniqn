@@ -168,7 +168,7 @@ export const SalarySection = memo(function SalarySection({
     <View>
       {/* 전체 동일 급여 토글 (2개 이상 역할만) */}
       {roles.length > 1 && (
-        <View className="mb-4 flex-row items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+        <View className="mb-4 flex-row items-center justify-between p-3 bg-gray-50 dark:bg-surface rounded-lg">
           <View>
             <Text className="text-gray-900 dark:text-white font-medium">
               전체 동일 급여
@@ -209,7 +209,7 @@ export const SalarySection = memo(function SalarySection({
 
         {/* 역할이 없을 때 */}
         {roles.length === 0 && (
-          <View className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <View className="p-4 bg-gray-50 dark:bg-surface rounded-lg">
             <Text className="text-center text-gray-500 dark:text-gray-400 text-sm">
               역할 단계에서 역할을 먼저 추가해주세요
             </Text>

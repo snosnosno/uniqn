@@ -31,7 +31,7 @@ export default function SplashScreen() {
   }, [hasHydrated, user]);
 
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
       <View className="mb-12 items-center">
         <Text className="text-5xl font-extrabold tracking-wider text-primary-600 dark:text-primary-400">
           UNIQN
@@ -41,7 +41,7 @@ export default function SplashScreen() {
         </Text>
       </View>
 
-      <ActivityIndicator size="large" color="#3b82f6" className="my-6" />
+      <ActivityIndicator size="large" color="#A855F7" className="my-6" />
 
       <Text className="absolute bottom-12 text-sm text-gray-400 dark:text-gray-500">v1.0.0</Text>
     </View>

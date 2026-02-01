@@ -89,8 +89,8 @@ export const Checkbox = memo(function Checkbox({
   const getBoxStyle = () => {
     if (disabled) {
       return checked
-        ? 'bg-gray-300 dark:bg-gray-600 border-gray-300 dark:border-gray-600'
-        : 'bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600';
+        ? 'bg-gray-300 dark:bg-surface-elevated border-gray-300 dark:border-surface-overlay'
+        : 'bg-gray-100 dark:bg-surface border-gray-300 dark:border-surface-overlay';
     }
     if (error) {
       return checked
@@ -99,7 +99,7 @@ export const Checkbox = memo(function Checkbox({
     }
     return checked
       ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
-      : 'bg-transparent border-gray-300 dark:border-gray-500';
+      : 'bg-transparent border-gray-300 dark:border-surface-overlay';
   };
 
   return (

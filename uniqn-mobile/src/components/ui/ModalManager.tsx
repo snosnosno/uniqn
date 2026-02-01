@@ -18,7 +18,7 @@ import { Button } from './Button';
 function LoadingModalContent({ message }: { message?: string }) {
   return (
     <View className="items-center py-4">
-      <ActivityIndicator size="large" color="#3B82F6" />
+      <ActivityIndicator size="large" color="#A855F7" />
       {message && (
         <Text className="text-gray-600 dark:text-gray-300 mt-4 text-center">
           {message}

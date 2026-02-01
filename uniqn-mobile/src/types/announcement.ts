@@ -217,7 +217,7 @@ export const ANNOUNCEMENT_STATUS_CONFIG: Record<
   draft: {
     label: '초안',
     color: 'text-gray-700 dark:text-gray-300',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
   },
   published: {
     label: '발행됨',
@@ -254,12 +254,12 @@ export const ANNOUNCEMENT_PRIORITY_CONFIG: Record<
   0: {
     label: '일반',
     color: 'text-gray-700 dark:text-gray-300',
-    bgColor: 'bg-gray-100 dark:bg-gray-800',
+    bgColor: 'bg-gray-100 dark:bg-surface',
   },
   1: {
     label: '중요',
-    color: 'text-blue-700 dark:text-blue-300',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
+    color: 'text-primary-700 dark:text-primary-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
   },
   2: {
     label: '긴급',

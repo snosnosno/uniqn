@@ -54,7 +54,7 @@ interface FilterTabsProps {
 
 function FilterTabs({ selected, onChange, counts }: FilterTabsProps) {
   return (
-    <View className="mx-4 mb-4 flex-row rounded-lg bg-gray-100 p-1 dark:bg-gray-800">
+    <View className="mx-4 mb-4 flex-row rounded-lg bg-gray-100 p-1 dark:bg-surface">
       {FILTER_OPTIONS.map((option) => {
         const isSelected = selected === option.value;
         const count = counts[option.value] || 0;
@@ -394,7 +394,7 @@ const JobPostingCard = memo(function JobPostingCard({
           </View>
 
           {/* 오른쪽: 급여 + 수당 */}
-          <View className="flex-1 pl-3 border-l border-gray-100 dark:border-gray-700">
+          <View className="flex-1 pl-3 border-l border-gray-100 dark:border-surface-overlay">
             {/* 급여 - v2.0: roles[].salary 구조 */}
             {!posting.useSameSalary &&
             posting.roles?.some((r) => r.salary) ? (
@@ -434,9 +434,9 @@ const JobPostingCard = memo(function JobPostingCard({
       </Pressable>
 
       {/* 하단: 지원자 수 + QR/상태/액션 버튼 (별도 영역으로 분리) */}
-      <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+      <View className="flex-row items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
         <View className="flex-row items-center">
-          <UsersIcon size={14} color="#2563EB" />
+          <UsersIcon size={14} color="#9333EA" />
           <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
             지원 {posting.applicationCount || 0}
           </Text>
@@ -451,7 +451,7 @@ const JobPostingCard = memo(function JobPostingCard({
             accessibilityLabel="현장 QR 표시"
             accessibilityRole="button"
           >
-            <QrCodeIcon size={18} color="#2563EB" />
+            <QrCodeIcon size={18} color="#9333EA" />
           </Pressable>
           {posting.postingType === 'tournament' && posting.tournamentConfig?.approvalStatus && (
             <TournamentStatusBadge
@@ -468,7 +468,7 @@ const JobPostingCard = memo(function JobPostingCard({
             <Pressable
               onPress={() => onClose(posting.id)}
               disabled={isClosing}
-              className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 rounded-md active:opacity-70"
+              className="px-3 py-1.5 bg-gray-100 dark:bg-surface rounded-md active:opacity-70"
               accessibilityLabel={`${posting.title} 공고 마감하기`}
               accessibilityRole="button"
               accessibilityState={{ disabled: isClosing }}
@@ -504,10 +504,10 @@ const JobPostingCard = memo(function JobPostingCard({
 
 function NonEmployerView() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="내 공고" />
       <View className="flex-1 items-center justify-center px-6">
-        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800">
+        <View className="mb-6 h-24 w-24 items-center justify-center rounded-full bg-gray-100 dark:bg-surface">
           <BriefcaseIcon size={48} color="#9CA3AF" />
         </View>
         <Text className="mb-2 text-center text-xl font-bold text-gray-900 dark:text-white">
@@ -697,7 +697,7 @@ function EmployerView() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="내 공고" />
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
@@ -712,7 +712,7 @@ function EmployerView() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="내 공고" />
         <ErrorState
           title="공고 목록을 불러올 수 없습니다"
@@ -724,7 +724,7 @@ function EmployerView() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <TabHeader title="내 공고" />
 
       {/* 새 공고 작성 버튼 */}

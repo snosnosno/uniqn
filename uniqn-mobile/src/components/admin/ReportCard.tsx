@@ -76,7 +76,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 active:opacity-80"
+      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${typeLabel} 신고, ${SEVERITY_LABELS[report.severity]} 심각도, ${REPORT_STATUS_LABELS[report.status]} 상태`}
     >
@@ -124,7 +124,7 @@ export const ReportCard = React.memo(function ReportCard({ report, onPress }: Re
 
       {/* 관련 공고 (있는 경우) */}
       {report.jobPostingTitle && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-400 dark:text-gray-500" numberOfLines={1}>
             공고: {report.jobPostingTitle}
           </Text>

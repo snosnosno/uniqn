@@ -41,7 +41,7 @@ function CustomHeader({ title, onShare, isSharing }: CustomHeaderProps) {
   const { isDarkMode } = useThemeStore();
 
   return (
-    <View className="flex-row items-center px-4 py-3 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+    <View className="flex-row items-center px-4 py-3 bg-white dark:bg-surface-dark border-b border-gray-200 dark:border-surface-overlay">
       <Pressable
         onPress={() => router.back()}
         className="p-2 -ml-2 mr-2"
@@ -49,7 +49,7 @@ function CustomHeader({ title, onShare, isSharing }: CustomHeaderProps) {
       >
         <ChevronLeftIcon
           size={24}
-          color={isDarkMode ? '#ffffff' : '#111827'}
+          color={isDarkMode ? '#ffffff' : '#1A1625'}
         />
       </Pressable>
       <Text className="text-base font-semibold text-gray-900 dark:text-white">
@@ -92,7 +92,7 @@ function CustomHeader({ title, onShare, isSharing }: CustomHeaderProps) {
 
 function LoadingState() {
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
       <ActivityIndicator size="large" color="#6366f1" />
       <Text className="mt-4 text-gray-500 dark:text-gray-400">
         공고 정보를 불러오는 중...
@@ -113,7 +113,7 @@ function ErrorState({
   onRetry: () => void;
 }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">😢</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         오류가 발생했습니다
@@ -181,7 +181,7 @@ export default function AuthenticatedJobDetailScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <CustomHeader />
         <LoadingState />
@@ -191,7 +191,7 @@ export default function AuthenticatedJobDetailScreen() {
 
   if (error || !job) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <Stack.Screen options={{ headerShown: false }} />
         <CustomHeader />
         <ErrorState
@@ -231,7 +231,7 @@ export default function AuthenticatedJobDetailScreen() {
     !applicationStatus?.cancellationRequest;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <Stack.Screen options={{ headerShown: false }} />
       <CustomHeader title={job.title} onShare={handleShare} isSharing={isSharing} />
 
@@ -251,7 +251,7 @@ export default function AuthenticatedJobDetailScreen() {
       </ScrollView>
 
       {/* 하단 액션 버튼 */}
-      <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 p-4">
+      <View className="absolute bottom-0 left-0 right-0 bg-white dark:bg-surface border-t border-gray-200 dark:border-surface-overlay p-4">
         <SafeAreaView edges={['bottom']}>
           {alreadyApplied ? (
             <View className="items-center">

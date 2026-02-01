@@ -50,7 +50,7 @@ function SelectOptionItemComponent<T>({
       onPress={handlePress}
       disabled={item.disabled}
       className={`
-        px-4 py-4 border-b border-gray-100 dark:border-gray-700
+        px-4 py-4 border-b border-gray-100 dark:border-surface-overlay
         ${item.disabled ? 'opacity-50' : 'active:bg-gray-100 dark:active:bg-gray-700'}
         ${isSelected ? 'bg-primary-50 dark:bg-primary-900/20' : ''}
       `}
@@ -160,8 +160,8 @@ export function FormSelect<T = string>({
   // 스타일 계산
   const getBorderStyle = () => {
     if (error || errorMessage) return 'border-red-500';
-    if (disabled) return 'border-gray-200 dark:border-gray-700';
-    return 'border-gray-300 dark:border-gray-600';
+    if (disabled) return 'border-gray-200 dark:border-surface-overlay';
+    return 'border-gray-300 dark:border-surface-overlay';
   };
 
   const getTextStyle = () => {
@@ -189,7 +189,7 @@ export function FormSelect<T = string>({
         className={`
           flex-row items-center justify-between
           px-4 py-3 rounded-lg border
-          bg-white dark:bg-gray-800
+          bg-white dark:bg-surface
           ${getBorderStyle()}
           ${disabled ? 'opacity-50' : 'active:bg-gray-50 dark:active:bg-gray-700'}
         `}
@@ -223,13 +223,13 @@ export function FormSelect<T = string>({
         <View className="-mx-5 -mb-5">
           {/* 검색 입력 */}
           {showSearch && (
-            <View className="px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+            <View className="px-4 py-2 border-b border-gray-200 dark:border-surface-overlay">
               <TextInput
                 value={searchQuery}
                 onChangeText={setSearchQuery}
                 placeholder={searchPlaceholder}
                 placeholderTextColor="#9CA3AF"
-                className="px-3 py-2 bg-gray-100 dark:bg-gray-700 rounded-lg text-base text-gray-900 dark:text-white"
+                className="px-3 py-2 bg-gray-100 dark:bg-surface rounded-lg text-base text-gray-900 dark:text-white"
                 autoCapitalize="none"
                 autoCorrect={false}
                 accessibilityLabel="옵션 검색"

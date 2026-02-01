@@ -89,7 +89,7 @@ function MonthNavigator({
   onToggleView,
 }: MonthNavigatorProps) {
   return (
-    <View className="flex-row items-center justify-between bg-white dark:bg-gray-800 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+    <View className="flex-row items-center justify-between bg-white dark:bg-surface px-4 py-3 border-b border-gray-200 dark:border-surface-overlay">
       <Pressable
         onPress={onPrev}
         className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-700"
@@ -160,7 +160,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
           ))}
         </View>
         {/* 구분선 */}
-        <View className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
+        <View className="h-px bg-gray-200 dark:bg-surface my-3" />
         {/* 2행: 수익 스켈레톤 */}
         <View className="flex-row justify-between items-center px-2">
           <Skeleton width={40} height={16} />
@@ -183,7 +183,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
             {stats.upcomingSchedules}
           </Text>
         </View>
-        <View className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+        <View className="h-8 w-px bg-gray-200 dark:bg-surface" />
         {/* 확정 (confirmed) */}
         <View className="items-center">
           <Text className="text-xs text-gray-500 dark:text-gray-400">확정</Text>
@@ -191,7 +191,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
             {stats.confirmedSchedules}
           </Text>
         </View>
-        <View className="h-8 w-px bg-gray-200 dark:bg-gray-700" />
+        <View className="h-8 w-px bg-gray-200 dark:bg-surface" />
         {/* 완료 (completed) */}
         <View className="items-center">
           <Text className="text-xs text-gray-500 dark:text-gray-400">완료</Text>
@@ -201,7 +201,7 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
         </View>
       </View>
       {/* 구분선 */}
-      <View className="h-px bg-gray-200 dark:bg-gray-700 my-3" />
+      <View className="h-px bg-gray-200 dark:bg-surface my-3" />
       {/* 2행: 수익 */}
       <View className="flex-row justify-between items-center px-2">
         <Text className="text-sm text-gray-500 dark:text-gray-400">수익</Text>
@@ -388,7 +388,7 @@ export default function ScheduleScreen() {
   // 에러 상태
   if (error && !isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="내 스케줄" />
         <View className="flex-1 justify-center items-center p-4">
           <ErrorState
@@ -402,7 +402,7 @@ export default function ScheduleScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="내 스케줄" />
 

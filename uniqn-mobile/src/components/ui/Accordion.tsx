@@ -178,7 +178,7 @@ export function AccordionGroup({
               onToggle: (expanded: boolean) => handleToggle(index, expanded),
             })}
             {showDivider && !isLast && (
-              <View className="h-px bg-gray-200 dark:bg-gray-700" />
+              <View className="h-px bg-gray-200 dark:bg-surface" />
             )}
           </View>
         );

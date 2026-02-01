@@ -45,7 +45,7 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
           className={`p-4 rounded-lg border ${
             selectedReason === key
               ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/20'
-              : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+              : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
           }`}
         >
           <View className="flex-row items-center">
@@ -53,7 +53,7 @@ function ReasonSelect({ selectedReason, onSelect }: ReasonSelectProps) {
               className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
                 selectedReason === key
                   ? 'border-primary-500 bg-primary-500'
-                  : 'border-gray-300 dark:border-gray-600'
+                  : 'border-gray-300 dark:border-surface-overlay'
               }`}
             >
               {selectedReason === key && (
@@ -140,15 +140,15 @@ export default function DeleteAccountScreen() {
   const canSubmit = selectedReason && password.length >= 8;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <Stack.Screen
         options={{
           headerShown: true,
           title: '회원탈퇴',
           headerStyle: {
-            backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+            backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
           },
-          headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+          headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
         }}
       />
 

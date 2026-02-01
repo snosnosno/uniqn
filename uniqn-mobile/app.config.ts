@@ -155,7 +155,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'expo-notifications',
       {
         icon: './assets/icon.png',
-        color: '#3B82F6',
+        color: '#A855F7',
         // Android 알림 채널은 pushNotificationService.ts에서 동적 생성
       },
     ],

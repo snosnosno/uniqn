@@ -57,7 +57,7 @@ export default function AdminInquiriesScreen() {
     if (!hasMore) return null;
     return (
       <View className="items-center py-4">
-        <ActivityIndicator size="small" color="#3B82F6" />
+        <ActivityIndicator size="small" color="#A855F7" />
       </View>
     );
   }, [hasMore]);
@@ -80,9 +80,9 @@ export default function AdminInquiriesScreen() {
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       {/* 통계 */}
-      <View className="border-b border-gray-200 bg-white px-4 py-3 dark:border-gray-700 dark:bg-gray-800">
+      <View className="border-b border-gray-200 bg-white px-4 py-3 dark:border-surface-overlay dark:bg-surface">
         <View className="flex-row items-center justify-between">
           <Text className="text-sm text-gray-500 dark:text-gray-400">미답변 문의</Text>
           <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
@@ -92,7 +92,7 @@ export default function AdminInquiriesScreen() {
       </View>
 
       {/* 필터 탭 */}
-      <View className="border-b border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+      <View className="border-b border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface">
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
@@ -107,7 +107,7 @@ export default function AdminInquiriesScreen() {
                 className={`rounded-full px-4 py-2 ${
                   isSelected
                     ? 'bg-primary-500 dark:bg-primary-600'
-                    : 'bg-gray-100 dark:bg-gray-700'
+                    : 'bg-gray-100 dark:bg-surface'
                 }`}
               >
                 <Text
@@ -126,7 +126,7 @@ export default function AdminInquiriesScreen() {
       {/* 문의 목록 */}
       {isLoading && inquiries.length === 0 ? (
         <View className="flex-1 items-center justify-center">
-          <ActivityIndicator size="large" color="#3B82F6" />
+          <ActivityIndicator size="large" color="#A855F7" />
         </View>
       ) : (
         <FlashList
@@ -144,7 +144,7 @@ export default function AdminInquiriesScreen() {
             <RefreshControl
               refreshing={isLoading}
               onRefresh={refetch}
-              tintColor="#3B82F6"
+              tintColor="#A855F7"
             />
           }
         />

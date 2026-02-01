@@ -44,8 +44,8 @@ export const RoleCheckbox = memo(function RoleCheckbox({
           isSelected
             ? 'bg-primary-500 border-primary-500'
             : isFilled
-            ? 'bg-gray-200 border-gray-300 dark:bg-gray-700 dark:border-gray-600'
-            : 'border-gray-300 dark:border-gray-600'
+            ? 'bg-gray-200 border-gray-300 dark:bg-surface dark:border-surface-overlay'
+            : 'border-gray-300 dark:border-surface-overlay'
         }`}
       >
         {isSelected && <Text className="text-white text-xs font-bold">✓</Text>}

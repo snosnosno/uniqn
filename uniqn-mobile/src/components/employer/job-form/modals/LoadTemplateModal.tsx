@@ -73,7 +73,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
   };
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 mb-3">
+    <View className="bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay p-4 mb-3">
       {/* 헤더 */}
       <View className="flex-row items-start justify-between mb-2">
         <View className="flex-1 mr-2">
@@ -110,7 +110,7 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       {/* 태그 */}
       <View className="flex-row flex-wrap gap-2 mb-3">
         {/* 지역 */}
-        <View className="bg-gray-100 dark:bg-gray-700 px-2.5 py-1 rounded-md">
+        <View className="bg-gray-100 dark:bg-surface px-2.5 py-1 rounded-md">
           <Text className="text-xs text-gray-600 dark:text-gray-300">{location}</Text>
         </View>
 
@@ -123,8 +123,8 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
 
         {/* 공고 타입 */}
         {templateData?.postingType && (
-          <View className="bg-blue-100 dark:bg-blue-900/40 px-2.5 py-1 rounded-md">
-            <Text className="text-xs text-blue-700 dark:text-blue-300">
+          <View className="bg-primary-100 dark:bg-primary-900/40 px-2.5 py-1 rounded-md">
+            <Text className="text-xs text-primary-700 dark:text-primary-300">
               {templateData.postingType === 'regular'
                 ? '지원'
                 : templateData.postingType === 'fixed'
@@ -138,14 +138,14 @@ function TemplateCard({ template, onLoad, onDelete, isLoading, isDeleting }: Tem
       </View>
 
       {/* 푸터 */}
-      <View className="flex-row items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+      <View className="flex-row items-center justify-between pt-2 border-t border-gray-100 dark:border-surface-overlay">
         <Text className="text-xs text-gray-400 dark:text-gray-500">
           {formatDate(createdAt)} 생성 {usageCount ? `/ ${usageCount}회 사용` : ''}
         </Text>
         <Pressable
           onPress={onLoad}
           disabled={isLoading}
-          className={`px-4 py-2 rounded-lg ${isLoading ? 'bg-gray-300' : 'bg-blue-600'}`}
+          className={`px-4 py-2 rounded-lg ${isLoading ? 'bg-gray-300' : 'bg-primary-600'}`}
           accessibilityRole="button"
           accessibilityLabel="템플릿 불러오기"
         >
@@ -228,7 +228,7 @@ export function LoadTemplateModal({
         {/* 로딩 상태 */}
         {templatesLoading && (
           <View className="items-center justify-center py-12">
-            <ActivityIndicator size="large" color="#3B82F6" />
+            <ActivityIndicator size="large" color="#A855F7" />
             <Text className="text-gray-500 dark:text-gray-400 mt-3">
               템플릿 불러오는 중...
             </Text>

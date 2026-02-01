@@ -64,7 +64,7 @@ const SelectOption = memo(function SelectOption({
       className={`px-4 py-3 rounded-lg border mb-2 ${
         isSelected
           ? 'bg-primary-50 border-primary-500 dark:bg-primary-900/20 dark:border-primary-400'
-          : 'bg-white border-gray-200 dark:bg-gray-800 dark:border-gray-700'
+          : 'bg-white border-gray-200 dark:bg-surface dark:border-surface-overlay'
       } ${disabled ? 'opacity-50' : 'active:opacity-80'}`}
     >
       <View className="flex-row items-center">
@@ -72,7 +72,7 @@ const SelectOption = memo(function SelectOption({
           className={`w-5 h-5 rounded-full border-2 mr-3 items-center justify-center ${
             isSelected
               ? 'border-primary-500 bg-primary-500'
-              : 'border-gray-300 dark:border-gray-600'
+              : 'border-gray-300 dark:border-surface-overlay'
           }`}
         >
           {isSelected && (
@@ -119,7 +119,7 @@ const QuestionItem = memo(function QuestionItem({
 
   const borderColor = hasError
     ? 'border-red-500 dark:border-red-400'
-    : 'border-gray-200 dark:border-gray-700';
+    : 'border-gray-200 dark:border-surface-overlay';
 
   return (
     <View className="mb-6">
@@ -145,7 +145,7 @@ const QuestionItem = memo(function QuestionItem({
           placeholder="답변을 입력해주세요"
           placeholderTextColor="#9CA3AF"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-gray-800 border ${borderColor} rounded-lg px-4 py-3 text-gray-900 dark:text-white`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-gray-900 dark:text-white`}
         />
       )}
 
@@ -160,7 +160,7 @@ const QuestionItem = memo(function QuestionItem({
           numberOfLines={4}
           textAlignVertical="top"
           accessibilityLabel={`${question.question} 답변 입력`}
-          className={`bg-white dark:bg-gray-800 border ${borderColor} rounded-lg px-4 py-3 text-gray-900 dark:text-white min-h-[100px]`}
+          className={`bg-white dark:bg-surface border ${borderColor} rounded-lg px-4 py-3 text-gray-900 dark:text-white min-h-[100px]`}
         />
       )}
 
@@ -240,7 +240,7 @@ export const PreQuestionForm = memo(function PreQuestionForm({
   ).length;
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4">
+    <View className="bg-white dark:bg-surface rounded-xl p-4">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-lg font-semibold text-gray-900 dark:text-white">

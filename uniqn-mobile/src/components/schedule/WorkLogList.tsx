@@ -79,7 +79,7 @@ const PAYROLL_STATUS_CONFIG: Record<
   { label: string; color: string; bgColor: string }
 > = {
   pending: { label: '정산 대기', color: 'text-yellow-700 dark:text-yellow-300', bgColor: 'bg-yellow-100 dark:bg-yellow-900/30' },
-  processing: { label: '정산 중', color: 'text-blue-700 dark:text-blue-300', bgColor: 'bg-blue-100 dark:bg-blue-900/30' },
+  processing: { label: '정산 중', color: 'text-primary-700 dark:text-primary-300', bgColor: 'bg-primary-100 dark:bg-primary-900/30' },
   completed: { label: '정산 완료', color: 'text-green-700 dark:text-green-300', bgColor: 'bg-green-100 dark:bg-green-900/30' },
 };
 
@@ -129,7 +129,7 @@ function calculateWorkHours(
 /** 스켈레톤 아이템 */
 function WorkLogSkeleton() {
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between mb-3">
         <Skeleton className="h-5 w-24" />
         <Skeleton className="h-5 w-16 rounded-full" />
@@ -170,7 +170,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 border border-gray-100 dark:border-gray-700 active:opacity-80"
+      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 border border-gray-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${formatDate(workLog.date)} ${roleLabel} 근무 기록`}
     >
@@ -239,7 +239,7 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
 
       {/* 메모 (있는 경우) */}
       {workLog.notes && (
-        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-xs text-gray-500 dark:text-gray-400" numberOfLines={2}>
             📝 {workLog.notes}
           </Text>

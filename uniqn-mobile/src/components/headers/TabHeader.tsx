@@ -48,7 +48,7 @@ export function TabHeader({
   const unreadCount = useUnreadCountRealtime();
 
   return (
-    <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-gray-800">
+    <View className="flex-row items-center justify-between bg-white px-4 py-3 dark:bg-surface">
       {/* 제목 */}
       <Text className="text-xl font-bold text-gray-900 dark:text-gray-100">
         {title}

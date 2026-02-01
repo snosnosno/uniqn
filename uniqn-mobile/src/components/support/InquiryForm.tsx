@@ -51,7 +51,7 @@ export function InquiryForm({
   const getInputStyle = (hasError: boolean) => ({
     backgroundColor: hasError
       ? isDark ? 'rgba(127, 29, 29, 0.2)' : '#FEF2F2'
-      : isDark ? '#1F2937' : '#FFFFFF',
+      : isDark ? '#1A1625' : '#FFFFFF',
   });
 
   const validateField = useCallback((field: string, value: string) => {
@@ -149,7 +149,7 @@ export function InquiryForm({
             className={`rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
               errors.subject
                 ? 'border-error-500'
-                : 'border-gray-300 dark:border-gray-600'
+                : 'border-gray-300 dark:border-surface-overlay'
             }`}
             style={getInputStyle(!!errors.subject)}
             maxLength={100}
@@ -181,7 +181,7 @@ export function InquiryForm({
             className={`min-h-[200px] rounded-lg border px-4 py-3 text-base text-gray-900 dark:text-gray-100 ${
               errors.message
                 ? 'border-error-500'
-                : 'border-gray-300 dark:border-gray-600'
+                : 'border-gray-300 dark:border-surface-overlay'
             }`}
             style={getInputStyle(!!errors.message)}
             maxLength={2000}

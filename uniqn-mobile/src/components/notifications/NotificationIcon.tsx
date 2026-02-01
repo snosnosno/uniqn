@@ -131,7 +131,7 @@ const typeEmojis: Record<NotificationType, string> = {
 const categoryColors: Record<NotificationCategory, { bg: string; icon: string }> = {
   [NotificationCategory.APPLICATION]: {
     bg: 'bg-primary-100 dark:bg-primary-900/30',
-    icon: '#3b82f6', // primary-500
+    icon: '#A855F7', // primary-500
   },
   [NotificationCategory.ATTENDANCE]: {
     bg: 'bg-success-100 dark:bg-success-900/30',
@@ -142,11 +142,11 @@ const categoryColors: Record<NotificationCategory, { bg: string; icon: string }>
     icon: '#f59e0b', // warning-500
   },
   [NotificationCategory.JOB]: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    icon: '#3b82f6', // blue-500
+    bg: 'bg-primary-100 dark:bg-primary-900/30',
+    icon: '#A855F7', // primary-500
   },
   [NotificationCategory.SYSTEM]: {
-    bg: 'bg-gray-100 dark:bg-gray-800',
+    bg: 'bg-gray-100 dark:bg-surface',
     icon: '#6b7280', // gray-500
   },
   [NotificationCategory.ADMIN]: {

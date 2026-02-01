@@ -2,7 +2,7 @@
  * UNIQN Mobile - 색상 상수 정의
  *
  * @description 아이콘 및 UI 요소의 색상 중앙 관리
- * @version 1.0.0
+ * @version 2.0.0 - 프리미엄 퍼플/골드 리브랜딩
  */
 
 // ============================================================================
@@ -81,7 +81,7 @@ export const STATUS_COLORS = {
   success: '#22C55E', // green-500
   warning: '#F59E0B', // amber-500
   error: '#EF4444', // red-500
-  info: '#3B82F6', // blue-500
+  info: '#A855F7', // primary-500 (퍼플)
 } as const;
 
 // ============================================================================
@@ -89,20 +89,53 @@ export const STATUS_COLORS = {
 // ============================================================================
 
 /**
- * 프라이머리 색상
+ * 프라이머리 색상 (퍼플)
  */
 export const PRIMARY_COLORS = {
-  50: '#EFF6FF',
-  100: '#DBEAFE',
-  200: '#BFDBFE',
-  300: '#93C5FD',
-  400: '#60A5FA',
-  500: '#3B82F6',
-  600: '#2563EB',
-  700: '#1D4ED8',
-  800: '#1E40AF',
-  900: '#1E3A8A',
+  50: '#FAF5FF',
+  100: '#F3E8FF',
+  200: '#E9D5FF',
+  300: '#D8B4FE',
+  400: '#C084FC',
+  500: '#A855F7',
+  600: '#9333EA',
+  700: '#7C3AED',
+  800: '#6B21A8',
+  900: '#581C87',
 } as const;
+
+/**
+ * 악센트 색상 (골드) - 프리미엄 강조용
+ */
+export const ACCENT_COLORS = {
+  50: '#FFFBEB',
+  100: '#FEF3C7',
+  200: '#FDE68A',
+  300: '#FCD34D',
+  400: '#FBBF24',
+  500: '#D4AF37',
+  600: '#B8860B',
+  700: '#92400E',
+} as const;
+
+/**
+ * 서피스 색상 (다크 퍼플 배경)
+ */
+export const SURFACE_COLORS = {
+  DEFAULT: '#1A1625',
+  dark: '#0D0B14',
+  elevated: '#2D2438',
+  overlay: '#3D3350',
+} as const;
+
+/**
+ * 서피스 색상 반환 헬퍼
+ */
+export function getSurfaceColor(
+  variant: keyof typeof SURFACE_COLORS = 'DEFAULT'
+): string {
+  return SURFACE_COLORS[variant];
+}
 
 // ============================================================================
 // Badge 색상 (v1.1.0)
@@ -132,9 +165,9 @@ export const BADGE_COLORS: Record<
     dot: '#6B7280', // gray-500
   },
   primary: {
-    background: { light: '#DBEAFE', dark: 'rgba(30, 58, 138, 0.3)' }, // primary-100 / primary-900/30
-    text: { light: '#1D4ED8', dark: '#93C5FD' }, // primary-700 / primary-300
-    dot: '#3B82F6', // primary-500
+    background: { light: '#F3E8FF', dark: 'rgba(88, 28, 135, 0.3)' }, // primary-100 / primary-900/30
+    text: { light: '#7C3AED', dark: '#D8B4FE' }, // primary-700 / primary-300
+    dot: '#A855F7', // primary-500
   },
   secondary: {
     background: { light: '#E5E7EB', dark: '#4B5563' }, // gray-200 / gray-600
@@ -188,9 +221,9 @@ export function getBadgeColor(
  */
 export const BADGE_CLASSES = {
   container: {
-    default: 'bg-gray-100 dark:bg-gray-700',
+    default: 'bg-gray-100 dark:bg-surface',
     primary: 'bg-primary-100 dark:bg-primary-900/30',
-    secondary: 'bg-gray-200 dark:bg-gray-600',
+    secondary: 'bg-gray-200 dark:bg-surface-elevated',
     success: 'bg-success-100 dark:bg-success-700/30',
     warning: 'bg-warning-100 dark:bg-warning-700/30',
     error: 'bg-error-100 dark:bg-error-700/30',
@@ -269,8 +302,8 @@ export const TEXT_COLORS = {
   },
   /** 링크 텍스트 */
   link: {
-    light: '#2563EB', // blue-600
-    dark: '#60A5FA', // blue-400
+    light: '#9333EA', // primary-600
+    dark: '#C084FC', // primary-400
   },
   /** 에러 텍스트 */
   error: {
@@ -306,7 +339,7 @@ export const TEXT_CLASSES = {
   secondary: 'text-gray-600 dark:text-gray-300',
   tertiary: 'text-gray-500 dark:text-gray-400',
   muted: 'text-gray-400 dark:text-gray-500',
-  link: 'text-blue-600 dark:text-blue-400',
+  link: 'text-primary-600 dark:text-primary-400',
   error: 'text-red-600 dark:text-red-400',
   success: 'text-green-600 dark:text-green-400',
 } as const;
@@ -331,8 +364,8 @@ export const CARD_COLORS = {
   },
   /** 하이라이트 카드 */
   highlighted: {
-    light: '#EFF6FF', // blue-50
-    dark: 'rgba(30, 64, 175, 0.2)', // blue-800/20
+    light: '#FAF5FF', // primary-50
+    dark: 'rgba(107, 33, 168, 0.2)', // primary-800/20
   },
   /** 성공 상태 카드 */
   success: {
@@ -369,9 +402,9 @@ export function getCardColor(
  * 카드 NativeWind 클래스
  */
 export const CARD_CLASSES = {
-  default: 'bg-white dark:bg-gray-800',
-  elevated: 'bg-white dark:bg-gray-700',
-  highlighted: 'bg-blue-50 dark:bg-blue-800/20',
+  default: 'bg-white dark:bg-surface',
+  elevated: 'bg-white dark:bg-surface-elevated',
+  highlighted: 'bg-primary-50 dark:bg-primary-800/20',
   success: 'bg-green-50 dark:bg-green-800/20',
   warning: 'bg-amber-50 dark:bg-amber-800/20',
   error: 'bg-red-50 dark:bg-red-800/20',
@@ -394,8 +427,8 @@ export const BORDER_COLORS = {
     dark: '#4B5563', // gray-600
   },
   focus: {
-    light: '#3B82F6', // blue-500
-    dark: '#60A5FA', // blue-400
+    light: '#A855F7', // primary-500
+    dark: '#C084FC', // primary-400
   },
   error: {
     light: '#EF4444', // red-500
@@ -417,9 +450,9 @@ export function getBorderColor(
  * 보더 NativeWind 클래스
  */
 export const BORDER_CLASSES = {
-  default: 'border-gray-200 dark:border-gray-700',
-  light: 'border-gray-100 dark:border-gray-600',
-  focus: 'border-blue-500 dark:border-blue-400',
+  default: 'border-gray-200 dark:border-surface-overlay',
+  light: 'border-gray-100 dark:border-surface-overlay',
+  focus: 'border-primary-500 dark:border-primary-400',
   error: 'border-red-500 dark:border-red-400',
 } as const;
 
@@ -433,7 +466,7 @@ export const BORDER_CLASSES = {
 export const CHART_COLORS = {
   background: {
     light: '#FFFFFF',
-    dark: '#1F2937', // gray-800
+    dark: '#1A1625', // surface
   },
   text: {
     light: '#111827', // gray-900
@@ -441,11 +474,11 @@ export const CHART_COLORS = {
   },
   grid: {
     light: '#E5E7EB', // gray-200
-    dark: '#374151', // gray-700
+    dark: '#3D3350', // surface-overlay
   },
   series: {
-    light: ['#3B82F6', '#22C55E', '#F59E0B', '#EF4444', '#8B5CF6'],
-    dark: ['#60A5FA', '#4ADE80', '#FBBF24', '#F87171', '#A78BFA'],
+    light: ['#A855F7', '#22C55E', '#D4AF37', '#EF4444', '#A855F7'],
+    dark: ['#C084FC', '#4ADE80', '#FBBF24', '#F87171', '#C084FC'],
   },
 } as const;
 
@@ -489,8 +522,8 @@ export function getPlaceholderColor(isDarkMode: boolean): string {
  */
 export const LOADING_COLORS = {
   primary: {
-    light: '#3B82F6', // primary-500
-    dark: '#60A5FA', // primary-400
+    light: '#A855F7', // primary-500
+    dark: '#C084FC', // primary-400
   },
   secondary: {
     light: '#6B7280', // gray-500

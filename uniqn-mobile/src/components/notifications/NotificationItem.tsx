@@ -80,11 +80,11 @@ export const NotificationItem = memo(function NotificationItem({
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={notification.link ? '탭하면 관련 페이지로 이동합니다' : undefined}
       className={`
-        px-4 py-3 border-b border-gray-100 dark:border-gray-800
+        px-4 py-3 border-b border-gray-100 dark:border-surface
         active:bg-gray-50 dark:active:bg-gray-800
         ${notification.isRead
-          ? 'bg-white dark:bg-gray-900'
-          : 'bg-blue-50 dark:bg-blue-900/20'
+          ? 'bg-white dark:bg-surface-dark'
+          : 'bg-primary-50 dark:bg-primary-900/20'
         }
       `}
     >
@@ -171,20 +171,20 @@ export const NotificationItem = memo(function NotificationItem({
  */
 export function NotificationItemSkeleton() {
   return (
-    <View className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+    <View className="px-4 py-3 border-b border-gray-100 dark:border-surface">
       <View className="flex-row items-start">
         {/* 아이콘 스켈레톤 */}
-        <View className="w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 animate-pulse mr-3" />
+        <View className="w-10 h-10 rounded-full bg-gray-200 dark:bg-surface animate-pulse mr-3" />
 
         {/* 컨텐츠 스켈레톤 */}
         <View className="flex-1">
           {/* 제목 스켈레톤 */}
-          <View className="h-4 w-3/4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <View className="h-4 w-3/4 bg-gray-200 dark:bg-surface rounded animate-pulse" />
           {/* 본문 스켈레톤 */}
-          <View className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-2" />
-          <View className="h-3 w-2/3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-1" />
+          <View className="h-3 w-full bg-gray-200 dark:bg-surface rounded animate-pulse mt-2" />
+          <View className="h-3 w-2/3 bg-gray-200 dark:bg-surface rounded animate-pulse mt-1" />
           {/* 시간 스켈레톤 */}
-          <View className="h-2 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mt-2" />
+          <View className="h-2 w-16 bg-gray-200 dark:bg-surface rounded animate-pulse mt-2" />
         </View>
       </View>
     </View>

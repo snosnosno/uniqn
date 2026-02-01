@@ -41,7 +41,7 @@ export const AllowanceInput = memo(function AllowanceInput({
 
       <Card variant="outlined" padding="md">
         {/* 보장시간 */}
-        <View className="pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
+        <View className="pb-3 mb-3 border-b border-gray-100 dark:border-surface-overlay">
           <View className="flex-row items-center justify-between">
             <View className="flex-row items-center flex-1">
               <Text className="text-xl mr-2">⏰</Text>
@@ -56,7 +56,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                 value={allowances?.guaranteedHours ? String(allowances.guaranteedHours) : ''}
                 onChangeText={onGuaranteedHoursChange}
                 keyboardType="numeric"
-                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                className="w-16 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"
               />
               <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
                 시간
@@ -76,7 +76,7 @@ export const AllowanceInput = memo(function AllowanceInput({
               key={allowance.key}
               className={`${
                 index < ALLOWANCE_TYPES.length - 1
-                  ? 'pb-3 mb-3 border-b border-gray-100 dark:border-gray-700'
+                  ? 'pb-3 mb-3 border-b border-gray-100 dark:border-surface-overlay'
                   : ''
               }`}
             >
@@ -118,7 +118,7 @@ export const AllowanceInput = memo(function AllowanceInput({
                     value={value && value > 0 ? formatCurrency(value) : ''}
                     onChangeText={(v) => onAllowanceChange(allowance.key, v)}
                     keyboardType="numeric"
-                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white"
+                    className="w-32 py-2 px-2 text-right text-sm rounded-md bg-gray-50 dark:bg-surface text-gray-900 dark:text-white"
                   />
                   <Text className="text-gray-600 dark:text-gray-400 ml-2 text-sm">
                     원

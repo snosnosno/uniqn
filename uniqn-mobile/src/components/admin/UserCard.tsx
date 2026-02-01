@@ -81,7 +81,7 @@ export const UserCard = React.memo(function UserCard({
     return (
       <Pressable
         onPress={handlePress}
-        className="flex-row items-center py-3 px-4 bg-white dark:bg-gray-800 active:bg-gray-50 dark:active:bg-gray-700"
+        className="flex-row items-center py-3 px-4 bg-white dark:bg-surface active:bg-gray-50 dark:active:bg-gray-700"
       >
         <Avatar name={user.name} source={user.photoURL} size="sm" />
         <View className="flex-1 ml-3">
@@ -164,7 +164,7 @@ export const UserCard = React.memo(function UserCard({
       </View>
 
       {/* 상태 표시 */}
-      <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+      <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
         {/* 활성 상태 */}
         <View className="flex-row items-center mr-4">
           <View
@@ -195,7 +195,7 @@ export const UserCard = React.memo(function UserCard({
         {showActions && onEdit && (
           <Pressable
             onPress={handleEdit}
-            className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+            className="ml-auto px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
           >
             <Text className="text-xs font-medium text-gray-700 dark:text-gray-300">
               수정

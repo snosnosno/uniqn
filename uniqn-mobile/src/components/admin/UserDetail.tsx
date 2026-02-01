@@ -159,12 +159,12 @@ export const UserDetail = React.memo(function UserDetail({
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      className="flex-1 bg-gray-50 dark:bg-surface-dark"
       contentContainerStyle={{ paddingBottom: 100 }}
       showsVerticalScrollIndicator={false}
     >
       {/* 프로필 헤더 */}
-      <View className="bg-white dark:bg-gray-800 px-4 py-6 items-center border-b border-gray-100 dark:border-gray-700">
+      <View className="bg-white dark:bg-surface px-4 py-6 items-center border-b border-gray-100 dark:border-surface-overlay">
         <Avatar
           name={user.name}
           source={user.photoURL}
@@ -202,7 +202,7 @@ export const UserDetail = React.memo(function UserDetail({
 
         {/* 통계 */}
         {(user.totalApplications !== undefined || user.completedJobs !== undefined) && (
-          <View className="flex-row mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+          <View className="flex-row mt-4 pt-4 border-t border-gray-100 dark:border-surface-overlay">
             <View className="items-center px-6">
               <Text className="text-lg font-bold text-gray-900 dark:text-white">
                 {user.totalApplications || 0}
@@ -211,7 +211,7 @@ export const UserDetail = React.memo(function UserDetail({
                 총 지원
               </Text>
             </View>
-            <View className="items-center px-6 border-l border-gray-200 dark:border-gray-600">
+            <View className="items-center px-6 border-l border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-bold text-green-600 dark:text-green-400">
                 {user.completedJobs || 0}
               </Text>
@@ -220,7 +220,7 @@ export const UserDetail = React.memo(function UserDetail({
               </Text>
             </View>
             {user.averageRating !== undefined && (
-              <View className="items-center px-6 border-l border-gray-200 dark:border-gray-600">
+              <View className="items-center px-6 border-l border-gray-200 dark:border-surface-overlay">
                 <Text className="text-lg font-bold text-yellow-600 dark:text-yellow-400">
                   {user.averageRating.toFixed(1)}
                 </Text>
@@ -314,7 +314,7 @@ export const UserDetail = React.memo(function UserDetail({
             {user.penalties.map((penalty) => (
               <View
                 key={penalty.id}
-                className="py-2 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+                className="py-2 border-b border-gray-100 dark:border-surface-overlay last:border-b-0"
               >
                 <View className="flex-row items-center justify-between mb-1">
                   <Badge
@@ -358,7 +358,7 @@ export const UserDetail = React.memo(function UserDetail({
           {onClose && (
             <Pressable
               onPress={onClose}
-              className="flex-row items-center justify-center py-3 px-4 bg-gray-200 dark:bg-gray-700 rounded-xl active:opacity-70"
+              className="flex-row items-center justify-center py-3 px-4 bg-gray-200 dark:bg-surface rounded-xl active:opacity-70"
               accessibilityLabel="닫기"
               accessibilityRole="button"
             >

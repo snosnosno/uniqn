@@ -126,7 +126,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
     }
 
     const containerClass = fullScreen
-      ? 'flex-1 bg-white dark:bg-gray-900'
+      ? 'flex-1 bg-white dark:bg-surface-dark'
       : 'p-4';
 
     return (
@@ -152,7 +152,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           {/* 개발 모드 상세 정보 */}
           {showDetails && error && (
             <ScrollView
-              className="max-h-40 w-full bg-gray-100 dark:bg-gray-800 rounded-xl p-4 mb-6"
+              className="max-h-40 w-full bg-gray-100 dark:bg-surface rounded-xl p-4 mb-6"
               showsVerticalScrollIndicator={true}
             >
               <Text className="text-xs text-red-600 dark:text-red-400 font-mono mb-2">
@@ -170,7 +170,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
           <View className="flex-row gap-3">
             <Pressable
               onPress={this.handleReset}
-              className="bg-blue-600 px-6 py-3 rounded-xl active:bg-blue-700"
+              className="bg-primary-600 px-6 py-3 rounded-xl active:bg-primary-700"
               accessibilityRole="button"
               accessibilityLabel="다시 시도"
             >
@@ -183,7 +183,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
                   // 앱 재시작을 유도하는 UI (실제 재시작은 네이티브에서 처리)
                   this.handleReset();
                 }}
-                className="bg-gray-200 dark:bg-gray-700 px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
+                className="bg-gray-200 dark:bg-surface px-6 py-3 rounded-xl active:bg-gray-300 dark:active:bg-gray-600"
                 accessibilityRole="button"
                 accessibilityLabel="홈으로"
               >

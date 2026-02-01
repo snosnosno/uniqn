@@ -396,7 +396,7 @@ export function JobPostingScrollForm({
       </ScrollView>
 
       {/* 하단 버튼 영역 (고정) - 컴팩트 */}
-      <View className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+      <View className="absolute bottom-0 left-0 right-0 px-4 py-2 bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-surface-overlay">
         {/* 템플릿 버튼 + 등록 버튼을 한 줄에 */}
         <View className="flex-row items-center gap-2">
           {/* 템플릿 버튼들 */}
@@ -406,7 +406,7 @@ export function JobPostingScrollForm({
               size="sm"
               onPress={onLoadTemplate}
             >
-              <Text className="text-sm text-blue-600 dark:text-blue-400">
+              <Text className="text-sm text-primary-600 dark:text-primary-400">
                 불러오기
               </Text>
             </Button>
@@ -418,7 +418,7 @@ export function JobPostingScrollForm({
               onPress={onSaveTemplate}
               disabled={isSavingTemplate}
             >
-              <Text className={`text-sm ${isSavingTemplate ? 'text-gray-400' : 'text-blue-600 dark:text-blue-400'}`}>
+              <Text className={`text-sm ${isSavingTemplate ? 'text-gray-400' : 'text-primary-600 dark:text-primary-400'}`}>
                 {isSavingTemplate ? '저장 중...' : '저장'}
               </Text>
             </Button>

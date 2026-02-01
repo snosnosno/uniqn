@@ -107,7 +107,7 @@ const TimeSlotItem = memo(function TimeSlotItem({
       onPress={() => onSelect(item.value)}
       className={`
         flex-row items-center justify-between px-4 py-4
-        border-b border-gray-100 dark:border-gray-700
+        border-b border-gray-100 dark:border-surface-overlay
         ${isSelected ? 'bg-indigo-50 dark:bg-indigo-900/30' : ''}
       `}
       accessibilityRole="button"
@@ -190,12 +190,12 @@ export const TimePicker = memo(function TimePicker({
   const getInputStyle = () => {
     const base = 'flex-row items-center px-4 py-3 rounded-lg border-2';
     if (disabled) {
-      return `${base} bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600`;
+      return `${base} bg-gray-100 dark:bg-surface border-gray-200 dark:border-surface-overlay`;
     }
     if (error) {
-      return `${base} bg-white dark:bg-gray-800 border-red-500`;
+      return `${base} bg-white dark:bg-surface border-red-500`;
     }
-    return `${base} bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600`;
+    return `${base} bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay`;
   };
 
   // FlatList renderItem
@@ -284,9 +284,9 @@ export const TimePicker = memo(function TimePicker({
           />
 
           {/* 모달 컨텐츠 - 백드롭과 형제 관계 */}
-          <View className="bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70%]">
+          <View className="bg-white dark:bg-surface rounded-t-2xl max-h-[70%]">
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                 출근 시간 선택
               </Text>

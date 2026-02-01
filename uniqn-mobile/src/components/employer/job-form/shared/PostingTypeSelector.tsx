@@ -53,8 +53,8 @@ const TypeCard = memo(function TypeCard({
         flex-1 p-3 rounded-xl border
         ${
           isSelected
-            ? 'border-blue-500 bg-blue-50 dark:border-blue-400 dark:bg-blue-900/30'
-            : 'border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800'
+            ? 'border-primary-500 bg-primary-50 dark:border-primary-400 dark:bg-primary-900/30'
+            : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
         }
         ${disabled ? 'opacity-50' : 'active:scale-[0.98]'}
       `}
@@ -71,7 +71,7 @@ const TypeCard = memo(function TypeCard({
           <Text
             className={`
               text-sm font-semibold
-              ${isSelected ? 'text-blue-600 dark:text-blue-400' : 'text-gray-900 dark:text-gray-100'}
+              ${isSelected ? 'text-primary-600 dark:text-primary-400' : 'text-gray-900 dark:text-gray-100'}
             `}
           >
             {info.label}
@@ -79,7 +79,7 @@ const TypeCard = memo(function TypeCard({
           <Text
             className={`
               text-xs
-              ${isSelected ? 'text-blue-500 dark:text-blue-300' : 'text-gray-500 dark:text-gray-400'}
+              ${isSelected ? 'text-primary-500 dark:text-primary-300' : 'text-gray-500 dark:text-gray-400'}
             `}
           >
             {info.description}
@@ -87,7 +87,7 @@ const TypeCard = memo(function TypeCard({
         </View>
 
         {/* 체크 */}
-        {isSelected && <CheckCircleIcon size={16} color="#3B82F6" />}
+        {isSelected && <CheckCircleIcon size={16} color="#A855F7" />}
       </View>
     </Pressable>
   );
@@ -169,7 +169,7 @@ export const PostingTypeSelector = memo(function PostingTypeSelector({
 
       {/* 수정 모드 안내 */}
       {disabled && (
-        <View className="mt-2 p-2 bg-gray-100 dark:bg-gray-800 rounded">
+        <View className="mt-2 p-2 bg-gray-100 dark:bg-surface rounded">
           <Text className="text-xs text-gray-500 dark:text-gray-400 text-center">
             공고 타입은 수정할 수 없습니다
           </Text>

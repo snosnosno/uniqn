@@ -387,7 +387,7 @@ export default function EditJobPostingScreen() {
   // 로딩 상태
   if (isJobLoading || !formData) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -401,7 +401,7 @@ export default function EditJobPostingScreen() {
   // 에러 상태
   if (jobError || !existingJob) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center p-4">
           <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             공고를 불러올 수 없습니다
@@ -418,7 +418,7 @@ export default function EditJobPostingScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -464,7 +464,7 @@ export default function EditJobPostingScreen() {
               errorCount={getErrorCount(errors.schedule)}
             >
               {hasConfirmedApplicants ? (
-                <View className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                <View className="p-4 bg-gray-100 dark:bg-surface rounded-lg">
                   <Text className="text-gray-500 dark:text-gray-400 text-center">
                     확정된 지원자가 있어 일정을 수정할 수 없습니다.
                   </Text>
@@ -495,7 +495,7 @@ export default function EditJobPostingScreen() {
                 errorCount={getErrorCount(errors.roles)}
               >
                 {hasConfirmedApplicants ? (
-                  <View className="p-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                  <View className="p-4 bg-gray-100 dark:bg-surface rounded-lg">
                     <Text className="text-gray-500 dark:text-gray-400 text-center">
                       확정된 지원자가 있어 역할을 수정할 수 없습니다.
                     </Text>
@@ -545,7 +545,7 @@ export default function EditJobPostingScreen() {
         </ScrollView>
 
         {/* 하단 버튼 영역 (고정) */}
-        <View className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
+        <View className="absolute bottom-0 left-0 right-0 p-4 bg-white dark:bg-surface-dark border-t border-gray-200 dark:border-surface-overlay">
           <Button
             variant="primary"
             size="lg"

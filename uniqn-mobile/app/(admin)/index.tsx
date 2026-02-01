@@ -22,7 +22,7 @@ interface DashboardCardProps {
 function DashboardCard({ title, description, iconName, iconColor, href, bgColor }: DashboardCardProps) {
   return (
     <Link href={href as never} asChild>
-      <Pressable className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 active:opacity-80">
+      <Pressable className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80">
         <View className={`w-12 h-12 rounded-lg items-center justify-center mb-3 ${bgColor}`}>
           <Ionicons name={iconName} size={24} color={iconColor} />
         </View>
@@ -51,9 +51,9 @@ export default function AdminDashboard() {
       title: "사용자 관리",
       description: "회원 정보 조회 및 권한 관리",
       iconName: "people-outline",
-      iconColor: "#2563eb",
+      iconColor: "#9333EA",
       href: "/(admin)/users",
-      bgColor: "bg-blue-100 dark:bg-blue-900/30",
+      bgColor: "bg-primary-100 dark:bg-primary-900/30",
     },
     {
       title: "신고 관리",
@@ -77,7 +77,7 @@ export default function AdminDashboard() {
       iconName: "settings-outline",
       iconColor: "#4b5563",
       href: "/(admin)/settings",
-      bgColor: "bg-gray-100 dark:bg-gray-700",
+      bgColor: "bg-gray-100 dark:bg-surface",
     },
     {
       title: "통계",
@@ -106,7 +106,7 @@ export default function AdminDashboard() {
   ];
 
   return (
-    <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <View className="p-4">
         {/* Header */}
         <View className="mb-6">

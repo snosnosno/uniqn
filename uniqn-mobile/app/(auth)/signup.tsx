@@ -92,9 +92,9 @@ export default function SignUpScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
+    <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-gray-700">
+      <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-surface-overlay">
         <Pressable onPress={handleBack} className="p-2 -ml-2">
           <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
         </Pressable>

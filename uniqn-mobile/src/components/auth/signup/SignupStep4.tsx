@@ -130,7 +130,7 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
             w-6 h-6 rounded border-2 items-center justify-center mr-3
             ${checked
               ? 'bg-primary-500 border-primary-500'
-              : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+              : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
             }
             ${disabled ? 'opacity-50' : ''}
           `}
@@ -201,7 +201,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
         disabled={isLoading}
         className={`
           flex-row items-center p-4 rounded-lg
-          bg-gray-50 dark:bg-gray-800
+          bg-gray-50 dark:bg-surface
           ${isLoading ? 'opacity-50' : ''}
         `}
       >
@@ -210,7 +210,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
             w-6 h-6 rounded border-2 items-center justify-center mr-3
             ${allChecked
               ? 'bg-primary-500 border-primary-500'
-              : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+              : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
             }
           `}
         >
@@ -222,7 +222,7 @@ export function SignupStep4({ onSubmit, onBack, initialData, isLoading = false }
       </Pressable>
 
       {/* 구분선 */}
-      <View className="h-px bg-gray-200 dark:bg-gray-700" />
+      <View className="h-px bg-gray-200 dark:bg-surface" />
 
       {/* 개별 약관 */}
       <View className="px-2">

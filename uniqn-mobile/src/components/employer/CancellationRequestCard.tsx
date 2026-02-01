@@ -155,7 +155,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
         )}
 
         {/* 공고 정보 */}
-        <View className="bg-gray-50 dark:bg-gray-800 rounded-lg px-3 py-2 mb-3">
+        <View className="bg-gray-50 dark:bg-surface rounded-lg px-3 py-2 mb-3">
           <Text className="text-sm text-gray-600 dark:text-gray-400">
             {application.jobPostingTitle ?? application.jobPosting?.title ?? '공고'}
           </Text>
@@ -198,14 +198,14 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
 
         {/* 액션 버튼 (pending 상태일 때만) */}
         {isPending && (
-          <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
             {/* 거절 버튼 */}
             <Pressable
               onPress={handleOpenRejectModal}
               disabled={isProcessing}
               className={`
                 flex-1 flex-row items-center justify-center py-2 mr-2
-                rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70
+                rounded-lg bg-gray-100 dark:bg-surface active:opacity-70
                 ${isProcessing ? 'opacity-50' : ''}
               `}
             >
@@ -256,7 +256,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
             multiline
             numberOfLines={3}
             maxLength={200}
-            className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 text-gray-900 dark:text-white text-base min-h-[80px] mb-4"
+            className="bg-gray-50 dark:bg-surface rounded-lg p-3 text-gray-900 dark:text-white text-base min-h-[80px] mb-4"
             textAlignVertical="top"
           />
           <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mb-4">

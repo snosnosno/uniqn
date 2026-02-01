@@ -64,9 +64,9 @@ export function Input({
       return 'border-error-500 bg-error-50 dark:bg-error-900/20';
     }
     if (isFocused) {
-      return 'border-primary-500 bg-white dark:bg-gray-800';
+      return 'border-primary-500 bg-white dark:bg-surface';
     }
-    return 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800';
+    return 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface';
   };
 
   return (

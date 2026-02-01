@@ -67,7 +67,7 @@ function AgreementCheckbox({
           className={`mr-3 mt-0.5 h-6 w-6 items-center justify-center rounded-md border-2 ${
             checked
               ? 'border-primary-600 bg-primary-600'
-              : 'border-gray-300 bg-white dark:border-gray-600 dark:bg-gray-800'
+              : 'border-gray-300 bg-white dark:border-surface-overlay dark:bg-surface'
           }`}
         >
           {checked && <CheckCircleIcon size={16} color="#fff" />}
@@ -179,7 +179,7 @@ export default function EmployerRegisterScreen() {
   }, [toast]);
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <StackHeader title="구인자 등록" />
 
       <ScrollView

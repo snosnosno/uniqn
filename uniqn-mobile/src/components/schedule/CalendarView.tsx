@@ -73,7 +73,7 @@ interface DotInfo {
 const SCHEDULE_DOT_COLORS: Record<ScheduleType, string> = {
   applied: '#F59E0B', // yellow-500
   confirmed: '#10B981', // green-500
-  completed: '#3B82F6', // blue-500
+  completed: '#A855F7', // primary-500
   cancelled: '#EF4444', // red-500
 };
 
@@ -86,17 +86,17 @@ const calendarTheme = {
   // 텍스트 색상
   textSectionTitleColor: '#6B7280',
   textSectionTitleDisabledColor: '#9CA3AF',
-  selectedDayBackgroundColor: '#3B82F6',
+  selectedDayBackgroundColor: '#A855F7',
   selectedDayTextColor: '#FFFFFF',
-  todayTextColor: '#3B82F6',
-  dayTextColor: '#1F2937',
+  todayTextColor: '#A855F7',
+  dayTextColor: '#1A1625',
   textDisabledColor: '#D1D5DB',
-  dotColor: '#3B82F6',
+  dotColor: '#A855F7',
   selectedDotColor: '#FFFFFF',
 
   // 월 네비게이션
-  monthTextColor: '#1F2937',
-  indicatorColor: '#3B82F6',
+  monthTextColor: '#1A1625',
+  indicatorColor: '#A855F7',
 
   // 화살표
   arrowColor: '#6B7280',
@@ -162,7 +162,7 @@ function convertToMarkedDates(
       dots,
       marked: true,
       selected: date === selectedDate,
-      selectedColor: date === selectedDate ? '#3B82F6' : undefined,
+      selectedColor: date === selectedDate ? '#A855F7' : undefined,
     };
   });
 
@@ -170,7 +170,7 @@ function convertToMarkedDates(
   if (!markedDates[selectedDate]) {
     markedDates[selectedDate] = {
       selected: true,
-      selectedColor: '#3B82F6',
+      selectedColor: '#A855F7',
     };
   }
 
@@ -256,7 +256,7 @@ export function CalendarView({
   const currentMonthString = `${currentMonth.year}-${String(currentMonth.month).padStart(2, '0')}-01`;
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl mx-4 overflow-hidden">
+    <View className="bg-white dark:bg-surface rounded-xl mx-4 overflow-hidden">
       <Calendar
         key={`${currentMonthString}-${mode}`}
         current={currentMonthString}

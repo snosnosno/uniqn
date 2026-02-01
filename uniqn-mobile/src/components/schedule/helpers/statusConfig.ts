@@ -23,7 +23,7 @@ export const statusConfig: Record<ScheduleType, { label: string; variant: 'warni
 export const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor: string; textColor: string }> = {
   not_started: {
     label: '출근 전',
-    bgColor: 'bg-gray-100 dark:bg-gray-700',
+    bgColor: 'bg-gray-100 dark:bg-surface',
     textColor: 'text-gray-600 dark:text-gray-400',
   },
   checked_in: {
@@ -33,7 +33,7 @@ export const attendanceConfig: Record<AttendanceStatus, { label: string; bgColor
   },
   checked_out: {
     label: '퇴근 완료',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    textColor: 'text-blue-700 dark:text-blue-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    textColor: 'text-primary-700 dark:text-primary-300',
   },
 };

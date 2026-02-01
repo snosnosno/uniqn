@@ -79,7 +79,7 @@ export function FAQList({
             <Text className="mb-2 px-4 text-sm font-semibold text-gray-500 dark:text-gray-400">
               {INQUIRY_CATEGORY_LABELS[category as InquiryCategory] || category}
             </Text>
-            <View className="rounded-xl bg-white dark:bg-gray-800">
+            <View className="rounded-xl bg-white dark:bg-surface">
               {categoryItems.map((item, index) => (
                 <View key={item.id}>
                   <View className="px-4">
@@ -94,7 +94,7 @@ export function FAQList({
                     </AccordionItem>
                   </View>
                   {index < categoryItems.length - 1 && (
-                    <View className="mx-4 h-px bg-gray-100 dark:bg-gray-700" />
+                    <View className="mx-4 h-px bg-gray-100 dark:bg-surface" />
                   )}
                 </View>
               ))}
@@ -107,7 +107,7 @@ export function FAQList({
 
   // 특정 카테고리일 때 단순 리스트
   return (
-    <View className={`rounded-xl bg-white dark:bg-gray-800 ${className}`}>
+    <View className={`rounded-xl bg-white dark:bg-surface ${className}`}>
       {filteredItems.map((item, index) => (
         <View key={item.id}>
           <View className="px-4">
@@ -122,7 +122,7 @@ export function FAQList({
             </AccordionItem>
           </View>
           {index < filteredItems.length - 1 && (
-            <View className="mx-4 h-px bg-gray-100 dark:bg-gray-700" />
+            <View className="mx-4 h-px bg-gray-100 dark:bg-surface" />
           )}
         </View>
       ))}

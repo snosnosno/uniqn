@@ -272,7 +272,7 @@ export function ScheduleDetailModal({
     >
       {/* Handle Bar */}
       <View className="items-center mb-2">
-        <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+        <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
       </View>
 
       {/* 그룹 모드: 날짜 네비게이션 */}
@@ -371,7 +371,7 @@ export function ScheduleDetailModal({
       </View>
 
       {/* Tab Navigation */}
-      <View className="flex-row bg-gray-100 dark:bg-gray-700 p-1 rounded-xl mb-4">
+      <View className="flex-row bg-gray-100 dark:bg-surface p-1 rounded-xl mb-4">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
           return (
@@ -421,7 +421,7 @@ export function ScheduleDetailModal({
         </View>
 
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
-        <View className="pt-4 border-t border-gray-200 dark:border-gray-700 flex-row gap-3">
+        <View className="pt-4 border-t border-gray-200 dark:border-surface-overlay flex-row gap-3">
         {/* 지원 취소 버튼 (지원중 상태) */}
         {schedule.type === 'applied' && onCancelApplication && schedule.applicationId && (
           <View className="flex-1">
@@ -457,7 +457,7 @@ export function ScheduleDetailModal({
               variant="outline"
               size="md"
               onPress={handleOpenReportModal}
-              className="border-gray-300 dark:border-gray-600"
+              className="border-gray-300 dark:border-surface-overlay"
               icon={<AlertTriangleIcon size={16} color="#6B7280" />}
             >
               <Text className="text-gray-600 dark:text-gray-400">신고</Text>

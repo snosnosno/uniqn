@@ -59,7 +59,7 @@ const categoryInfo: Record<
   },
   [NotificationCategory.JOB]: {
     description: '새 공고, 마감 임박 알림',
-    color: 'bg-blue-500',
+    color: 'bg-primary-500',
   },
   [NotificationCategory.SYSTEM]: {
     description: '공지사항, 시스템 점검 알림',
@@ -160,7 +160,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
 
   return (
     <ScrollView
-      className="flex-1 bg-gray-50 dark:bg-gray-900"
+      className="flex-1 bg-gray-50 dark:bg-surface-dark"
       contentContainerClassName="p-4"
     >
       {/* 푸시 알림 권한 영구 거부 배너 */}
@@ -205,7 +205,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center">
             {settings.enabled ? (
-              <BellIcon size={24} color="#3b82f6" />
+              <BellIcon size={24} color="#A855F7" />
             ) : (
               <BellSlashIcon size={24} color="#9ca3af" />
             )}
@@ -221,7 +221,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.enabled}
             onValueChange={handleMasterToggle}
-            trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
             thumbColor="#ffffff"
             disabled={isSaving}
           />
@@ -245,7 +245,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.quietHours?.enabled || false}
             onValueChange={handleQuietHoursToggle}
-            trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
             thumbColor="#ffffff"
             disabled={isSaving || !settings.enabled}
           />
@@ -269,7 +269,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           <Switch
             value={settings.grouping?.enabled ?? true}
             onValueChange={handleGroupingToggle}
-            trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+            trackColor={{ false: '#d1d5db', true: '#A855F7' }}
             thumbColor="#ffffff"
             disabled={isSaving || !settings.enabled}
           />
@@ -290,7 +290,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
           return (
             <View
               key={category}
-              className={`p-4 ${!isLast ? 'border-b border-gray-100 dark:border-gray-800' : ''}`}
+              className={`p-4 ${!isLast ? 'border-b border-gray-100 dark:border-surface' : ''}`}
             >
               <View className="flex-row items-center justify-between mb-2">
                 <View className="flex-row items-center flex-1">
@@ -302,7 +302,7 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
                 <Switch
                   value={categorySettings?.enabled ?? true}
                   onValueChange={(enabled) => handleCategoryToggle(category, enabled)}
-                  trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                  trackColor={{ false: '#d1d5db', true: '#A855F7' }}
                   thumbColor="#ffffff"
                   disabled={isSaving || !settings.enabled}
                 />
@@ -314,14 +314,14 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
 
               {/* 푸시 알림 토글 (서브 옵션) */}
               {categorySettings?.enabled && (
-                <View className="flex-row items-center justify-between mt-3 ml-5 pt-3 border-t border-gray-100 dark:border-gray-800">
+                <View className="flex-row items-center justify-between mt-3 ml-5 pt-3 border-t border-gray-100 dark:border-surface">
                   <Text className="text-sm text-gray-600 dark:text-gray-400">
                     푸시 알림 받기
                   </Text>
                   <Switch
                     value={categorySettings?.pushEnabled ?? true}
                     onValueChange={(pushEnabled) => handlePushToggle(category, pushEnabled)}
-                    trackColor={{ false: '#d1d5db', true: '#3b82f6' }}
+                    trackColor={{ false: '#d1d5db', true: '#A855F7' }}
                     thumbColor="#ffffff"
                     disabled={isSaving || !settings.enabled}
                   />

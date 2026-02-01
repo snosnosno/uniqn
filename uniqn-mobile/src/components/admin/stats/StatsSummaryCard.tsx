@@ -28,13 +28,13 @@ export function StatsSummaryCard({
   isLoading = false,
   icon,
   iconColor = '#6b7280',
-  iconBgColor = 'bg-gray-100 dark:bg-gray-700',
+  iconBgColor = 'bg-gray-100 dark:bg-surface',
   valueColor = 'text-gray-900 dark:text-white',
   suffix = '',
   description,
 }: StatsSummaryCardProps) {
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-start justify-between">
         <View className="flex-1">
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">
@@ -103,7 +103,7 @@ export function SystemStatusCard({ status, isLoading }: SystemStatusCardProps) {
   const config = status ? statusConfig[status] : statusConfig.healthy;
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center justify-between">
         <View>
           <Text className="text-sm text-gray-500 dark:text-gray-400 mb-1">

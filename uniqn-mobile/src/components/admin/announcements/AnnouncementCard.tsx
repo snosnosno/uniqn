@@ -38,7 +38,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 active:opacity-80"
+      className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
     >
       {/* Header: Title + Badges */}
       <View className="flex-row items-start justify-between mb-2">
@@ -58,7 +58,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
           )}
 
           {/* Category Badge */}
-          <View className="px-2 py-0.5 rounded bg-gray-100 dark:bg-gray-700">
+          <View className="px-2 py-0.5 rounded bg-gray-100 dark:bg-surface">
             <Text className="text-xs text-gray-600 dark:text-gray-400">
               {categoryLabel}
             </Text>
@@ -119,7 +119,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
       {/* Target Audience Indicator */}
       {announcement.targetAudience.type === 'roles' && (
-        <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <View className="flex-row items-center mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
           <Ionicons name="people-outline" size={12} color={getIconColor(isDarkMode, 'secondary')} />
           <Text className="text-xs text-gray-400 ml-1">
             대상: {announcement.targetAudience.roles?.map((role) => {

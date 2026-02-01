@@ -32,7 +32,7 @@ interface RoleChipProps {
 
 function RoleChip({ label, isSelected, onPress }: RoleChipProps) {
   const baseClass = 'px-4 py-2 rounded-full mr-2';
-  const selectedClass = isSelected ? 'bg-blue-600 dark:bg-blue-500' : 'bg-gray-200 dark:bg-gray-700';
+  const selectedClass = isSelected ? 'bg-primary-600 dark:bg-primary-500' : 'bg-gray-200 dark:bg-surface';
   const textClass = isSelected ? 'text-white' : 'text-gray-700 dark:text-gray-300';
 
   return (
@@ -75,10 +75,10 @@ function UserCard({ user, onPress }: UserCardProps) {
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-gray-800 rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
+      className="bg-white dark:bg-surface rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
       style={{ shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.1, shadowRadius: 2, elevation: 2 }}
     >
-      <View className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mr-3">
+      <View className="w-12 h-12 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mr-3">
         {user.photoURL ? (
           <Text className="text-xl">{user.name.charAt(0)}</Text>
         ) : (
@@ -168,8 +168,8 @@ export default function AdminUsersPage() {
 
   if (isLoading && !data) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">
           사용자 목록을 불러오는 중...
         </Text>
@@ -179,7 +179,7 @@ export default function AdminUsersPage() {
 
   if (error) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="사용자 목록을 불러오는 데 실패했습니다."
@@ -195,9 +195,9 @@ export default function AdminUsersPage() {
   const total = data?.total ?? 0;
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
-      <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-        <View className="flex-row items-center bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+        <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-lg px-3 py-2">
           <MagnifyingGlassIcon size={20} color="#9CA3AF" />
           <TextInput
             value={searchQuery}
@@ -211,7 +211,7 @@ export default function AdminUsersPage() {
         </View>
       </View>
 
-      <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {ROLE_OPTIONS.map((option) => (
             <RoleChip
@@ -233,7 +233,7 @@ export default function AdminUsersPage() {
 
       <ScrollView
         className="flex-1 px-4"
-        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#3B82F6" />}
+        refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor="#A855F7" />}
         onScrollEndDrag={({ nativeEvent }) => {
           const { layoutMeasurement, contentOffset, contentSize } = nativeEvent;
           const isEndReached = layoutMeasurement.height + contentOffset.y >= contentSize.height - 50;
@@ -257,7 +257,7 @@ export default function AdminUsersPage() {
                   {data.page} / {data.totalPages} 페이지
                 </Text>
                 {data.hasNextPage && (
-                  <Pressable onPress={handleLoadMore} className="mt-2 px-4 py-2 bg-blue-600 rounded-lg">
+                  <Pressable onPress={handleLoadMore} className="mt-2 px-4 py-2 bg-primary-600 rounded-lg">
                     <Text className="text-white font-medium">더 보기</Text>
                   </Pressable>
                 )}

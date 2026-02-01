@@ -99,7 +99,7 @@ export default function ProfileScreen() {
   // 로딩 상태 (스켈레톤 UI)
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
         <TabHeader title="프로필" showSettings />
         <ScrollView className="flex-1" contentContainerClassName="p-4">
           {/* 프로필 헤더 스켈레톤 */}
@@ -122,7 +122,7 @@ export default function ProfileScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       {/* 헤더 */}
       <TabHeader title="프로필" showSettings />
 

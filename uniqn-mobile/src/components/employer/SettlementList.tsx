@@ -122,7 +122,7 @@ function SummaryCard({
             <Pressable
               onPress={onOpenSettings}
               hitSlop={8}
-              className="flex-row items-center px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+              className="flex-row items-center px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
               accessibilityLabel="정산 설정"
               accessibilityRole="button"
             >
@@ -145,7 +145,7 @@ function SummaryCard({
             {formatCurrency(pendingAmount)}
           </Text>
         </View>
-        <View className="w-px bg-gray-200 dark:bg-gray-700" />
+        <View className="w-px bg-gray-200 dark:bg-surface" />
         <View className="flex-1 items-center">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">완료</Text>
           <Text className="text-lg font-bold text-success-600 dark:text-success-400">
@@ -155,7 +155,7 @@ function SummaryCard({
             {formatCurrency(totalAmount - pendingAmount)}
           </Text>
         </View>
-        <View className="w-px bg-gray-200 dark:bg-gray-700" />
+        <View className="w-px bg-gray-200 dark:bg-surface" />
         <View className="flex-1 items-center">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 금액</Text>
           <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
@@ -176,7 +176,7 @@ interface FilterTabsProps {
 function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps) {
   return (
     <View className="px-4 mb-4">
-      <View className="flex-row bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+      <View className="flex-row bg-gray-100 dark:bg-surface rounded-lg p-1">
         {FILTER_OPTIONS.map((option) => {
           const isSelected = selectedFilter === option.value;
           const count = counts[option.value] || 0;
@@ -234,7 +234,7 @@ function BulkActionsBar({
             h-5 w-5 rounded border-2 items-center justify-center mr-2
             ${isAllSelected
               ? 'bg-primary-500 border-primary-500'
-              : 'border-gray-400 dark:border-gray-500'}
+              : 'border-gray-400 dark:border-surface-overlay'}
           `}>
             {isAllSelected && <CheckIcon size={12} color="#fff" />}
           </View>
@@ -258,7 +258,7 @@ function BulkActionsBar({
           flex-row items-center px-4 py-2 rounded-lg
           ${selectedCount > 0
             ? 'bg-primary-500 active:opacity-70'
-            : 'bg-gray-300 dark:bg-gray-700'}
+            : 'bg-gray-300 dark:bg-surface'}
         `}
       >
         <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : '#9CA3AF'} />
@@ -491,9 +491,9 @@ export function SettlementList({
         <View className="px-4 mb-3">
           <Pressable
             onPress={toggleSelectionMode}
-            className="flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-gray-800"
+            className="flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface"
           >
-            <CheckIcon size={16} color={selectionMode ? '#2563EB' : '#6B7280'} />
+            <CheckIcon size={16} color={selectionMode ? '#9333EA' : '#6B7280'} />
             <Text className={`
               ml-2 text-sm font-medium
               ${selectionMode

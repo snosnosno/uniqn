@@ -499,9 +499,9 @@ export const SCHEDULE_COLORS: Record<
     text: 'text-green-800 dark:text-green-200',
   },
   completed: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    border: 'border-blue-500',
-    text: 'text-blue-800 dark:text-blue-200',
+    bg: 'bg-primary-100 dark:bg-primary-900/30',
+    border: 'border-primary-500',
+    text: 'text-primary-800 dark:text-primary-200',
   },
   cancelled: {
     bg: 'bg-red-100 dark:bg-red-900/30',
@@ -514,9 +514,9 @@ export const SCHEDULE_COLORS: Record<
  * 출석 상태별 색상
  */
 export const ATTENDANCE_STATUS_COLORS: Record<AttendanceStatus, string> = {
-  not_started: 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300',
+  not_started: 'bg-gray-100 dark:bg-surface text-gray-600 dark:text-gray-300',
   checked_in: 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-300',
-  checked_out: 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300',
+  checked_out: 'bg-primary-100 dark:bg-primary-900/30 text-primary-600 dark:text-primary-300',
 };
 
 // ============================================================================

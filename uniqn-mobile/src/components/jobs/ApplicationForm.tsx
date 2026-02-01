@@ -262,7 +262,7 @@ export function ApplicationForm({
     >
       <View className="px-4">
           {/* 공고 정보 */}
-          <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+          <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
             {/* 공고 타입 뱃지 (v2.0) - regular가 아닌 경우만 표시 */}
             {job.postingType && job.postingType !== 'regular' && (
               <View className="mb-2">
@@ -307,7 +307,7 @@ export function ApplicationForm({
 
             {/* 고정공고: 근무 일정 표시 (읽기 전용) */}
             {isFixedMode && (
-              <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+              <View className="mt-3 pt-3 border-t border-gray-200 dark:border-surface-overlay">
                 <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">
                   근무 조건
                 </Text>
@@ -351,7 +351,7 @@ export function ApplicationForm({
                           flex-row items-center justify-between p-4 rounded-lg border-2
                           ${isSelected
                             ? 'border-primary-500 bg-primary-50 dark:bg-primary-900/30'
-                            : 'border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800'
+                            : 'border-gray-200 dark:border-surface-overlay bg-white dark:bg-surface'
                           }
                           ${isSubmitting ? 'opacity-50' : ''}
                         `}
@@ -362,7 +362,7 @@ export function ApplicationForm({
                               w-5 h-5 rounded-full border-2 mr-3 items-center justify-center
                               ${isSelected
                                 ? 'border-primary-500 bg-primary-500'
-                                : 'border-gray-300 dark:border-gray-600'
+                                : 'border-gray-300 dark:border-surface-overlay'
                               }
                             `}
                           >
@@ -428,7 +428,7 @@ export function ApplicationForm({
               numberOfLines={4}
               maxLength={500}
               editable={!isSubmitting}
-              className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 text-gray-900 dark:text-white text-base min-h-[120px]"
+              className="bg-gray-50 dark:bg-surface rounded-lg p-4 text-gray-900 dark:text-white text-base min-h-[120px]"
               textAlignVertical="top"
             />
             <Text className="text-xs text-gray-400 dark:text-gray-500 text-right mt-1">
@@ -437,7 +437,7 @@ export function ApplicationForm({
           </View>
 
           {/* 안내 문구 */}
-          <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-4 mb-6">
+          <View className="bg-gray-50 dark:bg-surface rounded-lg p-4 mb-6">
             <Text className="text-xs text-gray-500 dark:text-gray-400 leading-5">
               • 지원 후에는 구인자가 지원서를 확인합니다.{'\n'}
               • 수락 시 알림으로 안내해드립니다.{'\n'}

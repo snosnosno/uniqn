@@ -16,12 +16,12 @@ export default function SettingsLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          backgroundColor: isDark ? '#1A1625' : '#ffffff',
         },
-        headerTintColor: isDark ? '#f9fafb' : '#111827',
+        headerTintColor: isDark ? '#f9fafb' : '#1A1625',
         headerLeft: () => (
           <HeaderBackButton
-            tintColor={isDark ? '#f9fafb' : '#111827'}
+            tintColor={isDark ? '#f9fafb' : '#1A1625'}
             fallbackHref="/(app)/(tabs)/profile"
           />
         ),

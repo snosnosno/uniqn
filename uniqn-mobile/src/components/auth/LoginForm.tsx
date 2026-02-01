@@ -94,7 +94,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
       <View className="mt-2 items-end">
         <Link href="/forgot-password" asChild>
           <Pressable>
-            <Text className="text-sm text-blue-600 dark:text-blue-400">
+            <Text className="text-sm text-primary-600 dark:text-primary-400">
               비밀번호를 잊으셨나요?
             </Text>
           </Pressable>
@@ -126,7 +126,7 @@ export function LoginForm({ onSubmit, isLoading = false }: LoginFormProps) {
         </Text>
         <Link href="/signup" asChild>
           <Pressable>
-            <Text className="font-medium text-blue-600 dark:text-blue-400">
+            <Text className="font-medium text-primary-600 dark:text-primary-400">
               회원가입
             </Text>
           </Pressable>

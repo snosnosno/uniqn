@@ -169,7 +169,7 @@ function TimeInputField({
               className={`w-5 h-5 rounded border items-center justify-center mr-1.5
                 ${isUndefined
                   ? 'bg-primary-600 border-primary-600'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }`}
             >
               {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
@@ -185,8 +185,8 @@ function TimeInputField({
         disabled={isUndefined}
         className={`flex-row items-center justify-between p-3 border rounded-lg min-h-[52px]
           ${isUndefined
-            ? 'bg-gray-100 dark:bg-gray-900 border-gray-200 dark:border-gray-700'
-            : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700'
+            ? 'bg-gray-100 dark:bg-surface-dark border-gray-200 dark:border-surface-overlay'
+            : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700'
           }`}
       >
         <View className="flex-row items-center flex-1">
@@ -490,7 +490,7 @@ export function WorkTimeEditor({
     >
       <View className="px-4">
         {/* 스태프 정보 */}
-        <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg mb-2">
+        <View className="flex-row items-center py-2 px-3 bg-gray-50 dark:bg-surface rounded-lg mb-2">
           {/* 프로필 이미지 */}
           {workLog.staffPhotoURL ? (
             <Image
@@ -524,7 +524,7 @@ export function WorkTimeEditor({
             label="출근 시간"
             value={startTimeStr}
             originalTime={originalStartTime}
-            iconColor="#2563EB"
+            iconColor="#9333EA"
             isUndefined={isStartTimeUndefined}
             onUndefinedChange={setIsStartTimeUndefined}
             onOpenPicker={() => setActivePicker('start')}
@@ -542,7 +542,7 @@ export function WorkTimeEditor({
           />
 
           {/* 시간 선택 안내 */}
-          <View className="flex-row items-start p-3 bg-gray-100 dark:bg-gray-900 rounded-lg mb-4">
+          <View className="flex-row items-start p-3 bg-gray-100 dark:bg-surface-dark rounded-lg mb-4">
             <View className="mt-0.5">
               <AlertCircleIcon size={16} color="#6B7280" />
             </View>
@@ -585,7 +585,7 @@ export function WorkTimeEditor({
             multiline
             numberOfLines={2}
             textAlignVertical="top"
-            className="p-3 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[60px]"
+            className="p-3 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[60px]"
           />
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
             예: QR 인식 오류로 실제 출근 시간과 다름
@@ -593,9 +593,9 @@ export function WorkTimeEditor({
         </View>
 
         {/* 안내 메시지 */}
-        <View className="flex-row items-start p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-4">
-          <AlertCircleIcon size={16} color="#2563EB" />
-          <Text className="ml-2 text-sm text-blue-700 dark:text-blue-300 flex-1">
+        <View className="flex-row items-start p-3 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-4">
+          <AlertCircleIcon size={16} color="#9333EA" />
+          <Text className="ml-2 text-sm text-primary-700 dark:text-primary-300 flex-1">
             시간 수정 기록은 이력으로 저장되며, 해당 스태프에게 알림이 발송됩니다.
           </Text>
         </View>

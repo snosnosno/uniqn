@@ -116,7 +116,7 @@ export function DateRequirementCard({
   const canAddTimeSlot = requirement.timeSlots.length < MAX_TIME_SLOTS_PER_DATE;
 
   return (
-    <View className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 mb-3">
+    <View className="p-4 bg-white dark:bg-surface rounded-lg border border-gray-200 dark:border-surface-overlay mb-3">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-gray-100">
@@ -156,19 +156,19 @@ export function DateRequirementCard({
         disabled={!canAddTimeSlot}
         className={`flex-row items-center justify-center p-3 rounded-lg border border-dashed ${
           canAddTimeSlot
-            ? 'border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/10'
-            : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50'
+            ? 'border-primary-300 dark:border-primary-700 bg-primary-50/50 dark:bg-primary-900/10'
+            : 'border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface opacity-50'
         }`}
         accessibilityRole="button"
         accessibilityLabel="시간대 추가"
       >
         <View className="mr-2">
-          <PlusIcon size={16} color={canAddTimeSlot ? '#3B82F6' : '#9CA3AF'} />
+          <PlusIcon size={16} color={canAddTimeSlot ? '#A855F7' : '#9CA3AF'} />
         </View>
         <Text
           className={`text-sm font-medium ${
             canAddTimeSlot
-              ? 'text-blue-600 dark:text-blue-400'
+              ? 'text-primary-600 dark:text-primary-400'
               : 'text-gray-400 dark:text-gray-600'
           }`}
         >

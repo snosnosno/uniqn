@@ -119,7 +119,7 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
   }
 
   return (
-    <View className="mb-3 pb-3 border-b border-gray-100 dark:border-gray-700 last:border-b-0">
+    <View className="mb-3 pb-3 border-b border-gray-100 dark:border-surface-overlay last:border-b-0">
       <View className="flex-row items-center justify-between mb-2">
         <View className="flex-row items-center">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mr-2">
@@ -199,7 +199,7 @@ export const DateRequirementList = memo(function DateRequirementList({
   }
 
   return (
-    <View className={`bg-gray-50 dark:bg-gray-900 rounded-lg p-3 ${className}`}>
+    <View className={`bg-gray-50 dark:bg-surface-dark rounded-lg p-3 ${className}`}>
       <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
         날짜별 모집 정보
       </Text>

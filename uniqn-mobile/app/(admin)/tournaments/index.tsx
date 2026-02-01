@@ -22,6 +22,7 @@ import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -35,6 +36,7 @@ interface StatusTabProps {
   count?: number;
   isSelected: boolean;
   onPress: () => void;
+  isDarkMode: boolean;
 }
 
 interface TournamentCardProps {
@@ -54,19 +56,20 @@ const StatusTab = memo(function StatusTab({
   count,
   isSelected,
   onPress,
+  isDarkMode,
 }: StatusTabProps) {
   return (
     <Pressable
       onPress={onPress}
       className="px-4 py-2 rounded-full mr-2 flex-row items-center"
       style={{
-        backgroundColor: isSelected ? '#2563EB' : '#E5E7EB',
+        backgroundColor: isSelected ? '#9333EA' : isDarkMode ? '#3D3350' : '#E5E7EB',
       }}
     >
       <Text
         className="text-sm font-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : '#374151',
+          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D1D5DB' : '#374151',
         }}
       >
         {label}
@@ -122,7 +125,7 @@ const TournamentCard = memo(function TournamentCard({
   }, [posting.dateSpecificRequirements]);
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl mb-3 overflow-hidden border border-gray-100 dark:border-gray-700">
+    <View className="bg-white dark:bg-surface rounded-xl mb-3 overflow-hidden border border-gray-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <Pressable
         onPress={onViewDetail}
@@ -180,11 +183,11 @@ const TournamentCard = memo(function TournamentCard({
 
       {/* 액션 버튼 (pending 상태에서만 표시) */}
       {isPending && (
-        <View className="flex-row border-t border-gray-100 dark:border-gray-700">
+        <View className="flex-row border-t border-gray-100 dark:border-surface-overlay">
           <Pressable
             onPress={onReject}
             disabled={isProcessing}
-            className="flex-1 py-3 flex-row items-center justify-center border-r border-gray-100 dark:border-gray-700 active:bg-gray-50 dark:active:bg-gray-700"
+            className="flex-1 py-3 flex-row items-center justify-center border-r border-gray-100 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700"
             accessibilityRole="button"
             accessibilityLabel="거부"
           >
@@ -234,6 +237,7 @@ const STATUS_TABS: { status: TabStatus; label: string }[] = [
 // ============================================================================
 
 export default function AdminTournamentsPage() {
+  const { isDarkMode } = useThemeStore();
   const [selectedStatus, setSelectedStatus] = useState<TabStatus>('pending');
   const [modalState, setModalState] = useState<{
     visible: boolean;
@@ -305,8 +309,8 @@ export default function AdminTournamentsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">
           대회공고 목록을 불러오는 중...
         </Text>
@@ -317,7 +321,7 @@ export default function AdminTournamentsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="대회공고 목록을 불러오는 데 실패했습니다."
@@ -332,9 +336,9 @@ export default function AdminTournamentsPage() {
   const displayPostings = postings ?? [];
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
         <Text className="text-xl font-bold text-gray-900 dark:text-white mb-1">
           대회공고 승인 관리
         </Text>
@@ -344,7 +348,7 @@ export default function AdminTournamentsPage() {
       </View>
 
       {/* 상태 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {STATUS_TABS.map((tab) => (
             <StatusTab
@@ -354,6 +358,7 @@ export default function AdminTournamentsPage() {
               count={tab.status === 'pending' ? pendingCount : undefined}
               isSelected={selectedStatus === tab.status}
               onPress={() => handleStatusChange(tab.status)}
+              isDarkMode={isDarkMode}
             />
           ))}
         </ScrollView>
@@ -373,7 +378,7 @@ export default function AdminTournamentsPage() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#3B82F6"
+            tintColor="#A855F7"
           />
         }
       >

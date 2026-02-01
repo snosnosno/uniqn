@@ -9,7 +9,7 @@ import React, { memo } from 'react';
 import { Pressable, Text, ActivityIndicator, View, PressableProps } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 
-type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger';
+type ButtonVariant = 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger' | 'accent';
 type ButtonSize = 'sm' | 'md' | 'lg';
 
 export interface ButtonProps extends Omit<PressableProps, 'children'> {
@@ -35,11 +35,12 @@ export interface ButtonProps extends Omit<PressableProps, 'children'> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary: 'bg-primary-600 active:bg-primary-700 dark:bg-primary-500 dark:active:bg-primary-600',
-  secondary: 'bg-gray-100 active:bg-gray-200 dark:bg-gray-700 dark:active:bg-gray-600',
+  secondary: 'bg-gray-100 active:bg-gray-200 dark:bg-surface-elevated dark:active:bg-surface-overlay',
   outline:
-    'bg-transparent border border-gray-300 active:bg-gray-50 dark:border-gray-600 dark:active:bg-gray-800',
-  ghost: 'bg-transparent active:bg-gray-100 dark:active:bg-gray-800',
+    'bg-transparent border border-gray-300 active:bg-gray-50 dark:border-surface-overlay dark:active:bg-surface-elevated',
+  ghost: 'bg-transparent active:bg-gray-100 dark:active:bg-surface-elevated',
   danger: 'bg-error-600 active:bg-error-700 dark:bg-error-500 dark:active:bg-error-600',
+  accent: 'bg-accent-500 active:bg-accent-600 dark:bg-accent-400 dark:active:bg-accent-500',
 };
 
 const variantTextStyles: Record<ButtonVariant, string> = {
@@ -48,6 +49,7 @@ const variantTextStyles: Record<ButtonVariant, string> = {
   outline: 'text-gray-900 dark:text-gray-100',
   ghost: 'text-gray-900 dark:text-gray-100',
   danger: 'text-white',
+  accent: 'text-surface-dark font-bold',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -69,6 +71,7 @@ const LOADER_COLORS: Record<ButtonVariant, { light: string; dark: string }> = {
   outline: { light: '#6B7280', dark: '#D1D5DB' },
   ghost: { light: '#6B7280', dark: '#D1D5DB' },
   danger: { light: '#ffffff', dark: '#ffffff' },
+  accent: { light: '#0D0B14', dark: '#0D0B14' }, // 다크 텍스트
 };
 
 /**

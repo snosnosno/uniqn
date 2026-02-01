@@ -104,8 +104,8 @@ export const BiometricButton = memo(function BiometricButton({
 
   // 버튼 변형 스타일
   const variantStyles = {
-    default: 'bg-blue-600 dark:bg-blue-700',
-    outline: 'bg-transparent border border-gray-300 dark:border-gray-600',
+    default: 'bg-primary-600 dark:bg-primary-700',
+    outline: 'bg-transparent border border-gray-300 dark:border-surface-overlay',
     ghost: 'bg-transparent',
   };
 
@@ -113,7 +113,7 @@ export const BiometricButton = memo(function BiometricButton({
   const textStyles = {
     default: 'text-white',
     outline: 'text-gray-900 dark:text-gray-100',
-    ghost: 'text-blue-600 dark:text-blue-400',
+    ghost: 'text-primary-600 dark:text-primary-400',
   };
 
   // 텍스트 크기
@@ -206,7 +206,7 @@ export const BiometricIconButton = memo(function BiometricIconButton({
       accessibilityState={{ disabled: disabled || isLoading }}
       className={`
         items-center justify-center rounded-full
-        bg-gray-100 dark:bg-gray-800
+        bg-gray-100 dark:bg-surface
         ${disabled || isLoading ? 'opacity-50' : 'active:opacity-80'}
       `}
       style={{ width: size, height: size }}

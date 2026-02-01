@@ -44,7 +44,7 @@ export const CONFIRMED_STAFF_STATUS_COLORS: Record<
   { bg: string; text: string }
 > = {
   scheduled: {
-    bg: 'bg-gray-100 dark:bg-gray-700',
+    bg: 'bg-gray-100 dark:bg-surface',
     text: 'text-gray-600 dark:text-gray-300',
   },
   checked_in: {
@@ -52,8 +52,8 @@ export const CONFIRMED_STAFF_STATUS_COLORS: Record<
     text: 'text-green-600 dark:text-green-300',
   },
   checked_out: {
-    bg: 'bg-blue-100 dark:bg-blue-900/30',
-    text: 'text-blue-600 dark:text-blue-300',
+    bg: 'bg-primary-100 dark:bg-primary-900/30',
+    text: 'text-primary-600 dark:text-primary-300',
   },
   completed: {
     bg: 'bg-purple-100 dark:bg-purple-900/30',

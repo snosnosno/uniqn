@@ -27,6 +27,7 @@ import {
 } from '@/utils/dateRangeUtils';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -40,6 +41,7 @@ interface FilterTabProps {
   count?: number;
   isSelected: boolean;
   onPress: () => void;
+  isDarkMode: boolean;
 }
 
 interface PostingCardProps {
@@ -73,19 +75,20 @@ const FilterTab = memo(function FilterTab({
   count,
   isSelected,
   onPress,
+  isDarkMode,
 }: FilterTabProps) {
   return (
     <Pressable
       onPress={onPress}
       className="px-4 py-2 rounded-full mr-2 flex-row items-center"
       style={{
-        backgroundColor: isSelected ? '#2563EB' : '#E5E7EB',
+        backgroundColor: isSelected ? '#9333EA' : isDarkMode ? '#3D3350' : '#E5E7EB',
       }}
     >
       <Text
         className="text-sm font-medium"
         style={{
-          color: isSelected ? '#FFFFFF' : '#374151',
+          color: isSelected ? '#FFFFFF' : isDarkMode ? '#D1D5DB' : '#374151',
         }}
       >
         {label}
@@ -147,7 +150,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
   return (
     <Pressable
       onPress={onPress}
-      className="bg-white dark:bg-gray-800 rounded-xl mb-3 p-4 border border-gray-100 dark:border-gray-700 active:opacity-80"
+      className="bg-white dark:bg-surface rounded-xl mb-3 p-4 border border-gray-100 dark:border-surface-overlay active:opacity-80"
       accessibilityRole="button"
       accessibilityLabel={`${posting.title} 상세 보기`}
     >
@@ -207,8 +210,8 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 
       {/* 지원자 수 */}
       {(posting.applicationCount ?? 0) > 0 && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
-          <Text className="text-xs text-blue-600 dark:text-blue-400">
+        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
+          <Text className="text-xs text-primary-600 dark:text-primary-400">
             지원자 {posting.applicationCount}명
           </Text>
         </View>
@@ -222,6 +225,7 @@ const PostingCard = memo(function PostingCard({ posting, onPress }: PostingCardP
 // ============================================================================
 
 export default function MyPostingsPage() {
+  const { isDarkMode } = useThemeStore();
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
   const { data: postings, isLoading, isRefetching, refetch, error } = useMyJobPostings();
 
@@ -268,8 +272,8 @@ export default function MyPostingsPage() {
   // 로딩 상태
   if (isLoading && !postings) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
-        <ActivityIndicator size="large" color="#3B82F6" />
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
+        <ActivityIndicator size="large" color="#A855F7" />
         <Text className="mt-4 text-gray-500 dark:text-gray-400">
           공고 목록을 불러오는 중...
         </Text>
@@ -280,7 +284,7 @@ export default function MyPostingsPage() {
   // 에러 상태
   if (error) {
     return (
-      <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <EmptyState
           title="오류 발생"
           description="공고 목록을 불러오는 데 실패했습니다."
@@ -293,16 +297,16 @@ export default function MyPostingsPage() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
       {/* 헤더 */}
-      <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
         <View className="flex-row items-center justify-between mb-1">
           <Text className="text-xl font-bold text-gray-900 dark:text-white">
             내 공고 관리
           </Text>
           <Pressable
             onPress={handleCreatePress}
-            className="bg-blue-600 dark:bg-blue-500 px-4 py-2 rounded-lg flex-row items-center"
+            className="bg-primary-600 dark:bg-primary-500 px-4 py-2 rounded-lg flex-row items-center"
             accessibilityRole="button"
             accessibilityLabel="새 공고 작성"
           >
@@ -316,7 +320,7 @@ export default function MyPostingsPage() {
       </View>
 
       {/* 필터 탭 */}
-      <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+      <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {FILTER_TABS.map((tab) => (
             <FilterTab
@@ -326,6 +330,7 @@ export default function MyPostingsPage() {
               count={filterCounts[tab.status]}
               isSelected={selectedFilter === tab.status}
               onPress={() => handleFilterChange(tab.status)}
+              isDarkMode={isDarkMode}
             />
           ))}
         </ScrollView>
@@ -345,7 +350,7 @@ export default function MyPostingsPage() {
           <RefreshControl
             refreshing={isRefetching}
             onRefresh={() => refetch()}
-            tintColor="#3B82F6"
+            tintColor="#A855F7"
           />
         }
       >

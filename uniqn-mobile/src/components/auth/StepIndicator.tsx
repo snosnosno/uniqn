@@ -63,7 +63,7 @@ export function StepIndicator({
                     w-8 h-8 rounded-full items-center justify-center
                     ${isCompleted ? 'bg-success-500 dark:bg-success-600' : ''}
                     ${isActive ? 'bg-primary-600 dark:bg-primary-500' : ''}
-                    ${isUpcoming ? 'bg-gray-200 dark:bg-gray-700' : ''}
+                    ${isUpcoming ? 'bg-gray-200 dark:bg-surface' : ''}
                   `}
                 >
                   {isCompleted ? (
@@ -104,7 +104,7 @@ export function StepIndicator({
                     flex-1 h-0.5 mx-2 mb-5
                     ${stepNumber < currentStep
                       ? 'bg-success-500 dark:bg-success-600'
-                      : 'bg-gray-200 dark:bg-gray-700'
+                      : 'bg-gray-200 dark:bg-surface'
                     }
                   `}
                 />

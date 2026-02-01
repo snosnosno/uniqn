@@ -18,6 +18,7 @@ import {
 import { getRoleDisplayName } from '@/types/unified';
 import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import type { ScheduleEvent, AttendanceStatus } from '@/types';
+import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
 // Types
@@ -68,7 +69,7 @@ interface TimeBoxProps {
 
 function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
   return (
-    <View className="flex-1 items-center py-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+    <View className="flex-1 items-center py-3 bg-gray-50 dark:bg-surface/50 rounded-lg">
       <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
       <Text
         className={`text-base font-semibold ${
@@ -89,6 +90,7 @@ function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
 
 export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProps) {
   const { isWorking } = useCurrentWorkStatus();
+  const { isDarkMode } = useThemeStore();
   const attendance = attendanceConfig[schedule.status];
 
   const handleQRScan = useCallback(() => {
@@ -161,7 +163,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
               {formatPhoneNumber(schedule.ownerPhone)}
             </Text>
             <View className="ml-auto flex-row items-center">
-              <PhoneIcon size={16} color="#2563EB" />
+              <PhoneIcon size={16} color="#9333EA" />
               <Text className="ml-1 text-sm text-primary-600 dark:text-primary-400">
                 전화하기
               </Text>
@@ -201,7 +203,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
             />
           </View>
         ) : (
-          <View className="bg-gray-50 dark:bg-gray-700/50 rounded-xl p-4">
+          <View className="bg-gray-50 dark:bg-surface/50 rounded-xl p-4">
             <Text className="text-sm text-gray-500 dark:text-gray-400 text-center">
               아직 출퇴근 기록이 없습니다
             </Text>
@@ -211,7 +213,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
 
       {/* 예정 시간 (참고용) */}
       {(schedule.startTime || schedule.endTime) && (
-        <View className="mb-5 p-3 bg-gray-50 dark:bg-gray-700/30 rounded-lg">
+        <View className="mb-5 p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
           <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">예정 시간</Text>
           <Text className="text-sm text-gray-600 dark:text-gray-400">
             {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)}
@@ -227,7 +229,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
           onPress={handleQRScan}
           className="flex-row items-center justify-center mt-2"
         >
-          <QrCodeIcon size={20} color={isWorking ? '#374151' : '#FFFFFF'} />
+          <QrCodeIcon size={20} color={isWorking ? (isDarkMode ? '#D1D5DB' : '#374151') : '#FFFFFF'} />
           <Text className={`ml-2 font-semibold ${isWorking ? 'text-gray-900 dark:text-gray-100' : 'text-white'}`}>
             QR 코드로 {isWorking ? '퇴근' : '출근'}하기
           </Text>

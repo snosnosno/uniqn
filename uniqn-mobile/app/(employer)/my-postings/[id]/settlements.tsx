@@ -107,7 +107,7 @@ interface TabHeaderProps {
 
 function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabHeaderProps) {
   return (
-    <View className="flex-row bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+    <View className="flex-row bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
       <Pressable
         onPress={() => onTabChange('staff')}
         className="flex-1 flex-row items-center justify-center py-4"
@@ -118,7 +118,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
       >
         <UsersIcon
           size={20}
-          color={activeTab === 'staff' ? '#2563EB' : '#6B7280'}
+          color={activeTab === 'staff' ? '#9333EA' : '#6B7280'}
         />
         <Text
           className="ml-2 text-base font-medium"
@@ -157,7 +157,7 @@ function TabHeader({ activeTab, onTabChange, staffCount, settlementCount }: TabH
       >
         <CurrencyYenIcon
           size={20}
-          color={activeTab === 'settlement' ? '#2563EB' : '#6B7280'}
+          color={activeTab === 'settlement' ? '#9333EA' : '#6B7280'}
         />
         <Text
           className="ml-2 text-base font-medium"
@@ -667,7 +667,7 @@ export default function StaffSettlementsScreen() {
   // 로딩 상태
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -681,7 +681,7 @@ export default function StaffSettlementsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="데이터를 불러올 수 없습니다"
           message={error.message}
@@ -698,7 +698,7 @@ export default function StaffSettlementsScreen() {
   ).length;
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       {/* 탭 헤더 */}
       <TabHeader
         activeTab={activeTab}

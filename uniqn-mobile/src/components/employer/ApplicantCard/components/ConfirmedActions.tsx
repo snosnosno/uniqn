@@ -35,12 +35,12 @@ export const ConfirmedActions = React.memo(function ConfirmedActions({
   }
 
   return (
-    <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+    <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
       {/* 확정 취소 버튼 */}
       {onCancelConfirmation && (
         <Pressable
           onPress={onCancelConfirmation}
-          className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+          className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
         >
           <XMarkIcon size={16} color="#EF4444" />
           <Text className="ml-1 text-sm font-medium text-error-600 dark:text-error-400">

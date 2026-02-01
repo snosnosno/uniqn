@@ -211,7 +211,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                 px-4 py-2 rounded-lg border min-w-[70px] items-center
                 ${isSelected
                   ? 'bg-primary-500 border-primary-500'
-                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                  : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                 }
                 ${disabled ? 'opacity-50' : 'active:opacity-80'}
               `}
@@ -238,8 +238,8 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
           <View
             className={`
               flex-row items-center rounded-lg border px-3 h-12
-              bg-white dark:bg-gray-800
-              border-gray-300 dark:border-gray-600
+              bg-white dark:bg-surface
+              border-gray-300 dark:border-surface-overlay
               ${disabled ? 'opacity-50' : ''}
             `}
           >
@@ -283,7 +283,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                     px-3 py-1.5 rounded-full
                     ${isSelected
                       ? 'bg-indigo-100 dark:bg-indigo-900/30'
-                      : 'bg-gray-100 dark:bg-gray-700'
+                      : 'bg-gray-100 dark:bg-surface'
                     }
                     ${disabled ? 'opacity-50' : 'active:opacity-70'}
                   `}
@@ -310,8 +310,8 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
           <View
             className={`
               flex-row items-center rounded-lg border px-3 h-12
-              bg-white dark:bg-gray-800
-              border-gray-300 dark:border-gray-600
+              bg-white dark:bg-surface
+              border-gray-300 dark:border-surface-overlay
               ${disabled ? 'opacity-50' : ''}
             `}
           >
@@ -353,7 +353,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                     flex-row items-center px-3 py-2 rounded-lg border
                     ${isChecked
                       ? 'bg-indigo-50 dark:bg-indigo-900/30 border-indigo-300 dark:border-indigo-700'
-                      : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600'
+                      : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
                     }
                     ${disabled ? 'opacity-50' : 'active:opacity-70'}
                   `}
@@ -363,7 +363,7 @@ export const TaxSettingsEditor = memo(function TaxSettingsEditor({
                       h-4 w-4 rounded border items-center justify-center mr-2
                       ${isChecked
                         ? 'bg-indigo-600 dark:bg-indigo-500 border-indigo-600 dark:border-indigo-500'
-                        : 'bg-transparent border-gray-400 dark:border-gray-500'
+                        : 'bg-transparent border-gray-400 dark:border-surface-overlay'
                       }
                     `}
                   >

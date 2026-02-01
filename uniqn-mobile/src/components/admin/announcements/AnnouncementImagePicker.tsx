@@ -85,8 +85,8 @@ export function AnnouncementImagePicker({
             <View
               className={`w-full h-full rounded-xl overflow-hidden border-2 ${
                 isActive
-                  ? 'border-blue-500'
-                  : 'border-gray-200 dark:border-gray-700'
+                  ? 'border-primary-500'
+                  : 'border-gray-200 dark:border-surface-overlay'
               }`}
             >
               {/* 이미지 */}
@@ -173,7 +173,7 @@ export function AnnouncementImagePicker({
                     height: IMAGE_SIZE,
                     marginBottom: IMAGE_GAP,
                   }}
-                  className="rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-600 items-center justify-center bg-gray-50 dark:bg-gray-800/50 active:bg-gray-100 dark:active:bg-gray-700"
+                  className="rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center justify-center bg-gray-50 dark:bg-surface/50 active:bg-gray-100 dark:active:bg-gray-700"
                 >
                   <Ionicons name="add" size={32} color="#9CA3AF" />
                   <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -194,22 +194,22 @@ export function AnnouncementImagePicker({
             items-center justify-center
             ${
               disabled || isUploading
-                ? 'bg-gray-100 dark:bg-gray-800 border-gray-300 dark:border-gray-600'
-                : 'bg-gray-50 dark:bg-gray-800/50 border-gray-300 dark:border-gray-600 active:bg-gray-100 dark:active:bg-gray-700'
+                ? 'bg-gray-100 dark:bg-surface border-gray-300 dark:border-surface-overlay'
+                : 'bg-gray-50 dark:bg-surface/50 border-gray-300 dark:border-surface-overlay active:bg-gray-100 dark:active:bg-gray-700'
             }
           `}
           accessibilityLabel="이미지 선택"
         >
           {isUploading ? (
             <View className="items-center">
-              <ActivityIndicator size="large" color="#3B82F6" />
+              <ActivityIndicator size="large" color="#A855F7" />
               <Text className="mt-2 text-sm text-gray-500 dark:text-gray-400">
                 업로드 중... {uploadProgress}%
               </Text>
             </View>
           ) : (
             <View className="items-center">
-              <View className="w-14 h-14 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mb-2">
+              <View className="w-14 h-14 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
                 <Ionicons name="images-outline" size={28} color="#9CA3AF" />
               </View>
               <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -226,9 +226,9 @@ export function AnnouncementImagePicker({
       {/* 업로드 진행률 바 */}
       {isUploading && uploadProgress > 0 && (
         <View className="mt-2">
-          <View className="h-1.5 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+          <View className="h-1.5 bg-gray-200 dark:bg-surface rounded-full overflow-hidden">
             <View
-              className="h-full bg-blue-600 rounded-full"
+              className="h-full bg-primary-600 rounded-full"
               style={{ width: `${uploadProgress}%` }}
             />
           </View>

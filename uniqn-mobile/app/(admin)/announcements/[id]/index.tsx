@@ -139,7 +139,7 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
           <ActivityIndicator size="large" />
         </View>
       </>
@@ -150,14 +150,14 @@ export default function AnnouncementDetailPage() {
     return (
       <>
         <Stack.Screen options={{ title: '공지사항 상세' }} />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center px-8">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center px-8">
           <Ionicons name="alert-circle-outline" size={64} color="#ef4444" />
           <Text className="text-lg font-medium text-gray-700 dark:text-gray-300 mt-4">
             공지사항을 찾을 수 없습니다
           </Text>
           <Pressable
             onPress={() => router.back()}
-            className="mt-6 bg-blue-600 px-6 py-3 rounded-lg"
+            className="mt-6 bg-primary-600 px-6 py-3 rounded-lg"
           >
             <Text className="text-white font-medium">돌아가기</Text>
           </Pressable>
@@ -178,16 +178,16 @@ export default function AnnouncementDetailPage() {
           headerBackTitle: '목록',
           headerRight: () => (
             <Pressable onPress={handleEdit} className="mr-2">
-              <Ionicons name="create-outline" size={24} color="#2563eb" />
+              <Ionicons name="create-outline" size={24} color="#9333EA" />
             </Pressable>
           ),
         }}
       />
 
-      <ScrollView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <ScrollView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <View className="p-4">
           {/* Header Card */}
-          <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-4">
+          <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
             {/* Badges */}
             <View className="flex-row flex-wrap gap-2 mb-3">
               {/* Status */}
@@ -207,7 +207,7 @@ export default function AnnouncementDetailPage() {
               )}
 
               {/* Category */}
-              <View className="px-2 py-1 rounded bg-gray-100 dark:bg-gray-700">
+              <View className="px-2 py-1 rounded bg-gray-100 dark:bg-surface">
                 <Text className="text-xs text-gray-600 dark:text-gray-400">
                   {categoryLabel}
                 </Text>
@@ -247,7 +247,7 @@ export default function AnnouncementDetailPage() {
           </View>
 
           {/* Content Card */}
-          <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-4">
+          <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
             <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
               내용
             </Text>
@@ -262,7 +262,7 @@ export default function AnnouncementDetailPage() {
             if (images.length === 0) return null;
 
             return (
-              <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-4">
+              <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
                 <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
                   첨부 이미지 ({images.length}장)
                 </Text>
@@ -311,13 +311,13 @@ export default function AnnouncementDetailPage() {
           })()}
 
           {/* Info Card */}
-          <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700 mb-4">
+          <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay mb-4">
             <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">
               정보
             </Text>
 
             {/* Target Audience */}
-            <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">
               <Text className="text-sm text-gray-500 dark:text-gray-400">대상</Text>
               <Text className="text-sm text-gray-900 dark:text-white">
                 {announcement.targetAudience.type === 'all'
@@ -340,7 +340,7 @@ export default function AnnouncementDetailPage() {
             </View>
 
             {/* Created At */}
-            <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+            <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">
               <Text className="text-sm text-gray-500 dark:text-gray-400">작성일</Text>
               <Text className="text-sm text-gray-900 dark:text-white">
                 {formatDate(announcement.createdAt)}
@@ -349,7 +349,7 @@ export default function AnnouncementDetailPage() {
 
             {/* Published At */}
             {announcement.publishedAt && (
-              <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-gray-700">
+              <View className="flex-row justify-between py-2 border-b border-gray-100 dark:border-surface-overlay">
                 <Text className="text-sm text-gray-500 dark:text-gray-400">발행일</Text>
                 <Text className="text-sm text-gray-900 dark:text-white">
                   {formatDate(announcement.publishedAt)}
@@ -408,7 +408,7 @@ export default function AnnouncementDetailPage() {
             <Pressable
               onPress={handleEdit}
               disabled={!!actionLoading}
-              className="bg-blue-600 rounded-lg py-3 items-center flex-row justify-center"
+              className="bg-primary-600 rounded-lg py-3 items-center flex-row justify-center"
             >
               <Ionicons name="create-outline" size={18} color="#fff" />
               <Text className="text-white font-medium ml-2">수정하기</Text>

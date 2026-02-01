@@ -164,7 +164,7 @@ export function ApplicantConfirmModal({
     >
       <View>
         {/* 지원자 정보 */}
-        <View className="flex-row items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-xl mb-3">
+        <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-xl mb-3">
           <Avatar
             source={userProfile?.photoURL}
             name={displayName}
@@ -200,12 +200,12 @@ export function ApplicantConfirmModal({
                 <View
                   key={item.id}
                   className={`flex-row items-center p-3 rounded-lg mb-2 ${
-                    isDark ? 'bg-blue-900 border border-blue-700' : 'bg-blue-50 border border-blue-200'
+                    isDark ? 'bg-primary-900 border border-primary-700' : 'bg-primary-50 border border-primary-200'
                   }`}
                 >
                   <CalendarIcon
                     size={16}
-                    color={isDark ? '#93C5FD' : '#2563EB'}
+                    color={isDark ? '#93C5FD' : '#9333EA'}
                   />
                   <Text className={`ml-2 text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {item.date}
@@ -240,7 +240,7 @@ export function ApplicantConfirmModal({
 
         {/* 지원 메시지 */}
         {applicant.message && (
-          <View className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg mb-3">
+          <View className="p-2.5 bg-primary-50 dark:bg-primary-900/20 rounded-lg mb-3">
             <Text className="text-xs text-gray-600 dark:text-gray-300 mb-0.5 font-medium">
               지원 메시지
             </Text>
@@ -254,7 +254,7 @@ export function ApplicantConfirmModal({
         <View className="flex-row items-center mb-3">
           <AlertCircleIcon
             size={20}
-            color={action === 'reject' ? '#EF4444' : '#2563EB'}
+            color={action === 'reject' ? '#EF4444' : '#9333EA'}
           />
           <Text className="ml-2 text-sm text-gray-600 dark:text-gray-300">
             {config.description}
@@ -275,7 +275,7 @@ export function ApplicantConfirmModal({
               multiline
               numberOfLines={2}
               textAlignVertical="top"
-              className="p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[60px]"
+              className="p-2.5 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[60px]"
             />
           </View>
         )}

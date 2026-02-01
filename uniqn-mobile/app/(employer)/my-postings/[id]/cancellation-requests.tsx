@@ -31,7 +31,7 @@ interface StatsHeaderProps {
 
 function StatsHeader({ pendingCount, approvedCount, rejectedCount }: StatsHeaderProps) {
   return (
-    <View className="flex-row justify-between px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row justify-between px-4 py-3 bg-white dark:bg-surface border-b border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-center">
         <Badge variant="warning" size="sm" dot>
           대기 {pendingCount}
@@ -150,7 +150,7 @@ export default function CancellationRequestsScreen() {
   // 로딩 상태
   if (isLoadingCancellationRequests && cancellationRequests.length === 0) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <View className="flex-1 items-center justify-center">
           <Loading size="large" />
           <Text className="mt-4 text-gray-500 dark:text-gray-400">
@@ -164,7 +164,7 @@ export default function CancellationRequestsScreen() {
   // 에러 상태
   if (error) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <ErrorState
           title="취소 요청을 불러올 수 없습니다"
           message={error.message}
@@ -175,7 +175,7 @@ export default function CancellationRequestsScreen() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       {/* 통계 헤더 */}
       <StatsHeader
         pendingCount={stats.pending}
@@ -229,7 +229,7 @@ export default function CancellationRequestsScreen() {
           onPress={handleCancelApprove}
         >
           <Pressable
-            className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-sm p-5"
+            className="bg-white dark:bg-surface rounded-2xl w-full max-w-sm p-5"
             onPress={(e) => e.stopPropagation()}
           >
             {/* 모달 헤더 */}

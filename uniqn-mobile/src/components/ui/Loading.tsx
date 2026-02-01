@@ -14,8 +14,8 @@ import { useThemeStore } from '@/stores/themeStore';
 // ============================================================================
 
 const LOADING_COLORS = {
-  light: '#3b82f6', // primary-500
-  dark: '#60a5fa',  // primary-400 (다크모드에서 더 밝게)
+  light: '#A855F7', // primary-500
+  dark: '#C084FC',  // primary-400 (다크모드에서 더 밝게)
 } as const;
 
 export interface LoadingProps {
@@ -45,7 +45,7 @@ export function Loading({
 
   if (fullScreen) {
     return (
-      <View className="absolute inset-0 items-center justify-center bg-white/80 dark:bg-gray-900/80">
+      <View className="absolute inset-0 items-center justify-center bg-white/80 dark:bg-surface-dark/80">
         {content}
       </View>
     );

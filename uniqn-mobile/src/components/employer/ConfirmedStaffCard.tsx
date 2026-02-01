@@ -232,7 +232,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
         {/* 시간 정보 (컴팩트 아닐 때) */}
         {!compact && (
-          <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-gray-700">
+          <View className="flex-row items-center mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay">
             <ClockIcon size={16} color="#6B7280" />
             <View className="flex-row flex-1 ml-2">
               <View className="flex-1">
@@ -272,7 +272,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
         {/* 비고 */}
         {staff.notes && !compact && (
-          <View className="mt-2 p-2 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <View className="mt-2 p-2 bg-gray-50 dark:bg-surface rounded-lg">
             <Text className="text-sm text-gray-600 dark:text-gray-400" numberOfLines={2}>
               {staff.notes}
             </Text>
@@ -282,14 +282,14 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
       {/* 액션 버튼 */}
       {showActions && (
-        <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
+        <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay gap-2">
           {/* 시간 수정 */}
           {onEditTime && canEditTime && (
             <Pressable
               onPress={handleEditTime}
-              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
             >
-              <EditIcon size={14} color={isDark ? '#93C5FD' : '#2563EB'} />
+              <EditIcon size={14} color={isDark ? '#93C5FD' : '#9333EA'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
                 시간 수정
               </Text>
@@ -300,9 +300,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           {onChangeRole && canEditTime && (
             <Pressable
               onPress={handleChangeRole}
-              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+              className="flex-1 flex-row items-center justify-center py-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
             >
-              <BriefcaseIcon size={14} color={isDark ? '#93C5FD' : '#2563EB'} />
+              <BriefcaseIcon size={14} color={isDark ? '#93C5FD' : '#9333EA'} />
               <Text className="ml-1 text-sm font-medium text-primary-600 dark:text-primary-400">
                 역할 변경
               </Text>
@@ -326,7 +326,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
           {onDelete && canDelete && (
             <Pressable
               onPress={handleDelete}
-              className="flex-row items-center justify-center py-2 px-3 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+              className="flex-row items-center justify-center py-2 px-3 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
             >
               <TrashIcon size={14} color="#6B7280" />
             </Pressable>

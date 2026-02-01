@@ -106,12 +106,12 @@ export const DatePicker = memo(function DatePicker({
   const getInputStyle = () => {
     const base = 'flex-row items-center px-4 py-3 rounded-lg border-2';
     if (disabled) {
-      return `${base} bg-gray-100 dark:bg-gray-700 border-gray-200 dark:border-gray-600`;
+      return `${base} bg-gray-100 dark:bg-surface border-gray-200 dark:border-surface-overlay`;
     }
     if (error) {
-      return `${base} bg-white dark:bg-gray-800 border-red-500`;
+      return `${base} bg-white dark:bg-surface border-red-500`;
     }
-    return `${base} bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600`;
+    return `${base} bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay`;
   };
 
   // time 모드는 TimePicker 사용 권장 (여기서는 기본 동작만)
@@ -191,9 +191,9 @@ export const DatePicker = memo(function DatePicker({
         onRequestClose={closeModal}
       >
         <View className="flex-1 justify-end bg-black/50">
-          <View className="bg-white dark:bg-gray-800 rounded-t-2xl">
+          <View className="bg-white dark:bg-surface rounded-t-2xl">
             {/* 헤더 */}
-            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-gray-700">
+            <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">
                 날짜 선택
               </Text>

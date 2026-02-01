@@ -10,20 +10,40 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
-      // UNIQN 브랜드 컬러
+      // UNIQN 브랜드 컬러 (v2.0 - 프리미엄 퍼플/골드)
       colors: {
+        // Primary: 퍼플 (메인 브랜드 컬러)
         primary: {
-          50: '#eff6ff',
-          100: '#dbeafe',
-          200: '#bfdbfe',
-          300: '#93c5fd',
-          400: '#60a5fa',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
-          800: '#1e40af',
-          900: '#1e3a8a',
+          50: '#FAF5FF',
+          100: '#F3E8FF',
+          200: '#E9D5FF',
+          300: '#D8B4FE',
+          400: '#C084FC',
+          500: '#A855F7',
+          600: '#9333EA',
+          700: '#7C3AED',
+          800: '#6B21A8',
+          900: '#581C87',
         },
+        // Accent: 골드 (프리미엄 강조)
+        accent: {
+          50: '#FFFBEB',
+          100: '#FEF3C7',
+          200: '#FDE68A',
+          300: '#FCD34D',
+          400: '#FBBF24',
+          500: '#D4AF37',
+          600: '#B8860B',
+          700: '#92400E',
+        },
+        // Surface: 다크 퍼플 배경
+        surface: {
+          DEFAULT: '#1A1625',
+          dark: '#0D0B14',
+          elevated: '#2D2438',
+          overlay: '#3D3350',
+        },
+        // Secondary: 뉴트럴 그레이
         secondary: {
           50: '#f8fafc',
           100: '#f1f5f9',
@@ -36,6 +56,7 @@ module.exports = {
           800: '#1e293b',
           900: '#0f172a',
         },
+        // 상태 색상 (유지)
         success: {
           50: '#f0fdf4',
           100: '#dcfce7',

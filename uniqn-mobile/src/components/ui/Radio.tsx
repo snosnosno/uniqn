@@ -96,7 +96,7 @@ const RadioItem = memo(function RadioItem({
   // 외부 원 스타일 결정
   const getOuterStyle = () => {
     if (isDisabled) {
-      return 'border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700';
+      return 'border-gray-300 dark:border-surface-overlay bg-gray-100 dark:bg-surface';
     }
     if (error) {
       return 'border-red-500';
@@ -104,7 +104,7 @@ const RadioItem = memo(function RadioItem({
     if (selected) {
       return 'border-indigo-600 dark:border-indigo-500';
     }
-    return 'border-gray-300 dark:border-gray-500';
+    return 'border-gray-300 dark:border-surface-overlay';
   };
 
   // 내부 원 스타일 결정

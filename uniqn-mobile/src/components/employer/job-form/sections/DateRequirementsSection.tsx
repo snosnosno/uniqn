@@ -352,8 +352,8 @@ export function DateRequirementsSection({
         disabled={!canAddDate}
         className={`flex-row items-center justify-center p-4 rounded-lg border-2 border-dashed ${
           canAddDate
-            ? 'border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20'
-            : 'border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 opacity-50'
+            ? 'border-primary-300 dark:border-primary-700 bg-primary-50 dark:bg-primary-900/20'
+            : 'border-gray-300 dark:border-surface-overlay bg-gray-50 dark:bg-surface opacity-50'
         }`}
         accessibilityLabel="날짜 추가"
         accessibilityRole="button"
@@ -362,12 +362,12 @@ export function DateRequirementsSection({
         }
       >
         <View className="mr-2">
-          <PlusIcon size={20} color={canAddDate ? '#3B82F6' : '#9CA3AF'} />
+          <PlusIcon size={20} color={canAddDate ? '#A855F7' : '#9CA3AF'} />
         </View>
         <Text
           className={`font-medium ${
             canAddDate
-              ? 'text-blue-600 dark:text-blue-400'
+              ? 'text-primary-600 dark:text-primary-400'
               : 'text-gray-400 dark:text-gray-600'
           }`}
         >

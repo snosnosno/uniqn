@@ -36,7 +36,7 @@ export const DateSelection = memo(function DateSelection({
   const formattedDate = formatDateDisplay(date);
 
   return (
-    <View className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-900">
+    <View className="mb-3 p-3 rounded-lg bg-gray-50 dark:bg-surface-dark">
       {/* 날짜 헤더 */}
       <View className="flex-row items-center mb-3">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">

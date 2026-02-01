@@ -86,7 +86,7 @@ interface InfoRowProps {
 
 function InfoRow({ icon, label, value }: InfoRowProps) {
   return (
-    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
       <View className="w-6 mt-0.5">{icon}</View>
       <View className="flex-1 ml-2">
         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">{label}</Text>
@@ -104,8 +104,8 @@ interface GridInfoItemProps {
 
 function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
   return (
-    <View className="flex-row items-center p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-      <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 items-center justify-center mr-2">
+    <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-lg">
+      <View className="w-8 h-8 rounded-full bg-gray-100 dark:bg-surface items-center justify-center mr-2">
         {icon}
       </View>
       <View className="flex-1">
@@ -150,15 +150,15 @@ function AssignmentDisplay({ assignments }: AssignmentDisplayProps) {
   if (groupedByDate.length === 0) return null;
 
   return (
-    <View className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-3">
+    <View className="bg-primary-50 dark:bg-primary-900/20 rounded-lg p-3">
       <Text className="text-sm font-medium text-gray-900 dark:text-white mb-2">
         지원 일정
       </Text>
       {groupedByDate.map((item, idx) => (
         <View key={idx} className="mb-2 last:mb-0">
           <View className="flex-row items-center mb-1">
-            <CalendarIcon size={14} color="#2563EB" />
-            <Text className="ml-2 text-sm font-medium text-blue-700 dark:text-blue-300">
+            <CalendarIcon size={14} color="#9333EA" />
+            <Text className="ml-2 text-sm font-medium text-primary-700 dark:text-primary-300">
               {item.formattedDate}
             </Text>
           </View>
@@ -230,9 +230,9 @@ export function ApplicantProfileModal({
     >
       <View>
           {/* 프로필 헤더 */}
-          <View className="items-center py-4 bg-gray-50 dark:bg-gray-800">
+          <View className="items-center py-4 bg-gray-50 dark:bg-surface">
             {isProfileLoading ? (
-              <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-gray-700 items-center justify-center mb-2">
+              <View className="h-16 w-16 rounded-full bg-gray-200 dark:bg-surface items-center justify-center mb-2">
                 <ActivityIndicator size="small" color="#6B7280" />
               </View>
             ) : (
@@ -263,7 +263,7 @@ export function ApplicantProfileModal({
 
           {/* 프로필 정보 (사용자가 설정한 정보) */}
           {userProfile && (
-            <View className="px-4 py-4 border-b border-gray-100 dark:border-gray-700">
+            <View className="px-4 py-4 border-b border-gray-100 dark:border-surface-overlay">
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-3">
                 프로필 정보
               </Text>
@@ -366,7 +366,7 @@ export function ApplicantProfileModal({
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
                 지원 메시지
               </Text>
-              <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
                 <View className="flex-row items-start">
                   <MessageIcon size={16} color="#6B7280" />
                   <Text className="ml-2 text-sm text-gray-700 dark:text-gray-300 flex-1">
@@ -383,7 +383,7 @@ export function ApplicantProfileModal({
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
                 사전질문 답변
               </Text>
-              <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
                 {applicant.preQuestionAnswers.map((answer, idx) => (
                   <View key={idx} className="mb-3 last:mb-0">
                     <View className="flex-row items-start mb-1">
@@ -435,7 +435,7 @@ export function ApplicantProfileModal({
               <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
                 확정 이력
               </Text>
-              <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+              <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
                 {applicant.confirmationHistory.map((entry, idx) => {
                   const isCancelled = !!entry.cancelledAt;
                   const timestamp = isCancelled

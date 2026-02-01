@@ -27,7 +27,7 @@ import { Modal } from './Modal';
 /** BottomSheet 배경색 (Tailwind gray-800 / white 대응) */
 const BACKGROUND_COLORS = {
   light: '#ffffff',
-  dark: '#1f2937', // gray-800
+  dark: '#1A1625', // gray-800
 } as const;
 
 // ============================================================================
@@ -121,13 +121,13 @@ const WebBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         {/* Handle bar (시각적 요소만) */}
         {showHandle && (
           <View className="items-center pt-3 pb-1 -mt-5 -mx-5 mb-3">
-            <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+            <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
           </View>
         )}
 
         {/* Header */}
         {title && (
-          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-gray-700">
+          <View className="flex-row items-center justify-between pb-3 -mt-2 border-b border-gray-200 dark:border-surface-overlay">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
               {title}
             </Text>
@@ -235,7 +235,7 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
       if (!showHandle) return null;
       return (
         <View className="items-center pt-3 pb-1">
-          <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-gray-600" />
+          <View className="w-10 h-1 rounded-full bg-gray-300 dark:bg-surface-elevated" />
         </View>
       );
     }, [showHandle]);
@@ -263,14 +263,14 @@ const NativeBottomSheet = forwardRef<BottomSheetRef, BottomSheetProps>(
         <ContentWrapper style={styles.contentContainer}>
           {/* Header */}
           {(title || showCloseButton) && (
-            <View className="flex-row items-center justify-between px-5 pb-3 border-b border-gray-200 dark:border-gray-700">
+            <View className="flex-row items-center justify-between px-5 pb-3 border-b border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white flex-1">
                 {title ?? ''}
               </Text>
               {showCloseButton && (
                 <Pressable
                   onPress={onClose}
-                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 active:bg-gray-200 dark:active:bg-gray-600"
+                  className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                   accessibilityRole="button"
                   accessibilityLabel="닫기"
                 >

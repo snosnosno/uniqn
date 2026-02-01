@@ -37,7 +37,7 @@ interface JobDetailProps {
 
 function InfoRow({ label, value, icon }: { label: string; value: string | React.ReactNode; icon: string }) {
   return (
-    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="flex-row items-start py-3 border-b border-gray-100 dark:border-surface-overlay">
       <Text className="text-lg mr-3">{icon}</Text>
       <View className="flex-1">
         <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
@@ -79,7 +79,7 @@ function DateRequirementsGroupedDisplay({
 
   if (isTournament && dateGroups) {
     return (
-      <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+      <View className="py-3 border-b border-gray-100 dark:border-surface-overlay">
         <View className="flex-row items-start">
           <Text className="text-lg mr-3">📅</Text>
           <View className="flex-1">
@@ -89,7 +89,7 @@ function DateRequirementsGroupedDisplay({
             {dateGroups.map((group, groupIdx) => (
               <View
                 key={group.id || groupIdx}
-                className="mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                className="mb-3 p-3 bg-gray-50 dark:bg-surface rounded-lg"
               >
                 {/* 날짜 범위 */}
                 <Text className="text-sm font-semibold text-gray-900 dark:text-white mb-2">
@@ -119,15 +119,15 @@ function DateRequirementsGroupedDisplay({
                               key={role.id || roleIdx}
                               className={`mr-2 mb-1 px-2 py-1 rounded-md ${
                                 isFilled
-                                  ? 'bg-gray-200 dark:bg-gray-700'
-                                  : 'bg-blue-100 dark:bg-blue-900/30'
+                                  ? 'bg-gray-200 dark:bg-surface'
+                                  : 'bg-primary-100 dark:bg-primary-900/30'
                               }`}
                             >
                               <Text
                                 className={`text-xs ${
                                   isFilled
                                     ? 'text-gray-500 dark:text-gray-400 line-through'
-                                    : 'text-blue-700 dark:text-blue-300'
+                                    : 'text-primary-700 dark:text-primary-300'
                                 }`}
                               >
                                 {roleName} {headcount}명 ({filled}/{headcount})
@@ -149,7 +149,7 @@ function DateRequirementsGroupedDisplay({
 
   // 일반/긴급 공고: 개별 표시
   return (
-    <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+    <View className="py-3 border-b border-gray-100 dark:border-surface-overlay">
       <View className="flex-row items-start">
         <Text className="text-lg mr-3">📅</Text>
         <View className="flex-1">
@@ -213,9 +213,9 @@ export function JobDetail({ job }: JobDetailProps) {
   };
 
   return (
-    <View className="bg-white dark:bg-gray-900">
+    <View className="bg-white dark:bg-surface-dark">
       {/* 헤더 영역 */}
-      <View className="p-4 bg-gray-50 dark:bg-gray-800">
+      <View className="p-4 bg-gray-50 dark:bg-surface">
         {/* 뱃지 영역 */}
         <View className="flex-row items-center flex-wrap mb-2">
           {/* 공고 타입 뱃지 (regular 제외) */}
@@ -264,7 +264,7 @@ export function JobDetail({ job }: JobDetailProps) {
       )}
 
       {/* 근무 정보 */}
-      <View className="p-4 border-t border-gray-100 dark:border-gray-700">
+      <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
           근무 정보
         </Text>
@@ -274,7 +274,7 @@ export function JobDetail({ job }: JobDetailProps) {
         {/* 날짜별 요구사항 (v3.0) 또는 고정공고 일정 */}
         {isFixed && fixedSchedule ? (
           // 고정공고: FixedScheduleDisplay 사용 (v3.0: fixedSchedule에서 데이터 추출)
-          <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+          <View className="py-3 border-b border-gray-100 dark:border-surface-overlay">
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">📅</Text>
               <View className="flex-1">
@@ -317,7 +317,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
         {/* 수당 (v2.0: 개선된 표시) */}
         {allowanceItems.length > 0 && (
-          <View className="py-3 border-b border-gray-100 dark:border-gray-700">
+          <View className="py-3 border-b border-gray-100 dark:border-surface-overlay">
             <View className="flex-row items-start">
               <Text className="text-lg mr-3">💰</Text>
               <View className="flex-1">
@@ -339,11 +339,11 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {/* 사전질문 미리보기 (v2.0) */}
       {job.usesPreQuestions && job.preQuestions && job.preQuestions.length > 0 && (
-        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
+        <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
           <Text className="text-base font-semibold text-gray-900 dark:text-white mb-2">
             📝 사전질문 ({job.preQuestions.length}개)
           </Text>
-          <View className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+          <View className="bg-gray-50 dark:bg-surface rounded-lg p-3">
             {job.preQuestions.slice(0, 3).map((q, idx) => (
               <View key={idx} className="mb-2">
                 <Text className="text-sm text-gray-700 dark:text-gray-300">
@@ -363,7 +363,7 @@ export function JobDetail({ job }: JobDetailProps) {
 
       {/* 통계 */}
       {(typeof job.viewCount === 'number' || typeof job.applicationCount === 'number') && (
-        <View className="p-4 border-t border-gray-100 dark:border-gray-700">
+        <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
           <View className="flex-row">
             {typeof job.viewCount === 'number' && (
               <Text className="text-xs text-gray-400 dark:text-gray-500 mr-4">

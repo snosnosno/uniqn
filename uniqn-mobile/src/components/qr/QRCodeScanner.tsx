@@ -200,19 +200,19 @@ export function QRCodeScanner({
               {/* 코너 장식 */}
               <View
                 className="absolute -top-1 -left-1 w-8 h-8 border-t-4 border-l-4 rounded-tl-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
               />
               <View
                 className="absolute -top-1 -right-1 w-8 h-8 border-t-4 border-r-4 rounded-tr-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
               />
               <View
                 className="absolute -bottom-1 -left-1 w-8 h-8 border-b-4 border-l-4 rounded-bl-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
               />
               <View
                 className="absolute -bottom-1 -right-1 w-8 h-8 border-b-4 border-r-4 rounded-br-lg"
-                style={{ borderColor: scanned ? '#22C55E' : '#3B82F6' }}
+                style={{ borderColor: scanned ? '#22C55E' : '#A855F7' }}
               />
             </View>
 

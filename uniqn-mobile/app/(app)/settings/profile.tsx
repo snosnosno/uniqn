@@ -121,7 +121,7 @@ export default function ProfileEditScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['bottom']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
@@ -161,7 +161,7 @@ export default function ProfileEditScreen() {
             {/* 이름 (읽기 전용 - 본인인증 정보) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.name ?? user?.displayName ?? '본인인증 후 자동 입력'}
                 </Text>
@@ -171,7 +171,7 @@ export default function ProfileEditScreen() {
             {/* 이메일 (읽기 전용) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이메일</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.email ?? user?.email ?? '-'}
                 </Text>
@@ -181,7 +181,7 @@ export default function ProfileEditScreen() {
             {/* 전화번호 (읽기 전용 - 본인인증 정보) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.phone ?? '본인인증 후 자동 입력'}
                 </Text>
@@ -191,7 +191,7 @@ export default function ProfileEditScreen() {
             {/* 생년월일 (읽기 전용 - 본인인증 정보) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">생년월일</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.birthYear ? `${profile.birthYear}년` : '본인인증 후 자동 입력'}
                 </Text>
@@ -201,7 +201,7 @@ export default function ProfileEditScreen() {
             {/* 성별 (읽기 전용 - 본인인증 정보) */}
             <View>
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.gender === 'male' ? '남성' : profile?.gender === 'female' ? '여성' : '본인인증 후 자동 입력'}
                 </Text>
@@ -226,7 +226,7 @@ export default function ProfileEditScreen() {
                     className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
                       errors.nickname
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -254,7 +254,7 @@ export default function ProfileEditScreen() {
                     className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
                       errors.region
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -282,7 +282,7 @@ export default function ProfileEditScreen() {
                     className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
                       errors.experienceYears
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value?.toString() ?? ''}
                     onChangeText={(text) => {
@@ -315,7 +315,7 @@ export default function ProfileEditScreen() {
                     className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
                       errors.career
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -346,7 +346,7 @@ export default function ProfileEditScreen() {
                     className={`rounded-lg border px-4 py-3 text-gray-900 dark:text-gray-100 ${
                       errors.note
                         ? 'border-error-500 bg-error-50 dark:bg-error-900/20'
-                        : 'border-gray-200 bg-white dark:border-gray-600 dark:bg-gray-800'
+                        : 'border-gray-200 bg-white dark:border-surface-overlay dark:bg-surface'
                     }`}
                     value={value}
                     onChangeText={onChange}
@@ -369,7 +369,7 @@ export default function ProfileEditScreen() {
             {/* 역할 (읽기 전용) */}
             <View>
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">역할</Text>
-              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-gray-700">
+              <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
                   {profile?.role === 'admin'
                     ? '관리자'
@@ -389,7 +389,7 @@ export default function ProfileEditScreen() {
             disabled={isSaving || !isDirty}
             className={`rounded-lg py-4 ${
               isSaving || !isDirty
-                ? 'bg-gray-300 dark:bg-gray-700'
+                ? 'bg-gray-300 dark:bg-surface'
                 : 'bg-primary-600 active:bg-primary-700'
             }`}
           >

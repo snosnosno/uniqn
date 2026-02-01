@@ -27,7 +27,7 @@ export default function AdminStatsPage() {
       />
 
       <ScrollView
-        className="flex-1 bg-gray-50 dark:bg-gray-900"
+        className="flex-1 bg-gray-50 dark:bg-surface-dark"
         refreshControl={
           <RefreshControl refreshing={isRefreshing} onRefresh={refresh} />
         }
@@ -76,8 +76,8 @@ export default function AdminStatsPage() {
                     value={stats.totalUsers}
                     isLoading={isLoading}
                     icon="people"
-                    iconColor="#2563eb"
-                    iconBgColor="bg-blue-100 dark:bg-blue-900/30"
+                    iconColor="#9333EA"
+                    iconBgColor="bg-primary-100 dark:bg-primary-900/30"
                     suffix="명"
                   />
                 </View>
@@ -103,9 +103,9 @@ export default function AdminStatsPage() {
                     value={stats.activeJobPostings}
                     isLoading={isLoading}
                     icon="briefcase"
-                    iconColor="#2563eb"
-                    iconBgColor="bg-blue-100 dark:bg-blue-900/30"
-                    valueColor="text-blue-600"
+                    iconColor="#9333EA"
+                    iconBgColor="bg-primary-100 dark:bg-primary-900/30"
+                    valueColor="text-primary-600"
                     suffix="건"
                   />
                 </View>
@@ -186,7 +186,7 @@ export default function AdminStatsPage() {
                         title="일별 활성 사용자"
                         data={metrics.dailyActiveUsers}
                         type="line"
-                        color="#2563eb"
+                        color="#9333EA"
                         suffix="명"
                       />
                     </View>
@@ -200,13 +200,13 @@ export default function AdminStatsPage() {
                   <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
                     최근 가입자
                   </Text>
-                  <View className="bg-white dark:bg-gray-800 rounded-xl border border-gray-100 dark:border-gray-700 overflow-hidden mb-6">
+                  <View className="bg-white dark:bg-surface rounded-xl border border-gray-100 dark:border-surface-overlay overflow-hidden mb-6">
                     {stats.recentUsers.map((user, index) => (
                       <View
                         key={user.id}
                         className={`p-4 flex-row items-center justify-between ${
                           index < stats.recentUsers.length - 1
-                            ? 'border-b border-gray-100 dark:border-gray-700'
+                            ? 'border-b border-gray-100 dark:border-surface-overlay'
                             : ''
                         }`}
                       >
@@ -223,7 +223,7 @@ export default function AdminStatsPage() {
                             user.role === 'admin'
                               ? 'bg-red-100 dark:bg-red-900/30'
                               : user.role === 'employer'
-                              ? 'bg-blue-100 dark:bg-blue-900/30'
+                              ? 'bg-primary-100 dark:bg-primary-900/30'
                               : 'bg-green-100 dark:bg-green-900/30'
                           }`}
                         >
@@ -232,7 +232,7 @@ export default function AdminStatsPage() {
                               user.role === 'admin'
                                 ? 'text-red-700 dark:text-red-300'
                                 : user.role === 'employer'
-                                ? 'text-blue-700 dark:text-blue-300'
+                                ? 'text-primary-700 dark:text-primary-300'
                                 : 'text-green-700 dark:text-green-300'
                             }`}
                           >

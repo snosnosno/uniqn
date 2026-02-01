@@ -118,7 +118,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900 items-center justify-center">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center">
           <Loading size="large" message="신고 목록을 불러오는 중..." />
         </View>
       </>
@@ -135,7 +135,7 @@ export default function AdminReportsPage() {
             title: '신고 관리',
           }}
         />
-        <View className="flex-1 bg-gray-50 dark:bg-gray-900">
+        <View className="flex-1 bg-gray-50 dark:bg-surface-dark">
           <EmptyState
             title="오류 발생"
             description="신고 목록을 불러오는 데 실패했습니다."
@@ -156,10 +156,10 @@ export default function AdminReportsPage() {
           title: '신고 관리',
         }}
       />
-      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView edges={['bottom']} className="flex-1 bg-gray-50 dark:bg-surface-dark">
         {/* 검색바 */}
-        <View className="px-4 py-3 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <View className="flex-row items-center bg-gray-100 dark:bg-gray-700 rounded-lg px-3 py-2">
+        <View className="px-4 py-3 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+          <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-lg px-3 py-2">
             <SearchIcon size={20} color="#9CA3AF" />
             <TextInput
               value={searchQuery}
@@ -176,7 +176,7 @@ export default function AdminReportsPage() {
               hitSlop={8}
               accessibilityLabel="필터 토글"
             >
-              <FilterIcon size={20} color={showFilters ? '#3B82F6' : '#9CA3AF'} />
+              <FilterIcon size={20} color={showFilters ? '#A855F7' : '#9CA3AF'} />
             </Pressable>
           </View>
         </View>
@@ -185,7 +185,7 @@ export default function AdminReportsPage() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          className="px-4 py-2 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700"
+          className="px-4 py-2 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay"
           contentContainerStyle={{ gap: 8 }}
         >
           {STATUS_OPTIONS.map((option) => (
@@ -193,7 +193,7 @@ export default function AdminReportsPage() {
               key={option.value}
               onPress={() => handleStatusFilter(option.value)}
               className={`px-4 py-2 rounded-full ${
-                filters.status === option.value ? 'bg-blue-600' : 'bg-gray-200 dark:bg-gray-700'
+                filters.status === option.value ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'
               }`}
             >
               <Text
@@ -211,7 +211,7 @@ export default function AdminReportsPage() {
 
         {/* 확장 필터 패널 */}
         {showFilters && (
-          <View className="px-4 py-3 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
+          <View className="px-4 py-3 bg-gray-50 dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
             {/* 심각도 필터 */}
             <Text className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-2">
               심각도
@@ -223,8 +223,8 @@ export default function AdminReportsPage() {
                   onPress={() => handleSeverityFilter(option.value)}
                   className={`px-3 py-1.5 rounded-full ${
                     filters.severity === option.value
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200 dark:bg-gray-700'
+                      ? 'bg-primary-600'
+                      : 'bg-gray-200 dark:bg-surface'
                   }`}
                 >
                   <Text
@@ -255,8 +255,8 @@ export default function AdminReportsPage() {
                   onPress={() => handleReporterTypeFilter(option.value)}
                   className={`px-3 py-1.5 rounded-full ${
                     filters.reporterType === option.value
-                      ? 'bg-blue-600'
-                      : 'bg-gray-200 dark:bg-gray-700'
+                      ? 'bg-primary-600'
+                      : 'bg-gray-200 dark:bg-surface'
                   }`}
                 >
                   <Text

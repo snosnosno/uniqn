@@ -450,3 +450,9 @@ export const CurrencyYenIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
   const resolvedColor = useDefaultColor(color);
   return <MaterialIcons name="currency-yen" size={size} color={resolvedColor} />;
 };
+
+// Squares (Grid/Grouping) Icon (다크모드 자동 대응)
+export const Squares2X2Icon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
+  const resolvedColor = useDefaultColor(color);
+  return <Feather name="grid" size={size} color={resolvedColor} />;
+};

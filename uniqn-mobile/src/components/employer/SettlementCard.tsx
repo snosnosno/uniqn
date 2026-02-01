@@ -158,11 +158,11 @@ export const SettlementCard = React.memo(function SettlementCard({
       )}
 
       {/* 하단: 상세보기 + 정산하기 버튼 */}
-      <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 gap-2">
+      <View className="flex-row mt-3 pt-3 border-t border-gray-100 dark:border-surface-overlay gap-2">
         {/* 상세보기 */}
         <Pressable
           onPress={handlePress}
-          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-gray-100 dark:bg-gray-700 active:opacity-70"
+          className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
         >
           <ChevronRightIcon size={16} color="#6B7280" />
           <Text className="ml-1 text-sm font-medium text-gray-600 dark:text-gray-400">

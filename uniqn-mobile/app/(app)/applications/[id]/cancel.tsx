@@ -23,7 +23,7 @@ import type { Application } from '@/types';
 
 function LoadingState() {
   return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
       <ActivityIndicator size="large" color="#6366f1" />
       <Text className="mt-4 text-gray-500 dark:text-gray-400">
         지원 정보를 불러오는 중...
@@ -44,7 +44,7 @@ function ErrorState({
   onBack: () => void;
 }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">😢</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         오류가 발생했습니다
@@ -71,7 +71,7 @@ function CannotCancelState({
   onBack: () => void;
 }) {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-4xl mb-4">⚠️</Text>
       <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
         취소 요청 불가
@@ -92,7 +92,7 @@ function CannotCancelState({
 
 function SuccessState() {
   return (
-    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-gray-900">
+    <View className="flex-1 items-center justify-center p-6 bg-gray-50 dark:bg-surface-dark">
       <Text className="text-6xl mb-4">📨</Text>
       <Text className="text-xl font-bold text-gray-900 dark:text-white mb-2">
         취소 요청 완료
@@ -214,15 +214,15 @@ export default function CancellationRequestScreen() {
   // 로딩 상태
   if (isLoadingApplication) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <LoadingState />
@@ -233,15 +233,15 @@ export default function CancellationRequestScreen() {
   // 조회 에러
   if (loadError) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <ErrorState
@@ -255,15 +255,15 @@ export default function CancellationRequestScreen() {
   // 지원서를 찾을 수 없는 경우
   if (!application) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <ErrorState
@@ -277,15 +277,15 @@ export default function CancellationRequestScreen() {
   // 취소 요청 불가능한 경우
   if (!canRequestCancel.allowed) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '취소 요청',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <CannotCancelState
@@ -299,15 +299,15 @@ export default function CancellationRequestScreen() {
   // 성공 상태
   if (isSuccess) {
     return (
-      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
         <Stack.Screen
           options={{
             headerShown: true,
             title: '취소 요청 완료',
             headerStyle: {
-              backgroundColor: isDarkMode ? '#111827' : '#ffffff',
+              backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
             },
-            headerTintColor: isDarkMode ? '#ffffff' : '#111827',
+            headerTintColor: isDarkMode ? '#ffffff' : '#1A1625',
           }}
         />
         <SuccessState />
@@ -317,7 +317,7 @@ export default function CancellationRequestScreen() {
 
   // 폼 표시
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900">
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark">
       <Stack.Screen
         options={{
           headerShown: false,

@@ -160,7 +160,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
 
     // 이미 추가된 날짜
     if (day.isAlreadyAdded) {
-      return `${base} bg-gray-300 dark:bg-gray-600`;
+      return `${base} bg-gray-300 dark:bg-surface-elevated`;
     }
     if (day.isSelected) {
       return `${base} bg-indigo-500`;
@@ -191,7 +191,7 @@ const CalendarDayCell = memo(function CalendarDayCell({
       return 'text-red-500 dark:text-red-400'; // 일요일
     }
     if (dayOfWeek === 6) {
-      return 'text-blue-500 dark:text-blue-400'; // 토요일
+      return 'text-primary-500 dark:text-primary-400'; // 토요일
     }
     return 'text-gray-900 dark:text-white';
   };
@@ -350,7 +350,7 @@ export const CalendarPicker = memo(function CalendarPicker({
                 index === 0
                   ? 'text-red-500 dark:text-red-400'
                   : index === 6
-                    ? 'text-blue-500 dark:text-blue-400'
+                    ? 'text-primary-500 dark:text-primary-400'
                     : 'text-gray-500 dark:text-gray-400'
               }`}
             >

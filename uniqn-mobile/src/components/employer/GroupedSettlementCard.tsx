@@ -70,8 +70,8 @@ const PAYROLL_STATUS_CONFIG: Record<
   },
   processing: {
     label: '처리중',
-    bgColor: 'bg-blue-100 dark:bg-blue-900/30',
-    textColor: 'text-blue-700 dark:text-blue-300',
+    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
+    textColor: 'text-primary-700 dark:text-primary-300',
   },
   completed: {
     label: '정산완료',
@@ -126,7 +126,7 @@ const DateStatusRow = memo(function DateStatusRow({
     <Pressable
       onPress={handlePress}
       className={`flex-row items-center py-2.5 ${
-        !isLast ? 'border-b border-gray-100 dark:border-gray-700/50' : ''
+        !isLast ? 'border-b border-gray-100 dark:border-surface-overlay/50' : ''
       }`}
       accessibilityLabel={`${status.formattedDate} ${roleDisplay} ${payrollConfig.label}`}
     >
@@ -362,7 +362,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
           </View>
         )}
         {group.summary.settlableCount < group.summary.pendingCount && (
-          <View className="flex-row items-center px-2 py-1 bg-gray-50 dark:bg-gray-700 rounded-lg">
+          <View className="flex-row items-center px-2 py-1 bg-gray-50 dark:bg-surface rounded-lg">
             <ExclamationCircleIcon size={12} color="#6B7280" />
             <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">
               출퇴근 미완료 {group.summary.pendingCount - group.summary.settlableCount}건
@@ -374,7 +374,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
       {/* 펼침/접힘 버튼 */}
       <Pressable
         onPress={toggleExpanded}
-        className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-gray-700"
+        className="flex-row items-center justify-center mt-3 py-2 border-t border-gray-200 dark:border-surface-overlay"
         accessibilityLabel={isExpanded ? '날짜별 상세 접기' : '날짜별 상세 펼치기'}
       >
         <Text className="text-sm text-gray-500 dark:text-gray-400 mr-1">
@@ -389,7 +389,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 펼침 상태: 날짜별 정산 상태 */}
       {isExpanded && (
-        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-gray-700">
+        <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
           {group.dateStatuses.map((status, index) => {
             const workLog = workLogMap.get(status.workLogId);
             if (!workLog) return null;
@@ -414,7 +414,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
 
       {/* 일괄 정산 버튼 (미정산 + 출퇴근 완료가 있을 때) */}
       {!selectionMode && settlableWorkLogs.length > 0 && onBulkSettle && (
-        <View className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
+        <View className="mt-3 pt-3 border-t border-gray-200 dark:border-surface-overlay">
           <Pressable
             onPress={handleBulkSettle}
             className="flex-row items-center justify-center py-3 bg-primary-500 rounded-lg active:opacity-70"

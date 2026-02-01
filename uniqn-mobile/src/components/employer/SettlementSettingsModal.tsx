@@ -114,7 +114,7 @@ function AccordionSection({
   children,
 }: AccordionSectionProps) {
   return (
-    <View className="border-b border-gray-100 dark:border-gray-700">
+    <View className="border-b border-gray-100 dark:border-surface-overlay">
       <Pressable
         onPress={onToggle}
         className="flex-row items-center justify-between px-4 py-4 active:bg-gray-50 dark:active:bg-gray-800"
@@ -160,7 +160,7 @@ function RoleSalaryItem({
   showApplyButton = true,
 }: RoleSalaryItemProps) {
   return (
-    <View className="mb-4 pb-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 last:mb-0 last:pb-0">
+    <View className="mb-4 pb-4 border-b border-gray-100 dark:border-surface-overlay last:border-b-0 last:mb-0 last:pb-0">
       <View className="flex-row items-center justify-between mb-3">
         <Text className="text-sm font-semibold text-gray-900 dark:text-white">
           {getRoleLabel(role)}
@@ -285,7 +285,7 @@ export function SettlementSettingsModal({
       <Pressable
         onPress={onClose}
         disabled={isSaving}
-        className={`flex-1 py-4 rounded-xl bg-gray-100 dark:bg-gray-700 ${
+        className={`flex-1 py-4 rounded-xl bg-gray-100 dark:bg-surface ${
           isSaving ? 'opacity-50' : 'active:opacity-70'
         }`}
       >

@@ -12,7 +12,7 @@ import { Card } from '@/components/ui';
 
 export default function LiabilityWaiverScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-gray-900" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
       <StackHeader title="서약서" />
 
       <ScrollView

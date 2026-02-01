@@ -39,7 +39,7 @@ export const DefaultFallback: React.FC<{ message?: string }> = ({
   message = '로딩 중...',
 }) => (
   <View style={styles.fallbackContainer}>
-    <ActivityIndicator size="large" color="#3B82F6" />
+    <ActivityIndicator size="large" color="#A855F7" />
     <Text style={styles.fallbackText}>{message}</Text>
   </View>
 );

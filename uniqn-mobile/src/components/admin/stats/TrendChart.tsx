@@ -39,7 +39,7 @@ export function TrendChart({
   title,
   data,
   type = 'line',
-  color = '#2563eb',
+  color = '#9333EA',
   suffix = '',
 }: TrendChartProps) {
   const { isDarkMode } = useThemeStore();
@@ -66,9 +66,9 @@ export function TrendChart({
   }, [data]);
 
   const chartConfig = useMemo(() => ({
-    backgroundColor: isDarkMode ? '#1f2937' : '#ffffff',
-    backgroundGradientFrom: isDarkMode ? '#1f2937' : '#ffffff',
-    backgroundGradientTo: isDarkMode ? '#1f2937' : '#ffffff',
+    backgroundColor: isDarkMode ? '#1A1625' : '#ffffff',
+    backgroundGradientFrom: isDarkMode ? '#1A1625' : '#ffffff',
+    backgroundGradientTo: isDarkMode ? '#1A1625' : '#ffffff',
     decimalPlaces: 0,
     color: colorFn,
     labelColor: () => (isDarkMode ? '#9ca3af' : '#6b7280'),
@@ -82,7 +82,7 @@ export function TrendChart({
     },
     propsForBackgroundLines: {
       strokeDasharray: '',
-      stroke: isDarkMode ? '#374151' : '#e5e7eb',
+      stroke: isDarkMode ? '#3D3350' : '#e5e7eb',
       strokeWidth: 1,
     },
   }), [isDarkMode, color, colorFn]);
@@ -101,7 +101,7 @@ export function TrendChart({
   // 데이터가 없거나 빈 경우 (hooks 호출 이후에 early return)
   if (!data || data.length === 0) {
     return (
-      <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+      <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
         <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
           {title}
         </Text>
@@ -115,7 +115,7 @@ export function TrendChart({
   }
 
   return (
-    <View className="bg-white dark:bg-gray-800 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+    <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       <View className="flex-row justify-between items-center mb-4">
         <Text className="text-base font-semibold text-gray-900 dark:text-white">
           {title}

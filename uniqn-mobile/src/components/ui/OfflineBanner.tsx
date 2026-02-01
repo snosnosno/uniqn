@@ -95,7 +95,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     if (variant === 'fullscreen') {
       return (
         <View className="absolute inset-0 z-50 bg-gray-900/80 items-center justify-center px-6">
-          <View className="bg-white dark:bg-gray-800 rounded-2xl p-8 items-center shadow-2xl max-w-sm w-full">
+          <View className="bg-white dark:bg-surface rounded-2xl p-8 items-center shadow-2xl max-w-sm w-full">
             <View className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full items-center justify-center mb-4">
               <WifiOff size={40} color="#ef4444" />
             </View>
@@ -112,7 +112,7 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
               <Pressable
                 onPress={handleRetry}
                 disabled={isRetrying || isChecking}
-                className="w-full bg-blue-600 dark:bg-blue-700 py-3 px-6 rounded-xl flex-row items-center justify-center active:opacity-80"
+                className="w-full bg-primary-600 dark:bg-primary-700 py-3 px-6 rounded-xl flex-row items-center justify-center active:opacity-80"
               >
                 {isRetrying || isChecking ? (
                   <ActivityIndicator size="small" color="white" />

@@ -80,9 +80,9 @@ export interface BadgeProps {
 }
 
 const variantStyles: Record<BadgeVariant, string> = {
-  default: 'bg-gray-100 dark:bg-gray-700',
+  default: 'bg-gray-100 dark:bg-surface',
   primary: 'bg-primary-100 dark:bg-primary-900/30',
-  secondary: 'bg-gray-200 dark:bg-gray-600',
+  secondary: 'bg-gray-200 dark:bg-surface-elevated',
   success: 'bg-success-100 dark:bg-success-700/30',
   warning: 'bg-warning-100 dark:bg-warning-700/30',
   error: 'bg-error-100 dark:bg-error-700/30',

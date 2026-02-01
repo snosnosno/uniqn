@@ -93,8 +93,8 @@ export function ResubmitButton({
         disabled={resubmit.isPending}
         className={`
           flex-row items-center justify-center rounded-xl
-          bg-blue-600 dark:bg-blue-500
-          active:bg-blue-700 dark:active:bg-blue-600
+          bg-primary-600 dark:bg-primary-500
+          active:bg-primary-700 dark:active:bg-primary-600
           ${paddingClass}
           ${fullWidth ? 'w-full' : ''}
           ${resubmit.isPending ? 'opacity-50' : ''}

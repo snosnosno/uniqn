@@ -61,7 +61,7 @@ function ProgressCircle({
   progress,
   size = 64,
   strokeWidth = 4,
-  color = '#3B82F6',
+  color = '#A855F7',
 }: ProgressCircleProps) {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -112,7 +112,7 @@ export function LoadingOverlay({
   message,
   opacity = 0.7,
   size = 'large',
-  color = '#3B82F6',
+  color = '#A855F7',
   cancellable = false,
   onCancel,
   progress,
@@ -178,7 +178,7 @@ export function LoadingOverlay({
         style={[{ backgroundColor: `rgba(0, 0, 0, ${opacity})` }, containerAnimatedStyle]}
       >
         <Animated.View
-          className="bg-white dark:bg-gray-800 rounded-2xl px-8 py-6 items-center shadow-xl min-w-[160px]"
+          className="bg-white dark:bg-surface rounded-2xl px-8 py-6 items-center shadow-xl min-w-[160px]"
           style={contentAnimatedStyle}
         >
           {/* 진행률 표시 또는 스피너 */}
@@ -234,14 +234,14 @@ interface InlineLoadingOverlayProps {
 export function InlineLoadingOverlay({
   message,
   size = 'large',
-  color = '#3B82F6',
+  color = '#A855F7',
   progress,
   showProgress = false,
 }: InlineLoadingOverlayProps) {
   const hasProgress = showProgress && typeof progress === 'number';
 
   return (
-    <View className="absolute inset-0 bg-white/80 dark:bg-gray-900/80 items-center justify-center z-50">
+    <View className="absolute inset-0 bg-white/80 dark:bg-surface-dark/80 items-center justify-center z-50">
       <View className="items-center">
         {hasProgress ? (
           <ProgressCircle progress={progress} color={color} />
