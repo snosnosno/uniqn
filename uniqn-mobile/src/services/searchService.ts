@@ -6,6 +6,7 @@
  */
 
 import { logger } from '@/utils/logger';
+import { BusinessError, ERROR_CODES } from '@/errors';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -187,7 +188,9 @@ export class AlgoliaSearchProvider implements SearchProvider<JobPosting> {
 
   async search(_query: string, _options?: SearchOptions): Promise<SearchResult<JobPosting>> {
     // Algolia 검색 구현 예정 (P3: 검색 고도화)
-    throw new Error(`Algolia 프로바이더(${this.indexName})는 아직 구현되지 않았습니다.`);
+    throw new BusinessError(ERROR_CODES.UNKNOWN, {
+      userMessage: `Algolia 프로바이더(${this.indexName})는 아직 구현되지 않았습니다.`,
+    });
   }
 }
 
@@ -217,7 +220,9 @@ export function createSearchProvider(
   switch (config.provider) {
     case 'algolia':
       if (!config.algolia) {
-        throw new Error('Algolia 설정이 필요합니다.');
+        throw new BusinessError(ERROR_CODES.UNKNOWN, {
+          userMessage: 'Algolia 설정이 필요합니다.',
+        });
       }
       return new AlgoliaSearchProvider(
         config.algolia.appId,

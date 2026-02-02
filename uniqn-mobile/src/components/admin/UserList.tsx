@@ -13,6 +13,7 @@ import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { Badge } from '../ui/Badge';
 import { SearchIcon, XMarkIcon, FilterIcon, UsersIcon } from '../icons';
+import { LIST_CONTAINER_STYLES } from '@/constants';
 import { USER_ROLE_LABELS, type AdminUser, type AdminUserFilters, type UserRole } from '@/types';
 
 // ============================================================================
@@ -41,6 +42,118 @@ const ROLE_FILTERS: { value: UserRole | 'all'; label: string }[] = [
   { value: 'employer', label: '구인자' },
   { value: 'staff', label: '스태프' },
 ];
+
+// ============================================================================
+// Header Component (메모이제이션으로 의존성 최적화)
+// ============================================================================
+
+interface UserListHeaderProps {
+  ListHeaderComponent?: React.ReactElement;
+  filters: AdminUserFilters;
+  showFilters: boolean;
+  filteredCount: number;
+  onSearchChange: (text: string) => void;
+  onClearSearch: () => void;
+  onRoleFilter: (role: UserRole | 'all') => void;
+  onClearFilters: () => void;
+  onToggleFilters: () => void;
+}
+
+const UserListHeader = React.memo(function UserListHeader({
+  ListHeaderComponent,
+  filters,
+  showFilters,
+  filteredCount,
+  onSearchChange,
+  onClearSearch,
+  onRoleFilter,
+  onClearFilters,
+  onToggleFilters,
+}: UserListHeaderProps) {
+  return (
+    <View>
+      {ListHeaderComponent}
+
+      {/* 검색 바 */}
+      <View className="px-4 py-3">
+        <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-xl px-3">
+          <SearchIcon size={18} color="#9CA3AF" />
+          <TextInput
+            value={filters.search}
+            onChangeText={onSearchChange}
+            placeholder="이름, 이메일, 연락처 검색..."
+            placeholderTextColor="#9CA3AF"
+            className="flex-1 py-3 px-2 text-gray-900 dark:text-white"
+            returnKeyType="search"
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+          {filters.search ? (
+            <Pressable onPress={onClearSearch} className="p-1">
+              <XMarkIcon size={18} color="#9CA3AF" />
+            </Pressable>
+          ) : null}
+          <Pressable
+            onPress={onToggleFilters}
+            className={`ml-2 p-2 rounded-lg ${
+              showFilters ? 'bg-primary-100 dark:bg-primary-900/30' : ''
+            }`}
+          >
+            <FilterIcon size={18} color={showFilters ? '#A855F7' : '#9CA3AF'} />
+          </Pressable>
+        </View>
+      </View>
+
+      {/* 필터 패널 */}
+      {showFilters && (
+        <View className="px-4 pb-3">
+          <View className="bg-gray-50 dark:bg-surface rounded-xl p-3">
+            {/* 역할 필터 */}
+            <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">역할</Text>
+            <View className="flex-row flex-wrap gap-2">
+              {ROLE_FILTERS.map((role) => (
+                <Pressable
+                  key={role.value}
+                  onPress={() => onRoleFilter(role.value)}
+                  className={`px-3 py-1.5 rounded-full ${
+                    filters.role === role.value ? 'bg-primary-500' : 'bg-gray-200 dark:bg-surface'
+                  }`}
+                >
+                  <Text
+                    className={`text-sm font-medium ${
+                      filters.role === role.value
+                        ? 'text-white'
+                        : 'text-gray-700 dark:text-gray-300'
+                    }`}
+                  >
+                    {role.label}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {/* 필터 초기화 */}
+            {(filters.search || filters.role !== 'all') && (
+              <Pressable onPress={onClearFilters} className="mt-3 self-start">
+                <Text className="text-sm text-primary-500">필터 초기화</Text>
+              </Pressable>
+            )}
+          </View>
+        </View>
+      )}
+
+      {/* 결과 개수 */}
+      <View className="flex-row items-center justify-between px-4 py-2">
+        <Text className="text-sm text-gray-500 dark:text-gray-400">총 {filteredCount}명</Text>
+        {filters.role !== 'all' && (
+          <Badge variant="primary" size="sm">
+            {USER_ROLE_LABELS[filters.role as UserRole]}
+          </Badge>
+        )}
+      </View>
+    </View>
+  );
+});
 
 // ============================================================================
 // Component
@@ -137,94 +250,20 @@ export const UserList = React.memo(function UserList({
   // 키 추출
   const keyExtractor = useCallback((item: AdminUser) => item.id, []);
 
-  // 헤더 컴포넌트
+  // 헤더 컴포넌트 (메모이제이션된 별도 컴포넌트 사용)
   const renderHeader = useCallback(
     () => (
-      <View>
-        {ListHeaderComponent}
-
-        {/* 검색 바 */}
-        <View className="px-4 py-3">
-          <View className="flex-row items-center bg-gray-100 dark:bg-surface rounded-xl px-3">
-            <SearchIcon size={18} color="#9CA3AF" />
-            <TextInput
-              value={filters.search}
-              onChangeText={handleSearchChange}
-              placeholder="이름, 이메일, 연락처 검색..."
-              placeholderTextColor="#9CA3AF"
-              className="flex-1 py-3 px-2 text-gray-900 dark:text-white"
-              returnKeyType="search"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-            {filters.search ? (
-              <Pressable onPress={handleClearSearch} className="p-1">
-                <XMarkIcon size={18} color="#9CA3AF" />
-              </Pressable>
-            ) : null}
-            <Pressable
-              onPress={toggleFilters}
-              className={`ml-2 p-2 rounded-lg ${
-                showFilters ? 'bg-primary-100 dark:bg-primary-900/30' : ''
-              }`}
-            >
-              <FilterIcon size={18} color={showFilters ? '#A855F7' : '#9CA3AF'} />
-            </Pressable>
-          </View>
-        </View>
-
-        {/* 필터 패널 */}
-        {showFilters && (
-          <View className="px-4 pb-3">
-            <View className="bg-gray-50 dark:bg-surface rounded-xl p-3">
-              {/* 역할 필터 */}
-              <Text className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
-                역할
-              </Text>
-              <View className="flex-row flex-wrap gap-2">
-                {ROLE_FILTERS.map((role) => (
-                  <Pressable
-                    key={role.value}
-                    onPress={() => handleRoleFilter(role.value)}
-                    className={`px-3 py-1.5 rounded-full ${
-                      filters.role === role.value ? 'bg-primary-500' : 'bg-gray-200 dark:bg-surface'
-                    }`}
-                  >
-                    <Text
-                      className={`text-sm font-medium ${
-                        filters.role === role.value
-                          ? 'text-white'
-                          : 'text-gray-700 dark:text-gray-300'
-                      }`}
-                    >
-                      {role.label}
-                    </Text>
-                  </Pressable>
-                ))}
-              </View>
-
-              {/* 필터 초기화 */}
-              {(filters.search || filters.role !== 'all') && (
-                <Pressable onPress={handleClearFilters} className="mt-3 self-start">
-                  <Text className="text-sm text-primary-500">필터 초기화</Text>
-                </Pressable>
-              )}
-            </View>
-          </View>
-        )}
-
-        {/* 결과 개수 */}
-        <View className="flex-row items-center justify-between px-4 py-2">
-          <Text className="text-sm text-gray-500 dark:text-gray-400">
-            총 {filteredUsers.length}명
-          </Text>
-          {filters.role !== 'all' && (
-            <Badge variant="primary" size="sm">
-              {USER_ROLE_LABELS[filters.role as UserRole]}
-            </Badge>
-          )}
-        </View>
-      </View>
+      <UserListHeader
+        ListHeaderComponent={ListHeaderComponent}
+        filters={filters}
+        showFilters={showFilters}
+        filteredCount={filteredUsers.length}
+        onSearchChange={handleSearchChange}
+        onClearSearch={handleClearSearch}
+        onRoleFilter={handleRoleFilter}
+        onClearFilters={handleClearFilters}
+        onToggleFilters={toggleFilters}
+      />
     ),
     [
       ListHeaderComponent,
@@ -290,7 +329,7 @@ export const UserList = React.memo(function UserList({
         estimatedItemSize={150}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmpty}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        contentContainerStyle={LIST_CONTAINER_STYLES.paddingBottom100}
         refreshControl={
           onRefresh ? (
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#A855F7" />

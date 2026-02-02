@@ -60,6 +60,43 @@ export type ApplicationStatusType =
   | 'cancellation_pending';
 
 /**
+ * ApplicationStats 필드명 타입
+ */
+export type ApplicationStatsKey =
+  | 'total'
+  | 'applied'
+  | 'pending'
+  | 'confirmed'
+  | 'rejected'
+  | 'cancelled'
+  | 'completed'
+  | 'cancellationPending';
+
+/**
+ * ApplicationStatus → ApplicationStats 필드명 매핑
+ *
+ * @description ApplicationStatus는 snake_case (cancellation_pending)
+ *              ApplicationStats 필드는 camelCase (cancellationPending)
+ *
+ * @example
+ * import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
+ *
+ * const statsKey = STATUS_TO_STATS_KEY[application.status];
+ * if (statsKey && statsKey !== 'total') {
+ *   stats[statsKey]++;
+ * }
+ */
+export const STATUS_TO_STATS_KEY: Record<ApplicationStatusType, ApplicationStatsKey | null> = {
+  applied: 'applied',
+  pending: 'pending',
+  confirmed: 'confirmed',
+  rejected: 'rejected',
+  cancelled: 'cancelled',
+  completed: 'completed',
+  cancellation_pending: 'cancellationPending',
+};
+
+/**
  * 지원 상태 설정
  *
  * @example

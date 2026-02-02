@@ -337,14 +337,18 @@ export function SettlementList({
     return counts;
   }, [workLogs]);
 
-  // 요약 정보 (그룹 통계 사용)
+  // 요약 정보 (그룹 통계 사용) - 최적화: 필터='all'일 때 groupedSettlements 재사용
   const summaryInfo = useMemo(() => {
-    // 전체 workLogs를 그룹화하여 통계 계산 (필터 무관하게)
-    const allGrouped = groupSettlementsByStaff(workLogs, groupingContext, {
-      enabled: true,
-      minGroupSize: 1,
-    });
-    const stats = calculateGroupedSettlementStats(allGrouped);
+    // 필터가 'all'이면 이미 계산된 groupedSettlements 재사용 (중복 그룹화 방지)
+    const targetGrouped =
+      selectedFilter === 'all'
+        ? groupedSettlements
+        : groupSettlementsByStaff(workLogs, groupingContext, {
+            enabled: true,
+            minGroupSize: 1,
+          });
+
+    const stats = calculateGroupedSettlementStats(targetGrouped);
 
     return {
       totalCount: stats.totalWorkLogs,
@@ -353,7 +357,7 @@ export function SettlementList({
       totalAmount: stats.totalAmount,
       pendingAmount: stats.totalPendingAmount,
     };
-  }, [workLogs, groupingContext]);
+  }, [selectedFilter, groupedSettlements, workLogs, groupingContext]);
 
   // 선택된 항목 금액
   const selectedAmount = useMemo(() => {

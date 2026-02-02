@@ -26,8 +26,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.cleanupRateLimitsScheduled = void 0;
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = void 0;
+exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onJobPostingCreated = exports.onApplicationStatusChange = exports.onFixedPostingExpired = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
@@ -43,6 +43,8 @@ const corsHandler = (0, cors_1.default)({ origin: true });
 // --- Scheduled Functions ---
 var cleanupRateLimits_1 = require("./scheduled/cleanupRateLimits");
 Object.defineProperty(exports, "cleanupRateLimitsScheduled", { enumerable: true, get: function () { return cleanupRateLimits_1.cleanupRateLimitsScheduled; } });
+var retryFailedCounterOps_1 = require("./scheduled/retryFailedCounterOps");
+Object.defineProperty(exports, "retryFailedCounterOpsScheduled", { enumerable: true, get: function () { return retryFailedCounterOps_1.retryFailedCounterOpsScheduled; } });
 // --- Email Functions ---
 var sendReceipt_1 = require("./email/sendReceipt");
 Object.defineProperty(exports, "sendReceiptEmail", { enumerable: true, get: function () { return sendReceipt_1.sendReceiptEmail; } });
@@ -83,6 +85,16 @@ var onInquiryCreated_1 = require("./notifications/onInquiryCreated");
 Object.defineProperty(exports, "onInquiryCreated", { enumerable: true, get: function () { return onInquiryCreated_1.onInquiryCreated; } });
 var onTournamentPostingCreated_1 = require("./notifications/onTournamentPostingCreated");
 Object.defineProperty(exports, "onTournamentPostingCreated", { enumerable: true, get: function () { return onTournamentPostingCreated_1.onTournamentPostingCreated; } });
+var onNotificationRead_1 = require("./notifications/onNotificationRead");
+Object.defineProperty(exports, "onNotificationRead", { enumerable: true, get: function () { return onNotificationRead_1.onNotificationRead; } });
+var onNotificationDeleted_1 = require("./notifications/onNotificationDeleted");
+Object.defineProperty(exports, "onNotificationDeleted", { enumerable: true, get: function () { return onNotificationDeleted_1.onNotificationDeleted; } });
+var resetUnreadCounter_1 = require("./notifications/resetUnreadCounter");
+Object.defineProperty(exports, "resetUnreadCounter", { enumerable: true, get: function () { return resetUnreadCounter_1.resetUnreadCounter; } });
+var initializeUnreadCounter_1 = require("./notifications/initializeUnreadCounter");
+Object.defineProperty(exports, "initializeUnreadCounter", { enumerable: true, get: function () { return initializeUnreadCounter_1.initializeUnreadCounter; } });
+var decrementUnreadCounterCallable_1 = require("./notifications/decrementUnreadCounterCallable");
+Object.defineProperty(exports, "decrementUnreadCounter", { enumerable: true, get: function () { return decrementUnreadCounterCallable_1.decrementUnreadCounterCallable; } });
 // --- Account Management Functions ---
 var scheduledDeletion_1 = require("./account/scheduledDeletion");
 Object.defineProperty(exports, "processScheduledDeletions", { enumerable: true, get: function () { return scheduledDeletion_1.processScheduledDeletions; } });

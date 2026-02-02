@@ -53,6 +53,9 @@ export const AppliedActions = React.memo(function AppliedActions({
       {/* 거절 버튼 */}
       <Pressable
         onPress={onReject}
+        accessibilityRole="button"
+        accessibilityLabel="지원 거절"
+        accessibilityHint="지원자를 거절합니다"
         className="flex-1 flex-row items-center justify-center py-2 mr-2 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
       >
         <XMarkIcon size={16} color="#EF4444" />
@@ -63,6 +66,10 @@ export const AppliedActions = React.memo(function AppliedActions({
       <Pressable
         onPress={onConfirm}
         disabled={isConfirmDisabled}
+        accessibilityRole="button"
+        accessibilityLabel={confirmButtonText}
+        accessibilityHint="지원자를 확정합니다"
+        accessibilityState={{ disabled: isConfirmDisabled }}
         className={`flex-1 flex-row items-center justify-center py-2 rounded-lg active:opacity-70 ${
           isConfirmDisabled ? 'bg-gray-300 dark:bg-surface-elevated' : 'bg-primary-500'
         }`}

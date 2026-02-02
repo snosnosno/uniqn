@@ -8,7 +8,7 @@
 import { useMemo } from 'react';
 import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { getJobPostings, convertToCard } from '@/services';
-import { queryKeys, cachingPolicies } from '@/lib/queryClient';
+import { queryKeys, queryCachingOptions } from '@/lib/queryClient';
 import { stableFilters } from '@/utils/queryUtils';
 import { sortJobPostings } from '@/utils/jobPostingSorter';
 import type { JobPostingFilters, JobPostingCard } from '@/types';
@@ -52,8 +52,8 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
       | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     enabled,
-    staleTime: cachingPolicies.frequent, // 2분
-    gcTime: cachingPolicies.frequent, // 2분 (메모리 누수 방지)
+    staleTime: queryCachingOptions.jobPostings.staleTime,
+    gcTime: queryCachingOptions.jobPostings.gcTime,
   });
 
   // 전체 데이터를 플랫하게 변환 후 정렬

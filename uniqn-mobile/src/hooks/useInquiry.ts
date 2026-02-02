@@ -8,6 +8,7 @@
 import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
+import { requireAuth } from '@/errors/guardErrors';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import {
@@ -184,8 +185,9 @@ export function useCreateInquiry() {
 
   return useMutation({
     mutationFn: async (input: CreateInquiryInput) => {
-      if (!user?.uid || !user?.email) {
-        throw new Error('로그인이 필요합니다');
+      requireAuth(user?.uid, 'useInquiry.createInquiry');
+      if (!user?.email) {
+        throw new Error('이메일 정보가 필요합니다');
       }
 
       const userName = profile?.name || user.displayName || '사용자';
@@ -220,9 +222,7 @@ export function useRespondInquiry() {
 
   return useMutation({
     mutationFn: async ({ inquiryId, input }: RespondInquiryParams) => {
-      if (!user?.uid) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useInquiry.respondToInquiry');
 
       const responderName = profile?.name || user.displayName || '관리자';
 

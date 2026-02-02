@@ -41,7 +41,7 @@ export {
   hasItem,
   getStoredAt,
   authStorage,
-  sessionStorage,
+  userSessionStorage,
   settingsStorage,
   type SecureStorageOptions,
   type KeychainAccessible,

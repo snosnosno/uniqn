@@ -13,6 +13,7 @@
 
 import {
   doc,
+  documentId,
   getDoc,
   getDocs,
   updateDoc,
@@ -68,6 +69,63 @@ export class FirebaseUserRepository implements IUserRepository {
         operation: '사용자 조회',
         component: 'UserRepository',
         context: { userId },
+      });
+    }
+  }
+
+  async getByIdBatch(userIds: string[]): Promise<Map<string, FirestoreUserProfile>> {
+    try {
+      if (userIds.length === 0) {
+        return new Map();
+      }
+
+      logger.info('사용자 배치 조회', { count: userIds.length });
+
+      const uniqueIds = [...new Set(userIds)];
+      const usersRef = collection(getFirebaseDb(), USERS_COLLECTION);
+      const profileMap = new Map<string, FirestoreUserProfile>();
+
+      // Firestore whereIn은 최대 30개 제한
+      const BATCH_SIZE = 30;
+      const chunks: string[][] = [];
+
+      for (let i = 0; i < uniqueIds.length; i += BATCH_SIZE) {
+        chunks.push(uniqueIds.slice(i, i + BATCH_SIZE));
+      }
+
+      // 병렬 처리
+      const results = await Promise.allSettled(
+        chunks.map(async (chunk) => {
+          const q = query(usersRef, where(documentId(), 'in', chunk));
+          return getDocs(q);
+        })
+      );
+
+      for (const result of results) {
+        if (result.status === 'fulfilled') {
+          for (const docSnapshot of result.value.docs) {
+            const profile = docSnapshot.data() as FirestoreUserProfile;
+            profileMap.set(docSnapshot.id, profile);
+          }
+        } else {
+          logger.warn('사용자 배치 조회 일부 실패', { error: result.reason });
+        }
+      }
+
+      logger.info('사용자 배치 조회 완료', {
+        requested: userIds.length,
+        found: profileMap.size,
+      });
+
+      return profileMap;
+    } catch (error) {
+      logger.error('사용자 배치 조회 실패', toError(error), {
+        count: userIds.length,
+      });
+      throw handleServiceError(error, {
+        operation: '사용자 배치 조회',
+        component: 'UserRepository',
+        context: { count: userIds.length },
       });
     }
   }

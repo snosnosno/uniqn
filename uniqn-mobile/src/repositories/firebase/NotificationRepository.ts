@@ -165,6 +165,26 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     }
   }
 
+  async getUnreadCounterFromCache(userId: string): Promise<number | null> {
+    try {
+      const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
+      const counterSnap = await getDoc(counterRef);
+
+      if (!counterSnap.exists()) {
+        return null; // 문서 없음
+      }
+
+      return counterSnap.data()?.unreadCount ?? 0;
+    } catch (error) {
+      logger.error('캐시된 미읽음 카운터 조회 실패', toError(error), { userId });
+      throw handleServiceError(error, {
+        operation: '캐시된 미읽음 카운터 조회',
+        component: 'NotificationRepository',
+        context: { userId },
+      });
+    }
+  }
+
   // ==========================================================================
   // 수정 (Update)
   // ==========================================================================

@@ -26,6 +26,8 @@ import {
   serverTimestamp,
   Timestamp,
   increment,
+  onSnapshot,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -42,10 +44,17 @@ import {
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
-import type { IApplicationRepository, ApplicationWithJob, ApplyContext } from '../interfaces';
+import type {
+  IApplicationRepository,
+  ApplicationWithJob,
+  ApplyContext,
+  ApplicantListWithStats,
+  SubscribeCallbacks,
+} from '../interfaces';
 import type {
   Application,
   ApplicationStatus,
+  ApplicationStats,
   CancellationRequest,
   ConfirmApplicationInputV2,
   CreateApplicationInput,
@@ -58,7 +67,9 @@ import type {
   WorkLog,
   WorkLogStatus,
 } from '@/types';
+import { isPermissionError, isAuthError, AuthError } from '@/errors';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
+import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 
 // ============================================================================
 // Constants
@@ -1263,5 +1274,247 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         context: { applicationId, ownerId },
       });
     }
+  }
+
+  // ==========================================================================
+  // 구인자 전용 (Employer)
+  // ==========================================================================
+
+  async findByJobPostingWithStats(
+    jobPostingId: string,
+    ownerId: string,
+    statusFilter?: ApplicationStatus | ApplicationStatus[]
+  ): Promise<ApplicantListWithStats> {
+    try {
+      logger.info('지원자 목록 조회', { jobPostingId, ownerId, statusFilter });
+
+      // 공고 소유자 확인
+      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
+      const jobDoc = await getDoc(jobRef);
+
+      if (!jobDoc.exists()) {
+        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        });
+      }
+
+      const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+      if (!jobData) {
+        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '데이터가 올바르지 않습니다',
+        });
+      }
+
+      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
+      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+      if (postingOwnerId !== ownerId) {
+        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 조회할 수 있습니다',
+        });
+      }
+
+      // 지원자 목록 조회
+      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      let q = query(
+        applicationsRef,
+        where('jobPostingId', '==', jobPostingId),
+        orderBy('createdAt', 'desc')
+      );
+
+      // 상태 필터 적용 (단일 상태)
+      if (statusFilter) {
+        const statuses = Array.isArray(statusFilter) ? statusFilter : [statusFilter];
+        if (statuses.length === 1) {
+          q = query(
+            applicationsRef,
+            where('jobPostingId', '==', jobPostingId),
+            where('status', '==', statuses[0]),
+            orderBy('createdAt', 'desc')
+          );
+        }
+      }
+
+      const snapshot = await getDocs(q);
+      const applications: ApplicationWithJob[] = [];
+      const stats: ApplicationStats = {
+        total: 0,
+        applied: 0,
+        pending: 0,
+        confirmed: 0,
+        rejected: 0,
+        cancelled: 0,
+        completed: 0,
+        cancellationPending: 0,
+      };
+
+      snapshot.docs.forEach((docSnapshot) => {
+        const application = {
+          ...docSnapshot.data(),
+          id: docSnapshot.id,
+          jobPosting: { ...jobData, id: jobDoc.id },
+        } as ApplicationWithJob;
+
+        // 복수 상태 필터 적용 (클라이언트 사이드)
+        if (statusFilter && Array.isArray(statusFilter) && statusFilter.length > 1) {
+          if (!statusFilter.includes(application.status)) {
+            return;
+          }
+        }
+
+        applications.push(application);
+
+        // 통계 집계
+        stats.total++;
+        const statsKey = STATUS_TO_STATS_KEY[application.status];
+        if (statsKey && statsKey !== 'total') {
+          stats[statsKey]++;
+        }
+      });
+
+      logger.info('지원자 목록 조회 완료', {
+        jobPostingId,
+        count: applications.length,
+        stats,
+      });
+
+      return { applications, stats };
+    } catch (error) {
+      if (error instanceof BusinessError || error instanceof PermissionError) {
+        throw error;
+      }
+      throw handleServiceError(error, {
+        operation: '지원자 목록 조회',
+        component: 'ApplicationRepository',
+        context: { jobPostingId },
+      });
+    }
+  }
+
+  subscribeByJobPosting(
+    jobPostingId: string,
+    ownerId: string,
+    callbacks: SubscribeCallbacks
+  ): Unsubscribe {
+    logger.info('지원자 목록 실시간 구독 시작', { jobPostingId, ownerId });
+
+    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+    const q = query(
+      applicationsRef,
+      where('jobPostingId', '==', jobPostingId),
+      orderBy('createdAt', 'desc')
+    );
+
+    // 공고 정보 캐싱 (소유권 확인 및 지원자 데이터에 포함)
+    let cachedJobPosting: JobPosting | null = null;
+    let isOwnerVerified = false;
+    let unsubscribeFn: Unsubscribe | null = null;
+
+    /**
+     * 치명적 에러 시 구독 자동 해제
+     */
+    const handleFatalError = (error: Error) => {
+      if (isPermissionError(error) || isAuthError(error)) {
+        logger.warn('치명적 에러로 구독 자동 해제', {
+          errorCode: (error as PermissionError | AuthError).code,
+          jobPostingId,
+        });
+        unsubscribeFn?.();
+      }
+      callbacks.onError?.(error);
+    };
+
+    unsubscribeFn = onSnapshot(
+      q,
+      async (snapshot) => {
+        try {
+          // 첫 호출 시 공고 소유자 확인
+          if (!isOwnerVerified) {
+            const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
+            const jobDoc = await getDoc(jobRef);
+
+            if (!jobDoc.exists()) {
+              const error = new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+                userMessage: '존재하지 않는 공고입니다',
+              });
+              callbacks.onError?.(error);
+              return;
+            }
+
+            const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+            if (!jobData) {
+              const error = new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+                userMessage: '데이터가 올바르지 않습니다',
+              });
+              callbacks.onError?.(error);
+              return;
+            }
+
+            const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
+            if (postingOwnerId !== ownerId) {
+              const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+                userMessage: '본인의 공고만 조회할 수 있습니다',
+              });
+              handleFatalError(error);
+              return;
+            }
+
+            cachedJobPosting = jobData;
+            isOwnerVerified = true;
+          }
+
+          // 지원자 목록 처리
+          const applications: ApplicationWithJob[] = [];
+          const stats: ApplicationStats = {
+            total: 0,
+            applied: 0,
+            pending: 0,
+            confirmed: 0,
+            rejected: 0,
+            cancelled: 0,
+            completed: 0,
+            cancellationPending: 0,
+          };
+
+          snapshot.docs.forEach((docSnapshot) => {
+            const application = {
+              ...docSnapshot.data(),
+              id: docSnapshot.id,
+              jobPosting: cachedJobPosting,
+            } as ApplicationWithJob;
+
+            applications.push(application);
+
+            // 통계 집계
+            stats.total++;
+            const statsKey = STATUS_TO_STATS_KEY[application.status];
+            if (statsKey && statsKey !== 'total') {
+              stats[statsKey]++;
+            }
+          });
+
+          logger.debug('지원자 목록 실시간 업데이트', {
+            jobPostingId,
+            count: applications.length,
+            stats,
+          });
+
+          callbacks.onUpdate({ applications, stats });
+        } catch (error) {
+          logger.error('지원자 목록 실시간 구독 처리 실패', toError(error), { jobPostingId });
+          handleFatalError(toError(error));
+        }
+      },
+      (firebaseError) => {
+        const appError = handleServiceError(firebaseError, {
+          operation: '지원자 목록 실시간 구독',
+          component: 'ApplicationRepository',
+          context: { jobPostingId },
+        });
+
+        handleFatalError(appError as Error);
+      }
+    );
+
+    return () => unsubscribeFn?.();
   }
 }

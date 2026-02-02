@@ -23,9 +23,9 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
-import { tryInitializeFirebase, getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
+import { FirebaseNotificationRepository } from '@/repositories/firebase/NotificationRepository';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
 import { getUserProfile } from '@/services/authService';
@@ -36,6 +36,9 @@ import {
   type VersionCheckResult,
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
+
+// Repository 인스턴스
+const notificationRepository = new FirebaseNotificationRepository();
 
 // ============================================================================
 // Types
@@ -177,17 +180,18 @@ export function useAppInitialize(): UseAppInitializeReturn {
           return;
         }
 
-        // Auth 상태 변경 리스너로 세션 복원 대기
-        const unsubscribe = auth.onAuthStateChanged((user) => {
-          unsubscribe();
-          resolve(user);
-        });
-
-        // 타임아웃 (3초)
-        setTimeout(() => {
+        // 타임아웃 ID 저장 (cleanup용)
+        const timeoutId = setTimeout(() => {
           unsubscribe();
           resolve(null);
         }, 3000);
+
+        // Auth 상태 변경 리스너로 세션 복원 대기
+        const unsubscribe = auth.onAuthStateChanged((user) => {
+          clearTimeout(timeoutId); // 성공 시 타이머 정리
+          unsubscribe();
+          resolve(user);
+        });
       });
 
       // 자동 로그인 비활성화 시: Firebase Auth 상태는 유지하되 UI는 로그인 화면 표시
@@ -256,15 +260,14 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
             // 🆕 미읽음 알림 카운터 로드 (Firestore 실시간 리스너 대체)
             try {
-              const db = getFirebaseDb();
-              const counterRef = doc(db, 'users', authUser.uid, 'counters', 'notifications');
-              const counterSnap = await getDoc(counterRef);
+              // Repository를 통해 캐시된 카운터 조회
+              const cachedCount = await notificationRepository.getUnreadCounterFromCache(authUser.uid);
 
               let unreadCount: number;
 
-              if (counterSnap.exists()) {
+              if (cachedCount !== null) {
                 // 카운터 문서가 있으면 그 값 사용
-                unreadCount = counterSnap.data()?.unreadCount ?? 0;
+                unreadCount = cachedCount;
                 logger.info('미읽음 알림 카운터 로드 완료', {
                   component: 'useAppInitialize',
                   unreadCount,

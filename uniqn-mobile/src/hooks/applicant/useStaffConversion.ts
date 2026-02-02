@@ -20,6 +20,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
+import { requireAuth } from '@/errors/guardErrors';
 import type { Assignment } from '@/types';
 
 // ============================================================================
@@ -51,9 +52,7 @@ export function useConfirmApplicationWithHistory() {
 
   return useMutation({
     mutationFn: (input: ConfirmWithHistoryInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useStaffConversion');
       return confirmApplicationWithHistory(
         input.applicationId,
         input.selectedAssignments,
@@ -87,9 +86,7 @@ export function useCancelConfirmation() {
 
   return useMutation({
     mutationFn: ({ applicationId, reason }: { applicationId: string; reason?: string }) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useStaffConversion');
       return cancelConfirmation(applicationId, user.uid, reason);
     },
     onSuccess: (result) => {
@@ -119,9 +116,7 @@ export function useConvertToStaff() {
 
   return useMutation({
     mutationFn: (input: ConvertToStaffInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useStaffConversion');
       return convertApplicantToStaff(input.applicationId, input.jobPostingId, user.uid, {
         notes: input.notes,
       });
@@ -159,9 +154,7 @@ export function useBatchConvertToStaff() {
       applicationIds: string[];
       jobPostingId: string;
     }) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useStaffConversion');
       return batchConvertApplicants(applicationIds, jobPostingId, user.uid);
     },
     onSuccess: (result, variables) => {

@@ -23,7 +23,7 @@ import { deleteMultipleAnnouncementImages } from '@/services/storageService';
 import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
-import { toError } from '@/errors';
+import { toError, requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
 import { stableFilters } from '@/utils/queryUtils';
 import { getAnnouncementImages } from '@/types/announcement';
@@ -127,9 +127,7 @@ export function useCreateAnnouncement() {
 
   return useMutation({
     mutationFn: async (input: CreateAnnouncementInput) => {
-      if (!user?.uid) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useAnnouncement.createAnnouncement');
       const authorName = profile?.name || user.displayName || '관리자';
       return createAnnouncement(user.uid, authorName, input);
     },

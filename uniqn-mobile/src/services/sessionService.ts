@@ -13,7 +13,7 @@
 
 import { AppState, type AppStateStatus } from 'react-native';
 import { getFirebaseAuth } from '@/lib/firebase';
-import { authStorage, sessionStorage } from '@/lib/secureStorage';
+import { authStorage, userSessionStorage } from '@/lib/secureStorage';
 import { logger } from '@/utils/logger';
 import { crashlyticsService } from './crashlyticsService';
 import { useAuthStore } from '@/stores/authStore';
@@ -21,8 +21,8 @@ import { useToastStore } from '@/stores/toastStore';
 import { router } from 'expo-router';
 import { AppError, AuthError, ERROR_CODES, toError } from '@/errors';
 
-// sessionStorage는 향후 세션 관리 확장 시 활용
-void sessionStorage;
+// userSessionStorage는 향후 세션 관리 확장 시 활용
+void userSessionStorage;
 
 // ============================================================================
 // Constants

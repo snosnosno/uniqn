@@ -24,6 +24,9 @@ const envSchema = z.object({
     .enum(['development', 'staging', 'production'])
     .optional()
     .default('development'),
+
+  // Firebase Functions 리전 (선택적, 기본값: asia-northeast3)
+  EXPO_PUBLIC_FIREBASE_REGION: z.string().optional().default('asia-northeast3'),
 });
 
 export type Env = z.infer<typeof envSchema>;

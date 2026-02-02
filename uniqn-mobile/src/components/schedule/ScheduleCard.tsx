@@ -124,7 +124,19 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
     }
 
     return null;
-  }, [schedule]);
+  }, [
+    schedule.type,
+    schedule.payrollAmount,
+    schedule.checkInTime,
+    schedule.checkOutTime,
+    schedule.date,
+    schedule.role,
+    schedule.customRole,
+    schedule.customSalaryInfo,
+    schedule.customAllowances,
+    schedule.customTaxSettings,
+    schedule.jobPostingCard,
+  ]);
 
   // 시간 표시 정보 (WorkTimeDisplay 사용 - 구인자 화면과 일관성 확보)
   const timeDisplayInfo = useMemo(() => {

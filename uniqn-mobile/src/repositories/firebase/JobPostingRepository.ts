@@ -896,4 +896,33 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       });
     }
   }
+
+  async verifyOwnership(jobPostingId: string, ownerId: string): Promise<boolean> {
+    try {
+      logger.debug('공고 소유권 검증', { jobPostingId, ownerId });
+
+      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+      const docSnap = await getDoc(docRef);
+
+      if (!docSnap.exists()) {
+        return false;
+      }
+
+      const jobPosting = parseJobPostingDocument({
+        id: docSnap.id,
+        ...docSnap.data(),
+      });
+
+      if (!jobPosting) {
+        return false;
+      }
+
+      // ownerId 또는 createdBy로 소유권 확인
+      const postingOwnerId = jobPosting.ownerId ?? jobPosting.createdBy;
+      return postingOwnerId === ownerId;
+    } catch (error) {
+      logger.error('공고 소유권 검증 실패', toError(error), { jobPostingId, ownerId });
+      return false;
+    }
+  }
 }

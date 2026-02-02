@@ -30,4 +30,14 @@ export {
   type NotificationLinkData,
 } from './notificationConfig';
 
+export {
+  SENSITIVE_STORAGE_KEYS,
+  KNOWN_STORAGE_KEYS,
+  TOKEN_CONFIG,
+  PASSWORD_POLICY,
+  RATE_LIMIT_CONFIG,
+  isSensitiveKey,
+  type SensitiveStorageKey,
+} from './securityConfig';
+
 export { default } from './env';

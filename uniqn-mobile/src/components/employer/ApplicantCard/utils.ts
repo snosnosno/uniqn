@@ -2,12 +2,16 @@
  * UNIQN Mobile - ApplicantCard 유틸리티 함수
  *
  * @description 지원자 카드 컴포넌트 헬퍼 함수
- * @version 1.1.0 - formatAppliedDate를 utils/date에서 import
+ * @version 1.2.0 - selectionCore.ts로 키 생성 통합
  */
 
 import { getAssignmentRoles } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatAppliedDate } from '@/utils/date';
+import {
+  createAssignmentKey as createAssignmentKeyCore,
+  getDateFromKeyLegacy,
+} from '@/utils/assignment';
 import type { Assignment } from '@/types';
 import type { AssignmentDisplay } from './types';
 
@@ -90,14 +94,16 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
 
 /**
  * Assignment 키 생성 (date_timeSlot_role 형식)
+ * @see selectionCore.ts - 통합 구현
  */
 export const createAssignmentKey = (date: string, timeSlot: string, role: string): string => {
-  return `${date}_${timeSlot}_${role}`;
+  return createAssignmentKeyCore(date, timeSlot, role);
 };
 
 /**
  * Assignment 키에서 날짜 추출
+ * @see selectionCore.ts - 통합 구현
  */
 export const getDateFromKey = (key: string): string => {
-  return key.split('_')[0];
+  return getDateFromKeyLegacy(key);
 };

@@ -1,6 +1,8 @@
 import { Timestamp } from 'firebase/firestore';
-import { WorkLog } from '../hooks/useShiftSchedule';
 import { UnifiedWorkLog } from './unified/workLog';
+
+// WorkLog는 UnifiedWorkLog로 대체
+type WorkLog = UnifiedWorkLog;
 
 /**
  * 역할별 급여 정보

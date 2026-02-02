@@ -63,11 +63,18 @@ export interface INotificationRepository {
   ): Promise<PaginatedResult<NotificationData>>;
 
   /**
-   * 읽지 않은 알림 수 조회
+   * 읽지 않은 알림 수 조회 (컬렉션 카운트)
    * @param userId - 사용자 ID
    * @returns 미읽음 알림 수
    */
   getUnreadCount(userId: string): Promise<number>;
+
+  /**
+   * 캐싱된 미읽음 카운터 조회 (users/{userId}/counters/notifications)
+   * @param userId - 사용자 ID
+   * @returns 캐싱된 카운터 값 (문서 없으면 null)
+   */
+  getUnreadCounterFromCache(userId: string): Promise<number | null>;
 
   // ==========================================================================
   // 수정 (Update)

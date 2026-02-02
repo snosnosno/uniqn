@@ -5,17 +5,24 @@
  * @version 1.1.0
  */
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard';
 import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
 import { FilterIcon } from '../icons';
+import { FirebaseUserRepository } from '@/repositories/firebase/UserRepository';
+import { queryKeys } from '@/lib/queryClient';
+import { LIST_CONTAINER_STYLES } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';
+
+// Repository 인스턴스 (싱글톤)
+const userRepository = new FirebaseUserRepository();
 
 // ============================================================================
 // Types
@@ -107,6 +114,32 @@ export function ApplicantList({
   onViewProfile,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
+  const queryClient = useQueryClient();
+
+  // ==========================================================================
+  // N+1 최적화: 지원자 프로필 배치 프리페치
+  // ==========================================================================
+  const applicantIds = useMemo(
+    () => applicants.map((a) => a.applicantId).filter(Boolean),
+    [applicants]
+  );
+
+  // 배치로 사용자 프로필 조회
+  const { data: profileMap } = useQuery({
+    queryKey: queryKeys.user.profileBatch(applicantIds),
+    queryFn: () => userRepository.getByIdBatch(applicantIds),
+    enabled: applicantIds.length > 0,
+    staleTime: 5 * 60 * 1000, // 5분
+  });
+
+  // 개별 캐시에 저장 (ApplicantCard의 useQuery가 캐시 히트)
+  useEffect(() => {
+    if (profileMap) {
+      profileMap.forEach((profile, id) => {
+        queryClient.setQueryData(queryKeys.user.profile(id), profile);
+      });
+    }
+  }, [profileMap, queryClient]);
 
   // 필터링된 지원자 목록
   const filteredApplicants = useMemo(() => {
@@ -200,7 +233,7 @@ export function ApplicantList({
           onRefresh={onRefresh}
           refreshing={isRefreshing}
           showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
+          contentContainerStyle={LIST_CONTAINER_STYLES.paddingBottom100}
         />
       )}
     </View>

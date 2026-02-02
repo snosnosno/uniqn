@@ -10,6 +10,8 @@ export type {
   IApplicationRepository,
   ApplicationWithJob,
   ApplyContext,
+  ApplicantListWithStats,
+  SubscribeCallbacks,
 } from './IApplicationRepository';
 
 // JobPosting Repository

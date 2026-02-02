@@ -116,7 +116,13 @@ export const SettlementCard = React.memo(function SettlementCard({
   return (
     <Card variant="elevated" padding="md">
       {/* 상단: 프로필 + 금액/상태 */}
-      <Pressable onPress={handlePress} className="active:opacity-80">
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={`${displayName} 정산 상세 보기`}
+        accessibilityHint="정산 상세 정보를 확인합니다"
+        className="active:opacity-80"
+      >
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             <Avatar source={profilePhotoURL} name={displayName} size="sm" className="mr-3" />
@@ -163,6 +169,9 @@ export const SettlementCard = React.memo(function SettlementCard({
         {/* 상세보기 */}
         <Pressable
           onPress={handlePress}
+          accessibilityRole="button"
+          accessibilityLabel="정산 상세보기"
+          accessibilityHint="정산 내역을 자세히 확인합니다"
           className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
         >
           <ChevronRightIcon size={16} color="#6B7280" />
@@ -175,6 +184,9 @@ export const SettlementCard = React.memo(function SettlementCard({
         {payrollStatus === 'pending' && hasValidTimes && onSettle && (
           <Pressable
             onPress={handleSettle}
+            accessibilityRole="button"
+            accessibilityLabel={`${displayName} 정산하기`}
+            accessibilityHint="스태프에게 급여를 정산합니다"
             className="flex-1 flex-row items-center justify-center py-2.5 rounded-lg bg-primary-500 active:opacity-70"
           >
             <BanknotesIcon size={16} color="#fff" />

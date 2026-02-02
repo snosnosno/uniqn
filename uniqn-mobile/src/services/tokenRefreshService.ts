@@ -15,7 +15,7 @@ import { Platform, AppState, type AppStateStatus } from 'react-native';
 import NetInfo, { type NetInfoState } from '@react-native-community/netinfo';
 import { getMMKVInstance, STORAGE_KEYS } from '@/lib/mmkvStorage';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, AuthError, ERROR_CODES } from '@/errors';
 
 // ============================================================================
 // Types
@@ -224,7 +224,10 @@ async function refreshTokenWithRetry(): Promise<boolean> {
       }
 
       // 실패 (재시도 가능)
-      throw new Error('토큰 갱신 실패');
+      throw new AuthError(ERROR_CODES.AUTH_TOKEN_EXPIRED, {
+        userMessage: '토큰 갱신 실패',
+        isRetryable: true,
+      });
     } catch (error) {
       attempt++;
       state.failureCount++;

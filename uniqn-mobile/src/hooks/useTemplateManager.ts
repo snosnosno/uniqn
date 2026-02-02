@@ -18,7 +18,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { templateToFormData } from '@/types';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, requireAuth } from '@/errors';
 import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
 
 // ============================================================================
@@ -68,9 +68,7 @@ export function useSaveTemplate() {
 
   return useMutation({
     mutationFn: (params: SaveTemplateParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useTemplateManager');
       const input: CreateTemplateInput = {
         name: params.name,
         description: params.description,
@@ -138,9 +136,7 @@ export function useDeleteTemplate() {
 
   return useMutation({
     mutationFn: (params: DeleteTemplateParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useTemplateManager');
       return deleteTemplate(params.templateId, user.uid);
     },
     onSuccess: (_, params) => {

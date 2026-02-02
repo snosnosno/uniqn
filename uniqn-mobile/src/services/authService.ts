@@ -44,6 +44,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import { clearCounterSyncCache } from '@/hooks/useNotificationHandler';
 import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
@@ -251,6 +252,10 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 export async function signOut(): Promise<void> {
   try {
     logger.info('로그아웃 시도');
+
+    // 전역 캐시 정리 (메모리 누수 방지)
+    clearCounterSyncCache();
+
     await firebaseSignOut(getFirebaseAuth());
 
     // Analytics 이벤트
@@ -487,15 +492,17 @@ async function createMockSocialLoginResult(
         email: mockEmail,
         errorCode,
       });
-      throw new Error(
-        `Mock 계정 비밀번호가 변경되었습니다. Firebase Console에서 비밀번호를 재설정하거나 계정을 삭제해주세요.`
-      );
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage: 'Mock 계정 비밀번호가 변경되었습니다. Firebase Console에서 비밀번호를 재설정하거나 계정을 삭제해주세요.',
+      });
     }
 
     // 이메일 중복 (계정 생성 시)
     if (errorCode === 'auth/email-already-in-use') {
       logger.warn(`[MOCK] ${provider} 이메일 중복`, { email: mockEmail, errorCode });
-      throw new Error(`이미 등록된 이메일입니다. 다른 로그인 방법을 시도해주세요.`);
+      throw new AuthError(ERROR_CODES.AUTH_EMAIL_ALREADY_EXISTS, {
+        userMessage: '이미 등록된 이메일입니다. 다른 로그인 방법을 시도해주세요.',
+      });
     }
 
     // 기타 에러: 상세 로깅 후 재throw

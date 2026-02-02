@@ -2,7 +2,7 @@
  * UNIQN Mobile - Assignment 선택 유틸리티
  *
  * @description AssignmentSelector 컴포넌트에서 분리된 순수 함수들
- * @version 1.0.0
+ * @version 1.1.0 - selectionCore.ts로 makeSelectionKey 통합
  */
 
 import type { TimeSlotInfo, DatedScheduleInfo } from '@/types/unified';
@@ -14,6 +14,7 @@ import {
   formatDateRangeWithCount,
   toDateString,
 } from '@/utils/dateRangeUtils';
+import { makeSelectionKey as makeSelectionKeyCore } from './selectionCore';
 
 // ============================================================================
 // Types
@@ -59,7 +60,7 @@ export interface ScheduleGroup {
  * // => '2024-01-17|09:00|dealer'
  */
 export const makeSelectionKey = (date: string, slotTime: string, role: string): SelectionKey => {
-  return `${date}|${slotTime}|${role}`;
+  return makeSelectionKeyCore(date, slotTime, role);
 };
 
 /**

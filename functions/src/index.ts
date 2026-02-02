@@ -17,6 +17,7 @@ const corsHandler = cors({ origin: true });
 
 // --- Scheduled Functions ---
 export { cleanupRateLimitsScheduled } from './scheduled/cleanupRateLimits';
+export { retryFailedCounterOpsScheduled } from './scheduled/retryFailedCounterOps';
 
 // --- Email Functions ---
 export { sendReceiptEmail } from './email/sendReceipt';
@@ -45,6 +46,7 @@ export { onReportCreated } from './notifications/onReportCreated';
 export { onInquiryCreated } from './notifications/onInquiryCreated';
 export { onTournamentPostingCreated } from './notifications/onTournamentPostingCreated';
 export { onNotificationRead } from './notifications/onNotificationRead';
+export { onNotificationDeleted } from './notifications/onNotificationDeleted';
 export { resetUnreadCounter } from './notifications/resetUnreadCounter';
 export { initializeUnreadCounter } from './notifications/initializeUnreadCounter';
 export { decrementUnreadCounterCallable as decrementUnreadCounter } from './notifications/decrementUnreadCounterCallable';

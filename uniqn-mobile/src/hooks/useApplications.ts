@@ -15,7 +15,7 @@ import {
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
-import { toError } from '@/errors';
+import { toError, requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
@@ -58,9 +58,7 @@ export function useApplications() {
   // 지원 제출 (v2.0: Assignment + PreQuestion)
   const submitV2Mutation = useMutation({
     mutationFn: (params: SubmitApplicationV2Params) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplications');
       // Firestore profile 우선, Auth displayName 폴백
       const applicantName = profile?.name || profile?.nickname || user.displayName || '익명';
       const applicantPhone = profile?.phone || user.phoneNumber || undefined;
@@ -104,9 +102,7 @@ export function useApplications() {
   // 지원 취소 (Optimistic Update 적용)
   const cancelMutation = useMutation({
     mutationFn: (applicationId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplications');
       return cancelApplicationService(applicationId, user.uid);
     },
     // Optimistic Update: 서버 응답 전에 UI 즉시 업데이트
@@ -162,9 +158,7 @@ export function useApplications() {
   // 취소 요청 (확정된 지원에 대해 취소 요청, Optimistic Update 적용)
   const requestCancellationMutation = useMutation({
     mutationFn: (params: RequestCancellationParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplications');
       return requestCancellationService(
         { applicationId: params.applicationId, reason: params.reason },
         user.uid

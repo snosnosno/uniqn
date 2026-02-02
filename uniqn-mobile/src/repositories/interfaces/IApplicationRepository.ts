@@ -13,6 +13,7 @@
 import type {
   Application,
   ApplicationStatus,
+  ApplicationStats,
   CreateApplicationInput,
   ConfirmApplicationInputV2,
   RejectApplicationInput,
@@ -20,6 +21,7 @@ import type {
   ReviewCancellationInput,
   JobPosting,
 } from '@/types';
+import type { Unsubscribe } from 'firebase/firestore';
 
 // ============================================================================
 // Types
@@ -42,6 +44,22 @@ export interface ApplyContext {
   applicantEmail?: string;
   applicantNickname?: string;
   applicantPhotoURL?: string;
+}
+
+/**
+ * 지원자 목록 + 통계 결과
+ */
+export interface ApplicantListWithStats {
+  applications: ApplicationWithJob[];
+  stats: ApplicationStats;
+}
+
+/**
+ * 실시간 구독 콜백
+ */
+export interface SubscribeCallbacks {
+  onUpdate: (result: ApplicantListWithStats) => void;
+  onError?: (error: Error) => void;
 }
 
 // ============================================================================
@@ -220,4 +238,45 @@ export interface IApplicationRepository {
    * @throws PermissionError (소유자 아님), BusinessError (존재하지 않음)
    */
   markAsRead(applicationId: string, ownerId: string): Promise<void>;
+
+  // ==========================================================================
+  // 구인자 전용 (Employer)
+  // ==========================================================================
+
+  /**
+   * 공고별 지원자 목록 + 통계 조회 (구인자용)
+   *
+   * 처리 로직:
+   * 1. 공고 소유자 확인
+   * 2. 지원서 목록 조회
+   * 3. 상태별 통계 집계
+   *
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 공고 소유자 ID (권한 확인용)
+   * @param statusFilter - 상태 필터 (optional)
+   * @returns 지원자 목록 + 통계
+   * @throws PermissionError (소유자 아님), BusinessError (공고 없음)
+   */
+  findByJobPostingWithStats(
+    jobPostingId: string,
+    ownerId: string,
+    statusFilter?: ApplicationStatus | ApplicationStatus[]
+  ): Promise<ApplicantListWithStats>;
+
+  /**
+   * 공고별 지원자 목록 실시간 구독 (구인자용)
+   *
+   * @description onSnapshot을 사용하여 지원자 목록을 실시간으로 구독합니다.
+   *              새 지원이 들어오거나 상태가 변경되면 즉시 콜백이 호출됩니다.
+   *
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 공고 소유자 ID (권한 확인용)
+   * @param callbacks - 업데이트/에러 콜백
+   * @returns Unsubscribe 함수 (컴포넌트 언마운트 시 호출 필요)
+   */
+  subscribeByJobPosting(
+    jobPostingId: string,
+    ownerId: string,
+    callbacks: SubscribeCallbacks
+  ): Unsubscribe;
 }

@@ -18,6 +18,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import { formatDateShortWithDay } from '@/utils/dateUtils';
 import { useBookmarks } from '@/hooks';
+import { HIT_SLOP } from '@/constants';
 
 // ============================================================================
 // Types
@@ -314,7 +315,7 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
         ) : (
           <Pressable
             onPress={handleBookmarkPress}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            hitSlop={HIT_SLOP.medium}
             className="ml-2 p-1"
             accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
             accessibilityRole="button"

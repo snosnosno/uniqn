@@ -241,6 +241,8 @@ export const queryKeys = {
     all: ['user'] as const,
     current: () => [...queryKeys.user.all, 'current'] as const,
     profile: (uid: string) => [...queryKeys.user.all, 'profile', uid] as const,
+    profileBatch: (userIds: string[]) =>
+      [...queryKeys.user.all, 'profileBatch', userIds.sort().join(',')] as const,
   },
 
   // 구인공고
@@ -433,7 +435,7 @@ export const queryKeys = {
     /** 미답변 문의 수 */
     unansweredCount: () => [...queryKeys.inquiries.all, 'unansweredCount'] as const,
     /** FAQ */
-    faq: (category?: string) => ['faq', category] as const,
+    faq: (category?: string) => [...queryKeys.inquiries.all, 'faq', category] as const,
   },
 } as const;
 

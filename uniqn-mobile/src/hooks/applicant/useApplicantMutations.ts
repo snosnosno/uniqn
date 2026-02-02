@@ -17,6 +17,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { errorHandlerPresets } from '@/shared/errors';
+import { requireAuth } from '@/errors/guardErrors';
 import type { ConfirmApplicationInput, RejectApplicationInput } from '@/types';
 
 // ============================================================================
@@ -32,9 +33,7 @@ export function useConfirmApplication() {
 
   return useMutation({
     mutationFn: (input: ConfirmApplicationInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplicantMutations');
       return confirmApplication(input, user.uid);
     },
     onSuccess: (result) => {
@@ -63,9 +62,7 @@ export function useRejectApplication() {
 
   return useMutation({
     mutationFn: (input: RejectApplicationInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplicantMutations');
       return rejectApplication(input, user.uid);
     },
     onSuccess: (_, variables) => {
@@ -91,9 +88,7 @@ export function useBulkConfirmApplications() {
 
   return useMutation({
     mutationFn: (applicationIds: string[]) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplicantMutations');
       return bulkConfirmApplications(applicationIds, user.uid);
     },
     onSuccess: (result) => {
@@ -137,9 +132,7 @@ export function useMarkAsRead() {
 
   return useMutation({
     mutationFn: (applicationId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useApplicantMutations');
       return markApplicationAsRead(applicationId, user.uid);
     },
     onSuccess: () => {

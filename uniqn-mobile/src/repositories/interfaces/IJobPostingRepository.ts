@@ -197,6 +197,14 @@ export interface IJobPostingRepository {
   getStatsByOwnerId(ownerId: string): Promise<JobPostingStats>;
 
   /**
+   * 공고 소유권 검증
+   * @param jobPostingId - 공고 ID
+   * @param ownerId - 검증할 소유자 ID
+   * @returns 소유자인 경우 true, 아니면 false
+   */
+  verifyOwnership(jobPostingId: string, ownerId: string): Promise<boolean>;
+
+  /**
    * 여러 공고 상태 일괄 변경 (배치 트랜잭션)
    * @param jobPostingIds - 공고 ID 배열
    * @param status - 새 상태

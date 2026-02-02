@@ -12,6 +12,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
+import { requireAuth } from '@/errors/guardErrors';
 
 // ============================================================================
 // Types
@@ -50,9 +51,7 @@ export function useReviewCancellation() {
 
   return useMutation({
     mutationFn: (input: ReviewCancellationInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useCancellationManagement');
       return reviewCancellationRequest(
         {
           applicationId: input.applicationId,

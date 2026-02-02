@@ -29,7 +29,7 @@ import { getUserProfile } from '@/services/authService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, requireAuth } from '@/errors';
 
 // ============================================================================
 // Types
@@ -137,10 +137,7 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
         // 현재 로그인된 사용자 확인
         const auth = getFirebaseAuth();
         const currentUser = auth.currentUser;
-
-        if (!currentUser) {
-          throw new Error('로그인이 필요합니다');
-        }
+        requireAuth(currentUser?.uid, 'useBiometricAuth.enableBiometric');
 
         // Refresh Token 가져오기
         const refreshToken = currentUser.refreshToken;

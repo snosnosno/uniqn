@@ -21,7 +21,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler } from '@/shared/errors';
-import { toError } from '@/errors';
+import { toError, requireAuth } from '@/errors';
 import type { CreateJobPostingInput, UpdateJobPostingInput, JobPostingStatus } from '@/types';
 
 // ============================================================================
@@ -96,9 +96,7 @@ export function useCreateJobPosting() {
 
   return useMutation({
     mutationFn: (params: CreateJobParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useJobManagement');
       // Firestore profile의 name/nickname 우선 사용, 없으면 Firebase Auth displayName
       const ownerName = profile?.name || profile?.nickname || user.displayName || '익명';
       return createJobPosting(params.input, user.uid, ownerName);
@@ -141,9 +139,7 @@ export function useUpdateJobPosting() {
 
   return useMutation({
     mutationFn: (params: UpdateJobParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useJobManagement');
       return updateJobPosting(params.jobPostingId, params.input, user.uid);
     },
     onSuccess: (_, params) => {
@@ -182,9 +178,7 @@ export function useDeleteJobPosting() {
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useJobManagement');
       return deleteJobPosting(jobPostingId, user.uid);
     },
     onSuccess: (_, jobPostingId) => {
@@ -223,9 +217,7 @@ export function useCloseJobPosting() {
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useJobManagement');
       return closeJobPosting(jobPostingId, user.uid);
     },
     onSuccess: (_, jobPostingId) => {
@@ -264,9 +256,7 @@ export function useReopenJobPosting() {
 
   return useMutation({
     mutationFn: (jobPostingId: string) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useJobManagement');
       return reopenJobPosting(jobPostingId, user.uid);
     },
     onSuccess: (_, jobPostingId) => {
@@ -305,9 +295,7 @@ export function useBulkUpdateStatus() {
 
   return useMutation({
     mutationFn: (params: BulkStatusParams) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useJobManagement');
       return bulkUpdateJobPostingStatus(params.jobPostingIds, params.status, user.uid);
     },
     onSuccess: (successCount) => {

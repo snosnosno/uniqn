@@ -188,7 +188,8 @@ export function getFirebaseStorage(): FirebaseStorage {
 export function getFirebaseFunctions(): Functions {
   if (!firebaseFunctions) {
     const app = initializeFirebaseApp();
-    firebaseFunctions = getFunctions(app, 'asia-northeast3');
+    const region = getEnv().EXPO_PUBLIC_FIREBASE_REGION;
+    firebaseFunctions = getFunctions(app, region);
   }
   return firebaseFunctions;
 }

@@ -85,6 +85,13 @@ export interface IUserRepository {
   getById(userId: string): Promise<FirestoreUserProfile | null>;
 
   /**
+   * 여러 사용자 ID로 프로필 배치 조회 (N+1 최적화)
+   * @param userIds - 사용자 ID 배열
+   * @returns 사용자 프로필 Map (userId -> profile)
+   */
+  getByIdBatch(userIds: string[]): Promise<Map<string, FirestoreUserProfile>>;
+
+  /**
    * 사용자 존재 여부 확인
    * @param userId - 사용자 ID
    */

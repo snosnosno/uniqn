@@ -68,6 +68,7 @@ export const ERROR_CODES = {
   AUTH_TOO_MANY_REQUESTS: 'E2009',
   AUTH_REQUIRES_RECENT_LOGIN: 'E2010',
   AUTH_RATE_LIMITED: 'E2011',
+  AUTH_REQUIRED: 'E2012',
 
   // 검증 에러 (E3xxx)
   VALIDATION_REQUIRED: 'E3001',
@@ -149,6 +150,7 @@ export const ERROR_MESSAGES: Record<string, string> = {
   [ERROR_CODES.AUTH_TOO_MANY_REQUESTS]: '너무 많은 시도입니다. 잠시 후 다시 시도해주세요',
   [ERROR_CODES.AUTH_REQUIRES_RECENT_LOGIN]: '보안을 위해 다시 로그인해주세요',
   [ERROR_CODES.AUTH_RATE_LIMITED]: '로그인 시도 횟수를 초과했습니다. 잠시 후 다시 시도해주세요',
+  [ERROR_CODES.AUTH_REQUIRED]: '로그인이 필요합니다',
 
   // 검증
   [ERROR_CODES.VALIDATION_REQUIRED]: '필수 입력 항목입니다',

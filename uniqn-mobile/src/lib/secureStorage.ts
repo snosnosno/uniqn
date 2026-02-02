@@ -16,6 +16,7 @@
 
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
+import { isSensitiveKey, KNOWN_STORAGE_KEYS } from '@/config/securityConfig';
 
 // ============================================================================
 // Types
@@ -64,6 +65,15 @@ export type KeychainAccessible =
 
 const STORAGE_PREFIX = 'uniqn_secure_';
 const DEFAULT_KEYCHAIN_ACCESSIBLE: KeychainAccessible = 'WHEN_UNLOCKED_THIS_DEVICE_ONLY';
+
+/**
+ * 웹 플랫폼에서 사용할 스토리지 결정
+ * 민감한 키는 sessionStorage 사용 (XSS 방지)
+ * @see config/securityConfig.ts - SENSITIVE_STORAGE_KEYS
+ */
+function getWebStorage(key: string): Storage {
+  return isSensitiveKey(key) ? sessionStorage : localStorage;
+}
 
 // ============================================================================
 // Platform-specific Imports
@@ -131,8 +141,9 @@ export async function setItem<T>(
     const serialized = JSON.stringify(data);
 
     if (Platform.OS === 'web') {
-      // 웹: localStorage
-      localStorage.setItem(storageKey, serialized);
+      // 웹: 민감 데이터는 sessionStorage (XSS 방지), 나머지는 localStorage
+      const storage = getWebStorage(key);
+      storage.setItem(storageKey, serialized);
     } else {
       // 네이티브: SecureStore
       const store = await loadSecureStore();
@@ -168,7 +179,9 @@ export async function getItem<T>(key: string): Promise<T | null> {
     let serialized: string | null = null;
 
     if (Platform.OS === 'web') {
-      serialized = localStorage.getItem(storageKey);
+      // 웹: 민감 데이터는 sessionStorage, 나머지는 localStorage
+      const storage = getWebStorage(key);
+      serialized = storage.getItem(storageKey);
     } else {
       const store = await loadSecureStore();
       if (store) {
@@ -206,7 +219,9 @@ export async function deleteItem(key: string): Promise<void> {
     const storageKey = STORAGE_PREFIX + key;
 
     if (Platform.OS === 'web') {
-      localStorage.removeItem(storageKey);
+      // 웹: 민감 데이터는 sessionStorage, 나머지는 localStorage
+      const storage = getWebStorage(key);
+      storage.removeItem(storageKey);
     } else {
       const store = await loadSecureStore();
       if (store) {
@@ -236,25 +251,29 @@ export async function deleteItems(keys: string[]): Promise<void> {
 export async function clearAll(): Promise<void> {
   try {
     if (Platform.OS === 'web') {
-      const keysToDelete: string[] = [];
+      // localStorage 정리
+      const localKeysToDelete: string[] = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
         if (key?.startsWith(STORAGE_PREFIX)) {
-          keysToDelete.push(key);
+          localKeysToDelete.push(key);
         }
       }
-      keysToDelete.forEach((key) => localStorage.removeItem(key));
+      localKeysToDelete.forEach((key) => localStorage.removeItem(key));
+
+      // sessionStorage 정리 (민감 데이터)
+      const sessionKeysToDelete: string[] = [];
+      for (let i = 0; i < sessionStorage.length; i++) {
+        const key = sessionStorage.key(i);
+        if (key?.startsWith(STORAGE_PREFIX)) {
+          sessionKeysToDelete.push(key);
+        }
+      }
+      sessionKeysToDelete.forEach((key) => sessionStorage.removeItem(key));
     } else {
       // 네이티브에서는 알려진 키만 삭제 (SecureStore는 전체 목록 조회 불가)
-      const knownKeys = [
-        'authToken',
-        'refreshToken',
-        'userId',
-        'fcmToken',
-        'sessionId',
-        'biometricEnabled',
-      ];
-      await deleteItems(knownKeys);
+      // @see config/securityConfig.ts - KNOWN_STORAGE_KEYS
+      await deleteItems([...KNOWN_STORAGE_KEYS]);
     }
 
     logger.info('SecureStorage 전체 삭제 완료');
@@ -296,7 +315,8 @@ export async function isExpired(key: string): Promise<boolean> {
     let serialized: string | null = null;
 
     if (Platform.OS === 'web') {
-      serialized = localStorage.getItem(storageKey);
+      const storage = getWebStorage(key);
+      serialized = storage.getItem(storageKey);
     } else {
       const store = await loadSecureStore();
       if (store) {
@@ -334,7 +354,8 @@ export async function getStoredAt(key: string): Promise<number | null> {
     let serialized: string | null = null;
 
     if (Platform.OS === 'web') {
-      serialized = localStorage.getItem(storageKey);
+      const storage = getWebStorage(key);
+      serialized = storage.getItem(storageKey);
     } else {
       const store = await loadSecureStore();
       if (store) {
@@ -390,8 +411,9 @@ export const authStorage = {
 
 /**
  * 사용자 세션 관련 함수
+ * @note 브라우저 sessionStorage와 충돌 방지를 위해 userSessionStorage로 명명
  */
-export const sessionStorage = {
+export const userSessionStorage = {
   async setUserId(userId: string): Promise<void> {
     await setItem('userId', userId);
   },
@@ -468,7 +490,7 @@ export const secureStorage = {
 
   // Predefined
   auth: authStorage,
-  session: sessionStorage,
+  session: userSessionStorage,
   settings: settingsStorage,
 };
 

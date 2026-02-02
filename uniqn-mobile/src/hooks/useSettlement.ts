@@ -27,6 +27,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
+import { requireAuth } from '@/errors/guardErrors';
 import type { PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -94,9 +95,7 @@ export function useCalculateSettlement() {
 
   return useMutation({
     mutationFn: (input: CalculateSettlementInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useSettlement');
       return calculateSettlement(input, user.uid);
     },
     onSuccess: (result) => {
@@ -124,9 +123,7 @@ export function useUpdateWorkTime() {
 
   return useMutation({
     mutationFn: (input: UpdateWorkTimeInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useSettlement');
       return updateWorkTimeForSettlement(input, user.uid);
     },
     onSuccess: (_, input) => {
@@ -156,9 +153,7 @@ export function useSettleWorkLog() {
 
   return useMutation({
     mutationFn: (input: SettleWorkLogInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useSettlement');
       return settleWorkLog(input, user.uid);
     },
     onSuccess: (result) => {
@@ -194,9 +189,7 @@ export function useBulkSettlement() {
 
   return useMutation({
     mutationFn: (input: BulkSettlementInput) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useSettlement');
       return bulkSettlement(input, user.uid);
     },
     onSuccess: (result) => {
@@ -236,9 +229,7 @@ export function useUpdateSettlementStatus() {
 
   return useMutation({
     mutationFn: ({ workLogId, status }: { workLogId: string; status: PayrollStatus }) => {
-      if (!user) {
-        throw new Error('로그인이 필요합니다');
-      }
+      requireAuth(user?.uid, 'useSettlement');
       return updateSettlementStatus(workLogId, status, user.uid);
     },
     onSuccess: (_, { status }) => {

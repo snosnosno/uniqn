@@ -5,33 +5,18 @@
  * @version 2.0.0 - Assignment v2.0 지원
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  onSnapshot,
-  type Unsubscribe,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { type Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import {
   MaxCapacityReachedError,
   BusinessError,
   PermissionError,
-  AuthError,
-  isPermissionError,
-  isAuthError,
   ERROR_CODES,
-  toError,
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
-import { applicationRepository } from '@/repositories';
+import { applicationRepository, jobPostingRepository } from '@/repositories';
+import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import type {
   Application,
   ApplicationStatus,
@@ -42,29 +27,6 @@ import type {
   JobPosting,
   StaffRole,
 } from '@/types';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const APPLICATIONS_COLLECTION = 'applications';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-
-/**
- * ApplicationStatus → ApplicationStats 필드명 매핑
- *
- * @description ApplicationStatus는 snake_case (cancellation_pending)
- *              ApplicationStats 필드는 camelCase (cancellationPending)
- */
-const STATUS_TO_STATS_KEY: Record<ApplicationStatus, keyof ApplicationStats | null> = {
-  applied: 'applied',
-  pending: 'pending',
-  confirmed: 'confirmed',
-  rejected: 'rejected',
-  cancelled: 'cancelled',
-  completed: 'completed',
-  cancellation_pending: 'cancellationPending',
-};
 
 // ============================================================================
 // Types
@@ -98,6 +60,8 @@ export interface BulkConfirmResult {
 
 /**
  * 공고별 지원자 목록 조회 (구인자용)
+ *
+ * @description Repository 패턴을 통해 데이터 접근 추상화
  */
 export async function getApplicantsByJobPosting(
   jobPostingId: string,
@@ -107,96 +71,23 @@ export async function getApplicantsByJobPosting(
   try {
     logger.info('지원자 목록 조회', { jobPostingId, ownerId, statusFilter });
 
-    // 공고 소유자 확인
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
-    const jobDoc = await getDoc(jobRef);
-
-    if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '존재하지 않는 공고입니다',
-      });
-    }
-
-    const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-    if (!jobData) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '데이터가 올바르지 않습니다',
-      });
-    }
-    // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-    const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-    if (postingOwnerId !== ownerId) {
-      throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-        userMessage: '본인의 공고만 조회할 수 있습니다',
-      });
-    }
-
-    // 지원자 목록 조회
-    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-    let q = query(
-      applicationsRef,
-      where('jobPostingId', '==', jobPostingId),
-      orderBy('createdAt', 'desc')
+    // Repository를 통한 데이터 조회
+    const result = await applicationRepository.findByJobPostingWithStats(
+      jobPostingId,
+      ownerId,
+      statusFilter
     );
-
-    // 상태 필터 적용
-    if (statusFilter) {
-      const statuses = Array.isArray(statusFilter) ? statusFilter : [statusFilter];
-      if (statuses.length === 1) {
-        q = query(
-          applicationsRef,
-          where('jobPostingId', '==', jobPostingId),
-          where('status', '==', statuses[0]),
-          orderBy('createdAt', 'desc')
-        );
-      }
-      // 복수 상태 필터는 클라이언트에서 처리 (Firestore 제약)
-    }
-
-    const snapshot = await getDocs(q);
-    const applicants: ApplicantWithDetails[] = [];
-    const stats: ApplicationStats = {
-      total: 0,
-      applied: 0,
-      pending: 0,
-      confirmed: 0,
-      rejected: 0,
-      cancelled: 0,
-      completed: 0,
-      cancellationPending: 0,
-    };
-
-    snapshot.docs.forEach((docSnapshot) => {
-      const application = {
-        ...docSnapshot.data(),
-        id: docSnapshot.id,
-        jobPosting: { ...jobData, id: jobDoc.id },
-      } as ApplicantWithDetails;
-
-      // 복수 상태 필터 적용
-      if (statusFilter && Array.isArray(statusFilter) && statusFilter.length > 1) {
-        if (!statusFilter.includes(application.status)) {
-          return;
-        }
-      }
-
-      applicants.push(application);
-
-      // 통계 집계 (STATUS_TO_STATS_KEY 매핑 사용)
-      stats.total++;
-      const statsKey = STATUS_TO_STATS_KEY[application.status];
-      if (statsKey && statsKey !== 'total') {
-        stats[statsKey]++;
-      }
-    });
 
     logger.info('지원자 목록 조회 완료', {
       jobPostingId,
-      count: applicants.length,
-      stats,
+      count: result.applications.length,
+      stats: result.stats,
     });
 
-    return { applicants, stats };
+    return {
+      applicants: result.applications as ApplicantWithDetails[],
+      stats: result.stats,
+    };
   } catch (error) {
     if (error instanceof BusinessError || error instanceof PermissionError) {
       throw error;
@@ -228,24 +119,15 @@ export async function confirmApplication(
   try {
     logger.info('지원 확정 시작', { applicationId: input.applicationId, ownerId });
 
-    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
-    const applicationDoc = await getDoc(applicationRef);
+    // Repository를 통한 지원서 조회
+    const applicationData = await applicationRepository.getById(input.applicationId);
 
-    if (!applicationDoc.exists()) {
+    if (!applicationData) {
       throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
         userMessage: '존재하지 않는 지원입니다',
       });
     }
 
-    const applicationData = parseApplicationDocument({
-      id: applicationDoc.id,
-      ...applicationDoc.data(),
-    });
-    if (!applicationData) {
-      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-        userMessage: '데이터가 올바르지 않습니다',
-      });
-    }
     const v2Input = input as ConfirmApplicationInputV2;
     const selectedAssignments = v2Input.selectedAssignments ?? applicationData.assignments;
 
@@ -443,37 +325,20 @@ export interface SubscribeToApplicantsCallbacks {
 /**
  * 공고 소유권 검증 (구독 전 권한 확인용)
  *
+ * @description Repository 패턴을 통해 데이터 접근 추상화
  * @returns true: 소유자, false: 비소유자 또는 공고 없음
  */
 export async function verifyJobPostingOwnership(
   jobPostingId: string,
   ownerId: string
 ): Promise<boolean> {
-  try {
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
-    const jobDoc = await getDoc(jobRef);
-
-    if (!jobDoc.exists()) {
-      return false;
-    }
-
-    const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-    if (!jobData) {
-      return false;
-    }
-    const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-
-    return postingOwnerId === ownerId;
-  } catch (error) {
-    logger.error('공고 소유권 검증 실패', toError(error), { jobPostingId, ownerId });
-    return false;
-  }
+  return jobPostingRepository.verifyOwnership(jobPostingId, ownerId);
 }
 
 /**
  * 공고별 지원자 목록 실시간 구독 (구인자용)
  *
- * @description onSnapshot을 사용하여 지원자 목록을 실시간으로 구독합니다.
+ * @description Repository 패턴을 통해 실시간 구독을 추상화합니다.
  *              새 지원이 들어오거나 상태가 변경되면 즉시 콜백이 호출됩니다.
  *
  * @note 치명적 에러(권한, 인증) 발생 시 자동으로 구독이 해제됩니다.
@@ -487,127 +352,16 @@ export function subscribeToApplicants(
 ): Unsubscribe {
   logger.info('지원자 목록 실시간 구독 시작', { jobPostingId, ownerId });
 
-  const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-  const q = query(
-    applicationsRef,
-    where('jobPostingId', '==', jobPostingId),
-    orderBy('createdAt', 'desc')
-  );
-
-  // 공고 정보 캐싱 (소유권 확인 및 지원자 데이터에 포함)
-  let cachedJobPosting: JobPosting | null = null;
-  let isOwnerVerified = false;
-  let unsubscribeFn: Unsubscribe | null = null;
-
-  /**
-   * 치명적 에러 시 구독 자동 해제 (W5)
-   */
-  const handleFatalError = (error: Error) => {
-    if (isPermissionError(error) || isAuthError(error)) {
-      logger.warn('치명적 에러로 구독 자동 해제', {
-        errorCode: (error as PermissionError | AuthError).code,
-        jobPostingId,
+  // Repository를 통한 실시간 구독
+  return applicationRepository.subscribeByJobPosting(jobPostingId, ownerId, {
+    onUpdate: (result) => {
+      callbacks.onUpdate({
+        applicants: result.applications as ApplicantWithDetails[],
+        stats: result.stats,
       });
-      unsubscribeFn?.();
-    }
-    callbacks.onError?.(error);
-  };
-
-  unsubscribeFn = onSnapshot(
-    q,
-    async (snapshot) => {
-      try {
-        // 첫 호출 시 공고 소유자 확인
-        if (!isOwnerVerified) {
-          const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
-          const jobDoc = await getDoc(jobRef);
-
-          if (!jobDoc.exists()) {
-            const error = new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-              userMessage: '존재하지 않는 공고입니다',
-            });
-            callbacks.onError?.(error);
-            return;
-          }
-
-          const jobData = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
-          if (!jobData) {
-            const error = new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-              userMessage: '데이터가 올바르지 않습니다',
-            });
-            callbacks.onError?.(error);
-            return;
-          }
-          const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-
-          if (postingOwnerId !== ownerId) {
-            const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-              userMessage: '본인의 공고만 조회할 수 있습니다',
-            });
-            // 권한 에러는 치명적 → 자동 해제
-            handleFatalError(error);
-            return;
-          }
-
-          cachedJobPosting = jobData;
-          isOwnerVerified = true;
-        }
-
-        // 지원자 목록 처리
-        const applicants: ApplicantWithDetails[] = [];
-        const stats: ApplicationStats = {
-          total: 0,
-          applied: 0,
-          pending: 0,
-          confirmed: 0,
-          rejected: 0,
-          cancelled: 0,
-          completed: 0,
-          cancellationPending: 0,
-        };
-
-        snapshot.docs.forEach((docSnapshot) => {
-          const application = {
-            ...docSnapshot.data(),
-            id: docSnapshot.id,
-            jobPosting: cachedJobPosting,
-          } as ApplicantWithDetails;
-
-          applicants.push(application);
-
-          // 통계 집계
-          stats.total++;
-          const statsKey = STATUS_TO_STATS_KEY[application.status];
-          if (statsKey && statsKey !== 'total') {
-            stats[statsKey]++;
-          }
-        });
-
-        logger.debug('지원자 목록 실시간 업데이트', {
-          jobPostingId,
-          count: applicants.length,
-          stats,
-        });
-
-        callbacks.onUpdate({ applicants, stats });
-      } catch (error) {
-        logger.error('지원자 목록 실시간 구독 처리 실패', toError(error), { jobPostingId });
-        handleFatalError(toError(error));
-      }
     },
-    (firebaseError) => {
-      const appError = handleServiceError(firebaseError, {
-        operation: '지원자 목록 실시간 구독',
-        component: 'applicantManagementService',
-        context: { jobPostingId },
-      });
-
-      // Firebase 에러도 치명적 에러 여부 확인 후 처리
-      handleFatalError(appError as Error);
-    }
-  );
-
-  return () => unsubscribeFn?.();
+    onError: callbacks.onError,
+  });
 }
 
 /**

@@ -12,7 +12,6 @@ export const tournamentChunk = {
   ParticipantsPage: lazy(() => import('../pages/ParticipantsPage')),
   TablesPage: lazy(() => import('../pages/TablesPage')),
   PrizesPage: lazy(() => import('../pages/PrizesPage')),
-  ShiftSchedulePage: lazy(() => import('../pages/ShiftSchedulePage')),
 };
 
 // 기본 페이지 그룹

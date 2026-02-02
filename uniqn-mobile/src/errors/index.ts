@@ -172,3 +172,9 @@ export {
   type ServiceErrorOptions,
   type SilentErrorOptions,
 } from './serviceErrorHandler';
+
+// ============================================================================
+// Guard Error Helpers
+// ============================================================================
+
+export { requireAuth, requireValue } from './guardErrors';

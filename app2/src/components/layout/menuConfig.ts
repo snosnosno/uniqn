@@ -1,7 +1,6 @@
 import {
   FaUsers,
   FaTable,
-  FaClock,
   FaTrophy,
   FaUserCircle,
   FaFileInvoice,
@@ -117,12 +116,6 @@ export const TOURNAMENT_BASE_ITEMS: MenuItem[] = [
 
 // Admin/Manager 전용 토너먼트 아이템
 export const TOURNAMENT_ADMIN_ITEMS: MenuItem[] = [
-  {
-    to: '/app/admin/shift-schedule',
-    labelKey: 'nav.shiftSchedule',
-    labelDefault: 'Shift Schedule',
-    Icon: FaClock,
-  },
   {
     to: '/app/admin/prizes',
     labelKey: 'nav.prizes',

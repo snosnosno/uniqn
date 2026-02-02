@@ -369,6 +369,7 @@ export {
   type StatusConfig,
   type AttendanceStatusConfig,
   type ApplicationStatusType,
+  type ApplicationStatsKey,
   type ScheduleStatusType,
   type AttendanceStatusType,
   type PayrollStatusType,
@@ -383,6 +384,8 @@ export {
   JOB_POSTING_STATUS,
   INQUIRY_STATUS,
   ANNOUNCEMENT_PRIORITY,
+  // Status-to-Stats Mapping
+  STATUS_TO_STATS_KEY,
   // Utility Functions
   getStatusConfig,
   getStatusLabel,
@@ -392,3 +395,9 @@ export {
   applicationStatusConfig,
   statusConfig,
 } from './statusConfig';
+
+// ============================================================================
+// 리스트 스타일 상수 (v1.1.0)
+// ============================================================================
+
+export { LIST_CONTAINER_STYLES, HIT_SLOP, type HitSlopSize } from './listStyles';

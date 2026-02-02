@@ -26,22 +26,15 @@ import { deepLinkService, navigateFromNotification } from '@/services/deepLinkSe
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
-import { getFirebaseDb } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { FirebaseNotificationRepository } from '@/repositories/firebase/NotificationRepository';
 import type { NotificationType } from '@/types/notification';
+
+// Repository 인스턴스
+const notificationRepository = new FirebaseNotificationRepository();
 
 // ============================================================================
 // Types
 // ============================================================================
-
-/**
- * 카운터 문서 타입
- */
-interface CounterDocument {
-  unreadCount: number;
-  lastUpdatedAt?: unknown; // Firestore Timestamp
-  initializedAt?: unknown; // Firestore Timestamp
-}
 
 // ============================================================================
 // Helper Functions
@@ -80,16 +73,13 @@ export async function syncUnreadCounterFromServer(
       return;
     }
 
-    const db = getFirebaseDb();
-    const counterRef = doc(db, 'users', userId, 'counters', 'notifications');
-    const counterSnap = await getDoc(counterRef);
+    // Repository를 통해 캐시된 카운터 조회
+    const serverCount = await notificationRepository.getUnreadCounterFromCache(userId);
 
     // 캐시 갱신
     lastSyncTimeCache.set(userId, now);
 
-    if (counterSnap.exists()) {
-      const data = counterSnap.data() as CounterDocument;
-      const serverCount = data.unreadCount ?? 0;
+    if (serverCount !== null) {
       const localCount = useNotificationStore.getState().unreadCount;
 
       // 서버와 로컬 카운트가 다르면 동기화

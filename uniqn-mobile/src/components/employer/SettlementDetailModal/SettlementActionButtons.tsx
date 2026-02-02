@@ -39,6 +39,9 @@ export function SettlementActionButtons({
         {onEditTime && (
           <Pressable
             onPress={onEditTime}
+            accessibilityRole="button"
+            accessibilityLabel="근무 시간 수정"
+            accessibilityHint="근무 시간을 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
           >
             <ClockIcon size={18} color="#6B7280" />
@@ -51,6 +54,9 @@ export function SettlementActionButtons({
         {onEditAmount && (
           <Pressable
             onPress={onEditAmount}
+            accessibilityRole="button"
+            accessibilityLabel="정산 금액 수정"
+            accessibilityHint="정산 금액을 수정합니다"
             className="flex-1 flex-row items-center justify-center py-3 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
           >
             <EditIcon size={18} color="#6B7280" />
@@ -65,6 +71,9 @@ export function SettlementActionButtons({
       {onSettle && (
         <Pressable
           onPress={onSettle}
+          accessibilityRole="button"
+          accessibilityLabel="정산하기"
+          accessibilityHint="스태프에게 급여를 정산합니다"
           className="flex-row items-center justify-center py-3.5 rounded-lg bg-primary-500 active:opacity-70"
         >
           <BanknotesIcon size={18} color="#fff" />

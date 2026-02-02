@@ -56,6 +56,13 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
     <Pressable
       onPress={onSelect}
       disabled={isCurrentRole}
+      accessibilityRole="radio"
+      accessibilityLabel={`${roleDisplayName}${isCurrentRole ? ' (현재 역할)' : ''}`}
+      accessibilityHint={isCurrentRole ? '현재 역할이므로 선택할 수 없습니다' : '이 역할로 변경합니다'}
+      accessibilityState={{
+        selected: isSelected,
+        disabled: isCurrentRole,
+      }}
       className={`
         flex-row items-center justify-between p-4 rounded-xl mb-2
         ${
@@ -236,6 +243,8 @@ export function RoleChangeModal({
             multiline
             numberOfLines={2}
             textAlignVertical="top"
+            accessibilityLabel="역할 변경 사유 입력"
+            accessibilityHint="역할 변경 사유를 입력하세요. 필수 입력 항목입니다."
             className="p-2.5 border border-gray-200 dark:border-surface-overlay rounded-lg bg-white dark:bg-surface text-gray-900 dark:text-white min-h-[48px]"
           />
         </View>

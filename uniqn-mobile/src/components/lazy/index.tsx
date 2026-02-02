@@ -155,6 +155,15 @@ export const LazyJobPostingScrollForm = lazy(
 export const LazyUserList = lazy(() => import('@/components/admin/UserList'));
 export const LazyUserDetail = lazy(() => import('@/components/admin/UserDetail'));
 
+/**
+ * Chart Components - 관리자 통계용 (react-native-chart-kit 포함)
+ * @description 무거운 차트 라이브러리를 동적으로 로드하여 번들 크기 최적화
+ */
+export const LazyTrendChart = lazy(() => import('@/components/admin/stats/TrendChart'));
+export const LazyRoleDistributionChart = lazy(
+  () => import('@/components/admin/stats/RoleDistributionChart')
+);
+
 // =============================================================================
 // 간단한 Error Boundary (React Native용)
 // =============================================================================
@@ -260,4 +269,6 @@ export default {
   LazyJobPostingScrollForm,
   LazyUserList,
   LazyUserDetail,
+  LazyTrendChart,
+  LazyRoleDistributionChart,
 };

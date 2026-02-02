@@ -69,7 +69,6 @@ const {
   TablesPage,
   TournamentsPage,
   // PrizesPage, // 비활성화 - 추후 업데이트 예정
-  ShiftSchedulePage,
 } = tournamentChunk;
 
 const { LandingPage, ProfilePage, SupportPage } = coreChunk;
@@ -332,18 +331,6 @@ const App: React.FC = () => {
                                 path="admin"
                                 element={<RoleBasedRoute allowedRoles={['admin', 'employer']} />}
                               >
-                                <Route
-                                  path="shift-schedule"
-                                  element={
-                                    FEATURE_FLAGS.SHIFT_SCHEDULE ? (
-                                      <Suspense fallback={<LoadingSpinner />}>
-                                        <ShiftSchedulePage />
-                                      </Suspense>
-                                    ) : (
-                                      <ComingSoon feature="교대 관리" />
-                                    )
-                                  }
-                                />
                                 {/* 상금관리 페이지 - 추후 업데이트 예정 */}
                                 <Route
                                   path="prizes"

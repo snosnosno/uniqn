@@ -11,6 +11,7 @@ import { FlashList } from '@shopify/flash-list';
 import { JobCard } from './JobCard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { SkeletonJobCard } from '@/components/ui/Skeleton';
+import { LIST_CONTAINER_STYLES } from '@/constants';
 import type { JobPostingCard } from '@/types';
 
 // ============================================================================
@@ -90,7 +91,7 @@ export function JobList({
       keyExtractor={keyExtractor}
       // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
       estimatedItemSize={160}
-      contentContainerStyle={{ padding: 16 }}
+      contentContainerStyle={LIST_CONTAINER_STYLES.padding16}
       showsVerticalScrollIndicator={false}
       refreshControl={
         <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#6366f1" />

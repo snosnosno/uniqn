@@ -59,6 +59,10 @@ export const CardHeader = React.memo(function CardHeader({
       <Pressable
         onPress={onViewProfile}
         disabled={!onViewProfile}
+        accessibilityRole="button"
+        accessibilityLabel={`${displayName} 프로필 보기`}
+        accessibilityHint="지원자의 상세 프로필을 확인합니다"
+        accessibilityState={{ disabled: !onViewProfile }}
         className="flex-1 flex-row items-center active:opacity-80"
       >
         <Avatar source={profilePhotoURL} name={displayName} size="md" className="mr-3" />
@@ -67,7 +71,12 @@ export const CardHeader = React.memo(function CardHeader({
             <Text className="text-base font-semibold text-gray-900 dark:text-white">
               {displayName}
             </Text>
-            {!isRead && <View className="ml-2 h-2 w-2 rounded-full bg-primary-500" />}
+            {!isRead && (
+              <View
+                className="ml-2 h-2 w-2 rounded-full bg-primary-500"
+                accessibilityLabel="새 지원자"
+              />
+            )}
           </View>
         </View>
         <Badge variant={STATUS_BADGE_VARIANT[status]} size="sm" dot>
@@ -78,6 +87,9 @@ export const CardHeader = React.memo(function CardHeader({
       {/* 펼침/접힘 버튼 */}
       <Pressable
         onPress={onToggleExpand}
+        accessibilityRole="button"
+        accessibilityLabel={isExpanded ? '지원 상세 접기' : '지원 상세 열기'}
+        accessibilityState={{ expanded: isExpanded }}
         className="ml-2 px-3 py-1 rounded-full bg-gray-100 dark:bg-surface active:opacity-60 flex-row items-center"
         hitSlop={8}
       >
