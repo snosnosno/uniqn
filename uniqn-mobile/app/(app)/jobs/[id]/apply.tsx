@@ -3,19 +3,25 @@
  * 지원하기 화면 (로그인 필요)
  *
  * @description v2.0 - Assignment + PreQuestion 지원
- * @version 2.1.0
+ * @version 2.2.0
+ *
+ * @changelog
+ * - 2.2.0: 지원 폼 진입 시 최신 공고 상태 fetch + 제출 전 마감 검증
  */
 
 import { useState, useCallback } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useQueryClient } from '@tanstack/react-query';
 import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications } from '@/hooks';
-import { useThemeStore } from '@/stores';
+import { useThemeStore, useToastStore } from '@/stores';
+import { queryKeys } from '@/lib/queryClient';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { logger } from '@/utils/logger';
-import type { Assignment, PreQuestionAnswer } from '@/types';
+import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
 
 // ============================================================================
 // Loading Component
@@ -82,6 +88,8 @@ function AlreadyAppliedState() {
 export default function ApplyScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { isDarkMode } = useThemeStore();
+  const { addToast } = useToastStore();
+  const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(true);
 
   const {
@@ -93,16 +101,59 @@ export default function ApplyScreen() {
 
   const { submitApplication, isSubmitting, hasApplied } = useApplications();
 
+  // Note: staleTime: 0이므로 마운트 시 자동 fresh fetch (별도 useEffect 불필요)
+
   // 지원 제출 핸들러 (v2.0: Assignment + PreQuestion)
+  // v2.2: 제출 전 최신 공고 상태 검증 추가
   const handleSubmit = useCallback(
-    (assignments: Assignment[], message?: string, preQuestionAnswers?: PreQuestionAnswer[]) => {
+    async (
+      assignments: Assignment[],
+      message?: string,
+      preQuestionAnswers?: PreQuestionAnswer[]
+    ) => {
       if (!job) return;
 
-      logger.info('지원 제출', {
+      logger.info('지원 제출 시작', {
         jobId: job.id,
         assignmentsCount: assignments.length,
         hasPreQuestions: !!preQuestionAnswers,
       });
+
+      // 제출 전 최신 공고 상태 확인
+      try {
+        const latestJob = await queryClient.fetchQuery<JobPosting | null>({
+          queryKey: queryKeys.jobPostings.detail(job.id),
+          staleTime: 0, // 강제 fresh fetch
+        });
+
+        if (!latestJob) {
+          addToast({ type: 'error', message: '공고를 찾을 수 없습니다' });
+          return;
+        }
+
+        // 공고 상태 확인
+        if (latestJob.status !== 'active') {
+          addToast({ type: 'error', message: '지원이 마감된 공고입니다' });
+          return;
+        }
+
+        // 정원 확인
+        const { total, filled } = getClosingStatus(latestJob);
+        if (total > 0 && filled >= total) {
+          addToast({ type: 'error', message: '모집 인원이 마감되었습니다' });
+          return;
+        }
+
+        logger.info('지원 제출 검증 통과', {
+          jobId: job.id,
+          status: latestJob.status,
+          filled,
+          total,
+        });
+      } catch (error) {
+        logger.warn('지원 전 검증 실패, 서버에서 최종 검증', { error });
+        // 검증 실패해도 서버에서 최종 검증하므로 진행
+      }
 
       submitApplication(
         {
@@ -122,7 +173,7 @@ export default function ApplyScreen() {
         }
       );
     },
-    [job, submitApplication]
+    [job, submitApplication, queryClient, addToast]
   );
 
   // 폼 닫기 핸들러
