@@ -454,14 +454,14 @@ export const queryKeys = {
  * - offlineFirst: 오프라인 우선 접근이 필요한 데이터
  */
 export const cachingPolicies = {
-  /** 실시간 데이터 - 항상 fresh 체크 (settlement, workLogs) */
-  realtime: 0,
-  /** 자주 변경되는 데이터 - 2분 (schedules) */
-  frequent: 2 * 60 * 1000,
-  /** 보통 빈도 - 5분 (기본값: jobPostings, applications) */
-  standard: 5 * 60 * 1000,
-  /** 드물게 변경 - 30분 (settings, user profile) */
-  stable: 30 * 60 * 1000,
+  /** 실시간 데이터 - 30초 (settlement, workLogs) - 완전 realtime 대신 짧은 캐시 */
+  realtime: 30 * 1000,
+  /** 자주 변경되는 데이터 - 5분 (schedules) - 네트워크 비용 절감 */
+  frequent: 5 * 60 * 1000,
+  /** 보통 빈도 - 10분 (기본값: jobPostings, applications) */
+  standard: 10 * 60 * 1000,
+  /** 드물게 변경 - 60분 (settings, user profile) */
+  stable: 60 * 60 * 1000,
   /** 오프라인 우선 - 무제한 */
   offlineFirst: Infinity,
 } as const;
@@ -484,50 +484,50 @@ export const cachingPolicies = {
  * ```
  */
 export const queryCachingOptions = {
-  /** 스케줄 - 2분 (자주 변경될 수 있음) */
+  /** 스케줄 - 5분 (네트워크 비용 최적화) */
   schedules: {
     staleTime: cachingPolicies.frequent,
-    gcTime: 5 * 60 * 1000, // 5분
+    gcTime: 15 * 60 * 1000, // 15분
   },
-  /** 정산 - 실시간 (금액 정확성 중요) */
+  /** 정산 - 30초 (금액 정확성 중요하지만 과도한 리페치 방지) */
   settlement: {
     staleTime: cachingPolicies.realtime,
-    gcTime: 2 * 60 * 1000, // 2분
+    gcTime: 5 * 60 * 1000, // 5분
   },
-  /** 근무기록 - 실시간 (출퇴근 상태 즉시 반영) */
+  /** 근무기록 - 30초 (출퇴근 상태는 짧은 캐시 사용) */
   workLogs: {
     staleTime: cachingPolicies.realtime,
-    gcTime: 2 * 60 * 1000, // 2분
+    gcTime: 5 * 60 * 1000, // 5분
   },
-  /** 공고 목록 - 5분 */
+  /** 공고 목록 - 10분 */
   jobPostings: {
     staleTime: cachingPolicies.standard,
-    gcTime: 10 * 60 * 1000, // 10분
+    gcTime: 30 * 60 * 1000, // 30분
   },
-  /** 지원서 - 5분 */
+  /** 지원서 - 10분 */
   applications: {
     staleTime: cachingPolicies.standard,
+    gcTime: 30 * 60 * 1000, // 30분
+  },
+  /** 알림 - 2분 (실시간 구독과 별개로 폴링 캐시) */
+  notifications: {
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000, // 10분
   },
-  /** 알림 - 실시간 */
-  notifications: {
-    staleTime: cachingPolicies.realtime,
-    gcTime: 5 * 60 * 1000, // 5분
-  },
-  /** 확정 스태프 - 2분 */
+  /** 확정 스태프 - 5분 */
   confirmedStaff: {
     staleTime: cachingPolicies.frequent,
-    gcTime: 5 * 60 * 1000, // 5분
+    gcTime: 15 * 60 * 1000, // 15분
   },
-  /** 사용자 설정 - 30분 */
+  /** 사용자 설정 - 60분 */
   settings: {
     staleTime: cachingPolicies.stable,
-    gcTime: 60 * 60 * 1000, // 1시간
+    gcTime: 2 * 60 * 60 * 1000, // 2시간
   },
-  /** 사용자 프로필 - 30분 */
+  /** 사용자 프로필 - 60분 */
   user: {
     staleTime: cachingPolicies.stable,
-    gcTime: 60 * 60 * 1000, // 1시간
+    gcTime: 2 * 60 * 60 * 1000, // 2시간
   },
 } as const;
 

@@ -202,12 +202,28 @@ async function initializeSecureMMKV(): Promise<MMKVInstance> {
 
 /**
  * 암호화 키 생성 (32자)
+ *
+ * @description 암호학적으로 안전한 난수 생성기 사용 (crypto.getRandomValues)
+ * Math.random()은 예측 가능하므로 보안용으로 부적합
  */
 function generateEncryptionKey(): string {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+  const bytes = new Uint8Array(32);
+
+  // crypto.getRandomValues 사용 (웹/네이티브 모두 지원)
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    crypto.getRandomValues(bytes);
+  } else {
+    // 폴백: 개발 환경에서만 (프로덕션에서는 crypto 항상 존재)
+    logger.warn('[MMKV] crypto.getRandomValues 미지원 - 폴백 사용');
+    for (let i = 0; i < 32; i++) {
+      bytes[i] = Math.floor(Math.random() * 256);
+    }
+  }
+
   let result = '';
   for (let i = 0; i < 32; i++) {
-    result += chars.charAt(Math.floor(Math.random() * chars.length));
+    result += chars.charAt(bytes[i] % chars.length);
   }
   return result;
 }

@@ -81,7 +81,6 @@ export function useNotificationList(
     notifications: cachedNotifications,
     setNotifications,
     addNotifications,
-    setLoading,
     setHasMore,
     lastFetchedAt,
   } = useNotificationStore();
@@ -107,21 +106,15 @@ export function useNotificationList(
     },
     // 오프라인 시 쿼리 비활성화
     enabled: enabled && !!user?.uid && isOnline,
-    staleTime: cachingPolicies.frequent, // 2분
+    staleTime: cachingPolicies.frequent, // 5분
   });
 
-  // 스토어 동기화
+  // 스토어 동기화 (오프라인 캐시용)
   useEffect(() => {
     if (query.data) {
       setNotifications(query.data);
     }
   }, [query.data, setNotifications]);
-
-  // 로딩 상태 동기화
-  useEffect(() => {
-    // 오프라인 시 로딩 상태 false
-    setLoading(isOnline ? query.isLoading : false);
-  }, [query.isLoading, setLoading, isOnline]);
 
   // 온라인 복귀 시 놓친 알림 동기화
   useEffect(() => {
@@ -213,10 +206,12 @@ export function useNotificationList(
 
 /**
  * 알림 실시간 구독 훅
+ *
+ * @note 로딩 상태는 React Query가 관리하므로 여기서는 데이터 동기화만 담당
  */
 export function useNotificationRealtime() {
   const user = useAuthStore((state) => state.user);
-  const { setNotifications, setLoading } = useNotificationStore();
+  const setNotifications = useNotificationStore((state) => state.setNotifications);
   const unsubscribeRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
@@ -224,17 +219,13 @@ export function useNotificationRealtime() {
       return;
     }
 
-    setLoading(true);
-
     unsubscribeRef.current = subscribeToNotifications(
       user.uid,
       (notifications) => {
         setNotifications(notifications);
-        setLoading(false);
       },
       (error) => {
         logger.error('알림 구독 에러', error);
-        setLoading(false);
       }
     );
 
@@ -242,7 +233,7 @@ export function useNotificationRealtime() {
       unsubscribeRef.current?.();
       unsubscribeRef.current = null;
     };
-  }, [user?.uid, setNotifications, setLoading]);
+  }, [user?.uid, setNotifications]);
 }
 
 // ============================================================================
@@ -429,7 +420,7 @@ export function useNotificationSettingsQuery() {
       return getNotificationSettings(user.uid);
     },
     enabled: !!user?.uid,
-    staleTime: cachingPolicies.stable, // 30분
+    staleTime: cachingPolicies.stable, // 60분
   });
 
   // 스토어 동기화

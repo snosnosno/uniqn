@@ -139,7 +139,7 @@ export function useConfirmedStaff(
       return getConfirmedStaff(jobPostingId);
     },
     enabled: !!jobPostingId && !realtime,
-    staleTime: cachingPolicies.frequent, // 2분
+    staleTime: cachingPolicies.frequent, // 5분
   });
 
   // ============================================================================

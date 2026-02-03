@@ -75,8 +75,8 @@ export function usePostingTypeCounts() {
   const query_result = useQuery({
     queryKey: [...queryKeys.jobPostings.all, 'typeAvailability'] as const,
     queryFn: fetchPostingTypeAvailability,
-    staleTime: cachingPolicies.frequent, // 2분
-    gcTime: cachingPolicies.standard * 2, // 10분
+    staleTime: cachingPolicies.frequent, // 5분
+    gcTime: cachingPolicies.standard * 2, // 20분
   });
 
   // 우선순위에 따른 첫 번째 공고가 있는 타입 계산

@@ -51,7 +51,7 @@ export function useAdminReports(filters: GetAllReportsFilters = {}) {
   return useQuery({
     queryKey: [...queryKeys.reports.all, 'admin', filters],
     queryFn: () => getAllReports(filters),
-    staleTime: cachingPolicies.frequent, // 2분
+    staleTime: cachingPolicies.frequent, // 5분
   });
 }
 

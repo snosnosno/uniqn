@@ -2,11 +2,12 @@
  * UNIQN Mobile - 정산 조회 서비스
  *
  * @description 근무 기록 조회, 정산 요약 조회
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * @changelog
+ * - 1.1.0: Repository 패턴 적용 (Firebase 직접 호출 제거)
  */
 
-import { collection, doc, getDoc, getDocs, query, where, orderBy } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -16,15 +17,9 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
-import {
-  parseWorkLogDocuments,
-  parseJobPostingDocument,
-  parseJobPostingDocuments,
-} from '@/schemas';
+import { jobPostingRepository, workLogRepository } from '@/repositories';
 import type { WorkLog } from '@/types';
 import {
-  WORK_LOGS_COLLECTION,
-  JOB_POSTINGS_COLLECTION,
   type WorkLogWithOverrides,
   type SettlementWorkLog,
   type SettlementFilters,
@@ -48,20 +43,12 @@ export async function getWorkLogsByJobPosting(
   try {
     logger.info('공고별 근무 기록 조회', { jobPostingId, ownerId, filters });
 
-    // 1. 공고 소유권 확인
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
-    const jobDoc = await getDoc(jobRef);
+    // 1. 공고 소유권 확인 (Repository 사용)
+    const jobPosting = await jobPostingRepository.getById(jobPostingId);
 
-    if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '존재하지 않는 공고입니다',
-      });
-    }
-
-    const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
     if (!jobPosting) {
       throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '공고 데이터를 파싱할 수 없습니다',
+        userMessage: '존재하지 않는 공고입니다',
       });
     }
 
@@ -71,21 +58,9 @@ export async function getWorkLogsByJobPosting(
       });
     }
 
-    // 2. 근무 기록 쿼리 생성
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('jobPostingId', '==', jobPostingId),
-      orderBy('date', 'desc')
-    );
-    const snapshot = await getDocs(q);
+    // 2. 근무 기록 조회 (Repository 사용)
+    const parsedWorkLogs = await workLogRepository.getByJobPostingId(jobPostingId);
 
-    const parsedWorkLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }))
-    );
     let workLogs: SettlementWorkLog[] = parsedWorkLogs.map((wl) => ({
       ...wl,
       jobPostingTitle: jobPosting.title,
@@ -167,20 +142,12 @@ export async function getJobPostingSettlementSummary(
   try {
     logger.info('공고별 정산 요약 조회', { jobPostingId, ownerId });
 
-    // 1. 공고 조회 및 소유권 확인
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
-    const jobDoc = await getDoc(jobRef);
+    // 1. 공고 조회 및 소유권 확인 (Repository 사용)
+    const jobPosting = await jobPostingRepository.getById(jobPostingId);
 
-    if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '존재하지 않는 공고입니다',
-      });
-    }
-
-    const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
     if (!jobPosting) {
       throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '공고 데이터를 파싱할 수 없습니다',
+        userMessage: '존재하지 않는 공고입니다',
       });
     }
 
@@ -190,17 +157,8 @@ export async function getJobPostingSettlementSummary(
       });
     }
 
-    // 2. 근무 기록 조회
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(workLogsRef, where('jobPostingId', '==', jobPostingId));
-    const snapshot = await getDocs(q);
-
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }))
-    );
+    // 2. 근무 기록 조회 (Repository 사용)
+    const workLogs = await workLogRepository.getByJobPostingId(jobPostingId);
 
     // 3. 통계 계산
     let completedWorkLogs = 0;
@@ -321,17 +279,8 @@ export async function getMySettlementSummary(
   try {
     logger.info('전체 정산 요약 조회', { ownerId, dateRange });
 
-    // 1. 내 공고 조회
-    const jobsRef = collection(getFirebaseDb(), JOB_POSTINGS_COLLECTION);
-    const jobsQuery = query(jobsRef, where('ownerId', '==', ownerId));
-
-    const jobsSnapshot = await getDocs(jobsQuery);
-    const jobPostings = parseJobPostingDocuments(
-      jobsSnapshot.docs.map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }))
-    );
+    // 1. 내 공고 조회 (Repository 사용)
+    const jobPostings = await jobPostingRepository.getByOwnerId(ownerId);
 
     // 2. 각 공고별 정산 요약 조회
     const summaries: JobPostingSettlementSummary[] = [];

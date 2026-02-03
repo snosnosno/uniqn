@@ -12,13 +12,16 @@
 
 import {
   collection,
+  doc,
   query,
   where,
   orderBy,
   limit,
   onSnapshot,
+  getDoc,
   type QueryDocumentSnapshot,
   type DocumentData,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 import { Platform } from 'react-native';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -225,9 +228,15 @@ export function subscribeToNotifications(
 }
 
 /**
- * 읽지 않은 알림 수 실시간 구독
+ * 읽지 않은 알림 수 실시간 구독 (최적화 버전)
  *
- * @description Phase 12 - RealtimeManager로 중복 구독 방지
+ * @description
+ * - Phase 12 - RealtimeManager로 중복 구독 방지
+ * - 비용 최적화: 단일 카운터 문서 구독 (모든 미읽음 문서 대신)
+ * - 카운터 문서 경로: users/{userId}/counters/notifications
+ * - 카운터가 없으면 getCountFromServer() 폴백
+ *
+ * @changelog v1.1.0 - 전체 미읽음 문서 구독 → 단일 카운터 문서 구독
  */
 export function subscribeToUnreadCount(
   userId: string,
@@ -235,19 +244,47 @@ export function subscribeToUnreadCount(
   onError?: (error: Error) => void
 ): () => void {
   return RealtimeManager.subscribe(RealtimeManager.Keys.unreadCount(userId), () => {
-    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-    const q = query(
-      notificationsRef,
-      where('recipientId', '==', userId),
-      where('isRead', '==', false)
-    );
+    const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
 
+    // 초기값 로드 (카운터 문서가 없을 경우 getCountFromServer 사용)
+    getDoc(counterRef)
+      .then(async (snap) => {
+        if (!snap.exists()) {
+          // 카운터 문서 없음 - getCountFromServer로 폴백
+          try {
+            const count = await notificationRepository.getUnreadCount(userId);
+            onCount(count);
+            logger.debug('미읽음 카운터 초기 로드 (getCountFromServer)', { userId, count });
+          } catch (error) {
+            logger.error('미읽음 카운터 초기 로드 실패', normalizeError(error));
+          }
+        }
+      })
+      .catch((error: Error) => {
+        logger.warn('카운터 문서 확인 실패', { userId, error: error.message });
+      });
+
+    // 카운터 문서 실시간 구독 (단일 문서 - 비용 효율적)
     const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        onCount(snapshot.size);
+      counterRef,
+      async (snapshot: DocumentSnapshot) => {
+        if (snapshot.exists()) {
+          // 카운터 문서에서 값 읽기
+          const data = snapshot.data() as { unreadCount?: number } | undefined;
+          const count = data?.unreadCount ?? 0;
+          onCount(count);
+        } else {
+          // 카운터 문서가 없으면 직접 카운트 (드문 경우)
+          try {
+            const count = await notificationRepository.getUnreadCount(userId);
+            onCount(count);
+          } catch (error) {
+            logger.error('폴백 카운트 조회 실패', normalizeError(error));
+            onCount(0);
+          }
+        }
       },
-      (error) => {
+      (error: Error) => {
         const appError = normalizeError(error);
         logger.error('읽지 않은 알림 수 구독 에러', appError, {
           code: appError.code,
@@ -256,7 +293,7 @@ export function subscribeToUnreadCount(
       }
     );
 
-    logger.info('읽지 않은 알림 수 구독 시작', { userId });
+    logger.info('읽지 않은 알림 수 구독 시작 (최적화)', { userId });
     return unsubscribe;
   });
 }

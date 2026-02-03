@@ -45,16 +45,15 @@ export { useThemeStore } from './themeStore';
 export type { ThemeMode } from './themeStore';
 
 // Notification Store
+// Note: isLoading 관련 export 제거됨 (v1.2.0) - React Query가 로딩 상태 관리
 export {
   useNotificationStore,
   useUnreadCount,
   useNotifications,
   useNotificationSettings,
-  useNotificationLoading,
   useUnreadByCategory,
   selectNotifications,
   selectUnreadCount,
-  selectIsLoading as selectNotificationLoading,
   selectHasMore,
   selectSettings,
   selectFilter,

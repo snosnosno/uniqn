@@ -2,7 +2,15 @@
  * UNIQN Mobile - Notification Store
  *
  * @description 알림 상태 관리 (Zustand + MMKV)
- * @version 1.1.0
+ * @version 1.2.0
+ *
+ * @changelog
+ * - 1.2.0: React Query와 중복되는 isLoading 상태 제거
+ *          (서버 데이터 로딩은 React Query가 담당, 스토어는 UI/오프라인 상태만 관리)
+ *
+ * 아키텍처 분리:
+ * - React Query: 서버 데이터 캐싱, 로딩 상태, 에러 상태
+ * - Zustand: 오프라인 캐시, 설정, 필터, 실시간 카운터
  */
 
 import { create } from 'zustand';
@@ -22,12 +30,17 @@ type NotificationCategoryType = (typeof NotificationCategory)[keyof typeof Notif
 // ============================================================================
 
 interface NotificationState {
-  // 상태
+  // 오프라인 캐시 (React Query 데이터와 별도로 MMKV에 저장)
   notifications: NotificationData[];
+
+  // 실시간 카운터 (Firestore 리스너에서 직접 업데이트)
   unreadCount: number;
-  isLoading: boolean;
+
+  // 페이지네이션 상태 (무한 스크롤용)
   hasMore: boolean;
   lastFetchedAt: number | null;
+
+  // UI 상태 (순수 클라이언트 상태)
   settings: NotificationSettings;
   filter: NotificationFilter;
 
@@ -60,7 +73,6 @@ interface NotificationState {
   clearFilter: () => void;
 
   // 상태 관리
-  setLoading: (loading: boolean) => void;
   setHasMore: (hasMore: boolean) => void;
   setLastFetchedAt: (timestamp: number) => void;
   setUnreadCount: (count: number) => void;
@@ -89,7 +101,6 @@ function createEmptyUnreadByCategory(): Record<NotificationCategoryType, number>
 const initialState = {
   notifications: [] as NotificationData[],
   unreadCount: 0,
-  isLoading: false,
   hasMore: true,
   lastFetchedAt: null as number | null,
   settings: createDefaultNotificationSettings(),
@@ -464,10 +475,6 @@ export const useNotificationStore = create<NotificationState>()(
       // 상태 관리
       // ========================================================================
 
-      setLoading: (isLoading) => {
-        set({ isLoading });
-      },
-
       setHasMore: (hasMore) => {
         set({ hasMore });
       },
@@ -540,7 +547,6 @@ export const useNotificationStore = create<NotificationState>()(
 
 export const selectNotifications = (state: NotificationState) => state.notifications;
 export const selectUnreadCount = (state: NotificationState) => state.unreadCount;
-export const selectIsLoading = (state: NotificationState) => state.isLoading;
 export const selectHasMore = (state: NotificationState) => state.hasMore;
 export const selectSettings = (state: NotificationState) => state.settings;
 export const selectFilter = (state: NotificationState) => state.filter;
@@ -566,11 +572,6 @@ export const useNotifications = () => useNotificationStore(selectNotifications);
 export const useNotificationSettings = () => useNotificationStore(selectSettings);
 
 /**
- * 알림 로딩 상태
- */
-export const useNotificationLoading = () => useNotificationStore(selectIsLoading);
-
-/**
  * 카테고리별 읽지 않은 알림 수
  */
 export const useUnreadByCategory = () => useNotificationStore(selectUnreadByCategory);
@@ -583,7 +584,6 @@ export const selectSetNotifications = (state: NotificationState) => state.setNot
 export const selectAddNotification = (state: NotificationState) => state.addNotification;
 export const selectAddNotifications = (state: NotificationState) => state.addNotifications;
 export const selectRemoveNotification = (state: NotificationState) => state.removeNotification;
-export const selectSetLoading = (state: NotificationState) => state.setLoading;
 export const selectSetHasMore = (state: NotificationState) => state.setHasMore;
 export const selectMarkAsRead = (state: NotificationState) => state.markAsRead;
 export const selectMarkAllAsRead = (state: NotificationState) => state.markAllAsRead;
@@ -592,11 +592,11 @@ export const selectMarkAllAsRead = (state: NotificationState) => state.markAllAs
  * 알림 목록 관리 액션 훅
  *
  * @description 전체 store 구독 대신 액션만 구독하여 리렌더링 최소화
+ * @note isLoading은 React Query가 관리 (useNotificationList 훅에서 query.isLoading 사용)
  */
 export const useNotificationListActions = () => ({
   setNotifications: useNotificationStore(selectSetNotifications),
   addNotifications: useNotificationStore(selectAddNotifications),
-  setLoading: useNotificationStore(selectSetLoading),
   setHasMore: useNotificationStore(selectSetHasMore),
 });
 

@@ -277,7 +277,7 @@ export function useScheduleStats(enabled = true) {
       return getScheduleStats(staffId);
     },
     enabled: enabled && !!staffId,
-    staleTime: cachingPolicies.stable, // 30분
+    staleTime: cachingPolicies.stable, // 60분
   });
 
   return {

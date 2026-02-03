@@ -12,6 +12,56 @@ import { env } from '@/config/env';
 
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 
+// ============================================================================
+// Sensitive Data Masking (프로덕션 로그 보호)
+// ============================================================================
+
+/** 민감 정보 필드 목록 (대소문자 무시) */
+const SENSITIVE_FIELDS = [
+  'userid',
+  'staffid',
+  'uid',
+  'email',
+  'phone',
+  'password',
+  'token',
+  'apikey',
+  'secret',
+  'credential',
+  'applicantid',
+  'ownerid',
+];
+
+/**
+ * 민감 정보 마스킹 (로깅용)
+ *
+ * @description 프로덕션 환경에서 민감 데이터가 로그에 노출되지 않도록 보호
+ */
+function maskSensitiveContext(data: Record<string, unknown>): Record<string, unknown> {
+  const masked: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(data)) {
+    const lowerKey = key.toLowerCase();
+    const isSensitive = SENSITIVE_FIELDS.some((field) => lowerKey.includes(field));
+
+    if (isSensitive) {
+      if (typeof value === 'string' && value.length > 6) {
+        masked[key] = `${value.slice(0, 3)}***${value.slice(-3)}`;
+      } else if (typeof value === 'string' && value.length > 0) {
+        masked[key] = '***';
+      } else {
+        masked[key] = '[MASKED]';
+      }
+    } else if (typeof value === 'object' && value !== null && !Array.isArray(value)) {
+      masked[key] = maskSensitiveContext(value as Record<string, unknown>);
+    } else {
+      masked[key] = value;
+    }
+  }
+
+  return masked;
+}
+
 interface LogContext {
   component?: string;
   action?: string;
@@ -65,11 +115,18 @@ const formatLog = (entry: LogEntry): string => {
 
 /**
  * 로그 출력
+ *
+ * @description 프로덕션 환경에서는 context 내 민감 데이터를 자동 마스킹
  */
 const output = (level: LogLevel, entry: LogEntry): void => {
   if (!shouldLog(level)) return;
 
-  const formatted = formatLog(entry);
+  // 프로덕션 환경에서 context 마스킹 (민감 데이터 보호)
+  const safeEntry: LogEntry = isProduction && entry.context
+    ? { ...entry, context: maskSensitiveContext(entry.context) }
+    : entry;
+
+  const formatted = formatLog(safeEntry);
 
   switch (level) {
     case 'debug':
@@ -83,8 +140,8 @@ const output = (level: LogLevel, entry: LogEntry): void => {
       break;
     case 'error':
       console.error(formatted);
-      if (entry.error) {
-        console.error(entry.error);
+      if (safeEntry.error) {
+        console.error(safeEntry.error);
       }
       break;
   }

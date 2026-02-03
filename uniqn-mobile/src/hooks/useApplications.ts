@@ -52,7 +52,7 @@ export function useApplications() {
     queryKey: queryKeys.applications.mine(),
     queryFn: () => getMyApplications(user!.uid),
     enabled: !!user,
-    staleTime: cachingPolicies.frequent, // 2분
+    staleTime: cachingPolicies.frequent, // 5분
   });
 
   // 지원 제출 (v2.0: Assignment + PreQuestion)

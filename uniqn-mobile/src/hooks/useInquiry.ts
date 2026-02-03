@@ -132,7 +132,7 @@ export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
       return result;
     },
     enabled,
-    staleTime: cachingPolicies.frequent, // 2분
+    staleTime: cachingPolicies.frequent, // 5분
   });
 
   const fetchNextPage = useCallback(async () => {
@@ -296,7 +296,7 @@ export function useFAQ(options: UseFAQOptions = {}) {
       // 하드코딩된 FAQ 데이터 사용
       return filterFAQByCategory(FAQ_DATA, category);
     },
-    staleTime: cachingPolicies.stable, // 30분
+    staleTime: cachingPolicies.stable, // 60분
     gcTime: 60 * 60 * 1000, // 1시간
   });
 }
