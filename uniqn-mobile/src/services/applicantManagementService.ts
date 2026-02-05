@@ -7,12 +7,7 @@
 
 import { type Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
-import {
-  MaxCapacityReachedError,
-  BusinessError,
-  PermissionError,
-  ERROR_CODES,
-} from '@/errors';
+import { MaxCapacityReachedError, BusinessError, PermissionError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
 import { applicationRepository, jobPostingRepository } from '@/repositories';

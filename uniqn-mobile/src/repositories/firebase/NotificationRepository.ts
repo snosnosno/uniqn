@@ -167,7 +167,13 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
   async getUnreadCounterFromCache(userId: string): Promise<number | null> {
     try {
-      const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
+      const counterRef = doc(
+        getFirebaseDb(),
+        COLLECTIONS.USERS,
+        userId,
+        'counters',
+        'notifications'
+      );
       const counterSnap = await getDoc(counterRef);
 
       if (!counterSnap.exists()) {

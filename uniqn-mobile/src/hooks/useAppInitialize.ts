@@ -261,7 +261,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
             // 🆕 미읽음 알림 카운터 로드 (Firestore 실시간 리스너 대체)
             try {
               // Repository를 통해 캐시된 카운터 조회
-              const cachedCount = await notificationRepository.getUnreadCounterFromCache(authUser.uid);
+              const cachedCount = await notificationRepository.getUnreadCounterFromCache(
+                authUser.uid
+              );
 
               let unreadCount: number;
 

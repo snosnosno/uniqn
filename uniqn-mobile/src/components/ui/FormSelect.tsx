@@ -170,7 +170,7 @@ export function FormSelect<T = string>({
       {label && (
         <View className="flex-row mb-2">
           <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</Text>
-          {required && <Text className="text-red-500 ml-0.5">*</Text>}
+          {required && <Text className="text-red-600 ml-0.5">*</Text>}
         </View>
       )}
 
@@ -199,8 +199,8 @@ export function FormSelect<T = string>({
       {/* 에러 메시지 */}
       {errorMessage && (
         <View className="flex-row items-center mt-1.5">
-          <Text className="text-red-500 mr-1">⚠</Text>
-          <Text className="text-red-500 text-sm flex-1">{errorMessage}</Text>
+          <Text className="text-red-600 mr-1">⚠</Text>
+          <Text className="text-red-600 text-sm flex-1">{errorMessage}</Text>
         </View>
       )}
 

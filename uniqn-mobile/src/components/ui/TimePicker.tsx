@@ -150,14 +150,14 @@ export const TimePicker = memo(function TimePicker({
   }, [timeSlots, value]);
 
   // 모달 열기
-  const openModal = useCallback(() => {
+  const handleOpenModal = useCallback(() => {
     if (!disabled) {
       setShowModal(true);
     }
   }, [disabled]);
 
   // 모달 닫기
-  const closeModal = useCallback(() => {
+  const handleCloseModal = useCallback(() => {
     setShowModal(false);
   }, []);
 
@@ -165,9 +165,9 @@ export const TimePicker = memo(function TimePicker({
   const handleSelect = useCallback(
     (time: string) => {
       onChange(time);
-      closeModal();
+      handleCloseModal();
     },
-    [onChange, closeModal]
+    [onChange, handleCloseModal]
   );
 
   // 표시할 텍스트
@@ -213,7 +213,7 @@ export const TimePicker = memo(function TimePicker({
 
       {/* 트리거 버튼 */}
       <Pressable
-        onPress={openModal}
+        onPress={handleOpenModal}
         disabled={disabled}
         accessibilityRole="button"
         accessibilityLabel={label ?? '시간 선택'}
@@ -236,21 +236,21 @@ export const TimePicker = memo(function TimePicker({
       </Pressable>
 
       {/* 에러 메시지 */}
-      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-600">{errorMessage}</Text>}
 
       {/* 모달 */}
       <Modal
         visible={showModal}
         transparent
         animationType="slide"
-        onRequestClose={closeModal}
-        onDismiss={closeModal}
+        onRequestClose={handleCloseModal}
+        onDismiss={handleCloseModal}
         accessibilityViewIsModal
       >
         <View className="flex-1 justify-end">
           {/* 백드롭 - 별도 레이어 (button 중첩 방지) */}
           <Pressable
-            onPress={closeModal}
+            onPress={handleCloseModal}
             className="absolute inset-0 bg-black/50"
             accessibilityRole="button"
             accessibilityLabel="모달 닫기"
@@ -265,7 +265,7 @@ export const TimePicker = memo(function TimePicker({
                 출근 시간 선택
               </Text>
               <Pressable
-                onPress={closeModal}
+                onPress={handleCloseModal}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 accessibilityRole="button"
                 accessibilityLabel="닫기"

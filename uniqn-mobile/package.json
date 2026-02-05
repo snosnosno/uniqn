@@ -22,7 +22,8 @@
     "analyze:bundle": "expo export -p web && source-map-explorer dist/_expo/static/js/web/*.js --html bundle-report.html",
     "analyze:bundle:ci": "expo export -p web && node scripts/check-bundle-size.js",
     "audit": "npm audit",
-    "audit:fix": "npm audit fix"
+    "audit:fix": "npm audit fix",
+    "deploy:cloudflare": "node scripts/deploy-cloudflare.js"
   },
   "dependencies": {
     "@gorhom/bottom-sheet": "^5.2.8",
@@ -57,8 +58,6 @@
     "react-hook-form": "^7.68.0",
     "react-native": "^0.81.5",
     "react-native-calendars": "^1.1313.0",
-    "react-native-chart-kit": "^6.12.0",
-    "react-native-draggable-flatlist": "^4.0.3",
     "react-native-gesture-handler": "~2.28.0",
     "react-native-keyboard-aware-scroll-view": "^0.9.5",
     "react-native-mmkv": "^4.1.2",

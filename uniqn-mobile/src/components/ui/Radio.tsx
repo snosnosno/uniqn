@@ -229,7 +229,7 @@ export const Radio = memo(function Radio({
         ))}
       </View>
 
-      {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
+      {error && errorMessage && <Text className="mt-2 text-sm text-red-600">{errorMessage}</Text>}
     </View>
   );
 });

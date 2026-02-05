@@ -183,6 +183,14 @@ service cloud.firestore {
         allow read, write: if isSignedIn() && isOwner(userId);
       }
 
+      // Subcollection: counters (카운터 - 미읽음 알림 수 등)
+      match /counters/{counterId} {
+        // 본인의 카운터만 읽기 가능
+        allow read: if isSignedIn() && isOwner(userId);
+        // 쓰기는 Cloud Functions에서만 가능 (클라이언트 직접 수정 차단)
+        allow write: if false;
+      }
+
       // --- Account Management Subcollections ---
 
       // Subcollection: consents (동의 관리)

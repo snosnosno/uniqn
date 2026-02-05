@@ -156,8 +156,8 @@ export const LazyUserList = lazy(() => import('@/components/admin/UserList'));
 export const LazyUserDetail = lazy(() => import('@/components/admin/UserDetail'));
 
 /**
- * Chart Components - 관리자 통계용 (react-native-chart-kit 포함)
- * @description 무거운 차트 라이브러리를 동적으로 로드하여 번들 크기 최적화
+ * Stats Components - 관리자 통계용 (경량 텍스트 기반)
+ * @description v2.0.0에서 차트 라이브러리 제거, CSS 기반 경량화
  */
 export const LazyTrendChart = lazy(() => import('@/components/admin/stats/TrendChart'));
 export const LazyRoleDistributionChart = lazy(

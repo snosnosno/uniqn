@@ -58,7 +58,9 @@ function RoleOption({ role, isSelected, isCurrentRole, onSelect }: RoleOptionPro
       disabled={isCurrentRole}
       accessibilityRole="radio"
       accessibilityLabel={`${roleDisplayName}${isCurrentRole ? ' (현재 역할)' : ''}`}
-      accessibilityHint={isCurrentRole ? '현재 역할이므로 선택할 수 없습니다' : '이 역할로 변경합니다'}
+      accessibilityHint={
+        isCurrentRole ? '현재 역할이므로 선택할 수 없습니다' : '이 역할로 변경합니다'
+      }
       accessibilityState={{
         selected: isSelected,
         disabled: isCurrentRole,

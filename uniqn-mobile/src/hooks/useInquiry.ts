@@ -9,6 +9,7 @@ import { useCallback, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/stores/authStore';
 import { requireAuth } from '@/errors/guardErrors';
+import { ValidationError, ERROR_CODES } from '@/errors/AppError';
 import { useToastStore } from '@/stores/toastStore';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import {
@@ -187,7 +188,10 @@ export function useCreateInquiry() {
     mutationFn: async (input: CreateInquiryInput) => {
       requireAuth(user?.uid, 'useInquiry.createInquiry');
       if (!user?.email) {
-        throw new Error('이메일 정보가 필요합니다');
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          field: 'email',
+          userMessage: '이메일 정보가 필요합니다',
+        });
       }
 
       const userName = profile?.name || user.displayName || '사용자';

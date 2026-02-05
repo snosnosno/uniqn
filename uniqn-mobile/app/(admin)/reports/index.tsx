@@ -182,32 +182,34 @@ export default function AdminReportsPage() {
         </View>
 
         {/* 상태 필터 */}
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          className="px-4 py-2 bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay"
-          contentContainerStyle={{ gap: 8 }}
-        >
-          {STATUS_OPTIONS.map((option) => (
-            <Pressable
-              key={option.value}
-              onPress={() => handleStatusFilter(option.value)}
-              className={`px-4 py-2 rounded-full ${
-                filters.status === option.value ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'
-              }`}
-            >
-              <Text
-                className={`text-sm font-medium ${
-                  filters.status === option.value
-                    ? 'text-white'
-                    : 'text-gray-700 dark:text-gray-300'
+        <View className="bg-white dark:bg-surface border-b border-gray-200 dark:border-surface-overlay">
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            className="px-4 py-2"
+            contentContainerStyle={{ gap: 8, alignItems: 'center' }}
+          >
+            {STATUS_OPTIONS.map((option) => (
+              <Pressable
+                key={option.value}
+                onPress={() => handleStatusFilter(option.value)}
+                className={`px-4 py-2 rounded-full ${
+                  filters.status === option.value ? 'bg-primary-600' : 'bg-gray-200 dark:bg-surface'
                 }`}
               >
-                {option.label}
-              </Text>
-            </Pressable>
-          ))}
-        </ScrollView>
+                <Text
+                  className={`text-sm font-medium ${
+                    filters.status === option.value
+                      ? 'text-white'
+                      : 'text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
 
         {/* 확장 필터 패널 */}
         {showFilters && (

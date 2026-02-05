@@ -24,6 +24,7 @@ import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClie
 import { logger } from '@/utils/logger';
 import { groupScheduleEvents, filterSchedulesByDate } from '@/utils/scheduleGrouping';
 import { stableFilters } from '@/utils/queryUtils';
+import { AuthError, ERROR_CODES } from '@/errors/AppError';
 import type { ScheduleEvent, ScheduleFilters, CalendarView } from '@/types';
 
 // ============================================================================
@@ -61,7 +62,7 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   const query = useQuery({
     queryKey: queryKeys.schedules.list(stableFilters(filters)),
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getMySchedules(staffId, filters);
     },
     enabled: enabled && !!staffId && !realtime,
@@ -131,7 +132,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
   const query = useQuery({
     queryKey: queryKeys.schedules.byMonth(year, month),
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getSchedulesByMonth(staffId, year, month);
     },
     enabled: enabled && !!staffId,
@@ -175,7 +176,7 @@ export function useSchedulesByDate(date: string, enabled = true) {
   const query = useQuery({
     queryKey: queryKeys.schedules.byDate(date),
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getSchedulesByDate(staffId, date);
     },
     enabled: enabled && !!staffId && !!date,
@@ -221,7 +222,7 @@ export function useTodaySchedules(enabled = true) {
   const query = useQuery({
     queryKey: queryKeys.schedules.byDate(today),
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getTodaySchedules(staffId);
     },
     enabled: enabled && !!staffId,
@@ -247,7 +248,7 @@ export function useUpcomingSchedules(days = 7, enabled = true) {
   const query = useQuery({
     queryKey: [...queryKeys.schedules.all, 'upcoming', days],
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getUpcomingSchedules(staffId, days);
     },
     enabled: enabled && !!staffId,
@@ -273,7 +274,7 @@ export function useScheduleStats(enabled = true) {
   const query = useQuery({
     queryKey: [...queryKeys.schedules.all, 'stats'],
     queryFn: async () => {
-      if (!staffId) throw new Error('로그인이 필요합니다.');
+      if (!staffId) throw new AuthError(ERROR_CODES.AUTH_REQUIRED);
       return getScheduleStats(staffId);
     },
     enabled: enabled && !!staffId,

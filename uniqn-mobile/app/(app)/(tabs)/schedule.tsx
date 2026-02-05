@@ -3,12 +3,12 @@
  * 내 스케줄 화면
  */
 
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, Suspense } from 'react';
 import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
+import { LazyCalendarView } from '@/components/lazy';
 import {
-  CalendarView,
   ScheduleCard,
   ScheduleDetailModal,
   GroupedScheduleCard,
@@ -423,13 +423,15 @@ export default function ScheduleScreen() {
           refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}
         >
           <View className="mt-4">
-            <CalendarView
-              schedules={schedules}
-              selectedDate={selectedDate}
-              currentMonth={currentMonth}
-              onDateSelect={handleDateSelect}
-              onMonthChange={handleMonthChange}
-            />
+            <Suspense fallback={<Skeleton className="h-80 mx-4 rounded-xl" />}>
+              <LazyCalendarView
+                schedules={schedules}
+                selectedDate={selectedDate}
+                currentMonth={currentMonth}
+                onDateSelect={handleDateSelect}
+                onMonthChange={handleMonthChange}
+              />
+            </Suspense>
 
             {/* 선택된 날짜의 스케줄 (그룹화 적용) */}
             {selectedDateSchedules.length > 0 && (

@@ -72,7 +72,7 @@ async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> 
  * // firstAvailableType: 우선순위에 따른 첫 번째 공고가 있는 타입
  */
 export function usePostingTypeCounts() {
-  const query_result = useQuery({
+  const queryResult = useQuery({
     queryKey: [...queryKeys.jobPostings.all, 'typeAvailability'] as const,
     queryFn: fetchPostingTypeAvailability,
     staleTime: cachingPolicies.frequent, // 5분
@@ -81,10 +81,10 @@ export function usePostingTypeCounts() {
 
   // 우선순위에 따른 첫 번째 공고가 있는 타입 계산
   const firstAvailableType: PostingType | null = (() => {
-    if (!query_result.data) return null;
+    if (!queryResult.data) return null;
 
     for (const type of AUTO_SELECT_PRIORITY) {
-      if (query_result.data[type]) {
+      if (queryResult.data[type]) {
         return type;
       }
     }
@@ -93,7 +93,7 @@ export function usePostingTypeCounts() {
 
   return {
     /** 각 타입별 공고 존재 여부 */
-    availability: query_result.data ?? {
+    availability: queryResult.data ?? {
       urgent: false,
       tournament: false,
       regular: false,
@@ -102,11 +102,11 @@ export function usePostingTypeCounts() {
     /** 우선순위에 따른 첫 번째 공고가 있는 타입 */
     firstAvailableType,
     /** 로딩 중 여부 */
-    isLoading: query_result.isLoading,
+    isLoading: queryResult.isLoading,
     /** 에러 */
-    error: query_result.error,
+    error: queryResult.error,
     /** 리프레시 */
-    refetch: query_result.refetch,
+    refetch: queryResult.refetch,
   };
 }
 

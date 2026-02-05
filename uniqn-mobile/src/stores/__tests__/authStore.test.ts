@@ -54,6 +54,7 @@ describe('AuthStore', () => {
       };
 
       act(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser(mockFirebaseUser as any);
       });
 
@@ -73,6 +74,7 @@ describe('AuthStore', () => {
     it('should clear user when passed null', () => {
       // First set a user
       act(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser({
           uid: 'test-uid',
           email: 'test@example.com',
@@ -230,6 +232,7 @@ describe('AuthStore', () => {
       // Reset and set user first
       act(() => {
         useAuthStore.getState().reset();
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser({
           uid: 'test-uid',
           email: 'test@example.com',
@@ -249,6 +252,7 @@ describe('AuthStore', () => {
     it('should reset to initial state', () => {
       // Set some state
       act(() => {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         useAuthStore.getState().setUser({
           uid: 'test-uid',
           email: 'test@example.com',

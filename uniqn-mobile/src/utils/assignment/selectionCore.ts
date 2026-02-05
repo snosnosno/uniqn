@@ -163,10 +163,7 @@ export function getRoleFromKey(key: string, options: SelectionKeyOptions = {}): 
  * // result.added: true/false
  * // result.removed: true/false
  */
-export function toggleSelection<T extends string>(
-  selectedKeys: Set<T>,
-  key: T
-): ToggleResult<T> {
+export function toggleSelection<T extends string>(selectedKeys: Set<T>, key: T): ToggleResult<T> {
   const newKeys = new Set(selectedKeys);
   const wasSelected = newKeys.has(key);
 

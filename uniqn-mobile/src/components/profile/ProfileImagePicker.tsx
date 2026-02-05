@@ -50,7 +50,7 @@ export function ProfileImagePicker({
   /**
    * 이미지 선택 및 업로드
    */
-  const pickImage = useCallback(async () => {
+  const handlePickImage = useCallback(async () => {
     if (!user || disabled) return;
 
     try {
@@ -102,7 +102,7 @@ export function ProfileImagePicker({
   /**
    * 이미지 삭제
    */
-  const removeImage = useCallback(async () => {
+  const handleRemoveImage = useCallback(async () => {
     if (!user || !currentImageUrl || disabled) return;
 
     Alert.alert('프로필 사진 삭제', '프로필 사진을 삭제하시겠습니까?', [
@@ -140,24 +140,24 @@ export function ProfileImagePicker({
   /**
    * 옵션 선택 (업로드 or 삭제)
    */
-  const showOptions = useCallback(() => {
+  const handleShowOptions = useCallback(() => {
     if (disabled || isUploading) return;
 
     if (currentImageUrl) {
       Alert.alert('프로필 사진', '원하는 작업을 선택하세요', [
         { text: '취소', style: 'cancel' },
-        { text: '사진 변경', onPress: pickImage },
-        { text: '사진 삭제', onPress: removeImage, style: 'destructive' },
+        { text: '사진 변경', onPress: handlePickImage },
+        { text: '사진 삭제', onPress: handleRemoveImage, style: 'destructive' },
       ]);
     } else {
-      pickImage();
+      handlePickImage();
     }
-  }, [currentImageUrl, disabled, isUploading, pickImage, removeImage]);
+  }, [currentImageUrl, disabled, isUploading, handlePickImage, handleRemoveImage]);
 
   return (
     <View className="items-center">
       <Pressable
-        onPress={showOptions}
+        onPress={handleShowOptions}
         disabled={disabled || isUploading}
         className="relative"
         accessibilityLabel="프로필 사진 변경"
@@ -182,7 +182,7 @@ export function ProfileImagePicker({
       {/* 삭제 버튼 (이미지가 있고 업로드 중이 아닐 때만) */}
       {currentImageUrl && !isUploading && !disabled && (
         <Pressable
-          onPress={removeImage}
+          onPress={handleRemoveImage}
           className="mt-3 flex-row items-center"
           accessibilityLabel="프로필 사진 삭제"
         >

@@ -41,7 +41,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   }, [data.location]);
 
   // 장소 정보 업데이트
-  const updateLocation = useCallback(
+  const handleUpdateLocation = useCallback(
     (name: string, address: string) => {
       if (name.trim()) {
         const location: Location = {
@@ -61,18 +61,18 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   const handleLocationNameChange = useCallback(
     (name: string) => {
       setLocationName(name);
-      updateLocation(name, locationAddress);
+      handleUpdateLocation(name, locationAddress);
     },
-    [locationAddress, updateLocation]
+    [locationAddress, handleUpdateLocation]
   );
 
   // 장소 주소 변경
   const handleLocationAddressChange = useCallback(
     (address: string) => {
       setLocationAddress(address);
-      updateLocation(locationName, address);
+      handleUpdateLocation(locationName, address);
     },
-    [locationName, updateLocation]
+    [locationName, handleUpdateLocation]
   );
 
   // 공고 타입 변경 핸들러

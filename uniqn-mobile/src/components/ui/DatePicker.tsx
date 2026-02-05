@@ -67,14 +67,14 @@ export const DatePicker = memo(function DatePicker({
   const [showModal, setShowModal] = useState(false);
 
   // 모달 열기
-  const openModal = useCallback(() => {
+  const handleOpenModal = useCallback(() => {
     if (!disabled) {
       setShowModal(true);
     }
   }, [disabled]);
 
   // 모달 닫기
-  const closeModal = useCallback(() => {
+  const handleCloseModal = useCallback(() => {
     setShowModal(false);
   }, []);
 
@@ -82,9 +82,9 @@ export const DatePicker = memo(function DatePicker({
   const handleDateSelect = useCallback(
     (date: Date) => {
       onChange(date);
-      closeModal();
+      handleCloseModal();
     },
-    [onChange, closeModal]
+    [onChange, handleCloseModal]
   );
 
   // 날짜 초기화
@@ -127,7 +127,7 @@ export const DatePicker = memo(function DatePicker({
       <View className={getInputStyle()}>
         {/* 날짜 선택 영역 */}
         <Pressable
-          onPress={openModal}
+          onPress={handleOpenModal}
           disabled={disabled}
           accessibilityRole="button"
           accessibilityLabel={label ?? '날짜 선택'}
@@ -168,14 +168,19 @@ export const DatePicker = memo(function DatePicker({
       {error && errorMessage && <Text className="mt-2 text-sm text-red-500">{errorMessage}</Text>}
 
       {/* 모달 */}
-      <Modal visible={showModal} transparent animationType="slide" onRequestClose={closeModal}>
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={handleCloseModal}
+      >
         <View className="flex-1 justify-end bg-black/50">
           <View className="bg-white dark:bg-surface rounded-t-2xl">
             {/* 헤더 */}
             <View className="flex-row items-center justify-between px-4 py-4 border-b border-gray-200 dark:border-surface-overlay">
               <Text className="text-lg font-semibold text-gray-900 dark:text-white">날짜 선택</Text>
               <Pressable
-                onPress={closeModal}
+                onPress={handleCloseModal}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
                 accessibilityRole="button"
                 accessibilityLabel="닫기"

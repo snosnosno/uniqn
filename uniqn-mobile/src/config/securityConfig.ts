@@ -22,6 +22,7 @@ export const SENSITIVE_STORAGE_KEYS = [
   'refreshToken',
   'userId',
   'sessionId',
+  'fcmToken', // 푸시 토큰 (사용자 식별 가능)
 ] as const;
 
 export type SensitiveStorageKey = (typeof SENSITIVE_STORAGE_KEYS)[number];

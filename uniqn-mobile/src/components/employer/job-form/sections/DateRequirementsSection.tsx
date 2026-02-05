@@ -99,7 +99,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   }, [dateRequirements.length, constraints.maxDates]);
 
   // 그룹으로 날짜 추가 (연속 날짜만 그룹화, 비연속은 개별)
-  const addDatesAsGroup = useCallback(
+  const handleAddDatesAsGroup = useCallback(
     (dates: string[]) => {
       // 연속 날짜끼리만 그룹화 (예: [1/19, 1/20, 1/21], [1/23])
       const consecutiveGroups = groupConsecutiveDates(dates);
@@ -140,7 +140,7 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   );
 
   // 개별로 날짜 추가 (독립 timeSlots)
-  const addDatesIndividually = useCallback(
+  const handleAddDatesIndividually = useCallback(
     (dates: string[]) => {
       const newRequirements: DateSpecificRequirement[] = dates.map((date, index) => ({
         date,
@@ -179,10 +179,10 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
         setShowGroupingModal(true);
       } else {
         // 단일 날짜 또는 비대회 공고: 개별로 추가
-        addDatesIndividually(sortedDates);
+        handleAddDatesIndividually(sortedDates);
       }
     },
-    [isTournament, addDatesIndividually]
+    [isTournament, handleAddDatesIndividually]
   );
 
   // 그룹화 확인 핸들러
@@ -190,15 +190,15 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     (shouldGroup: boolean) => {
       if (shouldGroup) {
         // 그룹으로 추가 (공유 timeSlots)
-        addDatesAsGroup(pendingDates);
+        handleAddDatesAsGroup(pendingDates);
       } else {
         // 개별로 추가 (독립 timeSlots)
-        addDatesIndividually(pendingDates);
+        handleAddDatesIndividually(pendingDates);
       }
       setPendingDates([]);
       setShowGroupingModal(false);
     },
-    [pendingDates, addDatesAsGroup, addDatesIndividually]
+    [pendingDates, handleAddDatesAsGroup, handleAddDatesIndividually]
   );
 
   // 그룹화 모달 닫기 핸들러

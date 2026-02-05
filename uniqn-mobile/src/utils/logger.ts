@@ -122,9 +122,10 @@ const output = (level: LogLevel, entry: LogEntry): void => {
   if (!shouldLog(level)) return;
 
   // 프로덕션 환경에서 context 마스킹 (민감 데이터 보호)
-  const safeEntry: LogEntry = isProduction && entry.context
-    ? { ...entry, context: maskSensitiveContext(entry.context) }
-    : entry;
+  const safeEntry: LogEntry =
+    isProduction && entry.context
+      ? { ...entry, context: maskSensitiveContext(entry.context) }
+      : entry;
 
   const formatted = formatLog(safeEntry);
 
