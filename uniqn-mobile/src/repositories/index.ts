@@ -32,6 +32,9 @@ import {
   FirebaseUserRepository,
   FirebaseEventQRRepository,
   FirebaseNotificationRepository,
+  FirebaseReportRepository,
+  FirebaseSettlementRepository,
+  FirebaseConfirmedStaffRepository,
 } from './firebase';
 
 // ============================================================================
@@ -64,6 +67,25 @@ export type {
   // Notification
   INotificationRepository,
   GetNotificationsOptions,
+  // Report
+  IReportRepository,
+  CreateReportContext,
+  ReportFilters,
+  ReportCounts,
+  // Settlement
+  ISettlementRepository,
+  UpdateWorkTimeContext,
+  SettleWorkLogContext,
+  BulkSettlementContext,
+  SettlementResultDTO,
+  BulkSettlementResultDTO,
+  // ConfirmedStaff
+  IConfirmedStaffRepository,
+  UpdateRoleContext,
+  UpdateConfirmedStaffWorkTimeContext,
+  DeleteConfirmedStaffContext,
+  MarkNoShowContext,
+  ConfirmedStaffSubscriptionCallbacks,
 } from './interfaces';
 
 // ============================================================================
@@ -77,6 +99,9 @@ export {
   FirebaseUserRepository,
   FirebaseEventQRRepository,
   FirebaseNotificationRepository,
+  FirebaseReportRepository,
+  FirebaseSettlementRepository,
+  FirebaseConfirmedStaffRepository,
 } from './firebase';
 
 // ============================================================================
@@ -199,3 +224,72 @@ export const eventQRRepository = new FirebaseEventQRRepository();
  * ```
  */
 export const notificationRepository = new FirebaseNotificationRepository();
+
+/**
+ * Report Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { reportRepository } from '@/repositories';
+ *
+ * // 조회
+ * const reports = await reportRepository.getByJobPostingId(jobPostingId);
+ *
+ * // 트랜잭션 (중복 체크 + 생성)
+ * const reportId = await reportRepository.createWithTransaction(input, context);
+ *
+ * // 신고 처리 (관리자)
+ * await reportRepository.reviewWithTransaction(input, reviewerId);
+ * ```
+ */
+export const reportRepository = new FirebaseReportRepository();
+
+/**
+ * Settlement Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { settlementRepository } from '@/repositories';
+ *
+ * // 근무 시간 수정
+ * await settlementRepository.updateWorkTimeWithTransaction(context, ownerId);
+ *
+ * // 개별 정산
+ * const result = await settlementRepository.settleWorkLogWithTransaction(context, ownerId);
+ *
+ * // 일괄 정산
+ * const bulkResult = await settlementRepository.bulkSettlementWithTransaction(context, ownerId);
+ *
+ * // 정산 상태 변경
+ * await settlementRepository.updatePayrollStatusWithTransaction(workLogId, status, ownerId);
+ * ```
+ */
+export const settlementRepository = new FirebaseSettlementRepository();
+
+/**
+ * ConfirmedStaff Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { confirmedStaffRepository } from '@/repositories';
+ *
+ * // 조회
+ * const workLogs = await confirmedStaffRepository.getByJobPostingId(jobPostingId);
+ *
+ * // 역할 변경
+ * await confirmedStaffRepository.updateRoleWithTransaction(context);
+ *
+ * // 스태프 삭제 (멀티 컬렉션 트랜잭션)
+ * await confirmedStaffRepository.deleteWithTransaction(context);
+ *
+ * // 실시간 구독
+ * const unsubscribe = confirmedStaffRepository.subscribeByJobPostingId(jobPostingId, callbacks);
+ * ```
+ */
+export const confirmedStaffRepository = new FirebaseConfirmedStaffRepository();

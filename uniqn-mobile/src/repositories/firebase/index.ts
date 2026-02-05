@@ -11,3 +11,6 @@ export { FirebaseWorkLogRepository } from './WorkLogRepository';
 export { FirebaseUserRepository } from './UserRepository';
 export { FirebaseEventQRRepository } from './EventQRRepository';
 export { FirebaseNotificationRepository } from './NotificationRepository';
+export { FirebaseReportRepository } from './ReportRepository';
+export { FirebaseSettlementRepository } from './SettlementRepository';
+export { FirebaseConfirmedStaffRepository } from './ConfirmedStaffRepository';

@@ -4,41 +4,19 @@
  * @description 양방향 신고 비즈니스 로직
  *   - 구인자 → 스태프 (employer)
  *   - 구직자 → 구인자 (employee)
- * @version 1.2.0 - Zod 스키마 검증 + BusinessError 적용
+ * @version 2.0.0 - Repository 패턴 적용
+ *
+ * 변경사항:
+ * - Firebase 직접 호출 제거 → reportRepository 사용
+ * - Race Condition 해결 (createWithTransaction)
+ * - 중복 쿼리 패턴 제거 (Repository에서 통합)
  */
 
-import {
-  collection,
-  doc,
-  addDoc,
-  updateDoc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  serverTimestamp,
-} from 'firebase/firestore';
-import { QueryBuilder } from '@/utils/firestore/queryBuilder';
-import { db, auth } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import {
-  createReportInputSchema,
-  reviewReportInputSchema,
-  parseReportDocuments,
-  parseReportDocument,
-} from '@/schemas';
-import {
-  AuthError,
-  ValidationError,
-  DuplicateReportError,
-  ReportNotFoundError,
-  ReportAlreadyReviewedError,
-  CannotReportSelfError,
-  ERROR_CODES,
-  toError,
-} from '@/errors';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { reportRepository, userRepository } from '@/repositories';
+import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
+import { AuthError, ValidationError, ERROR_CODES, toError } from '@/errors';
 import type {
   Report,
   CreateReportInput,
@@ -46,13 +24,12 @@ import type {
   ReportStatus,
   ReporterType,
 } from '@/types/report';
-import { getReportSeverity } from '@/types/report';
 
 // ============================================================================
-// Constants
+// Types (Repository에서 재사용)
 // ============================================================================
 
-const REPORTS_COLLECTION = 'reports';
+export type { ReportFilters } from '@/repositories';
 
 // ============================================================================
 // Create Report
@@ -60,6 +37,9 @@ const REPORTS_COLLECTION = 'reports';
 
 /**
  * 신고 생성 (양방향 지원)
+ *
+ * @description Repository의 트랜잭션으로 Race Condition 해결
+ * - 중복 체크 + 생성이 원자적으로 처리됨
  */
 export async function createReport(input: CreateReportInput): Promise<string> {
   const user = auth.currentUser;
@@ -69,7 +49,7 @@ export async function createReport(input: CreateReportInput): Promise<string> {
     });
   }
 
-  // 1. Zod 스키마 검증
+  // 1. Zod 스키마 검증 (비즈니스 로직: Service에서 처리)
   const validationResult = createReportInputSchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -81,13 +61,6 @@ export async function createReport(input: CreateReportInput): Promise<string> {
 
   const validatedInput = validationResult.data;
 
-  // 2. 본인 신고 방지
-  if (validatedInput.targetId === user.uid) {
-    throw new CannotReportSelfError({
-      userMessage: '본인을 신고할 수 없습니다',
-    });
-  }
-
   logger.info('Creating report', {
     type: validatedInput.type,
     reporterType: validatedInput.reporterType,
@@ -95,89 +68,31 @@ export async function createReport(input: CreateReportInput): Promise<string> {
     jobPostingId: validatedInput.jobPostingId,
   });
 
+  // 2. 신고자 이름 조회 (userRepository 사용)
+  let reporterName = '익명';
   try {
-    // 3. 중복 신고 검사 (같은 공고, 같은 대상, pending 상태)
-    const existingQuery = query(
-      collection(db, REPORTS_COLLECTION),
-      where('reporterId', '==', user.uid),
-      where('targetId', '==', validatedInput.targetId),
-      where('jobPostingId', '==', validatedInput.jobPostingId),
-      where('status', '==', 'pending')
-    );
-    const existingSnapshot = await getDocs(existingQuery);
-
-    if (!existingSnapshot.empty) {
-      throw new DuplicateReportError({
-        userMessage: '이미 해당 건에 대해 신고하셨습니다',
-        targetId: validatedInput.targetId,
-        jobPostingId: validatedInput.jobPostingId,
-      });
+    const userProfile = await userRepository.getById(user.uid);
+    if (userProfile) {
+      reporterName = userProfile.name || userProfile.nickname || '익명';
     }
-
-    // 4. Firestore에서 프로필 조회하여 이름 가져오기
-    const userDoc = await getDoc(doc(db, 'users', user.uid));
-    const userProfile = userDoc.exists() ? userDoc.data() : null;
-    const reporterName = userProfile?.name || userProfile?.nickname || '익명';
-
-    // 5. 문서 데이터 구성 (검증된 데이터 사용)
-    const reportData: Record<string, unknown> = {
-      type: validatedInput.type,
-      reporterType: validatedInput.reporterType,
-      reporterId: user.uid,
-      reporterName,
-      targetId: validatedInput.targetId,
-      targetName: validatedInput.targetName,
-      jobPostingId: validatedInput.jobPostingId,
-      jobPostingTitle: validatedInput.jobPostingTitle || '',
-      description: validatedInput.description,
-      evidenceUrls: validatedInput.evidenceUrls || [],
-      status: 'pending' as ReportStatus,
-      severity: getReportSeverity(validatedInput.type, validatedInput.reporterType),
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    // 구인자→스태프 신고만 workLog 정보 포함
-    if (validatedInput.workLogId) {
-      reportData.workLogId = validatedInput.workLogId;
-    }
-    if (validatedInput.workDate) {
-      reportData.workDate = validatedInput.workDate;
-    }
-
-    const docRef = await addDoc(collection(db, REPORTS_COLLECTION), reportData);
-
-    logger.info('Report created', {
-      reportId: docRef.id,
-      reporterType: validatedInput.reporterType,
-    });
-
-    return docRef.id;
   } catch (error) {
-    // 이미 처리된 비즈니스 에러는 그대로 throw
-    if (
-      error instanceof DuplicateReportError ||
-      error instanceof CannotReportSelfError ||
-      error instanceof ValidationError
-    ) {
-      throw error;
-    }
-
-    throw handleServiceError(error, {
-      operation: '신고 생성',
-      component: 'reportService',
-      context: {
-        type: validatedInput.type,
-        reporterType: validatedInput.reporterType,
-        targetId: validatedInput.targetId,
-        jobPostingId: validatedInput.jobPostingId,
-      },
-    });
+    // 프로필 조회 실패 시 익명으로 진행
+    logger.warn('신고자 프로필 조회 실패, 익명으로 진행', { error: toError(error) });
   }
+
+  // 3. Repository 트랜잭션 호출
+  // - 본인 신고 방지
+  // - 중복 신고 검사 + 생성 (원자적)
+  const reportId = await reportRepository.createWithTransaction(validatedInput, {
+    reporterId: user.uid,
+    reporterName,
+  });
+
+  return reportId;
 }
 
 // ============================================================================
-// Get Reports (타입 안전성 개선)
+// Get Reports
 // ============================================================================
 
 /**
@@ -185,41 +100,7 @@ export async function createReport(input: CreateReportInput): Promise<string> {
  */
 export async function getReportsByJobPosting(jobPostingId: string): Promise<Report[]> {
   logger.info('Getting reports by job posting', { jobPostingId });
-
-  try {
-    const q = query(
-      collection(db, REPORTS_COLLECTION),
-      where('jobPostingId', '==', jobPostingId),
-      orderBy('createdAt', 'desc')
-    );
-
-    const snapshot = await getDocs(q);
-
-    // 타입 안전 파싱 (as 단언 제거)
-    const rawData = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
-
-    const reports = parseReportDocuments(rawData);
-
-    // 파싱 실패 건수 로깅
-    if (reports.length < rawData.length) {
-      logger.warn('Some reports failed validation', {
-        total: rawData.length,
-        valid: reports.length,
-        failed: rawData.length - reports.length,
-      });
-    }
-
-    return reports as Report[];
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '공고별 신고 목록 조회',
-      component: 'reportService',
-      context: { jobPostingId },
-    });
-  }
+  return reportRepository.getByJobPostingId(jobPostingId);
 }
 
 /**
@@ -227,39 +108,7 @@ export async function getReportsByJobPosting(jobPostingId: string): Promise<Repo
  */
 export async function getReportsByStaff(staffId: string): Promise<Report[]> {
   logger.info('Getting reports by staff', { staffId });
-
-  try {
-    const q = query(
-      collection(db, REPORTS_COLLECTION),
-      where('targetId', '==', staffId),
-      orderBy('createdAt', 'desc')
-    );
-
-    const snapshot = await getDocs(q);
-
-    const rawData = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
-
-    const reports = parseReportDocuments(rawData);
-
-    if (reports.length < rawData.length) {
-      logger.warn('Some reports failed validation', {
-        total: rawData.length,
-        valid: reports.length,
-        failed: rawData.length - reports.length,
-      });
-    }
-
-    return reports as Report[];
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '스태프별 신고 목록 조회',
-      component: 'reportService',
-      context: { staffId },
-    });
-  }
+  return reportRepository.getByTargetId(staffId);
 }
 
 /**
@@ -274,38 +123,7 @@ export async function getMyReports(): Promise<Report[]> {
   }
 
   logger.info('Getting my reports', { userId: user.uid });
-
-  try {
-    const q = query(
-      collection(db, REPORTS_COLLECTION),
-      where('reporterId', '==', user.uid),
-      orderBy('createdAt', 'desc')
-    );
-
-    const snapshot = await getDocs(q);
-
-    const rawData = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
-
-    const reports = parseReportDocuments(rawData);
-
-    if (reports.length < rawData.length) {
-      logger.warn('Some reports failed validation', {
-        total: rawData.length,
-        valid: reports.length,
-        failed: rawData.length - reports.length,
-      });
-    }
-
-    return reports as Report[];
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '내 신고 목록 조회',
-      component: 'reportService',
-    });
-  }
+  return reportRepository.getByReporterId(user.uid);
 }
 
 /**
@@ -313,35 +131,7 @@ export async function getMyReports(): Promise<Report[]> {
  */
 export async function getReportById(reportId: string): Promise<Report | null> {
   logger.info('Getting report by id', { reportId });
-
-  try {
-    const docRef = doc(db, REPORTS_COLLECTION, reportId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    const rawData = {
-      id: docSnap.id,
-      ...docSnap.data(),
-    };
-
-    const report = parseReportDocument(rawData);
-
-    if (!report) {
-      logger.warn('Report document failed validation', { reportId });
-      return null;
-    }
-
-    return report as Report;
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '신고 상세 조회',
-      component: 'reportService',
-      context: { reportId },
-    });
-  }
+  return reportRepository.getById(reportId);
 }
 
 // ============================================================================
@@ -350,6 +140,8 @@ export async function getReportById(reportId: string): Promise<Report | null> {
 
 /**
  * 신고 처리 (관리자용)
+ *
+ * @description Repository의 트랜잭션으로 상태 검증 + 업데이트 원자적 처리
  */
 export async function reviewReport(input: ReviewReportInput): Promise<void> {
   const user = auth.currentUser;
@@ -359,7 +151,7 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
     });
   }
 
-  // 1. Zod 스키마 검증
+  // 1. Zod 스키마 검증 (비즈니스 로직: Service에서 처리)
   const validationResult = reviewReportInputSchema.safeParse(input);
   if (!validationResult.success) {
     const firstError = validationResult.error.issues[0];
@@ -375,55 +167,11 @@ export async function reviewReport(input: ReviewReportInput): Promise<void> {
     status: validatedInput.status,
   });
 
-  try {
-    // 2. 기존 신고 상태 확인
-    const docRef = doc(db, REPORTS_COLLECTION, validatedInput.reportId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      throw new ReportNotFoundError({
-        userMessage: '신고 내역을 찾을 수 없습니다',
-        reportId: validatedInput.reportId,
-      });
-    }
-
-    const existingReport = docSnap.data();
-
-    // 이미 처리된 신고인지 확인
-    if (existingReport.status !== 'pending') {
-      throw new ReportAlreadyReviewedError({
-        userMessage: '이미 처리된 신고입니다',
-        reportId: validatedInput.reportId,
-        currentStatus: existingReport.status,
-      });
-    }
-
-    // 3. 업데이트
-    await updateDoc(docRef, {
-      status: validatedInput.status,
-      reviewerId: user.uid,
-      reviewerNotes: validatedInput.reviewerNotes || '',
-      reviewedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    logger.info('Report reviewed', { reportId: validatedInput.reportId });
-  } catch (error) {
-    // 이미 처리된 비즈니스 에러는 그대로 throw
-    if (
-      error instanceof ReportNotFoundError ||
-      error instanceof ReportAlreadyReviewedError ||
-      error instanceof ValidationError
-    ) {
-      throw error;
-    }
-
-    throw handleServiceError(error, {
-      operation: '신고 처리',
-      component: 'reportService',
-      context: { reportId: validatedInput.reportId, status: validatedInput.status },
-    });
-  }
+  // 2. Repository 트랜잭션 호출
+  // - 존재 확인
+  // - 상태 검증 (pending만 처리 가능)
+  // - 업데이트 (원자적)
+  await reportRepository.reviewWithTransaction(validatedInput, user.uid);
 }
 
 // ============================================================================
@@ -441,21 +189,7 @@ export async function getReportCountByStaff(staffId: string): Promise<{
   low: number;
 }> {
   logger.info('Getting report count by staff', { staffId });
-
-  try {
-    const reports = await getReportsByStaff(staffId);
-
-    return {
-      total: reports.length,
-      critical: reports.filter((r) => r.severity === 'critical').length,
-      high: reports.filter((r) => r.severity === 'high').length,
-      medium: reports.filter((r) => r.severity === 'medium').length,
-      low: reports.filter((r) => r.severity === 'low').length,
-    };
-  } catch (error) {
-    logger.error('Failed to get report count by staff', toError(error), { staffId });
-    throw error;
-  }
+  return reportRepository.getCountsByTargetId(staffId);
 }
 
 // ============================================================================
@@ -489,44 +223,7 @@ export async function getAllReports(filters: GetAllReportsFilters = {}): Promise
   }
 
   logger.info('Getting all reports (admin)', { filters });
-
-  try {
-    // QueryBuilder로 조건부 필터링
-    const reportsRef = collection(db, REPORTS_COLLECTION);
-    const q = new QueryBuilder(reportsRef)
-      .whereIf(filters.status && filters.status !== 'all', 'status', '==', filters.status)
-      .whereIf(filters.severity && filters.severity !== 'all', 'severity', '==', filters.severity)
-      .whereIf(
-        filters.reporterType && filters.reporterType !== 'all',
-        'reporterType',
-        '==',
-        filters.reporterType
-      )
-      .orderByDesc('createdAt')
-      .build();
-
-    const snapshot = await getDocs(q);
-
-    const rawData = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    }));
-
-    const reports = parseReportDocuments(rawData);
-
-    logger.info('Got all reports', {
-      count: reports.length,
-      filters,
-    });
-
-    return reports as Report[];
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '전체 신고 목록 조회',
-      component: 'reportService',
-      context: { filters },
-    });
-  }
+  return reportRepository.getAll(filters);
 }
 
 // ============================================================================

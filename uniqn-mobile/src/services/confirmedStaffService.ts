@@ -2,7 +2,12 @@
  * UNIQN Mobile - 확정 스태프 관리 서비스
  *
  * @description 구인자용 확정 스태프 조회/관리 서비스
- * @version 1.0.0
+ * @version 2.0.0 - Repository 패턴 적용
+ *
+ * 변경사항:
+ * - Firebase 직접 호출 제거 → confirmedStaffRepository 사용
+ * - 트랜잭션 로직 캡슐화
+ * - 비즈니스 로직 (상태 매핑, 이름 조회, 그룹화) 유지
  *
  * 기능:
  * - 확정 스태프 목록 조회 (workLogs 기반)
@@ -12,26 +17,10 @@
  * - 노쇼 처리
  */
 
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  updateDoc,
-  runTransaction,
-  onSnapshot,
-  Timestamp,
-  serverTimestamp,
-  increment,
-  type Unsubscribe,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import type { Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
-import { BusinessError, ERROR_CODES, toError } from '@/errors';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
+import { toError } from '@/errors';
+import { confirmedStaffRepository, userRepository } from '@/repositories';
 import {
   workLogToConfirmedStaff,
   groupStaffByDate,
@@ -44,22 +33,13 @@ import {
   type DeleteConfirmedStaffInput,
   type ConfirmedStaffStatus,
 } from '@/types/confirmedStaff';
-import type { WorkTimeModification, RoleChangeHistory } from '@/types';
 import { STAFF_ROLES } from '@/constants';
 import { StatusMapper } from '@/shared/status';
-import { userRepository } from '@/repositories';
 import { TimeNormalizer } from '@/shared/time';
+import type { WorkLog } from '@/types';
 
 // 표준 역할 키 목록 (other 제외)
 const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const WORK_LOGS_COLLECTION = 'workLogs';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-const APPLICATIONS_COLLECTION = 'applications';
 
 // ============================================================================
 // Types
@@ -69,14 +49,6 @@ export interface GetConfirmedStaffResult {
   staff: ConfirmedStaff[];
   grouped: ConfirmedStaffGroup[];
   stats: ConfirmedStaffStats;
-}
-
-export interface RoleChangeHistoryEntry {
-  previousRole: string;
-  newRole: string;
-  reason: string;
-  changedBy: string;
-  changedAt: Timestamp;
 }
 
 // ============================================================================
@@ -104,7 +76,7 @@ async function getStaffName(staffId: string): Promise<string> {
 /**
  * WorkLog 상태를 ConfirmedStaffStatus로 변환
  *
- * @description Phase 1 - StatusMapper로 위임
+ * @description StatusMapper로 위임
  * @note no_show는 WorkLogStatus에 없으므로 별도 처리
  */
 function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
@@ -120,6 +92,32 @@ function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
   return StatusMapper.toConfirmedStaff(status as import('@/shared/status').WorkLogStatus);
 }
 
+/**
+ * WorkLog 배열을 ConfirmedStaff 배열로 변환
+ *
+ * @description 스태프 이름 조회 + 상태 정규화 포함
+ */
+async function workLogsToConfirmedStaff(workLogs: WorkLog[]): Promise<ConfirmedStaff[]> {
+  // 스태프 이름 조회 (병렬)
+  const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
+  const nameMap = new Map<string, string>();
+
+  await Promise.all(
+    staffIds.map(async (staffId) => {
+      const name = await getStaffName(staffId);
+      nameMap.set(staffId, name);
+    })
+  );
+
+  // WorkLog를 ConfirmedStaff로 변환
+  return workLogs.map((workLog) => {
+    const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
+    // 상태 정규화
+    confirmedStaff.status = mapWorkLogStatus(workLog.status);
+    return confirmedStaff;
+  });
+}
+
 // ============================================================================
 // Confirmed Staff Service
 // ============================================================================
@@ -132,55 +130,27 @@ function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
  * @returns 확정 스태프 목록, 날짜별 그룹, 통계
  */
 export async function getConfirmedStaff(jobPostingId: string): Promise<GetConfirmedStaffResult> {
-  try {
-    logger.info('확정 스태프 목록 조회', { jobPostingId });
+  logger.info('확정 스태프 목록 조회', { jobPostingId });
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(workLogsRef, where('jobPostingId', '==', jobPostingId), orderBy('date', 'asc'));
-    const snapshot = await getDocs(q);
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-    );
+  // Repository에서 WorkLog 조회
+  const workLogs = await confirmedStaffRepository.getByJobPostingId(jobPostingId);
 
-    // 스태프 이름 조회 (병렬)
-    const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
-    const nameMap = new Map<string, string>();
+  // WorkLog → ConfirmedStaff 변환 (비즈니스 로직)
+  const staff = await workLogsToConfirmedStaff(workLogs);
 
-    await Promise.all(
-      staffIds.map(async (staffId) => {
-        const name = await getStaffName(staffId);
-        nameMap.set(staffId, name);
-      })
-    );
+  // 날짜별 그룹화
+  const grouped = groupStaffByDate(staff);
 
-    // WorkLog를 ConfirmedStaff로 변환
-    const staff: ConfirmedStaff[] = workLogs.map((workLog) => {
-      const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
-      // 상태 정규화
-      confirmedStaff.status = mapWorkLogStatus(workLog.status);
-      return confirmedStaff;
-    });
+  // 통계 계산
+  const stats = calculateStaffStats(staff);
 
-    // 날짜별 그룹화
-    const grouped = groupStaffByDate(staff);
+  logger.info('확정 스태프 목록 조회 완료', {
+    jobPostingId,
+    staffCount: staff.length,
+    dateCount: grouped.length,
+  });
 
-    // 통계 계산
-    const stats = calculateStaffStats(staff);
-
-    logger.info('확정 스태프 목록 조회 완료', {
-      jobPostingId,
-      staffCount: staff.length,
-      dateCount: grouped.length,
-    });
-
-    return { staff, grouped, stats };
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '확정 스태프 목록 조회',
-      component: 'confirmedStaffService',
-      context: { jobPostingId },
-    });
-  }
+  return { staff, grouped, stats };
 }
 
 /**
@@ -190,46 +160,15 @@ export async function getConfirmedStaffByDate(
   jobPostingId: string,
   date: string
 ): Promise<ConfirmedStaff[]> {
-  try {
-    logger.info('날짜별 확정 스태프 조회', { jobPostingId, date });
+  logger.info('날짜별 확정 스태프 조회', { jobPostingId, date });
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(
-      workLogsRef,
-      where('jobPostingId', '==', jobPostingId),
-      where('date', '==', date)
-    );
-    const snapshot = await getDocs(q);
-    const workLogs = parseWorkLogDocuments(
-      snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-    );
+  // Repository에서 WorkLog 조회
+  const workLogs = await confirmedStaffRepository.getByJobPostingAndDate(jobPostingId, date);
 
-    // 스태프 이름 조회
-    const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
-    const nameMap = new Map<string, string>();
+  // WorkLog → ConfirmedStaff 변환
+  const staff = await workLogsToConfirmedStaff(workLogs);
 
-    await Promise.all(
-      staffIds.map(async (staffId) => {
-        const name = await getStaffName(staffId);
-        nameMap.set(staffId, name);
-      })
-    );
-
-    // 변환
-    const staff: ConfirmedStaff[] = workLogs.map((workLog) => {
-      const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
-      confirmedStaff.status = mapWorkLogStatus(workLog.status);
-      return confirmedStaff;
-    });
-
-    return staff;
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '날짜별 확정 스태프 조회',
-      component: 'confirmedStaffService',
-      context: { jobPostingId, date },
-    });
-  }
+  return staff;
 }
 
 /**
@@ -238,62 +177,20 @@ export async function getConfirmedStaffByDate(
  * @description 스태프의 역할 변경 및 이력 저장
  */
 export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void> {
-  try {
-    logger.info('스태프 역할 변경', { ...input });
+  logger.info('스태프 역할 변경', { ...input });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
+  // 표준 역할 여부 확인 (비즈니스 로직)
+  const isStandardRole = STANDARD_ROLE_KEYS.includes(input.newRole);
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const workLogDoc = await transaction.get(workLogRef);
+  await confirmedStaffRepository.updateRoleWithTransaction({
+    workLogId: input.workLogId,
+    newRole: input.newRole,
+    isStandardRole,
+    reason: input.reason,
+    changedBy: input.changedBy ?? 'system',
+  });
 
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '근무 기록 데이터가 올바르지 않습니다',
-        });
-      }
-      const previousRole = workLog.role;
-
-      // 역할 변경 이력 저장
-      const roleChangeHistory: RoleChangeHistory[] = workLog.roleChangeHistory || [];
-      roleChangeHistory.push({
-        previousRole,
-        newRole: input.newRole,
-        reason: input.reason,
-        changedBy: input.changedBy ?? 'system',
-        changedAt: Timestamp.now(),
-      });
-
-      // 커스텀 역할 처리: 표준 역할이 아니면 role: 'other', customRole: newRole
-      const isStandardRole = STANDARD_ROLE_KEYS.includes(input.newRole);
-      const roleUpdate = isStandardRole
-        ? { role: input.newRole, customRole: null }
-        : { role: 'other', customRole: input.newRole };
-
-      transaction.update(workLogRef, {
-        ...roleUpdate,
-        roleChangeHistory,
-        updatedAt: serverTimestamp(),
-      });
-    });
-
-    logger.info('스태프 역할 변경 완료', { workLogId: input.workLogId });
-  } catch (error) {
-    if (error instanceof BusinessError) {
-      throw error;
-    }
-    throw handleServiceError(error, {
-      operation: '스태프 역할 변경',
-      component: 'confirmedStaffService',
-      context: { workLogId: input.workLogId },
-    });
-  }
+  logger.info('스태프 역할 변경 완료', { workLogId: input.workLogId });
 }
 
 /**
@@ -303,89 +200,25 @@ export async function updateStaffRole(input: UpdateStaffRoleInput): Promise<void
  * @note null은 '미정' 상태를 의미
  */
 export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> {
-  try {
-    // TimeInput을 Date로 변환
-    const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
-    const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
+  // TimeInput을 Date로 변환 (비즈니스 로직)
+  const checkInDate = TimeNormalizer.parseTime(input.checkInTime);
+  const checkOutDate = TimeNormalizer.parseTime(input.checkOutTime);
 
-    logger.info('근무 시간 수정', {
-      workLogId: input.workLogId,
-      checkInTime: checkInDate?.toISOString() ?? '미정',
-      checkOutTime: checkOutDate?.toISOString() ?? '미정',
-    });
+  logger.info('근무 시간 수정', {
+    workLogId: input.workLogId,
+    checkInTime: checkInDate?.toISOString() ?? '미정',
+    checkOutTime: checkOutDate?.toISOString() ?? '미정',
+  });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
+  await confirmedStaffRepository.updateWorkTimeWithTransaction({
+    workLogId: input.workLogId,
+    checkInTime: checkInDate,
+    checkOutTime: checkOutDate,
+    reason: input.reason,
+    modifiedBy: input.modifiedBy ?? 'system',
+  });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const workLogDoc = await transaction.get(workLogRef);
-
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '근무 기록 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 시간 수정 이력 저장
-      const modificationHistory: WorkTimeModification[] = workLog.modificationHistory || [];
-
-      // 이전 시간
-      const prevCheckIn = workLog.checkInTime ?? null;
-      const prevCheckOut = workLog.checkOutTime ?? null;
-
-      modificationHistory.push({
-        previousStartTime: prevCheckIn,
-        previousEndTime: prevCheckOut,
-        newStartTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
-        newEndTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
-        reason: input.reason,
-        modifiedBy: input.modifiedBy ?? 'system',
-        modifiedAt: Timestamp.now(),
-      });
-
-      // 업데이트 데이터 구성 (null은 삭제 대신 null로 저장)
-      // 예정 시간도 동기화하여 모든 화면에서 일관된 시간 표시
-      const updateData: Record<string, unknown> = {
-        checkInTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
-        checkOutTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
-        scheduledStartTime: checkInDate ? Timestamp.fromDate(checkInDate) : null,
-        scheduledEndTime: checkOutDate ? Timestamp.fromDate(checkOutDate) : null,
-        modificationHistory,
-        updatedAt: serverTimestamp(),
-      };
-
-      // 시간에 따른 상태 변경
-      // - 퇴근 시간 있음 → checked_out
-      // - 출근 시간만 있음 → 기존 상태 유지
-      // - 둘 다 미정 → scheduled (예정 상태로 복원)
-      if (checkOutDate) {
-        updateData.status = 'checked_out';
-      } else if (!checkInDate) {
-        // 출퇴근 모두 미정인 경우 예정 상태로 복원
-        updateData.status = 'scheduled';
-      }
-      // 출근 시간만 있는 경우: 기존 상태 유지 (status 필드 업데이트 안함)
-
-      transaction.update(workLogRef, updateData);
-    });
-
-    logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
-  } catch (error) {
-    if (error instanceof BusinessError) {
-      throw error;
-    }
-    throw handleServiceError(error, {
-      operation: '근무 시간 수정',
-      component: 'confirmedStaffService',
-      context: { workLogId: input.workLogId },
-    });
-  }
+  logger.info('근무 시간 수정 완료', { workLogId: input.workLogId });
 }
 
 /**
@@ -397,82 +230,16 @@ export async function updateWorkTime(input: UpdateWorkTimeInput): Promise<void> 
  * - JobPosting filledPositions 감소
  */
 export async function deleteConfirmedStaff(input: DeleteConfirmedStaffInput): Promise<void> {
-  try {
-    logger.info('확정 스태프 삭제', { ...input });
+  logger.info('확정 스태프 삭제', { ...input });
 
-    await runTransaction(getFirebaseDb(), async (transaction) => {
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
-      const jobPostingRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, input.jobPostingId);
+  await confirmedStaffRepository.deleteWithTransaction({
+    workLogId: input.workLogId,
+    jobPostingId: input.jobPostingId,
+    staffId: input.staffId,
+    reason: input.reason,
+  });
 
-      // WorkLog 조회
-      const workLogDoc = await transaction.get(workLogRef);
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '근무 기록 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 이미 출퇴근한 경우 삭제 불가
-      if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 출퇴근한 스태프는 삭제할 수 없습니다',
-        });
-      }
-
-      // JobPosting 조회
-      const jobPostingDoc = await transaction.get(jobPostingRef);
-      if (!jobPostingDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-          userMessage: '공고를 찾을 수 없습니다',
-        });
-      }
-
-      // 1. WorkLog 상태를 cancelled로 변경 (완전 삭제 대신)
-      transaction.update(workLogRef, {
-        status: 'cancelled',
-        cancelledReason: input.reason,
-        cancelledAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-      });
-
-      // 2. Application이 있으면 상태 복원
-      // Application ID 형식: `${jobPostingId}_${applicantId}`
-      const applicationId = `${input.jobPostingId}_${input.staffId}`;
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
-      const applicationDoc = await transaction.get(applicationRef);
-
-      if (applicationDoc.exists()) {
-        transaction.update(applicationRef, {
-          status: 'applied',
-          updatedAt: serverTimestamp(),
-        });
-      }
-
-      // 3. JobPosting의 filledPositions 감소
-      transaction.update(jobPostingRef, {
-        filledPositions: increment(-1),
-        updatedAt: serverTimestamp(),
-      });
-    });
-
-    logger.info('확정 스태프 삭제 완료', { ...input });
-  } catch (error) {
-    if (error instanceof BusinessError) {
-      throw error;
-    }
-    throw handleServiceError(error, {
-      operation: '확정 스태프 삭제',
-      component: 'confirmedStaffService',
-      context: { workLogId: input.workLogId, jobPostingId: input.jobPostingId },
-    });
-  }
+  logger.info('확정 스태프 삭제 완료', { ...input });
 }
 
 /**
@@ -481,26 +248,11 @@ export async function deleteConfirmedStaff(input: DeleteConfirmedStaffInput): Pr
  * @description 스태프 노쇼 상태로 변경
  */
 export async function markAsNoShow(workLogId: string, reason?: string): Promise<void> {
-  try {
-    logger.info('노쇼 처리', { workLogId, reason });
+  logger.info('노쇼 처리', { workLogId, reason });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+  await confirmedStaffRepository.markAsNoShow({ workLogId, reason });
 
-    await updateDoc(workLogRef, {
-      status: 'no_show',
-      noShowReason: reason,
-      noShowAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
-
-    logger.info('노쇼 처리 완료', { workLogId });
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '노쇼 처리',
-      component: 'confirmedStaffService',
-      context: { workLogId },
-    });
-  }
+  logger.info('노쇼 처리 완료', { workLogId });
 }
 
 /**
@@ -512,24 +264,11 @@ export async function updateStaffStatus(
   workLogId: string,
   status: ConfirmedStaffStatus
 ): Promise<void> {
-  try {
-    logger.info('스태프 상태 변경', { workLogId, status });
+  logger.info('스태프 상태 변경', { workLogId, status });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+  await confirmedStaffRepository.updateStatus(workLogId, status);
 
-    await updateDoc(workLogRef, {
-      status,
-      updatedAt: serverTimestamp(),
-    });
-
-    logger.info('스태프 상태 변경 완료', { workLogId, status });
-  } catch (error) {
-    throw handleServiceError(error, {
-      operation: '스태프 상태 변경',
-      component: 'confirmedStaffService',
-      context: { workLogId, status },
-    });
-  }
+  logger.info('스태프 상태 변경 완료', { workLogId, status });
 }
 
 // ============================================================================
@@ -550,35 +289,11 @@ export function subscribeToConfirmedStaff(
 ): Unsubscribe {
   logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
-  const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-  const q = query(workLogsRef, where('jobPostingId', '==', jobPostingId), orderBy('date', 'asc'));
-
-  const unsubscribe = onSnapshot(
-    q,
-    async (snapshot) => {
+  return confirmedStaffRepository.subscribeByJobPostingId(jobPostingId, {
+    onUpdate: async (workLogs) => {
       try {
-        const workLogs = parseWorkLogDocuments(
-          snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-        );
-
-        // 스태프 이름 조회
-        const staffIds = [...new Set(workLogs.map((wl) => wl.staffId))];
-        const nameMap = new Map<string, string>();
-
-        await Promise.all(
-          staffIds.map(async (staffId) => {
-            const name = await getStaffName(staffId);
-            nameMap.set(staffId, name);
-          })
-        );
-
-        // 변환
-        const staff: ConfirmedStaff[] = workLogs.map((workLog) => {
-          const confirmedStaff = workLogToConfirmedStaff(workLog, nameMap.get(workLog.staffId));
-          confirmedStaff.status = mapWorkLogStatus(workLog.status);
-          return confirmedStaff;
-        });
-
+        // WorkLog → ConfirmedStaff 변환 (비즈니스 로직)
+        const staff = await workLogsToConfirmedStaff(workLogs);
         const grouped = groupStaffByDate(staff);
         const stats = calculateStaffStats(staff);
 
@@ -588,15 +303,6 @@ export function subscribeToConfirmedStaff(
         callbacks.onError?.(toError(error));
       }
     },
-    (error) => {
-      const appError = handleServiceError(error, {
-        operation: '확정 스태프 구독',
-        component: 'confirmedStaffService',
-        context: { jobPostingId },
-      });
-      callbacks.onError?.(appError as Error);
-    }
-  );
-
-  return unsubscribe;
+    onError: callbacks.onError,
+  });
 }

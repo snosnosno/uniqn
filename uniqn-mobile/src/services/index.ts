@@ -387,7 +387,6 @@ export {
   updateStaffStatus,
   subscribeToConfirmedStaff,
   type GetConfirmedStaffResult,
-  type RoleChangeHistoryEntry,
 } from './confirmedStaffService';
 
 // Event QR Service (구인자용 현장 출퇴근 QR)
