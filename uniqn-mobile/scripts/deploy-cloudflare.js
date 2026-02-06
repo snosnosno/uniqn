@@ -1,0 +1,83 @@
+#!/usr/bin/env node
+/**
+ * Cloudflare Pages 배포 스크립트
+ *
+ * Wrangler가 node_modules 폴더를 무시하는 문제를 해결하기 위해
+ * 빌드 후 assets/node_modules를 assets/vendors로 변경합니다.
+ *
+ * 사용법: npm run deploy:cloudflare
+ */
+
+const { execSync } = require('child_process');
+const fs = require('fs');
+const path = require('path');
+
+const DIST_DIR = path.join(__dirname, '..', 'dist');
+const ASSETS_DIR = path.join(DIST_DIR, 'assets');
+const NODE_MODULES_DIR = path.join(ASSETS_DIR, 'node_modules');
+const VENDORS_DIR = path.join(ASSETS_DIR, 'vendors');
+const JS_DIR = path.join(DIST_DIR, '_expo', 'static', 'js', 'web');
+
+console.log('🚀 Cloudflare Pages 배포 시작\n');
+
+// 1. 웹 빌드
+console.log('📦 Step 1: Expo Web 빌드...');
+try {
+  execSync('npm run build:web', { stdio: 'inherit', cwd: path.join(__dirname, '..') });
+} catch (error) {
+  console.error('❌ 빌드 실패');
+  process.exit(1);
+}
+
+// 2. node_modules → vendors 폴더명 변경
+console.log('\n🔄 Step 2: assets/node_modules → assets/vendors 변경...');
+if (fs.existsSync(NODE_MODULES_DIR)) {
+  if (fs.existsSync(VENDORS_DIR)) {
+    fs.rmSync(VENDORS_DIR, { recursive: true });
+  }
+  fs.renameSync(NODE_MODULES_DIR, VENDORS_DIR);
+  console.log('   ✅ 폴더명 변경 완료');
+} else {
+  console.log('   ⚠️ node_modules 폴더 없음 (이미 변경됨)');
+}
+
+// 3. JS 파일 내 경로 수정
+console.log('\n📝 Step 3: JS 파일 내 경로 수정...');
+if (fs.existsSync(JS_DIR)) {
+  const jsFiles = fs.readdirSync(JS_DIR).filter(f => f.endsWith('.js'));
+  let modifiedCount = 0;
+
+  jsFiles.forEach(file => {
+    const filePath = path.join(JS_DIR, file);
+    let content = fs.readFileSync(filePath, 'utf-8');
+
+    if (content.includes('/assets/node_modules/')) {
+      content = content.replace(/\/assets\/node_modules\//g, '/assets/vendors/');
+      fs.writeFileSync(filePath, content);
+      modifiedCount++;
+      console.log(`   ✅ ${file} 수정됨`);
+    }
+  });
+
+  if (modifiedCount === 0) {
+    console.log('   ⚠️ 수정할 파일 없음');
+  }
+} else {
+  console.error('   ❌ JS 디렉토리 없음');
+  process.exit(1);
+}
+
+// 4. Wrangler 배포
+console.log('\n🌐 Step 4: Cloudflare Pages 배포...');
+try {
+  execSync('npx wrangler pages deploy dist --project-name=uniqn-app --commit-dirty=true', {
+    stdio: 'inherit',
+    cwd: path.join(__dirname, '..'),
+  });
+} catch (error) {
+  console.error('❌ 배포 실패');
+  process.exit(1);
+}
+
+console.log('\n✨ 배포 완료!');
+console.log('🔗 https://uniqn-app.pages.dev');
