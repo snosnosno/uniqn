@@ -26,6 +26,7 @@ import {
 import { Platform } from 'react-native';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
+import * as pushNotificationService from '@/services/pushNotificationService';
 import { normalizeError } from '@/errors';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { RealtimeManager } from '@/shared/realtime';
@@ -64,6 +65,11 @@ interface NotificationPermissionStatus {
   granted: boolean;
   canAskAgain: boolean;
   status: 'granted' | 'denied' | 'undetermined';
+  ios?: {
+    allowsAlert: boolean;
+    allowsBadge: boolean;
+    allowsSound: boolean;
+  };
 }
 
 // ============================================================================
@@ -346,13 +352,7 @@ export async function checkNotificationPermission(): Promise<NotificationPermiss
     };
   }
 
-  // pushNotificationService로 위임 (EAS Build 후 활성화)
-  // 현재는 기본값 반환
-  return {
-    granted: false,
-    canAskAgain: true,
-    status: 'undetermined',
-  };
+  return pushNotificationService.checkPermission();
 }
 
 /**
@@ -372,15 +372,7 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
     };
   }
 
-  // pushNotificationService로 위임 (EAS Build 후 활성화)
-  // 현재는 기본값 반환
-  logger.info('푸시 알림 권한 요청');
-
-  return {
-    granted: false,
-    canAskAgain: true,
-    status: 'undetermined',
-  };
+  return pushNotificationService.requestPermission();
 }
 
 // ============================================================================

@@ -40,14 +40,14 @@
  * ============================================================================
  */
 
-import { Platform, AppState, type AppStateStatus } from 'react-native';
+import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import type * as NotificationsTypes from 'expo-notifications';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { crashlyticsService } from './crashlyticsService';
-import { registerFCMToken, unregisterFCMToken } from './notificationService';
+import { notificationRepository } from '@/repositories';
 
 // ============================================================================
 // Types
@@ -180,7 +180,7 @@ let isInitialized = false;
 let currentToken: string | null = null;
 let notificationReceivedHandler: NotificationReceivedHandler | null = null;
 let notificationResponseHandler: NotificationResponseHandler | null = null;
-let appStateSubscription: { remove: () => void } | null = null;
+let notificationResponseSubscription: { remove: () => void } | null = null;
 
 // Expo Notifications 모듈 (동적 로드)
 let Notifications: typeof import('expo-notifications') | null = null;
@@ -226,9 +226,6 @@ export async function initialize(): Promise<boolean> {
 
     // 알림 핸들러 설정
     setupNotificationHandlers();
-
-    // 앱 상태 리스너 설정
-    setupAppStateListener();
 
     isInitialized = true;
     logger.info('푸시 알림 서비스 초기화 완료');
@@ -308,8 +305,8 @@ function setupNotificationHandlers(): void {
     },
   });
 
-  // 알림 터치 응답 리스너
-  Notifications.addNotificationResponseReceivedListener((response) => {
+  // 알림 터치 응답 리스너 (subscription 저장하여 cleanup 시 해제)
+  notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
     const payload = extractPayload(response.notification);
     const actionId = response.actionIdentifier;
 
@@ -323,19 +320,6 @@ function setupNotificationHandlers(): void {
   logger.info('알림 핸들러 설정 완료');
 }
 
-/**
- * 앱 상태 리스너 설정
- */
-function setupAppStateListener(): void {
-  const handleAppStateChange = async (nextAppState: AppStateStatus) => {
-    if (nextAppState === 'active') {
-      // 앱이 포그라운드로 돌아올 때 뱃지 초기화
-      await clearBadge();
-    }
-  };
-
-  appStateSubscription = AppState.addEventListener('change', handleAppStateChange);
-}
 
 /**
  * 알림에서 페이로드 추출
@@ -506,7 +490,7 @@ export async function registerToken(userId: string): Promise<boolean> {
       return false;
     }
 
-    await registerFCMToken(userId, tokenResult.token);
+    await notificationRepository.registerFCMToken(userId, tokenResult.token);
     logger.info('푸시 토큰 등록 완료', { userId, type: tokenResult.type });
     return true;
   } catch (error) {
@@ -525,7 +509,7 @@ export async function unregisterToken(userId: string): Promise<boolean> {
       return true;
     }
 
-    await unregisterFCMToken(userId, currentToken);
+    await notificationRepository.unregisterFCMToken(userId, currentToken);
     currentToken = null;
     logger.info('푸시 토큰 해제 완료', { userId });
     return true;

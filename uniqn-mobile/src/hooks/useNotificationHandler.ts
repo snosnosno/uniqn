@@ -22,7 +22,7 @@ import {
   type NotificationPayload,
 } from '@/services/pushNotificationService';
 import * as tokenRefreshService from '@/services/tokenRefreshService';
-import { deepLinkService, navigateFromNotification } from '@/services/deepLinkService';
+import { navigateFromNotification } from '@/services/deepLinkService';
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
@@ -328,11 +328,17 @@ export function useNotificationHandler(
       pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
 
       // 권한 상태 확인
-      const permission = await pushNotificationService.checkPermission();
+      let permission = await pushNotificationService.checkPermission();
+
+      // 권한이 미결정 상태이면 자동으로 권한 요청
+      if (permission.status === 'undetermined' && permission.canAskAgain) {
+        permission = await pushNotificationService.requestPermission();
+      }
+
       setPermissionStatus(permission.status);
 
       setIsInitialized(true);
-      logger.info('알림 핸들러 초기화 완료');
+      logger.info('알림 핸들러 초기화 완료', { permissionStatus: permission.status });
     } catch (error) {
       logger.error('알림 핸들러 초기화 실패', toError(error));
     } finally {
@@ -459,6 +465,16 @@ export function useNotificationHandler(
   }, [autoInitialize, initialize]);
 
   /**
+   * 핸들러 참조 갱신 (userId, 콜백 변경 시)
+   */
+  useEffect(() => {
+    if (isInitialized) {
+      pushNotificationService.setNotificationReceivedHandler(handleNotificationReceived);
+      pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
+    }
+  }, [isInitialized, handleNotificationReceived, handleNotificationResponse]);
+
+  /**
    * 로그인 시 토큰 자동 등록
    */
   useEffect(() => {
@@ -550,17 +566,8 @@ export function useNotificationHandler(
     return () => subscription.remove();
   }, [clearBadge, isTokenRegistered, userId, registerToken]);
 
-  /**
-   * 딥링크 리스너 설정
-   */
-  useEffect(() => {
-    const cleanup = deepLinkService.setupDeepLinkListener((url) => {
-      logger.info('딥링크 수신', { url });
-      trackEvent('deep_link_received', { url });
-    });
-
-    return cleanup;
-  }, []);
+  // 딥링크 리스너는 useDeepLinkSetup (MainNavigator)에서 처리
+  // useNotificationHandler에서 직접 설정하면 인증 체크가 우회되어 무한 루프 발생
 
   /**
    * 클린업
