@@ -29,6 +29,7 @@ export interface FirebaseConfig {
   storageBucket: string;
   messagingSenderId: string;
   appId: string;
+  measurementId?: string;
 }
 
 export interface ApiConfig {
@@ -136,6 +137,9 @@ const firebaseConfig: FirebaseConfig = {
     process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
   ),
   appId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_APP_ID', process.env.EXPO_PUBLIC_FIREBASE_APP_ID),
+  ...(process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID && {
+    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
+  }),
 };
 
 // ============================================================================
@@ -144,6 +148,7 @@ const firebaseConfig: FirebaseConfig = {
 
 const apiConfigs: Record<Environment, ApiConfig> = {
   development: {
+    // NOTE: 실제 디바이스에서는 로컬 IP 주소 사용 필요 (예: http://192.168.x.x:5001/...)
     baseUrl: 'http://localhost:5001/tholdem-ebc18/us-central1',
     timeout: 30000,
   },

@@ -27,6 +27,7 @@ import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
+import { useDeepLinkSetup } from '@/hooks/useDeepLink';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useThemeStore } from '@/stores/themeStore';
 import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
@@ -63,16 +64,22 @@ function MainNavigator() {
   // 화면 전환 추적 (Analytics + Crashlytics)
   useNavigationTracking();
 
-  // 푸시 알림 수신 및 딥링크 처리
+  // 딥링크 리스너 설정 (인증 체크 포함)
+  useDeepLinkSetup();
+
+  // 푸시 알림 수신 처리
   useNotificationHandler();
 
   // 전역 네트워크 상태 연동
   const { isOnline } = useNetworkStatus();
-  const prevOnlineRef = useRef(isOnline);
+  const prevOnlineRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     const wasOnline = prevOnlineRef.current;
     prevOnlineRef.current = isOnline;
+
+    // 초기 상태 설정 시에는 전환 처리하지 않음 (오탐 방지)
+    if (wasOnline === null) return;
 
     if (!wasOnline && isOnline) {
       // 오프라인 → 온라인: 재연결 처리

@@ -16,7 +16,7 @@
  * - Universal Links: https://uniqn.app (도메인 설정 후 활성화)
  */
 
-import { Linking } from 'react-native';
+import { Linking, Platform } from 'react-native';
 import { router } from 'expo-router';
 import { logger } from '@/utils/logger';
 import { trackEvent } from './analyticsService';
@@ -47,8 +47,10 @@ export const WEB_DOMAIN = 'uniqn.app';
 const SCHEME_PREFIX = `${APP_SCHEME}://`;
 const WEB_PREFIX = `https://${WEB_DOMAIN}`;
 
-/** 콜드 스타트 네비게이션 딜레이 (ms) */
-const COLD_START_NAVIGATION_DELAY_MS = 500;
+/** 콜드 스타트 네비게이션 재시도 간격 (ms) */
+const COLD_START_RETRY_INTERVAL_MS = 100;
+/** 콜드 스타트 네비게이션 최대 재시도 횟수 (100ms * 20 = 최대 2초) */
+const COLD_START_MAX_RETRIES = 20;
 
 /**
  * 안전한 알림 링크 패턴
@@ -413,6 +415,61 @@ export function createApplicationDeepLink(_applicationId: string, useWebUrl = fa
 }
 
 // ============================================================================
+// Web URL Filtering
+// ============================================================================
+
+/**
+ * 웹 플랫폼에서 루트 URL인지 확인
+ *
+ * @description 웹에서 `https://uniqn.app/` 같은 루트 URL은 일반 페이지 로드이지
+ * 의도적인 딥링크가 아님. 이를 딥링크로 처리하면 인증 가드와 충돌하여 무한 루프 발생.
+ */
+function isWebRootUrl(url: string): boolean {
+  if (Platform.OS !== 'web') return false;
+
+  try {
+    const urlObj = new URL(url);
+    // 루트 경로(/ 또는 빈 경로)이고 의미 있는 쿼리 파라미터가 없는 경우
+    const isRootPath = urlObj.pathname === '/' || urlObj.pathname === '';
+    const hasNoParams = urlObj.searchParams.toString() === '';
+    return isRootPath && hasNoParams;
+  } catch {
+    return false;
+  }
+}
+
+// ============================================================================
+// Cold Start Navigation Helper
+// ============================================================================
+
+/**
+ * 네비게이션 준비 완료 시까지 대기 후 콜백 실행
+ *
+ * @description 콜드 스타트 시 Expo Router가 완전히 마운트되기를 기다림.
+ * router.canGoBack()이 에러 없이 호출되면 준비된 것으로 판단.
+ * 최대 COLD_START_MAX_RETRIES회 재시도 후 강제 실행.
+ */
+function waitForNavigationReady(callback: () => void, retryCount = 0): void {
+  if (retryCount >= COLD_START_MAX_RETRIES) {
+    logger.warn('콜드 스타트 네비게이션: 최대 대기 초과, 강제 실행', {
+      retries: retryCount,
+      totalWaitMs: retryCount * COLD_START_RETRY_INTERVAL_MS,
+    });
+    callback();
+    return;
+  }
+
+  try {
+    router.canGoBack();
+    setTimeout(callback, COLD_START_RETRY_INTERVAL_MS);
+  } catch {
+    setTimeout(() => {
+      waitForNavigationReady(callback, retryCount + 1);
+    }, COLD_START_RETRY_INTERVAL_MS);
+  }
+}
+
+// ============================================================================
 // Linking Setup
 // ============================================================================
 
@@ -425,6 +482,9 @@ export function createApplicationDeepLink(_applicationId: string, useWebUrl = fa
 export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () => void {
   // 앱이 이미 실행 중일 때 딥링크로 열리는 경우
   const subscription = Linking.addEventListener('url', ({ url }) => {
+    // 웹에서 루트 URL은 일반 페이지 로드이므로 딥링크로 처리하지 않음
+    if (isWebRootUrl(url)) return;
+
     logger.info('딥링크 수신', { url });
     onDeepLink?.(url);
     navigateToDeepLink(url);
@@ -432,14 +492,15 @@ export function setupDeepLinkListener(onDeepLink?: (url: string) => void): () =>
 
   // 앱이 딥링크로 처음 열리는 경우 (콜드 스타트)
   Linking.getInitialURL().then((url) => {
-    if (url) {
-      logger.info('초기 딥링크', { url });
-      onDeepLink?.(url);
-      // 콜드 스타트 시에는 딜레이 후 네비게이션
-      setTimeout(() => {
-        navigateToDeepLink(url);
-      }, COLD_START_NAVIGATION_DELAY_MS);
-    }
+    // 웹에서 루트 URL은 일반 페이지 로드이므로 딥링크로 처리하지 않음
+    if (!url || isWebRootUrl(url)) return;
+
+    logger.info('초기 딥링크', { url });
+    onDeepLink?.(url);
+    // 콜드 스타트 시 네비게이션 준비까지 대기 후 실행
+    waitForNavigationReady(() => {
+      navigateToDeepLink(url);
+    });
   });
 
   return () => {

@@ -683,9 +683,9 @@ export function setNotificationResponseHandler(handler: NotificationResponseHand
  * 서비스 정리
  */
 export function cleanup(): void {
-  if (appStateSubscription) {
-    appStateSubscription.remove();
-    appStateSubscription = null;
+  if (notificationResponseSubscription) {
+    notificationResponseSubscription.remove();
+    notificationResponseSubscription = null;
   }
 
   notificationReceivedHandler = null;

@@ -19,6 +19,9 @@ const envSchema = z.object({
     .min(1, 'Firebase Messaging Sender ID가 필요합니다'),
   EXPO_PUBLIC_FIREBASE_APP_ID: z.string().min(1, 'Firebase App ID가 필요합니다'),
 
+  // Firebase Analytics (웹 전용, 선택적)
+  EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
+
   // 선택적 설정
   EXPO_PUBLIC_RELEASE_CHANNEL: z
     .enum(['development', 'staging', 'production'])
@@ -60,7 +63,9 @@ export function getEnv(): Env {
     EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
     EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
     EXPO_PUBLIC_RELEASE_CHANNEL: process.env.EXPO_PUBLIC_RELEASE_CHANNEL,
+    EXPO_PUBLIC_FIREBASE_REGION: process.env.EXPO_PUBLIC_FIREBASE_REGION,
   };
 
   // 스키마 검증

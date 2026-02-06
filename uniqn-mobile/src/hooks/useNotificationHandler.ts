@@ -26,8 +26,9 @@ import { navigateFromNotification } from '@/services/deepLinkService';
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
+import { Timestamp } from 'firebase/firestore';
 import { FirebaseNotificationRepository } from '@/repositories/firebase/NotificationRepository';
-import type { NotificationType } from '@/types/notification';
+import type { NotificationType, NotificationData } from '@/types/notification';
 
 // Repository 인스턴스
 const notificationRepository = new FirebaseNotificationRepository();
@@ -239,20 +240,20 @@ export function useNotificationHandler(
       // 🆕 FCM payload로부터 로컬 store에 알림 추가 (Firestore 실시간 리스너 대체)
       const notificationId = notification.data?.notificationId as string | undefined;
       if (notificationId) {
-        const notificationData = {
+        const notificationData: NotificationData = {
           id: notificationId,
           recipientId: userId || '',
-          type: (notification.data?.type as string) || 'announcement',
+          type: ((notification.data?.type as string) || 'announcement') as NotificationType,
           title: notification.title || '',
           body: notification.body || '',
           link: notification.data?.link as string | undefined,
           data: notification.data as Record<string, string> | undefined,
           isRead: false,
-          createdAt: new Date(),
+          createdAt: Timestamp.now(),
         };
 
         // Zustand store에 알림 추가 (incrementUnreadCounts 자동 호출됨)
-        useNotificationStore.getState().addNotification(notificationData as never);
+        useNotificationStore.getState().addNotification(notificationData);
         logger.info('FCM 알림을 로컬 store에 추가', { notificationId });
       }
 
