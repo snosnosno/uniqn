@@ -58,7 +58,7 @@ interface WorkLogData {
  * - 구인자에게 staff_checked_in/staff_checked_out 알림 전송
  * - Firestore notifications 문서 생성
  */
-export const onCheckInOut = functions.firestore
+export const onCheckInOut = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
   .onUpdate(async (change, context) => {
     const workLogId = context.params.workLogId;

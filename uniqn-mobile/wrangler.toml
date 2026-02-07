@@ -1,0 +1,9 @@
+# Cloudflare Pages - Wrangler 설정
+# https://developers.cloudflare.com/pages/functions/wrangler-configuration/
+
+name = "uniqn-app"
+compatibility_date = "2025-01-01"
+
+# Pages 배포 설정
+[pages]
+build_output_dir = "dist"

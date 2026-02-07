@@ -52,7 +52,7 @@ interface JobPostingData {
  * - confirmed, pending, applied 상태의 지원자들에게 알림 전송
  * - Firestore notifications 문서 생성 + FCM 푸시 전송
  */
-export const onJobPostingCancelled = functions.firestore
+export const onJobPostingCancelled = functions.region('asia-northeast3').firestore
   .document('jobPostings/{jobPostingId}')
   .onUpdate(async (change, context) => {
     const jobPostingId = context.params.jobPostingId;

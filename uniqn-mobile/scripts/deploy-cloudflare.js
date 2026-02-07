@@ -17,8 +17,29 @@ const ASSETS_DIR = path.join(DIST_DIR, 'assets');
 const NODE_MODULES_DIR = path.join(ASSETS_DIR, 'node_modules');
 const VENDORS_DIR = path.join(ASSETS_DIR, 'vendors');
 const JS_DIR = path.join(DIST_DIR, '_expo', 'static', 'js', 'web');
+const ROOT_DIR = path.join(__dirname, '..');
+
+// --force 플래그로 커밋되지 않은 변경사항 허용
+const forceFlag = process.argv.includes('--force');
 
 console.log('🚀 Cloudflare Pages 배포 시작\n');
+
+// 0. Git 상태 확인 (커밋되지 않은 변경사항 경고)
+try {
+  const gitStatus = execSync('git status --porcelain', { cwd: ROOT_DIR, encoding: 'utf-8' }).trim();
+  if (gitStatus) {
+    console.warn('⚠️  커밋되지 않은 변경사항이 있습니다:');
+    console.warn(gitStatus.split('\n').map(l => `   ${l}`).join('\n'));
+    if (!forceFlag) {
+      console.error('\n❌ 변경사항을 커밋한 후 배포하세요.');
+      console.error('   커밋 없이 배포하려면: npm run deploy:cloudflare -- --force');
+      process.exit(1);
+    }
+    console.warn('\n   --force 플래그로 계속 진행합니다.\n');
+  }
+} catch {
+  // git이 없는 환경에서는 무시
+}
 
 // 1. 웹 빌드
 console.log('📦 Step 1: Expo Web 빌드...');
@@ -67,12 +88,13 @@ if (fs.existsSync(JS_DIR)) {
   process.exit(1);
 }
 
-// 4. Wrangler 배포
+// 4. Wrangler 배포 (wrangler.toml 설정 사용)
 console.log('\n🌐 Step 4: Cloudflare Pages 배포...');
+const commitDirtyFlag = forceFlag ? ' --commit-dirty=true' : '';
 try {
-  execSync('npx wrangler pages deploy dist --project-name=uniqn-app --commit-dirty=true', {
+  execSync(`npx wrangler pages deploy dist --project-name=uniqn-app${commitDirtyFlag}`, {
     stdio: 'inherit',
-    cwd: path.join(__dirname, '..'),
+    cwd: ROOT_DIR,
   });
 } catch (error) {
   console.error('❌ 배포 실패');

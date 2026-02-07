@@ -71,7 +71,7 @@ const NOTIFY_FIELDS = [
  * - 해당 공고에 지원한 지원자들에게 알림
  * - FCM 푸시 알림 전송 + Firestore notifications 문서 생성
  */
-export const onJobPostingUpdated = functions.firestore
+export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
   .document('jobPostings/{jobPostingId}')
   .onUpdate(async (change, context) => {
     const jobPostingId = context.params.jobPostingId;

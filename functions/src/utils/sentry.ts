@@ -19,8 +19,8 @@ export const initSentry = (): void => {
   const dsn = functions.config().sentry?.dsn;
 
   if (!dsn) {
-    console.warn('⚠️  Sentry DSN이 설정되지 않아 에러 트래킹이 비활성화되었습니다.');
-    console.warn('설정 방법: firebase functions:config:set sentry.dsn="YOUR_DSN"');
+    functions.logger.warn('Sentry DSN이 설정되지 않아 에러 트래킹이 비활성화되었습니다.');
+    functions.logger.warn('설정 방법: firebase functions:config:set sentry.dsn="YOUR_DSN"');
     return;
   }
 
@@ -84,7 +84,7 @@ export const initSentry = (): void => {
     ignoreErrors: ['PERMISSION_DENIED', 'UNAUTHENTICATED', 'NOT_FOUND'],
   });
 
-  console.info('✅ Sentry (Functions) 초기화 완료');
+  functions.logger.info('Sentry (Functions) 초기화 완료');
 };
 
 /**

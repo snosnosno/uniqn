@@ -21,7 +21,7 @@ const db = admin.firestore();
  * - 고용주에게 FCM 푸시 알림 전송
  * - 공통 유틸리티 사용으로 일관된 알림 처리
  */
-export const onApplicationSubmitted = functions.firestore
+export const onApplicationSubmitted = functions.region('asia-northeast3').firestore
   .document('applications/{applicationId}')
   .onCreate(async (snap, context) => {
     const applicationId = context.params.applicationId;

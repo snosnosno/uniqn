@@ -11,9 +11,9 @@ import { Card } from '@/components/ui';
 const BUSINESS_INFO = {
   companyName: '스노스튜디오',
   representative: '김승호',
-  businessNumber: '000-00-00000', // TODO: 실제 사업자등록번호로 교체
-  salesNumber: '제0000-서울강남-0000호', // TODO: 실제 통신판매업신고번호로 교체
-  address: '서울특별시 강남구 테헤란로 00길 00, 0층', // TODO: 실제 주소로 교체
+  businessNumber: '107-37-40217',
+  salesNumber: '제2026-인천부평-0255호',
+  address: '인천광역시 부평구 부평대로 141번길 12, 504호',
   email: 'uniqnkorea@gmail.com',
   phone: '010-9800-9039',
   customerServiceHours: '평일 10:00 ~ 18:00 (점심 12:00 ~ 13:00)',

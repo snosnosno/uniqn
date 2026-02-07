@@ -50,7 +50,7 @@ interface SendSystemAnnouncementResponse {
  * - Firestore 알림 문서 생성 (각 사용자별)
  * - 전송 결과 기록 및 반환
  */
-export const sendSystemAnnouncement = functions.https.onCall(
+export const sendSystemAnnouncement = functions.region('asia-northeast3').https.onCall(
   async (data: SendSystemAnnouncementRequest, context): Promise<SendSystemAnnouncementResponse> => {
     functions.logger.info('시스템 공지사항 전송 요청 수신', { data, userId: context.auth?.uid });
 

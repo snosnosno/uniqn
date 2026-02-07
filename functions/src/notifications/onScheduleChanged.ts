@@ -61,7 +61,7 @@ interface WorkLogData {
  * - FCM 푸시 알림 전송
  * - Firestore notifications 문서 생성
  */
-export const onScheduleCreated = functions.firestore
+export const onScheduleCreated = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
   .onCreate(async (snap, context) => {
     const workLogId = context.params.workLogId;
@@ -200,7 +200,7 @@ export const onScheduleCreated = functions.firestore
  * - FCM 푸시 알림 전송
  * - Firestore notifications 문서 생성
  */
-export const onScheduleCancelled = functions.firestore
+export const onScheduleCancelled = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
   .onUpdate(async (change, context) => {
     const workLogId = context.params.workLogId;

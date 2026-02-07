@@ -298,6 +298,32 @@ jest.mock('@tanstack/react-query', () => ({
   })),
 }));
 
+// Mock @sentry/react-native
+jest.mock('@sentry/react-native', () => ({
+  init: jest.fn(),
+  wrap: jest.fn((component) => component),
+  withScope: jest.fn((callback) => callback({
+    setTag: jest.fn(),
+    setLevel: jest.fn(),
+    setExtra: jest.fn(),
+    setContext: jest.fn(),
+  })),
+  captureException: jest.fn(),
+  captureMessage: jest.fn(),
+  addBreadcrumb: jest.fn(),
+  setTag: jest.fn(),
+  setUser: jest.fn(),
+  setExtra: jest.fn(),
+  setContext: jest.fn(),
+  startTransaction: jest.fn(() => ({
+    finish: jest.fn(),
+    setTag: jest.fn(),
+    setData: jest.fn(),
+  })),
+  ReactNativeTracing: jest.fn(),
+  ReactNavigationInstrumentation: jest.fn(),
+}));
+
 // Mock zustand persist middleware
 jest.mock('zustand/middleware', () => ({
   persist: (config) => config,

@@ -125,6 +125,9 @@ function WebTimePicker({
             isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
           }`}
           style={{ height: ITEM_HEIGHT }}
+          accessibilityRole="button"
+          accessibilityLabel={`${hour.toString().padStart(2, '0')}시${isNextDayHour ? ' 다음날' : ''}`}
+          accessibilityState={{ selected: isSelected }}
         >
           <Text
             className={`text-lg ${
@@ -155,6 +158,9 @@ function WebTimePicker({
             isSelected ? 'bg-primary-100 dark:bg-primary-900/50' : ''
           }`}
           style={{ height: ITEM_HEIGHT }}
+          accessibilityRole="button"
+          accessibilityLabel={`${minute.toString().padStart(2, '0')}분`}
+          accessibilityState={{ selected: isSelected }}
         >
           <Text
             className={`text-lg ${
@@ -327,7 +333,7 @@ function NativeWheelPicker({
     setSelectedHour(value.hour);
     setSelectedMinute(normalizedMinute);
 
-    setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       hourScrollRef.current?.scrollTo({
         y: hourIndex * ITEM_HEIGHT,
         animated: false,
@@ -337,6 +343,8 @@ function NativeWheelPicker({
         animated: false,
       });
     }, 50);
+
+    return () => clearTimeout(timeoutId);
   }, [value, minHour, minuteInterval, normalizeMinute]);
 
   // 시간 스크롤 종료 핸들러
@@ -417,7 +425,8 @@ function NativeWheelPicker({
             ref={hourScrollRef}
             showsVerticalScrollIndicator={false}
             snapToInterval={ITEM_HEIGHT}
-            decelerationRate="fast"
+            snapToAlignment="start"
+            decelerationRate={Platform.OS === 'android' ? 0.98 : 'fast'}
             onMomentumScrollEnd={handleHourScrollEnd}
             onScrollEndDrag={handleHourScrollEnd}
             contentContainerStyle={{
@@ -429,10 +438,21 @@ function NativeWheelPicker({
               const isSelected = hour === selectedHour;
               const isNextDayHour = hour >= 24;
               return (
-                <View
+                <Pressable
                   key={hour}
                   style={{ height: ITEM_HEIGHT }}
                   className="items-center justify-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${hour.toString().padStart(2, '0')}시${isNextDayHour ? ' 다음날' : ''}`}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => {
+                    const index = hour - minHour!;
+                    setSelectedHour(hour);
+                    hourScrollRef.current?.scrollTo({
+                      y: index * ITEM_HEIGHT,
+                      animated: true,
+                    });
+                  }}
                 >
                   <Text
                     className={`text-xl ${
@@ -448,7 +468,7 @@ function NativeWheelPicker({
                       다음날
                     </Text>
                   )}
-                </View>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -463,7 +483,8 @@ function NativeWheelPicker({
             ref={minuteScrollRef}
             showsVerticalScrollIndicator={false}
             snapToInterval={ITEM_HEIGHT}
-            decelerationRate="fast"
+            snapToAlignment="start"
+            decelerationRate={Platform.OS === 'android' ? 0.98 : 'fast'}
             onMomentumScrollEnd={handleMinuteScrollEnd}
             onScrollEndDrag={handleMinuteScrollEnd}
             contentContainerStyle={{
@@ -474,10 +495,21 @@ function NativeWheelPicker({
             {minutes.map((minute) => {
               const isSelected = minute === selectedMinute;
               return (
-                <View
+                <Pressable
                   key={minute}
                   style={{ height: ITEM_HEIGHT }}
                   className="items-center justify-center"
+                  accessibilityRole="button"
+                  accessibilityLabel={`${minute.toString().padStart(2, '0')}분`}
+                  accessibilityState={{ selected: isSelected }}
+                  onPress={() => {
+                    const minuteIndex = minute / minuteInterval!;
+                    setSelectedMinute(minute);
+                    minuteScrollRef.current?.scrollTo({
+                      y: minuteIndex * ITEM_HEIGHT,
+                      animated: true,
+                    });
+                  }}
                 >
                   <Text
                     className={`text-xl ${
@@ -488,7 +520,7 @@ function NativeWheelPicker({
                   >
                     {minute.toString().padStart(2, '0')}
                   </Text>
-                </View>
+                </Pressable>
               );
             })}
           </ScrollView>
@@ -594,21 +626,23 @@ export function TimeWheelPicker({
   }
 
   // 네이티브에서는 기존 Modal 사용
+  // Pressable 중첩을 피해 backdrop과 콘텐츠를 분리 (ScrollView 제스처 충돌 방지)
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable className="flex-1 bg-black/50 justify-end" onPress={onClose}>
-        <Pressable onPress={(e) => e.stopPropagation()}>
-          <NativeWheelPicker
-            value={value}
-            title={title}
-            minHour={minHour}
-            maxHour={maxHour}
-            minuteInterval={minuteInterval}
-            onConfirm={onConfirm}
-            onClose={onClose}
-          />
-        </Pressable>
-      </Pressable>
+      <View className="flex-1 justify-end">
+        {/* Backdrop - 콘텐츠 위의 빈 영역만 터치 가능 */}
+        <Pressable className="flex-1 bg-black/50" onPress={onClose} />
+        {/* 콘텐츠 - Pressable로 감싸지 않아 ScrollView 제스처 정상 동작 */}
+        <NativeWheelPicker
+          value={value}
+          title={title}
+          minHour={minHour}
+          maxHour={maxHour}
+          minuteInterval={minuteInterval}
+          onConfirm={onConfirm}
+          onClose={onClose}
+        />
+      </View>
     </Modal>
   );
 }

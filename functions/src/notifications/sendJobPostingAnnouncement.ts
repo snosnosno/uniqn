@@ -53,7 +53,7 @@ interface SendAnnouncementResponse {
  * - Firestore 알림 문서 생성
  * - 전송 결과 반환
  */
-export const sendJobPostingAnnouncement = functions.https.onCall(
+export const sendJobPostingAnnouncement = functions.region('asia-northeast3').https.onCall(
   async (data: SendAnnouncementRequest, context): Promise<SendAnnouncementResponse> => {
     functions.logger.info('공지 전송 요청 수신', { data, userId: context.auth?.uid });
 

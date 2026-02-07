@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.uniqn.mobile",
+      "sha256_cert_fingerprints": [
+        "DF:CF:EC:E8:53:2E:5C:31:86:02:2F:AD:3C:BF:70:CA:AB:9A:E2:6B:81:3E:79:11:C3:30:D0:3A:9A:C1:FF:8A"
+      ]
+    }
+  }
+]

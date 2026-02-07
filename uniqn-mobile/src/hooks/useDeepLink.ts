@@ -18,8 +18,6 @@ import {
   parseDeepLink,
   createDeepLink,
   createJobDeepLink,
-  createApplicationDeepLink,
-  createScheduleDeepLink,
   type DeepLinkRoute,
   type ParsedDeepLink,
 } from '@/services/deepLinkService';
@@ -289,22 +287,14 @@ export function useDeepLinkNavigation() {
   /**
    * 공유용 URL 생성
    *
-   * @param type - 공유 타입 ('job' 권장, 'application'/'schedule'은 deprecated)
+   * @param type - 공유 타입
    * @param id - 리소스 ID
    * @returns 공유용 웹 URL
-   *
-   * @deprecated 'application', 'schedule' 타입은 v3.0에서 제거 예정
    */
-  const createShareUrl = useCallback((type: 'job' | 'application' | 'schedule', id?: string) => {
+  const createShareUrl = useCallback((type: 'job', id?: string) => {
     switch (type) {
       case 'job':
         return id ? createJobDeepLink(id, true) : '';
-      case 'application':
-        // deprecated: 지원 상세 화면 없음
-        return id ? createApplicationDeepLink(id, true) : '';
-      case 'schedule':
-        // deprecated: date 파라미터 무시됨
-        return createScheduleDeepLink(id, true);
       default:
         return '';
     }

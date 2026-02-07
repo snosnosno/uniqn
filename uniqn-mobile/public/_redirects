@@ -1,5 +1,8 @@
 # Cloudflare Pages SPA Routing
 # 정적 파일은 그대로 제공, 나머지만 SPA 라우팅
 
+# Well-Known 파일은 그대로 제공 (딥링크 검증)
+/.well-known/*  /.well-known/:splat  200
+
 # SPA fallback (모든 경로를 index.html로)
 /*  /index.html  200

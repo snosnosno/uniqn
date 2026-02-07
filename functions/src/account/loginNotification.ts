@@ -38,7 +38,7 @@ interface LoginAttempt {
  *
  * 클라이언트에서 로그인 성공 후 호출
  */
-export const sendLoginNotification = functions.https.onCall(
+export const sendLoginNotification = functions.region('asia-northeast3').https.onCall(
   async (data, context) => {
     // 인증 확인
     if (!context.auth) {
@@ -350,7 +350,7 @@ async function sendNotification(
  *
  * 클라이언트에서 로그인 실패 시 호출
  */
-export const recordLoginFailure = functions.https.onCall(
+export const recordLoginFailure = functions.region('asia-northeast3').https.onCall(
   async (data, context) => {
     const { email, ipAddress, userAgent, reason } = data;
 

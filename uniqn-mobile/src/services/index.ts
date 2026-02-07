@@ -256,12 +256,9 @@ export {
   validateNotificationLink,
   createDeepLink,
   createJobDeepLink,
-  createApplicationDeepLink, // deprecated
-  createScheduleDeepLink, // deprecated
   setupDeepLinkListener,
   getInitialDeepLink,
   openExternalUrl,
-  linkingConfig, // deprecated
   APP_SCHEME,
   WEB_DOMAIN,
   type DeepLinkRoute,

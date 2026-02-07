@@ -56,7 +56,7 @@ interface WorkLogData {
  * - 스태프(workLog.staffId에서 userId 추출)에게 알림 전송
  * - Firestore notifications 문서 생성 + FCM 푸시 전송
  */
-export const onSettlementCompleted = functions.firestore
+export const onSettlementCompleted = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
   .onUpdate(async (change, context) => {
     const workLogId = context.params.workLogId;

@@ -120,6 +120,9 @@ function initializeFirebaseApp(): FirebaseApp {
       storageBucket: env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
       appId: env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      ...(env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID && {
+        measurementId: env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
+      }),
     };
 
     // Firebase 앱 초기화 (중복 방지)

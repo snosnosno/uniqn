@@ -1,0 +1,23 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "UG8B64237G.com.uniqn.mobile",
+        "paths": [
+          "/jobs/*",
+          "/notifications/*",
+          "/notices/*",
+          "/schedule/*",
+          "/settings/*",
+          "/support/*"
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "UG8B64237G.com.uniqn.mobile"
+    ]
+  }
+}

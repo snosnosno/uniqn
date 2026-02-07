@@ -41,7 +41,7 @@ interface InquiryData {
  * - 새로운 문의가 생성되면 실행
  * - 모든 관리자에게 알림 전송
  */
-export const onInquiryCreated = functions.firestore
+export const onInquiryCreated = functions.region('asia-northeast3').firestore
   .document('inquiries/{inquiryId}')
   .onCreate(async (snap, context) => {
     const inquiryId = context.params.inquiryId;

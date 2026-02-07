@@ -40,13 +40,13 @@ const environment = getEnvironment();
 // 환경별 설정
 const ENV_CONFIG = {
   development: {
-    appName: 'UNIQN (Dev)',
+    appName: 'UNIQN Dev',
     bundleIdentifier: 'com.uniqn.mobile.dev',
     androidPackage: 'com.uniqn.mobile.dev',
     // Firebase: tholdem-ebc18 사용 (환경 분리 시 별도 프로젝트 생성 권장)
   },
   staging: {
-    appName: 'UNIQN (Staging)',
+    appName: 'UNIQN Staging',
     bundleIdentifier: 'com.uniqn.mobile.staging',
     androidPackage: 'com.uniqn.mobile.staging',
   },
@@ -87,15 +87,18 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     buildNumber: String(BUILD_NUMBER),
     googleServicesFile: './GoogleService-Info.plist',
     infoPlist: {
+      ITSAppUsesNonExemptEncryption: false,
       NSCameraUsageDescription: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
       NSPhotoLibraryUsageDescription: '프로필 사진 등록을 위해 사진 라이브러리 접근이 필요합니다.',
       NSFaceIDUsageDescription: '빠른 로그인을 위해 Face ID를 사용합니다.',
     },
-    // Universal Links (uniqn.app 도메인 설정 + apple-app-site-association 파일 배포 후 활성화)
-    // associatedDomains: [
-    //   'applinks:uniqn.app',
-    //   'webcredentials:uniqn.app',
-    // ],
+    // Universal Links (production 빌드에서만 활성화 - AASA에 production bundleID만 등록)
+    ...(environment === 'production' ? {
+      associatedDomains: [
+        'applinks:uniqn.app',
+        'webcredentials:uniqn.app',
+      ],
+    } : {}),
   },
 
   // Android 설정
@@ -111,21 +114,23 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       'android.permission.CAMERA',
       'android.permission.VIBRATE',
     ],
-    // App Links (uniqn.app 도메인 설정 + assetlinks.json 파일 배포 후 활성화)
-    // intentFilters: [
-    //   {
-    //     action: 'VIEW',
-    //     autoVerify: true,
-    //     data: [
-    //       {
-    //         scheme: 'https',
-    //         host: 'uniqn.app',
-    //         pathPrefix: '/',
-    //       },
-    //     ],
-    //     category: ['BROWSABLE', 'DEFAULT'],
-    //   },
-    // ],
+    // App Links (production 빌드에서만 활성화 - assetlinks.json에 production 패키지만 등록)
+    ...(environment === 'production' ? {
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [
+            {
+              scheme: 'https',
+              host: 'uniqn.app',
+              pathPrefix: '/',
+            },
+          ],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
+    } : {}),
   },
 
   // 웹 설정
@@ -165,6 +170,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       {
         organization: process.env.SENTRY_ORG,
         project: process.env.SENTRY_PROJECT,
+      },
+    ],
+    // Android ProGuard 매핑 파일 + 네이티브 디버그 심볼 포함 (Play Console 크래시 가독화)
+    [
+      'expo-build-properties',
+      {
+        android: {
+          enableProguardInReleaseBuilds: true,
+          enableShrinkResourcesInReleaseBuilds: true,
+          includeNativeDebugSymbols: true,
+        },
       },
     ],
   ],

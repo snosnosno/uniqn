@@ -21,7 +21,7 @@ import * as admin from 'firebase-admin';
  *
  * Cloud Scheduler에서 매일 자동 실행
  */
-export const processScheduledDeletions = functions.pubsub
+export const processScheduledDeletions = functions.region('asia-northeast3').pubsub
   .schedule('0 18 * * *') // 매일 UTC 18:00 (KST 03:00)
   .timeZone('UTC')
   .onRun(async (context) => {
@@ -197,7 +197,7 @@ async function deleteUserSubcollections(userId: string): Promise<void> {
  *
  * 관리자가 즉시 계정을 삭제할 수 있는 함수
  */
-export const forceDeleteAccount = functions.https.onCall(
+export const forceDeleteAccount = functions.region('asia-northeast3').https.onCall(
   async (data, context) => {
     const db = admin.firestore();
 

@@ -31,7 +31,7 @@ const db = admin.firestore();
  * - Firestore notifications 문서 생성
  * - 전송 결과 로깅
  */
-export const onWorkTimeChanged = functions.firestore
+export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
   .onUpdate(async (change, context) => {
     const workLogId = context.params.workLogId;

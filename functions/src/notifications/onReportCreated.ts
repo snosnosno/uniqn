@@ -70,7 +70,7 @@ function getReportTypeLabel(type: string): string {
  * - 새로운 신고가 생성되면 실행
  * - 모든 관리자에게 알림 전송
  */
-export const onReportCreated = functions.firestore
+export const onReportCreated = functions.region('asia-northeast3').firestore
   .document('reports/{reportId}')
   .onCreate(async (snap, context) => {
     const reportId = context.params.reportId;

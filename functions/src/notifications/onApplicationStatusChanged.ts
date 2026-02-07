@@ -67,7 +67,7 @@ interface JobPostingData {
 /**
  * 지원 상태 변경 알림 트리거
  */
-export const onApplicationStatusChanged = functions.firestore
+export const onApplicationStatusChanged = functions.region('asia-northeast3').firestore
   .document('applications/{applicationId}')
   .onUpdate(async (change, context) => {
     const applicationId = context.params.applicationId;

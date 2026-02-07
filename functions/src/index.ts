@@ -344,7 +344,7 @@ export const requestRegistration = functions.region('asia-northeast3').https.onC
         return { success: true, message: `Registration for ${name} as ${role} is processing.` };
 
     } catch (error: any) {
-        console.error("Error during registration request:", error);
+        functions.logger.error("Error during registration request:", error);
 
         const errorCode = error.code;
         switch (errorCode) {
@@ -398,7 +398,7 @@ export const processRegistration = functions.region('asia-northeast3').https.onC
             throw new functions.https.HttpsError('invalid-argument', 'Action must be "approve" or "reject".');
         }
     } catch (error: any) {
-        console.error("Error processing registration:", error);
+        functions.logger.error("Error processing registration:", error);
         throw new functions.https.HttpsError('internal', 'Failed to process registration.', error.message);
     }
 });
@@ -428,7 +428,7 @@ export const createUserAccount = functions.region('asia-northeast3').https.onCal
 
         return { result: `Successfully created ${role}: ${name} (${email})` };
     } catch (error: any) {
-        console.error("Error creating new user:", error);
+        functions.logger.error("Error creating new user:", error);
         throw new functions.https.HttpsError('internal', error.message, error);
     }
 });
@@ -444,16 +444,16 @@ export const onUserRoleChange = functions.region('asia-northeast3').firestore.do
     const oldRole = change.before.exists ? change.before.data()?.role : null;
 
     if (newRole === oldRole) {
-        console.log(`User ${uid}: Role unchanged (${newRole}). No action taken.`);
+        functions.logger.info(`User ${uid}: Role unchanged (${newRole}). No action taken.`);
         return null;
     }
 
     try {
-        console.log(`Setting custom claim for user ${uid}. New role: ${newRole}`);
+        functions.logger.info(`Setting custom claim for user ${uid}. New role: ${newRole}`);
         await admin.auth().setCustomUserClaims(uid, { role: newRole });
         return { result: `Custom claim for ${uid} updated to ${newRole}.` };
     } catch (error) {
-        console.error(`Failed to set custom claim for ${uid}`, error);
+        functions.logger.error(`Failed to set custom claim for ${uid}`, error);
         return { error: 'Failed to set custom claim.' };
     }
 });

@@ -3,7 +3,9 @@
     "origin": [
       "http://localhost:3000",
       "https://tholdem-ebc18.web.app",
-      "https://tholdem-ebc18.firebaseapp.com"
+      "https://tholdem-ebc18.firebaseapp.com",
+      "https://uniqn.app",
+      "https://www.uniqn.app"
     ],
     "method": ["GET", "POST", "PUT", "DELETE"],
     "maxAgeSeconds": 3600,

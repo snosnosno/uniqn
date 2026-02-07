@@ -393,26 +393,6 @@ export function createJobDeepLink(jobId: string, useWebUrl = false): string {
   return createDeepLink({ name: 'job', params: { id: jobId } }, { useWebUrl });
 }
 
-/**
- * 스케줄 딥링크 생성
- *
- * @deprecated v2.0 - date 파라미터는 무시됨 (날짜별 스케줄 라우트 없음)
- * @removeBy v3.0 - 2025년 하반기 제거 예정
- */
-export function createScheduleDeepLink(_date?: string, useWebUrl = false): string {
-  return createDeepLink({ name: 'schedule' }, { useWebUrl });
-}
-
-/**
- * 지원 딥링크 생성
- *
- * @deprecated v2.0 - 지원 상세 화면 없음, 스케줄로 리다이렉트
- * @removeBy v3.0 - 2025년 하반기 제거 예정
- */
-export function createApplicationDeepLink(_applicationId: string, useWebUrl = false): string {
-  logger.warn('createApplicationDeepLink는 deprecated됨 - 지원 상세 화면 없음');
-  return createDeepLink({ name: 'schedule' }, { useWebUrl });
-}
 
 // ============================================================================
 // Web URL Filtering
@@ -540,22 +520,6 @@ export async function openExternalUrl(url: string): Promise<boolean> {
 }
 
 // ============================================================================
-// Deprecated: linkingConfig
-// ============================================================================
-
-/**
- * Expo Router용 링킹 설정
- *
- * @deprecated v2.0 - Expo Router가 파일 기반 라우팅 자동 처리
- * app.config.ts의 scheme 설정만 필요
- * @removeBy v3.0 - 2025년 하반기 제거 예정
- */
-export const linkingConfig = {
-  prefixes: [SCHEME_PREFIX.slice(0, -3), WEB_PREFIX],
-  // Expo Router는 파일 기반 라우팅 사용, 별도 config 불필요
-};
-
-// ============================================================================
 // Export
 // ============================================================================
 
@@ -574,16 +538,11 @@ export const deepLinkService = {
   // URL Generation
   createDeepLink,
   createJobDeepLink,
-  createScheduleDeepLink,
-  createApplicationDeepLink, // deprecated
 
   // Setup
   setupDeepLinkListener,
   getInitialDeepLink,
   openExternalUrl,
-
-  // Config (deprecated)
-  linkingConfig,
 
   // Constants
   APP_SCHEME,

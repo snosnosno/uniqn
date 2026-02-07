@@ -55,7 +55,7 @@ interface WorkLogData {
  * - 구인자(jobPosting.createdBy)에게 알림 전송
  * - Firestore notifications 문서 생성 + FCM 푸시 전송
  */
-export const onNoShow = functions.firestore
+export const onNoShow = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
   .onUpdate(async (change, context) => {
     const workLogId = context.params.workLogId;

@@ -103,5 +103,6 @@ module.exports = {
     '*.d.ts',
     'coverage/',
     'functions/',
+    'scripts/',
   ],
 };

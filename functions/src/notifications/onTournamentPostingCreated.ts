@@ -48,7 +48,7 @@ interface UserData {
  * - 대회공고(postingType === 'tournament')가 생성되면 실행
  * - 모든 관리자에게 승인 요청 알림 전송
  */
-export const onTournamentPostingCreated = functions.firestore
+export const onTournamentPostingCreated = functions.region('asia-northeast3').firestore
   .document('jobPostings/{jobPostingId}')
   .onCreate(async (snap, context) => {
     const jobPostingId = context.params.jobPostingId;
