@@ -2,7 +2,7 @@
  * UNIQN Mobile - Login Screen
  * 로그인 화면
  *
- * @version 2.0.0
+ * @version 2.1.0
  */
 
 import { useState, useCallback } from 'react';
@@ -13,30 +13,58 @@ import { Timestamp } from '@/lib/firebase';
 import Constants from 'expo-constants';
 import { Divider } from '@/components/ui';
 import { LoginForm, SocialLoginButtons, BiometricButton } from '@/components/auth';
-import { login, signInWithApple, signInWithGoogle, signInWithKakao } from '@/services';
+import {
+  login,
+  signInWithApple,
+  signInWithGoogle,
+  signInWithKakao,
+  type AuthResult,
+} from '@/services';
 import { useBiometricAuth } from '@/hooks';
 import { useToastStore } from '@/stores/toastStore';
-import { useAuthStore, type UserProfile as StoreUserProfile } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
+import type { UserProfile } from '@/types';
 import { logger } from '@/utils/logger';
+import { extractErrorMessage } from '@/shared/errors';
 import type { LoginFormData } from '@/schemas';
 
 /**
- * Timestamp를 Date로 변환하는 헬퍼 함수
+ * AuthResult의 Firestore profile을 Store용 profile(Date 기반)로 변환
  */
-function toDate(value: Timestamp | Date | unknown): Date {
-  if (value instanceof Timestamp) {
-    return value.toDate();
-  }
-  if (value instanceof Date) {
-    return value;
-  }
-  return new Date();
+function toStoreProfile(profile: AuthResult['profile']): UserProfile {
+  const toDate = (value: unknown): Date => {
+    if (value instanceof Timestamp) return value.toDate();
+    if (value instanceof Date) return value;
+    return new Date();
+  };
+
+  return {
+    uid: profile.uid,
+    email: profile.email,
+    name: profile.name,
+    nickname: profile.nickname,
+    phone: profile.phone,
+    role: profile.role,
+    photoURL: profile.photoURL,
+    createdAt: toDate(profile.createdAt),
+    updatedAt: toDate(profile.updatedAt),
+  };
 }
 
 type SocialProvider = 'apple' | 'google' | 'kakao';
 
 // 소셜 로그인 활성화 여부 (SocialLoginButtons.tsx와 동일한 조건)
 const SOCIAL_LOGIN_ENABLED = __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
+
+// 소셜 로그인 설정
+const SOCIAL_CONFIG: Record<
+  SocialProvider,
+  { loginFn: () => Promise<AuthResult>; label: string; errorMessage: string }
+> = {
+  apple: { loginFn: signInWithApple, label: 'Apple', errorMessage: 'Apple 로그인에 실패했습니다.' },
+  google: { loginFn: signInWithGoogle, label: 'Google', errorMessage: 'Google 로그인에 실패했습니다.' },
+  kakao: { loginFn: signInWithKakao, label: '카카오', errorMessage: '카카오 로그인에 실패했습니다.' },
+};
 
 export default function LoginScreen() {
   const [isLoading, setIsLoading] = useState(false);
@@ -54,7 +82,29 @@ export default function LoginScreen() {
     updateCredentials: updateBiometricCredentials,
   } = useBiometricAuth();
 
-  // 생체 인증 로그인 핸들러
+  /**
+   * 로그인 성공 후 공통 처리: Store 업데이트 → 생체인증 갱신 → 네비게이션
+   */
+  const handleLoginSuccess = useCallback(
+    async (result: AuthResult, providerLabel: string) => {
+      setUser(result.user);
+      setProfile(toStoreProfile(result.profile));
+
+      // 생체인증 갱신은 부가 기능 — 실패해도 로그인 차단하지 않음
+      try {
+        await updateBiometricCredentials();
+      } catch (error) {
+        logger.warn('생체인증 자격 증명 갱신 실패', { error });
+      }
+
+      logger.info(`${providerLabel} 로그인 성공`, { userId: result.user.uid });
+      addToast({ type: 'success', message: '로그인되었습니다.' });
+      router.replace('/(app)/(tabs)');
+    },
+    [setUser, setProfile, addToast, updateBiometricCredentials]
+  );
+
+  // 생체 인증 로그인 핸들러 (실패 피드백은 useBiometricAuth 내부에서 처리)
   const handleBiometricLogin = useCallback(async () => {
     const success = await loginWithBiometric();
     if (success) {
@@ -69,141 +119,44 @@ export default function LoginScreen() {
       try {
         const result = await login(data);
         if (result.user) {
-          // authStore 업데이트 (Timestamp → Date 변환)
-          setUser(result.user);
-          const storeProfile: StoreUserProfile = {
-            uid: result.profile.uid,
-            email: result.profile.email,
-            name: result.profile.name,
-            nickname: result.profile.nickname,
-            phone: result.profile.phone,
-            role: result.profile.role,
-            photoURL: result.profile.photoURL,
-            createdAt: toDate(result.profile.createdAt),
-            updatedAt: toDate(result.profile.updatedAt),
-          };
-          setProfile(storeProfile);
-
-          // 생체 인증 자격 증명 갱신 (활성화된 경우)
-          await updateBiometricCredentials();
-
-          logger.info('로그인 성공', { userId: result.user.uid });
-          addToast({ type: 'success', message: '로그인되었습니다.' });
-          router.replace('/(app)/(tabs)');
+          await handleLoginSuccess(result, '이메일');
         }
       } catch (error) {
         logger.error('로그인 실패', error as Error);
         addToast({
           type: 'error',
-          message: error instanceof Error ? error.message : '로그인에 실패했습니다.',
+          message: extractErrorMessage(error, '로그인에 실패했습니다.'),
         });
       } finally {
         setIsLoading(false);
       }
     },
-    [addToast, setUser, setProfile, updateBiometricCredentials]
+    [addToast, handleLoginSuccess]
   );
 
-  // 소셜 로그인 공통 처리
-  const handleSocialLoginSuccess = useCallback(
-    async (
-      result: {
-        user: { uid: string };
-        profile: {
-          uid: string;
-          email: string;
-          name: string;
-          nickname?: string;
-          phone?: string;
-          role: 'staff' | 'employer' | 'admin';
-          photoURL?: string;
-          createdAt: Timestamp | Date;
-          updatedAt: Timestamp | Date;
-        };
-      },
-      provider: string
-    ) => {
-      // authStore 업데이트 (Timestamp → Date 변환)
-      setUser(result.user as import('firebase/auth').User);
-      const storeProfile: StoreUserProfile = {
-        uid: result.profile.uid,
-        email: result.profile.email,
-        name: result.profile.name,
-        nickname: result.profile.nickname,
-        phone: result.profile.phone,
-        role: result.profile.role,
-        photoURL: result.profile.photoURL,
-        createdAt: toDate(result.profile.createdAt),
-        updatedAt: toDate(result.profile.updatedAt),
-      };
-      setProfile(storeProfile);
-
-      // 생체 인증 자격 증명 갱신 (활성화된 경우)
-      await updateBiometricCredentials();
-
-      logger.info(`${provider} 로그인 성공`, { userId: result.user.uid });
-      addToast({ type: 'success', message: '로그인되었습니다.' });
-      router.replace('/(app)/(tabs)');
+  // 소셜 로그인 (Apple / Google / Kakao 통합)
+  const handleSocialLogin = useCallback(
+    async (provider: SocialProvider) => {
+      const config = SOCIAL_CONFIG[provider];
+      setLoadingProvider(provider);
+      try {
+        const result = await config.loginFn();
+        if (result.user) {
+          await handleLoginSuccess(result, config.label);
+        }
+      } catch (error) {
+        logger.error(`${config.label} 로그인 실패`, error as Error);
+        addToast({ type: 'error', message: config.errorMessage });
+      } finally {
+        setLoadingProvider(null);
+      }
     },
-    [setUser, setProfile, addToast, updateBiometricCredentials]
+    [addToast, handleLoginSuccess]
   );
 
-  // Apple 로그인
-  const handleAppleLogin = useCallback(async () => {
-    setLoadingProvider('apple');
-    try {
-      const result = await signInWithApple();
-      if (result.user) {
-        await handleSocialLoginSuccess(result, 'Apple');
-      }
-    } catch (error) {
-      logger.error('Apple 로그인 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: 'Apple 로그인에 실패했습니다.',
-      });
-    } finally {
-      setLoadingProvider(null);
-    }
-  }, [addToast, handleSocialLoginSuccess]);
-
-  // Google 로그인
-  const handleGoogleLogin = useCallback(async () => {
-    setLoadingProvider('google');
-    try {
-      const result = await signInWithGoogle();
-      if (result.user) {
-        await handleSocialLoginSuccess(result, 'Google');
-      }
-    } catch (error) {
-      logger.error('Google 로그인 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: 'Google 로그인에 실패했습니다.',
-      });
-    } finally {
-      setLoadingProvider(null);
-    }
-  }, [addToast, handleSocialLoginSuccess]);
-
-  // Kakao 로그인
-  const handleKakaoLogin = useCallback(async () => {
-    setLoadingProvider('kakao');
-    try {
-      const result = await signInWithKakao();
-      if (result.user) {
-        await handleSocialLoginSuccess(result, 'Kakao');
-      }
-    } catch (error) {
-      logger.error('Kakao 로그인 실패', error as Error);
-      addToast({
-        type: 'error',
-        message: '카카오 로그인에 실패했습니다.',
-      });
-    } finally {
-      setLoadingProvider(null);
-    }
-  }, [addToast, handleSocialLoginSuccess]);
+  const handleAppleLogin = useCallback(() => handleSocialLogin('apple'), [handleSocialLogin]);
+  const handleGoogleLogin = useCallback(() => handleSocialLogin('google'), [handleSocialLogin]);
+  const handleKakaoLogin = useCallback(() => handleSocialLogin('kakao'), [handleSocialLogin]);
 
   const isSocialLoading = loadingProvider !== null;
 

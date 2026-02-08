@@ -17,6 +17,7 @@ import { queryKeys, cachingPolicies, invalidateQueries } from '@/lib/queryClient
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { extractErrorMessage } from '@/shared/errors';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -125,7 +126,7 @@ export function useTournamentApproval(
       logger.info('대회공고 승인 완료', { postingId });
     },
     onError: (error: Error, postingId) => {
-      toast.error(error.message || '승인에 실패했습니다');
+      toast.error(extractErrorMessage(error, '승인에 실패했습니다'));
       logger.error('대회공고 승인 실패', error, { postingId });
     },
   });
@@ -140,7 +141,7 @@ export function useTournamentApproval(
       logger.info('대회공고 거부 완료', { postingId });
     },
     onError: (error: Error, { postingId }) => {
-      toast.error(error.message || '거부에 실패했습니다');
+      toast.error(extractErrorMessage(error, '거부에 실패했습니다'));
       logger.error('대회공고 거부 실패', error, { postingId });
     },
   });
@@ -154,7 +155,7 @@ export function useTournamentApproval(
       logger.info('대회공고 재제출 완료', { postingId });
     },
     onError: (error: Error, postingId) => {
-      toast.error(error.message || '재제출에 실패했습니다');
+      toast.error(extractErrorMessage(error, '재제출에 실패했습니다'));
       logger.error('대회공고 재제출 실패', error, { postingId });
     },
   });

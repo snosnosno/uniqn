@@ -17,7 +17,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { toError, requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
-import { createMutationErrorHandler } from '@/shared/errors';
+import { createMutationErrorHandler, extractErrorMessage } from '@/shared/errors';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
 
 // ============================================================================
@@ -138,7 +138,7 @@ export function useApplications() {
       logger.error('지원 취소 실패', toError(error));
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '취소에 실패했습니다.',
+        message: extractErrorMessage(error, '취소에 실패했습니다.'),
       });
 
       // 롤백: 이전 데이터로 복원
@@ -197,7 +197,7 @@ export function useApplications() {
       logger.error('취소 요청 실패', toError(error));
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '취소 요청에 실패했습니다.',
+        message: extractErrorMessage(error, '취소 요청에 실패했습니다.'),
       });
 
       // 롤백: 이전 데이터로 복원
