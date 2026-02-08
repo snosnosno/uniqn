@@ -180,11 +180,11 @@ export function SettlementDetailModal({
         )}
 
         {/* 액션 버튼 (미정산일 때만) */}
-        {payrollStatus === 'pending' && hasValidTimes && (
+        {payrollStatus === 'pending' && (
           <SettlementActionButtons
             onEditTime={onEditTime ? handleEditTime : undefined}
-            onEditAmount={onEditAmount ? handleEditAmount : undefined}
-            onSettle={onSettle ? handleSettle : undefined}
+            onEditAmount={hasValidTimes && onEditAmount ? handleEditAmount : undefined}
+            onSettle={hasValidTimes && onSettle ? handleSettle : undefined}
           />
         )}
 

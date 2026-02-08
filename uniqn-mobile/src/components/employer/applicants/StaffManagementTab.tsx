@@ -90,12 +90,12 @@ export function StaffManagementTab({
     updateWorkTime,
     removeStaff,
     changeStatus,
+    isUpdatingTime,
   } = useConfirmedStaff(jobPostingId);
 
   // 모달 상태
   const [selectedStaff, setSelectedStaff] = useState<ConfirmedStaff | null>(null);
   const [showTimeEditor, setShowTimeEditor] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ConfirmedStaff | null>(null);
   // 프로필 모달 상태
   const [profileStaff, setProfileStaff] = useState<ConfirmedStaff | null>(null);
@@ -137,8 +137,6 @@ export function StaffManagementTab({
     (data: { startTime: Date | null; endTime: Date | null; reason: string }) => {
       if (!selectedStaff) return;
 
-      setIsSaving(true);
-      // mutation 호출 (토스트는 useConfirmedStaff.onSuccess/onError에서 표시)
       updateWorkTime({
         workLogId: selectedStaff.id,
         checkInTime: data.startTime,
@@ -148,7 +146,6 @@ export function StaffManagementTab({
 
       setShowTimeEditor(false);
       setSelectedStaff(null);
-      setIsSaving(false);
     },
     [selectedStaff, updateWorkTime]
   );
@@ -337,7 +334,7 @@ export function StaffManagementTab({
           setSelectedStaff(null);
         }}
         onSave={handleSaveTime}
-        isLoading={isSaving}
+        isLoading={isUpdatingTime}
       />
 
       {/* 삭제 확인 모달 */}
