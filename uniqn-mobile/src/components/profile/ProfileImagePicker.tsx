@@ -6,12 +6,13 @@
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Avatar } from '@/components/ui';
 import { CameraIcon, TrashIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useModalStore } from '@/stores/modalStore';
 import { replaceProfileImage, deleteProfileImage, updateProfilePhotoURL } from '@/services';
 import { logger } from '@/utils/logger';
 
@@ -46,6 +47,7 @@ export function ProfileImagePicker({
   const [isUploading, setIsUploading] = useState(false);
   const { user, profile, setProfile } = useAuthStore();
   const { addToast } = useToastStore();
+  const showConfirm = useModalStore((s) => s.showConfirm);
 
   /**
    * 이미지 선택 및 업로드
@@ -63,7 +65,7 @@ export function ProfileImagePicker({
 
       // 이미지 선택
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
@@ -102,62 +104,46 @@ export function ProfileImagePicker({
   /**
    * 이미지 삭제
    */
-  const handleRemoveImage = useCallback(async () => {
+  const handleRemoveImage = useCallback(() => {
     if (!user || !currentImageUrl || disabled) return;
 
-    Alert.alert('프로필 사진 삭제', '프로필 사진을 삭제하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '삭제',
-        style: 'destructive',
-        onPress: async () => {
-          setIsUploading(true);
-          try {
-            // 1. Storage에서 삭제
-            await deleteProfileImage(currentImageUrl);
+    showConfirm('프로필 사진 삭제', '프로필 사진을 삭제하시겠습니까?', async () => {
+      setIsUploading(true);
+      try {
+        // 1. Storage에서 삭제
+        await deleteProfileImage(currentImageUrl);
 
-            // 2. 프로필 URL null로 업데이트
-            await updateProfilePhotoURL(user.uid, null);
+        // 2. 프로필 URL null로 업데이트
+        await updateProfilePhotoURL(user.uid, null);
 
-            // 3. 로컬 상태 업데이트
-            if (profile) {
-              setProfile({ ...profile, photoURL: undefined });
-            }
+        // 3. 로컬 상태 업데이트
+        if (profile) {
+          setProfile({ ...profile, photoURL: undefined });
+        }
 
-            addToast({ type: 'success', message: '프로필 사진이 삭제되었습니다' });
-            onImageUpdated?.(null);
-          } catch (error) {
-            logger.error('프로필 이미지 삭제 실패', error as Error);
-            addToast({ type: 'error', message: '이미지 삭제에 실패했습니다' });
-          } finally {
-            setIsUploading(false);
-          }
-        },
-      },
-    ]);
-  }, [user, profile, currentImageUrl, disabled, addToast, setProfile, onImageUpdated]);
+        addToast({ type: 'success', message: '프로필 사진이 삭제되었습니다' });
+        onImageUpdated?.(null);
+      } catch (error) {
+        logger.error('프로필 이미지 삭제 실패', error as Error);
+        addToast({ type: 'error', message: '이미지 삭제에 실패했습니다' });
+      } finally {
+        setIsUploading(false);
+      }
+    });
+  }, [user, profile, currentImageUrl, disabled, showConfirm, addToast, setProfile, onImageUpdated]);
 
   /**
-   * 옵션 선택 (업로드 or 삭제)
+   * 아바타 탭 → 바로 이미지 선택 (삭제는 별도 버튼으로 분리)
    */
-  const handleShowOptions = useCallback(() => {
+  const handleAvatarPress = useCallback(() => {
     if (disabled || isUploading) return;
-
-    if (currentImageUrl) {
-      Alert.alert('프로필 사진', '원하는 작업을 선택하세요', [
-        { text: '취소', style: 'cancel' },
-        { text: '사진 변경', onPress: handlePickImage },
-        { text: '사진 삭제', onPress: handleRemoveImage, style: 'destructive' },
-      ]);
-    } else {
-      handlePickImage();
-    }
-  }, [currentImageUrl, disabled, isUploading, handlePickImage, handleRemoveImage]);
+    handlePickImage();
+  }, [disabled, isUploading, handlePickImage]);
 
   return (
     <View className="items-center">
       <Pressable
-        onPress={handleShowOptions}
+        onPress={handleAvatarPress}
         disabled={disabled || isUploading}
         className="relative"
         accessibilityLabel="프로필 사진 변경"

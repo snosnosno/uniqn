@@ -561,7 +561,8 @@ export function useNotificationHandler(
           }
         }
 
-        // 포그라운드 복귀 시 카운터 동기화: 실시간 구독(onSnapshot)이 자동 처리
+        // 포그라운드 복귀 시 놓친 알림 동기화 (onSnapshot은 Background에서 중단됨)
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
       }
       appStateRef.current = nextAppState;
     };

@@ -253,20 +253,35 @@ async function refreshTokenWithRetry(): Promise<boolean> {
     }
   }
 
-  // 최대 재시도 초과
+  // 최대 재시도 초과 — 1시간 후 재시도 (정기 12시간 대신)
   state.isRefreshing = false;
   state.nextRetryAt = null;
-  persistState();
+  state.failureCount = 0; // 다음 시도에서 fresh start
 
-  logger.error('토큰 갱신 최종 실패', {
+  logger.error('토큰 갱신 최종 실패 - 1시간 후 재시도', {
     attempts: attempt,
-    failureCount: state.failureCount,
   });
 
-  options.onFailure?.(state.failureCount);
+  options.onFailure?.(attempt);
 
-  // 다음 정기 갱신 스케줄
-  scheduleNextRefresh();
+  // 서비스 중지 상태면 타이머 설정하지 않음
+  if (!isRunning) {
+    persistState();
+    return false;
+  }
+
+  // 1시간 후 재시도 (정기 갱신 12시간 대신 단축)
+  if (refreshTimer) {
+    clearTimeout(refreshTimer);
+    refreshTimer = null;
+  }
+  const retryAfterMs = 60 * 60 * 1000; // 1시간
+  state.nextScheduledAt = Date.now() + retryAfterMs;
+  persistState();
+
+  refreshTimer = setTimeout(() => {
+    refreshTokenWithRetry();
+  }, retryAfterMs);
 
   return false;
 }
