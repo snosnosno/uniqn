@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { generateId } from '@/utils/generateId';
 
 // ============================================================================
 // Types
@@ -43,17 +44,6 @@ interface ToastState {
 
 const DEFAULT_DURATION = 3000; // 3초
 const MAX_TOASTS = 3;
-
-// ============================================================================
-// Utilities
-// ============================================================================
-
-const generateId = (): string => {
-  const bytes = new Uint8Array(5);
-  crypto.getRandomValues(bytes);
-  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
-  return `${Date.now()}-${random}`;
-};
 
 // ============================================================================
 // Store

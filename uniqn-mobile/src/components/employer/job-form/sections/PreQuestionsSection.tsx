@@ -17,6 +17,7 @@ import {
 } from '@/components/icons';
 import type { JobPostingFormData, PreQuestion } from '@/types';
 import { PRE_QUESTION_TYPE_LABELS } from '@/types';
+import { generateId } from '@/utils/generateId';
 
 // ============================================================================
 // Types
@@ -39,17 +40,6 @@ const QUESTION_TYPES: { value: QuestionType; label: string; description: string 
   { value: 'textarea', label: '장문형', description: '여러 줄 답변' },
   { value: 'select', label: '선택형', description: '보기 중 선택' },
 ];
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-function generateId(): string {
-  const bytes = new Uint8Array(5);
-  crypto.getRandomValues(bytes);
-  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
-  return `q_${Date.now()}_${random}`;
-}
 
 // ============================================================================
 // Sub Components
@@ -242,7 +232,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       onUpdate({ usesPreQuestions: value });
       if (value && data.preQuestions.length === 0) {
         const newQuestion: PreQuestion = {
-          id: generateId(),
+          id: generateId('q'),
           question: '',
           required: false,
           type: 'text',
@@ -259,7 +249,7 @@ export const PreQuestionsSection = memo(function PreQuestionsSection({
       return;
     }
     const newQuestion: PreQuestion = {
-      id: generateId(),
+      id: generateId('q'),
       question: '',
       required: false,
       type: 'text',

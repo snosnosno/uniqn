@@ -6,6 +6,7 @@
  */
 
 import { create } from 'zustand';
+import { generateId } from '@/utils/generateId';
 
 // ============================================================================
 // Types
@@ -53,17 +54,6 @@ interface ModalState {
 }
 
 // ============================================================================
-// Utilities
-// ============================================================================
-
-const generateId = (): string => {
-  const bytes = new Uint8Array(5);
-  crypto.getRandomValues(bytes);
-  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
-  return `modal-${Date.now()}-${random}`;
-};
-
-// ============================================================================
 // Store
 // ============================================================================
 
@@ -72,7 +62,7 @@ export const useModalStore = create<ModalState>((set, get) => ({
   isAnyModalOpen: false,
 
   openModal: (config) => {
-    const id = generateId();
+    const id = generateId('modal');
     const modal: ModalConfig = {
       id,
       dismissible: true,
