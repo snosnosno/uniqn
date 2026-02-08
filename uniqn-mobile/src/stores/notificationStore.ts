@@ -514,6 +514,8 @@ export const useNotificationStore = create<NotificationState>()(
       partialize: (state) => ({
         settings: state.settings,
         lastFetchedAt: state.lastFetchedAt,
+        // 앱 재시작 시 배지 카운트 즉시 표시를 위해 persist
+        unreadCount: state.unreadCount,
         // 오프라인 지원: 최신 50개 알림 캐시
         cachedNotifications: state.notifications.slice(0, 50),
       }),
@@ -525,15 +527,25 @@ export const useNotificationStore = create<NotificationState>()(
             return;
           }
 
-          // cachedNotifications가 있고 현재 notifications가 비어있으면 복원
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const persistedState = state as any;
+
+          // persist된 unreadCount 보존 (setNotifications가 재계산으로 덮어쓰지 않도록)
+          const persistedUnreadCount = persistedState?.unreadCount ?? 0;
+
+          // cachedNotifications가 있고 현재 notifications가 비어있으면 복원
           if (
             persistedState?.cachedNotifications?.length > 0 &&
             (!state?.notifications || state.notifications.length === 0)
           ) {
             // 캐시된 알림으로 초기화
             state?.setNotifications?.(persistedState.cachedNotifications);
+
+            // setNotifications가 cachedNotifications(최대 50개) 기반으로 재계산한 값 대신
+            // persist된 원본 unreadCount 복원 (50개 초과 시 정확도 유지)
+            if (persistedUnreadCount > 0) {
+              state?.setUnreadCount?.(persistedUnreadCount);
+            }
           }
         };
       },

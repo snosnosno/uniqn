@@ -71,6 +71,8 @@ export function useSchedules(options: UseSchedulesOptions = {}) {
   });
 
   // 실시간 구독
+  // NOTE: subscribeToSchedules는 filters를 받지 않으므로 의존성에 포함하지 않음.
+  // 필터링이 필요하면 scheduleService에 filters 파라미터를 추가해야 함.
   useEffect(() => {
     if (!realtime || !staffId) return;
 

@@ -77,6 +77,15 @@ export interface AuthResult {
 // ============================================================================
 
 /**
+ * 이메일 마스킹 (로깅용)
+ * @example maskEmail('user@example.com') → 'use***com'
+ */
+function maskEmail(email: string): string {
+  if (email.length <= 6) return '***';
+  return `${email.slice(0, 3)}***${email.slice(-3)}`;
+}
+
+/**
  * 생년월일(YYYYMMDD)에서 출생년도 추출
  */
 function extractBirthYear(birthDate?: string): number | undefined {
@@ -93,7 +102,7 @@ function extractBirthYear(birthDate?: string): number | undefined {
  */
 export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
-    logger.info('로그인 시도', { email: data.email });
+    logger.info('로그인 시도', { email: maskEmail(data.email) });
 
     const userCredential = await signInWithEmailAndPassword(
       getFirebaseAuth(),
@@ -153,12 +162,12 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
  */
 export async function checkEmailExists(email: string): Promise<boolean> {
   try {
-    logger.info('이메일 중복 확인', { email });
+    logger.info('이메일 중복 확인', { email: maskEmail(email) });
 
     const methods = await fetchSignInMethodsForEmail(getFirebaseAuth(), email);
     const exists = methods.length > 0;
 
-    logger.info('이메일 중복 확인 완료', { email, exists });
+    logger.info('이메일 중복 확인 완료', { email: maskEmail(email), exists });
 
     return exists;
   } catch (error) {
@@ -175,7 +184,7 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
-    logger.info('회원가입 시도', { email: data.email, role: data.role });
+    logger.info('회원가입 시도', { email: maskEmail(data.email), role: data.role });
 
     // 1. Firebase Auth 사용자 생성
     const userCredential = await createUserWithEmailAndPassword(
@@ -276,9 +285,9 @@ export async function signOut(): Promise<void> {
  */
 export async function resetPassword(email: string): Promise<void> {
   try {
-    logger.info('비밀번호 재설정 이메일 전송', { email });
+    logger.info('비밀번호 재설정 이메일 전송', { email: maskEmail(email) });
     await sendPasswordResetEmail(getFirebaseAuth(), email);
-    logger.info('비밀번호 재설정 이메일 전송 성공', { email });
+    logger.info('비밀번호 재설정 이메일 전송 성공', { email: maskEmail(email) });
   } catch (error) {
     throw handleServiceError(error, {
       operation: '비밀번호 재설정',

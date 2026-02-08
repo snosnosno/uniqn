@@ -42,6 +42,11 @@ interface UseRealtimeQueryOptions<TData> {
 
   /**
    * Firestore 구독 함수
+   *
+   * **중요**: 이 함수는 useEffect 의존성으로 사용되므로
+   * 반드시 `useCallback`으로 감싸서 전달해야 합니다.
+   * 안정적 참조가 아니면 매 렌더마다 구독이 재시작됩니다.
+   *
    * @param onData 데이터 수신 시 호출
    * @param onError 에러 발생 시 호출
    * @returns 구독 해제 함수

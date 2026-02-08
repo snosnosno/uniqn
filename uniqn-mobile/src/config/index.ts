@@ -13,7 +13,6 @@ export {
   runInProduction,
   type Environment,
   type EnvironmentConfig,
-  type FirebaseConfig,
   type ApiConfig,
   type FeatureFlags,
   type LoggingConfig,

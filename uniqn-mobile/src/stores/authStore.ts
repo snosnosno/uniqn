@@ -258,27 +258,30 @@ export const useAuthStore = create<AuthState>()(
       }),
       // MMKV에서 데이터 복원 완료 시 호출
       onRehydrateStorage: () => (state) => {
-        // 복원 완료 시 _hasHydrated를 true로 설정
-        state?.setHasHydrated(true);
-
         // ⚠️ 중요: partialize에서 isAdmin/isEmployer/isStaff는 저장하지 않으므로
         // 복원된 profile을 기반으로 역할 플래그 재계산 필요
         // Phase 8: RoleResolver.computeRoleFlags로 통합 (이원화 해결)
+        //
+        // NOTE: 동기적으로 setState 호출 (queueMicrotask 제거)
+        // - queueMicrotask 사용 시 useAppInitialize의 setProfile()과 레이스 컨디션 발생
+        // - microtask가 setProfile() 이후에 실행되면 최신 roleFlags를 덮어쓰는 버그
+        // - Zustand setState는 React 외부 호출이므로 동기 호출 안전
         if (state?.profile) {
           const roleFlags = RoleResolver.computeRoleFlags(state.profile.role);
-          // ⚠️ queueMicrotask로 렌더링 사이클 이후 상태 업데이트
-          // React 경고 방지: "Can't perform a React state update on a component that hasn't mounted yet"
-          queueMicrotask(() => {
-            useAuthStore.setState({
-              ...roleFlags,
-              isAuthenticated: !!state.user,
-            });
-            logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
-              component: 'AuthStore',
-              role: state.profile?.role,
-              ...roleFlags,
-            });
+          // 단일 setState로 원자적 업데이트 (중간 상태 노출 방지)
+          useAuthStore.setState({
+            ...roleFlags,
+            isAuthenticated: !!state.user,
+            _hasHydrated: true,
           });
+          logger.debug('AuthStore Rehydration - 역할 플래그 재계산', {
+            component: 'AuthStore',
+            role: state.profile?.role,
+            ...roleFlags,
+          });
+        } else {
+          // profile이 없어도 hydration 완료 표시
+          useAuthStore.setState({ _hasHydrated: true });
         }
       },
     }

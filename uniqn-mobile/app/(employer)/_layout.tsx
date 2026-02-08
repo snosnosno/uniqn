@@ -5,17 +5,18 @@
 
 import { Stack, Redirect } from 'expo-router';
 import { useColorScheme, View, ActivityIndicator } from 'react-native';
-import { useAuthStore, useHasRole } from '@/stores/authStore';
+import { useAuthStore, useHasRole, selectProfile } from '@/stores/authStore';
 import { HeaderBackButton } from '@/components/navigation';
 
 export default function EmployerLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const { isLoading, isAuthenticated } = useAuthStore();
+  const profile = useAuthStore(selectProfile);
   const hasEmployerRole = useHasRole('employer');
 
-  // 로딩 중
-  if (isLoading) {
+  // 로딩 중 또는 인증됐지만 프로필 아직 로드 안 됨 (hydration 타이밍 방어)
+  if (isLoading || (isAuthenticated && !profile)) {
     return (
       <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
         <ActivityIndicator size="large" color="#A855F7" />
