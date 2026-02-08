@@ -8,28 +8,19 @@
  *
  * @trigger Firestore onUpdate
  * @collection jobPostings/{jobPostingId}
- * @version 2.0.0
+ * @version 3.0.0
  * @since 2025-01-18
- *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { getFcmTokens } from '../utils/fcmTokenUtils';
-import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
-import { sendMulticast } from '../utils/notificationUtils';
+import { broadcastNotification } from '../utils/notificationUtils';
 
 const db = admin.firestore();
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface UserData {
-  fcmTokens?: Record<string, FcmTokenRecord>;
-  name?: string;
-}
 
 interface ApplicationData {
   applicantId: string;
@@ -56,11 +47,6 @@ const NOTIFY_FIELDS = [
 ];
 
 // ============================================================================
-// Helper Functions
-// ============================================================================
-
-
-// ============================================================================
 // Triggers
 // ============================================================================
 
@@ -69,8 +55,7 @@ const NOTIFY_FIELDS = [
  *
  * @description
  * - 공고 주요 필드 변경 감지
- * - 해당 공고에 지원한 지원자들에게 알림
- * - FCM 푸시 알림 전송 + Firestore notifications 문서 생성
+ * - 해당 공고에 지원한 지원자들에게 broadcastNotification으로 일괄 알림
  */
 export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
   .document('jobPostings/{jobPostingId}')
@@ -94,7 +79,7 @@ export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
     });
 
     try {
-      // 1. 해당 공고의 지원자들 조회 (confirmed, pending 상태만)
+      // 1. 해당 공고의 지원자들 조회 (confirmed, pending, applied 상태만)
       const applicationsSnap = await db
         .collection('applications')
         .where('jobPostingId', '==', jobPostingId)
@@ -106,99 +91,45 @@ export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
         return;
       }
 
+      // 2. 지원자 ID 목록 추출 (중복 제거)
+      const applicantIds = [...new Set(
+        applicationsSnap.docs.map((doc) => (doc.data() as ApplicationData).applicantId)
+      )];
+
       functions.logger.info('알림 대상 지원자 수', {
         jobPostingId,
-        count: applicationsSnap.size,
+        count: applicantIds.length,
       });
 
-      // 2. 각 지원자에게 알림 발송
-      const notificationPromises = applicationsSnap.docs.map(async (doc) => {
-        const application = doc.data() as ApplicationData;
-
-        try {
-          // 지원자 정보 조회
-          const userDoc = await db
-            .collection('users')
-            .doc(application.applicantId)
-            .get();
-
-          if (!userDoc.exists) {
-            functions.logger.warn('지원자를 찾을 수 없습니다', {
-              applicantId: application.applicantId,
-            });
-            return;
-          }
-
-          const user = userDoc.data() as UserData;
-
-          // 알림 내용 생성
-          const notificationTitle = '📝 공고 수정 안내';
-          const notificationBody = `'${after.title || '공고'}' 공고가 수정되었습니다. 변경 내용을 확인하세요.`;
-
-          // Firestore notifications 문서 생성
-          const notificationRef = db.collection('notifications').doc();
-          const notificationId = notificationRef.id;
-
-          await notificationRef.set({
-            id: notificationId,
-            recipientId: application.applicantId,
-            type: 'job_updated',
-            category: 'job',
-            priority: 'normal',
-            title: notificationTitle,
-            body: notificationBody,
-            link: `/jobs/${jobPostingId}`,
-            isRead: false,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
-            data: {
-              jobPostingId,
-              jobPostingTitle: after.title || '',
-              changedFields: changedFields.join(', '),
-            },
-          });
-
-          // FCM 푸시 전송
-          const fcmTokens = getFcmTokens(user);
-
-          if (fcmTokens.length > 0) {
-            const result = await sendMulticast(fcmTokens, {
-              title: notificationTitle,
-              body: notificationBody,
-              data: {
-                type: 'job_updated',
-                notificationId,
-                jobPostingId,
-                target: `/jobs/${jobPostingId}`,
-              },
-              channelId: 'announcements',
-              priority: 'normal',
-            });
-
-            if (result.success > 0) {
-              await notificationRef.update({
-                sentAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
-            }
-
-            functions.logger.info('공고 수정 알림 전송 완료', {
-              applicantId: application.applicantId,
-              success: result.success,
-              failure: result.failure,
-            });
-          }
-        } catch (error) {
-          functions.logger.error('지원자 알림 전송 실패', {
-            applicantId: application.applicantId,
-            error: error instanceof Error ? error.message : String(error),
-          });
+      // 3. broadcastNotification으로 일괄 전송
+      const results = await broadcastNotification(
+        applicantIds,
+        'job_updated',
+        '📝 공고 수정 안내',
+        `'${after.title || '공고'}' 공고가 수정되었습니다. 변경 내용을 확인하세요.`,
+        {
+          link: `/jobs/${jobPostingId}`,
+          data: {
+            jobPostingId,
+            jobPostingTitle: after.title || '',
+            changedFields: changedFields.join(', '),
+          },
         }
-      });
+      );
 
-      await Promise.all(notificationPromises);
+      // 4. 결과 로깅
+      let totalSuccess = 0;
+      let totalFailure = 0;
+      results.forEach((result) => {
+        totalSuccess += result.successCount;
+        totalFailure += result.failureCount;
+      });
 
       functions.logger.info('공고 수정 알림 전체 처리 완료', {
         jobPostingId,
-        totalApplicants: applicationsSnap.size,
+        totalApplicants: applicantIds.length,
+        totalSuccess,
+        totalFailure,
       });
     } catch (error) {
       functions.logger.error('공고 수정 알림 처리 중 오류 발생', {

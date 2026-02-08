@@ -13,6 +13,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast, updateUnreadCounter } from '../utils/notificationUtils';
 
 const db = admin.firestore();
 
@@ -197,83 +198,39 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         };
       }
 
-      const batchSize = 500;
-      for (let i = 0; i < allTokens.length; i += batchSize) {
-        const batchTokens = allTokens.slice(i, i + batchSize);
+      // sendMulticast()로 일괄 전송 (Expo/FCM 하이브리드)
+      // @note 의도적 설계: 공지사항은 사용자별 알림설정(카테고리 비활성화) 무시하여 전원 수신
+      // @note 만료 토큰 정리는 cleanupExpiredTokensScheduled (스케줄 함수)에서 일괄 처리
+      const multicastResult = await sendMulticast(allTokens, {
+        title: `📢 ${notificationTitle}`,
+        body: announcementMessage,
+        data: {
+          type: 'announcement',
+          announcementId,
+          eventId,
+          link: `/jobs/${eventId}`,
+        },
+        channelId: 'announcements',
+        priority: 'high',
+      });
 
-        const fcmMessage: admin.messaging.MulticastMessage = {
-          notification: {
-            title: `📢 ${notificationTitle}`,
-            body: announcementMessage,
-          },
-          data: {
-            type: 'announcement',
-            announcementId,
-            eventId,
-            link: `/jobs/${eventId}`,
-          },
-          tokens: batchTokens,
-          android: {
-            priority: 'high',
-            notification: {
-              sound: 'default',
-              channelId: 'announcements',
-            },
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-                badge: 1,
-              },
-            },
-          },
-        };
+      // 전송 결과 처리 (토큰 → 사용자 역매핑)
+      multicastResult.responses.forEach((resp, idx) => {
+        const token = allTokens[idx];
+        const staffId = tokenToUserMap.get(token);
 
-        try {
-          const response = await admin.messaging().sendEachForMulticast(fcmMessage);
+        if (!staffId) return;
 
-          functions.logger.info(`FCM 배치 ${Math.floor(i / batchSize) + 1} 전송 결과`, {
-            successCount: response.successCount,
-            failureCount: response.failureCount,
-          });
-
-          // 전송 결과 처리 (토큰 → 사용자 역매핑 사용)
-          response.responses.forEach((resp, idx) => {
-            const token = batchTokens[idx];
-            const staffId = tokenToUserMap.get(token);
-
-            if (!staffId) return;
-
-            if (resp.success) {
-              successUserIds.add(staffId);
-            } else {
-              failedUserIds.add(staffId);
-              errors.push({
-                userId: staffId,
-                error: resp.error?.message || '알 수 없는 오류',
-              });
-            }
-          });
-        } catch (error: any) {
-          functions.logger.error(`FCM 배치 ${Math.floor(i / batchSize) + 1} 전송 실패`, {
-            error: error.message,
-            batchSize: batchTokens.length,
-          });
-
-          // 배치 전체 실패 처리
-          batchTokens.forEach((token) => {
-            const staffId = tokenToUserMap.get(token);
-            if (staffId) {
-              failedUserIds.add(staffId);
-              errors.push({
-                userId: staffId,
-                error: error.message || '배치 전송 실패',
-              });
-            }
+        if (resp.success) {
+          successUserIds.add(staffId);
+        } else {
+          failedUserIds.add(staffId);
+          errors.push({
+            userId: staffId,
+            error: resp.error || '알 수 없는 오류',
           });
         }
-      }
+      });
 
       // Set을 Array로 변환
       const successIds = Array.from(successUserIds);
@@ -311,6 +268,15 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         });
 
         await notificationBatch.commit();
+
+        // 카운터 증가 (배치 후)
+        await Promise.all(
+          batchIds.map((staffId) =>
+            updateUnreadCounter(staffId, 1).catch(() => {
+              // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
+            })
+          )
+        );
       }
 
       // 10. 공지 문서 업데이트

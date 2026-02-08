@@ -8,16 +8,13 @@
  *
  * @trigger Firestore onUpdate
  * @collection workLogs/{workLogId}
- * @version 2.0.0
+ * @version 3.0.0
  * @since 2025-10-15
- *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { getFcmTokens } from '../utils/fcmTokenUtils';
-import { sendMulticast } from '../utils/notificationUtils';
+import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
 
 const db = admin.firestore();
@@ -28,8 +25,6 @@ const db = admin.firestore();
  * @description
  * - scheduledStartTime 또는 scheduledEndTime 변경 감지
  * - 근무자에게 FCM 푸시 알림 전송
- * - Firestore notifications 문서 생성
- * - 전송 결과 로깅
  */
 export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
@@ -79,30 +74,7 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
         return;
       }
 
-      // 2. 근무자 정보 조회
-      const actualUserId = extractUserId(after.staffId);
-
-      const staffDoc = await db
-        .collection('users')
-        .doc(actualUserId)
-        .get();
-
-      if (!staffDoc.exists) {
-        functions.logger.warn('근무자를 찾을 수 없습니다', {
-          workLogId,
-          staffId: after.staffId,
-          actualUserId,
-        });
-        return;
-      }
-
-      const staff = staffDoc.data();
-      if (!staff) {
-        functions.logger.warn('근무자 데이터가 없습니다', { workLogId });
-        return;
-      }
-
-      // 3. 변경 내용 메시지 생성
+      // 2. 변경 내용 메시지 생성
       let changeDetails = '';
       if (startTimeChanged && endTimeChanged) {
         changeDetails = `시작: ${formatTime(before.scheduledStartTime)} → ${formatTime(after.scheduledStartTime)}, 종료: ${formatTime(before.scheduledEndTime)} → ${formatTime(after.scheduledEndTime)}`;
@@ -112,91 +84,39 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
         changeDetails = `종료시간: ${formatTime(before.scheduledEndTime)} → ${formatTime(after.scheduledEndTime)}`;
       }
 
-      // 4. 알림 제목 및 내용 생성
-      const notificationTitle = '⏰ 근무 시간이 변경되었습니다!';
-      const notificationBody = `'${jobPosting.title}'\n${changeDetails}`;
+      // 3. 근무자 userId 추출
+      const actualUserId = extractUserId(after.staffId);
 
-      functions.logger.info('근무시간 변경 알림 전송 시작', {
-        workLogId,
-        staffId: after.staffId,
-        changeDetails,
-      });
-
-      // 5. Firestore notifications 문서 생성
-      const notificationRef = db.collection('notifications').doc();
-      const notificationId = notificationRef.id;
-
-      await notificationRef.set({
-        id: notificationId,
-        recipientId: actualUserId,
-        type: 'schedule_change',
-        category: 'attendance',
-        priority: 'high',
-        title: notificationTitle,
-        body: notificationBody,
-        link: '/schedule',
-        relatedId: workLogId,
-        senderId: jobPosting.ownerId ?? jobPosting.createdBy ?? null,
-        isRead: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        data: {
-          type: 'schedule_change',
-          workLogId,
-          jobPostingId: after.jobPostingId,
-          jobPostingTitle: jobPosting.title || '',
-          scheduledStartTime: formatTime(after.scheduledStartTime),
-          scheduledEndTime: formatTime(after.scheduledEndTime),
-          location: jobPosting.location || '',
-          district: jobPosting.district || '',
-        },
-      });
-
-      functions.logger.info('근무시간 변경 알림 문서 생성 완료', {
-        notificationId,
-        staffId: after.staffId,
-      });
-
-      // 6. FCM 토큰 확인 및 푸시 전송
-      const fcmTokens = getFcmTokens(staff);
-
-      if (fcmTokens.length === 0) {
-        functions.logger.warn('FCM 토큰이 없습니다', {
-          staffId: after.staffId,
-          workLogId,
-        });
-        return;
-      }
-
-      // 7. FCM 멀티캐스트 전송 (공통 유틸리티 사용)
-      const result = await sendMulticast(fcmTokens, {
-        title: notificationTitle,
-        body: notificationBody,
-        data: {
-          type: 'schedule_change',
-          notificationId,
-          workLogId,
-          jobPostingId: after.jobPostingId,
+      // 4. 알림 전송
+      const result = await createAndSendNotification(
+        actualUserId,
+        'schedule_change',
+        '⏰ 근무 시간이 변경되었습니다!',
+        `'${jobPosting.title}'\n${changeDetails}`,
+        {
           link: '/schedule',
-        },
-        channelId: 'reminders',
-        priority: 'high',
-      });
+          priority: 'high',
+          relatedId: workLogId,
+          senderId: jobPosting.ownerId ?? jobPosting.createdBy ?? undefined,
+          channelId: 'reminders',
+          data: {
+            workLogId,
+            jobPostingId: after.jobPostingId,
+            jobPostingTitle: jobPosting.title || '',
+            scheduledStartTime: formatTime(after.scheduledStartTime),
+            scheduledEndTime: formatTime(after.scheduledEndTime),
+            location: jobPosting.location || '',
+            district: jobPosting.district || '',
+          },
+        }
+      );
 
-      functions.logger.info('근무시간 변경 알림 FCM 푸시 전송 완료', {
-        workLogId,
+      functions.logger.info('근무시간 변경 알림 전송 완료', {
+        notificationId: result.notificationId,
         staffId: after.staffId,
-        success: result.success,
-        failure: result.failure,
+        fcmSent: result.fcmSent,
+        successCount: result.successCount,
       });
-
-      // 8. 전송 성공 시 알림 문서 업데이트
-      if (result.success > 0) {
-        await notificationRef.update({
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-          fcmSuccess: result.success,
-          fcmFailure: result.failure,
-        });
-      }
     } catch (error: any) {
       functions.logger.error('근무시간 변경 알림 처리 중 오류 발생', {
         workLogId,

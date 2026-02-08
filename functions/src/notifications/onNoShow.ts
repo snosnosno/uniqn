@@ -6,17 +6,13 @@
  *
  * @trigger Firestore onUpdate
  * @collection workLogs/{workLogId}
- * @version 1.0.0
+ * @version 2.0.0
  * @since 2025-02-01
- *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { getFcmTokens } from '../utils/fcmTokenUtils';
-import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
-import { sendMulticast } from '../utils/notificationUtils';
+import { createAndSendNotification } from '../utils/notificationUtils';
 import { extractUserId } from '../utils/helpers';
 
 const db = admin.firestore();
@@ -24,11 +20,6 @@ const db = admin.firestore();
 // ============================================================================
 // Types
 // ============================================================================
-
-interface UserData {
-  fcmTokens?: Record<string, FcmTokenRecord>;
-  name?: string;
-}
 
 interface JobPostingData {
   title?: string;
@@ -54,8 +45,7 @@ interface WorkLogData {
  *
  * @description
  * - WorkLog status가 'no_show'로 변경되면 실행
- * - 구인자(jobPosting.createdBy)에게 알림 전송
- * - Firestore notifications 문서 생성 + FCM 푸시 전송
+ * - 구인자(jobPosting.ownerId/createdBy)에게 알림 전송
  */
 export const onNoShow = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
@@ -103,102 +93,41 @@ export const onNoShow = functions.region('asia-northeast3').firestore
         return;
       }
 
-      // 2. 스태프 정보 조회
+      // 2. 스태프 이름 조회
       const actualUserId = extractUserId(after.staffId);
       const staffDoc = await db.collection('users').doc(actualUserId).get();
-
       const staffName = staffDoc.exists
-        ? (staffDoc.data() as UserData)?.name || '스태프'
+        ? staffDoc.data()?.name || '스태프'
         : '스태프';
 
-      // 3. 구인자 정보 조회
-      const employerDoc = await db
-        .collection('users')
-        .doc(employerId)
-        .get();
-
-      if (!employerDoc.exists) {
-        functions.logger.warn('구인자를 찾을 수 없습니다', {
-          workLogId,
-          employerId,
-        });
-        return;
-      }
-
-      const employer = employerDoc.data() as UserData;
-
-      // 4. 알림 내용 생성
-      const notificationTitle = '⚠️ 노쇼 알림';
-      const notificationBody = `${staffName}님이 '${jobPosting.title || '공고'}'에 출근하지 않았습니다.`;
-
-      // 5. Firestore notifications 문서 생성
-      const notificationRef = db.collection('notifications').doc();
-      const notificationId = notificationRef.id;
-
-      await notificationRef.set({
-        id: notificationId,
-        recipientId: employerId,
-        type: 'no_show_alert',
-        category: 'attendance',
-        priority: 'urgent',
-        title: notificationTitle,
-        body: notificationBody,
-        link: `/employer/applicants/${after.jobPostingId}`,
-        isRead: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        data: {
-          workLogId,
-          jobPostingId: after.jobPostingId,
-          jobPostingTitle: jobPosting.title || '',
-          staffId: after.staffId,
-          staffName,
-          date: after.date || '',
-        },
-      });
-
-      functions.logger.info('노쇼 알림 문서 생성 완료', {
-        notificationId,
+      // 3. 알림 전송
+      const result = await createAndSendNotification(
         employerId,
-      });
+        'no_show_alert',
+        '⚠️ 노쇼 알림',
+        `${staffName}님이 '${jobPosting.title || '공고'}'에 출근하지 않았습니다.`,
+        {
+          link: `/employer/applicants/${after.jobPostingId}`,
+          priority: 'urgent',
+          relatedId: workLogId,
+          senderId: actualUserId,
+          data: {
+            workLogId,
+            jobPostingId: after.jobPostingId,
+            jobPostingTitle: jobPosting.title || '',
+            staffId: after.staffId,
+            staffName,
+            date: after.date || '',
+          },
+        }
+      );
 
-      // 6. FCM 푸시 전송
-      const fcmTokens = getFcmTokens(employer);
-
-      if (fcmTokens.length === 0) {
-        functions.logger.warn('구인자 FCM 토큰이 없습니다', {
-          employerId,
-          workLogId,
-        });
-        return;
-      }
-
-      const result = await sendMulticast(fcmTokens, {
-        title: notificationTitle,
-        body: notificationBody,
-        data: {
-          type: 'no_show_alert',
-          notificationId,
-          workLogId,
-          jobPostingId: after.jobPostingId,
-          target: `/employer/applicants/${after.jobPostingId}`,
-        },
-        channelId: 'reminders',
-        priority: 'urgent',
-      });
-
-      functions.logger.info('노쇼 알림 FCM 전송 완료', {
-        workLogId,
+      functions.logger.info('노쇼 알림 전송 완료', {
+        notificationId: result.notificationId,
         employerId,
-        success: result.success,
-        failure: result.failure,
+        fcmSent: result.fcmSent,
+        successCount: result.successCount,
       });
-
-      // 7. 전송 결과 업데이트
-      if (result.success > 0) {
-        await notificationRef.update({
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
     } catch (error: any) {
       functions.logger.error('노쇼 알림 처리 중 오류 발생', {
         workLogId,

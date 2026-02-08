@@ -21,7 +21,7 @@ export type { UserRole, StaffRole };
  */
 export interface FcmTokenRecord {
   token: string;
-  type: 'expo' | 'fcm';
+  type: 'expo' | 'fcm' | 'native';  // native는 하위호환용 유지
   platform: 'ios' | 'android';
   registeredAt: Timestamp | Date;
   lastRefreshedAt: Timestamp | Date;

@@ -442,32 +442,27 @@ export async function getToken(): Promise<PushTokenResult | null> {
       return null;
     }
 
-    // Expo Push Token (개발용)
+    // Expo Push Token - Expo Push API 경유로 iOS(APNs)/Android(FCM) 자동 라우팅
     const projectId = Constants.expoConfig?.extra?.eas?.projectId;
-
-    if (projectId) {
-      const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({
-        projectId,
-      });
-
-      currentToken = expoPushToken;
-      logger.info('Expo Push Token 발급', { tokenLength: expoPushToken.length, type: 'expo' });
-
-      return {
-        token: expoPushToken,
-        type: 'expo',
-      };
+    if (!projectId) {
+      logger.error('EAS projectId를 찾을 수 없습니다');
+      return null;
     }
 
-    // FCM Token (프로덕션)
-    const { data: fcmToken } = await Notifications.getDevicePushTokenAsync();
+    const { data: expoPushToken } = await Notifications.getExpoPushTokenAsync({
+      projectId,
+    });
 
-    currentToken = fcmToken;
-    logger.info('FCM Token 발급', { tokenLength: fcmToken.length, type: 'fcm' });
+    currentToken = expoPushToken;
+    logger.info('Expo Push Token 발급', {
+      tokenLength: expoPushToken.length,
+      type: 'expo',
+      platform: Platform.OS,
+    });
 
     return {
-      token: fcmToken,
-      type: 'fcm',
+      token: expoPushToken,
+      type: 'expo',
     };
   } catch (error) {
     logger.error('푸시 토큰 발급 실패', toError(error));

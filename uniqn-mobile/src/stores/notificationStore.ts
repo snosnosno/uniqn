@@ -21,7 +21,7 @@ import type {
   NotificationSettings,
   NotificationFilter,
 } from '@/types/notification';
-import { NotificationCategory, createDefaultNotificationSettings } from '@/types/notification';
+import { NotificationCategory, NOTIFICATION_TYPE_TO_CATEGORY, createDefaultNotificationSettings } from '@/types/notification';
 import { logger } from '@/utils/logger';
 
 type NotificationCategoryType = (typeof NotificationCategory)[keyof typeof NotificationCategory];
@@ -131,9 +131,9 @@ function calculateUnreadByCategory(
 
   notifications.forEach((notification) => {
     if (!notification.isRead) {
-      const category = notification.type.split('_')[0] || 'system';
+      const category = (NOTIFICATION_TYPE_TO_CATEGORY[notification.type] || 'system') as NotificationCategoryType;
       if (category in counts) {
-        counts[category as NotificationCategoryType]++;
+        counts[category]++;
       }
     }
   });
@@ -147,11 +147,7 @@ function calculateUnreadByCategory(
  * @description 타입 안전하게 카테고리 추출, 유효하지 않으면 'system' 반환
  */
 function getNotificationCategory(notification: NotificationData): NotificationCategoryType {
-  const category = notification.type.split('_')[0] || 'system';
-  // 유효한 카테고리인지 검증
-  const validCategories = Object.values(NotificationCategory);
-  const isValidCategory = validCategories.includes(category as NotificationCategoryType);
-  return isValidCategory ? (category as NotificationCategoryType) : 'system';
+  return (NOTIFICATION_TYPE_TO_CATEGORY[notification.type] || 'system') as NotificationCategoryType;
 }
 
 /**
@@ -414,7 +410,7 @@ export const useNotificationStore = create<NotificationState>()(
       markCategoryAsRead: (category) => {
         set((state) => {
           const notifications = state.notifications.map((n) => {
-            const notificationCategory = n.type.split('_')[0];
+            const notificationCategory = NOTIFICATION_TYPE_TO_CATEGORY[n.type];
             if (notificationCategory === category) {
               return { ...n, isRead: true };
             }
