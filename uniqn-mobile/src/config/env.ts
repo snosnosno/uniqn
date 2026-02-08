@@ -2,8 +2,13 @@
  * UNIQN Mobile - 환경 설정
  *
  * @description 환경별 설정 및 타입 안전한 환경 변수 접근
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * NOTE: Firebase 환경변수 검증은 lib/env.ts (Zod 기반)에서 수행
+ * 이 파일은 환경별 Feature Flags, API 설정, 로깅 설정 등을 제공
  */
+
+import { isDevelopment as libIsDevelopment, isProduction as libIsProduction } from '@/lib/env';
 
 // ============================================================================
 // Environment Types
@@ -16,20 +21,9 @@ export interface EnvironmentConfig {
   isDevelopment: boolean;
   isStaging: boolean;
   isProduction: boolean;
-  firebase: FirebaseConfig;
   api: ApiConfig;
   features: FeatureFlags;
   logging: LoggingConfig;
-}
-
-export interface FirebaseConfig {
-  apiKey: string;
-  authDomain: string;
-  projectId: string;
-  storageBucket: string;
-  messagingSenderId: string;
-  appId: string;
-  measurementId?: string;
 }
 
 export interface ApiConfig {
@@ -53,16 +47,12 @@ export interface LoggingConfig {
 }
 
 // ============================================================================
-// Environment Detection
+// Environment Detection (lib/env.ts Zod 검증 기반)
 // ============================================================================
 
-/**
- * 현재 환경 감지
- */
 function detectEnvironment(): Environment {
-  // Expo의 릴리즈 채널 또는 NODE_ENV로 환경 결정
-  const nodeEnv = process.env.NODE_ENV;
   const releaseChannel = process.env.EXPO_PUBLIC_RELEASE_CHANNEL;
+  const nodeEnv = process.env.NODE_ENV;
 
   if (releaseChannel === 'production' || nodeEnv === 'production') {
     return 'production';
@@ -76,71 +66,6 @@ function detectEnvironment(): Environment {
 }
 
 const currentEnvironment = detectEnvironment();
-
-// ============================================================================
-// Environment Variables (Type-Safe)
-// ============================================================================
-
-/**
- * 필수 환경 변수 가져오기
- * NOTE: Expo에서는 process.env 동적 접근 대신 직접 참조 사용
- */
-function getRequiredEnvVar(name: string, value: string | undefined): string {
-  if (!value) {
-    // 개발 환경에서는 경고만, 프로덕션에서는 에러
-    if (currentEnvironment === 'production') {
-      throw new Error(`Missing required environment variable: ${name}`);
-    }
-    // eslint-disable-next-line no-console
-    console.warn(`Missing environment variable: ${name}`);
-    return '';
-  }
-  return value;
-}
-
-/**
- * 선택적 환경 변수 가져오기 (추후 활용 예정)
- * export for future use - suppresses unused warning
- */
-export function getOptionalEnvVar(
-  name: string,
-  value: string | undefined,
-  defaultValue: string
-): string {
-  void name; // 변수명 로깅에 사용 가능
-  return value || defaultValue;
-}
-
-// ============================================================================
-// Firebase Configuration
-// ============================================================================
-
-const firebaseConfig: FirebaseConfig = {
-  apiKey: getRequiredEnvVar(
-    'EXPO_PUBLIC_FIREBASE_API_KEY',
-    process.env.EXPO_PUBLIC_FIREBASE_API_KEY
-  ),
-  authDomain: getRequiredEnvVar(
-    'EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN',
-    process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN
-  ),
-  projectId: getRequiredEnvVar(
-    'EXPO_PUBLIC_FIREBASE_PROJECT_ID',
-    process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID
-  ),
-  storageBucket: getRequiredEnvVar(
-    'EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET',
-    process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET
-  ),
-  messagingSenderId: getRequiredEnvVar(
-    'EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID',
-    process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-  ),
-  appId: getRequiredEnvVar('EXPO_PUBLIC_FIREBASE_APP_ID', process.env.EXPO_PUBLIC_FIREBASE_APP_ID),
-  ...(process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID && {
-    measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
-  }),
-};
 
 // ============================================================================
 // API Configuration
@@ -221,13 +146,14 @@ const loggingConfigs: Record<Environment, LoggingConfig> = {
 
 /**
  * 전체 환경 설정
+ *
+ * NOTE: Firebase 설정은 lib/env.ts의 getEnv()로 접근 (Zod 검증)
  */
 export const env: EnvironmentConfig = {
   environment: currentEnvironment,
   isDevelopment: currentEnvironment === 'development',
   isStaging: currentEnvironment === 'staging',
   isProduction: currentEnvironment === 'production',
-  firebase: firebaseConfig,
   api: apiConfigs[currentEnvironment],
   features: featureFlagsConfig[currentEnvironment],
   logging: loggingConfigs[currentEnvironment],
@@ -268,5 +194,8 @@ export function runInProduction(fn: () => void): void {
     fn();
   }
 }
+
+// lib/env.ts 유틸리티 re-export (하위 호환성)
+export { libIsDevelopment as isDevelopmentEnv, libIsProduction as isProductionEnv };
 
 export default env;
