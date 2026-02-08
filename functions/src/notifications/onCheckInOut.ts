@@ -2,23 +2,19 @@
  * QR 출퇴근 확인 알림 Firebase Functions
  *
  * @description
- * WorkLog에 checkInTime/checkOutTime이 설정되면 근무자에게 FCM 푸시 알림 전송
+ * WorkLog에 checkInTime/checkOutTime이 설정되면 근무자+구인자에게 FCM 푸시 알림 전송
  * - checkInTime 설정: 출근 확인 알림
  * - checkOutTime 설정: 퇴근 확인 알림
  *
  * @trigger Firestore onUpdate
  * @collection workLogs/{workLogId}
- * @version 2.0.0
+ * @version 3.0.0
  * @since 2025-01-18
- *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { getFcmTokens } from '../utils/fcmTokenUtils';
-import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
-import { sendMulticast } from '../utils/notificationUtils';
+import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
 
 const db = admin.firestore();
@@ -26,11 +22,6 @@ const db = admin.firestore();
 // ============================================================================
 // Types
 // ============================================================================
-
-interface UserData {
-  fcmTokens?: Record<string, FcmTokenRecord>;
-  name?: string;
-}
 
 interface JobPostingData {
   title?: string;
@@ -58,7 +49,6 @@ interface WorkLogData {
  * - WorkLog checkInTime/checkOutTime 변경 감지
  * - 근무자에게 check_in_confirmed/check_out_confirmed 알림 전송
  * - 구인자에게 staff_checked_in/staff_checked_out 알림 전송
- * - Firestore notifications 문서 생성
  */
 export const onCheckInOut = functions.region('asia-northeast3').firestore
   .document('workLogs/{workLogId}')
@@ -75,14 +65,16 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
       return; // 출퇴근 시간 변경 없음
     }
 
-    const checkType = isCheckIn ? 'check_in' : 'check_out';
-    const checkTime = isCheckIn ? after.checkInTime : after.checkOutTime;
+    // 출근+퇴근 동시 설정 시 (데이터 복구 등) 각각 처리
+    const checkTypes: Array<'check_in' | 'check_out'> = [];
+    if (isCheckIn) checkTypes.push('check_in');
+    if (isCheckOut) checkTypes.push('check_out');
 
-    functions.logger.info(`QR ${checkType} 감지`, {
+    functions.logger.info('QR 출퇴근 감지', {
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
-      checkType,
+      checkTypes,
     });
 
     try {
@@ -102,7 +94,7 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
 
-      // 2. 근무자 정보 조회
+      // 2. 근무자 정보 조회 (스태프 이름 - 구인자 알림용)
       const actualUserId = extractUserId(after.staffId);
       const staffDoc = await db.collection('users').doc(actualUserId).get();
 
@@ -115,163 +107,69 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
         return;
       }
 
-      const staff = staffDoc.data() as UserData;
-
-      // 3. 알림 내용 생성
-      const formattedTime = formatTime(checkTime);
-      const notificationTitle = isCheckIn ? '✅ 출근 확인' : '✅ 퇴근 확인';
-      const notificationBody = isCheckIn
-        ? `'${jobPosting?.title || '이벤트'}' 출근이 확인되었습니다. (${formattedTime})`
-        : `'${jobPosting?.title || '이벤트'}' 퇴근이 확인되었습니다. (${formattedTime})`;
-
-      // 4. Firestore notifications 문서 생성
-      const notificationRef = db.collection('notifications').doc();
-      const notificationId = notificationRef.id;
-
-      await notificationRef.set({
-        id: notificationId,
-        recipientId: actualUserId,
-        type: isCheckIn ? 'check_in_confirmed' : 'check_out_confirmed',
-        category: 'attendance',
-        priority: 'normal',
-        title: notificationTitle,
-        body: notificationBody,
-        link: '/schedule',
-        isRead: false,
-        createdAt: admin.firestore.FieldValue.serverTimestamp(),
-        data: {
-          workLogId,
-          jobPostingId: after.jobPostingId,
-          jobPostingTitle: jobPosting?.title || '',
-          date: after.date || '',
-          checkTime: formattedTime,
-        },
-      });
-
-      functions.logger.info(`${checkType} 알림 문서 생성 완료`, {
-        notificationId,
-        staffId: after.staffId,
-      });
-
-      // 5. FCM 푸시 전송
-      const fcmTokens = getFcmTokens(staff);
-
-      if (fcmTokens.length === 0) {
-        functions.logger.warn('FCM 토큰이 없습니다', {
-          staffId: after.staffId,
-          workLogId,
-        });
-        return;
-      }
-
-      const result = await sendMulticast(fcmTokens, {
-        title: notificationTitle,
-        body: notificationBody,
-        data: {
-          type: isCheckIn ? 'check_in_confirmed' : 'check_out_confirmed',
-          notificationId,
-          workLogId,
-          jobPostingId: after.jobPostingId,
-          target: '/schedule',
-        },
-        channelId: 'default',
-        priority: 'normal',
-      });
-
-      functions.logger.info(`${checkType} 알림 FCM 전송 완료`, {
-        workLogId,
-        success: result.success,
-        failure: result.failure,
-      });
-
-      // 6. 전송 결과 업데이트
-      if (result.success > 0) {
-        await notificationRef.update({
-          sentAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
-      }
-
-      // ========================================================================
-      // 7. 구인자에게 staff_checked_in/out 알림 전송
-      // ========================================================================
+      const staffName = staffDoc.data()?.name || '스태프';
       const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
-      if (employerId) {
-        const employerDoc = await db.collection('users').doc(employerId).get();
 
-        if (employerDoc.exists) {
-          const employer = employerDoc.data() as UserData;
+      // 3. 각 체크 타입별 알림 전송 (동시 출퇴근 시 양쪽 모두 처리)
+      for (const checkType of checkTypes) {
+        const isIn = checkType === 'check_in';
+        const checkTime = isIn ? after.checkInTime : after.checkOutTime;
+        const formattedTime = formatTime(checkTime);
 
-          // 구인자용 알림 내용
-          const employerTitle = isCheckIn ? '🟢 출근 알림' : '🔴 퇴근 알림';
-          const employerBody = isCheckIn
-            ? `${staff?.name || '스태프'}님이 ${formattedTime}에 출근했습니다.`
-            : `${staff?.name || '스태프'}님이 ${formattedTime}에 퇴근했습니다.`;
-
-          // 구인자용 알림 문서 생성
-          const employerNotificationRef = db.collection('notifications').doc();
-          const employerNotificationId = employerNotificationRef.id;
-
-          await employerNotificationRef.set({
-            id: employerNotificationId,
-            recipientId: employerId,
-            type: isCheckIn ? 'staff_checked_in' : 'staff_checked_out',
-            category: 'attendance',
-            priority: 'normal',
-            title: employerTitle,
-            body: employerBody,
-            link: `/employer/applicants/${after.jobPostingId}`,
-            isRead: false,
-            createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        // 근무자 알림
+        const staffResult = await createAndSendNotification(
+          actualUserId,
+          isIn ? 'check_in_confirmed' : 'check_out_confirmed',
+          isIn ? '✅ 출근 확인' : '✅ 퇴근 확인',
+          `'${jobPosting?.title || '이벤트'}' ${isIn ? '출근' : '퇴근'}이 확인되었습니다. (${formattedTime})`,
+          {
+            link: '/schedule',
             data: {
               workLogId,
               jobPostingId: after.jobPostingId,
               jobPostingTitle: jobPosting?.title || '',
-              staffId: after.staffId,
-              staffName: staff?.name || '',
               date: after.date || '',
               checkTime: formattedTime,
             },
-          });
+          }
+        );
 
-          functions.logger.info(`구인자 ${checkType} 알림 문서 생성 완료`, {
-            notificationId: employerNotificationId,
+        functions.logger.info(`${checkType} 알림 전송 완료 (근무자)`, {
+          notificationId: staffResult.notificationId,
+          staffId: after.staffId,
+          fcmSent: staffResult.fcmSent,
+        });
+
+        // 구인자 알림
+        if (employerId) {
+          const employerResult = await createAndSendNotification(
             employerId,
-          });
-
-          // 구인자 FCM 푸시 전송
-          const employerTokens = getFcmTokens(employer);
-
-          if (employerTokens.length > 0) {
-            const employerResult = await sendMulticast(employerTokens, {
-              title: employerTitle,
-              body: employerBody,
+            isIn ? 'staff_checked_in' : 'staff_checked_out',
+            isIn ? '🟢 출근 알림' : '🔴 퇴근 알림',
+            `${staffName}님이 ${formattedTime}에 ${isIn ? '출근' : '퇴근'}했습니다.`,
+            {
+              link: `/employer/applicants/${after.jobPostingId}`,
               data: {
-                type: isCheckIn ? 'staff_checked_in' : 'staff_checked_out',
-                notificationId: employerNotificationId,
                 workLogId,
                 jobPostingId: after.jobPostingId,
-                target: `/employer/applicants/${after.jobPostingId}`,
+                jobPostingTitle: jobPosting?.title || '',
+                staffId: after.staffId,
+                staffName,
+                date: after.date || '',
+                checkTime: formattedTime,
               },
-              channelId: 'reminders',
-              priority: 'normal',
-            });
-
-            if (employerResult.success > 0) {
-              await employerNotificationRef.update({
-                sentAt: admin.firestore.FieldValue.serverTimestamp(),
-              });
             }
+          );
 
-            functions.logger.info(`구인자 ${checkType} 알림 FCM 전송 완료`, {
-              employerId,
-              success: employerResult.success,
-              failure: employerResult.failure,
-            });
-          }
+          functions.logger.info(`${checkType} 알림 전송 완료 (구인자)`, {
+            notificationId: employerResult.notificationId,
+            employerId,
+            fcmSent: employerResult.fcmSent,
+          });
         }
       }
     } catch (error: any) {
-      functions.logger.error(`${checkType} 알림 처리 중 오류 발생`, {
+      functions.logger.error('출퇴근 알림 처리 중 오류 발생', {
         workLogId,
         error: error.message,
         stack: error.stack,

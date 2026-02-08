@@ -1,12 +1,12 @@
 /**
- * FCM 토큰 유틸리티
+ * 푸시 토큰 유틸리티
  *
- * @description FCM 토큰 추출, 검증, 관리 헬퍼 함수
- * @version 2.0.0
+ * @description 푸시 토큰 추출, 검증, 관리 헬퍼 함수
+ * @version 3.0.0
  *
  * fcmTokens 구조: Map (Record<string, FcmTokenRecord>)
  * 각 엔트리: { token, type, platform, registeredAt, lastRefreshedAt }
- * Expo 토큰(ExponentPushToken[...)은 FCM 전송 시 제외
+ * Expo Push Token과 FCM Token 모두 반환 — sendMulticast()에서 형식별 분기 처리
  */
 
 import * as admin from 'firebase-admin';
@@ -35,18 +35,18 @@ export interface UserFcmData {
 // ============================================================================
 
 /**
- * 사용자 문서에서 FCM 토큰 추출
+ * 사용자 문서에서 푸시 토큰 추출
  *
  * @param userData Firestore users 문서 데이터
- * @returns 유효한 FCM 토큰 배열 (Expo 토큰 제외, 중복 제거됨)
+ * @returns 유효한 푸시 토큰 배열 (Expo + FCM 모두 포함, 중복 제거됨)
  *
  * @example
- * const tokens = getFcmTokens(userDoc.data());
+ * const tokens = getPushTokens(userDoc.data());
  * if (tokens.length > 0) {
  *   await sendMulticast(tokens, message);
  * }
  */
-export function getFcmTokens(userData: UserFcmData | undefined | null): string[] {
+export function getPushTokens(userData: UserFcmData | undefined | null): string[] {
   if (!userData) {
     return [];
   }
@@ -64,17 +64,15 @@ export function getFcmTokens(userData: UserFcmData | undefined | null): string[]
       continue;
     }
 
-    // Expo 토큰은 FCM 전송에서 제외
-    if (record.type === 'expo' || record.token.startsWith('ExponentPushToken[')) {
-      continue;
-    }
-
     tokens.push(record.token);
   }
 
   // 중복 제거
   return [...new Set(tokens)];
 }
+
+/** @deprecated getPushTokens()로 대체. 하위 호환용 별칭 */
+export const getFcmTokens = getPushTokens;
 
 /**
  * FCM 토큰 유효성 검사
@@ -98,7 +96,7 @@ export function extractAllFcmTokens(
   const result = new Map<string, string[]>();
 
   for (const { id, data } of usersData) {
-    const tokens = getFcmTokens(data);
+    const tokens = getPushTokens(data);
     if (tokens.length > 0) {
       result.set(id, tokens);
     }

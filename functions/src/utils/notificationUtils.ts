@@ -12,7 +12,10 @@
 
 import * as admin from 'firebase-admin';
 import * as functions from 'firebase-functions';
-import { getFcmTokens, removeInvalidTokens, isTokenInvalidError } from './fcmTokenUtils';
+import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
+import { getPushTokens, removeInvalidTokens, isTokenInvalidError } from './fcmTokenUtils';
+
+const expo = new Expo();
 
 const db = admin.firestore();
 
@@ -517,9 +520,9 @@ export async function createAndSendNotification(
     type,
   });
 
-  // 2. 수신자의 FCM 토큰 조회 (이미 병렬로 조회됨)
+  // 2. 수신자의 푸시 토큰 조회 (이미 병렬로 조회됨)
   const userData = userDoc.data();
-  const tokens = getFcmTokens(userData);
+  const tokens = getPushTokens(userData);
 
   if (tokens.length === 0) {
     functions.logger.warn('FCM 토큰이 없습니다', {
@@ -587,9 +590,14 @@ export async function createAndSendNotification(
 }
 
 /**
- * FCM 멀티캐스트 전송
+ * 푸시 알림 멀티캐스트 전송 (Expo Push API + FCM 하이브리드)
  *
- * @param tokens FCM 토큰 배열
+ * @description
+ * - Expo Push Token (`ExponentPushToken[...]`) → Expo Push API로 전송
+ * - FCM Registration Token → 기존 admin.messaging()으로 전송
+ * - 전환기 동안 두 형식 모두 처리 가능
+ *
+ * @param tokens 푸시 토큰 배열 (Expo + FCM 혼합 가능)
  * @param payload 전송할 페이로드
  * @returns 전송 결과
  */
@@ -605,84 +613,187 @@ export async function sendMulticast(
 ): Promise<MulticastResult> {
   const { title, body, data = {}, channelId = 'default', priority = 'normal' } = payload;
 
-  // Android 우선순위 매핑
-  const androidPriority =
-    priority === 'urgent' || priority === 'high' ? 'high' : 'normal';
+  // 토큰 형식별 분리 (원본 인덱스 보존)
+  const expoIndices: number[] = [];
+  const fcmIndices: number[] = [];
 
-  const message: admin.messaging.MulticastMessage = {
-    notification: {
+  tokens.forEach((t, i) => {
+    if (Expo.isExpoPushToken(t)) {
+      expoIndices.push(i);
+    } else {
+      fcmIndices.push(i);
+    }
+  });
+
+  const expoTokens = expoIndices.map((i) => tokens[i]);
+  const fcmTokens = fcmIndices.map((i) => tokens[i]);
+
+  // 원본 tokens 배열 순서와 일치하는 응답 배열
+  const orderedResponses: MulticastResult['responses'] = new Array(tokens.length);
+  const invalidTokens: string[] = [];
+  let totalSuccess = 0;
+  let totalFailure = 0;
+
+  // ── 1. Expo Push Token → Expo Push API ──
+  if (expoTokens.length > 0) {
+    const expoPriority =
+      priority === 'urgent' || priority === 'high' ? 'high' : 'normal';
+
+    const messages: ExpoPushMessage[] = expoTokens.map((token) => ({
+      to: token,
       title,
       body,
-    },
-    data,
-    tokens,
-    android: {
-      priority: androidPriority,
-      notification: {
-        sound: 'default',
-        channelId,
-      },
-    },
-    apns: {
-      payload: {
-        aps: {
-          sound: 'default',
-          badge: 1,
-        },
-      },
-    },
-  };
+      data,
+      sound: 'default' as const,
+      channelId,
+      priority: expoPriority,
+    }));
 
-  try {
-    const response = await admin.messaging().sendEachForMulticast(message);
+    const chunks = expo.chunkPushNotifications(messages);
+    let processedCount = 0;
 
-    const invalidTokens: string[] = [];
-    const responses = response.responses.map((r, index) => {
-      const errorCode = r.error?.code;
+    for (const chunk of chunks) {
+      try {
+        const tickets = await expo.sendPushNotificationsAsync(chunk);
 
-      // 토큰 만료/무효 에러 감지
-      if (!r.success && isTokenInvalidError(errorCode)) {
-        invalidTokens.push(tokens[index]);
+        tickets.forEach((ticket: ExpoPushTicket) => {
+          const expoIdx = processedCount;
+          const originalIdx = expoIndices[expoIdx];
+          const token = expoTokens[expoIdx];
+          processedCount++;
+
+          if (ticket.status === 'ok') {
+            totalSuccess++;
+            orderedResponses[originalIdx] = {
+              success: true,
+              messageId: ticket.id,
+            };
+          } else {
+            totalFailure++;
+            orderedResponses[originalIdx] = {
+              success: false,
+              error: ticket.message,
+              errorCode: ticket.details?.error,
+            };
+
+            // DeviceNotRegistered → 토큰 만료
+            if (ticket.details?.error === 'DeviceNotRegistered' && token) {
+              invalidTokens.push(token);
+            }
+          }
+        });
+      } catch (error: any) {
+        functions.logger.error('Expo Push API 전송 실패', {
+          error: error.message,
+          chunkSize: chunk.length,
+        });
+
+        for (let j = 0; j < chunk.length; j++) {
+          const originalIdx = expoIndices[processedCount];
+          processedCount++;
+          totalFailure++;
+          orderedResponses[originalIdx] = {
+            success: false,
+            error: error.message,
+          };
+        }
       }
-
-      return {
-        success: r.success,
-        messageId: r.success ? r.messageId : undefined,
-        error: r.error?.message,
-        errorCode,
-      };
-    });
-
-    // 만료된 토큰이 있으면 로깅
-    if (invalidTokens.length > 0) {
-      functions.logger.info('만료/무효 FCM 토큰 감지', {
-        invalidCount: invalidTokens.length,
-        totalTokens: tokens.length,
-      });
     }
 
-    return {
-      success: response.successCount,
-      failure: response.failureCount,
-      responses,
-      invalidTokens,
-    };
-  } catch (error: any) {
-    functions.logger.error('FCM 멀티캐스트 전송 실패', {
-      error: error.message,
-      tokenCount: tokens.length,
+    functions.logger.info('Expo Push 전송 완료', {
+      total: expoTokens.length,
+      success: totalSuccess,
+      failure: totalFailure,
     });
-
-    return {
-      success: 0,
-      failure: tokens.length,
-      responses: tokens.map(() => ({
-        success: false,
-        error: error.message,
-      })),
-      invalidTokens: [],
-    };
   }
+
+  // ── 2. FCM Token → admin.messaging() (하위호환, 전환기) ──
+  if (fcmTokens.length > 0) {
+    const androidPriority =
+      priority === 'urgent' || priority === 'high' ? 'high' : 'normal';
+
+    const message: admin.messaging.MulticastMessage = {
+      notification: {
+        title,
+        body,
+      },
+      data,
+      tokens: fcmTokens,
+      android: {
+        priority: androidPriority,
+        notification: {
+          sound: 'default',
+          channelId,
+        },
+      },
+      apns: {
+        payload: {
+          aps: {
+            sound: 'default',
+            badge: 1,
+          },
+        },
+      },
+    };
+
+    try {
+      const response = await admin.messaging().sendEachForMulticast(message);
+
+      response.responses.forEach((r, index) => {
+        const originalIdx = fcmIndices[index];
+        const errorCode = r.error?.code;
+
+        if (!r.success && isTokenInvalidError(errorCode)) {
+          invalidTokens.push(fcmTokens[index]);
+        }
+
+        orderedResponses[originalIdx] = {
+          success: r.success,
+          messageId: r.success ? r.messageId : undefined,
+          error: r.error?.message,
+          errorCode,
+        };
+      });
+
+      totalSuccess += response.successCount;
+      totalFailure += response.failureCount;
+
+      functions.logger.info('FCM 전송 완료', {
+        total: fcmTokens.length,
+        success: response.successCount,
+        failure: response.failureCount,
+      });
+    } catch (error: any) {
+      functions.logger.error('FCM 멀티캐스트 전송 실패', {
+        error: error.message,
+        tokenCount: fcmTokens.length,
+      });
+
+      fcmTokens.forEach((_, index) => {
+        const originalIdx = fcmIndices[index];
+        totalFailure++;
+        orderedResponses[originalIdx] = {
+          success: false,
+          error: error.message,
+        };
+      });
+    }
+  }
+
+  // 만료된 토큰이 있으면 로깅
+  if (invalidTokens.length > 0) {
+    functions.logger.info('만료/무효 토큰 감지', {
+      invalidCount: invalidTokens.length,
+      totalTokens: tokens.length,
+    });
+  }
+
+  return {
+    success: totalSuccess,
+    failure: totalFailure,
+    responses: orderedResponses,
+    invalidTokens,
+  };
 }
 
 /**

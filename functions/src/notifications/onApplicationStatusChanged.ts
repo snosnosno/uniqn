@@ -11,29 +11,24 @@
  *
  * @trigger Firestore onUpdate
  * @collection applications/{applicationId}
- * @version 2.1.0
+ * @version 3.0.0
  * @since 2025-10-15
- * @updated 2025-01-18
+ * @updated 2026-02-09
  *
- * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
+ * @changelog
+ * - 3.0.0: createAndSendNotification 유틸리티 적용
+ *   (unreadCount 증가, 알림설정 확인, 만료 토큰 정리 자동 처리)
  */
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { getFcmTokens } from '../utils/fcmTokenUtils';
-import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
-import { sendMulticast } from '../utils/notificationUtils';
+import { createAndSendNotification } from '../utils/notificationUtils';
 
 const db = admin.firestore();
 
 // ============================================================================
 // Types
 // ============================================================================
-
-interface UserData {
-  fcmTokens?: Record<string, FcmTokenRecord>;
-  name?: string;
-}
 
 interface CancellationData {
   status?: 'pending' | 'approved' | 'rejected';
@@ -56,11 +51,6 @@ interface JobPostingData {
   ownerId?: string;
   createdBy?: string;
 }
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
 
 // ============================================================================
 // Main Trigger
@@ -111,73 +101,32 @@ export const onApplicationStatusChanged = functions.region('asia-northeast3').fi
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
 
-      // 2. 지원자 정보 조회
-      const applicantDoc = await db
-        .collection('users')
-        .doc(after.applicantId)
-        .get();
-
-      if (!applicantDoc.exists) {
-        functions.logger.warn('지원자를 찾을 수 없습니다', {
-          applicationId,
-          applicantId: after.applicantId,
-        });
-        return;
-      }
-
-      const applicant = applicantDoc.data() as UserData;
-
-      // 3. 상태별 알림 처리
+      // 2. 상태별 알림 처리
       if (statusChanged) {
         switch (after.status) {
           case 'confirmed':
-            await sendConfirmationNotification(
-              applicationId,
-              after,
-              jobPosting,
-              applicant
-            );
+            await sendConfirmationNotification(applicationId, after, jobPosting);
             break;
 
           case 'cancelled':
-            await sendCancellationNotification(
-              applicationId,
-              after,
-              jobPosting,
-              applicant
-            );
+            await sendCancellationNotification(applicationId, after, jobPosting);
             break;
 
           case 'rejected':
-            await sendRejectionNotification(
-              applicationId,
-              after,
-              jobPosting,
-              applicant
-            );
+            await sendRejectionNotification(applicationId, after, jobPosting);
             break;
         }
       }
 
-      // 4. 취소 요청 상태 변경 처리
+      // 3. 취소 요청 상태 변경 처리
       if (cancellationStatusChanged && after.cancellation?.status) {
         switch (after.cancellation.status) {
           case 'approved':
-            await sendCancellationApprovedNotification(
-              applicationId,
-              after,
-              jobPosting,
-              applicant
-            );
+            await sendCancellationApprovedNotification(applicationId, after, jobPosting);
             break;
 
           case 'rejected':
-            await sendCancellationRejectedNotification(
-              applicationId,
-              after,
-              jobPosting,
-              applicant
-            );
+            await sendCancellationRejectedNotification(applicationId, after, jobPosting);
             break;
         }
       }
@@ -200,70 +149,32 @@ export const onApplicationStatusChanged = functions.region('asia-northeast3').fi
 async function sendConfirmationNotification(
   applicationId: string,
   application: ApplicationData,
-  jobPosting: JobPostingData,
-  applicant: UserData
+  jobPosting: JobPostingData
 ): Promise<void> {
-  const notificationTitle = '🎉 지원이 확정되었습니다!';
-  const notificationBody = `'${jobPosting.title}' 지원이 확정되었습니다.`;
-
-  functions.logger.info('확정 알림 전송 시작', {
-    applicationId,
-    applicantId: application.applicantId,
-  });
-
-  // Firestore notifications 문서 생성
-  const notificationRef = db.collection('notifications').doc();
-  const notificationId = notificationRef.id;
-
-  await notificationRef.set({
-    id: notificationId,
-    recipientId: application.applicantId,
-    type: 'application_confirmed',
-    category: 'application',
-    priority: 'high',
-    title: notificationTitle,
-    body: notificationBody,
-    link: '/schedule',
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: {
-      applicationId,
-      jobPostingId: application.jobPostingId,
-      jobPostingTitle: jobPosting.title || '',
-      location: jobPosting.location || '',
-    },
-  });
-
-  // FCM 푸시 전송
-  const fcmTokens = getFcmTokens(applicant);
-
-  if (fcmTokens.length > 0) {
-    const result = await sendMulticast(fcmTokens, {
-      title: notificationTitle,
-      body: notificationBody,
+  const result = await createAndSendNotification(
+    application.applicantId,
+    'application_confirmed',
+    '🎉 지원이 확정되었습니다!',
+    `'${jobPosting.title}' 지원이 확정되었습니다.`,
+    {
+      link: '/schedule',
+      priority: 'high',
+      relatedId: applicationId,
       data: {
-        type: 'application_confirmed',
-        notificationId,
         applicationId,
         jobPostingId: application.jobPostingId,
-        target: '/schedule',
+        jobPostingTitle: jobPosting.title || '',
+        location: jobPosting.location || '',
       },
-      channelId: 'applications',
-      priority: 'high',
-    });
-
-    if (result.success > 0) {
-      await notificationRef.update({
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
     }
+  );
 
-    functions.logger.info('확정 알림 FCM 전송 완료', {
-      applicationId,
-      success: result.success,
-      failure: result.failure,
-    });
-  }
+  functions.logger.info('확정 알림 전송 완료', {
+    applicationId,
+    notificationId: result.notificationId,
+    fcmSent: result.fcmSent,
+    successCount: result.successCount,
+  });
 }
 
 /**
@@ -272,67 +183,30 @@ async function sendConfirmationNotification(
 async function sendCancellationNotification(
   applicationId: string,
   application: ApplicationData,
-  jobPosting: JobPostingData,
-  applicant: UserData
+  jobPosting: JobPostingData
 ): Promise<void> {
-  const notificationTitle = '확정 취소 안내';
-  const notificationBody = `'${jobPosting.title}' 지원 확정이 취소되었습니다.`;
-
-  functions.logger.info('취소 알림 전송 시작', {
-    applicationId,
-    applicantId: application.applicantId,
-  });
-
-  const notificationRef = db.collection('notifications').doc();
-  const notificationId = notificationRef.id;
-
-  await notificationRef.set({
-    id: notificationId,
-    recipientId: application.applicantId,
-    type: 'confirmation_cancelled',
-    category: 'application',
-    priority: 'normal',
-    title: notificationTitle,
-    body: notificationBody,
-    link: '/schedule',
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: {
-      applicationId,
-      jobPostingId: application.jobPostingId,
-      jobPostingTitle: jobPosting.title || '',
-    },
-  });
-
-  const fcmTokens = getFcmTokens(applicant);
-
-  if (fcmTokens.length > 0) {
-    const result = await sendMulticast(fcmTokens, {
-      title: notificationTitle,
-      body: notificationBody,
+  const result = await createAndSendNotification(
+    application.applicantId,
+    'confirmation_cancelled',
+    '확정 취소 안내',
+    `'${jobPosting.title}' 지원 확정이 취소되었습니다.`,
+    {
+      link: '/schedule',
+      priority: 'normal',
+      relatedId: applicationId,
       data: {
-        type: 'confirmation_cancelled',
-        notificationId,
         applicationId,
         jobPostingId: application.jobPostingId,
-        target: '/schedule',
+        jobPostingTitle: jobPosting.title || '',
       },
-      channelId: 'applications',
-      priority: 'normal',
-    });
-
-    if (result.success > 0) {
-      await notificationRef.update({
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
     }
+  );
 
-    functions.logger.info('취소 알림 FCM 전송 완료', {
-      applicationId,
-      success: result.success,
-      failure: result.failure,
-    });
-  }
+  functions.logger.info('취소 알림 전송 완료', {
+    applicationId,
+    notificationId: result.notificationId,
+    fcmSent: result.fcmSent,
+  });
 }
 
 /**
@@ -341,67 +215,30 @@ async function sendCancellationNotification(
 async function sendRejectionNotification(
   applicationId: string,
   application: ApplicationData,
-  jobPosting: JobPostingData,
-  applicant: UserData
+  jobPosting: JobPostingData
 ): Promise<void> {
-  const notificationTitle = '지원 결과 안내';
-  const notificationBody = `'${jobPosting.title}' 지원이 거절되었습니다.`;
-
-  functions.logger.info('거절 알림 전송 시작', {
-    applicationId,
-    applicantId: application.applicantId,
-  });
-
-  const notificationRef = db.collection('notifications').doc();
-  const notificationId = notificationRef.id;
-
-  await notificationRef.set({
-    id: notificationId,
-    recipientId: application.applicantId,
-    type: 'application_rejected',
-    category: 'application',
-    priority: 'normal',
-    title: notificationTitle,
-    body: notificationBody,
-    link: '/my-applications',
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: {
-      applicationId,
-      jobPostingId: application.jobPostingId,
-      jobPostingTitle: jobPosting.title || '',
-    },
-  });
-
-  const fcmTokens = getFcmTokens(applicant);
-
-  if (fcmTokens.length > 0) {
-    const result = await sendMulticast(fcmTokens, {
-      title: notificationTitle,
-      body: notificationBody,
+  const result = await createAndSendNotification(
+    application.applicantId,
+    'application_rejected',
+    '지원 결과 안내',
+    `'${jobPosting.title}' 지원이 거절되었습니다.`,
+    {
+      link: '/my-applications',
+      priority: 'normal',
+      relatedId: applicationId,
       data: {
-        type: 'application_rejected',
-        notificationId,
         applicationId,
         jobPostingId: application.jobPostingId,
-        target: '/my-applications',
+        jobPostingTitle: jobPosting.title || '',
       },
-      channelId: 'applications',
-      priority: 'normal',
-    });
-
-    if (result.success > 0) {
-      await notificationRef.update({
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
     }
+  );
 
-    functions.logger.info('거절 알림 FCM 전송 완료', {
-      applicationId,
-      success: result.success,
-      failure: result.failure,
-    });
-  }
+  functions.logger.info('거절 알림 전송 완료', {
+    applicationId,
+    notificationId: result.notificationId,
+    fcmSent: result.fcmSent,
+  });
 }
 
 /**
@@ -410,67 +247,30 @@ async function sendRejectionNotification(
 async function sendCancellationApprovedNotification(
   applicationId: string,
   application: ApplicationData,
-  jobPosting: JobPostingData,
-  applicant: UserData
+  jobPosting: JobPostingData
 ): Promise<void> {
-  const notificationTitle = '취소 승인 안내';
-  const notificationBody = `'${jobPosting.title}' 취소 요청이 승인되었습니다.`;
-
-  functions.logger.info('취소 승인 알림 전송 시작', {
-    applicationId,
-    applicantId: application.applicantId,
-  });
-
-  const notificationRef = db.collection('notifications').doc();
-  const notificationId = notificationRef.id;
-
-  await notificationRef.set({
-    id: notificationId,
-    recipientId: application.applicantId,
-    type: 'cancellation_approved',
-    category: 'application',
-    priority: 'normal',
-    title: notificationTitle,
-    body: notificationBody,
-    link: '/schedule',
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: {
-      applicationId,
-      jobPostingId: application.jobPostingId,
-      jobPostingTitle: jobPosting.title || '',
-    },
-  });
-
-  const fcmTokens = getFcmTokens(applicant);
-
-  if (fcmTokens.length > 0) {
-    const result = await sendMulticast(fcmTokens, {
-      title: notificationTitle,
-      body: notificationBody,
+  const result = await createAndSendNotification(
+    application.applicantId,
+    'cancellation_approved',
+    '취소 승인 안내',
+    `'${jobPosting.title}' 취소 요청이 승인되었습니다.`,
+    {
+      link: '/schedule',
+      priority: 'normal',
+      relatedId: applicationId,
       data: {
-        type: 'cancellation_approved',
-        notificationId,
         applicationId,
         jobPostingId: application.jobPostingId,
-        target: '/schedule',
+        jobPostingTitle: jobPosting.title || '',
       },
-      channelId: 'applications',
-      priority: 'normal',
-    });
-
-    if (result.success > 0) {
-      await notificationRef.update({
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
     }
+  );
 
-    functions.logger.info('취소 승인 알림 FCM 전송 완료', {
-      applicationId,
-      success: result.success,
-      failure: result.failure,
-    });
-  }
+  functions.logger.info('취소 승인 알림 전송 완료', {
+    applicationId,
+    notificationId: result.notificationId,
+    fcmSent: result.fcmSent,
+  });
 }
 
 /**
@@ -479,65 +279,28 @@ async function sendCancellationApprovedNotification(
 async function sendCancellationRejectedNotification(
   applicationId: string,
   application: ApplicationData,
-  jobPosting: JobPostingData,
-  applicant: UserData
+  jobPosting: JobPostingData
 ): Promise<void> {
-  const notificationTitle = '취소 거절 안내';
-  const notificationBody = `'${jobPosting.title}' 취소 요청이 거절되었습니다. 예정대로 근무해 주세요.`;
-
-  functions.logger.info('취소 거절 알림 전송 시작', {
-    applicationId,
-    applicantId: application.applicantId,
-  });
-
-  const notificationRef = db.collection('notifications').doc();
-  const notificationId = notificationRef.id;
-
-  await notificationRef.set({
-    id: notificationId,
-    recipientId: application.applicantId,
-    type: 'cancellation_rejected',
-    category: 'application',
-    priority: 'high',
-    title: notificationTitle,
-    body: notificationBody,
-    link: '/schedule',
-    isRead: false,
-    createdAt: admin.firestore.FieldValue.serverTimestamp(),
-    data: {
-      applicationId,
-      jobPostingId: application.jobPostingId,
-      jobPostingTitle: jobPosting.title || '',
-    },
-  });
-
-  const fcmTokens = getFcmTokens(applicant);
-
-  if (fcmTokens.length > 0) {
-    const result = await sendMulticast(fcmTokens, {
-      title: notificationTitle,
-      body: notificationBody,
+  const result = await createAndSendNotification(
+    application.applicantId,
+    'cancellation_rejected',
+    '취소 거절 안내',
+    `'${jobPosting.title}' 취소 요청이 거절되었습니다. 예정대로 근무해 주세요.`,
+    {
+      link: '/schedule',
+      priority: 'high',
+      relatedId: applicationId,
       data: {
-        type: 'cancellation_rejected',
-        notificationId,
         applicationId,
         jobPostingId: application.jobPostingId,
-        target: '/schedule',
+        jobPostingTitle: jobPosting.title || '',
       },
-      channelId: 'applications',
-      priority: 'high',
-    });
-
-    if (result.success > 0) {
-      await notificationRef.update({
-        sentAt: admin.firestore.FieldValue.serverTimestamp(),
-      });
     }
+  );
 
-    functions.logger.info('취소 거절 알림 FCM 전송 완료', {
-      applicationId,
-      success: result.success,
-      failure: result.failure,
-    });
-  }
+  functions.logger.info('취소 거절 알림 전송 완료', {
+    applicationId,
+    notificationId: result.notificationId,
+    fcmSent: result.fcmSent,
+  });
 }

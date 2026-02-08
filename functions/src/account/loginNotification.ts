@@ -14,6 +14,8 @@
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { getPushTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast } from '../utils/notificationUtils';
 
 const db = admin.firestore();
 
@@ -308,35 +310,23 @@ async function sendNotification(
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-    // FCM 푸시 알림 전송 (FCM 토큰이 있는 경우)
-    if (userData.fcmToken) {
+    // 푸시 알림 전송 (토큰이 있는 경우)
+    const tokens = getPushTokens(userData);
+    if (tokens.length > 0) {
       try {
-        await admin.messaging().send({
-          token: userData.fcmToken,
-          notification: {
-            title,
-            body,
-          },
+        await sendMulticast(tokens, {
+          title,
+          body,
           data: {
             type: 'login_alert',
             reason,
           },
-          android: {
-            priority: 'high',
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-                badge: 1,
-              },
-            },
-          },
+          priority: 'high',
         });
-        functions.logger.info(`FCM 푸시 알림 전송 완료: ${userId}`);
-      } catch (fcmError) {
-        functions.logger.error(`FCM 푸시 알림 전송 실패: ${userId}`, fcmError);
-        // FCM 실패 시에도 알림 기록은 저장됨
+        functions.logger.info(`푸시 알림 전송 완료: ${userId}`);
+      } catch (pushError) {
+        functions.logger.error(`푸시 알림 전송 실패: ${userId}`, pushError);
+        // 푸시 실패 시에도 알림 기록은 저장됨
       }
     }
   } catch (error) {

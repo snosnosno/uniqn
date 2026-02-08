@@ -12,7 +12,8 @@
 
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import { getFcmTokens, extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
+import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
+import { sendMulticast, updateUnreadCounter } from '../utils/notificationUtils';
 
 const db = admin.firestore();
 
@@ -204,6 +205,15 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
           });
 
           await notificationBatch.commit();
+
+          // 카운터 증가 (배치 후)
+          await Promise.all(
+            batchDocs.map((doc) =>
+              updateUnreadCounter(doc.id, 1).catch(() => {
+                // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
+              })
+            )
+          );
         }
 
         await db.collection('systemAnnouncements').doc(announcementId).update({
@@ -226,86 +236,39 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         };
       }
 
-      // FCM 채널 설정 (모바일 'announcements' 채널 사용)
-      const androidChannelId = 'announcements';
+      // sendMulticast()로 일괄 전송 (Expo/FCM 하이브리드)
+      // @note 의도적 설계: 시스템 공지는 사용자별 알림설정(카테고리 비활성화) 무시하여 전원 수신
+      // @note 만료 토큰 정리는 cleanupExpiredTokensScheduled (스케줄 함수)에서 일괄 처리
+      const multicastResult = await sendMulticast(allTokens, {
+        title: `📢 ${title}`,
+        body: content.length > 200 ? content.substring(0, 200) + '...' : content,
+        data: {
+          type: 'announcement',
+          announcementId,
+          priority,
+          target: '/notices',
+        },
+        channelId: 'announcements',
+        priority: priority === 'urgent' ? 'urgent' : priority === 'important' ? 'high' : 'normal',
+      });
 
-      const batchSize = 500;
-      for (let i = 0; i < allTokens.length; i += batchSize) {
-        const batchTokens = allTokens.slice(i, i + batchSize);
+      // 전송 결과 처리 (토큰 → 사용자 역매핑)
+      multicastResult.responses.forEach((resp, idx) => {
+        const token = allTokens[idx];
+        const userIdForToken = tokenToUserMap.get(token);
 
-        const fcmMessage: admin.messaging.MulticastMessage = {
-          notification: {
-            title: `📢 ${title}`,
-            body: content.length > 200 ? content.substring(0, 200) + '...' : content,
-          },
-          data: {
-            type: 'announcement',
-            announcementId,
-            priority,
-            target: '/notices',
-          },
-          tokens: batchTokens,
-          android: {
-            priority: priority === 'urgent' ? 'high' : 'normal',
-            notification: {
-              sound: 'default',
-              channelId: androidChannelId,
-            },
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-                badge: 1,
-              },
-            },
-          },
-        };
+        if (!userIdForToken) return;
 
-        try {
-          const response = await admin.messaging().sendEachForMulticast(fcmMessage);
-
-          functions.logger.info(`FCM 배치 ${Math.floor(i / batchSize) + 1} 전송 결과`, {
-            successCount: response.successCount,
-            failureCount: response.failureCount,
-          });
-
-          // 전송 결과 처리 (토큰 → 사용자 역매핑 사용)
-          response.responses.forEach((resp, idx) => {
-            const token = batchTokens[idx];
-            const userIdForToken = tokenToUserMap.get(token);
-
-            if (!userIdForToken) return;
-
-            if (resp.success) {
-              successUserIds.add(userIdForToken);
-            } else {
-              failedUserIds.add(userIdForToken);
-              errors.push({
-                userId: userIdForToken,
-                error: resp.error?.message || '알 수 없는 오류',
-              });
-            }
-          });
-        } catch (error: any) {
-          functions.logger.error(`FCM 배치 ${Math.floor(i / batchSize) + 1} 전송 실패`, {
-            error: error.message,
-            batchSize: batchTokens.length,
-          });
-
-          // 배치 전체 실패 처리
-          batchTokens.forEach((token) => {
-            const userIdForToken = tokenToUserMap.get(token);
-            if (userIdForToken) {
-              failedUserIds.add(userIdForToken);
-              errors.push({
-                userId: userIdForToken,
-                error: error.message || '배치 전송 실패',
-              });
-            }
+        if (resp.success) {
+          successUserIds.add(userIdForToken);
+        } else {
+          failedUserIds.add(userIdForToken);
+          errors.push({
+            userId: userIdForToken,
+            error: resp.error || '알 수 없는 오류',
           });
         }
-      }
+      });
 
       // 8. 각 사용자에게 알림 문서 생성 (배치 500개 제한 고려)
       const FIRESTORE_BATCH_LIMIT = 500;
@@ -340,6 +303,15 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         });
 
         await notificationBatch.commit();
+
+        // 카운터 증가 (배치 후)
+        await Promise.all(
+          batchUserIds.map((uid) =>
+            updateUnreadCounter(uid, 1).catch(() => {
+              // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
+            })
+          )
+        );
       }
 
       // 9. 공지사항 문서 업데이트

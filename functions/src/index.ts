@@ -68,10 +68,6 @@ export { onFixedPostingExpired } from './triggers/onFixedPostingExpired';
 export { expireByLastWorkDate } from './scheduled/expireByLastWorkDate';
 export { onWorkDateExpired } from './triggers/onWorkDateExpired';
 
-// --- Existing Functions (placeholders for brevity) ---
-export const onApplicationStatusChange = functions.region('asia-northeast3').firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });
-export const onJobPostingCreated = functions.region('asia-northeast3').firestore.document("jobPostings/{postId}").onCreate(async (snap, context) => { /* ... */ });
-
 /**
  * Firestore trigger that automatically validates and fixes job posting data
  * when a new job posting is created or updated

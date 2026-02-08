@@ -97,8 +97,8 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
           data: {
             applicationId,
             jobPostingId: application.jobPostingId,
-            applicantName: applicant.name,
-            jobPostingTitle: jobPosting.title,
+            applicantName: applicant.name || '',
+            jobPostingTitle: jobPosting.title || '',
           },
         }
       );

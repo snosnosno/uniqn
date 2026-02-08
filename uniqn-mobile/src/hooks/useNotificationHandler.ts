@@ -563,6 +563,11 @@ export function useNotificationHandler(
 
         // 포그라운드 복귀 시 놓친 알림 동기화 (onSnapshot은 Background에서 중단됨)
         queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+
+        // 포그라운드 복귀 시 카운터 재동기화 (백그라운드 중 놓친 카운터 변경 반영)
+        if (userId) {
+          syncUnreadCounterFromServer(userId);
+        }
       }
       appStateRef.current = nextAppState;
     };
