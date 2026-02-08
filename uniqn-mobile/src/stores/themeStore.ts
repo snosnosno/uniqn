@@ -13,6 +13,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 import { mmkvStorage } from '@/lib/mmkvStorage';
 import { Appearance, ColorSchemeName } from 'react-native';
 import { colorScheme as nativeWindColorScheme } from 'nativewind';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // Constants
@@ -77,7 +78,7 @@ export const useThemeStore = create<ThemeState>()(
       setTheme: (mode: ThemeMode) => {
         // 유효성 검증
         if (!VALID_THEME_MODES.includes(mode)) {
-          console.warn(`[themeStore] Invalid theme mode: ${mode}, using 'system'`);
+          logger.warn(`[themeStore] Invalid theme mode: ${mode}, using 'system'`);
           mode = 'system';
         }
         applyColorScheme(mode);

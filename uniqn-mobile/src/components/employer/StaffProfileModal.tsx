@@ -7,8 +7,6 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { SheetModal } from '../ui/SheetModal';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
@@ -32,8 +30,7 @@ import {
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
-import { getUserProfile } from '@/services';
-import type { UserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 // ============================================================================
 // Types
@@ -133,11 +130,10 @@ function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
 
 export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModalProps) {
   // 사용자 프로필 조회 (모달이 열려있고 staff가 있을 때만)
-  const { data: userProfile, isLoading: isProfileLoading } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(staff?.staffId ?? ''),
-    queryFn: () => getUserProfile(staff!.staffId),
-    enabled: visible && !!staff?.staffId,
-    staleTime: 5 * 60 * 1000, // 5분
+  const { userProfile, isLoading: isProfileLoading, displayName, profilePhotoURL } = useUserProfile({
+    userId: staff?.staffId,
+    enabled: visible,
+    fallbackName: staff?.staffName,
   });
 
   // 출근 시간 계산
@@ -171,16 +167,6 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     staff?.status === 'completed';
 
   if (!staff) return null;
-
-  // 프로필 사진 URL (사용자 프로필에서 우선 사용)
-  const profilePhotoURL = userProfile?.photoURL;
-  // 표시 이름: Firestore 프로필 우선, 기존 staffName 폴백
-  const baseName = userProfile?.name || staff.staffName;
-  // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
-  const displayName =
-    userProfile?.nickname && userProfile.nickname !== baseName
-      ? `${baseName}(${userProfile.nickname})`
-      : baseName;
 
   return (
     <SheetModal visible={visible} onClose={onClose} title="스태프 프로필">

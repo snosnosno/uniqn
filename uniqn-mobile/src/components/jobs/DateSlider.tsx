@@ -157,20 +157,28 @@ export const DateSlider = memo(function DateSlider({
     return dates.findIndex((d) => isToday(d));
   }, [dates]);
 
-  // 마운트 시 오늘 날짜로 스크롤
+  // 스크롤 대상 인덱스 (선택된 날짜 → 오늘 → 0)
+  const targetIndex = useMemo(() => {
+    if (selectedDate) {
+      const selectedIdx = dates.findIndex((d) => isSameDay(d, selectedDate));
+      if (selectedIdx >= 0) return selectedIdx;
+    }
+    return todayIndex;
+  }, [dates, selectedDate, todayIndex]);
+
+  // 마운트 시 대상 날짜로 스크롤
   useEffect(() => {
-    if (scrollRef.current && todayIndex > 0) {
+    if (scrollRef.current && targetIndex > 0) {
       // 칩 너비 약 68px (min-w-[60px] + gap) 기준으로 스크롤 위치 계산
       const chipWidth = 68;
       const paddingLeft = 16; // px-4 = 16px
-      const offset = todayIndex * chipWidth;
+      const offset = targetIndex * chipWidth;
       // 약간의 딜레이 후 스크롤 (레이아웃 완료 후)
-      // Math.max(0, ...)로 왼쪽 패딩이 화면 밖으로 나가지 않도록 제한
       setTimeout(() => {
         scrollRef.current?.scrollTo({ x: Math.max(0, offset - paddingLeft), animated: true });
       }, 100);
     }
-  }, [todayIndex]);
+  }, [targetIndex]);
 
   const handleDatePress = useCallback(
     (date: Date | null) => {

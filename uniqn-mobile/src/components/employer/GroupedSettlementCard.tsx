@@ -11,8 +11,6 @@
 
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, LayoutAnimation } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { Card, Avatar, Checkbox } from '@/components/ui';
 import {
   CalendarIcon,
@@ -26,7 +24,7 @@ import {
 import { formatDateDisplay, formatGroupRolesDisplay } from '@/utils/settlementGrouping';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
-import { getUserProfile, type UserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
 
@@ -192,23 +190,12 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
-  const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(group.staffId),
-    queryFn: () => getUserProfile(group.staffId),
-    enabled: !!group.staffId,
-    staleTime: 5 * 60 * 1000, // 5분 캐싱
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: group.staffId,
+    fallbackName: group.staffProfile.name,
+    fallbackNickname: group.staffProfile.nickname,
+    fallbackPhotoURL: group.staffProfile.photoURL,
   });
-
-  // 프로필 사진 URL
-  const profilePhotoURL = userProfile?.photoURL || group.staffProfile.photoURL;
-
-  // 표시 이름: Firestore 프로필 우선, 기존 staffProfile 폴백
-  const baseName = userProfile?.name || group.staffProfile.name;
-  const displayName = useMemo(() => {
-    const nickname = userProfile?.nickname || group.staffProfile.nickname;
-    if (!baseName) return `스태프 ${group.staffId.slice(-4)}`;
-    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
-  }, [userProfile, group.staffProfile, group.staffId, baseName]);
 
   // 역할 표시 텍스트
   const rolesDisplay = useMemo(() => {

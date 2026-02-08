@@ -23,6 +23,7 @@ import {
 import { TimePicker } from '@/components/ui/TimePicker';
 import { RoleSelectModal, NumberPickerModal } from '../modals';
 import { ROLE_ICONS, DEFAULT_ROLE_ICON, STAFF_ROLES, MAX_ROLES_PER_SLOT } from '@/constants';
+import { generateId } from '@/utils/generateId';
 import type { TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -234,7 +235,7 @@ export function TimeSlotCard({
       }
 
       const newRole: RoleRequirement = {
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        id: generateId(),
         role: roleKey as RoleRequirement['role'],
         headcount: 1,
         ...(roleKey === 'other' && customName ? { customRole: customName } : {}),

@@ -7,13 +7,11 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
 import { BanknotesIcon, ChevronRightIcon } from '../icons';
-import { getUserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   type SalaryType,
   type SalaryInfo,
@@ -24,7 +22,6 @@ import {
   formatCurrency,
 } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
-import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus } from '@/types';
 
 // Re-export types for backward compatibility
@@ -73,22 +70,11 @@ export const SettlementCard = React.memo(function SettlementCard({
   onSettle,
 }: SettlementCardProps) {
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
-  const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(workLog.staffId),
-    queryFn: () => getUserProfile(workLog.staffId),
-    enabled: !!workLog.staffId,
-    staleTime: 5 * 60 * 1000,
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: workLog.staffId,
+    fallbackName: (workLog as WorkLog & { staffName?: string }).staffName,
+    fallbackNickname: (workLog as WorkLog & { staffNickname?: string }).staffNickname,
   });
-
-  // 프로필 정보
-  const profilePhotoURL = userProfile?.photoURL;
-  const baseName = userProfile?.name || (workLog as WorkLog & { staffName?: string }).staffName;
-  const displayName = useMemo(() => {
-    if (!baseName) return `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}`;
-    const nickname =
-      userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string }).staffNickname;
-    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
-  }, [baseName, userProfile?.nickname, workLog]);
 
   // 정산 계산 (수당 + 세금 포함)
   const settlement = useMemo(

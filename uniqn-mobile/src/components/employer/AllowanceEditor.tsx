@@ -6,8 +6,9 @@
  */
 
 import React, { memo, useMemo, useCallback } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { NumericInput } from '@/components/ui';
 import { type Allowances, PROVIDED_FLAG, formatCurrency } from '@/utils/settlement';
 
 // ============================================================================
@@ -157,20 +158,12 @@ const AllowanceItem = memo(function AllowanceItem({
 
   // 금액 변경
   const handleAmountChange = useCallback(
-    (text: string) => {
+    (amount: number) => {
       if (disabled) return;
-      const numericValue = text.replace(/[^0-9]/g, '');
-      const amount = parseInt(numericValue, 10) || 0;
       onChange(amount);
     },
     [disabled, onChange]
   );
-
-  // 포맷된 금액
-  const formattedAmount = useMemo(() => {
-    if (status !== 'amount' || !value || value <= 0) return '';
-    return value.toLocaleString('ko-KR');
-  }, [status, value]);
 
   return (
     <View className="mb-4">
@@ -286,26 +279,14 @@ const AllowanceItem = memo(function AllowanceItem({
 
           {/* 금액 입력 필드 (금액 모드일 때만) */}
           {status === 'amount' && (
-            <View
-              className={`
-                flex-row items-center rounded-lg border px-3 h-10
-                bg-white dark:bg-surface
-                border-gray-300 dark:border-surface-overlay
-                ${disabled ? 'opacity-50' : ''}
-              `}
-            >
-              <TextInput
-                value={formattedAmount}
-                onChangeText={handleAmountChange}
-                keyboardType="numeric"
-                editable={!disabled}
-                placeholder={config.placeholder}
-                placeholderTextColor="#9CA3AF"
-                className="flex-1 text-base text-gray-900 dark:text-white"
-                accessibilityLabel={`${config.label} 금액`}
-              />
-              <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">원</Text>
-            </View>
+            <NumericInput
+              value={value}
+              onChange={handleAmountChange}
+              placeholder={config.placeholder}
+              suffix="원"
+              disabled={disabled}
+              accessibilityLabel={`${config.label} 금액`}
+            />
           )}
         </View>
       )}
@@ -390,38 +371,19 @@ export const AllowanceEditor = memo(function AllowanceEditor({
             추가 수당
           </Text>
         </View>
-        <View
-          className={`
-            flex-row items-center rounded-lg border px-3 h-10
-            bg-white dark:bg-surface
-            border-gray-300 dark:border-surface-overlay
-            ${disabled ? 'opacity-50' : ''}
-          `}
-        >
-          <TextInput
-            value={
-              allowances.additional && allowances.additional > 0
-                ? allowances.additional.toLocaleString('ko-KR')
-                : ''
-            }
-            onChangeText={(text) => {
-              if (disabled) return;
-              const numericValue = text.replace(/[^0-9]/g, '');
-              const amount = parseInt(numericValue, 10) || 0;
-              onChange({
-                ...allowances,
-                additional: amount > 0 ? amount : undefined,
-              });
-            }}
-            keyboardType="numeric"
-            editable={!disabled}
-            placeholder="0"
-            placeholderTextColor="#9CA3AF"
-            className="flex-1 text-base text-gray-900 dark:text-white"
-            accessibilityLabel="추가 수당 금액"
-          />
-          <Text className="text-sm text-gray-500 dark:text-gray-400 ml-2">원</Text>
-        </View>
+        <NumericInput
+          value={allowances.additional}
+          onChange={(amount) => {
+            onChange({
+              ...allowances,
+              additional: amount > 0 ? amount : undefined,
+            });
+          }}
+          placeholder="0"
+          suffix="원"
+          disabled={disabled}
+          accessibilityLabel="추가 수당 금액"
+        />
         <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1 ml-1">
           기타 수당 금액을 직접 입력하세요
         </Text>

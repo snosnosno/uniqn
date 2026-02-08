@@ -11,6 +11,7 @@ import { ConfirmedStaffCard } from './ConfirmedStaffCard';
 import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
+import { FilterTabs, type FilterTabOption } from '../ui/FilterTabs';
 import { UsersIcon, CalendarIcon, ChevronDownIcon, ChevronUpIcon } from '../icons';
 import {
   CONFIRMED_STAFF_STATUS_LABELS,
@@ -50,7 +51,7 @@ type FilterStatus = 'all' | ConfirmedStaffStatus;
 // Constants
 // ============================================================================
 
-const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
+const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
   { value: 'scheduled', label: '예정' },
   { value: 'checked_in', label: '근무중' },
@@ -60,47 +61,6 @@ const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
 // ============================================================================
 // Sub-components
 // ============================================================================
-
-interface FilterTabsProps {
-  selectedFilter: FilterStatus;
-  onFilterChange: (filter: FilterStatus) => void;
-  counts?: Partial<Record<FilterStatus, number>>;
-}
-
-function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps) {
-  return (
-    <View className="px-4 mb-4">
-      <View className="flex-row bg-gray-100 dark:bg-surface rounded-lg p-1">
-        {FILTER_OPTIONS.map((option) => {
-          const isSelected = selectedFilter === option.value;
-          const count =
-            option.value === 'all' ? counts?.all : counts?.[option.value as ConfirmedStaffStatus];
-
-          return (
-            <Pressable
-              key={option.value}
-              onPress={() => onFilterChange(option.value)}
-              className="flex-1 items-center justify-center py-2 rounded-md"
-              style={{
-                backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
-              }}
-            >
-              <Text
-                className="text-xs font-medium"
-                style={{
-                  color: isSelected ? '#4F46E5' : '#6B7280',
-                }}
-              >
-                {option.label}
-                {count !== undefined && count > 0 && ` (${count})`}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
-  );
-}
 
 interface SectionHeaderProps {
   group: ConfirmedStaffGroup;
@@ -198,8 +158,8 @@ export function ConfirmedStaffList({
     return expanded;
   });
 
-  // 필터별 카운트
-  const filterCounts = useMemo(() => {
+  // 필터 옵션 (카운트 포함)
+  const filterOptions = useMemo(() => {
     const counts: Partial<Record<FilterStatus, number>> = { all: 0 };
     grouped.forEach((group) => {
       group.staff.forEach((s) => {
@@ -207,7 +167,10 @@ export function ConfirmedStaffList({
         counts[s.status as FilterStatus] = (counts[s.status as FilterStatus] || 0) + 1;
       });
     });
-    return counts;
+    return FILTER_OPTIONS.map((option) => ({
+      ...option,
+      count: counts[option.value] ?? 0,
+    }));
   }, [grouped]);
 
   // 필터링된 그룹
@@ -323,9 +286,9 @@ export function ConfirmedStaffList({
     <View className="flex-1">
       {/* 필터 탭 */}
       <FilterTabs
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-        counts={filterCounts}
+        options={filterOptions}
+        selectedValue={selectedFilter}
+        onSelect={setSelectedFilter}
       />
 
       {/* 스태프 목록 (날짜별 섹션) */}

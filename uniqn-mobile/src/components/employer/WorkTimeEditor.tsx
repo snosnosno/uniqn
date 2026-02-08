@@ -9,7 +9,7 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { SheetModal } from '../ui/SheetModal';
-import { Button } from '../ui/Button';
+import { ModalFooterButtons } from '../ui/ModalFooterButtons';
 import { Card } from '../ui/Card';
 import { TimeWheelPicker, type TimeValue } from '../ui/TimeWheelPicker';
 import { ClockIcon, AlertCircleIcon, CheckIcon, ChevronDownIcon } from '../icons';
@@ -461,24 +461,13 @@ export function WorkTimeEditor({
 
   // Footer 버튼
   const footerContent = (
-    <View className="flex-row gap-3">
-      <View className="flex-1">
-        <Button variant="secondary" onPress={handleClose} disabled={isLoading} fullWidth>
-          취소
-        </Button>
-      </View>
-      <View className="flex-1">
-        <Button
-          variant="primary"
-          onPress={handleSave}
-          loading={isLoading}
-          disabled={!isValid}
-          fullWidth
-        >
-          저장
-        </Button>
-      </View>
-    </View>
+    <ModalFooterButtons
+      onCancel={handleClose}
+      onSubmit={handleSave}
+      isLoading={isLoading}
+      submitText="저장"
+      submitDisabled={!isValid}
+    />
   );
 
   return (

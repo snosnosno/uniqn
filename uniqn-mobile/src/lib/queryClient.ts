@@ -502,12 +502,12 @@ export const queryCachingOptions = {
   /** 공고 목록 - 10분 */
   jobPostings: {
     staleTime: cachingPolicies.standard,
-    gcTime: 30 * 60 * 1000, // 30분
+    gcTime: 10 * 60 * 1000, // 10분
   },
   /** 지원서 - 10분 */
   applications: {
     staleTime: cachingPolicies.standard,
-    gcTime: 30 * 60 * 1000, // 30분
+    gcTime: 10 * 60 * 1000, // 10분
   },
   /** 알림 - 2분 (실시간 구독과 별개로 폴링 캐시) */
   notifications: {

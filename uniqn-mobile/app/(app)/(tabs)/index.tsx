@@ -44,12 +44,7 @@ export default function JobsScreen() {
     const result: JobPostingFilters = {};
 
     if (selectedType) {
-      // "지원" 탭은 regular + urgent 모두 표시
-      if (selectedType === 'regular') {
-        result.postingTypes = ['regular', 'urgent'];
-      } else {
-        result.postingType = selectedType;
-      }
+      result.postingType = selectedType;
     }
 
     // 날짜 필터는 regular 타입에서만 적용
@@ -67,13 +62,10 @@ export default function JobsScreen() {
       enabled: selectedType !== null, // 타입 선택 전까지 쿼리 비활성화
     });
 
-  // 타입 변경 핸들러 (타입 변경 시 날짜 초기화)
+  // 타입 변경 핸들러 (탭 변경 시 항상 날짜 초기화)
   const handleTypeChange = useCallback((type: PostingType | null) => {
     setSelectedType(type);
-    // regular가 아닌 타입으로 변경 시 날짜 초기화
-    if (type !== 'regular') {
-      setSelectedDate(null);
-    }
+    setSelectedDate(null);
   }, []);
 
   // 공고 클릭 핸들러

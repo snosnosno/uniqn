@@ -213,8 +213,11 @@ export function createDefaultRole(): RoleRequirement {
 }
 
 /**
- * 고유 ID 생성 (간단한 UUID)
+ * 고유 ID 생성
  */
 function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
+  return `${Date.now()}-${random}`;
 }

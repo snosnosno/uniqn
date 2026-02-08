@@ -49,7 +49,10 @@ const MAX_TOASTS = 3;
 // ============================================================================
 
 const generateId = (): string => {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
+  return `${Date.now()}-${random}`;
 };
 
 // ============================================================================

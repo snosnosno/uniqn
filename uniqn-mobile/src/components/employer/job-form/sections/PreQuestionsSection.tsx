@@ -45,7 +45,10 @@ const QUESTION_TYPES: { value: QuestionType; label: string; description: string 
 // ============================================================================
 
 function generateId(): string {
-  return `q_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const bytes = new Uint8Array(5);
+  crypto.getRandomValues(bytes);
+  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
+  return `q_${Date.now()}_${random}`;
 }
 
 // ============================================================================

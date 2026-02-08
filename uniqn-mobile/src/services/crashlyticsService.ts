@@ -138,9 +138,6 @@ export async function recordError(error: Error | AppError, context?: CrashContex
         ...fullContext,
       });
 
-      if (__DEV__) {
-        console.error('[ErrorMonitor]', error.name, error.message, fullContext);
-      }
     } else {
       // Sentry로 에러 전송
       Sentry.withScope((scope) => {
@@ -156,9 +153,7 @@ export async function recordError(error: Error | AppError, context?: CrashContex
       });
     }
   } catch (_err) {
-    if (__DEV__) {
-      console.error('[ErrorMonitor] recordError failed', _err);
-    }
+    logger.warn('[ErrorMonitor] recordError failed', { error: _err });
   }
 }
 
@@ -185,9 +180,6 @@ export async function recordFatalError(
         ...errorInfo.attributes,
       });
 
-      if (__DEV__) {
-        console.error('[ErrorMonitor FATAL]', error.name, error.message, context);
-      }
     } else {
       Sentry.withScope((scope) => {
         if (context) {
@@ -202,9 +194,7 @@ export async function recordFatalError(
       });
     }
   } catch (_err) {
-    if (__DEV__) {
-      console.error('[ErrorMonitor] recordFatalError failed', _err);
-    }
+    logger.warn('[ErrorMonitor] recordFatalError failed', { error: _err });
   }
 }
 

@@ -8,13 +8,10 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, LayoutAnimation } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { Card } from '../../ui/Card';
 import { FixedScheduleDisplay } from '../../jobs/FixedScheduleDisplay';
 import { formatRelativeTime } from '@/utils/dateUtils';
-import { getUserProfile } from '@/services';
-import type { UserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 
 // 분리된 모듈 import
 import type { ApplicantCardProps, IconColors } from './types';
@@ -86,22 +83,10 @@ export const ApplicantCard = React.memo(function ApplicantCard({
   });
 
   // 사용자 프로필 조회
-  const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(applicant.applicantId),
-    queryFn: () => getUserProfile(applicant.applicantId),
-    enabled: !!applicant.applicantId,
-    staleTime: 5 * 60 * 1000,
+  const { displayName, profilePhotoURL, userProfile } = useUserProfile({
+    userId: applicant.applicantId,
+    fallbackName: applicant.applicantName,
   });
-
-  // 프로필 사진 URL
-  const profilePhotoURL = userProfile?.photoURL;
-  // 표시 이름: Firestore 프로필 우선, Firebase Auth displayName 폴백
-  const baseName = userProfile?.name || applicant.applicantName;
-  // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
-  const displayName =
-    userProfile?.nickname && userProfile.nickname !== baseName
-      ? `${baseName}(${userProfile.nickname})`
-      : baseName;
 
   // 지원일 계산
   const appliedTimeAgo = useMemo(() => {

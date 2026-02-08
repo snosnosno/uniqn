@@ -89,8 +89,7 @@ export function parseDateString(dateStr: string): Date | null {
 /**
  * 고유 ID 생성
  *
- * @description 타임스탬프 + 랜덤값으로 고유 ID 생성
+ * @description crypto.getRandomValues 기반 안전한 ID 생성
+ * @deprecated `@/utils/generateId`에서 직접 import 권장
  */
-export function generateId(): string {
-  return `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
-}
+export { generateId } from '@/utils/generateId';

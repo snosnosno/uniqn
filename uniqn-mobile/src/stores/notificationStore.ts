@@ -22,6 +22,7 @@ import type {
   NotificationFilter,
 } from '@/types/notification';
 import { NotificationCategory, createDefaultNotificationSettings } from '@/types/notification';
+import { logger } from '@/utils/logger';
 
 type NotificationCategoryType = (typeof NotificationCategory)[keyof typeof NotificationCategory];
 
@@ -520,8 +521,7 @@ export const useNotificationStore = create<NotificationState>()(
       onRehydrateStorage: () => {
         return (state, error) => {
           if (error) {
-            // eslint-disable-next-line no-console
-            console.warn('[NotificationStore] 복원 실패:', error);
+            logger.warn('[NotificationStore] 복원 실패', { error });
             return;
           }
 

@@ -21,6 +21,7 @@ import {
   type DateRangeGroup,
 } from '@/utils/dateRangeUtils';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
+import { generateId } from '@/utils/generateId';
 import type { TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -74,12 +75,12 @@ export function DateRangeCard({ group, index, canRemove, onUpdate, onRemove }: D
     }
 
     const newTimeSlot: TimeSlot = {
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateId(),
       startTime: DEFAULT_START_TIME,
       isTimeToBeAnnounced: false,
       roles: [
         {
-          id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+          id: generateId(),
           role: 'dealer',
           headcount: 1,
         } as RoleRequirement,
