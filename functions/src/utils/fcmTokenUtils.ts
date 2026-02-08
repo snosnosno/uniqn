@@ -2,11 +2,11 @@
  * FCM 토큰 유틸리티
  *
  * @description FCM 토큰 추출, 검증, 관리 헬퍼 함수
- * @version 1.1.0
+ * @version 2.0.0
  *
- * @note 개발 단계이므로 레거시 호환 코드 없음
- *       - fcmTokens: string[] 배열만 지원
- *       - 레거시 fcmToken 단일 필드는 완전히 무시
+ * fcmTokens 구조: Map (Record<string, FcmTokenRecord>)
+ * 각 엔트리: { token, type, platform, registeredAt, lastRefreshedAt }
+ * Expo 토큰(ExponentPushToken[...)은 FCM 전송 시 제외
  */
 
 import * as admin from 'firebase-admin';
@@ -18,8 +18,16 @@ const db = admin.firestore();
 // Types
 // ============================================================================
 
+export interface FcmTokenRecord {
+  token: string;
+  type: 'expo' | 'fcm';
+  platform: 'ios' | 'android';
+  registeredAt: admin.firestore.Timestamp;
+  lastRefreshedAt: admin.firestore.Timestamp;
+}
+
 export interface UserFcmData {
-  fcmTokens?: string[];
+  fcmTokens?: Record<string, FcmTokenRecord>;
 }
 
 // ============================================================================
@@ -30,7 +38,7 @@ export interface UserFcmData {
  * 사용자 문서에서 FCM 토큰 추출
  *
  * @param userData Firestore users 문서 데이터
- * @returns 유효한 FCM 토큰 배열 (중복 제거됨)
+ * @returns 유효한 FCM 토큰 배열 (Expo 토큰 제외, 중복 제거됨)
  *
  * @example
  * const tokens = getFcmTokens(userDoc.data());
@@ -45,18 +53,27 @@ export function getFcmTokens(userData: UserFcmData | undefined | null): string[]
 
   const { fcmTokens } = userData;
 
-  if (!fcmTokens || !Array.isArray(fcmTokens)) {
+  if (!fcmTokens || typeof fcmTokens !== 'object') {
     return [];
   }
 
-  // 유효한 토큰만 필터링 (문자열이고 빈 문자열이 아닌 것)
-  const validTokens = fcmTokens.filter(
-    (token): token is string =>
-      typeof token === 'string' && token.length > 0
-  );
+  const tokens: string[] = [];
+
+  for (const record of Object.values(fcmTokens)) {
+    if (!record || typeof record.token !== 'string' || record.token.length === 0) {
+      continue;
+    }
+
+    // Expo 토큰은 FCM 전송에서 제외
+    if (record.type === 'expo' || record.token.startsWith('ExponentPushToken[')) {
+      continue;
+    }
+
+    tokens.push(record.token);
+  }
 
   // 중복 제거
-  return [...new Set(validTokens)];
+  return [...new Set(tokens)];
 }
 
 /**
@@ -116,12 +133,6 @@ export function flattenTokens(tokenMap: Map<string, string[]>): string[] {
  * @param userId 사용자 ID
  * @param invalidToken 제거할 토큰
  * @returns 성공 여부
- *
- * @example
- * // FCM 전송 실패 시 호출
- * if (error.code === 'messaging/invalid-registration-token') {
- *   await removeInvalidToken(userId, token);
- * }
  */
 export async function removeInvalidToken(
   userId: string,
@@ -129,9 +140,18 @@ export async function removeInvalidToken(
 ): Promise<boolean> {
   try {
     const userRef = db.collection('users').doc(userId);
+    const tokenKey = await findTokenKeyByValue(userRef, invalidToken);
+
+    if (!tokenKey) {
+      functions.logger.warn('제거할 토큰 키를 찾을 수 없음', {
+        userId,
+        token: invalidToken.substring(0, 20) + '...',
+      });
+      return false;
+    }
 
     await userRef.update({
-      fcmTokens: admin.firestore.FieldValue.arrayRemove(invalidToken),
+      [`fcmTokens.${tokenKey}`]: admin.firestore.FieldValue.delete(),
     });
 
     functions.logger.info('만료된 FCM 토큰 제거 완료', {
@@ -166,18 +186,37 @@ export async function removeInvalidTokens(
 
   try {
     const userRef = db.collection('users').doc(userId);
+    const userDoc = await userRef.get();
+    const fcmTokens = (userDoc.data()?.fcmTokens ?? {}) as Record<string, FcmTokenRecord>;
 
-    // 여러 토큰을 한 번에 제거
-    await userRef.update({
-      fcmTokens: admin.firestore.FieldValue.arrayRemove(...invalidTokens),
-    });
+    // 토큰 값으로 키 매핑
+    const tokenToKey = new Map<string, string>();
+    for (const [key, record] of Object.entries(fcmTokens)) {
+      if (record?.token) {
+        tokenToKey.set(record.token, key);
+      }
+    }
+
+    const updateData: Record<string, admin.firestore.FieldValue> = {};
+    let removedCount = 0;
+    for (const token of invalidTokens) {
+      const key = tokenToKey.get(token);
+      if (key) {
+        updateData[`fcmTokens.${key}`] = admin.firestore.FieldValue.delete();
+        removedCount++;
+      }
+    }
+
+    if (removedCount > 0) {
+      await userRef.update(updateData);
+    }
 
     functions.logger.info('만료된 FCM 토큰 일괄 제거 완료', {
       userId,
-      removedCount: invalidTokens.length,
+      removedCount,
     });
 
-    return invalidTokens.length;
+    return removedCount;
   } catch (error: any) {
     functions.logger.error('FCM 토큰 일괄 제거 실패', {
       userId,
@@ -186,6 +225,24 @@ export async function removeInvalidTokens(
     });
     return 0;
   }
+}
+
+/**
+ * 토큰 값으로 Firestore Map 키 찾기
+ */
+async function findTokenKeyByValue(
+  userRef: admin.firestore.DocumentReference,
+  token: string
+): Promise<string | null> {
+  const userDoc = await userRef.get();
+  const fcmTokens = (userDoc.data()?.fcmTokens ?? {}) as Record<string, FcmTokenRecord>;
+
+  for (const [key, record] of Object.entries(fcmTokens)) {
+    if (record?.token === token) {
+      return key;
+    }
+  }
+  return null;
 }
 
 /**

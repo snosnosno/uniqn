@@ -49,8 +49,8 @@ const WEB_PREFIX = `https://${WEB_DOMAIN}`;
 
 /** 콜드 스타트 네비게이션 재시도 간격 (ms) */
 const COLD_START_RETRY_INTERVAL_MS = 100;
-/** 콜드 스타트 네비게이션 최대 재시도 횟수 (100ms * 20 = 최대 2초) */
-const COLD_START_MAX_RETRIES = 20;
+/** 콜드 스타트 네비게이션 최대 재시도 횟수 (100ms * 50 = 최대 5초) */
+const COLD_START_MAX_RETRIES = 50;
 
 /**
  * 안전한 알림 링크 패턴
@@ -199,21 +199,27 @@ function pathToRoute(path: string, params: Record<string, string>): DeepLinkRout
  *
  * @description navigateToDeepLink와 navigateFromNotification의 공통 로직
  */
+/** 네비게이션 재시도 대기 시간 (ms) */
+const NAVIGATION_RETRY_DELAY_MS = 300;
+
+/** 폴백 네비게이션 경로 */
+const FALLBACK_ROUTE = '/(app)/notifications';
+
 async function executeNavigation(
   route: DeepLinkRoute,
   context: NavigationContext
 ): Promise<boolean> {
+  const expoPath = RouteMapper.toExpoPath(route);
+
+  // Analytics 이벤트
+  trackEvent(context.source === 'deeplink' ? 'deep_link_navigation' : 'notification_click', {
+    route_name: route.name,
+    ...(context.type && { notification_type: context.type }),
+    ...(context.url && { path: context.url }),
+  });
+
+  // 1차 시도
   try {
-    const expoPath = RouteMapper.toExpoPath(route);
-
-    // Analytics 이벤트
-    trackEvent(context.source === 'deeplink' ? 'deep_link_navigation' : 'notification_click', {
-      route_name: route.name,
-      ...(context.type && { notification_type: context.type }),
-      ...(context.url && { path: context.url }),
-    });
-
-    // Expo Router 네비게이션
     router.push(expoPath);
 
     logger.info(`${context.source} 네비게이션 성공`, {
@@ -222,10 +228,48 @@ async function executeNavigation(
     });
 
     return true;
-  } catch (error) {
-    logger.error(`${context.source} 네비게이션 실패`, toError(error), {
+  } catch (firstError) {
+    logger.warn(`${context.source} 네비게이션 1차 실패, 재시도 대기`, {
+      route: route.name,
+      error: toError(firstError).message,
+    });
+  }
+
+  // 2차 시도 (300ms 후 재시도)
+  await new Promise((resolve) => setTimeout(resolve, NAVIGATION_RETRY_DELAY_MS));
+
+  try {
+    router.push(expoPath);
+
+    logger.info(`${context.source} 네비게이션 재시도 성공`, {
+      route: route.name,
+      expoPath,
+    });
+
+    return true;
+  } catch (retryError) {
+    logger.error(`${context.source} 네비게이션 재시도 실패, 폴백`, toError(retryError), {
       route: route.name,
     });
+  }
+
+  // 폴백: 알림 목록으로 이동
+  try {
+    router.replace(FALLBACK_ROUTE);
+
+    trackEvent('notification_navigation_fallback', {
+      original_route: route.name,
+      source: context.source,
+    });
+
+    logger.info(`${context.source} 네비게이션 폴백 성공`, {
+      originalRoute: route.name,
+      fallbackRoute: FALLBACK_ROUTE,
+    });
+
+    return true;
+  } catch (fallbackError) {
+    logger.error(`${context.source} 네비게이션 폴백도 실패`, toError(fallbackError));
     return false;
   }
 }
@@ -429,7 +473,7 @@ function isWebRootUrl(url: string): boolean {
  * router.canGoBack()이 에러 없이 호출되면 준비된 것으로 판단.
  * 최대 COLD_START_MAX_RETRIES회 재시도 후 강제 실행.
  */
-function waitForNavigationReady(callback: () => void, retryCount = 0): void {
+export function waitForNavigationReady(callback: () => void, retryCount = 0): void {
   if (retryCount >= COLD_START_MAX_RETRIES) {
     logger.warn('콜드 스타트 네비게이션: 최대 대기 초과, 강제 실행', {
       retries: retryCount,
@@ -447,6 +491,17 @@ function waitForNavigationReady(callback: () => void, retryCount = 0): void {
       waitForNavigationReady(callback, retryCount + 1);
     }, COLD_START_RETRY_INTERVAL_MS);
   }
+}
+
+/**
+ * 네비게이션 준비 완료 시까지 대기 (Promise 버전)
+ *
+ * @description 콜드 스타트 시 알림 터치 등에서 await로 사용
+ */
+export function waitForNavigationReadyAsync(): Promise<void> {
+  return new Promise((resolve) => {
+    waitForNavigationReady(() => resolve());
+  });
 }
 
 // ============================================================================
@@ -538,6 +593,10 @@ export const deepLinkService = {
   // URL Generation
   createDeepLink,
   createJobDeepLink,
+
+  // Cold Start
+  waitForNavigationReady,
+  waitForNavigationReadyAsync,
 
   // Setup
   setupDeepLinkListener,

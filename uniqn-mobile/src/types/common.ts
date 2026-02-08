@@ -16,6 +16,18 @@ import type { UserRole, StaffRole } from './role';
 export type { UserRole, StaffRole };
 
 /**
+ * FCM 토큰 레코드 (Map 구조)
+ * Firestore 필드: users/{userId}.fcmTokens.{tokenKey}
+ */
+export interface FcmTokenRecord {
+  token: string;
+  type: 'expo' | 'fcm';
+  platform: 'ios' | 'android';
+  registeredAt: Timestamp | Date;
+  lastRefreshedAt: Timestamp | Date;
+}
+
+/**
  * Firebase 문서 기본 타입
  */
 export interface FirebaseDocument {
@@ -35,7 +47,7 @@ export interface User extends FirebaseDocument {
   phone?: string;
   profileImage?: string;
   isActive: boolean;
-  fcmTokens?: string[]; // 멀티 디바이스 지원
+  fcmTokens?: Record<string, FcmTokenRecord>; // 멀티 디바이스 지원 (Map 구조)
 }
 
 // StaffRole은 role.ts에서 정의됨 (re-export는 위에서 처리)

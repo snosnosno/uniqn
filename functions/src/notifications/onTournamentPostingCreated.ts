@@ -13,6 +13,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
+import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
 
 const db = admin.firestore();
 
@@ -33,6 +34,7 @@ interface JobPostingData {
 }
 
 interface UserData {
+  fcmTokens?: Record<string, FcmTokenRecord>;
   name?: string;
   email?: string;
 }

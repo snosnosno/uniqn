@@ -142,8 +142,13 @@ export interface INotificationRepository {
    * FCM 토큰 등록
    * @param userId - 사용자 ID
    * @param token - FCM 토큰
+   * @param metadata - 토큰 메타데이터 (타입, 플랫폼)
    */
-  registerFCMToken(userId: string, token: string): Promise<void>;
+  registerFCMToken(
+    userId: string,
+    token: string,
+    metadata: { type: 'expo' | 'fcm'; platform: 'ios' | 'android' }
+  ): Promise<void>;
 
   /**
    * FCM 토큰 삭제
