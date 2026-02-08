@@ -118,7 +118,7 @@ const formatLog = (entry: LogEntry): string => {
  *
  * @description 프로덕션 환경에서는 context 내 민감 데이터를 자동 마스킹
  */
-const output = (level: LogLevel, entry: LogEntry): void => {
+const output = (level: LogLevel, entry: LogEntry, skipCrashlytics = false): void => {
   if (!shouldLog(level)) return;
 
   // 프로덕션 환경에서 context 마스킹 (민감 데이터 보호)
@@ -148,7 +148,8 @@ const output = (level: LogLevel, entry: LogEntry): void => {
   }
 
   // 프로덕션에서 error 레벨은 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
-  if (isProduction && level === 'error' && entry.error) {
+  // skipCrashlytics: appError()처럼 severity 기반으로 직접 전송을 제어하는 경우 true
+  if (!skipCrashlytics && isProduction && level === 'error' && entry.error) {
     import('@/services/crashlyticsService')
       .then(({ crashlyticsService }) => {
         crashlyticsService
@@ -340,9 +341,13 @@ export const logger = {
         error.originalError
       );
 
-      output('error', entry);
+      // skipCrashlytics=true: output()의 자동 Sentry 전송을 방지하고,
+      // 아래에서 severity 기반으로 직접 전송을 제어
+      output('error', entry, true);
 
       // 프로덕션에서는 심각도에 따라 Crashlytics로 전송 (동적 import로 순환 의존성 방지)
+      // low/medium (비밀번호 불일치, 이미 지원함 등) → Sentry 전송 안 함
+      // high/critical (서버 장애, 알 수 없는 에러 등) → Sentry 전송
       if (isProduction && (error.severity === 'high' || error.severity === 'critical')) {
         // LogContext를 CrashContext-호환 형식으로 변환
         const crashContext = context ? toCrashContext(context) : undefined;
