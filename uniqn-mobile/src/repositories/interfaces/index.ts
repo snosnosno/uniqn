@@ -73,3 +73,11 @@ export type {
   MarkNoShowContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from './IConfirmedStaffRepository';
+
+// Admin Repository
+export type {
+  IAdminRepository,
+  DashboardCounts,
+  DailyCount,
+  SystemMetricsData,
+} from './IAdminRepository';

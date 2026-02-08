@@ -456,6 +456,8 @@ export const queryKeys = {
 export const cachingPolicies = {
   /** 실시간 데이터 - 30초 (settlement, workLogs) - 완전 realtime 대신 짧은 캐시 */
   realtime: 30 * 1000,
+  /** 준실시간 - 2분 (notifications) - FCM 보완용 폴링 캐시 */
+  nearRealtime: 2 * 60 * 1000,
   /** 자주 변경되는 데이터 - 5분 (schedules) - 네트워크 비용 절감 */
   frequent: 5 * 60 * 1000,
   /** 보통 빈도 - 10분 (기본값: jobPostings, applications) */
@@ -511,7 +513,7 @@ export const queryCachingOptions = {
   },
   /** 알림 - 2분 (실시간 구독과 별개로 폴링 캐시) */
   notifications: {
-    staleTime: 2 * 60 * 1000,
+    staleTime: cachingPolicies.nearRealtime,
     gcTime: 10 * 60 * 1000, // 10분
   },
   /** 확정 스태프 - 5분 */

@@ -60,6 +60,21 @@ export interface SilentErrorOptions extends ServiceErrorOptions {
 // Sensitive Data Masking
 // ============================================================================
 
+/**
+ * 민감 값 마스킹 유틸리티
+ *
+ * @description 이메일, ID, 전화번호 등 민감 값을 마스킹 처리
+ *
+ * @example
+ * maskValue('user@example.com', 'email') // 'use***com'
+ * maskValue('abc123xyz', 'id')           // 'abc***xyz'
+ * maskValue('01012345678', 'phone')      // '010***678'
+ */
+export function maskValue(value: string, _type: 'email' | 'id' | 'phone' = 'id'): string {
+  if (value.length <= 6) return '***';
+  return `${value.slice(0, 3)}***${value.slice(-3)}`;
+}
+
 /** 민감 정보 필드 목록 (대소문자 무시) */
 const SENSITIVE_FIELDS = [
   'userid',

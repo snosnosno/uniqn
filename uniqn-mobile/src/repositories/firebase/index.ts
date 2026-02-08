@@ -14,3 +14,4 @@ export { FirebaseNotificationRepository } from './NotificationRepository';
 export { FirebaseReportRepository } from './ReportRepository';
 export { FirebaseSettlementRepository } from './SettlementRepository';
 export { FirebaseConfirmedStaffRepository } from './ConfirmedStaffRepository';
+export { FirebaseAdminRepository } from './AdminRepository';

@@ -72,7 +72,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   slug: 'uniqn',
   version: VERSION,
   orientation: 'portrait',
-  icon: './assets/icon.png',
+  icon: './assets/1024.png',
   userInterfaceStyle: 'automatic',
   scheme: 'uniqn',
 
@@ -80,7 +80,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   splash: {
     image: './assets/splash-icon.png',
     resizeMode: 'contain',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1a1625',
   },
 
   // iOS 설정
@@ -106,8 +106,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // Android 설정
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/adaptive-icon.png',
-      backgroundColor: '#ffffff',
+      foregroundImage: './assets/1024.png',
+      backgroundColor: '#1a1625',
     },
     package: envConfig.androidPackage,
     googleServicesFile: './google-services.json',
@@ -136,7 +136,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   // 웹 설정
   web: {
-    favicon: './assets/favicon.png',
+    favicon: './assets/play_store_512.png',
     bundler: 'metro',
   },
 
@@ -160,7 +160,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     [
       'expo-notifications',
       {
-        icon: './assets/icon.png',
+        icon: './assets/1024.png',
         color: '#A855F7',
         // Android 알림 채널은 pushNotificationService.ts에서 동적 생성
       },

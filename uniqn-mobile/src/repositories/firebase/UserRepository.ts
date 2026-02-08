@@ -16,6 +16,7 @@ import {
   documentId,
   getDoc,
   getDocs,
+  setDoc,
   updateDoc,
   collection,
   query,
@@ -171,6 +172,45 @@ export class FirebaseUserRepository implements IUserRepository {
   // ==========================================================================
   // 변경 (Write)
   // ==========================================================================
+
+  async createOrMerge(userId: string, profile: Record<string, unknown>): Promise<void> {
+    try {
+      logger.info('사용자 문서 생성/병합', { userId, fields: Object.keys(profile) });
+
+      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      await setDoc(userRef, profile, { merge: true });
+
+      logger.info('사용자 문서 생성/병합 완료', { userId });
+    } catch (error) {
+      logger.error('사용자 문서 생성/병합 실패', toError(error), { userId });
+      throw handleServiceError(error, {
+        operation: '사용자 문서 생성/병합',
+        component: 'UserRepository',
+        context: { userId, fields: Object.keys(profile) },
+      });
+    }
+  }
+
+  async updateFields(userId: string, updates: Record<string, unknown>): Promise<void> {
+    try {
+      logger.info('사용자 필드 업데이트', { userId, fields: Object.keys(updates) });
+
+      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      await updateDoc(userRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
+
+      logger.info('사용자 필드 업데이트 완료', { userId });
+    } catch (error) {
+      logger.error('사용자 필드 업데이트 실패', toError(error), { userId });
+      throw handleServiceError(error, {
+        operation: '사용자 필드 업데이트',
+        component: 'UserRepository',
+        context: { userId, fields: Object.keys(updates) },
+      });
+    }
+  }
 
   async updateProfile(userId: string, updates: Partial<MyDataEditableFields>): Promise<void> {
     try {

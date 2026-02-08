@@ -109,6 +109,24 @@ export interface IUserRepository {
   // ==========================================================================
 
   /**
+   * 사용자 문서 생성 또는 병합 (setDoc with merge:true)
+   *
+   * @description 문서가 없으면 생성, 있으면 기존 필드를 유지하면서 병합
+   * @param userId - 사용자 ID
+   * @param profile - 저장할 프로필 데이터
+   */
+  createOrMerge(userId: string, profile: Record<string, unknown>): Promise<void>;
+
+  /**
+   * 사용자 필드 업데이트 (updatedAt 자동 추가)
+   *
+   * @description updateDoc + serverTimestamp 자동 추가
+   * @param userId - 사용자 ID
+   * @param updates - 변경할 필드 (updatedAt은 자동 추가됨)
+   */
+  updateFields(userId: string, updates: Record<string, unknown>): Promise<void>;
+
+  /**
    * 프로필 업데이트
    * @param userId - 사용자 ID
    * @param updates - 변경할 필드

@@ -35,18 +35,16 @@ import {
 } from 'firebase/auth';
 import {
   doc,
-  setDoc,
-  getDoc,
-  updateDoc,
   serverTimestamp,
   Timestamp,
   runTransaction,
 } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/hooks/useNotificationHandler';
 import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
   trackLogin,
   trackSignup,
@@ -76,14 +74,8 @@ export interface AuthResult {
 // Helpers
 // ============================================================================
 
-/**
- * 이메일 마스킹 (로깅용)
- * @example maskEmail('user@example.com') → 'use***com'
- */
-function maskEmail(email: string): string {
-  if (email.length <= 6) return '***';
-  return `${email.slice(0, 3)}***${email.slice(-3)}`;
-}
+/** 이메일 마스킹 (로깅용) - maskValue 래퍼 */
+const maskEmail = (email: string) => maskValue(email, 'email');
 
 /**
  * 생년월일(YYYYMMDD)에서 출생년도 추출
@@ -229,7 +221,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     };
 
     // merge: true로 Cloud Function이 먼저 생성한 문서를 덮어씀
-    await setDoc(doc(getFirebaseDb(), 'users', user.uid), profile, { merge: true });
+    await userRepository.createOrMerge(user.uid, { ...profile });
 
     logger.info('회원가입 성공', { uid: user.uid, role: data.role });
 
@@ -302,13 +294,7 @@ export async function resetPassword(email: string): Promise<void> {
  */
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
   try {
-    const userDoc = await getDoc(doc(getFirebaseDb(), 'users', uid));
-
-    if (!userDoc.exists()) {
-      return null;
-    }
-
-    return userDoc.data() as UserProfile;
+    return await userRepository.getById(uid);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '프로필 조회',
@@ -325,10 +311,7 @@ export async function updateMarketingConsent(uid: string, marketingAgreed: boole
   try {
     logger.info('마케팅 동의 업데이트', { uid, marketingAgreed });
 
-    await updateDoc(doc(getFirebaseDb(), 'users', uid), {
-      marketingAgreed,
-      updatedAt: serverTimestamp(),
-    });
+    await userRepository.updateFields(uid, { marketingAgreed });
 
     logger.info('마케팅 동의 업데이트 성공', { uid, marketingAgreed });
   } catch (error) {
@@ -352,10 +335,7 @@ export async function updateUserProfile(
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });
 
     // 1. Firestore 업데이트
-    await updateDoc(doc(getFirebaseDb(), 'users', uid), {
-      ...updates,
-      updatedAt: serverTimestamp(),
-    });
+    await userRepository.updateFields(uid, updates);
 
     // 2. Firebase Auth 업데이트 (photoURL 변경 시)
     // Note: name(본명)은 본인인증 정보이므로 수정 불가
@@ -554,7 +534,7 @@ async function createMockProfile(
     updatedAt: serverTimestamp() as Timestamp,
   };
 
-  await setDoc(doc(getFirebaseDb(), 'users', uid), {
+  await userRepository.createOrMerge(uid, {
     ...profile,
     socialProvider: provider, // 소셜 로그인 제공자 기록
   });
@@ -812,10 +792,7 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
     await updateProfile(user, { photoURL });
 
     // 2. Firestore 사용자 문서 업데이트
-    await updateDoc(doc(getFirebaseDb(), 'users', uid), {
-      photoURL: photoURL ?? null,
-      updatedAt: serverTimestamp(),
-    });
+    await userRepository.updateFields(uid, { photoURL: photoURL ?? null });
 
     logger.info('프로필 사진 업데이트 성공', { uid });
   } catch (error) {

@@ -25,7 +25,7 @@ import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
-import { FirebaseNotificationRepository } from '@/repositories/firebase/NotificationRepository';
+import { notificationRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
 import { getUserProfile } from '@/services/authService';
@@ -37,8 +37,7 @@ import {
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
 
-// Repository 인스턴스
-const notificationRepository = new FirebaseNotificationRepository();
+// Repository 인스턴스 (싱글톤)
 
 // ============================================================================
 // Types

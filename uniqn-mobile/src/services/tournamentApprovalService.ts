@@ -2,7 +2,11 @@
  * UNIQN Mobile - 대회공고 승인 서비스
  *
  * @description Firebase Functions 기반 대회공고 승인/거부/재제출 워크플로우
- * @version 1.0.0
+ * @version 2.0.0
+ *
+ * Repository 패턴 적용:
+ * - Query Functions의 Firebase 직접 호출 제거
+ * - jobPostingRepository를 통한 데이터 접근
  *
  * 기존 Firebase Functions 재사용:
  * - approveJobPosting: 관리자 승인
@@ -11,8 +15,7 @@
  */
 
 import { httpsCallable } from 'firebase/functions';
-import { collection, query, where, orderBy, getDocs, getDoc, doc } from 'firebase/firestore';
-import { getFirebaseFunctions, getFirebaseDb } from '@/lib/firebase';
+import { getFirebaseFunctions } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import {
   mapFirebaseError,
@@ -24,6 +27,7 @@ import {
   toError,
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { jobPostingRepository } from '@/repositories';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import type {
   ApproveTournamentData,
@@ -200,7 +204,7 @@ export async function resubmitTournamentPosting(
 }
 
 // ============================================================================
-// Query Functions
+// Query Functions (Repository 패턴 적용)
 // ============================================================================
 
 /**
@@ -210,19 +214,10 @@ export async function getPendingTournamentPostings(): Promise<JobPosting[]> {
   try {
     logger.info('승인 대기 대회공고 목록 조회');
 
-    const db = getFirebaseDb();
-    const q = query(
-      collection(db, 'jobPostings'),
-      where('postingType', '==', 'tournament'),
-      where('tournamentConfig.approvalStatus', '==', 'pending'),
-      orderBy('createdAt', 'desc')
+    const postings = await jobPostingRepository.getByPostingTypeAndApprovalStatus(
+      'tournament',
+      'pending'
     );
-
-    const snapshot = await getDocs(q);
-    const postings = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as JobPosting[];
 
     logger.info('승인 대기 대회공고 목록 조회 완료', { count: postings.length });
     return postings;
@@ -243,19 +238,10 @@ export async function getTournamentPostingsByStatus(
   try {
     logger.info('대회공고 목록 조회', { status });
 
-    const db = getFirebaseDb();
-    const q = query(
-      collection(db, 'jobPostings'),
-      where('postingType', '==', 'tournament'),
-      where('tournamentConfig.approvalStatus', '==', status),
-      orderBy('createdAt', 'desc')
+    const postings = await jobPostingRepository.getByPostingTypeAndApprovalStatus(
+      'tournament',
+      status
     );
-
-    const snapshot = await getDocs(q);
-    const postings = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as JobPosting[];
 
     logger.info('대회공고 목록 조회 완료', { status, count: postings.length });
     return postings;
@@ -275,21 +261,11 @@ export async function getMyPendingTournamentPostings(ownerId: string): Promise<J
   try {
     logger.info('내 대회공고 목록 조회', { ownerId });
 
-    const db = getFirebaseDb();
-    // pending 또는 rejected 상태의 내 대회공고
-    const pendingQuery = query(
-      collection(db, 'jobPostings'),
-      where('postingType', '==', 'tournament'),
-      where('ownerId', '==', ownerId),
-      where('tournamentConfig.approvalStatus', 'in', ['pending', 'rejected']),
-      orderBy('createdAt', 'desc')
+    const postings = await jobPostingRepository.getByOwnerAndPostingType(
+      ownerId,
+      'tournament',
+      ['pending', 'rejected']
     );
-
-    const snapshot = await getDocs(pendingQuery);
-    const postings = snapshot.docs.map((docSnap) => ({
-      id: docSnap.id,
-      ...docSnap.data(),
-    })) as JobPosting[];
 
     logger.info('내 대회공고 목록 조회 완료', {
       ownerId,
@@ -312,19 +288,12 @@ export async function getTournamentPostingById(postingId: string): Promise<JobPo
   try {
     logger.info('대회공고 상세 조회', { postingId });
 
-    const db = getFirebaseDb();
-    const docRef = doc(db, 'jobPostings', postingId);
-    const docSnap = await getDoc(docRef);
+    const posting = await jobPostingRepository.getById(postingId);
 
-    if (!docSnap.exists()) {
+    if (!posting) {
       logger.warn('대회공고를 찾을 수 없음', { postingId });
       return null;
     }
-
-    const posting = {
-      id: docSnap.id,
-      ...docSnap.data(),
-    } as JobPosting;
 
     // 대회공고가 아닌 경우 null 반환
     if (posting.postingType !== 'tournament') {

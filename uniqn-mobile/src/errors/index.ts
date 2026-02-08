@@ -168,6 +168,7 @@ export {
   wrapSyncService,
   // Utilities
   maskSensitiveData,
+  maskValue,
   // Types
   type ServiceErrorOptions,
   type SilentErrorOptions,

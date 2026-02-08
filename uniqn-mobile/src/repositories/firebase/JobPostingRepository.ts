@@ -23,6 +23,7 @@ import {
   setDoc,
   query,
   where,
+  orderBy,
   startAfter,
   updateDoc,
   increment,
@@ -929,6 +930,112 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     } catch (error) {
       logger.error('공고 소유권 검증 실패', toError(error), { jobPostingId, ownerId });
       return false;
+    }
+  }
+
+  // ==========================================================================
+  // 대회공고 (Tournament)
+  // ==========================================================================
+
+  async getByPostingTypeAndApprovalStatus(
+    postingType: string,
+    approvalStatus: string
+  ): Promise<JobPosting[]> {
+    try {
+      logger.info('공고 타입/승인상태별 조회', { postingType, approvalStatus });
+
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const q = query(
+        jobPostingsRef,
+        where('postingType', '==', postingType),
+        where('tournamentConfig.approvalStatus', '==', approvalStatus),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      const postings: JobPosting[] = [];
+
+      for (const docSnapshot of snapshot.docs) {
+        const jobPosting = parseJobPostingDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (jobPosting) {
+          postings.push(jobPosting);
+        }
+      }
+
+      logger.info('공고 타입/승인상태별 조회 완료', {
+        postingType,
+        approvalStatus,
+        count: postings.length,
+      });
+
+      return postings;
+    } catch (error) {
+      logger.error('공고 타입/승인상태별 조회 실패', toError(error), {
+        postingType,
+        approvalStatus,
+      });
+      throw handleServiceError(error, {
+        operation: '공고 타입/승인상태별 조회',
+        component: 'JobPostingRepository',
+        context: { postingType, approvalStatus },
+      });
+    }
+  }
+
+  async getByOwnerAndPostingType(
+    ownerId: string,
+    postingType: string,
+    approvalStatuses: string[]
+  ): Promise<JobPosting[]> {
+    try {
+      logger.info('소유자/공고타입별 조회', {
+        ownerId,
+        postingType,
+        approvalStatuses,
+      });
+
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const q = query(
+        jobPostingsRef,
+        where('postingType', '==', postingType),
+        where('ownerId', '==', ownerId),
+        where('tournamentConfig.approvalStatus', 'in', approvalStatuses),
+        orderBy('createdAt', 'desc')
+      );
+
+      const snapshot = await getDocs(q);
+      const postings: JobPosting[] = [];
+
+      for (const docSnapshot of snapshot.docs) {
+        const jobPosting = parseJobPostingDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (jobPosting) {
+          postings.push(jobPosting);
+        }
+      }
+
+      logger.info('소유자/공고타입별 조회 완료', {
+        ownerId,
+        postingType,
+        count: postings.length,
+      });
+
+      return postings;
+    } catch (error) {
+      logger.error('소유자/공고타입별 조회 실패', toError(error), {
+        ownerId,
+        postingType,
+      });
+      throw handleServiceError(error, {
+        operation: '소유자/공고타입별 조회',
+        component: 'JobPostingRepository',
+        context: { ownerId, postingType, approvalStatuses },
+      });
     }
   }
 }
