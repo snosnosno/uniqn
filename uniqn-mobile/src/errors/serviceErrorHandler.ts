@@ -190,12 +190,10 @@ export function handleServiceError(error: unknown, options: ServiceErrorOptions)
     appError = normalizeError(error);
   }
 
-  // 4. 로깅
-  logger.error(`${operation} 실패`, toError(error), {
+  // 4. 로깅 (severity 기반 Sentry 전송 - appError()가 high/critical만 전송)
+  logger.appError(appError, {
     operation,
     component,
-    errorCode: appError.code,
-    errorCategory: appError.category,
     ...safeContext,
   });
 
