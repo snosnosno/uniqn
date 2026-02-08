@@ -140,7 +140,7 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
     throw handleServiceError(error, {
       operation: '로그인',
       component: 'authService',
-      context: { email: data.email },
+      context: { email: maskEmail(data.email) },
     });
   }
 }
@@ -166,7 +166,7 @@ export async function checkEmailExists(email: string): Promise<boolean> {
     throw handleServiceError(error, {
       operation: '이메일 중복 확인',
       component: 'authService',
-      context: { email },
+      context: { email: maskEmail(email) },
     });
   }
 }
@@ -242,7 +242,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     throw handleServiceError(error, {
       operation: '회원가입',
       component: 'authService',
-      context: { email: data.email, role: data.role },
+      context: { email: maskEmail(data.email), role: data.role },
     });
   }
 }
@@ -284,7 +284,7 @@ export async function resetPassword(email: string): Promise<void> {
     throw handleServiceError(error, {
       operation: '비밀번호 재설정',
       component: 'authService',
-      context: { email },
+      context: { email: maskEmail(email) },
     });
   }
 }

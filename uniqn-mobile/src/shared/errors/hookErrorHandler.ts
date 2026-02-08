@@ -29,6 +29,9 @@ interface ToastInput {
 
 type AddToastFn = (toast: ToastInput) => void;
 
+/** critical/high 에러를 모달로 표시하기 위한 함수 타입 */
+export type ShowAlertFn = (title: string, message: string) => void;
+
 interface ErrorHandlerOptions {
   /** 에러 발생 시 토스트 표시 여부 (기본: true) */
   showToast?: boolean;
@@ -36,6 +39,8 @@ interface ErrorHandlerOptions {
   context?: Record<string, unknown>;
   /** 특정 에러 코드에 대한 커스텀 메시지 */
   customMessages?: Record<string, string>;
+  /** critical/high 에러를 모달로 표시하기 위한 함수 */
+  showAlert?: ShowAlertFn;
 }
 
 // ============================================================================
@@ -65,7 +70,7 @@ export function createMutationErrorHandler(
   addToast: AddToastFn,
   options: ErrorHandlerOptions = {}
 ): (error: unknown) => void {
-  const { showToast = true, context: extraContext, customMessages } = options;
+  const { showToast = true, context: extraContext, customMessages, showAlert } = options;
 
   return (error: unknown) => {
     const appError = normalizeError(error);
@@ -74,19 +79,24 @@ export function createMutationErrorHandler(
     logger.error(`${context} 실패`, appError, {
       code: appError.code,
       category: appError.category,
+      severity: appError.severity,
       ...extraContext,
     });
 
-    // 토스트 표시
+    // 피드백 표시
     if (showToast) {
-      // 커스텀 메시지 확인
       const customMessage = customMessages?.[appError.code];
       const message = customMessage ?? appError.userMessage;
 
-      addToast({
-        type: 'error',
-        message,
-      });
+      // 심각도 기반 라우팅: critical/high → modal, medium/low → toast
+      const shouldUseModal =
+        showAlert && (appError.severity === 'critical' || appError.severity === 'high');
+
+      if (shouldUseModal) {
+        showAlert(`${context} 실패`, message);
+      } else {
+        addToast({ type: 'error', message });
+      }
     }
   };
 }
@@ -209,6 +219,8 @@ interface QueryErrorHandlerOptions extends ErrorHandlerOptions {
   ignoreBackground?: boolean;
   /** 재시도 가능 시 토스트 억제 (기본: false) */
   suppressRetryableToast?: boolean;
+  /** critical/high 에러를 모달로 표시하기 위한 함수 */
+  showAlert?: ShowAlertFn;
 }
 
 /**
@@ -242,6 +254,7 @@ export function createQueryErrorHandler(
     context: extraContext,
     customMessages,
     suppressRetryableToast = false,
+    showAlert,
   } = options;
 
   return (error: unknown) => {
@@ -260,15 +273,20 @@ export function createQueryErrorHandler(
       return;
     }
 
-    // 토스트 표시
+    // 피드백 표시
     if (showToast) {
       const customMessage = customMessages?.[appError.code];
       const message = customMessage ?? appError.userMessage;
 
-      addToast({
-        type: 'error',
-        message,
-      });
+      // 심각도 기반 라우팅: critical/high → modal, medium/low → toast
+      const shouldUseModal =
+        showAlert && (appError.severity === 'critical' || appError.severity === 'high');
+
+      if (shouldUseModal) {
+        showAlert(`${context} 실패`, message);
+      } else {
+        addToast({ type: 'error', message });
+      }
     }
   };
 }
@@ -299,9 +317,10 @@ export function createQueryErrorHandler(
  */
 export const errorHandlerPresets = {
   /** 확정 처리 에러 핸들러 */
-  confirm: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  confirm: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('확정 처리', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_ALREADY_APPLIED]: '이미 확정된 지원입니다.',
         [ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED]: '모집 인원이 마감되었습니다.',
@@ -309,18 +328,20 @@ export const errorHandlerPresets = {
     }),
 
   /** 거절 처리 에러 핸들러 */
-  reject: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  reject: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('거절 처리', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_INVALID_STATE]: '이미 처리된 지원입니다.',
       },
     }),
 
   /** 지원 처리 에러 핸들러 */
-  apply: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  apply: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('지원', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_ALREADY_APPLIED]: '이미 지원한 공고입니다.',
         [ERROR_CODES.BUSINESS_MAX_CAPACITY_REACHED]: '모집이 마감되었습니다.',
@@ -329,18 +350,20 @@ export const errorHandlerPresets = {
     }),
 
   /** 지원 취소 에러 핸들러 */
-  cancel: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  cancel: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('지원 취소', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_INVALID_STATE]: '취소할 수 없는 상태입니다.',
       },
     }),
 
   /** 정산 처리 에러 핸들러 */
-  settlement: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  settlement: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('정산 처리', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_ALREADY_SETTLED]: '이미 정산이 완료되었습니다.',
         [ERROR_CODES.BUSINESS_INVALID_WORKLOG]: '유효하지 않은 근무 기록입니다.',
@@ -348,9 +371,10 @@ export const errorHandlerPresets = {
     }),
 
   /** 출퇴근 처리 에러 핸들러 */
-  attendance: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  attendance: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('출퇴근 처리', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_ALREADY_CHECKED_IN]: '이미 출근 처리되었습니다.',
         [ERROR_CODES.BUSINESS_NOT_CHECKED_IN]: '출근 기록이 없습니다.',
@@ -360,18 +384,20 @@ export const errorHandlerPresets = {
     }),
 
   /** 프로필 업데이트 에러 핸들러 */
-  profile: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  profile: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('프로필 저장', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.VALIDATION_FORMAT]: '입력 형식이 올바르지 않습니다.',
       },
     }),
 
   /** 공고 CRUD 에러 핸들러 */
-  jobPosting: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  jobPosting: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('공고 처리', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.FIREBASE_PERMISSION_DENIED]: '공고 수정 권한이 없습니다.',
         [ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND]: '공고를 찾을 수 없습니다.',
@@ -379,9 +405,10 @@ export const errorHandlerPresets = {
     }),
 
   /** 신고 처리 에러 핸들러 */
-  report: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  report: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('신고 처리', addToast, {
       context: extraContext,
+      showAlert,
       customMessages: {
         [ERROR_CODES.BUSINESS_DUPLICATE_REPORT]: '이미 신고한 항목입니다.',
         [ERROR_CODES.BUSINESS_CANNOT_REPORT_SELF]: '자신을 신고할 수 없습니다.',
@@ -389,9 +416,10 @@ export const errorHandlerPresets = {
     }),
 
   /** 알림 처리 에러 핸들러 */
-  notification: (addToast: AddToastFn, extraContext?: Record<string, unknown>) =>
+  notification: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
     createMutationErrorHandler('알림 처리', addToast, {
       context: extraContext,
+      showAlert,
       showToast: false, // 알림 처리 실패는 조용히 로깅만
     }),
 } as const;

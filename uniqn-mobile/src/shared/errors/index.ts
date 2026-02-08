@@ -38,4 +38,5 @@ export {
   combineLoadingStates,
   // Types
   type NormalizedLoadingState,
+  type ShowAlertFn,
 } from './hookErrorHandler';

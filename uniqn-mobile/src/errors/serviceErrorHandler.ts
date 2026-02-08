@@ -66,13 +66,30 @@ export interface SilentErrorOptions extends ServiceErrorOptions {
  * @description 이메일, ID, 전화번호 등 민감 값을 마스킹 처리
  *
  * @example
- * maskValue('user@example.com', 'email') // 'use***com'
+ * maskValue('user@example.com', 'email') // 'use***@example.com'
  * maskValue('abc123xyz', 'id')           // 'abc***xyz'
- * maskValue('01012345678', 'phone')      // '010***678'
+ * maskValue('01012345678', 'phone')      // '010****5678'
  */
-export function maskValue(value: string, _type: 'email' | 'id' | 'phone' = 'id'): string {
+export function maskValue(value: string, type: 'email' | 'id' | 'phone' = 'id'): string {
   if (value.length <= 6) return '***';
-  return `${value.slice(0, 3)}***${value.slice(-3)}`;
+
+  switch (type) {
+    case 'email': {
+      const atIndex = value.indexOf('@');
+      if (atIndex > 0) {
+        const local = value.slice(0, atIndex);
+        const domain = value.slice(atIndex);
+        const visibleLen = Math.min(3, local.length);
+        return `${local.slice(0, visibleLen)}***${domain}`;
+      }
+      return `${value.slice(0, 3)}***${value.slice(-3)}`;
+    }
+    case 'phone':
+      return `${value.slice(0, 3)}****${value.slice(-4)}`;
+    case 'id':
+    default:
+      return `${value.slice(0, 3)}***${value.slice(-3)}`;
+  }
 }
 
 /** 민감 정보 필드 목록 (대소문자 무시) */

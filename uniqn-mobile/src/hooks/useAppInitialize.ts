@@ -37,8 +37,6 @@ import {
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
 
-// Repository 인스턴스 (싱글톤)
-
 // ============================================================================
 // Types
 // ============================================================================

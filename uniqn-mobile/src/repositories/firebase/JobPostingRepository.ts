@@ -54,6 +54,7 @@ import type {
   JobPostingStatus,
   CreateJobPostingInput,
   UpdateJobPostingInput,
+  TournamentApprovalStatus,
 } from '@/types';
 
 // ============================================================================
@@ -699,6 +700,8 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
         transaction.update(jobRef, {
           status: 'closed',
+          closedAt: serverTimestamp(),
+          closedReason: 'manual',
           updatedAt: serverTimestamp(),
         });
       });
@@ -939,7 +942,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
   async getByPostingTypeAndApprovalStatus(
     postingType: string,
-    approvalStatus: string
+    approvalStatus: TournamentApprovalStatus
   ): Promise<JobPosting[]> {
     try {
       logger.info('공고 타입/승인상태별 조회', { postingType, approvalStatus });
@@ -988,7 +991,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
   async getByOwnerAndPostingType(
     ownerId: string,
     postingType: string,
-    approvalStatuses: string[]
+    approvalStatuses: TournamentApprovalStatus[]
   ): Promise<JobPosting[]> {
     try {
       logger.info('소유자/공고타입별 조회', {
