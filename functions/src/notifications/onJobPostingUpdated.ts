@@ -17,6 +17,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { getFcmTokens } from '../utils/fcmTokenUtils';
+import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
 import { sendMulticast } from '../utils/notificationUtils';
 
 const db = admin.firestore();
@@ -26,7 +27,7 @@ const db = admin.firestore();
 // ============================================================================
 
 interface UserData {
-  fcmTokens?: string[];
+  fcmTokens?: Record<string, FcmTokenRecord>;
   name?: string;
 }
 

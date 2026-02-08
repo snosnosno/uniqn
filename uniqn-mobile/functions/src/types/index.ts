@@ -129,12 +129,20 @@ export interface ScheduleDoc {
   status: 'scheduled' | 'checked_in' | 'completed' | 'no_show';
 }
 
+export interface FcmTokenRecord {
+  token: string;
+  type: 'expo' | 'fcm';
+  platform: 'ios' | 'android';
+  registeredAt: admin.firestore.Timestamp;
+  lastRefreshedAt: admin.firestore.Timestamp;
+}
+
 export interface UserDoc {
   id: string;
   email: string;
   name: string;
   role: 'staff' | 'employer' | 'admin';
-  fcmTokens?: string[];
+  fcmTokens?: Record<string, FcmTokenRecord>;
   notificationSettings?: {
     enabled: boolean;
     application: boolean;

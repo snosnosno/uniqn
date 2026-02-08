@@ -96,7 +96,6 @@ export {
 export {
   useNotificationList,
   useNotificationRealtime,
-  useUnreadCountRealtime,
   useMarkAsRead,
   useMarkAllAsRead,
   useDeleteNotification,

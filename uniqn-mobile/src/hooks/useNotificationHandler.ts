@@ -22,7 +22,8 @@ import {
   type NotificationPayload,
 } from '@/services/pushNotificationService';
 import * as tokenRefreshService from '@/services/tokenRefreshService';
-import { navigateFromNotification } from '@/services/deepLinkService';
+import { navigateFromNotification, waitForNavigationReadyAsync } from '@/services/deepLinkService';
+import { subscribeToUnreadCount } from '@/services/notificationService';
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
@@ -299,6 +300,9 @@ export function useNotificationHandler(
       const data = notification.data as Record<string, string> | undefined;
       const link = data?.link;
 
+      // 콜드 스타트 시 네비게이션 준비 대기
+      await waitForNavigationReadyAsync();
+
       // 딥링크 네비게이션
       const success = await navigateFromNotification(notificationType, data, link);
 
@@ -557,10 +561,7 @@ export function useNotificationHandler(
           }
         }
 
-        // 🆕 포그라운드 복귀 시 서버 카운터 동기화 (멀티 디바이스 대응)
-        if (userId) {
-          syncUnreadCounterFromServer(userId);
-        }
+        // 포그라운드 복귀 시 카운터 동기화: 실시간 구독(onSnapshot)이 자동 처리
       }
       appStateRef.current = nextAppState;
     };
@@ -571,6 +572,27 @@ export function useNotificationHandler(
 
   // 딥링크 리스너는 useDeepLinkSetup (MainNavigator)에서 처리
   // useNotificationHandler에서 직접 설정하면 인증 체크가 우회되어 무한 루프 발생
+
+  /**
+   * 실시간 미읽음 카운터 구독
+   * @description 기존 subscribeToUnreadCount (onSnapshot)를 글로벌 스토어에 연결
+   */
+  useEffect(() => {
+    if (!userId) return;
+
+    const unsubscribe = subscribeToUnreadCount(
+      userId,
+      (count) => {
+        useNotificationStore.getState().setUnreadCount(count);
+      },
+      (error) => {
+        logger.warn('실시간 미읽음 카운터 구독 에러 - 폴백', { error: error.message });
+        syncUnreadCounterFromServer(userId, true);
+      }
+    );
+
+    return unsubscribe;
+  }, [userId]);
 
   /**
    * 클린업

@@ -490,8 +490,11 @@ export async function registerToken(userId: string): Promise<boolean> {
       return false;
     }
 
-    await notificationRepository.registerFCMToken(userId, tokenResult.token);
-    logger.info('푸시 토큰 등록 완료', { userId, type: tokenResult.type });
+    await notificationRepository.registerFCMToken(userId, tokenResult.token, {
+      type: tokenResult.type,
+      platform: Platform.OS === 'ios' ? 'ios' : 'android',
+    });
+    logger.info('푸시 토큰 등록 완료', { userId, type: tokenResult.type, platform: Platform.OS });
     return true;
   } catch (error) {
     logger.error('푸시 토큰 등록 실패', toError(error));

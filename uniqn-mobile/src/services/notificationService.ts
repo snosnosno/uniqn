@@ -382,18 +382,22 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
 /**
  * FCM 토큰 등록
  *
- * @description Firestore에 FCM 토큰 저장 (arrayUnion 사용으로 중복 방지)
+ * @description Firestore에 FCM 토큰 저장 (Map 구조, 토큰키 기반 upsert)
  */
-export async function registerFCMToken(userId: string, token: string): Promise<void> {
+export async function registerFCMToken(
+  userId: string,
+  token: string,
+  metadata: { type: 'expo' | 'fcm'; platform: 'ios' | 'android' }
+): Promise<void> {
   return withErrorHandling(async () => {
-    await notificationRepository.registerFCMToken(userId, token);
+    await notificationRepository.registerFCMToken(userId, token, metadata);
   }, 'registerFCMToken');
 }
 
 /**
  * FCM 토큰 삭제
  *
- * @description Firestore에서 특정 FCM 토큰 제거 (arrayRemove 사용)
+ * @description Firestore에서 특정 FCM 토큰 제거 (Map 키 deleteField)
  */
 export async function unregisterFCMToken(userId: string, token: string): Promise<void> {
   return withErrorHandling(async () => {

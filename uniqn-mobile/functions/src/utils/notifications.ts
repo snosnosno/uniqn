@@ -171,7 +171,15 @@ async function getUserNotificationSettings(userId: string): Promise<{
   }
 
   const settings = userData.notificationSettings;
-  const fcmTokens = userData.fcmTokens || [];
+
+  // Map 구조에서 FCM 토큰만 추출 (Expo 토큰 제외)
+  const tokenMap = userData.fcmTokens || {};
+  const fcmTokens: string[] = [];
+  for (const record of Object.values(tokenMap)) {
+    if (record?.token && record.type !== 'expo' && !record.token.startsWith('ExponentPushToken[')) {
+      fcmTokens.push(record.token);
+    }
+  }
 
   // 기본값
   if (!settings) {
@@ -265,23 +273,57 @@ async function sendPushNotification(
 }
 
 /**
- * 유효하지 않은 FCM 토큰 정리
+ * 유효하지 않은 FCM 토큰 정리 (Map 구조)
+ * 페이지네이션 + batch 분할로 대규모 사용자 대응
  */
 async function cleanupInvalidTokens(invalidTokens: string[]): Promise<void> {
-  const usersSnapshot = await db.collection('users')
-    .where('fcmTokens', 'array-contains-any', invalidTokens.slice(0, 10)) // Firestore 제한
-    .get();
+  const invalidSet = new Set(invalidTokens);
+  const PAGE_SIZE = 100;
+  const MAX_BATCH_OPS = 450; // Firestore 500 limit에 여유분
 
-  const batch = db.batch();
-  usersSnapshot.docs.forEach((doc) => {
-    const userData = doc.data() as UserDoc;
-    const validTokens = (userData.fcmTokens || []).filter(
-      (t) => !invalidTokens.includes(t)
-    );
-    batch.update(doc.ref, { fcmTokens: validTokens });
-  });
+  let lastDoc: admin.firestore.QueryDocumentSnapshot | undefined;
 
-  await batch.commit();
+  while (true) {
+    let queryRef: admin.firestore.Query = db.collection('users').limit(PAGE_SIZE);
+    if (lastDoc) {
+      queryRef = queryRef.startAfter(lastDoc);
+    }
+
+    const snapshot = await queryRef.get();
+    if (snapshot.empty) break;
+
+    let batch = db.batch();
+    let batchOps = 0;
+
+    for (const userDoc of snapshot.docs) {
+      const tokenMap = (userDoc.data().fcmTokens || {}) as Record<string, { token: string }>;
+      const updateData: Record<string, admin.firestore.FieldValue> = {};
+
+      for (const [key, record] of Object.entries(tokenMap)) {
+        if (record?.token && invalidSet.has(record.token)) {
+          updateData[`fcmTokens.${key}`] = admin.firestore.FieldValue.delete();
+        }
+      }
+
+      if (Object.keys(updateData).length > 0) {
+        batch.update(userDoc.ref, updateData);
+        batchOps++;
+
+        if (batchOps >= MAX_BATCH_OPS) {
+          await batch.commit();
+          batch = db.batch();
+          batchOps = 0;
+        }
+      }
+    }
+
+    if (batchOps > 0) {
+      await batch.commit();
+    }
+
+    lastDoc = snapshot.docs[snapshot.docs.length - 1];
+    if (snapshot.size < PAGE_SIZE) break;
+  }
 }
 
 /**

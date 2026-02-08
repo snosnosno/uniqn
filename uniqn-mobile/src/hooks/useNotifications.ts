@@ -14,7 +14,6 @@ import {
   markAllAsRead as markAllAsReadService,
   deleteNotification as deleteNotificationService,
   subscribeToNotifications,
-  subscribeToUnreadCount,
   getNotificationSettings,
   saveNotificationSettings,
   checkNotificationPermission,
@@ -240,34 +239,6 @@ export function useNotificationRealtime() {
 // useUnreadCount
 // ============================================================================
 
-/**
- * 읽지 않은 알림 수 훅 (실시간)
- */
-export function useUnreadCountRealtime() {
-  const user = useAuthStore((state) => state.user);
-  const [count, setCount] = useState(0);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    if (!user?.uid) {
-      setCount(0);
-      return;
-    }
-
-    unsubscribeRef.current = subscribeToUnreadCount(user.uid, setCount, (error) => {
-      logger.error('읽지 않은 알림 수 구독 에러', error);
-    });
-
-    return () => {
-      unsubscribeRef.current?.();
-      unsubscribeRef.current = null;
-    };
-  }, [user?.uid]);
-
-  return count;
-}
-
-// ============================================================================
 // useMarkAsRead
 // ============================================================================
 
@@ -642,7 +613,6 @@ export function useGroupedNotifications(
 export default {
   useNotificationList,
   useNotificationRealtime,
-  useUnreadCountRealtime,
   useMarkAsRead,
   useMarkAllAsRead,
   useDeleteNotification,

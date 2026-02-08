@@ -18,6 +18,7 @@ const corsHandler = cors({ origin: true });
 // --- Scheduled Functions ---
 export { cleanupRateLimitsScheduled } from './scheduled/cleanupRateLimits';
 export { retryFailedCounterOpsScheduled } from './scheduled/retryFailedCounterOps';
+export { cleanupExpiredTokensScheduled } from './scheduled/cleanupExpiredTokens';
 
 // --- Email Functions ---
 export { sendReceiptEmail } from './email/sendReceipt';

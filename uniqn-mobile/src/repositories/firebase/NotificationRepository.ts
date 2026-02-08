@@ -18,6 +18,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   writeBatch,
   query,
   where,
@@ -25,8 +26,6 @@ import {
   Timestamp,
   serverTimestamp,
   getCountFromServer,
-  arrayUnion,
-  arrayRemove,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
@@ -518,15 +517,26 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   // FCM 토큰 (Push Notification)
   // ==========================================================================
 
-  async registerFCMToken(userId: string, token: string): Promise<void> {
+  async registerFCMToken(
+    userId: string,
+    token: string,
+    metadata: { type: 'expo' | 'fcm'; platform: 'ios' | 'android' }
+  ): Promise<void> {
     try {
       const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
+      const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+
       await updateDoc(userRef, {
-        fcmTokens: arrayUnion(token),
-        lastTokenUpdate: serverTimestamp(),
+        [`fcmTokens.${tokenKey}`]: {
+          token,
+          type: metadata.type,
+          platform: metadata.platform,
+          registeredAt: serverTimestamp(),
+          lastRefreshedAt: serverTimestamp(),
+        },
       });
 
-      logger.info('FCM 토큰 등록', { userId, tokenPrefix: token.substring(0, 20) });
+      logger.info('FCM 토큰 등록', { userId, tokenPrefix: token.substring(0, 20), type: metadata.type });
     } catch (error) {
       throw handleServiceError(error, {
         operation: 'FCM 토큰 등록',
@@ -539,8 +549,10 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   async unregisterFCMToken(userId: string, token: string): Promise<void> {
     try {
       const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
+      const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+
       await updateDoc(userRef, {
-        fcmTokens: arrayRemove(token),
+        [`fcmTokens.${tokenKey}`]: deleteField(),
       });
 
       logger.info('FCM 토큰 삭제', { userId, tokenPrefix: token.substring(0, 20) });
@@ -557,7 +569,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     try {
       const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       await updateDoc(userRef, {
-        fcmTokens: [],
+        fcmTokens: {},
       });
 
       logger.info('모든 FCM 토큰 삭제', { userId });
