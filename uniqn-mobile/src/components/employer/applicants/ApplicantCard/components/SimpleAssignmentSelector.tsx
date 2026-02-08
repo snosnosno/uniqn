@@ -17,7 +17,7 @@ import { createAssignmentKey } from '../utils';
 // Types
 // ============================================================================
 
-export interface AssignmentSelectorProps {
+export interface SimpleAssignmentSelectorProps {
   /** 일정 표시 데이터 */
   assignmentDisplays: AssignmentDisplay[];
   /** 선택된 키 Set */
@@ -36,14 +36,14 @@ export interface AssignmentSelectorProps {
 // Component
 // ============================================================================
 
-export const AssignmentSelector = React.memo(function AssignmentSelector({
+export const SimpleAssignmentSelector = React.memo(function SimpleAssignmentSelector({
   assignmentDisplays,
   selectedKeys,
   selectedCount,
   isDark,
   iconColors,
   onToggle,
-}: AssignmentSelectorProps) {
+}: SimpleAssignmentSelectorProps) {
   if (assignmentDisplays.length === 0) {
     return null;
   }
@@ -124,4 +124,4 @@ export const AssignmentSelector = React.memo(function AssignmentSelector({
   );
 });
 
-export default AssignmentSelector;
+export default SimpleAssignmentSelector;

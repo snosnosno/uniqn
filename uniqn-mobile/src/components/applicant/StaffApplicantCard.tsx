@@ -1,8 +1,12 @@
 /**
- * UNIQN Mobile - 지원자 카드 컴포넌트
+ * UNIQN Mobile - 지원자 카드 컴포넌트 (스태프 뷰)
  *
  * @description 지원자 정보 + 확정/취소 이력 타임라인 통합 표시
- * @version 1.0.0
+ * @version 1.1.0
+ *
+ * @note
+ * 구인자용 ApplicantCard와의 네이밍 충돌 해소를 위해
+ * StaffApplicantCard로 rename됨 (Phase D-1).
  */
 
 import React, { memo, useCallback, useMemo } from 'react';
@@ -17,7 +21,7 @@ import { APPLICATION_STATUS_LABELS } from '@/types';
 // Types
 // ============================================================================
 
-interface ApplicantCardProps {
+interface StaffApplicantCardProps {
   /** 지원서 데이터 */
   application: Application;
   /** 카드 클릭 핸들러 */
@@ -326,13 +330,13 @@ const ActionButtons = memo(function ActionButtons({
 // ============================================================================
 
 /**
- * 지원자 카드 컴포넌트
+ * 스태프용 지원자 카드 컴포넌트
  *
- * @description 지원자 정보와 확정/취소 이력을 함께 표시
+ * @description 지원자 정보와 확정/취소 이력을 함께 표시 (스태프 뷰)
  *
  * @example
  * // 목록용 컴팩트 모드
- * <ApplicantCard
+ * <StaffApplicantCard
  *   application={application}
  *   onPress={handlePress}
  *   compact
@@ -340,7 +344,7 @@ const ActionButtons = memo(function ActionButtons({
  *
  * @example
  * // 상세 모드 (이력 + 액션)
- * <ApplicantCard
+ * <StaffApplicantCard
  *   application={application}
  *   onConfirm={handleConfirm}
  *   onReject={handleReject}
@@ -348,7 +352,7 @@ const ActionButtons = memo(function ActionButtons({
  *   showActions
  * />
  */
-export const ApplicantCard = memo(function ApplicantCard({
+export const StaffApplicantCard = memo(function StaffApplicantCard({
   application,
   onPress,
   onConfirm,
@@ -358,7 +362,7 @@ export const ApplicantCard = memo(function ApplicantCard({
   showHistory = false,
   showActions = false,
   className = '',
-}: ApplicantCardProps) {
+}: StaffApplicantCardProps) {
   // 이벤트 핸들러
   const handlePress = useCallback(() => {
     onPress?.(application.id);
@@ -479,4 +483,4 @@ export const ApplicantCard = memo(function ApplicantCard({
   );
 });
 
-export default ApplicantCard;
+export default StaffApplicantCard;
