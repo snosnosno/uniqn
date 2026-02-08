@@ -7,11 +7,11 @@
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
-import { Modal } from '../ui/Modal';
-import { ModalFooterButtons } from '../ui/ModalFooterButtons';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { UserIcon, CheckIcon, AlertCircleIcon, EditIcon } from '../icons';
+import { Modal } from '../../ui/Modal';
+import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
+import { Card } from '../../ui/Card';
+import { Badge } from '../../ui/Badge';
+import { UserIcon, CheckIcon, AlertCircleIcon, EditIcon } from '../../icons';
 import type { ConfirmedStaff, JobPosting } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { STAFF_ROLES } from '@/constants';

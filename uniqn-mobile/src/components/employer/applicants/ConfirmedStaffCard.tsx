@@ -8,9 +8,9 @@
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Avatar } from '../ui/Avatar';
+import { Card } from '../../ui/Card';
+import { Badge } from '../../ui/Badge';
+import { Avatar } from '../../ui/Avatar';
 import {
   ClockIcon,
   EditIcon,
@@ -19,7 +19,7 @@ import {
   ChevronRightIcon,
   BriefcaseIcon,
   CheckCircleIcon,
-} from '../icons';
+} from '../../icons';
 import {
   CONFIRMED_STAFF_STATUS_LABELS,
   type ConfirmedStaff,

@@ -6,8 +6,8 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { Avatar } from '../../ui/Avatar';
-import { Badge } from '../../ui/Badge';
+import { Avatar } from '../../../ui/Avatar';
+import { Badge } from '../../../ui/Badge';
 import { formatDate } from '@/utils/dateUtils';
 import { getRoleDisplayName } from '@/types/unified';
 import { PAYROLL_STATUS_CONFIG } from './constants';

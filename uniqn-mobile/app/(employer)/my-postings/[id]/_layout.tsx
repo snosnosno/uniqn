@@ -11,7 +11,7 @@ import { Stack, useLocalSearchParams } from 'expo-router';
 import { View, Text, Pressable, useColorScheme } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { QRCodeIcon } from '@/components/icons';
-import { EventQRModal } from '@/components/employer/EventQRModal';
+import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { HeaderBackButton } from '@/components/navigation';
 
 /**
