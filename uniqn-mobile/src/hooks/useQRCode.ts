@@ -13,9 +13,9 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
-import type { QRCodeAction, QRCodeScanResult, EventQRDisplayData } from '@/types';
+import type { QRCodeAction, QRCodeScanResult, QRScanError, EventQRDisplayData } from '@/types';
 import { isAppError } from '@/errors/AppError';
-import { toError } from '@/errors';
+import { toError, normalizeError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -44,6 +44,9 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
   const addToast = useToastStore((state) => state.addToast);
 
   const [isProcessing, setIsProcessing] = useState(false);
+  const [lastError, setLastError] = useState<QRScanError | null>(null);
+
+  const clearError = useCallback(() => setLastError(null), []);
 
   // QR 스캔 결과 처리 (Event QR 시스템 통합)
   const handleScanResult = useCallback(
@@ -103,10 +106,13 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
         const errorMessage = isAppError(error)
           ? error.userMessage
           : toError(error).message || '처리에 실패했습니다.';
-        addToast({
-          type: 'error',
+        const appError = isAppError(error) ? error : normalizeError(toError(error));
+        setLastError({
+          code: appError.code,
           message: errorMessage,
+          isRetryable: appError.isRetryable,
         });
+        // 토스트 생략: scanError UI가 스캐너 화면에서 에러를 표시
         onError?.(toError(error));
       } finally {
         setIsProcessing(false);
@@ -118,6 +124,8 @@ export function useQRCodeScanner(options: UseQRCodeScannerOptions) {
   return {
     handleScanResult,
     isProcessing,
+    lastError,
+    clearError,
   };
 }
 

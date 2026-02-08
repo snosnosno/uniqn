@@ -63,6 +63,12 @@ export const useToastStore = create<ToastState>((set, get) => ({
   toasts: [],
 
   addToast: (toast) => {
+    // 중복 체크: 동일 message + type이 이미 표시 중이면 무시
+    const isDuplicate = get().toasts.some(
+      (t) => t.message === toast.message && t.type === toast.type
+    );
+    if (isDuplicate) return;
+
     const id = generateId();
     const newToast: Toast = {
       id,

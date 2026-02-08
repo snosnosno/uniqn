@@ -33,7 +33,7 @@ export default function QRScreen() {
   }, [isWorking]);
 
   // QR 스캔 결과 핸들러
-  const { handleScanResult, isProcessing } = useQRCodeScanner({
+  const { handleScanResult, isProcessing, lastError, clearError } = useQRCodeScanner({
     onSuccess: () => {
       setIsScannerOpen(false);
     },
@@ -47,7 +47,8 @@ export default function QRScreen() {
   // 스캐너 닫기
   const handleCloseScanner = useCallback(() => {
     setIsScannerOpen(false);
-  }, []);
+    clearError();
+  }, [clearError]);
 
   // 스캔 완료
   const handleScan = useCallback(
@@ -166,6 +167,8 @@ export default function QRScreen() {
         onScan={handleScan}
         expectedAction={selectedAction}
         title={`${actionLabel} QR 스캔`}
+        scanError={lastError}
+        onClearError={clearError}
       />
     </SafeAreaView>
   );

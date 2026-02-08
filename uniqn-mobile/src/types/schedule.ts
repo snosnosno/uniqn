@@ -538,6 +538,15 @@ export interface QRCodeScanResult {
   error?: string;
 }
 
+/**
+ * QR 스캔 에러 정보 (useQRCodeScanner → QRCodeScanner 전달용)
+ */
+export interface QRScanError {
+  code: string;
+  message: string;
+  isRetryable: boolean;
+}
+
 // ============================================================================
 // Event QR Types (eventQRCodes 컬렉션)
 // ============================================================================

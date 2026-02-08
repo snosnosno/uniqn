@@ -15,7 +15,7 @@ import { logger } from '@/utils/logger';
 import { isWeb } from '@/utils/platform';
 // @ts-expect-error - react-dom 타입 없음 (Expo 웹에서 런타임에는 사용 가능)
 import { createPortal } from 'react-dom';
-import type { QRCodeScanResult, QRCodeAction } from '@/types';
+import type { QRCodeScanResult, QRCodeAction, QRScanError } from '@/types';
 
 // ============================================================================
 // Types
@@ -28,6 +28,10 @@ interface QRCodeScannerProps {
   /** UI 표시용 (실제 검증은 processEventQRCheckIn에서 수행) */
   expectedAction?: QRCodeAction;
   title?: string;
+  /** QR 처리 에러 정보 */
+  scanError?: QRScanError | null;
+  /** 에러 초기화 콜백 */
+  onClearError?: () => void;
 }
 
 // ============================================================================
@@ -57,6 +61,8 @@ export function QRCodeScanner({
   onScan,
   expectedAction,
   title = 'QR 코드 스캔',
+  scanError,
+  onClearError,
 }: QRCodeScannerProps) {
   const [permission, requestPermission] = useCameraPermissions();
   const [scanned, setScanned] = useState(false);
@@ -210,25 +216,46 @@ export function QRCodeScanner({
               />
             </View>
 
-            {/* 안내 문구 */}
-            <Text className="text-white text-center mt-6 px-8">
-              {scanned
-                ? '스캔 완료!'
-                : expectedAction === 'checkIn'
-                  ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
-                  : expectedAction === 'checkOut'
-                    ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
-                    : 'QR 코드를 영역 안에 맞춰주세요'}
-            </Text>
+            {/* 안내 문구 / 에러 표시 */}
+            {scanError ? (
+              <View className="mt-6 px-8 items-center">
+                <View className="bg-red-900/80 rounded-xl p-4 w-full">
+                  <Text className="text-red-300 text-center font-semibold mb-1">
+                    스캔 실패
+                  </Text>
+                  <Text className="text-white text-center text-sm">
+                    {scanError.message}
+                  </Text>
+                  {scanError.isRetryable && (
+                    <Text className="text-gray-400 text-center text-xs mt-2">
+                      다시 스캔하거나 새 QR 코드를 요청하세요
+                    </Text>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <Text className="text-white text-center mt-6 px-8">
+                {scanned
+                  ? '스캔 완료!'
+                  : expectedAction === 'checkIn'
+                    ? 'QR 코드를 영역 안에 맞춰주세요\n(출근용)'
+                    : expectedAction === 'checkOut'
+                      ? 'QR 코드를 영역 안에 맞춰주세요\n(퇴근용)'
+                      : 'QR 코드를 영역 안에 맞춰주세요'}
+              </Text>
+            )}
           </View>
         </View>
 
         {/* 하단 버튼 */}
-        {scanned && (
+        {(scanned || scanError) && (
           <View className="px-6 py-4 bg-black/50">
             <Button
               variant="outline"
-              onPress={handleRescan}
+              onPress={() => {
+                handleRescan();
+                onClearError?.();
+              }}
               icon={<RefreshIcon size={20} color="#FFFFFF" />}
             >
               <Text className="text-white ml-2">다시 스캔하기</Text>

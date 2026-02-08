@@ -127,6 +127,7 @@ const RadioItem = memo(function RadioItem({
       accessibilityLabel={option.label}
       // P1 접근성: accessibilityHint 추가
       accessibilityHint={selected ? '선택됨' : '두 번 탭하여 선택'}
+      hitSlop={8}
       className={`flex-row items-start ${isDisabled ? 'opacity-60' : ''}`}
     >
       {/* Radio Circle */}

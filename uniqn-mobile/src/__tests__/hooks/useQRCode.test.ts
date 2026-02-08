@@ -179,9 +179,11 @@ describe('useQRCode Hooks', () => {
         await result.current.handleScanResult(scanResult);
       });
 
-      expect(mockAddToast).toHaveBeenCalledWith({
-        type: 'error',
+      // 토스트 대신 lastError 상태로 에러 표시 (scanError UI)
+      expect(result.current.lastError).toEqual({
+        code: expect.any(String),
         message: '처리 실패',
+        isRetryable: expect.any(Boolean),
       });
       expect(onError).toHaveBeenCalled();
     });

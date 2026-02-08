@@ -77,7 +77,7 @@ function formatPhoneNumber(phone: string): string {
  * 예정 시간 표시 (WorkTimeDisplay 사용)
  *
  * @description 구인자 화면과 일관성 확보
- * 우선순위: startTime/endTime → scheduledStartTime/scheduledEndTime → timeSlot
+ * 우선순위: startTime/endTime → scheduledStartTime/scheduledEndTime → '미정'
  */
 function getTimeDisplay(schedule: ScheduleEvent): string {
   return WorkTimeDisplay.getScheduledTimeRange(schedule);
