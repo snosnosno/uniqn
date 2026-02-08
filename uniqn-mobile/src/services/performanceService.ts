@@ -47,8 +47,19 @@ export interface PerformanceMetrics {
 /**
  * 성능 트레이스 생성 (웹/개발용 폴백)
  */
+/**
+ * performance.now() 안전 호출
+ * 앱 극초기 단계에서 글로벌 performance 객체가 없을 수 있음
+ */
+function safeNow(): number {
+  if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+    return performance.now();
+  }
+  return Date.now();
+}
+
 function createTrace(name: string): PerformanceTrace {
-  const startTime = performance.now();
+  const startTime = safeNow();
   const attributes: Record<string, string> = {};
   const metrics: Record<string, number> = {};
 
@@ -63,7 +74,7 @@ function createTrace(name: string): PerformanceTrace {
     },
 
     stop() {
-      const duration = performance.now() - startTime;
+      const duration = safeNow() - startTime;
       metrics['duration_ms'] = duration;
 
       // 개발 환경에서 로깅

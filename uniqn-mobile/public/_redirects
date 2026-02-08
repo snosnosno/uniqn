@@ -4,8 +4,9 @@
 # Well-Known 파일은 그대로 제공 (딥링크 검증)
 /.well-known/*  /.well-known/:splat  200
 
-# 정적 페이지 (스토어 제출용 개인정보처리방침)
+# 정적 페이지 (스토어 제출용)
 /privacy.html  /privacy.html  200
+/account-deletion.html  /account-deletion.html  200
 
 # SPA fallback (모든 경로를 index.html로)
 /*  /index.html  200

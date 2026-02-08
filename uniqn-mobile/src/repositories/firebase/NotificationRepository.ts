@@ -166,6 +166,14 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   }
 
   async getUnreadCounterFromCache(userId: string): Promise<number | null> {
+    if (!userId || userId.trim() === '') {
+      logger.warn('유효하지 않은 userId', {
+        component: 'NotificationRepository',
+        method: 'getUnreadCounterFromCache',
+      });
+      return null;
+    }
+
     try {
       const counterRef = doc(
         getFirebaseDb(),

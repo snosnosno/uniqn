@@ -5,7 +5,11 @@
   },
   "build": {
     "base": {
-      "node": "22.12.0"
+      "node": "22.12.0",
+      "env": {
+        "SENTRY_ORG": "129908fd396a",
+        "SENTRY_PROJECT": "uniqn-mobile"
+      }
     },
     "development": {
       "extends": "base",
@@ -26,7 +30,8 @@
       "distribution": "internal",
       "channel": "staging",
       "env": {
-        "APP_ENV": "staging"
+        "APP_ENV": "staging",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "staging"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -41,7 +46,8 @@
       "channel": "production",
       "autoIncrement": true,
       "env": {
-        "APP_ENV": "production"
+        "APP_ENV": "production",
+        "EXPO_PUBLIC_RELEASE_CHANNEL": "production"
       },
       "ios": {
         "resourceClass": "m-medium"
@@ -54,9 +60,9 @@
   "submit": {
     "production": {
       "ios": {
-        "appleId": "${APPLE_ID}",
-        "ascAppId": "${ASC_APP_ID}",
-        "appleTeamId": "${APPLE_TEAM_ID}"
+        "appleId": "tmdgh1qn@icloud.com",
+        "ascAppId": "6758857038",
+        "appleTeamId": "UG8B64237G"
       },
       "android": {
         "serviceAccountKeyPath": "./playstore-credentials.json",

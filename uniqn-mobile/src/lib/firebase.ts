@@ -113,13 +113,21 @@ function initializeFirebaseApp(): FirebaseApp {
     // 환경변수 검증 (실패 시 명확한 에러 메시지)
     const env = getEnv();
 
+    // 플랫폼별 Firebase App ID 선택 (iOS/Android 분리 지원)
+    const platformAppId =
+      Platform.OS === 'ios'
+        ? env.EXPO_PUBLIC_FIREBASE_APP_ID_IOS || env.EXPO_PUBLIC_FIREBASE_APP_ID
+        : Platform.OS === 'android'
+          ? env.EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID || env.EXPO_PUBLIC_FIREBASE_APP_ID
+          : env.EXPO_PUBLIC_FIREBASE_APP_ID;
+
     const firebaseConfig = {
       apiKey: env.EXPO_PUBLIC_FIREBASE_API_KEY,
       authDomain: env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN,
       projectId: env.EXPO_PUBLIC_FIREBASE_PROJECT_ID,
       storageBucket: env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
       messagingSenderId: env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-      appId: env.EXPO_PUBLIC_FIREBASE_APP_ID,
+      appId: platformAppId,
       ...(env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID && {
         measurementId: env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
       }),

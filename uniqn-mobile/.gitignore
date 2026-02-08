@@ -50,5 +50,8 @@ coverage/
 *.pem
 *.log
 
+# Sentry
+sentry.properties
+
 # EAS
 .eas/

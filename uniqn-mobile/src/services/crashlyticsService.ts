@@ -78,6 +78,9 @@ const MAX_BREADCRUMBS = 50;
 
 /**
  * 에러 모니터링 초기화
+ *
+ * Sentry.init()은 app/_layout.tsx 최상단에서 호출됨.
+ * 이 메서드는 초기화 상태 플래그만 설정.
  */
 async function initialize(): Promise<boolean> {
   if (isInitialized) return true;
@@ -89,9 +92,10 @@ async function initialize(): Promise<boolean> {
       return true;
     }
 
-    // Sentry는 app/_layout.tsx에서 초기화됨
+    // Sentry.init()은 app/_layout.tsx에서 이미 호출됨
+    const sentryEnabled = !!process.env.EXPO_PUBLIC_SENTRY_DSN;
     isInitialized = true;
-    logger.info('Sentry 에러 모니터링 연동 완료');
+    logger.info('Sentry 에러 모니터링 연동 확인', { enabled: sentryEnabled });
     return true;
   } catch (error) {
     logger.error('에러 모니터링 초기화 실패', toError(error));

@@ -13,6 +13,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { BottomSheetModalProvider } from '@gorhom/bottom-sheet';
 import { colorScheme as nativeWindColorScheme } from 'nativewind';
+import * as Sentry from '@sentry/react-native';
 import { queryClient } from '@/lib/queryClient';
 import { isWeb } from '@/utils/platform';
 import {
@@ -33,6 +34,29 @@ import { useThemeStore } from '@/stores/themeStore';
 import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
 import * as tokenRefreshService from '@/services/tokenRefreshService';
 import { logger } from '@/utils/logger';
+
+// ============================================================================
+// Sentry 초기화 (네이티브 SDK 설정 - 앱 최상단에서 실행)
+// ============================================================================
+
+const SENTRY_DSN = process.env.EXPO_PUBLIC_SENTRY_DSN || '';
+const SENTRY_ENABLED = !__DEV__ && !!SENTRY_DSN;
+
+try {
+  Sentry.init({
+    dsn: SENTRY_DSN,
+    enabled: SENTRY_ENABLED,
+    environment: process.env.EXPO_PUBLIC_RELEASE_CHANNEL || 'development',
+    tracesSampleRate: 0.2,
+    enableNativeCrashHandling: SENTRY_ENABLED,
+    enableNative: SENTRY_ENABLED,
+  });
+} catch (e) {
+  // Sentry 초기화 실패해도 앱은 정상 실행되어야 함
+  if (__DEV__) {
+    console.warn('[Sentry] 초기화 실패:', e);
+  }
+}
 
 // LogBox 경고 억제 (써드파티 라이브러리 이슈)
 if (__DEV__) {

@@ -25,9 +25,13 @@ const BUILD_NUMBER = 1;
 type Environment = 'development' | 'staging' | 'production';
 
 const getEnvironment = (): Environment => {
-  // EAS Build 환경에서는 EAS_BUILD_PROFILE로 판단
-  const buildProfile = process.env.EAS_BUILD_PROFILE;
+  // eas.json의 env.APP_ENV을 우선 참조 (로컬 config 해석 시에도 확실히 전달됨)
+  const appEnv = process.env.APP_ENV;
+  if (appEnv === 'production') return 'production';
+  if (appEnv === 'staging') return 'staging';
 
+  // EAS Build 서버 환경 fallback
+  const buildProfile = process.env.EAS_BUILD_PROFILE;
   if (buildProfile === 'production') return 'production';
   if (buildProfile === 'preview') return 'staging';
 

@@ -19,6 +19,10 @@ const envSchema = z.object({
     .min(1, 'Firebase Messaging Sender ID가 필요합니다'),
   EXPO_PUBLIC_FIREBASE_APP_ID: z.string().min(1, 'Firebase App ID가 필요합니다'),
 
+  // 플랫폼별 Firebase App ID (설정 시 EXPO_PUBLIC_FIREBASE_APP_ID 대신 사용)
+  EXPO_PUBLIC_FIREBASE_APP_ID_IOS: z.string().optional(),
+  EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID: z.string().optional(),
+
   // Firebase Analytics (웹 전용, 선택적)
   EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: z.string().optional(),
 
@@ -63,6 +67,8 @@ export function getEnv(): Env {
     EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET,
     EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
     EXPO_PUBLIC_FIREBASE_APP_ID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID,
+    EXPO_PUBLIC_FIREBASE_APP_ID_IOS: process.env.EXPO_PUBLIC_FIREBASE_APP_ID_IOS,
+    EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID: process.env.EXPO_PUBLIC_FIREBASE_APP_ID_ANDROID,
     EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID,
     EXPO_PUBLIC_RELEASE_CHANNEL: process.env.EXPO_PUBLIC_RELEASE_CHANNEL,
     EXPO_PUBLIC_FIREBASE_REGION: process.env.EXPO_PUBLIC_FIREBASE_REGION,
@@ -73,14 +79,22 @@ export function getEnv(): Env {
 
   if (!result.success) {
     const errors = result.error.flatten().fieldErrors;
+    const missingFields = Object.keys(errors);
     const errorMessages = Object.entries(errors)
       .map(([field, messages]) => `  - ${field}: ${messages?.join(', ')}`)
       .join('\n');
 
-    validationError = new Error(
-      `환경변수 검증 실패:\n${errorMessages}\n\n` +
-        `.env.local 파일을 확인하세요. .env.example을 참고하여 필수 환경변수를 설정해주세요.`
-    );
+    const message =
+      `환경변수 검증 실패 (${missingFields.length}개 누락):\n${errorMessages}\n\n` +
+      `EAS Build: eas secret:create로 환경변수를 등록하세요.\n` +
+      `로컬 개발: .env.local 파일을 확인하세요. .env.example을 참고하여 필수 환경변수를 설정해주세요.`;
+
+    // 프로덕션 빌드에서 환경변수 누락 시 콘솔에 명확한 에러 출력
+    if (!__DEV__) {
+      console.error('[UNIQN] ' + message);
+    }
+
+    validationError = new Error(message);
 
     throw validationError;
   }
