@@ -162,6 +162,12 @@ export { InAppMessageManager } from './InAppMessageManager';
 export { FilterTabs, type FilterTabsProps, type FilterTabOption } from './FilterTabs';
 
 // ============================================================================
+// Password Components
+// ============================================================================
+
+export { PasswordStrength } from './PasswordStrength';
+
+// ============================================================================
 // Network Status Components
 // ============================================================================
 

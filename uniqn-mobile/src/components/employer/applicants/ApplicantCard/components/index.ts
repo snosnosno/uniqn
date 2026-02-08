@@ -13,8 +13,8 @@ export type { AppliedActionsProps } from './AppliedActions';
 export { ConfirmedActions } from './ConfirmedActions';
 export type { ConfirmedActionsProps } from './ConfirmedActions';
 
-export { AssignmentSelector } from './AssignmentSelector';
-export type { AssignmentSelectorProps } from './AssignmentSelector';
+export { SimpleAssignmentSelector } from './SimpleAssignmentSelector';
+export type { SimpleAssignmentSelectorProps } from './SimpleAssignmentSelector';
 
 export { GroupedAssignmentSelector } from './GroupedAssignmentSelector';
 export type { GroupedAssignmentSelectorProps } from './GroupedAssignmentSelector';

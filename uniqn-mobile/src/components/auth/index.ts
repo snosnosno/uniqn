@@ -8,7 +8,7 @@
 export { LoginForm } from './LoginForm';
 
 // Password
-export { PasswordStrength } from './PasswordStrength';
+export { PasswordStrength } from '../ui/PasswordStrength';
 export { ForgotPasswordForm } from './ForgotPasswordForm';
 
 // Signup

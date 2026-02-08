@@ -11,7 +11,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { PasswordStrength } from '@/components/auth/PasswordStrength';
+import { PasswordStrength } from '@/components/ui/PasswordStrength';
 import { signUpStep1Schema, type SignUpStep1Data } from '@/schemas';
 import { checkEmailExists } from '@/services/authService';
 import { logger } from '@/utils/logger';

@@ -1,13 +1,13 @@
 /**
- * UNIQN Mobile - 비밀번호 강도 표시 컴포넌트
+ * UNIQN Mobile - 비밀번호 강도 표시기 컴포넌트
  *
- * @description 비밀번호 입력 시 강도와 요구사항 충족 상태 표시
- * @version 1.1.0
+ * @description 비밀번호 입력 시 강도와 요구사항 충족 상태를 시각적으로 표시
+ * @version 2.0.0 - auth/settings 버전 통합
  */
 
 import React, { useMemo } from 'react';
-import { View, Text, StyleSheet } from 'react-native';
-import { CheckIcon, XMarkIcon } from '@/components/icons';
+import { View, Text } from 'react-native';
+import { CheckIcon, XMarkIcon } from '../icons';
 
 // ============================================================================
 // Types
@@ -53,18 +53,30 @@ const REQUIREMENTS: Requirement[] = [
   },
 ];
 
-const STRENGTH_COLORS: Record<StrengthLevel, string> = {
-  weak: '#ef4444',
-  medium: '#f59e0b',
-  strong: '#22c55e',
-  'very-strong': '#16a34a',
-};
-
-const STRENGTH_LABELS: Record<StrengthLevel, string> = {
-  weak: '약함',
-  medium: '보통',
-  strong: '강함',
-  'very-strong': '매우 강함',
+const STRENGTH_CONFIG: Record<
+  StrengthLevel,
+  { label: string; color: string; barColor: string }
+> = {
+  weak: {
+    label: '약함',
+    color: 'text-error-600 dark:text-error-400',
+    barColor: 'bg-error-500',
+  },
+  medium: {
+    label: '보통',
+    color: 'text-warning-600 dark:text-warning-400',
+    barColor: 'bg-warning-500',
+  },
+  strong: {
+    label: '강함',
+    color: 'text-success-600 dark:text-success-400',
+    barColor: 'bg-success-500',
+  },
+  'very-strong': {
+    label: '매우 강함',
+    color: 'text-success-700 dark:text-success-300',
+    barColor: 'bg-success-600',
+  },
 };
 
 // ============================================================================
@@ -83,6 +95,7 @@ function calculateStrength(password: string): { level: StrengthLevel; score: num
   if (/[0-9]/.test(password)) score += 15;
   if (/[!@#$%^&*]/.test(password)) score += 15;
 
+  // 연속 문자 감점
   for (let i = 0; i < password.length - 2; i++) {
     const c1 = password.charCodeAt(i);
     const c2 = password.charCodeAt(i + 1);
@@ -106,43 +119,65 @@ function calculateStrength(password: string): { level: StrengthLevel; score: num
 // Component
 // ============================================================================
 
-export function PasswordStrength({ password, showRequirements = true }: PasswordStrengthProps) {
+export const PasswordStrength = React.memo(function PasswordStrength({
+  password,
+  showRequirements = true,
+}: PasswordStrengthProps) {
   const { level, score } = useMemo(() => calculateStrength(password), [password]);
-  const color = STRENGTH_COLORS[level];
-  const label = STRENGTH_LABELS[level];
+  const config = STRENGTH_CONFIG[level];
 
   const requirementResults = useMemo(
-    () => REQUIREMENTS.map((req) => ({ ...req, passed: req.test(password) })),
+    () =>
+      REQUIREMENTS.map((req) => ({
+        ...req,
+        passed: password.length > 0 ? req.test(password) : false,
+      })),
     [password]
   );
 
   const passedCount = requirementResults.filter((r) => r.passed).length;
 
+  if (!password) {
+    return null;
+  }
+
   return (
-    <View>
-      <View style={styles.barSection}>
-        <View style={styles.labelRow}>
-          <Text style={styles.labelText}>비밀번호 강도</Text>
-          <Text style={[styles.strengthLabel, { color }]}>{label}</Text>
+    <View className="mt-2 flex-col gap-2">
+      {/* 강도 바 */}
+      <View className="flex-col gap-1">
+        <View className="flex-row justify-between items-center">
+          <Text className="text-xs text-gray-500 dark:text-gray-400">비밀번호 강도</Text>
+          <Text className={`text-xs font-medium ${config.color}`}>{config.label}</Text>
         </View>
-        <View style={styles.barBg}>
-          <View style={[styles.barFill, { width: `${score}%`, backgroundColor: color }]} />
+        <View className="h-2 bg-gray-200 dark:bg-surface rounded-full overflow-hidden">
+          <View
+            className={`h-full rounded-full ${config.barColor}`}
+            // eslint-disable-next-line react-native/no-inline-styles
+            style={{ width: `${score}%` }}
+          />
         </View>
       </View>
 
+      {/* 요구사항 체크리스트 */}
       {showRequirements && (
-        <View style={styles.requirementsSection}>
-          <Text style={styles.requirementsTitle}>
+        <View className="flex-col gap-1">
+          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">
             요구사항 ({passedCount}/{REQUIREMENTS.length})
           </Text>
           {requirementResults.map((req) => (
-            <View key={req.key} style={styles.requirementRow}>
+            <View key={req.key} className="flex-row items-center gap-2">
               {req.passed ? (
                 <CheckIcon size={14} color="#22C55E" />
               ) : (
                 <XMarkIcon size={14} color="#9CA3AF" />
               )}
-              <Text style={[styles.requirementText, req.passed && styles.requirementPassed]}>
+              <Text
+                className={`text-xs ${
+                  req.passed
+                    ? 'text-success-600 dark:text-success-400'
+                    : 'text-gray-500 dark:text-gray-400'
+                }`}
+              >
                 {req.label}
               </Text>
             </View>
@@ -151,60 +186,6 @@ export function PasswordStrength({ password, showRequirements = true }: Password
       )}
     </View>
   );
-}
-
-// ============================================================================
-// Styles
-// ============================================================================
-
-const styles = StyleSheet.create({
-  barSection: {
-    marginBottom: 8,
-  },
-  labelRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  labelText: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  strengthLabel: {
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  barBg: {
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#e5e7eb',
-    overflow: 'hidden',
-  },
-  barFill: {
-    height: '100%',
-    borderRadius: 4,
-  },
-  requirementsSection: {
-    gap: 4,
-  },
-  requirementsTitle: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 4,
-  },
-  requirementRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  requirementText: {
-    marginLeft: 8,
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  requirementPassed: {
-    color: '#16a34a',
-  },
 });
 
 export default PasswordStrength;
