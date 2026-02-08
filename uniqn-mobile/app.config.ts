@@ -16,7 +16,6 @@ import { ExpoConfig, ConfigContext } from 'expo/config';
 // ============================================================================
 
 const VERSION = '1.0.0';
-const BUILD_NUMBER = 1;
 
 // ============================================================================
 // 환경 설정
@@ -88,7 +87,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   ios: {
     supportsTablet: true,
     bundleIdentifier: envConfig.bundleIdentifier,
-    buildNumber: String(BUILD_NUMBER),
     googleServicesFile: './GoogleService-Info.plist',
     infoPlist: {
       ITSAppUsesNonExemptEncryption: false,
@@ -112,7 +110,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
       backgroundColor: '#ffffff',
     },
     package: envConfig.androidPackage,
-    versionCode: BUILD_NUMBER,
     googleServicesFile: './google-services.json',
     permissions: [
       'android.permission.CAMERA',
@@ -197,7 +194,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     },
     // 앱 버전 정보
     version: VERSION,
-    buildNumber: BUILD_NUMBER,
     environment,
     // 빌드 시간
     buildDate: new Date().toISOString(),

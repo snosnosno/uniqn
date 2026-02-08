@@ -2,25 +2,25 @@
  * UNIQN Mobile - 정산 목록 컴포넌트
  *
  * @description FlashList 기반 정산 목록 (필터링, 일괄 정산, 스태프별 그룹핑)
- * @version 3.0.0
+ * @version 4.0.0 - SummaryCard, BulkActions 서브컴포넌트 분해
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
+import { SettlementSummaryCard } from './SettlementSummaryCard';
+import { SettlementBulkActions } from './SettlementBulkActions';
 import { Loading } from '../../ui/Loading';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
-import { Card } from '../../ui/Card';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
-import { BanknotesIcon, CheckIcon, SettingsIcon } from '../../icons';
+import { BanknotesIcon, CheckIcon } from '../../icons';
 import {
   type SalaryType,
   type SalaryInfo,
   type Allowances,
   type TaxSettings,
-  formatCurrency,
 } from '@/utils/settlement';
 import {
   groupSettlementsByStaff,
@@ -83,151 +83,6 @@ const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'pending', label: '미정산' },
   { value: 'completed', label: '완료' },
 ];
-
-// ============================================================================
-// Sub-components
-// ============================================================================
-
-interface SummaryCardProps {
-  totalCount: number;
-  pendingCount: number;
-  completedCount: number;
-  totalAmount: number;
-  pendingAmount: number;
-  onOpenSettings?: () => void;
-}
-
-function SummaryCard({
-  totalCount,
-  pendingCount,
-  completedCount,
-  totalAmount,
-  pendingAmount,
-  onOpenSettings,
-}: SummaryCardProps) {
-  return (
-    <Card variant="filled" padding="md" className="mb-4 mx-4">
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">정산 현황</Text>
-        <View className="flex-row items-center">
-          <Text className="text-sm text-gray-500 dark:text-gray-400 mr-2">총 {totalCount}건</Text>
-          {onOpenSettings && (
-            <Pressable
-              onPress={onOpenSettings}
-              hitSlop={8}
-              className="flex-row items-center px-2 py-1.5 rounded-lg bg-gray-100 dark:bg-surface active:opacity-70"
-              accessibilityLabel="정산 설정"
-              accessibilityRole="button"
-            >
-              <SettingsIcon size={16} color="#6B7280" />
-              <Text className="ml-1 text-xs text-gray-600 dark:text-gray-400">정산설정</Text>
-            </Pressable>
-          )}
-        </View>
-      </View>
-
-      <View className="flex-row justify-between mb-2">
-        <View className="flex-1 items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">미정산</Text>
-          <Text className="text-lg font-bold text-warning-600 dark:text-warning-400">
-            {pendingCount}건
-          </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
-            {formatCurrency(pendingAmount)}
-          </Text>
-        </View>
-        <View className="w-px bg-gray-200 dark:bg-surface" />
-        <View className="flex-1 items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">완료</Text>
-          <Text className="text-lg font-bold text-success-600 dark:text-success-400">
-            {completedCount}건
-          </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
-            {formatCurrency(totalAmount - pendingAmount)}
-          </Text>
-        </View>
-        <View className="w-px bg-gray-200 dark:bg-surface" />
-        <View className="flex-1 items-center">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">총 금액</Text>
-          <Text className="text-lg font-bold text-primary-600 dark:text-primary-400">
-            {formatCurrency(totalAmount)}
-          </Text>
-        </View>
-      </View>
-    </Card>
-  );
-}
-
-interface BulkActionsBarProps {
-  selectedCount: number;
-  selectedAmount: number;
-  onSelectAll: () => void;
-  onClearSelection: () => void;
-  onBulkSettle: () => void;
-  isAllSelected: boolean;
-}
-
-function BulkActionsBar({
-  selectedCount,
-  selectedAmount,
-  onSelectAll,
-  onClearSelection,
-  onBulkSettle,
-  isAllSelected,
-}: BulkActionsBarProps) {
-  return (
-    <View className="flex-row items-center justify-between px-4 py-3 bg-primary-50 dark:bg-primary-900/20">
-      <View className="flex-row items-center">
-        <Pressable
-          onPress={isAllSelected ? onClearSelection : onSelectAll}
-          className="flex-row items-center mr-4"
-        >
-          <View
-            className={`
-            h-5 w-5 rounded border-2 items-center justify-center mr-2
-            ${
-              isAllSelected
-                ? 'bg-primary-500 border-primary-500'
-                : 'border-gray-400 dark:border-surface-overlay'
-            }
-          `}
-          >
-            {isAllSelected && <CheckIcon size={12} color="#fff" />}
-          </View>
-          <Text className="text-sm text-gray-700 dark:text-gray-300">
-            {isAllSelected ? '해제' : '전체'}
-          </Text>
-        </Pressable>
-        <View>
-          <Text className="text-sm font-medium text-primary-600 dark:text-primary-400">
-            {selectedCount}건 선택
-          </Text>
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
-            {formatCurrency(selectedAmount)}
-          </Text>
-        </View>
-      </View>
-      <Pressable
-        onPress={onBulkSettle}
-        disabled={selectedCount === 0}
-        className={`
-          flex-row items-center px-4 py-2 rounded-lg
-          ${selectedCount > 0 ? 'bg-primary-500 active:opacity-70' : 'bg-gray-300 dark:bg-surface'}
-        `}
-      >
-        <BanknotesIcon size={16} color={selectedCount > 0 ? '#fff' : '#9CA3AF'} />
-        <Text
-          className={`
-          ml-1 text-sm font-medium
-          ${selectedCount > 0 ? 'text-white' : 'text-gray-500 dark:text-gray-400'}
-        `}
-        >
-          일괄 정산
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
 
 // ============================================================================
 // Main Component
@@ -326,7 +181,6 @@ export function SettlementList({
 
   // 선택된 항목 금액
   const selectedAmount = useMemo(() => {
-    // 그룹 내 선택된 WorkLog들의 금액 합산
     let totalAmount = 0;
     for (const group of groupedSettlements) {
       for (const status of group.dateStatuses) {
@@ -443,7 +297,7 @@ export function SettlementList({
   return (
     <View className="flex-1">
       {/* 요약 카드 */}
-      <SummaryCard {...summaryInfo} onOpenSettings={onOpenSettings} />
+      <SettlementSummaryCard {...summaryInfo} onOpenSettings={onOpenSettings} />
 
       {/* 필터 탭 */}
       <FilterTabs
@@ -480,7 +334,7 @@ export function SettlementList({
 
       {/* 선택 모드 액션 바 */}
       {selectionMode && (
-        <BulkActionsBar
+        <SettlementBulkActions
           selectedCount={selectedIds.size}
           selectedAmount={selectedAmount}
           onSelectAll={handleSelectAll}

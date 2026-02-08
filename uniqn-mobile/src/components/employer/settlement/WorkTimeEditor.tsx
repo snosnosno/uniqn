@@ -2,19 +2,26 @@
  * UNIQN Mobile - 근무 시간 수정 컴포넌트
  *
  * @description 구인자가 스태프의 출퇴근 시간을 수정할 때 사용
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, TextInput, Pressable } from 'react-native';
+import { View, Text, TextInput } from 'react-native';
 import { Image } from 'expo-image';
 import { SheetModal } from '../../ui/SheetModal';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { Card } from '../../ui/Card';
 import { TimeWheelPicker, type TimeValue } from '../../ui/TimeWheelPicker';
-import { ClockIcon, AlertCircleIcon, CheckIcon, ChevronDownIcon } from '../../icons';
-import { formatTime, formatDate, parseTimeSlotToDate } from '@/utils/dateUtils';
-import { TimeNormalizer, type TimeInput } from '@/shared/time';
+import { AlertCircleIcon } from '../../icons';
+import { formatDate, parseTimeSlotToDate } from '@/utils/dateUtils';
+import { TimeInputField } from './TimeInputField';
+import {
+  parseTimestamp,
+  parseTimeInput,
+  formatTimeForInput,
+  formatEndTimeForInput,
+  calculateDuration,
+} from './timeEditorUtils';
 import type { WorkLog } from '@/types';
 
 // ============================================================================
@@ -32,184 +39,6 @@ export interface WorkTimeEditorProps {
 // 편집 필드 타입 (향후 인라인 편집 시 활용)
 // export for future use - suppresses unused warning
 export type EditingField = 'startTime' | 'endTime' | null;
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-/**
- * TimeInput을 Date로 변환 (null일 경우 현재 시간 반환)
- */
-function parseTimestamp(value: TimeInput): Date {
-  return TimeNormalizer.parseTime(value) ?? new Date();
-}
-
-function calculateDuration(start: Date, end: Date): string {
-  const diffMs = end.getTime() - start.getTime();
-
-  // 퇴근이 출근보다 빠르면 계산 불가
-  if (diffMs <= 0) {
-    return '시간 오류';
-  }
-
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-
-  if (hours === 0) return `${minutes}분`;
-  if (minutes === 0) return `${hours}시간`;
-  return `${hours}시간 ${minutes}분`;
-}
-
-function formatTimeForInput(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, '0');
-  const minutes = date.getMinutes().toString().padStart(2, '0');
-  return `${hours}:${minutes}`;
-}
-
-/**
- * 퇴근 시간을 24+ 형식으로 변환 (다음날인 경우)
- */
-function formatEndTimeForInput(endDate: Date, baseDate: Date): string {
-  const baseDateOnly = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate());
-  const endDateOnly = new Date(endDate.getFullYear(), endDate.getMonth(), endDate.getDate());
-
-  // 퇴근 날짜가 기준 날짜보다 하루 뒤면 24+ 형식
-  const dayDiff = Math.round(
-    (endDateOnly.getTime() - baseDateOnly.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (dayDiff === 1) {
-    const hours = (endDate.getHours() + 24).toString().padStart(2, '0');
-    const minutes = endDate.getMinutes().toString().padStart(2, '0');
-    return `${hours}:${minutes}`;
-  }
-
-  return formatTimeForInput(endDate);
-}
-
-function parseTimeInput(timeStr: string, baseDate: Date): Date | null {
-  const match = timeStr.match(/^(\d{1,2}):(\d{2})$/);
-  if (!match) return null;
-
-  const hours = parseInt(match[1], 10);
-  const minutes = parseInt(match[2], 10);
-
-  // 0-47시까지 허용 (24시 이상은 다음날)
-  if (hours < 0 || hours > 47 || minutes < 0 || minutes > 59) return null;
-
-  const result = new Date(baseDate);
-
-  if (hours >= 24) {
-    // 24시 이상이면 다음날로 설정
-    result.setDate(result.getDate() + 1);
-    result.setHours(hours - 24, minutes, 0, 0);
-  } else {
-    result.setHours(hours, minutes, 0, 0);
-  }
-
-  return result;
-}
-
-// ============================================================================
-// Sub-components
-// ============================================================================
-
-interface TimeInputProps {
-  label: string;
-  value: string;
-  originalTime?: Date | null;
-  iconColor: string;
-  /** 미정 여부 */
-  isUndefined?: boolean;
-  /** 미정 상태 변경 핸들러 */
-  onUndefinedChange?: (isUndefined: boolean) => void;
-  /** 휠 피커 열기 */
-  onOpenPicker: () => void;
-}
-
-function TimeInputField({
-  label,
-  value,
-  originalTime,
-  iconColor,
-  isUndefined = false,
-  onUndefinedChange,
-  onOpenPicker,
-}: TimeInputProps) {
-  const hasChanged = originalTime && !isUndefined && formatTimeForInput(originalTime) !== value;
-
-  // 표시용 텍스트 (24시 이상이면 다음날 표시)
-  const displayText = useMemo(() => {
-    if (!value) return '시간 선택';
-    const match = value.match(/^(\d{1,2}):(\d{2})$/);
-    if (!match) return value;
-    const hour = parseInt(match[1], 10);
-    const minute = match[2];
-    if (hour >= 24) {
-      return `${value} (다음날 ${(hour - 24).toString().padStart(2, '0')}:${minute})`;
-    }
-    return value;
-  }, [value]);
-
-  return (
-    <View className="mb-4">
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-sm font-medium text-gray-600 dark:text-gray-400">{label}</Text>
-        {/* 미정 체크박스 */}
-        {onUndefinedChange && (
-          <Pressable
-            onPress={() => onUndefinedChange(!isUndefined)}
-            className="flex-row items-center"
-          >
-            <View
-              className={`w-5 h-5 rounded border items-center justify-center mr-1.5
-                ${
-                  isUndefined
-                    ? 'bg-primary-600 border-primary-600'
-                    : 'bg-white dark:bg-surface border-gray-300 dark:border-surface-overlay'
-                }`}
-            >
-              {isUndefined && <CheckIcon size={14} color="#FFFFFF" />}
-            </View>
-            <Text className="text-sm text-gray-600 dark:text-gray-400">미정</Text>
-          </Pressable>
-        )}
-      </View>
-
-      {/* 시간 선택 버튼 (휠 피커 트리거) */}
-      <Pressable
-        onPress={() => !isUndefined && onOpenPicker()}
-        disabled={isUndefined}
-        className={`flex-row items-center justify-between p-3 border rounded-lg min-h-[52px]
-          ${
-            isUndefined
-              ? 'bg-gray-100 dark:bg-surface-dark border-gray-200 dark:border-surface-overlay'
-              : 'bg-white dark:bg-surface border-gray-200 dark:border-surface-overlay active:bg-gray-50 dark:active:bg-gray-700'
-          }`}
-      >
-        <View className="flex-row items-center flex-1">
-          <ClockIcon size={20} color={isUndefined ? '#9CA3AF' : iconColor} />
-          {isUndefined ? (
-            <Text className="ml-2 text-lg font-semibold text-gray-400 dark:text-gray-500">
-              미정
-            </Text>
-          ) : (
-            <Text className="ml-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {displayText}
-            </Text>
-          )}
-        </View>
-        {!isUndefined && <ChevronDownIcon size={20} color="#9CA3AF" />}
-      </Pressable>
-
-      {hasChanged && originalTime && (
-        <Text className="mt-1 text-xs text-yellow-600 dark:text-yellow-400">
-          원래: {formatTime(originalTime)}
-        </Text>
-      )}
-    </View>
-  );
-}
 
 // ============================================================================
 // Component
