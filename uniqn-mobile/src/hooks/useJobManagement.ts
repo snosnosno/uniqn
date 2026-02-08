@@ -20,7 +20,7 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
-import { createMutationErrorHandler } from '@/shared/errors';
+import { createMutationErrorHandler, extractErrorMessage } from '@/shared/errors';
 import { toError, requireAuth } from '@/errors';
 import type { CreateJobPostingInput, UpdateJobPostingInput, JobPostingStatus } from '@/types';
 
@@ -162,7 +162,7 @@ export function useUpdateJobPosting() {
       logger.error('공고 수정 실패', toError(error));
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 수정에 실패했습니다.',
+        message: extractErrorMessage(error, '공고 수정에 실패했습니다.'),
       });
     },
   });
@@ -197,7 +197,7 @@ export function useDeleteJobPosting() {
       logger.error('공고 삭제 실패', toError(error));
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 삭제에 실패했습니다.',
+        message: extractErrorMessage(error, '공고 삭제에 실패했습니다.'),
       });
     },
   });
@@ -240,7 +240,7 @@ export function useCloseJobPosting() {
       logger.error('공고 마감 실패', toError(error));
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 마감에 실패했습니다.',
+        message: extractErrorMessage(error, '공고 마감에 실패했습니다.'),
       });
     },
   });
@@ -279,7 +279,7 @@ export function useReopenJobPosting() {
       logger.error('공고 재오픈 실패', toError(error));
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '공고 재오픈에 실패했습니다.',
+        message: extractErrorMessage(error, '공고 재오픈에 실패했습니다.'),
       });
     },
   });
