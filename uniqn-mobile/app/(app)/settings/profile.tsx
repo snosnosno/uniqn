@@ -3,7 +3,7 @@
  * 프로필 수정 화면
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -18,7 +18,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Card } from '@/components/ui';
+import { Card, Loading } from '@/components/ui';
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore, useHasHydrated } from '@/stores/authStore';
@@ -26,43 +26,50 @@ import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
+import type { UserProfile } from '@/types';
+import type { AuthUser } from '@/stores/authStore';
 
 export default function ProfileEditScreen() {
   const { profile, user } = useAuth();
+  const hasHydrated = useHasHydrated();
+
+  // profile이 로드될 때까지 로딩 표시
+  if (!hasHydrated || !profile) {
+    return (
+      <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
+        <Loading />
+      </SafeAreaView>
+    );
+  }
+
+  // profile이 확실히 존재할 때만 폼 렌더링
+  return <ProfileEditForm profile={profile} user={user} />;
+}
+
+/**
+ * 프로필 수정 폼 (profile이 확실히 존재할 때만 렌더링)
+ *
+ * profile을 defaultValues로 직접 설정하여 useEffect + reset() 타이밍 문제 방지
+ */
+function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUser | null }) {
   const setProfile = useAuthStore((state) => state.setProfile);
   const addToast = useToastStore((state) => state.addToast);
-  const hasHydrated = useHasHydrated();
   const [isSaving, setIsSaving] = useState(false);
 
   const {
     control,
     handleSubmit,
-    reset,
     formState: { errors, isDirty },
   } = useForm<UpdateProfileData>({
     resolver: zodResolver(updateProfileSchema),
     defaultValues: {
-      nickname: '',
-      region: '',
-      experienceYears: undefined,
-      career: '',
-      note: '',
+      nickname: profile.nickname ?? '',
+      region: profile.region ?? '',
+      experienceYears: profile.experienceYears ?? undefined,
+      career: profile.career ?? '',
+      note: profile.note ?? '',
     },
   });
-
-  // profile이 로드되면 form 값을 업데이트
-  // hasHydrated를 확인하여 MMKV rehydration 완료 후에만 초기화
-  useEffect(() => {
-    if (hasHydrated && profile) {
-      reset({
-        nickname: profile.nickname ?? '',
-        region: profile.region ?? '',
-        experienceYears: profile.experienceYears ?? undefined,
-        career: profile.career ?? '',
-        note: profile.note ?? '',
-      });
-    }
-  }, [hasHydrated, profile, reset]);
 
   // 프로필 이미지 변경 핸들러 (ProfileImagePicker가 내부적으로 처리)
   const handleImageUpdated = (imageUrl: string | null) => {
@@ -76,22 +83,23 @@ export default function ProfileEditScreen() {
 
     setIsSaving(true);
     try {
-      // 변경된 필드만 업데이트
+      // 변경된 필드만 업데이트 (undefined와 ''를 동일하게 취급)
       const updates: Partial<UpdateProfileData> = {};
+      const normalize = (v: string | undefined) => v || '';
 
-      if (data.nickname !== profile?.nickname) {
+      if (normalize(data.nickname) !== normalize(profile.nickname)) {
         updates.nickname = data.nickname;
       }
-      if (data.region !== profile?.region) {
+      if (normalize(data.region) !== normalize(profile.region)) {
         updates.region = data.region;
       }
-      if (data.experienceYears !== profile?.experienceYears) {
+      if ((data.experienceYears ?? null) !== (profile.experienceYears ?? null)) {
         updates.experienceYears = data.experienceYears;
       }
-      if (data.career !== profile?.career) {
+      if (normalize(data.career) !== normalize(profile.career)) {
         updates.career = data.career;
       }
-      if (data.note !== profile?.note) {
+      if (normalize(data.note) !== normalize(profile.note)) {
         updates.note = data.note;
       }
 
@@ -99,13 +107,11 @@ export default function ProfileEditScreen() {
         await updateUserProfile(user.uid, updates);
 
         // authStore의 profile 업데이트 (로컬 상태 동기화)
-        if (profile) {
-          setProfile({
-            ...profile,
-            ...updates,
-            updatedAt: new Date(),
-          });
-        }
+        setProfile({
+          ...profile,
+          ...updates,
+          updatedAt: new Date(),
+        });
 
         addToast({ type: 'success', message: '프로필이 저장되었습니다' });
         router.back();
@@ -134,8 +140,8 @@ export default function ProfileEditScreen() {
           {/* 프로필 이미지 */}
           <Card className="mb-4 items-center py-6">
             <ProfileImagePicker
-              currentImageUrl={profile?.photoURL ?? null}
-              name={profile?.name ?? user?.displayName ?? '사용자'}
+              currentImageUrl={profile.photoURL ?? null}
+              name={profile.name ?? user?.displayName ?? '사용자'}
               onImageUpdated={handleImageUpdated}
               size="xl"
             />
@@ -163,7 +169,7 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.name ?? user?.displayName ?? '본인인증 후 자동 입력'}
+                  {profile.name ?? user?.displayName ?? '본인인증 후 자동 입력'}
                 </Text>
               </View>
             </View>
@@ -173,7 +179,7 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이메일</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.email ?? user?.email ?? '-'}
+                  {profile.email ?? user?.email ?? '-'}
                 </Text>
               </View>
             </View>
@@ -183,7 +189,7 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.phone ?? '본인인증 후 자동 입력'}
+                  {profile.phone ?? '본인인증 후 자동 입력'}
                 </Text>
               </View>
             </View>
@@ -193,7 +199,7 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">생년월일</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.birthYear ? `${profile.birthYear}년` : '본인인증 후 자동 입력'}
+                  {profile.birthYear ? `${profile.birthYear}년` : '본인인증 후 자동 입력'}
                 </Text>
               </View>
             </View>
@@ -203,9 +209,9 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.gender === 'male'
+                  {profile.gender === 'male'
                     ? '남성'
-                    : profile?.gender === 'female'
+                    : profile.gender === 'female'
                       ? '여성'
                       : '본인인증 후 자동 입력'}
                 </Text>
@@ -375,11 +381,11 @@ export default function ProfileEditScreen() {
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">역할</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile?.role === 'admin'
+                  {profile.role === 'admin'
                     ? '관리자'
-                    : profile?.role === 'employer'
+                    : profile.role === 'employer'
                       ? '구인자'
-                      : profile?.role === 'staff'
+                      : profile.role === 'staff'
                         ? '스태프'
                         : '-'}
                 </Text>
