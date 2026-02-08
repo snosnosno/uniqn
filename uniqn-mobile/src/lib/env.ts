@@ -86,15 +86,12 @@ export function getEnv(): Env {
       .map(([field, messages]) => `  - ${field}: ${messages?.join(', ')}`)
       .join('\n');
 
-    const message =
-      `환경변수 검증 실패 (${missingFields.length}개 누락):\n${errorMessages}\n\n` +
-      `EAS Build: eas secret:create로 환경변수를 등록하세요.\n` +
-      `로컬 개발: .env.local 파일을 확인하세요. .env.example을 참고하여 필수 환경변수를 설정해주세요.`;
-
-    // 프로덕션 빌드에서 환경변수 누락 시 콘솔에 명확한 에러 출력
-    if (!__DEV__) {
-      console.error('[UNIQN] ' + message);
-    }
+    // 개발 환경: 필드명 포함 상세 메시지, 프로덕션: 필드명 제외
+    const message = __DEV__
+      ? `환경변수 검증 실패 (${missingFields.length}개 누락):\n${errorMessages}\n\n` +
+        `EAS Build: eas secret:create로 환경변수를 등록하세요.\n` +
+        `로컬 개발: .env.local 파일을 확인하세요. .env.example을 참고하여 필수 환경변수를 설정해주세요.`
+      : `환경변수 검증 실패 (${missingFields.length}개 누락). .env 파일을 확인하세요.`;
 
     validationError = new Error(message);
 

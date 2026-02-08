@@ -9,7 +9,7 @@ import { FlashList } from '@shopify/flash-list';
 import { Timestamp } from '@/lib/firebase';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useAuth } from '@/hooks/useAuth';
+import { useHasRole } from '@/stores/authStore';
 import {
   useMyJobPostings,
   useCloseJobPosting,
@@ -815,8 +815,8 @@ function EmployerView() {
 // ============================================================================
 
 export default function EmployerTabScreen() {
-  const { profile } = useAuth();
-  const hasEmployerRole = profile?.role === 'employer' || profile?.role === 'admin';
+  // useHasRole은 RoleResolver.hasPermission으로 계층적 권한 체크 (admin > employer)
+  const hasEmployerRole = useHasRole('employer');
 
   if (!hasEmployerRole) {
     return <NonEmployerView />;

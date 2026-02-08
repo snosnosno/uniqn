@@ -145,7 +145,7 @@ export const Checkbox = memo(function Checkbox({
                 ${
                   disabled
                     ? // P1 접근성: WCAG AA 준수를 위해 대비 개선
-                      'text-gray-500 dark:text-gray-500'
+                      'text-gray-500 dark:text-gray-400'
                     : 'text-gray-600 dark:text-gray-400'
                 }
               `}

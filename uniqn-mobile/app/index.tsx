@@ -7,14 +7,21 @@ import { useEffect } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { router } from 'expo-router';
 import { useAuthStore, selectHasHydrated } from '@/stores/authStore';
+import { logger } from '@/utils/logger';
 
 export default function SplashScreen() {
   const hasHydrated = useAuthStore(selectHasHydrated);
   const user = useAuthStore((state) => state.user);
 
   useEffect(() => {
-    // Hydration 완료 대기
-    if (!hasHydrated) return;
+    if (!hasHydrated) {
+      // Hydration이 5초 안에 완료되지 않으면 로그인 화면으로 폴백
+      const fallback = setTimeout(() => {
+        logger.warn('Hydration 타임아웃 - 로그인 화면으로 폴백', { component: 'SplashScreen' });
+        router.replace('/(auth)/login');
+      }, 5000);
+      return () => clearTimeout(fallback);
+    }
 
     // 인증 상태에 따라 라우팅
     const timer = setTimeout(() => {

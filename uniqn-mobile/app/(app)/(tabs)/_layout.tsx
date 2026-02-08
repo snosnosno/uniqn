@@ -20,8 +20,13 @@ export default function TabLayout() {
     if (Platform.OS !== 'web') return;
 
     const unsubscribe = navigation.addListener('state', () => {
-      if (document.activeElement instanceof HTMLElement) {
-        document.activeElement.blur();
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLElement &&
+        active.tagName !== 'INPUT' &&
+        active.tagName !== 'TEXTAREA'
+      ) {
+        active.blur();
       }
     });
 

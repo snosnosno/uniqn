@@ -205,8 +205,8 @@ export const queryClient = new QueryClient({
     queries: {
       // 5분 동안 데이터를 fresh로 간주
       staleTime: 5 * 60 * 1000,
-      // 10분 동안 캐시 유지 (garbage collection time)
-      gcTime: 10 * 60 * 1000,
+      // 5분 동안 캐시 유지 (모바일 메모리 최적화)
+      gcTime: 5 * 60 * 1000,
       // 카테고리별 재시도 조건
       retry: shouldRetry,
       // 지수 백오프 + 지터 딜레이
