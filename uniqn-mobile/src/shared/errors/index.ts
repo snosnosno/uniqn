@@ -23,7 +23,7 @@ export {
   // Core handlers
   createMutationErrorHandler,
   createQueryErrorHandler,
-  handleSilentError,
+  handleHookSilentError,
   // Auth helpers
   requireAuth,
   getAuthUserId,

@@ -12,6 +12,7 @@ import type {
   JobPostingStatus,
   CreateJobPostingInput,
   UpdateJobPostingInput,
+  TournamentApprovalStatus,
 } from '@/types';
 
 // ============================================================================
@@ -216,4 +217,36 @@ export interface IJobPostingRepository {
     status: JobPostingStatus,
     ownerId: string
   ): Promise<number>;
+
+  // ==========================================================================
+  // 대회공고 (Tournament)
+  // ==========================================================================
+
+  /**
+   * 공고 타입 및 승인 상태로 조회
+   *
+   * @description 대회공고 승인 워크플로우에서 사용
+   * @param postingType - 공고 타입 (예: 'tournament')
+   * @param approvalStatus - 승인 상태 (pending, approved, rejected)
+   * @returns 매칭되는 공고 목록 (최신순)
+   */
+  getByPostingTypeAndApprovalStatus(
+    postingType: string,
+    approvalStatus: TournamentApprovalStatus
+  ): Promise<JobPosting[]>;
+
+  /**
+   * 소유자, 공고 타입, 승인 상태들로 조회
+   *
+   * @description 구인자의 대회공고 목록 조회에서 사용
+   * @param ownerId - 소유자 ID
+   * @param postingType - 공고 타입 (예: 'tournament')
+   * @param approvalStatuses - 승인 상태 배열 (예: ['pending', 'rejected'])
+   * @returns 매칭되는 공고 목록 (최신순)
+   */
+  getByOwnerAndPostingType(
+    ownerId: string,
+    postingType: string,
+    approvalStatuses: TournamentApprovalStatus[]
+  ): Promise<JobPosting[]>;
 }

@@ -35,6 +35,7 @@ import {
   FirebaseReportRepository,
   FirebaseSettlementRepository,
   FirebaseConfirmedStaffRepository,
+  FirebaseAdminRepository,
 } from './firebase';
 
 // ============================================================================
@@ -86,6 +87,11 @@ export type {
   DeleteConfirmedStaffContext,
   MarkNoShowContext,
   ConfirmedStaffSubscriptionCallbacks,
+  // Admin
+  IAdminRepository,
+  DashboardCounts,
+  DailyCount,
+  SystemMetricsData,
 } from './interfaces';
 
 // ============================================================================
@@ -102,6 +108,7 @@ export {
   FirebaseReportRepository,
   FirebaseSettlementRepository,
   FirebaseConfirmedStaffRepository,
+  FirebaseAdminRepository,
 } from './firebase';
 
 // ============================================================================
@@ -293,3 +300,24 @@ export const settlementRepository = new FirebaseSettlementRepository();
  * ```
  */
 export const confirmedStaffRepository = new FirebaseConfirmedStaffRepository();
+
+/**
+ * Admin Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { adminRepository } from '@/repositories';
+ *
+ * // 대시보드 카운트
+ * const counts = await adminRepository.getDashboardCounts();
+ *
+ * // 사용자 목록 조회
+ * const users = await adminRepository.getUsers(filters, page, pageSize);
+ *
+ * // 사용자 역할 변경
+ * const prevRole = await adminRepository.updateUserRole(userId, 'employer');
+ * ```
+ */
+export const adminRepository = new FirebaseAdminRepository();

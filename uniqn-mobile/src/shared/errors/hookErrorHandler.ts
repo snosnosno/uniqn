@@ -98,7 +98,7 @@ export function createMutationErrorHandler(
  * @param extraContext - 추가 컨텍스트
  * @returns AppError
  */
-export function handleSilentError(
+export function handleHookSilentError(
   error: unknown,
   context: string,
   extraContext?: Record<string, unknown>

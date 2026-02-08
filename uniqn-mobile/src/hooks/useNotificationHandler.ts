@@ -27,11 +27,9 @@ import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { Timestamp } from 'firebase/firestore';
-import { FirebaseNotificationRepository } from '@/repositories/firebase/NotificationRepository';
+import { queryClient, queryKeys } from '@/lib/queryClient';
+import { notificationRepository } from '@/repositories';
 import type { NotificationType, NotificationData } from '@/types/notification';
-
-// Repository 인스턴스
-const notificationRepository = new FirebaseNotificationRepository();
 
 // ============================================================================
 // Types
@@ -254,6 +252,10 @@ export function useNotificationHandler(
 
         // Zustand store에 알림 추가 (incrementUnreadCounts 자동 호출됨)
         useNotificationStore.getState().addNotification(notificationData);
+
+        // React Query 캐시 무효화 (Store ↔ Query 동기화)
+        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+
         logger.info('FCM 알림을 로컬 store에 추가', { notificationId });
       }
 

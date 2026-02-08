@@ -15,15 +15,12 @@ import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
 import { FilterIcon } from '../../icons';
-import { FirebaseUserRepository } from '@/repositories/firebase/UserRepository';
+import { userRepository } from '@/repositories';
 import { queryKeys } from '@/lib/queryClient';
 import { LIST_CONTAINER_STYLES } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';
-
-// Repository 인스턴스 (싱글톤)
-const userRepository = new FirebaseUserRepository();
 
 // ============================================================================
 // Types
