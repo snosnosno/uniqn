@@ -35,6 +35,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
     formState: { errors },
   } = useForm<SignUpStep3Data>({
     resolver: zodResolver(signUpStep3Schema),
+    mode: 'onBlur',
     defaultValues: {
       nickname: initialData?.nickname || '',
       role: 'staff', // 모든 사용자는 스태프로 가입

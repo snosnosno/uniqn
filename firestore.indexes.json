@@ -490,6 +490,25 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "workDate",
+          "order": "ASCENDING"
+        }
+      ],
+      "density": "SPARSE_ALL"
+    },
+    {
+      "collectionGroup": "jobPostings",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "postingType",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "tournamentConfig.approvalStatus",
           "order": "ASCENDING"
         },

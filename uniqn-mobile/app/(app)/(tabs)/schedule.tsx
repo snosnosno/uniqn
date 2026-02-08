@@ -343,18 +343,19 @@ export default function ScheduleScreen() {
     setIsQRScannerVisible(true);
   }, [isWorking]);
 
-  // QR 스캐너 닫기
-  const handleCloseQRScanner = useCallback(() => {
-    setIsQRScannerVisible(false);
-  }, []);
-
   // QR 스캔 결과 처리 훅
-  const { handleScanResult } = useQRCodeScanner({
+  const { handleScanResult, lastError, clearError } = useQRCodeScanner({
     onSuccess: () => {
       setIsQRScannerVisible(false);
       handleCloseDetailSheet();
     },
   });
+
+  // QR 스캐너 닫기
+  const handleCloseQRScanner = useCallback(() => {
+    setIsQRScannerVisible(false);
+    clearError();
+  }, [clearError]);
 
   // QR 스캔 완료
   const handleQRScanComplete = useCallback(
@@ -538,6 +539,8 @@ export default function ScheduleScreen() {
         onScan={handleQRScanComplete}
         expectedAction={qrScanAction}
         title={`${qrScanAction === 'checkIn' ? '출근' : '퇴근'} QR 스캔`}
+        scanError={lastError}
+        onClearError={clearError}
       />
     </SafeAreaView>
   );

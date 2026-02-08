@@ -65,7 +65,11 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     // 토스트 스타일
     if (variant === 'toast') {
       return (
-        <View className="absolute top-12 left-4 right-4 z-50">
+        <View
+          className="absolute top-12 left-4 right-4 z-50"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="assertive"
+        >
           <View className="flex-row items-center justify-between bg-red-600 dark:bg-red-700 px-4 py-3 rounded-lg shadow-lg">
             <View className="flex-row items-center flex-1">
               <WifiOff size={18} color="white" />
@@ -76,6 +80,9 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
                 onPress={handleRetry}
                 disabled={isRetrying || isChecking}
                 className="ml-2 p-1"
+                accessibilityRole="button"
+                accessibilityLabel="네트워크 재연결 시도"
+                accessibilityState={{ disabled: isRetrying || isChecking }}
               >
                 {isRetrying || isChecking ? (
                   <ActivityIndicator size="small" color="white" />
@@ -92,7 +99,11 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
     // 전체 화면 스타일
     if (variant === 'fullscreen') {
       return (
-        <View className="absolute inset-0 z-50 bg-gray-900/80 items-center justify-center px-6">
+        <View
+          className="absolute inset-0 z-50 bg-gray-900/80 items-center justify-center px-6"
+          accessibilityRole="alert"
+          accessibilityLiveRegion="assertive"
+        >
           <View className="bg-white dark:bg-surface rounded-2xl p-8 items-center shadow-2xl max-w-sm w-full">
             <View className="w-20 h-20 bg-red-100 dark:bg-red-900/30 rounded-full items-center justify-center mb-4">
               <WifiOff size={40} color="#ef4444" />
@@ -109,6 +120,9 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
                 onPress={handleRetry}
                 disabled={isRetrying || isChecking}
                 className="w-full bg-primary-600 dark:bg-primary-700 py-3 px-6 rounded-xl flex-row items-center justify-center active:opacity-80"
+                accessibilityRole="button"
+                accessibilityLabel="네트워크 재연결 시도"
+                accessibilityState={{ disabled: isRetrying || isChecking }}
               >
                 {isRetrying || isChecking ? (
                   <ActivityIndicator size="small" color="white" />
@@ -127,7 +141,11 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
 
     // 기본 배너 스타일
     return (
-      <View className="bg-red-600 dark:bg-red-700 px-4 py-3">
+      <View
+        className="bg-red-600 dark:bg-red-700 px-4 py-3"
+        accessibilityRole="alert"
+        accessibilityLiveRegion="assertive"
+      >
         <View className="flex-row items-center justify-between">
           <View className="flex-row items-center flex-1">
             <WifiOff size={18} color="white" />
@@ -139,6 +157,9 @@ export const OfflineBanner: React.FC<OfflineBannerProps> = React.memo(
               onPress={handleRetry}
               disabled={isRetrying || isChecking}
               className="flex-row items-center bg-white/20 px-3 py-1.5 rounded-full active:opacity-80"
+              accessibilityRole="button"
+              accessibilityLabel="네트워크 재연결 시도"
+              accessibilityState={{ disabled: isRetrying || isChecking }}
             >
               {isRetrying || isChecking ? (
                 <ActivityIndicator size="small" color="white" />

@@ -28,7 +28,7 @@ import {
   type ConfirmedStaffStatus,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatTime, parseTimeSlotToDate } from '@/utils/dateUtils';
+import { formatTime } from '@/utils/dateUtils';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
@@ -136,16 +136,12 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
     fallbackName: staff?.staffName,
   });
 
-  // 출근 시간 계산
+  // 출근 시간 계산 (checkInTime이 없으면 "미정", timeSlot 폴백 안 함)
   const startTimeStr = useMemo(() => {
     if (!staff) return '미정';
     if (staff.checkInTime) {
       const date = parseTimestamp(staff.checkInTime);
       return date ? formatTime(date) : '미정';
-    }
-    if (staff.timeSlot && staff.date) {
-      const { startTime } = parseTimeSlotToDate(staff.timeSlot, staff.date);
-      return startTime ? formatTime(startTime) : '미정';
     }
     return '미정';
   }, [staff]);

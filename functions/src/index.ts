@@ -62,8 +62,10 @@ export { resubmitJobPosting } from './api/jobPostings/resubmitJobPosting';
 export { onTournamentApprovalChange } from './triggers/onTournamentApprovalChange';
 
 // --- Job Posting Scheduled Functions (Phase 5) ---
-export { expireFixedPostings } from './scheduled/expireFixedPostings';
+export { expireFixedPostings, manualExpireFixedPostings } from './scheduled/expireFixedPostings';
 export { onFixedPostingExpired } from './triggers/onFixedPostingExpired';
+export { expireByLastWorkDate } from './scheduled/expireByLastWorkDate';
+export { onWorkDateExpired } from './triggers/onWorkDateExpired';
 
 // --- Existing Functions (placeholders for brevity) ---
 export const onApplicationStatusChange = functions.region('asia-northeast3').firestore.document('applications/{applicationId}').onUpdate(async (change, context) => { /* ... */ });

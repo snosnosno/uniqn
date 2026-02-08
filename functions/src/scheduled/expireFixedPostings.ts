@@ -35,11 +35,11 @@ export const expireFixedPostings = functions
 
     try {
       // 만료된 고정 공고 조회
-      // 조건: postingType='fixed' AND status='open' AND expiresAt <= now
+      // 조건: postingType='fixed' AND status='active' AND expiresAt <= now
       const expiredQuery = db
         .collection('jobPostings')
         .where('postingType', '==', 'fixed')
-        .where('status', '==', 'open')
+        .where('status', '==', 'active')
         .where('fixedConfig.expiresAt', '<=', now)
         .limit(100); // 배치 크기 제한
 
@@ -87,8 +87,8 @@ export const expireFixedPostings = functions
 
       return null;
     } catch (error) {
-      logger.error('고정 공고 만료 처리 실패', error, {
-        errorMessage: error instanceof Error ? error.message : String(error)
+      logger.error('고정 공고 만료 처리 실패', {
+        error: error instanceof Error ? error.stack : String(error),
       });
 
       throw error; // Functions에서 재시도하도록 에러 던지기
@@ -150,7 +150,7 @@ export const manualExpireFixedPostings = functions
       const expiredQuery = db
         .collection('jobPostings')
         .where('postingType', '==', 'fixed')
-        .where('status', '==', 'open')
+        .where('status', '==', 'active')
         .where('fixedConfig.expiresAt', '<=', now)
         .limit(limit);
 

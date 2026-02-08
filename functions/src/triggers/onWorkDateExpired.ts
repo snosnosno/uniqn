@@ -1,14 +1,14 @@
 /**
- * @file onFixedPostingExpired.ts
- * @description 고정 공고 만료 알림 Firestore Trigger
+ * @file onWorkDateExpired.ts
+ * @description 근무일 만료 공고 작성자 알림 Firestore Trigger
  *
  * 트리거 조건:
  * - jobPostings 컬렉션 문서 업데이트 감지
  * - status: 'active' → 'closed'
- * - closedReason === 'expired'
+ * - closedReason === 'expired_by_work_date'
  *
  * 처리 내용:
- * - 작성자에게 만료 알림 전송 (Firestore + FCM)
+ * - 작성자에게 자동 마감 알림 전송 (Firestore + FCM)
  * - 지원자 알림은 기존 onJobPostingClosed 트리거가 처리
  */
 
@@ -17,12 +17,12 @@ import * as logger from 'firebase-functions/logger';
 import { createAndSendNotification } from '../utils/notificationUtils';
 
 /**
- * 고정 공고 만료 알림 Trigger
+ * 근무일 만료 공고 작성자 알림 Trigger
  *
  * 경로: jobPostings/{postingId}
  * 이벤트: onUpdate
  */
-export const onFixedPostingExpired = functions
+export const onWorkDateExpired = functions
   .region('asia-northeast3')
   .firestore.document('jobPostings/{postingId}')
   .onUpdate(async (change, context) => {
@@ -30,24 +30,22 @@ export const onFixedPostingExpired = functions
     const after = change.after.data();
     const postingId = context.params.postingId;
 
-    // 변경 전후 데이터 확인
     if (!before || !after) {
-      logger.warn('변경 전후 데이터 없음', { postingId });
       return;
     }
 
-    // 만료 감지: status가 'active' → 'closed'로 변경되고 closedReason === 'expired'
-    const isExpired =
+    // 근무일 만료 감지: active → closed + closedReason === 'expired_by_work_date'
+    const isWorkDateExpired =
       before.status === 'active' &&
       after.status === 'closed' &&
-      after.closedReason === 'expired';
+      after.closedReason === 'expired_by_work_date';
 
-    if (!isExpired) {
-      return; // 만료가 아니면 처리 안 함
+    if (!isWorkDateExpired) {
+      return;
     }
 
-    // 고정 공고인지 확인
-    if (after.postingType !== 'fixed') {
+    // fixed 공고는 onFixedPostingExpired에서 처리
+    if (after.postingType === 'fixed') {
       return;
     }
 
@@ -57,11 +55,11 @@ export const onFixedPostingExpired = functions
       return;
     }
 
-    logger.info(`고정 공고 ${postingId} 만료 감지`, {
+    logger.info(`공고 ${postingId} 근무일 만료 감지`, {
       title: after.title,
+      postingType: after.postingType,
+      workDate: after.workDate,
       createdBy,
-      expiresAt: after.fixedConfig?.expiresAt?.toDate(),
-      durationDays: after.fixedConfig?.durationDays,
     });
 
     try {
@@ -70,25 +68,25 @@ export const onFixedPostingExpired = functions
       await createAndSendNotification(
         createdBy,
         'job_closed',
-        '고정 공고가 만료되었습니다',
-        `"${title}" 공고의 노출 기간이 종료되어 자동으로 마감 처리되었습니다.`,
+        '공고가 자동 마감되었습니다',
+        `"${title}" 공고의 마지막 근무일이 지나 자동으로 마감 처리되었습니다.`,
         {
           data: {
             postingId,
             postingTitle: title,
-            postingType: 'fixed',
-            closedReason: 'expired',
+            postingType: after.postingType || 'regular',
+            closedReason: 'expired_by_work_date',
           },
           priority: 'normal',
         }
       );
 
-      logger.info('만료 알림 전송 완료', {
+      logger.info('근무일 만료 알림 전송 완료', {
         postingId,
         recipientId: createdBy,
       });
     } catch (error) {
-      logger.error('만료 알림 전송 실패', {
+      logger.error('근무일 만료 알림 전송 실패', {
         postingId,
         error: error instanceof Error ? error.stack : String(error),
       });

@@ -203,9 +203,10 @@ function WebModal({
                 {showCloseButton && (
                   <Pressable
                     onPress={onClose}
-                    className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                    className="w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                     accessibilityRole="button"
                     accessibilityLabel="닫기"
+                    hitSlop={8}
                   >
                     <XMarkIcon size={18} color={getIconColor(isDarkMode, 'primary')} />
                   </Pressable>
@@ -366,7 +367,7 @@ function NativeModal({
                   {showCloseButton && (
                     <Pressable
                       onPress={onClose}
-                      className="w-8 h-8 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
+                      className="w-10 h-10 items-center justify-center rounded-full bg-gray-100 dark:bg-surface active:bg-gray-200 dark:active:bg-gray-600"
                       accessibilityRole="button"
                       accessibilityLabel="닫기"
                       hitSlop={8}

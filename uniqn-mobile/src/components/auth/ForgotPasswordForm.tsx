@@ -36,6 +36,7 @@ export function ForgotPasswordForm({ onSubmit, isLoading = false }: ForgotPasswo
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema),
+    mode: 'onBlur',
     defaultValues: {
       email: '',
     },

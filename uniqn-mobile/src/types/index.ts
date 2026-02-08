@@ -243,6 +243,7 @@ export type {
   // QR 코드 타입
   QRCodeAction,
   QRCodeScanResult,
+  QRScanError,
   // Event QR 타입 (eventQRCodes 컬렉션)
   EventQRCode,
   EventQRDisplayData,

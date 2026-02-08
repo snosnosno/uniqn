@@ -32,6 +32,11 @@ export type { PostingType } from './postingConfig';
 export type JobPostingStatus = 'active' | 'closed' | 'cancelled';
 
 /**
+ * 공고 마감 사유
+ */
+export type ClosedReason = 'manual' | 'expired' | 'expired_by_work_date';
+
+/**
  * 급여 타입
  */
 export type SalaryType = 'hourly' | 'daily' | 'monthly' | 'other';
@@ -153,6 +158,12 @@ export interface JobPosting extends FirebaseDocument {
   // === 통계 ===
   viewCount?: number;
   applicationCount?: number;
+
+  // === 마감 정보 ===
+  /** 마감 시간 (자동 마감 또는 수동 마감 시 설정) */
+  closedAt?: Timestamp;
+  /** 마감 사유 */
+  closedReason?: ClosedReason;
 
   // === 메타데이터 ===
   tags?: string[];

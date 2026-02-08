@@ -41,6 +41,7 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
     formState: { errors },
   } = useForm<SignUpStep1Data>({
     resolver: zodResolver(signUpStep1Schema),
+    mode: 'onBlur',
     defaultValues: {
       email: initialData?.email || '',
       password: initialData?.password || '',

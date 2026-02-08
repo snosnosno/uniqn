@@ -118,11 +118,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
     staff.date,
   ]);
 
-  // 출근 시간: 예정 상태면 예정 시간, 출근 후면 실제 시간
-  const startTimeStr = staff.status === 'scheduled' ? timeInfo.scheduledStart : timeInfo.checkIn;
-
-  // 퇴근 시간: 예정 상태면 예정 시간, 퇴근 후면 실제 시간
-  const endTimeStr = staff.status === 'scheduled' ? timeInfo.scheduledEnd : timeInfo.checkOut;
+  // 출퇴근 시간: 실제 checkIn/checkOut 상태 표시 (미정 시 '미정')
+  const startTimeStr = timeInfo.checkIn;
+  const endTimeStr = timeInfo.checkOut;
 
   // 근무 시간 계산 (실제 시간 기반, 없으면 '-')
   const workDuration = timeInfo.hasActualTime ? timeInfo.duration : null;

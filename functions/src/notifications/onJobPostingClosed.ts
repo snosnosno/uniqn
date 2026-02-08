@@ -72,7 +72,7 @@ export const onJobPostingClosed = functions.region('asia-northeast3').firestore
       // 1. 해당 공고의 지원자들 조회 (confirmed, pending, applied 상태만)
       const applicationsSnap = await db
         .collection('applications')
-        .where('eventId', '==', jobPostingId)
+        .where('jobPostingId', '==', jobPostingId)
         .where('status', 'in', ['confirmed', 'pending', 'applied'])
         .get();
 
@@ -160,10 +160,10 @@ export const onJobPostingClosed = functions.region('asia-northeast3').firestore
               failure: result.failure,
             });
           }
-        } catch (error: any) {
+        } catch (error) {
           functions.logger.error('지원자 알림 전송 실패', {
             applicantId: application.applicantId,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           });
         }
       });
@@ -174,11 +174,10 @@ export const onJobPostingClosed = functions.region('asia-northeast3').firestore
         jobPostingId,
         totalApplicants: applicationsSnap.size,
       });
-    } catch (error: any) {
+    } catch (error) {
       functions.logger.error('공고 마감 알림 처리 중 오류 발생', {
         jobPostingId,
-        error: error.message,
-        stack: error.stack,
+        error: error instanceof Error ? error.stack : String(error),
       });
     }
   });
