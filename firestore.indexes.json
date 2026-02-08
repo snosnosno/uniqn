@@ -406,6 +406,10 @@
           "order": "ASCENDING"
         },
         {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "fixedConfig.expiresAt",
           "order": "ASCENDING"
         }
