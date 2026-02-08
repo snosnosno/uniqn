@@ -35,12 +35,13 @@ interface UserData {
 interface JobPostingData {
   title?: string;
   location?: string;
+  ownerId?: string;
   createdBy?: string;
 }
 
 interface WorkLogData {
   staffId: string;
-  eventId: string;
+  jobPostingId: string;
   date?: string;
   checkInTime?: admin.firestore.Timestamp | null;
   checkOutTime?: admin.firestore.Timestamp | null;
@@ -80,7 +81,7 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
     functions.logger.info(`QR ${checkType} 감지`, {
       workLogId,
       staffId: after.staffId,
-      eventId: after.eventId,
+      jobPostingId: after.jobPostingId,
       checkType,
     });
 
@@ -88,13 +89,13 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(after.eventId)
+        .doc(after.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
         });
         return;
       }
@@ -140,7 +141,7 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           jobPostingTitle: jobPosting?.title || '',
           date: after.date || '',
           checkTime: formattedTime,
@@ -170,7 +171,7 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
           type: isCheckIn ? 'check_in_confirmed' : 'check_out_confirmed',
           notificationId,
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           target: '/schedule',
         },
         channelId: 'default',
@@ -193,8 +194,9 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
       // ========================================================================
       // 7. 구인자에게 staff_checked_in/out 알림 전송
       // ========================================================================
-      if (jobPosting?.createdBy) {
-        const employerDoc = await db.collection('users').doc(jobPosting.createdBy).get();
+      const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
+      if (employerId) {
+        const employerDoc = await db.collection('users').doc(employerId).get();
 
         if (employerDoc.exists) {
           const employer = employerDoc.data() as UserData;
@@ -211,18 +213,18 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
 
           await employerNotificationRef.set({
             id: employerNotificationId,
-            recipientId: jobPosting.createdBy,
+            recipientId: employerId,
             type: isCheckIn ? 'staff_checked_in' : 'staff_checked_out',
             category: 'attendance',
             priority: 'normal',
             title: employerTitle,
             body: employerBody,
-            link: `/employer/applicants/${after.eventId}`,
+            link: `/employer/applicants/${after.jobPostingId}`,
             isRead: false,
             createdAt: admin.firestore.FieldValue.serverTimestamp(),
             data: {
               workLogId,
-              eventId: after.eventId,
+              jobPostingId: after.jobPostingId,
               jobPostingTitle: jobPosting?.title || '',
               staffId: after.staffId,
               staffName: staff?.name || '',
@@ -233,7 +235,7 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
 
           functions.logger.info(`구인자 ${checkType} 알림 문서 생성 완료`, {
             notificationId: employerNotificationId,
-            employerId: jobPosting.createdBy,
+            employerId,
           });
 
           // 구인자 FCM 푸시 전송
@@ -247,8 +249,8 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
                 type: isCheckIn ? 'staff_checked_in' : 'staff_checked_out',
                 notificationId: employerNotificationId,
                 workLogId,
-                eventId: after.eventId,
-                target: `/employer/applicants/${after.eventId}`,
+                jobPostingId: after.jobPostingId,
+                target: `/employer/applicants/${after.jobPostingId}`,
               },
               channelId: 'reminders',
               priority: 'normal',
@@ -261,7 +263,7 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
             }
 
             functions.logger.info(`구인자 ${checkType} 알림 FCM 전송 완료`, {
-              employerId: jobPosting.createdBy,
+              employerId,
               success: employerResult.success,
               failure: employerResult.failure,
             });

@@ -37,12 +37,13 @@ interface JobPostingData {
   location?: string;
   district?: string;
   detailedAddress?: string;
+  ownerId?: string;
   createdBy?: string;
 }
 
 interface WorkLogData {
   staffId: string;
-  eventId: string;
+  jobPostingId: string;
   date?: string;
   role?: string;
   status?: string;
@@ -71,7 +72,7 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
     functions.logger.info('새 스케줄 생성 감지', {
       workLogId,
       staffId: workLog.staffId,
-      eventId: workLog.eventId,
+      jobPostingId: workLog.jobPostingId,
       date: workLog.date,
     });
 
@@ -79,13 +80,13 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(workLog.eventId)
+        .doc(workLog.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
-          eventId: workLog.eventId,
+          jobPostingId: workLog.jobPostingId,
         });
         return;
       }
@@ -131,7 +132,7 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
           workLogId,
-          eventId: workLog.eventId,
+          jobPostingId: workLog.jobPostingId,
           jobPostingTitle: jobPosting?.title || '',
           date: workLog.date || '',
           role: workLog.role || '',
@@ -165,7 +166,7 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
           type: 'schedule_created',
           notificationId,
           workLogId,
-          eventId: workLog.eventId,
+          jobPostingId: workLog.jobPostingId,
           target: '/schedule',
         },
         channelId: 'reminders',
@@ -216,7 +217,7 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
     functions.logger.info('스케줄 취소 감지', {
       workLogId,
       staffId: after.staffId,
-      eventId: after.eventId,
+      jobPostingId: after.jobPostingId,
       beforeStatus: before.status,
       afterStatus: after.status,
     });
@@ -225,13 +226,13 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(after.eventId)
+        .doc(after.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
         });
         return;
       }
@@ -274,7 +275,7 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           jobPostingTitle: jobPosting?.title || '',
           date: after.date || '',
           role: after.role || '',
@@ -304,7 +305,7 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
           type: 'schedule_cancelled',
           notificationId,
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           target: '/schedule',
         },
         channelId: 'reminders',

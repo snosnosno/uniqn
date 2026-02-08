@@ -43,7 +43,7 @@ interface CancellationData {
 interface ApplicationData {
   applicantId: string;
   applicantName?: string;
-  eventId: string;
+  jobPostingId: string;
   status: string;
   cancellation?: CancellationData;
 }
@@ -53,6 +53,7 @@ interface JobPostingData {
   location?: string;
   district?: string;
   detailedAddress?: string;
+  ownerId?: string;
   createdBy?: string;
 }
 
@@ -97,13 +98,13 @@ export const onApplicationStatusChanged = functions.region('asia-northeast3').fi
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(after.eventId)
+        .doc(after.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           applicationId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
         });
         return;
       }
@@ -227,7 +228,7 @@ async function sendConfirmationNotification(
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
       applicationId,
-      eventId: application.eventId,
+      jobPostingId: application.jobPostingId,
       jobPostingTitle: jobPosting.title || '',
       location: jobPosting.location || '',
     },
@@ -244,7 +245,7 @@ async function sendConfirmationNotification(
         type: 'application_confirmed',
         notificationId,
         applicationId,
-        eventId: application.eventId,
+        jobPostingId: application.jobPostingId,
         target: '/schedule',
       },
       channelId: 'applications',
@@ -298,7 +299,7 @@ async function sendCancellationNotification(
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
       applicationId,
-      eventId: application.eventId,
+      jobPostingId: application.jobPostingId,
       jobPostingTitle: jobPosting.title || '',
     },
   });
@@ -313,7 +314,7 @@ async function sendCancellationNotification(
         type: 'confirmation_cancelled',
         notificationId,
         applicationId,
-        eventId: application.eventId,
+        jobPostingId: application.jobPostingId,
         target: '/schedule',
       },
       channelId: 'applications',
@@ -367,7 +368,7 @@ async function sendRejectionNotification(
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
       applicationId,
-      eventId: application.eventId,
+      jobPostingId: application.jobPostingId,
       jobPostingTitle: jobPosting.title || '',
     },
   });
@@ -382,7 +383,7 @@ async function sendRejectionNotification(
         type: 'application_rejected',
         notificationId,
         applicationId,
-        eventId: application.eventId,
+        jobPostingId: application.jobPostingId,
         target: '/my-applications',
       },
       channelId: 'applications',
@@ -436,7 +437,7 @@ async function sendCancellationApprovedNotification(
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
       applicationId,
-      eventId: application.eventId,
+      jobPostingId: application.jobPostingId,
       jobPostingTitle: jobPosting.title || '',
     },
   });
@@ -451,7 +452,7 @@ async function sendCancellationApprovedNotification(
         type: 'cancellation_approved',
         notificationId,
         applicationId,
-        eventId: application.eventId,
+        jobPostingId: application.jobPostingId,
         target: '/schedule',
       },
       channelId: 'applications',
@@ -505,7 +506,7 @@ async function sendCancellationRejectedNotification(
     createdAt: admin.firestore.FieldValue.serverTimestamp(),
     data: {
       applicationId,
-      eventId: application.eventId,
+      jobPostingId: application.jobPostingId,
       jobPostingTitle: jobPosting.title || '',
     },
   });
@@ -520,7 +521,7 @@ async function sendCancellationRejectedNotification(
         type: 'cancellation_rejected',
         notificationId,
         applicationId,
-        eventId: application.eventId,
+        jobPostingId: application.jobPostingId,
         target: '/schedule',
       },
       channelId: 'applications',

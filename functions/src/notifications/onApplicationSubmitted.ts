@@ -30,20 +30,20 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
     functions.logger.info('지원서 제출 알림 시작', {
       applicationId,
       applicantId: application.applicantId,
-      eventId: application.eventId,
+      jobPostingId: application.jobPostingId,
     });
 
     try {
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(application.eventId)
+        .doc(application.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           applicationId,
-          eventId: application.eventId,
+          jobPostingId: application.jobPostingId,
         });
         return;
       }
@@ -74,19 +74,29 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
         return;
       }
 
-      // 3. 알림 생성 및 전송 (공통 유틸리티 사용)
+      // 3. 고용주 ID 확인
+      const employerId = jobPosting.ownerId ?? jobPosting.createdBy;
+      if (!employerId) {
+        functions.logger.error('공고 소유자 정보 누락', {
+          applicationId,
+          jobPostingId: application.jobPostingId,
+        });
+        return;
+      }
+
+      // 4. 알림 생성 및 전송 (공통 유틸리티 사용)
       const result = await createAndSendNotification(
-        jobPosting.createdBy, // 고용주에게 전송
+        employerId, // 고용주에게 전송
         'new_application',
         '📨 새로운 지원자',
         `${applicant.name}님이 '${jobPosting.title}'에 지원했습니다.`,
         {
-          link: `/employer/applicants/${application.eventId}`,
+          link: `/employer/applicants/${application.jobPostingId}`,
           relatedId: applicationId,
           senderId: application.applicantId,
           data: {
             applicationId,
-            jobPostingId: application.eventId,
+            jobPostingId: application.jobPostingId,
             applicantName: applicant.name,
             jobPostingTitle: jobPosting.title,
           },

@@ -34,11 +34,19 @@ const DEFAULT_OPTIONS: Required<NotificationGroupingOptions> = {
 
 /**
  * Timestamp를 밀리초로 변환
+ *
+ * @note Firestore 웹 SDK에서 Timestamp가 plain object({seconds, nanoseconds})로
+ * 역직렬화되는 경우가 있어 duck typing으로 안전하게 처리
  */
 function timestampToMs(ts: Timestamp | Date | undefined): number {
   if (!ts) return 0;
   if (ts instanceof Date) return ts.getTime();
-  return ts.toDate().getTime();
+  if (typeof ts.toDate === 'function') return ts.toDate().getTime();
+  // plain object fallback ({seconds, nanoseconds})
+  if ('seconds' in ts && typeof (ts as any).seconds === 'number') {
+    return (ts as any).seconds * 1000;
+  }
+  return 0;
 }
 
 /**

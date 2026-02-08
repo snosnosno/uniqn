@@ -33,12 +33,13 @@ interface UserData {
 interface JobPostingData {
   title?: string;
   location?: string;
+  ownerId?: string;
   createdBy?: string;
 }
 
 interface WorkLogData {
   staffId: string;
-  eventId: string;
+  jobPostingId: string;
   date?: string;
   status?: string;
   scheduledStartTime?: admin.firestore.Timestamp | string;
@@ -71,7 +72,7 @@ export const onNoShow = functions.region('asia-northeast3').firestore
     functions.logger.info('노쇼 감지', {
       workLogId,
       staffId: after.staffId,
-      eventId: after.eventId,
+      jobPostingId: after.jobPostingId,
       beforeStatus: before.status,
       afterStatus: after.status,
     });
@@ -80,23 +81,24 @@ export const onNoShow = functions.region('asia-northeast3').firestore
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(after.eventId)
+        .doc(after.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
         });
         return;
       }
 
       const jobPosting = jobPostingDoc.data() as JobPostingData;
 
-      if (!jobPosting?.createdBy) {
+      const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
+      if (!employerId) {
         functions.logger.warn('공고 작성자를 찾을 수 없습니다', {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
         });
         return;
       }
@@ -112,13 +114,13 @@ export const onNoShow = functions.region('asia-northeast3').firestore
       // 3. 구인자 정보 조회
       const employerDoc = await db
         .collection('users')
-        .doc(jobPosting.createdBy)
+        .doc(employerId)
         .get();
 
       if (!employerDoc.exists) {
         functions.logger.warn('구인자를 찾을 수 없습니다', {
           workLogId,
-          employerId: jobPosting.createdBy,
+          employerId,
         });
         return;
       }
@@ -135,18 +137,18 @@ export const onNoShow = functions.region('asia-northeast3').firestore
 
       await notificationRef.set({
         id: notificationId,
-        recipientId: jobPosting.createdBy,
+        recipientId: employerId,
         type: 'no_show_alert',
         category: 'attendance',
         priority: 'urgent',
         title: notificationTitle,
         body: notificationBody,
-        link: `/employer/applicants/${after.eventId}`,
+        link: `/employer/applicants/${after.jobPostingId}`,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           jobPostingTitle: jobPosting.title || '',
           staffId: after.staffId,
           staffName,
@@ -156,7 +158,7 @@ export const onNoShow = functions.region('asia-northeast3').firestore
 
       functions.logger.info('노쇼 알림 문서 생성 완료', {
         notificationId,
-        employerId: jobPosting.createdBy,
+        employerId,
       });
 
       // 6. FCM 푸시 전송
@@ -164,7 +166,7 @@ export const onNoShow = functions.region('asia-northeast3').firestore
 
       if (fcmTokens.length === 0) {
         functions.logger.warn('구인자 FCM 토큰이 없습니다', {
-          employerId: jobPosting.createdBy,
+          employerId,
           workLogId,
         });
         return;
@@ -177,8 +179,8 @@ export const onNoShow = functions.region('asia-northeast3').firestore
           type: 'no_show_alert',
           notificationId,
           workLogId,
-          eventId: after.eventId,
-          target: `/employer/applicants/${after.eventId}`,
+          jobPostingId: after.jobPostingId,
+          target: `/employer/applicants/${after.jobPostingId}`,
         },
         channelId: 'reminders',
         priority: 'urgent',
@@ -186,7 +188,7 @@ export const onNoShow = functions.region('asia-northeast3').firestore
 
       functions.logger.info('노쇼 알림 FCM 전송 완료', {
         workLogId,
-        employerId: jobPosting.createdBy,
+        employerId,
         success: result.success,
         failure: result.failure,
       });
