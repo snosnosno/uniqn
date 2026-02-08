@@ -37,7 +37,7 @@ interface JobPostingData {
 
 interface WorkLogData {
   staffId: string;
-  eventId: string;
+  jobPostingId: string;
   date?: string;
   settlementStatus?: string;
   totalPay?: number;
@@ -75,7 +75,7 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
     functions.logger.info('정산 완료 감지', {
       workLogId,
       staffId: after.staffId,
-      eventId: after.eventId,
+      jobPostingId: after.jobPostingId,
       beforeStatus: before.settlementStatus,
       afterStatus: after.settlementStatus,
     });
@@ -99,7 +99,7 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
       // 2. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(after.eventId)
+        .doc(after.jobPostingId)
         .get();
 
       const jobPosting = jobPostingDoc.exists
@@ -133,7 +133,7 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           jobPostingTitle: jobPosting?.title || '',
           date: after.date || '',
           totalPay,
@@ -166,7 +166,7 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
           type: 'settlement_completed',
           notificationId,
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           target: '/my-settlements',
         },
         channelId: 'settlement',

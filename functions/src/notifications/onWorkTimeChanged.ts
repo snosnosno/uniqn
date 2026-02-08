@@ -51,7 +51,7 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
     functions.logger.info('근무시간 변경 감지', {
       workLogId,
       staffId: after.staffId,
-      eventId: after.eventId,
+      jobPostingId: after.jobPostingId,
       beforeStart: formatTime(before.scheduledStartTime),
       afterStart: formatTime(after.scheduledStartTime),
       beforeEnd: formatTime(before.scheduledEndTime),
@@ -62,13 +62,13 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
         .collection('jobPostings')
-        .doc(after.eventId)
+        .doc(after.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
         functions.logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
         });
         return;
       }
@@ -136,13 +136,13 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
         body: notificationBody,
         link: '/schedule',
         relatedId: workLogId,
-        senderId: jobPosting.createdBy ?? null,
+        senderId: jobPosting.ownerId ?? jobPosting.createdBy ?? null,
         isRead: false,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         data: {
           type: 'schedule_change',
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           jobPostingTitle: jobPosting.title,
           scheduledStartTime: formatTime(after.scheduledStartTime),
           scheduledEndTime: formatTime(after.scheduledEndTime),
@@ -175,7 +175,7 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
           type: 'schedule_change',
           notificationId,
           workLogId,
-          eventId: after.eventId,
+          jobPostingId: after.jobPostingId,
           link: '/schedule',
         },
         channelId: 'reminders',
