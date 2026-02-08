@@ -55,6 +55,9 @@ import type {
 
 type TabType = 'staff' | 'settlement';
 
+/** SheetModal 닫기 애니메이션(250ms) + 여유(50ms) 후 다음 모달 열기 */
+const MODAL_TRANSITION_DELAY_MS = 300;
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -392,9 +395,11 @@ export default function StaffSettlementsScreen() {
     // 상세 모달 닫기
     setIsDetailModalVisible(false);
     setSelectedWorkLogForDetail(null);
-    // 시간 수정 모달 열기
-    setSelectedWorkLog(workLog);
-    setIsEditModalVisible(true);
+    // 닫기 애니메이션(250ms) 완료 후 시간 수정 모달 열기
+    setTimeout(() => {
+      setSelectedWorkLog(workLog);
+      setIsEditModalVisible(true);
+    }, MODAL_TRANSITION_DELAY_MS);
   }, []);
 
   // 정산하기 클릭 (상세 모달에서)
@@ -403,20 +408,22 @@ export default function StaffSettlementsScreen() {
       // 상세 모달 닫기
       setIsDetailModalVisible(false);
       setSelectedWorkLogForDetail(null);
-      // 정산 확인 모달 열기
-      const amount = calculateWorkLogAmount(
-        workLog,
-        rolesForList,
-        salaryConfig.defaultSalary,
-        salaryConfig.allowances
-      );
-      setSettleConfirm({
-        visible: true,
-        workLog,
-        workLogs: [],
-        amount,
-        isBulk: false,
-      });
+      // 닫기 애니메이션(250ms) 완료 후 정산 확인 모달 열기
+      setTimeout(() => {
+        const amount = calculateWorkLogAmount(
+          workLog,
+          rolesForList,
+          salaryConfig.defaultSalary,
+          salaryConfig.allowances
+        );
+        setSettleConfirm({
+          visible: true,
+          workLog,
+          workLogs: [],
+          amount,
+          isBulk: false,
+        });
+      }, MODAL_TRANSITION_DELAY_MS);
     },
     [salaryConfig, rolesForList]
   );
@@ -534,9 +541,11 @@ export default function StaffSettlementsScreen() {
     // 상세 모달 닫기
     setIsDetailModalVisible(false);
     setSelectedWorkLogForDetail(null);
-    // 금액 수정 모달 열기
-    setSelectedWorkLogForEdit(workLog);
-    setIsEditAmountModalVisible(true);
+    // 닫기 애니메이션(250ms) 완료 후 금액 수정 모달 열기
+    setTimeout(() => {
+      setSelectedWorkLogForEdit(workLog);
+      setIsEditAmountModalVisible(true);
+    }, MODAL_TRANSITION_DELAY_MS);
   }, []);
 
   // 금액 수정 저장 (개인설정 - workLog에 저장)
