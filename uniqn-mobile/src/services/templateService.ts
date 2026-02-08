@@ -21,7 +21,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
 import { extractTemplateData } from '@/types';
@@ -164,7 +164,7 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
 
     return template;
   } catch (error) {
-    if (error instanceof BusinessError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -207,7 +207,7 @@ export async function deleteTemplate(templateId: string, userId: string): Promis
 
     logger.info('템플릿 삭제 완료', { templateId });
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -271,7 +271,7 @@ export async function updateTemplate(
 
     logger.info('템플릿 업데이트 완료', { templateId });
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {

@@ -33,7 +33,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { BusinessError, ERROR_CODES, toError } from '@/errors';
+import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type {
@@ -384,7 +384,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
 
       return currentRole;
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('사용자 역할 변경 실패', toError(error), {
@@ -419,7 +419,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
 
       logger.info('사용자 상태 변경 완료', { userId, isActive });
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('사용자 상태 변경 실패', toError(error), {

@@ -11,7 +11,7 @@
  * - E6053: 유효하지 않은 알림 링크
  */
 
-import { AppError, ERROR_CODES } from './AppError';
+import { AppError, ERROR_CODES, isAppError } from './AppError';
 
 // ============================================================================
 // Notification Permission Error
@@ -164,22 +164,28 @@ export class InvalidNotificationLinkError extends AppError {
 // Type Guards
 // ============================================================================
 
+/**
+ * Babel wrapNativeSuper 환경에서 instanceof 대신 name + isAppError로 판별
+ */
+const hasErrorName = (error: unknown, name: string): boolean =>
+  isAppError(error) && error.name === name;
+
 export const isNotificationPermissionError = (
   error: unknown
 ): error is NotificationPermissionError => {
-  return error instanceof NotificationPermissionError;
+  return error instanceof NotificationPermissionError || hasErrorName(error, 'NotificationPermissionError');
 };
 
 export const isFCMTokenError = (error: unknown): error is FCMTokenError => {
-  return error instanceof FCMTokenError;
+  return error instanceof FCMTokenError || hasErrorName(error, 'FCMTokenError');
 };
 
 export const isNotificationSendError = (error: unknown): error is NotificationSendError => {
-  return error instanceof NotificationSendError;
+  return error instanceof NotificationSendError || hasErrorName(error, 'NotificationSendError');
 };
 
 export const isInvalidNotificationLinkError = (
   error: unknown
 ): error is InvalidNotificationLinkError => {
-  return error instanceof InvalidNotificationLinkError;
+  return error instanceof InvalidNotificationLinkError || hasErrorName(error, 'InvalidNotificationLinkError');
 };

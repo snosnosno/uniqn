@@ -18,7 +18,7 @@
 import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { logger } from '@/utils/logger';
-import { AppError } from '@/errors/AppError';
+import { AppError, isAppError } from '@/errors/AppError';
 import { toError } from '@/errors';
 
 // ============================================================================
@@ -336,7 +336,7 @@ function extractErrorInfo(error: Error | AppError): {
 } {
   const attributes: Record<string, string> = {};
 
-  if (error instanceof AppError) {
+  if (isAppError(error)) {
     attributes.error_code = error.code;
     attributes.error_category = error.category;
     attributes.error_severity = error.severity;

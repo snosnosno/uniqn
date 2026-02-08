@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { AppError, ERROR_CODES } from './AppError';
+import { AppError, ERROR_CODES, isAppError } from './AppError';
 
 // ============================================================================
 // 지원 관련 에러
@@ -361,52 +361,58 @@ export class InvalidWorkLogError extends AppError {
 // Type Guards
 // ============================================================================
 
+/**
+ * Babel wrapNativeSuper 환경에서 instanceof 대신 name + isAppError로 판별
+ */
+const hasErrorName = (error: unknown, name: string): boolean =>
+  isAppError(error) && error.name === name;
+
 export const isAlreadyAppliedError = (error: unknown): error is AlreadyAppliedError => {
-  return error instanceof AlreadyAppliedError;
+  return error instanceof AlreadyAppliedError || hasErrorName(error, 'AlreadyAppliedError');
 };
 
 export const isApplicationClosedError = (error: unknown): error is ApplicationClosedError => {
-  return error instanceof ApplicationClosedError;
+  return error instanceof ApplicationClosedError || hasErrorName(error, 'ApplicationClosedError');
 };
 
 export const isMaxCapacityReachedError = (error: unknown): error is MaxCapacityReachedError => {
-  return error instanceof MaxCapacityReachedError;
+  return error instanceof MaxCapacityReachedError || hasErrorName(error, 'MaxCapacityReachedError');
 };
 
 export const isAlreadyCheckedInError = (error: unknown): error is AlreadyCheckedInError => {
-  return error instanceof AlreadyCheckedInError;
+  return error instanceof AlreadyCheckedInError || hasErrorName(error, 'AlreadyCheckedInError');
 };
 
 export const isNotCheckedInError = (error: unknown): error is NotCheckedInError => {
-  return error instanceof NotCheckedInError;
+  return error instanceof NotCheckedInError || hasErrorName(error, 'NotCheckedInError');
 };
 
 export const isInvalidQRCodeError = (error: unknown): error is InvalidQRCodeError => {
-  return error instanceof InvalidQRCodeError;
+  return error instanceof InvalidQRCodeError || hasErrorName(error, 'InvalidQRCodeError');
 };
 
 export const isExpiredQRCodeError = (error: unknown): error is ExpiredQRCodeError => {
-  return error instanceof ExpiredQRCodeError;
+  return error instanceof ExpiredQRCodeError || hasErrorName(error, 'ExpiredQRCodeError');
 };
 
 export const isQRSecurityMismatchError = (error: unknown): error is QRSecurityMismatchError => {
-  return error instanceof QRSecurityMismatchError;
+  return error instanceof QRSecurityMismatchError || hasErrorName(error, 'QRSecurityMismatchError');
 };
 
 export const isQRWrongEventError = (error: unknown): error is QRWrongEventError => {
-  return error instanceof QRWrongEventError;
+  return error instanceof QRWrongEventError || hasErrorName(error, 'QRWrongEventError');
 };
 
 export const isQRWrongDateError = (error: unknown): error is QRWrongDateError => {
-  return error instanceof QRWrongDateError;
+  return error instanceof QRWrongDateError || hasErrorName(error, 'QRWrongDateError');
 };
 
 export const isAlreadySettledError = (error: unknown): error is AlreadySettledError => {
-  return error instanceof AlreadySettledError;
+  return error instanceof AlreadySettledError || hasErrorName(error, 'AlreadySettledError');
 };
 
 export const isInvalidWorkLogError = (error: unknown): error is InvalidWorkLogError => {
-  return error instanceof InvalidWorkLogError;
+  return error instanceof InvalidWorkLogError || hasErrorName(error, 'InvalidWorkLogError');
 };
 
 // ============================================================================
@@ -523,19 +529,19 @@ export class CannotReportSelfError extends AppError {
 
 // Type Guards - 신고 관련
 export const isDuplicateReportError = (error: unknown): error is DuplicateReportError => {
-  return error instanceof DuplicateReportError;
+  return error instanceof DuplicateReportError || hasErrorName(error, 'DuplicateReportError');
 };
 
 export const isReportNotFoundError = (error: unknown): error is ReportNotFoundError => {
-  return error instanceof ReportNotFoundError;
+  return error instanceof ReportNotFoundError || hasErrorName(error, 'ReportNotFoundError');
 };
 
 export const isReportAlreadyReviewedError = (
   error: unknown
 ): error is ReportAlreadyReviewedError => {
-  return error instanceof ReportAlreadyReviewedError;
+  return error instanceof ReportAlreadyReviewedError || hasErrorName(error, 'ReportAlreadyReviewedError');
 };
 
 export const isCannotReportSelfError = (error: unknown): error is CannotReportSelfError => {
-  return error instanceof CannotReportSelfError;
+  return error instanceof CannotReportSelfError || hasErrorName(error, 'CannotReportSelfError');
 };

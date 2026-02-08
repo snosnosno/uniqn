@@ -16,7 +16,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { MaxCapacityReachedError, ValidationError, BusinessError, ERROR_CODES } from '@/errors';
+import { MaxCapacityReachedError, ValidationError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
@@ -422,7 +422,7 @@ export async function confirmApplicationWithHistory(
 
     return result;
   } catch (error) {
-    if (error instanceof ValidationError || error instanceof MaxCapacityReachedError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -591,7 +591,7 @@ export async function cancelConfirmation(
 
     return result;
   } catch (error) {
-    if (error instanceof ValidationError || error instanceof BusinessError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -684,7 +684,7 @@ export async function getApplicationHistorySummary(applicationId: string): Promi
       lastCancelledAt: history.filter((e) => e.cancelledAt).pop()?.cancelledAt,
     };
   } catch (error) {
-    if (error instanceof BusinessError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {

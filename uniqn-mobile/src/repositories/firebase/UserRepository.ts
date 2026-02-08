@@ -26,7 +26,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError, BusinessError, ERROR_CODES } from '@/errors';
+import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
@@ -300,7 +300,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       logger.info('회원탈퇴 철회 완료', { userId });
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('회원탈퇴 철회 실패', toError(error), { userId });
@@ -373,7 +373,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       return exportData;
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('데이터 내보내기 조회 실패', toError(error), { userId });

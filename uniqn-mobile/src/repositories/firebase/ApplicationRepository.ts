@@ -67,7 +67,7 @@ import type {
   WorkLog,
   WorkLogStatus,
 } from '@/types';
-import { isPermissionError, isAuthError, AuthError } from '@/errors';
+import { isAppError, isPermissionError, isAuthError, AuthError } from '@/errors';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 
@@ -426,7 +426,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
     } catch (error) {
       logger.error('취소 요청 목록 조회 실패', toError(error), { jobPostingId });
 
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -609,12 +609,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         applicantId: context.applicantId,
       });
 
-      if (
-        error instanceof AlreadyAppliedError ||
-        error instanceof ApplicationClosedError ||
-        error instanceof MaxCapacityReachedError ||
-        error instanceof ValidationError
-      ) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -814,7 +809,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         applicantId,
       });
 
-      if (error instanceof ValidationError) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -953,11 +948,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         reviewerId,
       });
 
-      if (
-        error instanceof ValidationError ||
-        error instanceof BusinessError ||
-        error instanceof PermissionError
-      ) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -1099,11 +1090,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         reviewerId,
       });
 
-      if (
-        error instanceof BusinessError ||
-        error instanceof PermissionError ||
-        error instanceof MaxCapacityReachedError
-      ) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -1191,7 +1178,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         reviewerId,
       });
 
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -1264,7 +1251,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
     } catch (error) {
       logger.error('지원 읽음 처리 실패', toError(error), { applicationId, ownerId });
 
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -1379,7 +1366,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       return { applications, stats };
     } catch (error) {
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {

@@ -31,7 +31,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { BusinessError, ERROR_CODES, toError } from '@/errors';
+import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import type { WorkLog, WorkTimeModification, RoleChangeHistory } from '@/types';
@@ -183,7 +183,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       logger.info('스태프 역할 변경 완료', { workLogId: context.workLogId });
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {
@@ -260,7 +260,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
       logger.info('근무 시간 수정 완료', { workLogId: context.workLogId });
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {
@@ -347,7 +347,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         jobPostingId: context.jobPostingId,
       });
     } catch (error) {
-      if (error instanceof BusinessError) {
+      if (isAppError(error)) {
         throw error;
       }
       throw handleServiceError(error, {

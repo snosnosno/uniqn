@@ -35,7 +35,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError, BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
@@ -588,7 +588,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
       return result;
     } catch (error) {
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('공고 수정 실패', toError(error), { jobPostingId });
@@ -648,7 +648,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
       logger.info('공고 삭제 완료', { jobPostingId });
     } catch (error) {
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('공고 삭제 실패', toError(error), { jobPostingId });
@@ -708,7 +708,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
       logger.info('공고 마감 완료', { jobPostingId });
     } catch (error) {
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('공고 마감 실패', toError(error), { jobPostingId });
@@ -784,7 +784,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
       logger.info('공고 재오픈 완료', { jobPostingId });
     } catch (error) {
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
       logger.error('공고 재오픈 실패', toError(error), { jobPostingId });

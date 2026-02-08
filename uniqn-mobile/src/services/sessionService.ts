@@ -19,7 +19,7 @@ import { crashlyticsService } from './crashlyticsService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { router } from 'expo-router';
-import { AppError, AuthError, ERROR_CODES, toError } from '@/errors';
+import { AuthError, ERROR_CODES, toError, isAppError } from '@/errors';
 
 // userSessionStorage는 향후 세션 관리 확장 시 활용
 void userSessionStorage;
@@ -379,7 +379,7 @@ export async function checkLoginAttempts(email: string): Promise<void> {
       await deleteItem(key);
     }
   } catch (error) {
-    if (error instanceof AppError) throw error;
+    if (isAppError(error)) throw error;
     logger.error('로그인 시도 횟수 확인 실패', toError(error));
   }
 }
