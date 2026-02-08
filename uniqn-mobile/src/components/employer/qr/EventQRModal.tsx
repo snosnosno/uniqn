@@ -22,10 +22,10 @@ import {
   Easing,
 } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
-import { Card } from '../ui/Card';
-import { CircularProgress } from '../ui/CircularProgress';
+import { Modal } from '../../ui/Modal';
+import { Button } from '../../ui/Button';
+import { Card } from '../../ui/Card';
+import { CircularProgress } from '../../ui/CircularProgress';
 import {
   QrCodeIcon,
   RefreshIcon,
@@ -34,7 +34,7 @@ import {
   XMarkIcon,
   LogInIcon,
   LogOutIcon,
-} from '../icons';
+} from '../../icons';
 import { useEventQR } from '@/hooks/useEventQR';
 import { useAuth } from '@/hooks/useAuth';
 import { formatDate } from '@/utils/dateUtils';

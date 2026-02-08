@@ -8,10 +8,10 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
-import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
-import { Avatar } from '../ui/Avatar';
-import { AlertCircleIcon, CalendarIcon, ClockIcon, BriefcaseIcon } from '../icons';
+import { Modal } from '../../ui/Modal';
+import { Button } from '../../ui/Button';
+import { Avatar } from '../../ui/Avatar';
+import { AlertCircleIcon, CalendarIcon, ClockIcon, BriefcaseIcon } from '../../icons';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatDateShort } from '@/utils/dateUtils';
 import { getAssignmentRoles } from '@/types/assignment';

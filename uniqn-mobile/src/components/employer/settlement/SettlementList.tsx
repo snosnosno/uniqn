@@ -9,12 +9,12 @@ import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
-import { Loading } from '../ui/Loading';
-import { EmptyState } from '../ui/EmptyState';
-import { ErrorState } from '../ui/ErrorState';
-import { Card } from '../ui/Card';
-import { FilterTabs, type FilterTabOption } from '../ui/FilterTabs';
-import { BanknotesIcon, CheckIcon, SettingsIcon } from '../icons';
+import { Loading } from '../../ui/Loading';
+import { EmptyState } from '../../ui/EmptyState';
+import { ErrorState } from '../../ui/ErrorState';
+import { Card } from '../../ui/Card';
+import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
+import { BanknotesIcon, CheckIcon, SettingsIcon } from '../../icons';
 import {
   type SalaryType,
   type SalaryInfo,

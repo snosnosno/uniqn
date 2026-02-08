@@ -19,7 +19,7 @@ import { Card, Badge, Button, Loading, EmptyState, ErrorState, ConfirmModal } fr
 import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
-import { EventQRModal } from '@/components/employer/EventQRModal';
+import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { TabHeader } from '@/components/headers';
 import { PlusIcon, UsersIcon, BriefcaseIcon, QrCodeIcon } from '@/components/icons';
 import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';

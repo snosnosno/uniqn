@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ClockIcon, EditIcon, BanknotesIcon } from '../../icons';
+import { ClockIcon, EditIcon, BanknotesIcon } from '../../../icons';
 
 export interface SettlementActionButtonsProps {
   /** 시간 수정 핸들러 */

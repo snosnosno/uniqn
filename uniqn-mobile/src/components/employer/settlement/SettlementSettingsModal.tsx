@@ -7,8 +7,8 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { SheetModal } from '../ui/SheetModal';
-import { ChevronDownIcon, ChevronUpIcon } from '../icons';
+import { SheetModal } from '../../ui/SheetModal';
+import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
 import { type SalaryInfo, type Allowances, DEFAULT_SALARY_INFO } from '@/utils/settlement';
 import { SalaryTypeSelector } from './SalaryTypeSelector';
 import { AllowanceEditor } from './AllowanceEditor';

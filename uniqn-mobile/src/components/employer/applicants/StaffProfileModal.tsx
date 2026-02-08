@@ -7,9 +7,9 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { SheetModal } from '../ui/SheetModal';
-import { Avatar } from '../ui/Avatar';
-import { Badge } from '../ui/Badge';
+import { SheetModal } from '../../ui/SheetModal';
+import { Avatar } from '../../ui/Avatar';
+import { Badge } from '../../ui/Badge';
 import {
   PhoneIcon,
   MailIcon,
@@ -21,7 +21,7 @@ import {
   MapPinIcon,
   StarIcon,
   CheckCircleIcon,
-} from '../icons';
+} from '../../icons';
 import {
   CONFIRMED_STAFF_STATUS_LABELS,
   type ConfirmedStaff,

@@ -7,12 +7,12 @@
 
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, Pressable, TextInput } from 'react-native';
-import { Card } from '../ui/Card';
-import { Modal } from '../ui/Modal';
-import { Badge } from '../ui/Badge';
-import { Avatar } from '../ui/Avatar';
-import { ModalFooterButtons } from '../ui/ModalFooterButtons';
-import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../icons';
+import { Card } from '../../ui/Card';
+import { Modal } from '../../ui/Modal';
+import { Badge } from '../../ui/Badge';
+import { Avatar } from '../../ui/Avatar';
+import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
+import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../../icons';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { formatAppliedDate } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';

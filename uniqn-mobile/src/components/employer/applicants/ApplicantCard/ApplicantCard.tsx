@@ -8,8 +8,8 @@
 import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, LayoutAnimation } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
-import { Card } from '../../ui/Card';
-import { FixedScheduleDisplay } from '../../jobs/FixedScheduleDisplay';
+import { Card } from '../../../ui/Card';
+import { FixedScheduleDisplay } from '../../../jobs/FixedScheduleDisplay';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { useUserProfile } from '@/hooks/useUserProfile';
 

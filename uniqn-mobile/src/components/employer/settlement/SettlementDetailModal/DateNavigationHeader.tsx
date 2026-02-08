@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { ChevronLeftIcon, ChevronRightIcon } from '../../icons';
+import { ChevronLeftIcon, ChevronRightIcon } from '../../../icons';
 import { formatDate } from '@/utils/dateUtils';
 import { parseTimestamp } from '@/utils/settlement';
 

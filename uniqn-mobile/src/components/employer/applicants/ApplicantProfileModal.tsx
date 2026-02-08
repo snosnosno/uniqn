@@ -7,9 +7,9 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { SheetModal } from '../ui/SheetModal';
-import { Avatar } from '../ui/Avatar';
-import { Badge } from '../ui/Badge';
+import { SheetModal } from '../../ui/SheetModal';
+import { Avatar } from '../../ui/Avatar';
+import { Badge } from '../../ui/Badge';
 import {
   PhoneIcon,
   MailIcon,
@@ -23,7 +23,7 @@ import {
   UserIcon,
   MapPinIcon,
   StarIcon,
-} from '../icons';
+} from '../../icons';
 import { APPLICATION_STATUS_LABELS, getAssignmentRoles } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatRelativeTime } from '@/utils/dateUtils';

@@ -7,10 +7,10 @@
 
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { Card } from '../ui/Card';
-import { Badge } from '../ui/Badge';
-import { Avatar } from '../ui/Avatar';
-import { BanknotesIcon, ChevronRightIcon } from '../icons';
+import { Card } from '../../ui/Card';
+import { Badge } from '../../ui/Badge';
+import { Avatar } from '../../ui/Avatar';
+import { BanknotesIcon, ChevronRightIcon } from '../../icons';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   type SalaryType,

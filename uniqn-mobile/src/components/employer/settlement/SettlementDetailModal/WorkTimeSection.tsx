@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { ClockIcon } from '../../icons';
+import { ClockIcon } from '../../../icons';
 import { formatTime } from '@/utils/dateUtils';
 import { formatDuration } from '@/utils/settlement';
 

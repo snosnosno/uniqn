@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
-import { BanknotesIcon, ChevronDownIcon, ChevronUpIcon } from '../../icons';
+import { BanknotesIcon, ChevronDownIcon, ChevronUpIcon } from '../../../icons';
 import { formatTime, formatDate } from '@/utils/dateUtils';
 import { parseTimestamp } from '@/utils/settlement';
 import type { SalaryInfo, TaxSettings } from '@/utils/settlement';
