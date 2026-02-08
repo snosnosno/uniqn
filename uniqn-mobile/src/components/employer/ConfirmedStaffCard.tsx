@@ -8,8 +8,6 @@
 import React, { useMemo, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
@@ -28,8 +26,7 @@ import {
   type ConfirmedStaffStatus,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { getUserProfile } from '@/services';
-import type { UserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { WorkTimeDisplay } from '@/shared/time';
 
 // ============================================================================
@@ -93,22 +90,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const { isDarkMode: isDark } = useThemeStore();
 
   // 사용자 프로필 조회 (프로필 사진, 닉네임)
-  const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(staff.staffId),
-    queryFn: () => getUserProfile(staff.staffId),
-    enabled: !!staff.staffId,
-    staleTime: 5 * 60 * 1000, // 5분 캐싱
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: staff.staffId,
+    fallbackName: staff.staffName,
   });
-
-  // 프로필 사진 URL
-  const profilePhotoURL = userProfile?.photoURL;
-  // 표시 이름: Firestore 프로필 우선, 기존 staffName 폴백
-  const baseName = userProfile?.name || staff.staffName;
-  // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
-  const displayName =
-    userProfile?.nickname && userProfile.nickname !== baseName
-      ? `${baseName}(${userProfile.nickname})`
-      : baseName;
 
   // 출석 체크 여부 (QR 출근 찍었는지)
   const isCheckedIn =

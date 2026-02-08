@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
 import { View, Text, TextInput, Pressable, ScrollView } from 'react-native';
 import { Modal } from '../ui/Modal';
-import { Button } from '../ui/Button';
+import { ModalFooterButtons } from '../ui/ModalFooterButtons';
 import { Card } from '../ui/Card';
 import { Badge } from '../ui/Badge';
 import { UserIcon, CheckIcon, AlertCircleIcon, EditIcon } from '../icons';
@@ -260,21 +260,14 @@ export function RoleChangeModal({
         </View>
 
         {/* 버튼 */}
-        <View className="flex-row gap-3">
-          <Button variant="secondary" onPress={handleClose} disabled={isLoading} className="flex-1">
-            취소
-          </Button>
-          <Button
-            variant="primary"
-            onPress={handleSave}
-            loading={isLoading}
-            disabled={!isValid}
-            className="flex-1"
-            icon={<EditIcon size={18} color="#FFFFFF" />}
-          >
-            역할 변경
-          </Button>
-        </View>
+        <ModalFooterButtons
+          onCancel={handleClose}
+          onSubmit={handleSave}
+          isLoading={isLoading}
+          submitText="역할 변경"
+          submitDisabled={!isValid}
+          submitIcon={<EditIcon size={18} color="#FFFFFF" />}
+        />
       </View>
     </Modal>
   );

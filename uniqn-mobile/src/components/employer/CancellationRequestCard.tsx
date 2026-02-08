@@ -11,7 +11,7 @@ import { Card } from '../ui/Card';
 import { Modal } from '../ui/Modal';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import { Button } from '../ui/Button';
+import { ModalFooterButtons } from '../ui/ModalFooterButtons';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../icons';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { formatAppliedDate } from '@/utils/date';
@@ -260,18 +260,12 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
           </Text>
 
           {/* 버튼 */}
-          <View className="flex-row gap-3">
-            <Button onPress={handleCloseRejectModal} variant="outline" className="flex-1">
-              취소
-            </Button>
-            <Button
-              onPress={handleSubmitReject}
-              disabled={rejectionReason.trim().length < 3}
-              className="flex-1"
-            >
-              거절하기
-            </Button>
-          </View>
+          <ModalFooterButtons
+            onCancel={handleCloseRejectModal}
+            onSubmit={handleSubmitReject}
+            submitText="거절하기"
+            submitDisabled={rejectionReason.trim().length < 3}
+          />
         </View>
       </Modal>
     </>

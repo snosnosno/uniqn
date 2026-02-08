@@ -316,6 +316,15 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         const data = docSnapshot.data();
         const postingType = data.postingType as string;
 
+        // 대회공고는 승인된 것만 카운팅
+        if (postingType === 'tournament') {
+          if (data.tournamentConfig?.approvalStatus === 'approved') {
+            counts.tournament++;
+            counts.total++;
+          }
+          continue;
+        }
+
         counts.total++;
 
         switch (postingType) {
@@ -327,9 +336,6 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
             break;
           case 'fixed':
             counts.fixed++;
-            break;
-          case 'tournament':
-            counts.tournament++;
             break;
         }
       }

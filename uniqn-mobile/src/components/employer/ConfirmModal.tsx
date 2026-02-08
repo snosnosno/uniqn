@@ -8,13 +8,11 @@
 import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, TextInput, ScrollView } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { Modal } from '../ui/Modal';
 import { Button } from '../ui/Button';
 import { Avatar } from '../ui/Avatar';
 import { AlertCircleIcon, CalendarIcon, ClockIcon, BriefcaseIcon } from '../icons';
-import { getUserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { formatDateShort } from '@/utils/dateUtils';
 import { getAssignmentRoles } from '@/types/assignment';
 import type { ApplicantWithDetails } from '@/services';
@@ -94,12 +92,11 @@ export function ApplicantConfirmModal({
   // 다크모드 감지 (앱 테마 스토어 사용)
   const { isDarkMode: isDark } = useThemeStore();
 
-  // 지원자 프로필 사진 조회
-  const { data: userProfile } = useQuery({
-    queryKey: queryKeys.user.profile(applicant?.applicantId ?? ''),
-    queryFn: () => getUserProfile(applicant!.applicantId),
-    enabled: !!applicant?.applicantId && visible,
-    staleTime: 5 * 60 * 1000,
+  // 지원자 프로필 조회
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: applicant?.applicantId,
+    enabled: visible,
+    fallbackName: applicant?.applicantName,
   });
 
   // 선택된 일정 포맷팅
@@ -129,15 +126,6 @@ export function ApplicantConfirmModal({
     });
   }, [selectedAssignments]);
 
-  // 표시 이름: 프로필 이름 우선, 닉네임이 있으면 "이름(닉네임)" 형식
-  const displayName = useMemo(() => {
-    const baseName = userProfile?.name || applicant?.applicantName || '';
-    if (userProfile?.nickname && userProfile.nickname !== baseName) {
-      return `${baseName}(${userProfile.nickname})`;
-    }
-    return baseName;
-  }, [userProfile, applicant?.applicantName]);
-
   // 모달 닫기 시 입력값 초기화
   const handleClose = useCallback(() => {
     setInputValue('');
@@ -164,7 +152,7 @@ export function ApplicantConfirmModal({
       <View>
         {/* 지원자 정보 */}
         <View className="flex-row items-center p-3 bg-gray-50 dark:bg-surface rounded-xl mb-3">
-          <Avatar source={userProfile?.photoURL} name={displayName} size="lg" className="mr-4" />
+          <Avatar source={profilePhotoURL} name={displayName} size="lg" className="mr-4" />
           <View className="flex-1">
             <Text className="text-lg font-semibold text-gray-900 dark:text-white">
               {displayName}

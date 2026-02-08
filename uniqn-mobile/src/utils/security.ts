@@ -7,6 +7,8 @@
  * @module utils/security
  */
 
+import { logger } from '@/utils/logger';
+
 /**
  * 위험한 XSS 패턴 목록
  *
@@ -226,8 +228,7 @@ export function secureLog(message: string, data?: Record<string, unknown>): void
     : undefined;
 
   if (__DEV__) {
-    // eslint-disable-next-line no-console
-    console.info(`[Security] ${message}`, maskedData);
+    logger.debug(`[Security] ${message}`, maskedData ? { data: maskedData } : undefined);
   }
 }
 

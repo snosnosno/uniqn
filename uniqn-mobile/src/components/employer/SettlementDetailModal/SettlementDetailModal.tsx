@@ -7,12 +7,10 @@
 
 import React, { useMemo, useCallback, useState } from 'react';
 import { View } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { useSettlementDateNavigation } from '@/hooks';
 import { SheetModal } from '../../ui/SheetModal';
 import { useThemeStore } from '@/stores/themeStore';
-import { getUserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import { parseTimestamp, calculateSettlementFromWorkLog } from '@/utils/settlement';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 
@@ -27,7 +25,6 @@ import { SettlementActionButtons } from './SettlementActionButtons';
 import { SettlementCompletedBanner } from './SettlementCompletedBanner';
 
 // Types
-import type { UserProfile } from '@/services';
 import type { WorkLog, PayrollStatus } from '@/types';
 import type { SettlementDetailModalProps } from './types';
 
@@ -56,11 +53,11 @@ export function SettlementDetailModal({
   const { isDarkMode: isDark } = useThemeStore();
 
   // 사용자 프로필 조회
-  const { data: userProfile } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(workLog?.staffId ?? ''),
-    queryFn: () => getUserProfile(workLog!.staffId),
-    enabled: visible && !!workLog?.staffId,
-    staleTime: 5 * 60 * 1000,
+  const { displayName, profilePhotoURL } = useUserProfile({
+    userId: workLog?.staffId,
+    enabled: visible,
+    fallbackName: (workLog as WorkLog & { staffName?: string })?.staffName,
+    fallbackNickname: (workLog as WorkLog & { staffNickname?: string })?.staffNickname,
   });
 
   // 수정 이력 접기/펼치기 상태 (기본: 접힘)
@@ -95,16 +92,6 @@ export function SettlementDetailModal({
   );
 
   const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
-
-  // 프로필 정보
-  const profilePhotoURL = userProfile?.photoURL;
-  const baseName = userProfile?.name || (workLog as WorkLog & { staffName?: string })?.staffName;
-  const displayName = useMemo(() => {
-    if (!baseName) return workLog ? `스태프 ${workLog.staffId?.slice(-4) || '알 수 없음'}` : '';
-    const nickname =
-      userProfile?.nickname || (workLog as WorkLog & { staffNickname?: string })?.staffNickname;
-    return nickname && nickname !== baseName ? `${baseName}(${nickname})` : baseName;
-  }, [baseName, userProfile?.nickname, workLog]);
 
   const payrollStatus = (workLog?.payrollStatus || 'pending') as PayrollStatus;
   const hasValidTimes = startTime && endTime;

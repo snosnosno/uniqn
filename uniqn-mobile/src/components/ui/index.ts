@@ -58,6 +58,7 @@ export { Toast } from './Toast';
 export { ToastManager } from './ToastManager';
 export { Modal, AlertModal, ConfirmModal, type ModalProps } from './Modal';
 export { SheetModal, type SheetModalProps } from './SheetModal';
+export { ModalFooterButtons, type ModalFooterButtonsProps } from './ModalFooterButtons';
 export { ActionSheet, type ActionSheetProps, type ActionSheetOption } from './ActionSheet';
 export {
   BottomSheet,
@@ -67,6 +68,12 @@ export {
   type SelectBottomSheetProps,
 } from './BottomSheet';
 export { ModalManager } from './ModalManager';
+
+// ============================================================================
+// Numeric Input
+// ============================================================================
+
+export { NumericInput, type NumericInputProps } from './NumericInput';
 
 // ============================================================================
 // Form Components
@@ -147,6 +154,12 @@ export { MobileHeader, HeaderAction, LargeHeader } from './MobileHeader';
 export { InAppBanner } from './InAppBanner';
 export { InAppModal } from './InAppModal';
 export { InAppMessageManager } from './InAppMessageManager';
+
+// ============================================================================
+// Filter Components
+// ============================================================================
+
+export { FilterTabs, type FilterTabsProps, type FilterTabOption } from './FilterTabs';
 
 // ============================================================================
 // Network Status Components

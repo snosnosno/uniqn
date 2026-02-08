@@ -13,6 +13,7 @@ import { Loading } from '../ui/Loading';
 import { EmptyState } from '../ui/EmptyState';
 import { ErrorState } from '../ui/ErrorState';
 import { Card } from '../ui/Card';
+import { FilterTabs, type FilterTabOption } from '../ui/FilterTabs';
 import { BanknotesIcon, CheckIcon, SettingsIcon } from '../icons';
 import {
   type SalaryType,
@@ -77,7 +78,7 @@ type FilterStatus = 'all' | PayrollStatus;
 // Constants
 // ============================================================================
 
-const FILTER_OPTIONS: { value: FilterStatus; label: string }[] = [
+const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
   { value: 'pending', label: '미정산' },
   { value: 'completed', label: '완료' },
@@ -154,45 +155,6 @@ function SummaryCard({
         </View>
       </View>
     </Card>
-  );
-}
-
-interface FilterTabsProps {
-  selectedFilter: FilterStatus;
-  onFilterChange: (filter: FilterStatus) => void;
-  counts: Partial<Record<FilterStatus, number>>;
-}
-
-function FilterTabs({ selectedFilter, onFilterChange, counts }: FilterTabsProps) {
-  return (
-    <View className="px-4 mb-4">
-      <View className="flex-row bg-gray-100 dark:bg-surface rounded-lg p-1">
-        {FILTER_OPTIONS.map((option) => {
-          const isSelected = selectedFilter === option.value;
-          const count = counts[option.value] || 0;
-
-          return (
-            <Pressable
-              key={option.value}
-              onPress={() => onFilterChange(option.value)}
-              className="flex-1 items-center justify-center py-2 rounded-md"
-              style={{
-                backgroundColor: isSelected ? '#FFFFFF' : 'transparent',
-              }}
-            >
-              <Text
-                className="text-sm font-medium"
-                style={{
-                  color: isSelected ? '#4F46E5' : '#6B7280',
-                }}
-              >
-                {option.label} ({count})
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-    </View>
   );
 }
 
@@ -325,8 +287,8 @@ export function SettlementList({
     );
   }, [workLogs]);
 
-  // 필터별 카운트
-  const filterCounts = useMemo(() => {
+  // 필터 옵션 (카운트 포함)
+  const filterOptions = useMemo(() => {
     const counts: Partial<Record<FilterStatus, number>> = {
       all: workLogs.length,
     };
@@ -334,7 +296,10 @@ export function SettlementList({
       const status = (log.payrollStatus || 'pending') as PayrollStatus;
       counts[status] = (counts[status] || 0) + 1;
     });
-    return counts;
+    return FILTER_OPTIONS.map((option) => ({
+      ...option,
+      count: counts[option.value] ?? 0,
+    }));
   }, [workLogs]);
 
   // 요약 정보 (그룹 통계 사용) - 최적화: 필터='all'일 때 groupedSettlements 재사용
@@ -482,9 +447,11 @@ export function SettlementList({
 
       {/* 필터 탭 */}
       <FilterTabs
-        selectedFilter={selectedFilter}
-        onFilterChange={setSelectedFilter}
-        counts={filterCounts}
+        options={filterOptions}
+        selectedValue={selectedFilter}
+        onSelect={setSelectedFilter}
+        countDisplay="always"
+        labelSize="sm"
       />
 
       {/* 일괄 선택 버튼 */}

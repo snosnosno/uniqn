@@ -27,6 +27,7 @@ import {
   toDateString,
   type DateRangeGroup,
 } from '@/utils/dateRangeUtils';
+import { generateId } from '@/utils/generateId';
 import type { JobPostingFormData } from '@/types';
 import type {
   DateSpecificRequirement,
@@ -110,12 +111,12 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
       for (const group of consecutiveGroups) {
         const sharedTimeSlots: TimeSlot[] = [
           {
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            id: generateId(),
             startTime: '09:00',
             isTimeToBeAnnounced: false,
             roles: [
               {
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                id: generateId(),
                 role: 'dealer',
                 headcount: 1,
               } as RoleRequirement,
@@ -142,16 +143,16 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
   // 개별로 날짜 추가 (독립 timeSlots)
   const handleAddDatesIndividually = useCallback(
     (dates: string[]) => {
-      const newRequirements: DateSpecificRequirement[] = dates.map((date, index) => ({
+      const newRequirements: DateSpecificRequirement[] = dates.map((date) => ({
         date,
         timeSlots: [
           {
-            id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+            id: generateId(),
             startTime: '09:00',
             isTimeToBeAnnounced: false,
             roles: [
               {
-                id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}-${index}`,
+                id: generateId(),
                 role: 'dealer',
                 headcount: 1,
               } as RoleRequirement,
@@ -407,10 +408,10 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
 function deepCloneTimeSlots(timeSlots: TimeSlot[]): TimeSlot[] {
   return timeSlots.map((slot) => ({
     ...slot,
-    id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    id: generateId(),
     roles: slot.roles.map((role) => ({
       ...role,
-      id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      id: generateId(),
     })),
   }));
 }

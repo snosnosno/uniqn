@@ -7,8 +7,6 @@
 
 import React, { useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
-import { useQuery } from '@tanstack/react-query';
-import { queryKeys } from '@/lib/queryClient';
 import { SheetModal } from '../ui/SheetModal';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
@@ -29,8 +27,8 @@ import {
 import { APPLICATION_STATUS_LABELS, getAssignmentRoles } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatRelativeTime } from '@/utils/dateUtils';
-import { getUserProfile } from '@/services';
-import type { ApplicantWithDetails, UserProfile } from '@/services';
+import { useUserProfile } from '@/hooks/useUserProfile';
+import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, Assignment } from '@/types';
 
 // ============================================================================
@@ -187,11 +185,10 @@ function AssignmentDisplay({ assignments }: AssignmentDisplayProps) {
 
 export function ApplicantProfileModal({ visible, onClose, applicant }: ApplicantProfileModalProps) {
   // 사용자 프로필 조회 (모달이 열려있고 applicant가 있을 때만)
-  const { data: userProfile, isLoading: isProfileLoading } = useQuery<UserProfile | null>({
-    queryKey: queryKeys.user.profile(applicant?.applicantId ?? ''),
-    queryFn: () => getUserProfile(applicant!.applicantId),
-    enabled: visible && !!applicant?.applicantId,
-    staleTime: 5 * 60 * 1000, // 5분
+  const { userProfile, isLoading: isProfileLoading, displayName, profilePhotoURL } = useUserProfile({
+    userId: applicant?.applicantId,
+    enabled: visible,
+    fallbackName: applicant?.applicantName,
   });
 
   const appliedTimeAgo = useMemo(() => {
@@ -208,16 +205,6 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
   }, [applicant?.createdAt]);
 
   if (!applicant) return null;
-
-  // 프로필 사진 URL (사용자 프로필에서 우선 사용)
-  const profilePhotoURL = userProfile?.photoURL;
-  // 표시 이름: Firestore 프로필 우선, Firebase Auth displayName 폴백
-  const baseName = userProfile?.name || applicant.applicantName;
-  // 닉네임이 있고 이름과 다르면 "이름(닉네임)" 형식
-  const displayName =
-    userProfile?.nickname && userProfile.nickname !== baseName
-      ? `${baseName}(${userProfile.nickname})`
-      : baseName;
 
   return (
     <SheetModal visible={visible} onClose={onClose} title="지원자 프로필">

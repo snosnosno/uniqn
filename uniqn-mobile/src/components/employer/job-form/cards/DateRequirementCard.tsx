@@ -17,6 +17,7 @@ import { formatDateWithDay } from '@/utils/dateUtils';
 import { TimeSlotCard } from './TimeSlotCard';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
 import { useToast } from '@/stores/toastStore';
+import { generateId } from '@/utils/generateId';
 import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================
@@ -71,12 +72,12 @@ export function DateRequirementCard({
     }
 
     const newTimeSlot: TimeSlot = {
-      id: `${Date.now()}-${Math.random()}`,
+      id: generateId(),
       startTime: DEFAULT_START_TIME,
       isTimeToBeAnnounced: false,
       roles: [
         {
-          id: `${Date.now()}-${Math.random()}`,
+          id: generateId(),
           role: 'dealer',
           headcount: 1,
         },

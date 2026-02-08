@@ -288,3 +288,9 @@ export {
 export { useJobSchedule, type UseJobScheduleResult } from './useJobSchedule';
 
 export { useJobRoles, type UseJobRolesResult } from './useJobRoles';
+
+// ============================================================================
+// User Profile Hooks (사용자 프로필 조회)
+// ============================================================================
+
+export { useUserProfile } from './useUserProfile';
