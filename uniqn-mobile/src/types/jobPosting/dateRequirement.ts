@@ -13,6 +13,7 @@
 import { Timestamp } from 'firebase/firestore';
 import { StaffRole } from '../common';
 import type { SalaryInfo } from '../jobPosting';
+import { generateId } from '@/utils/generateId';
 
 /**
  * 역할 요구사항
@@ -212,12 +213,3 @@ export function createDefaultRole(): RoleRequirement {
   };
 }
 
-/**
- * 고유 ID 생성
- */
-function generateId(): string {
-  const bytes = new Uint8Array(5);
-  crypto.getRandomValues(bytes);
-  const random = Array.from(bytes).map((b) => b.toString(36)).join('').substring(0, 7);
-  return `${Date.now()}-${random}`;
-}

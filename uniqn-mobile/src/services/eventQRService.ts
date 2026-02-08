@@ -34,11 +34,11 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { generateUUID } from '@/utils/generateId';
 import {
   InvalidQRCodeError,
-  ExpiredQRCodeError,
   AlreadyCheckedInError,
   NotCheckedInError,
 } from '@/errors/BusinessErrors';
@@ -72,17 +72,10 @@ export const QR_REFRESH_INTERVAL_MS = 2 * 60 * 1000;
 // ============================================================================
 
 /**
- * UUID v4 생성 (보안 코드용)
- *
- * @description crypto.getRandomValues 기반 RFC 4122 호환
+ * 보안 코드 생성 (UUID v4)
  */
 function generateSecurityCode(): string {
-  const bytes = new Uint8Array(16);
-  crypto.getRandomValues(bytes);
-  bytes[6] = (bytes[6] & 0x0f) | 0x40;
-  bytes[8] = (bytes[8] & 0x3f) | 0x80;
-  const hex = Array.from(bytes).map((b) => b.toString(16).padStart(2, '0')).join('');
-  return [hex.slice(0, 8), hex.slice(8, 12), hex.slice(12, 16), hex.slice(16, 20), hex.slice(20, 32)].join('-');
+  return generateUUID();
 }
 
 /**
@@ -405,12 +398,7 @@ export async function processEventQRCheckIn(
   } catch (error) {
     logger.error('QR 스캔 출퇴근 처리 실패', toError(error), { staffId });
 
-    if (
-      error instanceof InvalidQRCodeError ||
-      error instanceof ExpiredQRCodeError ||
-      error instanceof AlreadyCheckedInError ||
-      error instanceof NotCheckedInError
-    ) {
+    if (isAppError(error)) {
       throw error;
     }
 
