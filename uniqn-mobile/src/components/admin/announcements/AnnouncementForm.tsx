@@ -166,7 +166,7 @@ export function AnnouncementForm({
 
       // 이미지 선택 (다중)
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        mediaTypes: ['images'],
         allowsMultipleSelection: true,
         selectionLimit: remainingSlots,
         quality: 0.8,

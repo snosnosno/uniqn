@@ -143,11 +143,11 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
           type: 'schedule_change',
           workLogId,
           jobPostingId: after.jobPostingId,
-          jobPostingTitle: jobPosting.title,
+          jobPostingTitle: jobPosting.title || '',
           scheduledStartTime: formatTime(after.scheduledStartTime),
           scheduledEndTime: formatTime(after.scheduledEndTime),
-          location: jobPosting.location,
-          district: jobPosting.district,
+          location: jobPosting.location || '',
+          district: jobPosting.district || '',
         },
       });
 

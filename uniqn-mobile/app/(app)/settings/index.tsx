@@ -3,13 +3,14 @@
  * 설정 메인 화면
  */
 
-import { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator } from 'react-native';
+import { useState, useEffect, useCallback } from 'react';
+import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator, Linking, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
 import { DangerZone } from '@/components/settings';
-import { BellIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
+import { BellIcon, BellSlashIcon, LockIcon, ChevronRightIcon, TrashIcon } from '@/components/icons';
+import { pushNotificationService } from '@/services/pushNotificationService';
 import { useThemeStore } from '@/stores/themeStore';
 import { useModalStore } from '@/stores/modalStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -86,6 +87,29 @@ export default function SettingsScreen() {
   // 알림 설정 (로그인 상태에서만)
   const { data: notificationSettings } = useNotificationSettingsQuery();
   const { saveSettings, isSaving } = useSaveNotificationSettings();
+
+  // 알림 권한 상태 (useNotificationHandler 중복 호출 방지 — 경량 체크)
+  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined' | null>(null);
+
+  useEffect(() => {
+    if (Platform.OS === 'web') return;
+    pushNotificationService.checkPermission().then((result) => {
+      setPermissionStatus(result.status);
+    });
+  }, []);
+
+  const handleRequestPermission = useCallback(async () => {
+    const result = await pushNotificationService.requestPermission();
+    setPermissionStatus(result.status);
+  }, []);
+
+  const handleOpenSettings = useCallback(async () => {
+    if (Platform.OS === 'ios') {
+      await Linking.openURL('app-settings:');
+    } else {
+      await Linking.openSettings();
+    }
+  }, []);
 
   // 자동 로그인 설정
   const { autoLoginEnabled, setAutoLoginEnabled, isLoading: isAutoLoginLoading } = useAutoLogin();
@@ -172,6 +196,29 @@ export default function SettingsScreen() {
         {/* 알림 설정 */}
         <Card className="mb-4">
           <Text className="mb-2 text-sm font-medium text-gray-500 dark:text-gray-400">알림</Text>
+          {permissionStatus === 'denied' && (
+            <Pressable
+              onPress={handleOpenSettings}
+              className="mb-3 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg flex-row items-center"
+            >
+              <BellSlashIcon size={20} color="#dc2626" />
+              <Text className="flex-1 ml-2 text-red-700 dark:text-red-300 text-sm">
+                알림 권한이 거부되었습니다. 탭하여 설정에서 허용해주세요.
+              </Text>
+              <ChevronRightIcon size={16} color="#dc2626" />
+            </Pressable>
+          )}
+          {permissionStatus === 'undetermined' && (
+            <Pressable
+              onPress={handleRequestPermission}
+              className="mb-3 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg flex-row items-center"
+            >
+              <BellIcon size={20} color="#d97706" />
+              <Text className="flex-1 ml-2 text-yellow-700 dark:text-yellow-300 text-sm">
+                푸시 알림이 꺼져있습니다. 탭하여 허용해주세요.
+              </Text>
+            </Pressable>
+          )}
           <SettingItem
             icon={<BellIcon size={22} color="#6B7280" />}
             label="푸시 알림"

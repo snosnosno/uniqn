@@ -70,14 +70,9 @@ export const NotificationItem = memo(function NotificationItem({
   const accessibilityLabel = `${notification.isRead ? '읽음' : '읽지 않음'}, ${notification.title}, ${notification.body}, ${timeAgo}`;
 
   const content = (
-    <Pressable
-      onPress={handlePress}
-      accessibilityRole="button"
-      accessibilityLabel={accessibilityLabel}
-      accessibilityHint={notification.link ? '탭하면 관련 페이지로 이동합니다' : undefined}
+    <View
       className={`
-        px-4 py-3 border-b border-gray-100 dark:border-surface
-        active:bg-gray-50 dark:active:bg-gray-800
+        relative border-b border-gray-100 dark:border-surface
         ${
           notification.isRead
             ? 'bg-white dark:bg-surface-dark'
@@ -85,57 +80,70 @@ export const NotificationItem = memo(function NotificationItem({
         }
       `}
     >
-      <View className="flex-row items-start">
-        {/* 아이콘 */}
-        <NotificationIcon type={notification.type} useEmoji={useEmoji} className="mr-3" />
+      <Pressable
+        onPress={handlePress}
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityHint={notification.link ? '탭하면 관련 페이지로 이동합니다' : undefined}
+        className="px-4 py-3 active:bg-gray-50 dark:active:bg-gray-800"
+      >
+        <View className="flex-row items-start">
+          {/* 아이콘 */}
+          <NotificationIcon type={notification.type} useEmoji={useEmoji} className="mr-3" />
 
-        {/* 컨텐츠 */}
-        <View className="flex-1">
-          {/* 제목 */}
-          <View className="flex-row items-center">
-            {!notification.isRead && <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />}
-            <Text
-              numberOfLines={1}
-              className={`
-                text-base flex-1
-                ${
-                  notification.isRead
-                    ? 'text-gray-700 dark:text-gray-300 font-normal'
-                    : 'text-gray-900 dark:text-white font-semibold'
-                }
-              `}
-            >
-              {notification.title}
+          {/* 컨텐츠 */}
+          <View className="flex-1">
+            {/* 제목 */}
+            <View className="flex-row items-center">
+              {!notification.isRead && <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />}
+              <Text
+                numberOfLines={1}
+                className={`
+                  text-base flex-1
+                  ${
+                    notification.isRead
+                      ? 'text-gray-700 dark:text-gray-300 font-normal'
+                      : 'text-gray-900 dark:text-white font-semibold'
+                  }
+                `}
+              >
+                {notification.title}
+              </Text>
+            </View>
+
+            {/* 본문 */}
+            <Text numberOfLines={2} className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              {notification.body}
             </Text>
+
+            {/* 시간 */}
+            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{timeAgo}</Text>
           </View>
 
-          {/* 본문 */}
-          <Text numberOfLines={2} className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-            {notification.body}
-          </Text>
-
-          {/* 시간 */}
-          <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">{timeAgo}</Text>
-        </View>
-
-        {/* 오른쪽 액션 영역 */}
-        <View className="ml-2 items-center justify-center">
-          {showDelete && onDelete ? (
-            <Pressable
-              onPress={handleDelete}
-              hitSlop={8}
-              accessibilityRole="button"
-              accessibilityLabel="알림 삭제"
-              className="p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
-            >
-              <TrashIcon size={18} color={getIconColor(isDarkMode, 'secondary')} />
-            </Pressable>
-          ) : notification.link ? (
-            <ChevronRightIcon size={20} color={getIconColor(isDarkMode, 'secondary')} />
+          {/* 오른쪽: 링크 화살표 (삭제 모드가 아닐 때만) */}
+          {!showDelete && notification.link ? (
+            <View className="ml-2 items-center justify-center">
+              <ChevronRightIcon size={20} color={getIconColor(isDarkMode, 'secondary')} />
+            </View>
+          ) : showDelete ? (
+            <View className="w-10" />
           ) : null}
         </View>
-      </View>
-    </Pressable>
+      </Pressable>
+
+      {/* 삭제 버튼: Pressable 외부에 배치하여 button 중첩 방지 */}
+      {showDelete && onDelete ? (
+        <Pressable
+          onPress={handleDelete}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="알림 삭제"
+          className="absolute right-2 top-3 p-2 rounded-full active:bg-gray-100 dark:active:bg-gray-800"
+        >
+          <TrashIcon size={18} color={getIconColor(isDarkMode, 'secondary')} />
+        </Pressable>
+      ) : null}
+    </View>
   );
 
   if (animated) {
