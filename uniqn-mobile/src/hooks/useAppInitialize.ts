@@ -33,6 +33,8 @@ import {
   checkForceUpdate,
   ForceUpdateError,
   MaintenanceError,
+  isForceUpdateError,
+  isMaintenanceError,
   type VersionCheckResult,
 } from '@/services/versionService';
 import { checkAutoLoginEnabled } from './useAutoLogin';
@@ -371,7 +373,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       const err = error instanceof Error ? error : new Error(String(error));
 
       // 강제 업데이트 에러 처리
-      if (err instanceof ForceUpdateError) {
+      if (isForceUpdateError(err)) {
         logger.warn('강제 업데이트 필요', {
           component: 'useAppInitialize',
           latestVersion: err.latestVersion,
@@ -392,7 +394,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
       }
 
       // 점검 모드 에러 처리
-      if (err instanceof MaintenanceError) {
+      if (isMaintenanceError(err)) {
         logger.warn('점검 모드', {
           component: 'useAppInitialize',
           message: err.message,
@@ -417,7 +419,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
 
       // 성능 추적: 초기화 실패
       appInitTrace.putAttribute('status', 'error');
-      appInitTrace.putAttribute('error_message', err.message);
+      appInitTrace.putAttribute('error_message', (err as Error).message);
       appInitTrace.stop();
 
       setState({

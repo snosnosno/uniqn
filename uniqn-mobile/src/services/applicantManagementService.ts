@@ -7,7 +7,7 @@
 
 import { type Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
-import { MaxCapacityReachedError, BusinessError, PermissionError, ERROR_CODES } from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { confirmApplicationWithHistory } from './applicationHistoryService';
 import { applicationRepository, jobPostingRepository } from '@/repositories';
@@ -84,7 +84,7 @@ export async function getApplicantsByJobPosting(
       stats: result.stats,
     };
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -145,11 +145,7 @@ export async function confirmApplication(
       message: historyResult.message,
     };
   } catch (error) {
-    if (
-      error instanceof BusinessError ||
-      error instanceof PermissionError ||
-      error instanceof MaxCapacityReachedError
-    ) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -176,7 +172,7 @@ export async function rejectApplication(
 
     logger.info('지원 거절 완료', { applicationId: input.applicationId });
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -240,7 +236,7 @@ export async function markApplicationAsRead(applicationId: string, ownerId: stri
   try {
     await applicationRepository.markAsRead(applicationId, ownerId);
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -297,7 +293,7 @@ export async function getApplicantStatsByRole(
 
     return statsByRole as Record<StaffRole, ApplicationStats>;
   } catch (error) {
-    if (error instanceof BusinessError || error instanceof PermissionError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {

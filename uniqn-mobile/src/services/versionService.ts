@@ -208,6 +208,7 @@ export class ForceUpdateError extends Error {
   ) {
     super(message);
     this.name = 'ForceUpdateError';
+    Object.setPrototypeOf(this, ForceUpdateError.prototype);
   }
 }
 
@@ -218,8 +219,20 @@ export class MaintenanceError extends Error {
   constructor(message: string) {
     super(message);
     this.name = 'MaintenanceError';
+    Object.setPrototypeOf(this, MaintenanceError.prototype);
   }
 }
+
+/**
+ * Babel wrapNativeSuper 환경에서 instanceof 대신 name으로 판별
+ */
+export const isForceUpdateError = (error: unknown): error is ForceUpdateError => {
+  return error instanceof ForceUpdateError || (error instanceof Error && error.name === 'ForceUpdateError');
+};
+
+export const isMaintenanceError = (error: unknown): error is MaintenanceError => {
+  return error instanceof MaintenanceError || (error instanceof Error && error.name === 'MaintenanceError');
+};
 
 export default {
   getRemoteVersionConfig,

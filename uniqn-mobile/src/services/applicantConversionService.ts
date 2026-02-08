@@ -18,7 +18,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { ValidationError, BusinessError, ERROR_CODES, toError } from '@/errors';
+import { ValidationError, BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff, StaffRole } from '@/types';
@@ -316,7 +316,7 @@ export async function convertApplicantToStaff(
 
     return result;
   } catch (error) {
-    if (error instanceof ValidationError || error instanceof BusinessError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {
@@ -545,7 +545,7 @@ export async function revertStaffConversion(
 
     logger.info('스태프 변환 취소 완료', { applicationId });
   } catch (error) {
-    if (error instanceof ValidationError) {
+    if (isAppError(error)) {
       throw error;
     }
     throw handleServiceError(error, {

@@ -23,7 +23,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { BusinessError, PermissionError, ERROR_CODES, AlreadySettledError } from '@/errors';
+import { BusinessError, PermissionError, ERROR_CODES, AlreadySettledError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
@@ -164,11 +164,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       logger.info('근무 시간 수정 완료', { workLogId: context.workLogId });
     } catch (error) {
       // 비즈니스 에러는 그대로 throw
-      if (
-        error instanceof BusinessError ||
-        error instanceof PermissionError ||
-        error instanceof AlreadySettledError
-      ) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -247,7 +243,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       );
 
       const message =
-        error instanceof BusinessError || error instanceof PermissionError
+        isAppError(error)
           ? error.userMessage
           : error instanceof Error
             ? error.message
@@ -483,7 +479,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       logger.info('정산 상태 변경 완료', { workLogId, status });
     } catch (error) {
       // 비즈니스 에러는 그대로 throw
-      if (error instanceof BusinessError || error instanceof PermissionError) {
+      if (isAppError(error)) {
         throw error;
       }
 

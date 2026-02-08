@@ -27,7 +27,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
   DuplicateReportError,
@@ -248,7 +248,7 @@ export class FirebaseReportRepository implements IReportRepository {
       return newReportRef.id;
     } catch (error) {
       // 비즈니스 에러는 그대로 throw
-      if (error instanceof DuplicateReportError || error instanceof CannotReportSelfError) {
+      if (isAppError(error)) {
         throw error;
       }
 
@@ -310,7 +310,7 @@ export class FirebaseReportRepository implements IReportRepository {
       logger.info('신고 처리 트랜잭션 완료', { reportId: input.reportId });
     } catch (error) {
       // 비즈니스 에러는 그대로 throw
-      if (error instanceof ReportNotFoundError || error instanceof ReportAlreadyReviewedError) {
+      if (isAppError(error)) {
         throw error;
       }
 

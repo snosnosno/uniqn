@@ -218,6 +218,8 @@ export const ERROR_MESSAGES: Record<string, string> = {
  * 모든 커스텀 에러는 이 클래스를 상속받음
  */
 export class AppError extends Error {
+  /** Babel wrapNativeSuper 환경에서 instanceof 대신 사용하는 브랜드 */
+  readonly __isAppError = true as const;
   readonly code: string;
   readonly category: ErrorCategory;
   readonly severity: ErrorSeverity;
@@ -385,28 +387,45 @@ export class BusinessError extends AppError {
 // Type Guards
 // ============================================================================
 
+/**
+ * AppError 여부 판별 (Babel wrapNativeSuper 환경에서도 안전)
+ *
+ * React Native + Babel 환경에서 Error 서브클래스의 instanceof가 실패할 수 있어
+ * __isAppError 브랜드 속성으로 추가 판별합니다.
+ */
 export const isAppError = (error: unknown): error is AppError => {
-  return error instanceof AppError;
+  if (error instanceof AppError) return true;
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    '__isAppError' in error &&
+    (error as { __isAppError: unknown }).__isAppError === true
+  );
 };
 
 export const isNetworkError = (error: unknown): error is NetworkError => {
-  return error instanceof NetworkError;
+  if (error instanceof NetworkError) return true;
+  return isAppError(error) && error.category === 'network';
 };
 
 export const isAuthError = (error: unknown): error is AuthError => {
-  return error instanceof AuthError;
+  if (error instanceof AuthError) return true;
+  return isAppError(error) && error.category === 'auth';
 };
 
 export const isValidationError = (error: unknown): error is ValidationError => {
-  return error instanceof ValidationError;
+  if (error instanceof ValidationError) return true;
+  return isAppError(error) && error.category === 'validation';
 };
 
 export const isPermissionError = (error: unknown): error is PermissionError => {
-  return error instanceof PermissionError;
+  if (error instanceof PermissionError) return true;
+  return isAppError(error) && error.category === 'permission';
 };
 
 export const isBusinessError = (error: unknown): error is BusinessError => {
-  return error instanceof BusinessError;
+  if (error instanceof BusinessError) return true;
+  return isAppError(error) && error.category === 'business';
 };
 
 export default AppError;

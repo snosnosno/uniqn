@@ -11,7 +11,7 @@
  */
 
 import { logger } from './logger';
-import { normalizeError, AppError } from '@/errors';
+import { normalizeError, AppError, isAppError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -263,7 +263,7 @@ function calculateDelay(
  */
 function defaultShouldRetry(error: Error | AppError, _attempt: number): boolean {
   // AppError인 경우 isRetryable 확인
-  if (error instanceof AppError) {
+  if (isAppError(error)) {
     return error.isRetryable;
   }
 

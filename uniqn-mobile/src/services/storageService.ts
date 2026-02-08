@@ -9,7 +9,7 @@ import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage
 import * as ImageManipulator from 'expo-image-manipulator';
 import { getFirebaseStorage } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { ValidationError, AppError, ERROR_CODES, toError } from '@/errors';
+import { ValidationError, AppError, ERROR_CODES, toError, isAppError } from '@/errors';
 import type { AnnouncementImage } from '@/types';
 
 // ============================================================================
@@ -92,7 +92,7 @@ export async function uploadProfileImage(userId: string, uri: string): Promise<U
   } catch (error) {
     logger.error('프로필 이미지 업로드 실패', toError(error), { userId });
 
-    if (error instanceof AppError) {
+    if (isAppError(error)) {
       throw error;
     }
 
@@ -242,7 +242,7 @@ export async function uploadAnnouncementImage(
   } catch (error) {
     logger.error('공지사항 이미지 업로드 실패', toError(error), { userId });
 
-    if (error instanceof AppError) {
+    if (isAppError(error)) {
       throw error;
     }
 
