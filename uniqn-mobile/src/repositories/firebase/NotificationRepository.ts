@@ -35,7 +35,7 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder, processPaginatedResults, type PaginatedResult } from '@/utils/firestore';
-import { COLLECTIONS } from '@/constants';
+import { COLLECTIONS, FIELDS } from '@/constants';
 import { parseNotificationSettingsDocument } from '@/schemas';
 import { createDefaultNotificationSettings } from '@/types/notification';
 import type {
@@ -116,9 +116,9 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
       // QueryBuilder로 쿼리 구성
       const q = new QueryBuilder(notificationsRef)
-        .whereEqual('recipientId', userId)
-        .whereIf(filter?.isRead !== undefined, 'isRead', '==', filter?.isRead)
-        .orderByDesc('createdAt')
+        .whereEqual(FIELDS.NOTIFICATION.recipientId, userId)
+        .whereIf(filter?.isRead !== undefined, FIELDS.NOTIFICATION.isRead, '==', filter?.isRead)
+        .orderByDesc(FIELDS.NOTIFICATION.createdAt)
         .paginate(pageSize, lastDoc)
         .build();
 
@@ -148,8 +148,8 @@ export class FirebaseNotificationRepository implements INotificationRepository {
       const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
       const q = query(
         notificationsRef,
-        where('recipientId', '==', userId),
-        where('isRead', '==', false)
+        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+        where(FIELDS.NOTIFICATION.isRead, '==', false)
       );
 
       const snapshot = await getCountFromServer(q);
@@ -225,8 +225,8 @@ export class FirebaseNotificationRepository implements INotificationRepository {
       const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
       const q = query(
         notificationsRef,
-        where('recipientId', '==', userId),
-        where('isRead', '==', false)
+        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+        where(FIELDS.NOTIFICATION.isRead, '==', false)
       );
 
       const snapshot = await getDocs(q);
@@ -364,7 +364,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         const q = query(
           notificationsRef,
           where('__name__', 'in', chunk),
-          where('isRead', '==', false)
+          where(FIELDS.NOTIFICATION.isRead, '==', false)
         );
         const snapshot = await getCountFromServer(q);
         unreadCount += snapshot.data().count;
@@ -423,8 +423,8 @@ export class FirebaseNotificationRepository implements INotificationRepository {
       const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
       const q = query(
         notificationsRef,
-        where('recipientId', '==', userId),
-        where('createdAt', '<', Timestamp.fromDate(cutoffDate)),
+        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+        where(FIELDS.NOTIFICATION.createdAt, '<', Timestamp.fromDate(cutoffDate)),
         limit(500) // 한 번에 처리할 최대 개수
       );
 

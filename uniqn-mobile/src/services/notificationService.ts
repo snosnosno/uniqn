@@ -30,7 +30,7 @@ import * as pushNotificationService from '@/services/pushNotificationService';
 import { normalizeError } from '@/errors';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { RealtimeManager } from '@/shared/realtime';
-import { COLLECTIONS } from '@/constants';
+import { COLLECTIONS, FIELDS } from '@/constants';
 import { notificationRepository } from '@/repositories';
 import type {
   NotificationData,
@@ -208,28 +208,46 @@ export function subscribeToNotifications(
     const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
     const q = query(
       notificationsRef,
-      where('recipientId', '==', userId),
-      orderBy('createdAt', 'desc'),
+      where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+      orderBy(FIELDS.NOTIFICATION.createdAt, 'desc'),
       limit(50)
     );
 
-    const unsubscribe = onSnapshot(
+    // 에러 콜백 중복 실행 방지 (Firebase SDK 내부 재시도로 인한 무한 루프 차단)
+    let hasErrored = false;
+    let firebaseUnsubscribe: (() => void) | null = null;
+
+    firebaseUnsubscribe = onSnapshot(
       q,
       (snapshot) => {
+        if (hasErrored) return;
         const notifications = snapshot.docs.map(docToNotification);
         onNotifications(notifications);
       },
       (error) => {
+        if (hasErrored) return;
+        hasErrored = true;
+
         const appError = normalizeError(error);
         logger.error('알림 구독 에러', appError, {
           code: appError.code,
         });
+
+        // 리스너 즉시 해제 (재시도 방지)
+        firebaseUnsubscribe?.();
+        firebaseUnsubscribe = null;
+
         onError?.(appError);
       }
     );
 
     logger.info('알림 구독 시작', { userId });
-    return unsubscribe;
+
+    return () => {
+      hasErrored = true;
+      firebaseUnsubscribe?.();
+      firebaseUnsubscribe = null;
+    };
   });
 }
 
@@ -252,30 +270,18 @@ export function subscribeToUnreadCount(
   return RealtimeManager.subscribe(RealtimeManager.Keys.unreadCount(userId), () => {
     const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
 
-    // 초기값 로드 (카운터 문서가 없을 경우 getCountFromServer 사용)
-    getDoc(counterRef)
-      .then(async (snap) => {
-        if (!snap.exists()) {
-          // 카운터 문서 없음 - getCountFromServer로 폴백
-          try {
-            const count = await notificationRepository.getUnreadCount(userId);
-            onCount(count);
-            logger.debug('미읽음 카운터 초기 로드 (getCountFromServer)', { userId, count });
-          } catch (error) {
-            logger.error('미읽음 카운터 초기 로드 실패', normalizeError(error));
-          }
-        }
-      })
-      .catch((error: Error) => {
-        logger.warn('카운터 문서 확인 실패', { userId, error: error.message });
-      });
+    // Firebase unsubscribe 참조 (에러 시 자체 정리용)
+    let firebaseUnsubscribe: (() => void) | null = null;
+    // 에러 콜백 중복 실행 방지 (Firebase SDK 내부 재시도로 인한 무한 루프 차단)
+    let hasErrored = false;
 
     // 카운터 문서 실시간 구독 (단일 문서 - 비용 효율적)
-    const unsubscribe = onSnapshot(
+    firebaseUnsubscribe = onSnapshot(
       counterRef,
       async (snapshot: DocumentSnapshot) => {
+        if (hasErrored) return;
+
         if (snapshot.exists()) {
-          // 카운터 문서에서 값 읽기
           const data = snapshot.data() as { unreadCount?: number } | undefined;
           const count = data?.unreadCount ?? 0;
           onCount(count);
@@ -291,16 +297,30 @@ export function subscribeToUnreadCount(
         }
       },
       (error: Error) => {
+        // 이미 에러 처리됨 - Firebase SDK 내부 재시도로 인한 중복 호출 차단
+        if (hasErrored) return;
+        hasErrored = true;
+
         const appError = normalizeError(error);
         logger.error('읽지 않은 알림 수 구독 에러', appError, {
           code: appError.code,
         });
+
+        // 리스너 즉시 해제 (재시도 방지)
+        firebaseUnsubscribe?.();
+        firebaseUnsubscribe = null;
+
         onError?.(appError);
       }
     );
 
     logger.info('읽지 않은 알림 수 구독 시작 (최적화)', { userId });
-    return unsubscribe;
+
+    return () => {
+      hasErrored = true;
+      firebaseUnsubscribe?.();
+      firebaseUnsubscribe = null;
+    };
   });
 }
 

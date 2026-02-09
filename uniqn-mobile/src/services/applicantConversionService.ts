@@ -23,7 +23,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff, StaffRole } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
-import { STAFF_ROLES } from '@/constants';
+import { COLLECTIONS, FIELDS, STAFF_ROLES } from '@/constants';
 
 // 표준 역할 키 목록 (other 제외)
 const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
@@ -39,14 +39,6 @@ function normalizeRole(roleValue: string): { role: string; customRole?: string }
   return { role: 'other', customRole: roleValue };
 }
 
-// ============================================================================
-// Constants
-// ============================================================================
-
-const APPLICATIONS_COLLECTION = 'applications';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-const WORK_LOGS_COLLECTION = 'workLogs';
-const STAFF_COLLECTION = 'staff';
 
 // ============================================================================
 // Types
@@ -106,7 +98,7 @@ export async function convertApplicantToStaff(
 
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 읽기
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -134,7 +126,7 @@ export async function convertApplicantToStaff(
       }
 
       // 2. 공고 읽기 (권한 확인)
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {
@@ -159,16 +151,16 @@ export async function convertApplicantToStaff(
       }
 
       // 3. 스태프 중복 확인
-      const staffRef = doc(getFirebaseDb(), STAFF_COLLECTION, applicationData.applicantId);
+      const staffRef = doc(getFirebaseDb(), COLLECTIONS.STAFF, applicationData.applicantId);
       const staffDoc = await transaction.get(staffRef);
       const isNewStaff = !staffDoc.exists();
 
       if (staffDoc.exists() && !skipExisting) {
         // 해당 공고에서 이미 스태프인지 확인
         const existingWorkLogsQuery = query(
-          collection(getFirebaseDb(), WORK_LOGS_COLLECTION),
-          where('staffId', '==', applicationData.applicantId),
-          where('jobPostingId', '==', jobPostingId)
+          collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS),
+          where(FIELDS.WORK_LOG.staffId, '==', applicationData.applicantId),
+          where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId)
         );
         const existingWorkLogs = await getDocs(existingWorkLogsQuery);
 
@@ -207,7 +199,7 @@ export async function convertApplicantToStaff(
 
       if (createWorkLogs) {
         const assignments = applicationData.assignments ?? [];
-        const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+        const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
         // 고정공고 또는 레거시: assignments가 없거나 dates가 FIXED_DATE_MARKER인 경우
         const isFixedOrLegacy =
@@ -401,7 +393,7 @@ export async function batchConvertApplicants(
  */
 export async function isAlreadyStaff(userId: string, jobPostingId?: string): Promise<boolean> {
   try {
-    const staffRef = doc(getFirebaseDb(), STAFF_COLLECTION, userId);
+    const staffRef = doc(getFirebaseDb(), COLLECTIONS.STAFF, userId);
     const staffDoc = await getDoc(staffRef);
 
     if (!staffDoc.exists()) {
@@ -411,9 +403,9 @@ export async function isAlreadyStaff(userId: string, jobPostingId?: string): Pro
     // jobPostingId가 지정된 경우 해당 공고의 WorkLog 존재 확인
     if (jobPostingId) {
       const workLogsQuery = query(
-        collection(getFirebaseDb(), WORK_LOGS_COLLECTION),
-        where('staffId', '==', userId),
-        where('jobPostingId', '==', jobPostingId)
+        collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS),
+        where(FIELDS.WORK_LOG.staffId, '==', userId),
+        where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId)
       );
       const workLogs = await getDocs(workLogsQuery);
       return !workLogs.empty;
@@ -434,7 +426,7 @@ export async function canConvertToStaff(applicationId: string): Promise<{
   reason?: string;
 }> {
   try {
-    const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+    const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
     const applicationDoc = await getDoc(applicationRef);
 
     if (!applicationDoc.exists()) {
@@ -484,7 +476,7 @@ export async function revertStaffConversion(
 
     await runTransaction(getFirebaseDb(), async (transaction) => {
       // 지원서 읽기
-      const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
       const applicationDoc = await transaction.get(applicationRef);
 
       if (!applicationDoc.exists()) {
@@ -511,7 +503,7 @@ export async function revertStaffConversion(
       }
 
       // 공고 소유자 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
       const jobDoc = await transaction.get(jobRef);
 
       if (!jobDoc.exists()) {

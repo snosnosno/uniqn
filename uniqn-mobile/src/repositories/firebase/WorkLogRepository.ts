@@ -43,12 +43,12 @@ import type {
   WorkLogFilterOptions,
 } from '../interfaces';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const COLLECTION_NAME = 'workLogs';
 const DEFAULT_PAGE_SIZE = 50;
 
 // ============================================================================
@@ -67,7 +67,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('근무 기록 상세 조회', { workLogId });
 
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, workLogId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -99,11 +99,11 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('스태프별 근무 기록 조회', { staffId, pageSize });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = new QueryBuilder(workLogsRef)
-        .whereEqual('staffId', staffId)
-        .orderByDesc('date')
+        .whereEqual(FIELDS.WORK_LOG.staffId, staffId)
+        .orderByDesc(FIELDS.WORK_LOG.date)
         .limit(pageSize)
         .build();
 
@@ -145,24 +145,24 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('필터를 포함한 스태프별 근무 기록 조회', { staffId, options });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
-      const queryBuilder = new QueryBuilder(workLogsRef).whereEqual('staffId', staffId);
+      const queryBuilder = new QueryBuilder(workLogsRef).whereEqual(FIELDS.WORK_LOG.staffId, staffId);
 
       // 날짜 범위 필터
       if (options?.dateRange) {
         queryBuilder
-          .where('date', '>=', options.dateRange.start)
-          .where('date', '<=', options.dateRange.end);
+          .where(FIELDS.WORK_LOG.date, '>=', options.dateRange.start)
+          .where(FIELDS.WORK_LOG.date, '<=', options.dateRange.end);
       }
 
       // 상태 필터
       if (options?.status) {
-        queryBuilder.whereEqual('status', options.status);
+        queryBuilder.whereEqual(FIELDS.WORK_LOG.status, options.status);
       }
 
       const q = queryBuilder
-        .orderByDesc('date')
+        .orderByDesc(FIELDS.WORK_LOG.date)
         .limit(options?.pageSize ?? DEFAULT_PAGE_SIZE)
         .build();
 
@@ -201,12 +201,12 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('날짜별 근무 기록 조회', { staffId, date });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = new QueryBuilder(workLogsRef)
-        .whereEqual('staffId', staffId)
-        .whereEqual('date', date)
-        .orderByDesc('checkInTime')
+        .whereEqual(FIELDS.WORK_LOG.staffId, staffId)
+        .whereEqual(FIELDS.WORK_LOG.date, date)
+        .orderByDesc(FIELDS.WORK_LOG.checkInTime)
         .build();
 
       const snapshot = await getDocs(q);
@@ -248,11 +248,11 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('공고별 근무 기록 조회', { jobPostingId });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = new QueryBuilder(workLogsRef)
-        .whereEqual('jobPostingId', jobPostingId)
-        .orderByDesc('date')
+        .whereEqual(FIELDS.WORK_LOG.jobPostingId, jobPostingId)
+        .orderByDesc(FIELDS.WORK_LOG.date)
         .build();
 
       const snapshot = await getDocs(q);
@@ -294,13 +294,13 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       logger.info('오늘 출근 기록 조회', { staffId, today });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = query(
         workLogsRef,
-        where('staffId', '==', staffId),
-        where('date', '==', today),
-        where('status', '==', 'checked_in'),
+        where(FIELDS.WORK_LOG.staffId, '==', staffId),
+        where(FIELDS.WORK_LOG.date, '==', today),
+        where(FIELDS.WORK_LOG.status, '==', STATUS.WORK_LOG.CHECKED_IN),
         limit(1)
       );
 
@@ -401,14 +401,14 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
       const startDate = `${monthStr}-01`;
       const endDate = `${monthStr}-31`;
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = query(
         workLogsRef,
-        where('staffId', '==', staffId),
-        where('date', '>=', startDate),
-        where('date', '<=', endDate),
-        orderBy('date', 'asc')
+        where(FIELDS.WORK_LOG.staffId, '==', staffId),
+        where(FIELDS.WORK_LOG.date, '>=', startDate),
+        where(FIELDS.WORK_LOG.date, '<=', endDate),
+        orderBy(FIELDS.WORK_LOG.date, 'asc')
       );
 
       const snapshot = await getDocs(q);
@@ -469,14 +469,14 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('날짜 범위 근무 기록 조회', { staffId, startDate, endDate });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = query(
         workLogsRef,
-        where('staffId', '==', staffId),
-        where('date', '>=', startDate),
-        where('date', '<=', endDate),
-        orderBy('date', 'asc')
+        where(FIELDS.WORK_LOG.staffId, '==', staffId),
+        where(FIELDS.WORK_LOG.date, '>=', startDate),
+        where(FIELDS.WORK_LOG.date, '<=', endDate),
+        orderBy(FIELDS.WORK_LOG.date, 'asc')
       );
 
       const snapshot = await getDocs(q);
@@ -523,13 +523,13 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('공고-스태프-날짜 근무 기록 조회', { jobPostingId, staffId, date });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       const q = query(
         workLogsRef,
-        where('jobPostingId', '==', jobPostingId),
-        where('staffId', '==', staffId),
-        where('date', '==', date),
+        where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
+        where(FIELDS.WORK_LOG.staffId, '==', staffId),
+        where(FIELDS.WORK_LOG.date, '==', date),
         limit(1)
       );
 
@@ -580,13 +580,13 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
   ): Unsubscribe {
     logger.info('날짜별 근무 기록 구독 시작', { staffId, date });
 
-    const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
     const q = query(
       workLogsRef,
-      where('staffId', '==', staffId),
-      where('date', '==', date),
-      orderBy('checkInTime', 'desc')
+      where(FIELDS.WORK_LOG.staffId, '==', staffId),
+      where(FIELDS.WORK_LOG.date, '==', date),
+      orderBy(FIELDS.WORK_LOG.checkInTime, 'desc')
     );
 
     return onSnapshot(
@@ -630,12 +630,12 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
   ): Unsubscribe {
     logger.info('스태프별 근무 기록 실시간 구독 시작', { staffId });
 
-    const workLogsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
     const q = query(
       workLogsRef,
-      where('staffId', '==', staffId),
-      orderBy('date', 'desc'),
+      where(FIELDS.WORK_LOG.staffId, '==', staffId),
+      orderBy(FIELDS.WORK_LOG.date, 'desc'),
       limit(DEFAULT_PAGE_SIZE)
     );
 
@@ -677,7 +677,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
     try {
       logger.info('정산 상태 변경', { workLogId, status });
 
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, workLogId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
 
       await updateDoc(docRef, {
         payrollStatus: status,

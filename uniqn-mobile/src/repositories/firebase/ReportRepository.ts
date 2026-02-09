@@ -45,12 +45,7 @@ import type {
   ReportCounts,
 } from '../interfaces';
 import type { Report, CreateReportInput, ReviewReportInput, ReportStatus } from '@/types/report';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const COLLECTION_NAME = 'reports';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
@@ -68,7 +63,7 @@ export class FirebaseReportRepository implements IReportRepository {
     try {
       logger.info('신고 상세 조회', { reportId });
 
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, reportId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.REPORTS, reportId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -111,9 +106,9 @@ export class FirebaseReportRepository implements IReportRepository {
     try {
       logger.info('전체 신고 목록 조회', { filters });
 
-      const reportsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const reportsRef = collection(getFirebaseDb(), COLLECTIONS.REPORTS);
       const q = new QueryBuilder(reportsRef)
-        .whereIf(filters?.status && filters.status !== 'all', 'status', '==', filters?.status)
+        .whereIf(filters?.status && filters.status !== 'all', FIELDS.REPORT.status, '==', filters?.status)
         .whereIf(
           filters?.severity && filters.severity !== 'all',
           'severity',
@@ -126,7 +121,7 @@ export class FirebaseReportRepository implements IReportRepository {
           '==',
           filters?.reporterType
         )
-        .orderByDesc('createdAt')
+        .orderByDesc(FIELDS.REPORT.createdAt)
         .build();
 
       const snapshot = await getDocs(q);
@@ -183,7 +178,7 @@ export class FirebaseReportRepository implements IReportRepository {
       });
 
       const db = getFirebaseDb();
-      const reportsRef = collection(db, COLLECTION_NAME);
+      const reportsRef = collection(db, COLLECTIONS.REPORTS);
 
       // 새 문서 ID 미리 생성
       const newReportRef = doc(reportsRef);
@@ -192,10 +187,10 @@ export class FirebaseReportRepository implements IReportRepository {
         // 1. 중복 신고 검사 (같은 reporter + target + jobPosting + pending 상태)
         const existingQuery = query(
           reportsRef,
-          where('reporterId', '==', context.reporterId),
-          where('targetId', '==', input.targetId),
-          where('jobPostingId', '==', input.jobPostingId),
-          where('status', '==', 'pending')
+          where(FIELDS.REPORT.reporterId, '==', context.reporterId),
+          where(FIELDS.REPORT.targetId, '==', input.targetId),
+          where(FIELDS.REPORT.jobPostingId, '==', input.jobPostingId),
+          where(FIELDS.REPORT.status, '==', STATUS.REPORT.PENDING)
         );
 
         // 트랜잭션 내에서 쿼리 실행
@@ -273,7 +268,7 @@ export class FirebaseReportRepository implements IReportRepository {
       });
 
       const db = getFirebaseDb();
-      const reportRef = doc(db, COLLECTION_NAME, input.reportId);
+      const reportRef = doc(db, COLLECTIONS.REPORTS, input.reportId);
 
       await runTransaction(db, async (transaction) => {
         // 1. 기존 신고 조회
@@ -338,9 +333,9 @@ export class FirebaseReportRepository implements IReportRepository {
       logger.info(operationName, { [field]: value });
 
       const q = query(
-        collection(getFirebaseDb(), COLLECTION_NAME),
-        where(field, '==', value),
-        orderBy('createdAt', 'desc')
+        collection(getFirebaseDb(), COLLECTIONS.REPORTS),
+        where(FIELDS.REPORT[field], '==', value),
+        orderBy(FIELDS.REPORT.createdAt, 'desc')
       );
 
       const snapshot = await getDocs(q);

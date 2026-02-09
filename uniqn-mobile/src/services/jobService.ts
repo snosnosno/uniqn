@@ -26,6 +26,7 @@ import { startApiTrace } from '@/services/performanceService';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/types';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Re-export Types
@@ -37,7 +38,6 @@ export type { PaginatedJobPostings } from '@/repositories';
 // Constants
 // ============================================================================
 
-const COLLECTION_NAME = 'jobPostings';
 const DEFAULT_PAGE_SIZE = 20;
 
 // ============================================================================
@@ -64,30 +64,30 @@ export async function getJobPostings(
   try {
     logger.info('공고 목록 조회', { filters, pageSize });
 
-    const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+    const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
 
     // QueryBuilder로 쿼리 조합
     const qb = new QueryBuilder(jobsRef)
       // 기본 필터: status
-      .whereEqual('status', filters?.status || 'active')
+      .whereEqual(FIELDS.JOB_POSTING.status, filters?.status || STATUS.JOB_POSTING.ACTIVE)
       // 역할 필터 (최대 10개)
       .whereArrayContainsAny('roles', filters?.roles?.slice(0, 10))
       // 지역 필터
-      .whereIf(!!filters?.district, 'location.district', '==', filters?.district)
+      .whereIf(!!filters?.district, FIELDS.JOB_POSTING.locationDistrict, '==', filters?.district)
       // 긴급 공고 필터
-      .whereIf(filters?.isUrgent !== undefined, 'isUrgent', '==', filters?.isUrgent)
+      .whereIf(filters?.isUrgent !== undefined, FIELDS.JOB_POSTING.isUrgent, '==', filters?.isUrgent)
       // 구인자 필터 (내 공고)
-      .whereIf(!!filters?.ownerId, 'ownerId', '==', filters?.ownerId)
+      .whereIf(!!filters?.ownerId, FIELDS.JOB_POSTING.ownerId, '==', filters?.ownerId)
       // 날짜 범위 필터
-      .whereDateRange('workDate', filters?.dateRange);
+      .whereDateRange(FIELDS.JOB_POSTING.workDate, filters?.dateRange);
 
     // 공고 타입 필터
     if (filters?.postingType === 'tournament') {
       // 대회 공고는 승인된(approved) 것만 일반 목록에 노출
-      qb.whereEqual('postingType', 'tournament');
-      qb.whereEqual('tournamentConfig.approvalStatus', 'approved');
+      qb.whereEqual(FIELDS.JOB_POSTING.postingType, 'tournament');
+      qb.whereEqual(FIELDS.JOB_POSTING.tournamentApprovalStatus, STATUS.TOURNAMENT.APPROVED);
     } else if (filters?.postingType) {
-      qb.whereEqual('postingType', filters.postingType);
+      qb.whereEqual(FIELDS.JOB_POSTING.postingType, filters.postingType);
     }
 
     // 단일 날짜 필터 (workDates 배열에서 array-contains 쿼리)
@@ -100,8 +100,8 @@ export async function getJobPostings(
 
     // 정렬 및 페이지네이션
     const q = qb
-      .orderByDesc('workDate')
-      .orderBy('createdAt', 'desc')
+      .orderByDesc(FIELDS.JOB_POSTING.workDate)
+      .orderBy(FIELDS.JOB_POSTING.createdAt, 'desc')
       .paginate(pageSize, lastDocument)
       .build();
 

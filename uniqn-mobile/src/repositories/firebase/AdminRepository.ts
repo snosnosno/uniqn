@@ -48,15 +48,7 @@ import type {
   PaginatedUsers,
 } from '@/types/admin';
 import type { UserRole } from '@/types/common';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const USERS_COLLECTION = 'users';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-const APPLICATIONS_COLLECTION = 'applications';
-const REPORTS_COLLECTION = 'reports';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Helpers
@@ -119,47 +111,47 @@ export class FirebaseAdminRepository implements IAdminRepository {
         employerCountSnap,
         staffCountSnap,
       ] = await Promise.all([
-        getCountFromServer(collection(db, USERS_COLLECTION)),
+        getCountFromServer(collection(db, COLLECTIONS.USERS)),
         getCountFromServer(
           query(
-            collection(db, USERS_COLLECTION),
-            where('createdAt', '>=', Timestamp.fromDate(todayStart))
+            collection(db, COLLECTIONS.USERS),
+            where(FIELDS.USER.createdAt, '>=', Timestamp.fromDate(todayStart))
           )
         ),
         getCountFromServer(
           query(
-            collection(db, JOB_POSTINGS_COLLECTION),
-            where('status', '==', 'active')
+            collection(db, COLLECTIONS.JOB_POSTINGS),
+            where(FIELDS.JOB_POSTING.status, '==', STATUS.JOB_POSTING.ACTIVE)
           )
         ),
         getCountFromServer(
           query(
-            collection(db, APPLICATIONS_COLLECTION),
-            where('createdAt', '>=', Timestamp.fromDate(todayStart))
+            collection(db, COLLECTIONS.APPLICATIONS),
+            where(FIELDS.APPLICATION.createdAt, '>=', Timestamp.fromDate(todayStart))
           )
         ),
         getCountFromServer(
           query(
-            collection(db, REPORTS_COLLECTION),
-            where('status', '==', 'pending')
+            collection(db, COLLECTIONS.REPORTS),
+            where(FIELDS.REPORT.status, '==', STATUS.REPORT.PENDING)
           )
         ),
         getCountFromServer(
           query(
-            collection(db, USERS_COLLECTION),
-            where('role', '==', 'admin')
+            collection(db, COLLECTIONS.USERS),
+            where(FIELDS.USER.role, '==', 'admin')
           )
         ),
         getCountFromServer(
           query(
-            collection(db, USERS_COLLECTION),
-            where('role', '==', 'employer')
+            collection(db, COLLECTIONS.USERS),
+            where(FIELDS.USER.role, '==', 'employer')
           )
         ),
         getCountFromServer(
           query(
-            collection(db, USERS_COLLECTION),
-            where('role', '==', 'staff')
+            collection(db, COLLECTIONS.USERS),
+            where(FIELDS.USER.role, '==', 'staff')
           )
         ),
       ]);
@@ -196,8 +188,8 @@ export class FirebaseAdminRepository implements IAdminRepository {
 
       const recentUsersSnap = await getDocs(
         query(
-          collection(db, USERS_COLLECTION),
-          orderBy('createdAt', 'desc'),
+          collection(db, COLLECTIONS.USERS),
+          orderBy(FIELDS.USER.createdAt, 'desc'),
           limit(limitCount)
         )
       );
@@ -237,13 +229,13 @@ export class FirebaseAdminRepository implements IAdminRepository {
       const constraints: QueryConstraint[] = [];
 
       if (filters.role && filters.role !== 'all') {
-        constraints.push(where('role', '==', filters.role));
+        constraints.push(where(FIELDS.USER.role, '==', filters.role));
       }
       if (filters.isActive !== undefined) {
-        constraints.push(where('isActive', '==', filters.isActive));
+        constraints.push(where(FIELDS.USER.isActive, '==', filters.isActive));
       }
       if (filters.isVerified !== undefined) {
-        constraints.push(where('identityVerified', '==', filters.isVerified));
+        constraints.push(where(FIELDS.USER.identityVerified, '==', filters.isVerified));
       }
 
       const sortField = filters.sortBy || 'createdAt';
@@ -251,26 +243,26 @@ export class FirebaseAdminRepository implements IAdminRepository {
       constraints.push(orderBy(sortField, sortOrder));
 
       const totalSnap = await getCountFromServer(
-        query(collection(db, USERS_COLLECTION), ...constraints)
+        query(collection(db, COLLECTIONS.USERS), ...constraints)
       );
       const total = totalSnap.data().count;
       const totalPages = Math.ceil(total / pageSize);
       const offset = (page - 1) * pageSize;
 
       let dataQuery = query(
-        collection(db, USERS_COLLECTION),
+        collection(db, COLLECTIONS.USERS),
         ...constraints,
         limit(pageSize)
       );
 
       if (offset > 0) {
         const prevSnap = await getDocs(
-          query(collection(db, USERS_COLLECTION), ...constraints, limit(offset))
+          query(collection(db, COLLECTIONS.USERS), ...constraints, limit(offset))
         );
         const lastDoc = prevSnap.docs[prevSnap.docs.length - 1];
         if (lastDoc) {
           dataQuery = query(
-            collection(db, USERS_COLLECTION),
+            collection(db, COLLECTIONS.USERS),
             ...constraints,
             startAfter(lastDoc),
             limit(pageSize)
@@ -330,7 +322,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
     try {
       logger.info('사용자 조회', { userId });
       const db = getFirebaseDb();
-      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
 
       if (!userDoc.exists()) {
         return null;
@@ -360,7 +352,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
     try {
       logger.info('사용자 역할 변경', { userId, newRole });
       const db = getFirebaseDb();
-      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
 
       if (!userDoc.exists()) {
         throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
@@ -371,7 +363,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
 
       const currentRole = userDoc.data()?.role as string | undefined;
 
-      await updateDoc(doc(db, USERS_COLLECTION, userId), {
+      await updateDoc(doc(db, COLLECTIONS.USERS, userId), {
         role: newRole,
         updatedAt: serverTimestamp(),
       });
@@ -403,7 +395,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
     try {
       logger.info('사용자 상태 변경', { userId, isActive });
       const db = getFirebaseDb();
-      const userDoc = await getDoc(doc(db, USERS_COLLECTION, userId));
+      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
 
       if (!userDoc.exists()) {
         throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
@@ -412,7 +404,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
         });
       }
 
-      await updateDoc(doc(db, USERS_COLLECTION, userId), {
+      await updateDoc(doc(db, COLLECTIONS.USERS, userId), {
         isActive,
         updatedAt: serverTimestamp(),
       });
@@ -460,9 +452,9 @@ export class FirebaseAdminRepository implements IAdminRepository {
           dateRanges.map(async ({ start, end }, i) => {
             const snap = await getCountFromServer(
               query(
-                collection(db, USERS_COLLECTION),
-                where('createdAt', '>=', Timestamp.fromDate(start)),
-                where('createdAt', '<=', Timestamp.fromDate(end))
+                collection(db, COLLECTIONS.USERS),
+                where(FIELDS.USER.createdAt, '>=', Timestamp.fromDate(start)),
+                where(FIELDS.USER.createdAt, '<=', Timestamp.fromDate(end))
               )
             );
             return { date: dates[i], count: snap.data().count } as DailyCount;
@@ -472,9 +464,9 @@ export class FirebaseAdminRepository implements IAdminRepository {
           dateRanges.map(async ({ start, end }, i) => {
             const snap = await getCountFromServer(
               query(
-                collection(db, APPLICATIONS_COLLECTION),
-                where('createdAt', '>=', Timestamp.fromDate(start)),
-                where('createdAt', '<=', Timestamp.fromDate(end))
+                collection(db, COLLECTIONS.APPLICATIONS),
+                where(FIELDS.APPLICATION.createdAt, '>=', Timestamp.fromDate(start)),
+                where(FIELDS.APPLICATION.createdAt, '<=', Timestamp.fromDate(end))
               )
             );
             return { date: dates[i], count: snap.data().count } as DailyCount;

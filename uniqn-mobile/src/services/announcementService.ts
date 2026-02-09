@@ -24,7 +24,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { QueryBuilder, processPaginatedResultsWithFilter } from '@/utils/firestore';
-import { COLLECTIONS } from '@/constants';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import type {
   Announcement,
   AnnouncementStatus,
@@ -105,10 +105,10 @@ export async function fetchPublishedAnnouncements(
 
     // QueryBuilder로 쿼리 구성 (고정 > 우선순위 > 발행일 순)
     const q = new QueryBuilder(collection(db, COLLECTIONS.ANNOUNCEMENTS))
-      .whereEqual('status', 'published')
-      .orderByDesc('isPinned')
-      .orderByDesc('priority')
-      .orderByDesc('publishedAt')
+      .whereEqual(FIELDS.ANNOUNCEMENT.status, STATUS.ANNOUNCEMENT.PUBLISHED)
+      .orderByDesc(FIELDS.ANNOUNCEMENT.isPinned)
+      .orderByDesc(FIELDS.ANNOUNCEMENT.priority)
+      .orderByDesc(FIELDS.ANNOUNCEMENT.publishedAt)
       .paginate(pageSize, lastDoc)
       .build();
 
@@ -155,8 +155,8 @@ export async function fetchAllAnnouncements(
 
     // QueryBuilder로 쿼리 구성
     const q = new QueryBuilder(collection(db, COLLECTIONS.ANNOUNCEMENTS))
-      .whereIf(filters?.status && filters.status !== 'all', 'status', '==', filters?.status)
-      .orderByDesc('createdAt')
+      .whereIf(filters?.status && filters.status !== 'all', FIELDS.ANNOUNCEMENT.status, '==', filters?.status)
+      .orderByDesc(FIELDS.ANNOUNCEMENT.createdAt)
       .paginate(pageSize, lastDoc)
       .build();
 
@@ -391,13 +391,13 @@ export async function getAnnouncementCountByStatus(): Promise<{
 
     const [draftSnap, publishedSnap, archivedSnap] = await Promise.all([
       getCountFromServer(
-        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where('status', '==', 'draft'))
+        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.DRAFT))
       ),
       getCountFromServer(
-        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where('status', '==', 'published'))
+        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.PUBLISHED))
       ),
       getCountFromServer(
-        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where('status', '==', 'archived'))
+        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.ARCHIVED))
       ),
     ]);
 

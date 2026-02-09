@@ -36,6 +36,7 @@ import { trackSettlementComplete } from './analyticsService';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, type WorkLogStats } from '@/repositories';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Re-export Types
@@ -47,7 +48,6 @@ export type { WorkLogStats } from '@/repositories';
 // Constants
 // ============================================================================
 
-const WORK_LOGS_COLLECTION = 'workLogs';
 const DEFAULT_PAGE_SIZE = 50;
 
 // ============================================================================
@@ -224,7 +224,7 @@ export async function updateWorkTime(
     const db = getFirebaseDb();
 
     await runTransaction(db, async (transaction) => {
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -292,7 +292,7 @@ export async function updatePayrollStatus(
     const db = getFirebaseDb();
 
     await runTransaction(db, async (transaction) => {
-      const workLogRef = doc(db, WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {
@@ -377,7 +377,7 @@ export function subscribeToWorkLog(
   return RealtimeManager.subscribe(RealtimeManager.Keys.workLog(workLogId), () => {
     logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+    const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
 
     return onSnapshot(
       workLogRef,
@@ -449,22 +449,22 @@ export function subscribeToMyWorkLogs(
         dateRange,
       });
 
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
       // 쿼리 생성 - 날짜 범위 유무에 따라 분기
       const q = dateRange
         ? query(
             workLogsRef,
-            where('staffId', '==', staffId),
-            where('date', '>=', dateRange.start),
-            where('date', '<=', dateRange.end),
-            orderBy('date', 'desc'),
+            where(FIELDS.WORK_LOG.staffId, '==', staffId),
+            where(FIELDS.WORK_LOG.date, '>=', dateRange.start),
+            where(FIELDS.WORK_LOG.date, '<=', dateRange.end),
+            orderBy(FIELDS.WORK_LOG.date, 'desc'),
             limit(pageSize)
           )
         : query(
             workLogsRef,
-            where('staffId', '==', staffId),
-            orderBy('date', 'desc'),
+            where(FIELDS.WORK_LOG.staffId, '==', staffId),
+            orderBy(FIELDS.WORK_LOG.date, 'desc'),
             limit(pageSize)
           );
 
@@ -513,12 +513,13 @@ export function subscribeToTodayWorkStatus(
   return RealtimeManager.subscribe(RealtimeManager.Keys.todayWorkStatus(staffId, today), () => {
     logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
     const q = query(
       workLogsRef,
-      where('staffId', '==', staffId),
-      where('date', '==', today),
-      where('status', 'in', ['confirmed', 'checked_in']),
+      where(FIELDS.WORK_LOG.staffId, '==', staffId),
+      where(FIELDS.WORK_LOG.date, '==', today),
+      // 'confirmed'는 WorkLogStatus 타입에 미정의지만 Firestore에서 실제 사용되는 전이 상태값
+      where(FIELDS.WORK_LOG.status, 'in', ['confirmed', STATUS.WORK_LOG.CHECKED_IN]),
       limit(1)
     );
 

@@ -39,7 +39,7 @@ import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
-import { FIREBASE_LIMITS } from '@/constants';
+import { COLLECTIONS, FIELDS, FIREBASE_LIMITS } from '@/constants';
 import type {
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -61,7 +61,6 @@ import type {
 // Constants
 // ============================================================================
 
-const COLLECTION_NAME = 'jobPostings';
 const DEFAULT_PAGE_SIZE = 20;
 
 // ============================================================================
@@ -80,7 +79,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 상세 조회', { jobPostingId });
 
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -117,7 +116,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 배치 조회', { count: jobPostingIds.length });
 
       const uniqueIds = [...new Set(jobPostingIds)];
-      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
       const items: JobPosting[] = [];
 
       // Firestore whereIn은 최대 30개 제한
@@ -179,22 +178,22 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 목록 조회', { filters, pageSize });
 
-      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
 
       // QueryBuilder로 쿼리 구성
       let builder = new QueryBuilder(jobPostingsRef).whereEqual(
-        'status',
+        FIELDS.JOB_POSTING.status,
         filters?.status ?? 'active'
       );
 
       // 공고 타입 필터
       if (filters?.postingType) {
-        builder = builder.whereEqual('postingType', filters.postingType);
+        builder = builder.whereEqual(FIELDS.JOB_POSTING.postingType, filters.postingType);
       }
 
       // 지역 필터
       if (filters?.district) {
-        builder = builder.whereEqual('district', filters.district);
+        builder = builder.whereEqual(FIELDS.JOB_POSTING.locationDistrict, filters.district);
       }
 
       // 역할 필터 (첫 번째 역할만 적용 - Firestore 제약)
@@ -203,7 +202,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       }
 
       // 정렬 및 페이지네이션
-      builder = builder.orderByDesc('createdAt').limit(pageSize + 1);
+      builder = builder.orderByDesc(FIELDS.JOB_POSTING.createdAt).limit(pageSize + 1);
 
       // 커서 기반 페이지네이션
       let q = builder.build();
@@ -255,15 +254,15 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('소유자별 공고 조회', { ownerId, status });
 
-      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
 
-      let builder = new QueryBuilder(jobPostingsRef).whereEqual('ownerId', ownerId);
+      let builder = new QueryBuilder(jobPostingsRef).whereEqual(FIELDS.JOB_POSTING.ownerId, ownerId);
 
       if (status) {
-        builder = builder.whereEqual('status', status);
+        builder = builder.whereEqual(FIELDS.JOB_POSTING.status, status);
       }
 
-      const q = builder.orderByDesc('createdAt').build();
+      const q = builder.orderByDesc(FIELDS.JOB_POSTING.createdAt).build();
       const snapshot = await getDocs(q);
 
       const items: JobPosting[] = [];
@@ -299,10 +298,10 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 타입별 개수 조회', { filters });
 
-      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
       const status = filters?.status ?? 'active';
 
-      const q = query(jobPostingsRef, where('status', '==', status));
+      const q = query(jobPostingsRef, where(FIELDS.JOB_POSTING.status, '==', status));
 
       const snapshot = await getDocs(q);
 
@@ -361,7 +360,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
   async incrementViewCount(jobPostingId: string): Promise<void> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
 
       await updateDoc(docRef, {
         viewCount: increment(1),
@@ -378,7 +377,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 상태 변경', { jobPostingId, status });
 
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
 
       await updateDoc(docRef, {
         status,
@@ -413,7 +412,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         title: input.title,
       });
 
-      const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
       const newDocRef = doc(jobsRef);
       const now = serverTimestamp();
 
@@ -522,7 +521,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 수정 (트랜잭션)', { jobPostingId, ownerId });
 
       const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-        const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -605,7 +604,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 삭제 (트랜잭션)', { jobPostingId, ownerId });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -665,7 +664,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 마감 (트랜잭션)', { jobPostingId, ownerId });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -725,7 +724,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 재오픈 (트랜잭션)', { jobPostingId, ownerId });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -800,8 +799,8 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('소유자별 공고 통계 조회', { ownerId });
 
-      const jobsRef = collection(getFirebaseDb(), COLLECTION_NAME);
-      const q = query(jobsRef, where('ownerId', '==', ownerId));
+      const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
+      const q = query(jobsRef, where(FIELDS.JOB_POSTING.ownerId, '==', ownerId));
 
       const snapshot = await getDocs(q);
       const jobPostings = parseJobPostingDocuments(
@@ -871,7 +870,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
         await runTransaction(getFirebaseDb(), async (transaction) => {
           for (const jobPostingId of batch) {
-            const jobRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+            const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
             const jobDoc = await transaction.get(jobRef);
 
             if (jobDoc.exists()) {
@@ -911,7 +910,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.debug('공고 소유권 검증', { jobPostingId, ownerId });
 
-      const docRef = doc(getFirebaseDb(), COLLECTION_NAME, jobPostingId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -947,12 +946,12 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
     try {
       logger.info('공고 타입/승인상태별 조회', { postingType, approvalStatus });
 
-      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
       const q = query(
         jobPostingsRef,
-        where('postingType', '==', postingType),
-        where('tournamentConfig.approvalStatus', '==', approvalStatus),
-        orderBy('createdAt', 'desc')
+        where(FIELDS.JOB_POSTING.postingType, '==', postingType),
+        where(FIELDS.JOB_POSTING.tournamentApprovalStatus, '==', approvalStatus),
+        orderBy(FIELDS.JOB_POSTING.createdAt, 'desc')
       );
 
       const snapshot = await getDocs(q);
@@ -1000,13 +999,13 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         approvalStatuses,
       });
 
-      const jobPostingsRef = collection(getFirebaseDb(), COLLECTION_NAME);
+      const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
       const q = query(
         jobPostingsRef,
-        where('postingType', '==', postingType),
-        where('ownerId', '==', ownerId),
-        where('tournamentConfig.approvalStatus', 'in', approvalStatuses),
-        orderBy('createdAt', 'desc')
+        where(FIELDS.JOB_POSTING.postingType, '==', postingType),
+        where(FIELDS.JOB_POSTING.ownerId, '==', ownerId),
+        where(FIELDS.JOB_POSTING.tournamentApprovalStatus, 'in', approvalStatuses),
+        orderBy(FIELDS.JOB_POSTING.createdAt, 'desc')
       );
 
       const snapshot = await getDocs(q);
