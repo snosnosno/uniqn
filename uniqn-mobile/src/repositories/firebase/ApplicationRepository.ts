@@ -70,14 +70,7 @@ import type {
 import { isAppError, isPermissionError, isAuthError, AuthError } from '@/errors';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const APPLICATIONS_COLLECTION = 'applications';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-const WORK_LOGS_COLLECTION = 'workLogs';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // Lazy import to avoid circular dependency
 let _jobPostingRepository: import('./JobPostingRepository').FirebaseJobPostingRepository | null =
@@ -155,7 +148,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
     try {
       logger.info('지원 상세 조회', { applicationId });
 
-      const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -169,7 +162,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       }
 
       const jobDoc = await getDoc(
-        doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, application.jobPostingId)
+        doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, application.jobPostingId)
       );
 
       return {
@@ -192,11 +185,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
     try {
       logger.info('내 지원 내역 조회', { applicantId });
 
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
       const q = query(
         applicationsRef,
-        where('applicantId', '==', applicantId),
-        orderBy('createdAt', 'desc')
+        where(FIELDS.APPLICATION.applicantId, '==', applicantId),
+        orderBy(FIELDS.APPLICATION.createdAt, 'desc')
       );
 
       const snapshot = await getDocs(q);
@@ -242,7 +235,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
           // Fallback: 배치 조회 실패 시 개별 조회
           for (const jobId of jobPostingIds) {
             try {
-              const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId));
+              const jobDoc = await getDoc(doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobId));
               if (jobDoc.exists()) {
                 const job = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
                 if (job) {
@@ -283,11 +276,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
     try {
       logger.info('공고별 지원서 조회', { jobPostingId });
 
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
       const q = query(
         applicationsRef,
-        where('jobPostingId', '==', jobPostingId),
-        orderBy('createdAt', 'desc')
+        where(FIELDS.APPLICATION.jobPostingId, '==', jobPostingId),
+        orderBy(FIELDS.APPLICATION.createdAt, 'desc')
       );
 
       const snapshot = await getDocs(q);
@@ -317,7 +310,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
   async hasApplied(jobPostingId: string, applicantId: string): Promise<boolean> {
     try {
       const applicationId = `${jobPostingId}_${applicantId}`;
-      const docRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -374,7 +367,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       logger.info('취소 요청 목록 조회', { jobPostingId, ownerId });
 
       // 공고 소유자 확인
-      const jobDoc = await getDoc(doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId));
+      const jobDoc = await getDoc(doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId));
       if (!jobDoc.exists()) {
         throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
           userMessage: '공고를 찾을 수 없습니다',
@@ -393,12 +386,12 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         });
       }
 
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
       const q = query(
         applicationsRef,
-        where('jobPostingId', '==', jobPostingId),
-        where('status', '==', 'cancellation_pending'),
-        orderBy('updatedAt', 'desc')
+        where(FIELDS.APPLICATION.jobPostingId, '==', jobPostingId),
+        where(FIELDS.APPLICATION.status, '==', STATUS.APPLICATION.CANCELLATION_PENDING),
+        orderBy(FIELDS.APPLICATION.updatedAt, 'desc')
       );
 
       const snapshot = await getDocs(q);
@@ -464,7 +457,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       const result = await runTransaction(getFirebaseDb(), async (transaction) => {
         // 공고 정보 읽기
-        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, input.jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, input.jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -531,7 +524,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
         // 중복 지원 검사
         const applicationId = `${input.jobPostingId}_${context.applicantId}`;
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
 
         const existingApp = await transaction.get(applicationRef);
         if (existingApp.exists()) {
@@ -626,7 +619,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       logger.info('지원 취소 시작', { applicationId, applicantId });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (!applicationDoc.exists()) {
@@ -673,7 +666,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         });
 
         // 공고의 지원자 수 감소
-        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
         transaction.update(jobRef, {
           applicationCount: increment(-1),
           updatedAt: serverTimestamp(),
@@ -709,7 +702,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       }
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, input.applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (!applicationDoc.exists()) {
@@ -840,7 +833,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       }
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, input.applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (!applicationDoc.exists()) {
@@ -860,7 +853,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 공고 정보 조회 및 소유자 확인
-        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -972,7 +965,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         // 지원서 조회
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, input.applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (!applicationDoc.exists()) {
@@ -992,7 +985,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 공고 조회 및 소유자 확인
-        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -1056,7 +1049,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         for (const assignment of assignmentsToConfirm) {
           for (const date of assignment.dates) {
             const workLogId = `${applicationData.jobPostingId}_${applicationData.applicantId}_${date}`;
-            const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+            const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
 
             const primaryRole = (assignment.roleIds[0] || 'other') as StaffRole;
 
@@ -1111,7 +1104,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         // 지원서 조회
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, input.applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, input.applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (!applicationDoc.exists()) {
@@ -1131,7 +1124,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 공고 조회 및 소유자 확인
-        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -1196,7 +1189,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         // 지원서 읽기
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (!applicationDoc.exists()) {
@@ -1216,7 +1209,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 공고 소유자 확인
-        const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, applicationData.jobPostingId);
+        const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
         const jobDoc = await transaction.get(jobRef);
 
         if (!jobDoc.exists()) {
@@ -1276,7 +1269,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       logger.info('지원자 목록 조회', { jobPostingId, ownerId, statusFilter });
 
       // 공고 소유자 확인
-      const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
+      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
       const jobDoc = await getDoc(jobRef);
 
       if (!jobDoc.exists()) {
@@ -1301,11 +1294,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       }
 
       // 지원자 목록 조회
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
       let q = query(
         applicationsRef,
-        where('jobPostingId', '==', jobPostingId),
-        orderBy('createdAt', 'desc')
+        where(FIELDS.APPLICATION.jobPostingId, '==', jobPostingId),
+        orderBy(FIELDS.APPLICATION.createdAt, 'desc')
       );
 
       // 상태 필터 적용 (단일 상태)
@@ -1314,9 +1307,9 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         if (statuses.length === 1) {
           q = query(
             applicationsRef,
-            where('jobPostingId', '==', jobPostingId),
-            where('status', '==', statuses[0]),
-            orderBy('createdAt', 'desc')
+            where(FIELDS.APPLICATION.jobPostingId, '==', jobPostingId),
+            where(FIELDS.APPLICATION.status, '==', statuses[0]),
+            orderBy(FIELDS.APPLICATION.createdAt, 'desc')
           );
         }
       }
@@ -1384,11 +1377,11 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
   ): Unsubscribe {
     logger.info('지원자 목록 실시간 구독 시작', { jobPostingId, ownerId });
 
-    const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
+    const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
     const q = query(
       applicationsRef,
-      where('jobPostingId', '==', jobPostingId),
-      orderBy('createdAt', 'desc')
+      where(FIELDS.APPLICATION.jobPostingId, '==', jobPostingId),
+      orderBy(FIELDS.APPLICATION.createdAt, 'desc')
     );
 
     // 공고 정보 캐싱 (소유권 확인 및 지원자 데이터에 포함)
@@ -1416,7 +1409,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         try {
           // 첫 호출 시 공고 소유자 확인
           if (!isOwnerVerified) {
-            const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobPostingId);
+            const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
             const jobDoc = await getDoc(jobRef);
 
             if (!jobDoc.exists()) {

@@ -29,12 +29,7 @@ import { toError } from '@/errors';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
 import type { IEventQRRepository } from '../interfaces/IEventQRRepository';
 import type { EventQRCode, QRCodeAction } from '@/types';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const EVENT_QR_COLLECTION = 'eventQRCodes';
+import { COLLECTIONS, FIELDS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
@@ -50,7 +45,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
   async getById(qrId: string): Promise<EventQRCode | null> {
     try {
-      const docRef = doc(getFirebaseDb(), EVENT_QR_COLLECTION, qrId);
+      const docRef = doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, qrId);
       const docSnap = await getDoc(docRef);
 
       if (!docSnap.exists()) {
@@ -77,14 +72,14 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
     action: QRCodeAction
   ): Promise<EventQRCode | null> {
     try {
-      const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
+      const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
       const q = query(
         qrRef,
-        where('jobPostingId', '==', jobPostingId),
-        where('date', '==', date),
-        where('action', '==', action),
-        where('isActive', '==', true),
-        orderBy('createdAt', 'desc'),
+        where(FIELDS.EVENT_QR.jobPostingId, '==', jobPostingId),
+        where(FIELDS.EVENT_QR.date, '==', date),
+        where(FIELDS.EVENT_QR.action, '==', action),
+        where(FIELDS.EVENT_QR.isActive, '==', true),
+        orderBy(FIELDS.EVENT_QR.createdAt, 'desc'),
         limit(1)
       );
 
@@ -96,7 +91,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
       // 만료 확인 및 자동 비활성화
       if (data.expiresAt.toMillis() < Date.now()) {
-        await updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, docSnap.id), {
+        await updateDoc(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
           isActive: false,
         });
         return null;
@@ -116,14 +111,14 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
     securityCode: string
   ): Promise<EventQRCode | null> {
     try {
-      const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
+      const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
       const q = query(
         qrRef,
-        where('jobPostingId', '==', jobPostingId),
-        where('date', '==', date),
-        where('action', '==', action),
-        where('securityCode', '==', securityCode),
-        where('isActive', '==', true),
+        where(FIELDS.EVENT_QR.jobPostingId, '==', jobPostingId),
+        where(FIELDS.EVENT_QR.date, '==', date),
+        where(FIELDS.EVENT_QR.action, '==', action),
+        where(FIELDS.EVENT_QR.securityCode, '==', securityCode),
+        where(FIELDS.EVENT_QR.isActive, '==', true),
         limit(1)
       );
 
@@ -153,7 +148,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
   async create(data: Omit<EventQRCode, 'id'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(getFirebaseDb(), EVENT_QR_COLLECTION), data);
+      const docRef = await addDoc(collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES), data);
 
       logger.info('QR 코드 생성 완료', { qrId: docRef.id });
       return docRef.id;
@@ -172,7 +167,7 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
   async deactivate(qrId: string): Promise<void> {
     try {
-      await updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, qrId), {
+      await updateDoc(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, qrId), {
         isActive: false,
       });
       logger.info('QR 코드 비활성화 완료', { qrId });
@@ -191,20 +186,20 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
     action: QRCodeAction
   ): Promise<number> {
     try {
-      const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
+      const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
       const q = query(
         qrRef,
-        where('jobPostingId', '==', jobPostingId),
-        where('date', '==', date),
-        where('action', '==', action),
-        where('isActive', '==', true)
+        where(FIELDS.EVENT_QR.jobPostingId, '==', jobPostingId),
+        where(FIELDS.EVENT_QR.date, '==', date),
+        where(FIELDS.EVENT_QR.action, '==', action),
+        where(FIELDS.EVENT_QR.isActive, '==', true)
       );
 
       const snapshot = await getDocs(q);
 
       await Promise.all(
         snapshot.docs.map((docSnap) =>
-          updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, docSnap.id), {
+          updateDoc(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
             isActive: false,
           })
         )
@@ -228,17 +223,17 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
   async deactivateExpired(): Promise<number> {
     try {
-      const qrRef = collection(getFirebaseDb(), EVENT_QR_COLLECTION);
+      const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
       const now = Timestamp.now();
 
-      const q = query(qrRef, where('isActive', '==', true), where('expiresAt', '<', now));
+      const q = query(qrRef, where(FIELDS.EVENT_QR.isActive, '==', true), where(FIELDS.EVENT_QR.expiresAt, '<', now));
 
       const snapshot = await getDocs(q);
       let count = 0;
 
       await Promise.all(
         snapshot.docs.map(async (docSnap) => {
-          await updateDoc(doc(getFirebaseDb(), EVENT_QR_COLLECTION, docSnap.id), {
+          await updateDoc(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
             isActive: false,
           });
           count++;

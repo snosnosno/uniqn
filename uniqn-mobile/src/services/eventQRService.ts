@@ -54,12 +54,7 @@ import type {
   EventQRScanResult,
   EventQRValidationResult,
 } from '@/types';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const WORK_LOGS_COLLECTION = 'workLogs';
+import { COLLECTIONS, FIELDS } from '@/constants';
 
 /** QR 코드 유효 시간 (3분) */
 const QR_VALIDITY_DURATION_MS = 3 * 60 * 1000;
@@ -238,12 +233,12 @@ export async function processEventQRCheckIn(
     const { jobPostingId, date, action } = validation;
 
     // 2. 해당 스태프의 WorkLog 찾기 (쿼리는 트랜잭션 외부에서)
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
     const q = query(
       workLogsRef,
-      where('jobPostingId', '==', jobPostingId),
-      where('staffId', '==', staffId),
-      where('date', '==', date),
+      where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
+      where(FIELDS.WORK_LOG.staffId, '==', staffId),
+      where(FIELDS.WORK_LOG.date, '==', date),
       limit(1)
     );
     const snapshot = await getDocs(q);
@@ -261,7 +256,7 @@ export async function processEventQRCheckIn(
     // 3. 트랜잭션으로 상태 확인 및 업데이트 (원자적 처리)
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 3-1. WorkLog 읽기 (트랜잭션 내)
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
       const workLogDoc = await transaction.get(workLogRef);
 
       if (!workLogDoc.exists()) {

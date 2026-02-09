@@ -30,15 +30,7 @@ import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const USERS_COLLECTION = 'users';
-const APPLICATIONS_COLLECTION = 'applications';
-const WORK_LOGS_COLLECTION = 'workLogs';
-const NOTIFICATIONS_COLLECTION = 'notifications';
+import { COLLECTIONS, FIELDS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
@@ -56,7 +48,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('사용자 조회', { userId });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
@@ -83,7 +75,7 @@ export class FirebaseUserRepository implements IUserRepository {
       logger.info('사용자 배치 조회', { count: userIds.length });
 
       const uniqueIds = [...new Set(userIds)];
-      const usersRef = collection(getFirebaseDb(), USERS_COLLECTION);
+      const usersRef = collection(getFirebaseDb(), COLLECTIONS.USERS);
       const profileMap = new Map<string, FirestoreUserProfile>();
 
       // Firestore whereIn은 최대 30개 제한
@@ -133,7 +125,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
   async exists(userId: string): Promise<boolean> {
     try {
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       const userDoc = await getDoc(userRef);
       return userDoc.exists();
     } catch (error) {
@@ -150,7 +142,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('탈퇴 상태 조회', { userId });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
@@ -177,7 +169,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('사용자 문서 생성/병합', { userId, fields: Object.keys(profile) });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       await setDoc(userRef, profile, { merge: true });
 
       logger.info('사용자 문서 생성/병합 완료', { userId });
@@ -195,7 +187,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('사용자 필드 업데이트', { userId, fields: Object.keys(updates) });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       await updateDoc(userRef, {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -216,7 +208,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('프로필 업데이트', { userId, fields: Object.keys(updates) });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       await updateDoc(userRef, {
         ...updates,
         updatedAt: serverTimestamp(),
@@ -237,7 +229,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('회원탈퇴 요청 저장', { userId, reason: request.reason });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       const deletionRequest: DeletionRequest = {
         userId,
         ...request,
@@ -267,7 +259,7 @@ export class FirebaseUserRepository implements IUserRepository {
     try {
       logger.info('회원탈퇴 철회', { userId });
 
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       const userDoc = await getDoc(userRef);
 
       if (!userDoc.exists()) {
@@ -329,8 +321,8 @@ export class FirebaseUserRepository implements IUserRepository {
       }
 
       // 2. 지원 내역
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-      const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
+      const applicationsQuery = query(applicationsRef, where(FIELDS.APPLICATION.applicantId, '==', userId));
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       const applications = applicationsSnapshot.docs.map((docSnapshot) => {
@@ -344,8 +336,8 @@ export class FirebaseUserRepository implements IUserRepository {
       });
 
       // 3. 근무 기록
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-      const workLogsQuery = query(workLogsRef, where('staffId', '==', userId));
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
+      const workLogsQuery = query(workLogsRef, where(FIELDS.WORK_LOG.staffId, '==', userId));
       const workLogsSnapshot = await getDocs(workLogsQuery);
 
       const workLogs = workLogsSnapshot.docs.map((docSnapshot) => {
@@ -392,8 +384,8 @@ export class FirebaseUserRepository implements IUserRepository {
       const batch = writeBatch(getFirebaseDb());
 
       // 1. 지원 내역 익명화
-      const applicationsRef = collection(getFirebaseDb(), APPLICATIONS_COLLECTION);
-      const applicationsQuery = query(applicationsRef, where('applicantId', '==', userId));
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
+      const applicationsQuery = query(applicationsRef, where(FIELDS.APPLICATION.applicantId, '==', userId));
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       applicationsSnapshot.docs.forEach((docSnapshot) => {
@@ -405,8 +397,8 @@ export class FirebaseUserRepository implements IUserRepository {
       });
 
       // 2. 근무 기록 익명화
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-      const workLogsQuery = query(workLogsRef, where('staffId', '==', userId));
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
+      const workLogsQuery = query(workLogsRef, where(FIELDS.WORK_LOG.staffId, '==', userId));
       const workLogsSnapshot = await getDocs(workLogsQuery);
 
       workLogsSnapshot.docs.forEach((docSnapshot) => {
@@ -417,7 +409,7 @@ export class FirebaseUserRepository implements IUserRepository {
       });
 
       // 3. 알림 삭제
-      const notificationsRef = collection(getFirebaseDb(), NOTIFICATIONS_COLLECTION);
+      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
       const notificationsQuery = query(notificationsRef, where('userId', '==', userId));
       const notificationsSnapshot = await getDocs(notificationsQuery);
 
@@ -426,7 +418,7 @@ export class FirebaseUserRepository implements IUserRepository {
       });
 
       // 4. 사용자 문서 삭제
-      const userRef = doc(getFirebaseDb(), USERS_COLLECTION, userId);
+      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
       batch.delete(userRef);
 
       // 배치 실행

@@ -25,12 +25,7 @@ import { BusinessError, PermissionError, ERROR_CODES, isAppError } from '@/error
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { JobPostingTemplate, CreateTemplateInput, JobPostingFormData } from '@/types';
 import { extractTemplateData } from '@/types';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const COLLECTION_NAME = 'mobileJobPostingTemplates';
+import { COLLECTIONS, FIELDS } from '@/constants';
 
 // ============================================================================
 // Template Service
@@ -46,8 +41,8 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
   try {
     logger.info('템플릿 목록 조회', { userId });
 
-    const templatesRef = collection(getFirebaseDb(), COLLECTION_NAME);
-    const q = query(templatesRef, where('createdBy', '==', userId), orderBy('createdAt', 'desc'));
+    const templatesRef = collection(getFirebaseDb(), COLLECTIONS.TEMPLATES);
+    const q = query(templatesRef, where(FIELDS.TEMPLATE.createdBy, '==', userId), orderBy(FIELDS.TEMPLATE.createdAt, 'desc'));
 
     const snapshot = await getDocs(q);
 
@@ -85,7 +80,7 @@ export async function saveTemplate(input: CreateTemplateInput, userId: string): 
   try {
     logger.info('템플릿 저장 시작', { userId, name: input.name });
 
-    const templatesRef = collection(getFirebaseDb(), COLLECTION_NAME);
+    const templatesRef = collection(getFirebaseDb(), COLLECTIONS.TEMPLATES);
     const newDocRef = doc(templatesRef);
 
     // 날짜/일정 관련 필드 제외한 템플릿 데이터 추출
@@ -138,7 +133,7 @@ export async function loadTemplate(templateId: string): Promise<JobPostingTempla
   try {
     logger.info('템플릿 불러오기', { templateId });
 
-    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, templateId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.TEMPLATES, templateId);
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
@@ -185,7 +180,7 @@ export async function deleteTemplate(templateId: string, userId: string): Promis
   try {
     logger.info('템플릿 삭제 시작', { templateId, userId });
 
-    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, templateId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.TEMPLATES, templateId);
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {
@@ -235,7 +230,7 @@ export async function updateTemplate(
   try {
     logger.info('템플릿 업데이트 시작', { templateId, userId });
 
-    const docRef = doc(getFirebaseDb(), COLLECTION_NAME, templateId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.TEMPLATES, templateId);
     const docSnapshot = await getDoc(docRef);
 
     if (!docSnapshot.exists()) {

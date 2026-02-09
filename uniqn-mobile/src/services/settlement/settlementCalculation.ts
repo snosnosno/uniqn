@@ -19,12 +19,11 @@ import {
 import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
 import type { WorkLog } from '@/types';
-import {
-  WORK_LOGS_COLLECTION,
-  JOB_POSTINGS_COLLECTION,
-  type WorkLogWithOverrides,
-  type CalculateSettlementInput,
-  type SettlementCalculation,
+import { COLLECTIONS } from '@/constants';
+import type {
+  WorkLogWithOverrides,
+  CalculateSettlementInput,
+  SettlementCalculation,
 } from './types';
 
 // ============================================================================
@@ -47,7 +46,7 @@ export async function calculateSettlement(
     logger.info('정산 금액 계산', { workLogId: input.workLogId, ownerId });
 
     // 1. 근무 기록 조회
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, input.workLogId);
+    const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, input.workLogId);
     const workLogDoc = await getDoc(workLogRef);
 
     if (!workLogDoc.exists()) {
@@ -66,7 +65,7 @@ export async function calculateSettlement(
 
     // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
+    const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, normalizedJobId);
     const jobDoc = await getDoc(jobRef);
 
     if (!jobDoc.exists()) {

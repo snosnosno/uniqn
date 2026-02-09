@@ -25,7 +25,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES, AlreadySettledError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { FIREBASE_LIMITS } from '@/constants';
+import { COLLECTIONS, FIREBASE_LIMITS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
   getEffectiveSalaryInfoFromRoles,
@@ -43,13 +43,6 @@ import type {
   SettlementResultDTO,
   BulkSettlementResultDTO,
 } from '../interfaces';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const WORK_LOGS_COLLECTION = 'workLogs';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
 
 // ============================================================================
 // Internal Types
@@ -282,7 +275,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
           // 1. 모든 근무 기록 조회
           const workLogDocs = await Promise.all(
             batchIds.map(async (id) => {
-              const ref = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, id);
+              const ref = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, id);
               const docSnap = await transaction.get(ref);
               return { id, ref, doc: docSnap };
             })
@@ -306,7 +299,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
 
           const jobPostings = new Map<string, JobPosting>();
           for (const jobId of jobPostingIds) {
-            const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, jobId);
+            const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobId);
             const jobDoc = await transaction.get(jobRef);
             if (jobDoc.exists()) {
               const parsedJob = parseJobPostingDocument({
@@ -512,7 +505,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
     operationMessage: string = '처리'
   ): Promise<WorkLogOwnershipResult> {
     // 1. 근무 기록 조회
-    const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+    const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
     const workLogDoc = await transaction.get(workLogRef);
 
     if (!workLogDoc.exists()) {
@@ -533,7 +526,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
 
     // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-    const jobRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, normalizedJobId);
+    const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, normalizedJobId);
     const jobDoc = await transaction.get(jobRef);
 
     if (!jobDoc.exists()) {

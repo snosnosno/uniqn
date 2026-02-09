@@ -23,7 +23,7 @@ import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { ValidationError, ERROR_CODES } from '@/errors';
-import { COLLECTIONS } from '@/constants';
+import { COLLECTIONS, FIELDS } from '@/constants';
 import type {
   Inquiry,
   InquiryStatus,
@@ -106,8 +106,8 @@ export async function fetchMyInquiries(
 
     // QueryBuilder로 쿼리 구성
     const q = new QueryBuilder(collection(db, COLLECTIONS.INQUIRIES))
-      .whereEqual('userId', userId)
-      .orderByDesc('createdAt')
+      .whereEqual(FIELDS.INQUIRY.userId, userId)
+      .orderByDesc(FIELDS.INQUIRY.createdAt)
       .paginate(pageSize, lastDoc)
       .build();
 
@@ -140,8 +140,8 @@ export async function fetchAllInquiries(
 
     // QueryBuilder로 쿼리 구성
     const q = new QueryBuilder(collection(db, COLLECTIONS.INQUIRIES))
-      .whereIf(filters?.status && filters.status !== 'all', 'status', '==', filters?.status)
-      .orderByDesc('createdAt')
+      .whereIf(filters?.status && filters.status !== 'all', FIELDS.INQUIRY.status, '==', filters?.status)
+      .orderByDesc(FIELDS.INQUIRY.createdAt)
       .paginate(pageSize, lastDoc)
       .build();
 
@@ -303,7 +303,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
 export async function getUnansweredCount(): Promise<number> {
   return withErrorHandling(async () => {
     const db = getFirebaseDb();
-    const q = query(collection(db, COLLECTIONS.INQUIRIES), where('status', '==', 'open'));
+    const q = query(collection(db, COLLECTIONS.INQUIRIES), where(FIELDS.INQUIRY.status, '==', 'open'));
 
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;

@@ -44,14 +44,7 @@ import type {
   MarkNoShowContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from '../interfaces';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const WORK_LOGS_COLLECTION = 'workLogs';
-const JOB_POSTINGS_COLLECTION = 'jobPostings';
-const APPLICATIONS_COLLECTION = 'applications';
+import { COLLECTIONS, FIELDS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
@@ -69,11 +62,11 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('공고별 확정 스태프 WorkLog 조회', { jobPostingId });
 
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
       const q = query(
         workLogsRef,
-        where('jobPostingId', '==', jobPostingId),
-        orderBy('date', 'asc')
+        where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
+        orderBy(FIELDS.WORK_LOG.date, 'asc')
       );
       const snapshot = await getDocs(q);
 
@@ -103,11 +96,11 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('날짜별 확정 스태프 WorkLog 조회', { jobPostingId, date });
 
-      const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
+      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
       const q = query(
         workLogsRef,
-        where('jobPostingId', '==', jobPostingId),
-        where('date', '==', date)
+        where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
+        where(FIELDS.WORK_LOG.date, '==', date)
       );
       const snapshot = await getDocs(q);
 
@@ -136,7 +129,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('스태프 역할 변경 트랜잭션 시작', { workLogId: context.workLogId });
 
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, context.workLogId);
+      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         const workLogDoc = await transaction.get(workLogRef);
@@ -202,7 +195,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         checkOutTime: context.checkOutTime?.toISOString() ?? '미정',
       });
 
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, context.workLogId);
+      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
         const workLogDoc = await transaction.get(workLogRef);
@@ -279,8 +272,8 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
       });
 
       await runTransaction(getFirebaseDb(), async (transaction) => {
-        const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, context.workLogId);
-        const jobPostingRef = doc(getFirebaseDb(), JOB_POSTINGS_COLLECTION, context.jobPostingId);
+        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
+        const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, context.jobPostingId);
 
         // WorkLog 조회
         const workLogDoc = await transaction.get(workLogRef);
@@ -325,7 +318,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 2. Application이 있으면 상태 복원
         const applicationId = `${context.jobPostingId}_${context.staffId}`;
-        const applicationRef = doc(getFirebaseDb(), APPLICATIONS_COLLECTION, applicationId);
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
         const applicationDoc = await transaction.get(applicationRef);
 
         if (applicationDoc.exists()) {
@@ -362,7 +355,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('노쇼 처리', { workLogId: context.workLogId });
 
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, context.workLogId);
+      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
 
       await updateDoc(workLogRef, {
         status: 'no_show',
@@ -385,7 +378,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('스태프 상태 변경', { workLogId, status });
 
-      const workLogRef = doc(getFirebaseDb(), WORK_LOGS_COLLECTION, workLogId);
+      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
 
       await updateDoc(workLogRef, {
         status,
@@ -412,8 +405,8 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
   ): Unsubscribe {
     logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
-    const workLogsRef = collection(getFirebaseDb(), WORK_LOGS_COLLECTION);
-    const q = query(workLogsRef, where('jobPostingId', '==', jobPostingId), orderBy('date', 'asc'));
+    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
+    const q = query(workLogsRef, where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId), orderBy(FIELDS.WORK_LOG.date, 'asc'));
 
     const unsubscribe = onSnapshot(
       q,
