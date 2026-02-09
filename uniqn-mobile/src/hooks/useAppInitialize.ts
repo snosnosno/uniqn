@@ -229,6 +229,9 @@ export function useAppInitialize(): UseAppInitializeReturn {
             );
           }
 
+          // authStore에 user 설정 (MMKV 복원 실패 시에도 인증 상태 보장)
+          useAuthStore.getState().setUser(authUser);
+
           // Firestore에서 최신 프로필 가져오기
           logger.debug('Firestore에서 최신 프로필 가져오는 중...', {
             component: 'useAppInitialize',
@@ -348,7 +351,17 @@ export function useAppInitialize(): UseAppInitializeReturn {
           });
         }
       } else {
-        logger.debug('로그인된 사용자 없음', { component: 'useAppInitialize' });
+        // Firebase Auth에 사용자가 없으면 MMKV에서 복원된 stale 인증 상태 정리
+        const currentStatus = useAuthStore.getState().status;
+        if (currentStatus === 'authenticated') {
+          logger.info('Firebase Auth 사용자 없음 - stale 인증 상태 정리', {
+            component: 'useAppInitialize',
+            previousStatus: currentStatus,
+          });
+          useAuthStore.getState().clearAuthState();
+        } else {
+          logger.debug('로그인된 사용자 없음', { component: 'useAppInitialize' });
+        }
       }
 
       // 11. 기타 초기화 작업 (필요 시 추가)

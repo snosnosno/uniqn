@@ -270,6 +270,28 @@ export class RealtimeManager {
   // ==========================================================================
 
   /**
+   * 구독 엔트리 강제 제거 (에러로 죽은 구독 정리용)
+   *
+   * @description refCount와 무관하게 엔트리를 완전 제거하여 재구독 경로를 열어줌
+   * @param key - 구독 식별 키
+   */
+  static forceRemove(key: string): void {
+    const entry = this.subscriptions.get(key);
+    if (!entry) return;
+
+    try {
+      entry.unsubscribe();
+    } catch {
+      // 이미 죽은 구독 - 무시
+    }
+    this.subscriptions.delete(key);
+
+    if (this.isDebugMode) {
+      logger.debug('RealtimeManager: 구독 강제 제거', { key });
+    }
+  }
+
+  /**
    * 모든 구독 해제 (앱 종료 시 등)
    */
   static unsubscribeAll(): void {

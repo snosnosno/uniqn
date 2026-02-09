@@ -18,7 +18,6 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  getDoc,
   type QueryDocumentSnapshot,
   type DocumentData,
   type DocumentSnapshot,
@@ -237,6 +236,9 @@ export function subscribeToNotifications(
         firebaseUnsubscribe?.();
         firebaseUnsubscribe = null;
 
+        // RealtimeManager에서 죽은 구독 엔트리 강제 제거 (재구독 가능하도록)
+        RealtimeManager.forceRemove(RealtimeManager.Keys.notifications(userId));
+
         onError?.(appError);
       }
     );
@@ -309,6 +311,9 @@ export function subscribeToUnreadCount(
         // 리스너 즉시 해제 (재시도 방지)
         firebaseUnsubscribe?.();
         firebaseUnsubscribe = null;
+
+        // RealtimeManager에서 죽은 구독 엔트리 강제 제거 (재구독 가능하도록)
+        RealtimeManager.forceRemove(RealtimeManager.Keys.unreadCount(userId));
 
         onError?.(appError);
       }
