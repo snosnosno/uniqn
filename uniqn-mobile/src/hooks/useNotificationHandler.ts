@@ -26,7 +26,7 @@ import { navigateFromNotification, waitForNavigationReadyAsync } from '@/service
 import { subscribeToUnreadCount } from '@/services/notificationService';
 import { trackEvent } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, isAppError } from '@/errors';
 import { Timestamp } from 'firebase/firestore';
 import { queryClient, queryKeys } from '@/lib/queryClient';
 import { notificationRepository } from '@/repositories';
@@ -198,9 +198,10 @@ export function useNotificationHandler(
   } = options;
 
   // ========== Store ==========
-  const { user } = useAuthStore();
+  const { user, status } = useAuthStore();
   const { addToast } = useToastStore();
   const userId = user?.uid;
+  const isAuthenticated = status === 'authenticated';
 
   // ========== State ==========
   const [isInitialized, setIsInitialized] = useState(false);
@@ -582,23 +583,51 @@ export function useNotificationHandler(
   /**
    * 실시간 미읽음 카운터 구독
    * @description 기존 subscribeToUnreadCount (onSnapshot)를 글로벌 스토어에 연결
+   * - 에러 발생 시 1회 재시도 (10초 후, 일시적 토큰 갱신 지연 대응)
+   * - 영구적 에러 시 무한 루프 방지
    */
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || !isAuthenticated) return;
 
-    const unsubscribe = subscribeToUnreadCount(
-      userId,
-      (count) => {
-        useNotificationStore.getState().setUnreadCount(count);
-      },
-      (error) => {
-        logger.warn('실시간 미읽음 카운터 구독 에러 - 폴백', { error: error.message });
-        syncUnreadCounterFromServer(userId, true);
-      }
-    );
+    let retryTimeout: ReturnType<typeof setTimeout> | null = null;
+    let hasRetried = false;
+    let currentUnsubscribe: (() => void) | null = null;
 
-    return unsubscribe;
-  }, [userId]);
+    const subscribe = (): (() => void) => {
+      return subscribeToUnreadCount(
+        userId,
+        (count) => {
+          hasRetried = false; // 성공 시 재시도 카운터 리셋
+          useNotificationStore.getState().setUnreadCount(count);
+        },
+        (error) => {
+          logger.warn('실시간 미읽음 카운터 구독 에러', { error: error.message });
+
+          // permission-denied 등 재시도 불가 에러는 폴백 동기화도 의미 없음
+          if (isAppError(error) && !error.isRetryable) return;
+
+          // 1회만 재시도 (10초 후, 토큰 갱신 대기)
+          if (!hasRetried) {
+            hasRetried = true;
+            retryTimeout = setTimeout(() => {
+              currentUnsubscribe?.(); // 이전 구독 명시적 해제 (이미 죽은 구독이어도 안전)
+              currentUnsubscribe = subscribe();
+            }, 10_000);
+          }
+
+          // 서버에서 직접 조회 (폴백)
+          syncUnreadCounterFromServer(userId, true);
+        }
+      );
+    };
+
+    currentUnsubscribe = subscribe();
+
+    return () => {
+      currentUnsubscribe?.();
+      if (retryTimeout) clearTimeout(retryTimeout);
+    };
+  }, [userId, isAuthenticated]);
 
   /**
    * 클린업
