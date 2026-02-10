@@ -1,4 +1,4 @@
-import * as functions from "firebase-functions";
+import * as functions from "firebase-functions/v1";
 import * as admin from "firebase-admin";
 import cors from "cors";
 import { initSentry } from './utils/sentry';
@@ -19,6 +19,14 @@ const corsHandler = cors({ origin: true });
 export { cleanupRateLimitsScheduled } from './scheduled/cleanupRateLimits';
 export { retryFailedCounterOpsScheduled } from './scheduled/retryFailedCounterOps';
 export { cleanupExpiredTokensScheduled } from './scheduled/cleanupExpiredTokens';
+export { cleanupPendingVerificationsScheduled } from './scheduled/cleanupPendingVerifications';
+
+// --- Identity Verification Functions ---
+export { verifyIdentity } from './auth/verifyIdentity';
+export { linkIdentityVerification } from './auth/linkIdentityVerification';
+
+// --- Migration Functions ---
+export { backfillCiIndex } from './migrations/backfillCiIndex';
 
 // --- Email Functions ---
 export { sendReceiptEmail } from './email/sendReceipt';

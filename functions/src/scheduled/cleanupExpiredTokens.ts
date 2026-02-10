@@ -5,7 +5,7 @@
  * fcmTokens Map 구조에서 lastRefreshedAt 기준으로 판단
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
 
@@ -17,11 +17,13 @@ const MAX_BATCH_OPS = 450; // Firestore 500 limit에 여유분
 
 /**
  * Cloud Scheduler: 매일 03:00 (Asia/Seoul) 실행
+ * pubsub.schedule() 사용 → firebase deploy 시 Cloud Scheduler 자동 생성
  */
 export const cleanupExpiredTokensScheduled = functions
   .region('asia-northeast3')
-  .pubsub.topic('cleanup-expired-tokens')
-  .onPublish(async () => {
+  .pubsub.schedule('0 3 * * *')
+  .timeZone('Asia/Seoul')
+  .onRun(async () => {
     functions.logger.info('만료 FCM 토큰 정리 시작');
 
     const cutoffDate = new Date();
