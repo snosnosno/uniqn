@@ -182,7 +182,7 @@ export class StatusMapper {
       return true;
     }
 
-    if (item.cancellationRequest?.status === 'pending') {
+    if (item.cancellationRequest?.status === STATUS.CANCELLATION_REQUEST.PENDING) {
       return true;
     }
 

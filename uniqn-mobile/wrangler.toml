@@ -4,3 +4,8 @@
 name = "uniqn-app"
 compatibility_date = "2025-01-01"
 pages_build_output_dir = "dist"
+
+# 커스텀 도메인 (Cloudflare Dashboard에서 설정됨)
+# - uniqn.app        → CNAME → uniqn-app.pages.dev (Proxied, SSL)
+# - www.uniqn.app    → CNAME → uniqn-app.pages.dev (Proxied, SSL)
+# - DNS Setup: Full (Cloudflare 관리)

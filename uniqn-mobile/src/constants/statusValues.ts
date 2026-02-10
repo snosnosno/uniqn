@@ -13,10 +13,12 @@
  */
 
 import type { ApplicationStatusType, JobPostingStatusType, InquiryStatusType } from './statusConfig';
-import type { WorkLogStatus, PayrollStatus, ScheduleType, AttendanceStatus } from '@/shared/status/types';
+import type { WorkLogStatus, PayrollStatus, ScheduleType, AttendanceStatus, ConfirmedStaffStatus } from '@/shared/status/types';
 import type { ReportStatus } from '@/types/report';
 import type { AnnouncementStatus } from '@/types/announcement';
 import type { TournamentApprovalStatus } from '@/types/postingConfig';
+import type { CancellationRequestStatus } from '@/types/application';
+import type { DeletionRequest } from '@/repositories/interfaces/IUserRepository';
 
 // ============================================================================
 // 상태값 상수
@@ -91,6 +93,27 @@ export const ATTENDANCE_VALUES = {
   CHECKED_OUT: 'checked_out',
 } as const satisfies Record<string, AttendanceStatus>;
 
+export const CONFIRMED_STAFF_STATUS_VALUES = {
+  SCHEDULED: 'scheduled',
+  CHECKED_IN: 'checked_in',
+  CHECKED_OUT: 'checked_out',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+  NO_SHOW: 'no_show',
+} as const satisfies Record<string, ConfirmedStaffStatus>;
+
+export const CANCELLATION_REQUEST_STATUS_VALUES = {
+  PENDING: 'pending',
+  APPROVED: 'approved',
+  REJECTED: 'rejected',
+} as const satisfies Record<string, CancellationRequestStatus>;
+
+export const DELETION_REQUEST_STATUS_VALUES = {
+  PENDING: 'pending',
+  CANCELLED: 'cancelled',
+  COMPLETED: 'completed',
+} as const satisfies Record<string, DeletionRequest['status']>;
+
 // ============================================================================
 // 통합 객체
 // ============================================================================
@@ -106,4 +129,7 @@ export const STATUS = {
   TOURNAMENT: TOURNAMENT_APPROVAL_VALUES,
   SCHEDULE: SCHEDULE_TYPE_VALUES,
   ATTENDANCE: ATTENDANCE_VALUES,
+  CONFIRMED_STAFF: CONFIRMED_STAFF_STATUS_VALUES,
+  CANCELLATION_REQUEST: CANCELLATION_REQUEST_STATUS_VALUES,
+  DELETION_REQUEST: DELETION_REQUEST_STATUS_VALUES,
 } as const;

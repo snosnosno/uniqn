@@ -768,12 +768,12 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
         // 이미 취소 요청이 있는지 확인
         if (applicationData.cancellationRequest) {
-          if (applicationData.cancellationRequest.status === 'pending') {
+          if (applicationData.cancellationRequest.status === STATUS.CANCELLATION_REQUEST.PENDING) {
             throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
               userMessage: '이미 취소 요청이 진행 중입니다',
             });
           }
-          if (applicationData.cancellationRequest.status === 'rejected') {
+          if (applicationData.cancellationRequest.status === STATUS.CANCELLATION_REQUEST.REJECTED) {
             throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
               userMessage: '이전 취소 요청이 거절되었습니다. 구인자에게 직접 문의해주세요.',
             });
@@ -784,7 +784,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         const cancellationRequest: CancellationRequest = {
           requestedAt: new Date().toISOString(),
           reason: input.reason.trim(),
-          status: 'pending',
+          status: STATUS.CANCELLATION_REQUEST.PENDING,
         };
 
         // 트랜잭션 쓰기
@@ -900,10 +900,10 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         };
 
         const updatedCancellationRequest: CancellationRequest = input.approved
-          ? { ...baseFields, status: 'approved' as const }
+          ? { ...baseFields, status: STATUS.CANCELLATION_REQUEST.APPROVED }
           : {
               ...baseFields,
-              status: 'rejected' as const,
+              status: STATUS.CANCELLATION_REQUEST.REJECTED,
               rejectionReason: input.rejectionReason?.trim() || '거절됨',
             };
 

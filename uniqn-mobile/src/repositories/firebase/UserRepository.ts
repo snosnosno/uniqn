@@ -30,7 +30,7 @@ import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
-import { COLLECTIONS, FIELDS } from '@/constants';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
@@ -271,7 +271,7 @@ export class FirebaseUserRepository implements IUserRepository {
       const userData = userDoc.data();
       const deletionRequest = userData.deletionRequest as DeletionRequest | undefined;
 
-      if (!deletionRequest || deletionRequest.status !== 'pending') {
+      if (!deletionRequest || deletionRequest.status !== STATUS.DELETION_REQUEST.PENDING) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
           userMessage: '진행 중인 탈퇴 요청이 없습니다',
         });
@@ -286,7 +286,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       await updateDoc(userRef, {
         status: 'active',
-        'deletionRequest.status': 'cancelled',
+        'deletionRequest.status': STATUS.DELETION_REQUEST.CANCELLED,
         updatedAt: serverTimestamp(),
       });
 
