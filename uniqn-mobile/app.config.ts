@@ -12,10 +12,23 @@
 import { ExpoConfig, ConfigContext } from 'expo/config';
 
 // ============================================================================
-// 버전 관리
+// 상수
 // ============================================================================
 
 const VERSION = '1.0.0';
+const SLUG = 'uniqn';
+const DOMAIN = 'uniqn.app';
+const EAS_PROJECT_ID = '9bca3314-2a12-4654-ad9c-3ae43f8cf125';
+
+const BRAND_BG_COLOR = '#1a1625';
+const BRAND_ACCENT_COLOR = '#A855F7';
+const APP_ICON = './assets/1024.png';
+
+const PERMISSION_MESSAGES = {
+  camera: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
+  photoLibrary: '프로필 사진 등록을 위해 사진 라이브러리 접근이 필요합니다.',
+  faceId: '빠른 로그인을 위해 Face ID를 사용합니다.',
+} as const;
 
 // ============================================================================
 // 환경 설정
@@ -69,19 +82,12 @@ const envConfig = ENV_CONFIG[environment];
 export default ({ config }: ConfigContext): ExpoConfig => ({
   ...config,
   name: envConfig.appName,
-  slug: 'uniqn',
+  slug: SLUG,
   version: VERSION,
   orientation: 'portrait',
-  icon: './assets/1024.png',
+  icon: APP_ICON,
   userInterfaceStyle: 'automatic',
-  scheme: 'uniqn',
-
-  // 스플래시 스크린
-  splash: {
-    image: './assets/splash-icon.png',
-    resizeMode: 'contain',
-    backgroundColor: '#1a1625',
-  },
+  scheme: SLUG,
 
   // iOS 설정
   ios: {
@@ -89,16 +95,17 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     bundleIdentifier: envConfig.bundleIdentifier,
     googleServicesFile: './GoogleService-Info.plist',
     infoPlist: {
+      UIBackgroundModes: ['remote-notification'],
       ITSAppUsesNonExemptEncryption: false,
-      NSCameraUsageDescription: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
-      NSPhotoLibraryUsageDescription: '프로필 사진 등록을 위해 사진 라이브러리 접근이 필요합니다.',
-      NSFaceIDUsageDescription: '빠른 로그인을 위해 Face ID를 사용합니다.',
+      NSCameraUsageDescription: PERMISSION_MESSAGES.camera,
+      NSPhotoLibraryUsageDescription: PERMISSION_MESSAGES.photoLibrary,
+      NSFaceIDUsageDescription: PERMISSION_MESSAGES.faceId,
     },
     // Universal Links (production 빌드에서만 활성화 - AASA에 production bundleID만 등록)
     ...(environment === 'production' ? {
       associatedDomains: [
-        'applinks:uniqn.app',
-        'webcredentials:uniqn.app',
+        `applinks:${DOMAIN}`,
+        `webcredentials:${DOMAIN}`,
       ],
     } : {}),
   },
@@ -106,8 +113,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // Android 설정
   android: {
     adaptiveIcon: {
-      foregroundImage: './assets/1024.png',
-      backgroundColor: '#1a1625',
+      foregroundImage: APP_ICON,
+      backgroundColor: BRAND_BG_COLOR,
     },
     package: envConfig.androidPackage,
     googleServicesFile: './google-services.json',
@@ -124,7 +131,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           data: [
             {
               scheme: 'https',
-              host: 'uniqn.app',
+              host: DOMAIN,
               pathPrefix: '/',
             },
           ],
@@ -138,6 +145,10 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   web: {
     favicon: './assets/play_store_512.png',
     bundler: 'metro',
+    name: 'UNIQN',
+    shortName: 'UNIQN',
+    themeColor: BRAND_BG_COLOR,
+    backgroundColor: BRAND_BG_COLOR,
   },
 
   // 플러그인
@@ -145,23 +156,41 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     'expo-router',
     'expo-secure-store',
     [
+      'expo-splash-screen',
+      {
+        image: APP_ICON,
+        imageWidth: 200,
+        backgroundColor: BRAND_BG_COLOR,
+        dark: {
+          backgroundColor: BRAND_BG_COLOR,
+          image: APP_ICON,
+        },
+      },
+    ],
+    [
       'expo-camera',
       {
-        cameraPermission: 'QR 코드 스캔을 위해 카메라 접근이 필요합니다.',
+        cameraPermission: PERMISSION_MESSAGES.camera,
       },
     ],
     [
       'expo-local-authentication',
       {
-        faceIDPermission: '빠른 로그인을 위해 Face ID를 사용합니다.',
+        faceIDPermission: PERMISSION_MESSAGES.faceId,
+      },
+    ],
+    [
+      'expo-image-picker',
+      {
+        photosPermission: PERMISSION_MESSAGES.photoLibrary,
       },
     ],
     '@react-native-community/datetimepicker',
     [
       'expo-notifications',
       {
-        icon: './assets/1024.png',
-        color: '#A855F7',
+        icon: APP_ICON,
+        color: BRAND_ACCENT_COLOR,
         // Android 알림 채널은 pushNotificationService.ts에서 동적 생성
       },
     ],
@@ -173,7 +202,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         project: process.env.SENTRY_PROJECT,
       },
     ],
-    // Android ProGuard 매핑 파일 + 네이티브 디버그 심볼 포함 (Play Console 크래시 가독화)
+    // 네이티브 빌드 속성 (ProGuard, 디버그 심볼, New Architecture, iOS 배포 대상)
     [
       'expo-build-properties',
       {
@@ -181,6 +210,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           enableProguardInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           includeNativeDebugSymbols: true,
+          newArchEnabled: false,
+        },
+        ios: {
+          deploymentTarget: '16.0',
+          newArchEnabled: false,
         },
       },
     ],
@@ -190,7 +224,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   extra: {
     // EAS 설정
     eas: {
-      projectId: process.env.EAS_PROJECT_ID || '9bca3314-2a12-4654-ad9c-3ae43f8cf125',
+      projectId: process.env.EAS_PROJECT_ID || EAS_PROJECT_ID,
     },
     // 앱 버전 정보
     version: VERSION,
@@ -205,7 +239,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   updates: {
     enabled: true,
     fallbackToCacheTimeout: 0,
-    url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID || '9bca3314-2a12-4654-ad9c-3ae43f8cf125'}`,
+    url: `https://u.expo.dev/${process.env.EAS_PROJECT_ID || EAS_PROJECT_ID}`,
   },
 
   // 런타임 버전 (EAS Update 호환)
