@@ -13,6 +13,7 @@ import { Badge } from '../../ui/Badge';
 import { Avatar } from '../../ui/Avatar';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../../icons';
+import { STATUS } from '@/constants';
 import { formatRelativeTime } from '@/utils/dateUtils';
 import { formatAppliedDate } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
@@ -105,7 +106,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
     return null;
   }
 
-  const isPending = cancellationRequest.status === 'pending';
+  const isPending = cancellationRequest.status === STATUS.CANCELLATION_REQUEST.PENDING;
   const statusColors = STATUS_COLORS[cancellationRequest.status];
 
   return (
@@ -123,7 +124,7 @@ export const CancellationRequestCard = React.memo(function CancellationRequestCa
                 variant={
                   isPending
                     ? 'warning'
-                    : cancellationRequest.status === 'approved'
+                    : cancellationRequest.status === STATUS.CANCELLATION_REQUEST.APPROVED
                       ? 'success'
                       : 'error'
                 }

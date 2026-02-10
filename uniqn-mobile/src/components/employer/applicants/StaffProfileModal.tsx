@@ -335,7 +335,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
         )}
 
         {/* 상태별 추가 정보 */}
-        {staff.status === 'no_show' && (
+        {staff.status === STATUS.CONFIRMED_STAFF.NO_SHOW && (
           <View className="px-4 pb-4">
             <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-lg p-3 flex-row items-center">
               <Text className="text-sm text-yellow-700 dark:text-yellow-300">

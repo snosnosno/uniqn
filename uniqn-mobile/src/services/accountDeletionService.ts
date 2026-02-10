@@ -19,6 +19,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { userRepository } from '@/repositories';
 import type { DeletionReason, DeletionRequest, UserDataExport } from '@/repositories';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Constants
@@ -96,7 +97,7 @@ export async function requestAccountDeletion(
       reasonDetail,
       requestedAt: now,
       scheduledDeletionAt: scheduledDeletion,
-      status: 'pending',
+      status: STATUS.DELETION_REQUEST.PENDING,
     };
 
     // 3. Repository를 통해 저장

@@ -81,8 +81,8 @@ async function getStaffName(staffId: string): Promise<string> {
  */
 function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
   // no_show는 WorkLogStatus에 없으므로 직접 처리
-  if (status === 'no_show') {
-    return 'no_show';
+  if (status === STATUS.CONFIRMED_STAFF.NO_SHOW) {
+    return STATUS.CONFIRMED_STAFF.NO_SHOW;
   }
   // confirmed는 레거시 상태, scheduled로 정규화
   if (status === STATUS.APPLICATION.CONFIRMED) {

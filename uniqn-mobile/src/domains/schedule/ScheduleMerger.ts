@@ -11,6 +11,7 @@
  */
 
 import type { ScheduleEvent } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -296,16 +297,16 @@ export class ScheduleMerger {
 
     for (const schedule of schedules) {
       switch (schedule.type) {
-        case 'applied':
+        case STATUS.SCHEDULE.APPLIED:
           stats.applied++;
           break;
-        case 'confirmed':
+        case STATUS.SCHEDULE.CONFIRMED:
           stats.confirmed++;
           break;
-        case 'completed':
+        case STATUS.SCHEDULE.COMPLETED:
           stats.completed++;
           break;
-        case 'cancelled':
+        case STATUS.SCHEDULE.CANCELLED:
           stats.cancelled++;
           break;
       }

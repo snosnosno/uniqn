@@ -127,7 +127,7 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const workDuration = timeInfo.hasActualTime ? timeInfo.duration : null;
 
   // 액션 버튼 표시 조건
-  const canEditTime = staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== 'no_show';
+  const canEditTime = staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
   const canDelete = staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
 
   // 핸들러

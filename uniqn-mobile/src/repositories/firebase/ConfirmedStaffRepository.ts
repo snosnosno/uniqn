@@ -358,7 +358,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
       const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
 
       await updateDoc(workLogRef, {
-        status: 'no_show',
+        status: STATUS.CONFIRMED_STAFF.NO_SHOW,
         noShowReason: context.reason,
         noShowAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
