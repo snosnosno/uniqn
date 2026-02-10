@@ -25,6 +25,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { formatDistanceToNow, format } from 'date-fns';
 import { ko } from 'date-fns/locale';
+import { STATUS } from '@/constants';
 import { useReportDetail, useReviewReport } from '@/hooks/useAdminReports';
 import { EmptyState, Loading, Button } from '@/components/ui';
 import {
@@ -204,7 +205,7 @@ function ReportContentSection({ report }: { report: Report }) {
  * 처리 이력 섹션 (이미 처리된 경우)
  */
 function ReviewHistorySection({ report }: { report: Report }) {
-  if (report.status === 'pending') return null;
+  if (report.status === STATUS.REPORT.PENDING) return null;
 
   return (
     <View className="bg-white dark:bg-surface rounded-xl p-4 mx-4 mb-4">
@@ -258,7 +259,7 @@ function ReviewFormSection({
   const [selectedStatus, setSelectedStatus] = useState<ReportStatus | null>(null);
   const [notes, setNotes] = useState('');
 
-  if (report.status !== 'pending') return null;
+  if (report.status !== STATUS.REPORT.PENDING) return null;
 
   const handleSubmit = () => {
     if (!selectedStatus) return;

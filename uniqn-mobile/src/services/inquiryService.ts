@@ -23,7 +23,7 @@ import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { ValidationError, ERROR_CODES } from '@/errors';
-import { COLLECTIONS, FIELDS } from '@/constants';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 import type {
   Inquiry,
   InquiryStatus,
@@ -219,7 +219,7 @@ export async function createInquiry(
       category: input.category,
       subject: input.subject,
       message: input.message,
-      status: 'open' as InquiryStatus,
+      status: STATUS.INQUIRY.OPEN as InquiryStatus,
       attachments: input.attachments || [],
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
@@ -259,7 +259,7 @@ export async function respondToInquiry(
       responderId,
       responderName,
       respondedAt: serverTimestamp(),
-      status: input.status || 'closed',
+      status: input.status || STATUS.INQUIRY.CLOSED,
       updatedAt: serverTimestamp(),
     });
 
@@ -303,7 +303,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
 export async function getUnansweredCount(): Promise<number> {
   return withErrorHandling(async () => {
     const db = getFirebaseDb();
-    const q = query(collection(db, COLLECTIONS.INQUIRIES), where(FIELDS.INQUIRY.status, '==', 'open'));
+    const q = query(collection(db, COLLECTIONS.INQUIRIES), where(FIELDS.INQUIRY.status, '==', STATUS.INQUIRY.OPEN));
 
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;

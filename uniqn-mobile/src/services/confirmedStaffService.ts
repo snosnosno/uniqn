@@ -33,7 +33,7 @@ import {
   type DeleteConfirmedStaffInput,
   type ConfirmedStaffStatus,
 } from '@/types/confirmedStaff';
-import { STAFF_ROLES } from '@/constants';
+import { STAFF_ROLES, STATUS } from '@/constants';
 import { StatusMapper } from '@/shared/status';
 import { TimeNormalizer } from '@/shared/time';
 import type { WorkLog } from '@/types';
@@ -85,8 +85,8 @@ function mapWorkLogStatus(status: string): ConfirmedStaffStatus {
     return 'no_show';
   }
   // confirmed는 레거시 상태, scheduled로 정규화
-  if (status === 'confirmed') {
-    return 'scheduled';
+  if (status === STATUS.APPLICATION.CONFIRMED) {
+    return STATUS.WORK_LOG.SCHEDULED;
   }
   // 나머지는 StatusMapper로 위임
   return StatusMapper.toConfirmedStaff(status as import('@/shared/status').WorkLogStatus);

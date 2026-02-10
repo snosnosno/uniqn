@@ -25,6 +25,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -228,7 +229,7 @@ export function ScheduleDetailSheet({
       </View>
 
       {/* 실제 출퇴근 시간 (근무 완료인 경우) */}
-      {schedule.status === 'checked_out' && schedule.checkInTime && schedule.checkOutTime && (
+      {schedule.status === STATUS.WORK_LOG.CHECKED_OUT && schedule.checkInTime && schedule.checkOutTime && (
         <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 mb-6">
           <Text className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
             실제 근무 시간

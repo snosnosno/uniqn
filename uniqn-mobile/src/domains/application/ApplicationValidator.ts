@@ -14,6 +14,7 @@
 import type { JobPosting, Assignment, PreQuestionAnswer } from '@/types';
 import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -174,7 +175,7 @@ export class ApplicationValidator {
    * @returns 지원 가능 여부
    */
   isJobActive(jobData: JobPosting): boolean {
-    return jobData.status === 'active';
+    return jobData.status === STATUS.JOB_POSTING.ACTIVE;
   }
 
   /**

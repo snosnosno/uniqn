@@ -14,6 +14,7 @@ import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications } from '@/hooks';
 import { useAuthStore, useThemeStore } from '@/stores';
+import { STATUS } from '@/constants';
 import { trackJobView } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
 
@@ -158,10 +159,10 @@ export default function JobDetailScreen() {
           {alreadyApplied ? (
             <View className="items-center">
               <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                {applicationStatus?.status === 'applied' && '지원 완료 - 검토 중'}
-                {applicationStatus?.status === 'pending' && '지원 검토 중'}
-                {applicationStatus?.status === 'confirmed' && '지원 승인됨'}
-                {applicationStatus?.status === 'rejected' && '지원이 거절되었습니다'}
+                {applicationStatus?.status === STATUS.APPLICATION.APPLIED && '지원 완료 - 검토 중'}
+                {applicationStatus?.status === STATUS.APPLICATION.PENDING && '지원 검토 중'}
+                {applicationStatus?.status === STATUS.APPLICATION.CONFIRMED && '지원 승인됨'}
+                {applicationStatus?.status === STATUS.APPLICATION.REJECTED && '지원이 거절되었습니다'}
               </Text>
               <Button
                 onPress={() => router.push('/(app)/(tabs)/schedule')}
@@ -171,7 +172,7 @@ export default function JobDetailScreen() {
                 내 지원 현황 보기
               </Button>
             </View>
-          ) : job.status !== 'active' ? (
+          ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
               마감된 공고입니다
             </Button>

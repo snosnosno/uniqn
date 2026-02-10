@@ -32,6 +32,8 @@ export const USER_FIELDS = {
   isActive: 'isActive',
   identityVerified: 'identityVerified',
   userId: 'userId',
+  ci: 'ci',
+  di: 'di',
 } as const;
 
 export const JOB_POSTING_FIELDS = {
@@ -80,6 +82,8 @@ export const REPORT_FIELDS = {
   reporterId: 'reporterId',
   targetId: 'targetId',
   jobPostingId: 'jobPostingId',
+  severity: 'severity',
+  reporterType: 'reporterType',
 } as const;
 
 export const INQUIRY_FIELDS = {

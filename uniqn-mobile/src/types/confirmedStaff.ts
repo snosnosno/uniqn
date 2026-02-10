@@ -8,6 +8,7 @@
 import type { Timestamp } from 'firebase/firestore';
 import type { WorkLog, PayrollStatus } from './schedule';
 import type { TimeInput } from '@/shared/time/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // 확정 스태프 상태
@@ -319,8 +320,8 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
         isPast: date < today,
         stats: {
           total: staffInDate.length,
-          checkedIn: staffInDate.filter((s) => s.status === 'checked_in').length,
-          completed: staffInDate.filter((s) => ['checked_out', 'completed'].includes(s.status))
+          checkedIn: staffInDate.filter((s) => s.status === STATUS.WORK_LOG.CHECKED_IN).length,
+          completed: staffInDate.filter((s) => s.status === STATUS.WORK_LOG.CHECKED_OUT || s.status === STATUS.WORK_LOG.COMPLETED)
             .length,
           noShow: staffInDate.filter((s) => s.status === 'no_show').length,
         },
@@ -349,13 +350,13 @@ function formatDateKorean(date: Date): string {
 export function calculateStaffStats(staffList: ConfirmedStaff[]): ConfirmedStaffStats {
   return {
     total: staffList.length,
-    scheduled: staffList.filter((s) => s.status === 'scheduled').length,
-    checkedIn: staffList.filter((s) => s.status === 'checked_in').length,
-    checkedOut: staffList.filter((s) => s.status === 'checked_out').length,
-    completed: staffList.filter((s) => s.status === 'completed').length,
-    cancelled: staffList.filter((s) => s.status === 'cancelled').length,
+    scheduled: staffList.filter((s) => s.status === STATUS.WORK_LOG.SCHEDULED).length,
+    checkedIn: staffList.filter((s) => s.status === STATUS.WORK_LOG.CHECKED_IN).length,
+    checkedOut: staffList.filter((s) => s.status === STATUS.WORK_LOG.CHECKED_OUT).length,
+    completed: staffList.filter((s) => s.status === STATUS.WORK_LOG.COMPLETED).length,
+    cancelled: staffList.filter((s) => s.status === STATUS.WORK_LOG.CANCELLED).length,
     noShow: staffList.filter((s) => s.status === 'no_show').length,
-    settled: staffList.filter((s) => s.payrollStatus === 'completed').length,
+    settled: staffList.filter((s) => s.payrollStatus === STATUS.PAYROLL.COMPLETED).length,
   };
 }
 

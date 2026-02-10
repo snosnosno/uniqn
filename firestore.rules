@@ -148,8 +148,8 @@ service cloud.firestore {
 
       // 본인 문서 수정: 일반 업데이트 또는 구인자 등록
       allow update: if isSignedIn() && isOwner(userId) && (
-        // 일반 프로필 업데이트 (role 변경 불가)
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        // 일반 프로필 업데이트 (role, ci, di 변경 불가 - CI/DI는 Cloud Functions만 가능)
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'ci', 'di'])) ||
         // 구인자 등록 (staff → employer)
         isValidEmployerRegistration()
       );
@@ -1000,6 +1000,20 @@ service cloud.firestore {
 
       // 삭제: 관리자만 가능
       allow delete: if isAdmin();
+    }
+
+    // --- Pending Verifications (본인인증 임시 저장 - 서버 전용) ---
+    // CI/DI 등 민감 정보를 서버에서만 관리하기 위한 컬렉션
+    // 클라이언트 읽기/쓰기 완전 차단 (Cloud Functions만 가능)
+    match /pendingVerifications/{verificationId} {
+      allow read, write: if false;
+    }
+
+    // --- CI Index (CI 중복가입 방지 인덱스 - 서버 전용) ---
+    // linkIdentityVerification 트랜잭션에서 원자적 중복 확인용
+    // 클라이언트 읽기/쓰기 완전 차단 (Cloud Functions만 가능)
+    match /ciIndex/{ciHash} {
+      allow read, write: if false;
     }
 
     // ================= 모바일 앱 지원 (v1.0.0) =================

@@ -99,6 +99,7 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
   return {
     inquiries: allInquiries,
     isLoading: query.isLoading,
+    isRefreshing: query.isRefetching,
     isError: query.isError,
     error: query.error,
     hasMore,
@@ -153,6 +154,7 @@ export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
   return {
     inquiries: allInquiries,
     isLoading: query.isLoading,
+    isRefreshing: query.isRefetching,
     isError: query.isError,
     error: query.error,
     hasMore,

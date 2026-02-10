@@ -56,6 +56,7 @@ export default function NotificationsScreen() {
     groupedNotifications,
     unreadCount,
     isLoading,
+    isRefreshing,
     error,
     hasMore,
     fetchNextPage,
@@ -159,6 +160,7 @@ export default function NotificationsScreen() {
       <NotificationList
         notifications={groupedNotifications}
         isLoading={isLoading}
+        isRefreshing={isRefreshing}
         error={error}
         hasMore={hasMore}
         isFetchingNextPage={isFetchingNextPage}

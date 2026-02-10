@@ -167,6 +167,7 @@ export const signUpStep2Schema = z.object({
   verifiedGender: z.enum(['male', 'female'], {
     error: '성별 정보가 필요합니다',
   }), // 본인인증된 성별
+  identityVerificationId: z.string(), // 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용)
 });
 
 export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
@@ -216,6 +217,7 @@ export const signUpSchema = z.object({
   verifiedPhone: z.string().optional(),
   verifiedBirthDate: z.string().optional(), // 본인인증된 생년월일 (YYYYMMDD)
   verifiedGender: z.enum(['male', 'female']).optional(), // 본인인증된 성별
+  identityVerificationId: z.string().optional(), // 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용)
   // Step 3: 프로필
   nickname: z.string(),
   role: z.enum(['staff', 'employer']),

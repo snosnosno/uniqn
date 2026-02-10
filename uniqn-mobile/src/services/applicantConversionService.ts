@@ -23,7 +23,7 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import type { Staff, StaffRole } from '@/types';
 import { FIXED_DATE_MARKER } from '@/types/assignment';
-import { COLLECTIONS, FIELDS, STAFF_ROLES } from '@/constants';
+import { COLLECTIONS, FIELDS, STAFF_ROLES, STATUS } from '@/constants';
 
 // 표준 역할 키 목록 (other 제외)
 const STANDARD_ROLE_KEYS: string[] = STAFF_ROLES.filter((r) => r.key !== 'other').map((r) => r.key);
@@ -119,7 +119,7 @@ export async function convertApplicantToStaff(
       }
 
       // 확정 상태 확인
-      if (applicationData.status !== 'confirmed') {
+      if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '확정된 지원만 스태프로 변환할 수 있습니다',
         });
@@ -224,7 +224,7 @@ export async function convertApplicantToStaff(
             date: null, // 고정공고는 날짜 없음
             timeSlot: null, // 고정공고는 시간 협의
             isFixedPosting: true, // 고정공고 플래그
-            status: 'scheduled',
+            status: STATUS.WORK_LOG.SCHEDULED,
             attendanceStatus: 'not_started',
             checkInTime: null,
             checkOutTime: null,
@@ -262,7 +262,7 @@ export async function convertApplicantToStaff(
                 // 미정 시간 정보
                 isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
                 tentativeDescription: assignment.tentativeDescription ?? null,
-                status: 'scheduled',
+                status: STATUS.WORK_LOG.SCHEDULED,
                 attendanceStatus: 'not_started',
                 checkInTime: null,
                 checkOutTime: null,
@@ -284,7 +284,7 @@ export async function convertApplicantToStaff(
 
       // 6. 지원서 상태 업데이트
       transaction.update(applicationRef, {
-        status: 'completed',
+        status: STATUS.APPLICATION.COMPLETED,
         processedBy: managerId,
         processedAt: serverTimestamp(),
         notes: notes ?? applicationData.notes,
@@ -443,12 +443,12 @@ export async function canConvertToStaff(applicationId: string): Promise<{
     }
 
     // completed 상태 먼저 체크 (이미 변환된 경우)
-    if (applicationData.status === 'completed') {
+    if (applicationData.status === STATUS.APPLICATION.COMPLETED) {
       return { canConvert: false, reason: '이미 스태프로 변환되었습니다' };
     }
 
     // confirmed 상태인지 체크
-    if (applicationData.status !== 'confirmed') {
+    if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
       return {
         canConvert: false,
         reason: `확정된 지원만 변환 가능합니다 (현재: ${applicationData.status})`,
@@ -496,7 +496,7 @@ export async function revertStaffConversion(
         });
       }
 
-      if (applicationData.status !== 'completed') {
+      if (applicationData.status !== STATUS.APPLICATION.COMPLETED) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '완료된 지원만 취소할 수 있습니다',
         });
@@ -528,7 +528,7 @@ export async function revertStaffConversion(
 
       // 지원서 상태 복원
       transaction.update(applicationRef, {
-        status: 'confirmed',
+        status: STATUS.APPLICATION.CONFIRMED,
         updatedAt: serverTimestamp(),
       });
 

@@ -11,6 +11,7 @@
  */
 
 import type { ApplicantWithDetails } from '@/services';
+import { STATUS } from '@/constants';
 
 import { useApplicantsByJobPosting, useApplicantStats } from './useApplicantsByJobPosting';
 import { getPrimaryRoleId } from './helpers';
@@ -184,6 +185,7 @@ export function useApplicantManagement(
     // 지원자 목록
     applicants,
     isLoading: applicantsQuery.isLoading,
+    isRefreshing: applicantsQuery.isRefetching,
     error: applicantsQuery.error,
     refresh: applicantsQuery.refetch,
 
@@ -229,6 +231,7 @@ export function useApplicantManagement(
     // 취소 요청 관리
     cancellationRequests: cancellationRequestsQuery.data ?? [],
     isLoadingCancellationRequests: cancellationRequestsQuery.isLoading,
+    isRefetchingCancellationRequests: cancellationRequestsQuery.isRefetching,
     refreshCancellationRequests: cancellationRequestsQuery.refetch,
 
     reviewCancellation: reviewCancellationMutation.mutate,
@@ -240,11 +243,11 @@ export function useApplicantManagement(
     countByStatus,
 
     // 상태별 카운트 단축키
-    pendingCount: countByStatus('pending'),
-    confirmedCount: countByStatus('confirmed'),
-    rejectedCount: countByStatus('rejected'),
-    completedCount: countByStatus('completed'),
-    cancellationPendingCount: countByStatus('cancellation_pending'),
+    pendingCount: countByStatus(STATUS.APPLICATION.PENDING),
+    confirmedCount: countByStatus(STATUS.APPLICATION.CONFIRMED),
+    rejectedCount: countByStatus(STATUS.APPLICATION.REJECTED),
+    completedCount: countByStatus(STATUS.APPLICATION.COMPLETED),
+    cancellationPendingCount: countByStatus(STATUS.APPLICATION.CANCELLATION_PENDING),
   };
 }
 

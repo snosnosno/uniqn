@@ -28,6 +28,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
 import { errorHandlerPresets, createMutationErrorHandler } from '@/shared/errors';
 import { requireAuth } from '@/errors/guardErrors';
+import { STATUS } from '@/constants';
 import type { PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -304,10 +305,10 @@ export function useSettlement(jobPostingId: string) {
   };
 
   // 정산 대기 목록
-  const pendingWorkLogs = filterWorkLogs({ payrollStatus: 'pending' });
+  const pendingWorkLogs = filterWorkLogs({ payrollStatus: STATUS.PAYROLL.PENDING });
 
   // 정산 완료 목록
-  const completedWorkLogs = filterWorkLogs({ payrollStatus: 'completed' });
+  const completedWorkLogs = filterWorkLogs({ payrollStatus: STATUS.PAYROLL.COMPLETED });
 
   // 총 정산 대기 금액
   const totalPendingAmount = pendingWorkLogs.reduce(
@@ -325,6 +326,7 @@ export function useSettlement(jobPostingId: string) {
     // 근무 기록
     workLogs: workLogsQuery.data ?? [],
     isLoading: workLogsQuery.isLoading,
+    isRefreshing: workLogsQuery.isRefetching,
     error: workLogsQuery.error,
     refresh: workLogsQuery.refetch,
 

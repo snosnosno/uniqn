@@ -44,7 +44,7 @@ import type {
   MarkNoShowContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from '../interfaces';
-import { COLLECTIONS, FIELDS } from '@/constants';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
 // Repository Implementation
@@ -243,9 +243,9 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 시간에 따른 상태 변경
         if (context.checkOutTime) {
-          updateData.status = 'checked_out';
+          updateData.status = STATUS.WORK_LOG.CHECKED_OUT;
         } else if (!context.checkInTime) {
-          updateData.status = 'scheduled';
+          updateData.status = STATUS.WORK_LOG.SCHEDULED;
         }
 
         transaction.update(workLogRef, updateData);
@@ -294,7 +294,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         }
 
         // 이미 출퇴근한 경우 삭제 불가
-        if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
+        if (workLog.status === STATUS.WORK_LOG.CHECKED_IN || workLog.status === STATUS.WORK_LOG.CHECKED_OUT) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '이미 출퇴근한 스태프는 삭제할 수 없습니다',
           });
@@ -310,7 +310,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         // 1. WorkLog 상태를 cancelled로 변경
         transaction.update(workLogRef, {
-          status: 'cancelled',
+          status: STATUS.WORK_LOG.CANCELLED,
           cancelledReason: context.reason,
           cancelledAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -323,7 +323,7 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
 
         if (applicationDoc.exists()) {
           transaction.update(applicationRef, {
-            status: 'applied',
+            status: STATUS.APPLICATION.APPLIED,
             updatedAt: serverTimestamp(),
           });
         }

@@ -311,9 +311,9 @@ export async function getMySchedules(
     let mappedStatus: string | undefined;
     if (filters?.status) {
       const statusMapping: Record<string, string> = {
-        not_started: 'scheduled',
-        checked_in: 'checked_in',
-        checked_out: 'checked_out',
+        not_started: STATUS.WORK_LOG.SCHEDULED,
+        checked_in: STATUS.WORK_LOG.CHECKED_IN,
+        checked_out: STATUS.WORK_LOG.CHECKED_OUT,
       };
       mappedStatus = statusMapping[filters.status];
     }

@@ -21,7 +21,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Card, Loading } from '@/components/ui';
 import { ProfileImagePicker } from '@/components/profile';
 import { useAuth } from '@/hooks/useAuth';
-import { useAuthStore, useHasHydrated } from '@/stores/authStore';
+import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
@@ -30,11 +30,10 @@ import type { UserProfile } from '@/types';
 import type { AuthUser } from '@/stores/authStore';
 
 export default function ProfileEditScreen() {
-  const { profile, user } = useAuth();
-  const hasHydrated = useHasHydrated();
+  const { profile, user, isLoading } = useAuth();
 
   // profile이 로드될 때까지 로딩 표시
-  if (!hasHydrated || !profile) {
+  if (isLoading || !profile) {
     return (
       <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
         <Loading />

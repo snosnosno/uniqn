@@ -19,6 +19,7 @@ import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement
 import { getAllowanceItems } from '@/utils/allowanceUtils';
 import { formatDateKoreanWithDay } from '@/utils/dateUtils';
 import { getRoleDisplayName } from '@/types/unified';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -221,8 +222,8 @@ export function JobDetail({ job }: JobDetailProps) {
               긴급
             </Badge>
           )}
-          <Badge variant={job.status === 'active' ? 'success' : 'default'} size="sm">
-            {job.status === 'active' ? '모집중' : '마감'}
+          <Badge variant={job.status === STATUS.JOB_POSTING.ACTIVE ? 'success' : 'default'} size="sm">
+            {job.status === STATUS.JOB_POSTING.ACTIVE ? '모집중' : '마감'}
           </Badge>
         </View>
 

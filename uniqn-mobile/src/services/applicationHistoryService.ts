@@ -30,7 +30,7 @@ import type {
 } from '@/types';
 import { createHistoryEntry, addCancellationToEntry, findActiveConfirmation } from '@/types';
 import { getDateString } from '@/types/jobPosting/dateRequirement';
-import { COLLECTIONS } from '@/constants';
+import { COLLECTIONS, STATUS } from '@/constants';
 
 // ============================================================================
 // Helper Functions (WorkLogCreator 위임)
@@ -327,7 +327,7 @@ export async function confirmApplicationWithHistory(
             // 미정 시간 정보
             isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
             tentativeDescription: assignment.tentativeDescription ?? null,
-            status: 'scheduled',
+            status: STATUS.WORK_LOG.SCHEDULED,
             attendanceStatus: 'not_started',
             checkInTime, // timeSlot 파싱하여 설정 (예정 출근 시간)
             checkOutTime: null, // 퇴근 시간은 미정
@@ -348,7 +348,7 @@ export async function confirmApplicationWithHistory(
 
       // 8. 지원서 업데이트
       transaction.update(applicationRef, {
-        status: 'confirmed',
+        status: STATUS.APPLICATION.CONFIRMED,
         assignments: assignmentsToConfirm,
         originalApplication,
         confirmationHistory,
@@ -380,7 +380,7 @@ export async function confirmApplicationWithHistory(
       // 11. 전체 마감 여부 확인 및 상태 변경
       const newFilledPositions = currentFilled + assignmentCount;
       const shouldClose = totalPositions > 0 && newFilledPositions >= totalPositions;
-      const newStatus = shouldClose ? 'closed' : jobData.status;
+      const newStatus = shouldClose ? STATUS.JOB_POSTING.CLOSED : jobData.status;
 
       const jobUpdateData: Record<string, unknown> = {
         filledPositions: increment(assignmentCount),
@@ -394,7 +394,7 @@ export async function confirmApplicationWithHistory(
       }
 
       // 상태가 변경될 때만 status 업데이트
-      if (shouldClose && jobData.status !== 'closed') {
+      if (shouldClose && jobData.status !== STATUS.JOB_POSTING.CLOSED) {
         jobUpdateData.status = newStatus;
       }
 
@@ -467,7 +467,7 @@ export async function cancelConfirmation(
       }
 
       // 확정 상태 확인
-      if (applicationData.status !== 'confirmed') {
+      if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
         throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
           userMessage: '확정된 지원만 취소할 수 있습니다',
         });
@@ -541,7 +541,7 @@ export async function cancelConfirmation(
       // 7. 마감 해제 여부 확인 (closed → active 복원)
       const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
       const newFilledPositions = Math.max(0, currentFilled - decrementCount);
-      const shouldReopen = jobData.status === 'closed' && newFilledPositions < totalPositions;
+      const shouldReopen = jobData.status === STATUS.JOB_POSTING.CLOSED && newFilledPositions < totalPositions;
 
       const jobUpdateData: Record<string, unknown> = {
         filledPositions: increment(-decrementCount),
@@ -556,14 +556,14 @@ export async function cancelConfirmation(
 
       // 마감 상태에서 인원이 줄어들면 active로 복원
       if (shouldReopen) {
-        jobUpdateData.status = 'active';
+        jobUpdateData.status = STATUS.JOB_POSTING.ACTIVE;
       }
 
       transaction.update(jobRef, jobUpdateData);
 
       // 8. 지원서 상태 복원 (originalApplication 기반)
       const restoredAssignments = applicationData.originalApplication?.assignments;
-      const restoredStatus = 'applied' as const;
+      const restoredStatus = STATUS.APPLICATION.APPLIED;
 
       transaction.update(applicationRef, {
         status: restoredStatus,

@@ -9,6 +9,8 @@ import { useQuery } from '@tanstack/react-query';
 import { jobPostingRepository } from '@/repositories';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';
+import { useAuthStore } from '@/stores/authStore';
+import { STATUS } from '@/constants';
 import type { PostingType } from '@/types';
 
 // ============================================================================
@@ -39,7 +41,7 @@ export const AUTO_SELECT_PRIORITY: PostingType[] = ['urgent', 'tournament', 'reg
 async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> {
   try {
     // Repository 메서드로 타입별 개수 조회
-    const counts = await jobPostingRepository.getTypeCounts({ status: 'active' });
+    const counts = await jobPostingRepository.getTypeCounts({ status: STATUS.JOB_POSTING.ACTIVE });
 
     // 개수 > 0 이면 존재
     return {
@@ -72,11 +74,14 @@ async function fetchPostingTypeAvailability(): Promise<PostingTypeAvailability> 
  * // firstAvailableType: 우선순위에 따른 첫 번째 공고가 있는 타입
  */
 export function usePostingTypeCounts() {
+  const { status } = useAuthStore();
+
   const queryResult = useQuery({
     queryKey: [...queryKeys.jobPostings.all, 'typeAvailability'] as const,
     queryFn: fetchPostingTypeAvailability,
     staleTime: cachingPolicies.frequent, // 5분
     gcTime: cachingPolicies.standard * 2, // 20분
+    enabled: status === 'authenticated',
   });
 
   // 우선순위에 따른 첫 번째 공고가 있는 타입 계산

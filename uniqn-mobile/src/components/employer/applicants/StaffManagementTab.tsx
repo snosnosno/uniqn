@@ -18,6 +18,7 @@ import { QRCodeIcon, RefreshIcon, CheckCircleIcon, ClockIcon, CalendarIcon } fro
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { logger } from '@/utils/logger';
 import type { ConfirmedStaff, JobPosting, WorkLog } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -236,7 +237,7 @@ export function StaffManagementTab({
     const options: ActionSheetOption[] = [];
 
     // 출근 예정 옵션 (현재 상태가 아닐 때만)
-    if (currentStatus !== 'scheduled') {
+    if (currentStatus !== STATUS.WORK_LOG.SCHEDULED) {
       options.push({
         label: '출근 예정으로 변경',
         value: 'scheduled',
@@ -245,7 +246,7 @@ export function StaffManagementTab({
     }
 
     // 출근 처리 옵션 (현재 상태가 아닐 때만)
-    if (currentStatus !== 'checked_in') {
+    if (currentStatus !== STATUS.WORK_LOG.CHECKED_IN) {
       options.push({
         label: '출근 처리',
         value: 'checked_in',
@@ -254,7 +255,7 @@ export function StaffManagementTab({
     }
 
     // 퇴근 처리 옵션 (현재 상태가 아닐 때만)
-    if (currentStatus !== 'checked_out') {
+    if (currentStatus !== STATUS.WORK_LOG.CHECKED_OUT) {
       options.push({
         label: '퇴근 처리',
         value: 'checked_out',

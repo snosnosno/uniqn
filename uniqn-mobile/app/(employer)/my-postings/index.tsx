@@ -15,6 +15,7 @@ import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import { STATUS } from '@/constants';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { useThemeStore } from '@/stores/themeStore';
@@ -231,9 +232,9 @@ export default function MyPostingsPage() {
 
     switch (selectedFilter) {
       case 'active':
-        return postings.filter((p) => p.status === 'active');
+        return postings.filter((p) => p.status === STATUS.JOB_POSTING.ACTIVE);
       case 'closed':
-        return postings.filter((p) => p.status === 'closed' || p.status === 'cancelled');
+        return postings.filter((p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED);
       case 'tournament':
         return postings.filter((p) => p.postingType === 'tournament');
       default:
@@ -247,8 +248,8 @@ export default function MyPostingsPage() {
 
     return {
       all: postings.length,
-      active: postings.filter((p) => p.status === 'active').length,
-      closed: postings.filter((p) => p.status === 'closed' || p.status === 'cancelled').length,
+      active: postings.filter((p) => p.status === STATUS.JOB_POSTING.ACTIVE).length,
+      closed: postings.filter((p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED).length,
       tournament: postings.filter((p) => p.postingType === 'tournament').length,
     };
   }, [postings]);

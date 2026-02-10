@@ -48,9 +48,8 @@ export const JOB_POSTING_STATUS_VALUES = {
 } as const satisfies Record<string, JobPostingStatusType>;
 
 export const INQUIRY_STATUS_VALUES = {
-  PENDING: 'pending',
+  OPEN: 'open',
   IN_PROGRESS: 'in_progress',
-  RESOLVED: 'resolved',
   CLOSED: 'closed',
 } as const satisfies Record<string, InquiryStatusType>;
 

@@ -54,7 +54,7 @@ import type {
   EventQRScanResult,
   EventQRValidationResult,
 } from '@/types';
-import { COLLECTIONS, FIELDS } from '@/constants';
+import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 /** QR 코드 유효 시간 (3분) */
 const QR_VALIDITY_DURATION_MS = 3 * 60 * 1000;
@@ -303,7 +303,7 @@ export async function processEventQRCheckIn(
       // 3-2. 상태 확인 및 출퇴근 처리
       if (action === 'checkIn') {
         // 출근 처리
-        if (workLog.status === 'checked_in' || workLog.status === 'checked_out') {
+        if (workLog.status === STATUS.WORK_LOG.CHECKED_IN || workLog.status === STATUS.WORK_LOG.CHECKED_OUT) {
           throw new AlreadyCheckedInError({
             message: '이미 출근 처리되었습니다',
             userMessage: '이미 출근 처리가 완료되었습니다',
@@ -313,7 +313,7 @@ export async function processEventQRCheckIn(
 
         // 업데이트할 데이터 구성
         const updateData: Record<string, unknown> = {
-          status: 'checked_in',
+          status: STATUS.WORK_LOG.CHECKED_IN,
           updatedAt: serverTimestamp(),
         };
 
@@ -336,7 +336,7 @@ export async function processEventQRCheckIn(
         };
       } else {
         // 퇴근 처리
-        if (workLog.status !== 'checked_in') {
+        if (workLog.status !== STATUS.WORK_LOG.CHECKED_IN) {
           throw new NotCheckedInError({
             message: '먼저 출근 처리가 필요합니다',
             userMessage: '출근 처리 후 퇴근할 수 있습니다',
@@ -345,7 +345,7 @@ export async function processEventQRCheckIn(
 
         // 3-3. 업데이트 (트랜잭션 내)
         transaction.update(workLogRef, {
-          status: 'checked_out',
+          status: STATUS.WORK_LOG.CHECKED_OUT,
           checkOutTime: Timestamp.fromDate(checkTime),
           updatedAt: serverTimestamp(),
         });

@@ -21,6 +21,7 @@ import {
 
 // 4. 타입
 import type { Announcement } from '@/types';
+import { STATUS } from '@/constants';
 
 interface AnnouncementCardProps {
   announcement: Announcement;
@@ -104,7 +105,7 @@ export function AnnouncementCard({ announcement, onPress }: AnnouncementCardProp
 
         {/* Date */}
         <Text className="text-xs text-gray-400">
-          {announcement.status === 'published' && announcement.publishedAt
+          {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && announcement.publishedAt
             ? formatDateKorean(announcement.publishedAt) || '-'
             : announcement.createdAt
               ? formatDateKorean(announcement.createdAt)

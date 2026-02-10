@@ -232,7 +232,7 @@ export async function createAnnouncement(
       title: input.title,
       content: input.content,
       category: input.category,
-      status: 'draft' as AnnouncementStatus,
+      status: STATUS.ANNOUNCEMENT.DRAFT as AnnouncementStatus,
       priority: input.priority ?? 0,
       isPinned: input.isPinned ?? false,
       targetAudience: input.targetAudience,
@@ -306,7 +306,7 @@ export async function publishAnnouncement(announcementId: string): Promise<void>
     const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
     await updateDoc(docRef, {
-      status: 'published' as AnnouncementStatus,
+      status: STATUS.ANNOUNCEMENT.PUBLISHED as AnnouncementStatus,
       publishedAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
     });
@@ -327,7 +327,7 @@ export async function archiveAnnouncement(announcementId: string): Promise<void>
     const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
     await updateDoc(docRef, {
-      status: 'archived' as AnnouncementStatus,
+      status: STATUS.ANNOUNCEMENT.ARCHIVED as AnnouncementStatus,
       updatedAt: serverTimestamp(),
     });
 

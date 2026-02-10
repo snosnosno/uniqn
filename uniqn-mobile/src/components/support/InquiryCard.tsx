@@ -18,6 +18,7 @@ import { Card } from '@/components/ui';
 import { ChevronRightIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
 import { INQUIRY_CATEGORY_LABELS, toDate } from '@/types';
+import { STATUS } from '@/constants';
 
 // 4. 타입
 import type { Inquiry } from '@/types';
@@ -77,7 +78,7 @@ export function InquiryCard({
             <Text className="text-xs text-gray-400 dark:text-gray-500">{formattedDate}</Text>
 
             {/* 답변 여부 */}
-            {inquiry.status === 'closed' && inquiry.response && (
+            {inquiry.status === STATUS.INQUIRY.CLOSED && inquiry.response && (
               <View className="mt-2 flex-row items-center">
                 <View className="mr-1 h-2 w-2 rounded-full bg-green-500" />
                 <Text className="text-xs text-green-600 dark:text-green-400">답변 완료</Text>

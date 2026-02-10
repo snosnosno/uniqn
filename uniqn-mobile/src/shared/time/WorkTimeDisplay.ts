@@ -14,6 +14,7 @@
 
 import { TimeNormalizer } from './TimeNormalizer';
 import type { TimeInput } from './types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -154,7 +155,7 @@ export class WorkTimeDisplay {
     const info = this.getDisplayInfo(source);
 
     // completed 상태이고 실제 시간이 있으면 실제 시간 반환
-    if (status === 'completed' && info.hasActualTime) {
+    if (status === STATUS.WORK_LOG.COMPLETED && info.hasActualTime) {
       return `${info.checkIn} - ${info.checkOut}`;
     }
 

@@ -18,6 +18,7 @@ import {
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
 import { jobPostingRepository, workLogRepository } from '@/repositories';
+import { STATUS } from '@/constants';
 import type { WorkLog } from '@/types';
 import {
   type WorkLogWithOverrides,
@@ -195,13 +196,13 @@ export async function getJobPostingSettlementSummary(
       workLogsByRole[effectiveRole].count++;
 
       // 완료된 근무 기록
-      if (workLog.status === 'checked_out' || workLog.status === 'completed') {
+      if (workLog.status === STATUS.WORK_LOG.CHECKED_OUT || workLog.status === STATUS.WORK_LOG.COMPLETED) {
         completedWorkLogs++;
 
         // 정산 상태별 분류
         const amount = workLog.payrollAmount || 0;
 
-        if (workLog.payrollStatus === 'completed') {
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           completedSettlement++;
           totalCompletedAmount += amount;
           workLogsByRole[effectiveRole].completedAmount += amount;

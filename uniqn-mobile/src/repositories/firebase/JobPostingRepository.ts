@@ -39,7 +39,7 @@ import { toError, BusinessError, PermissionError, ERROR_CODES, isAppError } from
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseJobPostingDocument, parseJobPostingDocuments } from '@/schemas';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
-import { COLLECTIONS, FIELDS, FIREBASE_LIMITS } from '@/constants';
+import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
 import type {
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -183,7 +183,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       // QueryBuilder로 쿼리 구성
       let builder = new QueryBuilder(jobPostingsRef).whereEqual(
         FIELDS.JOB_POSTING.status,
-        filters?.status ?? 'active'
+        filters?.status ?? STATUS.JOB_POSTING.ACTIVE
       );
 
       // 공고 타입 필터
@@ -299,7 +299,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       logger.info('공고 타입별 개수 조회', { filters });
 
       const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
-      const status = filters?.status ?? 'active';
+      const status = filters?.status ?? STATUS.JOB_POSTING.ACTIVE;
 
       const q = query(jobPostingsRef, where(FIELDS.JOB_POSTING.status, '==', status));
 
@@ -319,7 +319,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
         // 대회공고는 승인된 것만 카운팅
         if (postingType === 'tournament') {
-          if (data.tournamentConfig?.approvalStatus === 'approved') {
+          if (data.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.APPROVED) {
             counts.tournament++;
             counts.total++;
           }
@@ -458,7 +458,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       const jobPostingData = removeUndefined({
         ...restInput,
         roles: restInput.roles as JobPosting['roles'],
-        status: 'active' as const,
+        status: STATUS.JOB_POSTING.ACTIVE,
         ownerId: context.ownerId,
         ownerName: context.ownerName,
         createdBy: context.ownerId,
@@ -474,7 +474,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         // 대회공고 승인 대기
         ...(input.postingType === 'tournament' && {
           tournamentConfig: {
-            approvalStatus: 'pending' as const,
+            approvalStatus: STATUS.TOURNAMENT.PENDING,
             submittedAt: now as Timestamp,
           },
         }),
@@ -640,7 +640,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
         // Soft Delete: status를 cancelled로 변경
         transaction.update(jobRef, {
-          status: 'cancelled',
+          status: STATUS.JOB_POSTING.CANCELLED,
           updatedAt: serverTimestamp(),
         });
       });
@@ -691,14 +691,14 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         }
 
         // 이미 마감된 경우
-        if (currentData.status === 'closed') {
+        if (currentData.status === STATUS.JOB_POSTING.CLOSED) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '이미 마감된 공고입니다',
           });
         }
 
         transaction.update(jobRef, {
-          status: 'closed',
+          status: STATUS.JOB_POSTING.CLOSED,
           closedAt: serverTimestamp(),
           closedReason: 'manual',
           updatedAt: serverTimestamp(),
@@ -751,14 +751,14 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         }
 
         // 활성 상태인 경우
-        if (currentData.status === 'active') {
+        if (currentData.status === STATUS.JOB_POSTING.ACTIVE) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '이미 활성 상태인 공고입니다',
           });
         }
 
         // 취소된 공고는 재오픈 불가
-        if (currentData.status === 'cancelled') {
+        if (currentData.status === STATUS.JOB_POSTING.CANCELLED) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '삭제된 공고는 재오픈할 수 없습니다. 새 공고를 작성해주세요',
           });
@@ -766,7 +766,7 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
         // 고정공고인 경우 expiresAt 갱신
         const updateData: Record<string, unknown> = {
-          status: 'active',
+          status: STATUS.JOB_POSTING.ACTIVE,
           updatedAt: serverTimestamp(),
         };
 
@@ -825,13 +825,13 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         stats.totalViews += data.viewCount ?? 0;
 
         switch (data.status) {
-          case 'active':
+          case STATUS.JOB_POSTING.ACTIVE:
             stats.active++;
             break;
-          case 'closed':
+          case STATUS.JOB_POSTING.CLOSED:
             stats.closed++;
             break;
-          case 'cancelled':
+          case STATUS.JOB_POSTING.CANCELLED:
             stats.cancelled++;
             break;
         }

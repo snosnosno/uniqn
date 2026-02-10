@@ -11,6 +11,7 @@ import { View, Text } from 'react-native';
 import { ConfirmationHistoryTimeline } from '@/components/applicant/ConfirmationHistoryTimeline';
 
 import type { ApplicationStatus, ConfirmationHistoryEntry } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -40,7 +41,7 @@ export const StatusInfo = React.memo(function StatusInfo({
   return (
     <>
       {/* 거절 사유 */}
-      {status === 'rejected' && rejectionReason && (
+      {status === STATUS.APPLICATION.REJECTED && rejectionReason && (
         <View className="bg-red-50 dark:bg-red-900/20 rounded-lg px-3 py-2 mb-2">
           <Text className="text-sm text-red-700 dark:text-red-300">
             거절 사유: {rejectionReason}
@@ -50,7 +51,7 @@ export const StatusInfo = React.memo(function StatusInfo({
 
       {/* 확정 이력 타임라인 */}
       {showConfirmationHistory &&
-        status === 'confirmed' &&
+        status === STATUS.APPLICATION.CONFIRMED &&
         confirmationHistory &&
         confirmationHistory.length > 0 && (
           <View className="mb-2">

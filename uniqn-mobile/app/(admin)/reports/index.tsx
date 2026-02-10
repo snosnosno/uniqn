@@ -17,6 +17,7 @@ import { View, Text, ScrollView, Pressable, TextInput, RefreshControl } from 're
 import { FlashList } from '@shopify/flash-list';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
+import { STATUS } from '@/constants';
 import { useAdminReports, type ReportFilters } from '@/hooks/useAdminReports';
 import { ReportCard } from '@/components/admin/ReportCard';
 import { EmptyState, Loading } from '@/components/ui';
@@ -53,7 +54,7 @@ const SEVERITY_OPTIONS: {
 export default function AdminReportsPage() {
   // 필터 상태
   const [filters, setFilters] = useState<ReportFilters>({
-    status: 'pending', // 기본값: 검토 대기
+    status: STATUS.REPORT.PENDING, // 기본값: 검토 대기
     severity: 'all',
     reporterType: 'all',
   });

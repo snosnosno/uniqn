@@ -344,7 +344,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       for (const workLog of workLogs) {
         // 완료된 근무
-        if (workLog.status === 'completed') {
+        if (workLog.status === STATUS.WORK_LOG.COMPLETED) {
           stats.completedCount++;
         }
 
@@ -363,7 +363,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
         // 정산 상태
         const amount = workLog.payrollAmount ?? 0;
-        if (workLog.payrollStatus === 'completed') {
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           stats.completedPayroll += amount;
         } else {
           stats.pendingPayroll += amount;
@@ -436,7 +436,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
         const amount = workLog.payrollAmount ?? 0;
         summary.totalAmount += amount;
 
-        if (workLog.payrollStatus === 'completed') {
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           summary.completedAmount += amount;
         } else {
           summary.pendingAmount += amount;
@@ -681,7 +681,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       await updateDoc(docRef, {
         payrollStatus: status,
-        ...(status === 'completed' && { payrollDate: serverTimestamp() }),
+        ...(status === STATUS.PAYROLL.COMPLETED && { payrollDate: serverTimestamp() }),
         updatedAt: serverTimestamp(),
       });
 

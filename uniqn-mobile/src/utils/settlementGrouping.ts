@@ -8,6 +8,7 @@
 
 import { getRoleDisplayName } from '@/types/unified';
 import type { WorkLog, PayrollStatus } from '@/types/schedule';
+import { STATUS } from '@/constants';
 import type {
   GroupedSettlement,
   DateSettlementStatus,
@@ -93,7 +94,7 @@ function createDateSettlementStatus(
   return {
     date: workLog.date,
     formattedDate: formatSingleDate(workLog.date),
-    payrollStatus: workLog.payrollStatus || 'pending',
+    payrollStatus: workLog.payrollStatus || STATUS.PAYROLL.PENDING,
     amount: settlementResult.afterTaxPay,
     workLogId: workLog.id,
     role: workLog.role,
@@ -146,7 +147,7 @@ function createGroupedSettlement(
   for (const status of dateStatuses) {
     totalAmount += status.amount;
 
-    if (status.payrollStatus === 'completed') {
+    if (status.payrollStatus === STATUS.PAYROLL.COMPLETED) {
       completedCount++;
       completedAmount += status.amount;
     } else {
@@ -289,7 +290,7 @@ export function groupSettlementsByStaff(
  */
 export function getSettlableWorkLogIds(group: GroupedSettlement): string[] {
   return group.dateStatuses
-    .filter((status) => status.hasValidTimes && status.payrollStatus !== 'completed')
+    .filter((status) => status.hasValidTimes && status.payrollStatus !== STATUS.PAYROLL.COMPLETED)
     .map((status) => status.workLogId);
 }
 
@@ -366,10 +367,10 @@ export function filterGroupedSettlements(
   }
 
   return groups.filter((group) => {
-    if (payrollStatus === 'pending') {
+    if (payrollStatus === STATUS.PAYROLL.PENDING) {
       return group.overallStatus === 'all_pending' || group.overallStatus === 'partial';
     }
-    if (payrollStatus === 'completed') {
+    if (payrollStatus === STATUS.PAYROLL.COMPLETED) {
       return group.overallStatus === 'all_completed';
     }
     return true;

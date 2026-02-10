@@ -16,6 +16,7 @@ import { useUserProfile } from '@/hooks/useUserProfile';
 // 분리된 모듈 import
 import type { ApplicantCardProps, IconColors } from './types';
 import { getRoleDisplayName } from '@/types/unified';
+import { STATUS } from '@/constants';
 import { useAssignmentSelection } from './useAssignmentSelection';
 import {
   CardHeader,
@@ -145,10 +146,10 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 확정 상태 액션 표시 여부
   const canShowConfirmedActions =
-    showActions && applicant.status === 'confirmed' && (onCancelConfirmation || onConvertToStaff);
+    showActions && applicant.status === STATUS.APPLICATION.CONFIRMED && (onCancelConfirmation || onConvertToStaff);
 
   // 액션 버튼 표시 여부
-  const canShowActions = showActions && applicant.status === 'applied';
+  const canShowActions = showActions && applicant.status === STATUS.APPLICATION.APPLIED;
 
   return (
     <Card variant="elevated" padding="md">

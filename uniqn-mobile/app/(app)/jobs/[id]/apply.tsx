@@ -18,6 +18,7 @@ import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications } from '@/hooks';
 import { useThemeStore, useToastStore } from '@/stores';
+import { STATUS } from '@/constants';
 import { queryKeys } from '@/lib/queryClient';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 import { logger } from '@/utils/logger';
@@ -132,7 +133,7 @@ export default function ApplyScreen() {
         }
 
         // 공고 상태 확인
-        if (latestJob.status !== 'active') {
+        if (latestJob.status !== STATUS.JOB_POSTING.ACTIVE) {
           addToast({ type: 'error', message: '지원이 마감된 공고입니다' });
           return;
         }

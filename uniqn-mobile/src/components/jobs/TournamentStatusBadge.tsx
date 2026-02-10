@@ -20,6 +20,7 @@ import { useTournamentApproval } from '@/hooks/useTournamentApproval';
 import { ConfirmModal } from '@/components/ui/Modal';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import type { TournamentConfig } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -168,7 +169,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   const sizeConfig = SIZE_CONFIG[size];
 
   // 거부 상태이고 사유가 있을 때만 모달 표시 가능
-  const canShowReason = showRejectionReason && approvalStatus === 'rejected' && rejectionReason;
+  const canShowReason = showRejectionReason && approvalStatus === STATUS.TOURNAMENT.REJECTED && rejectionReason;
 
   const rejectedDate = toDate(rejectedAt);
   const formattedDate = formatDateTime(rejectedDate);
@@ -228,7 +229,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
         {config.label}
       </Text>
       {/* 재제출 표시 */}
-      {isResubmitted && approvalStatus === 'pending' && (
+      {isResubmitted && approvalStatus === STATUS.TOURNAMENT.PENDING && (
         <Text className="ml-1 text-primary-600 dark:text-primary-400">🔄</Text>
       )}
     </>

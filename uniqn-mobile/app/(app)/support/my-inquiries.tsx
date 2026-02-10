@@ -14,7 +14,7 @@ import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
 
 export default function MyInquiriesScreen() {
-  const { inquiries, isLoading, hasMore, fetchNextPage, refetch } = useMyInquiries();
+  const { inquiries, isLoading, isRefreshing, hasMore, fetchNextPage, refetch } = useMyInquiries();
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
     router.push(`/(app)/support/inquiry/${inquiry.id}`);
@@ -84,7 +84,7 @@ export default function MyInquiriesScreen() {
         ListEmptyComponent={renderEmpty}
         ListFooterComponent={renderFooter}
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#A855F7" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#A855F7" />
         }
       />
     </SafeAreaView>

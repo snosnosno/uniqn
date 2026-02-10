@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useMemo, useEffect } from 'react';
-import { View, Text } from 'react-native';
+import { View, Text, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard';
@@ -186,8 +186,11 @@ export function ApplicantList({
           keyExtractor={keyExtractor}
           // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
           estimatedItemSize={180}
-          onRefresh={onRefresh}
-          refreshing={isRefreshing}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={isRefreshing ?? false} onRefresh={onRefresh} tintColor="#6366f1" />
+            ) : undefined
+          }
           showsVerticalScrollIndicator={false}
           contentContainerStyle={LIST_CONTAINER_STYLES.paddingBottom100}
         />

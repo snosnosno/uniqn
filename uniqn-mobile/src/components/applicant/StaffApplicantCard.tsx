@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { ConfirmationHistoryTimeline } from './ConfirmationHistoryTimeline';
 import type { Application, ApplicationStatus, Assignment } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -299,7 +300,7 @@ const ActionButtons = memo(function ActionButtons({
   isLoading?: boolean;
 }) {
   // 처리 가능한 상태인지 확인
-  const canProcess = status === 'applied' || status === 'pending';
+  const canProcess = status === STATUS.APPLICATION.APPLIED || status === STATUS.APPLICATION.PENDING;
 
   if (!canProcess) return null;
 
