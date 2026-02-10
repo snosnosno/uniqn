@@ -11,6 +11,7 @@
  */
 
 import { Timestamp, serverTimestamp, FieldValue } from 'firebase/firestore';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -195,7 +196,7 @@ export class WorkLogCreator {
       timeSlot: input.timeSlot,
       isTimeToBeAnnounced: input.isTimeToBeAnnounced ?? false,
       tentativeDescription: input.tentativeDescription ?? null,
-      status: 'scheduled',
+      status: STATUS.WORK_LOG.SCHEDULED,
       attendanceStatus: 'not_started',
       checkInTime,
       checkOutTime: null,

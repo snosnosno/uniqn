@@ -326,39 +326,32 @@ export const JOB_POSTING_STATUS: Record<JobPostingStatusType, StatusConfig> = {
 /**
  * 문의 상태 타입
  */
-export type InquiryStatusType = 'pending' | 'in_progress' | 'resolved' | 'closed';
+export type InquiryStatusType = 'open' | 'in_progress' | 'closed';
 
 /**
  * 문의 상태 설정
  */
 export const INQUIRY_STATUS: Record<InquiryStatusType, StatusConfig> = {
-  pending: {
-    label: '대기 중',
-    variant: 'warning',
-    textColor: 'text-yellow-600 dark:text-yellow-400',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    hexColor: '#F59E0B',
-  },
-  in_progress: {
-    label: '처리 중',
+  open: {
+    label: '접수됨',
     variant: 'primary',
     textColor: 'text-primary-600 dark:text-primary-400',
     bgColor: 'bg-primary-100 dark:bg-primary-900/30',
     hexColor: '#A855F7',
   },
-  resolved: {
-    label: '해결됨',
+  in_progress: {
+    label: '처리중',
+    variant: 'warning',
+    textColor: 'text-amber-600 dark:text-amber-400',
+    bgColor: 'bg-amber-100 dark:bg-amber-900/30',
+    hexColor: '#F59E0B',
+  },
+  closed: {
+    label: '답변 완료',
     variant: 'success',
     textColor: 'text-green-600 dark:text-green-400',
     bgColor: 'bg-green-100 dark:bg-green-900/30',
     hexColor: '#22C55E',
-  },
-  closed: {
-    label: '종료',
-    variant: 'default',
-    textColor: 'text-gray-600 dark:text-gray-400',
-    bgColor: 'bg-gray-100 dark:bg-surface',
-    hexColor: '#6B7280',
   },
 };
 

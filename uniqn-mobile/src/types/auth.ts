@@ -49,6 +49,9 @@ export interface SignUpRequest {
   identityProvider?: 'pass' | 'kakao'; // 본인인증 제공자
   verifiedName?: string; // 본인인증된 실명
   verifiedPhone?: string; // 본인인증된 휴대폰 번호
+  verifiedBirthDate?: string; // 본인인증된 생년월일 (YYYYMMDD)
+  verifiedGender?: 'male' | 'female'; // 본인인증된 성별
+  identityVerificationId?: string; // 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용)
 
   // Step 3: 프로필 정보
   nickname: string;

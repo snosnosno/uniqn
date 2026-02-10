@@ -21,6 +21,7 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { toError } from '@/errors';
 import { logger } from '@/utils/logger';
+import { STATUS } from '@/constants';
 import type { ReviewReportInput } from '@/types/report';
 
 // Get toast from the store (can be called outside of React components)
@@ -122,7 +123,7 @@ export function useReviewReport() {
  * @description pending 상태의 신고 수를 반환
  */
 export function useReportStats() {
-  const { data: pendingReports } = useAdminReports({ status: 'pending' });
+  const { data: pendingReports } = useAdminReports({ status: STATUS.REPORT.PENDING });
 
   return {
     pendingCount: pendingReports?.length ?? 0,

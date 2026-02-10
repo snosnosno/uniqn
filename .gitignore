@@ -82,6 +82,7 @@ GoogleService-Info.plist
 
 # Security certificates and keys
 *.key
+*.p8
 *.pem
 *.cert
 *.crt

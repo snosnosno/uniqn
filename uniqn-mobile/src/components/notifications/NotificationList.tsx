@@ -24,6 +24,8 @@ export interface NotificationListProps {
   notifications: NotificationListItem[];
   /** 로딩 상태 */
   isLoading?: boolean;
+  /** 새로고침 중 여부 (pull-to-refresh 스피너용) */
+  isRefreshing?: boolean;
   /** 에러 */
   error?: Error | null;
   /** 추가 데이터 존재 여부 */
@@ -57,6 +59,7 @@ const SKELETON_COUNT = 5;
 export const NotificationList = memo(function NotificationList({
   notifications,
   isLoading = false,
+  isRefreshing = false,
   error,
   hasMore = false,
   isFetchingNextPage = false,
@@ -186,7 +189,7 @@ export const NotificationList = memo(function NotificationList({
         refreshControl={
           onRefresh ? (
             <RefreshControl
-              refreshing={isLoading && notifications.length > 0}
+              refreshing={isRefreshing}
               onRefresh={onRefresh}
               tintColor="#A855F7"
             />

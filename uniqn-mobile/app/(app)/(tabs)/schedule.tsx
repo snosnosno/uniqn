@@ -234,6 +234,7 @@ export default function ScheduleScreen() {
     currentMonth,
     selectedDate,
     isLoading,
+    isRefreshing,
     error,
     setSelectedDate,
     goToPrevMonth,
@@ -421,7 +422,7 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-20"
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />}
         >
           <View className="mt-4">
             <Suspense fallback={<Skeleton className="h-80 mx-4 rounded-xl" />}>
@@ -472,7 +473,7 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="p-4 pb-20"
-          refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refresh} />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />}
         >
           {isLoading && schedules.length === 0 ? (
             // 스켈레톤 로딩 (SkeletonScheduleCard 사용)

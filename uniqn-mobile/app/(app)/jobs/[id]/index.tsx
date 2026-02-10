@@ -18,6 +18,7 @@ import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
 import { useJobDetail, useApplications, useAuth, useShare } from '@/hooks';
 import { useThemeStore } from '@/stores';
+import { STATUS } from '@/constants';
 import { trackJobView } from '@/services/analyticsService';
 
 // ============================================================================
@@ -177,14 +178,14 @@ export default function AuthenticatedJobDetailScreen() {
     if (!applicationStatus) return null;
 
     switch (applicationStatus.status) {
-      case 'applied':
-      case 'pending':
+      case STATUS.APPLICATION.APPLIED:
+      case STATUS.APPLICATION.PENDING:
         return '지원 완료 - 검토 중';
-      case 'confirmed':
+      case STATUS.APPLICATION.CONFIRMED:
         return '지원 승인됨';
-      case 'rejected':
+      case STATUS.APPLICATION.REJECTED:
         return '지원이 거절되었습니다';
-      case 'cancelled':
+      case STATUS.APPLICATION.CANCELLED:
         return '지원이 취소되었습니다';
       default:
         return null;
@@ -193,7 +194,7 @@ export default function AuthenticatedJobDetailScreen() {
 
   // 취소 요청 가능 여부 (확정된 지원만)
   const canRequestCancel =
-    applicationStatus?.status === 'confirmed' && !applicationStatus?.cancellationRequest;
+    applicationStatus?.status === STATUS.APPLICATION.CONFIRMED && !applicationStatus?.cancellationRequest;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
@@ -238,7 +239,7 @@ export default function AuthenticatedJobDetailScreen() {
                 )}
               </View>
             </View>
-          ) : job.status !== 'active' ? (
+          ) : job.status !== STATUS.JOB_POSTING.ACTIVE ? (
             <Button disabled fullWidth>
               마감된 공고입니다
             </Button>

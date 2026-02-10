@@ -25,7 +25,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ERROR_CODES, AlreadySettledError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { COLLECTIONS, FIREBASE_LIMITS } from '@/constants';
+import { COLLECTIONS, FIREBASE_LIMITS, STATUS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
 import {
   getEffectiveSalaryInfoFromRoles,
@@ -96,7 +96,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         );
 
         // 3. 이미 정산 완료된 경우 수정 불가
-        if (workLog.payrollStatus === 'completed') {
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           throw new AlreadySettledError();
         }
 
@@ -190,20 +190,20 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         );
 
         // 3. 출퇴근 완료 여부 확인
-        if (workLog.status !== 'checked_out' && workLog.status !== 'completed') {
+        if (workLog.status !== STATUS.WORK_LOG.CHECKED_OUT && workLog.status !== STATUS.WORK_LOG.COMPLETED) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '출퇴근이 완료된 근무 기록만 정산할 수 있습니다',
           });
         }
 
         // 4. 중복 정산 방지
-        if (workLog.payrollStatus === 'completed') {
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
           throw new AlreadySettledError();
         }
 
         // 5. 정산 처리
         const updateData: Record<string, unknown> = {
-          payrollStatus: 'completed',
+          payrollStatus: STATUS.PAYROLL.COMPLETED,
           payrollAmount: context.amount,
           payrollDate: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -343,7 +343,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
             }
 
             // 상태 확인
-            if (workLog.status !== 'checked_out' && workLog.status !== 'completed') {
+            if (workLog.status !== STATUS.WORK_LOG.CHECKED_OUT && workLog.status !== STATUS.WORK_LOG.COMPLETED) {
               results.push({
                 success: false,
                 workLogId: id,
@@ -355,7 +355,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
             }
 
             // 이미 정산 완료
-            if (workLog.payrollStatus === 'completed') {
+            if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
               results.push({
                 success: false,
                 workLogId: id,
@@ -386,7 +386,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
 
             // 정산 처리
             const updateData: Record<string, unknown> = {
-              payrollStatus: 'completed',
+              payrollStatus: STATUS.PAYROLL.COMPLETED,
               payrollAmount: amount,
               payrollDate: serverTimestamp(),
               updatedAt: serverTimestamp(),
@@ -462,7 +462,7 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
           updatedAt: serverTimestamp(),
         };
 
-        if (status === 'completed') {
+        if (status === STATUS.PAYROLL.COMPLETED) {
           updateData.payrollDate = serverTimestamp();
         }
 

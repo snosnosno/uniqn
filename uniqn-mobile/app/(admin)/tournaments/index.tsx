@@ -14,6 +14,7 @@ import { ApprovalModal } from '@/components/admin/ApprovalModal';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
+import { STATUS } from '@/constants';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 
@@ -88,8 +89,8 @@ const TournamentCard = memo(function TournamentCard({
   onViewDetail,
   isProcessing,
 }: TournamentCardProps) {
-  const approvalStatus = posting.tournamentConfig?.approvalStatus ?? 'pending';
-  const isPending = approvalStatus === 'pending';
+  const approvalStatus = posting.tournamentConfig?.approvalStatus ?? STATUS.TOURNAMENT.PENDING;
+  const isPending = approvalStatus === STATUS.TOURNAMENT.PENDING;
   const isResubmitted = !!posting.tournamentConfig?.resubmittedAt;
 
   const formatDate = (dateStr: string) => {
@@ -370,20 +371,20 @@ export default function AdminTournamentsPage() {
         {displayPostings.length === 0 ? (
           <EmptyState
             title={
-              selectedStatus === 'pending'
+              selectedStatus === STATUS.TOURNAMENT.PENDING
                 ? '승인 대기 공고 없음'
-                : selectedStatus === 'approved'
+                : selectedStatus === STATUS.TOURNAMENT.APPROVED
                   ? '승인된 공고 없음'
                   : '거부된 공고 없음'
             }
             description={
-              selectedStatus === 'pending'
+              selectedStatus === STATUS.TOURNAMENT.PENDING
                 ? '현재 승인 대기 중인 대회공고가 없습니다'
-                : selectedStatus === 'approved'
+                : selectedStatus === STATUS.TOURNAMENT.APPROVED
                   ? '아직 승인된 대회공고가 없습니다'
                   : '거부된 대회공고가 없습니다'
             }
-            icon={selectedStatus === 'pending' ? '📋' : selectedStatus === 'approved' ? '✅' : '❌'}
+            icon={selectedStatus === STATUS.TOURNAMENT.PENDING ? '📋' : selectedStatus === STATUS.TOURNAMENT.APPROVED ? '✅' : '❌'}
           />
         ) : (
           displayPostings.map((posting) => (

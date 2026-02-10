@@ -1,21 +1,32 @@
 /**
  * UNIQN Mobile - 본인인증 컴포넌트
  *
- * @description 재사용 가능한 본인인증 UI (PASS/카카오)
- * @version 1.0.0
+ * @description 포트원 V2 SDK 기반 휴대폰 본인인증
+ * @version 2.1.0
  *
- * 현재 상태: Mock 구현 (UI 스텁)
+ * 플로우:
+ * 1. 사용자가 "휴대폰 본인인증" 버튼 클릭
+ * 2. 포트원 SDK WebView 모달 오픈
+ * 3. 인증 완료 후 Cloud Function으로 결과 검증
+ * 4. CI/DI는 서버에만 저장, 클라이언트에는 개인정보만 반환
  *
- * 실제 연동 시 구현 필요:
- * - PASS: react-native-nice-pass 또는 WebView
- * - Kakao: 카카오 본인인증 SDK
- *
- * @see docs/IDENTITY_VERIFICATION.md (구현 가이드 예정)
+ * 개발 모드: Mock 인증 사용 (포트원 SDK 미호출)
  */
 
 import React, { useState, useCallback } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
+import { View, Text, Pressable, ActivityIndicator, Modal, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { ShieldCheckIcon, CheckCircleIcon, XCircleIcon } from '@/components/icons';
+import {
+  generateIdentityVerificationId,
+  getPortOneParams,
+  verifyIdentityResult,
+} from '@/services/identityVerificationService';
+import type { VerifiedIdentityData } from '@/services/identityVerificationService';
+
+// 포트원 SDK 컴포넌트 (네이티브 전용, 모듈 최상위에서 로드)
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const PortOneSDK = Platform.OS !== 'web' ? require('@portone/react-native-sdk') : null;
 
 // ============================================================================
 // Types
@@ -30,14 +41,16 @@ export interface VerificationResult {
   name: string;
   /** 인증된 휴대폰 번호 */
   phone: string;
+  /** 인증된 생년월일 (YYYYMMDD) */
+  birthDate: string;
+  /** 인증된 성별 */
+  gender: 'male' | 'female';
   /** 사용한 인증 제공자 */
   provider: IdentityProvider;
   /** 인증 완료 시간 */
   verifiedAt: Date;
-  /** CI (연계정보, 필요한 경우) */
-  ci?: string;
-  /** DI (중복가입확인정보, 필요한 경우) */
-  di?: string;
+  /** 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용) */
+  identityVerificationId: string;
 }
 
 /** 본인인증 상태 */
@@ -69,16 +82,98 @@ export interface IdentityVerificationProps {
 
 const MOCK_VERIFICATION_DELAY = 1500; // ms
 
-const MOCK_NAMES = ['홍길동', '김철수', '이영희', '박지성', '최민수'];
-const MOCK_PHONES = ['010-1234-5678', '010-9876-5432', '010-1111-2222'];
-
-function generateMockResult(provider: IdentityProvider): VerificationResult {
+function generateMockResult(): VerificationResult {
   return {
-    name: MOCK_NAMES[Math.floor(Math.random() * MOCK_NAMES.length)],
-    phone: MOCK_PHONES[Math.floor(Math.random() * MOCK_PHONES.length)],
-    provider,
+    name: '홍길동',
+    phone: '010-1234-5678',
+    birthDate: '19900101',
+    gender: 'male',
+    provider: 'pass',
     verifiedAt: new Date(),
+    identityVerificationId: `mock-${Date.now()}`,
   };
+}
+
+// ============================================================================
+// PortOne WebView Modal (네이티브 전용)
+// ============================================================================
+
+interface PortOneModalProps {
+  visible: boolean;
+  identityVerificationId: string;
+  onComplete: (verifiedData: VerifiedIdentityData) => void;
+  onError: (error: Error) => void;
+  onClose: () => void;
+}
+
+/**
+ * 포트원 본인인증 WebView 모달
+ * - @portone/react-native-sdk의 IdentityVerification 컴포넌트를 렌더링
+ * - 웹에서는 사용 불가 (네이티브 전용)
+ */
+function PortOneModal({ visible, identityVerificationId, onComplete, onError, onClose }: PortOneModalProps) {
+  const [verifying, setVerifying] = useState(false);
+
+  if (!PortOneSDK) return null;
+
+  const PortOneIdentityVerification = PortOneSDK.IdentityVerification;
+  const params = getPortOneParams(identityVerificationId);
+
+  const handleComplete = async (response: { code?: string; message?: string; identityVerificationId: string }) => {
+    // SDK 응답에 code가 있으면 에러
+    if (response.code != null) {
+      if (response.code === 'IDENTITY_VERIFICATION_CANCELLED') {
+        onClose();
+        return;
+      }
+      onError(new Error(response.message || '본인인증에 실패했습니다.'));
+      return;
+    }
+
+    // Cloud Function으로 인증 결과 검증
+    setVerifying(true);
+    try {
+      const verifiedData = await verifyIdentityResult(identityVerificationId);
+      onComplete(verifiedData);
+    } catch (err) {
+      onError(err instanceof Error ? err : new Error('인증 결과 검증에 실패했습니다.'));
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleError = (error: { code?: string; message?: string }) => {
+    onError(new Error(error.message || '본인인증 중 오류가 발생했습니다.'));
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+      <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
+        {/* 닫기 헤더 */}
+        <View className="flex-row items-center justify-between px-4 pb-3 border-b border-gray-200 dark:border-gray-700">
+          <Text className="text-lg font-bold text-gray-900 dark:text-white">본인인증</Text>
+          <Pressable onPress={onClose} className="p-2">
+            <Text className="text-gray-500 dark:text-gray-400 text-base">닫기</Text>
+          </Pressable>
+        </View>
+
+        {/* 검증 중 오버레이 */}
+        {verifying ? (
+          <View className="flex-1 items-center justify-center">
+            <ActivityIndicator size="large" color="#6366f1" />
+            <Text className="mt-4 text-gray-600 dark:text-gray-400">인증 결과 확인 중...</Text>
+          </View>
+        ) : (
+          /* 포트원 SDK 컴포넌트 (WebView) */
+          <PortOneIdentityVerification
+            request={params}
+            onComplete={handleComplete}
+            onError={handleError}
+          />
+        )}
+      </SafeAreaView>
+    </Modal>
+  );
 }
 
 // ============================================================================
@@ -99,43 +194,78 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
     const [status, setStatus] = useState<VerificationStatus>(initialResult ? 'success' : 'idle');
     const [result, setResult] = useState<VerificationResult | null>(initialResult);
     const [error, setError] = useState<string | null>(null);
-    const [activeProvider, setActiveProvider] = useState<IdentityProvider | null>(null);
+
+    // 포트원 모달 상태
+    const [showPortOne, setShowPortOne] = useState(false);
+    const [currentVerificationId, setCurrentVerificationId] = useState('');
 
     /**
      * 본인인증 시작
      */
-    const handleVerification = useCallback(
-      async (provider: IdentityProvider) => {
-        if (disabled || status === 'verifying') return;
+    const handleVerification = useCallback(async () => {
+      if (disabled || status === 'verifying') return;
 
-        setActiveProvider(provider);
-        setStatus('verifying');
-        setError(null);
+      setStatus('verifying');
+      setError(null);
 
+      if (devMode) {
+        // 개발 모드: 모의 인증
         try {
-          if (devMode) {
-            // 개발 모드: 모의 인증
-            await new Promise((resolve) => setTimeout(resolve, MOCK_VERIFICATION_DELAY));
-            const mockResult = generateMockResult(provider);
-            setResult(mockResult);
-            setStatus('success');
-            onVerified(mockResult);
-          } else {
-            // 프로덕션: 실제 SDK 연동 필요
-            // PASS 또는 카카오 본인인증 SDK 구현 예정
-            throw new Error('본인인증 서비스가 준비 중입니다.');
-          }
+          await new Promise((resolve) => setTimeout(resolve, MOCK_VERIFICATION_DELAY));
+          const mockResult = generateMockResult();
+          setResult(mockResult);
+          setStatus('success');
+          onVerified(mockResult);
         } catch (err) {
           const errorMessage = err instanceof Error ? err.message : '본인인증에 실패했습니다.';
           setError(errorMessage);
           setStatus('error');
           onError?.(err instanceof Error ? err : new Error(errorMessage));
-        } finally {
-          setActiveProvider(null);
         }
-      },
-      [disabled, status, devMode, onVerified, onError]
-    );
+      } else {
+        // 프로덕션: 포트원 SDK 모달 오픈
+        const verificationId = generateIdentityVerificationId();
+        setCurrentVerificationId(verificationId);
+        setShowPortOne(true);
+      }
+    }, [disabled, status, devMode, onVerified, onError]);
+
+    /**
+     * 포트원 인증 완료
+     */
+    const handlePortOneComplete = useCallback((verifiedData: VerifiedIdentityData) => {
+      setShowPortOne(false);
+      const verificationResult: VerificationResult = {
+        name: verifiedData.name,
+        phone: verifiedData.phone,
+        birthDate: verifiedData.birthDate,
+        gender: verifiedData.gender,
+        provider: 'pass',
+        verifiedAt: new Date(),
+        identityVerificationId: currentVerificationId,
+      };
+      setResult(verificationResult);
+      setStatus('success');
+      onVerified(verificationResult);
+    }, [onVerified, currentVerificationId]);
+
+    /**
+     * 포트원 인증 실패
+     */
+    const handlePortOneError = useCallback((err: Error) => {
+      setShowPortOne(false);
+      setError(err.message);
+      setStatus('error');
+      onError?.(err);
+    }, [onError]);
+
+    /**
+     * 포트원 모달 닫기 (취소)
+     */
+    const handlePortOneClose = useCallback(() => {
+      setShowPortOne(false);
+      setStatus('idle');
+    }, []);
 
     /**
      * 인증 초기화 (다시 인증)
@@ -163,6 +293,17 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
 
     return (
       <View className="w-full">
+        {/* 포트원 본인인증 모달 */}
+        {showPortOne && (
+          <PortOneModal
+            visible={showPortOne}
+            identityVerificationId={currentVerificationId}
+            onComplete={handlePortOneComplete}
+            onError={handlePortOneError}
+            onClose={handlePortOneClose}
+          />
+        )}
+
         {/* 헤더 */}
         {!compact && (
           <View className="items-center mb-6">
@@ -188,7 +329,7 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
                   본인인증 완료
                 </Text>
                 <Text className="text-xs text-success-600 dark:text-success-500">
-                  {result.provider === 'pass' ? 'PASS' : '카카오'} 인증
+                  휴대폰 본인인증
                 </Text>
               </View>
             </View>
@@ -202,6 +343,18 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">휴대폰</Text>
                 <Text className="text-gray-900 dark:text-white font-medium">{result.phone}</Text>
               </View>
+              <View className="flex-row justify-between">
+                <Text className="text-gray-500 dark:text-gray-400 text-sm">생년월일</Text>
+                <Text className="text-gray-900 dark:text-white font-medium">
+                  {result.birthDate.replace(/(\d{4})(\d{2})(\d{2})/, '$1.$2.$3')}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-gray-500 dark:text-gray-400 text-sm">성별</Text>
+                <Text className="text-gray-900 dark:text-white font-medium">
+                  {result.gender === 'male' ? '남성' : '여성'}
+                </Text>
+              </View>
             </View>
 
             <Pressable onPress={handleReset} className="mt-4 py-2 items-center">
@@ -213,48 +366,25 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
         ) : (
           /* 인증 버튼 */
           <View className="flex-col gap-3">
-            {/* PASS 본인인증 */}
+            {/* 휴대폰 본인인증 */}
             <Pressable
-              onPress={() => handleVerification('pass')}
+              onPress={handleVerification}
               disabled={disabled || status === 'verifying'}
               className={`
                 flex-row items-center justify-center
                 py-4 px-6 rounded-xl
-                bg-[#1B1464]
+                bg-primary-600
                 ${disabled || status === 'verifying' ? 'opacity-50' : 'active:opacity-80'}
               `}
-              accessibilityLabel="PASS 본인인증"
-              accessibilityHint="PASS 앱을 통해 본인인증을 진행합니다"
+              accessibilityLabel="휴대폰 본인인증"
+              accessibilityHint="휴대폰을 통해 본인인증을 진행합니다"
             >
-              {activeProvider === 'pass' && status === 'verifying' ? (
+              {status === 'verifying' ? (
                 <ActivityIndicator color="white" size="small" />
               ) : (
                 <>
-                  <Text className="text-white font-bold text-lg mr-2">PASS</Text>
-                  <Text className="text-white font-medium">본인인증</Text>
-                </>
-              )}
-            </Pressable>
-
-            {/* 카카오 본인인증 */}
-            <Pressable
-              onPress={() => handleVerification('kakao')}
-              disabled={disabled || status === 'verifying'}
-              className={`
-                flex-row items-center justify-center
-                py-4 px-6 rounded-xl
-                bg-[#FEE500]
-                ${disabled || status === 'verifying' ? 'opacity-50' : 'active:opacity-80'}
-              `}
-              accessibilityLabel="카카오 본인인증"
-              accessibilityHint="카카오를 통해 본인인증을 진행합니다"
-            >
-              {activeProvider === 'kakao' && status === 'verifying' ? (
-                <ActivityIndicator color="#191919" size="small" />
-              ) : (
-                <>
-                  <Text className="text-[#191919] text-lg mr-2">💬</Text>
-                  <Text className="text-[#191919] font-medium">카카오 본인인증</Text>
+                  <ShieldCheckIcon size={20} color="white" />
+                  <Text className="text-white font-bold text-base ml-2">휴대폰 본인인증</Text>
                 </>
               )}
             </Pressable>

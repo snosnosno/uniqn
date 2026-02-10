@@ -29,6 +29,7 @@ export default function ApplicantsScreen() {
     applicants,
     stats,
     isLoading,
+    isRefreshing,
     error,
     refresh,
     confirmWithHistory,
@@ -164,7 +165,7 @@ export default function ApplicantsScreen() {
         isLoading={isLoading}
         error={error}
         onRefresh={() => refresh()}
-        isRefreshing={false}
+        isRefreshing={isRefreshing}
         onConfirm={handleConfirm}
         onReject={handleReject}
         onViewProfile={handleViewProfile}

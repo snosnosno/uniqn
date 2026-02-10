@@ -22,6 +22,7 @@ import {
 } from '../../icons';
 import type { UserProfile } from '@/services';
 import type { ApplicantWithDetails } from '@/services';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -239,7 +240,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
       )}
 
       {/* 상태별 추가 정보 */}
-      {applicant.status === 'rejected' && applicant.rejectionReason && (
+      {applicant.status === STATUS.APPLICATION.REJECTED && applicant.rejectionReason && (
         <View className="px-4 pb-4">
           <View className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 flex-row items-start">
             <XCircleIcon size={16} color="#EF4444" />
@@ -253,7 +254,7 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
         </View>
       )}
 
-      {applicant.status === 'confirmed' && (
+      {applicant.status === STATUS.APPLICATION.CONFIRMED && (
         <View className="px-4 pb-4">
           <View className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 flex-row items-center">
             <CheckCircleIcon size={16} color="#10B981" />

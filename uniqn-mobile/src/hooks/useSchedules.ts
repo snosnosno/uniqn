@@ -163,6 +163,7 @@ export function useSchedulesByMonth(options: UseSchedulesByMonthOptions) {
     markedDates,
     stats,
     isLoading: query.isLoading,
+    isRefreshing: query.isRefetching,
     error: query.error,
     refresh,
   };
@@ -365,7 +366,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   }, []);
 
   // 월별 스케줄 데이터
-  const { schedules, groupedSchedules, markedDates, stats, isLoading, error, refresh } =
+  const { schedules, groupedSchedules, markedDates, stats, isLoading, isRefreshing, error, refresh } =
     useSchedulesByMonth({
       year: currentMonth.year,
       month: currentMonth.month,
@@ -411,6 +412,7 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
     selectedDateSchedulesRaw, // 선택된 날짜 (원본)
     // 상태
     isLoading,
+    isRefreshing,
     error,
     // 액션
     setView,

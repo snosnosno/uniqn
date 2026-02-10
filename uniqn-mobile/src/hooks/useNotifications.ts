@@ -60,6 +60,7 @@ interface UseNotificationListOptions {
 interface UseNotificationListResult {
   notifications: NotificationData[];
   isLoading: boolean;
+  isRefreshing: boolean;
   isError: boolean;
   error: Error | null;
   hasMore: boolean;
@@ -186,6 +187,7 @@ export function useNotificationList(
   return {
     notifications: effectiveNotifications,
     isLoading: isOnline ? query.isLoading : false,
+    isRefreshing: query.isRefetching,
     isError: query.isError,
     error: query.error ? toError(query.error) : null,
     hasMore: useNotificationStore((state) => state.hasMore),
@@ -512,6 +514,8 @@ interface UseGroupedNotificationsResult {
   unreadCount: number;
   /** 로딩 상태 */
   isLoading: boolean;
+  /** 새로고침 중 여부 */
+  isRefreshing: boolean;
   /** 에러 */
   error: Error | null;
   /** 추가 데이터 존재 */
@@ -557,6 +561,7 @@ export function useGroupedNotifications(
   const {
     notifications: rawNotifications,
     isLoading,
+    isRefreshing,
     error,
     hasMore,
     fetchNextPage,
@@ -597,6 +602,7 @@ export function useGroupedNotifications(
     rawNotifications,
     unreadCount,
     isLoading,
+    isRefreshing,
     error,
     hasMore,
     fetchNextPage,

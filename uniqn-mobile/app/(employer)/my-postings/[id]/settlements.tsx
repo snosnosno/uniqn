@@ -32,6 +32,7 @@ import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
 import { reportService, markAsNoShow } from '@/services';
 import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
+import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
 import {
   type SalaryInfo,
@@ -217,6 +218,7 @@ export default function StaffSettlementsScreen() {
   const {
     workLogs,
     isLoading,
+    isRefreshing,
     error,
     refresh,
     updateWorkTime,
@@ -754,7 +756,7 @@ export default function StaffSettlementsScreen() {
 
   // 카운트 계산
   const staffCount = staffStats?.total ?? 0;
-  const pendingSettlementCount = workLogs.filter((log) => log.payrollStatus !== 'completed').length;
+  const pendingSettlementCount = workLogs.filter((log) => log.payrollStatus !== STATUS.PAYROLL.COMPLETED).length;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
@@ -785,7 +787,7 @@ export default function StaffSettlementsScreen() {
           isLoading={isLoading}
           error={error}
           onRefresh={() => refresh()}
-          isRefreshing={false}
+          isRefreshing={isRefreshing}
           onWorkLogPress={handleWorkLogPress}
           onSettle={handleSettle}
           onBulkSettle={handleBulkSettle}

@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable, SectionList } from 'react-native';
+import { View, Text, Pressable, SectionList, RefreshControl } from 'react-native';
 import { ConfirmedStaffCard } from './ConfirmedStaffCard';
 import { Loading } from '../../ui/Loading';
 import { EmptyState } from '../../ui/EmptyState';
@@ -303,8 +303,11 @@ export function ConfirmedStaffList({
           renderItem={renderItem}
           renderSectionHeader={renderSectionHeader}
           keyExtractor={keyExtractor}
-          onRefresh={onRefresh}
-          refreshing={isRefreshing}
+          refreshControl={
+            onRefresh ? (
+              <RefreshControl refreshing={isRefreshing ?? false} onRefresh={onRefresh} tintColor="#6366f1" />
+            ) : undefined
+          }
           showsVerticalScrollIndicator={false}
           stickySectionHeadersEnabled={false}
           contentContainerStyle={{ paddingBottom: 100 }}

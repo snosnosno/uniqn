@@ -19,7 +19,6 @@ import { Platform } from 'react-native';
 import * as Sentry from '@sentry/react-native';
 import { logger } from '@/utils/logger';
 import { AppError, isAppError } from '@/errors/AppError';
-import { toError } from '@/errors';
 
 // ============================================================================
 // Types
@@ -98,7 +97,8 @@ async function initialize(): Promise<boolean> {
     logger.info('Sentry 에러 모니터링 연동 확인', { enabled: sentryEnabled });
     return true;
   } catch (error) {
-    logger.error('에러 모니터링 초기화 실패', toError(error));
+    // 주의: logger.error()를 사용하면 logger → crashlyticsService → logger 루프 가능
+    console.error('[ErrorMonitor] 에러 모니터링 초기화 실패', error);
     return false;
   }
 }
@@ -133,21 +133,22 @@ export async function recordError(error: Error | AppError, context?: CrashContex
     };
 
     if (Platform.OS === 'web') {
-      logger.error('Error recorded', error, {
+      // 주의: logger.error()를 사용하면 logger → crashlyticsService → logger 무한 루프 발생
+      // 웹에서는 console.error로 직접 출력
+      console.error('[ErrorMonitor] Error recorded', {
         severity: 'non-fatal',
         ...fullContext,
+        error: error.message,
       });
 
     } else {
-      // Sentry로 에러 전송
+      // Sentry로 에러 전송 (context + AppError 메타데이터 모두 포함)
       Sentry.withScope((scope) => {
-        if (context) {
-          Object.entries(context).forEach(([key, value]) => {
-            if (value !== undefined) {
-              scope.setTag(key, String(value));
-            }
-          });
-        }
+        Object.entries(fullContext).forEach(([key, value]) => {
+          if (value !== undefined) {
+            scope.setTag(key, String(value));
+          }
+        });
         scope.setLevel('error');
         Sentry.captureException(error);
       });
@@ -172,23 +173,28 @@ export async function recordFatalError(
     }
 
     const errorInfo = extractErrorInfo(error);
+    const fullContext = {
+      ...context,
+      ...errorInfo.attributes,
+    };
 
     if (Platform.OS === 'web') {
-      logger.error('Fatal Error recorded', error, {
+      // 주의: logger.error()를 사용하면 logger → crashlyticsService → logger 무한 루프 발생
+      // 웹에서는 console.error로 직접 출력
+      console.error('[ErrorMonitor] Fatal Error recorded', {
         severity: 'fatal',
-        ...context,
-        ...errorInfo.attributes,
+        ...fullContext,
+        error: error.message,
       });
 
     } else {
+      // Sentry로 에러 전송 (context + AppError 메타데이터 모두 포함)
       Sentry.withScope((scope) => {
-        if (context) {
-          Object.entries(context).forEach(([key, value]) => {
-            if (value !== undefined) {
-              scope.setTag(key, String(value));
-            }
-          });
-        }
+        Object.entries(fullContext).forEach(([key, value]) => {
+          if (value !== undefined) {
+            scope.setTag(key, String(value));
+          }
+        });
         scope.setLevel('fatal');
         Sentry.captureException(error);
       });
@@ -440,7 +446,7 @@ export async function leaveBreadcrumb(
     if (Platform.OS !== 'web') {
       Sentry.addBreadcrumb({
         message,
-        data: data as Record<string, string>,
+        data,
         level: 'info',
       });
     }

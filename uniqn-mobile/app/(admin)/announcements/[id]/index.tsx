@@ -17,6 +17,7 @@ import {
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { STATUS } from '@/constants';
 import {
   useAnnouncementDetail,
   usePublishAnnouncement,
@@ -361,7 +362,7 @@ export default function AnnouncementDetailPage() {
           {/* Action Buttons */}
           <View className="gap-3 pb-8">
             {/* Publish (draft only) */}
-            {announcement.status === 'draft' && (
+            {announcement.status === STATUS.ANNOUNCEMENT.DRAFT && (
               <Pressable
                 onPress={handlePublish}
                 disabled={!!actionLoading}
@@ -379,7 +380,7 @@ export default function AnnouncementDetailPage() {
             )}
 
             {/* Archive (published only) */}
-            {announcement.status === 'published' && (
+            {announcement.status === STATUS.ANNOUNCEMENT.PUBLISHED && (
               <Pressable
                 onPress={handleArchive}
                 disabled={!!actionLoading}

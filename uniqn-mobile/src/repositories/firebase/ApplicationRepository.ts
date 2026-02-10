@@ -321,7 +321,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
       if (!data) {
         return false;
       }
-      return data.status !== 'cancelled';
+      return data.status !== STATUS.APPLICATION.CANCELLED;
     } catch (error) {
       logger.error('지원 여부 확인 실패', toError(error), { jobPostingId, applicantId });
       return false;
@@ -475,7 +475,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 공고 상태 확인
-        if (jobData.status !== 'active') {
+        if (jobData.status !== STATUS.JOB_POSTING.ACTIVE) {
           throw new ApplicationClosedError({
             userMessage: '지원이 마감된 공고입니다',
             jobPostingId: input.jobPostingId,
@@ -532,7 +532,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
             id: existingApp.id,
             ...existingApp.data(),
           });
-          if (existingData && existingData.status !== 'cancelled') {
+          if (existingData && existingData.status !== STATUS.APPLICATION.CANCELLED) {
             throw new AlreadyAppliedError({
               userMessage: '이미 지원한 공고입니다',
               jobPostingId: input.jobPostingId,
@@ -564,7 +564,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
           jobPostingTitle: jobData.title || '',
           ...(jobData.workDate && { jobPostingDate: jobData.workDate }),
 
-          status: 'applied',
+          status: STATUS.APPLICATION.APPLIED,
           ...(input.message && { message: input.message }),
           recruitmentType,
 
@@ -646,14 +646,14 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 이미 취소된 경우
-        if (applicationData.status === 'cancelled') {
+        if (applicationData.status === STATUS.APPLICATION.CANCELLED) {
           throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_CANCELLED, {
             userMessage: '이미 취소된 지원입니다',
           });
         }
 
         // 확정된 경우 취소 불가
-        if (applicationData.status === 'confirmed') {
+        if (applicationData.status === STATUS.APPLICATION.CONFIRMED) {
           throw new BusinessError(ERROR_CODES.BUSINESS_CANNOT_CANCEL_CONFIRMED, {
             userMessage: '확정된 지원은 취소할 수 없습니다. 취소 요청을 이용해주세요.',
           });
@@ -661,7 +661,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
         // 지원 취소 처리
         transaction.update(applicationRef, {
-          status: 'cancelled',
+          status: STATUS.APPLICATION.CANCELLED,
           updatedAt: serverTimestamp(),
         });
 
@@ -729,33 +729,33 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 확정된 상태인지 확인 (명시적 상태 검증)
-        if (applicationData.status !== 'confirmed') {
+        if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
           // 지원 대기 상태: 직접 취소 가능
-          if (applicationData.status === 'applied' || applicationData.status === 'pending') {
+          if (applicationData.status === STATUS.APPLICATION.APPLIED || applicationData.status === STATUS.APPLICATION.PENDING) {
             throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
               userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
             });
           }
           // 이미 취소된 상태
-          if (applicationData.status === 'cancelled') {
+          if (applicationData.status === STATUS.APPLICATION.CANCELLED) {
             throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
               userMessage: '이미 취소된 지원입니다',
             });
           }
           // 거절된 상태
-          if (applicationData.status === 'rejected') {
+          if (applicationData.status === STATUS.APPLICATION.REJECTED) {
             throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
               userMessage: '거절된 지원은 취소 요청이 불가능합니다',
             });
           }
           // 완료된 상태
-          if (applicationData.status === 'completed') {
+          if (applicationData.status === STATUS.APPLICATION.COMPLETED) {
             throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
               userMessage: '이미 완료된 근무는 취소 요청이 불가능합니다',
             });
           }
           // 취소 요청 대기 중
-          if (applicationData.status === 'cancellation_pending') {
+          if (applicationData.status === STATUS.APPLICATION.CANCELLATION_PENDING) {
             throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
               userMessage: '이미 취소 요청이 진행 중입니다',
             });
@@ -789,7 +789,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
         // 트랜잭션 쓰기
         transaction.update(applicationRef, {
-          status: 'cancellation_pending' as ApplicationStatus,
+          status: STATUS.APPLICATION.CANCELLATION_PENDING as ApplicationStatus,
           cancellationRequest,
           updatedAt: serverTimestamp(),
         });
@@ -876,7 +876,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 취소 요청 상태 확인
-        if (applicationData.status !== 'cancellation_pending') {
+        if (applicationData.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '검토 대기 중인 취소 요청이 없습니다',
           });
@@ -910,7 +910,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         if (input.approved) {
           // 승인: 지원 상태를 cancelled로 변경 + 지원자 수/확정 인원 감소
           transaction.update(applicationRef, {
-            status: 'cancelled' as ApplicationStatus,
+            status: STATUS.APPLICATION.CANCELLED as ApplicationStatus,
             cancellationRequest: updatedCancellationRequest,
             cancelledAt: serverTimestamp(),
             updatedAt: serverTimestamp(),
@@ -924,7 +924,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         } else {
           // 거절: 지원 상태를 confirmed로 복원
           transaction.update(applicationRef, {
-            status: 'confirmed' as ApplicationStatus,
+            status: STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
             cancellationRequest: updatedCancellationRequest,
             updatedAt: serverTimestamp(),
           });
@@ -1009,7 +1009,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 지원 상태 확인 (applied 또는 pending만 확정 가능)
-        if (applicationData.status !== 'applied' && applicationData.status !== 'pending') {
+        if (applicationData.status !== STATUS.APPLICATION.APPLIED && applicationData.status !== STATUS.APPLICATION.PENDING) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 확정할 수 있습니다.`,
           });
@@ -1031,7 +1031,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
         // 지원 상태 업데이트
         transaction.update(applicationRef, {
-          status: 'confirmed' as ApplicationStatus,
+          status: STATUS.APPLICATION.CONFIRMED as ApplicationStatus,
           confirmedAt: serverTimestamp(),
           processedBy: reviewerId,
           processedAt: serverTimestamp(),
@@ -1062,8 +1062,8 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
               ownerId: jobData.ownerId,
               date,
               role: primaryRole,
-              status: 'scheduled' as WorkLogStatus,
-              payrollStatus: 'pending',
+              status: STATUS.WORK_LOG.SCHEDULED as WorkLogStatus,
+              payrollStatus: STATUS.PAYROLL.PENDING,
               ...(assignment.timeSlot && { timeSlot: assignment.timeSlot }),
             };
 
@@ -1148,7 +1148,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 지원 상태 확인 (applied 또는 pending만 거절 가능)
-        if (applicationData.status !== 'applied' && applicationData.status !== 'pending') {
+        if (applicationData.status !== STATUS.APPLICATION.APPLIED && applicationData.status !== STATUS.APPLICATION.PENDING) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 거절할 수 있습니다.`,
           });
@@ -1156,7 +1156,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
         // 지원 상태 업데이트
         transaction.update(applicationRef, {
-          status: 'rejected' as ApplicationStatus,
+          status: STATUS.APPLICATION.REJECTED as ApplicationStatus,
           rejectionReason: input.reason || '',
           processedBy: reviewerId,
           processedAt: serverTimestamp(),

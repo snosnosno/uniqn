@@ -18,6 +18,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
 import { extractErrorMessage } from '@/shared/errors';
+import { STATUS } from '@/constants';
 import type { JobPosting } from '@/types';
 
 // ============================================================================
@@ -254,9 +255,9 @@ export function useTournamentDetail(postingId: string, enabled = true) {
  */
 export function useTournamentsByStatus(status: TournamentApprovalStatus, enabled = true) {
   const queryKey =
-    status === 'pending'
+    status === STATUS.TOURNAMENT.PENDING
       ? queryKeys.tournaments.pending()
-      : status === 'approved'
+      : status === STATUS.TOURNAMENT.APPROVED
         ? queryKeys.tournaments.approved()
         : queryKeys.tournaments.rejected();
 

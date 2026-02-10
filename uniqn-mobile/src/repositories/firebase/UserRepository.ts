@@ -410,7 +410,7 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 3. 알림 삭제
       const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const notificationsQuery = query(notificationsRef, where('userId', '==', userId));
+      const notificationsQuery = query(notificationsRef, where(FIELDS.NOTIFICATION.recipientId, '==', userId));
       const notificationsSnapshot = await getDocs(notificationsQuery);
 
       notificationsSnapshot.docs.forEach((docSnapshot) => {

@@ -18,6 +18,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { toError, requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
 import { createMutationErrorHandler, extractErrorMessage } from '@/shared/errors';
+import { STATUS } from '@/constants';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
 
 // ============================================================================
@@ -122,7 +123,7 @@ export function useApplications() {
         queryClient.setQueryData<Application[]>(
           queryKeys.applications.mine(),
           previousApplications.map((app) =>
-            app.id === applicationId ? { ...app, status: 'cancelled' as const } : app
+            app.id === applicationId ? { ...app, status: STATUS.APPLICATION.CANCELLED } : app
           )
         );
       }
@@ -181,7 +182,7 @@ export function useApplications() {
         queryClient.setQueryData<Application[]>(
           queryKeys.applications.mine(),
           previousApplications.map((app) =>
-            app.id === applicationId ? { ...app, status: 'cancellation_pending' as const } : app
+            app.id === applicationId ? { ...app, status: STATUS.APPLICATION.CANCELLATION_PENDING } : app
           )
         );
       }
@@ -217,7 +218,7 @@ export function useApplications() {
   const hasApplied = (jobPostingId: string): boolean => {
     const applications: Application[] = myApplicationsQuery.data ?? [];
     return applications.some(
-      (app: Application) => app.jobPostingId === jobPostingId && app.status !== 'cancelled'
+      (app: Application) => app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
     );
   };
 
@@ -226,7 +227,7 @@ export function useApplications() {
     const applications: Application[] = myApplicationsQuery.data ?? [];
     return (
       applications.find(
-        (app: Application) => app.jobPostingId === jobPostingId && app.status !== 'cancelled'
+        (app: Application) => app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
       ) ?? null
     );
   };

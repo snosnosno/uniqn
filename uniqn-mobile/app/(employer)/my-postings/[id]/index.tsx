@@ -7,7 +7,7 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform, RefreshControl } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -36,6 +36,7 @@ import {
   TournamentStatusBadge,
   ResubmitButton,
 } from '@/components/jobs';
+import { STATUS } from '@/constants';
 import type { PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
 // ============================================================================
@@ -139,7 +140,7 @@ function ActionCard({ icon, title, description, badge, onPress }: ActionCardProp
 export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { job: posting, isLoading, error, refresh } = useJobDetail(id || '');
+  const { job: posting, isLoading, isRefreshing, error, refresh } = useJobDetail(id || '');
   const { cancellationPendingCount, stats: applicantStats } = useApplicantManagement(id || '');
   const { mutate: deleteJobPosting, isPending: isDeleting } = useDeleteJobPosting();
 
@@ -255,7 +256,11 @@ export default function JobPostingDetailScreen() {
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+      <ScrollView
+        className="flex-1"
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />}
+      >
         {/* 공고 정보 카드 */}
         <View className="px-4 pt-3">
           <Card variant="elevated" padding="md">
@@ -522,7 +527,7 @@ export default function JobPostingDetailScreen() {
 
         {/* 대회공고 거부 안내 및 재제출 (거부된 경우에만 표시) */}
         {posting.postingType === 'tournament' &&
-          posting.tournamentConfig?.approvalStatus === 'rejected' && (
+          posting.tournamentConfig?.approvalStatus === STATUS.TOURNAMENT.REJECTED && (
             <View className="px-4 pb-4">
               <Card
                 variant="outlined"

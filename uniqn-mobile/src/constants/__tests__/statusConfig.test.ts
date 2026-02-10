@@ -120,9 +120,8 @@ describe('StatusConfig', () => {
   // ==========================================================================
   describe('INQUIRY_STATUS', () => {
     it('should have all inquiry statuses', () => {
-      expect(INQUIRY_STATUS.pending).toBeDefined();
+      expect(INQUIRY_STATUS.open).toBeDefined();
       expect(INQUIRY_STATUS.in_progress).toBeDefined();
-      expect(INQUIRY_STATUS.resolved).toBeDefined();
       expect(INQUIRY_STATUS.closed).toBeDefined();
     });
   });

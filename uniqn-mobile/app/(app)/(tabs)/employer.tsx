@@ -23,6 +23,7 @@ import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { TabHeader } from '@/components/headers';
 import { PlusIcon, UsersIcon, BriefcaseIcon, QrCodeIcon } from '@/components/icons';
 import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import { STATUS } from '@/constants';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import type { JobPosting, PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
@@ -468,7 +469,7 @@ const JobPostingCard = memo(function JobPostingCard({
           <Badge variant={status.variant} size="sm">
             {status.label}
           </Badge>
-          {posting.status === 'active' && (
+          {posting.status === STATUS.JOB_POSTING.ACTIVE && (
             <Pressable
               onPress={() => onClose(posting.id)}
               disabled={isClosing}
@@ -482,7 +483,7 @@ const JobPostingCard = memo(function JobPostingCard({
               </Text>
             </Pressable>
           )}
-          {posting.status === 'closed' && (
+          {posting.status === STATUS.JOB_POSTING.CLOSED && (
             <Pressable
               onPress={() => onReopen(posting.id)}
               disabled={isReopening}

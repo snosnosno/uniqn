@@ -26,7 +26,7 @@ export default function AdminInquiriesScreen() {
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   const filters: InquiryFilters = statusFilter === 'all' ? {} : { status: statusFilter };
 
-  const { inquiries, isLoading, hasMore, fetchNextPage, refetch } = useAllInquiries({
+  const { inquiries, isLoading, isRefreshing, hasMore, fetchNextPage, refetch } = useAllInquiries({
     filters,
   });
   const { data: unansweredCount } = useUnansweredCount();
@@ -139,7 +139,7 @@ export default function AdminInquiriesScreen() {
           ListEmptyComponent={renderEmpty}
           ListFooterComponent={renderFooter}
           refreshControl={
-            <RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor="#A855F7" />
+            <RefreshControl refreshing={isRefreshing} onRefresh={refetch} tintColor="#A855F7" />
           }
         />
       )}

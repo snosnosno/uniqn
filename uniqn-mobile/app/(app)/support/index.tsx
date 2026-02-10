@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
 import { ChevronRightIcon, MessageIcon } from '@/components/icons';
+import { STATUS } from '@/constants';
 import { useMyInquiries } from '@/hooks/useInquiry';
 
 // 리스트 아이콘
@@ -63,7 +64,7 @@ export default function SupportScreen() {
 
   // 답변 대기 중인 문의 수
   const pendingCount = inquiries.filter(
-    (inquiry) => inquiry.status === 'open' || inquiry.status === 'in_progress'
+    (inquiry) => inquiry.status === STATUS.INQUIRY.OPEN || inquiry.status === STATUS.INQUIRY.IN_PROGRESS
   ).length;
 
   return (

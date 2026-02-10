@@ -207,7 +207,7 @@ export async function searchJobPostings(
     const { ClientSideSearchProvider } = await import('./searchService');
 
     const searchProvider = new ClientSideSearchProvider(async () => {
-      const { items } = await getJobPostings({ status: 'active' }, 100);
+      const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE }, 100);
       return items;
     });
 
@@ -231,7 +231,7 @@ export async function searchJobPostings(
  */
 export async function getUrgentJobPostings(pageSize: number = 10): Promise<JobPosting[]> {
   try {
-    const { items } = await getJobPostings({ status: 'active', isUrgent: true }, pageSize);
+    const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE, isUrgent: true }, pageSize);
     return items;
   } catch (error) {
     throw handleServiceError(error, {
@@ -256,8 +256,8 @@ export async function getMyJobPostings(
     // includeAll이 true면 모든 상태의 공고 조회 (active, closed)
     if (includeAll && !status) {
       const results = await Promise.all([
-        getJobPostings({ ownerId, status: 'active' }, 100),
-        getJobPostings({ ownerId, status: 'closed' }, 100),
+        getJobPostings({ ownerId, status: STATUS.JOB_POSTING.ACTIVE }, 100),
+        getJobPostings({ ownerId, status: STATUS.JOB_POSTING.CLOSED }, 100),
       ]);
       return [...results[0].items, ...results[1].items];
     }
@@ -265,7 +265,7 @@ export async function getMyJobPostings(
     const { items } = await getJobPostings(
       {
         ownerId,
-        status: status || 'active',
+        status: status || STATUS.JOB_POSTING.ACTIVE,
       },
       100
     );

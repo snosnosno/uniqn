@@ -131,7 +131,7 @@ export async function getTodayCheckedInWorkLog(staffId: string): Promise<WorkLog
     const today = toDateString(new Date());
     const workLogs = await getWorkLogsByDate(staffId, today);
 
-    return workLogs.find((wl) => wl.status === 'checked_in') || null;
+    return workLogs.find((wl) => wl.status === STATUS.WORK_LOG.CHECKED_IN) || null;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '오늘 출근 기록 조회',
@@ -241,7 +241,7 @@ export async function updateWorkTime(
       }
 
       // 이미 정산 완료된 경우 수정 불가
-      if (workLog.payrollStatus === 'completed') {
+      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
           userMessage: '이미 정산 완료된 근무 기록은 수정할 수 없습니다',
         });
@@ -309,7 +309,7 @@ export async function updatePayrollStatus(
       }
 
       // 중복 정산 방지
-      if (status === 'completed' && workLog.payrollStatus === 'completed') {
+      if (status === STATUS.PAYROLL.COMPLETED && workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
         throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
           userMessage: '이미 정산 완료된 근무 기록입니다',
         });
@@ -324,7 +324,7 @@ export async function updatePayrollStatus(
         updateData.payrollAmount = amount;
       }
 
-      if (status === 'completed') {
+      if (status === STATUS.PAYROLL.COMPLETED) {
         updateData.payrollDate = serverTimestamp();
       }
 
@@ -334,7 +334,7 @@ export async function updatePayrollStatus(
     logger.info('정산 상태 업데이트 완료', { workLogId });
 
     // Analytics 이벤트 (정산 완료 시)
-    if (status === 'completed' && amount !== undefined) {
+    if (status === STATUS.PAYROLL.COMPLETED && amount !== undefined) {
       trackSettlementComplete(amount, 1);
     }
   } catch (error) {

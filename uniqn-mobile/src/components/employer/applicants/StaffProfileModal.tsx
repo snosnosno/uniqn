@@ -31,6 +31,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { formatTime } from '@/utils/dateUtils';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { useUserProfile } from '@/hooks/useUserProfile';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -158,9 +159,9 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
 
   // 출석 체크 여부
   const isCheckedIn =
-    staff?.status === 'checked_in' ||
-    staff?.status === 'checked_out' ||
-    staff?.status === 'completed';
+    staff?.status === STATUS.WORK_LOG.CHECKED_IN ||
+    staff?.status === STATUS.WORK_LOG.CHECKED_OUT ||
+    staff?.status === STATUS.WORK_LOG.COMPLETED;
 
   if (!staff) return null;
 
@@ -344,7 +345,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           </View>
         )}
 
-        {staff.status === 'cancelled' && (
+        {staff.status === STATUS.WORK_LOG.CANCELLED && (
           <View className="px-4 pb-4">
             <View className="bg-red-50 dark:bg-red-900/20 rounded-lg p-3 flex-row items-center">
               <Text className="text-sm text-red-700 dark:text-red-300">취소된 스태프입니다</Text>
@@ -352,7 +353,7 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
           </View>
         )}
 
-        {staff.status === 'completed' && (
+        {staff.status === STATUS.WORK_LOG.COMPLETED && (
           <View className="px-4 pb-4">
             <View className="bg-green-50 dark:bg-green-900/20 rounded-lg p-3 flex-row items-center">
               <CheckCircleIcon size={16} color="#10B981" />

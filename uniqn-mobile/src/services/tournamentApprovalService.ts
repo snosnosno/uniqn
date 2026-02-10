@@ -28,6 +28,7 @@ import {
 } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
+import { STATUS } from '@/constants';
 import type { JobPosting, TournamentApprovalStatus } from '@/types';
 import type {
   ApproveTournamentData,
@@ -216,7 +217,7 @@ export async function getPendingTournamentPostings(): Promise<JobPosting[]> {
 
     const postings = await jobPostingRepository.getByPostingTypeAndApprovalStatus(
       'tournament',
-      'pending'
+      STATUS.TOURNAMENT.PENDING
     );
 
     logger.info('승인 대기 대회공고 목록 조회 완료', { count: postings.length });
@@ -264,7 +265,7 @@ export async function getMyPendingTournamentPostings(ownerId: string): Promise<J
     const postings = await jobPostingRepository.getByOwnerAndPostingType(
       ownerId,
       'tournament',
-      ['pending', 'rejected']
+      [STATUS.TOURNAMENT.PENDING, STATUS.TOURNAMENT.REJECTED]
     );
 
     logger.info('내 대회공고 목록 조회 완료', {

@@ -12,6 +12,7 @@ import type { SelectOption } from '@/components/ui';
 import type { InquiryStatus, RespondInquiryInput } from '@/types';
 import { respondInquirySchema } from '@/schemas';
 import { z } from 'zod';
+import { STATUS } from '@/constants';
 
 export interface InquiryResponseFormProps {
   /** 제출 핸들러 */
@@ -37,7 +38,7 @@ export function InquiryResponseForm({
 }: InquiryResponseFormProps) {
   const [response, setResponse] = useState(existingResponse);
   const [status, setStatus] = useState<InquiryStatus>(
-    currentStatus === 'open' ? 'closed' : currentStatus
+    currentStatus === STATUS.INQUIRY.OPEN ? STATUS.INQUIRY.CLOSED : currentStatus
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
 

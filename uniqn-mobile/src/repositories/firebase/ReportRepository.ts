@@ -111,13 +111,13 @@ export class FirebaseReportRepository implements IReportRepository {
         .whereIf(filters?.status && filters.status !== 'all', FIELDS.REPORT.status, '==', filters?.status)
         .whereIf(
           filters?.severity && filters.severity !== 'all',
-          'severity',
+          FIELDS.REPORT.severity,
           '==',
           filters?.severity
         )
         .whereIf(
           filters?.reporterType && filters.reporterType !== 'all',
-          'reporterType',
+          FIELDS.REPORT.reporterType,
           '==',
           filters?.reporterType
         )
@@ -218,7 +218,7 @@ export class FirebaseReportRepository implements IReportRepository {
           jobPostingTitle: input.jobPostingTitle || '',
           description: input.description,
           evidenceUrls: input.evidenceUrls || [],
-          status: 'pending' as ReportStatus,
+          status: STATUS.REPORT.PENDING as ReportStatus,
           severity: getReportSeverity(input.type, input.reporterType),
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp(),
@@ -284,7 +284,7 @@ export class FirebaseReportRepository implements IReportRepository {
         const existingReport = reportSnap.data();
 
         // 2. 상태 확인 (pending만 처리 가능)
-        if (existingReport.status !== 'pending') {
+        if (existingReport.status !== STATUS.REPORT.PENDING) {
           throw new ReportAlreadyReviewedError({
             userMessage: '이미 처리된 신고입니다',
             reportId: input.reportId,

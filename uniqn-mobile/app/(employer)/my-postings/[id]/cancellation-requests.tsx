@@ -56,7 +56,6 @@ function StatsHeader({ pendingCount, approvedCount, rejectedCount }: StatsHeader
 export default function CancellationRequestsScreen() {
   const { id: jobPostingId } = useLocalSearchParams<{ id: string }>();
   const { isDarkMode } = useThemeStore();
-  const [refreshing, setRefreshing] = useState(false);
 
   // 승인 확인 모달 상태 (웹 호환)
   const [approveModalVisible, setApproveModalVisible] = useState(false);
@@ -65,6 +64,7 @@ export default function CancellationRequestsScreen() {
   const {
     cancellationRequests,
     isLoadingCancellationRequests,
+    isRefetchingCancellationRequests,
     refreshCancellationRequests,
     reviewCancellation,
     isReviewingCancellation,
@@ -87,10 +87,8 @@ export default function CancellationRequestsScreen() {
   }, [cancellationRequests]);
 
   // 새로고침 핸들러
-  const handleRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await refreshCancellationRequests();
-    setRefreshing(false);
+  const handleRefresh = useCallback(() => {
+    refreshCancellationRequests();
   }, [refreshCancellationRequests]);
 
   // 승인 핸들러 - 모달 열기
@@ -199,7 +197,7 @@ export default function CancellationRequestsScreen() {
           contentContainerStyle={{ paddingVertical: 8 }}
           refreshControl={
             <RefreshControl
-              refreshing={refreshing}
+              refreshing={isRefetchingCancellationRequests}
               onRefresh={handleRefresh}
               tintColor={isDarkMode ? '#9CA3AF' : '#6B7280'}
             />

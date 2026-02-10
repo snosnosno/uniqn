@@ -53,6 +53,7 @@ import {
   setUserProperties,
 } from './analyticsService';
 import type { FirestoreUserProfile, EditableProfileFields } from '@/types';
+import { linkIdentityVerification } from './identityVerificationService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 
 // ============================================================================
@@ -210,6 +211,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       // 파생 정보 (본인인증 데이터에서 추출)
       birthYear: extractBirthYear(data.verifiedBirthDate),
       gender: data.verifiedGender,
+      // CI/DI는 linkIdentityVerification CF에서 서버 전용 저장 (클라이언트 미포함)
       // 동의 정보
       termsAgreed: data.termsAgreed,
       privacyAgreed: data.privacyAgreed,
@@ -222,6 +224,39 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
     // merge: true로 Cloud Function이 먼저 생성한 문서를 덮어씀
     await userRepository.createOrMerge(user.uid, { ...profile });
+
+    // CI/DI 서버 전용 연결 (pendingVerifications → users/{uid})
+    // 최대 2회 재시도 (네트워크 일시 오류 대응)
+    if (data.identityVerificationId) {
+      const MAX_LINK_RETRIES = 2;
+      let linkSuccess = false;
+
+      for (let attempt = 1; attempt <= MAX_LINK_RETRIES; attempt++) {
+        try {
+          await linkIdentityVerification(data.identityVerificationId);
+          logger.info('본인인증 CI/DI 연결 완료', { uid: user.uid, attempt });
+          linkSuccess = true;
+          break;
+        } catch (linkError) {
+          logger.warn(`본인인증 CI/DI 연결 실패 (시도 ${attempt}/${MAX_LINK_RETRIES})`, {
+            uid: user.uid,
+            identityVerificationId: data.identityVerificationId,
+            error: linkError,
+          });
+          // 마지막 시도가 아니면 500ms 대기 후 재시도
+          if (attempt < MAX_LINK_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+        }
+      }
+
+      if (!linkSuccess) {
+        logger.error('본인인증 CI/DI 연결 최종 실패 (가입은 완료됨, 재인증 필요)', {
+          uid: user.uid,
+          identityVerificationId: data.identityVerificationId,
+        });
+      }
+    }
 
     logger.info('회원가입 성공', { uid: user.uid, role: data.role });
 

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { JobList, PostingTypeChips } from '@/components/jobs';
 import { useJobPostings } from '@/hooks';
 import { useThemeStore } from '@/stores';
+import { STATUS } from '@/constants';
 import type { PostingType, JobPostingFilters } from '@/types';
 
 // ============================================================================
@@ -24,7 +25,7 @@ export default function JobListScreen() {
 
   // 필터 변환 (App 라우트와 동일한 패턴)
   const filters = useMemo<JobPostingFilters>(() => {
-    const result: JobPostingFilters = { status: 'active' };
+    const result: JobPostingFilters = { status: STATUS.JOB_POSTING.ACTIVE };
     if (selectedType) {
       result.postingType = selectedType;
     }

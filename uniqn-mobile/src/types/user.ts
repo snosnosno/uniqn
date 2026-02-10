@@ -74,6 +74,10 @@ export interface UserProfile<T = Date> {
   verifiedBirthDate?: string;
   /** 본인인증된 성별 */
   verifiedGender?: 'male' | 'female';
+  /** CI (연계정보 - 중복가입 방지) */
+  ci?: string;
+  /** DI (중복가입확인정보) */
+  di?: string;
 
   // 동의 정보 (Firestore 전용, Store에서는 optional)
   /** 이용약관 동의 */
