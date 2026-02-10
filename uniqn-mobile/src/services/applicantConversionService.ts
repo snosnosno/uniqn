@@ -225,7 +225,7 @@ export async function convertApplicantToStaff(
             timeSlot: null, // 고정공고는 시간 협의
             isFixedPosting: true, // 고정공고 플래그
             status: STATUS.WORK_LOG.SCHEDULED,
-            attendanceStatus: 'not_started',
+            attendanceStatus: STATUS.ATTENDANCE.NOT_STARTED,
             checkInTime: null,
             checkOutTime: null,
             workDuration: null,
@@ -263,7 +263,7 @@ export async function convertApplicantToStaff(
                 isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
                 tentativeDescription: assignment.tentativeDescription ?? null,
                 status: STATUS.WORK_LOG.SCHEDULED,
-                attendanceStatus: 'not_started',
+                attendanceStatus: STATUS.ATTENDANCE.NOT_STARTED,
                 checkInTime: null,
                 checkOutTime: null,
                 workDuration: null,

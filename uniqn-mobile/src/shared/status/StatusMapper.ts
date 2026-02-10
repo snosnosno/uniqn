@@ -5,6 +5,7 @@
  * 7개 상태 타입 간 변환 로직을 단일 클래스로 통합
  */
 
+import { STATUS } from '@/constants';
 import type {
   WorkLogStatus,
   ApplicationStatus,
@@ -49,16 +50,16 @@ export class StatusMapper {
    */
   static toAttendance(status: WorkLogStatus): AttendanceStatus {
     switch (status) {
-      case 'scheduled':
-      case 'cancelled':
-        return 'not_started';
-      case 'checked_in':
-        return 'checked_in';
-      case 'checked_out':
-      case 'completed':
-        return 'checked_out';
+      case STATUS.WORK_LOG.SCHEDULED:
+      case STATUS.WORK_LOG.CANCELLED:
+        return STATUS.ATTENDANCE.NOT_STARTED as AttendanceStatus;
+      case STATUS.WORK_LOG.CHECKED_IN:
+        return STATUS.ATTENDANCE.CHECKED_IN as AttendanceStatus;
+      case STATUS.WORK_LOG.CHECKED_OUT:
+      case STATUS.WORK_LOG.COMPLETED:
+        return STATUS.ATTENDANCE.CHECKED_OUT as AttendanceStatus;
       default:
-        return 'not_started';
+        return STATUS.ATTENDANCE.NOT_STARTED as AttendanceStatus;
     }
   }
 
@@ -76,16 +77,16 @@ export class StatusMapper {
    */
   static workLogToSchedule(status: WorkLogStatus): ScheduleType {
     switch (status) {
-      case 'scheduled':
-      case 'checked_in':
-        return 'confirmed';
-      case 'checked_out':
-      case 'completed':
-        return 'completed';
-      case 'cancelled':
-        return 'cancelled';
+      case STATUS.WORK_LOG.SCHEDULED:
+      case STATUS.WORK_LOG.CHECKED_IN:
+        return STATUS.SCHEDULE.CONFIRMED as ScheduleType;
+      case STATUS.WORK_LOG.CHECKED_OUT:
+      case STATUS.WORK_LOG.COMPLETED:
+        return STATUS.SCHEDULE.COMPLETED as ScheduleType;
+      case STATUS.WORK_LOG.CANCELLED:
+        return STATUS.SCHEDULE.CANCELLED as ScheduleType;
       default:
-        return 'confirmed';
+        return STATUS.SCHEDULE.CONFIRMED as ScheduleType;
     }
   }
 
@@ -105,18 +106,18 @@ export class StatusMapper {
    */
   static applicationToSchedule(status: ApplicationStatus): ScheduleType | null {
     switch (status) {
-      case 'applied':
-      case 'pending':
-        return 'applied';
-      case 'confirmed':
-      case 'cancellation_pending':
-        return 'confirmed';
-      case 'rejected':
+      case STATUS.APPLICATION.APPLIED:
+      case STATUS.APPLICATION.PENDING:
+        return STATUS.SCHEDULE.APPLIED as ScheduleType;
+      case STATUS.APPLICATION.CONFIRMED:
+      case STATUS.APPLICATION.CANCELLATION_PENDING:
+        return STATUS.SCHEDULE.CONFIRMED as ScheduleType;
+      case STATUS.APPLICATION.REJECTED:
         return null; // 거절된 지원은 스케줄에 표시하지 않음
-      case 'cancelled':
-        return 'cancelled';
-      case 'completed':
-        return 'completed';
+      case STATUS.APPLICATION.CANCELLED:
+        return STATUS.SCHEDULE.CANCELLED as ScheduleType;
+      case STATUS.APPLICATION.COMPLETED:
+        return STATUS.SCHEDULE.COMPLETED as ScheduleType;
       default:
         return null;
     }
@@ -177,7 +178,7 @@ export class StatusMapper {
    * 2. cancellationRequest.status가 'pending'인 경우
    */
   static isCancellationPending(item: CancellationCheckable): boolean {
-    if (item.status === 'cancellation_pending') {
+    if (item.status === STATUS.APPLICATION.CANCELLATION_PENDING) {
       return true;
     }
 

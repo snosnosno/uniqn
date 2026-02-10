@@ -13,7 +13,7 @@
  */
 
 import type { ApplicationStatusType, JobPostingStatusType, InquiryStatusType } from './statusConfig';
-import type { WorkLogStatus, PayrollStatus } from '@/shared/status/types';
+import type { WorkLogStatus, PayrollStatus, ScheduleType, AttendanceStatus } from '@/shared/status/types';
 import type { ReportStatus } from '@/types/report';
 import type { AnnouncementStatus } from '@/types/announcement';
 import type { TournamentApprovalStatus } from '@/types/postingConfig';
@@ -78,6 +78,19 @@ export const TOURNAMENT_APPROVAL_VALUES = {
   REJECTED: 'rejected',
 } as const satisfies Record<string, TournamentApprovalStatus>;
 
+export const SCHEDULE_TYPE_VALUES = {
+  APPLIED: 'applied',
+  CONFIRMED: 'confirmed',
+  COMPLETED: 'completed',
+  CANCELLED: 'cancelled',
+} as const satisfies Record<string, ScheduleType>;
+
+export const ATTENDANCE_VALUES = {
+  NOT_STARTED: 'not_started',
+  CHECKED_IN: 'checked_in',
+  CHECKED_OUT: 'checked_out',
+} as const satisfies Record<string, AttendanceStatus>;
+
 // ============================================================================
 // 통합 객체
 // ============================================================================
@@ -91,4 +104,6 @@ export const STATUS = {
   ANNOUNCEMENT: ANNOUNCEMENT_STATUS_VALUES,
   REPORT: REPORT_STATUS_VALUES,
   TOURNAMENT: TOURNAMENT_APPROVAL_VALUES,
+  SCHEDULE: SCHEDULE_TYPE_VALUES,
+  ATTENDANCE: ATTENDANCE_VALUES,
 } as const;

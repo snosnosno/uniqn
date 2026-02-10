@@ -17,7 +17,7 @@ import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
 import { FilterIcon } from '../../icons';
 import { userRepository } from '@/repositories';
 import { queryKeys } from '@/lib/queryClient';
-import { LIST_CONTAINER_STYLES } from '@/constants';
+import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
 import { APPLICATION_STATUS_LABELS } from '@/types';
@@ -47,9 +47,9 @@ type FilterStatus = 'all' | ApplicationStatus;
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
-  { value: 'applied', label: '신규' },
-  { value: 'confirmed', label: '확정' },
-  { value: 'rejected', label: '거절' },
+  { value: STATUS.APPLICATION.APPLIED, label: '신규' },
+  { value: STATUS.APPLICATION.CONFIRMED, label: '확정' },
+  { value: STATUS.APPLICATION.REJECTED, label: '거절' },
 ];
 
 // ============================================================================

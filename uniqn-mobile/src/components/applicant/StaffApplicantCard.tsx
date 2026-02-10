@@ -82,14 +82,14 @@ const getStatusBadgeVariant = (
   status: ApplicationStatus
 ): 'primary' | 'success' | 'warning' | 'error' | 'default' => {
   switch (status) {
-    case 'applied':
-    case 'pending':
+    case STATUS.APPLICATION.APPLIED:
+    case STATUS.APPLICATION.PENDING:
       return 'primary';
-    case 'confirmed':
-    case 'completed':
+    case STATUS.APPLICATION.CONFIRMED:
+    case STATUS.APPLICATION.COMPLETED:
       return 'success';
-    case 'rejected':
-    case 'cancelled':
+    case STATUS.APPLICATION.REJECTED:
+    case STATUS.APPLICATION.CANCELLED:
       return 'error';
     default:
       return 'default';

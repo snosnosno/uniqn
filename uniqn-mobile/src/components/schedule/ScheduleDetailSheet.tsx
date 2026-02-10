@@ -23,9 +23,10 @@ import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
 import { formatCurrency } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
-import type { ScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
+import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 import { STATUS } from '@/constants';
+import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
 
 // ============================================================================
 // Types
@@ -46,32 +47,7 @@ interface ScheduleDetailSheetProps {
 // Constants
 // ============================================================================
 
-const statusConfig: Record<
-  ScheduleType,
-  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
-> = {
-  applied: { label: '지원 중', variant: 'warning' },
-  confirmed: { label: '확정', variant: 'success' },
-  completed: { label: '완료', variant: 'default' },
-  cancelled: { label: '취소', variant: 'error' },
-};
-
-const attendanceConfig: Record<
-  AttendanceStatus,
-  { label: string; color: string; bgColor: string }
-> = {
-  not_started: { label: '출근 전', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-surface' },
-  checked_in: {
-    label: '근무 중',
-    color: 'text-green-600',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-  },
-  checked_out: {
-    label: '퇴근 완료',
-    color: 'text-primary-600',
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-  },
-};
+// SCHEDULE_STATUS, ATTENDANCE_STATUS: '@/constants/statusConfig'에서 import
 
 // ============================================================================
 // Helper Functions
@@ -157,9 +133,9 @@ export function ScheduleDetailSheet({
 
   if (!schedule) return null;
 
-  const status = statusConfig[schedule.type];
-  const attendance = attendanceConfig[schedule.status];
-  const isConfirmed = schedule.type === 'confirmed';
+  const status = SCHEDULE_STATUS[schedule.type];
+  const attendance = ATTENDANCE_STATUS[schedule.status];
+  const isConfirmed = schedule.type === STATUS.SCHEDULE.CONFIRMED;
   const canCheckInOut = isConfirmed && schedule.workLogId;
 
   return (
@@ -178,7 +154,7 @@ export function ScheduleDetailSheet({
             </Badge>
             {isConfirmed && (
               <View className={`px-2 py-0.5 rounded-full ${attendance.bgColor}`}>
-                <Text className={`text-xs ${attendance.color}`}>{attendance.label}</Text>
+                <Text className={`text-xs ${attendance.textColor}`}>{attendance.label}</Text>
               </View>
             )}
           </View>
@@ -268,7 +244,7 @@ export function ScheduleDetailSheet({
       )}
 
       {/* 취소된 스케줄 안내 */}
-      {schedule.type === 'cancelled' && (
+      {schedule.type === STATUS.SCHEDULE.CANCELLED && (
         <View className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4">
           <Text className="text-sm text-red-600 dark:text-red-300 text-center">
             이 스케줄은 취소되었습니다.
@@ -277,7 +253,7 @@ export function ScheduleDetailSheet({
       )}
 
       {/* 지원 중: 안내 + 취소 버튼 */}
-      {schedule.type === 'applied' && (
+      {schedule.type === STATUS.SCHEDULE.APPLIED && (
         <View>
           <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 mb-4">
             <Text className="text-sm text-yellow-700 dark:text-yellow-300 text-center">
@@ -297,7 +273,7 @@ export function ScheduleDetailSheet({
       )}
 
       {/* 확정 상태: 취소 요청 버튼 */}
-      {schedule.type === 'confirmed' &&
+      {schedule.type === STATUS.SCHEDULE.CONFIRMED &&
         onRequestCancellation &&
         schedule.applicationId &&
         !canCheckInOut && (

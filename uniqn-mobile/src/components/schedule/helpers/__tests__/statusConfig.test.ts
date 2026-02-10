@@ -81,8 +81,8 @@ describe('attendanceConfig', () => {
     expect(attendanceConfig.checked_in.bgColor).toContain('green');
     expect(attendanceConfig.checked_in.textColor).toContain('green');
 
-    // checked_out: blue (completed)
-    expect(attendanceConfig.checked_out.bgColor).toContain('blue');
-    expect(attendanceConfig.checked_out.textColor).toContain('blue');
+    // checked_out: primary (completed)
+    expect(attendanceConfig.checked_out.bgColor).toContain('primary');
+    expect(attendanceConfig.checked_out.textColor).toContain('primary');
   });
 });

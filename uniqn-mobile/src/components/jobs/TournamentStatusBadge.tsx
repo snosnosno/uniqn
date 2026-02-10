@@ -148,7 +148,7 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   const approvalStatus: ApprovalStatus =
     'tournamentConfig' in props && props.tournamentConfig
       ? props.tournamentConfig.approvalStatus
-      : (props.status ?? 'pending');
+      : (props.status ?? STATUS.TOURNAMENT.PENDING);
 
   const rejectionReason =
     'tournamentConfig' in props && props.tournamentConfig

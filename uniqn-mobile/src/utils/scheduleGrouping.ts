@@ -7,6 +7,7 @@
  */
 
 import { getRoleDisplayName } from '@/types/unified';
+import { STATUS } from '@/constants';
 import type {
   ScheduleEvent,
   GroupedScheduleEvent,
@@ -210,7 +211,7 @@ function createGroupedScheduleEvent(events: ScheduleEvent[]): GroupedScheduleEve
     return {
       date,
       formattedDate: formatSingleDate(date),
-      status: eventForDate?.status || 'not_started',
+      status: eventForDate?.status || STATUS.ATTENDANCE.NOT_STARTED,
       scheduleEventId: eventForDate?.id || '',
     };
   });
@@ -357,13 +358,13 @@ export function calculateGroupedStats(schedules: (ScheduleEvent | GroupedSchedul
       totalEvents += schedule.dateRange.totalDays;
 
       switch (schedule.type) {
-        case 'applied':
+        case STATUS.SCHEDULE.APPLIED:
           appliedCount += schedule.dateRange.totalDays;
           break;
-        case 'confirmed':
+        case STATUS.SCHEDULE.CONFIRMED:
           confirmedCount += schedule.dateRange.totalDays;
           break;
-        case 'completed':
+        case STATUS.SCHEDULE.COMPLETED:
           completedCount += schedule.dateRange.totalDays;
           break;
       }
@@ -372,13 +373,13 @@ export function calculateGroupedStats(schedules: (ScheduleEvent | GroupedSchedul
       totalEvents++;
 
       switch (schedule.type) {
-        case 'applied':
+        case STATUS.SCHEDULE.APPLIED:
           appliedCount++;
           break;
-        case 'confirmed':
+        case STATUS.SCHEDULE.CONFIRMED:
           confirmedCount++;
           break;
-        case 'completed':
+        case STATUS.SCHEDULE.COMPLETED:
           completedCount++;
           break;
       }

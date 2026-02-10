@@ -12,7 +12,9 @@ import { formatTime, calculateDuration } from '../helpers/timeHelpers';
 import { BriefcaseIcon, ClockIcon, QrCodeIcon, PhoneIcon } from '@/components/icons';
 import { getRoleDisplayName } from '@/types/unified';
 import { useCurrentWorkStatus } from '@/hooks/useWorkLogs';
-import type { ScheduleEvent, AttendanceStatus } from '@/types';
+import { STATUS } from '@/constants';
+import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
+import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
 
 // ============================================================================
@@ -28,14 +30,7 @@ export interface WorkTabProps {
 // Constants
 // ============================================================================
 
-const attendanceConfig: Record<
-  AttendanceStatus,
-  { label: string; variant: 'default' | 'success' | 'primary' }
-> = {
-  not_started: { label: '출근 전', variant: 'default' },
-  checked_in: { label: '근무 중', variant: 'success' },
-  checked_out: { label: '퇴근 완료', variant: 'primary' },
-};
+// ATTENDANCE_STATUS: '@/constants/statusConfig'에서 import
 
 // ============================================================================
 // Helpers
@@ -87,7 +82,7 @@ function TimeBox({ label, value, isHighlight }: TimeBoxProps) {
 export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProps) {
   const { isWorking } = useCurrentWorkStatus();
   const { isDarkMode } = useThemeStore();
-  const attendance = attendanceConfig[schedule.status];
+  const attendance = ATTENDANCE_STATUS[schedule.status];
 
   const handleQRScan = useCallback(() => {
     onQRScan?.();
@@ -97,10 +92,10 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   const hasActualTimes = schedule.checkInTime || schedule.checkOutTime;
 
   // QR 버튼 표시 조건: 확정 상태 + workLogId 있음
-  const canShowQRButton = schedule.type === 'confirmed' && schedule.workLogId && onQRScan;
+  const canShowQRButton = schedule.type === STATUS.SCHEDULE.CONFIRMED && schedule.workLogId && onQRScan;
 
   // 지원중 상태면 안내 메시지 표시
-  if (schedule.type === 'applied') {
+  if (schedule.type === STATUS.SCHEDULE.APPLIED) {
     return (
       <View className="py-6 items-center">
         <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 w-full">
@@ -113,7 +108,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   }
 
   // 취소 상태면 안내 메시지 표시
-  if (schedule.type === 'cancelled') {
+  if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-6 items-center">
         <View className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 w-full">
@@ -141,7 +136,7 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
       </View>
 
       {/* 구인자 연락처 (확정 상태에서만) */}
-      {schedule.type === 'confirmed' && schedule.ownerPhone && (
+      {schedule.type === STATUS.SCHEDULE.CONFIRMED && schedule.ownerPhone && (
         <View className="mb-5">
           <View className="flex-row items-center mb-2">
             <PhoneIcon size={18} color="#6B7280" />

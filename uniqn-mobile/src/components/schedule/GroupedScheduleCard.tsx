@@ -23,7 +23,9 @@ import {
   ChevronUpIcon,
 } from '@/components/icons';
 import { formatDateDisplay, formatRolesDisplay } from '@/utils/scheduleGrouping';
-import type { GroupedScheduleEvent, ScheduleType, AttendanceStatus } from '@/types';
+import { STATUS } from '@/constants';
+import { SCHEDULE_STATUS, ATTENDANCE_STATUS } from '@/constants/statusConfig';
+import type { GroupedScheduleEvent } from '@/types';
 
 // ============================================================================
 // Types
@@ -44,36 +46,7 @@ export interface GroupedScheduleCardProps {
 // Constants
 // ============================================================================
 
-const statusConfig: Record<
-  ScheduleType,
-  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
-> = {
-  applied: { label: '지원 중', variant: 'warning' },
-  confirmed: { label: '확정', variant: 'success' },
-  completed: { label: '완료', variant: 'default' },
-  cancelled: { label: '취소', variant: 'error' },
-};
-
-const attendanceConfig: Record<
-  AttendanceStatus,
-  { label: string; bgColor: string; textColor: string }
-> = {
-  not_started: {
-    label: '출근 전',
-    bgColor: 'bg-gray-100 dark:bg-surface',
-    textColor: 'text-gray-600 dark:text-gray-400',
-  },
-  checked_in: {
-    label: '근무 중',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    textColor: 'text-green-700 dark:text-green-300',
-  },
-  checked_out: {
-    label: '퇴근 완료',
-    bgColor: 'bg-primary-100 dark:bg-primary-900/30',
-    textColor: 'text-primary-700 dark:text-primary-300',
-  },
-};
+// SCHEDULE_STATUS, ATTENDANCE_STATUS: '@/constants/statusConfig'에서 import
 
 // ============================================================================
 // Component
@@ -87,8 +60,8 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 }: GroupedScheduleCardProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  const status = statusConfig[group.type];
-  const isCancelled = group.type === 'cancelled';
+  const status = SCHEDULE_STATUS[group.type];
+  const isCancelled = group.type === STATUS.SCHEDULE.CANCELLED;
 
   // 역할 표시 텍스트
   const rolesDisplay = useMemo(() => {
@@ -117,15 +90,15 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
 
   // 출석 상태 요약 (confirmed 상태일 때) - 상태와 색상 통합
   const attendanceSummary = useMemo(() => {
-    if (group.type !== 'confirmed') return null;
+    if (group.type !== STATUS.SCHEDULE.CONFIRMED) return null;
 
-    const checkedIn = group.dateStatuses.filter((d) => d.status === 'checked_in').length;
-    const checkedOut = group.dateStatuses.filter((d) => d.status === 'checked_out').length;
+    const checkedIn = group.dateStatuses.filter((d) => d.status === STATUS.ATTENDANCE.CHECKED_IN).length;
+    const checkedOut = group.dateStatuses.filter((d) => d.status === STATUS.ATTENDANCE.CHECKED_OUT).length;
 
     // 우선순위: 근무 중 > 퇴근 완료 > 출근 전
-    if (checkedIn > 0) return { label: '근무 중', status: 'checked_in' as const };
-    if (checkedOut > 0) return { label: '퇴근 완료', status: 'checked_out' as const };
-    return { label: '출근 전', status: 'not_started' as const };
+    if (checkedIn > 0) return { label: '근무 중', status: STATUS.ATTENDANCE.CHECKED_IN };
+    if (checkedOut > 0) return { label: '퇴근 완료', status: STATUS.ATTENDANCE.CHECKED_OUT };
+    return { label: '출근 전', status: STATUS.ATTENDANCE.NOT_STARTED };
   }, [group.type, group.dateStatuses]);
 
   // 펼침/접힘 토글
@@ -170,10 +143,10 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
             {/* 확정 상태: 출석 상태 요약 (상태 기반 색상) */}
             {attendanceSummary && (
               <View
-                className={`ml-2 px-2 py-0.5 rounded-full ${attendanceConfig[attendanceSummary.status].bgColor}`}
+                className={`ml-2 px-2 py-0.5 rounded-full ${ATTENDANCE_STATUS[attendanceSummary.status].bgColor}`}
               >
                 <Text
-                  className={`text-xs font-medium ${attendanceConfig[attendanceSummary.status].textColor}`}
+                  className={`text-xs font-medium ${ATTENDANCE_STATUS[attendanceSummary.status].textColor}`}
                 >
                   {attendanceSummary.label}
                 </Text>
@@ -231,7 +204,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           </View>
 
           {/* 급여 (지원 중 상태) */}
-          {group.type === 'applied' && salaryDisplay && (
+          {group.type === STATUS.SCHEDULE.APPLIED && salaryDisplay && (
             <View className="flex-row items-center mr-3">
               <BanknotesIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm font-medium text-gray-700 dark:text-gray-300">
@@ -241,7 +214,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
           )}
 
           {/* 구인자 */}
-          {ownerName && group.type === 'applied' && (
+          {ownerName && group.type === STATUS.SCHEDULE.APPLIED && (
             <View className="flex-row items-center">
               <UserIcon size={14} color="#9CA3AF" />
               <Text className="ml-1 text-sm text-gray-500 dark:text-gray-400">{ownerName}</Text>
@@ -269,7 +242,7 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
         {isExpanded && (
           <View className="mt-2 pt-2 border-t border-gray-100 dark:border-surface-overlay">
             {group.dateStatuses.map((dateStatus, index) => {
-              const attendance = attendanceConfig[dateStatus.status];
+              const attendance = ATTENDANCE_STATUS[dateStatus.status];
               return (
                 <Pressable
                   key={dateStatus.date}

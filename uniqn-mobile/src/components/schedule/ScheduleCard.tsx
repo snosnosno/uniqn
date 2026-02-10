@@ -36,6 +36,7 @@ import {
   statusConfig,
   attendanceConfig,
 } from './helpers';
+import { STATUS } from '@/constants';
 import { WorkTimeDisplay } from '@/shared/time';
 import type { ScheduleEvent } from '@/types';
 
@@ -84,7 +85,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
   // 완료 상태 금액 계산 (payrollAmount 우선, 없으면 계산)
   const completedAmount = useMemo(() => {
-    if (schedule.type !== 'completed') return null;
+    if (schedule.type !== STATUS.SCHEDULE.COMPLETED) return null;
 
     // payrollAmount(구인자 확정 금액) 우선
     if (schedule.payrollAmount && schedule.payrollAmount > 0) {
@@ -145,11 +146,11 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
 
   // 확정 상태 시간 표시 (예정 시간)
   const confirmedTimeDisplay = useMemo(() => {
-    if (schedule.type !== 'confirmed') return null;
+    if (schedule.type !== STATUS.SCHEDULE.CONFIRMED) return null;
     return `${timeDisplayInfo.scheduledStart} - ${timeDisplayInfo.scheduledEnd}`;
   }, [schedule.type, timeDisplayInfo]);
 
-  const isCancelled = schedule.type === 'cancelled';
+  const isCancelled = schedule.type === STATUS.SCHEDULE.CANCELLED;
 
   // 접근성 라벨 생성
   const accessibilityLabel = `${schedule.jobPostingName}, ${status.label}, ${formatDate(schedule.date)}${schedule.location ? `, ${schedule.location}` : ''}`;
@@ -171,7 +172,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
             </Badge>
 
             {/* 확정 상태: 출퇴근 상태 표시 */}
-            {schedule.type === 'confirmed' && (
+            {schedule.type === STATUS.SCHEDULE.CONFIRMED && (
               <View className={`ml-2 px-2 py-0.5 rounded-full ${attendance.bgColor}`}>
                 <Text className={`text-xs font-medium ${attendance.textColor}`}>
                   {attendance.label}
@@ -181,7 +182,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
           </View>
 
           {/* 완료 상태: 정산 금액 우측 상단 */}
-          {schedule.type === 'completed' && completedAmount && (
+          {schedule.type === STATUS.SCHEDULE.COMPLETED && completedAmount && (
             <Text className="text-base font-bold text-primary-600 dark:text-primary-400">
               {formatCurrency(completedAmount)}
             </Text>
@@ -214,7 +215,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
         )}
 
         {/* 상태별 추가 정보 */}
-        {schedule.type === 'applied' ? (
+        {schedule.type === STATUS.SCHEDULE.APPLIED ? (
           // 지원 중: 일정 + 역할 + 급여 + 구인자
           <View>
             <View className="flex-row items-center">
@@ -265,7 +266,7 @@ export const ScheduleCard = memo(function ScheduleCard({ schedule, onPress }: Sc
               <View className="mx-2 h-3 w-px bg-gray-300 dark:bg-surface-elevated" />
               <ClockIcon size={14} color="#6B7280" />
               <Text className="ml-1.5 text-sm text-gray-600 dark:text-gray-400">
-                {schedule.type === 'completed'
+                {schedule.type === STATUS.SCHEDULE.COMPLETED
                   ? // 완료: 근무시간 표시 (WorkTimeDisplay 사용)
                     timeDisplayInfo.duration
                   : // 확정: 예정시간 범위 표시 (WorkTimeDisplay 사용)

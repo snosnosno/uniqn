@@ -81,8 +81,8 @@ type FilterStatus = 'all' | PayrollStatus;
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
-  { value: 'pending', label: '미정산' },
-  { value: 'completed', label: '완료' },
+  { value: STATUS.PAYROLL.PENDING, label: '미정산' },
+  { value: STATUS.PAYROLL.COMPLETED, label: '완료' },
 ];
 
 // ============================================================================
