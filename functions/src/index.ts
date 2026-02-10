@@ -28,9 +28,6 @@ export { linkIdentityVerification } from './auth/linkIdentityVerification';
 // --- Migration Functions ---
 export { backfillCiIndex } from './migrations/backfillCiIndex';
 
-// --- Email Functions ---
-export { sendReceiptEmail } from './email/sendReceipt';
-
 // --- Phone Verification Functions ---
 export {
   sendPhoneVerificationCode,
