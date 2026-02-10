@@ -7,7 +7,7 @@
  * @note 알림 카운터 증가/감소 실패 시 복구용
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { retryFailedCounterOps } from '../utils/notificationUtils';
 
 /**

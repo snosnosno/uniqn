@@ -11,7 +11,7 @@
  * - 현재는 로깅만 구현되어 있으며, 실제 SMS 발송 코드는 TODO로 표시되어 있습니다.
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
 

@@ -10,10 +10,11 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { extractUserId } from '../utils/helpers';
+import { STATUS } from '../constants/status';
 
 const db = admin.firestore();
 
@@ -34,7 +35,7 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
     // settlementStatus가 completed로 변경된 경우만 처리
     if (
       before.settlementStatus === after.settlementStatus ||
-      after.settlementStatus !== 'completed'
+      after.settlementStatus !== STATUS.PAYROLL.COMPLETED
     ) {
       return;
     }

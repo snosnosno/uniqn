@@ -12,9 +12,10 @@
  * - 지원자 알림은 기존 onJobPostingClosed 트리거가 처리
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as logger from 'firebase-functions/logger';
 import { createAndSendNotification } from '../utils/notificationUtils';
+import { STATUS } from '../constants/status';
 
 /**
  * 근무일 만료 공고 작성자 알림 Trigger
@@ -36,8 +37,8 @@ export const onWorkDateExpired = functions
 
     // 근무일 만료 감지: active → closed + closedReason === 'expired_by_work_date'
     const isWorkDateExpired =
-      before.status === 'active' &&
-      after.status === 'closed' &&
+      before.status === STATUS.JOB_POSTING.ACTIVE &&
+      after.status === STATUS.JOB_POSTING.CLOSED &&
       after.closedReason === 'expired_by_work_date';
 
     if (!isWorkDateExpired) {

@@ -10,7 +10,7 @@
  * @note 앱 초기화 시 카운터 문서가 없으면 호출됨
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 
 const db = admin.firestore();

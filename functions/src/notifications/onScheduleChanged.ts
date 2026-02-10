@@ -12,10 +12,11 @@
  * @since 2025-12-22
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
+import { STATUS } from '../constants/status';
 
 const db = admin.firestore();
 
@@ -142,7 +143,7 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
     const after = change.after.data() as WorkLogData;
 
     // status가 cancelled로 변경된 경우만 처리
-    if (before.status === after.status || after.status !== 'cancelled') {
+    if (before.status === after.status || after.status !== STATUS.APPLICATION.CANCELLED) {
       return;
     }
 

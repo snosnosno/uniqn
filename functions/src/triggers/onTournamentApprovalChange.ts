@@ -1,6 +1,7 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
+import { STATUS } from '../constants/status';
 
 /**
  * 대회 공고 승인/거부 알림 Trigger
@@ -34,9 +35,9 @@ export const onTournamentApprovalChange = functions
     }
 
     // 4. 승인 또는 거부 처리
-    if (afterStatus === 'approved') {
+    if (afterStatus === STATUS.TOURNAMENT.APPROVED) {
       await sendApprovalNotification(postingId, after);
-    } else if (afterStatus === 'rejected') {
+    } else if (afterStatus === STATUS.TOURNAMENT.REJECTED) {
       await sendRejectionNotification(postingId, after);
     }
   });

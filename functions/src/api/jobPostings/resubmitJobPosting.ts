@@ -1,6 +1,7 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
+import { STATUS } from '../../constants/status';
 
 /**
  * 거부된 대회 공고 재제출 Firebase Function
@@ -58,7 +59,7 @@ export const resubmitJobPosting = functions
       }
 
       // 6. 거부 상태 확인
-      if (posting?.tournamentConfig?.approvalStatus !== 'rejected') {
+      if (posting?.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.REJECTED) {
         logger.error('resubmitJobPosting: 거부 상태가 아님', {
           postingId,
           approvalStatus: posting?.tournamentConfig?.approvalStatus

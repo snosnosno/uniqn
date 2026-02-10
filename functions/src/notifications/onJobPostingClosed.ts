@@ -10,9 +10,10 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
+import { STATUS } from '../constants/status';
 
 const db = admin.firestore();
 
@@ -51,7 +52,7 @@ export const onJobPostingClosed = functions.region('asia-northeast3').firestore
     const after = change.after.data() as JobPostingData;
 
     // status가 closed로 변경된 경우만 처리
-    if (before.status === after.status || after.status !== 'closed') {
+    if (before.status === after.status || after.status !== STATUS.JOB_POSTING.CLOSED) {
       return;
     }
 

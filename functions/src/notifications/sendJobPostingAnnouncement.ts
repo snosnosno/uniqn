@@ -10,7 +10,7 @@
  * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
 import { sendMulticast, updateUnreadCounter } from '../utils/notificationUtils';

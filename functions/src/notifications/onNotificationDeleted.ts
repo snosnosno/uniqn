@@ -8,7 +8,7 @@
  * @note 클라이언트에서는 NotificationRepository.delete()가 직접 처리
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { decrementUnreadCounter } from '../utils/notificationUtils';
 
 /**

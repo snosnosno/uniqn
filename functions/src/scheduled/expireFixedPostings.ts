@@ -10,9 +10,10 @@
  * 4. 만료 처리 로그 기록
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
+import { STATUS } from '../constants/status';
 
 /**
  * 고정 공고 만료 처리 Scheduled Function
@@ -39,7 +40,7 @@ export const expireFixedPostings = functions
       const expiredQuery = db
         .collection('jobPostings')
         .where('postingType', '==', 'fixed')
-        .where('status', '==', 'active')
+        .where('status', '==', STATUS.JOB_POSTING.ACTIVE)
         .where('fixedConfig.expiresAt', '<=', now)
         .limit(100); // 배치 크기 제한
 
@@ -68,7 +69,7 @@ export const expireFixedPostings = functions
 
         // status를 'closed'로 업데이트
         batch.update(doc.ref, {
-          status: 'closed',
+          status: STATUS.JOB_POSTING.CLOSED,
           closedAt: now,
           closedReason: 'expired', // 만료 사유 추가
           updatedAt: now
@@ -150,7 +151,7 @@ export const manualExpireFixedPostings = functions
       const expiredQuery = db
         .collection('jobPostings')
         .where('postingType', '==', 'fixed')
-        .where('status', '==', 'active')
+        .where('status', '==', STATUS.JOB_POSTING.ACTIVE)
         .where('fixedConfig.expiresAt', '<=', now)
         .limit(limit);
 
@@ -193,7 +194,7 @@ export const manualExpireFixedPostings = functions
       const batch = db.batch();
       snapshot.docs.forEach((doc) => {
         batch.update(doc.ref, {
-          status: 'closed',
+          status: STATUS.JOB_POSTING.CLOSED,
           closedAt: now,
           closedReason: 'expired',
           updatedAt: now
