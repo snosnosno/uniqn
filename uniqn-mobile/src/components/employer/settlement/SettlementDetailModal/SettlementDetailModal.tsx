@@ -26,6 +26,7 @@ import { SettlementCompletedBanner } from './SettlementCompletedBanner';
 
 // Types
 import type { WorkLog, PayrollStatus } from '@/types';
+import { STATUS } from '@/constants';
 import type { SettlementDetailModalProps } from './types';
 
 // Re-export types for backward compatibility
@@ -93,7 +94,7 @@ export function SettlementDetailModal({
 
   const allowanceItems = useMemo(() => getAllowanceItems(allowances), [allowances]);
 
-  const payrollStatus = (workLog?.payrollStatus || 'pending') as PayrollStatus;
+  const payrollStatus = (workLog?.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const hasValidTimes = startTime && endTime;
 
   // 핸들러
@@ -175,12 +176,12 @@ export function SettlementDetailModal({
         />
 
         {/* 정산 완료 표시 */}
-        {payrollStatus === 'completed' && (
+        {payrollStatus === STATUS.PAYROLL.COMPLETED && (
           <SettlementCompletedBanner payrollDate={workLog.payrollDate} />
         )}
 
         {/* 액션 버튼 (미정산일 때만) */}
-        {payrollStatus === 'pending' && (
+        {payrollStatus === STATUS.PAYROLL.PENDING && (
           <SettlementActionButtons
             onEditTime={onEditTime ? handleEditTime : undefined}
             onEditAmount={hasValidTimes && onEditAmount ? handleEditAmount : undefined}

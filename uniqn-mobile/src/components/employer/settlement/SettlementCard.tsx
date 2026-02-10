@@ -23,6 +23,7 @@ import {
 } from '@/utils/settlement';
 import { getRoleDisplayName } from '@/types/unified';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { STATUS } from '@/constants';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -82,7 +83,7 @@ export const SettlementCard = React.memo(function SettlementCard({
     [workLog, salaryInfo, allowances, taxSettings]
   );
 
-  const payrollStatus = (workLog.payrollStatus || 'pending') as PayrollStatus;
+  const payrollStatus = (workLog.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
   const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
 
   // 출퇴근 시간 유효 여부
@@ -167,7 +168,7 @@ export const SettlementCard = React.memo(function SettlementCard({
         </Pressable>
 
         {/* 정산하기 (미정산 + 출퇴근 완료일 때만) */}
-        {payrollStatus === 'pending' && hasValidTimes && onSettle && (
+        {payrollStatus === STATUS.PAYROLL.PENDING && hasValidTimes && onSettle && (
           <Pressable
             onPress={handleSettle}
             accessibilityRole="button"

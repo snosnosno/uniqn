@@ -6,7 +6,7 @@
  */
 
 import React, { useState, useCallback, useMemo } from 'react';
-import { View, Text, Pressable } from 'react-native';
+import { View, Text, Pressable, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
 import { GroupedSettlementCard } from './GroupedSettlementCard';
 import { SettlementSummaryCard } from './SettlementSummaryCard';
@@ -29,6 +29,7 @@ import {
 } from '@/utils/settlementGrouping';
 import type { GroupedSettlement } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { STATUS } from '@/constants';
 
 // Re-export types for backward compatibility
 export type { SalaryType, SalaryInfo };
@@ -124,7 +125,7 @@ export function SettlementList({
   // 필터링된 목록
   const filteredWorkLogs = useMemo(() => {
     if (selectedFilter === 'all') return workLogs;
-    return workLogs.filter((log) => (log.payrollStatus || 'pending') === selectedFilter);
+    return workLogs.filter((log) => (log.payrollStatus || STATUS.PAYROLL.PENDING) === selectedFilter);
   }, [workLogs, selectedFilter]);
 
   // 그룹화된 목록
@@ -138,7 +139,7 @@ export function SettlementList({
   // 선택 가능한 항목 (미정산 + 출퇴근 완료)
   const selectableWorkLogs = useMemo(() => {
     return workLogs.filter(
-      (log) => (log.payrollStatus || 'pending') === 'pending' && log.checkInTime && log.checkOutTime
+      (log) => (log.payrollStatus || STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING && log.checkInTime && log.checkOutTime
     );
   }, [workLogs]);
 
@@ -148,7 +149,7 @@ export function SettlementList({
       all: workLogs.length,
     };
     workLogs.forEach((log) => {
-      const status = (log.payrollStatus || 'pending') as PayrollStatus;
+      const status = (log.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
       counts[status] = (counts[status] || 0) + 1;
     });
     return FILTER_OPTIONS.map((option) => ({
@@ -352,8 +353,11 @@ export function SettlementList({
         // @ts-expect-error - estimatedItemSize is required in FlashList 2.x but types may be missing
         // 그룹 카드는 펼침 가능하여 높이가 가변적 (기본 약 200, 펼침 시 최대 ~500)
         estimatedItemSize={250}
-        onRefresh={onRefresh}
-        refreshing={isRefreshing}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={isRefreshing ?? false} onRefresh={onRefresh} tintColor="#6366f1" />
+          ) : undefined
+        }
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 100 }}
       />

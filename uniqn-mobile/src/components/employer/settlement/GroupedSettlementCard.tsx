@@ -27,6 +27,7 @@ import { getRoleDisplayName } from '@/types/unified';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import type { GroupedSettlement, DateSettlementStatus } from '@/types/settlement';
 import type { WorkLog, PayrollStatus } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -106,7 +107,7 @@ const DateStatusRow = memo(function DateStatusRow({
 }) {
   const payrollConfig = PAYROLL_STATUS_CONFIG[status.payrollStatus];
   const roleDisplay = getRoleDisplayName(status.role, status.customRole);
-  const canSettle = status.hasValidTimes && status.payrollStatus !== 'completed';
+  const canSettle = status.hasValidTimes && status.payrollStatus !== STATUS.PAYROLL.COMPLETED;
 
   const handlePress = useCallback(() => {
     if (selectionMode && onToggleSelect) {
@@ -211,7 +212,7 @@ export const GroupedSettlementCard = memo(function GroupedSettlementCard({
   const settlableWorkLogs = useMemo(() => {
     const settlableIds = new Set(
       group.dateStatuses
-        .filter((s) => s.hasValidTimes && s.payrollStatus !== 'completed')
+        .filter((s) => s.hasValidTimes && s.payrollStatus !== STATUS.PAYROLL.COMPLETED)
         .map((s) => s.workLogId)
     );
     return group.originalWorkLogs.filter((wl) => settlableIds.has(wl.id));
