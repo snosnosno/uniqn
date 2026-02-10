@@ -328,7 +328,7 @@ export async function confirmApplicationWithHistory(
             isTimeToBeAnnounced: assignment.isTimeToBeAnnounced ?? false,
             tentativeDescription: assignment.tentativeDescription ?? null,
             status: STATUS.WORK_LOG.SCHEDULED,
-            attendanceStatus: 'not_started',
+            attendanceStatus: STATUS.ATTENDANCE.NOT_STARTED,
             checkInTime, // timeSlot 파싱하여 설정 (예정 출근 시간)
             checkOutTime: null, // 퇴근 시간은 미정
             workDuration: null,

@@ -22,6 +22,8 @@ import {
   type Allowances,
   type TaxSettings,
 } from '@/utils/settlement';
+import { STATUS } from '@/constants';
+import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 import type { JobPostingCard } from '@/types/jobPosting';
 
@@ -77,17 +79,7 @@ function getRoleSalary(
 // Constants
 // ============================================================================
 
-const PAYROLL_STATUS_CONFIG: Record<
-  PayrollStatus,
-  {
-    label: string;
-    variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
-  }
-> = {
-  pending: { label: '미정산', variant: 'warning' },
-  processing: { label: '처리중', variant: 'primary' },
-  completed: { label: '정산완료', variant: 'success' },
-};
+// PAYROLL_STATUS: '@/constants/statusConfig'에서 import
 
 // ============================================================================
 // Sub Components
@@ -257,11 +249,11 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
   const isEstimate = hasBreakdown
     ? schedule.settlementBreakdown!.isEstimate
     : !schedule.checkInTime || !schedule.checkOutTime;
-  const payrollStatus = (schedule.payrollStatus || 'pending') as PayrollStatus;
-  const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
+  const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
+  const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
 
   // 지원중 상태면 안내 메시지 표시
-  if (schedule.type === 'applied') {
+  if (schedule.type === STATUS.SCHEDULE.APPLIED) {
     return (
       <View className="py-6 items-center">
         <View className="bg-yellow-50 dark:bg-yellow-900/20 rounded-xl p-4 w-full">
@@ -286,7 +278,7 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
   }
 
   // 취소 상태면 안내 메시지 표시
-  if (schedule.type === 'cancelled') {
+  if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-6 items-center">
         <View className="bg-red-50 dark:bg-red-900/20 rounded-xl p-4 w-full">
@@ -308,8 +300,8 @@ export const SettlementTab = memo(function SettlementTab({ schedule }: Settlemen
             정산 정보
           </Text>
         </View>
-        <Badge variant={statusConfig.variant} size="sm">
-          {statusConfig.label}
+        <Badge variant={payrollStatusConfig.variant} size="sm">
+          {payrollStatusConfig.label}
         </Badge>
       </View>
 

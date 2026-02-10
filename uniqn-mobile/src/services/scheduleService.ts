@@ -183,7 +183,7 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
 
   schedules.forEach((schedule) => {
     // 완료된 스케줄
-    if (schedule.type === 'completed') {
+    if (schedule.type === STATUS.SCHEDULE.COMPLETED) {
       completedSchedules++;
 
       // 수익 계산 (payrollAmount 우선, 없으면 settlementBreakdown 사용)
@@ -213,12 +213,12 @@ function calculateStats(schedules: ScheduleEvent[]): ScheduleStats {
     }
 
     // 확정된 스케줄 (미래 날짜, confirmed)
-    if (schedule.date >= today && schedule.type === 'confirmed') {
+    if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.CONFIRMED) {
       confirmedSchedules++;
     }
 
     // 지원 중인 스케줄 (미래 날짜, applied)
-    if (schedule.date >= today && schedule.type === 'applied') {
+    if (schedule.date >= today && schedule.type === STATUS.SCHEDULE.APPLIED) {
       upcomingSchedules++;
     }
   });
@@ -610,7 +610,7 @@ export async function getUpcomingSchedules(
     });
 
     // confirmed 상태만 필터링
-    return schedules.filter((s) => s.type === 'confirmed' || s.type === 'applied');
+    return schedules.filter((s) => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '다가오는 스케줄 조회',
@@ -720,8 +720,8 @@ export function getCalendarMarkedDates(
         type: schedule.type,
       };
     } else if (
-      schedule.type === 'confirmed' ||
-      (schedule.type === 'applied' && markedDates[schedule.date].type !== 'confirmed')
+      schedule.type === STATUS.SCHEDULE.CONFIRMED ||
+      (schedule.type === STATUS.SCHEDULE.APPLIED && markedDates[schedule.date].type !== STATUS.SCHEDULE.CONFIRMED)
     ) {
       markedDates[schedule.date] = {
         marked: true,

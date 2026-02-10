@@ -22,6 +22,7 @@ import { Timestamp } from 'firebase/firestore';
 import { normalizeTimestamp } from '@/utils/firestore';
 import { calculateSettlementBreakdown } from '@/utils/settlement';
 import { StatusMapper } from '@/shared/status';
+import { STATUS } from '@/constants';
 import { FIXED_DATE_MARKER, FIXED_TIME_MARKER, TBA_TIME_MARKER } from '@/types/assignment';
 import type {
   ScheduleEvent,
@@ -174,7 +175,7 @@ export class ScheduleConverter {
             location: cardInfo?.location || '',
             role: assignment.roleIds[0] || 'other',
             customRole: application.customRole,
-            status: 'not_started', // applications에는 출퇴근 데이터 없음
+            status: STATUS.ATTENDANCE.NOT_STARTED, // applications에는 출퇴근 데이터 없음
             payrollStatus: undefined,
             payrollAmount: undefined,
             ownerPhone: cardInfo?.contactPhone,

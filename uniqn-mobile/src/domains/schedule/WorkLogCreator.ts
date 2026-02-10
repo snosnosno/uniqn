@@ -197,7 +197,7 @@ export class WorkLogCreator {
       isTimeToBeAnnounced: input.isTimeToBeAnnounced ?? false,
       tentativeDescription: input.tentativeDescription ?? null,
       status: STATUS.WORK_LOG.SCHEDULED,
-      attendanceStatus: 'not_started',
+      attendanceStatus: STATUS.ATTENDANCE.NOT_STARTED,
       checkInTime,
       checkOutTime: null,
       workDuration: null,

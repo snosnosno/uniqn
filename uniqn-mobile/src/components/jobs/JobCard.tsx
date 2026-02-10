@@ -19,6 +19,7 @@ import { getAllowanceItems } from '@/utils/allowanceUtils';
 import { formatDateShortWithDay } from '@/utils/dateUtils';
 import { useBookmarks } from '@/hooks';
 import { HIT_SLOP } from '@/constants';
+import { SCHEDULE_STATUS } from '@/constants/statusConfig';
 
 // ============================================================================
 // Types
@@ -34,16 +35,6 @@ interface JobCardProps {
   applicationStatus?: ApplicationStatusType;
 }
 
-/** 지원 상태별 뱃지 설정 */
-const applicationStatusConfig: Record<
-  ApplicationStatusType,
-  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
-> = {
-  applied: { label: '지원 중', variant: 'warning' },
-  confirmed: { label: '확정', variant: 'success' },
-  completed: { label: '완료', variant: 'default' },
-  cancelled: { label: '취소', variant: 'error' },
-};
 
 // ============================================================================
 // Helpers
@@ -269,8 +260,8 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
       {/* 지원 상태 뱃지 (스케줄 탭에서만 표시) */}
       {applicationStatus && (
         <View className="mb-2">
-          <Badge variant={applicationStatusConfig[applicationStatus].variant} dot>
-            {applicationStatusConfig[applicationStatus].label}
+          <Badge variant={SCHEDULE_STATUS[applicationStatus].variant} dot>
+            {SCHEDULE_STATUS[applicationStatus].label}
           </Badge>
         </View>
       )}

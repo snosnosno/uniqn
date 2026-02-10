@@ -29,6 +29,8 @@ import {
   type TaxSettings,
 } from '@/utils/settlement';
 import { WorkTimeDisplay } from '@/shared/time';
+import { STATUS } from '@/constants';
+import { PAYROLL_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent, PayrollStatus } from '@/types';
 
 // ============================================================================
@@ -43,17 +45,7 @@ export interface InfoTabProps {
 // Constants
 // ============================================================================
 
-const PAYROLL_STATUS_CONFIG: Record<
-  PayrollStatus,
-  {
-    label: string;
-    variant: 'default' | 'primary' | 'success' | 'warning' | 'error';
-  }
-> = {
-  pending: { label: '미정산', variant: 'warning' },
-  processing: { label: '처리중', variant: 'primary' },
-  completed: { label: '정산완료', variant: 'success' },
-};
+// PAYROLL_STATUS: '@/constants/statusConfig'에서 import
 
 // ============================================================================
 // Helpers
@@ -140,8 +132,8 @@ function Section({ icon, title, children }: SectionProps) {
 
 export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const ownerName = schedule.jobPostingCard?.ownerName;
-  const payrollStatus = (schedule.payrollStatus || 'pending') as PayrollStatus;
-  const statusConfig = PAYROLL_STATUS_CONFIG[payrollStatus];
+  const payrollStatus = (schedule.payrollStatus || STATUS.PAYROLL.PENDING) as PayrollStatus;
+  const payrollStatusConfig = PAYROLL_STATUS[payrollStatus];
 
   // 급여 정보 (settlementBreakdown > customSalaryInfo > 역할별 급여 > defaultSalary)
   const salaryInfo = useMemo(() => {
@@ -226,7 +218,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
   const hasTax = taxSettings.type !== 'none';
 
   // 취소 상태면 별도 UI
-  if (schedule.type === 'cancelled') {
+  if (schedule.type === STATUS.SCHEDULE.CANCELLED) {
     return (
       <View className="py-2 opacity-70">
         {/* 취소 안내 배너 */}
@@ -303,7 +295,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
           {formatFullDate(schedule.date)}
         </Text>
 
-        {schedule.type === 'completed' ? (
+        {schedule.type === STATUS.SCHEDULE.COMPLETED ? (
           // 완료 상태: 실제 근무시간 + 예정 시간 비교 (WorkTimeDisplay 사용)
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
@@ -451,7 +443,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
       )}
 
       {/* 정산 현황 (완료 상태만) */}
-      {schedule.type === 'completed' && (
+      {schedule.type === STATUS.SCHEDULE.COMPLETED && (
         <Section icon={<BanknotesIcon size={18} color="#6B7280" />} title="정산 현황">
           <View className="flex-row items-center justify-between p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
             <View>
@@ -466,8 +458,8 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 </Text>
               )}
             </View>
-            <Badge variant={statusConfig.variant} size="sm">
-              {statusConfig.label}
+            <Badge variant={payrollStatusConfig.variant} size="sm">
+              {payrollStatusConfig.label}
             </Badge>
           </View>
         </Section>

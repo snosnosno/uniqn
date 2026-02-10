@@ -240,7 +240,7 @@ export function StaffManagementTab({
     if (currentStatus !== STATUS.WORK_LOG.SCHEDULED) {
       options.push({
         label: '출근 예정으로 변경',
-        value: 'scheduled',
+        value: STATUS.WORK_LOG.SCHEDULED,
         icon: <CalendarIcon size={20} color="#6B7280" />,
       });
     }
@@ -249,7 +249,7 @@ export function StaffManagementTab({
     if (currentStatus !== STATUS.WORK_LOG.CHECKED_IN) {
       options.push({
         label: '출근 처리',
-        value: 'checked_in',
+        value: STATUS.WORK_LOG.CHECKED_IN,
         icon: <CheckCircleIcon size={20} color="#22C55E" />,
       });
     }
@@ -258,7 +258,7 @@ export function StaffManagementTab({
     if (currentStatus !== STATUS.WORK_LOG.CHECKED_OUT) {
       options.push({
         label: '퇴근 처리',
-        value: 'checked_out',
+        value: STATUS.WORK_LOG.CHECKED_OUT,
         icon: <ClockIcon size={20} color="#A855F7" />,
       });
     }

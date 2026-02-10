@@ -18,6 +18,7 @@
  * ```
  */
 
+import { STATUS } from '@/constants';
 import type { ApplicationStatus } from '@/types';
 
 // ============================================================================
@@ -75,18 +76,18 @@ const TRANSITION_TABLE: Record<
   Partial<Record<StatusAction, ApplicationStatus>>
 > = {
   applied: {
-    CONFIRM: 'confirmed',
-    REJECT: 'rejected',
-    CANCEL: 'cancelled',
+    CONFIRM: STATUS.APPLICATION.CONFIRMED,
+    REJECT: STATUS.APPLICATION.REJECTED,
+    CANCEL: STATUS.APPLICATION.CANCELLED,
   },
   pending: {
-    CONFIRM: 'confirmed',
-    REJECT: 'rejected',
-    CANCEL: 'cancelled',
+    CONFIRM: STATUS.APPLICATION.CONFIRMED,
+    REJECT: STATUS.APPLICATION.REJECTED,
+    CANCEL: STATUS.APPLICATION.CANCELLED,
   },
   confirmed: {
-    REQUEST_CANCEL: 'cancellation_pending',
-    COMPLETE: 'completed',
+    REQUEST_CANCEL: STATUS.APPLICATION.CANCELLATION_PENDING,
+    COMPLETE: STATUS.APPLICATION.COMPLETED,
   },
   rejected: {
     // 최종 상태 - 전이 없음
@@ -98,8 +99,8 @@ const TRANSITION_TABLE: Record<
     // 최종 상태 - 전이 없음
   },
   cancellation_pending: {
-    APPROVE_CANCEL: 'cancelled',
-    REJECT_CANCEL: 'confirmed',
+    APPROVE_CANCEL: STATUS.APPLICATION.CANCELLED,
+    REJECT_CANCEL: STATUS.APPLICATION.CONFIRMED,
   },
 };
 
@@ -348,7 +349,7 @@ export class ApplicationStatusMachine {
 
     switch (action) {
       case 'CANCEL':
-        if (status === 'confirmed') {
+        if (status === STATUS.APPLICATION.CONFIRMED) {
           return '확정된 지원은 직접 취소할 수 없습니다. 취소 요청을 이용해주세요.';
         }
         return `${metadata.label} 상태에서는 취소할 수 없습니다`;

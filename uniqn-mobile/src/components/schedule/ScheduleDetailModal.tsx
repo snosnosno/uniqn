@@ -28,7 +28,9 @@ import { useToastStore } from '@/stores/toastStore';
 import { useModal } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
 import { formatSingleDate } from '@/utils/scheduleGrouping';
-import type { ScheduleEvent, ScheduleType, GroupedScheduleEvent, CreateReportInput } from '@/types';
+import { STATUS } from '@/constants';
+import { SCHEDULE_STATUS } from '@/constants/statusConfig';
+import type { ScheduleEvent, GroupedScheduleEvent, CreateReportInput } from '@/types';
 
 // ============================================================================
 // Types
@@ -63,15 +65,7 @@ interface TabConfig {
 // Constants
 // ============================================================================
 
-const statusConfig: Record<
-  ScheduleType,
-  { label: string; variant: 'warning' | 'success' | 'default' | 'error' }
-> = {
-  applied: { label: '지원 중', variant: 'warning' },
-  confirmed: { label: '확정', variant: 'success' },
-  completed: { label: '완료', variant: 'default' },
-  cancelled: { label: '취소', variant: 'error' },
-};
+// SCHEDULE_STATUS: '@/constants/statusConfig'에서 import
 
 /** 중복 리페치 방지를 위한 쿨다운 (3초) */
 const REFETCH_COOLDOWN_MS = 3000;
@@ -270,7 +264,7 @@ export function ScheduleDetailModal({
 
   if (!schedule) return null;
 
-  const status = statusConfig[schedule.type];
+  const status = SCHEDULE_STATUS[schedule.type];
 
   return (
     <Modal visible={visible} onClose={onClose} position="bottom" showCloseButton={false}>
@@ -424,7 +418,7 @@ export function ScheduleDetailModal({
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
         <View className="pt-4 border-t border-gray-200 dark:border-surface-overlay flex-row gap-3">
           {/* 지원 취소 버튼 (지원중 상태) */}
-          {schedule.type === 'applied' && onCancelApplication && schedule.applicationId && (
+          {schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication && schedule.applicationId && (
             <View className="flex-1">
               <Button
                 variant="outline"
@@ -438,7 +432,7 @@ export function ScheduleDetailModal({
           )}
 
           {/* 취소 요청 버튼 (확정 상태) */}
-          {schedule.type === 'confirmed' && onRequestCancellation && schedule.applicationId && (
+          {schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation && schedule.applicationId && (
             <View className="flex-1">
               <Button
                 variant="outline"

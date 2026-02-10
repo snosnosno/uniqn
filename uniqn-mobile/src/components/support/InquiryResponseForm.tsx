@@ -26,15 +26,15 @@ export interface InquiryResponseFormProps {
 }
 
 const statusOptions: SelectOption[] = [
-  { label: '처리중', value: 'in_progress' },
-  { label: '답변 완료', value: 'closed' },
+  { label: '처리중', value: STATUS.INQUIRY.IN_PROGRESS },
+  { label: '답변 완료', value: STATUS.INQUIRY.CLOSED },
 ];
 
 export function InquiryResponseForm({
   onSubmit,
   isSubmitting = false,
   existingResponse = '',
-  currentStatus = 'open',
+  currentStatus = STATUS.INQUIRY.OPEN,
 }: InquiryResponseFormProps) {
   const [response, setResponse] = useState(existingResponse);
   const [status, setStatus] = useState<InquiryStatus>(

@@ -20,6 +20,7 @@ import {
   type ConfirmedStaffStatus,
   type ConfirmedStaffStats,
 } from '@/types';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Types
@@ -53,9 +54,9 @@ type FilterStatus = 'all' | ConfirmedStaffStatus;
 
 const FILTER_OPTIONS: FilterTabOption<FilterStatus>[] = [
   { value: 'all', label: '전체' },
-  { value: 'scheduled', label: '예정' },
-  { value: 'checked_in', label: '근무중' },
-  { value: 'checked_out', label: '퇴근' },
+  { value: STATUS.WORK_LOG.SCHEDULED, label: '예정' },
+  { value: STATUS.WORK_LOG.CHECKED_IN, label: '근무중' },
+  { value: STATUS.WORK_LOG.CHECKED_OUT, label: '퇴근' },
 ];
 
 // ============================================================================
