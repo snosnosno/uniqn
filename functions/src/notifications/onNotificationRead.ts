@@ -10,7 +10,7 @@
  * - 1.1.0: _batchUpdate 플래그 지원 (markAllAsRead 배치 업데이트 시 개별 트리거 스킵)
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { decrementUnreadCounter } from '../utils/notificationUtils';
 
 /**

@@ -1,6 +1,7 @@
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
+import { STATUS } from '../../constants/status';
 
 /**
  * 대회 공고 승인 Firebase Function
@@ -57,7 +58,7 @@ export const approveJobPosting = functions
       }
 
       // 6. 승인 대기 상태 확인
-      if (posting?.tournamentConfig?.approvalStatus !== 'pending') {
+      if (posting?.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.PENDING) {
         logger.error('approveJobPosting: 이미 처리됨', {
           postingId,
           approvalStatus: posting?.tournamentConfig?.approvalStatus

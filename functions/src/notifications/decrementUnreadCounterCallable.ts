@@ -7,7 +7,7 @@
  * @note 알림 삭제 시 미읽음인 경우 클라이언트에서 호출
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import { decrementUnreadCounter } from '../utils/notificationUtils';
 
 interface DecrementUnreadCounterData {

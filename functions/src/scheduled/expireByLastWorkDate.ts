@@ -12,10 +12,11 @@
  * - 공식: lastWorkDate <= KST_today - 2일
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import * as logger from 'firebase-functions/logger';
 import type { ClosedReason, PostingType } from '../types/jobPosting';
+import { STATUS } from '../constants/status';
 
 const CLOSED_REASON: ClosedReason = 'expired_by_work_date';
 
@@ -95,7 +96,7 @@ async function processPostingType(
     let query = db
       .collection('jobPostings')
       .where('postingType', '==', postingType)
-      .where('status', '==', 'active')
+      .where('status', '==', STATUS.JOB_POSTING.ACTIVE)
       .where('workDate', '<=', cutoffDate)
       .orderBy('workDate', 'asc')
       .limit(100);
@@ -112,7 +113,7 @@ async function processPostingType(
 
     snapshot.docs.forEach((doc) => {
       batch.update(doc.ref, {
-        status: 'closed',
+        status: STATUS.JOB_POSTING.CLOSED,
         closedAt: now,
         closedReason: CLOSED_REASON,
         updatedAt: now,
@@ -149,7 +150,7 @@ async function processTournamentPostings(
   const snapshot = await db
     .collection('jobPostings')
     .where('postingType', '==', 'tournament')
-    .where('status', '==', 'active')
+    .where('status', '==', STATUS.JOB_POSTING.ACTIVE)
     .get();
 
   if (snapshot.empty) return 0;
@@ -179,7 +180,7 @@ async function processTournamentPostings(
 
     batchDocs.forEach((doc) => {
       batch.update(doc.ref, {
-        status: 'closed',
+        status: STATUS.JOB_POSTING.CLOSED,
         closedAt: now,
         closedReason: CLOSED_REASON,
         updatedAt: now,

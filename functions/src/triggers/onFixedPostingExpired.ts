@@ -12,9 +12,10 @@
  * - 지원자 알림은 기존 onJobPostingClosed 트리거가 처리
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as logger from 'firebase-functions/logger';
 import { createAndSendNotification } from '../utils/notificationUtils';
+import { STATUS } from '../constants/status';
 
 /**
  * 고정 공고 만료 알림 Trigger
@@ -38,8 +39,8 @@ export const onFixedPostingExpired = functions
 
     // 만료 감지: status가 'active' → 'closed'로 변경되고 closedReason === 'expired'
     const isExpired =
-      before.status === 'active' &&
-      after.status === 'closed' &&
+      before.status === STATUS.JOB_POSTING.ACTIVE &&
+      after.status === STATUS.JOB_POSTING.CLOSED &&
       after.closedReason === 'expired';
 
     if (!isExpired) {

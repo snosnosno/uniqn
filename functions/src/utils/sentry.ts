@@ -10,17 +10,17 @@
 import * as Sentry from '@sentry/node';
 import type { ErrorEvent } from '@sentry/node';
 // import { ProfilingIntegration } from '@sentry/profiling-node'; // 추후 프로파일링 필요 시 활성화
-import * as functions from 'firebase-functions';
+import { logger } from 'firebase-functions';
 
 /**
  * Sentry 초기화
  */
 export const initSentry = (): void => {
-  const dsn = functions.config().sentry?.dsn;
+  const dsn = process.env.SENTRY_DSN;
 
   if (!dsn) {
-    functions.logger.warn('Sentry DSN이 설정되지 않아 에러 트래킹이 비활성화되었습니다.');
-    functions.logger.warn('설정 방법: firebase functions:config:set sentry.dsn="YOUR_DSN"');
+    logger.warn('Sentry DSN이 설정되지 않아 에러 트래킹이 비활성화되었습니다.');
+    logger.warn('설정 방법: functions/.env 파일에 SENTRY_DSN=your-dsn 추가');
     return;
   }
 
@@ -84,7 +84,7 @@ export const initSentry = (): void => {
     ignoreErrors: ['PERMISSION_DENIED', 'UNAUTHENTICATED', 'NOT_FOUND'],
   });
 
-  functions.logger.info('Sentry (Functions) 초기화 완료');
+  logger.info('Sentry (Functions) 초기화 완료');
 };
 
 /**

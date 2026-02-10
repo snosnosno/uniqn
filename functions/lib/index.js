@@ -15,20 +15,30 @@ var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (
 }) : function(o, v) {
     o["default"] = v;
 });
-var __importStar = (this && this.__importStar) || function (mod) {
-    if (mod && mod.__esModule) return mod;
-    var result = {};
-    if (mod != null) for (var k in mod) if (k !== "default" && Object.prototype.hasOwnProperty.call(mod, k)) __createBinding(result, mod, k);
-    __setModuleDefault(result, mod);
-    return result;
-};
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onWorkDateExpired = exports.expireByLastWorkDate = exports.onFixedPostingExpired = exports.manualExpireFixedPostings = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.cleanupExpiredTokensScheduled = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = void 0;
-const functions = __importStar(require("firebase-functions"));
+exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onWorkDateExpired = exports.expireByLastWorkDate = exports.onFixedPostingExpired = exports.manualExpireFixedPostings = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.backfillCiIndex = exports.linkIdentityVerification = exports.verifyIdentity = exports.cleanupPendingVerificationsScheduled = exports.cleanupExpiredTokensScheduled = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = void 0;
+const functions = __importStar(require("firebase-functions/v1"));
 const admin = __importStar(require("firebase-admin"));
 const cors_1 = __importDefault(require("cors"));
 const sentry_1 = require("./utils/sentry");
@@ -47,6 +57,16 @@ var retryFailedCounterOps_1 = require("./scheduled/retryFailedCounterOps");
 Object.defineProperty(exports, "retryFailedCounterOpsScheduled", { enumerable: true, get: function () { return retryFailedCounterOps_1.retryFailedCounterOpsScheduled; } });
 var cleanupExpiredTokens_1 = require("./scheduled/cleanupExpiredTokens");
 Object.defineProperty(exports, "cleanupExpiredTokensScheduled", { enumerable: true, get: function () { return cleanupExpiredTokens_1.cleanupExpiredTokensScheduled; } });
+var cleanupPendingVerifications_1 = require("./scheduled/cleanupPendingVerifications");
+Object.defineProperty(exports, "cleanupPendingVerificationsScheduled", { enumerable: true, get: function () { return cleanupPendingVerifications_1.cleanupPendingVerificationsScheduled; } });
+// --- Identity Verification Functions ---
+var verifyIdentity_1 = require("./auth/verifyIdentity");
+Object.defineProperty(exports, "verifyIdentity", { enumerable: true, get: function () { return verifyIdentity_1.verifyIdentity; } });
+var linkIdentityVerification_1 = require("./auth/linkIdentityVerification");
+Object.defineProperty(exports, "linkIdentityVerification", { enumerable: true, get: function () { return linkIdentityVerification_1.linkIdentityVerification; } });
+// --- Migration Functions ---
+var backfillCiIndex_1 = require("./migrations/backfillCiIndex");
+Object.defineProperty(exports, "backfillCiIndex", { enumerable: true, get: function () { return backfillCiIndex_1.backfillCiIndex; } });
 // --- Email Functions ---
 var sendReceipt_1 = require("./email/sendReceipt");
 Object.defineProperty(exports, "sendReceiptEmail", { enumerable: true, get: function () { return sendReceipt_1.sendReceiptEmail; } });
@@ -192,9 +212,8 @@ exports.submitDealerRating = functions.region('asia-northeast3').https.onCall(as
  * Only callable by admin users
  */
 exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    var _a, _b;
     // Check admin permissions
-    if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
+    if (context.auth?.token?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can run data migrations.');
     }
     functions.logger.info("Starting job postings migration...");
@@ -269,7 +288,6 @@ exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(as
  * - Passes extra data (phone, gender) via displayName for the trigger.
  */
 exports.requestRegistration = functions.region('asia-northeast3').https.onCall(async (data) => {
-    var _a, _b, _c, _d, _e, _f, _g, _h, _j, _k, _l;
     functions.logger.info("requestRegistration called with data:", data);
     const { email, password, name, nickname, role, phone, gender, consents } = data;
     if (!email || !password || !name || !role) {
@@ -314,30 +332,40 @@ exports.requestRegistration = functions.region('asia-northeast3').https.onCall(a
         if (consents && userRecord.uid) {
             try {
                 const consentRef = db.collection('users').doc(userRecord.uid).collection('consents').doc('current');
-                const consentData = Object.assign(Object.assign(Object.assign(Object.assign({ version: '1.0.0', userId: userRecord.uid, termsOfService: {
-                        agreed: (_b = (_a = consents.termsOfService) === null || _a === void 0 ? void 0 : _a.agreed) !== null && _b !== void 0 ? _b : true,
-                        version: (_d = (_c = consents.termsOfService) === null || _c === void 0 ? void 0 : _c.version) !== null && _d !== void 0 ? _d : '1.0.0',
-                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    }, privacyPolicy: {
-                        agreed: (_f = (_e = consents.privacyPolicy) === null || _e === void 0 ? void 0 : _e.agreed) !== null && _f !== void 0 ? _f : true,
-                        version: (_h = (_g = consents.privacyPolicy) === null || _g === void 0 ? void 0 : _g.version) !== null && _h !== void 0 ? _h : '1.0.0',
-                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    } }, (((_j = consents.marketing) === null || _j === void 0 ? void 0 : _j.agreed) && {
-                    marketing: {
-                        agreed: consents.marketing.agreed,
+                const consentData = {
+                    version: '1.0.0',
+                    userId: userRecord.uid,
+                    termsOfService: {
+                        agreed: consents.termsOfService?.agreed ?? true,
+                        version: consents.termsOfService?.version ?? '1.0.0',
                         agreedAt: admin.firestore.FieldValue.serverTimestamp(),
                     },
-                })), (((_k = consents.locationService) === null || _k === void 0 ? void 0 : _k.agreed) && {
-                    locationService: {
-                        agreed: consents.locationService.agreed,
+                    privacyPolicy: {
+                        agreed: consents.privacyPolicy?.agreed ?? true,
+                        version: consents.privacyPolicy?.version ?? '1.0.0',
                         agreedAt: admin.firestore.FieldValue.serverTimestamp(),
                     },
-                })), (((_l = consents.pushNotification) === null || _l === void 0 ? void 0 : _l.agreed) && {
-                    pushNotification: {
-                        agreed: consents.pushNotification.agreed,
-                        agreedAt: admin.firestore.FieldValue.serverTimestamp(),
-                    },
-                })), { createdAt: admin.firestore.FieldValue.serverTimestamp(), updatedAt: admin.firestore.FieldValue.serverTimestamp() });
+                    ...(consents.marketing?.agreed && {
+                        marketing: {
+                            agreed: consents.marketing.agreed,
+                            agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        },
+                    }),
+                    ...(consents.locationService?.agreed && {
+                        locationService: {
+                            agreed: consents.locationService.agreed,
+                            agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        },
+                    }),
+                    ...(consents.pushNotification?.agreed && {
+                        pushNotification: {
+                            agreed: consents.pushNotification.agreed,
+                            agreedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        },
+                    }),
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                };
                 await consentRef.set(consentData);
                 functions.logger.info(`Consent data saved for user ${userRecord.uid}`);
             }
@@ -370,8 +398,7 @@ exports.requestRegistration = functions.region('asia-northeast3').https.onCall(a
  * Only callable by an admin.
  */
 exports.processRegistration = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    var _a, _b, _c;
-    if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
+    if (context.auth?.token?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can process registration requests.');
     }
     const { targetUid, action } = data; // action can be 'approve' or 'reject'
@@ -381,7 +408,7 @@ exports.processRegistration = functions.region('asia-northeast3').https.onCall(a
     const userRef = db.collection('users').doc(targetUid);
     try {
         const userDoc = await userRef.get();
-        if (!userDoc.exists || ((_c = userDoc.data()) === null || _c === void 0 ? void 0 : _c.role) !== 'pending_manager') {
+        if (!userDoc.exists || userDoc.data()?.role !== 'pending_manager') {
             throw new functions.https.HttpsError('not-found', 'The specified user is not awaiting approval.');
         }
         if (action === 'approve') {
@@ -408,8 +435,7 @@ exports.processRegistration = functions.region('asia-northeast3').https.onCall(a
  * Creates a new user account, stores details in Firestore, and sets a custom role claim.
  */
 exports.createUserAccount = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    var _a, _b;
-    if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
+    if (context.auth?.token?.role !== 'admin') {
         throw new functions.https.HttpsError('permission-denied', 'Only admins can create new user accounts.');
     }
     const { email, name, role } = data;
@@ -437,10 +463,9 @@ exports.createUserAccount = functions.region('asia-northeast3').https.onCall(asy
  * created or changed in the 'users' collection.
  */
 exports.onUserRoleChange = functions.region('asia-northeast3').firestore.document('users/{uid}').onWrite(async (change, context) => {
-    var _a, _b;
     const { uid } = context.params;
-    const newRole = change.after.exists ? (_a = change.after.data()) === null || _a === void 0 ? void 0 : _a.role : null;
-    const oldRole = change.before.exists ? (_b = change.before.data()) === null || _b === void 0 ? void 0 : _b.role : null;
+    const newRole = change.after.exists ? change.after.data()?.role : null;
+    const oldRole = change.before.exists ? change.before.data()?.role : null;
     if (newRole === oldRole) {
         functions.logger.info(`User ${uid}: Role unchanged (${newRole}). No action taken.`);
         return null;
@@ -471,7 +496,10 @@ exports.getDashboardStats = functions.region('asia-northeast3').https.onRequest(
                 totalStaffQuery.get(),
                 topStaffQuery.get(),
             ]);
-            const topRatedStaff = topStaffSnapshot.docs.map((doc) => (Object.assign({ id: doc.id }, doc.data())));
+            const topRatedStaff = topStaffSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data()
+            }));
             response.status(200).send({
                 data: {
                     ongoingEventsCount: ongoingEventsSnapshot.size,
@@ -491,8 +519,7 @@ exports.getDashboardStats = functions.region('asia-northeast3').https.onRequest(
  * Only callable by an admin.
  */
 exports.updateUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    var _a, _b;
-    if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
+    if (context.auth?.token?.role !== 'admin') {
         functions.logger.error("updateUser denied", { auth: context.auth });
         throw new functions.https.HttpsError('permission-denied', 'Only admins can update users.');
     }
@@ -515,8 +542,7 @@ exports.updateUser = functions.region('asia-northeast3').https.onCall(async (dat
  * Only callable by an admin.
  */
 exports.deleteUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    var _a, _b;
-    if (((_b = (_a = context.auth) === null || _a === void 0 ? void 0 : _a.token) === null || _b === void 0 ? void 0 : _b.role) !== 'admin') {
+    if (context.auth?.token?.role !== 'admin') {
         functions.logger.error("deleteUser denied", { auth: context.auth });
         throw new functions.https.HttpsError('permission-denied', 'Only admins can delete users.');
     }
@@ -542,16 +568,15 @@ exports.deleteUser = functions.region('asia-northeast3').https.onCall(async (dat
  * This is a "fire-and-forget" function - it should not block the client.
  */
 exports.logAction = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    var _a, _b, _c, _d, _e, _f, _g;
     try {
         const { action, details = {} } = data;
         if (!action) {
             throw new functions.https.HttpsError('invalid-argument', 'Action is required.');
         }
         // Get user information from context
-        const userId = ((_a = context.auth) === null || _a === void 0 ? void 0 : _a.uid) || 'anonymous';
-        const userEmail = ((_c = (_b = context.auth) === null || _b === void 0 ? void 0 : _b.token) === null || _c === void 0 ? void 0 : _c.email) || 'unknown';
-        const userRole = ((_e = (_d = context.auth) === null || _d === void 0 ? void 0 : _d.token) === null || _e === void 0 ? void 0 : _e.role) || 'unknown';
+        const userId = context.auth?.uid || 'anonymous';
+        const userEmail = context.auth?.token?.email || 'unknown';
+        const userRole = context.auth?.token?.role || 'unknown';
         // Create log entry
         const logEntry = {
             action,
@@ -560,8 +585,8 @@ exports.logAction = functions.region('asia-northeast3').https.onCall(async (data
             userEmail,
             userRole,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            ip: ((_f = context.rawRequest) === null || _f === void 0 ? void 0 : _f.ip) || 'unknown',
-            userAgent: ((_g = context.rawRequest) === null || _g === void 0 ? void 0 : _g.get('user-agent')) || 'unknown'
+            ip: context.rawRequest?.ip || 'unknown',
+            userAgent: context.rawRequest?.get('user-agent') || 'unknown'
         };
         // Store in actionLogs collection
         await db.collection('actionLogs').add(logEntry);
@@ -630,7 +655,7 @@ exports.updateJobPostingApplicantCount = functions.region('asia-northeast3').fir
     const applicationData = change.after.exists ? change.after.data() : null;
     const previousData = change.before.exists ? change.before.data() : null;
     // Get job posting ID from either new or old data
-    const jobPostingId = (applicationData === null || applicationData === void 0 ? void 0 : applicationData.jobPostingId) || (previousData === null || previousData === void 0 ? void 0 : previousData.jobPostingId);
+    const jobPostingId = applicationData?.jobPostingId || previousData?.jobPostingId;
     if (!jobPostingId) {
         functions.logger.warn('No jobPostingId found in application document');
         return;
@@ -662,7 +687,7 @@ exports.updateEventParticipantCount = functions.region('asia-northeast3').firest
     const participantData = change.after.exists ? change.after.data() : null;
     const previousData = change.before.exists ? change.before.data() : null;
     // Get event ID from either new or old data
-    const eventId = (participantData === null || participantData === void 0 ? void 0 : participantData.eventId) || (previousData === null || previousData === void 0 ? void 0 : previousData.eventId);
+    const eventId = participantData?.eventId || previousData?.eventId;
     if (!eventId) {
         functions.logger.warn('No eventId found in participant document');
         return;

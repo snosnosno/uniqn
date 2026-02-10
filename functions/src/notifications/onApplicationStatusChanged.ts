@@ -20,7 +20,7 @@
  *   (unreadCount 증가, 알림설정 확인, 만료 토큰 정리 자동 처리)
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 

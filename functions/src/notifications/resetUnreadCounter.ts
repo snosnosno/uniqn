@@ -10,7 +10,7 @@
  * @note 배치 업데이트 후 개별 트리거가 스킵되므로 직접 리셋 필요
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { resetUnreadCounter as resetCounter } from '../utils/notificationUtils';
 

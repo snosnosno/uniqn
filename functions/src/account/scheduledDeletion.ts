@@ -13,7 +13,7 @@
  * @since 2025-10-23
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 
 /**

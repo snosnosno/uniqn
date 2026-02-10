@@ -12,7 +12,7 @@
  * @since 2025-10-15
  */
 
-import * as functions from 'firebase-functions';
+import * as functions from 'firebase-functions/v1';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
