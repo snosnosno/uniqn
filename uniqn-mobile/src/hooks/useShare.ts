@@ -11,6 +11,7 @@ import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { trackEvent } from '@/services/analyticsService';
 import { createJobDeepLink } from '@/services/deepLinkService';
+import { useToast } from '@/stores/toastStore';
 
 // ============================================================================
 // Types
@@ -56,6 +57,41 @@ export interface UseShareReturn {
  */
 export function useShare(): UseShareReturn {
   const [isSharing, setIsSharing] = useState(false);
+  const toast = useToast();
+
+  /**
+   * 웹 플랫폼 공유 (Web Share API → 클립보드 fallback)
+   */
+  const webShare = useCallback(
+    async (options: { title: string; text: string; url?: string }): Promise<'shared' | 'dismissed'> => {
+      // Web Share API 시도
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        try {
+          await navigator.share({
+            title: options.title,
+            text: options.text,
+            url: options.url,
+          });
+          return 'shared';
+        } catch (e) {
+          // AbortError = 사용자가 공유 시트 닫음
+          if (e instanceof Error && e.name === 'AbortError') {
+            return 'dismissed';
+          }
+          // 그 외 에러는 클립보드 fallback
+        }
+      }
+
+      // 클립보드 fallback
+      const copyText = options.url || options.text;
+      if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(copyText);
+      }
+      toast.success('링크가 복사되었습니다');
+      return 'shared';
+    },
+    [toast]
+  );
 
   /**
    * 일반 콘텐츠 공유
@@ -69,19 +105,23 @@ export function useShare(): UseShareReturn {
       setIsSharing(true);
 
       try {
-        const result = await Share.share(
-          {
-            title: options.title,
-            message: options.message,
-            ...(Platform.OS === 'ios' && options.url ? { url: options.url } : {}),
-          },
-          {
-            dialogTitle: options.title,
-          }
-        );
+        let action: 'shared' | 'dismissed';
 
-        // Android는 항상 'sharedAction', iOS는 실제 액션 반환
-        const action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
+        if (Platform.OS === 'web') {
+          action = await webShare({ title: options.title, text: options.message, url: options.url });
+        } else {
+          const result = await Share.share(
+            {
+              title: options.title,
+              message: options.message,
+              ...(Platform.OS === 'ios' && options.url ? { url: options.url } : {}),
+            },
+            {
+              dialogTitle: options.title,
+            }
+          );
+          action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
+        }
 
         logger.info('콘텐츠 공유 완료', { action, title: options.title });
 
@@ -95,7 +135,7 @@ export function useShare(): UseShareReturn {
         setIsSharing(false);
       }
     },
-    [isSharing]
+    [isSharing, webShare]
   );
 
   /**
@@ -117,18 +157,23 @@ export function useShare(): UseShareReturn {
         const dateInfo = job.workDate ? `\n${job.workDate}` : '';
         const message = `[UNIQN] ${job.title}\n${job.location}${dateInfo}\n\n${url}`;
 
-        const result = await Share.share(
-          {
-            title: job.title,
-            message,
-            ...(Platform.OS === 'ios' ? { url } : {}),
-          },
-          {
-            dialogTitle: '공고 공유하기',
-          }
-        );
+        let action: 'shared' | 'dismissed';
 
-        const action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
+        if (Platform.OS === 'web') {
+          action = await webShare({ title: job.title, text: message, url });
+        } else {
+          const result = await Share.share(
+            {
+              title: job.title,
+              message,
+              ...(Platform.OS === 'ios' ? { url } : {}),
+            },
+            {
+              dialogTitle: '공고 공유하기',
+            }
+          );
+          action = result.action === Share.sharedAction ? 'shared' : 'dismissed';
+        }
 
         // Analytics 이벤트
         if (action === 'shared') {
@@ -148,7 +193,7 @@ export function useShare(): UseShareReturn {
         setIsSharing(false);
       }
     },
-    [isSharing]
+    [isSharing, webShare]
   );
 
   return {

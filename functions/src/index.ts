@@ -67,6 +67,9 @@ export { rejectJobPosting } from './api/jobPostings/rejectJobPosting';
 export { resubmitJobPosting } from './api/jobPostings/resubmitJobPosting';
 export { onTournamentApprovalChange } from './triggers/onTournamentApprovalChange';
 
+// --- Job Posting OG Sync ---
+export { onJobPostingOGSync } from './triggers/onJobPostingOGSync';
+
 // --- Job Posting Scheduled Functions (Phase 5) ---
 export { expireFixedPostings, manualExpireFixedPostings } from './scheduled/expireFixedPostings';
 export { onFixedPostingExpired } from './triggers/onFixedPostingExpired';

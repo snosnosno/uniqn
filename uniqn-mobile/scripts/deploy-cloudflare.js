@@ -91,8 +91,19 @@ if (fs.existsSync(JS_DIR)) {
 // 4. Wrangler 배포 (wrangler.toml 설정 사용)
 console.log('\n🌐 Step 4: Cloudflare Pages 배포...');
 const commitDirtyFlag = forceFlag ? ' --commit-dirty=true' : '';
+
+// 최근 커밋 메시지를 ASCII-safe하게 가져옴 (한글 깨짐 방지)
+let commitMessage = 'deploy';
 try {
-  execSync(`npx wrangler pages deploy dist --project-name=uniqn-app${commitDirtyFlag}`, {
+  const raw = execSync('git log -1 --pretty=format:%s', { cwd: ROOT_DIR, encoding: 'utf-8' }).trim();
+  // wrangler가 non-UTF-8로 인식하는 경우 방지: ASCII 외 문자는 유니코드 이스케이프
+  commitMessage = raw.replace(/[^\x20-\x7E]/g, (ch) => `\\u${ch.charCodeAt(0).toString(16).padStart(4, '0')}`);
+} catch {
+  // git 없으면 기본값 사용
+}
+
+try {
+  execSync(`npx wrangler pages deploy dist --project-name=uniqn-app${commitDirtyFlag} --commit-message="${commitMessage}"`, {
     stdio: 'inherit',
     cwd: ROOT_DIR,
   });

@@ -9,3 +9,8 @@ pages_build_output_dir = "dist"
 # - uniqn.app        → CNAME → uniqn-app.pages.dev (Proxied, SSL)
 # - www.uniqn.app    → CNAME → uniqn-app.pages.dev (Proxied, SSL)
 # - DNS Setup: Full (Cloudflare 관리)
+
+# Workers KV - OG 메타태그 캐시 (공고 공유 링크 미리보기)
+[[kv_namespaces]]
+binding = "OG_KV"
+id = "b0e7c77711924c6a9ef7e4d415f0a90a"
