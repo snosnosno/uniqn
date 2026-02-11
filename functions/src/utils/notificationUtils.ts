@@ -287,10 +287,10 @@ async function getUserNotificationSettings(
     }
 
     return settingsDoc.data() as UserNotificationSettings;
-  } catch (error: any) {
+  } catch (error: unknown) {
     functions.logger.warn('알림 설정 조회 실패', {
       userId,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return null;
   }
@@ -682,9 +682,9 @@ export async function sendMulticast(
             }
           }
         });
-      } catch (error: any) {
+      } catch (error: unknown) {
         functions.logger.error('Expo Push API 전송 실패', {
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
           chunkSize: chunk.length,
         });
 
@@ -694,7 +694,7 @@ export async function sendMulticast(
           totalFailure++;
           orderedResponses[originalIdx] = {
             success: false,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
           };
         }
       }
@@ -763,9 +763,9 @@ export async function sendMulticast(
         success: response.successCount,
         failure: response.failureCount,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('FCM 멀티캐스트 전송 실패', {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         tokenCount: fcmTokens.length,
       });
 
@@ -774,7 +774,7 @@ export async function sendMulticast(
         totalFailure++;
         orderedResponses[originalIdx] = {
           success: false,
-          error: error.message,
+          error: error instanceof Error ? error.message : String(error),
         };
       });
     }

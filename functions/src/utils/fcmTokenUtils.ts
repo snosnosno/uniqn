@@ -158,10 +158,10 @@ export async function removeInvalidToken(
     });
 
     return true;
-  } catch (error: any) {
+  } catch (error: unknown) {
     functions.logger.error('FCM 토큰 제거 실패', {
       userId,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return false;
   }
@@ -215,11 +215,11 @@ export async function removeInvalidTokens(
     });
 
     return removedCount;
-  } catch (error: any) {
+  } catch (error: unknown) {
     functions.logger.error('FCM 토큰 일괄 제거 실패', {
       userId,
       tokenCount: invalidTokens.length,
-      error: error.message,
+      error: error instanceof Error ? error.message : String(error),
     });
     return 0;
   }

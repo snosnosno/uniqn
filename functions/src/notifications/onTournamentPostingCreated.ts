@@ -132,11 +132,11 @@ export const onTournamentPostingCreated = functions.region('asia-northeast3').fi
         successCount,
         failureCount,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('대회공고 승인 요청 알림 처리 중 오류 발생', {
         jobPostingId,
-        error: error.message,
-        stack: error.stack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   });

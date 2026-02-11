@@ -2,31 +2,24 @@
  * UNIQN Mobile - 구인공고 서비스
  *
  * @description Repository 패턴 기반 구인공고 서비스
- * @version 2.0.0 - Repository 패턴 적용 (Phase 2.1)
+ * @version 2.1.0 - getJobPostings Repository 이관
  *
  * 아키텍처:
  * Service Layer → Repository Layer → Firebase
  *
  * 책임 분리:
- * - Service: 복잡한 필터 조합, 검색, Analytics
- * - Repository: 단순 조회/업데이트 캡슐화
+ * - Service: 비즈니스 로직 조합, 검색, Analytics
+ * - Repository: 데이터 접근 + 쿼리 빌딩 캡슐화
  */
 
-import {
-  collection,
-  getDocs,
-  type QueryDocumentSnapshot,
-  type DocumentData,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { type QueryDocumentSnapshot, type DocumentData } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { handleServiceError, handleSilentError } from '@/errors/serviceErrorHandler';
-import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { startApiTrace } from '@/services/performanceService';
 import { jobPostingRepository, type PaginatedJobPostings } from '@/repositories';
 import type { JobPosting, JobPostingFilters, JobPostingCard } from '@/types';
 import { toJobPostingCard } from '@/types';
-import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Re-export Types
@@ -47,10 +40,7 @@ const DEFAULT_PAGE_SIZE = 20;
 /**
  * 공고 목록 조회 (무한스크롤 지원)
  *
- * @description 복잡한 필터 조합 로직은 Service에서 처리
- * - 대회공고 승인 상태 필터
- * - 복수 공고 타입 필터
- * - 날짜 범위 필터
+ * @description Repository를 통한 필터링 + 페이지네이션
  */
 export async function getJobPostings(
   filters?: JobPostingFilters,
@@ -64,66 +54,18 @@ export async function getJobPostings(
   try {
     logger.info('공고 목록 조회', { filters, pageSize });
 
-    const jobsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
-
-    // QueryBuilder로 쿼리 조합
-    const qb = new QueryBuilder(jobsRef)
-      // 기본 필터: status
-      .whereEqual(FIELDS.JOB_POSTING.status, filters?.status || STATUS.JOB_POSTING.ACTIVE)
-      // 역할 필터 (최대 10개)
-      .whereArrayContainsAny('roles', filters?.roles?.slice(0, 10))
-      // 지역 필터
-      .whereIf(!!filters?.district, FIELDS.JOB_POSTING.locationDistrict, '==', filters?.district)
-      // 긴급 공고 필터
-      .whereIf(filters?.isUrgent !== undefined, FIELDS.JOB_POSTING.isUrgent, '==', filters?.isUrgent)
-      // 구인자 필터 (내 공고)
-      .whereIf(!!filters?.ownerId, FIELDS.JOB_POSTING.ownerId, '==', filters?.ownerId)
-      // 날짜 범위 필터
-      .whereDateRange(FIELDS.JOB_POSTING.workDate, filters?.dateRange);
-
-    // 공고 타입 필터
-    if (filters?.postingType === 'tournament') {
-      // 대회 공고는 승인된(approved) 것만 일반 목록에 노출
-      qb.whereEqual(FIELDS.JOB_POSTING.postingType, 'tournament');
-      qb.whereEqual(FIELDS.JOB_POSTING.tournamentApprovalStatus, STATUS.TOURNAMENT.APPROVED);
-    } else if (filters?.postingType) {
-      qb.whereEqual(FIELDS.JOB_POSTING.postingType, filters.postingType);
-    }
-
-    // 단일 날짜 필터 (workDates 배열에서 array-contains 쿼리)
-    qb.whereIf(
-      !!filters?.workDate && !filters?.dateRange,
-      'workDates',
-      'array-contains',
-      filters?.workDate
-    );
-
-    // 정렬 및 페이지네이션
-    const q = qb
-      .orderByDesc(FIELDS.JOB_POSTING.workDate)
-      .orderBy(FIELDS.JOB_POSTING.createdAt, 'desc')
-      .paginate(pageSize, lastDocument)
-      .build();
-
-    const snapshot = await getDocs(q);
-
-    // 페이지네이션 결과 처리
-    const { items, lastDoc, hasMore } = processPaginatedResults(
-      snapshot.docs,
-      pageSize,
-      (docSnapshot) => ({ id: docSnapshot.id, ...docSnapshot.data() }) as JobPosting
-    );
+    const result = await jobPostingRepository.getList(filters, pageSize, lastDocument);
 
     logger.info('공고 목록 조회 완료', {
-      count: items.length,
-      hasMore,
+      count: result.items.length,
+      hasMore: result.hasMore,
     });
 
-    trace.putMetric('result_count', items.length);
+    trace.putMetric('result_count', result.items.length);
     trace.putAttribute('status', 'success');
     trace.stop();
 
-    return { items, lastDoc, hasMore };
+    return result;
   } catch (error) {
     trace.putAttribute('status', 'error');
     trace.stop();

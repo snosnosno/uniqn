@@ -120,11 +120,11 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
         staffId: workLog.staffId,
         fcmSent: result.fcmSent,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('스케줄 생성 알림 처리 중 오류 발생', {
         workLogId,
-        error: error.message,
-        stack: error.stack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   });
@@ -199,11 +199,11 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
         staffId: after.staffId,
         fcmSent: result.fcmSent,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('스케줄 취소 알림 처리 중 오류 발생', {
         workLogId,
-        error: error.message,
-        stack: error.stack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   });

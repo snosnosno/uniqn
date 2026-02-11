@@ -1,90 +1,27 @@
 /**
  * UNIQN Mobile - Announcement Service
  *
- * @description 공지사항 관리 서비스 (Firestore)
- * @version 1.0.0
+ * @description 공지사항 관리 서비스 (Repository 패턴)
+ * @version 2.0.0 - Repository 패턴 적용
+ *
+ * 아키텍처:
+ * Service Layer → Repository Layer → Firebase
  */
 
-import {
-  collection,
-  doc,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-  deleteDoc,
-  serverTimestamp,
-  increment,
-  QueryDocumentSnapshot,
-  getCountFromServer,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
-import { QueryBuilder, processPaginatedResultsWithFilter } from '@/utils/firestore';
-import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
+import { announcementRepository } from '@/repositories';
 import type {
   Announcement,
-  AnnouncementStatus,
   CreateAnnouncementInput,
   UpdateAnnouncementInput,
-  AnnouncementFilters,
 } from '@/types';
 import type { UserRole } from '@/types/common';
-
-// ============================================================================
-// Constants
-// ============================================================================
-
-const PAGE_SIZE = 20;
-
-// ============================================================================
-// Types
-// ============================================================================
-
-interface FetchAnnouncementsOptions {
-  filters?: AnnouncementFilters;
-  pageSize?: number;
-  lastDoc?: QueryDocumentSnapshot;
-}
-
-interface FetchAnnouncementsResult {
-  announcements: Announcement[];
-  lastDoc: QueryDocumentSnapshot | null;
-  hasMore: boolean;
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Firestore 문서를 Announcement로 변환
- */
-function docToAnnouncement(doc: QueryDocumentSnapshot): Announcement {
-  const data = doc.data();
-  return {
-    id: doc.id,
-    title: data.title,
-    content: data.content,
-    category: data.category,
-    status: data.status,
-    priority: data.priority ?? 0,
-    isPinned: data.isPinned ?? false,
-    targetAudience: data.targetAudience ?? { type: 'all' },
-    authorId: data.authorId,
-    authorName: data.authorName,
-    viewCount: data.viewCount ?? 0,
-    publishedAt: data.publishedAt,
-    createdAt: data.createdAt,
-    updatedAt: data.updatedAt,
-    imageUrl: data.imageUrl ?? null,
-    imageStoragePath: data.imageStoragePath ?? null,
-    images: data.images ?? [],
-  };
-}
+import type {
+  FetchAnnouncementsOptions,
+  FetchAnnouncementsResult,
+  AnnouncementCountByStatus,
+} from '@/repositories';
 
 // ============================================================================
 // Announcement Fetch Operations
@@ -100,46 +37,7 @@ export async function fetchPublishedAnnouncements(
   options: FetchAnnouncementsOptions = {}
 ): Promise<FetchAnnouncementsResult> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const { pageSize = PAGE_SIZE, lastDoc } = options;
-
-    // QueryBuilder로 쿼리 구성 (고정 > 우선순위 > 발행일 순)
-    const q = new QueryBuilder(collection(db, COLLECTIONS.ANNOUNCEMENTS))
-      .whereEqual(FIELDS.ANNOUNCEMENT.status, STATUS.ANNOUNCEMENT.PUBLISHED)
-      .orderByDesc(FIELDS.ANNOUNCEMENT.isPinned)
-      .orderByDesc(FIELDS.ANNOUNCEMENT.priority)
-      .orderByDesc(FIELDS.ANNOUNCEMENT.publishedAt)
-      .paginate(pageSize, lastDoc)
-      .build();
-
-    const snapshot = await getDocs(q);
-
-    // 대상 역할 필터링 + 페이지네이션 처리
-    const result = processPaginatedResultsWithFilter(
-      snapshot.docs,
-      pageSize,
-      docToAnnouncement,
-      (announcement) => {
-        const targetAudience = announcement.targetAudience ?? { type: 'all' };
-        if (targetAudience.type === 'all') return true;
-        if (targetAudience.type === 'roles' && targetAudience.roles && userRole) {
-          return targetAudience.roles.includes(userRole);
-        }
-        return false;
-      }
-    );
-
-    logger.info('발행된 공지사항 조회 완료', {
-      component: 'announcementService',
-      count: result.items.length,
-      userRole,
-    });
-
-    return {
-      announcements: result.items,
-      lastDoc: result.lastDoc,
-      hasMore: result.hasMore,
-    };
+    return announcementRepository.getPublished(userRole, options);
   }, 'fetchPublishedAnnouncements');
 }
 
@@ -150,30 +48,7 @@ export async function fetchAllAnnouncements(
   options: FetchAnnouncementsOptions = {}
 ): Promise<FetchAnnouncementsResult> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const { filters, pageSize = PAGE_SIZE, lastDoc } = options;
-
-    // QueryBuilder로 쿼리 구성
-    const q = new QueryBuilder(collection(db, COLLECTIONS.ANNOUNCEMENTS))
-      .whereIf(filters?.status && filters.status !== 'all', FIELDS.ANNOUNCEMENT.status, '==', filters?.status)
-      .orderByDesc(FIELDS.ANNOUNCEMENT.createdAt)
-      .paginate(pageSize, lastDoc)
-      .build();
-
-    const snapshot = await getDocs(q);
-    const result = processPaginatedResultsWithFilter(snapshot.docs, pageSize, docToAnnouncement);
-
-    logger.info('전체 공지사항 조회 완료', {
-      component: 'announcementService',
-      count: result.items.length,
-      filters,
-    });
-
-    return {
-      announcements: result.items,
-      lastDoc: result.lastDoc,
-      hasMore: result.hasMore,
-    };
+    return announcementRepository.getAll(options);
   }, 'fetchAllAnnouncements');
 }
 
@@ -182,34 +57,7 @@ export async function fetchAllAnnouncements(
  */
 export async function getAnnouncement(announcementId: string): Promise<Announcement | null> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      title: data.title,
-      content: data.content,
-      category: data.category,
-      status: data.status,
-      priority: data.priority ?? 0,
-      isPinned: data.isPinned ?? false,
-      targetAudience: data.targetAudience ?? { type: 'all' },
-      authorId: data.authorId,
-      authorName: data.authorName,
-      viewCount: data.viewCount ?? 0,
-      publishedAt: data.publishedAt,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-      imageUrl: data.imageUrl ?? null,
-      imageStoragePath: data.imageStoragePath ?? null,
-      images: data.images ?? [],
-    };
+    return announcementRepository.getById(announcementId);
   }, 'getAnnouncement');
 }
 
@@ -226,36 +74,16 @@ export async function createAnnouncement(
   input: CreateAnnouncementInput
 ): Promise<string> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-
-    const announcementData = {
-      title: input.title,
-      content: input.content,
-      category: input.category,
-      status: STATUS.ANNOUNCEMENT.DRAFT as AnnouncementStatus,
-      priority: input.priority ?? 0,
-      isPinned: input.isPinned ?? false,
-      targetAudience: input.targetAudience,
-      authorId,
-      authorName,
-      viewCount: 0,
-      imageUrl: input.imageUrl ?? null,
-      imageStoragePath: input.imageStoragePath ?? null,
-      images: input.images ?? [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(collection(db, COLLECTIONS.ANNOUNCEMENTS), announcementData);
+    const id = await announcementRepository.create(authorId, authorName, input);
 
     logger.info('공지사항 생성 완료', {
       component: 'announcementService',
-      announcementId: docRef.id,
+      announcementId: id,
       title: input.title,
       authorId,
     });
 
-    return docRef.id;
+    return id;
   }, 'createAnnouncement');
 }
 
@@ -271,24 +99,7 @@ export async function updateAnnouncement(
   input: UpdateAnnouncementInput
 ): Promise<void> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
-
-    const updateData: Record<string, unknown> = {
-      updatedAt: serverTimestamp(),
-    };
-
-    if (input.title !== undefined) updateData.title = input.title;
-    if (input.content !== undefined) updateData.content = input.content;
-    if (input.category !== undefined) updateData.category = input.category;
-    if (input.priority !== undefined) updateData.priority = input.priority;
-    if (input.isPinned !== undefined) updateData.isPinned = input.isPinned;
-    if (input.targetAudience !== undefined) updateData.targetAudience = input.targetAudience;
-    if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl;
-    if (input.imageStoragePath !== undefined) updateData.imageStoragePath = input.imageStoragePath;
-    if (input.images !== undefined) updateData.images = input.images;
-
-    await updateDoc(docRef, updateData);
+    await announcementRepository.update(announcementId, input);
 
     logger.info('공지사항 수정 완료', {
       component: 'announcementService',
@@ -302,14 +113,7 @@ export async function updateAnnouncement(
  */
 export async function publishAnnouncement(announcementId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
-
-    await updateDoc(docRef, {
-      status: STATUS.ANNOUNCEMENT.PUBLISHED as AnnouncementStatus,
-      publishedAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    });
+    await announcementRepository.publish(announcementId);
 
     logger.info('공지사항 발행 완료', {
       component: 'announcementService',
@@ -323,13 +127,7 @@ export async function publishAnnouncement(announcementId: string): Promise<void>
  */
 export async function archiveAnnouncement(announcementId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
-
-    await updateDoc(docRef, {
-      status: STATUS.ANNOUNCEMENT.ARCHIVED as AnnouncementStatus,
-      updatedAt: serverTimestamp(),
-    });
+    await announcementRepository.archive(announcementId);
 
     logger.info('공지사항 보관 완료', {
       component: 'announcementService',
@@ -343,10 +141,7 @@ export async function archiveAnnouncement(announcementId: string): Promise<void>
  */
 export async function deleteAnnouncement(announcementId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
-
-    await deleteDoc(docRef);
+    await announcementRepository.delete(announcementId);
 
     logger.info('공지사항 삭제 완료', {
       component: 'announcementService',
@@ -364,12 +159,7 @@ export async function deleteAnnouncement(announcementId: string): Promise<void> 
  */
 export async function incrementViewCount(announcementId: string): Promise<void> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
-
-    await updateDoc(docRef, {
-      viewCount: increment(1),
-    });
+    await announcementRepository.incrementViewCount(announcementId);
   }, 'incrementViewCount');
 }
 
@@ -380,37 +170,9 @@ export async function incrementViewCount(announcementId: string): Promise<void> 
 /**
  * 상태별 공지사항 수 조회 (관리자)
  */
-export async function getAnnouncementCountByStatus(): Promise<{
-  draft: number;
-  published: number;
-  archived: number;
-  total: number;
-}> {
+export async function getAnnouncementCountByStatus(): Promise<AnnouncementCountByStatus> {
   return withErrorHandling(async () => {
-    const db = getFirebaseDb();
-
-    const [draftSnap, publishedSnap, archivedSnap] = await Promise.all([
-      getCountFromServer(
-        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.DRAFT))
-      ),
-      getCountFromServer(
-        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.PUBLISHED))
-      ),
-      getCountFromServer(
-        query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.ARCHIVED))
-      ),
-    ]);
-
-    const draft = draftSnap.data().count;
-    const published = publishedSnap.data().count;
-    const archived = archivedSnap.data().count;
-
-    return {
-      draft,
-      published,
-      archived,
-      total: draft + published + archived,
-    };
+    return announcementRepository.getCountByStatus();
   }, 'getAnnouncementCountByStatus');
 }
 

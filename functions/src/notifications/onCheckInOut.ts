@@ -168,11 +168,11 @@ export const onCheckInOut = functions.region('asia-northeast3').firestore
           });
         }
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('출퇴근 알림 처리 중 오류 발생', {
         workLogId,
-        error: error.message,
-        stack: error.stack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   });

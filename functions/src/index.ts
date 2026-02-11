@@ -92,13 +92,13 @@ export const validateJobPostingData = functions.region('asia-northeast3').firest
     if (!data) return;
     
     let needsUpdate = false;
-    const updates: any = {};
-    
+    const updates: Record<string, unknown> = {};
+
     // Auto-generate requiredRoles if missing
     if (!data.requiredRoles && data.timeSlots) {
         const requiredRoles = Array.from(new Set(
-            data.timeSlots.flatMap((ts: any) => 
-                ts.roles ? ts.roles.map((r: any) => r.name) : []
+            data.timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) =>
+                ts.roles ? ts.roles.map((r: { name: string }) => r.name) : []
             )
         ));
         updates.requiredRoles = requiredRoles;
@@ -167,13 +167,13 @@ export const migrateJobPostings = functions.region('asia-northeast3').https.onCa
         snapshot.docs.forEach((doc) => {
             const data = doc.data();
             let needsUpdate = false;
-            const updates: any = {};
-            
+            const updates: Record<string, unknown> = {};
+
             // Check if requiredRoles field is missing
             if (!data.requiredRoles && data.timeSlots) {
                 const requiredRoles = Array.from(new Set(
-                    data.timeSlots.flatMap((ts: any) => 
-                        ts.roles ? ts.roles.map((r: any) => r.name) : []
+                    data.timeSlots.flatMap((ts: { roles?: Array<{ name: string }> }) =>
+                        ts.roles ? ts.roles.map((r: { name: string }) => r.name) : []
                     )
                 ));
                 updates.requiredRoles = requiredRoles;
@@ -227,9 +227,9 @@ export const migrateJobPostings = functions.region('asia-northeast3').https.onCa
             }
         };
         
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error("Migration failed:", error);
-        throw new functions.https.HttpsError('internal', 'Migration failed', error.message);
+        throw new functions.https.HttpsError('internal', 'Migration failed', error instanceof Error ? error.message : String(error));
     }
 });
 
@@ -334,7 +334,7 @@ export const requestRegistration = functions.region('asia-northeast3').https.onC
 
                 await consentRef.set(consentData);
                 functions.logger.info(`Consent data saved for user ${userRecord.uid}`);
-            } catch (consentError: any) {
+            } catch (consentError: unknown) {
                 functions.logger.error("Error saving consent data:", consentError);
                 // Don't fail the registration if consent saving fails
             }
@@ -342,10 +342,10 @@ export const requestRegistration = functions.region('asia-northeast3').https.onC
 
         return { success: true, message: `Registration for ${name} as ${role} is processing.` };
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error("Error during registration request:", error);
 
-        const errorCode = error.code;
+        const errorCode = error != null && typeof error === 'object' && 'code' in error ? (error as { code: string }).code : undefined;
         switch (errorCode) {
             case 'auth/email-already-exists':
                 throw new functions.https.HttpsError('already-exists', 'This email address is already in use by another account.');
@@ -396,9 +396,9 @@ export const processRegistration = functions.region('asia-northeast3').https.onC
         } else {
             throw new functions.https.HttpsError('invalid-argument', 'Action must be "approve" or "reject".');
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error("Error processing registration:", error);
-        throw new functions.https.HttpsError('internal', 'Failed to process registration.', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to process registration.', error instanceof Error ? error.message : String(error));
     }
 });
 
@@ -426,9 +426,9 @@ export const createUserAccount = functions.region('asia-northeast3').https.onCal
         });
 
         return { result: `Successfully created ${role}: ${name} (${email})` };
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error("Error creating new user:", error);
-        throw new functions.https.HttpsError('internal', error.message, error);
+        throw new functions.https.HttpsError('internal', error instanceof Error ? error.message : String(error));
     }
 });
 
@@ -481,7 +481,7 @@ export const getDashboardStats = functions.region('asia-northeast3').https.onReq
         topStaffQuery.get(),
       ]);
       
-      const topRatedStaff = topStaffSnapshot.docs.map((doc: any) => ({
+      const topRatedStaff = topStaffSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data()
       }));
@@ -521,9 +521,9 @@ export const updateUser = functions.region('asia-northeast3').https.onCall(async
         await userRef.update({ name, role });
 
         return { success: true, message: `User ${uid} updated successfully.` };
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error(`Error updating user ${uid}:`, error);
-        throw new functions.https.HttpsError('internal', 'Failed to update user.', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to update user.', error instanceof Error ? error.message : String(error));
     }
 });
 
@@ -552,9 +552,9 @@ export const deleteUser = functions.region('asia-northeast3').https.onCall(async
         functions.logger.info(`Successfully deleted user ${uid} from Firestore.`);
 
         return { success: true, message: `User ${uid} deleted successfully.` };
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error(`Error deleting user ${uid}:`, error);
-        throw new functions.https.HttpsError('internal', 'Failed to delete user.', error.message);
+        throw new functions.https.HttpsError('internal', 'Failed to delete user.', error instanceof Error ? error.message : String(error));
     }
 });
 
@@ -600,12 +600,12 @@ export const logAction = functions.region('asia-northeast3').https.onCall(async 
 
         return { success: true, message: 'Action logged successfully' };
         
-    } catch (error: any) {
+    } catch (error: unknown) {
         functions.logger.error('Error logging action:', error);
-        
+
         // Don't throw errors for logging - this should be fire-and-forget
         // Just return a success to prevent blocking the client
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
 });
 
@@ -648,9 +648,9 @@ export const logActionHttp = functions.region('asia-northeast3').https.onRequest
 
             response.status(200).send({ success: true, message: 'Action logged successfully' });
             
-        } catch (error: any) {
+        } catch (error: unknown) {
             functions.logger.error('Error logging HTTP action:', error);
-            response.status(200).send({ success: false, error: error.message });
+            response.status(200).send({ success: false, error: error instanceof Error ? error.message : String(error) });
         }
     });
 });

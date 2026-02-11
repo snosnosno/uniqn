@@ -185,8 +185,7 @@ export async function validateRateLimit(
     const error = new Error(
       `요청 횟수 제한을 초과했습니다. ${result.retryAfter}초 후에 다시 시도하세요.`
     );
-    (error as any).code = 'RATE_LIMIT_EXCEEDED';
-    (error as any).retryAfter = result.retryAfter;
+    Object.assign(error, { code: 'RATE_LIMIT_EXCEEDED', retryAfter: result.retryAfter });
     throw error;
   }
 

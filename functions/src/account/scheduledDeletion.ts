@@ -72,9 +72,10 @@ export const processScheduledDeletions = functions.region('asia-northeast3').pub
           try {
             await admin.auth().deleteUser(userId);
             functions.logger.info(`Firebase Auth 계정 삭제 완료: ${userId}`);
-          } catch (authError: any) {
+          } catch (authError: unknown) {
             // Auth 계정이 이미 삭제된 경우 무시
-            if (authError.code !== 'auth/user-not-found') {
+            const authErrorCode = authError != null && typeof authError === 'object' && 'code' in authError ? (authError as { code: string }).code : undefined;
+            if (authErrorCode !== 'auth/user-not-found') {
               throw authError;
             }
             functions.logger.warn(
@@ -242,8 +243,9 @@ export const forceDeleteAccount = functions.region('asia-northeast3').https.onCa
       // Firebase Auth 계정 삭제
       try {
         await admin.auth().deleteUser(userId);
-      } catch (authError: any) {
-        if (authError.code !== 'auth/user-not-found') {
+      } catch (authError: unknown) {
+        const authErrorCode = authError != null && typeof authError === 'object' && 'code' in authError ? (authError as { code: string }).code : undefined;
+        if (authErrorCode !== 'auth/user-not-found') {
           throw authError;
         }
       }

@@ -35,6 +35,7 @@ import {
   FirebaseReportRepository,
   FirebaseSettlementRepository,
   FirebaseConfirmedStaffRepository,
+  FirebaseAnnouncementRepository,
   FirebaseAdminRepository,
 } from './firebase';
 
@@ -87,6 +88,11 @@ export type {
   DeleteConfirmedStaffContext,
   MarkNoShowContext,
   ConfirmedStaffSubscriptionCallbacks,
+  // Announcement
+  IAnnouncementRepository,
+  FetchAnnouncementsOptions,
+  FetchAnnouncementsResult,
+  AnnouncementCountByStatus,
   // Admin
   IAdminRepository,
   DashboardCounts,
@@ -108,6 +114,7 @@ export {
   FirebaseReportRepository,
   FirebaseSettlementRepository,
   FirebaseConfirmedStaffRepository,
+  FirebaseAnnouncementRepository,
   FirebaseAdminRepository,
 } from './firebase';
 
@@ -300,6 +307,27 @@ export const settlementRepository = new FirebaseSettlementRepository();
  * ```
  */
 export const confirmedStaffRepository = new FirebaseConfirmedStaffRepository();
+
+/**
+ * Announcement Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { announcementRepository } from '@/repositories';
+ *
+ * // 조회
+ * const announcement = await announcementRepository.getById(announcementId);
+ *
+ * // 발행된 공지사항
+ * const { announcements } = await announcementRepository.getPublished(userRole);
+ *
+ * // 생성
+ * const id = await announcementRepository.create(authorId, authorName, input);
+ * ```
+ */
+export const announcementRepository = new FirebaseAnnouncementRepository();
 
 /**
  * Admin Repository 싱글톤 인스턴스

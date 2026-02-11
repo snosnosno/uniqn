@@ -108,11 +108,11 @@ export const onInquiryCreated = functions.region('asia-northeast3').firestore
         successCount,
         failureCount,
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('문의 접수 알림 처리 중 오류 발생', {
         inquiryId,
-        error: error.message,
-        stack: error.stack,
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
       });
     }
   });

@@ -342,13 +342,15 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
           totalUsers,
         },
       };
-    } catch (error: any) {
-      functions.logger.error('시스템 공지사항 전송 중 오류 발생', error);
+    } catch (error: unknown) {
+      functions.logger.error('시스템 공지사항 전송 중 오류 발생', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
 
       throw new functions.https.HttpsError(
         'internal',
-        error.message || '시스템 공지사항 전송에 실패했습니다.',
-        error
+        error instanceof Error ? error.message : '시스템 공지사항 전송에 실패했습니다.'
       );
     }
   }

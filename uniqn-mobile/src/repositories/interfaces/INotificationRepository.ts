@@ -162,4 +162,36 @@ export interface INotificationRepository {
    * @param userId - 사용자 ID
    */
   unregisterAllFCMTokens(userId: string): Promise<void>;
+
+  // ==========================================================================
+  // 실시간 구독 (Realtime Subscription)
+  // ==========================================================================
+
+  /**
+   * 알림 실시간 구독
+   *
+   * @param userId - 사용자 ID
+   * @param onNotifications - 알림 업데이트 콜백
+   * @param onError - 에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeToNotifications(
+    userId: string,
+    onNotifications: (notifications: NotificationData[]) => void,
+    onError?: (error: Error) => void
+  ): () => void;
+
+  /**
+   * 읽지 않은 알림 수 실시간 구독 (카운터 문서 기반)
+   *
+   * @param userId - 사용자 ID
+   * @param onCount - 카운트 업데이트 콜백
+   * @param onError - 에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeToUnreadCount(
+    userId: string,
+    onCount: (count: number) => void,
+    onError?: (error: Error) => void
+  ): () => void;
 }

@@ -22,18 +22,22 @@ import {
   writeBatch,
   query,
   where,
+  orderBy,
   limit,
+  onSnapshot,
   Timestamp,
   serverTimestamp,
   getCountFromServer,
   type QueryDocumentSnapshot,
   type DocumentData,
+  type DocumentSnapshot,
 } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { getFirebaseDb, getFirebaseFunctions } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, normalizeError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { RealtimeManager } from '@/shared/realtime';
 import { QueryBuilder, processPaginatedResults, type PaginatedResult } from '@/utils/firestore';
 import { COLLECTIONS, FIELDS } from '@/constants';
 import { parseNotificationSettingsDocument } from '@/schemas';
@@ -580,5 +584,119 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         context: { userId },
       });
     }
+  }
+
+  // ==========================================================================
+  // 실시간 구독 (Realtime Subscription)
+  // ==========================================================================
+
+  subscribeToNotifications(
+    userId: string,
+    onNotifications: (notifications: NotificationData[]) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    return RealtimeManager.subscribe(RealtimeManager.Keys.notifications(userId), () => {
+      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+      const q = query(
+        notificationsRef,
+        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+        orderBy(FIELDS.NOTIFICATION.createdAt, 'desc'),
+        limit(50)
+      );
+
+      let hasErrored = false;
+      let firebaseUnsubscribe: (() => void) | null = null;
+
+      firebaseUnsubscribe = onSnapshot(
+        q,
+        (snapshot) => {
+          if (hasErrored) return;
+          const notifications = snapshot.docs.map(docToNotification);
+          onNotifications(notifications);
+        },
+        (error) => {
+          if (hasErrored) return;
+          hasErrored = true;
+
+          const appError = normalizeError(error);
+          logger.error('알림 구독 에러', appError, {
+            code: appError.code,
+          });
+
+          firebaseUnsubscribe?.();
+          firebaseUnsubscribe = null;
+
+          RealtimeManager.forceRemove(RealtimeManager.Keys.notifications(userId));
+
+          onError?.(appError);
+        }
+      );
+
+      logger.info('알림 구독 시작', { userId });
+
+      return () => {
+        hasErrored = true;
+        firebaseUnsubscribe?.();
+        firebaseUnsubscribe = null;
+      };
+    });
+  }
+
+  subscribeToUnreadCount(
+    userId: string,
+    onCount: (count: number) => void,
+    onError?: (error: Error) => void
+  ): () => void {
+    return RealtimeManager.subscribe(RealtimeManager.Keys.unreadCount(userId), () => {
+      const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
+
+      let firebaseUnsubscribe: (() => void) | null = null;
+      let hasErrored = false;
+
+      firebaseUnsubscribe = onSnapshot(
+        counterRef,
+        async (snapshot: DocumentSnapshot) => {
+          if (hasErrored) return;
+
+          if (snapshot.exists()) {
+            const data = snapshot.data() as { unreadCount?: number } | undefined;
+            const count = data?.unreadCount ?? 0;
+            onCount(count);
+          } else {
+            try {
+              const count = await this.getUnreadCount(userId);
+              onCount(count);
+            } catch (error) {
+              logger.error('폴백 카운트 조회 실패', normalizeError(error));
+              onCount(0);
+            }
+          }
+        },
+        (error: Error) => {
+          if (hasErrored) return;
+          hasErrored = true;
+
+          const appError = normalizeError(error);
+          logger.error('읽지 않은 알림 수 구독 에러', appError, {
+            code: appError.code,
+          });
+
+          firebaseUnsubscribe?.();
+          firebaseUnsubscribe = null;
+
+          RealtimeManager.forceRemove(RealtimeManager.Keys.unreadCount(userId));
+
+          onError?.(appError);
+        }
+      );
+
+      logger.info('읽지 않은 알림 수 구독 시작 (최적화)', { userId });
+
+      return () => {
+        hasErrored = true;
+        firebaseUnsubscribe?.();
+        firebaseUnsubscribe = null;
+      };
+    });
   }
 }

@@ -148,7 +148,7 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
       await announcementRef.set(announcementData);
 
       // 7. 스태프 FCM 토큰 조회 (배치 처리, fcmTokens: string[] 배열만 사용)
-      const allUsersData: Array<{ id: string; data: any }> = [];
+      const allUsersData: Array<{ id: string; data: FirebaseFirestore.DocumentData | undefined }> = [];
       const chunkSize = 10; // Firestore in 쿼리 제한
 
       for (let i = 0; i < targetStaffIds.length; i += chunkSize) {
@@ -317,13 +317,12 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         announcementId,
         result: sendResult,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       functions.logger.error('공지 전송 중 오류 발생', error);
 
       throw new functions.https.HttpsError(
         'internal',
-        error.message || '공지 전송에 실패했습니다.',
-        error
+        error instanceof Error ? error.message : '공지 전송에 실패했습니다.',
       );
     }
   }

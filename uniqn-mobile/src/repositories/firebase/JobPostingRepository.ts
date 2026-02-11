@@ -24,7 +24,6 @@ import {
   query,
   where,
   orderBy,
-  startAfter,
   updateDoc,
   increment,
   serverTimestamp,
@@ -181,34 +180,43 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
       const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
 
       // QueryBuilder로 쿼리 구성
-      let builder = new QueryBuilder(jobPostingsRef).whereEqual(
-        FIELDS.JOB_POSTING.status,
-        filters?.status ?? STATUS.JOB_POSTING.ACTIVE
-      );
+      const qb = new QueryBuilder(jobPostingsRef)
+        // 기본 필터: status
+        .whereEqual(FIELDS.JOB_POSTING.status, filters?.status || STATUS.JOB_POSTING.ACTIVE)
+        // 역할 필터 (최대 10개)
+        .whereArrayContainsAny('roles', filters?.roles?.slice(0, 10))
+        // 지역 필터
+        .whereIf(!!filters?.district, FIELDS.JOB_POSTING.locationDistrict, '==', filters?.district)
+        // 긴급 공고 필터
+        .whereIf(filters?.isUrgent !== undefined, FIELDS.JOB_POSTING.isUrgent, '==', filters?.isUrgent)
+        // 구인자 필터 (내 공고)
+        .whereIf(!!filters?.ownerId, FIELDS.JOB_POSTING.ownerId, '==', filters?.ownerId)
+        // 날짜 범위 필터
+        .whereDateRange(FIELDS.JOB_POSTING.workDate, filters?.dateRange);
 
       // 공고 타입 필터
-      if (filters?.postingType) {
-        builder = builder.whereEqual(FIELDS.JOB_POSTING.postingType, filters.postingType);
+      if (filters?.postingType === 'tournament') {
+        // 대회 공고는 승인된(approved) 것만 일반 목록에 노출
+        qb.whereEqual(FIELDS.JOB_POSTING.postingType, 'tournament');
+        qb.whereEqual(FIELDS.JOB_POSTING.tournamentApprovalStatus, STATUS.TOURNAMENT.APPROVED);
+      } else if (filters?.postingType) {
+        qb.whereEqual(FIELDS.JOB_POSTING.postingType, filters.postingType);
       }
 
-      // 지역 필터
-      if (filters?.district) {
-        builder = builder.whereEqual(FIELDS.JOB_POSTING.locationDistrict, filters.district);
-      }
-
-      // 역할 필터 (첫 번째 역할만 적용 - Firestore 제약)
-      if (filters?.roles && filters.roles.length > 0) {
-        builder = builder.whereArrayContains('roleKeys', filters.roles[0]);
-      }
+      // 단일 날짜 필터 (workDates 배열에서 array-contains 쿼리)
+      qb.whereIf(
+        !!filters?.workDate && !filters?.dateRange,
+        'workDates',
+        'array-contains',
+        filters?.workDate
+      );
 
       // 정렬 및 페이지네이션
-      builder = builder.orderByDesc(FIELDS.JOB_POSTING.createdAt).limit(pageSize + 1);
-
-      // 커서 기반 페이지네이션
-      let q = builder.build();
-      if (lastDocument) {
-        q = query(q, startAfter(lastDocument));
-      }
+      const q = qb
+        .orderByDesc(FIELDS.JOB_POSTING.workDate)
+        .orderBy(FIELDS.JOB_POSTING.createdAt, 'desc')
+        .paginate(pageSize, lastDocument)
+        .build();
 
       const snapshot = await getDocs(q);
 

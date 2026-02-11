@@ -74,6 +74,14 @@ export type {
   ConfirmedStaffSubscriptionCallbacks,
 } from './IConfirmedStaffRepository';
 
+// Announcement Repository
+export type {
+  IAnnouncementRepository,
+  FetchAnnouncementsOptions,
+  FetchAnnouncementsResult,
+  AnnouncementCountByStatus,
+} from './IAnnouncementRepository';
+
 // Admin Repository
 export type {
   IAdminRepository,
