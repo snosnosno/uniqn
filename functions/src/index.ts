@@ -142,14 +142,6 @@ export const validateJobPostingData = functions.region('asia-northeast3').firest
         }
     }
 });
-export const matchDealersToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-export const assignDealerToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-export const generateEventQrToken = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-export const recordAttendance = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-export const calculatePayrollsForEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-export const getPayrolls = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-export const submitDealerRating = functions.region('asia-northeast3').https.onCall(async (data, context) => { /* ... */ });
-
 // --- Data Migration Functions ---
 
 /**

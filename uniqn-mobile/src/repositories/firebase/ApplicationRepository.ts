@@ -72,18 +72,10 @@ import { isValidAssignment, validateRequiredAnswers } from '@/types';
 import { STATUS_TO_STATS_KEY } from '@/constants/statusConfig';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
-// Lazy import to avoid circular dependency
-let _jobPostingRepository: import('./JobPostingRepository').FirebaseJobPostingRepository | null =
-  null;
-function getJobPostingRepository(): import('./JobPostingRepository').FirebaseJobPostingRepository {
-  if (!_jobPostingRepository) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { FirebaseJobPostingRepository } = require('./JobPostingRepository');
-    _jobPostingRepository = new FirebaseJobPostingRepository();
-  }
-  // Non-null assertion: 위에서 초기화 보장
-  return _jobPostingRepository!;
-}
+// 단방향 의존: ApplicationRepository → JobPostingRepository (역참조 없음)
+import { FirebaseJobPostingRepository } from './JobPostingRepository';
+
+const _jobPostingRepository = new FirebaseJobPostingRepository();
 
 // ============================================================================
 // Helpers
@@ -223,7 +215,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       if (jobPostingIds.size > 0) {
         try {
-          const jobPostings = await getJobPostingRepository().getByIdBatch(
+          const jobPostings = await _jobPostingRepository.getByIdBatch(
             Array.from(jobPostingIds)
           );
 

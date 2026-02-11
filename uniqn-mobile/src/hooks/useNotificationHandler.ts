@@ -40,11 +40,14 @@ import type { NotificationType, NotificationData } from '@/types/notification';
 // Helper Functions
 // ============================================================================
 
-/** 마지막 동기화 시간 캐시 (userId → timestamp) */
-const lastSyncTimeCache = new Map<string, number>();
+import {
+  isSyncCacheValid,
+  updateSyncCache,
+  clearCounterSyncCache,
+} from '@/shared/cache/counterSyncCache';
 
-/** 동기화 캐시 TTL (밀리초) - 30초 */
-const SYNC_CACHE_TTL_MS = 30000;
+// Re-export for backward compatibility
+export { clearCounterSyncCache };
 
 /**
  * 서버에서 미읽음 카운터 동기화
@@ -61,15 +64,9 @@ export async function syncUnreadCounterFromServer(
   forceSync: boolean = false
 ): Promise<void> {
   try {
-    // 🆕 캐시 TTL 체크 (불필요한 Firestore 읽기 방지)
-    const now = Date.now();
-    const lastSyncTime = lastSyncTimeCache.get(userId) ?? 0;
-
-    if (!forceSync && now - lastSyncTime < SYNC_CACHE_TTL_MS) {
-      logger.debug('카운터 동기화 스킵 - 캐시 TTL 내', {
-        userId,
-        lastSyncAgo: now - lastSyncTime,
-      });
+    // 캐시 TTL 체크 (불필요한 Firestore 읽기 방지)
+    if (!forceSync && isSyncCacheValid(userId)) {
+      logger.debug('카운터 동기화 스킵 - 캐시 TTL 내', { userId });
       return;
     }
 
@@ -77,7 +74,7 @@ export async function syncUnreadCounterFromServer(
     const serverCount = await notificationRepository.getUnreadCounterFromCache(userId);
 
     // 캐시 갱신
-    lastSyncTimeCache.set(userId, now);
+    updateSyncCache(userId);
 
     if (serverCount !== null) {
       const localCount = useNotificationStore.getState().unreadCount;
@@ -97,20 +94,6 @@ export async function syncUnreadCounterFromServer(
       error: error instanceof Error ? error.message : String(error),
     });
     // 동기화 실패해도 앱은 계속 동작
-  }
-}
-
-/**
- * 카운터 동기화 캐시 초기화
- *
- * @description 로그아웃 시 호출하여 다음 로그인 시 새로 동기화
- * @param userId 사용자 ID (선택, 없으면 전체 캐시 초기화)
- */
-export function clearCounterSyncCache(userId?: string): void {
-  if (userId) {
-    lastSyncTimeCache.delete(userId);
-  } else {
-    lastSyncTimeCache.clear();
   }
 }
 

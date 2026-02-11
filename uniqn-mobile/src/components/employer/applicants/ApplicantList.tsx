@@ -5,18 +5,16 @@
  * @version 1.1.0
  */
 
-import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { View, Text, RefreshControl } from 'react-native';
 import { FlashList } from '@shopify/flash-list';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ApplicantCard } from './ApplicantCard';
 import { Loading } from '../../ui/Loading';
 import { EmptyState } from '../../ui/EmptyState';
 import { ErrorState } from '../../ui/ErrorState';
 import { FilterTabs, type FilterTabOption } from '../../ui/FilterTabs';
 import { FilterIcon } from '../../icons';
-import { userRepository } from '@/repositories';
-import { queryKeys } from '@/lib/queryClient';
+import { useApplicantProfiles } from '@/hooks/useApplicantProfiles';
 import { LIST_CONTAINER_STYLES, STATUS } from '@/constants';
 import type { ApplicantWithDetails } from '@/services';
 import type { ApplicationStatus, ApplicationStats } from '@/types';
@@ -67,7 +65,6 @@ export function ApplicantList({
   onViewProfile,
 }: ApplicantListProps) {
   const [selectedFilter, setSelectedFilter] = useState<FilterStatus>('all');
-  const queryClient = useQueryClient();
 
   // ==========================================================================
   // N+1 최적화: 지원자 프로필 배치 프리페치
@@ -77,22 +74,8 @@ export function ApplicantList({
     [applicants]
   );
 
-  // 배치로 사용자 프로필 조회
-  const { data: profileMap } = useQuery({
-    queryKey: queryKeys.user.profileBatch(applicantIds),
-    queryFn: () => userRepository.getByIdBatch(applicantIds),
-    enabled: applicantIds.length > 0,
-    staleTime: 5 * 60 * 1000, // 5분
-  });
-
-  // 개별 캐시에 저장 (ApplicantCard의 useQuery가 캐시 히트)
-  useEffect(() => {
-    if (profileMap) {
-      profileMap.forEach((profile, id) => {
-        queryClient.setQueryData(queryKeys.user.profile(id), profile);
-      });
-    }
-  }, [profileMap, queryClient]);
+  // 배치로 사용자 프로필 조회 (Hook 레이어를 통해 Repository 접근)
+  useApplicantProfiles({ applicantIds });
 
   // 필터링된 지원자 목록
   const filteredApplicants = useMemo(() => {

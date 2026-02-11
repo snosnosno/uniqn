@@ -42,7 +42,7 @@ import {
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
-import { clearCounterSyncCache } from '@/hooks/useNotificationHandler';
+import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import {
