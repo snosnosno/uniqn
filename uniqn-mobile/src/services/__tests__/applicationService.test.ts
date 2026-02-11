@@ -1,11 +1,10 @@
 /**
  * UNIQN Mobile - Application Service Tests
  *
- * @description 지원 서비스 테스트
- * @version 1.0.0
+ * @description 지원 서비스 테스트 (Repository 패턴 기반)
+ * @version 2.0.0
  */
 
-import * as firestoreModule from 'firebase/firestore';
 import {
   getMyApplications,
   getApplicationById,
@@ -14,78 +13,99 @@ import {
   getApplicationStats,
 } from '../applicationService';
 
-// Mock Firebase modules
-jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(),
-  doc: jest.fn(() => ({})),
-  getDoc: jest.fn(),
-  getDocs: jest.fn(),
-  runTransaction: jest.fn(),
-  query: jest.fn(),
-  where: jest.fn(),
-  orderBy: jest.fn(),
-  serverTimestamp: jest.fn(() => ({ _seconds: Date.now() / 1000 })),
-  increment: jest.fn((n) => n),
+// ============================================================================
+// Mock Repository
+// ============================================================================
+
+const mockGetByApplicantId = jest.fn();
+const mockGetById = jest.fn();
+const mockCancelWithTransaction = jest.fn();
+const mockHasApplied = jest.fn();
+const mockGetStatsByApplicantId = jest.fn();
+
+jest.mock('@/repositories', () => ({
+  applicationRepository: {
+    getByApplicantId: (...args: unknown[]) => mockGetByApplicantId(...args),
+    getById: (...args: unknown[]) => mockGetById(...args),
+    cancelWithTransaction: (...args: unknown[]) => mockCancelWithTransaction(...args),
+    hasApplied: (...args: unknown[]) => mockHasApplied(...args),
+    getStatsByApplicantId: (...args: unknown[]) => mockGetStatsByApplicantId(...args),
+  },
 }));
-const mockDb = {};
+
+// ============================================================================
+// Mock Dependencies
+// ============================================================================
+
 jest.mock('@/lib/firebase', () => ({
-  db: mockDb,
-  getFirebaseDb: () => mockDb,
+  db: {},
+  getFirebaseDb: () => ({}),
 }));
+
 jest.mock('@/utils/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
+    appError: jest.fn(),
   },
 }));
 
-const mockRunTransaction = firestoreModule.runTransaction as jest.Mock;
-const mockCollection = firestoreModule.collection as jest.Mock;
-const mockDoc = firestoreModule.doc as jest.Mock;
-const mockGetDoc = firestoreModule.getDoc as jest.Mock;
-const mockGetDocs = firestoreModule.getDocs as jest.Mock;
+jest.mock('@/errors/serviceErrorHandler', () => ({
+  handleServiceError: jest.fn((error: unknown) => {
+    if (error instanceof Error) return error;
+    return new Error(String(error));
+  }),
+  handleErrorWithDefault: jest.fn((_error: unknown, defaultValue: unknown) => defaultValue),
+}));
+
+jest.mock('../analyticsService', () => ({
+  trackJobApply: jest.fn(),
+  trackEvent: jest.fn(),
+}));
+
+jest.mock('../performanceService', () => ({
+  startApiTrace: jest.fn(() => ({
+    putAttribute: jest.fn(),
+    stop: jest.fn(),
+  })),
+}));
+
+// ============================================================================
+// Tests
+// ============================================================================
 
 describe('ApplicationService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockDoc.mockReturnValue({});
-    mockCollection.mockReturnValue({});
   });
 
   describe('getMyApplications', () => {
     const applicantId = 'user-1';
 
     it('should return empty array when no applications', async () => {
-      mockGetDocs.mockResolvedValue({ docs: [] });
+      mockGetByApplicantId.mockResolvedValue([]);
 
       const result = await getMyApplications(applicantId);
 
       expect(result).toEqual([]);
+      expect(mockGetByApplicantId).toHaveBeenCalledWith(applicantId);
     });
 
     it('should return applications with job data', async () => {
-      const mockApplicationDoc = {
-        id: 'app-1',
-        data: () => ({
+      mockGetByApplicantId.mockResolvedValue([
+        {
+          id: 'app-1',
           applicantId,
           jobPostingId: 'job-1',
           status: 'applied',
-        }),
-      };
-
-      const mockJobDoc = {
-        id: 'job-1',
-        exists: () => true,
-        data: () => ({
-          title: '테스트 공고',
-          location: '서울',
-        }),
-      };
-
-      mockGetDocs.mockResolvedValue({ docs: [mockApplicationDoc] });
-      mockGetDoc.mockResolvedValue(mockJobDoc);
+          jobPosting: {
+            title: '테스트 공고',
+            location: '서울',
+          },
+        },
+      ]);
 
       const result = await getMyApplications(applicantId);
 
@@ -95,19 +115,15 @@ describe('ApplicationService', () => {
     });
 
     it('should return applications without job data when job not found', async () => {
-      const mockApplicationDoc = {
-        id: 'app-1',
-        data: () => ({
+      mockGetByApplicantId.mockResolvedValue([
+        {
+          id: 'app-1',
           applicantId,
           jobPostingId: 'job-1',
           status: 'applied',
-        }),
-      };
-
-      mockGetDocs.mockResolvedValue({ docs: [mockApplicationDoc] });
-      mockGetDoc.mockResolvedValue({
-        exists: () => false,
-      });
+          jobPosting: undefined,
+        },
+      ]);
 
       const result = await getMyApplications(applicantId);
 
@@ -118,9 +134,7 @@ describe('ApplicationService', () => {
 
   describe('getApplicationById', () => {
     it('should return null when application not found', async () => {
-      mockGetDoc.mockResolvedValue({
-        exists: () => false,
-      });
+      mockGetById.mockResolvedValue(null);
 
       const result = await getApplicationById('non-existent');
 
@@ -128,23 +142,15 @@ describe('ApplicationService', () => {
     });
 
     it('should return application with job data', async () => {
-      mockGetDoc
-        .mockResolvedValueOnce({
-          exists: () => true,
-          id: 'app-1',
-          data: () => ({
-            applicantId: 'user-1',
-            jobPostingId: 'job-1',
-            status: 'applied',
-          }),
-        })
-        .mockResolvedValueOnce({
-          exists: () => true,
-          id: 'job-1',
-          data: () => ({
-            title: '테스트 공고',
-          }),
-        });
+      mockGetById.mockResolvedValue({
+        id: 'app-1',
+        applicantId: 'user-1',
+        jobPostingId: 'job-1',
+        status: 'applied',
+        jobPosting: {
+          title: '테스트 공고',
+        },
+      });
 
       const result = await getApplicationById('app-1');
 
@@ -159,90 +165,41 @@ describe('ApplicationService', () => {
     const applicantId = 'user-1';
 
     it('should cancel application successfully', async () => {
-      const mockTransactionGet = jest.fn().mockResolvedValue({
-        exists: () => true,
-        data: () => ({
-          applicantId,
-          jobPostingId: 'job-1',
-          status: 'applied',
-        }),
-      });
-
-      const mockTransactionUpdate = jest.fn();
-
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: mockTransactionGet,
-          update: mockTransactionUpdate,
-        };
-        return callback(transaction);
-      });
+      mockCancelWithTransaction.mockResolvedValue(undefined);
 
       await expect(cancelApplication(applicationId, applicantId)).resolves.not.toThrow();
 
-      expect(mockTransactionUpdate).toHaveBeenCalledTimes(2);
+      expect(mockCancelWithTransaction).toHaveBeenCalledWith(applicationId, applicantId);
     });
 
     it('should throw error when application not found', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => false,
-          }),
-        };
-        return callback(transaction);
-      });
+      mockCancelWithTransaction.mockRejectedValue(
+        new Error('존재하지 않는 지원입니다')
+      );
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when not the applicant', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => true,
-            data: () => ({
-              applicantId: 'other-user',
-              status: 'applied',
-            }),
-          }),
-        };
-        return callback(transaction);
-      });
+      mockCancelWithTransaction.mockRejectedValue(
+        new Error('본인의 지원만 취소할 수 있습니다')
+      );
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when already cancelled', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => true,
-            data: () => ({
-              applicantId,
-              status: 'cancelled',
-            }),
-          }),
-        };
-        return callback(transaction);
-      });
+      mockCancelWithTransaction.mockRejectedValue(
+        new Error('이미 취소된 지원입니다')
+      );
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when confirmed', async () => {
-      mockRunTransaction.mockImplementation(async (_, callback) => {
-        const transaction = {
-          get: jest.fn().mockResolvedValue({
-            exists: () => true,
-            data: () => ({
-              applicantId,
-              status: 'confirmed',
-            }),
-          }),
-        };
-        return callback(transaction);
-      });
+      mockCancelWithTransaction.mockRejectedValue(
+        new Error('확정된 지원은 취소할 수 없습니다')
+      );
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
@@ -250,9 +207,7 @@ describe('ApplicationService', () => {
 
   describe('hasAppliedToJob', () => {
     it('should return false when not applied', async () => {
-      mockGetDoc.mockResolvedValue({
-        exists: () => false,
-      });
+      mockHasApplied.mockResolvedValue(false);
 
       const result = await hasAppliedToJob('job-1', 'user-1');
 
@@ -260,10 +215,7 @@ describe('ApplicationService', () => {
     });
 
     it('should return true when applied', async () => {
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => ({ status: 'applied' }),
-      });
+      mockHasApplied.mockResolvedValue(true);
 
       const result = await hasAppliedToJob('job-1', 'user-1');
 
@@ -271,10 +223,7 @@ describe('ApplicationService', () => {
     });
 
     it('should return false when cancelled', async () => {
-      mockGetDoc.mockResolvedValue({
-        exists: () => true,
-        data: () => ({ status: 'cancelled' }),
-      });
+      mockHasApplied.mockResolvedValue(false);
 
       const result = await hasAppliedToJob('job-1', 'user-1');
 
@@ -282,7 +231,7 @@ describe('ApplicationService', () => {
     });
 
     it('should return false on error', async () => {
-      mockGetDoc.mockRejectedValue(new Error('Firestore error'));
+      mockHasApplied.mockRejectedValue(new Error('Firestore error'));
 
       const result = await hasAppliedToJob('job-1', 'user-1');
 
@@ -294,7 +243,14 @@ describe('ApplicationService', () => {
     const applicantId = 'user-1';
 
     it('should return zero counts when no applications', async () => {
-      mockGetDocs.mockResolvedValue({ docs: [] });
+      mockGetStatsByApplicantId.mockResolvedValue({
+        applied: 0,
+        pending: 0,
+        confirmed: 0,
+        rejected: 0,
+        cancelled: 0,
+        cancellation_requested: 0,
+      });
 
       const result = await getApplicationStats(applicantId);
 
@@ -306,15 +262,14 @@ describe('ApplicationService', () => {
     });
 
     it('should count applications by status', async () => {
-      const mockDocs = [
-        { id: 'app-1', data: () => ({ applicantId, jobPostingId: 'job-1', status: 'applied' }) },
-        { id: 'app-2', data: () => ({ applicantId, jobPostingId: 'job-2', status: 'applied' }) },
-        { id: 'app-3', data: () => ({ applicantId, jobPostingId: 'job-3', status: 'confirmed' }) },
-        { id: 'app-4', data: () => ({ applicantId, jobPostingId: 'job-4', status: 'cancelled' }) },
-      ];
-
-      mockGetDocs.mockResolvedValue({ docs: mockDocs });
-      mockGetDoc.mockResolvedValue({ exists: () => false });
+      mockGetStatsByApplicantId.mockResolvedValue({
+        applied: 2,
+        pending: 0,
+        confirmed: 1,
+        rejected: 0,
+        cancelled: 1,
+        cancellation_requested: 0,
+      });
 
       const result = await getApplicationStats(applicantId);
 

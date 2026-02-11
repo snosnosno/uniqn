@@ -182,8 +182,9 @@ describe('Card', () => {
     });
 
     it('should pass accessibilityLabel', () => {
+      const onPress = jest.fn();
       render(
-        <Card accessibilityLabel="카드 컨테이너">
+        <Card accessibilityLabel="카드 컨테이너" onPress={onPress}>
           <Text>Accessible Card</Text>
         </Card>
       );

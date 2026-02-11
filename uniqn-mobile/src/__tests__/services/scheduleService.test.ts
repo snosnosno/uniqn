@@ -74,7 +74,23 @@ jest.mock('@/utils/logger', () => ({
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
+    appError: jest.fn(),
   },
+}));
+
+jest.mock('@/schemas', () => ({
+  parseWorkLogDocument: jest.fn((data: unknown) => data),
+  parseWorkLogDocuments: jest.fn((data: unknown[]) => data.filter(Boolean)),
+  parseJobPostingDocument: jest.fn((data: unknown) => data),
+  parseJobPostingDocuments: jest.fn((data: unknown[]) => data.filter(Boolean)),
+}));
+
+jest.mock('@/errors/serviceErrorHandler', () => ({
+  handleServiceError: jest.fn((error: unknown) => {
+    if (error instanceof Error) return error;
+    return new Error(String(error));
+  }),
+  handleErrorWithDefault: jest.fn((_error: unknown, defaultValue: unknown) => defaultValue),
 }));
 
 jest.mock('@/errors', () => ({

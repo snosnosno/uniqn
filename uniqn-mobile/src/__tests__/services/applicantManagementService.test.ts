@@ -2,64 +2,53 @@
  * UNIQN Mobile - Applicant Management Service Tests
  *
  * @description Unit tests for applicant management service (employer)
- * @version 1.0.0
+ * @version 2.0.0 - Repository 패턴 기반
  */
 
-import { createMockJobPosting, createMockApplication, resetCounters } from '../mocks/factories';
-
-// Import after mocks
-import {
-  getApplicantsByJobPosting,
-  confirmApplication,
-  rejectApplication,
-  bulkConfirmApplications,
-  markApplicationAsRead,
-  getApplicantStatsByRole,
-} from '@/services/applicantManagementService';
+import { createMockApplication, resetCounters } from '../mocks/factories';
 
 // ============================================================================
-// Firebase Mocks
+// Mock Repository
 // ============================================================================
 
-const mockGetDoc = jest.fn();
-const mockGetDocs = jest.fn();
-const mockDoc = jest.fn();
-const mockCollection = jest.fn();
-const mockQuery = jest.fn();
-const mockWhere = jest.fn();
-const mockOrderBy = jest.fn();
-const mockRunTransaction = jest.fn();
-const mockWriteBatch = jest.fn();
-const mockIncrement = jest.fn();
+const mockFindByJobPostingWithStats = jest.fn();
+const mockGetById = jest.fn();
+const mockRejectWithTransaction = jest.fn();
+const mockMarkAsRead = jest.fn();
+const mockVerifyOwnership = jest.fn();
+const mockSubscribeByJobPosting = jest.fn();
 
-jest.mock('firebase/firestore', () => ({
-  doc: (...args: unknown[]) => mockDoc(...args),
-  collection: (...args: unknown[]) => mockCollection(...args),
-  getDoc: (...args: unknown[]) => mockGetDoc(...args),
-  getDocs: (...args: unknown[]) => mockGetDocs(...args),
-  query: (...args: unknown[]) => mockQuery(...args),
-  where: (...args: unknown[]) => mockWhere(...args),
-  orderBy: (...args: unknown[]) => mockOrderBy(...args),
-  runTransaction: (...args: unknown[]) => mockRunTransaction(...args),
-  writeBatch: (...args: unknown[]) => mockWriteBatch(...args),
-  increment: (n: number) => mockIncrement(n),
-  serverTimestamp: () => ({ _serverTimestamp: true }),
-  Timestamp: {
-    now: () => ({
-      toMillis: () => Date.now(),
-      toDate: () => new Date(),
-    }),
-    fromDate: (date: Date) => ({
-      toMillis: () => date.getTime(),
-      toDate: () => date,
-    }),
+jest.mock('@/repositories', () => ({
+  applicationRepository: {
+    findByJobPostingWithStats: (...args: unknown[]) => mockFindByJobPostingWithStats(...args),
+    getById: (...args: unknown[]) => mockGetById(...args),
+    rejectWithTransaction: (...args: unknown[]) => mockRejectWithTransaction(...args),
+    markAsRead: (...args: unknown[]) => mockMarkAsRead(...args),
+    subscribeByJobPosting: (...args: unknown[]) => mockSubscribeByJobPosting(...args),
+  },
+  jobPostingRepository: {
+    verifyOwnership: (...args: unknown[]) => mockVerifyOwnership(...args),
   },
 }));
 
-const mockDb = {};
+// ============================================================================
+// Mock confirmApplicationWithHistory
+// ============================================================================
+
+const mockConfirmApplicationWithHistory = jest.fn();
+
+jest.mock('@/services/applicationHistoryService', () => ({
+  confirmApplicationWithHistory: (...args: unknown[]) =>
+    mockConfirmApplicationWithHistory(...args),
+}));
+
+// ============================================================================
+// Mock Dependencies
+// ============================================================================
+
 jest.mock('@/lib/firebase', () => ({
-  db: mockDb,
-  getFirebaseDb: () => mockDb,
+  db: {},
+  getFirebaseDb: () => ({}),
 }));
 
 jest.mock('@/utils/logger', () => ({
@@ -68,19 +57,25 @@ jest.mock('@/utils/logger', () => ({
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
+    appError: jest.fn(),
   },
 }));
 
-jest.mock('@/errors', () => ({
-  mapFirebaseError: (error: Error) => error,
-  ERROR_CODES: {
-    FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
-    FIREBASE_PERMISSION_DENIED: 'E4001',
-    BUSINESS_INVALID_STATE: 'E6042',
-  },
-  BusinessError: class BusinessError extends Error {
+jest.mock('@/errors/serviceErrorHandler', () => ({
+  handleServiceError: jest.fn((error: unknown) => {
+    if (error instanceof Error) return error;
+    return new Error(String(error));
+  }),
+  handleErrorWithDefault: jest.fn((_error: unknown, defaultValue: unknown) => defaultValue),
+}));
+
+jest.mock('@/errors', () => {
+  class BusinessError extends Error {
     public userMessage: string;
     public code: string;
+    public category = 'business';
+    public severity = 'medium';
+    public isRetryable = false;
     constructor(code: string, options?: { userMessage?: string }) {
       const message = options?.userMessage || code;
       super(message);
@@ -88,10 +83,13 @@ jest.mock('@/errors', () => ({
       this.code = code;
       this.userMessage = message;
     }
-  },
-  PermissionError: class PermissionError extends Error {
+  }
+  class PermissionError extends Error {
     public userMessage: string;
     public code: string;
+    public category = 'permission';
+    public severity = 'medium';
+    public isRetryable = false;
     constructor(code: string, options?: { userMessage?: string }) {
       const message = options?.userMessage || code;
       super(message);
@@ -99,10 +97,13 @@ jest.mock('@/errors', () => ({
       this.code = code;
       this.userMessage = message;
     }
-  },
-  ValidationError: class ValidationError extends Error {
+  }
+  class ValidationError extends Error {
     public userMessage: string;
     public code: string;
+    public category = 'validation';
+    public severity = 'low';
+    public isRetryable = false;
     constructor(code: string, options?: { userMessage?: string }) {
       const message = options?.userMessage || code;
       super(message);
@@ -110,12 +111,15 @@ jest.mock('@/errors', () => ({
       this.code = code;
       this.userMessage = message;
     }
-  },
-  MaxCapacityReachedError: class MaxCapacityReachedError extends Error {
+  }
+  class MaxCapacityReachedError extends Error {
     public userMessage: string;
     public jobPostingId: string;
     public maxCapacity: number;
     public currentCount: number;
+    public category = 'business';
+    public severity = 'medium';
+    public isRetryable = false;
     constructor(params: {
       userMessage: string;
       jobPostingId: string;
@@ -129,35 +133,55 @@ jest.mock('@/errors', () => ({
       this.maxCapacity = params.maxCapacity;
       this.currentCount = params.currentCount;
     }
+  }
+
+  return {
+    mapFirebaseError: (error: Error) => error,
+    isAppError: (error: unknown) =>
+      error instanceof BusinessError ||
+      error instanceof PermissionError ||
+      error instanceof ValidationError ||
+      error instanceof MaxCapacityReachedError,
+    ERROR_CODES: {
+      FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
+      FIREBASE_PERMISSION_DENIED: 'E4001',
+      BUSINESS_INVALID_STATE: 'E6042',
+    },
+    BusinessError,
+    PermissionError,
+    ValidationError,
+    MaxCapacityReachedError,
+  };
+});
+
+jest.mock('@/constants/statusConfig', () => ({
+  STATUS_TO_STATS_KEY: {
+    applied: 'applied',
+    pending: 'pending',
+    confirmed: 'confirmed',
+    rejected: 'rejected',
+    cancelled: 'cancelled',
+    completed: 'completed',
+    cancellation_pending: 'cancellationPending',
   },
 }));
+
+// Import after mocks
+import {
+  getApplicantsByJobPosting,
+  confirmApplication,
+  rejectApplication,
+  bulkConfirmApplications,
+  markApplicationAsRead,
+  getApplicantStatsByRole,
+} from '@/services/applicantManagementService';
 
 // ============================================================================
 // Test Utilities
 // ============================================================================
 
-function createMockJobPostingWithRoles(overrides = {}) {
-  const baseJob = createMockJobPosting();
-  return {
-    ...baseJob,
-    id: baseJob.id,
-    title: baseJob.title,
-    ownerId: 'employer-1',
-    workDate: '2024-01-20',
-    totalPositions: 10,
-    filledPositions: 0,
-    roles: [
-      { role: 'dealer', count: 5, filled: 0 },
-      { role: 'floor', count: 3, filled: 0 },
-      { role: 'chip', count: 2, filled: 0 },
-    ],
-    ...overrides,
-  };
-}
-
 function createMockApplicationWithDetails(overrides: Record<string, unknown> = {}) {
   const baseApplication = createMockApplication();
-  // assignments 기본값 (role 필요 시 overrides에 assignments로 전달)
   const defaultAssignments = [
     { dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] },
   ];
@@ -184,11 +208,6 @@ describe('applicantManagementService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     resetCounters();
-    mockDoc.mockReturnValue({ id: 'test-doc' });
-    mockCollection.mockReturnValue({ id: 'test-collection' });
-    mockQuery.mockReturnValue({ query: 'test-query' });
-    mockWhere.mockReturnValue({ where: 'test-where' });
-    mockOrderBy.mockReturnValue({ orderBy: 'test-orderBy' });
   });
 
   // ==========================================================================
@@ -197,7 +216,6 @@ describe('applicantManagementService', () => {
 
   describe('getApplicantsByJobPosting', () => {
     it('should return applicants list with stats', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const applicant1 = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
@@ -207,17 +225,18 @@ describe('applicantManagementService', () => {
         status: 'confirmed',
       });
 
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        id: 'job-1',
-        data: () => jobPosting,
-      });
-
-      mockGetDocs.mockResolvedValueOnce({
-        docs: [
-          { id: 'app-1', data: () => applicant1 },
-          { id: 'app-2', data: () => applicant2 },
-        ],
+      mockFindByJobPostingWithStats.mockResolvedValue({
+        applications: [applicant1, applicant2],
+        stats: {
+          total: 2,
+          applied: 1,
+          pending: 0,
+          confirmed: 1,
+          rejected: 0,
+          cancelled: 0,
+          completed: 0,
+          cancellationPending: 0,
+        },
       });
 
       const result = await getApplicantsByJobPosting('job-1', 'employer-1');
@@ -226,12 +245,16 @@ describe('applicantManagementService', () => {
       expect(result.stats.total).toBe(2);
       expect(result.stats.applied).toBe(1);
       expect(result.stats.confirmed).toBe(1);
+      expect(mockFindByJobPostingWithStats).toHaveBeenCalledWith('job-1', 'employer-1', undefined);
     });
 
     it('should throw error for non-existent job posting', async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => false,
-      });
+      const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
+      mockFindByJobPostingWithStats.mockRejectedValue(
+        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 공고입니다',
+        })
+      );
 
       await expect(getApplicantsByJobPosting('non-existent', 'employer-1')).rejects.toThrow(
         '존재하지 않는 공고입니다'
@@ -239,16 +262,12 @@ describe('applicantManagementService', () => {
     });
 
     it('should throw error for unauthorized owner', async () => {
-      const jobPosting = createMockJobPostingWithRoles({
-        id: 'job-1',
-        ownerId: 'other-employer',
-      });
-
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        id: 'job-1',
-        data: () => jobPosting,
-      });
+      const { PermissionError, ERROR_CODES } = jest.requireMock('@/errors');
+      mockFindByJobPostingWithStats.mockRejectedValue(
+        new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+          userMessage: '본인의 공고만 조회할 수 있습니다',
+        })
+      );
 
       await expect(getApplicantsByJobPosting('job-1', 'employer-1')).rejects.toThrow(
         '본인의 공고만 조회할 수 있습니다'
@@ -256,26 +275,30 @@ describe('applicantManagementService', () => {
     });
 
     it('should filter by status', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const applicant1 = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
       });
 
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        id: 'job-1',
-        data: () => jobPosting,
-      });
-
-      mockGetDocs.mockResolvedValueOnce({
-        docs: [{ id: 'app-1', data: () => applicant1 }],
+      mockFindByJobPostingWithStats.mockResolvedValue({
+        applications: [applicant1],
+        stats: {
+          total: 1,
+          applied: 1,
+          pending: 0,
+          confirmed: 0,
+          rejected: 0,
+          cancelled: 0,
+          completed: 0,
+          cancellationPending: 0,
+        },
       });
 
       const result = await getApplicantsByJobPosting('job-1', 'employer-1', 'applied');
 
       expect(result.applicants).toHaveLength(1);
       expect(result.applicants[0].status).toBe('applied');
+      expect(mockFindByJobPostingWithStats).toHaveBeenCalledWith('job-1', 'employer-1', 'applied');
     });
   });
 
@@ -285,43 +308,18 @@ describe('applicantManagementService', () => {
 
   describe('confirmApplication', () => {
     it('should confirm an application and create work log', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
         assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
       });
 
-      const mockWorkLogRef = { id: 'worklog-new' };
+      mockGetById.mockResolvedValue(application);
 
-      // Mock the initial getDoc call (before transaction)
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => application,
-      });
-
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          set: jest.fn(),
-          update: jest.fn(),
-        };
-
-        mockDoc.mockReturnValueOnce({ id: 'app-1' });
-        mockDoc.mockReturnValueOnce({ id: 'job-1' });
-        mockCollection.mockReturnValueOnce({});
-        mockDoc.mockReturnValueOnce(mockWorkLogRef);
-
-        return await callback(transaction);
+      mockConfirmApplicationWithHistory.mockResolvedValue({
+        applicationId: 'app-1',
+        workLogIds: ['worklog-new'],
+        message: '지원이 확정되었습니다',
       });
 
       const result = await confirmApplication({ applicationId: 'app-1' }, 'employer-1');
@@ -332,44 +330,19 @@ describe('applicantManagementService', () => {
     });
 
     it('should throw error for already confirmed application', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'confirmed',
-        // Service checks confirmationHistory for active confirmation, not just status
-        confirmationHistory: [
-          {
-            status: 'confirmed',
-            confirmedAt: new Date().toISOString(),
-            confirmedBy: 'employer-1',
-            workLogIds: ['wl-1'],
-          },
-        ],
       });
 
-      // Mock the initial getDoc call (before transaction)
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => application,
-      });
+      mockGetById.mockResolvedValue(application);
 
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          set: jest.fn(),
-          update: jest.fn(),
-        };
-        return await callback(transaction);
-      });
+      const { ValidationError, ERROR_CODES } = jest.requireMock('@/errors');
+      mockConfirmApplicationWithHistory.mockRejectedValue(
+        new ValidationError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 확정된 지원입니다',
+        })
+      );
 
       await expect(confirmApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
         '이미 확정된 지원입니다'
@@ -377,39 +350,22 @@ describe('applicantManagementService', () => {
     });
 
     it('should throw MaxCapacityReachedError when positions are full', async () => {
-      const jobPosting = createMockJobPostingWithRoles({
-        id: 'job-1',
-        totalPositions: 5,
-        filledPositions: 5,
-      });
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
       });
 
-      // Mock the initial getDoc call (before transaction)
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => application,
-      });
+      mockGetById.mockResolvedValue(application);
 
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          set: jest.fn(),
-          update: jest.fn(),
-        };
-        return await callback(transaction);
-      });
+      const { MaxCapacityReachedError } = jest.requireMock('@/errors');
+      mockConfirmApplicationWithHistory.mockRejectedValue(
+        new MaxCapacityReachedError({
+          userMessage: '모집 인원이 마감되었습니다',
+          jobPostingId: 'job-1',
+          maxCapacity: 5,
+          currentCount: 5,
+        })
+      );
 
       await expect(confirmApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
         '모집 인원이 마감되었습니다'
@@ -417,38 +373,19 @@ describe('applicantManagementService', () => {
     });
 
     it('should throw error for unauthorized owner', async () => {
-      const jobPosting = createMockJobPostingWithRoles({
-        id: 'job-1',
-        ownerId: 'other-employer',
-      });
       const application = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
       });
 
-      // Mock the initial getDoc call (before transaction)
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => application,
-      });
+      mockGetById.mockResolvedValue(application);
 
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          set: jest.fn(),
-          update: jest.fn(),
-        };
-        return await callback(transaction);
-      });
+      const { ValidationError } = jest.requireMock('@/errors');
+      mockConfirmApplicationWithHistory.mockRejectedValue(
+        new ValidationError('E5001', {
+          userMessage: '본인의 공고만 관리할 수 있습니다',
+        })
+      );
 
       await expect(confirmApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
         '본인의 공고만 관리할 수 있습니다'
@@ -462,57 +399,25 @@ describe('applicantManagementService', () => {
 
   describe('rejectApplication', () => {
     it('should reject an application', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
-      const application = createMockApplicationWithDetails({
-        id: 'app-1',
-        status: 'applied',
-      });
-
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          update: jest.fn(),
-        };
-        await callback(transaction);
-      });
+      mockRejectWithTransaction.mockResolvedValue(undefined);
 
       await expect(
         rejectApplication({ applicationId: 'app-1', reason: '부적합' }, 'employer-1')
       ).resolves.not.toThrow();
+
+      expect(mockRejectWithTransaction).toHaveBeenCalledWith(
+        { applicationId: 'app-1', reason: '부적합' },
+        'employer-1'
+      );
     });
 
     it('should throw error for already confirmed application', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
-      const application = createMockApplicationWithDetails({
-        id: 'app-1',
-        status: 'confirmed',
-      });
-
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          update: jest.fn(),
-        };
-        await callback(transaction);
-      });
+      const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
+      mockRejectWithTransaction.mockRejectedValue(
+        new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 확정된 지원은 거절할 수 없습니다',
+        })
+      );
 
       await expect(rejectApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
         '이미 확정된 지원은 거절할 수 없습니다'
@@ -520,28 +425,12 @@ describe('applicantManagementService', () => {
     });
 
     it('should throw error for already rejected application', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
-      const application = createMockApplicationWithDetails({
-        id: 'app-1',
-        status: 'rejected',
-      });
-
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => application,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          update: jest.fn(),
-        };
-        await callback(transaction);
-      });
+      const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
+      mockRejectWithTransaction.mockRejectedValue(
+        new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+          userMessage: '이미 거절된 지원입니다',
+        })
+      );
 
       await expect(rejectApplication({ applicationId: 'app-1' }, 'employer-1')).rejects.toThrow(
         '이미 거절된 지원입니다'
@@ -555,7 +444,6 @@ describe('applicantManagementService', () => {
 
   describe('bulkConfirmApplications', () => {
     it('should confirm multiple applications', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const application1 = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
@@ -565,42 +453,21 @@ describe('applicantManagementService', () => {
         status: 'applied',
       });
 
-      // Mock the initial getDoc calls (before each transaction)
-      mockGetDoc
+      mockGetById
+        .mockResolvedValueOnce(application1)
+        .mockResolvedValueOnce(application2);
+
+      mockConfirmApplicationWithHistory
         .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => application1,
+          applicationId: 'app-1',
+          workLogIds: ['worklog-1'],
+          message: '지원이 확정되었습니다',
         })
         .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => application2,
+          applicationId: 'app-2',
+          workLogIds: ['worklog-2'],
+          message: '지원이 확정되었습니다',
         });
-
-      let callCount = 0;
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        callCount++;
-        const app = callCount === 1 ? application1 : application2;
-        const workLogId = `worklog-${callCount}`;
-
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => app,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          set: jest.fn(),
-          update: jest.fn(),
-        };
-
-        mockDoc.mockReturnValueOnce({ id: workLogId });
-
-        return await callback(transaction);
-      });
 
       const result = await bulkConfirmApplications(['app-1', 'app-2'], 'employer-1');
 
@@ -610,61 +477,32 @@ describe('applicantManagementService', () => {
     });
 
     it('should handle partial failures', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const application1 = createMockApplicationWithDetails({
         id: 'app-1',
         status: 'applied',
       });
       const application2 = createMockApplicationWithDetails({
         id: 'app-2',
-        status: 'confirmed', // already confirmed - will fail
-        // Service checks confirmationHistory for active confirmation
-        confirmationHistory: [
-          {
-            status: 'confirmed',
-            confirmedAt: new Date().toISOString(),
-            confirmedBy: 'employer-1',
-            workLogIds: ['wl-existing'],
-          },
-        ],
+        status: 'confirmed',
       });
 
-      // Mock the initial getDoc calls (before each transaction)
-      mockGetDoc
+      mockGetById
+        .mockResolvedValueOnce(application1)
+        .mockResolvedValueOnce(application2);
+
+      const { ValidationError } = jest.requireMock('@/errors');
+
+      mockConfirmApplicationWithHistory
         .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => application1,
+          applicationId: 'app-1',
+          workLogIds: ['worklog-1'],
+          message: '지원이 확정되었습니다',
         })
-        .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => application2,
-        });
-
-      let callCount = 0;
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        callCount++;
-        const app = callCount === 1 ? application1 : application2;
-        const workLogId = `worklog-${callCount}`;
-
-        const transaction = {
-          get: jest
-            .fn()
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => app,
-            })
-            .mockResolvedValueOnce({
-              exists: () => true,
-              data: () => jobPosting,
-            }),
-          set: jest.fn(),
-          update: jest.fn(),
-        };
-
-        mockDoc.mockReturnValueOnce({ id: workLogId });
-
-        return await callback(transaction);
-      });
+        .mockRejectedValueOnce(
+          new ValidationError('E6042', {
+            userMessage: '이미 확정된 지원입니다',
+          })
+        );
 
       const result = await bulkConfirmApplications(['app-1', 'app-2'], 'employer-1');
 
@@ -680,36 +518,20 @@ describe('applicantManagementService', () => {
 
   describe('markApplicationAsRead', () => {
     it('should mark an application as read', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
-      const application = createMockApplicationWithDetails({
-        id: 'app-1',
-        isRead: false,
-      });
-
-      mockGetDoc
-        .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => application,
-        })
-        .mockResolvedValueOnce({
-          exists: () => true,
-          data: () => jobPosting,
-        });
-
-      mockRunTransaction.mockImplementation(async (_db, callback) => {
-        const transaction = {
-          update: jest.fn(),
-        };
-        await callback(transaction);
-      });
+      mockMarkAsRead.mockResolvedValue(undefined);
 
       await expect(markApplicationAsRead('app-1', 'employer-1')).resolves.not.toThrow();
+
+      expect(mockMarkAsRead).toHaveBeenCalledWith('app-1', 'employer-1');
     });
 
     it('should throw error for non-existent application', async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => false,
-      });
+      const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
+      mockMarkAsRead.mockRejectedValue(
+        new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+          userMessage: '존재하지 않는 지원입니다',
+        })
+      );
 
       await expect(markApplicationAsRead('non-existent', 'employer-1')).rejects.toThrow(
         '존재하지 않는 지원입니다'
@@ -723,7 +545,6 @@ describe('applicantManagementService', () => {
 
   describe('getApplicantStatsByRole', () => {
     it('should return stats grouped by role', async () => {
-      const jobPosting = createMockJobPostingWithRoles({ id: 'job-1' });
       const applicant1 = createMockApplicationWithDetails({
         id: 'app-1',
         assignments: [{ dates: ['2024-01-15'], timeSlot: '14:00~22:00', roleIds: ['dealer'] }],
@@ -740,18 +561,18 @@ describe('applicantManagementService', () => {
         status: 'applied',
       });
 
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        id: 'job-1',
-        data: () => jobPosting,
-      });
-
-      mockGetDocs.mockResolvedValueOnce({
-        docs: [
-          { id: 'app-1', data: () => applicant1 },
-          { id: 'app-2', data: () => applicant2 },
-          { id: 'app-3', data: () => applicant3 },
-        ],
+      mockFindByJobPostingWithStats.mockResolvedValue({
+        applications: [applicant1, applicant2, applicant3],
+        stats: {
+          total: 3,
+          applied: 2,
+          pending: 0,
+          confirmed: 1,
+          rejected: 0,
+          cancelled: 0,
+          completed: 0,
+          cancellationPending: 0,
+        },
       });
 
       const result = await getApplicantStatsByRole('job-1', 'employer-1');

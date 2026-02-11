@@ -190,7 +190,7 @@ jest.mock('@tanstack/react-query', () => ({
 // Mock Query Keys
 // ============================================================================
 
-jest.mock('@/lib/queryClient', () => ({
+jest.mock('@/lib', () => ({
   queryKeys: {
     settlement: {
       all: ['settlement'],
@@ -202,9 +202,61 @@ jest.mock('@/lib/queryClient', () => ({
       all: ['workLogs'],
     },
   },
+  queryCachingOptions: {
+    settlement: {
+      staleTime: 30 * 1000,
+      gcTime: 5 * 60 * 1000,
+    },
+    workLogs: {
+      staleTime: 30 * 1000,
+      gcTime: 5 * 60 * 1000,
+    },
+  },
   cachingPolicies: {
-    frequent: 1000 * 60 * 2, // 2 minutes
-    standard: 1000 * 60 * 5, // 5 minutes
+    frequent: 1000 * 60 * 2,
+    standard: 1000 * 60 * 5,
+    realtime: 30 * 1000,
+  },
+  invalidateRelated: jest.fn(),
+  invalidateQueries: {
+    settlement: jest.fn(),
+    workLogs: jest.fn(),
+  },
+}));
+
+jest.mock('@/shared/errors', () => ({
+  errorHandlerPresets: {
+    settlement: (addToast: (t: { type: string; message: string }) => void) =>
+      (error: Error) => {
+        addToast({ type: 'error', message: error.message });
+      },
+  },
+  createMutationErrorHandler: (
+    _operation: string,
+    addToast: (t: { type: string; message: string }) => void
+  ) => (error: Error) => {
+    addToast({ type: 'error', message: error.message });
+  },
+}));
+
+jest.mock('@/errors/guardErrors', () => ({
+  requireAuth: (uid: unknown) => {
+    if (!uid) throw new Error('인증이 필요합니다');
+    return uid;
+  },
+  requireValue: (value: unknown) => {
+    if (!value) throw new Error('값이 필요합니다');
+    return value;
+  },
+}));
+
+jest.mock('@/constants', () => ({
+  STATUS: {
+    PAYROLL: {
+      PENDING: 'pending',
+      PROCESSING: 'processing',
+      COMPLETED: 'completed',
+    },
   },
 }));
 
