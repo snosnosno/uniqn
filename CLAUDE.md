@@ -99,7 +99,7 @@ Backend:
   - Firebase: 12.6.0 (Modular API)
 
 Payment:
-  - @portone/react-native-sdk: 0.6.0 (결제)
+  - RevenueCat: 인앱 결제 (App Store/Google Play)
 
 Forms & Validation:
   - React Hook Form: 7.68.0
