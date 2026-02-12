@@ -197,7 +197,7 @@ REACT_APP_ENV=production
   },
   "functions": {
     "source": "functions",
-    "runtime": "nodejs20"
+    "runtime": "nodejs22"
   }
 }
 ```
