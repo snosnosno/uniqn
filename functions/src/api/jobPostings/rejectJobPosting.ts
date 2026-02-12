@@ -22,7 +22,6 @@ export const rejectJobPosting = onCall(
   { region: 'asia-northeast3' },
   async (request) => {
     const db = admin.firestore();
-    const FieldValue = admin.firestore.FieldValue;
 
     try {
       // 1. 인증 + 권한 체크
@@ -30,7 +29,7 @@ export const rejectJobPosting = onCall(
       requireRole(request, 'admin');
       await validateRateLimit(userId, RATE_LIMIT_CONFIGS.general);
 
-      // 2. 파라미터 검증
+      // 2. 파라미터 검증 (DB 접근 불필요 → 트랜잭션 밖)
       const postingId = requireString(request.data.postingId, '공고 ID');
       const reason = requireString(request.data.reason, '거부 사유');
 
@@ -43,53 +42,54 @@ export const rejectJobPosting = onCall(
       }
 
       const postingRef = db.collection('jobPostings').doc(postingId);
-      const postingDoc = await postingRef.get();
+      const now = admin.firestore.Timestamp.now();
 
-      // 3. 공고 존재 확인
-      if (!postingDoc.exists) {
-        throw new NotFoundError({
-          userMessage: '공고를 찾을 수 없습니다',
-          metadata: { postingId },
+      // 3-6. 트랜잭션으로 원자적 검증 + 거부 처리 (TOCTOU 방지)
+      await db.runTransaction(async (transaction) => {
+        const postingDoc = await transaction.get(postingRef);
+
+        if (!postingDoc.exists) {
+          throw new NotFoundError({
+            userMessage: '공고를 찾을 수 없습니다',
+            metadata: { postingId },
+          });
+        }
+
+        const posting = postingDoc.data();
+
+        if (posting?.postingType !== 'tournament') {
+          throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+            userMessage: '대회 공고만 거부 가능합니다',
+            metadata: { postingId, postingType: posting?.postingType },
+          });
+        }
+
+        if (posting?.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.PENDING) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '이미 승인/거부된 공고입니다',
+            metadata: { postingId, approvalStatus: posting?.tournamentConfig?.approvalStatus },
+          });
+        }
+
+        transaction.update(postingRef, {
+          'tournamentConfig.approvalStatus': 'rejected',
+          'tournamentConfig.rejectedBy': userId,
+          'tournamentConfig.rejectedAt': now,
+          'tournamentConfig.rejectionReason': reason
         });
-      }
-
-      const posting = postingDoc.data();
-
-      // 4. 대회 공고 확인
-      if (posting?.postingType !== 'tournament') {
-        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-          userMessage: '대회 공고만 거부 가능합니다',
-          metadata: { postingId, postingType: posting?.postingType },
-        });
-      }
-
-      // 5. 승인 대기 상태 확인
-      if (posting?.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.PENDING) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 승인/거부된 공고입니다',
-          metadata: { postingId, approvalStatus: posting?.tournamentConfig?.approvalStatus },
-        });
-      }
-
-      // 6. 공고 거부 처리
-      await postingRef.update({
-        'tournamentConfig.approvalStatus': 'rejected',
-        'tournamentConfig.rejectedBy': request.auth!.uid,
-        'tournamentConfig.rejectedAt': FieldValue.serverTimestamp(),
-        'tournamentConfig.rejectionReason': reason
       });
 
       logger.info('rejectJobPosting: 거부 완료', {
         postingId,
-        rejectedBy: request.auth!.uid,
+        rejectedBy: userId,
         reasonLength: reason.length
       });
 
       return {
         success: true,
         postingId,
-        rejectedBy: request.auth!.uid,
-        rejectedAt: new Date().toISOString(),
+        rejectedBy: userId,
+        rejectedAt: now.toDate().toISOString(),
         reason
       };
     } catch (error: unknown) {

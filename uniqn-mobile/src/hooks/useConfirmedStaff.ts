@@ -14,7 +14,7 @@
  */
 
 import { useCallback, useEffect, useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { queryKeys, invalidateQueries, cachingPolicies } from '@/lib/queryClient';
 import {
   getConfirmedStaff,
@@ -174,7 +174,12 @@ export function useConfirmedStaff(
   // Mutations
   // ============================================================================
 
-  // 역할 변경
+  const queryClient = useQueryClient();
+  const staffQueryKey = date
+    ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
+    : queryKeys.confirmedStaff.byJobPosting(jobPostingId);
+
+  // 역할 변경 (낙관적 업데이트 제외 — UI 영향 적음)
   const changeRoleMutation = useMutation({
     mutationFn: updateStaffRole,
     onSuccess: () => {
@@ -187,7 +192,7 @@ export function useConfirmedStaff(
     },
   });
 
-  // 근무 시간 수정
+  // 근무 시간 수정 (낙관적 업데이트 제외 — 복잡한 객체)
   const updateWorkTimeMutation = useMutation({
     mutationFn: updateConfirmedStaffWorkTime,
     onSuccess: () => {
@@ -200,42 +205,96 @@ export function useConfirmedStaff(
     },
   });
 
-  // 스태프 삭제
+  // 스태프 삭제 (낙관적 업데이트: 리스트에서 즉시 제거)
   const removeStaffMutation = useMutation({
     mutationFn: deleteConfirmedStaff,
+    onMutate: async (input: DeleteConfirmedStaffInput) => {
+      await queryClient.cancelQueries({ queryKey: staffQueryKey });
+      const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
+
+      if (previous) {
+        queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, {
+          ...previous,
+          staff: previous.staff.filter((s) => s.id !== input.workLogId),
+        });
+      }
+
+      return { previous };
+    },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '스태프가 삭제되었습니다.' });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(staffQueryKey, context.previous);
+      }
       logger.error('스태프 삭제 실패', error, { jobPostingId });
       addToast({ type: 'error', message: '스태프 삭제에 실패했습니다.' });
     },
   });
 
-  // 노쇼 처리
+  // 노쇼 처리 (낙관적 업데이트: status를 'cancelled'로 변경 + noShow 표시)
   const setNoShowMutation = useMutation({
     mutationFn: ({ workLogId, reason }: { workLogId: string; reason?: string }) =>
       markAsNoShow(workLogId, reason),
+    onMutate: async ({ workLogId }) => {
+      await queryClient.cancelQueries({ queryKey: staffQueryKey });
+      const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
+
+      if (previous) {
+        queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, {
+          ...previous,
+          staff: previous.staff.map((s) =>
+            s.id === workLogId
+              ? { ...s, status: 'cancelled' as ConfirmedStaffStatus, isNoShow: true }
+              : s
+          ),
+        });
+      }
+
+      return { previous };
+    },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '노쇼 처리되었습니다.' });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(staffQueryKey, context.previous);
+      }
       logger.error('노쇼 처리 실패', error, { jobPostingId });
       addToast({ type: 'error', message: '노쇼 처리에 실패했습니다.' });
     },
   });
 
-  // 상태 변경
+  // 상태 변경 (낙관적 업데이트: status 즉시 반영)
   const changeStatusMutation = useMutation({
     mutationFn: ({ workLogId, status }: { workLogId: string; status: ConfirmedStaffStatus }) =>
       updateStaffStatus(workLogId, status),
+    onMutate: async ({ workLogId, status }) => {
+      await queryClient.cancelQueries({ queryKey: staffQueryKey });
+      const previous = queryClient.getQueryData<GetConfirmedStaffResult>(staffQueryKey);
+
+      if (previous) {
+        queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, {
+          ...previous,
+          staff: previous.staff.map((s) =>
+            s.id === workLogId ? { ...s, status } : s
+          ),
+        });
+      }
+
+      return { previous };
+    },
     onSuccess: () => {
       invalidateQueries.staffManagement(jobPostingId);
       addToast({ type: 'success', message: '상태가 변경되었습니다.' });
     },
-    onError: (error: Error) => {
+    onError: (error: Error, _, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(staffQueryKey, context.previous);
+      }
       logger.error('상태 변경 실패', error, { jobPostingId });
       addToast({ type: 'error', message: '상태 변경에 실패했습니다.' });
     },

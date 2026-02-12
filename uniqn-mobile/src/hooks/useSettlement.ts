@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   getWorkLogsByJobPosting,
   calculateSettlement,
@@ -149,35 +149,59 @@ export function useUpdateWorkTime() {
  * 개별 정산 뮤테이션 훅
  */
 export function useSettleWorkLog() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
   return useMutation({
-    mutationFn: (input: SettleWorkLogInput) => {
+    mutationFn: async (input: SettleWorkLogInput) => {
       requireAuth(user?.uid, 'useSettlement');
-      return settleWorkLog(input, user.uid);
+      const result = await settleWorkLog(input, user.uid);
+      // soft failure를 reject로 전환하여 onError 롤백 보장
+      if (!result.success) {
+        throw new Error(result.message);
+      }
+      return result;
+    },
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
+      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
+
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.settlement.all },
+        (old: unknown) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((wl: Record<string, unknown>) =>
+            wl.workLogId === input.workLogId || wl.id === input.workLogId
+              ? { ...wl, payrollStatus: STATUS.PAYROLL.COMPLETED }
+              : wl
+          );
+        }
+      );
+
+      return { previousData };
     },
     onSuccess: (result) => {
-      if (result.success) {
-        logger.info('개별 정산 완료', {
-          workLogId: result.workLogId,
-          amount: result.amount,
-        });
-        addToast({
-          type: 'success',
-          message: `${result.amount.toLocaleString()}원 정산 완료`,
-        });
-      } else {
-        addToast({
-          type: 'error',
-          message: result.message,
-        });
-      }
+      logger.info('개별 정산 완료', {
+        workLogId: result.workLogId,
+        amount: result.amount,
+      });
+      addToast({
+        type: 'success',
+        message: `${result.amount.toLocaleString()}원 정산 완료`,
+      });
 
       // 이벤트 기반 캐시 무효화
       invalidateRelated('settlement.process');
     },
-    onError: errorHandlerPresets.settlement(addToast),
+    onError: createMutationErrorHandler('정산 처리', addToast, {
+      onRollback: (ctx) => {
+        const { previousData } = ctx as { previousData: [readonly unknown[], unknown][] };
+        previousData?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      },
+    }),
   });
 }
 
@@ -185,6 +209,7 @@ export function useSettleWorkLog() {
  * 일괄 정산 뮤테이션 훅
  */
 export function useBulkSettlement() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -192,6 +217,25 @@ export function useBulkSettlement() {
     mutationFn: (input: BulkSettlementInput) => {
       requireAuth(user?.uid, 'useSettlement');
       return bulkSettlement(input, user.uid);
+    },
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
+      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
+
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.settlement.all },
+        (old: unknown) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((wl: Record<string, unknown>) =>
+            input.workLogIds.includes(wl.workLogId as string) ||
+            input.workLogIds.includes(wl.id as string)
+              ? { ...wl, payrollStatus: STATUS.PAYROLL.COMPLETED }
+              : wl
+          );
+        }
+      );
+
+      return { previousData };
     },
     onSuccess: (result) => {
       logger.info('일괄 정산 완료', {
@@ -217,7 +261,14 @@ export function useBulkSettlement() {
       // 이벤트 기반 캐시 무효화
       invalidateRelated('settlement.bulkProcess');
     },
-    onError: errorHandlerPresets.settlement(addToast),
+    onError: createMutationErrorHandler('정산 처리', addToast, {
+      onRollback: (ctx) => {
+        const { previousData } = ctx as { previousData: [readonly unknown[], unknown][] };
+        previousData?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      },
+    }),
   });
 }
 
@@ -225,6 +276,7 @@ export function useBulkSettlement() {
  * 정산 상태 변경 뮤테이션 훅
  */
 export function useUpdateSettlementStatus() {
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const { user } = useAuthStore();
 
@@ -232,6 +284,24 @@ export function useUpdateSettlementStatus() {
     mutationFn: ({ workLogId, status }: { workLogId: string; status: PayrollStatus }) => {
       requireAuth(user?.uid, 'useSettlement');
       return updateSettlementStatus(workLogId, status, user.uid);
+    },
+    onMutate: async ({ workLogId, status }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
+      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
+
+      queryClient.setQueriesData(
+        { queryKey: queryKeys.settlement.all },
+        (old: unknown) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((wl: Record<string, unknown>) =>
+            wl.workLogId === workLogId || wl.id === workLogId
+              ? { ...wl, payrollStatus: status }
+              : wl
+          );
+        }
+      );
+
+      return { previousData };
     },
     onSuccess: (_, { status }) => {
       logger.info('정산 상태 변경 완료', { status });
@@ -250,7 +320,14 @@ export function useUpdateSettlementStatus() {
       // 이벤트 기반 캐시 무효화
       invalidateRelated('settlement.process');
     },
-    onError: errorHandlerPresets.settlement(addToast),
+    onError: createMutationErrorHandler('정산 상태 변경', addToast, {
+      onRollback: (ctx) => {
+        const { previousData } = ctx as { previousData: [readonly unknown[], unknown][] };
+        previousData?.forEach(([key, data]) => {
+          queryClient.setQueryData(key, data);
+        });
+      },
+    }),
   });
 }
 

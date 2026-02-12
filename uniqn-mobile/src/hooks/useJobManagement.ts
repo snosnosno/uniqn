@@ -175,6 +175,19 @@ export function useDeleteJobPosting() {
       requireAuth(user?.uid, 'useJobManagement');
       return deleteJobPosting(jobPostingId, user.uid);
     },
+    onMutate: async (jobPostingId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
+      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+
+      if (Array.isArray(previous)) {
+        queryClient.setQueryData(
+          queryKeys.jobManagement.myPostings(),
+          previous.filter((p: Record<string, unknown>) => p.id !== jobPostingId)
+        );
+      }
+
+      return { previous };
+    },
     onSuccess: (_, jobPostingId) => {
       logger.info('공고 삭제 완료', { jobPostingId });
       addToast({ type: 'success', message: '공고가 삭제되었습니다.' });
@@ -187,7 +200,14 @@ export function useDeleteJobPosting() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: createMutationErrorHandler('공고 삭제', addToast),
+    onError: createMutationErrorHandler('공고 삭제', addToast, {
+      onRollback: (ctx) => {
+        const { previous } = ctx as { previous: unknown };
+        if (previous) {
+          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+        }
+      },
+    }),
   });
 }
 
@@ -208,6 +228,21 @@ export function useCloseJobPosting() {
       requireAuth(user?.uid, 'useJobManagement');
       return closeJobPosting(jobPostingId, user.uid);
     },
+    onMutate: async (jobPostingId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
+      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+
+      if (Array.isArray(previous)) {
+        queryClient.setQueryData(
+          queryKeys.jobManagement.myPostings(),
+          previous.map((p: Record<string, unknown>) =>
+            p.id === jobPostingId ? { ...p, status: 'closed' } : p
+          )
+        );
+      }
+
+      return { previous };
+    },
     onSuccess: (_, jobPostingId) => {
       logger.info('공고 마감 완료', { jobPostingId });
       addToast({ type: 'success', message: '공고가 마감되었습니다.' });
@@ -224,7 +259,14 @@ export function useCloseJobPosting() {
         queryKey: queryKeys.jobPostings.lists(),
       });
     },
-    onError: createMutationErrorHandler('공고 마감', addToast),
+    onError: createMutationErrorHandler('공고 마감', addToast, {
+      onRollback: (ctx) => {
+        const { previous } = ctx as { previous: unknown };
+        if (previous) {
+          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+        }
+      },
+    }),
   });
 }
 
@@ -240,6 +282,21 @@ export function useReopenJobPosting() {
     mutationFn: (jobPostingId: string) => {
       requireAuth(user?.uid, 'useJobManagement');
       return reopenJobPosting(jobPostingId, user.uid);
+    },
+    onMutate: async (jobPostingId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
+      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+
+      if (Array.isArray(previous)) {
+        queryClient.setQueryData(
+          queryKeys.jobManagement.myPostings(),
+          previous.map((p: Record<string, unknown>) =>
+            p.id === jobPostingId ? { ...p, status: 'active' } : p
+          )
+        );
+      }
+
+      return { previous };
     },
     onSuccess: (_, jobPostingId) => {
       logger.info('공고 재오픈 완료', { jobPostingId });
@@ -257,7 +314,14 @@ export function useReopenJobPosting() {
         queryKey: queryKeys.jobPostings.lists(),
       });
     },
-    onError: createMutationErrorHandler('공고 재오픈', addToast),
+    onError: createMutationErrorHandler('공고 재오픈', addToast, {
+      onRollback: (ctx) => {
+        const { previous } = ctx as { previous: unknown };
+        if (previous) {
+          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+        }
+      },
+    }),
   });
 }
 
@@ -274,6 +338,23 @@ export function useBulkUpdateStatus() {
       requireAuth(user?.uid, 'useJobManagement');
       return bulkUpdateJobPostingStatus(params.jobPostingIds, params.status, user.uid);
     },
+    onMutate: async (params) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.jobManagement.myPostings() });
+      const previous = queryClient.getQueryData(queryKeys.jobManagement.myPostings());
+
+      if (Array.isArray(previous)) {
+        queryClient.setQueryData(
+          queryKeys.jobManagement.myPostings(),
+          previous.map((p: Record<string, unknown>) =>
+            params.jobPostingIds.includes(p.id as string)
+              ? { ...p, status: params.status }
+              : p
+          )
+        );
+      }
+
+      return { previous };
+    },
     onSuccess: (successCount) => {
       logger.info('공고 일괄 상태 변경 완료', { successCount });
       addToast({
@@ -289,7 +370,14 @@ export function useBulkUpdateStatus() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: createMutationErrorHandler('공고 일괄 상태 변경', addToast),
+    onError: createMutationErrorHandler('공고 일괄 상태 변경', addToast, {
+      onRollback: (ctx) => {
+        const { previous } = ctx as { previous: unknown };
+        if (previous) {
+          queryClient.setQueryData(queryKeys.jobManagement.myPostings(), previous);
+        }
+      },
+    }),
   });
 }
 

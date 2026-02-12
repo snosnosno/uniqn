@@ -331,11 +331,12 @@ service cloud.firestore {
       );
 
       // 본인의 알림만 읽음 처리 및 삭제 가능
+      // _batchUpdate: markAllAsRead 배치 업데이트 시 onNotificationRead 트리거 스킵 플래그
       allow update: if isSignedIn() && (
         request.auth.uid == resource.data.recipientId ||
         request.auth.uid == resource.data.userId
       ) && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['isRead', 'readAt']);
+          .hasOnly(['isRead', 'readAt', '_batchUpdate']);
 
       allow delete: if isSignedIn() && (
         request.auth.uid == resource.data.recipientId ||
@@ -367,7 +368,7 @@ service cloud.firestore {
         (!('description' in request.resource.data) || request.resource.data.description is string) &&
         request.resource.data.location is map &&
         request.resource.data.location.keys().hasAny(['name', 'region', 'district']) &&
-        request.resource.data.status in ['draft', 'active', 'closed', 'cancelled', 'open', 'in_progress', 'completed'] &&
+        request.resource.data.status in ['draft', 'active', 'closed', 'cancelled'] &&
         (!('postingType' in request.resource.data) || request.resource.data.postingType in ['regular', 'fixed', 'tournament', 'urgent']) &&
         (!('detailedAddress' in request.resource.data) || isSafeText(request.resource.data.detailedAddress, 500)) &&
         (!('contactPhone' in request.resource.data) || isSafeText(request.resource.data.contactPhone, 25)) &&
@@ -491,10 +492,12 @@ service cloud.firestore {
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
         request.resource.data.keys().hasAll(['applicantId', 'status']) &&
         (request.resource.data.keys().hasAny(['jobPostingId', 'postId', 'eventId'])) &&  // jobPostingId 우선, 하위 호환성 유지
+        request.resource.data.status == 'applied' &&
         (!('preQuestionAnswers' in request.resource.data) || request.resource.data.preQuestionAnswers is list);
 
       // 관리자 및 구인공고 작성자가 지원서 수정 가능
-      allow update: if isPrivileged() ||
+      // status enum 검증: 허용값 출처 application.schema.ts
+      allow update: if (isPrivileged() ||
         (hasValidRole() && (
           (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
            get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid) ||
@@ -502,7 +505,10 @@ service cloud.firestore {
            get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
           (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
            get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
-        ));
+        ))) &&
+        (!('status' in request.resource.data) ||
+         request.resource.data.status in
+         ['applied', 'pending', 'confirmed', 'rejected', 'cancelled', 'completed', 'cancellation_pending']);
 
       // 사용자는 본인 지원서 삭제 가능, 관리자 및 구인공고 작성자도 삭제 가능
       allow delete: if isSignedIn() && (
@@ -560,10 +566,20 @@ service cloud.firestore {
         request.resource.data.keys().hasAll(['staffId', 'jobPostingId', 'date']) &&
         request.resource.data.staffId is string &&
         request.resource.data.jobPostingId is string &&
-        request.resource.data.date is string;
+        request.resource.data.date is string &&
+        (!('status' in request.resource.data) || request.resource.data.status == 'scheduled');
 
-      // 관리자 및 유효한 역할을 가진 사용자가 수정 가능
-      allow update: if isSignedIn() && hasValidRole();
+      // 소유자/공고작성자/admin만 수정 가능 + status enum 검증
+      // 허용값 출처: workLog.schema.ts
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == resource.data.staffId ||
+        (hasValidRole() &&
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+      ) &&
+        (!('status' in request.resource.data) ||
+         request.resource.data.status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled']);
 
       // 삭제 권한: Admin/Manager 또는 해당 공고 작성자 (Staff 포함)
       allow delete: if isSignedIn() && (

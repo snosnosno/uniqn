@@ -33,56 +33,56 @@ export const resubmitJobPosting = onCall(
       const postingId = requireString(request.data.postingId, '공고 ID');
 
       const postingRef = db.collection('jobPostings').doc(postingId);
-      const postingDoc = await postingRef.get();
+      const now = admin.firestore.Timestamp.now();
 
-      // 3. 공고 존재 확인
-      if (!postingDoc.exists) {
-        throw new NotFoundError({
-          userMessage: '공고를 찾을 수 없습니다',
-          metadata: { postingId },
+      // 3-7. 트랜잭션으로 원자적 검증 + 재제출 처리 (TOCTOU 방지)
+      await db.runTransaction(async (transaction) => {
+        const postingDoc = await transaction.get(postingRef);
+
+        if (!postingDoc.exists) {
+          throw new NotFoundError({
+            userMessage: '공고를 찾을 수 없습니다',
+            metadata: { postingId },
+          });
+        }
+
+        const posting = postingDoc.data();
+
+        if (posting?.createdBy !== userId) {
+          throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
+            userMessage: '본인이 작성한 공고만 재제출할 수 있습니다',
+            metadata: { postingId },
+          });
+        }
+
+        if (posting?.postingType !== 'tournament') {
+          throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+            userMessage: '대회 공고만 재제출 가능합니다',
+            metadata: { postingId, postingType: posting?.postingType },
+          });
+        }
+
+        if (posting?.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.REJECTED) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
+            userMessage: '거부된 공고만 재제출할 수 있습니다',
+            metadata: { postingId, approvalStatus: posting?.tournamentConfig?.approvalStatus },
+          });
+        }
+
+        transaction.update(postingRef, {
+          'tournamentConfig.approvalStatus': 'pending',
+          'tournamentConfig.resubmittedAt': now,
+          'tournamentConfig.resubmittedBy': userId,
+          'tournamentConfig.previousRejection': {
+            reason: posting.tournamentConfig.rejectionReason || null,
+            rejectedBy: posting.tournamentConfig.rejectedBy || null,
+            rejectedAt: posting.tournamentConfig.rejectedAt || null
+          },
+          'tournamentConfig.rejectionReason': FieldValue.delete(),
+          'tournamentConfig.rejectedBy': FieldValue.delete(),
+          'tournamentConfig.rejectedAt': FieldValue.delete(),
+          'updatedAt': now,
         });
-      }
-
-      const posting = postingDoc.data();
-
-      // 4. 공고 소유자 확인
-      if (posting?.createdBy !== userId) {
-        throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
-          userMessage: '본인이 작성한 공고만 재제출할 수 있습니다',
-          metadata: { postingId },
-        });
-      }
-
-      // 5. 대회 공고 확인
-      if (posting?.postingType !== 'tournament') {
-        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-          userMessage: '대회 공고만 재제출 가능합니다',
-          metadata: { postingId, postingType: posting?.postingType },
-        });
-      }
-
-      // 6. 거부 상태 확인
-      if (posting?.tournamentConfig?.approvalStatus !== STATUS.TOURNAMENT.REJECTED) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_PREVIOUSLY_REJECTED, {
-          userMessage: '거부된 공고만 재제출할 수 있습니다',
-          metadata: { postingId, approvalStatus: posting?.tournamentConfig?.approvalStatus },
-        });
-      }
-
-      // 7. 공고 재제출 처리 (pending 상태로 변경)
-      await postingRef.update({
-        'tournamentConfig.approvalStatus': 'pending',
-        'tournamentConfig.resubmittedAt': FieldValue.serverTimestamp(),
-        'tournamentConfig.resubmittedBy': userId,
-        'tournamentConfig.previousRejection': {
-          reason: posting.tournamentConfig.rejectionReason || null,
-          rejectedBy: posting.tournamentConfig.rejectedBy || null,
-          rejectedAt: posting.tournamentConfig.rejectedAt || null
-        },
-        'tournamentConfig.rejectionReason': FieldValue.delete(),
-        'tournamentConfig.rejectedBy': FieldValue.delete(),
-        'tournamentConfig.rejectedAt': FieldValue.delete(),
-        'updatedAt': FieldValue.serverTimestamp()
       });
 
       logger.info('resubmitJobPosting: 재제출 완료', {
@@ -94,7 +94,7 @@ export const resubmitJobPosting = onCall(
         success: true,
         postingId,
         resubmittedBy: userId,
-        resubmittedAt: new Date().toISOString()
+        resubmittedAt: now.toDate().toISOString()
       };
     } catch (error: unknown) {
       throw handleFunctionError(error, {
