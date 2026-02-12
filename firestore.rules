@@ -478,8 +478,14 @@ service cloud.firestore {
 
     // --- Applications Collection (jobPostingId 통일) ---
     match /applications/{applicationId} {
-      // 인증된 사용자가 읽기 가능 (역할별 필터링은 클라이언트에서 처리)
-      allow read: if isSignedIn();
+      // 본인 지원서, 공고 소유자, 관리자만 읽기 가능
+      allow read: if isSignedIn() && (
+        isPrivileged() ||
+        request.auth.uid == resource.data.applicantId ||
+        (resource.data.keys().hasAny(['jobPostingId']) &&
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+      );
 
       // 사용자는 본인 지원서 생성 가능
       allow create: if isSignedIn() && request.auth.uid == request.resource.data.applicantId &&
@@ -522,8 +528,16 @@ service cloud.firestore {
         request.auth.uid == staffId
       );
 
-      // 관리자 및 유효한 역할을 가진 사용자가 스태프 정보 생성/수정 가능
-      allow create, update: if isSignedIn() && hasValidRole();
+      // 관리자 또는 본인만 스태프 정보 생성/수정 가능
+      allow create: if isSignedIn() && (
+        isAdmin() ||
+        (hasValidRole() && request.auth.uid == request.resource.data.userId)
+      );
+
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (hasValidRole() && request.auth.uid == resource.data.userId)
+      );
 
       // 관리자만 삭제 가능
       allow delete: if isPrivileged();
@@ -531,9 +545,14 @@ service cloud.firestore {
 
     // --- Work Logs Collection (표준 필드명 + 최적화 지원) ---
     match /workLogs/{workLogId} {
-      // ✅ 쿼리 지원을 위해 hasValidRole()만으로 읽기 허용
-      // (개별 문서 접근은 resource.data 체크 가능하지만, 쿼리는 불가능)
-      allow read: if isSignedIn() && hasValidRole();
+      // 본인 근무기록, 공고 소유자, 관리자만 읽기 가능
+      allow read: if isSignedIn() && (
+        isAdmin() ||
+        request.auth.uid == resource.data.staffId ||
+        (isPrivileged() &&
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+      );
 
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
       // Phase 2: jobPostingId 사용 (eventId 대신)
@@ -1175,12 +1194,15 @@ service cloud.firestore {
     }
 
     // --- Event QR Codes (현장 출퇴근 QR 코드) ---
-    // TODO: 보안 강화 - validateEventQR()를 Firebase Functions로 이전 후
-    //       읽기 권한을 isPrivileged()로 제한 권장
-    //       현재는 스태프가 QR 검증을 위해 클라이언트에서 읽기 필요
+    // 스태프의 QR 스캔 검증은 QR JSON 파싱으로 처리 (Firestore 직접 읽기 불필요)
     match /eventQRCodes/{qrId} {
-      // 읽기: 인증된 사용자 (QR 검증용 - 스태프 포함)
-      allow read: if isSignedIn();
+      // 읽기: 관리자 또는 공고 소유자만 가능
+      allow read: if isSignedIn() && (
+        isPrivileged() ||
+        (hasValidRole() &&
+         exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+      );
 
       // 생성: 구인자/관리자 + 공고 소유자 확인
       // v2.0: eventId → jobPostingId 필드명 정규화

@@ -12,6 +12,7 @@ import { logger } from 'firebase-functions';
 import { decrementUnreadCounter } from '../utils/notificationUtils';
 import { requireAuth, handleFunctionError } from '../errors';
 import { ValidationError, ERROR_CODES } from '../errors';
+import { validateRateLimit, RATE_LIMIT_CONFIGS } from '../middleware/rateLimiter';
 
 interface DecrementUnreadCounterData {
   /** 감소할 양 */
@@ -36,8 +37,9 @@ export const decrementUnreadCounterCallable = onCall<DecrementUnreadCounterData>
   { region: 'asia-northeast3' },
   async (request): Promise<DecrementUnreadCounterResult> => {
     try {
-      // 인증 확인
+      // 인증 확인 + Rate Limiting
       const userId = requireAuth(request);
+      await validateRateLimit(userId, RATE_LIMIT_CONFIGS.general);
 
       const delta = request.data?.delta ?? 1;
 

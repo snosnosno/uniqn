@@ -19,6 +19,7 @@ import {
 } from './sections';
 import type { JobPostingFormData } from '@/types';
 import { STAFF_ROLES } from '@/constants';
+import { xssValidation } from '@/utils/security';
 
 // ============================================================================
 // Types
@@ -56,6 +57,17 @@ function validateBasicInfo(data: JobPostingFormData): Record<string, string> {
     errors.title = '제목을 입력해주세요';
   } else if (data.title.trim().length < 2) {
     errors.title = '제목은 최소 2자 이상 입력해주세요';
+  } else if (!xssValidation(data.title)) {
+    errors.title = '위험한 문자열이 포함되어 있습니다';
+  }
+  if (data.description && !xssValidation(data.description)) {
+    errors.description = '위험한 문자열이 포함되어 있습니다';
+  }
+  if (data.detailedAddress && !xssValidation(data.detailedAddress)) {
+    errors.detailedAddress = '위험한 문자열이 포함되어 있습니다';
+  }
+  if (data.contactPhone && !xssValidation(data.contactPhone)) {
+    errors.contactPhone = '위험한 문자열이 포함되어 있습니다';
   }
   if (!data.location) {
     errors.location = '근무지를 선택해주세요';

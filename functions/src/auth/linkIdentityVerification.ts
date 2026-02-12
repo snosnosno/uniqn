@@ -11,6 +11,7 @@ import {
   ERROR_CODES,
 } from "../errors/AppError";
 import { handleFunctionError } from "../errors/errorHandler";
+import { validateRateLimit, RATE_LIMIT_CONFIGS } from "../middleware/rateLimiter";
 
 const db = admin.firestore();
 
@@ -37,8 +38,9 @@ export const linkIdentityVerification = onCall(
   { region: "asia-northeast3" },
   async (request): Promise<LinkIdentityResponse> => {
     try {
-      // 1. 인증 확인 (로그인 필수)
+      // 1. 인증 확인 + Rate Limiting
       const uid = requireAuth(request);
+      await validateRateLimit(uid, RATE_LIMIT_CONFIGS.general);
 
       // 2. 입력값 검증
       const identityVerificationId = requireString(

@@ -12,6 +12,7 @@ import {
   ERROR_CODES,
   handleFunctionError,
 } from '../../errors';
+import { validateRateLimit, RATE_LIMIT_CONFIGS } from '../../middleware/rateLimiter';
 
 /**
  * 대회 공고 거부 Firebase Function
@@ -25,8 +26,9 @@ export const rejectJobPosting = onCall(
 
     try {
       // 1. 인증 + 권한 체크
-      requireAuth(request);
+      const userId = requireAuth(request);
       requireRole(request, 'admin');
+      await validateRateLimit(userId, RATE_LIMIT_CONFIGS.general);
 
       // 2. 파라미터 검증
       const postingId = requireString(request.data.postingId, '공고 ID');

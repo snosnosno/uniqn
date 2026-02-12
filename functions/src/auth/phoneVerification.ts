@@ -25,6 +25,7 @@ import {
   ERROR_CODES,
 } from '../errors/AppError';
 import { handleFunctionError } from '../errors/errorHandler';
+import { validateRateLimit, RATE_LIMIT_CONFIGS } from '../middleware/rateLimiter';
 
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
@@ -72,8 +73,9 @@ export const sendPhoneVerificationCode = onCall(
   { region: 'asia-northeast3' },
   async (request) => {
     try {
-      // 1. 인증 확인
+      // 1. 인증 확인 + Rate Limiting
       const userId = requireAuth(request);
+      await validateRateLimit(userId, RATE_LIMIT_CONFIGS.general);
 
       // 2. 전화번호 검증
       const phoneNumber = requireString(request.data.phoneNumber, '전화번호');
@@ -181,8 +183,9 @@ export const verifyPhoneCode = onCall(
   { region: 'asia-northeast3' },
   async (request) => {
     try {
-      // 1. 인증 확인
+      // 1. 인증 확인 + Rate Limiting
       const userId = requireAuth(request);
+      await validateRateLimit(userId, RATE_LIMIT_CONFIGS.general);
 
       // 2. 입력값 검증
       const phoneNumber = requireString(request.data.phoneNumber, '전화번호');
