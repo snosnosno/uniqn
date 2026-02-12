@@ -1,7 +1,7 @@
 # ☁️ API Reference (Firebase Functions)
 
 **최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심 + PortOne 결제 연동)
+**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
 **상태**: 🚀 **Production Ready**
 
 > **참고**: 이 문서는 Firebase Cloud Functions API 레퍼런스입니다.
