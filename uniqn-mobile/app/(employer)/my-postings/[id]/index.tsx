@@ -37,6 +37,8 @@ import {
   ResubmitButton,
 } from '@/components/jobs';
 import { STATUS } from '@/constants';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 import type { PostingType, Allowances, TournamentApprovalStatus } from '@/types';
 
 // ============================================================================
@@ -139,6 +141,7 @@ function ActionCard({ icon, title, description, badge, onPress }: ActionCardProp
 
 export default function JobPostingDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isDark = useThemeStore((s) => s.isDarkMode);
   const router = useRouter();
   const { job: posting, isLoading, isRefreshing, error, refresh } = useJobDetail(id || '');
   const { cancellationPendingCount, stats: applicantStats } = useApplicantManagement(id || '');
@@ -259,7 +262,7 @@ export default function JobPostingDetailScreen() {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />}
       >
         {/* 공고 정보 카드 */}
         <View className="px-4 pt-3">

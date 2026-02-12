@@ -10,7 +10,8 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
 
@@ -70,13 +71,14 @@ function getReportTypeLabel(type: string): string {
  * - 새로운 신고가 생성되면 실행
  * - 모든 관리자에게 알림 전송
  */
-export const onReportCreated = functions.region('asia-northeast3').firestore
-  .document('reports/{reportId}')
-  .onCreate(async (snap, context) => {
-    const reportId = context.params.reportId;
-    const report = snap.data() as ReportData;
+export const onReportCreated = onDocumentCreated(
+  { document: 'reports/{reportId}', region: 'asia-northeast3' },
+  async (event) => {
+    const reportId = event.params.reportId;
+    const report = event.data?.data() as ReportData | undefined;
+    if (!report) return;
 
-    functions.logger.info('새로운 신고 접수', {
+    logger.info('새로운 신고 접수', {
       reportId,
       reporterName: report.reporterName,
       targetName: report.targetName,
@@ -91,13 +93,13 @@ export const onReportCreated = functions.region('asia-northeast3').firestore
         .get();
 
       if (adminUsersSnap.empty) {
-        functions.logger.warn('관리자가 없습니다');
+        logger.warn('관리자가 없습니다');
         return;
       }
 
       const adminIds = adminUsersSnap.docs.map((doc) => doc.id);
 
-      functions.logger.info('알림 대상 관리자 수', {
+      logger.info('알림 대상 관리자 수', {
         count: adminIds.length,
       });
 
@@ -135,14 +137,14 @@ export const onReportCreated = functions.region('asia-northeast3').firestore
         }
       });
 
-      functions.logger.info('신고 접수 알림 전송 완료', {
+      logger.info('신고 접수 알림 전송 완료', {
         reportId,
         totalAdmins: adminIds.length,
         successCount,
         failureCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('신고 접수 알림 처리 중 오류 발생', {
+      logger.error('신고 접수 알림 처리 중 오류 발생', {
         reportId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

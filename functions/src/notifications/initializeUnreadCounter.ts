@@ -10,8 +10,10 @@
  * @note 앱 초기화 시 카운터 문서가 없으면 호출됨
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import { requireAuth, handleFunctionError } from '../errors';
 
 const db = admin.firestore();
 
@@ -36,27 +38,20 @@ const MIN_INIT_INTERVAL_MS = 10000; // 10초
  * const result = await initCounter();
  * console.log(result.data.unreadCount);
  */
-export const initializeUnreadCounter = functions
-  .region('asia-northeast3')
-  .https.onCall(async (data, context): Promise<InitializeUnreadCounterResult> => {
-    // 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '로그인이 필요합니다.'
-      );
-    }
-
-    const userId = context.auth.uid;
-
+export const initializeUnreadCounter = onCall(
+  { region: 'asia-northeast3' },
+  async (request): Promise<InitializeUnreadCounterResult> => {
     try {
+      // 인증 확인
+      const userId = requireAuth(request);
+
       const counterRef = db
         .collection('users')
         .doc(userId)
         .collection('counters')
         .doc('notifications');
 
-      // 🆕 0. 먼저 기존 카운터 문서 확인 (중복 호출 방지)
+      // 0. 먼저 기존 카운터 문서 확인 (중복 호출 방지)
       const existingCounter = await counterRef.get();
       if (existingCounter.exists) {
         const data = existingCounter.data();
@@ -66,7 +61,7 @@ export const initializeUnreadCounter = functions
 
         // 최근 초기화된 경우 기존 값 반환 (debounce)
         if (now - initializedAt < MIN_INIT_INTERVAL_MS) {
-          functions.logger.info('카운터 초기화 debounce - 최근 초기화됨', {
+          logger.info('카운터 초기화 debounce - 최근 초기화됨', {
             userId,
             existingCount,
             initializedAgo: now - initializedAt,
@@ -75,7 +70,7 @@ export const initializeUnreadCounter = functions
         }
 
         // 이미 존재하면 기존 값 반환
-        functions.logger.info('카운터 문서 이미 존재', {
+        logger.info('카운터 문서 이미 존재', {
           userId,
           existingCount,
         });
@@ -98,7 +93,7 @@ export const initializeUnreadCounter = functions
         // 이미 존재하면 기존 값 반환 (다른 요청이 먼저 생성한 경우)
         if (counterDoc.exists) {
           const existingCount = counterDoc.data()?.unreadCount ?? 0;
-          functions.logger.info('카운터 문서 이미 존재 (동시 요청)', {
+          logger.info('카운터 문서 이미 존재 (동시 요청)', {
             userId,
             existingCount,
             calculatedCount,
@@ -117,7 +112,7 @@ export const initializeUnreadCounter = functions
       });
 
       if (result.created) {
-        functions.logger.info('미읽음 카운터 초기화 완료', {
+        logger.info('미읽음 카운터 초기화 완료', {
           userId,
           unreadCount: result.unreadCount,
         });
@@ -125,15 +120,9 @@ export const initializeUnreadCounter = functions
 
       return { unreadCount: result.unreadCount };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      functions.logger.error('미읽음 카운터 초기화 실패', {
-        userId,
-        error: errorMessage,
+      throw handleFunctionError(error, {
+        operation: 'initializeUnreadCounter',
+        context: { userId: request.auth?.uid },
       });
-
-      throw new functions.https.HttpsError(
-        'internal',
-        '카운터 초기화에 실패했습니다.'
-      );
     }
   });

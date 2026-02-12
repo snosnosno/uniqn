@@ -8,7 +8,8 @@
  * @note 클라이언트에서는 NotificationRepository.delete()가 직접 처리
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentDeleted } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import { decrementUnreadCounter } from '../utils/notificationUtils';
 
 /**
@@ -25,16 +26,16 @@ import { decrementUnreadCounter } from '../utils/notificationUtils';
  *       클라이언트는 삭제 전 카운터를 직접 감소시킴.
  *       서버 트리거는 _clientHandled 플래그로 중복 처리 방지.
  */
-export const onNotificationDeleted = functions
-  .region('asia-northeast3')
-  .firestore.document('notifications/{notificationId}')
-  .onDelete(async (snap, context) => {
-    const { notificationId } = context.params;
-    const data = snap.data();
+export const onNotificationDeleted = onDocumentDeleted(
+  { document: 'notifications/{notificationId}', region: 'asia-northeast3' },
+  async (event) => {
+    const { notificationId } = event.params;
+    const data = event.data?.data();
+    if (!data) return;
 
     // 읽지 않은 알림만 카운터 감소
     if (data.isRead === true) {
-      functions.logger.debug('이미 읽은 알림 삭제 - 카운터 감소 스킵', {
+      logger.debug('이미 읽은 알림 삭제 - 카운터 감소 스킵', {
         notificationId,
       });
       return;
@@ -43,7 +44,7 @@ export const onNotificationDeleted = functions
     // recipientId 확인
     const recipientId = data.recipientId;
     if (!recipientId) {
-      functions.logger.warn('알림에 recipientId가 없습니다', {
+      logger.warn('알림에 recipientId가 없습니다', {
         notificationId,
       });
       return;
@@ -52,7 +53,7 @@ export const onNotificationDeleted = functions
     // 🆕 클라이언트 처리 플래그 확인 (중복 감소 방지)
     // 클라이언트에서 삭제 시 _clientHandled: true 설정 후 삭제
     if (data._clientHandled === true) {
-      functions.logger.info('클라이언트에서 이미 카운터 처리됨 - 트리거 스킵', {
+      logger.info('클라이언트에서 이미 카운터 처리됨 - 트리거 스킵', {
         notificationId,
         recipientId,
       });
@@ -62,13 +63,13 @@ export const onNotificationDeleted = functions
     try {
       await decrementUnreadCounter(recipientId, 1, notificationId);
 
-      functions.logger.info('알림 삭제 - 카운터 감소', {
+      logger.info('알림 삭제 - 카운터 감소', {
         notificationId,
         recipientId,
       });
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      functions.logger.error('알림 삭제 시 카운터 감소 실패', {
+      logger.error('알림 삭제 시 카운터 감소 실패', {
         notificationId,
         recipientId,
         error: errorMessage,

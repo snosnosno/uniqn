@@ -13,20 +13,29 @@
  * @since 2025-10-23
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
+import {
+  requireAuth,
+  requireRole,
+  requireString,
+  NotFoundError,
+  handleFunctionError,
+  handleTriggerError,
+} from '../errors';
 
 /**
  * 예약된 계정 삭제 처리 함수
  *
  * Cloud Scheduler에서 매일 자동 실행
  */
-export const processScheduledDeletions = functions.region('asia-northeast3').pubsub
-  .schedule('0 18 * * *') // 매일 UTC 18:00 (KST 03:00)
-  .timeZone('UTC')
-  .onRun(async (context) => {
+export const processScheduledDeletions = onSchedule(
+  { schedule: '0 18 * * *', timeZone: 'UTC', region: 'asia-northeast3' },
+  async () => {
     const db = admin.firestore();
-    functions.logger.info('예약된 계정 삭제 작업 시작');
+    logger.info('예약된 계정 삭제 작업 시작');
 
     try {
       const now = admin.firestore.Timestamp.now();
@@ -39,11 +48,11 @@ export const processScheduledDeletions = functions.region('asia-northeast3').pub
         .get();
 
       if (deletionRequestsSnapshot.empty) {
-        functions.logger.info('처리할 계정 삭제 요청이 없습니다');
-        return { processed: 0, succeeded: 0, failed: 0 };
+        logger.info('처리할 계정 삭제 요청이 없습니다');
+        return;
       }
 
-      functions.logger.info(
+      logger.info(
         `${deletionRequestsSnapshot.size}개의 계정 삭제 요청 발견`
       );
 
@@ -59,26 +68,26 @@ export const processScheduledDeletions = functions.region('asia-northeast3').pub
         const userId = deletionRequest.userId;
 
         try {
-          functions.logger.info(`계정 삭제 시작: ${userId}`);
+          logger.info(`계정 삭제 시작: ${userId}`);
 
           // 1. 사용자 하위 컬렉션 삭제
           await deleteUserSubcollections(userId);
 
           // 2. Firestore 사용자 문서 삭제
           await db.collection('users').doc(userId).delete();
-          functions.logger.info(`Firestore 사용자 문서 삭제 완료: ${userId}`);
+          logger.info(`Firestore 사용자 문서 삭제 완료: ${userId}`);
 
           // 3. Firebase Auth 계정 삭제
           try {
             await admin.auth().deleteUser(userId);
-            functions.logger.info(`Firebase Auth 계정 삭제 완료: ${userId}`);
+            logger.info(`Firebase Auth 계정 삭제 완료: ${userId}`);
           } catch (authError: unknown) {
             // Auth 계정이 이미 삭제된 경우 무시
             const authErrorCode = authError != null && typeof authError === 'object' && 'code' in authError ? (authError as { code: string }).code : undefined;
             if (authErrorCode !== 'auth/user-not-found') {
               throw authError;
             }
-            functions.logger.warn(
+            logger.warn(
               `Firebase Auth 계정이 이미 삭제됨: ${userId}`
             );
           }
@@ -89,10 +98,10 @@ export const processScheduledDeletions = functions.region('asia-northeast3').pub
             completedAt: admin.firestore.FieldValue.serverTimestamp(),
           });
 
-          functions.logger.info(`계정 삭제 완료: ${userId}`);
+          logger.info(`계정 삭제 완료: ${userId}`);
           results.succeeded++;
         } catch (error) {
-          functions.logger.error(`계정 삭제 실패: ${userId}`, error);
+          logger.error(`계정 삭제 실패: ${userId}`, error);
           results.failed++;
 
           // 삭제 실패 시 에러 로그 기록
@@ -106,11 +115,13 @@ export const processScheduledDeletions = functions.region('asia-northeast3').pub
         }
       }
 
-      functions.logger.info('예약된 계정 삭제 작업 완료', results);
-      return results;
+      logger.info('예약된 계정 삭제 작업 완료', results);
     } catch (error) {
-      functions.logger.error('예약된 계정 삭제 작업 중 오류 발생', error);
-      throw error;
+      logger.error('예약된 계정 삭제 작업 중 오류 발생', error);
+      throw handleTriggerError(error, {
+        operation: 'processScheduledDeletions',
+        context: { source: 'scheduled-task' },
+      });
     }
   });
 
@@ -148,11 +159,11 @@ async function deleteUserSubcollections(userId: string): Promise<void> {
       });
 
       await batch.commit();
-      functions.logger.info(
+      logger.info(
         `하위 컬렉션 삭제 완료: users/${userId}/${collectionName} (${snapshot.size}개)`
       );
     } catch (error) {
-      functions.logger.error(
+      logger.error(
         `하위 컬렉션 삭제 실패: users/${userId}/${collectionName}`,
         error
       );
@@ -182,14 +193,14 @@ async function deleteUserSubcollections(userId: string): Promise<void> {
             batch.delete(doc.ref);
           });
           await batch.commit();
-          functions.logger.info(
+          logger.info(
             `토너먼트 하위 데이터 삭제: ${tournamentDoc.id}/${subCollection} (${subSnapshot.size}개)`
           );
         }
       }
     }
   } catch (error) {
-    functions.logger.error('토너먼트 데이터 삭제 중 오류', error);
+    logger.error('토너먼트 데이터 삭제 중 오류', error);
   }
 }
 
@@ -198,40 +209,33 @@ async function deleteUserSubcollections(userId: string): Promise<void> {
  *
  * 관리자가 즉시 계정을 삭제할 수 있는 함수
  */
-export const forceDeleteAccount = functions.region('asia-northeast3').https.onCall(
-  async (data, context) => {
-    const db = admin.firestore();
-
-    // 관리자 권한 확인
-    if (context.auth?.token?.role !== 'admin') {
-      throw new functions.https.HttpsError(
-        'permission-denied',
-        'Only admins can force delete accounts'
-      );
-    }
-
-    const { userId, reason } = data;
-
-    if (!userId) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        'userId is required'
-      );
-    }
-
+export const forceDeleteAccount = onCall(
+  { region: 'asia-northeast3' },
+  async (request) => {
     try {
-      functions.logger.info(`관리자 강제 삭제 시작: ${userId}`, {
-        adminUid: context.auth.uid,
+      const db = admin.firestore();
+
+      // 관리자 권한 확인
+      const adminUid = requireAuth(request);
+      requireRole(request, 'admin');
+
+      const { userId, reason } = request.data;
+
+      // 입력 검증
+      requireString(userId, 'userId');
+
+      logger.info(`관리자 강제 삭제 시작: ${userId}`, {
+        adminUid,
         reason,
       });
 
       // 사용자 존재 확인
       const userDoc = await db.collection('users').doc(userId).get();
       if (!userDoc.exists) {
-        throw new functions.https.HttpsError(
-          'not-found',
-          'User not found'
-        );
+        throw new NotFoundError({
+          message: 'User not found',
+          metadata: { resource: 'User', resourceId: userId },
+        });
       }
 
       // 하위 컬렉션 삭제
@@ -254,23 +258,22 @@ export const forceDeleteAccount = functions.region('asia-northeast3').https.onCa
       await db.collection('adminLogs').add({
         action: 'force_delete_account',
         targetUserId: userId,
-        adminUid: context.auth.uid,
+        adminUid,
         reason: reason || 'No reason provided',
         timestamp: admin.firestore.FieldValue.serverTimestamp(),
       });
 
-      functions.logger.info(`관리자 강제 삭제 완료: ${userId}`);
+      logger.info(`관리자 강제 삭제 완료: ${userId}`);
 
       return {
         success: true,
         message: `Account ${userId} has been permanently deleted`,
       };
     } catch (error) {
-      functions.logger.error(`관리자 강제 삭제 실패: ${userId}`, error);
-      throw new functions.https.HttpsError(
-        'internal',
-        error instanceof Error ? error.message : 'Failed to delete account'
-      );
+      throw handleFunctionError(error, {
+        operation: 'forceDeleteAccount',
+        context: { userId: request.data?.userId },
+      });
     }
   }
 );

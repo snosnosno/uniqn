@@ -12,7 +12,8 @@
  * @since 2025-10-15
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
@@ -26,12 +27,13 @@ const db = admin.firestore();
  * - scheduledStartTime 또는 scheduledEndTime 변경 감지
  * - 근무자에게 FCM 푸시 알림 전송
  */
-export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
-  .document('workLogs/{workLogId}')
-  .onUpdate(async (change, context) => {
-    const workLogId = context.params.workLogId;
-    const before = change.before.data();
-    const after = change.after.data();
+export const onWorkTimeChanged = onDocumentUpdated(
+  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+  async (event) => {
+    const workLogId = event.params.workLogId;
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
 
     // scheduledStartTime 또는 scheduledEndTime 변경 감지
     const startTimeChanged =
@@ -43,7 +45,7 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
       return; // 근무시간 변경 없음
     }
 
-    functions.logger.info('근무시간 변경 감지', {
+    logger.info('근무시간 변경 감지', {
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
@@ -61,7 +63,7 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
         .get();
 
       if (!jobPostingDoc.exists) {
-        functions.logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -70,7 +72,7 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
 
       const jobPosting = jobPostingDoc.data();
       if (!jobPosting) {
-        functions.logger.warn('공고 데이터가 없습니다', { workLogId });
+        logger.warn('공고 데이터가 없습니다', { workLogId });
         return;
       }
 
@@ -111,14 +113,14 @@ export const onWorkTimeChanged = functions.region('asia-northeast3').firestore
         }
       );
 
-      functions.logger.info('근무시간 변경 알림 전송 완료', {
+      logger.info('근무시간 변경 알림 전송 완료', {
         notificationId: result.notificationId,
         staffId: after.staffId,
         fcmSent: result.fcmSent,
         successCount: result.successCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('근무시간 변경 알림 처리 중 오류 발생', {
+      logger.error('근무시간 변경 알림 처리 중 오류 발생', {
         workLogId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

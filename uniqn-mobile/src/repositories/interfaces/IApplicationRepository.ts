@@ -93,6 +93,21 @@ export interface IApplicationRepository {
   getByApplicantId(applicantId: string): Promise<ApplicationWithJob[]>;
 
   /**
+   * 지원자의 지원 내역을 상태 필터와 함께 조회
+   *
+   * @description scheduleService에서 applied/pending 상태만 조회할 때 사용
+   * @param applicantId - 지원자 ID
+   * @param statuses - 조회할 상태 배열
+   * @param pageSize - 페이지 크기 (기본 50)
+   * @returns 지원서 목록 (공고 정보 미포함)
+   */
+  getByApplicantIdWithStatuses(
+    applicantId: string,
+    statuses: ApplicationStatus[],
+    pageSize?: number
+  ): Promise<Application[]>;
+
+  /**
    * 특정 공고의 지원서 목록 조회
    * @param jobPostingId - 공고 ID
    * @returns 지원서 목록

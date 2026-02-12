@@ -12,7 +12,8 @@
  * @since 2025-01-18
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
 
@@ -57,12 +58,13 @@ const NOTIFY_FIELDS = [
  * - 공고 주요 필드 변경 감지
  * - 해당 공고에 지원한 지원자들에게 broadcastNotification으로 일괄 알림
  */
-export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
-  .document('jobPostings/{jobPostingId}')
-  .onUpdate(async (change, context) => {
-    const jobPostingId = context.params.jobPostingId;
-    const before = change.before.data();
-    const after = change.after.data();
+export const onJobPostingUpdated = onDocumentUpdated(
+  { document: 'jobPostings/{jobPostingId}', region: 'asia-northeast3' },
+  async (event) => {
+    const jobPostingId = event.params.jobPostingId;
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
 
     // 주요 필드 변경 확인
     const changedFields = NOTIFY_FIELDS.filter(
@@ -73,7 +75,7 @@ export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
       return; // 주요 필드 변경 없음
     }
 
-    functions.logger.info('공고 수정 감지', {
+    logger.info('공고 수정 감지', {
       jobPostingId,
       changedFields,
     });
@@ -87,7 +89,7 @@ export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
         .get();
 
       if (applicationsSnap.empty) {
-        functions.logger.info('알림 대상 지원자가 없습니다', { jobPostingId });
+        logger.info('알림 대상 지원자가 없습니다', { jobPostingId });
         return;
       }
 
@@ -96,7 +98,7 @@ export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
         applicationsSnap.docs.map((doc) => (doc.data() as ApplicationData).applicantId)
       )];
 
-      functions.logger.info('알림 대상 지원자 수', {
+      logger.info('알림 대상 지원자 수', {
         jobPostingId,
         count: applicantIds.length,
       });
@@ -125,14 +127,14 @@ export const onJobPostingUpdated = functions.region('asia-northeast3').firestore
         totalFailure += result.failureCount;
       });
 
-      functions.logger.info('공고 수정 알림 전체 처리 완료', {
+      logger.info('공고 수정 알림 전체 처리 완료', {
         jobPostingId,
         totalApplicants: applicantIds.length,
         totalSuccess,
         totalFailure,
       });
     } catch (error) {
-      functions.logger.error('공고 수정 알림 처리 중 오류 발생', {
+      logger.error('공고 수정 알림 처리 중 오류 발생', {
         jobPostingId,
         error: error instanceof Error ? error.stack : String(error),
       });

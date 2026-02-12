@@ -20,6 +20,7 @@ import {
   PreQuestionsSection,
 } from '@/components/employer/job-form';
 import { useAuth } from '@/hooks/useAuth';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { STAFF_ROLES } from '@/constants';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { useUpdateJobPosting } from '@/hooks/useJobManagement';
@@ -228,7 +229,11 @@ export default function EditJobPostingScreen() {
   // Form State
   const scrollViewRef = useRef<ScrollView>(null);
   const [formData, setFormData] = useState<JobPostingFormData | null>(null);
+  const [isDirty, setIsDirty] = useState(false);
   const [hasConfirmedApplicants, setHasConfirmedApplicants] = useState(false);
+
+  // 미저장 변경사항 가드
+  useUnsavedChangesGuard(isDirty);
   const [errors, setErrors] = useState<SectionErrors>({
     basicInfo: {},
     schedule: {},
@@ -307,6 +312,7 @@ export default function EditJobPostingScreen() {
 
   // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
+    setIsDirty(true);
     setFormData((prev) => (prev ? { ...prev, ...data } : null));
   }, []);
 
@@ -377,6 +383,7 @@ export default function EditJobPostingScreen() {
       };
 
       await updateJobPosting.mutateAsync({ jobPostingId: id, input });
+      setIsDirty(false);
 
       addToast({ type: 'success', message: '공고가 수정되었습니다' });
       router.back();

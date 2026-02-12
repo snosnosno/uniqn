@@ -10,7 +10,7 @@
  */
 
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions/v1';
+import { logger } from 'firebase-functions';
 
 const db = admin.firestore();
 
@@ -141,7 +141,7 @@ export async function removeInvalidToken(
     const tokenKey = await findTokenKeyByValue(userRef, invalidToken);
 
     if (!tokenKey) {
-      functions.logger.warn('제거할 토큰 키를 찾을 수 없음', {
+      logger.warn('제거할 토큰 키를 찾을 수 없음', {
         userId,
         token: invalidToken.substring(0, 20) + '...',
       });
@@ -152,14 +152,14 @@ export async function removeInvalidToken(
       [`fcmTokens.${tokenKey}`]: admin.firestore.FieldValue.delete(),
     });
 
-    functions.logger.info('만료된 FCM 토큰 제거 완료', {
+    logger.info('만료된 FCM 토큰 제거 완료', {
       userId,
       token: invalidToken.substring(0, 20) + '...',
     });
 
     return true;
   } catch (error: unknown) {
-    functions.logger.error('FCM 토큰 제거 실패', {
+    logger.error('FCM 토큰 제거 실패', {
       userId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -209,14 +209,14 @@ export async function removeInvalidTokens(
       await userRef.update(updateData);
     }
 
-    functions.logger.info('만료된 FCM 토큰 일괄 제거 완료', {
+    logger.info('만료된 FCM 토큰 일괄 제거 완료', {
       userId,
       removedCount,
     });
 
     return removedCount;
   } catch (error: unknown) {
-    functions.logger.error('FCM 토큰 일괄 제거 실패', {
+    logger.error('FCM 토큰 일괄 제거 실패', {
       userId,
       tokenCount: invalidTokens.length,
       error: error instanceof Error ? error.message : String(error),

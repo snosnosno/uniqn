@@ -5,17 +5,17 @@
 
 import { useCallback, useEffect } from 'react';
 import { Stack } from 'expo-router';
-import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuthStore } from '@/stores/authStore';
-import { NetworkErrorBoundary } from '@/components/ui';
+import { useThemeStore } from '@/stores/themeStore';
+import { NetworkErrorBoundary, Loading } from '@/components/ui';
+import { getLayoutColor } from '@/constants/colors';
 import { NotificationPermissionScreen } from '@/components/onboarding';
 import { useOnboarding } from '@/hooks/useOnboarding';
 import { useNotificationHandler } from '@/hooks/useNotificationHandler';
 import { logger } from '@/utils/logger';
 
 export default function AppLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useThemeStore((s) => s.isDarkMode);
   const { isLoading } = useAuthStore();
 
   // 온보딩 상태 관리
@@ -70,11 +70,7 @@ export default function AppLayout() {
 
   // 로딩 중이면 로딩 표시
   if (isLoading || isOnboardingLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#A855F7" />
-      </View>
-    );
+    return <Loading variant="layout" />;
   }
 
   // 알림 권한 온보딩 필요 시 온보딩 화면 표시
@@ -95,7 +91,7 @@ export default function AppLayout() {
           headerShown: false,
           animation: 'slide_from_right',
           contentStyle: {
-            backgroundColor: isDark ? '#1A1625' : '#f9fafb',
+            backgroundColor: getLayoutColor(isDark, 'content'),
           },
         }}
       >

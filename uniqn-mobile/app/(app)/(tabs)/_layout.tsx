@@ -5,13 +5,14 @@
 
 import { useEffect } from 'react';
 import { Tabs, useNavigation } from 'expo-router';
-import { useColorScheme, Platform } from 'react-native';
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HomeIcon, CalendarIcon, BriefcaseIcon, UserIcon } from '@/components/icons';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useThemeStore((s) => s.isDarkMode);
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
 
@@ -37,11 +38,11 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: '#A855F7',
-        tabBarInactiveTintColor: isDark ? '#9CA3AF' : '#6B7280',
+        tabBarActiveTintColor: getLayoutColor(isDark, 'tabBarActive'),
+        tabBarInactiveTintColor: getLayoutColor(isDark, 'tabBarInactive'),
         tabBarStyle: {
-          backgroundColor: isDark ? '#1A1625' : '#ffffff',
-          borderTopColor: isDark ? '#2D2438' : '#e5e7eb',
+          backgroundColor: getLayoutColor(isDark, 'tabBarBg'),
+          borderTopColor: getLayoutColor(isDark, 'tabBarBorder'),
           height: 56 + insets.bottom,
           paddingBottom: insets.bottom,
         },

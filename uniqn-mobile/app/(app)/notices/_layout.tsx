@@ -3,32 +3,32 @@
  */
 
 import { Stack } from 'expo-router';
-import { useColorScheme } from 'react-native';
 import { HeaderBackButton } from '@/components/navigation';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 
 export default function NoticesLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useThemeStore((s) => s.isDarkMode);
 
   return (
     <Stack
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: isDark ? '#1A1625' : '#ffffff',
+          backgroundColor: getLayoutColor(isDark, 'header'),
         },
-        headerTintColor: isDark ? '#ffffff' : '#1A1625',
+        headerTintColor: getLayoutColor(isDark, 'headerTint'),
         headerTitleStyle: {
           fontWeight: '600',
         },
         headerLeft: () => (
           <HeaderBackButton
-            tintColor={isDark ? '#ffffff' : '#1A1625'}
+            tintColor={getLayoutColor(isDark, 'headerTint')}
             fallbackHref="/(app)/(tabs)"
           />
         ),
         contentStyle: {
-          backgroundColor: isDark ? '#1A1625' : '#f9fafb',
+          backgroundColor: getLayoutColor(isDark, 'content'),
         },
       }}
     />

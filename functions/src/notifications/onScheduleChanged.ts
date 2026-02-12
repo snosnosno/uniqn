@@ -12,7 +12,8 @@
  * @since 2025-12-22
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentCreated, onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { formatTime, extractUserId } from '../utils/helpers';
@@ -53,13 +54,14 @@ interface WorkLogData {
  * @description
  * - 새로운 WorkLog 문서 생성 시 근무자에게 알림
  */
-export const onScheduleCreated = functions.region('asia-northeast3').firestore
-  .document('workLogs/{workLogId}')
-  .onCreate(async (snap, context) => {
-    const workLogId = context.params.workLogId;
-    const workLog = snap.data() as WorkLogData;
+export const onScheduleCreated = onDocumentCreated(
+  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+  async (event) => {
+    const workLogId = event.params.workLogId;
+    const workLog = event.data?.data() as WorkLogData | undefined;
+    if (!workLog) return;
 
-    functions.logger.info('새 스케줄 생성 감지', {
+    logger.info('새 스케줄 생성 감지', {
       workLogId,
       staffId: workLog.staffId,
       jobPostingId: workLog.jobPostingId,
@@ -74,7 +76,7 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
         .get();
 
       if (!jobPostingDoc.exists) {
-        functions.logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
           jobPostingId: workLog.jobPostingId,
         });
@@ -115,13 +117,13 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
         }
       );
 
-      functions.logger.info('스케줄 생성 알림 전송 완료', {
+      logger.info('스케줄 생성 알림 전송 완료', {
         notificationId: result.notificationId,
         staffId: workLog.staffId,
         fcmSent: result.fcmSent,
       });
     } catch (error: unknown) {
-      functions.logger.error('스케줄 생성 알림 처리 중 오류 발생', {
+      logger.error('스케줄 생성 알림 처리 중 오류 발생', {
         workLogId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,
@@ -135,19 +137,20 @@ export const onScheduleCreated = functions.region('asia-northeast3').firestore
  * @description
  * - WorkLog status가 'cancelled'로 변경 시 근무자에게 알림
  */
-export const onScheduleCancelled = functions.region('asia-northeast3').firestore
-  .document('workLogs/{workLogId}')
-  .onUpdate(async (change, context) => {
-    const workLogId = context.params.workLogId;
-    const before = change.before.data() as WorkLogData;
-    const after = change.after.data() as WorkLogData;
+export const onScheduleCancelled = onDocumentUpdated(
+  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+  async (event) => {
+    const workLogId = event.params.workLogId;
+    const before = event.data?.before.data() as WorkLogData | undefined;
+    const after = event.data?.after.data() as WorkLogData | undefined;
+    if (!before || !after) return;
 
     // status가 cancelled로 변경된 경우만 처리
     if (before.status === after.status || after.status !== STATUS.APPLICATION.CANCELLED) {
       return;
     }
 
-    functions.logger.info('스케줄 취소 감지', {
+    logger.info('스케줄 취소 감지', {
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
@@ -163,7 +166,7 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
         .get();
 
       if (!jobPostingDoc.exists) {
-        functions.logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -194,13 +197,13 @@ export const onScheduleCancelled = functions.region('asia-northeast3').firestore
         }
       );
 
-      functions.logger.info('스케줄 취소 알림 전송 완료', {
+      logger.info('스케줄 취소 알림 전송 완료', {
         notificationId: result.notificationId,
         staffId: after.staffId,
         fcmSent: result.fcmSent,
       });
     } catch (error: unknown) {
-      functions.logger.error('스케줄 취소 알림 처리 중 오류 발생', {
+      logger.error('스케줄 취소 알림 처리 중 오류 발생', {
         workLogId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

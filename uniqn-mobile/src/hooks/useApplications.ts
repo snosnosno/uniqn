@@ -15,9 +15,9 @@ import {
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
-import { toError, requireAuth } from '@/errors';
+import { requireAuth } from '@/errors';
 import { logger } from '@/utils/logger';
-import { createMutationErrorHandler, extractErrorMessage } from '@/shared/errors';
+import { createMutationErrorHandler } from '@/shared/errors';
 import { STATUS } from '@/constants';
 import type { Application, Assignment, PreQuestionAnswer } from '@/types';
 
@@ -135,18 +135,14 @@ export function useApplications() {
       logger.info('지원 취소', { applicationId });
       addToast({ type: 'success', message: '지원이 취소되었습니다.' });
     },
-    onError: (error, _, context) => {
-      logger.error('지원 취소 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '취소에 실패했습니다.'),
-      });
-
-      // 롤백: 이전 데이터로 복원
-      if (context?.previousApplications) {
-        queryClient.setQueryData(queryKeys.applications.mine(), context.previousApplications);
-      }
-    },
+    onError: createMutationErrorHandler('지원 취소', addToast, {
+      onRollback: (ctx) => {
+        const rollbackCtx = ctx as { previousApplications?: Application[] };
+        if (rollbackCtx?.previousApplications) {
+          queryClient.setQueryData(queryKeys.applications.mine(), rollbackCtx.previousApplications);
+        }
+      },
+    }),
     // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
     onSettled: () => {
       queryClient.invalidateQueries({
@@ -194,18 +190,14 @@ export function useApplications() {
       logger.info('취소 요청 완료', { applicationId });
       addToast({ type: 'success', message: '취소 요청이 제출되었습니다.' });
     },
-    onError: (error, _, context) => {
-      logger.error('취소 요청 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '취소 요청에 실패했습니다.'),
-      });
-
-      // 롤백: 이전 데이터로 복원
-      if (context?.previousApplications) {
-        queryClient.setQueryData(queryKeys.applications.mine(), context.previousApplications);
-      }
-    },
+    onError: createMutationErrorHandler('취소 요청', addToast, {
+      onRollback: (ctx) => {
+        const rollbackCtx = ctx as { previousApplications?: Application[] };
+        if (rollbackCtx?.previousApplications) {
+          queryClient.setQueryData(queryKeys.applications.mine(), rollbackCtx.previousApplications);
+        }
+      },
+    }),
     // 성공/실패 관계없이 최종적으로 서버 데이터와 동기화
     onSettled: () => {
       queryClient.invalidateQueries({

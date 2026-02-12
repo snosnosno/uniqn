@@ -8,11 +8,13 @@
 
 import { useState, useCallback, useMemo } from 'react';
 import { Stack, useLocalSearchParams } from 'expo-router';
-import { View, Text, Pressable, useColorScheme } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import { useJobDetail } from '@/hooks/useJobDetail';
 import { QRCodeIcon } from '@/components/icons';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { HeaderBackButton } from '@/components/navigation';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 
 /**
  * 헤더 QR 버튼
@@ -62,8 +64,7 @@ function HeaderTitle({
 
 export default function JobPostingDetailLayout() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useThemeStore((s) => s.isDarkMode);
   const { job, isLoading } = useJobDetail(id || '');
 
   // QR 모달 상태
@@ -89,24 +90,24 @@ export default function JobPostingDetailLayout() {
         screenOptions={{
           headerShown: true,
           headerStyle: {
-            backgroundColor: isDark ? '#1A1625' : '#ffffff',
+            backgroundColor: getLayoutColor(isDark, 'header'),
           },
-          headerTintColor: isDark ? '#ffffff' : '#1A1625',
+          headerTintColor: getLayoutColor(isDark, 'headerTint'),
           headerTitleStyle: {
             fontWeight: '600',
           },
           animation: 'slide_from_right',
           contentStyle: {
-            backgroundColor: isDark ? '#1A1625' : '#f9fafb',
+            backgroundColor: getLayoutColor(isDark, 'content'),
           },
           headerLeft: () => (
             <HeaderBackButton
-              tintColor={isDark ? '#ffffff' : '#1A1625'}
+              tintColor={getLayoutColor(isDark, 'headerTint')}
               fallbackHref="/(app)/(tabs)/employer"
             />
           ),
           headerRight: () => (
-            <HeaderQRButton tintColor={isDark ? '#ffffff' : '#1A1625'} onPress={handleShowQR} />
+            <HeaderQRButton tintColor={getLayoutColor(isDark, 'headerTint')} onPress={handleShowQR} />
           ),
         }}
       >

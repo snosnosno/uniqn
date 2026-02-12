@@ -6,14 +6,16 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeftIcon } from '@/components/icons';
 import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
+import { Loading } from '@/components/ui';
 import { useJobDetail, useApplications } from '@/hooks';
 import { useAuthStore, useThemeStore } from '@/stores';
+import { getLayoutColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
 import { trackJobView } from '@/services/analyticsService';
 import { logger } from '@/utils/logger';
@@ -52,12 +54,7 @@ function CustomHeader({ title }: { title?: string }) {
 // ============================================================================
 
 function LoadingState() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-      <ActivityIndicator size="large" color="#6366f1" />
-      <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
-    </View>
-  );
+  return <Loading variant="layout" message="공고 정보를 불러오는 중..." />;
 }
 
 // ============================================================================
@@ -85,6 +82,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 export default function JobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isDark = useThemeStore((s) => s.isDarkMode);
   const { user } = useAuthStore();
   const { hasApplied, getApplicationStatus } = useApplications();
 
@@ -147,7 +145,7 @@ export default function JobDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />
         }
       >
         <JobDetail job={job} />

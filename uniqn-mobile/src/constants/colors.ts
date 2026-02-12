@@ -538,3 +538,25 @@ export function getLoadingColor(
 ): string {
   return isDarkMode ? LOADING_COLORS[variant].dark : LOADING_COLORS[variant].light;
 }
+
+// ============================================================================
+// Layout 색상 (Stack/Tab 네비게이션 스타일용)
+// ============================================================================
+
+export const LAYOUT_COLORS = {
+  header: { light: '#ffffff', dark: '#1A1625' },
+  content: { light: '#f9fafb', dark: '#1A1625' },
+  headerTint: { light: '#1A1625', dark: '#ffffff' },
+  tabBarActive: { light: '#A855F7', dark: '#C084FC' },
+  tabBarInactive: { light: '#6B7280', dark: '#9CA3AF' },
+  tabBarBg: { light: '#ffffff', dark: '#1A1625' },
+  tabBarBorder: { light: '#e5e7eb', dark: '#2D2438' },
+  refreshTint: { light: '#A855F7', dark: '#C084FC' },
+} as const;
+
+/**
+ * Layout 색상 반환 헬퍼
+ */
+export function getLayoutColor(isDarkMode: boolean, key: keyof typeof LAYOUT_COLORS): string {
+  return isDarkMode ? LAYOUT_COLORS[key].dark : LAYOUT_COLORS[key].light;
+}

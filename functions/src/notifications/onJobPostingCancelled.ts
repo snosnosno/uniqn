@@ -10,10 +10,12 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
 import { STATUS } from '../constants/status';
+import { handleTriggerError } from '../errors';
 
 const db = admin.firestore();
 
@@ -44,19 +46,20 @@ interface JobPostingData {
  * - 공고 status가 'cancelled'로 변경되면 실행
  * - confirmed, pending, applied 상태의 지원자들에게 broadcastNotification으로 일괄 알림
  */
-export const onJobPostingCancelled = functions.region('asia-northeast3').firestore
-  .document('jobPostings/{jobPostingId}')
-  .onUpdate(async (change, context) => {
-    const jobPostingId = context.params.jobPostingId;
-    const before = change.before.data() as JobPostingData;
-    const after = change.after.data() as JobPostingData;
+export const onJobPostingCancelled = onDocumentUpdated(
+  { document: 'jobPostings/{jobPostingId}', region: 'asia-northeast3' },
+  async (event) => {
+    const jobPostingId = event.params.jobPostingId;
+    const before = event.data?.before.data() as JobPostingData | undefined;
+    const after = event.data?.after.data() as JobPostingData | undefined;
+    if (!before || !after) return;
 
     // status가 cancelled로 변경된 경우만 처리
     if (before.status === after.status || after.status !== STATUS.JOB_POSTING.CANCELLED) {
       return;
     }
 
-    functions.logger.info('공고 취소 감지', {
+    logger.info('공고 취소 감지', {
       jobPostingId,
       beforeStatus: before.status,
       afterStatus: after.status,
@@ -71,7 +74,7 @@ export const onJobPostingCancelled = functions.region('asia-northeast3').firesto
         .get();
 
       if (applicationsSnap.empty) {
-        functions.logger.info('알림 대상 지원자가 없습니다', { jobPostingId });
+        logger.info('알림 대상 지원자가 없습니다', { jobPostingId });
         return;
       }
 
@@ -80,7 +83,7 @@ export const onJobPostingCancelled = functions.region('asia-northeast3').firesto
         applicationsSnap.docs.map((doc) => (doc.data() as ApplicationData).applicantId)
       )];
 
-      functions.logger.info('알림 대상 지원자 수', {
+      logger.info('알림 대상 지원자 수', {
         jobPostingId,
         count: applicantIds.length,
       });
@@ -109,16 +112,16 @@ export const onJobPostingCancelled = functions.region('asia-northeast3').firesto
         totalFailure += result.failureCount;
       });
 
-      functions.logger.info('공고 취소 알림 전체 처리 완료', {
+      logger.info('공고 취소 알림 전체 처리 완료', {
         jobPostingId,
         totalApplicants: applicantIds.length,
         totalSuccess,
         totalFailure,
       });
     } catch (error) {
-      functions.logger.error('공고 취소 알림 처리 중 오류 발생', {
-        jobPostingId,
-        error: error instanceof Error ? error.stack : String(error),
+      handleTriggerError(error, {
+        operation: 'onJobPostingCancelled',
+        context: { jobPostingId },
       });
     }
   });

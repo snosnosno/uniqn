@@ -11,7 +11,7 @@
  */
 
 import * as admin from 'firebase-admin';
-import * as functions from 'firebase-functions/v1';
+import { logger } from 'firebase-functions';
 import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
 import { getPushTokens, removeInvalidTokens, isTokenInvalidError } from './fcmTokenUtils';
 
@@ -288,7 +288,7 @@ async function getUserNotificationSettings(
 
     return settingsDoc.data() as UserNotificationSettings;
   } catch (error: unknown) {
-    functions.logger.warn('알림 설정 조회 실패', {
+    logger.warn('알림 설정 조회 실패', {
       userId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -440,7 +440,7 @@ export async function createAndSendNotification(
   ]);
 
   if (!permissionCheck.allowed) {
-    functions.logger.info('사용자 알림 설정에 의해 푸시 전송 생략', {
+    logger.info('사용자 알림 설정에 의해 푸시 전송 생략', {
       recipientId,
       type,
       category,
@@ -514,7 +514,7 @@ export async function createAndSendNotification(
     // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
   });
 
-  functions.logger.info('알림 문서 생성 완료', {
+  logger.info('알림 문서 생성 완료', {
     notificationId,
     recipientId,
     type,
@@ -525,7 +525,7 @@ export async function createAndSendNotification(
   const tokens = getPushTokens(userData);
 
   if (tokens.length === 0) {
-    functions.logger.warn('FCM 토큰이 없습니다', {
+    logger.warn('FCM 토큰이 없습니다', {
       recipientId,
       notificationId,
     });
@@ -565,7 +565,7 @@ export async function createAndSendNotification(
   if (fcmResult.invalidTokens.length > 0) {
     // 비동기로 처리 (알림 전송 결과에 영향 주지 않음)
     removeInvalidTokens(recipientId, fcmResult.invalidTokens).catch((error) => {
-      functions.logger.error('만료 토큰 정리 실패', {
+      logger.error('만료 토큰 정리 실패', {
         recipientId,
         tokenCount: fcmResult.invalidTokens.length,
         error: error.message,
@@ -573,7 +573,7 @@ export async function createAndSendNotification(
     });
   }
 
-  functions.logger.info('알림 전송 완료', {
+  logger.info('알림 전송 완료', {
     notificationId,
     recipientId,
     success: fcmResult.success,
@@ -683,7 +683,7 @@ export async function sendMulticast(
           }
         });
       } catch (error: unknown) {
-        functions.logger.error('Expo Push API 전송 실패', {
+        logger.error('Expo Push API 전송 실패', {
           error: error instanceof Error ? error.message : String(error),
           chunkSize: chunk.length,
         });
@@ -700,7 +700,7 @@ export async function sendMulticast(
       }
     }
 
-    functions.logger.info('Expo Push 전송 완료', {
+    logger.info('Expo Push 전송 완료', {
       total: expoTokens.length,
       success: totalSuccess,
       failure: totalFailure,
@@ -758,13 +758,13 @@ export async function sendMulticast(
       totalSuccess += response.successCount;
       totalFailure += response.failureCount;
 
-      functions.logger.info('FCM 전송 완료', {
+      logger.info('FCM 전송 완료', {
         total: fcmTokens.length,
         success: response.successCount,
         failure: response.failureCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('FCM 멀티캐스트 전송 실패', {
+      logger.error('FCM 멀티캐스트 전송 실패', {
         error: error instanceof Error ? error.message : String(error),
         tokenCount: fcmTokens.length,
       });
@@ -782,7 +782,7 @@ export async function sendMulticast(
 
   // 만료된 토큰이 있으면 로깅
   if (invalidTokens.length > 0) {
-    functions.logger.info('만료/무효 토큰 감지', {
+    logger.info('만료/무효 토큰 감지', {
       invalidCount: invalidTokens.length,
       totalTokens: tokens.length,
     });
@@ -814,7 +814,7 @@ export async function updateUnreadCounter(
 ): Promise<void> {
   // 증가만 허용 (감소는 decrementUnreadCounter 사용)
   if (delta <= 0) {
-    functions.logger.warn('updateUnreadCounter는 양수만 허용, decrementUnreadCounter 사용 필요', {
+    logger.warn('updateUnreadCounter는 양수만 허용, decrementUnreadCounter 사용 필요', {
       userId,
       delta,
     });
@@ -836,14 +836,14 @@ export async function updateUnreadCounter(
       { merge: true }
     );
 
-    functions.logger.info('미읽음 카운터 증가', {
+    logger.info('미읽음 카운터 증가', {
       userId,
       delta,
     });
   } catch (error: unknown) {
     // 🆕 실패 시 _failedCounterOps에 기록 (배치 재동기화용)
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    functions.logger.error('미읽음 카운터 증가 실패 - 복구 대기열에 추가', {
+    logger.error('미읽음 카운터 증가 실패 - 복구 대기열에 추가', {
       userId,
       delta,
       notificationId,
@@ -863,7 +863,7 @@ export async function updateUnreadCounter(
       });
     } catch (recordError) {
       // 실패 기록도 실패하면 로깅만 (추가 조치 없음)
-      functions.logger.error('실패 기록 저장 실패', {
+      logger.error('실패 기록 저장 실패', {
         userId,
         originalError: errorMessage,
         recordError: recordError instanceof Error ? recordError.message : 'Unknown',
@@ -919,7 +919,7 @@ export async function decrementUnreadCounter(
         );
       });
 
-      functions.logger.info('미읽음 카운터 감소 (트랜잭션)', {
+      logger.info('미읽음 카운터 감소 (트랜잭션)', {
         userId,
         delta,
         attempt,
@@ -932,7 +932,7 @@ export async function decrementUnreadCounter(
       if (attempt < MAX_RETRIES) {
         // 재시도 전 대기 (exponential backoff)
         await new Promise((resolve) => setTimeout(resolve, 100 * Math.pow(2, attempt)));
-        functions.logger.warn('카운터 감소 트랜잭션 재시도', {
+        logger.warn('카운터 감소 트랜잭션 재시도', {
           userId,
           delta,
           attempt,
@@ -943,7 +943,7 @@ export async function decrementUnreadCounter(
   }
 
   // 🆕 최대 재시도 초과 시 실패 기록
-  functions.logger.error('미읽음 카운터 감소 최종 실패 - 복구 대기열에 추가', {
+  logger.error('미읽음 카운터 감소 최종 실패 - 복구 대기열에 추가', {
     userId,
     delta,
     notificationId,
@@ -968,7 +968,7 @@ export async function decrementUnreadCounter(
       _counterSyncRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   } catch (recordError) {
-    functions.logger.error('실패 기록 저장 실패', {
+    logger.error('실패 기록 저장 실패', {
       userId,
       originalError: lastError?.message,
       recordError: recordError instanceof Error ? recordError.message : 'Unknown',
@@ -1002,7 +1002,7 @@ export async function resetUnreadCounter(userId: string): Promise<void> {
     { merge: true }
   );
 
-  functions.logger.info('미읽음 카운터 리셋', {
+  logger.info('미읽음 카운터 리셋', {
     userId,
   });
 }
@@ -1039,7 +1039,7 @@ export async function retryFailedCounterOps(
   const snapshot = await failedOpsQuery.get();
 
   if (snapshot.empty) {
-    functions.logger.info('재처리할 실패 카운터 연산 없음');
+    logger.info('재처리할 실패 카운터 연산 없음');
     return { success: 0, failed: 0, skipped: 0 };
   }
 
@@ -1119,7 +1119,7 @@ export async function retryFailedCounterOps(
     }
   }
 
-  functions.logger.info('실패 카운터 연산 재처리 완료', {
+  logger.info('실패 카운터 연산 재처리 완료', {
     total: snapshot.size,
     success,
     failed,
@@ -1159,7 +1159,7 @@ export async function broadcastNotification(
         createAndSendNotification(recipientId, type, title, body, options)
           .then((result) => ({ recipientId, result }))
           .catch((error) => {
-            functions.logger.error('개별 알림 전송 실패', {
+            logger.error('개별 알림 전송 실패', {
               recipientId,
               error: error.message,
             });

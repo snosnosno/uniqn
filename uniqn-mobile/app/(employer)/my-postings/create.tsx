@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '@/hooks/useAuth';
 import { useCreateJobPosting } from '@/hooks/useJobManagement';
+import { useUnsavedChangesGuard } from '@/hooks/useUnsavedChangesGuard';
 import { useTemplateManager } from '@/hooks/useTemplateManager';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
@@ -31,6 +32,10 @@ export default function CreateJobPostingScreen() {
 
   // Form State
   const [formData, setFormData] = useState<JobPostingFormData>(INITIAL_JOB_POSTING_FORM_DATA);
+  const [isDirty, setIsDirty] = useState(false);
+
+  // 미저장 변경사항 가드
+  useUnsavedChangesGuard(isDirty);
 
   // Mutations
   const createJobPosting = useCreateJobPosting();
@@ -40,6 +45,7 @@ export default function CreateJobPostingScreen() {
 
   // 폼 데이터 업데이트
   const updateFormData = useCallback((data: Partial<JobPostingFormData>) => {
+    setIsDirty(true);
     setFormData((prev) => {
       const updated = { ...prev, ...data };
 
@@ -118,6 +124,7 @@ export default function CreateJobPostingScreen() {
       };
 
       await createJobPosting.mutateAsync({ input });
+      setIsDirty(false);
 
       const successMessage =
         formData.postingType === 'tournament'

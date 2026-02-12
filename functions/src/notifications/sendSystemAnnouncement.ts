@@ -10,10 +10,13 @@
  * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
 import { sendMulticast, updateUnreadCounter } from '../utils/notificationUtils';
+import { requireAuth, requireRole, requireString, requireMaxLength, requireEnum } from '../errors/validators';
+import { NotFoundError, handleFunctionError } from '../errors';
 
 const db = admin.firestore();
 
@@ -51,80 +54,50 @@ interface SendSystemAnnouncementResponse {
  * - Firestore 알림 문서 생성 (각 사용자별)
  * - 전송 결과 기록 및 반환
  */
-export const sendSystemAnnouncement = functions.region('asia-northeast3').https.onCall(
-  async (data: SendSystemAnnouncementRequest, context): Promise<SendSystemAnnouncementResponse> => {
-    functions.logger.info('시스템 공지사항 전송 요청 수신', { data, userId: context.auth?.uid });
-
-    // 1. 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '인증이 필요합니다.'
-      );
-    }
-
-    const userId = context.auth.uid;
-    const userRole = context.auth.token?.role;
-
-    // 2. 권한 검증 (admin, manager만 가능)
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      functions.logger.warn('권한 없음', { userId, userRole });
-      throw new functions.https.HttpsError(
-        'permission-denied',
-        '시스템 공지사항 전송 권한이 없습니다. (관리자/매니저만 가능)'
-      );
-    }
-
-    // 3. 입력 데이터 검증
-    const { announcementId, title, content, priority } = data;
-
-    if (!announcementId || !title || !content || !priority) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '필수 입력값이 누락되었습니다.'
-      );
-    }
-
-    if (title.length > 100) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '공지 제목은 최대 100자까지 입력 가능합니다.'
-      );
-    }
-
-    if (content.length > 2000) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '공지 내용은 최대 2000자까지 입력 가능합니다.'
-      );
-    }
-
-    if (!['normal', 'important', 'urgent'].includes(priority)) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '올바른 우선순위를 선택해주세요.'
-      );
-    }
+export const sendSystemAnnouncement = onCall<SendSystemAnnouncementRequest>(
+  { region: 'asia-northeast3' },
+  async (request): Promise<SendSystemAnnouncementResponse> => {
+    logger.info('시스템 공지사항 전송 요청 수신', { data: request.data, userId: request.auth?.uid });
 
     try {
-      // 4. 공지사항 문서 확인
+      // 1. 인증 및 권한 검증
+      requireAuth(request);
+      requireRole(request, 'admin', 'manager');
+
+      // 2. 입력 데이터 검증
+      const announcementId = requireString(request.data.announcementId, '공지사항 ID');
+      const title = requireString(request.data.title, '공지 제목');
+      requireMaxLength(title, 100, '공지 제목');
+
+      const content = requireString(request.data.content, '공지 내용');
+      requireMaxLength(content, 2000, '공지 내용');
+
+      const priority = requireEnum(
+        request.data.priority,
+        ['normal', 'important', 'urgent'] as const,
+        '우선순위'
+      );
+
+      const userId = request.auth!.uid;
+
+      // 3. 공지사항 문서 확인
       const announcementDoc = await db.collection('systemAnnouncements').doc(announcementId).get();
 
       if (!announcementDoc.exists) {
-        throw new functions.https.HttpsError(
-          'not-found',
-          '공지사항을 찾을 수 없습니다.'
-        );
+        throw new NotFoundError({
+          userMessage: '공지사항을 찾을 수 없습니다.',
+          metadata: { announcementId },
+        });
       }
 
-      // 5. 모든 사용자 조회 (isActive 필드 없이 전체 조회)
+      // 4. 모든 사용자 조회 (isActive 필드 없이 전체 조회)
       const usersSnapshot = await db.collection('users').get();
 
       const totalUsers = usersSnapshot.size;
-      functions.logger.info('전체 활성 사용자 조회 완료', { totalUsers });
+      logger.info('전체 활성 사용자 조회 완료', { totalUsers });
 
       if (totalUsers === 0) {
-        functions.logger.warn('활성 사용자가 없습니다.');
+        logger.warn('활성 사용자가 없습니다.');
 
         await db.collection('systemAnnouncements').doc(announcementId).update({
           sendResult: {
@@ -142,7 +115,7 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         };
       }
 
-      // 6. FCM 토큰 수집 (fcmTokens: string[] 배열만 사용)
+      // 5. FCM 토큰 수집 (fcmTokens: string[] 배열만 사용)
       const usersData = usersSnapshot.docs.map((doc) => ({
         id: doc.id,
         data: doc.data(),
@@ -151,13 +124,13 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
       const userTokensMap = extractAllFcmTokens(usersData);
       const allTokens = flattenTokens(userTokensMap);
 
-      functions.logger.info('FCM 토큰 조회 완료', {
+      logger.info('FCM 토큰 조회 완료', {
         totalUsers,
         usersWithTokens: userTokensMap.size,
         totalTokens: allTokens.length,
       });
 
-      // 7. FCM 멀티캐스트 전송 (최대 500개씩 배치)
+      // 6. FCM 멀티캐스트 전송 (최대 500개씩 배치)
       // 토큰 → 사용자 ID 역매핑 (한 사용자가 여러 토큰 가질 수 있음)
       const tokenToUserMap = new Map<string, string>();
       for (const [userId, tokens] of userTokensMap.entries()) {
@@ -172,7 +145,7 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
       const errors: Array<{ userId: string; error: string }> = [];
 
       if (allTokens.length === 0) {
-        functions.logger.warn('FCM 토큰이 있는 사용자가 없습니다.');
+        logger.warn('FCM 토큰이 있는 사용자가 없습니다.');
 
         // 토큰이 없는 사용자에게도 알림 문서는 생성 (앱 내 확인 가능)
         const FIRESTORE_BATCH_LIMIT = 500;
@@ -270,7 +243,7 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         }
       });
 
-      // 8. 각 사용자에게 알림 문서 생성 (배치 500개 제한 고려)
+      // 7. 각 사용자에게 알림 문서 생성 (배치 500개 제한 고려)
       const FIRESTORE_BATCH_LIMIT = 500;
 
       for (let i = 0; i < allUserIds.length; i += FIRESTORE_BATCH_LIMIT) {
@@ -314,7 +287,7 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         );
       }
 
-      // 9. 공지사항 문서 업데이트
+      // 8. 공지사항 문서 업데이트
       const sendResult = {
         successCount: successUserIds.size,
         failedCount: failedUserIds.size,
@@ -326,7 +299,7 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         sendResult,
       });
 
-      functions.logger.info('시스템 공지사항 전송 완료', {
+      logger.info('시스템 공지사항 전송 완료', {
         announcementId,
         successCount: successUserIds.size,
         failedCount: failedUserIds.size,
@@ -343,15 +316,10 @@ export const sendSystemAnnouncement = functions.region('asia-northeast3').https.
         },
       };
     } catch (error: unknown) {
-      functions.logger.error('시스템 공지사항 전송 중 오류 발생', {
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      throw handleFunctionError(error, {
+        operation: 'sendSystemAnnouncement',
+        context: { announcementId: request.data?.announcementId },
       });
-
-      throw new functions.https.HttpsError(
-        'internal',
-        error instanceof Error ? error.message : '시스템 공지사항 전송에 실패했습니다.'
-      );
     }
   }
 );

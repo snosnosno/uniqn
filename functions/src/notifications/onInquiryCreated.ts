@@ -10,7 +10,8 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
 
@@ -41,13 +42,14 @@ interface InquiryData {
  * - 새로운 문의가 생성되면 실행
  * - 모든 관리자에게 알림 전송
  */
-export const onInquiryCreated = functions.region('asia-northeast3').firestore
-  .document('inquiries/{inquiryId}')
-  .onCreate(async (snap, context) => {
-    const inquiryId = context.params.inquiryId;
-    const inquiry = snap.data() as InquiryData;
+export const onInquiryCreated = onDocumentCreated(
+  { document: 'inquiries/{inquiryId}', region: 'asia-northeast3' },
+  async (event) => {
+    const inquiryId = event.params.inquiryId;
+    const inquiry = event.data?.data() as InquiryData | undefined;
+    if (!inquiry) return;
 
-    functions.logger.info('새로운 문의 접수', {
+    logger.info('새로운 문의 접수', {
       inquiryId,
       userName: inquiry.userName,
       category: inquiry.category,
@@ -62,13 +64,13 @@ export const onInquiryCreated = functions.region('asia-northeast3').firestore
         .get();
 
       if (adminUsersSnap.empty) {
-        functions.logger.warn('관리자가 없습니다');
+        logger.warn('관리자가 없습니다');
         return;
       }
 
       const adminIds = adminUsersSnap.docs.map((doc) => doc.id);
 
-      functions.logger.info('알림 대상 관리자 수', {
+      logger.info('알림 대상 관리자 수', {
         count: adminIds.length,
       });
 
@@ -102,14 +104,14 @@ export const onInquiryCreated = functions.region('asia-northeast3').firestore
         }
       });
 
-      functions.logger.info('문의 접수 알림 전송 완료', {
+      logger.info('문의 접수 알림 전송 완료', {
         inquiryId,
         totalAdmins: adminIds.length,
         successCount,
         failureCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('문의 접수 알림 처리 중 오류 발생', {
+      logger.error('문의 접수 알림 처리 중 오류 발생', {
         inquiryId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

@@ -187,6 +187,57 @@ export interface IWorkLogRepository {
     onError: (error: Error) => void
   ): Unsubscribe;
 
+  /**
+   * 단일 근무 기록 실시간 구독
+   * @param workLogId - 근무 기록 ID
+   * @param onData - 데이터 콜백 (삭제 시 null)
+   * @param onError - 에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeById(
+    workLogId: string,
+    onData: (workLog: WorkLog | null) => void,
+    onError: (error: Error) => void
+  ): Unsubscribe;
+
+  /**
+   * 스태프의 근무 기록 실시간 구독 (날짜 범위 필터 지원)
+   *
+   * @description workLogService의 subscribeToMyWorkLogs에서 사용
+   *
+   * @param staffId - 스태프 ID
+   * @param options - 날짜 범위, 페이지 크기
+   * @param onData - 데이터 콜백
+   * @param onError - 에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeByStaffIdWithFilters(
+    staffId: string,
+    options: { dateRange?: { start: string; end: string }; pageSize?: number },
+    onData: (workLogs: WorkLog[]) => void,
+    onError: (error: Error) => void
+  ): Unsubscribe;
+
+  /**
+   * 오늘의 활성 근무 기록 실시간 구독 (출근 가능/출근 중)
+   *
+   * @description workLogService의 subscribeToTodayWorkStatus에서 사용
+   *
+   * @param staffId - 스태프 ID
+   * @param date - 날짜 (YYYY-MM-DD)
+   * @param statuses - 구독할 상태 목록
+   * @param onData - 데이터 콜백 (없으면 null)
+   * @param onError - 에러 콜백
+   * @returns 구독 해제 함수
+   */
+  subscribeTodayActive(
+    staffId: string,
+    date: string,
+    statuses: string[],
+    onData: (workLog: WorkLog | null) => void,
+    onError: (error: Error) => void
+  ): Unsubscribe;
+
   // ==========================================================================
   // 변경 (Write)
   // ==========================================================================

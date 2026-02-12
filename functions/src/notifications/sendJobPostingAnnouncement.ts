@@ -10,10 +10,13 @@
  * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
 import { sendMulticast, updateUnreadCounter } from '../utils/notificationUtils';
+import { requireAuth, requireRole, requireString, requireMaxLength } from '../errors/validators';
+import { NotFoundError, ValidationError, handleFunctionError, ERROR_CODES } from '../errors';
 
 const db = admin.firestore();
 
@@ -54,63 +57,42 @@ interface SendAnnouncementResponse {
  * - Firestore 알림 문서 생성
  * - 전송 결과 반환
  */
-export const sendJobPostingAnnouncement = functions.region('asia-northeast3').https.onCall(
-  async (data: SendAnnouncementRequest, context): Promise<SendAnnouncementResponse> => {
-    functions.logger.info('공지 전송 요청 수신', { data, userId: context.auth?.uid });
-
-    // 1. 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '인증이 필요합니다.'
-      );
-    }
-
-    const userId = context.auth.uid;
-    const userRole = context.auth.token?.role;
-
-    // 2. 권한 검증 (admin, manager만 가능)
-    if (userRole !== 'admin' && userRole !== 'manager') {
-      functions.logger.warn('권한 없음', { userId, userRole });
-      throw new functions.https.HttpsError(
-        'permission-denied',
-        '공지 전송 권한이 없습니다. (관리자/매니저만 가능)'
-      );
-    }
-
-    // 3. 입력 데이터 검증
-    const { eventId, title, message: announcementMessage, targetStaffIds, jobPostingTitle } = data;
-
-    if (!eventId || !title || !announcementMessage || !targetStaffIds || targetStaffIds.length === 0) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '필수 입력값이 누락되었습니다.'
-      );
-    }
-
-    if (title.length > 50) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '공지 제목은 최대 50자까지 입력 가능합니다.'
-      );
-    }
-
-    if (announcementMessage.length > 500) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '공지 내용은 최대 500자까지 입력 가능합니다.'
-      );
-    }
+export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
+  { region: 'asia-northeast3' },
+  async (request): Promise<SendAnnouncementResponse> => {
+    logger.info('공지 전송 요청 수신', { data: request.data, userId: request.auth?.uid });
 
     try {
-      // 4. 공고 정보 조회
+      // 1. 인증 및 권한 검증
+      const userId = requireAuth(request);
+      requireRole(request, 'admin', 'manager');
+
+      // 2. 입력 데이터 검증
+      const eventId = requireString(request.data.eventId, '이벤트 ID');
+      const title = requireString(request.data.title, '공지 제목');
+      requireMaxLength(title, 50, '공지 제목');
+
+      const announcementMessage = requireString(request.data.message, '공지 내용');
+      requireMaxLength(announcementMessage, 500, '공지 내용');
+
+      const targetStaffIds = request.data.targetStaffIds;
+      if (!Array.isArray(targetStaffIds) || targetStaffIds.length === 0) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+          userMessage: '대상 스태프가 필요합니다.',
+          field: 'targetStaffIds',
+        });
+      }
+
+      const jobPostingTitle = request.data.jobPostingTitle;
+
+      // 3. 공고 정보 조회
       const jobPostingDoc = await db.collection('jobPostings').doc(eventId).get();
 
       if (!jobPostingDoc.exists) {
-        throw new functions.https.HttpsError(
-          'not-found',
-          '공고를 찾을 수 없습니다.'
-        );
+        throw new NotFoundError({
+          userMessage: '공고를 찾을 수 없습니다.',
+          metadata: { eventId },
+        });
       }
 
       const jobPosting = jobPostingDoc.data();
@@ -119,11 +101,11 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
       const actualJobPostingTitle = jobPostingTitle || jobPosting?.title || '공고';
       const notificationTitle = `[${actualJobPostingTitle}] ${title}`;
 
-      // 5. 발신자 정보 조회
+      // 4. 발신자 정보 조회
       const senderDoc = await db.collection('users').doc(userId).get();
       const senderName = senderDoc.data()?.name || '관리자';
 
-      // 6. 공지 문서 생성
+      // 5. 공지 문서 생성
       const announcementRef = db.collection('jobPostingAnnouncements').doc();
       const announcementId = announcementRef.id;
 
@@ -147,7 +129,7 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
 
       await announcementRef.set(announcementData);
 
-      // 7. 스태프 FCM 토큰 조회 (배치 처리, fcmTokens: string[] 배열만 사용)
+      // 6. 스태프 FCM 토큰 조회 (배치 처리, fcmTokens: string[] 배열만 사용)
       const allUsersData: Array<{ id: string; data: FirebaseFirestore.DocumentData | undefined }> = [];
       const chunkSize = 10; // Firestore in 쿼리 제한
 
@@ -171,19 +153,19 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         }
       }
 
-      functions.logger.info('FCM 토큰 조회 완료', {
+      logger.info('FCM 토큰 조회 완료', {
         totalStaff: targetStaffIds.length,
         usersWithTokens: staffTokensMap.size,
         totalTokens: allTokens.length,
       });
 
-      // 8. FCM 멀티캐스트 전송 (최대 500개씩 배치)
+      // 7. FCM 멀티캐스트 전송 (최대 500개씩 배치)
       const successUserIds = new Set<string>();
       const failedUserIds = new Set<string>();
       const errors: Array<{ userId: string; error: string }> = [];
 
       if (allTokens.length === 0) {
-        functions.logger.warn('FCM 토큰이 없는 스태프만 있습니다.');
+        logger.warn('FCM 토큰이 없는 스태프만 있습니다.');
 
         await announcementRef.update({
           status: 'failed',
@@ -236,7 +218,7 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
       const successIds = Array.from(successUserIds);
       const failedIds = Array.from(failedUserIds);
 
-      // 9. 각 스태프에게 알림 문서 생성 (배치 500개 제한 고려)
+      // 8. 각 스태프에게 알림 문서 생성 (배치 500개 제한 고려)
       const FIRESTORE_BATCH_LIMIT = 500;
 
       for (let i = 0; i < successIds.length; i += FIRESTORE_BATCH_LIMIT) {
@@ -279,7 +261,7 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         );
       }
 
-      // 10. 공지 문서 업데이트
+      // 9. 공지 문서 업데이트
       const sendResult: {
         successIds: string[];
         failedIds: string[];
@@ -306,7 +288,7 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         sendResult,
       });
 
-      functions.logger.info('공지 전송 완료', {
+      logger.info('공지 전송 완료', {
         announcementId,
         successCount: successIds.length,
         failedCount: failedIds.length,
@@ -318,12 +300,10 @@ export const sendJobPostingAnnouncement = functions.region('asia-northeast3').ht
         result: sendResult,
       };
     } catch (error: unknown) {
-      functions.logger.error('공지 전송 중 오류 발생', error);
-
-      throw new functions.https.HttpsError(
-        'internal',
-        error instanceof Error ? error.message : '공지 전송에 실패했습니다.',
-      );
+      throw handleFunctionError(error, {
+        operation: 'sendJobPostingAnnouncement',
+        context: { eventId: request.data?.eventId },
+      });
     }
   }
 );

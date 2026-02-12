@@ -10,10 +10,12 @@
  * 4. 만료 처리 로그 기록
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as logger from 'firebase-functions/logger';
 import { STATUS } from '../constants/status';
+import { requireAuth, requireRole } from '../errors';
 
 /**
  * 고정 공고 만료 처리 Scheduled Function
@@ -21,17 +23,14 @@ import { STATUS } from '../constants/status';
  * 스케줄: 매 1시간마다 실행
  * 타임존: Asia/Seoul
  */
-export const expireFixedPostings = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('every 1 hours')
-  .timeZone('Asia/Seoul')
-  .onRun(async (context) => {
+export const expireFixedPostings = onSchedule(
+  { schedule: 'every 1 hours', timeZone: 'Asia/Seoul', region: 'asia-northeast3' },
+  async () => {
     const db = admin.firestore();
     const now = admin.firestore.Timestamp.now();
 
     logger.info('=== 고정 공고 만료 처리 시작 ===', {
       timestamp: new Date().toISOString(),
-      scheduledTime: context.timestamp
     });
 
     try {
@@ -48,7 +47,7 @@ export const expireFixedPostings = functions
 
       if (snapshot.empty) {
         logger.info('만료된 고정 공고가 없습니다');
-        return null;
+        return;
       }
 
       logger.info(`${snapshot.size}개 만료된 공고 발견`);
@@ -86,7 +85,7 @@ export const expireFixedPostings = functions
         timestamp: new Date().toISOString()
       });
 
-      return null;
+      return;
     } catch (error) {
       logger.error('고정 공고 만료 처리 실패', {
         error: error instanceof Error ? error.stack : String(error),
@@ -106,39 +105,26 @@ export const expireFixedPostings = functions
  * });
  * ```
  */
-export const manualExpireFixedPostings = functions
-  .region('asia-northeast3')
-  .https.onCall(async (
-    data: {
-      dryRun?: boolean;
-      limit?: number;
-    },
-    context
-  ): Promise<{
+export const manualExpireFixedPostings = onCall(
+  { region: 'asia-northeast3' },
+  async (request): Promise<{
     success: boolean;
     expiredCount: number;
     expiredPostings: Array<{ id: string; title: string; expiresAt: string }>;
     message: string;
   }> => {
     const db = admin.firestore();
+    const data = request.data as {
+      dryRun?: boolean;
+      limit?: number;
+    };
 
     // Admin 권한 체크
-    if (!context.auth?.uid) {
-      throw new functions.https.HttpsError('unauthenticated', '인증되지 않은 요청입니다');
-    }
-
-    const userDoc = await db
-      .collection('users')
-      .doc(context.auth.uid)
-      .get();
-
-    const userData = userDoc.data();
-    if (!userData || userData.role !== 'admin') {
-      throw new functions.https.HttpsError('permission-denied', '관리자 권한이 필요합니다');
-    }
+    requireAuth(request);
+    requireRole(request, 'admin');
 
     logger.info('수동 만료 처리 요청', {
-      userId: context.auth.uid,
+      userId: request.auth!.uid,
       dryRun: data.dryRun ?? true,
       limit: data.limit ?? 100
     });
@@ -205,7 +191,7 @@ export const manualExpireFixedPostings = functions
 
       logger.info('수동 만료 처리 완료', {
         expiredCount: expiredPostings.length,
-        userId: context.auth.uid
+        userId: request.auth!.uid
       });
 
       return {

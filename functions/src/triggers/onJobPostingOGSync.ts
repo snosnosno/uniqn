@@ -11,8 +11,8 @@
  * - viewCount, applicationCount 등 무관한 변경 → 무시
  */
 
-import * as functions from 'firebase-functions/v1';
-import * as logger from 'firebase-functions/logger';
+import { onDocumentWritten } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import { kvPut, kvDelete } from '../utils/cloudflareKV';
 import { STATUS } from '../constants/status';
 
@@ -172,13 +172,12 @@ function hasOGRelevantChange(
 
 // --- 메인 트리거 ---
 
-export const onJobPostingOGSync = functions
-  .region('asia-northeast3')
-  .firestore.document('jobPostings/{jobId}')
-  .onWrite(async (change, context) => {
-    const jobId = context.params.jobId;
-    const after = change.after.exists ? change.after.data()! : null;
-    const before = change.before.exists ? change.before.data()! : null;
+export const onJobPostingOGSync = onDocumentWritten(
+  { document: 'jobPostings/{jobId}', region: 'asia-northeast3' },
+  async (event) => {
+    const jobId = event.params.jobId;
+    const after = event.data?.after?.exists ? event.data.after.data()! : null;
+    const before = event.data?.before?.exists ? event.data.before.data()! : null;
 
     // 조기 반환: 수정인데 OG 관련 필드가 안 바뀐 경우 (가장 빈번한 케이스)
     // viewCount, applicationCount 등 무관한 업데이트에서 KV 호출 없이 즉시 반환

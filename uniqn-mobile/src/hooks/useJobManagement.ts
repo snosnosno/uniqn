@@ -20,8 +20,8 @@ import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
-import { createMutationErrorHandler, extractErrorMessage } from '@/shared/errors';
-import { toError, requireAuth } from '@/errors';
+import { createMutationErrorHandler } from '@/shared/errors';
+import { requireAuth } from '@/errors';
 import type { CreateJobPostingInput, UpdateJobPostingInput, JobPostingStatus } from '@/types';
 
 // ============================================================================
@@ -158,13 +158,7 @@ export function useUpdateJobPosting() {
         queryKey: queryKeys.jobPostings.lists(),
       });
     },
-    onError: (error) => {
-      logger.error('공고 수정 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '공고 수정에 실패했습니다.'),
-      });
-    },
+    onError: createMutationErrorHandler('공고 수정', addToast),
   });
 }
 
@@ -193,13 +187,7 @@ export function useDeleteJobPosting() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: (error) => {
-      logger.error('공고 삭제 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '공고 삭제에 실패했습니다.'),
-      });
-    },
+    onError: createMutationErrorHandler('공고 삭제', addToast),
   });
 }
 
@@ -236,13 +224,7 @@ export function useCloseJobPosting() {
         queryKey: queryKeys.jobPostings.lists(),
       });
     },
-    onError: (error) => {
-      logger.error('공고 마감 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '공고 마감에 실패했습니다.'),
-      });
-    },
+    onError: createMutationErrorHandler('공고 마감', addToast),
   });
 }
 
@@ -275,13 +257,7 @@ export function useReopenJobPosting() {
         queryKey: queryKeys.jobPostings.lists(),
       });
     },
-    onError: (error) => {
-      logger.error('공고 재오픈 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: extractErrorMessage(error, '공고 재오픈에 실패했습니다.'),
-      });
-    },
+    onError: createMutationErrorHandler('공고 재오픈', addToast),
   });
 }
 
@@ -313,13 +289,7 @@ export function useBulkUpdateStatus() {
         queryKey: queryKeys.jobPostings.all,
       });
     },
-    onError: (error) => {
-      logger.error('공고 일괄 상태 변경 실패', toError(error));
-      addToast({
-        type: 'error',
-        message: '상태 변경에 실패했습니다.',
-      });
-    },
+    onError: createMutationErrorHandler('공고 일괄 상태 변경', addToast),
   });
 }
 

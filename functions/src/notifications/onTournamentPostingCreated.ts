@@ -10,7 +10,8 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { broadcastNotification } from '../utils/notificationUtils';
 import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
@@ -50,18 +51,19 @@ interface UserData {
  * - 대회공고(postingType === 'tournament')가 생성되면 실행
  * - 모든 관리자에게 승인 요청 알림 전송
  */
-export const onTournamentPostingCreated = functions.region('asia-northeast3').firestore
-  .document('jobPostings/{jobPostingId}')
-  .onCreate(async (snap, context) => {
-    const jobPostingId = context.params.jobPostingId;
-    const jobPosting = snap.data() as JobPostingData;
+export const onTournamentPostingCreated = onDocumentCreated(
+  { document: 'jobPostings/{jobPostingId}', region: 'asia-northeast3' },
+  async (event) => {
+    const jobPostingId = event.params.jobPostingId;
+    const jobPosting = event.data?.data() as JobPostingData | undefined;
+    if (!jobPosting) return;
 
     // tournament 타입만 처리
     if (jobPosting.postingType !== 'tournament') {
       return;
     }
 
-    functions.logger.info('대회공고 승인 요청', {
+    logger.info('대회공고 승인 요청', {
       jobPostingId,
       title: jobPosting.title,
       createdBy: jobPosting.createdBy,
@@ -86,13 +88,13 @@ export const onTournamentPostingCreated = functions.region('asia-northeast3').fi
         .get();
 
       if (adminUsersSnap.empty) {
-        functions.logger.warn('관리자가 없습니다');
+        logger.warn('관리자가 없습니다');
         return;
       }
 
       const adminIds = adminUsersSnap.docs.map((doc) => doc.id);
 
-      functions.logger.info('알림 대상 관리자 수', {
+      logger.info('알림 대상 관리자 수', {
         count: adminIds.length,
       });
 
@@ -126,14 +128,14 @@ export const onTournamentPostingCreated = functions.region('asia-northeast3').fi
         }
       });
 
-      functions.logger.info('대회공고 승인 요청 알림 전송 완료', {
+      logger.info('대회공고 승인 요청 알림 전송 완료', {
         jobPostingId,
         totalAdmins: adminIds.length,
         successCount,
         failureCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('대회공고 승인 요청 알림 처리 중 오류 발생', {
+      logger.error('대회공고 승인 요청 알림 처리 중 오류 발생', {
         jobPostingId,
         error: error instanceof Error ? error.message : String(error),
         stack: error instanceof Error ? error.stack : undefined,

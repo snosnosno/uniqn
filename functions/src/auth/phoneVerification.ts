@@ -11,9 +11,20 @@
  * - 현재는 로깅만 구현되어 있으며, 실제 SMS 발송 코드는 TODO로 표시되어 있습니다.
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as logger from 'firebase-functions/logger';
+import {
+  requireAuth,
+  requireString,
+} from '../errors/validators';
+import {
+  ValidationError,
+  NotFoundError,
+  BusinessError,
+  ERROR_CODES,
+} from '../errors/AppError';
+import { handleFunctionError } from '../errors/errorHandler';
 
 const db = admin.firestore();
 const FieldValue = admin.firestore.FieldValue;
@@ -57,31 +68,25 @@ function normalizePhoneNumber(phoneNumber: string): string {
 /**
  * 인증 코드 발송
  */
-export const sendPhoneVerificationCode = functions
-  .region('asia-northeast3')
-  .https.onCall(async (data, context) => {
-    // 1. 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '로그인이 필요합니다.'
-      );
-    }
-
-    const { phoneNumber } = data;
-    const userId = context.auth.uid;
-
-    // 2. 전화번호 검증
-    if (!phoneNumber || !validatePhoneNumber(phoneNumber)) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)'
-      );
-    }
-
-    const normalizedPhone = normalizePhoneNumber(phoneNumber);
-
+export const sendPhoneVerificationCode = onCall(
+  { region: 'asia-northeast3' },
+  async (request) => {
     try {
+      // 1. 인증 확인
+      const userId = requireAuth(request);
+
+      // 2. 전화번호 검증
+      const phoneNumber = requireString(request.data.phoneNumber, '전화번호');
+
+      if (!validatePhoneNumber(phoneNumber)) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+          userMessage: '올바른 전화번호 형식이 아닙니다. (예: 010-1234-5678)',
+          field: 'phoneNumber',
+        });
+      }
+
+      const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
       // 3. 중복 전화번호 확인
       const existingPhone = await db
         .collection('userVerifications')
@@ -92,10 +97,10 @@ export const sendPhoneVerificationCode = functions
       if (!existingPhone.empty) {
         const existingUserId = existingPhone.docs[0]?.data()?.userId;
         if (existingUserId !== userId) {
-          throw new functions.https.HttpsError(
-            'already-exists',
-            '이미 사용 중인 전화번호입니다.'
-          );
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_REQUESTED, {
+            userMessage: '이미 사용 중인 전화번호입니다.',
+            metadata: { phoneNumber: normalizedPhone },
+          });
         }
       }
 
@@ -116,10 +121,10 @@ export const sendPhoneVerificationCode = functions
           const diffMinutes = (now.getTime() - lastCreated.getTime()) / 1000 / 60;
 
           if (diffMinutes < 1) {
-            throw new functions.https.HttpsError(
-              'resource-exhausted',
-              '1분 후에 다시 시도해주세요.'
-            );
+            throw new BusinessError(ERROR_CODES.AUTH_RATE_LIMITED, {
+              userMessage: '1분 후에 다시 시도해주세요.',
+              metadata: { remainingSeconds: Math.ceil((1 - diffMinutes) * 60) },
+            });
           }
         }
       }
@@ -162,47 +167,29 @@ export const sendPhoneVerificationCode = functions
         ...(process.env.NODE_ENV === 'development' && { code: verificationCode }),
       };
     } catch (error) {
-      logger.error('인증 코드 발송 실패', error);
-
-      if (error instanceof functions.https.HttpsError) {
-        throw error;
-      }
-
-      throw new functions.https.HttpsError(
-        'internal',
-        '인증 코드 발송 중 오류가 발생했습니다.'
-      );
+      throw handleFunctionError(error, {
+        operation: 'sendPhoneVerificationCode',
+        context: { phoneNumber: request.data?.phoneNumber },
+      });
     }
   });
 
 /**
  * 인증 코드 확인
  */
-export const verifyPhoneCode = functions
-  .region('asia-northeast3')
-  .https.onCall(async (data, context) => {
-    // 1. 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '로그인이 필요합니다.'
-      );
-    }
-
-    const { phoneNumber, code } = data;
-    const userId = context.auth.uid;
-
-    // 2. 입력값 검증
-    if (!phoneNumber || !code) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        '전화번호와 인증 코드를 입력해주세요.'
-      );
-    }
-
-    const normalizedPhone = normalizePhoneNumber(phoneNumber);
-
+export const verifyPhoneCode = onCall(
+  { region: 'asia-northeast3' },
+  async (request) => {
     try {
+      // 1. 인증 확인
+      const userId = requireAuth(request);
+
+      // 2. 입력값 검증
+      const phoneNumber = requireString(request.data.phoneNumber, '전화번호');
+      const code = requireString(request.data.code, '인증 코드');
+
+      const normalizedPhone = normalizePhoneNumber(phoneNumber);
+
       // 3. 인증 기록 조회
       const verificationSnapshot = await db
         .collection('phoneVerifications')
@@ -214,18 +201,16 @@ export const verifyPhoneCode = functions
         .get();
 
       if (verificationSnapshot.empty) {
-        throw new functions.https.HttpsError(
-          'not-found',
-          '인증 요청을 찾을 수 없습니다. 인증 코드를 다시 요청해주세요.'
-        );
+        throw new NotFoundError({
+          userMessage: '인증 요청을 찾을 수 없습니다. 인증 코드를 다시 요청해주세요.',
+        });
       }
 
       const verificationDoc = verificationSnapshot.docs[0];
       if (!verificationDoc) {
-        throw new functions.https.HttpsError(
-          'not-found',
-          '인증 요청을 찾을 수 없습니다.'
-        );
+        throw new NotFoundError({
+          userMessage: '인증 요청을 찾을 수 없습니다.',
+        });
       }
 
       const verification = verificationDoc.data();
@@ -240,10 +225,9 @@ export const verifyPhoneCode = functions
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-        throw new functions.https.HttpsError(
-          'deadline-exceeded',
-          '인증 코드가 만료되었습니다. 다시 요청해주세요.'
-        );
+        throw new BusinessError(ERROR_CODES.AUTH_TOKEN_EXPIRED, {
+          userMessage: '인증 코드가 만료되었습니다. 다시 요청해주세요.',
+        });
       }
 
       // 5. 시도 횟수 확인
@@ -253,10 +237,9 @@ export const verifyPhoneCode = functions
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-        throw new functions.https.HttpsError(
-          'resource-exhausted',
-          '인증 시도 횟수를 초과했습니다. 인증 코드를 다시 요청해주세요.'
-        );
+        throw new BusinessError(ERROR_CODES.AUTH_TOO_MANY_REQUESTS, {
+          userMessage: '인증 시도 횟수를 초과했습니다. 인증 코드를 다시 요청해주세요.',
+        });
       }
 
       // 6. 인증 코드 확인
@@ -266,10 +249,10 @@ export const verifyPhoneCode = functions
           updatedAt: FieldValue.serverTimestamp(),
         });
 
-        throw new functions.https.HttpsError(
-          'invalid-argument',
-          `인증 코드가 일치하지 않습니다. (${verification.maxAttempts - verification.attempts - 1}회 남음)`
-        );
+        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+          userMessage: `인증 코드가 일치하지 않습니다. (${verification.maxAttempts - verification.attempts - 1}회 남음)`,
+          field: 'code',
+        });
       }
 
       // 7. 인증 성공 처리
@@ -288,7 +271,7 @@ export const verifyPhoneCode = functions
         if (!userVerification.exists) {
           transaction.set(userVerificationRef, {
             userId,
-            emailVerified: context.auth?.token.email_verified || false,
+            emailVerified: request.auth?.token.email_verified || false,
             phoneVerified: true,
             phoneNumber: normalizedPhone,
             verifiedAt: FieldValue.serverTimestamp(),
@@ -320,36 +303,23 @@ export const verifyPhoneCode = functions
         phoneNumber: normalizedPhone,
       };
     } catch (error) {
-      logger.error('인증 코드 확인 실패', error);
-
-      if (error instanceof functions.https.HttpsError) {
-        throw error;
-      }
-
-      throw new functions.https.HttpsError(
-        'internal',
-        '인증 코드 확인 중 오류가 발생했습니다.'
-      );
+      throw handleFunctionError(error, {
+        operation: 'verifyPhoneCode',
+        context: { phoneNumber: request.data?.phoneNumber },
+      });
     }
   });
 
 /**
  * 인증 상태 조회
  */
-export const getVerificationStatus = functions
-  .region('asia-northeast3')
-  .https.onCall(async (data, context) => {
-    // 1. 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '로그인이 필요합니다.'
-      );
-    }
-
-    const userId = context.auth.uid;
-
+export const getVerificationStatus = onCall(
+  { region: 'asia-northeast3' },
+  async (request) => {
     try {
+      // 1. 인증 확인
+      const userId = requireAuth(request);
+
       // 2. 인증 상태 조회
       const userVerificationDoc = await db
         .collection('userVerifications')
@@ -359,27 +329,25 @@ export const getVerificationStatus = functions
       if (!userVerificationDoc.exists) {
         return {
           userId,
-          emailVerified: context.auth.token.email_verified || false,
+          emailVerified: request.auth!.token.email_verified || false,
           phoneVerified: false,
           phoneNumber: null,
         };
       }
 
-      const data = userVerificationDoc.data();
+      const verificationData = userVerificationDoc.data();
 
       return {
         userId,
-        emailVerified: data?.emailVerified || false,
-        phoneVerified: data?.phoneVerified || false,
-        phoneNumber: data?.phoneNumber || null,
-        verifiedAt: data?.verifiedAt || null,
+        emailVerified: verificationData?.emailVerified || false,
+        phoneVerified: verificationData?.phoneVerified || false,
+        phoneNumber: verificationData?.phoneNumber || null,
+        verifiedAt: verificationData?.verifiedAt || null,
       };
     } catch (error) {
-      logger.error('인증 상태 조회 실패', error);
-
-      throw new functions.https.HttpsError(
-        'internal',
-        '인증 상태 조회 중 오류가 발생했습니다.'
-      );
+      throw handleFunctionError(error, {
+        operation: 'getVerificationStatus',
+        context: { userId: request.auth?.uid },
+      });
     }
   });

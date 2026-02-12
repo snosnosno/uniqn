@@ -4,7 +4,8 @@
  */
 
 import { useEffect } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text } from 'react-native';
+import { Loading } from '@/components/ui';
 import { router } from 'expo-router';
 import { useAuthStore, selectHasHydrated } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
@@ -48,7 +49,9 @@ export default function SplashScreen() {
         </Text>
       </View>
 
-      <ActivityIndicator size="large" color="#A855F7" className="my-6" />
+      <View className="my-6">
+        <Loading size="large" />
+      </View>
 
       <Text className="absolute bottom-12 text-sm text-gray-400 dark:text-gray-500">v1.0.0</Text>
     </View>

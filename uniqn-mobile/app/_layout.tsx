@@ -7,7 +7,7 @@ import '../global.css';
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View, ActivityIndicator, Text, LogBox } from 'react-native';
+import { View, LogBox } from 'react-native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,6 +23,7 @@ import {
   ScreenErrorBoundary,
   InAppMessageManager,
   OfflineBanner,
+  Loading,
 } from '@/components/ui';
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
@@ -31,6 +32,7 @@ import { useNotificationHandler } from '@/hooks/useNotificationHandler';
 import { useDeepLinkSetup } from '@/hooks/useDeepLink';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 import { RealtimeManager } from '@/shared/realtime/RealtimeManager';
 import * as tokenRefreshService from '@/services/tokenRefreshService';
 import { logger } from '@/utils/logger';
@@ -126,7 +128,7 @@ function MainNavigator() {
           headerShown: false,
           animation: 'slide_from_right',
           contentStyle: {
-            backgroundColor: isDark ? '#1A1625' : '#f9fafb',
+            backgroundColor: getLayoutColor(isDark, 'content'),
           },
         }}
       >
@@ -153,12 +155,7 @@ function AppContent() {
 
   // 초기화 중 로딩 표시
   if (isLoading || !isInitialized) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#A855F7" />
-        <Text className="mt-4 text-gray-600 dark:text-gray-400">앱 로딩 중...</Text>
-      </View>
-    );
+    return <Loading variant="layout" message="앱 로딩 중..." />;
   }
 
   // 초기화 실패 시 에러 표시

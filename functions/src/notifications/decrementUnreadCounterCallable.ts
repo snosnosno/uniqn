@@ -7,8 +7,11 @@
  * @note 알림 삭제 시 미읽음인 경우 클라이언트에서 호출
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import { decrementUnreadCounter } from '../utils/notificationUtils';
+import { requireAuth, handleFunctionError } from '../errors';
+import { ValidationError, ERROR_CODES } from '../errors';
 
 interface DecrementUnreadCounterData {
   /** 감소할 양 */
@@ -29,48 +32,36 @@ interface DecrementUnreadCounterResult {
  * const decrementCounter = httpsCallable(functions, 'decrementUnreadCounter');
  * await decrementCounter({ delta: 1 });
  */
-export const decrementUnreadCounterCallable = functions
-  .region('asia-northeast3')
-  .https.onCall(async (data: DecrementUnreadCounterData, context): Promise<DecrementUnreadCounterResult> => {
-    // 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        '로그인이 필요합니다.'
-      );
-    }
-
-    const userId = context.auth.uid;
-    const delta = data?.delta ?? 1;
-
-    // 입력 검증
-    if (typeof delta !== 'number' || delta <= 0 || delta > 1000) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        'delta는 1~1000 사이의 양수여야 합니다.'
-      );
-    }
-
+export const decrementUnreadCounterCallable = onCall<DecrementUnreadCounterData>(
+  { region: 'asia-northeast3' },
+  async (request): Promise<DecrementUnreadCounterResult> => {
     try {
+      // 인증 확인
+      const userId = requireAuth(request);
+
+      const delta = request.data?.delta ?? 1;
+
+      // 입력 검증
+      if (typeof delta !== 'number' || delta <= 0 || delta > 1000) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+          userMessage: 'delta는 1~1000 사이의 양수여야 합니다.',
+          field: 'delta',
+          metadata: { delta },
+        });
+      }
+
       await decrementUnreadCounter(userId, delta);
 
-      functions.logger.info('미읽음 카운터 감소 완료 (Callable)', {
+      logger.info('미읽음 카운터 감소 완료 (Callable)', {
         userId,
         delta,
       });
 
       return { success: true };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      functions.logger.error('미읽음 카운터 감소 실패', {
-        userId,
-        delta,
-        error: errorMessage,
+      throw handleFunctionError(error, {
+        operation: 'decrementUnreadCounterCallable',
+        context: { delta: request.data?.delta },
       });
-
-      throw new functions.https.HttpsError(
-        'internal',
-        '카운터 감소에 실패했습니다.'
-      );
     }
   });

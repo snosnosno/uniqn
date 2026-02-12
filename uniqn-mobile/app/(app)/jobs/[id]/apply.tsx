@@ -10,12 +10,13 @@
  */
 
 import { useState, useCallback } from 'react';
-import { View, Text, ActivityIndicator } from 'react-native';
+import { View, Text } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useQueryClient } from '@tanstack/react-query';
 import { ApplicationForm } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
+import { Loading } from '@/components/ui';
 import { useJobDetail, useApplications } from '@/hooks';
 import { useThemeStore, useToastStore } from '@/stores';
 import { STATUS } from '@/constants';
@@ -29,12 +30,7 @@ import type { Assignment, PreQuestionAnswer, JobPosting } from '@/types';
 // ============================================================================
 
 function LoadingState() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-      <ActivityIndicator size="large" color="#6366f1" />
-      <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
-    </View>
-  );
+  return <Loading variant="layout" message="공고 정보를 불러오는 중..." />;
 }
 
 // ============================================================================
@@ -257,7 +253,7 @@ export default function ApplyScreen() {
           <Text className="text-gray-500 dark:text-gray-400 text-center">
             지원서가 성공적으로 제출되었습니다.{'\n'}곧 스케줄 페이지로 이동합니다...
           </Text>
-          <ActivityIndicator className="mt-6" color="#6366f1" />
+          <Loading size="small" />
         </View>
       </SafeAreaView>
     );

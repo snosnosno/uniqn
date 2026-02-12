@@ -10,11 +10,13 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { extractUserId } from '../utils/helpers';
 import { STATUS } from '../constants/status';
+import { handleTriggerError } from '../errors';
 
 const db = admin.firestore();
 
@@ -25,12 +27,13 @@ const db = admin.firestore();
  * - WorkLog settlementStatus가 'completed'로 변경되면 실행
  * - 스태프(workLog.staffId에서 userId 추출)에게 알림 전송
  */
-export const onSettlementCompleted = functions.region('asia-northeast3').firestore
-  .document('workLogs/{workLogId}')
-  .onUpdate(async (change, context) => {
-    const workLogId = context.params.workLogId;
-    const before = change.before.data();
-    const after = change.after.data();
+export const onSettlementCompleted = onDocumentUpdated(
+  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+  async (event) => {
+    const workLogId = event.params.workLogId;
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    if (!before || !after) return;
 
     // settlementStatus가 completed로 변경된 경우만 처리
     if (
@@ -40,7 +43,7 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
       return;
     }
 
-    functions.logger.info('정산 완료 감지', {
+    logger.info('정산 완료 감지', {
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
@@ -93,17 +96,16 @@ export const onSettlementCompleted = functions.region('asia-northeast3').firesto
         }
       );
 
-      functions.logger.info('정산 완료 알림 전송 완료', {
+      logger.info('정산 완료 알림 전송 완료', {
         notificationId: result.notificationId,
         staffId: after.staffId,
         totalPay,
         fcmSent: result.fcmSent,
       });
     } catch (error: unknown) {
-      functions.logger.error('정산 완료 알림 처리 중 오류 발생', {
-        workLogId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: 'onSettlementCompleted',
+        context: { workLogId, staffId: after.staffId },
       });
     }
   });

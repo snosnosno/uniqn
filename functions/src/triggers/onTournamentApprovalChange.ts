@@ -1,19 +1,18 @@
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as logger from 'firebase-functions/logger';
 import { STATUS } from '../constants/status';
 
 /**
  * 대회 공고 승인/거부 알림 Trigger
  * tournamentConfig.approvalStatus 변경 감지 → 작성자에게 알림 전송
  */
-export const onTournamentApprovalChange = functions
-  .region('asia-northeast3')
-  .firestore.document('jobPostings/{postingId}')
-  .onUpdate(async (change, context) => {
-    const postingId = context.params.postingId;
-    const before = change.before.data();
-    const after = change.after.data();
+export const onTournamentApprovalChange = onDocumentUpdated(
+  { document: 'jobPostings/{postingId}', region: 'asia-northeast3' },
+  async (event) => {
+    const postingId = event.params.postingId;
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
 
     // 1. 데이터 검증
     if (!before || !after) {

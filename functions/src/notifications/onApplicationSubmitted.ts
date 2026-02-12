@@ -7,9 +7,11 @@
  * @version 2.0.0
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentCreated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
+import { handleTriggerError } from '../errors';
 
 const db = admin.firestore();
 
@@ -21,13 +23,14 @@ const db = admin.firestore();
  * - 고용주에게 FCM 푸시 알림 전송
  * - 공통 유틸리티 사용으로 일관된 알림 처리
  */
-export const onApplicationSubmitted = functions.region('asia-northeast3').firestore
-  .document('applications/{applicationId}')
-  .onCreate(async (snap, context) => {
-    const applicationId = context.params.applicationId;
-    const application = snap.data();
+export const onApplicationSubmitted = onDocumentCreated(
+  { document: 'applications/{applicationId}', region: 'asia-northeast3' },
+  async (event) => {
+    const applicationId = event.params.applicationId;
+    const application = event.data?.data();
+    if (!application) return;
 
-    functions.logger.info('지원서 제출 알림 시작', {
+    logger.info('지원서 제출 알림 시작', {
       applicationId,
       applicantId: application.applicantId,
       jobPostingId: application.jobPostingId,
@@ -41,7 +44,7 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
         .get();
 
       if (!jobPostingDoc.exists) {
-        functions.logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('공고를 찾을 수 없습니다', {
           applicationId,
           jobPostingId: application.jobPostingId,
         });
@@ -50,7 +53,7 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
 
       const jobPosting = jobPostingDoc.data();
       if (!jobPosting) {
-        functions.logger.warn('공고 데이터가 없습니다', { applicationId });
+        logger.warn('공고 데이터가 없습니다', { applicationId });
         return;
       }
 
@@ -61,7 +64,7 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
         .get();
 
       if (!applicantDoc.exists) {
-        functions.logger.warn('지원자를 찾을 수 없습니다', {
+        logger.warn('지원자를 찾을 수 없습니다', {
           applicationId,
           applicantId: application.applicantId,
         });
@@ -70,14 +73,14 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
 
       const applicant = applicantDoc.data();
       if (!applicant) {
-        functions.logger.warn('지원자 데이터가 없습니다', { applicationId });
+        logger.warn('지원자 데이터가 없습니다', { applicationId });
         return;
       }
 
       // 3. 고용주 ID 확인
       const employerId = jobPosting.ownerId ?? jobPosting.createdBy;
       if (!employerId) {
-        functions.logger.error('공고 소유자 정보 누락', {
+        logger.error('공고 소유자 정보 누락', {
           applicationId,
           jobPostingId: application.jobPostingId,
         });
@@ -103,17 +106,16 @@ export const onApplicationSubmitted = functions.region('asia-northeast3').firest
         }
       );
 
-      functions.logger.info('지원서 제출 알림 완료', {
+      logger.info('지원서 제출 알림 완료', {
         applicationId,
         notificationId: result.notificationId,
         fcmSent: result.fcmSent,
         successCount: result.successCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('지원서 제출 알림 처리 중 오류 발생', {
-        applicationId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: 'onApplicationSubmitted',
+        context: { applicationId, applicantId: application.applicantId },
       });
     }
   });

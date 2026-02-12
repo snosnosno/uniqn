@@ -32,24 +32,21 @@ var __importStar = (this && this.__importStar) || (function () {
         return result;
     };
 })();
-var __importDefault = (this && this.__importDefault) || function (mod) {
-    return (mod && mod.__esModule) ? mod : { "default": mod };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.recordAttendance = exports.generateEventQrToken = exports.assignDealerToEvent = exports.matchDealersToEvent = exports.validateJobPostingData = exports.onWorkDateExpired = exports.expireByLastWorkDate = exports.onFixedPostingExpired = exports.manualExpireFixedPostings = exports.expireFixedPostings = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.sendReceiptEmail = exports.backfillCiIndex = exports.linkIdentityVerification = exports.verifyIdentity = exports.cleanupPendingVerificationsScheduled = exports.cleanupExpiredTokensScheduled = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.submitDealerRating = exports.getPayrolls = exports.calculatePayrollsForEvent = void 0;
-const functions = __importStar(require("firebase-functions/v1"));
+exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.validateJobPostingData = exports.onWorkDateExpired = exports.expireByLastWorkDate = exports.onFixedPostingExpired = exports.manualExpireFixedPostings = exports.expireFixedPostings = exports.onJobPostingOGSync = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.backfillCiIndex = exports.linkIdentityVerification = exports.verifyIdentity = exports.cleanupPendingVerificationsScheduled = exports.cleanupExpiredTokensScheduled = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = void 0;
 const admin = __importStar(require("firebase-admin"));
-const cors_1 = __importDefault(require("cors"));
+const firebase_functions_1 = require("firebase-functions");
+const https_1 = require("firebase-functions/v2/https");
+const firestore_1 = require("firebase-functions/v2/firestore");
 const sentry_1 = require("./utils/sentry");
+const errors_1 = require("./errors");
 // Initialize Firebase Admin
 admin.initializeApp();
 // Initialize Firestore
 const db = admin.firestore();
 // Initialize Sentry (에러 트래킹)
 (0, sentry_1.initSentry)();
-// CORS handler
-const corsHandler = (0, cors_1.default)({ origin: true });
 // --- Scheduled Functions ---
 var cleanupRateLimits_1 = require("./scheduled/cleanupRateLimits");
 Object.defineProperty(exports, "cleanupRateLimitsScheduled", { enumerable: true, get: function () { return cleanupRateLimits_1.cleanupRateLimitsScheduled; } });
@@ -67,9 +64,6 @@ Object.defineProperty(exports, "linkIdentityVerification", { enumerable: true, g
 // --- Migration Functions ---
 var backfillCiIndex_1 = require("./migrations/backfillCiIndex");
 Object.defineProperty(exports, "backfillCiIndex", { enumerable: true, get: function () { return backfillCiIndex_1.backfillCiIndex; } });
-// --- Email Functions ---
-var sendReceipt_1 = require("./email/sendReceipt");
-Object.defineProperty(exports, "sendReceiptEmail", { enumerable: true, get: function () { return sendReceipt_1.sendReceiptEmail; } });
 // --- Phone Verification Functions ---
 var phoneVerification_1 = require("./auth/phoneVerification");
 Object.defineProperty(exports, "sendPhoneVerificationCode", { enumerable: true, get: function () { return phoneVerification_1.sendPhoneVerificationCode; } });
@@ -133,6 +127,9 @@ var resubmitJobPosting_1 = require("./api/jobPostings/resubmitJobPosting");
 Object.defineProperty(exports, "resubmitJobPosting", { enumerable: true, get: function () { return resubmitJobPosting_1.resubmitJobPosting; } });
 var onTournamentApprovalChange_1 = require("./triggers/onTournamentApprovalChange");
 Object.defineProperty(exports, "onTournamentApprovalChange", { enumerable: true, get: function () { return onTournamentApprovalChange_1.onTournamentApprovalChange; } });
+// --- Job Posting OG Sync ---
+var onJobPostingOGSync_1 = require("./triggers/onJobPostingOGSync");
+Object.defineProperty(exports, "onJobPostingOGSync", { enumerable: true, get: function () { return onJobPostingOGSync_1.onJobPostingOGSync; } });
 // --- Job Posting Scheduled Functions (Phase 5) ---
 var expireFixedPostings_1 = require("./scheduled/expireFixedPostings");
 Object.defineProperty(exports, "expireFixedPostings", { enumerable: true, get: function () { return expireFixedPostings_1.expireFixedPostings; } });
@@ -147,13 +144,13 @@ Object.defineProperty(exports, "onWorkDateExpired", { enumerable: true, get: fun
  * Firestore trigger that automatically validates and fixes job posting data
  * when a new job posting is created or updated
  */
-exports.validateJobPostingData = functions.region('asia-northeast3').firestore.document("jobPostings/{postId}").onWrite(async (change, context) => {
-    const postId = context.params.postId;
+exports.validateJobPostingData = (0, firestore_1.onDocumentWritten)({ document: 'jobPostings/{postId}', region: 'asia-northeast3' }, async (event) => {
+    const postId = event.params.postId;
     // Skip if document was deleted
-    if (!change.after.exists) {
+    if (!event.data?.after.exists) {
         return;
     }
-    const data = change.after.data();
+    const data = event.data?.after.data();
     if (!data)
         return;
     let needsUpdate = false;
@@ -163,7 +160,7 @@ exports.validateJobPostingData = functions.region('asia-northeast3').firestore.d
         const requiredRoles = Array.from(new Set(data.timeSlots.flatMap((ts) => ts.roles ? ts.roles.map((r) => r.name) : [])));
         updates.requiredRoles = requiredRoles;
         needsUpdate = true;
-        functions.logger.info(`Auto-generating requiredRoles for post ${postId}:`, requiredRoles);
+        firebase_functions_1.logger.info(`Auto-generating requiredRoles for post ${postId}:`, requiredRoles);
     }
     // Auto-generate searchIndex if missing
     if (!data.searchIndex) {
@@ -175,82 +172,78 @@ exports.validateJobPostingData = functions.region('asia-northeast3').firestore.d
         ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
         updates.searchIndex = searchIndex;
         needsUpdate = true;
-        functions.logger.info(`Auto-generating searchIndex for post ${postId}`);
+        firebase_functions_1.logger.info(`Auto-generating searchIndex for post ${postId}`);
     }
     // Convert string dates to Timestamp if needed
     if (data.startDate && typeof data.startDate === 'string') {
         updates.startDate = admin.firestore.Timestamp.fromDate(new Date(data.startDate));
         needsUpdate = true;
-        functions.logger.info(`Converting startDate to Timestamp for post ${postId}`);
+        firebase_functions_1.logger.info(`Converting startDate to Timestamp for post ${postId}`);
     }
     if (data.endDate && typeof data.endDate === 'string') {
         updates.endDate = admin.firestore.Timestamp.fromDate(new Date(data.endDate));
         needsUpdate = true;
-        functions.logger.info(`Converting endDate to Timestamp for post ${postId}`);
+        firebase_functions_1.logger.info(`Converting endDate to Timestamp for post ${postId}`);
     }
     // Apply updates if needed
     if (needsUpdate) {
         try {
-            await change.after.ref.update(updates);
-            functions.logger.info(`Auto-fixed job posting ${postId}`, updates);
+            await event.data?.after.ref.update(updates);
+            firebase_functions_1.logger.info(`Auto-fixed job posting ${postId}`, updates);
         }
         catch (error) {
-            functions.logger.error(`Failed to auto-fix job posting ${postId}:`, error);
+            firebase_functions_1.logger.error(`Failed to auto-fix job posting ${postId}:`, error);
+            throw (0, errors_1.handleTriggerError)(error, {
+                operation: 'validateJobPostingData',
+                context: { postId },
+            });
         }
     }
 });
-exports.matchDealersToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
-exports.assignDealerToEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
-exports.generateEventQrToken = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
-exports.recordAttendance = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
-exports.calculatePayrollsForEvent = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
-exports.getPayrolls = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
-exports.submitDealerRating = functions.region('asia-northeast3').https.onCall(async (data, context) => { });
 // --- Data Migration Functions ---
 /**
  * Migrates existing job postings to include requiredRoles and proper date formats
  * Only callable by admin users
  */
-exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    // Check admin permissions
-    if (context.auth?.token?.role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can run data migrations.');
-    }
-    functions.logger.info("Starting job postings migration...");
+exports.migrateJobPostings = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
+        // Check admin permissions
+        (0, errors_1.requireAuth)(request);
+        (0, errors_1.requireRole)(request, 'admin');
+        firebase_functions_1.logger.info("Starting job postings migration...");
         const jobPostingsRef = db.collection('jobPostings');
         const snapshot = await jobPostingsRef.get();
         let migratedCount = 0;
         let skippedCount = 0;
         const batch = db.batch();
         snapshot.docs.forEach((doc) => {
-            const data = doc.data();
+            const docData = doc.data();
             let needsUpdate = false;
             const updates = {};
             // Check if requiredRoles field is missing
-            if (!data.requiredRoles && data.timeSlots) {
-                const requiredRoles = Array.from(new Set(data.timeSlots.flatMap((ts) => ts.roles ? ts.roles.map((r) => r.name) : [])));
+            if (!docData.requiredRoles && docData.timeSlots) {
+                const requiredRoles = Array.from(new Set(docData.timeSlots.flatMap((ts) => ts.roles ? ts.roles.map((r) => r.name) : [])));
                 updates.requiredRoles = requiredRoles;
                 needsUpdate = true;
             }
             // Check if searchIndex field is missing
-            if (!data.searchIndex) {
+            if (!docData.searchIndex) {
                 const searchIndex = [
-                    data.title || '',
-                    data.location || '',
-                    data.description || '',
-                    ...(updates.requiredRoles || data.requiredRoles || [])
+                    docData.title || '',
+                    docData.location || '',
+                    docData.description || '',
+                    ...(updates.requiredRoles || docData.requiredRoles || [])
                 ].join(' ').toLowerCase().split(/\s+/).filter(word => word.length > 0);
                 updates.searchIndex = searchIndex;
                 needsUpdate = true;
             }
             // Check if dates need conversion to Timestamp
-            if (data.startDate && typeof data.startDate === 'string') {
-                updates.startDate = admin.firestore.Timestamp.fromDate(new Date(data.startDate));
+            if (docData.startDate && typeof docData.startDate === 'string') {
+                updates.startDate = admin.firestore.Timestamp.fromDate(new Date(docData.startDate));
                 needsUpdate = true;
             }
-            if (data.endDate && typeof data.endDate === 'string') {
-                updates.endDate = admin.firestore.Timestamp.fromDate(new Date(data.endDate));
+            if (docData.endDate && typeof docData.endDate === 'string') {
+                updates.endDate = admin.firestore.Timestamp.fromDate(new Date(docData.endDate));
                 needsUpdate = true;
             }
             if (needsUpdate) {
@@ -264,7 +257,7 @@ exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(as
         if (migratedCount > 0) {
             await batch.commit();
         }
-        functions.logger.info(`Migration completed: ${migratedCount} updated, ${skippedCount} skipped`);
+        firebase_functions_1.logger.info(`Migration completed: ${migratedCount} updated, ${skippedCount} skipped`);
         return {
             success: true,
             message: `Migration completed successfully`,
@@ -276,8 +269,10 @@ exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(as
         };
     }
     catch (error) {
-        functions.logger.error("Migration failed:", error);
-        throw new functions.https.HttpsError('internal', 'Migration failed', error.message);
+        throw (0, errors_1.handleFunctionError)(error, {
+            operation: 'migrateJobPostings',
+            context: { userId: request.auth?.uid },
+        });
     }
 });
 // --- Authentication and Role Management Functions ---
@@ -287,20 +282,18 @@ exports.migrateJobPostings = functions.region('asia-northeast3').https.onCall(as
  * - Managers are created as disabled and await admin approval.
  * - Passes extra data (phone, gender) via displayName for the trigger.
  */
-exports.requestRegistration = functions.region('asia-northeast3').https.onCall(async (data) => {
-    functions.logger.info("requestRegistration called with data:", data);
-    const { email, password, name, nickname, role, phone, gender, consents } = data;
-    if (!email || !password || !name || !role) {
-        functions.logger.error("Validation failed: Missing required fields.", { data });
-        throw new functions.https.HttpsError('invalid-argument', 'Missing required fields for registration.');
-    }
-    // 웹앱에서는 employer로 가입
-    const validRoles = ['employer', 'staff'];
-    if (!validRoles.includes(role)) {
-        functions.logger.error("Validation failed: Invalid role.", { role });
-        throw new functions.https.HttpsError('invalid-argument', `Role must be one of: ${validRoles.join(', ')}`);
-    }
+exports.requestRegistration = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
+        firebase_functions_1.logger.info("requestRegistration called with data:", request.data);
+        const { email, password, name, nickname, role, phone, gender, consents } = request.data;
+        // 입력 검증
+        (0, errors_1.requireString)(email, 'email');
+        (0, errors_1.requireString)(password, 'password');
+        (0, errors_1.requireString)(name, 'name');
+        (0, errors_1.requireString)(role, 'role');
+        // 웹앱에서는 employer로 가입
+        const validRoles = ['employer', 'staff'];
+        (0, errors_1.requireEnum)(role, validRoles, 'role');
         // 1. Firebase Auth 사용자 생성
         const userRecord = await admin.auth().createUser({
             email,
@@ -310,7 +303,7 @@ exports.requestRegistration = functions.region('asia-northeast3').https.onCall(a
             emailVerified: false,
         });
         const uid = userRecord.uid;
-        functions.logger.info(`User created successfully: ${email} (UID: ${uid})`);
+        firebase_functions_1.logger.info(`User created successfully: ${email} (UID: ${uid})`);
         // 2. Firestore에 프로필 생성
         const userRef = db.collection("users").doc(uid);
         await userRef.set({
@@ -327,7 +320,7 @@ exports.requestRegistration = functions.region('asia-northeast3').https.onCall(a
         });
         // 3. Custom Claims 설정
         await admin.auth().setCustomUserClaims(uid, { role });
-        functions.logger.info(`Profile created and claims set for UID: ${uid}`);
+        firebase_functions_1.logger.info(`Profile created and claims set for UID: ${uid}`);
         // Save consent data to Firestore if provided
         if (consents && userRecord.uid) {
             try {
@@ -367,49 +360,41 @@ exports.requestRegistration = functions.region('asia-northeast3').https.onCall(a
                     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 };
                 await consentRef.set(consentData);
-                functions.logger.info(`Consent data saved for user ${userRecord.uid}`);
+                firebase_functions_1.logger.info(`Consent data saved for user ${userRecord.uid}`);
             }
             catch (consentError) {
-                functions.logger.error("Error saving consent data:", consentError);
+                firebase_functions_1.logger.error("Error saving consent data:", consentError);
                 // Don't fail the registration if consent saving fails
             }
         }
         return { success: true, message: `Registration for ${name} as ${role} is processing.` };
     }
     catch (error) {
-        functions.logger.error("Error during registration request:", error);
-        const errorCode = error.code;
-        switch (errorCode) {
-            case 'auth/email-already-exists':
-                throw new functions.https.HttpsError('already-exists', 'This email address is already in use by another account.');
-            case 'auth/invalid-email':
-                throw new functions.https.HttpsError('invalid-argument', 'The email address is not valid.', { originalCode: errorCode });
-            case 'auth/weak-password':
-                throw new functions.https.HttpsError('invalid-argument', 'The password is too weak. Please use a stronger password.', { originalCode: errorCode });
-            case 'auth/operation-not-allowed':
-                throw new functions.https.HttpsError('unimplemented', 'Email/password sign-in is not enabled.', { originalCode: errorCode });
-            default:
-                throw new functions.https.HttpsError('internal', 'An unexpected error occurred during registration.', { originalCode: errorCode || 'unknown' });
-        }
+        throw (0, errors_1.handleFunctionError)(error, {
+            operation: 'requestRegistration',
+            context: { email: request.data?.email, role: request.data?.role },
+        });
     }
 });
 /**
  * Processes a registration request for a manager, either approving or rejecting it.
  * Only callable by an admin.
  */
-exports.processRegistration = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    if (context.auth?.token?.role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can process registration requests.');
-    }
-    const { targetUid, action } = data; // action can be 'approve' or 'reject'
-    if (!targetUid || !action) {
-        throw new functions.https.HttpsError('invalid-argument', 'Missing "targetUid" or "action".');
-    }
-    const userRef = db.collection('users').doc(targetUid);
+exports.processRegistration = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
+        (0, errors_1.requireAuth)(request);
+        (0, errors_1.requireRole)(request, 'admin');
+        const { targetUid, action } = request.data;
+        // 입력 검증
+        (0, errors_1.requireString)(targetUid, 'targetUid');
+        (0, errors_1.requireEnum)(action, ['approve', 'reject'], 'action');
+        const userRef = db.collection('users').doc(targetUid);
         const userDoc = await userRef.get();
         if (!userDoc.exists || userDoc.data()?.role !== 'pending_manager') {
-            throw new functions.https.HttpsError('not-found', 'The specified user is not awaiting approval.');
+            throw new errors_1.NotFoundError({
+                message: 'The specified user is not awaiting approval.',
+                metadata: { resource: 'User', resourceId: targetUid },
+            });
         }
         if (action === 'approve') {
             await admin.auth().updateUser(targetUid, { disabled: false });
@@ -422,27 +407,30 @@ exports.processRegistration = functions.region('asia-northeast3').https.onCall(a
             await userRef.delete();
             return { success: true, message: 'User registration rejected.' };
         }
-        else {
-            throw new functions.https.HttpsError('invalid-argument', 'Action must be "approve" or "reject".');
-        }
+        return { success: false };
     }
     catch (error) {
-        functions.logger.error("Error processing registration:", error);
-        throw new functions.https.HttpsError('internal', 'Failed to process registration.', error.message);
+        throw (0, errors_1.handleFunctionError)(error, {
+            operation: 'processRegistration',
+            context: {
+                userId: request.auth?.uid,
+                targetUid: request.data?.targetUid,
+            },
+        });
     }
 });
 /**
  * Creates a new user account, stores details in Firestore, and sets a custom role claim.
  */
-exports.createUserAccount = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    if (context.auth?.token?.role !== 'admin') {
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can create new user accounts.');
-    }
-    const { email, name, role } = data;
-    if (!email || !name || !role) {
-        throw new functions.https.HttpsError('invalid-argument', 'The function must be called with "email", "name", and "role" arguments.');
-    }
+exports.createUserAccount = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
+        (0, errors_1.requireAuth)(request);
+        (0, errors_1.requireRole)(request, 'admin');
+        const { email, name, role } = request.data;
+        // 입력 검증
+        (0, errors_1.requireString)(email, 'email');
+        (0, errors_1.requireString)(name, 'name');
+        (0, errors_1.requireString)(role, 'role');
         const userRecord = await admin.auth().createUser({ email, displayName: name });
         await admin.auth().setCustomUserClaims(userRecord.uid, { role });
         await db.collection('users').doc(userRecord.uid).set({
@@ -454,129 +442,137 @@ exports.createUserAccount = functions.region('asia-northeast3').https.onCall(asy
         return { result: `Successfully created ${role}: ${name} (${email})` };
     }
     catch (error) {
-        functions.logger.error("Error creating new user:", error);
-        throw new functions.https.HttpsError('internal', error.message, error);
+        throw (0, errors_1.handleFunctionError)(error, {
+            operation: 'createUserAccount',
+            context: {
+                userId: request.auth?.uid,
+                email: request.data?.email,
+            },
+        });
     }
 });
 /**
  * Firestore trigger that automatically sets a custom user claim whenever a user's role is
  * created or changed in the 'users' collection.
  */
-exports.onUserRoleChange = functions.region('asia-northeast3').firestore.document('users/{uid}').onWrite(async (change, context) => {
-    const { uid } = context.params;
-    const newRole = change.after.exists ? change.after.data()?.role : null;
-    const oldRole = change.before.exists ? change.before.data()?.role : null;
+exports.onUserRoleChange = (0, firestore_1.onDocumentWritten)({ document: 'users/{uid}', region: 'asia-northeast3' }, async (event) => {
+    const { uid } = event.params;
+    const newRole = event.data?.after.exists ? event.data?.after.data()?.role : null;
+    const oldRole = event.data?.before.exists ? event.data?.before.data()?.role : null;
     if (newRole === oldRole) {
-        functions.logger.info(`User ${uid}: Role unchanged (${newRole}). No action taken.`);
+        firebase_functions_1.logger.info(`User ${uid}: Role unchanged (${newRole}). No action taken.`);
         return null;
     }
     try {
-        functions.logger.info(`Setting custom claim for user ${uid}. New role: ${newRole}`);
+        firebase_functions_1.logger.info(`Setting custom claim for user ${uid}. New role: ${newRole}`);
         await admin.auth().setCustomUserClaims(uid, { role: newRole });
         return { result: `Custom claim for ${uid} updated to ${newRole}.` };
     }
     catch (error) {
-        functions.logger.error(`Failed to set custom claim for ${uid}`, error);
+        firebase_functions_1.logger.error(`Failed to set custom claim for ${uid}`, error);
         return { error: 'Failed to set custom claim.' };
     }
 });
 // --- Dashboard Functions ---
-exports.getDashboardStats = functions.region('asia-northeast3').https.onRequest((request, response) => {
-    corsHandler(request, response, async () => {
-        try {
-            const now = new Date();
-            const ongoingEventsQuery = db.collection("events").where("endDate", ">=", now);
-            const totalStaffQuery = db.collection("users").where("role", "==", "staff");
-            const topStaffQuery = db.collection("users")
-                .where("role", "==", "staff")
-                .orderBy("rating", "desc")
-                .limit(5);
-            const [ongoingEventsSnapshot, totalStaffSnapshot, topStaffSnapshot,] = await Promise.all([
-                ongoingEventsQuery.get(),
-                totalStaffQuery.get(),
-                topStaffQuery.get(),
-            ]);
-            const topRatedStaff = topStaffSnapshot.docs.map((doc) => ({
-                id: doc.id,
-                ...doc.data()
-            }));
-            response.status(200).send({
-                data: {
-                    ongoingEventsCount: ongoingEventsSnapshot.size,
-                    totalStaffCount: totalStaffSnapshot.size,
-                    topRatedStaff,
-                },
-            });
-        }
-        catch (error) {
-            functions.logger.error("Error getting dashboard stats:", error);
-            response.status(500).send({ data: { error: "Internal Server Error" } });
-        }
-    });
+exports.getDashboardStats = (0, https_1.onRequest)({ region: 'asia-northeast3', cors: true }, async (request, response) => {
+    try {
+        const now = new Date();
+        const ongoingEventsQuery = db.collection("events").where("endDate", ">=", now);
+        const totalStaffQuery = db.collection("users").where("role", "==", "staff");
+        const topStaffQuery = db.collection("users")
+            .where("role", "==", "staff")
+            .orderBy("rating", "desc")
+            .limit(5);
+        const [ongoingEventsSnapshot, totalStaffSnapshot, topStaffSnapshot,] = await Promise.all([
+            ongoingEventsQuery.get(),
+            totalStaffQuery.get(),
+            topStaffQuery.get(),
+        ]);
+        const topRatedStaff = topStaffSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data()
+        }));
+        response.status(200).send({
+            data: {
+                ongoingEventsCount: ongoingEventsSnapshot.size,
+                totalStaffCount: totalStaffSnapshot.size,
+                topRatedStaff,
+            },
+        });
+    }
+    catch (error) {
+        firebase_functions_1.logger.error("Error getting dashboard stats:", error);
+        response.status(500).send({ data: { error: "Internal Server Error" } });
+    }
 });
 /**
  * Updates an existing user's details.
  * Only callable by an admin.
  */
-exports.updateUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    if (context.auth?.token?.role !== 'admin') {
-        functions.logger.error("updateUser denied", { auth: context.auth });
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can update users.');
-    }
-    const { uid, name, role } = data;
-    if (!uid || !name || !role) {
-        throw new functions.https.HttpsError('invalid-argument', 'Missing required fields: "uid", "name", or "role".');
-    }
+exports.updateUser = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
+        (0, errors_1.requireAuth)(request);
+        (0, errors_1.requireRole)(request, 'admin');
+        const { uid, name, role } = request.data;
+        // 입력 검증
+        (0, errors_1.requireString)(uid, 'uid');
+        (0, errors_1.requireString)(name, 'name');
+        (0, errors_1.requireString)(role, 'role');
         const userRef = db.collection('users').doc(uid);
         await userRef.update({ name, role });
         return { success: true, message: `User ${uid} updated successfully.` };
     }
     catch (error) {
-        functions.logger.error(`Error updating user ${uid}:`, error);
-        throw new functions.https.HttpsError('internal', 'Failed to update user.', error.message);
+        throw (0, errors_1.handleFunctionError)(error, {
+            operation: 'updateUser',
+            context: {
+                userId: request.auth?.uid,
+                targetUid: request.data?.uid,
+            },
+        });
     }
 });
 /**
  * Deletes a user from Firebase Authentication and Firestore.
  * Only callable by an admin.
  */
-exports.deleteUser = functions.region('asia-northeast3').https.onCall(async (data, context) => {
-    if (context.auth?.token?.role !== 'admin') {
-        functions.logger.error("deleteUser denied", { auth: context.auth });
-        throw new functions.https.HttpsError('permission-denied', 'Only admins can delete users.');
-    }
-    const { uid } = data;
-    if (!uid) {
-        throw new functions.https.HttpsError('invalid-argument', 'Missing required field: "uid".');
-    }
+exports.deleteUser = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
+        (0, errors_1.requireAuth)(request);
+        (0, errors_1.requireRole)(request, 'admin');
+        const { uid } = request.data;
+        // 입력 검증
+        (0, errors_1.requireString)(uid, 'uid');
         await admin.auth().deleteUser(uid);
-        functions.logger.info(`Successfully deleted user ${uid} from Auth.`);
+        firebase_functions_1.logger.info(`Successfully deleted user ${uid} from Auth.`);
         const userRef = db.collection('users').doc(uid);
         await userRef.delete();
-        functions.logger.info(`Successfully deleted user ${uid} from Firestore.`);
+        firebase_functions_1.logger.info(`Successfully deleted user ${uid} from Firestore.`);
         return { success: true, message: `User ${uid} deleted successfully.` };
     }
     catch (error) {
-        functions.logger.error(`Error deleting user ${uid}:`, error);
-        throw new functions.https.HttpsError('internal', 'Failed to delete user.', error.message);
+        throw (0, errors_1.handleFunctionError)(error, {
+            operation: 'deleteUser',
+            context: {
+                userId: request.auth?.uid,
+                targetUid: request.data?.uid,
+            },
+        });
     }
 });
 /**
  * Logs user actions for audit trail and analytics purposes.
  * This is a "fire-and-forget" function - it should not block the client.
  */
-exports.logAction = functions.region('asia-northeast3').https.onCall(async (data, context) => {
+exports.logAction = (0, https_1.onCall)({ region: 'asia-northeast3' }, async (request) => {
     try {
-        const { action, details = {} } = data;
-        if (!action) {
-            throw new functions.https.HttpsError('invalid-argument', 'Action is required.');
-        }
-        // Get user information from context
-        const userId = context.auth?.uid || 'anonymous';
-        const userEmail = context.auth?.token?.email || 'unknown';
-        const userRole = context.auth?.token?.role || 'unknown';
+        const { action, details = {} } = request.data;
+        // 입력 검증
+        (0, errors_1.requireString)(action, 'action');
+        // Get user information from request
+        const userId = request.auth?.uid || 'anonymous';
+        const userEmail = request.auth?.token?.email || 'unknown';
+        const userRole = request.auth?.token?.role || 'unknown';
         // Create log entry
         const logEntry = {
             action,
@@ -585,13 +581,13 @@ exports.logAction = functions.region('asia-northeast3').https.onCall(async (data
             userEmail,
             userRole,
             timestamp: admin.firestore.FieldValue.serverTimestamp(),
-            ip: context.rawRequest?.ip || 'unknown',
-            userAgent: context.rawRequest?.get('user-agent') || 'unknown'
+            ip: request.rawRequest?.ip || 'unknown',
+            userAgent: request.rawRequest?.get('user-agent') || 'unknown'
         };
         // Store in actionLogs collection
         await db.collection('actionLogs').add(logEntry);
         // Also log to Firebase Functions logger for debugging
-        functions.logger.info(`Action logged: ${action}`, {
+        firebase_functions_1.logger.info(`Action logged: ${action}`, {
             userId,
             userEmail,
             userRole,
@@ -600,64 +596,60 @@ exports.logAction = functions.region('asia-northeast3').https.onCall(async (data
         return { success: true, message: 'Action logged successfully' };
     }
     catch (error) {
-        functions.logger.error('Error logging action:', error);
+        firebase_functions_1.logger.error('Error logging action:', error);
         // Don't throw errors for logging - this should be fire-and-forget
         // Just return a success to prevent blocking the client
-        return { success: false, error: error.message };
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
     }
 });
 /**
  * Alternative HTTP endpoint version of logAction for cases where onCall doesn't work
  * This handles CORS properly for direct HTTP requests
  */
-exports.logActionHttp = functions.region('asia-northeast3').https.onRequest((request, response) => {
-    corsHandler(request, response, async () => {
-        try {
-            if (request.method !== 'POST') {
-                response.status(405).send({ error: 'Method not allowed' });
-                return;
-            }
-            const { action, details = {} } = request.body;
-            if (!action) {
-                response.status(400).send({ error: 'Action is required' });
-                return;
-            }
-            // Create log entry (without auth context since this is HTTP)
-            const logEntry = {
-                action,
-                details,
-                userId: 'http_request',
-                userEmail: 'unknown',
-                userRole: 'unknown',
-                timestamp: admin.firestore.FieldValue.serverTimestamp(),
-                ip: request.ip || 'unknown',
-                userAgent: request.get('user-agent') || 'unknown'
-            };
-            // Store in actionLogs collection
-            await db.collection('actionLogs').add(logEntry);
-            // Log to Firebase Functions logger
-            functions.logger.info(`HTTP Action logged: ${action}`, { details });
-            response.status(200).send({ success: true, message: 'Action logged successfully' });
+exports.logActionHttp = (0, https_1.onRequest)({ region: 'asia-northeast3', cors: true }, async (request, response) => {
+    try {
+        if (request.method !== 'POST') {
+            response.status(405).send({ error: 'Method not allowed' });
+            return;
         }
-        catch (error) {
-            functions.logger.error('Error logging HTTP action:', error);
-            response.status(200).send({ success: false, error: error.message });
+        const { action, details = {} } = request.body;
+        if (!action) {
+            response.status(400).send({ error: 'Action is required' });
+            return;
         }
-    });
+        // Create log entry (without auth context since this is HTTP)
+        const logEntry = {
+            action,
+            details,
+            userId: 'http_request',
+            userEmail: 'unknown',
+            userRole: 'unknown',
+            timestamp: admin.firestore.FieldValue.serverTimestamp(),
+            ip: request.ip || 'unknown',
+            userAgent: request.get('user-agent') || 'unknown'
+        };
+        // Store in actionLogs collection
+        await db.collection('actionLogs').add(logEntry);
+        // Log to Firebase Functions logger
+        firebase_functions_1.logger.info(`HTTP Action logged: ${action}`, { details });
+        response.status(200).send({ success: true, message: 'Action logged successfully' });
+    }
+    catch (error) {
+        firebase_functions_1.logger.error('Error logging HTTP action:', error);
+        response.status(200).send({ success: false, error: error instanceof Error ? error.message : String(error) });
+    }
 });
 // --- Performance Optimization Triggers ---
 /**
  * Automatically updates applicantCount in job postings when applications are created/deleted
  */
-exports.updateJobPostingApplicantCount = functions.region('asia-northeast3').firestore
-    .document('applications/{applicationId}')
-    .onWrite(async (change, context) => {
-    const applicationData = change.after.exists ? change.after.data() : null;
-    const previousData = change.before.exists ? change.before.data() : null;
+exports.updateJobPostingApplicantCount = (0, firestore_1.onDocumentWritten)({ document: 'applications/{applicationId}', region: 'asia-northeast3' }, async (event) => {
+    const applicationData = event.data?.after.exists ? event.data?.after.data() : null;
+    const previousData = event.data?.before.exists ? event.data?.before.data() : null;
     // Get job posting ID from either new or old data
     const jobPostingId = applicationData?.jobPostingId || previousData?.jobPostingId;
     if (!jobPostingId) {
-        functions.logger.warn('No jobPostingId found in application document');
+        firebase_functions_1.logger.warn('No jobPostingId found in application document');
         return;
     }
     try {
@@ -672,24 +664,26 @@ exports.updateJobPostingApplicantCount = functions.region('asia-northeast3').fir
             applicantCount,
             lastUpdated: admin.firestore.FieldValue.serverTimestamp()
         });
-        functions.logger.info(`Updated applicantCount for job posting ${jobPostingId}: ${applicantCount}`);
+        firebase_functions_1.logger.info(`Updated applicantCount for job posting ${jobPostingId}: ${applicantCount}`);
     }
     catch (error) {
-        functions.logger.error('Error updating applicant count:', error);
+        firebase_functions_1.logger.error('Error updating applicant count:', error);
+        throw (0, errors_1.handleTriggerError)(error, {
+            operation: 'updateJobPostingApplicantCount',
+            context: { jobPostingId },
+        });
     }
 });
 /**
  * Automatically updates participantCount in events when participants are added/removed
  */
-exports.updateEventParticipantCount = functions.region('asia-northeast3').firestore
-    .document('participants/{participantId}')
-    .onWrite(async (change, context) => {
-    const participantData = change.after.exists ? change.after.data() : null;
-    const previousData = change.before.exists ? change.before.data() : null;
+exports.updateEventParticipantCount = (0, firestore_1.onDocumentWritten)({ document: 'participants/{participantId}', region: 'asia-northeast3' }, async (event) => {
+    const participantData = event.data?.after.exists ? event.data?.after.data() : null;
+    const previousData = event.data?.before.exists ? event.data?.before.data() : null;
     // Get event ID from either new or old data
     const eventId = participantData?.eventId || previousData?.eventId;
     if (!eventId) {
-        functions.logger.warn('No eventId found in participant document');
+        firebase_functions_1.logger.warn('No eventId found in participant document');
         return;
     }
     try {
@@ -704,10 +698,14 @@ exports.updateEventParticipantCount = functions.region('asia-northeast3').firest
             participantCount,
             lastUpdated: admin.firestore.FieldValue.serverTimestamp()
         });
-        functions.logger.info(`Updated participantCount for event ${eventId}: ${participantCount}`);
+        firebase_functions_1.logger.info(`Updated participantCount for event ${eventId}: ${participantCount}`);
     }
     catch (error) {
-        functions.logger.error('Error updating participant count:', error);
+        firebase_functions_1.logger.error('Error updating participant count:', error);
+        throw (0, errors_1.handleTriggerError)(error, {
+            operation: 'updateEventParticipantCount',
+            context: { eventId },
+        });
     }
 });
 //# sourceMappingURL=index.js.map

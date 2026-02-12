@@ -293,3 +293,9 @@ export { useJobRoles, type UseJobRolesResult } from './useJobRoles';
 // ============================================================================
 
 export { useUserProfile } from './useUserProfile';
+
+// ============================================================================
+// Form Guard Hooks
+// ============================================================================
+
+export { useUnsavedChangesGuard } from './useUnsavedChangesGuard';

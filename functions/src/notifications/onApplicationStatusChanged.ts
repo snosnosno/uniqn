@@ -20,9 +20,11 @@
  *   (unreadCount 증가, 알림설정 확인, 만료 토큰 정리 자동 처리)
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
+import { handleTriggerError } from '../errors';
 
 const db = admin.firestore();
 
@@ -59,12 +61,13 @@ interface JobPostingData {
 /**
  * 지원 상태 변경 알림 트리거
  */
-export const onApplicationStatusChanged = functions.region('asia-northeast3').firestore
-  .document('applications/{applicationId}')
-  .onUpdate(async (change, context) => {
-    const applicationId = context.params.applicationId;
-    const before = change.before.data() as ApplicationData;
-    const after = change.after.data() as ApplicationData;
+export const onApplicationStatusChanged = onDocumentUpdated(
+  { document: 'applications/{applicationId}', region: 'asia-northeast3' },
+  async (event) => {
+    const applicationId = event.params.applicationId;
+    const before = event.data?.before.data() as ApplicationData | undefined;
+    const after = event.data?.after.data() as ApplicationData | undefined;
+    if (!before || !after) return;
 
     // 상태 변경 감지
     const statusChanged = before.status !== after.status;
@@ -75,7 +78,7 @@ export const onApplicationStatusChanged = functions.region('asia-northeast3').fi
       return; // 관련 변경 없음
     }
 
-    functions.logger.info('지원 상태 변경 감지', {
+    logger.info('지원 상태 변경 감지', {
       applicationId,
       beforeStatus: before.status,
       afterStatus: after.status,
@@ -92,7 +95,7 @@ export const onApplicationStatusChanged = functions.region('asia-northeast3').fi
         .get();
 
       if (!jobPostingDoc.exists) {
-        functions.logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('공고를 찾을 수 없습니다', {
           applicationId,
           jobPostingId: after.jobPostingId,
         });
@@ -131,10 +134,9 @@ export const onApplicationStatusChanged = functions.region('asia-northeast3').fi
         }
       }
     } catch (error: unknown) {
-      functions.logger.error('지원 상태 변경 알림 처리 중 오류 발생', {
-        applicationId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: 'onApplicationStatusChanged',
+        context: { applicationId, applicantId: after.applicantId },
       });
     }
   });
@@ -169,7 +171,7 @@ async function sendConfirmationNotification(
     }
   );
 
-  functions.logger.info('확정 알림 전송 완료', {
+  logger.info('확정 알림 전송 완료', {
     applicationId,
     notificationId: result.notificationId,
     fcmSent: result.fcmSent,
@@ -202,7 +204,7 @@ async function sendCancellationNotification(
     }
   );
 
-  functions.logger.info('취소 알림 전송 완료', {
+  logger.info('취소 알림 전송 완료', {
     applicationId,
     notificationId: result.notificationId,
     fcmSent: result.fcmSent,
@@ -234,7 +236,7 @@ async function sendRejectionNotification(
     }
   );
 
-  functions.logger.info('거절 알림 전송 완료', {
+  logger.info('거절 알림 전송 완료', {
     applicationId,
     notificationId: result.notificationId,
     fcmSent: result.fcmSent,
@@ -266,7 +268,7 @@ async function sendCancellationApprovedNotification(
     }
   );
 
-  functions.logger.info('취소 승인 알림 전송 완료', {
+  logger.info('취소 승인 알림 전송 완료', {
     applicationId,
     notificationId: result.notificationId,
     fcmSent: result.fcmSent,
@@ -298,7 +300,7 @@ async function sendCancellationRejectedNotification(
     }
   );
 
-  functions.logger.info('취소 거절 알림 전송 완료', {
+  logger.info('취소 거절 알림 전송 완료', {
     applicationId,
     notificationId: result.notificationId,
     fcmSent: result.fcmSent,

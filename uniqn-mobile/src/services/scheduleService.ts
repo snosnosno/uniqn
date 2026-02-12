@@ -5,25 +5,11 @@
  * @version 1.0.0
  */
 
-import {
-  collection,
-  doc,
-  getDoc,
-  getDocs,
-  query,
-  where,
-  orderBy,
-  limit,
-  Timestamp,
-  onSnapshot,
-  documentId,
-  type Unsubscribe,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import type { Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { NetworkError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { COLLECTIONS, FIELDS, FIREBASE_LIMITS, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 import { toDateString } from '@/utils/date';
 import { timestampToDate } from '@/utils/firestore';
 import type {
@@ -34,18 +20,18 @@ import type {
   ScheduleType,
   WorkLog,
   Application,
+  WorkLogStatus,
+  ApplicationStatus,
 } from '@/types';
 import { toJobPostingCard } from '@/types/jobPosting';
-import {
-  parseJobPostingDocument,
-  parseWorkLogDocuments,
-  parseApplicationDocuments,
-  parseWorkLogDocument,
-} from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
 import { ScheduleMerger, ScheduleConverter, type JobPostingCardWithMeta } from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';
-import { QueryBuilder } from '@/utils/firestore/queryBuilder';
+import {
+  workLogRepository,
+  jobPostingRepository,
+  applicationRepository,
+} from '@/repositories';
 
 // ============================================================================
 // Constants
@@ -93,46 +79,27 @@ async function fetchJobPostingCardBatch(
     return cardMap;
   }
 
-  // Firestore whereIn 최대 30개 제한 → 청크 분할
-  const uniqueIds = [...new Set(jobPostingIds)]; // 중복 제거
-  const chunks: string[][] = [];
-  for (let i = 0; i < uniqueIds.length; i += FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS) {
-    chunks.push(uniqueIds.slice(i, i + FIREBASE_LIMITS.WHERE_IN_MAX_ITEMS));
-  }
+  const uniqueIds = [...new Set(jobPostingIds)];
 
-  // 청크별 배치 쿼리 (병렬 처리)
-  const results = await Promise.allSettled(
-    chunks.map(async (chunk) => {
-      const q = query(
-        collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS),
-        where(documentId(), 'in', chunk)
-      );
-      return getDocs(q);
-    })
-  );
+  try {
+    // Repository를 통한 배치 조회 (내부적으로 청크 분할 처리)
+    const jobPostings = await jobPostingRepository.getByIdBatch(uniqueIds);
 
-  // 결과 처리
-  for (const result of results) {
-    if (result.status === 'fulfilled') {
-      for (const docSnap of result.value.docs) {
-        const data = docSnap.data();
-        const jobPosting = parseJobPostingDocument({ id: docSnap.id, ...data });
-        if (!jobPosting) {
-          logger.warn('JobPosting 문서 파싱 실패', { docId: docSnap.id });
-          continue;
-        }
-        const card = toJobPostingCard(jobPosting);
-        cardMap.set(docSnap.id, {
-          card,
-          title: data.title || '이벤트',
-          location: typeof data.location === 'string' ? data.location : data.location?.name || '',
-          contactPhone: data.contactPhone,
-          ownerId: data.ownerId,
-        });
-      }
-    } else {
-      logger.warn('공고 배치 조회 실패', { error: result.reason });
+    for (const jobPosting of jobPostings) {
+      const card = toJobPostingCard(jobPosting);
+      const location = typeof jobPosting.location === 'string'
+        ? jobPosting.location
+        : (jobPosting.location as { name?: string })?.name || '';
+      cardMap.set(jobPosting.id, {
+        card,
+        title: jobPosting.title || '이벤트',
+        location,
+        contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as string | undefined,
+        ownerId: jobPosting.ownerId,
+      });
     }
+  } catch (error) {
+    logger.warn('공고 배치 조회 실패', { error });
   }
 
   // 조회되지 않은 ID 로깅 (삭제된 공고 등)
@@ -271,8 +238,8 @@ export function groupSchedulesByDate(schedules: ScheduleEvent[]): ScheduleGroup[
         // 시작 시간 순으로 정렬
         if (!a.startTime) return 1;
         if (!b.startTime) return -1;
-        const aTime = a.startTime instanceof Timestamp ? a.startTime.toMillis() : 0;
-        const bTime = b.startTime instanceof Timestamp ? b.startTime.toMillis() : 0;
+        const aTime = timestampToDate(a.startTime)?.getTime() ?? 0;
+        const bTime = timestampToDate(b.startTime)?.getTime() ?? 0;
         return aTime - bTime;
       }),
       isToday,
@@ -303,48 +270,32 @@ export async function getMySchedules(
     logger.info('스케줄 목록 조회 시작', { staffId, filters });
 
     // ========================================
-    // 1. WorkLogs 쿼리 구성 (QueryBuilder 사용)
+    // 1. 상태 매핑 (UI 상태 → Firestore 상태)
     // ========================================
-    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-
-    // 상태 매핑 (UI 상태 → Firestore 상태)
-    let mappedStatus: string | undefined;
+    let mappedStatus: WorkLogStatus | undefined;
     if (filters?.status) {
-      const statusMapping: Record<string, string> = {
-        not_started: STATUS.WORK_LOG.SCHEDULED,
-        checked_in: STATUS.WORK_LOG.CHECKED_IN,
-        checked_out: STATUS.WORK_LOG.CHECKED_OUT,
+      const statusMapping: Record<string, WorkLogStatus> = {
+        not_started: STATUS.WORK_LOG.SCHEDULED as WorkLogStatus,
+        checked_in: STATUS.WORK_LOG.CHECKED_IN as WorkLogStatus,
+        checked_out: STATUS.WORK_LOG.CHECKED_OUT as WorkLogStatus,
       };
       mappedStatus = statusMapping[filters.status];
     }
 
-    const workLogsQuery = new QueryBuilder(workLogsRef)
-      .whereEqual(FIELDS.WORK_LOG.staffId, staffId)
-      .whereDateRange(FIELDS.WORK_LOG.date, filters?.dateRange)
-      .whereIf(!!mappedStatus, FIELDS.WORK_LOG.status, '==', mappedStatus)
-      .orderByDesc(FIELDS.WORK_LOG.date)
-      .limit(pageSize)
-      .build();
-
     // ========================================
-    // 2. Applications 쿼리 구성 (QueryBuilder 사용)
-    // ========================================
-    // 복합 인덱스: applicantId + status + createdAt (firestore.indexes.json 참조)
-    const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
-
-    const applicationsQuery = new QueryBuilder(applicationsRef)
-      .whereEqual(FIELDS.APPLICATION.applicantId, staffId)
-      .whereIn(FIELDS.APPLICATION.status, [STATUS.APPLICATION.APPLIED, STATUS.APPLICATION.PENDING])
-      .orderByDesc(FIELDS.APPLICATION.createdAt)
-      .limit(pageSize)
-      .build();
-
-    // ========================================
-    // 3. 병렬 조회 (부분 실패 허용)
+    // 2. Repository를 통한 병렬 조회 (부분 실패 허용)
     // ========================================
     const [workLogsResult, applicationsResult] = await Promise.allSettled([
-      getDocs(workLogsQuery),
-      getDocs(applicationsQuery),
+      workLogRepository.getByStaffIdWithFilters(staffId, {
+        dateRange: filters?.dateRange,
+        status: mappedStatus,
+        pageSize,
+      }),
+      applicationRepository.getByApplicantIdWithStatuses(
+        staffId,
+        [STATUS.APPLICATION.APPLIED, STATUS.APPLICATION.PENDING] as ApplicationStatus[],
+        pageSize
+      ),
     ]);
 
     // 둘 다 실패한 경우에만 에러 throw
@@ -378,37 +329,23 @@ export async function getMySchedules(
     }
 
     // ========================================
-    // 4. 데이터 파싱 (안전한 파서 사용)
+    // 3. Repository가 반환한 타입 안전한 데이터 사용
     // ========================================
     const workLogs: WorkLog[] =
-      workLogsResult.status === 'fulfilled'
-        ? parseWorkLogDocuments(
-            workLogsResult.value.docs.map((docSnap) => ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }))
-          )
-        : [];
+      workLogsResult.status === 'fulfilled' ? workLogsResult.value : [];
 
     const applications: Application[] =
-      applicationsResult.status === 'fulfilled'
-        ? parseApplicationDocuments(
-            applicationsResult.value.docs.map((docSnap) => ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }))
-          )
-        : [];
+      applicationsResult.status === 'fulfilled' ? applicationsResult.value : [];
 
     // ========================================
-    // 5. 공고 정보 일괄 조회 (JobPostingCard 포함)
+    // 4. 공고 정보 일괄 조회 (JobPostingCard 포함)
     // ========================================
     // IdNormalizer로 통합 ID 추출
     const allJobPostingIds = IdNormalizer.extractUnifiedIds(workLogs, applications);
     const jobPostingCardMap = await fetchJobPostingCardBatch(Array.from(allJobPostingIds));
 
     // ========================================
-    // 6. ScheduleEvent 변환
+    // 5. ScheduleEvent 변환
     // ========================================
     // WorkLogs → ScheduleEvent (IdNormalizer로 정규화된 ID 사용)
     const workLogSchedules: ScheduleEvent[] = workLogs.map((workLog) => {
@@ -425,7 +362,7 @@ export async function getMySchedules(
     });
 
     // ========================================
-    // 7. 병합 및 중복 제거
+    // 6. 병합 및 중복 제거
     // ========================================
     const mergedSchedules = mergeAndDeduplicateSchedules(
       workLogSchedules,
@@ -434,7 +371,7 @@ export async function getMySchedules(
     );
 
     // ========================================
-    // 8. 클라이언트 사이드 필터링
+    // 7. 클라이언트 사이드 필터링
     // ========================================
     let filteredSchedules = mergedSchedules;
 
@@ -455,7 +392,7 @@ export async function getMySchedules(
     }
 
     // ========================================
-    // 9. 통계 계산
+    // 8. 통계 계산
     // ========================================
     const stats = calculateStats(filteredSchedules);
 
@@ -532,39 +469,30 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
   try {
     logger.info('스케줄 상세 조회', { scheduleId });
 
-    // WorkLog에서 조회
-    const workLogDoc = await getDoc(doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, scheduleId));
+    // Repository를 통한 WorkLog 조회
+    const workLog = await workLogRepository.getById(scheduleId);
 
-    if (!workLogDoc.exists()) {
+    if (!workLog) {
       logger.warn('스케줄을 찾을 수 없음', { scheduleId });
       return null;
     }
 
-    const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-    if (!workLog) {
-      logger.warn('WorkLog 문서 파싱 실패', { scheduleId });
-      return null;
-    }
-
-    // 공고 정보 조회 (JobPostingCard 포함)
+    // Repository를 통한 공고 정보 조회 (JobPostingCard 포함)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
     let cardInfo: JobPostingCardWithMeta | undefined;
     try {
-      const eventDoc = await getDoc(doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, normalizedJobId));
-      if (eventDoc.exists()) {
-        const data = eventDoc.data();
-        const jobPosting = parseJobPostingDocument({ id: eventDoc.id, ...data });
-        if (jobPosting) {
-          cardInfo = {
-            card: toJobPostingCard(jobPosting),
-            title: data.title || '이벤트',
-            location: typeof data.location === 'string' ? data.location : data.location?.name || '',
-            contactPhone: data.contactPhone,
-            ownerId: data.ownerId,
-          };
-        } else {
-          logger.debug('JobPosting 문서 파싱 실패 (상세)', { jobPostingId: normalizedJobId });
-        }
+      const jobPosting = await jobPostingRepository.getById(normalizedJobId);
+      if (jobPosting) {
+        const location = typeof jobPosting.location === 'string'
+          ? jobPosting.location
+          : (jobPosting.location as { name?: string })?.name || '';
+        cardInfo = {
+          card: toJobPostingCard(jobPosting),
+          title: jobPosting.title || '이벤트',
+          location,
+          contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as string | undefined,
+          ownerId: jobPosting.ownerId,
+        };
       }
     } catch (err) {
       logger.debug('공고 정보 조회 실패 (상세)', { jobPostingId: normalizedJobId, error: err });
@@ -633,30 +561,14 @@ export function subscribeToSchedules(
   return RealtimeManager.subscribe(RealtimeManager.Keys.schedules(staffId), () => {
     logger.info('스케줄 구독 시작', { staffId });
 
-    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-    const q = query(
-      workLogsRef,
-      where(FIELDS.WORK_LOG.staffId, '==', staffId),
-      orderBy(FIELDS.WORK_LOG.date, 'desc'),
-      limit(50)
-    );
-
     // 에러 콜백 중복 실행 방지 (Firebase SDK 내부 재시도로 인한 무한 루프 차단)
     let hasErrored = false;
-    let firebaseUnsubscribe: (() => void) | null = null;
 
-    firebaseUnsubscribe = onSnapshot(
-      q,
-      async (snapshot) => {
+    const repoUnsubscribe = workLogRepository.subscribeByStaffId(
+      staffId,
+      async (workLogs: WorkLog[]) => {
         if (hasErrored) return;
         try {
-          const workLogs: WorkLog[] = parseWorkLogDocuments(
-            snapshot.docs.map((docSnap) => ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }))
-          );
-
           // 공고 정보 일괄 조회 (배치 쿼리 - N+1 해결)
           const jobPostingIds = workLogs.map((wl) => IdNormalizer.normalizeJobId(wl));
           const cardInfoMap = await fetchJobPostingCardBatch(jobPostingIds);
@@ -672,24 +584,18 @@ export function subscribeToSchedules(
           onError?.(toError(error));
         }
       },
-      (error) => {
+      (error: Error) => {
         if (hasErrored) return;
         hasErrored = true;
 
         logger.error('스케줄 구독 에러', error);
-
-        // 리스너 즉시 해제 (재시도 방지)
-        firebaseUnsubscribe?.();
-        firebaseUnsubscribe = null;
-
         onError?.(error);
       }
     );
 
     return () => {
       hasErrored = true;
-      firebaseUnsubscribe?.();
-      firebaseUnsubscribe = null;
+      repoUnsubscribe();
     };
   });
 }

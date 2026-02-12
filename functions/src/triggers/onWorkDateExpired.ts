@@ -12,8 +12,8 @@
  * - 지원자 알림은 기존 onJobPostingClosed 트리거가 처리
  */
 
-import * as functions from 'firebase-functions/v1';
-import * as logger from 'firebase-functions/logger';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { STATUS } from '../constants/status';
 
@@ -23,13 +23,12 @@ import { STATUS } from '../constants/status';
  * 경로: jobPostings/{postingId}
  * 이벤트: onUpdate
  */
-export const onWorkDateExpired = functions
-  .region('asia-northeast3')
-  .firestore.document('jobPostings/{postingId}')
-  .onUpdate(async (change, context) => {
-    const before = change.before.data();
-    const after = change.after.data();
-    const postingId = context.params.postingId;
+export const onWorkDateExpired = onDocumentUpdated(
+  { document: 'jobPostings/{postingId}', region: 'asia-northeast3' },
+  async (event) => {
+    const before = event.data?.before.data();
+    const after = event.data?.after.data();
+    const postingId = event.params.postingId;
 
     if (!before || !after) {
       return;

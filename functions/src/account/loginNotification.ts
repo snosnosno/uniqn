@@ -12,10 +12,16 @@
  * @since 2025-10-23
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onCall } from 'firebase-functions/v2/https';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { getPushTokens } from '../utils/fcmTokenUtils';
 import { sendMulticast } from '../utils/notificationUtils';
+import {
+  requireAuth,
+  requireString,
+  handleFunctionError,
+} from '../errors';
 
 const db = admin.firestore();
 
@@ -40,21 +46,16 @@ interface LoginAttempt {
  *
  * 클라이언트에서 로그인 성공 후 호출
  */
-export const sendLoginNotification = functions.region('asia-northeast3').https.onCall(
-  async (data, context) => {
-    // 인증 확인
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
-        'unauthenticated',
-        'User must be authenticated'
-      );
-    }
-
-    const userId = context.auth.uid;
-    const { ipAddress, userAgent, deviceId, location } = data;
-
+export const sendLoginNotification = onCall(
+  { region: 'asia-northeast3' },
+  async (request) => {
     try {
-      functions.logger.info(`로그인 알림 처리 시작: ${userId}`);
+      // 인증 확인
+      const userId = requireAuth(request);
+
+      const { ipAddress, userAgent, deviceId, location } = request.data;
+
+      logger.info(`로그인 알림 처리 시작: ${userId}`);
 
       // 1. 사용자 알림 설정 조회
       const settingsDoc = await db
@@ -68,7 +69,7 @@ export const sendLoginNotification = functions.region('asia-northeast3').https.o
 
       // 알림이 비활성화된 경우 조기 종료
       if (!settings || !settings.enabled) {
-        functions.logger.info(`로그인 알림 비활성화됨: ${userId}`);
+        logger.info(`로그인 알림 비활성화됨: ${userId}`);
         return { notificationSent: false, reason: 'disabled' };
       }
 
@@ -76,9 +77,9 @@ export const sendLoginNotification = functions.region('asia-northeast3').https.o
       const loginAttempt: LoginAttempt = {
         userId,
         timestamp: admin.firestore.Timestamp.now(),
-        ipAddress: ipAddress || context.rawRequest?.ip || 'unknown',
+        ipAddress: ipAddress || request.rawRequest?.ip || 'unknown',
         userAgent:
-          userAgent || context.rawRequest?.get('user-agent') || 'unknown',
+          userAgent || request.rawRequest?.get('user-agent') || 'unknown',
         deviceId,
         location,
         success: true,
@@ -124,7 +125,7 @@ export const sendLoginNotification = functions.region('asia-northeast3').https.o
         if (isNewDevice) {
           shouldNotify = true;
           notificationReason = 'new_device';
-          functions.logger.info(`새 기기 감지: ${userId}, ${deviceId}`);
+          logger.info(`새 기기 감지: ${userId}, ${deviceId}`);
         }
       }
 
@@ -140,7 +141,7 @@ export const sendLoginNotification = functions.region('asia-northeast3').https.o
         if (isNewLocation) {
           shouldNotify = true;
           notificationReason = 'new_location';
-          functions.logger.info(
+          logger.info(
             `새 위치 감지: ${userId}, ${location.country}`
           );
         }
@@ -156,14 +157,14 @@ export const sendLoginNotification = functions.region('asia-northeast3').https.o
         if (isSuspicious) {
           shouldNotify = true;
           notificationReason = 'suspicious_activity';
-          functions.logger.warn(`의심스러운 활동 감지: ${userId}`);
+          logger.warn(`의심스러운 활동 감지: ${userId}`);
         }
       }
 
       // 5. 알림 전송
       if (shouldNotify) {
         await sendNotification(userId, loginAttempt, notificationReason);
-        functions.logger.info(
+        logger.info(
           `로그인 알림 전송 완료: ${userId}, ${notificationReason}`
         );
         return {
@@ -172,16 +173,13 @@ export const sendLoginNotification = functions.region('asia-northeast3').https.o
         };
       }
 
-      functions.logger.info(`로그인 알림 전송 조건 미충족: ${userId}`);
+      logger.info(`로그인 알림 전송 조건 미충족: ${userId}`);
       return { notificationSent: false, reason: 'no_trigger' };
     } catch (error) {
-      functions.logger.error(`로그인 알림 처리 실패: ${userId}`, error);
-      throw new functions.https.HttpsError(
-        'internal',
-        error instanceof Error
-          ? error.message
-          : 'Failed to process login notification'
-      );
+      throw handleFunctionError(error, {
+        operation: 'sendLoginNotification',
+        context: { userId: request.auth?.uid },
+      });
     }
   }
 );
@@ -213,7 +211,7 @@ async function detectSuspiciousActivity(
       lastLogin.location?.country &&
       lastLogin.location.country !== currentAttempt.location.country
     ) {
-      functions.logger.warn(
+      logger.warn(
         `불가능한 이동 감지: ${userId}, ${lastLogin.location.country} → ${currentAttempt.location.country} (${timeDiffMinutes.toFixed(1)}분)`
       );
       return true;
@@ -236,7 +234,7 @@ async function detectSuspiciousActivity(
     .get();
 
   if (recentAttemptsSnapshot.size >= 5) {
-    functions.logger.warn(
+    logger.warn(
       `비정상적으로 많은 로그인 시도: ${userId}, ${recentAttemptsSnapshot.size}회`
     );
     return true;
@@ -323,14 +321,14 @@ async function sendNotification(
           },
           priority: 'high',
         });
-        functions.logger.info(`푸시 알림 전송 완료: ${userId}`);
+        logger.info(`푸시 알림 전송 완료: ${userId}`);
       } catch (pushError) {
-        functions.logger.error(`푸시 알림 전송 실패: ${userId}`, pushError);
+        logger.error(`푸시 알림 전송 실패: ${userId}`, pushError);
         // 푸시 실패 시에도 알림 기록은 저장됨
       }
     }
   } catch (error) {
-    functions.logger.error(`알림 전송 실패: ${userId}`, error);
+    logger.error(`알림 전송 실패: ${userId}`, error);
     throw error;
   }
 }
@@ -340,18 +338,15 @@ async function sendNotification(
  *
  * 클라이언트에서 로그인 실패 시 호출
  */
-export const recordLoginFailure = functions.region('asia-northeast3').https.onCall(
-  async (data, context) => {
-    const { email, ipAddress, userAgent, reason } = data;
-
-    if (!email) {
-      throw new functions.https.HttpsError(
-        'invalid-argument',
-        'Email is required'
-      );
-    }
-
+export const recordLoginFailure = onCall(
+  { region: 'asia-northeast3' },
+  async (request) => {
     try {
+      const { email, ipAddress, userAgent, reason } = request.data;
+
+      // 입력 검증
+      requireString(email, 'email');
+
       // 이메일로 사용자 조회
       const userRecord = await admin.auth().getUserByEmail(email);
 
@@ -363,19 +358,19 @@ export const recordLoginFailure = functions.region('asia-northeast3').https.onCa
         .add({
           userId: userRecord.uid,
           timestamp: admin.firestore.Timestamp.now(),
-          ipAddress: ipAddress || context.rawRequest?.ip || 'unknown',
+          ipAddress: ipAddress || request.rawRequest?.ip || 'unknown',
           userAgent:
-            userAgent || context.rawRequest?.get('user-agent') || 'unknown',
+            userAgent || request.rawRequest?.get('user-agent') || 'unknown',
           success: false,
           reason: reason || 'authentication_failed',
         });
 
-      functions.logger.info(`로그인 실패 기록됨: ${userRecord.uid}`);
+      logger.info(`로그인 실패 기록됨: ${userRecord.uid}`);
       return { success: true };
     } catch (error) {
       // 사용자를 찾을 수 없는 경우에도 에러를 노출하지 않음 (보안)
-      functions.logger.warn(
-        `로그인 실패 기록 중 오류 (이메일: ${email})`,
+      logger.warn(
+        `로그인 실패 기록 중 오류 (이메일: ${request.data?.email})`,
         error
       );
       return { success: true }; // 클라이언트에는 성공으로 반환

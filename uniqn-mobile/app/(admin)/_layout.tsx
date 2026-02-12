@@ -4,23 +4,20 @@
  */
 
 import { Stack, Redirect } from 'expo-router';
-import { useColorScheme, View, ActivityIndicator } from 'react-native';
 import { useAuth } from '@/hooks/useAuth';
+import { useThemeStore } from '@/stores/themeStore';
 import { HeaderBackButton } from '@/components/navigation';
+import { Loading } from '@/components/ui';
+import { getLayoutColor } from '@/constants/colors';
 
 export default function AdminLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const isDark = useThemeStore((s) => s.isDarkMode);
   // useAuth()는 profile.role에서 직접 권한을 계산하므로 MMKV rehydration 문제 없음
   const { isLoading, isAuthenticated, isAdmin } = useAuth();
 
   // 로딩 중
   if (isLoading) {
-    return (
-      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
-        <ActivityIndicator size="large" color="#DC2626" />
-      </View>
-    );
+    return <Loading variant="layout" />;
   }
 
   // 인증되지 않음 - 로그인 페이지로 리다이렉트
@@ -38,21 +35,21 @@ export default function AdminLayout() {
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: isDark ? '#1A1625' : '#ffffff',
+          backgroundColor: getLayoutColor(isDark, 'header'),
         },
-        headerTintColor: isDark ? '#ffffff' : '#1A1625',
+        headerTintColor: getLayoutColor(isDark, 'headerTint'),
         headerTitleStyle: {
           fontWeight: '600',
         },
         headerLeft: () => (
           <HeaderBackButton
-            tintColor={isDark ? '#ffffff' : '#1A1625'}
+            tintColor={getLayoutColor(isDark, 'headerTint')}
             fallbackHref="/(app)/(tabs)"
           />
         ),
         animation: 'slide_from_right',
         contentStyle: {
-          backgroundColor: isDark ? '#1A1625' : '#f9fafb',
+          backgroundColor: getLayoutColor(isDark, 'content'),
         },
       }}
     >

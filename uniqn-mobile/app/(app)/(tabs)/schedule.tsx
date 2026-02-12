@@ -18,6 +18,8 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { useThemeStore } from '@/stores/themeStore';
+import { getLayoutColor } from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
 import type { ScheduleEvent, GroupedScheduleEvent, QRCodeScanResult, QRCodeAction } from '@/types';
 import { isGroupedScheduleEvent } from '@/types';
@@ -205,6 +207,8 @@ function StatsCard({ stats, isLoading }: StatsCardProps) {
 // ============================================================================
 
 export default function ScheduleScreen() {
+  const isDark = useThemeStore((s) => s.isDarkMode);
+
   // 뷰 모드 상태 (list | calendar) - 캘린더가 기본
   const [viewMode, setViewMode] = useState<'list' | 'calendar'>('calendar');
 
@@ -422,7 +426,7 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-20"
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />}
         >
           <View className="mt-4">
             <Suspense fallback={<Skeleton className="h-80 mx-4 rounded-xl" />}>
@@ -473,7 +477,7 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="p-4 pb-20"
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />}
+          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />}
         >
           {isLoading && schedules.length === 0 ? (
             // 스켈레톤 로딩 (SkeletonScheduleCard 사용)

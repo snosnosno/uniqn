@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { requestAccountDeletion, signOut, DELETION_REASONS, type DeletionReason } from '@/services';
+import { extractErrorMessage } from '@/shared/errors';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -126,7 +127,7 @@ export default function DeleteAccountScreen() {
       logger.error('회원탈퇴 실패', error as Error);
       addToast({
         type: 'error',
-        message: error instanceof Error ? error.message : '탈퇴 처리에 실패했습니다',
+        message: extractErrorMessage(error, '탈퇴 처리에 실패했습니다.'),
       });
     } finally {
       setIsSubmitting(false);

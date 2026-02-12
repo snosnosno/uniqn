@@ -23,9 +23,17 @@ export interface LoadingProps {
   color?: string;
   message?: string;
   fullScreen?: boolean;
+  /** layout: Layout 파일용 전체화면 중앙 정렬 (bg-white dark:bg-surface-dark) */
+  variant?: 'default' | 'layout';
 }
 
-export function Loading({ size = 'large', color, message, fullScreen = false }: LoadingProps) {
+export function Loading({
+  size = 'large',
+  color,
+  message,
+  fullScreen = false,
+  variant = 'default',
+}: LoadingProps) {
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
   const resolvedColor = color ?? (isDarkMode ? LOADING_COLORS.dark : LOADING_COLORS.light);
 
@@ -39,6 +47,14 @@ export function Loading({ size = 'large', color, message, fullScreen = false }: 
   if (fullScreen) {
     return (
       <View className="absolute inset-0 items-center justify-center bg-white/80 dark:bg-surface-dark/80">
+        {content}
+      </View>
+    );
+  }
+
+  if (variant === 'layout') {
+    return (
+      <View className="flex-1 items-center justify-center bg-white dark:bg-surface-dark">
         {content}
       </View>
     );

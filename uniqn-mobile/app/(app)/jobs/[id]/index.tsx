@@ -10,14 +10,16 @@
  */
 
 import { useCallback, useEffect } from 'react';
-import { View, Text, ScrollView, RefreshControl, ActivityIndicator, Pressable } from 'react-native';
+import { View, Text, ScrollView, RefreshControl, Pressable } from 'react-native';
 import { useLocalSearchParams, router, Stack } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ChevronLeftIcon, ShareIcon } from '@/components/icons';
 import { JobDetail } from '@/components/jobs';
 import { Button } from '@/components/ui/Button';
+import { Loading } from '@/components/ui';
 import { useJobDetail, useApplications, useAuth, useShare } from '@/hooks';
 import { useThemeStore } from '@/stores';
+import { getLayoutColor } from '@/constants/colors';
 import { STATUS } from '@/constants';
 import { trackJobView } from '@/services/analyticsService';
 
@@ -74,12 +76,7 @@ function CustomHeader({ title, onShare, isSharing }: CustomHeaderProps) {
 // ============================================================================
 
 function LoadingState() {
-  return (
-    <View className="flex-1 items-center justify-center bg-gray-50 dark:bg-surface-dark">
-      <ActivityIndicator size="large" color="#6366f1" />
-      <Text className="mt-4 text-gray-500 dark:text-gray-400">공고 정보를 불러오는 중...</Text>
-    </View>
-  );
+  return <Loading variant="layout" message="공고 정보를 불러오는 중..." />;
 }
 
 // ============================================================================
@@ -107,6 +104,7 @@ function ErrorState({ message, onRetry }: { message: string; onRetry: () => void
 
 export default function AuthenticatedJobDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const isDark = useThemeStore((s) => s.isDarkMode);
   const { user } = useAuth();
   const { hasApplied, getApplicationStatus } = useApplications();
   const { shareJob, isSharing } = useShare();
@@ -206,7 +204,7 @@ export default function AuthenticatedJobDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor="#6366f1" />
+          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />
         }
       >
         <JobDetail job={job} />

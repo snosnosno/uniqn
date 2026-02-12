@@ -12,9 +12,9 @@
  * - 공식: lastWorkDate <= KST_today - 2일
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
-import * as logger from 'firebase-functions/logger';
 import type { ClosedReason, PostingType } from '../types/jobPosting';
 import { STATUS } from '../constants/status';
 
@@ -204,11 +204,9 @@ async function processTournamentPostings(
  * 스케줄: 매일 00:15 KST
  * 타임존: Asia/Seoul
  */
-export const expireByLastWorkDate = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('15 0 * * *')
-  .timeZone('Asia/Seoul')
-  .onRun(async () => {
+export const expireByLastWorkDate = onSchedule(
+  { schedule: '15 0 * * *', timeZone: 'Asia/Seoul', region: 'asia-northeast3' },
+  async () => {
     const db = admin.firestore();
     const now = admin.firestore.Timestamp.now();
     const kstToday = getKSTToday();
@@ -239,7 +237,7 @@ export const expireByLastWorkDate = functions
         cutoffDate,
       });
 
-      return null;
+      return;
     } catch (error) {
       logger.error('근무일 기반 공고 자동 마감 실패', {
         error: error instanceof Error ? error.stack : String(error),

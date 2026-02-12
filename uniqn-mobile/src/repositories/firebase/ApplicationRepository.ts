@@ -27,6 +27,7 @@ import {
   Timestamp,
   increment,
   onSnapshot,
+  limit,
   type Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
@@ -260,6 +261,52 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         operation: '내 지원 내역 조회',
         component: 'ApplicationRepository',
         context: { applicantId },
+      });
+    }
+  }
+
+  async getByApplicantIdWithStatuses(
+    applicantId: string,
+    statuses: ApplicationStatus[],
+    pageSize: number = 50
+  ): Promise<Application[]> {
+    try {
+      logger.info('상태 필터 지원 내역 조회', { applicantId, statuses, pageSize });
+
+      const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
+      const q = query(
+        applicationsRef,
+        where(FIELDS.APPLICATION.applicantId, '==', applicantId),
+        where(FIELDS.APPLICATION.status, 'in', statuses),
+        orderBy(FIELDS.APPLICATION.createdAt, 'desc'),
+        limit(pageSize)
+      );
+
+      const snapshot = await getDocs(q);
+
+      const applications: Application[] = [];
+      for (const docSnapshot of snapshot.docs) {
+        const application = parseApplicationDocument({
+          id: docSnapshot.id,
+          ...docSnapshot.data(),
+        });
+        if (application) {
+          applications.push(application);
+        }
+      }
+
+      logger.info('상태 필터 지원 내역 조회 완료', {
+        applicantId,
+        count: applications.length,
+      });
+
+      return applications;
+    } catch (error) {
+      logger.error('상태 필터 지원 내역 조회 실패', toError(error), { applicantId });
+      throw handleServiceError(error, {
+        operation: '상태 필터 지원 내역 조회',
+        component: 'ApplicationRepository',
+        context: { applicantId, statuses },
       });
     }
   }

@@ -13,13 +13,7 @@
  */
 
 import {
-  collection,
   doc,
-  query,
-  where,
-  orderBy,
-  limit,
-  onSnapshot,
   Timestamp,
   serverTimestamp,
   runTransaction,
@@ -30,13 +24,13 @@ import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
 import { BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
+import { parseWorkLogDocument } from '@/schemas';
 import { toDateString } from '@/utils/date';
 import { trackSettlementComplete } from './analyticsService';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, type WorkLogStats } from '@/repositories';
 import type { WorkLog, PayrollStatus } from '@/types';
-import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
+import { COLLECTIONS, STATUS } from '@/constants';
 
 // ============================================================================
 // Re-export Types
@@ -377,29 +371,14 @@ export function subscribeToWorkLog(
   return RealtimeManager.subscribe(RealtimeManager.Keys.workLog(workLogId), () => {
     logger.info('근무 기록 실시간 구독 시작', { workLogId });
 
-    const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
-
-    return onSnapshot(
-      workLogRef,
-      (docSnap) => {
-        if (!docSnap.exists()) {
-          logger.warn('구독 중인 근무 기록이 존재하지 않음', { workLogId });
-          callbacks.onUpdate(null);
-          return;
-        }
-
-        const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
+    return workLogRepository.subscribeById(
+      workLogId,
+      (workLog) => {
         if (!workLog) {
-          logger.warn('근무 기록 데이터 파싱 실패', { workLogId });
-          callbacks.onUpdate(null);
-          return;
+          logger.warn('구독 중인 근무 기록이 존재하지 않거나 파싱 실패', { workLogId });
+        } else {
+          logger.debug('근무 기록 업데이트 수신', { workLogId, status: workLog.status });
         }
-
-        logger.debug('근무 기록 업데이트 수신', {
-          workLogId,
-          status: workLog.status,
-        });
-
         callbacks.onUpdate(workLog);
       },
       (error) => {
@@ -449,37 +428,14 @@ export function subscribeToMyWorkLogs(
         dateRange,
       });
 
-      const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-
-      // 쿼리 생성 - 날짜 범위 유무에 따라 분기
-      const q = dateRange
-        ? query(
-            workLogsRef,
-            where(FIELDS.WORK_LOG.staffId, '==', staffId),
-            where(FIELDS.WORK_LOG.date, '>=', dateRange.start),
-            where(FIELDS.WORK_LOG.date, '<=', dateRange.end),
-            orderBy(FIELDS.WORK_LOG.date, 'desc'),
-            limit(pageSize)
-          )
-        : query(
-            workLogsRef,
-            where(FIELDS.WORK_LOG.staffId, '==', staffId),
-            orderBy(FIELDS.WORK_LOG.date, 'desc'),
-            limit(pageSize)
-          );
-
-      return onSnapshot(
-        q,
-        (snapshot) => {
-          const workLogs = parseWorkLogDocuments(
-            snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }))
-          );
-
+      return workLogRepository.subscribeByStaffIdWithFilters(
+        staffId,
+        { dateRange, pageSize },
+        (workLogs) => {
           logger.debug('근무 기록 목록 업데이트 수신', {
             staffId: maskSensitiveId(staffId),
             count: workLogs.length,
           });
-
           onUpdate(workLogs);
         },
         (error) => {
@@ -513,37 +469,18 @@ export function subscribeToTodayWorkStatus(
   return RealtimeManager.subscribe(RealtimeManager.Keys.todayWorkStatus(staffId, today), () => {
     logger.info('오늘 근무 상태 실시간 구독 시작', { staffId: maskSensitiveId(staffId), today });
 
-    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-    const q = query(
-      workLogsRef,
-      where(FIELDS.WORK_LOG.staffId, '==', staffId),
-      where(FIELDS.WORK_LOG.date, '==', today),
-      // 'confirmed'는 WorkLogStatus 타입에 미정의지만 Firestore에서 실제 사용되는 전이 상태값
-      where(FIELDS.WORK_LOG.status, 'in', ['confirmed', STATUS.WORK_LOG.CHECKED_IN]),
-      limit(1)
-    );
-
-    return onSnapshot(
-      q,
-      (snapshot) => {
-        if (snapshot.empty) {
-          callbacks.onUpdate(null);
-          return;
+    // 'confirmed'는 WorkLogStatus 타입에 미정의지만 Firestore에서 실제 사용되는 전이 상태값
+    return workLogRepository.subscribeTodayActive(
+      staffId,
+      today,
+      ['confirmed', STATUS.WORK_LOG.CHECKED_IN],
+      (workLog) => {
+        if (workLog) {
+          logger.debug('오늘 근무 상태 업데이트', {
+            staffId: maskSensitiveId(staffId),
+            status: workLog.status,
+          });
         }
-
-        const docSnap = snapshot.docs[0];
-        const workLog = parseWorkLogDocument({ id: docSnap.id, ...docSnap.data() });
-        if (!workLog) {
-          logger.warn('오늘 근무 기록 파싱 실패', { staffId: maskSensitiveId(staffId) });
-          callbacks.onUpdate(null);
-          return;
-        }
-
-        logger.debug('오늘 근무 상태 업데이트', {
-          staffId: maskSensitiveId(staffId),
-          status: workLog.status,
-        });
-
         callbacks.onUpdate(workLog);
       },
       (error) => {

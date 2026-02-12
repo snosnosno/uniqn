@@ -5,7 +5,8 @@
  * fcmTokens Map 구조에서 lastRefreshedAt 기준으로 판단
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onSchedule } from 'firebase-functions/v2/scheduler';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import type { FcmTokenRecord } from '../utils/fcmTokenUtils';
 
@@ -17,14 +18,12 @@ const MAX_BATCH_OPS = 450; // Firestore 500 limit에 여유분
 
 /**
  * Cloud Scheduler: 매일 03:00 (Asia/Seoul) 실행
- * pubsub.schedule() 사용 → firebase deploy 시 Cloud Scheduler 자동 생성
+ * onSchedule() 사용 → firebase deploy 시 Cloud Scheduler 자동 생성
  */
-export const cleanupExpiredTokensScheduled = functions
-  .region('asia-northeast3')
-  .pubsub.schedule('0 3 * * *')
-  .timeZone('Asia/Seoul')
-  .onRun(async () => {
-    functions.logger.info('만료 FCM 토큰 정리 시작');
+export const cleanupExpiredTokensScheduled = onSchedule(
+  { schedule: '0 3 * * *', timeZone: 'Asia/Seoul', region: 'asia-northeast3' },
+  async () => {
+    logger.info('만료 FCM 토큰 정리 시작');
 
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - TOKEN_EXPIRY_DAYS);
@@ -104,7 +103,7 @@ export const cleanupExpiredTokensScheduled = functions
             }
           }
         } catch (userError) {
-          functions.logger.error('사용자 토큰 정리 실패 - 스킵', {
+          logger.error('사용자 토큰 정리 실패 - 스킵', {
             userId: userDoc.id,
             error: (userError as Error).message,
           });
@@ -123,5 +122,5 @@ export const cleanupExpiredTokensScheduled = functions
       }
     }
 
-    functions.logger.info('만료 FCM 토큰 정리 완료', { totalRemoved });
+    logger.info('만료 FCM 토큰 정리 완료', { totalRemoved });
   });

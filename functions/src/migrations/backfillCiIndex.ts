@@ -19,8 +19,10 @@
  * ```
  */
 
-import * as functions from "firebase-functions/v1";
+import { onCall } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions";
 import * as admin from "firebase-admin";
+import { requireAuth, requireRole, handleFunctionError } from "../errors";
 
 const db = admin.firestore();
 
@@ -43,41 +45,21 @@ interface BackfillResult {
  * users 컬렉션에서 ci 필드가 있는 문서를 스캔하고
  * ciIndex/{ci} 문서가 없으면 생성
  */
-export const backfillCiIndex = functions
-  .region("asia-northeast3")
-  .runWith({ timeoutSeconds: 540 }) // 9분(최대)
-  .https.onCall(
-    async (
-      data: { dryRun?: boolean },
-      context
-    ): Promise<BackfillResult> => {
-      // 1. admin 권한 확인
-      if (!context.auth) {
-        throw new functions.https.HttpsError(
-          "unauthenticated",
-          "로그인이 필요합니다."
-        );
-      }
+export const backfillCiIndex = onCall(
+  { region: "asia-northeast3", timeoutSeconds: 540 }, // 9분(최대)
+  async (request): Promise<BackfillResult> => {
+    const data = request.data as { dryRun?: boolean };
 
-      const callerDoc = await db
-        .collection("users")
-        .doc(context.auth.uid)
-        .get();
-      const callerRole = callerDoc.data()?.role;
+    // 1. admin 권한 확인
+    requireAuth(request);
+    requireRole(request, 'admin');
 
-      if (callerRole !== "admin") {
-        throw new functions.https.HttpsError(
-          "permission-denied",
-          "관리자 권한이 필요합니다."
-        );
-      }
+    const dryRun = data?.dryRun ?? true;
 
-      const dryRun = data?.dryRun ?? true;
-
-      functions.logger.info("=== ciIndex 백필 마이그레이션 시작 ===", {
-        dryRun,
-        callerUid: context.auth.uid,
-      });
+    logger.info("=== ciIndex 백필 마이그레이션 시작 ===", {
+      dryRun,
+      callerUid: request.auth!.uid,
+    });
 
       let totalScanned = 0;
       let totalBackfilled = 0;
@@ -127,7 +109,7 @@ export const backfillCiIndex = functions
                 // 이미 존재 (혹시 다른 uid)
                 const existingUid = ciIndexDoc.data()?.uid;
                 if (existingUid !== userDoc.id) {
-                  functions.logger.warn("CI 충돌 감지", {
+                  logger.warn("CI 충돌 감지", {
                     ci: ci.substring(0, 8) + "...",
                     existingUid,
                     currentUid: userDoc.id,
@@ -154,12 +136,12 @@ export const backfillCiIndex = functions
                 // batch 크기 제한
                 if (batchOps >= MAX_BATCH_OPS) {
                   await batch.commit();
-                  functions.logger.info(`배치 커밋: ${batchOps}건`);
+                  logger.info(`배치 커밋: ${batchOps}건`);
                   batch = db.batch();
                   batchOps = 0;
                 }
               } else {
-                functions.logger.info("[DRY RUN] 백필 대상", {
+                logger.info("[DRY RUN] 백필 대상", {
                   uid: userDoc.id,
                   ci: ci.substring(0, 8) + "...",
                 });
@@ -170,7 +152,7 @@ export const backfillCiIndex = functions
                 userError instanceof Error
                   ? userError.message
                   : String(userError);
-              functions.logger.error("사용자 처리 실패", {
+              logger.error("사용자 처리 실패", {
                 uid: userDoc.id,
                 error: errorMsg,
               });
@@ -181,7 +163,7 @@ export const backfillCiIndex = functions
           // 남은 배치 커밋
           if (!dryRun && batchOps > 0) {
             await batch.commit();
-            functions.logger.info(`최종 배치 커밋: ${batchOps}건`);
+            logger.info(`최종 배치 커밋: ${batchOps}건`);
           }
 
           lastDoc = snapshot.docs[snapshot.docs.length - 1];
@@ -195,7 +177,7 @@ export const backfillCiIndex = functions
           ? `[DRY RUN] 스캔: ${totalScanned}건, 백필 대상: ${totalBackfilled}건, 이미 존재: ${totalAlreadyExists}건, 스킵: ${totalSkipped}건`
           : `백필 완료: ${totalBackfilled}건 생성, 이미 존재: ${totalAlreadyExists}건, 스킵: ${totalSkipped}건, 에러: ${errors.length}건`;
 
-        functions.logger.info("=== ciIndex 백필 마이그레이션 완료 ===", {
+        logger.info("=== ciIndex 백필 마이그레이션 완료 ===", {
           dryRun,
           totalScanned,
           totalBackfilled,
@@ -216,7 +198,7 @@ export const backfillCiIndex = functions
       } catch (error) {
         const errorMsg =
           error instanceof Error ? error.message : String(error);
-        functions.logger.error("ciIndex 백필 마이그레이션 실패", { error });
+        logger.error("ciIndex 백필 마이그레이션 실패", { error });
 
         return {
           success: false,

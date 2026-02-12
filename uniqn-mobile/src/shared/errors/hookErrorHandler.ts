@@ -41,6 +41,8 @@ interface ErrorHandlerOptions {
   customMessages?: Record<string, string>;
   /** critical/high 에러를 모달로 표시하기 위한 함수 */
   showAlert?: ShowAlertFn;
+  /** Optimistic Update 롤백 콜백 (mutation context 전달) */
+  onRollback?: (mutationContext: unknown) => void;
 }
 
 // ============================================================================
@@ -69,10 +71,14 @@ export function createMutationErrorHandler(
   context: string,
   addToast: AddToastFn,
   options: ErrorHandlerOptions = {}
-): (error: unknown) => void {
-  const { showToast = true, context: extraContext, customMessages, showAlert } = options;
+): (error: unknown, variables?: unknown, mutationContext?: unknown) => void {
+  const { showToast = true, context: extraContext, customMessages, showAlert, onRollback } = options;
 
-  return (error: unknown) => {
+  return (error: unknown, _variables?: unknown, mutationContext?: unknown) => {
+    // Optimistic Update 롤백 실행
+    if (onRollback && mutationContext) {
+      onRollback(mutationContext);
+    }
     const appError = normalizeError(error);
 
     // 로깅

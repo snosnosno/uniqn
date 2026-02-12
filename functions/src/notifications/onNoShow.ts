@@ -10,10 +10,12 @@
  * @since 2025-02-01
  */
 
-import * as functions from 'firebase-functions/v1';
+import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
+import { logger } from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { createAndSendNotification } from '../utils/notificationUtils';
 import { extractUserId } from '../utils/helpers';
+import { handleTriggerError } from '../errors';
 
 const db = admin.firestore();
 
@@ -47,19 +49,20 @@ interface WorkLogData {
  * - WorkLog status가 'no_show'로 변경되면 실행
  * - 구인자(jobPosting.ownerId/createdBy)에게 알림 전송
  */
-export const onNoShow = functions.region('asia-northeast3').firestore
-  .document('workLogs/{workLogId}')
-  .onUpdate(async (change, context) => {
-    const workLogId = context.params.workLogId;
-    const before = change.before.data() as WorkLogData;
-    const after = change.after.data() as WorkLogData;
+export const onNoShow = onDocumentUpdated(
+  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+  async (event) => {
+    const workLogId = event.params.workLogId;
+    const before = event.data?.before.data() as WorkLogData | undefined;
+    const after = event.data?.after.data() as WorkLogData | undefined;
+    if (!before || !after) return;
 
     // status가 no_show로 변경된 경우만 처리
     if (before.status === after.status || after.status !== 'no_show') {
       return;
     }
 
-    functions.logger.info('노쇼 감지', {
+    logger.info('노쇼 감지', {
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
@@ -75,7 +78,7 @@ export const onNoShow = functions.region('asia-northeast3').firestore
         .get();
 
       if (!jobPostingDoc.exists) {
-        functions.logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn('공고를 찾을 수 없습니다', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -86,7 +89,7 @@ export const onNoShow = functions.region('asia-northeast3').firestore
 
       const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
       if (!employerId) {
-        functions.logger.warn('공고 작성자를 찾을 수 없습니다', {
+        logger.warn('공고 작성자를 찾을 수 없습니다', {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -122,17 +125,16 @@ export const onNoShow = functions.region('asia-northeast3').firestore
         }
       );
 
-      functions.logger.info('노쇼 알림 전송 완료', {
+      logger.info('노쇼 알림 전송 완료', {
         notificationId: result.notificationId,
         employerId,
         fcmSent: result.fcmSent,
         successCount: result.successCount,
       });
     } catch (error: unknown) {
-      functions.logger.error('노쇼 알림 처리 중 오류 발생', {
-        workLogId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: 'onNoShow',
+        context: { workLogId, staffId: after.staffId },
       });
     }
   });

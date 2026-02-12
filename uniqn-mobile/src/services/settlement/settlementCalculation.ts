@@ -5,8 +5,6 @@
  * @version 1.0.0
  */
 
-import { doc, getDoc } from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { BusinessError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -16,10 +14,9 @@ import {
   getEffectiveAllowances,
   getEffectiveTaxSettings,
 } from '@/utils/settlement';
-import { parseWorkLogDocument, parseJobPostingDocument } from '@/schemas';
 import { IdNormalizer } from '@/shared/id';
+import { workLogRepository, jobPostingRepository } from '@/repositories';
 import type { WorkLog } from '@/types';
-import { COLLECTIONS } from '@/constants';
 import type {
   WorkLogWithOverrides,
   CalculateSettlementInput,
@@ -45,39 +42,21 @@ export async function calculateSettlement(
   try {
     logger.info('정산 금액 계산', { workLogId: input.workLogId, ownerId });
 
-    // 1. 근무 기록 조회
-    const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, input.workLogId);
-    const workLogDoc = await getDoc(workLogRef);
-
-    if (!workLogDoc.exists()) {
+    // 1. 근무 기록 조회 (Repository 패턴)
+    const parsedWorkLog = await workLogRepository.getById(input.workLogId);
+    if (!parsedWorkLog) {
       throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
         userMessage: '근무 기록을 찾을 수 없습니다',
       });
     }
-
-    const parsedWorkLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-    if (!parsedWorkLog) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '근무 기록 데이터를 파싱할 수 없습니다',
-      });
-    }
     const workLog = parsedWorkLog as WorkLog & { customRole?: string };
 
-    // 2. 공고 조회 및 소유권 확인 (IdNormalizer로 ID 정규화)
+    // 2. 공고 조회 및 소유권 확인 (Repository 패턴 + IdNormalizer)
     const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-    const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, normalizedJobId);
-    const jobDoc = await getDoc(jobRef);
-
-    if (!jobDoc.exists()) {
-      throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '공고를 찾을 수 없습니다',
-      });
-    }
-
-    const jobPosting = parseJobPostingDocument({ id: jobDoc.id, ...jobDoc.data() });
+    const jobPosting = await jobPostingRepository.getById(normalizedJobId);
     if (!jobPosting) {
       throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
-        userMessage: '공고 데이터를 파싱할 수 없습니다',
+        userMessage: '공고를 찾을 수 없습니다',
       });
     }
 
