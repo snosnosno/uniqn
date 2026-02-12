@@ -1,7 +1,7 @@
 # UNIQN 종합 테스트 가이드
 
 **최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**버전**: v1.0.0 (모바일앱 중심 + PortOne 결제 연동)
 **상태**: ✅ **모바일앱 테스트 커버리지 14%+ (MVP 기준)**
 
 > **모바일앱 테스트**: uniqn-mobile/은 Jest + React Native Testing Library를 사용합니다.

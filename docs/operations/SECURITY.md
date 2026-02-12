@@ -2,14 +2,14 @@
 
 **최종 업데이트**: 2026년 2월 1일
 **상태**: 🚀 **Production Ready**
-**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**버전**: v1.1.0 (모바일앱 중심 + PortOne 결제 연동)
 
 > **참고**: 이 문서는 Firebase 백엔드 및 공통 보안 가이드라인입니다.
 > 모바일앱(uniqn-mobile/) 보안은 [CLAUDE.md](../../CLAUDE.md)의 "보안 규칙" 섹션을 참조하세요.
 >
 > **모바일앱 보안 추가 사항**:
 > - expo-secure-store: 민감 데이터 암호화 저장
-> - RevenueCat: 결제 보안 (App Store/Google Play 정책 준수)
+> - @portone/react-native-sdk: 결제 보안 (PG사 연동)
 > - Zod 스키마: 입력 검증 및 XSS 방지
 
 ## 📋 목차
@@ -285,132 +285,106 @@ exports.secureFunction = functions.https.onRequest((req, res) => {
 
 #### 사용자 역할 정의
 ```typescript
-// src/types/auth.ts
-export enum UserRole {
-  ADMIN = 'admin',           // 전체 관리자
-  MANAGER = 'manager',       // 매장 관리자
-  STAFF = 'staff',          // 일반 스태프
-  APPLICANT = 'applicant'   // 지원자
-}
+// 공통 역할 정의 (CLAUDE.md 역할 체계와 동기화)
+type UserRole = 'admin' | 'employer' | 'manager' | 'staff' | 'user';
+
+// 권한 계층
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  admin: 100,      // 전체 관리 (모든 권한)
+  employer: 50,    // 구인자 (공고 관리, 지원자 관리, 정산)
+  manager: 30,     // 매니저 (이벤트 관리, 스태프 관리)
+  staff: 10,       // 스태프 (지원, 스케줄 확인, QR 출퇴근)
+  user: 1,         // 일반 사용자 (읽기 전용)
+};
 
 export interface UserPermissions {
-  canCreateEvents: boolean;
+  canManageJobPostings: boolean;
   canManageStaff: boolean;
   canViewAllData: boolean;
   canModifySettings: boolean;
   canAccessReports: boolean;
+  canManageSettlements: boolean;
 }
 
 // 역할별 권한 매트릭스
 export const ROLE_PERMISSIONS: Record<UserRole, UserPermissions> = {
-  [UserRole.ADMIN]: {
-    canCreateEvents: true,
+  admin: {
+    canManageJobPostings: true,
     canManageStaff: true,
     canViewAllData: true,
     canModifySettings: true,
-    canAccessReports: true
+    canAccessReports: true,
+    canManageSettlements: true
   },
-  [UserRole.MANAGER]: {
-    canCreateEvents: true,
+  employer: {
+    canManageJobPostings: true,
     canManageStaff: true,
     canViewAllData: true,
     canModifySettings: false,
-    canAccessReports: true
+    canAccessReports: true,
+    canManageSettlements: true
   },
-  [UserRole.STAFF]: {
-    canCreateEvents: false,
+  manager: {
+    canManageJobPostings: false,
+    canManageStaff: true,
+    canViewAllData: false,
+    canModifySettings: false,
+    canAccessReports: false,
+    canManageSettlements: false
+  },
+  staff: {
+    canManageJobPostings: false,
     canManageStaff: false,
     canViewAllData: false,
     canModifySettings: false,
-    canAccessReports: false
+    canAccessReports: false,
+    canManageSettlements: false
   },
-  [UserRole.APPLICANT]: {
-    canCreateEvents: false,
+  user: {
+    canManageJobPostings: false,
     canManageStaff: false,
     canViewAllData: false,
     canModifySettings: false,
-    canAccessReports: false
+    canAccessReports: false,
+    canManageSettlements: false
   }
 };
-```
 
-#### 권한 검사 훅
-```typescript
-// src/hooks/usePermissions.ts
-export const usePermissions = () => {
-  const { user } = useAuth();
-  
-  const hasPermission = useCallback((permission: keyof UserPermissions): boolean => {
-    if (!user || !user.role) return false;
-    
-    const userPermissions = ROLE_PERMISSIONS[user.role as UserRole];
-    return userPermissions[permission] || false;
-  }, [user]);
-  
-  const requirePermission = useCallback((permission: keyof UserPermissions) => {
-    if (!hasPermission(permission)) {
-      logger.warn('Unauthorized access attempt', {
-        uid: user?.uid,
-        requiredPermission: permission,
-        userRole: user?.role,
-        timestamp: new Date().toISOString()
-      });
-      
-      throw new Error(`권한이 없습니다: ${permission}`);
-    }
-  }, [hasPermission, user]);
-  
-  return { hasPermission, requirePermission };
-};
-```
-
-#### 보호된 라우트 구현
-```typescript
-// src/components/auth/ProtectedRoute.tsx
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-  requiredRole?: UserRole;
-  requiredPermission?: keyof UserPermissions;
+// 권한 확인
+function hasPermission(userRole: UserRole | null, required: UserRole): boolean {
+  if (!userRole) return false;
+  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[required];
 }
+```
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
-  children,
-  requiredRole,
-  requiredPermission
-}) => {
-  const { user, loading } = useAuth();
-  const { hasPermission } = usePermissions();
-  
-  if (loading) {
-    return <div>인증 확인 중...</div>;
-  }
-  
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-  
-  // 역할 기반 접근 제어
-  if (requiredRole && user.role !== requiredRole) {
-    logger.warn('Role-based access denied', {
-      uid: user.uid,
-      userRole: user.role,
-      requiredRole,
-      path: location.pathname
-    });
-    return <Navigate to="/unauthorized" replace />;
-  }
-  
-  // 권한 기반 접근 제어
-  if (requiredPermission && !hasPermission(requiredPermission)) {
-    logger.warn('Permission-based access denied', {
-      uid: user.uid,
-      requiredPermission,
-      path: location.pathname
-    });
-    return <Navigate to="/unauthorized" replace />;
-  }
-  
-  return <>{children}</>;
+#### 권한 검사 (모바일앱)
+
+> **참고**: 모바일앱(uniqn-mobile)은 Expo Router 파일 기반 라우팅 + useAuthGuard 훅을 사용합니다.
+> 아래는 권한 가드의 핵심 패턴입니다. 상세 구현은 CLAUDE.md의 "라우트 가드 패턴"을 참조하세요.
+
+```typescript
+// app/(employer)/_layout.tsx - Expo Router 라우트 가드 예시
+export default function EmployerLayout() {
+  const { isLoading, isAuthenticated } = useAuthStore();
+  const hasEmployerRole = useHasRole('employer');
+
+  if (isLoading) return <LoadingSpinner />;
+  if (!isAuthenticated) return <Redirect href="/(auth)/login" />;
+  if (!hasEmployerRole) return <Redirect href="/(app)/(tabs)" />;
+
+  return <Stack />;
+}
+```
+
+#### 라우트 그룹별 권한
+```typescript
+// 라우트 그룹과 필요 역할 매핑
+const ROUTE_PERMISSIONS = {
+  '(public)':   null,         // 비로그인 접근 가능
+  '(auth)':     null,         // 비로그인 전용 (로그인 시 리다이렉트)
+  '(app)':      'staff',      // staff 이상
+  '(employer)': 'employer',   // employer 이상
+  '(admin)':    'admin',      // admin만
 };
 ```
 
