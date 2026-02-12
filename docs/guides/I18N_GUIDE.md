@@ -1,7 +1,7 @@
 # 🌍 T-HOLDEM 국제화 가이드 (i18n)
 
 **최종 업데이트**: 2026년 2월 1일
-**버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
+**버전**: v1.0.0 (모바일앱 중심 + PortOne 결제 연동)
 **상태**: 🚀 **Production Ready - 완전 구현됨**
 
 > ⚠️ **참고**: 현재 주력 플랫폼은 **uniqn-mobile/** (React Native + Expo)입니다.
