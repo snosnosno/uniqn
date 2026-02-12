@@ -271,7 +271,7 @@ function NativeSheetModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className="flex-1 justify-end" pointerEvents="box-none">
+        <View className="flex-1 justify-end" style={{ pointerEvents: 'box-none' }}>
           {/* Backdrop */}
           <Pressable
             onPress={handleClose}

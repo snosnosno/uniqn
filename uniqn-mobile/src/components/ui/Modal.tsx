@@ -344,7 +344,7 @@ function NativeModal({
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1"
       >
-        <View className={`flex-1 ${containerStyle}`} pointerEvents="box-none">
+        <View className={`flex-1 ${containerStyle}`} style={{ pointerEvents: 'box-none' }}>
           {/* 백드롭 - 별도 레이어로 분리 (button 중첩 방지) */}
           <Pressable
             onPress={handleBackdropPress}

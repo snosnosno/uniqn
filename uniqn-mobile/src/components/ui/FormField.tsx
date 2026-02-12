@@ -50,12 +50,12 @@ export function FormField({
       {children}
 
       {/* 에러 메시지 */}
-      {error && (
+      {error ? (
         <View className="flex-row items-center mt-1.5">
           <Text className="text-red-600 mr-1">⚠</Text>
           <Text className="text-red-600 text-sm flex-1">{error}</Text>
         </View>
-      )}
+      ) : null}
 
       {/* 힌트 텍스트 */}
       {hint && !error && (

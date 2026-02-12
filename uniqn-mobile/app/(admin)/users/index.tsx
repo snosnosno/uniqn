@@ -85,10 +85,7 @@ function UserCard({ user, onPress }: UserCardProps) {
       onPress={onPress}
       className="bg-white dark:bg-surface rounded-xl p-4 mb-3 flex-row items-center active:opacity-80"
       style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
+        boxShadow: '0px 1px 2px rgba(0, 0, 0, 0.1)',
         elevation: 2,
       }}
     >

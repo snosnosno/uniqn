@@ -69,6 +69,9 @@ ui-debug.log*
 pubsub-debug.log*
 database-debug.log*
 
+# Firebase CLI 토큰 갱신 스크립트 (OAuth2 시크릿 포함)
+functions/refresh-token.js
+
 # Firebase Service Account Keys - 절대 커밋하지 말 것!
 serviceAccountKey*.json
 *-service-account*.json

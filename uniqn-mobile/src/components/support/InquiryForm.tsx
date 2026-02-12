@@ -45,7 +45,7 @@ export function InquiryForm({
   const [category, setCategory] = useState<InquiryCategory | ''>(defaultCategory || '');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
-  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
   // 다크모드 대응 입력 필드 스타일
   const getInputStyle = (hasError: boolean) => ({
@@ -67,10 +67,10 @@ export function InquiryForm({
       } else if (field === 'message') {
         createInquirySchema.shape.message.parse(value);
       }
-      setErrors((prev) => ({ ...prev, [field]: '' }));
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
     } catch (error) {
       if (error instanceof z.ZodError) {
-        setErrors((prev) => ({ ...prev, [field]: error.issues[0]?.message || '' }));
+        setErrors((prev) => ({ ...prev, [field]: error.issues[0]?.message }));
       }
     }
   }, []);
