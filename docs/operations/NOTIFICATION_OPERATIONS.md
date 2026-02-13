@@ -7,9 +7,12 @@
 > ⚠️ **참고**: 모바일앱의 푸시 알림은 **FCM + expo-notifications**을 사용합니다.
 > `pushNotificationService.ts`에서 FCM 토큰을 관리합니다.
 
-> 📚 **관련 문서**:
-> - 📋 **기능 명세**: [NOTIFICATION_IMPLEMENTATION_STATUS.md](../features/NOTIFICATION_IMPLEMENTATION_STATUS.md)
+> 📚 **관련 문서 (역할별 참조)**:
+> - 📋 **구현 현황/테스트**: [NOTIFICATION_IMPLEMENTATION_STATUS.md](../features/NOTIFICATION_IMPLEMENTATION_STATUS.md) (개발팀용)
+> - 💻 **모바일앱 구현 상세**: [10-notifications.md](../../specs/react-native-app/10-notifications.md) (앱개발자용 — FCM, Zustand, UI, 30개 타입)
 > - 🔧 **API 참조**: [API_REFERENCE.md](../reference/API_REFERENCE.md)
+>
+> 이 문서는 **운영팀용**입니다. Firebase Functions 관리, 모니터링, 문제 해결에 집중합니다.
 
 ---
 

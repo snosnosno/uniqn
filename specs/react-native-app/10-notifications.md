@@ -2,6 +2,12 @@
 
 > **구현 완료**: v1.0.0 기준 알림 시스템 전체 구현됨
 > **파일 위치**: `src/services/notificationService.ts`, `src/services/pushNotificationService.ts`, `src/stores/notificationStore.ts`, `src/hooks/useNotifications*.ts`, `src/components/notifications/`
+>
+> 📚 **관련 문서**:
+> - 📋 **구현 현황/테스트**: [NOTIFICATION_IMPLEMENTATION_STATUS.md](../../docs/features/NOTIFICATION_IMPLEMENTATION_STATUS.md) (Phase 진행도, 타임존 이슈)
+> - 💼 **운영 가이드**: [NOTIFICATION_OPERATIONS.md](../../docs/operations/NOTIFICATION_OPERATIONS.md) (Functions 관리, 모니터링)
+>
+> 이 문서는 **모바일앱 개발자용**입니다. 클라이언트 측 구현 상세(FCM, Zustand, UI, 30개 알림 타입)에 집중합니다.
 
 ## 목차
 

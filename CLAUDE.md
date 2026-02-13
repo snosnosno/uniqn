@@ -113,33 +113,37 @@ Forms & Validation:
 ### 1. 역할 체계 (통합)
 
 ```typescript
-// 공통 역할 정의
-type UserRole = 'admin' | 'employer' | 'manager' | 'staff' | 'user';
+// 공통 역할 정의 (3개만 운영 중)
+type UserRole = 'admin' | 'employer' | 'staff';
 
 // 권한 계층
-const ROLE_HIERARCHY: Record<UserRole, number> = {
+const USER_ROLE_HIERARCHY: Record<UserRole, number> = {
   admin: 100,      // 전체 관리 (모든 권한)
   employer: 50,    // 구인자 (공고 관리, 지원자 관리, 정산)
-  manager: 30,     // 매니저 (이벤트 관리, 스태프 관리)
   staff: 10,       // 스태프 (지원, 스케줄 확인, QR 출퇴근)
-  user: 1,         // 일반 사용자 (읽기 전용)
 };
 
 // 권한 확인
 function hasPermission(userRole: UserRole | null, required: UserRole): boolean {
   if (!userRole) return false;
-  return ROLE_HIERARCHY[userRole] >= ROLE_HIERARCHY[required];
+  return USER_ROLE_HIERARCHY[userRole] >= USER_ROLE_HIERARCHY[required];
 }
 ```
 
 **역할별 기능**:
-| 역할 | 기능 |
-|------|------|
-| `admin` | 사용자/신고/공지/대회 관리 |
-| `employer` | 공고 CRUD, 지원자 관리, 정산 |
-| `manager` | (미구현) |
-| `staff` | 지원, 스케줄, QR 출퇴근 |
-| `user` | 공고 열람만 |
+| 역할 | 권한 레벨 | 기능 |
+|------|----------|------|
+| `admin` | 100 | 사용자/신고/공지/대회 관리 |
+| `employer` | 50 | 공고 CRUD, 지원자 관리, 정산 |
+| `staff` | 10 | 지원, 스케줄, QR 출퇴근 |
+
+> **하위 호환성**: Firestore에 `manager` 역할이 남아있는 경우 `employer`로 자동 매핑됩니다 (`RoleResolver.normalizeUserRole()`).
+> 비로그인 사용자는 `(public)` 라우트에서 공고 열람만 가능합니다.
+
+> **주의: UserRole vs StaffRole 구분**
+> - `UserRole`: 앱 기능 접근 권한 (`admin`, `employer`, `staff`)
+> - `StaffRole`: 포커룸 직무 역할 (`dealer`, `floor`, `serving`, `manager`, `staff`, `other`)
+> - StaffRole의 `manager`는 포커룸 매니저 직무이며, UserRole과는 별개입니다.
 
 ---
 
@@ -1089,16 +1093,32 @@ eas build --platform android    # Android 빌드
 | CLAUDE.md | docs/reference/ARCHITECTURE.md | 폴더 구조, 기술 스택 |
 | docs/features/PERMISSION_SYSTEM.md | docs/reference/DATA_SCHEMA.md | 역할 정의, 권한 계층 |
 | 결제 문서 4개 | (상호 중복) | 포인트 시스템 설계/구현 40-50% 중복 |
-| 알림 문서 2개 | (상호 중복) | 알림 시스템 상태/운영 40% 중복 |
+| 알림 문서 3개 | (상호 중복) | 알림 시스템 아키텍처/타입/Functions 37% 중복 |
+
+**결제 문서 중복 상세** (총 4,576줄, 약 22% 중복):
+| 문서 | 라인 수 | 중복율 | 대상 독자 | 고유 콘텐츠 |
+|------|--------|--------|---------|------------|
+| MODEL_B_CHIP_SYSTEM_FINAL.md | 632 | 35-40% | 기획자 | 시각화, 법률, 어뷰징 방지 |
+| PAYMENT_SYSTEM_DEVELOPMENT.md | 1,195 | 40-45% | 개발자 | API 명세, 아키텍처, Webhook |
+| CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md | 2,062 | 45-50% | 개발자 | 6주 로드맵, 전체 코드 예제 |
+| PAYMENT_OPERATIONS.md | 687 | 30-35% | 운영팀 | 긴급대응, FAQ, 체크리스트 |
+
+**알림 문서 중복 상세** (총 2,196줄, 약 37% 중복):
+| 문서 | 라인 수 | 중복율 | 대상 독자 | 고유 콘텐츠 |
+|------|--------|--------|---------|------------|
+| NOTIFICATION_OPERATIONS.md | 364 | 59% | 운영팀 | Functions 관리, 문제해결, 체크리스트 |
+| NOTIFICATION_IMPLEMENTATION_STATUS.md | 310 | 42% | 개발팀 | 구현 현황, 테스트, 타임존 이슈 |
+| specs/react-native-app/10-notifications.md | 1,522 | 31% | 앱개발자 | FCM, Zustand, UI, 30개 타입 |
 
 **레거시 표시 필요 (app2/ 전용):**
 - docs/core/CAPACITOR_MIGRATION_GUIDE.md (Expo 사용으로 불필요)
 - docs/guides/MIGRATION_GUIDE.md (대상 불명확)
 - docs/reference/API_REFERENCE.md (웹앱/Cloud Functions 구분 필요)
+- docs/features/PERMISSION_SYSTEM.md (manager→employer 통합으로 레거시 표시 추가됨)
 - specs/001-* 시리즈 (레거시 마이그레이션 스펙)
 
 **알려진 문서 간 불일치:**
-- 역할 정의: CLAUDE.md(5개 역할) vs DATA_SCHEMA.md(3개 역할) — manager/user 포함 여부
+- ~~역할 정의: CLAUDE.md(5개 역할) vs DATA_SCHEMA.md(3개 역할)~~ → ✅ 해결됨 (3개 역할로 통합)
 - 필드명: CLAUDE.md(eventId) vs DATA_SCHEMA.md(jobPostingId 표준) — 마이그레이션 과도기
 
 ---
