@@ -52,21 +52,21 @@
 T-HOLDEM/
 ├── uniqn-mobile/            # 모바일앱 (React Native + Expo) ⭐ 주력
 │   ├── app/                 # Expo Router (68개 라우트)
-│   └── src/                 # 소스 코드 (520+ 파일)
-│       ├── components/      # UI 컴포넌트 (200개, 20개 폴더)
-│       ├── hooks/           # Custom Hooks (45개)
-│       ├── services/        # 비즈니스 서비스 (42개)
-│       ├── stores/          # Zustand Stores (9개)
-│       ├── repositories/    # Repository 패턴 (20개: 인터페이스 10 + 구현체 10)
-│       ├── shared/          # 공유 모듈 (25개)
-│       ├── domains/         # 도메인 로직 (16개)
-│       ├── types/           # 타입 정의 (26개)
+│   └── src/                 # 소스 코드 (497+ 파일, 테스트 제외)
+│       ├── components/      # UI 컴포넌트 (245개, 20개 폴더)
+│       ├── hooks/           # Custom Hooks (49개)
+│       ├── services/        # 비즈니스 서비스 (43개)
+│       ├── stores/          # Zustand Stores (8개)
+│       ├── repositories/    # Repository 패턴 (22개: 인터페이스 11 + 구현체 11)
+│       ├── shared/          # 공유 모듈 (26개, 9개 도메인)
+│       ├── domains/         # 도메인 로직 (14개)
+│       ├── types/           # 타입 정의 (27개)
 │       ├── schemas/         # Zod 스키마 (18개)
-│       ├── errors/          # 에러 시스템 (12개)
-│       ├── utils/           # 유틸리티 (38개)
+│       ├── errors/          # 에러 시스템 (8개)
+│       ├── utils/           # 유틸리티 (37개)
 │       ├── lib/             # 라이브러리 설정 (7개)
-│       ├── constants/       # 상수 (12개)
-│       └── config/          # 설정 (4개)
+│       ├── constants/       # 상수 (10개)
+│       └── config/          # 설정 (3개)
 │
 ├── functions/               # Firebase Functions
 ├── specs/                   # 스펙 문서
@@ -318,18 +318,18 @@ await runTransaction(db, async (transaction) => {
 | 카테고리 | 파일 수 | 설명 |
 |---------|--------|------|
 | **Routes (app/)** | 68 | Expo Router 라우트 파일 |
-| **Components** | 200 | UI 49개 + 기능별 151개 (20개 폴더) |
-| **Hooks** | 45 | 커스텀 훅 |
-| **Services** | 42 | 비즈니스 로직 서비스 |
-| **Stores** | 9 | Zustand 전역 상태 |
-| **Types** | 26 | TypeScript 타입 정의 |
+| **Components** | 245 | UI 50개 + 기능별 195개 (20개 폴더) |
+| **Hooks** | 49 | 커스텀 훅 |
+| **Services** | 43 | 비즈니스 로직 서비스 |
+| **Stores** | 8 | Zustand 전역 상태 |
+| **Types** | 27 | TypeScript 타입 정의 |
 | **Schemas** | 18 | Zod 검증 스키마 |
-| **Repositories** | 20 | Repository 패턴 (인터페이스 10 + 구현체 10) |
-| **Shared** | 25 | 공유 유틸리티 (ID, Role, Status, Time, DeepLink, Firestore) |
-| **Domains** | 16 | 도메인 로직 (Application, Schedule, Settlement 등) |
-| **Errors** | 12 | 에러 시스템 (AppError 계층) |
-| **Utils** | 38 | 유틸리티 함수 |
-| **전체 TypeScript** | **520+** | src + app 합계 |
+| **Repositories** | 22 | Repository 패턴 (인터페이스 11 + 구현체 11) |
+| **Shared** | 26 | 공유 유틸리티 (ID, Role, Status, Time, DeepLink, Firestore, Cache) |
+| **Domains** | 14 | 도메인 로직 (Application, Schedule, Settlement 등) |
+| **Errors** | 8 | 에러 시스템 (AppError 계층) |
+| **Utils** | 37 | 유틸리티 함수 |
+| **전체 TypeScript** | **565+** | src (497+) + app (68) 합계, 테스트 제외 |
 
 ### 폴더 구조
 
@@ -369,73 +369,77 @@ uniqn-mobile/
 │       └── stats/                # 통계
 │
 ├── src/
-│   ├── components/               # 200개 (20개 폴더)
-│   │   ├── ui/                   # 기본 UI (49개)
-│   │   ├── auth/                 # 인증 (12개)
-│   │   ├── jobs/                 # 구인공고 (21개)
-│   │   ├── employer/             # 구인자 (68개) ⭐ 가장 많음
-│   │   ├── schedule/             # 스케줄 (9개)
-│   │   ├── qr/                   # QR 코드 (3개)
-│   │   ├── notifications/        # 알림 (7개)
-│   │   ├── admin/                # 관리자 (12개)
-│   │   ├── support/              # 고객지원 (6개)
-│   │   └── ...                   # 기타 (applicant, headers, icons 등)
+│   ├── components/               # 245개 (20개 폴더)
+│   │   ├── ui/                   # 기본 UI (50개)
+│   │   ├── employer/             # 구인자 (88개) ⭐ 가장 많음
+│   │   ├── jobs/                 # 구인공고 (23개)
+│   │   ├── schedule/             # 스케줄 (15개)
+│   │   ├── admin/                # 관리자 (15개)
+│   │   ├── auth/                 # 인증 (13개)
+│   │   ├── notifications/        # 알림 (8개)
+│   │   ├── support/              # 고객지원 (7개)
+│   │   ├── qr/                   # QR 코드 (4개)
+│   │   └── ...                   # 기타 (applicant, headers, navigation 등 11개 폴더)
 │   │
-│   ├── hooks/                    # 45개 커스텀 훅
-│   ├── services/                 # 42개 비즈니스 서비스
-│   ├── stores/                   # 9개 Zustand 스토어
-│   ├── types/                    # 26개 타입 정의
+│   ├── hooks/                    # 49개 커스텀 훅
+│   ├── services/                 # 43개 비즈니스 서비스
+│   ├── stores/                   # 8개 Zustand 스토어
+│   ├── types/                    # 27개 타입 정의
 │   ├── schemas/                  # 18개 Zod 스키마
-│   ├── errors/                   # 에러 시스템 (12개)
+│   ├── errors/                   # 에러 시스템 (8개)
 │   │   ├── AppError.ts           # 기본 에러 클래스
 │   │   ├── BusinessErrors.ts     # 비즈니스 로직 에러
 │   │   ├── NotificationErrors.ts # 알림 에러
 │   │   ├── errorUtils.ts         # 에러 유틸리티
 │   │   ├── firebaseErrorMapper.ts # Firebase 에러 변환
-│   │   └── serviceErrorHandler.ts # 서비스 에러 처리 등
+│   │   ├── guardErrors.ts        # 가드 에러
+│   │   └── serviceErrorHandler.ts # 서비스 에러 처리
 │   │
-│   ├── repositories/             # 20개 (Repository 패턴) ⭐
-│   │   ├── interfaces/           # Repository 인터페이스 (10개)
-│   │   │   ├── IApplicationRepository.ts
-│   │   │   ├── IJobPostingRepository.ts
-│   │   │   ├── IWorkLogRepository.ts
+│   ├── repositories/             # 22개 (Repository 패턴) ⭐
+│   │   ├── interfaces/           # Repository 인터페이스 (11개)
 │   │   │   ├── IAdminRepository.ts
+│   │   │   ├── IAnnouncementRepository.ts
+│   │   │   ├── IApplicationRepository.ts
 │   │   │   ├── IConfirmedStaffRepository.ts
 │   │   │   ├── IEventQRRepository.ts
+│   │   │   ├── IJobPostingRepository.ts
 │   │   │   ├── INotificationRepository.ts
 │   │   │   ├── IReportRepository.ts
 │   │   │   ├── ISettlementRepository.ts
-│   │   │   └── IUserRepository.ts
-│   │   └── firebase/             # Firebase 구현체 (10개)
-│   │       ├── ApplicationRepository.ts
-│   │       ├── JobPostingRepository.ts
-│   │       ├── WorkLogRepository.ts
+│   │   │   ├── IUserRepository.ts
+│   │   │   └── IWorkLogRepository.ts
+│   │   └── firebase/             # Firebase 구현체 (11개)
 │   │       ├── AdminRepository.ts
+│   │       ├── AnnouncementRepository.ts
+│   │       ├── ApplicationRepository.ts
 │   │       ├── ConfirmedStaffRepository.ts
 │   │       ├── EventQRRepository.ts
+│   │       ├── JobPostingRepository.ts
 │   │       ├── NotificationRepository.ts
 │   │       ├── ReportRepository.ts
 │   │       ├── SettlementRepository.ts
-│   │       └── UserRepository.ts
+│   │       ├── UserRepository.ts
+│   │       └── WorkLogRepository.ts
 │   │
-│   ├── shared/                   # 25개 (공유 로직) ⭐
+│   ├── shared/                   # 26개 (공유 로직) ⭐
+│   │   ├── cache/                # counterSyncCache (카운터 동기화)
+│   │   ├── deeplink/             # DeepLink 공유 로직
 │   │   ├── errors/               # hookErrorHandler
+│   │   ├── firestore/            # Firestore 공유 유틸리티
 │   │   ├── id/                   # IdNormalizer (ID 정규화)
 │   │   ├── realtime/             # RealtimeManager (실시간 구독)
 │   │   ├── role/                 # RoleResolver (권한 계산)
 │   │   ├── status/               # StatusMapper (상태 흐름)
-│   │   ├── time/                 # TimeNormalizer (시간 정규화)
-│   │   ├── deeplink/             # DeepLink 공유 로직
-│   │   └── firestore/            # Firestore 공유 유틸리티
+│   │   └── time/                 # TimeNormalizer (시간 정규화)
 │   │
-│   ├── domains/                  # 도메인 로직 (16개) ⭐
-│   │   ├── application/          # ApplicationValidator 등
+│   ├── domains/                  # 도메인 로직 (14개) ⭐
+│   │   ├── application/          # ApplicationValidator, ApplicationStatusMachine
 │   │   ├── job/                  # 공고 도메인 로직
-│   │   ├── schedule/             # ScheduleMerger 등
-│   │   ├── settlement/           # SettlementCalculator, TaxCalculator
+│   │   ├── schedule/             # ScheduleMerger, ScheduleConverter, WorkLogCreator
+│   │   ├── settlement/           # SettlementCalculator, TaxCalculator, SettlementCache
 │   │   └── staff/                # 스태프 도메인 로직
 │   │
-│   ├── utils/                    # 38개 유틸리티
+│   ├── utils/                    # 37개 유틸리티
 │   ├── lib/                      # 라이브러리 설정 (7개)
 │   │   ├── queryClient.ts        # React Query + Query Keys
 │   │   ├── firebase.ts           # Firebase 지연 초기화
@@ -443,9 +447,9 @@ uniqn-mobile/
 │   │   ├── secureStorage.ts      # Secure Storage
 │   │   ├── invalidationStrategy.ts # 쿼리 무효화 전략
 │   │   └── env.ts                # 환경변수
-│   ├── config/                   # 설정 (4개)
+│   ├── config/                   # 설정 (3개)
 │   │   └── env.ts
-│   └── constants/                # 상수 (12개)
+│   └── constants/                # 상수 (10개)
 │
 ├── __tests__/                    # 테스트
 ├── __mocks__/                    # 모킹 설정
@@ -459,22 +463,22 @@ uniqn-mobile/
 │  Presentation Layer (app/, components/)                     │
 │  └─ UI 렌더링만, 비즈니스 로직/Firebase 직접 호출 금지        │
 ├─────────────────────────────────────────────────────────────┤
-│  Hooks Layer (45개 커스텀 훅)                               │
+│  Hooks Layer (49개 커스텀 훅)                               │
 │  └─ 상태와 서비스 연결, 로딩/에러 상태 관리                   │
 ├─────────────────────────────────────────────────────────────┤
-│  State Layer (Zustand 9개 + TanStack Query)                 │
+│  State Layer (Zustand 8개 + TanStack Query)                 │
 │  └─ Zustand: UI/세션 상태  |  Query: 서버 데이터 캐싱        │
 ├─────────────────────────────────────────────────────────────┤
-│  Domain Layer (16개 도메인 로직) ⭐                          │
+│  Domain Layer (14개 도메인 로직) ⭐                          │
 │  └─ ApplicationValidator, ScheduleMerger, SettlementCalculator│
 ├─────────────────────────────────────────────────────────────┤
-│  Shared Layer (25개 공유 모듈)                              │
+│  Shared Layer (26개 공유 모듈)                              │
 │  └─ IdNormalizer, RoleResolver, StatusMapper, TimeNormalizer │
 ├─────────────────────────────────────────────────────────────┤
-│  Service Layer (42개 서비스)                                │
+│  Service Layer (43개 서비스)                                │
 │  └─ 비즈니스 로직, Repository 호출, 에러 처리                │
 ├─────────────────────────────────────────────────────────────┤
-│  Repository Layer (20개: 인터페이스 10 + 구현체 10) ⭐       │
+│  Repository Layer (22개: 인터페이스 11 + 구현체 11) ⭐       │
 │  └─ 데이터 접근 추상화, Firebase Modular API 캡슐화          │
 ├─────────────────────────────────────────────────────────────┤
 │  Firebase Layer (Auth, Firestore, Storage, Functions)       │
@@ -511,7 +515,7 @@ uniqn-mobile/
 </GestureHandlerRootView>
 ```
 
-### Zustand 스토어 (9개)
+### Zustand 스토어 (8개)
 
 ```yaml
 authStore (12.9KB):
@@ -552,7 +556,7 @@ tabFiltersStore:
   - 공고 목록 필터 유지
 ```
 
-### 서비스 레이어 (42개)
+### 서비스 레이어 (43개)
 
 ```yaml
 Core (8개):
@@ -601,7 +605,7 @@ Infrastructure (25개):
   - versionService: 앱 버전 관리
 ```
 
-### 커스텀 훅 (45개)
+### 커스텀 훅 (49개)
 
 ```yaml
 App (2):
@@ -626,9 +630,8 @@ Applications (2):
   - useApplications: 지원 제출/취소 (Optimistic Update)
   - useAssignmentSelection: 선택/취소
 
-Schedule (2):
+Schedule (1):
   - useSchedules: 스케줄 목록/월별/날짜별/통계
-  - useCalendarView: 캘린더 뷰
 
 WorkLog (1):
   - useWorkLogs: 근무 기록
@@ -641,8 +644,13 @@ Notification (2):
   - useNotifications: 알림 목록
   - useNotificationHandler: 알림 처리
 
-Employer (6):
-  - useApplicantManagement: 지원자 관리 (구 useApplicantManagement)
+Employer (7):
+  - useApplicantManagement: 지원자 관리 (applicant/ 하위 모듈)
+    - useApplicantMutations: 지원자 상태 변경
+    - useApplicantsByJobPosting: 공고별 지원자 조회
+    - useCancellationManagement: 취소 관리
+    - useStaffConversion: 스태프 변환
+  - useApplicantProfiles: 지원자 프로필 조회
   - useSettlement: 정산
   - useSettlementDateNavigation: 정산 날짜 탐색
   - useConfirmedStaff: 확정 스태프
@@ -659,7 +667,7 @@ User (2):
   - useUserProfile: 프로필 관리
   - useOnboarding: 온보딩 플로우
 
-Infrastructure (8):
+Infrastructure (10):
   - useNavigationTracking: Analytics 추적
   - useNetworkStatus: 네트워크 상태
   - useDeepLink: 딥링크 라우팅
@@ -669,6 +677,7 @@ Infrastructure (8):
   - useRealtimeQuery: 실시간 쿼리 구독
   - useShare: 공유 기능
   - useAllowances: 수당 관리
+  - useUnsavedChangesGuard: 미저장 변경 감지
 ```
 
 ### Query Keys 중앙 관리 (14개 도메인)
@@ -710,7 +719,7 @@ export const cachingPolicies = {
 };
 ```
 
-### UI 컴포넌트 (49개)
+### UI 컴포넌트 (50개)
 
 ```yaml
 기본 (6):
@@ -869,18 +878,19 @@ class JobPostingRepository implements IJobPostingRepository {
 
 | Repository | 담당 컬렉션 | 주요 메서드 |
 |------------|-----------|------------|
-| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus |
-| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update |
-| WorkLogRepository | workLogs | findBySchedule, checkIn, checkOut |
 | AdminRepository | users (관리) | findAll, updateRole, ban |
+| AnnouncementRepository | announcements | findAll, create, update, delete |
+| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus |
 | ConfirmedStaffRepository | confirmedStaff | findByJobPosting, findByDate |
 | EventQRRepository | eventQR | create, validate, findCurrent |
+| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update |
 | NotificationRepository | notifications | findByUser, markAsRead, create |
 | ReportRepository | reports | create, findByTarget, updateStatus |
 | SettlementRepository | settlements | findByJobPosting, create, updateStatus |
 | UserRepository | users | findById, updateProfile, delete |
+| WorkLogRepository | workLogs | findBySchedule, checkIn, checkOut |
 
-### Shared 모듈 (25개, 8개 도메인)
+### Shared 모듈 (26개, 9개 도메인)
 
 ```typescript
 // ID 정규화 (shared/id/)
@@ -1031,16 +1041,19 @@ eas build --platform android    # Android 빌드
 | ESLint 경고 | < 10개 | < 5개 | - |
 | 테스트 커버리지 (전체) | 14%+ | 60%+ | 14% |
 | 테스트 커버리지 (services/) | 40%+ | 70%+ | 40% |
-| Repository 패턴 적용 | 핵심 3개 | 전체 | 10개 |
+| Repository 패턴 적용 | 핵심 3개 | 전체 | 11개 |
 | Shared 모듈 테스트 | 80%+ | 90%+ | 80%+ |
 
 ---
 
 ## 주요 문서 참조
 
-### 공통 문서
+### 문서 우선순위
 
-> **참고**: docs/ 내 문서 대부분은 레거시 웹앱(app2/) 기준입니다. 모바일앱 개발 시 이 CLAUDE.md와 specs/react-native-app/을 우선 참조하세요.
+> **단일 소스 원칙**: 모바일앱 개발 시 이 CLAUDE.md를 최우선으로 참조합니다.
+> docs/ 내 문서 대부분은 레거시 웹앱(app2/) 기준이며, specs/react-native-app/의 일부 수치는 본 문서와 차이가 있을 수 있습니다.
+
+### 공통 문서
 
 | 문서 | 경로 | 설명 | 상태 |
 |------|------|------|------|
@@ -1055,11 +1068,38 @@ eas build --platform android    # Android 빌드
 
 | 문서 | 경로 | 설명 |
 |------|------|------|
-| RN 스펙 개요 | specs/react-native-app/README.md | 모바일앱 설계 개요 |
-| 아키텍처 | specs/react-native-app/architecture.md | RN 앱 아키텍처 |
-| API 스펙 | specs/react-native-app/api-spec.md | API 명세 |
-| 화면 설계 | specs/react-native-app/screens/ | 화면별 상세 스펙 |
-| 컴포넌트 | specs/react-native-app/components.md | 컴포넌트 설계 |
+| RN 스펙 개요 | specs/react-native-app/00-overview.md | 모바일앱 설계 개요 |
+| 아키텍처 | specs/react-native-app/01-architecture.md | RN 앱 아키텍처 |
+| 에러 처리 | specs/react-native-app/09-error-handling.md | 에러 처리 설계 |
+| 화면 설계 | specs/react-native-app/04-screens.md | 화면별 상세 스펙 |
+| 컴포넌트 | specs/react-native-app/05-components.md | 컴포넌트 설계 |
+| 개발 체크리스트 | specs/react-native-app/DEVELOPMENT_CHECKLIST.md | Phase별 진행 상태 |
+
+### 문서 중복/정리 현황
+
+> 아래는 문서 간 중복 분석 결과입니다. 향후 통합 정리 시 참고하세요.
+
+**높은 중복도 (통합 권장):**
+
+| 문서 A | 문서 B | 중복 영역 |
+|--------|--------|---------|
+| CLAUDE.md | specs/react-native-app/00-overview.md | 기술 스택, 프로젝트 구조, 현황 수치 |
+| CLAUDE.md | specs/react-native-app/01-architecture.md | 아키텍처 레이어, 스토어, 서비스 목록 |
+| CLAUDE.md | docs/core/DEVELOPMENT_GUIDE.md | 최우선 지침, 공통 규칙, 역할 체계 |
+| CLAUDE.md | docs/reference/ARCHITECTURE.md | 폴더 구조, 기술 스택 |
+| docs/features/PERMISSION_SYSTEM.md | docs/reference/DATA_SCHEMA.md | 역할 정의, 권한 계층 |
+| 결제 문서 4개 | (상호 중복) | 포인트 시스템 설계/구현 40-50% 중복 |
+| 알림 문서 2개 | (상호 중복) | 알림 시스템 상태/운영 40% 중복 |
+
+**레거시 표시 필요 (app2/ 전용):**
+- docs/core/CAPACITOR_MIGRATION_GUIDE.md (Expo 사용으로 불필요)
+- docs/guides/MIGRATION_GUIDE.md (대상 불명확)
+- docs/reference/API_REFERENCE.md (웹앱/Cloud Functions 구분 필요)
+- specs/001-* 시리즈 (레거시 마이그레이션 스펙)
+
+**알려진 문서 간 불일치:**
+- 역할 정의: CLAUDE.md(5개 역할) vs DATA_SCHEMA.md(3개 역할) — manager/user 포함 여부
+- 필드명: CLAUDE.md(eventId) vs DATA_SCHEMA.md(jobPostingId 표준) — 마이그레이션 과도기
 
 ---
 
@@ -1087,6 +1127,6 @@ Capacitor 7.4 (iOS/Android 하이브리드)
 
 ---
 
-*마지막 업데이트: 2026-02-12*
+*마지막 업데이트: 2026-02-13*
 *모바일앱 버전: v1.0.0*
-*문서 기준: 모바일앱 중심 개발 전환*
+*문서 기준: 모바일앱 중심 개발 전환 (파일 수치 코드베이스 동기화 완료)*
