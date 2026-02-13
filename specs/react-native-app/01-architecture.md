@@ -18,7 +18,7 @@
 │  └───────┼────────────┼────────────┼────────────┼──────────┘   │
 │          │            │            │            │               │
 │  ┌───────┴────────────┴────────────┴────────────┴──────────┐   │
-│  │                      Hooks Layer (46개)                  │   │
+│  │                      Hooks Layer (49개)                  │   │
 │  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐│   │
 │  │  │ useAuth  │  │ useJobs  │  │useSchedule│  │useSettle ││   │
 │  │  │ +Guard   │  │ +Detail  │  │ (8함수)  │  │ (10함수) ││   │
@@ -28,21 +28,21 @@
 │  ┌───────┴─────────────┴─────────────┴─────────────┴────────┐  │
 │  │                    State Layer                            │  │
 │  │  ┌────────────────┐  ┌────────────────────────────┐      │  │
-│  │  │ Zustand (10개) │  │  TanStack Query (14도메인)  │      │  │
+│  │  │ Zustand (8개)  │  │  TanStack Query (14도메인)  │      │  │
 │  │  │ auth, theme,   │  │  Query Keys 중앙 관리      │      │  │
 │  │  │ toast, modal.. │  │  캐싱 정책 적용            │      │  │
 │  │  └────────┬───────┘  └────────────┬───────────────┘      │  │
 │  └───────────┼───────────────────────┼───────────────────────┘  │
 │              │                       │                          │
 │  ┌───────────┴───────────────────────┴──────────────────────┐  │
-│  │                   Shared Layer (33개)                     │  │
+│  │                   Shared Layer (26개)                     │  │
 │  │  ┌───────────┐ ┌───────────┐ ┌───────────┐ ┌──────────┐ │  │
 │  │  │IdNormalizer│ │RoleResolver│ │StatusMapper│ │TimeNorm │ │  │
 │  │  └─────┬─────┘ └─────┬─────┘ └─────┬─────┘ └────┬─────┘ │  │
 │  └────────┼─────────────┼─────────────┼────────────┼────────┘  │
 │           │             │             │            │            │
 │  ┌────────┴─────────────┴─────────────┴────────────┴────────┐  │
-│  │                   Service Layer (44개)                    │  │
+│  │                   Service Layer (43개)                    │  │
 │  │  ┌─────────┐  ┌─────────┐  ┌─────────┐  ┌─────────┐     │  │
 │  │  │  Auth   │  │   Job   │  │Schedule │  │Settlement│     │  │
 │  │  │ Service │  │ Service │  │ Service │  │ Service │     │  │
@@ -50,7 +50,7 @@
 │  └───────┼────────────┼────────────┼────────────┼───────────┘  │
 │          │            │            │            │               │
 │  ┌───────┴────────────┴────────────┴────────────┴───────────┐  │
-│  │                  Repository Layer (15개)                  │  │
+│  │                  Repository Layer (22개)                  │  │
 │  │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐      │  │
 │  │  │ Application │  │ JobPosting  │  │  WorkLog    │      │  │
 │  │  │ Repository  │  │ Repository  │  │ Repository  │      │  │
@@ -67,7 +67,7 @@
 └─────────────────────────────────────────────────────────────────┘
 ```
 
-### Domains Layer (비즈니스 로직 분리 - 16개 파일)
+### Domains Layer (비즈니스 로직 분리 - 14개 파일)
 
 ```
 domains/
@@ -223,20 +223,20 @@ import { JobCardSkeleton } from './JobCardSkeleton';
 │  (app/, components/)                                  │
 │         │                                             │
 │         ▼                                             │
-│        Hooks (46개) ◄────────────────────────────┐   │
+│        Hooks (49개) ◄────────────────────────────┐   │
 │         │                                        │   │
 │         ▼                                        │   │
-│       Stores (10개) ◄────── TanStack Query       │   │
+│       Stores (8개) ◄────── TanStack Query        │   │
 │         │                        │               │   │
 │         ▼                        ▼               │   │
-│        Shared (33개) ◄─────────────────────────  │   │
+│        Shared (26개) ◄─────────────────────────  │   │
 │  (IdNormalizer, RoleResolver, StatusMapper...)   │   │
 │         │                        │               │   │
 │         ▼                        ▼               │   │
-│       Services (44개) ─────► Domains (16개)      │   │
+│       Services (43개) ─────► Domains (14개)      │   │
 │         │                                        │   │
 │         ▼                                        │   │
-│    Repositories (15개)                           │   │
+│    Repositories (22개)                           │   │
 │         │                                        │   │
 │         ▼                                        │   │
 │       Firebase Layer (Web SDK)                   │   │
@@ -277,23 +277,23 @@ class ApplicationRepository implements IApplicationRepository {
 ❌ Hooks → Firebase 직접 호출 (금지)
 ```
 
-### 구현된 Repository 목록 (15개 파일)
+### 구현된 Repository 목록 (22개: 인터페이스 11 + 구현체 11)
 | Repository | 담당 컬렉션 | 주요 메서드 |
 |------------|-----------|------------|
-| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus, delete |
-| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update, delete |
-| WorkLogRepository | workLogs | findBySchedule, findByUser, checkIn, checkOut |
-| NotificationRepository | notifications | findUnread, markAsRead, subscribeToChanges |
-| UserRepository | users | findById, findByEmail, create, update |
-| EventQRRepository | qrMetadata | create, validate, deactivate, findByEvent |
+| AdminRepository | users (관리) | findAll, updateRole, ban |
+| AnnouncementRepository | announcements | findAll, create, update, delete |
+| ApplicationRepository | applications | findByJobPosting, findByUser, create, updateStatus |
+| ConfirmedStaffRepository | confirmedStaff | findByJobPosting, findByDate |
+| EventQRRepository | eventQR | create, validate, findCurrent |
+| JobPostingRepository | jobPostings | findActive, findByEmployer, create, update |
+| NotificationRepository | notifications | findByUser, markAsRead, create |
+| ReportRepository | reports | create, findByTarget, updateStatus |
+| SettlementRepository | settlements | findByJobPosting, create, updateStatus |
+| UserRepository | users | findById, updateProfile, delete |
+| WorkLogRepository | workLogs | findBySchedule, checkIn, checkOut |
 
-**인터페이스 (7개)**: `repositories/interfaces/`
-- IApplicationRepository, IJobPostingRepository, IWorkLogRepository
-- INotificationRepository, IUserRepository, IEventQRRepository
-- index.ts (배럴 export)
-
-**Firebase 구현체 (8개)**: `repositories/firebase/`
-- 각 인터페이스의 Firestore Modular API 구현
+**인터페이스 (11개)**: `repositories/interfaces/`
+**Firebase 구현체 (11개)**: `repositories/firebase/`
 
 ---
 
@@ -365,7 +365,7 @@ function AppContent() {
 | TournamentProvider | 제외 (Phase 2) |
 | UnifiedDataInitializer | `useAppInitialize` 훅 |
 
-### Zustand 스토어 목록 (10개 파일)
+### Zustand 스토어 목록 (8개)
 | 스토어 | 역할 | persist |
 |--------|------|---------|
 | `authStore` | 인증 상태, user, profile, isAdmin/isEmployer 플래그 | MMKV |
@@ -387,16 +387,17 @@ function AppContent() {
 
 ---
 
-## 에러 처리 전략 (9개 파일)
+## 에러 처리 전략 (8개 파일)
 
 ### 에러 시스템 구조
 ```
-src/errors/                    # 7개 파일
+src/errors/                    # 8개 파일
 ├── AppError.ts               # 기본 에러 클래스 (code, category, severity)
 ├── BusinessErrors.ts         # 비즈니스 로직 에러 (20+ 클래스)
 ├── NotificationErrors.ts     # 알림 관련 에러
 ├── errorUtils.ts             # 에러 유틸리티
 ├── firebaseErrorMapper.ts    # Firebase 에러 → AppError 변환
+├── guardErrors.ts            # 가드 에러
 ├── serviceErrorHandler.ts    # 서비스 레이어 에러 처리
 └── index.ts                  # 배럴 export
 

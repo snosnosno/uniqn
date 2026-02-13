@@ -4,7 +4,13 @@
 **버전**: v2.0.0 (하트/다이아 포인트 시스템)
 **상태**: ✅ **최종 확정**
 
-> 📋 **상세 구현 계획**: [mobile-payment-plan.md](../../../mobile-payment-plan.md)
+> 📋 **관련 문서 (역할별 참조)**:
+> - 🔧 **기술 아키텍처/API**: [PAYMENT_SYSTEM_DEVELOPMENT.md](./PAYMENT_SYSTEM_DEVELOPMENT.md) (개발자용)
+> - 💻 **구현 가이드/코드**: [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](./CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md) (개발자용)
+> - 💼 **운영 절차**: [PAYMENT_OPERATIONS.md](../../operations/PAYMENT_OPERATIONS.md) (운영팀용)
+>
+> ⚠️ 포인트 정의, 패키지 가격표, 하트 획득표의 **단일 소스(SSOT)**는 이 문서입니다.
+> 다른 문서에서 동일 내용이 반복되는 경우 이 문서를 기준으로 합니다.
 
 ---
 

@@ -164,7 +164,7 @@ uniqn-mobile/
 │       └── stats/                # 통계
 │
 ├── src/
-│   ├── components/               # 245개 (22개 폴더)
+│   ├── components/               # 245개 (20개 폴더)
 │   │   ├── ui/                   # 기본 UI 컴포넌트
 │   │   ├── employer/             # 구인자 전용 ⭐ 가장 많음
 │   │   ├── jobs/                 # 공고 관련
@@ -182,13 +182,11 @@ uniqn-mobile/
 │   │   ├── modals/               # 모달
 │   │   ├── headers/              # 헤더
 │   │   ├── navigation/           # 네비게이션
-│   │   ├── forms/                # 폼 컴포넌트
-│   │   ├── common/               # 공통
 │   │   ├── icons/                # 아이콘
 │   │   ├── onboarding/           # 온보딩
 │   │   └── lazy/                 # 지연 로딩
 │   │
-│   ├── hooks/                    # 46개 커스텀 훅
+│   ├── hooks/                    # 49개 커스텀 훅
 │   │   ├── useAuth.ts, useAuthGuard.ts
 │   │   ├── useJobPostings.ts, useJobDetail.ts
 │   │   ├── useApplications.ts
@@ -198,7 +196,7 @@ uniqn-mobile/
 │   │   ├── applicant/ (지원자 관리 훅 폴더)
 │   │   └── ...
 │   │
-│   ├── stores/                   # 10개 Zustand 스토어
+│   ├── stores/                   # 8개 Zustand 스토어
 │   │   ├── authStore.ts          # 인증 상태
 │   │   ├── themeStore.ts         # 테마
 │   │   ├── toastStore.ts         # Toast 알림
@@ -209,7 +207,7 @@ uniqn-mobile/
 │   │   ├── tabFiltersStore.ts    # 탭 필터
 │   │   └── index.ts
 │   │
-│   ├── services/                 # 44개 비즈니스 서비스
+│   ├── services/                 # 43개 비즈니스 서비스
 │   │   ├── authService.ts
 │   │   ├── jobService.ts
 │   │   ├── applicationService.ts # v2.0 Assignment
@@ -221,19 +219,33 @@ uniqn-mobile/
 │   │   ├── deepLinkService.ts
 │   │   └── ...
 │   │
-│   ├── repositories/             # 15개 (Repository 패턴)
-│   │   ├── interfaces/           # 7개 인터페이스
+│   ├── repositories/             # 22개 (Repository 패턴: 인터페이스 11 + 구현체 11)
+│   │   ├── interfaces/           # 11개 인터페이스
+│   │   │   ├── IAdminRepository.ts
+│   │   │   ├── IAnnouncementRepository.ts
 │   │   │   ├── IApplicationRepository.ts
+│   │   │   ├── IConfirmedStaffRepository.ts
+│   │   │   ├── IEventQRRepository.ts
 │   │   │   ├── IJobPostingRepository.ts
-│   │   │   ├── IWorkLogRepository.ts
-│   │   │   └── ...
-│   │   └── firebase/             # 8개 구현체
+│   │   │   ├── INotificationRepository.ts
+│   │   │   ├── IReportRepository.ts
+│   │   │   ├── ISettlementRepository.ts
+│   │   │   ├── IUserRepository.ts
+│   │   │   └── IWorkLogRepository.ts
+│   │   └── firebase/             # 11개 구현체
+│   │       ├── AdminRepository.ts
+│   │       ├── AnnouncementRepository.ts
 │   │       ├── ApplicationRepository.ts
+│   │       ├── ConfirmedStaffRepository.ts
+│   │       ├── EventQRRepository.ts
 │   │       ├── JobPostingRepository.ts
-│   │       ├── WorkLogRepository.ts
-│   │       └── ...
+│   │       ├── NotificationRepository.ts
+│   │       ├── ReportRepository.ts
+│   │       ├── SettlementRepository.ts
+│   │       ├── UserRepository.ts
+│   │       └── WorkLogRepository.ts
 │   │
-│   ├── shared/                   # 33개 공유 모듈
+│   ├── shared/                   # 26개 공유 모듈 (9개 도메인)
 │   │   ├── id/                   # IdNormalizer
 │   │   ├── role/                 # RoleResolver
 │   │   ├── status/               # StatusMapper
@@ -242,18 +254,19 @@ uniqn-mobile/
 │   │   ├── deeplink/             # RouteMapper
 │   │   └── errors/               # hookErrorHandler
 │   │
-│   ├── domains/                  # 16개 도메인 모듈
+│   ├── domains/                  # 14개 도메인 모듈
 │   │   ├── application/          # ApplicationStatusMachine
 │   │   ├── schedule/             # ScheduleMerger, WorkLogCreator
 │   │   ├── settlement/           # SettlementCalculator, TaxCalculator
 │   │   └── ...
 │   │
-│   ├── errors/                   # 에러 시스템 (7개)
+│   ├── errors/                   # 에러 시스템 (8개)
 │   │   ├── AppError.ts           # 기본 에러 클래스
 │   │   ├── BusinessErrors.ts     # 비즈니스 로직 에러 (20+ 클래스)
 │   │   ├── NotificationErrors.ts # 알림 관련 에러
 │   │   ├── errorUtils.ts         # 에러 유틸리티
 │   │   ├── firebaseErrorMapper.ts# Firebase 에러 변환
+│   │   ├── guardErrors.ts        # 가드 에러
 │   │   ├── serviceErrorHandler.ts# 서비스 에러 처리
 │   │   └── index.ts              # 배럴 export
 │   │
@@ -288,18 +301,18 @@ uniqn-mobile/
 | 항목 | 개수 | 설명 |
 |------|------|------|
 | **라우트 파일 (app/)** | 68개 | Expo Router 파일 기반 라우팅 |
-| **컴포넌트** | 245개 | 22개 폴더로 구성 |
-| **커스텀 훅** | 46개 | 화면별 데이터/상태 관리 |
-| **서비스** | 44개 | 비즈니스 로직 |
-| **Zustand 스토어** | 10개 | 전역 상태 (MMKV persist) |
-| **Repository** | 15개 | 데이터 접근 추상화 |
-| **공유 모듈** | 33개 | IdNormalizer, RoleResolver 등 |
-| **도메인 모듈** | 16개 | StatusMachine, Calculator 등 |
-| **에러 시스템** | 9개 | AppError 계층 (errors/ 7 + shared/errors/ 2) |
-| **타입 파일** | 28개 | TypeScript 타입 정의 |
-| **Zod 스키마** | 19개 | 폼 검증 스키마 |
-| **유틸리티** | 36개 | 포매터, 헬퍼 함수 |
-| **상수** | 9개 | 공통 상수 정의 |
+| **컴포넌트** | 245개 | 20개 폴더로 구성 |
+| **커스텀 훅** | 49개 | 화면별 데이터/상태 관리 |
+| **서비스** | 43개 | 비즈니스 로직 |
+| **Zustand 스토어** | 8개 | 전역 상태 (MMKV persist) |
+| **Repository** | 22개 | 데이터 접근 추상화 (인터페이스 11 + 구현체 11) |
+| **공유 모듈** | 26개 | IdNormalizer, RoleResolver 등 (9개 도메인) |
+| **도메인 모듈** | 14개 | StatusMachine, Calculator 등 |
+| **에러 시스템** | 8개 | AppError 계층 (errors/ 8) |
+| **타입 파일** | 27개 | TypeScript 타입 정의 |
+| **Zod 스키마** | 18개 | 폼 검증 스키마 |
+| **유틸리티** | 37개 | 포매터, 헬퍼 함수 |
+| **상수** | 10개 | 공통 상수 정의 |
 | **라이브러리 설정** | 7개 | Firebase, QueryClient 등 |
 | **환경설정** | 3개 | env, config |
 | **전체 src 파일** | 522개 | TypeScript/TSX |

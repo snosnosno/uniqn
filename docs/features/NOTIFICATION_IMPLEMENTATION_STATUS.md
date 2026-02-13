@@ -5,6 +5,12 @@
 **문서 버전**: 3.0.0
 
 > **모바일앱 알림**: uniqn-mobile/은 FCM + expo-notifications를 통해 푸시 알림을 지원합니다.
+>
+> 📚 **관련 문서 (역할별 참조)**:
+> - 💻 **모바일앱 구현 상세**: [10-notifications.md](../../specs/react-native-app/10-notifications.md) (앱개발자용 — FCM, Zustand, UI, 30개 타입)
+> - 💼 **운영 가이드**: [NOTIFICATION_OPERATIONS.md](../operations/NOTIFICATION_OPERATIONS.md) (운영팀용 — Functions 관리, 모니터링)
+>
+> 이 문서는 **구현 현황 추적용**입니다. Phase 진행도, 테스트 결과, 해결된 이슈에 집중합니다.
 
 ---
 

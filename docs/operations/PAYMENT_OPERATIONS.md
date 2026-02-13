@@ -1,9 +1,16 @@
 # 💼 포인트 시스템 운영 가이드
 
-**최종 업데이트**: 2026년 2월 1일
+**최종 업데이트**: 2026년 2월 13일
 **버전**: v2.0.0 (하트/다이아 포인트 시스템)
 **상태**: 🔧 **개발 중**
 **프로젝트**: UNIQN 포인트 시스템
+
+> **📋 관련 문서**:
+> - 📊 **포인트 정의 & 가격표 (마스터)**: [MODEL_B_CHIP_SYSTEM_FINAL.md](../features/payment/MODEL_B_CHIP_SYSTEM_FINAL.md)
+> - 🔧 **기술 아키텍처/API**: [PAYMENT_SYSTEM_DEVELOPMENT.md](../features/payment/PAYMENT_SYSTEM_DEVELOPMENT.md)
+> - 💻 **구현 가이드**: [CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md](../features/payment/CHIP_SYSTEM_IMPLEMENTATION_GUIDE.md)
+>
+> 포인트 정의, 패키지, 획득표 등 기획 정보는 마스터 문서를 참조하세요.
 
 ---
 
