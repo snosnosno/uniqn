@@ -1,15 +1,18 @@
 /**
  * UNIQN Mobile - 회원가입 Step 2: 본인인증
  *
- * @description 포트원 V2 휴대폰 본인인증
- * @version 2.0.0
+ * @description 이름/생년월일/성별 입력 + Firebase Phone Auth(SMS OTP) 전화번호 인증
+ * @version 4.0.0
  */
 
-import React, { useState } from 'react';
-import { View, Text } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, Pressable, TextInput } from 'react-native';
+import { useForm, Controller } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
-import { IdentityVerification } from '@/components/auth/IdentityVerification';
-import type { VerificationResult } from '@/components/auth/IdentityVerification';
+import { Input } from '@/components/ui/Input';
+import { PhoneVerification } from '@/components/auth/PhoneVerification';
+import { signUpStep2Schema } from '@/schemas';
 import type { SignUpStep2Data } from '@/schemas';
 
 // ============================================================================
@@ -24,16 +27,159 @@ interface SignupStep2Props {
 }
 
 // ============================================================================
-// Helpers
+// Sub-components
 // ============================================================================
 
-/**
- * 18세 이상 검증
- */
-function validateAge(birthDate: string): boolean {
-  const birthYear = parseInt(birthDate.substring(0, 4), 10);
-  const currentYear = new Date().getFullYear();
-  return currentYear - birthYear >= 18;
+/** 생년월일 입력 (년/월/일 3칸) */
+function BirthDateInput({
+  value,
+  onChange,
+  disabled,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+}) {
+  const [year, setYear] = useState(value ? value.substring(0, 4) : '');
+  const [month, setMonth] = useState(value ? value.substring(4, 6) : '');
+  const [day, setDay] = useState(value ? value.substring(6, 8) : '');
+
+  const monthRef = useRef<TextInput>(null);
+  const dayRef = useRef<TextInput>(null);
+
+  const updateValue = (y: string, m: string, d: string) => {
+    if (y.length === 4 && m.length === 2 && d.length === 2) {
+      onChange(`${y}${m}${d}`);
+    } else if (y === '' && m === '' && d === '') {
+      onChange('');
+    }
+  };
+
+  const handleYearChange = (text: string) => {
+    const cleaned = text.replace(/\D/g, '').slice(0, 4);
+    setYear(cleaned);
+    if (cleaned.length === 4) {
+      monthRef.current?.focus();
+    }
+    updateValue(cleaned, month, day);
+  };
+
+  const handleMonthChange = (text: string) => {
+    const cleaned = text.replace(/\D/g, '').slice(0, 2);
+    setMonth(cleaned);
+    if (cleaned.length === 2) {
+      dayRef.current?.focus();
+    }
+    updateValue(year, cleaned, day);
+  };
+
+  const handleDayChange = (text: string) => {
+    const cleaned = text.replace(/\D/g, '').slice(0, 2);
+    setDay(cleaned);
+    updateValue(year, month, cleaned);
+  };
+
+  return (
+    <View className="flex-row gap-2">
+      <View className="flex-[2]">
+        <Input
+          placeholder="YYYY"
+          value={year}
+          onChangeText={handleYearChange}
+          keyboardType="number-pad"
+          maxLength={4}
+          editable={!disabled}
+          accessibilityLabel="출생 연도"
+        />
+      </View>
+      <View className="flex-1">
+        <TextInput
+          ref={monthRef}
+          className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 dark:border-gray-700 dark:bg-surface dark:text-gray-100"
+          placeholder="MM"
+          placeholderTextColor="#9CA3AF"
+          value={month}
+          onChangeText={handleMonthChange}
+          keyboardType="number-pad"
+          maxLength={2}
+          editable={!disabled}
+          accessibilityLabel="출생 월"
+        />
+      </View>
+      <View className="flex-1">
+        <TextInput
+          ref={dayRef}
+          className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 dark:border-gray-700 dark:bg-surface dark:text-gray-100"
+          placeholder="DD"
+          placeholderTextColor="#9CA3AF"
+          value={day}
+          onChangeText={handleDayChange}
+          keyboardType="number-pad"
+          maxLength={2}
+          editable={!disabled}
+          accessibilityLabel="출생 일"
+        />
+      </View>
+    </View>
+  );
+}
+
+/** 성별 선택 (남성/여성 버튼) */
+function GenderSelector({
+  value,
+  onChange,
+  disabled,
+}: {
+  value?: 'male' | 'female';
+  onChange: (value: 'male' | 'female') => void;
+  disabled?: boolean;
+}) {
+  return (
+    <View className="flex-row gap-3">
+      <Pressable
+        onPress={() => !disabled && onChange('male')}
+        className={`flex-1 py-3 rounded-xl items-center border ${
+          value === 'male'
+            ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
+            : 'bg-white dark:bg-surface border-gray-200 dark:border-gray-700'
+        }`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected: value === 'male' }}
+        accessibilityLabel="남성"
+      >
+        <Text
+          className={`text-base font-medium ${
+            value === 'male'
+              ? 'text-primary-600 dark:text-primary-400'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          남성
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => !disabled && onChange('female')}
+        className={`flex-1 py-3 rounded-xl items-center border ${
+          value === 'female'
+            ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
+            : 'bg-white dark:bg-surface border-gray-200 dark:border-gray-700'
+        }`}
+        accessibilityRole="radio"
+        accessibilityState={{ selected: value === 'female' }}
+        accessibilityLabel="여성"
+      >
+        <Text
+          className={`text-base font-medium ${
+            value === 'female'
+              ? 'text-primary-600 dark:text-primary-400'
+              : 'text-gray-500 dark:text-gray-400'
+          }`}
+        >
+          여성
+        </Text>
+      </Pressable>
+    </View>
+  );
 }
 
 // ============================================================================
@@ -41,73 +187,116 @@ function validateAge(birthDate: string): boolean {
 // ============================================================================
 
 export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: SignupStep2Props) {
-  const [verifiedResult, setVerifiedResult] = useState<VerificationResult | null>(
-    initialData?.identityVerified
-      ? {
-          name: initialData.verifiedName || '',
-          phone: initialData.verifiedPhone || '',
-          birthDate: initialData.verifiedBirthDate || '',
-          gender: initialData.verifiedGender || 'male',
-          provider: initialData.identityProvider || 'pass',
-          verifiedAt: new Date(),
-          identityVerificationId: initialData.identityVerificationId || '',
-        }
-      : null
+  const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
+    initialData?.verifiedPhone || null
   );
-  const [error, setError] = useState<string | null>(null);
 
-  const handleVerified = (result: VerificationResult) => {
-    // 18세 미만 가입 차단
-    if (result.birthDate && !validateAge(result.birthDate)) {
-      setError('만 18세 이상만 가입 가능합니다.');
-      return;
-    }
+  const {
+    control,
+    handleSubmit,
+    setValue,
+    formState: { errors },
+  } = useForm<SignUpStep2Data>({
+    resolver: zodResolver(signUpStep2Schema),
+    defaultValues: {
+      name: initialData?.name || '',
+      birthDate: initialData?.birthDate || '',
+      gender: initialData?.gender,
+      phoneVerified: initialData?.phoneVerified || (false as unknown as true),
+      verifiedPhone: initialData?.verifiedPhone || '',
+    },
+  });
 
-    setError(null);
-    setVerifiedResult(result);
-  };
+  const handleVerified = useCallback(
+    (phone: string) => {
+      setVerifiedPhone(phone);
+      setValue('phoneVerified', true);
+      setValue('verifiedPhone', phone);
+    },
+    [setValue]
+  );
 
-  const handleError = (err: Error) => {
-    setError(err.message);
-  };
-
-  const handleNext = () => {
-    if (!verifiedResult) {
-      setError('본인인증이 필요합니다.');
-      return;
-    }
-
-    onNext({
-      identityVerified: true,
-      identityProvider: verifiedResult.provider,
-      verifiedName: verifiedResult.name,
-      verifiedPhone: verifiedResult.phone,
-      verifiedBirthDate: verifiedResult.birthDate,
-      verifiedGender: verifiedResult.gender,
-      identityVerificationId: verifiedResult.identityVerificationId,
-    });
-  };
+  const onSubmit = useCallback(
+    (data: SignUpStep2Data) => {
+      onNext(data);
+    },
+    [onNext]
+  );
 
   return (
-    <View className="w-full flex-col gap-4">
-      {/* 본인인증 컴포넌트 */}
-      <IdentityVerification
+    <View className="w-full flex-col gap-5">
+      {/* 이름 입력 */}
+      <View>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          이름 (실명)
+        </Text>
+        <Controller
+          control={control}
+          name="name"
+          render={({ field: { onChange, onBlur, value } }) => (
+            <Input
+              placeholder="실명을 입력해주세요"
+              value={value}
+              onChangeText={onChange}
+              onBlur={onBlur}
+              editable={!isLoading}
+              accessibilityLabel="이름 입력"
+            />
+          )}
+        />
+        {errors.name && (
+          <Text className="text-sm text-error-500 mt-1">{errors.name.message}</Text>
+        )}
+      </View>
+
+      {/* 생년월일 입력 */}
+      <View>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          생년월일
+        </Text>
+        <Controller
+          control={control}
+          name="birthDate"
+          render={({ field: { onChange, value } }) => (
+            <BirthDateInput value={value} onChange={onChange} disabled={isLoading} />
+          )}
+        />
+        {errors.birthDate && (
+          <Text className="text-sm text-error-500 mt-1">{errors.birthDate.message}</Text>
+        )}
+      </View>
+
+      {/* 성별 선택 */}
+      <View>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">성별</Text>
+        <Controller
+          control={control}
+          name="gender"
+          render={({ field: { onChange, value } }) => (
+            <GenderSelector value={value} onChange={onChange} disabled={isLoading} />
+          )}
+        />
+        {errors.gender && (
+          <Text className="text-sm text-error-500 mt-1">{errors.gender.message}</Text>
+        )}
+      </View>
+
+      {/* 구분선 */}
+      <View className="border-t border-gray-200 dark:border-gray-700" />
+
+      {/* 전화번호 인증 */}
+      <PhoneVerification
         onVerified={handleVerified}
-        onError={handleError}
-        initialResult={verifiedResult}
+        initialPhone={verifiedPhone || initialData?.verifiedPhone}
         disabled={isLoading}
       />
-
-      {/* 에러 메시지 (18세 미만 등) */}
-      {error && (
-        <View className="bg-error-50 dark:bg-error-900/30 rounded-lg p-3">
-          <Text className="text-error-600 dark:text-error-400 text-sm text-center">{error}</Text>
-        </View>
+      {errors.phoneVerified && !verifiedPhone && (
+        <Text className="text-sm text-error-500 -mt-2">{errors.phoneVerified.message}</Text>
       )}
 
       {/* 버튼 영역 */}
-      <View className="mt-6 flex-col gap-3">
-        <Button onPress={handleNext} disabled={!verifiedResult || isLoading} fullWidth>
+      <View className="mt-4 flex-col gap-3">
+        <Button onPress={handleSubmit(onSubmit)} disabled={isLoading} fullWidth>
           다음
         </Button>
 

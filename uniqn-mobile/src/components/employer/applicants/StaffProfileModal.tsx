@@ -29,6 +29,7 @@ import {
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatTime } from '@/utils/dateUtils';
+import { formatBirthDate } from '@/utils/formatters';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { STATUS } from '@/constants';
@@ -256,12 +257,12 @@ export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModal
                 </View>
               )}
 
-              {userProfile.birthYear && (
+              {userProfile.birthDate && (
                 <View className="w-[48%]">
                   <GridInfoItem
                     icon={<CalendarIcon size={16} color="#6B7280" />}
-                    label="출생년도"
-                    value={`${userProfile.birthYear}년`}
+                    label="생년월일"
+                    value={formatBirthDate(userProfile.birthDate)}
                   />
                 </View>
               )}

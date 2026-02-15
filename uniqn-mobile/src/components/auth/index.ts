@@ -19,14 +19,8 @@ export { SignupForm, SignupStep1, SignupStep2, SignupStep3, SignupStep4 } from '
 // Social Login
 export { SocialLoginButtons } from './SocialLoginButtons';
 
-// Identity Verification
-export { IdentityVerification } from './IdentityVerification';
-export type {
-  IdentityProvider,
-  VerificationResult,
-  VerificationStatus,
-  IdentityVerificationProps,
-} from './IdentityVerification';
+// Phone Verification
+export { PhoneVerification } from './PhoneVerification';
 
 // Biometric
 export { BiometricButton, BiometricIconButton } from './BiometricButton';

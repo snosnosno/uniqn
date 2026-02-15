@@ -153,6 +153,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
 
   // 플러그인
   plugins: [
+    '@react-native-firebase/app',
+    '@react-native-firebase/auth',
     'expo-router',
     'expo-secure-store',
     [

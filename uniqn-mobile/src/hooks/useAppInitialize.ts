@@ -11,7 +11,8 @@
  * 4. Zustand hydration 대기 (MMKV 복원)
  * 5. Firebase 초기화
  * 6. 강제 업데이트 체크
- * 7-11. 인증 상태 확인 및 프로필 로드
+ * 7. Dual SDK 상태 일치 확인
+ * 8-12. 인증 상태 확인 및 프로필 로드
  *
  * TODO [출시 후]: 폰트 로딩 추가 (expo-font) - 기본 폰트 사용 시 불필요
  * NOTE: 푸시 알림 권한은 useNotificationHandler에서 처리
@@ -24,6 +25,7 @@ import { useAuthStore, waitForHydration } from '@/stores/authStore';
 import { useNotificationStore } from '@/stores/notificationStore';
 import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
+import { ensureDualSdkSync } from '@/lib/authBridge';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { notificationRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
@@ -155,19 +157,22 @@ export function useAppInitialize(): UseAppInitializeReturn {
         currentVersion: versionResult.currentVersion,
       });
 
-      // 7. 인증 상태 초기화 (복원된 상태 활용)
+      // 7. Dual SDK 상태 일치 확인 (native ↔ web)
+      await ensureDualSdkSync();
+
+      // 8. 인증 상태 초기화 (복원된 상태 활용)
       // getState()로 안정적인 함수 참조 획득
       await useAuthStore.getState().initialize();
 
-      // 8. 인증 상태 확인 (Firebase Auth 리스너 등록)
+      // 9. 인증 상태 확인 (Firebase Auth 리스너 등록)
       await useAuthStore.getState().checkAuthState();
 
-      // 9. 자동 로그인 설정 확인
+      // 10. 자동 로그인 설정 확인
       logger.debug('자동 로그인 설정 확인 중...', { component: 'useAppInitialize' });
       const autoLoginEnabled = await checkAutoLoginEnabled();
       logger.debug('자동 로그인 설정', { autoLoginEnabled, component: 'useAppInitialize' });
 
-      // 10. Firebase Auth 상태 확정 대기 및 토큰 갱신
+      // 11. Firebase Auth 상태 확정 대기 및 토큰 갱신
       // 웹앱에서 가입한 계정도 모바일앱에서 최신 Custom Claims를 가져옴
       logger.debug('Firebase Auth 상태 확정 대기 중...', { component: 'useAppInitialize' });
 

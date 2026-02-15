@@ -34,14 +34,14 @@ export type UserStatusSchema = z.infer<typeof userStatusSchema>;
 /**
  * 성별 스키마
  */
-export const genderSchema = z.enum(['male', 'female', 'other']);
+export const genderSchema = z.enum(['male', 'female']);
 
 export type GenderSchema = z.infer<typeof genderSchema>;
 
 /**
  * 프로필 업데이트 스키마
  *
- * @note name, phone, birthYear, gender는 본인인증 정보이므로 수정 불가
+ * @note name, phone, birthDate, gender는 회원가입 Step2 입력 정보이므로 수정 불가
  */
 export const updateProfileSchema = z.object({
   nickname: z

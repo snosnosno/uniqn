@@ -148,26 +148,49 @@ export const signUpStep1Schema = z
 export type SignUpStep1Data = z.infer<typeof signUpStep1Schema>;
 
 /**
+ * 생년월일 검증 스키마 (YYYYMMDD)
+ */
+export const birthDateSchema = z
+  .string()
+  .min(1, { message: '생년월일을 입력해주세요' })
+  .length(8, { message: '생년월일은 8자리(YYYYMMDD)로 입력해주세요' })
+  .regex(/^\d{8}$/, { message: '숫자만 입력해주세요' })
+  .refine(
+    (val) => {
+      const year = parseInt(val.substring(0, 4), 10);
+      const month = parseInt(val.substring(4, 6), 10);
+      const day = parseInt(val.substring(6, 8), 10);
+      const currentYear = new Date().getFullYear();
+      if (year < 1900 || year > currentYear) return false;
+      if (month < 1 || month > 12) return false;
+      if (day < 1 || day > 31) return false;
+      // 월별 일수 검증
+      const date = new Date(year, month - 1, day);
+      return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
+    },
+    { message: '올바른 생년월일을 입력해주세요' }
+  );
+
+/**
+ * 성별 선택 스키마 (회원가입용)
+ */
+export const signupGenderSchema = z.enum(['male', 'female'], {
+  error: '성별을 선택해주세요',
+});
+
+/**
  * 회원가입 Step 2 스키마 (본인인증 - 필수)
  *
- * PASS 또는 카카오 본인인증을 통해 실명/휴대폰 번호/생년월일/성별 검증
+ * 이름/생년월일/성별 입력 + Firebase Phone Auth(SMS OTP) 전화번호 인증
  */
 export const signUpStep2Schema = z.object({
-  identityVerified: z.literal(true, {
-    error: '본인인증이 필요합니다',
+  name: nameSchema,
+  birthDate: birthDateSchema,
+  gender: signupGenderSchema,
+  phoneVerified: z.literal(true, {
+    error: '전화번호 인증이 필요합니다',
   }),
-  identityProvider: z.enum(['pass', 'kakao'], {
-    error: '본인인증 제공자를 선택해주세요',
-  }),
-  verifiedName: nameSchema, // 본인인증된 실명
-  verifiedPhone: phoneSchema, // 본인인증된 휴대폰 번호
-  verifiedBirthDate: z.string().regex(/^\d{8}$/, {
-    message: '생년월일 형식이 올바르지 않습니다',
-  }), // 본인인증된 생년월일 (YYYYMMDD)
-  verifiedGender: z.enum(['male', 'female'], {
-    error: '성별 정보가 필요합니다',
-  }), // 본인인증된 성별
-  identityVerificationId: z.string(), // 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용)
+  verifiedPhone: phoneSchema,
 });
 
 export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
@@ -211,13 +234,11 @@ export const signUpSchema = z.object({
   email: emailSchema,
   password: passwordSchema,
   // Step 2: 본인인증
-  identityVerified: z.boolean(),
-  identityProvider: z.enum(['pass', 'kakao']).optional(),
-  verifiedName: z.string().optional(),
-  verifiedPhone: z.string().optional(),
-  verifiedBirthDate: z.string().optional(), // 본인인증된 생년월일 (YYYYMMDD)
-  verifiedGender: z.enum(['male', 'female']).optional(), // 본인인증된 성별
-  identityVerificationId: z.string().optional(), // 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용)
+  name: nameSchema,
+  birthDate: birthDateSchema,
+  gender: signupGenderSchema,
+  phoneVerified: z.literal(true),
+  verifiedPhone: phoneSchema,
   // Step 3: 프로필
   nickname: z.string(),
   role: z.enum(['staff', 'employer']),

@@ -23,6 +23,7 @@ import {
 import type { UserProfile } from '@/services';
 import type { ApplicantWithDetails } from '@/services';
 import { STATUS } from '@/constants';
+import { formatBirthDate } from '@/utils/formatters';
 
 // ============================================================================
 // Types
@@ -125,12 +126,12 @@ export const ApplicantProfileContent = React.memo(function ApplicantProfileConte
               </View>
             )}
 
-            {userProfile.birthYear && (
+            {userProfile.birthDate && (
               <View className="w-[48%]">
                 <GridInfoItem
                   icon={<CalendarIcon size={16} color="#6B7280" />}
-                  label="출생년도"
-                  value={`${userProfile.birthYear}년`}
+                  label="생년월일"
+                  value={formatBirthDate(userProfile.birthDate)}
                 />
               </View>
             )}

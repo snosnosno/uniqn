@@ -17,6 +17,7 @@ import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
 import { getMyData, updateMyData, exportMyData } from '@/services';
 import type { FirestoreUserProfile } from '@/types';
 import { logger } from '@/utils/logger';
+import { formatBirthDate } from '@/utils/formatters';
 
 // ============================================================================
 // Data Row Component
@@ -237,41 +238,26 @@ export default function MyDataScreen() {
             본인인증 정보
           </Text>
 
-          <DataRow label="인증 상태" value={userData?.identityVerified ? '인증 완료' : '미인증'} />
-          {userData?.identityVerified && (
-            <>
-              <DataRow
-                label="인증 방법"
-                value={
-                  userData?.identityProvider === 'pass'
-                    ? 'PASS 본인인증'
-                    : userData?.identityProvider === 'kakao'
-                      ? '카카오 본인인증'
-                      : '-'
-                }
-              />
-              <DataRow label="인증 이름" value={userData?.verifiedName ?? null} />
-              <DataRow label="인증 연락처" value={userData?.verifiedPhone ?? null} />
-              <DataRow
-                label="생년월일"
-                value={
-                  userData?.verifiedBirthDate
-                    ? `${userData.verifiedBirthDate.substring(0, 4)}.${userData.verifiedBirthDate.substring(4, 6)}.${userData.verifiedBirthDate.substring(6, 8)}`
-                    : null
-                }
-              />
-              <DataRow
-                label="성별"
-                value={
-                  userData?.verifiedGender === 'male'
-                    ? '남성'
-                    : userData?.verifiedGender === 'female'
-                      ? '여성'
-                      : null
-                }
-              />
-            </>
-          )}
+          <DataRow
+            label="전화번호 인증"
+            value={userData?.phoneVerified ? '인증 완료' : '미인증'}
+          />
+          <DataRow label="이름" value={userData?.name ?? null} />
+          <DataRow label="연락처" value={userData?.phone ?? null} />
+          <DataRow
+            label="생년월일"
+            value={userData?.birthDate ? formatBirthDate(userData.birthDate) : null}
+          />
+          <DataRow
+            label="성별"
+            value={
+              userData?.gender === 'male'
+                ? '남성'
+                : userData?.gender === 'female'
+                  ? '여성'
+                  : null
+            }
+          />
         </Card>
 
         {/* 동의 정보 */}

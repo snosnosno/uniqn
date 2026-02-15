@@ -36,22 +36,26 @@ export interface UserProfile<T = Date> {
   uid: string;
   /** 이메일 주소 */
   email: string;
-  /** 실명 (본인인증 정보) */
+  /** 실명 (회원가입 Step2 입력, 수정 불가) */
   name: string;
-  /** 닉네임 (서비스 표시명) */
+  /** 서비스 닉네임 (회원가입 Step3 입력) */
   nickname?: string;
-  /** 전화번호 (본인인증 정보) */
+  /** 전화번호 (회원가입 Step2 SMS 인증, 수정 불가) */
   phone?: string;
   /** 사용자 역할 */
   role: UserRole;
   /** 프로필 사진 URL */
   photoURL?: string;
 
+  // 전화번호 인증 (Firebase Phone Auth)
+  /** 전화번호 인증 완료 여부 */
+  phoneVerified?: boolean;
+
   // 추가 정보
-  /** 성별 */
-  gender?: 'male' | 'female' | 'other';
-  /** 출생년도 */
-  birthYear?: number;
+  /** 성별 (회원가입 Step2 입력, 수정 불가) */
+  gender?: 'male' | 'female';
+  /** 생년월일 YYYYMMDD (회원가입 Step2 입력, 수정 불가) */
+  birthDate?: string;
   /** 지역 */
   region?: string;
   /** 경력 (년) */
@@ -60,24 +64,6 @@ export interface UserProfile<T = Date> {
   career?: string;
   /** 기타사항 */
   note?: string;
-
-  // 본인인증 정보 (Firestore 전용, Store에서는 optional)
-  /** 본인인증 완료 여부 */
-  identityVerified?: boolean;
-  /** 본인인증 제공자 */
-  identityProvider?: 'pass' | 'kakao';
-  /** 본인인증된 실명 */
-  verifiedName?: string;
-  /** 본인인증된 전화번호 */
-  verifiedPhone?: string;
-  /** 본인인증된 생년월일 (YYYYMMDD) */
-  verifiedBirthDate?: string;
-  /** 본인인증된 성별 */
-  verifiedGender?: 'male' | 'female';
-  /** CI (연계정보 - 중복가입 방지) */
-  ci?: string;
-  /** DI (중복가입확인정보) */
-  di?: string;
 
   // 동의 정보 (Firestore 전용, Store에서는 optional)
   /** 이용약관 동의 */
@@ -122,7 +108,7 @@ export type FirestoreUserProfile = UserProfile<Timestamp>;
  * 프로필 수정 가능 필드
  *
  * @description profile.tsx에서 수정 가능한 필드
- * @note name, phone, birthYear, gender는 본인인증 정보이므로 수정 불가 (읽기 전용)
+ * @note name, phone, birthDate, gender는 회원가입 Step2 입력 정보이므로 수정 불가 (읽기 전용)
  */
 export type EditableProfileFields = Pick<
   UserProfile,
@@ -136,7 +122,7 @@ export type EditableProfileFields = Pick<
  */
 export type ProfileViewFields = Pick<
   UserProfile,
-  'uid' | 'email' | 'name' | 'nickname' | 'phone' | 'role' | 'createdAt' | 'updatedAt'
+  'uid' | 'email' | 'name' | 'nickname' | 'phone' | 'birthDate' | 'gender' | 'role' | 'createdAt' | 'updatedAt'
 >;
 
 /**

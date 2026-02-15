@@ -75,7 +75,7 @@ function docToAdminUser(docSnap: DocumentSnapshot): AdminUser | null {
     updatedAt: toDate(data.updatedAt),
     lastLoginAt: data.lastLoginAt ? toDate(data.lastLoginAt) : undefined,
     isActive: data.isActive !== false,
-    isVerified: data.identityVerified === true,
+    isVerified: data.phoneVerified === true,
   };
 }
 
@@ -222,7 +222,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
         constraints.push(where(FIELDS.USER.isActive, '==', filters.isActive));
       }
       if (filters.isVerified !== undefined) {
-        constraints.push(where(FIELDS.USER.identityVerified, '==', filters.isVerified));
+        constraints.push(where(FIELDS.USER.phoneVerified, '==', filters.isVerified));
       }
 
       const sortField = filters.sortBy || 'createdAt';

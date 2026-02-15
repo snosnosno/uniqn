@@ -83,13 +83,11 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
         email: updatedFormData.step1!.email,
         password: updatedFormData.step1!.password,
         // Step 2: 본인인증
-        identityVerified: updatedFormData.step2!.identityVerified,
-        identityProvider: updatedFormData.step2!.identityProvider,
-        verifiedName: updatedFormData.step2!.verifiedName,
+        name: updatedFormData.step2!.name,
+        birthDate: updatedFormData.step2!.birthDate,
+        gender: updatedFormData.step2!.gender,
+        phoneVerified: updatedFormData.step2!.phoneVerified,
         verifiedPhone: updatedFormData.step2!.verifiedPhone,
-        verifiedBirthDate: updatedFormData.step2!.verifiedBirthDate,
-        verifiedGender: updatedFormData.step2!.verifiedGender,
-        identityVerificationId: updatedFormData.step2!.identityVerificationId,
         // Step 3: 프로필
         nickname: updatedFormData.step3!.nickname,
         role: updatedFormData.step3!.role,

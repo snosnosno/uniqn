@@ -105,7 +105,7 @@ export default function EmployerRegisterScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 본인인증 여부
-  const isVerified = profile?.identityVerified === true;
+  const isVerified = profile?.phoneVerified === true;
 
   // 모든 동의 완료 여부
   const canSubmit = isVerified && agreeToTerms && agreeToLiability;
@@ -201,8 +201,8 @@ export default function EmployerRegisterScreen() {
 
           {isVerified ? (
             <>
-              <InfoRow label="이름" value={profile?.verifiedName || profile?.name} />
-              <InfoRow label="연락처" value={profile?.verifiedPhone || profile?.phone} />
+              <InfoRow label="이름" value={profile?.name} />
+              <InfoRow label="연락처" value={profile?.phone} />
               <View className="mt-2 rounded-md bg-green-50 px-3 py-2 dark:bg-green-900/20">
                 <Text className="text-sm text-green-700 dark:text-green-400">
                   본인인증이 완료되었습니다

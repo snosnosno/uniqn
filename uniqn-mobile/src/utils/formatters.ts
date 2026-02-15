@@ -194,3 +194,11 @@ export const capitalize = (text: string | undefined | null): string => {
 export const padNumber = (num: number, length: number = 2): string => {
   return String(num).padStart(length, '0');
 };
+
+/**
+ * 생년월일 포맷 (YYYYMMDD → YYYY.MM.DD)
+ */
+export const formatBirthDate = (birthDate: string | undefined | null): string => {
+  if (!birthDate || birthDate.length !== 8) return '-';
+  return `${birthDate.substring(0, 4)}.${birthDate.substring(4, 6)}.${birthDate.substring(6, 8)}`;
+};

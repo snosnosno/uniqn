@@ -30,10 +30,9 @@ export const USER_FIELDS = {
   ...COMMON_FIELDS,
   role: 'role',
   isActive: 'isActive',
-  identityVerified: 'identityVerified',
+  phoneVerified: 'phoneVerified',
+  birthDate: 'birthDate',
   userId: 'userId',
-  ci: 'ci',
-  di: 'di',
 } as const;
 
 export const JOB_POSTING_FIELDS = {

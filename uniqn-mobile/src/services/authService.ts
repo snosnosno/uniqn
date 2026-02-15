@@ -24,7 +24,6 @@
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
-  signOut as firebaseSignOut,
   sendPasswordResetEmail,
   updatePassword,
   User as FirebaseUser,
@@ -33,8 +32,10 @@ import {
   reauthenticateWithCredential,
   fetchSignInMethodsForEmail,
 } from 'firebase/auth';
+import nativeAuth from '@react-native-firebase/auth';
 import { doc, serverTimestamp, Timestamp, runTransaction } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { syncToWebAuth, syncSignOut } from '@/lib/authBridge';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
@@ -48,7 +49,6 @@ import {
   setUserProperties,
 } from './analyticsService';
 import type { FirestoreUserProfile, EditableProfileFields } from '@/types';
-import { linkIdentityVerification } from './identityVerificationService';
 import type { SignUpFormData, LoginFormData } from '@/schemas';
 
 // ============================================================================
@@ -73,14 +73,6 @@ export interface AuthResult {
 /** 이메일 마스킹 (로깅용) - maskValue 래퍼 */
 const maskEmail = (email: string) => maskValue(email, 'email');
 
-/**
- * 생년월일(YYYYMMDD)에서 출생년도 추출
- */
-function extractBirthYear(birthDate?: string): number | undefined {
-  if (!birthDate || birthDate.length < 4) return undefined;
-  return parseInt(birthDate.substring(0, 4), 10);
-}
-
 // ============================================================================
 // Auth Service
 // ============================================================================
@@ -92,11 +84,11 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
     logger.info('로그인 시도', { email: maskEmail(data.email) });
 
-    const userCredential = await signInWithEmailAndPassword(
-      getFirebaseAuth(),
-      data.email,
-      data.password
-    );
+    // Native SDK + Web SDK 동시 로그인 (Dual SDK)
+    const [, userCredential] = await Promise.all([
+      nativeAuth().signInWithEmailAndPassword(data.email, data.password),
+      signInWithEmailAndPassword(getFirebaseAuth(), data.email, data.password),
+    ]);
 
     // Custom Claims 갱신을 위해 토큰 강제 새로고침
     // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
@@ -125,7 +117,7 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
     setUserId(userCredential.user.uid);
     setUserProperties({
       user_role: profile.role,
-      has_verified_phone: !!profile.verifiedPhone,
+      has_verified_phone: !!profile.phoneVerified,
     });
 
     return {
@@ -133,6 +125,12 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
+    // 부분 로그인 상태 정리 (한쪽만 성공한 경우)
+    try {
+      await syncSignOut();
+    } catch {
+      // 정리 실패는 무시 (이미 에러 상태)
+    }
     throw handleServiceError(error, {
       operation: '로그인',
       component: 'authService',
@@ -174,100 +172,88 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
     logger.info('회원가입 시도', { email: maskEmail(data.email), role: data.role });
 
-    // 1. Firebase Auth 사용자 생성
-    const userCredential = await createUserWithEmailAndPassword(
-      getFirebaseAuth(),
-      data.email,
-      data.password
-    );
-
-    const { user } = userCredential;
-
-    // 2. 프로필 업데이트
-    await updateProfile(user, {
-      displayName: data.nickname,
-    });
-
-    // 3. Firestore에 사용자 프로필 저장
-    const profile: UserProfile = {
-      uid: user.uid,
-      email: data.email,
-      name: data.verifiedName || data.nickname,
-      nickname: data.nickname,
-      phone: data.verifiedPhone,
-      role: data.role,
-      // 본인인증 정보
-      identityVerified: data.identityVerified,
-      identityProvider: data.identityProvider,
-      verifiedName: data.verifiedName,
-      verifiedPhone: data.verifiedPhone,
-      verifiedBirthDate: data.verifiedBirthDate,
-      verifiedGender: data.verifiedGender,
-      // 파생 정보 (본인인증 데이터에서 추출)
-      birthYear: extractBirthYear(data.verifiedBirthDate),
-      gender: data.verifiedGender,
-      // CI/DI는 linkIdentityVerification CF에서 서버 전용 저장 (클라이언트 미포함)
-      // 동의 정보
-      termsAgreed: data.termsAgreed,
-      privacyAgreed: data.privacyAgreed,
-      marketingAgreed: data.marketingAgreed,
-      // 메타데이터
-      isActive: true,
-      createdAt: serverTimestamp() as Timestamp,
-      updatedAt: serverTimestamp() as Timestamp,
-    };
-
-    // merge: true로 Cloud Function이 먼저 생성한 문서를 덮어씀
-    await userRepository.createOrMerge(user.uid, { ...profile });
-
-    // CI/DI 서버 전용 연결 (pendingVerifications → users/{uid})
-    // 최대 2회 재시도 (네트워크 일시 오류 대응)
-    if (data.identityVerificationId) {
-      const MAX_LINK_RETRIES = 2;
-      let linkSuccess = false;
-
-      for (let attempt = 1; attempt <= MAX_LINK_RETRIES; attempt++) {
-        try {
-          await linkIdentityVerification(data.identityVerificationId);
-          logger.info('본인인증 CI/DI 연결 완료', { uid: user.uid, attempt });
-          linkSuccess = true;
-          break;
-        } catch (linkError) {
-          logger.warn(`본인인증 CI/DI 연결 실패 (시도 ${attempt}/${MAX_LINK_RETRIES})`, {
-            uid: user.uid,
-            identityVerificationId: data.identityVerificationId,
-            error: linkError,
-          });
-          // 마지막 시도가 아니면 500ms 대기 후 재시도
-          if (attempt < MAX_LINK_RETRIES) {
-            await new Promise((resolve) => setTimeout(resolve, 500));
-          }
-        }
-      }
-
-      if (!linkSuccess) {
-        logger.error('본인인증 CI/DI 연결 최종 실패 (가입은 완료됨, 재인증 필요)', {
-          uid: user.uid,
-          identityVerificationId: data.identityVerificationId,
-        });
-      }
+    // 1. Phone Auth 계정은 Step 2에서 이미 생성됨 (nativeAuth)
+    const nativeUser = nativeAuth().currentUser;
+    if (!nativeUser) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '전화번호 인증이 필요합니다. 다시 시도해주세요.',
+      });
     }
 
-    logger.info('회원가입 성공', { uid: user.uid, role: data.role });
+    // 2~5: 실패 시 phone-only 고아 계정 롤백을 위해 try-catch
+    try {
+      // 2. Email/Password credential 연결 (phone-only → email+phone)
+      const emailCredential = nativeAuth.EmailAuthProvider.credential(data.email, data.password);
+      await nativeUser.linkWithCredential(emailCredential);
 
-    // Analytics 이벤트
-    trackSignup('email');
-    setUserId(user.uid);
-    setUserProperties({
-      user_role: data.role,
-      account_created_date: new Date().toISOString().split('T')[0],
-      has_verified_phone: data.identityVerified,
-    });
+      // 3. displayName 설정
+      await nativeUser.updateProfile({ displayName: data.nickname });
 
-    return {
-      user,
-      profile,
-    };
+      // 4. Web SDK 동기화 (Firestore Security Rules용)
+      await syncToWebAuth(data.email, data.password);
+      const webUser = getFirebaseAuth().currentUser;
+
+      if (!webUser) {
+        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+          userMessage: 'Web SDK 동기화에 실패했습니다. 다시 시도해주세요.',
+        });
+      }
+
+      // 5. Firestore에 사용자 프로필 저장
+      const profile: UserProfile = {
+        uid: nativeUser.uid,
+        email: data.email,
+        name: data.name,
+        nickname: data.nickname,
+        phone: data.verifiedPhone,
+        phoneVerified: true,
+        birthDate: data.birthDate,
+        gender: data.gender,
+        role: data.role,
+        // 동의 정보
+        termsAgreed: data.termsAgreed,
+        privacyAgreed: data.privacyAgreed,
+        marketingAgreed: data.marketingAgreed,
+        // 메타데이터
+        isActive: true,
+        createdAt: serverTimestamp() as Timestamp,
+        updatedAt: serverTimestamp() as Timestamp,
+      };
+
+      await userRepository.createOrMerge(nativeUser.uid, { ...profile });
+
+      logger.info('회원가입 성공', { uid: nativeUser.uid, role: data.role });
+
+      // Analytics 이벤트
+      trackSignup('email');
+      setUserId(nativeUser.uid);
+      setUserProperties({
+        user_role: data.role,
+        account_created_date: new Date().toISOString().split('T')[0],
+        has_verified_phone: true,
+      });
+
+      return {
+        user: webUser,
+        profile,
+      };
+    } catch (innerError) {
+      // 고아 계정 롤백: phone-only 계정 삭제 (같은 번호로 재가입 가능하도록)
+      logger.warn('회원가입 실패 - phone-only 계정 롤백 시도', {
+        uid: nativeUser.uid,
+        component: 'authService',
+      });
+      try {
+        await nativeUser.delete();
+        logger.info('phone-only 고아 계정 삭제 완료', { uid: nativeUser.uid });
+      } catch (deleteError) {
+        logger.error('phone-only 고아 계정 삭제 실패 (수동 정리 필요)', {
+          uid: nativeUser.uid,
+          error: deleteError,
+        });
+      }
+      throw innerError;
+    }
   } catch (error) {
     throw handleServiceError(error, {
       operation: '회원가입',
@@ -287,7 +273,8 @@ export async function signOut(): Promise<void> {
     // 전역 캐시 정리 (메모리 누수 방지)
     clearCounterSyncCache();
 
-    await firebaseSignOut(getFirebaseAuth());
+    // Native + Web SDK 동시 로그아웃
+    await syncSignOut();
 
     // Analytics 이벤트
     trackLogout();
@@ -554,8 +541,7 @@ async function createMockProfile(
     name,
     nickname: name,
     role: 'staff',
-    identityVerified: false, // Mock이므로 본인인증 미완료
-    identityProvider: undefined,
+    phoneVerified: false, // Mock이므로 전화번호 인증 미완료
     termsAgreed: true,
     privacyAgreed: true,
     marketingAgreed: false,
@@ -749,10 +735,10 @@ export async function registerAsEmployer(): Promise<UserProfile> {
         });
       }
 
-      // 3. 본인인증 확인
-      if (!profile.identityVerified) {
+      // 3. 전화번호 인증 확인
+      if (!profile.phoneVerified) {
         throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '본인인증을 먼저 완료해주세요',
+          userMessage: '전화번호 인증을 먼저 완료해주세요',
         });
       }
 

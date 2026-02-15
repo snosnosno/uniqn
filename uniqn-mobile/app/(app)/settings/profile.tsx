@@ -26,6 +26,7 @@ import { useToastStore } from '@/stores/toastStore';
 import { updateUserProfile } from '@/services';
 import { updateProfileSchema, type UpdateProfileData } from '@/schemas/user.schema';
 import { logger } from '@/utils/logger';
+import { formatBirthDate } from '@/utils/formatters';
 import type { UserProfile } from '@/types';
 import type { AuthUser } from '@/stores/authStore';
 
@@ -149,26 +150,18 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             </Text>
           </Card>
 
-          {/* 기본 정보 (본인인증 후 자동 입력) */}
+          {/* 기본 정보 (수정 불가) */}
           <Card className="mb-4">
-            <View className="mb-3 flex-row items-center justify-between">
-              <Text className="text-sm font-medium text-gray-500 dark:text-gray-400">
-                기본 정보
-              </Text>
-              {/* 본인인증 SDK 연동 후 인증 버튼 추가 */}
-              {/* <Pressable className="rounded-full bg-primary-100 px-3 py-1 dark:bg-primary-900/30">
-                <Text className="text-xs font-medium text-primary-600 dark:text-primary-400">
-                  본인인증
-                </Text>
-              </Pressable> */}
-            </View>
+            <Text className="mb-3 text-sm font-medium text-gray-500 dark:text-gray-400">
+              기본 정보 (수정 불가)
+            </Text>
 
-            {/* 이름 (읽기 전용 - 본인인증 정보) */}
+            {/* 이름 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile.name ?? user?.displayName ?? '본인인증 후 자동 입력'}
+                  {profile.name ?? '-'}
                 </Text>
               </View>
             </View>
@@ -183,27 +176,27 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               </View>
             </View>
 
-            {/* 전화번호 (읽기 전용 - 본인인증 정보) */}
+            {/* 전화번호 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile.phone ?? '본인인증 후 자동 입력'}
+                  {profile.phone ?? '-'}
                 </Text>
               </View>
             </View>
 
-            {/* 생년월일 (읽기 전용 - 본인인증 정보) */}
+            {/* 생년월일 (읽기 전용 - 회원가입 Step2) */}
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">생년월일</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile.birthYear ? `${profile.birthYear}년` : '본인인증 후 자동 입력'}
+                  {formatBirthDate(profile.birthDate)}
                 </Text>
               </View>
             </View>
 
-            {/* 성별 (읽기 전용 - 본인인증 정보) */}
+            {/* 성별 (읽기 전용 - 회원가입 Step2) */}
             <View>
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
@@ -212,7 +205,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
                     ? '남성'
                     : profile.gender === 'female'
                       ? '여성'
-                      : '본인인증 후 자동 입력'}
+                      : '-'}
                 </Text>
               </View>
             </View>

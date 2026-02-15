@@ -358,6 +358,15 @@ export const db: Firestore = createLazyProxy(getFirebaseDb);
 export const storage: FirebaseStorage = createLazyProxy(getFirebaseStorage);
 export const functions: Functions = createLazyProxy(getFirebaseFunctions);
 
+// ============================================================================
+// Native Firebase Auth (@react-native-firebase/auth)
+// Phone Auth 등 네이티브 전용 기능에 사용
+// Firestore는 web SDK auth를 사용 (Security Rules 호환)
+// ============================================================================
+
+import nativeAuth from '@react-native-firebase/auth';
+export { nativeAuth };
+
 // 기본 export
 export default {
   getApp: getFirebaseApp,

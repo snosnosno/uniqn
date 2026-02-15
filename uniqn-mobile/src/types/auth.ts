@@ -37,21 +37,18 @@ export interface LoginRequest {
  * 회원가입 요청 (4단계)
  *
  * 플로우: 계정 → 본인인증 → 프로필 → 약관동의
- * ⚠️ 이메일 인증 사용 안함 - 휴대폰 본인인증 필수
  */
 export interface SignUpRequest {
   // Step 1: 계정 정보
   email: string;
   password: string;
 
-  // Step 2: 본인인증 (필수)
-  identityVerified: boolean;
-  identityProvider?: 'pass' | 'kakao'; // 본인인증 제공자
-  verifiedName?: string; // 본인인증된 실명
-  verifiedPhone?: string; // 본인인증된 휴대폰 번호
-  verifiedBirthDate?: string; // 본인인증된 생년월일 (YYYYMMDD)
-  verifiedGender?: 'male' | 'female'; // 본인인증된 성별
-  identityVerificationId?: string; // 포트원 본인인증 ID (서버에서 CI/DI 연결에 사용)
+  // Step 2: 본인인증 (이름/생년월일/성별 + 전화번호 SMS 인증)
+  name: string;
+  birthDate: string; // YYYYMMDD
+  gender: 'male' | 'female';
+  phoneVerified: boolean;
+  verifiedPhone?: string;
 
   // Step 3: 프로필 정보
   nickname: string;
