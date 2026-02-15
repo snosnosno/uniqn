@@ -1041,14 +1041,16 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
-    // --- [레거시 - 향후 삭제 예정] Pending Verifications ---
-    // 포트원 V2 본인인증 시스템에서 사용하던 컬렉션 (Firebase Phone Auth로 전환됨)
+    // --- [서버 전용] Pending Verifications ---
+    // Cloud Functions(Admin SDK)에서만 접근. 클라이언트 접근 차단.
+    // 포트원 V2 본인인증 임시 저장 (TTL 30분, 스케줄러 자동 정리)
     match /pendingVerifications/{verificationId} {
       allow read, write: if false;
     }
 
-    // --- [레거시 - 향후 삭제 예정] CI Index ---
-    // 포트원 V2 CI 중복가입 방지 인덱스 (Firebase Phone Auth로 전환됨)
+    // --- [서버 전용] CI Index ---
+    // Cloud Functions(Admin SDK)에서만 접근. 클라이언트 접근 차단.
+    // CI 기반 중복가입 방지 인덱스
     match /ciIndex/{ciHash} {
       allow read, write: if false;
     }

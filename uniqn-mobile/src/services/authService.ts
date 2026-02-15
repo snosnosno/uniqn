@@ -26,6 +26,7 @@ import {
   signInWithEmailAndPassword,
   sendPasswordResetEmail,
   updatePassword,
+  signOut as firebaseSignOut,
   User as FirebaseUser,
   updateProfile,
   EmailAuthProvider,
@@ -245,6 +246,11 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       });
       try {
         await nativeUser.delete();
+        // Web SDK 세션도 정리 (Step 4 syncToWebAuth 이후 실패 시)
+        const auth = getFirebaseAuth();
+        if (auth.currentUser) {
+          await firebaseSignOut(auth);
+        }
         logger.info('phone-only 고아 계정 삭제 완료', { uid: nativeUser.uid });
       } catch (deleteError) {
         logger.error('phone-only 고아 계정 삭제 실패 (수동 정리 필요)', {

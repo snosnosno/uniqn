@@ -65,24 +65,32 @@ export async function syncSignOut(): Promise<void> {
  *              불일치 시 양쪽 모두 로그아웃하여 깨끗한 상태로 복구.
  */
 export async function ensureDualSdkSync(): Promise<void> {
-  const nativeUser = nativeAuth().currentUser;
-  const webUser = getFirebaseAuth().currentUser;
+  try {
+    const nativeUser = nativeAuth().currentUser;
+    const webUser = getFirebaseAuth().currentUser;
 
-  const nativeLoggedIn = !!nativeUser;
-  const webLoggedIn = !!webUser;
+    const nativeLoggedIn = !!nativeUser;
+    const webLoggedIn = !!webUser;
 
-  if (nativeLoggedIn === webLoggedIn) {
-    return; // 양쪽 일치 (둘 다 로그인 또는 둘 다 로그아웃)
+    if (nativeLoggedIn === webLoggedIn) {
+      return; // 양쪽 일치 (둘 다 로그인 또는 둘 다 로그아웃)
+    }
+
+    // 불일치 감지 → 안전하게 양쪽 모두 로그아웃
+    logger.warn('Dual SDK 상태 불일치 감지 - 양쪽 로그아웃으로 복구', {
+      component: 'authBridge',
+      nativeLoggedIn,
+      webLoggedIn,
+      nativeUid: nativeUser?.uid,
+      webUid: webUser?.uid,
+    });
+
+    await syncSignOut();
+  } catch (error) {
+    // Native Firebase 앱 미초기화 등 환경 문제 시 건너뜀
+    logger.warn('Dual SDK 상태 확인 실패 - 건너뜀', {
+      component: 'authBridge',
+      error: error instanceof Error ? error.message : String(error),
+    });
   }
-
-  // 불일치 감지 → 안전하게 양쪽 모두 로그아웃
-  logger.warn('Dual SDK 상태 불일치 감지 - 양쪽 로그아웃으로 복구', {
-    component: 'authBridge',
-    nativeLoggedIn,
-    webLoggedIn,
-    nativeUid: nativeUser?.uid,
-    webUid: webUser?.uid,
-  });
-
-  await syncSignOut();
 }
