@@ -42,7 +42,11 @@ export async function getTemplates(userId: string): Promise<JobPostingTemplate[]
     logger.info('템플릿 목록 조회', { userId });
 
     const templatesRef = collection(getFirebaseDb(), COLLECTIONS.TEMPLATES);
-    const q = query(templatesRef, where(FIELDS.TEMPLATE.createdBy, '==', userId), orderBy(FIELDS.TEMPLATE.createdAt, 'desc'));
+    const q = query(
+      templatesRef,
+      where(FIELDS.TEMPLATE.createdBy, '==', userId),
+      orderBy(FIELDS.TEMPLATE.createdAt, 'desc')
+    );
 
     const snapshot = await getDocs(q);
 

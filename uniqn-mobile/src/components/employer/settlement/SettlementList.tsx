@@ -125,7 +125,9 @@ export function SettlementList({
   // 필터링된 목록
   const filteredWorkLogs = useMemo(() => {
     if (selectedFilter === 'all') return workLogs;
-    return workLogs.filter((log) => (log.payrollStatus || STATUS.PAYROLL.PENDING) === selectedFilter);
+    return workLogs.filter(
+      (log) => (log.payrollStatus || STATUS.PAYROLL.PENDING) === selectedFilter
+    );
   }, [workLogs, selectedFilter]);
 
   // 그룹화된 목록
@@ -139,7 +141,10 @@ export function SettlementList({
   // 선택 가능한 항목 (미정산 + 출퇴근 완료)
   const selectableWorkLogs = useMemo(() => {
     return workLogs.filter(
-      (log) => (log.payrollStatus || STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING && log.checkInTime && log.checkOutTime
+      (log) =>
+        (log.payrollStatus || STATUS.PAYROLL.PENDING) === STATUS.PAYROLL.PENDING &&
+        log.checkInTime &&
+        log.checkOutTime
     );
   }, [workLogs]);
 
@@ -355,7 +360,11 @@ export function SettlementList({
         estimatedItemSize={250}
         refreshControl={
           onRefresh ? (
-            <RefreshControl refreshing={isRefreshing ?? false} onRefresh={onRefresh} tintColor="#6366f1" />
+            <RefreshControl
+              refreshing={isRefreshing ?? false}
+              onRefresh={onRefresh}
+              tintColor="#6366f1"
+            />
           ) : undefined
         }
         showsVerticalScrollIndicator={false}

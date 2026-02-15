@@ -177,11 +177,7 @@ describe('WorkLogCreator', () => {
         },
       ];
 
-      const result = WorkLogCreator.createFromAssignments(
-        assignments,
-        staffInfo,
-        jobPostingInfo
-      );
+      const result = WorkLogCreator.createFromAssignments(assignments, staffInfo, jobPostingInfo);
 
       expect(result.count).toBe(2);
       expect(result.workLogs).toHaveLength(2);
@@ -202,11 +198,7 @@ describe('WorkLogCreator', () => {
         },
       ];
 
-      const result = WorkLogCreator.createFromAssignments(
-        assignments,
-        staffInfo,
-        jobPostingInfo
-      );
+      const result = WorkLogCreator.createFromAssignments(assignments, staffInfo, jobPostingInfo);
 
       expect(result.count).toBe(3);
       expect(result.workLogs[0].role).toBe('dealer');
@@ -219,20 +211,14 @@ describe('WorkLogCreator', () => {
         { dates: ['2026-02-15'], timeSlot: '13:00~18:00', roleIds: ['floor'] },
       ];
 
-      const result = WorkLogCreator.createFromAssignments(
-        assignments,
-        staffInfo,
-        jobPostingInfo
-      );
+      const result = WorkLogCreator.createFromAssignments(assignments, staffInfo, jobPostingInfo);
 
       expect(result.count).toBe(2); // workLogs는 2개
       expect(result.dates).toEqual(['2026-02-15']); // 중복 제거된 날짜
     });
 
     it('roleIds 없으면 defaultRole 사용', () => {
-      const assignments = [
-        { dates: ['2026-02-15'], timeSlot: '09:00~18:00' },
-      ];
+      const assignments = [{ dates: ['2026-02-15'], timeSlot: '09:00~18:00' }];
 
       const result = WorkLogCreator.createFromAssignments(
         assignments,
@@ -245,11 +231,7 @@ describe('WorkLogCreator', () => {
     });
 
     it('빈 Assignment 배열은 빈 결과', () => {
-      const result = WorkLogCreator.createFromAssignments(
-        [],
-        staffInfo,
-        jobPostingInfo
-      );
+      const result = WorkLogCreator.createFromAssignments([], staffInfo, jobPostingInfo);
 
       expect(result.count).toBe(0);
       expect(result.workLogs).toHaveLength(0);
@@ -262,10 +244,7 @@ describe('WorkLogCreator', () => {
   // ============================================================================
   describe('countAssignments', () => {
     it('Assignment 배열의 총 날짜 수 계산', () => {
-      const assignments = [
-        { dates: ['2026-02-15', '2026-02-16'] },
-        { dates: ['2026-02-17'] },
-      ];
+      const assignments = [{ dates: ['2026-02-15', '2026-02-16'] }, { dates: ['2026-02-17'] }];
 
       expect(WorkLogCreator.countAssignments(assignments)).toBe(3);
     });

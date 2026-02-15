@@ -37,10 +37,13 @@ jest.mock('expo-notifications', () => ({
   setBadgeCountAsync: (...args: unknown[]) => mockSetBadgeCountAsync(...args),
   getBadgeCountAsync: (...args: unknown[]) => mockGetBadgeCountAsync(...args),
   scheduleNotificationAsync: (...args: unknown[]) => mockScheduleNotificationAsync(...args),
-  cancelScheduledNotificationAsync: (...args: unknown[]) => mockCancelScheduledNotificationAsync(...args),
-  cancelAllScheduledNotificationsAsync: (...args: unknown[]) => mockCancelAllScheduledNotificationsAsync(...args),
+  cancelScheduledNotificationAsync: (...args: unknown[]) =>
+    mockCancelScheduledNotificationAsync(...args),
+  cancelAllScheduledNotificationsAsync: (...args: unknown[]) =>
+    mockCancelAllScheduledNotificationsAsync(...args),
   dismissAllNotificationsAsync: (...args: unknown[]) => mockDismissAllNotificationsAsync(...args),
-  addNotificationResponseReceivedListener: (...args: unknown[]) => mockAddNotificationResponseReceivedListener(...args),
+  addNotificationResponseReceivedListener: (...args: unknown[]) =>
+    mockAddNotificationResponseReceivedListener(...args),
   SchedulableTriggerInputTypes: {
     TIME_INTERVAL: 'timeInterval',
     DATE: 'date',
@@ -122,7 +125,9 @@ describe('pushNotificationService', () => {
       expect(result).toBe(true);
       expect(mockSetNotificationChannelAsync).toHaveBeenCalled();
       expect(mockSetNotificationHandler).toHaveBeenCalled();
-      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('푸시 알림 서비스 초기화 완료'));
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('푸시 알림 서비스 초기화 완료')
+      );
     });
 
     it('iOS에서 성공적으로 초기화하고 채널 설정을 건너뛰어야 함', async () => {
@@ -539,7 +544,9 @@ describe('pushNotificationService', () => {
       pushNotificationService.cleanup();
 
       expect(pushNotificationService.getCurrentToken()).toBeNull();
-      expect(logger.info).toHaveBeenCalledWith(expect.stringContaining('푸시 알림 서비스 정리 완료'));
+      expect(logger.info).toHaveBeenCalledWith(
+        expect.stringContaining('푸시 알림 서비스 정리 완료')
+      );
     });
   });
 });

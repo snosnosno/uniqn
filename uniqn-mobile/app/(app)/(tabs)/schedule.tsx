@@ -8,11 +8,7 @@ import { View, Text, ScrollView, RefreshControl, Pressable, Alert } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, EmptyState, ErrorState, Skeleton, SkeletonScheduleCard } from '@/components/ui';
 import { LazyCalendarView } from '@/components/lazy';
-import {
-  ScheduleCard,
-  ScheduleDetailModal,
-  GroupedScheduleCard,
-} from '@/components/schedule';
+import { ScheduleCard, ScheduleDetailModal, GroupedScheduleCard } from '@/components/schedule';
 import { QRCodeScanner } from '@/components/qr';
 import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
@@ -426,7 +422,13 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="pb-20"
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refresh}
+              tintColor={getLayoutColor(isDark, 'refreshTint')}
+            />
+          }
         >
           <View className="mt-4">
             <Suspense fallback={<Skeleton className="h-80 mx-4 rounded-xl" />}>
@@ -477,7 +479,13 @@ export default function ScheduleScreen() {
         <ScrollView
           className="flex-1"
           contentContainerClassName="p-4 pb-20"
-          refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={refresh}
+              tintColor={getLayoutColor(isDark, 'refreshTint')}
+            />
+          }
         >
           {isLoading && schedules.length === 0 ? (
             // 스켈레톤 로딩 (SkeletonScheduleCard 사용)

@@ -4,12 +4,7 @@
  * @description Firebase JobPosting Repository 단위 테스트
  */
 
-import {
-  getDoc,
-  getDocs,
-  updateDoc,
-  runTransaction,
-} from 'firebase/firestore';
+import { getDoc, getDocs, updateDoc, runTransaction } from 'firebase/firestore';
 import { FirebaseJobPostingRepository } from '../JobPostingRepository';
 
 // firebase/firestore의 전역 mock에 documentId가 누락되어 있으므로 추가
@@ -91,15 +86,33 @@ jest.mock('@/utils/firestore/queryBuilder', () => {
     constructor(ref: unknown) {
       this.ref = ref;
     }
-    whereEqual() { return this; }
-    whereIf() { return this; }
-    whereArrayContainsAny() { return this; }
-    where() { return this; }
-    whereDateRange() { return this; }
-    orderBy() { return this; }
-    orderByDesc() { return this; }
-    limit() { return this; }
-    paginate() { return this; }
+    whereEqual() {
+      return this;
+    }
+    whereIf() {
+      return this;
+    }
+    whereArrayContainsAny() {
+      return this;
+    }
+    where() {
+      return this;
+    }
+    whereDateRange() {
+      return this;
+    }
+    orderBy() {
+      return this;
+    }
+    orderByDesc() {
+      return this;
+    }
+    limit() {
+      return this;
+    }
+    paginate() {
+      return this;
+    }
     build() {
       // Return something that getDocs can consume
       return { _query: true, ref: this.ref };
@@ -224,9 +237,7 @@ describe('FirebaseJobPostingRepository', () => {
       const { parseJobPostingDocument } = require('@/schemas');
       parseJobPostingDocument.mockReturnValueOnce(null);
 
-      (getDoc as jest.Mock).mockResolvedValue(
-        createMockDocSnap('job-1', { title: 'invalid' })
-      );
+      (getDoc as jest.Mock).mockResolvedValue(createMockDocSnap('job-1', { title: 'invalid' }));
 
       const result = await repository.getById('job-1');
 
@@ -294,8 +305,14 @@ describe('FirebaseJobPostingRepository', () => {
   describe('getByOwnerId', () => {
     it('should return job postings for the given owner', async () => {
       const querySnap = createMockQuerySnap([
-        { id: 'job-1', data: { id: 'job-1', title: '공고 1', ownerId: 'employer-1', status: 'active' } },
-        { id: 'job-2', data: { id: 'job-2', title: '공고 2', ownerId: 'employer-1', status: 'closed' } },
+        {
+          id: 'job-1',
+          data: { id: 'job-1', title: '공고 1', ownerId: 'employer-1', status: 'active' },
+        },
+        {
+          id: 'job-2',
+          data: { id: 'job-2', title: '공고 2', ownerId: 'employer-1', status: 'closed' },
+        },
       ]);
 
       (getDocs as jest.Mock).mockResolvedValue(querySnap);
@@ -473,9 +490,7 @@ describe('FirebaseJobPostingRepository', () => {
         return callback(mockTransaction);
       });
 
-      await expect(
-        repository.deleteWithTransaction('job-1', 'wrong-employer')
-      ).rejects.toThrow();
+      await expect(repository.deleteWithTransaction('job-1', 'wrong-employer')).rejects.toThrow();
     });
 
     it('should throw when confirmed applicants exist', async () => {
@@ -494,9 +509,7 @@ describe('FirebaseJobPostingRepository', () => {
         return callback(mockTransaction);
       });
 
-      await expect(
-        repository.deleteWithTransaction('job-1', 'employer-1')
-      ).rejects.toThrow();
+      await expect(repository.deleteWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
   });
 
@@ -540,9 +553,7 @@ describe('FirebaseJobPostingRepository', () => {
         return callback(mockTransaction);
       });
 
-      await expect(
-        repository.closeWithTransaction('job-1', 'employer-1')
-      ).rejects.toThrow();
+      await expect(repository.closeWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
   });
 
@@ -587,9 +598,7 @@ describe('FirebaseJobPostingRepository', () => {
         return callback(mockTransaction);
       });
 
-      await expect(
-        repository.reopenWithTransaction('job-1', 'employer-1')
-      ).rejects.toThrow();
+      await expect(repository.reopenWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
 
     it('should throw when cancelled', async () => {
@@ -607,9 +616,7 @@ describe('FirebaseJobPostingRepository', () => {
         return callback(mockTransaction);
       });
 
-      await expect(
-        repository.reopenWithTransaction('job-1', 'employer-1')
-      ).rejects.toThrow();
+      await expect(repository.reopenWithTransaction('job-1', 'employer-1')).rejects.toThrow();
     });
   });
 
@@ -668,9 +675,36 @@ describe('FirebaseJobPostingRepository', () => {
   describe('getStatsByOwnerId', () => {
     it('should return correct stats for owner', async () => {
       const querySnap = createMockQuerySnap([
-        { id: 'job-1', data: { id: 'job-1', ownerId: 'employer-1', status: 'active', applicationCount: 5, viewCount: 100 } },
-        { id: 'job-2', data: { id: 'job-2', ownerId: 'employer-1', status: 'closed', applicationCount: 3, viewCount: 50 } },
-        { id: 'job-3', data: { id: 'job-3', ownerId: 'employer-1', status: 'cancelled', applicationCount: 0, viewCount: 10 } },
+        {
+          id: 'job-1',
+          data: {
+            id: 'job-1',
+            ownerId: 'employer-1',
+            status: 'active',
+            applicationCount: 5,
+            viewCount: 100,
+          },
+        },
+        {
+          id: 'job-2',
+          data: {
+            id: 'job-2',
+            ownerId: 'employer-1',
+            status: 'closed',
+            applicationCount: 3,
+            viewCount: 50,
+          },
+        },
+        {
+          id: 'job-3',
+          data: {
+            id: 'job-3',
+            ownerId: 'employer-1',
+            status: 'cancelled',
+            applicationCount: 0,
+            viewCount: 10,
+          },
+        },
       ]);
 
       (getDocs as jest.Mock).mockResolvedValue(querySnap);
@@ -735,7 +769,11 @@ describe('FirebaseJobPostingRepository', () => {
       });
 
       await expect(
-        repository.updateWithTransaction('job-1', { title: '수정' } as Record<string, unknown>, 'wrong-employer')
+        repository.updateWithTransaction(
+          'job-1',
+          { title: '수정' } as Record<string, unknown>,
+          'wrong-employer'
+        )
       ).rejects.toThrow();
     });
   });

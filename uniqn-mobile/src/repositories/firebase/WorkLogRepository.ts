@@ -147,7 +147,10 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
       const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
 
-      const queryBuilder = new QueryBuilder(workLogsRef).whereEqual(FIELDS.WORK_LOG.staffId, staffId);
+      const queryBuilder = new QueryBuilder(workLogsRef).whereEqual(
+        FIELDS.WORK_LOG.staffId,
+        staffId
+      );
 
       // 날짜 범위 필터
       if (options?.dateRange) {

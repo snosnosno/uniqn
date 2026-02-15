@@ -173,7 +173,10 @@ const hasErrorName = (error: unknown, name: string): boolean =>
 export const isNotificationPermissionError = (
   error: unknown
 ): error is NotificationPermissionError => {
-  return error instanceof NotificationPermissionError || hasErrorName(error, 'NotificationPermissionError');
+  return (
+    error instanceof NotificationPermissionError ||
+    hasErrorName(error, 'NotificationPermissionError')
+  );
 };
 
 export const isFCMTokenError = (error: unknown): error is FCMTokenError => {
@@ -187,5 +190,8 @@ export const isNotificationSendError = (error: unknown): error is NotificationSe
 export const isInvalidNotificationLinkError = (
   error: unknown
 ): error is InvalidNotificationLinkError => {
-  return error instanceof InvalidNotificationLinkError || hasErrorName(error, 'InvalidNotificationLinkError');
+  return (
+    error instanceof InvalidNotificationLinkError ||
+    hasErrorName(error, 'InvalidNotificationLinkError')
+  );
 };

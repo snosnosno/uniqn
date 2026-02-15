@@ -65,7 +65,14 @@ describe('confirmedStaff', () => {
 
   describe('CONFIRMED_STAFF_STATUS_COLORS', () => {
     it('should have bg and text for all statuses', () => {
-      const statuses = ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled', 'no_show'] as const;
+      const statuses = [
+        'scheduled',
+        'checked_in',
+        'checked_out',
+        'completed',
+        'cancelled',
+        'no_show',
+      ] as const;
 
       for (const status of statuses) {
         const color = CONFIRMED_STAFF_STATUS_COLORS[status];
@@ -184,9 +191,7 @@ describe('confirmedStaff', () => {
     });
 
     it('should have formattedDate in Korean format', () => {
-      const staffList: ConfirmedStaff[] = [
-        createMockConfirmedStaff({ date: '2025-03-01' }),
-      ];
+      const staffList: ConfirmedStaff[] = [createMockConfirmedStaff({ date: '2025-03-01' })];
 
       const groups = groupStaffByDate(staffList);
       // Date(2025-03-01) in local timezone - verify it has Korean format pattern

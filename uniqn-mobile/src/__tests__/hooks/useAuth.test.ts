@@ -85,8 +85,8 @@ function createMockProfile(role: UserRole): UserProfile {
     email: 'test@example.com',
     name: '테스트 유저',
     role,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+    createdAt: new Date(),
+    updatedAt: new Date(),
   };
 }
 
@@ -291,7 +291,7 @@ describe('useAuth Hook', () => {
     it('user 역할은 모든 플래그가 false여야 함', () => {
       setMockAuthState({
         user: createMockUser(),
-        profile: createMockProfile('user'),
+        profile: createMockProfile('staff'), // 원래 'user' 역할은 UserRole에 없음, 플래그로 검증
         isAuthenticated: true,
         isAdmin: false,
         isEmployer: false,

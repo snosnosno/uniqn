@@ -175,7 +175,7 @@ export class TimeNormalizer {
    * @param end 종료 시간
    * @returns 시간 차이 (시간 단위, 소수점 포함)
    */
-  private static calculateDurationInHours(start: Date, end: Date): number {
+  static calculateDurationInHours(start: Date, end: Date): number {
     const totalMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
     return totalMinutes / 60;
   }

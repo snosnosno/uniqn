@@ -303,7 +303,10 @@ export async function updatePayrollStatus(
       }
 
       // 중복 정산 방지
-      if (status === STATUS.PAYROLL.COMPLETED && workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+      if (
+        status === STATUS.PAYROLL.COMPLETED &&
+        workLog.payrollStatus === STATUS.PAYROLL.COMPLETED
+      ) {
         throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
           userMessage: '이미 정산 완료된 근무 기록입니다',
         });

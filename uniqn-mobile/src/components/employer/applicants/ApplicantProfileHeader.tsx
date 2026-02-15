@@ -61,7 +61,12 @@ export const ApplicantProfileHeader = React.memo(function ApplicantProfileHeader
           <ActivityIndicator size="small" color="#6B7280" />
         </View>
       ) : (
-        <Avatar source={profilePhotoURL ?? undefined} name={displayName} size="xl" className="mb-2" />
+        <Avatar
+          source={profilePhotoURL ?? undefined}
+          name={displayName}
+          size="xl"
+          className="mb-2"
+        />
       )}
       {/* 이름 + 상태 뱃지 (같은 행) */}
       <View className="flex-row items-center gap-2 mb-1">

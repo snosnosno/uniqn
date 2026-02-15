@@ -171,7 +171,11 @@ export function ApplicantList({
           estimatedItemSize={180}
           refreshControl={
             onRefresh ? (
-              <RefreshControl refreshing={isRefreshing ?? false} onRefresh={onRefresh} tintColor="#6366f1" />
+              <RefreshControl
+                refreshing={isRefreshing ?? false}
+                onRefresh={onRefresh}
+                tintColor="#6366f1"
+              />
             ) : undefined
           }
           showsVerticalScrollIndicator={false}

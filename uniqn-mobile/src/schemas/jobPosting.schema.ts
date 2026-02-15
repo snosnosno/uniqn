@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { xssValidation } from '@/utils/security';
 import { logger } from '@/utils/logger';
 import { timestampSchema } from './common';
+import { VALID_STAFF_ROLES } from '@/types/role';
 import type { JobPosting } from '@/types';
 
 /**
@@ -32,7 +33,7 @@ export type SalaryTypeSchema = z.infer<typeof salaryTypeSchema>;
 /**
  * 역할 스키마
  */
-export const roleSchema = z.enum(['dealer', 'manager', 'chiprunner', 'admin'], {
+export const roleSchema = z.enum(VALID_STAFF_ROLES, {
   error: '올바른 역할을 선택해주세요',
 });
 

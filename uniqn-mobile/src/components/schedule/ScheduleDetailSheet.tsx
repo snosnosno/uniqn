@@ -205,16 +205,18 @@ export function ScheduleDetailSheet({
       </View>
 
       {/* 실제 출퇴근 시간 (근무 완료인 경우) */}
-      {schedule.status === STATUS.WORK_LOG.CHECKED_OUT && schedule.checkInTime && schedule.checkOutTime && (
-        <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 mb-6">
-          <Text className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
-            실제 근무 시간
-          </Text>
-          <Text className="text-sm text-primary-600 dark:text-primary-300">
-            {formatTime(schedule.checkInTime)} - {formatTime(schedule.checkOutTime)}
-          </Text>
-        </View>
-      )}
+      {schedule.status === STATUS.WORK_LOG.CHECKED_OUT &&
+        schedule.checkInTime &&
+        schedule.checkOutTime && (
+          <View className="bg-primary-50 dark:bg-primary-900/20 rounded-xl p-4 mb-6">
+            <Text className="text-sm font-medium text-primary-800 dark:text-primary-200 mb-2">
+              실제 근무 시간
+            </Text>
+            <Text className="text-sm text-primary-600 dark:text-primary-300">
+              {formatTime(schedule.checkInTime)} - {formatTime(schedule.checkOutTime)}
+            </Text>
+          </View>
+        )}
 
       {/* 메모 */}
       {schedule.notes && (

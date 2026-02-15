@@ -24,9 +24,13 @@ export const notificationTypeSchema = z.enum([
   'application_confirmed',
   'confirmation_cancelled',
   'application_rejected',
+  'cancellation_approved',
+  'cancellation_rejected',
   // 출퇴근/스케줄 관련
   'staff_checked_in',
   'staff_checked_out',
+  'check_in_confirmed',
+  'check_out_confirmed',
   'checkin_reminder',
   'no_show_alert',
   'schedule_change',
@@ -36,10 +40,9 @@ export const notificationTypeSchema = z.enum([
   'settlement_completed',
   'settlement_requested',
   // 공고 관련
-  'job_closing_soon',
-  'new_job_in_area',
   'job_updated',
   'job_cancelled',
+  'job_closed',
   // 시스템
   'announcement',
   'maintenance',
@@ -47,6 +50,9 @@ export const notificationTypeSchema = z.enum([
   // 관리자
   'inquiry_answered',
   'report_resolved',
+  'new_report',
+  'new_inquiry',
+  'tournament_approval_request',
 ]);
 
 export type NotificationTypeSchema = z.infer<typeof notificationTypeSchema>;

@@ -122,9 +122,7 @@ describe('calculateEstimatedCost', () => {
   });
 
   it('급여가 없는 역할은 무시한다', () => {
-    const roles: FormRoleWithCount[] = [
-      { name: '딜러', count: 2 },
-    ];
+    const roles: FormRoleWithCount[] = [{ name: '딜러', count: 2 }];
     expect(calculateEstimatedCost(roles)).toBe(null);
   });
 
@@ -173,9 +171,7 @@ describe('calculateTotalSalary', () => {
   });
 
   it('salary가 없는 역할은 무시한다', () => {
-    const roles: FormRoleWithCount[] = [
-      { name: '딜러', count: 2 },
-    ];
+    const roles: FormRoleWithCount[] = [{ name: '딜러', count: 2 }];
     expect(calculateTotalSalary(roles)).toBe(0);
   });
 
@@ -206,9 +202,7 @@ describe('calculateTotalCount', () => {
   });
 
   it('단일 역할의 인원을 반환한다', () => {
-    const roles: FormRoleWithCount[] = [
-      { name: '딜러', count: 5 },
-    ];
+    const roles: FormRoleWithCount[] = [{ name: '딜러', count: 5 }];
     expect(calculateTotalCount(roles)).toBe(5);
   });
 });

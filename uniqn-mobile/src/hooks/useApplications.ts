@@ -178,7 +178,9 @@ export function useApplications() {
         queryClient.setQueryData<Application[]>(
           queryKeys.applications.mine(),
           previousApplications.map((app) =>
-            app.id === applicationId ? { ...app, status: STATUS.APPLICATION.CANCELLATION_PENDING } : app
+            app.id === applicationId
+              ? { ...app, status: STATUS.APPLICATION.CANCELLATION_PENDING }
+              : app
           )
         );
       }
@@ -210,7 +212,8 @@ export function useApplications() {
   const hasApplied = (jobPostingId: string): boolean => {
     const applications: Application[] = myApplicationsQuery.data ?? [];
     return applications.some(
-      (app: Application) => app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
+      (app: Application) =>
+        app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
     );
   };
 
@@ -219,7 +222,8 @@ export function useApplications() {
     const applications: Application[] = myApplicationsQuery.data ?? [];
     return (
       applications.find(
-        (app: Application) => app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
+        (app: Application) =>
+          app.jobPostingId === jobPostingId && app.status !== STATUS.APPLICATION.CANCELLED
       ) ?? null
     );
   };

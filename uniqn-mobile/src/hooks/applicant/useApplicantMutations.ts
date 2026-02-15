@@ -40,7 +40,9 @@ export function useConfirmApplication() {
     },
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.applicantManagement.all });
-      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.applicantManagement.all });
+      const previousData = queryClient.getQueriesData({
+        queryKey: queryKeys.applicantManagement.all,
+      });
 
       queryClient.setQueriesData(
         { queryKey: queryKeys.applicantManagement.all },
@@ -50,9 +52,7 @@ export function useConfirmApplication() {
           return {
             ...data,
             applicants: data.applicants.map((a) =>
-              a.applicationId === input.applicationId
-                ? { ...a, status: 'confirmed' }
-                : a
+              a.applicationId === input.applicationId ? { ...a, status: 'confirmed' } : a
             ),
           };
         }
@@ -103,7 +103,9 @@ export function useRejectApplication() {
     },
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.applicantManagement.all });
-      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.applicantManagement.all });
+      const previousData = queryClient.getQueriesData({
+        queryKey: queryKeys.applicantManagement.all,
+      });
 
       queryClient.setQueriesData(
         { queryKey: queryKeys.applicantManagement.all },
@@ -113,9 +115,7 @@ export function useRejectApplication() {
           return {
             ...data,
             applicants: data.applicants.map((a) =>
-              a.applicationId === input.applicationId
-                ? { ...a, status: 'rejected' }
-                : a
+              a.applicationId === input.applicationId ? { ...a, status: 'rejected' } : a
             ),
           };
         }
@@ -162,7 +162,9 @@ export function useBulkConfirmApplications() {
     },
     onMutate: async (applicationIds) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.applicantManagement.all });
-      const previousData = queryClient.getQueriesData({ queryKey: queryKeys.applicantManagement.all });
+      const previousData = queryClient.getQueriesData({
+        queryKey: queryKeys.applicantManagement.all,
+      });
 
       queryClient.setQueriesData(
         { queryKey: queryKeys.applicantManagement.all },
@@ -172,9 +174,7 @@ export function useBulkConfirmApplications() {
           return {
             ...data,
             applicants: data.applicants.map((a) =>
-              applicationIds.includes(a.applicationId as string)
-                ? { ...a, status: 'confirmed' }
-                : a
+              applicationIds.includes(a.applicationId as string) ? { ...a, status: 'confirmed' } : a
             ),
           };
         }

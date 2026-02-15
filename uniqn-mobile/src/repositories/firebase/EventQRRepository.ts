@@ -226,7 +226,11 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
       const qrRef = collection(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES);
       const now = Timestamp.now();
 
-      const q = query(qrRef, where(FIELDS.EVENT_QR.isActive, '==', true), where(FIELDS.EVENT_QR.expiresAt, '<', now));
+      const q = query(
+        qrRef,
+        where(FIELDS.EVENT_QR.isActive, '==', true),
+        where(FIELDS.EVENT_QR.expiresAt, '<', now)
+      );
 
       const snapshot = await getDocs(q);
       let count = 0;

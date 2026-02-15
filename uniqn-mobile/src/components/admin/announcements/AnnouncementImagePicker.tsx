@@ -127,11 +127,7 @@ export function AnnouncementImagePicker({
                   hitSlop={4}
                   accessibilityLabel="위로 이동"
                 >
-                  <Ionicons
-                    name="chevron-up"
-                    size={14}
-                    color={isFirst ? '#6b7280' : 'white'}
-                  />
+                  <Ionicons name="chevron-up" size={14} color={isFirst ? '#6b7280' : 'white'} />
                 </Pressable>
                 <Pressable
                   onPress={() => handleMoveDown(index)}
@@ -142,11 +138,7 @@ export function AnnouncementImagePicker({
                   hitSlop={4}
                   accessibilityLabel="아래로 이동"
                 >
-                  <Ionicons
-                    name="chevron-down"
-                    size={14}
-                    color={isLast ? '#6b7280' : 'white'}
-                  />
+                  <Ionicons name="chevron-down" size={14} color={isLast ? '#6b7280' : 'white'} />
                 </Pressable>
               </View>
             )}
@@ -171,7 +163,15 @@ export function AnnouncementImagePicker({
         </View>
       );
     },
-    [uploadingIndex, uploadProgress, onRemoveImage, disabled, images.length, handleMoveUp, handleMoveDown]
+    [
+      uploadingIndex,
+      uploadProgress,
+      onRemoveImage,
+      disabled,
+      images.length,
+      handleMoveUp,
+      handleMoveDown,
+    ]
   );
 
   // 추가 버튼 컴포넌트

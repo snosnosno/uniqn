@@ -104,7 +104,8 @@ describe('withRetry', () => {
   // ============================================================================
   describe('재시도 후 성공', () => {
     it('2번째 시도에 성공', async () => {
-      const fn = jest.fn()
+      const fn = jest
+        .fn()
         .mockRejectedValueOnce(new Error('일시적 에러'))
         .mockResolvedValue('success');
 
@@ -189,9 +190,7 @@ describe('withRetry', () => {
   describe('onRetry 콜백', () => {
     it('재시도 시 onRetry 콜백 호출', async () => {
       const onRetry = jest.fn();
-      const fn = jest.fn()
-        .mockRejectedValueOnce(new Error('에러'))
-        .mockResolvedValue('ok');
+      const fn = jest.fn().mockRejectedValueOnce(new Error('에러')).mockResolvedValue('ok');
 
       const promise = withRetry(fn, {
         maxRetries: 3,
@@ -205,11 +204,7 @@ describe('withRetry', () => {
       await promise;
 
       expect(onRetry).toHaveBeenCalledTimes(1);
-      expect(onRetry).toHaveBeenCalledWith(
-        expect.any(Error),
-        1,
-        expect.any(Number)
-      );
+      expect(onRetry).toHaveBeenCalledWith(expect.any(Error), 1, expect.any(Number));
     });
   });
 });

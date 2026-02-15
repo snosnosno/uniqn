@@ -12,7 +12,7 @@ import type {
   RejectApplicationInput,
   StaffRole,
 } from '@/types';
-import type { ApplicantListWithStats } from '@/repositories';
+import type { ApplicantListWithStats } from '@/repositories/interfaces';
 
 // ============================================================================
 // Mock Setup (호이스팅을 위해 파일 최상단에 배치)
@@ -134,13 +134,7 @@ function createMockApplication(overrides: Partial<Application> = {}): Applicatio
     applicantName: '김스태프',
     applicantPhone: '010-1234-5678',
     status: 'applied',
-    assignments: [
-      {
-        dates: ['2024-02-01'],
-        roleIds: ['dealer' as StaffRole],
-        timeSlot: '09:00-18:00',
-      },
-    ],
+    assignments: [{ isGrouped: false }],
     createdAt: { seconds: Date.now() / 1000, nanoseconds: 0 },
     updatedAt: { seconds: Date.now() / 1000, nanoseconds: 0 },
     ...overrides,
@@ -206,7 +200,11 @@ describe('applicantManagementService', () => {
 
       expect(result.applicants).toHaveLength(1);
       expect(result.applicants[0]?.status).toBe('confirmed');
-      expect(mockFindByJobPostingWithStats).toHaveBeenCalledWith('job-1', 'employer-1', 'confirmed');
+      expect(mockFindByJobPostingWithStats).toHaveBeenCalledWith(
+        'job-1',
+        'employer-1',
+        'confirmed'
+      );
     });
 
     it('다중 상태 필터를 적용하여 조회해야 함', async () => {
@@ -220,7 +218,10 @@ describe('applicantManagementService', () => {
 
       mockFindByJobPostingWithStats.mockResolvedValue(mockResult);
 
-      const result = await getApplicantsByJobPosting('job-1', 'employer-1', ['confirmed', 'pending']);
+      const result = await getApplicantsByJobPosting('job-1', 'employer-1', [
+        'confirmed',
+        'pending',
+      ]);
 
       expect(result.applicants).toHaveLength(2);
       expect(mockFindByJobPostingWithStats).toHaveBeenCalledWith('job-1', 'employer-1', [
@@ -251,7 +252,9 @@ describe('applicantManagementService', () => {
         })
       );
 
-      await expect(getApplicantsByJobPosting('job-1', 'employer-1')).rejects.toThrow('권한이 없습니다');
+      await expect(getApplicantsByJobPosting('job-1', 'employer-1')).rejects.toThrow(
+        '권한이 없습니다'
+      );
     });
   });
 
@@ -289,6 +292,7 @@ describe('applicantManagementService', () => {
             dates: ['2024-02-01', '2024-02-02'],
             roleIds: ['dealer' as StaffRole],
             timeSlot: '09:00-18:00',
+            isGrouped: false,
           },
         ],
       });
@@ -297,13 +301,7 @@ describe('applicantManagementService', () => {
 
       const input = {
         applicationId: 'app-1',
-        selectedAssignments: [
-          {
-            dates: ['2024-02-01'],
-            roleIds: ['dealer' as StaffRole],
-            timeSlot: '09:00-18:00',
-          },
-        ],
+        selectedAssignments: [{ isGrouped: false }],
       };
 
       mockConfirmApplicationWithHistory.mockResolvedValue({
@@ -350,7 +348,7 @@ describe('applicantManagementService', () => {
     });
 
     it('존재하지 않는 지원서는 에러를 발생시켜야 함', async () => {
-      const { BusinessError, ERROR_CODES } = jest.requireMock('@/errors');
+      const { BusinessError } = jest.requireMock('@/errors');
       const input: ConfirmApplicationInput = {
         applicationId: 'non-existent',
       };
@@ -374,7 +372,9 @@ describe('applicantManagementService', () => {
         })
       );
 
-      await expect(confirmApplication(input, 'employer-1')).rejects.toThrow('모집 인원이 마감되었습니다');
+      await expect(confirmApplication(input, 'employer-1')).rejects.toThrow(
+        '모집 인원이 마감되었습니다'
+      );
     });
 
     it('다중 WorkLog를 생성하면 첫 번째 ID를 반환해야 함', async () => {
@@ -458,7 +458,9 @@ describe('applicantManagementService', () => {
         })
       );
 
-      await expect(rejectApplication(input, 'employer-1')).rejects.toThrow('존재하지 않는 지원입니다');
+      await expect(rejectApplication(input, 'employer-1')).rejects.toThrow(
+        '존재하지 않는 지원입니다'
+      );
     });
   });
 
@@ -596,17 +598,38 @@ describe('applicantManagementService', () => {
           createMockApplication({
             id: 'app-1',
             status: 'applied',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['dealer'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
           createMockApplication({
             id: 'app-2',
             status: 'confirmed',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['dealer'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
           createMockApplication({
             id: 'app-3',
             status: 'applied',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['manager'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['manager'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
         ] as Application[],
         stats: createMockStats({ total: 3, applied: 2, confirmed: 1 }),
@@ -632,13 +655,27 @@ describe('applicantManagementService', () => {
           createMockApplication({
             id: 'app-1',
             status: 'applied',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['other'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['other'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
             customRole: '사회자',
           }),
           createMockApplication({
             id: 'app-2',
             status: 'confirmed',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['other'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['other'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
             customRole: '사회자',
           }),
         ] as Application[],
@@ -649,10 +686,10 @@ describe('applicantManagementService', () => {
 
       const result = await getApplicantStatsByRole('job-1', 'employer-1');
 
-      expect(result['사회자']).toBeDefined();
-      expect(result['사회자'].total).toBe(2);
-      expect(result['사회자'].applied).toBe(1);
-      expect(result['사회자'].confirmed).toBe(1);
+      expect((result as Record<string, ApplicationStats>)['사회자']).toBeDefined();
+      expect((result as Record<string, ApplicationStats>)['사회자'].total).toBe(2);
+      expect((result as Record<string, ApplicationStats>)['사회자'].applied).toBe(1);
+      expect((result as Record<string, ApplicationStats>)['사회자'].confirmed).toBe(1);
     });
 
     it('지원자가 없으면 빈 객체를 반환해야 함', async () => {
@@ -674,22 +711,50 @@ describe('applicantManagementService', () => {
           createMockApplication({
             id: 'app-1',
             status: 'confirmed',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['dealer'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
           createMockApplication({
             id: 'app-2',
             status: 'confirmed',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['dealer'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
           createMockApplication({
             id: 'app-3',
             status: 'rejected',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['dealer'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['dealer'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
           createMockApplication({
             id: 'app-4',
             status: 'confirmed',
-            assignments: [{ dates: ['2024-02-01'], roleIds: ['chiprunner'], timeSlot: '09:00-18:00' }],
+            assignments: [
+              {
+                dates: ['2024-02-01'],
+                roleIds: ['floor'],
+                timeSlot: '09:00-18:00',
+                isGrouped: false,
+              },
+            ],
           }),
         ] as Application[],
         stats: createMockStats({ total: 4, confirmed: 3, rejected: 1 }),
@@ -703,8 +768,8 @@ describe('applicantManagementService', () => {
       expect(result.dealer.confirmed).toBe(2);
       expect(result.dealer.rejected).toBe(1);
 
-      expect(result.chiprunner.total).toBe(1);
-      expect(result.chiprunner.confirmed).toBe(1);
+      expect((result as Record<string, ApplicationStats>).floor.total).toBe(1);
+      expect((result as Record<string, ApplicationStats>).floor.confirmed).toBe(1);
     });
   });
 
@@ -755,12 +820,17 @@ describe('applicantManagementService', () => {
 
       const unsubscribe = subscribeToApplicants('job-1', 'employer-1', callbacks);
 
-      expect(mockSubscribeByJobPosting).toHaveBeenCalledWith('job-1', 'employer-1', expect.any(Object));
+      expect(mockSubscribeByJobPosting).toHaveBeenCalledWith(
+        'job-1',
+        'employer-1',
+        expect.any(Object)
+      );
       expect(typeof unsubscribe).toBe('function');
     });
 
     it('업데이트 콜백을 호출해야 함', () => {
-      let capturedCallbacks: { onUpdate: (result: ApplicantListWithStats) => void } | null = null;
+      let capturedCallbacks: { onUpdate: (result: ApplicantListWithStats) => void } | null =
+        null as { onUpdate: (result: ApplicantListWithStats) => void } | null;
 
       mockSubscribeByJobPosting.mockImplementation(
         (_jobPostingId: string, _ownerId: string, callbacks: unknown) => {
@@ -784,11 +854,15 @@ describe('applicantManagementService', () => {
 
       capturedCallbacks?.onUpdate(mockResult);
 
-      expect(onUpdate).toHaveBeenCalledWith(expect.objectContaining({ applicants: expect.any(Array) }));
+      expect(onUpdate).toHaveBeenCalledWith(
+        expect.objectContaining({ applicants: expect.any(Array) })
+      );
     });
 
     it('에러 콜백을 호출해야 함', () => {
-      let capturedCallbacks: { onError?: (error: Error) => void } | null = null;
+      let capturedCallbacks: { onError?: (error: Error) => void } | null = null as {
+        onError?: (error: Error) => void;
+      } | null;
 
       mockSubscribeByJobPosting.mockImplementation(
         (_jobPostingId: string, _ownerId: string, callbacks: unknown) => {

@@ -306,20 +306,21 @@ function setupNotificationHandlers(): void {
   });
 
   // 알림 터치 응답 리스너 (subscription 저장하여 cleanup 시 해제)
-  notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener((response) => {
-    const payload = extractPayload(response.notification);
-    const actionId = response.actionIdentifier;
+  notificationResponseSubscription = Notifications.addNotificationResponseReceivedListener(
+    (response) => {
+      const payload = extractPayload(response.notification);
+      const actionId = response.actionIdentifier;
 
-    logger.info('알림 응답 수신', { actionId, data: payload.data });
+      logger.info('알림 응답 수신', { actionId, data: payload.data });
 
-    if (notificationResponseHandler) {
-      notificationResponseHandler(payload, actionId);
+      if (notificationResponseHandler) {
+        notificationResponseHandler(payload, actionId);
+      }
     }
-  });
+  );
 
   logger.info('알림 핸들러 설정 완료');
 }
-
 
 /**
  * 알림에서 페이로드 추출

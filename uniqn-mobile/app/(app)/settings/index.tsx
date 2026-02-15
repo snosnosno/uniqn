@@ -4,7 +4,16 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { View, Text, ScrollView, Pressable, Switch, ActivityIndicator, Linking, Platform } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  Switch,
+  ActivityIndicator,
+  Linking,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Card, Divider } from '@/components/ui';
@@ -89,7 +98,9 @@ export default function SettingsScreen() {
   const { saveSettings, isSaving } = useSaveNotificationSettings();
 
   // 알림 권한 상태 (useNotificationHandler 중복 호출 방지 — 경량 체크)
-  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined' | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<
+    'granted' | 'denied' | 'undetermined' | null
+  >(null);
 
   useEffect(() => {
     if (Platform.OS === 'web') return;

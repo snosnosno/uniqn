@@ -7,7 +7,15 @@
  */
 
 import React, { useCallback, useMemo, useState } from 'react';
-import { View, Text, ScrollView, Pressable, ActivityIndicator, Platform, RefreshControl } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  Pressable,
+  ActivityIndicator,
+  Platform,
+  RefreshControl,
+} from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useDeleteJobPosting } from '@/hooks/useJobManagement';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -262,7 +270,13 @@ export default function JobPostingDetailScreen() {
       <ScrollView
         className="flex-1"
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />}
+        refreshControl={
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={getLayoutColor(isDark, 'refreshTint')}
+          />
+        }
       >
         {/* 공고 정보 카드 */}
         <View className="px-4 pt-3">

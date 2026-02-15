@@ -146,7 +146,9 @@ export const ApplicantCard = React.memo(function ApplicantCard({
 
   // 확정 상태 액션 표시 여부
   const canShowConfirmedActions =
-    showActions && applicant.status === STATUS.APPLICATION.CONFIRMED && (onCancelConfirmation || onConvertToStaff);
+    showActions &&
+    applicant.status === STATUS.APPLICATION.CONFIRMED &&
+    (onCancelConfirmation || onConvertToStaff);
 
   // 액션 버튼 표시 여부
   const canShowActions = showActions && applicant.status === STATUS.APPLICATION.APPLIED;

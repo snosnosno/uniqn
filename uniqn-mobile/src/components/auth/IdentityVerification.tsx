@@ -25,7 +25,7 @@ import {
 import type { VerifiedIdentityData } from '@/services/identityVerificationService';
 
 // 포트원 SDK 컴포넌트 (네이티브 전용, 모듈 최상위에서 로드)
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
 const PortOneSDK = Platform.OS !== 'web' ? require('@portone/react-native-sdk') : null;
 
 // ============================================================================
@@ -111,7 +111,13 @@ interface PortOneModalProps {
  * - @portone/react-native-sdk의 IdentityVerification 컴포넌트를 렌더링
  * - 웹에서는 사용 불가 (네이티브 전용)
  */
-function PortOneModal({ visible, identityVerificationId, onComplete, onError, onClose }: PortOneModalProps) {
+function PortOneModal({
+  visible,
+  identityVerificationId,
+  onComplete,
+  onError,
+  onClose,
+}: PortOneModalProps) {
   const [verifying, setVerifying] = useState(false);
 
   if (!PortOneSDK) return null;
@@ -119,9 +125,13 @@ function PortOneModal({ visible, identityVerificationId, onComplete, onError, on
   const PortOneIdentityVerification = PortOneSDK.IdentityVerification;
   const params = getPortOneParams(identityVerificationId);
 
-  const handleComplete = async (response: { code?: string; message?: string; identityVerificationId: string }) => {
+  const handleComplete = async (response: {
+    code?: string;
+    message?: string;
+    identityVerificationId: string;
+  }) => {
     // SDK 응답에 code가 있으면 에러
-    if (response.code != null) {
+    if (response.code !== null && response.code !== undefined) {
       if (response.code === 'IDENTITY_VERIFICATION_CANCELLED') {
         onClose();
         return;
@@ -147,7 +157,12 @@ function PortOneModal({ visible, identityVerificationId, onComplete, onError, on
   };
 
   return (
-    <Modal visible={visible} animationType="slide" presentationStyle="fullScreen" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="slide"
+      presentationStyle="fullScreen"
+      onRequestClose={onClose}
+    >
       <SafeAreaView className="flex-1 bg-white dark:bg-gray-900">
         {/* 닫기 헤더 */}
         <View className="flex-row items-center justify-between px-4 pb-3 border-b border-gray-200 dark:border-gray-700">
@@ -233,31 +248,37 @@ export const IdentityVerification: React.FC<IdentityVerificationProps> = React.m
     /**
      * 포트원 인증 완료
      */
-    const handlePortOneComplete = useCallback((verifiedData: VerifiedIdentityData) => {
-      setShowPortOne(false);
-      const verificationResult: VerificationResult = {
-        name: verifiedData.name,
-        phone: verifiedData.phone,
-        birthDate: verifiedData.birthDate,
-        gender: verifiedData.gender,
-        provider: 'pass',
-        verifiedAt: new Date(),
-        identityVerificationId: currentVerificationId,
-      };
-      setResult(verificationResult);
-      setStatus('success');
-      onVerified(verificationResult);
-    }, [onVerified, currentVerificationId]);
+    const handlePortOneComplete = useCallback(
+      (verifiedData: VerifiedIdentityData) => {
+        setShowPortOne(false);
+        const verificationResult: VerificationResult = {
+          name: verifiedData.name,
+          phone: verifiedData.phone,
+          birthDate: verifiedData.birthDate,
+          gender: verifiedData.gender,
+          provider: 'pass',
+          verifiedAt: new Date(),
+          identityVerificationId: currentVerificationId,
+        };
+        setResult(verificationResult);
+        setStatus('success');
+        onVerified(verificationResult);
+      },
+      [onVerified, currentVerificationId]
+    );
 
     /**
      * 포트원 인증 실패
      */
-    const handlePortOneError = useCallback((err: Error) => {
-      setShowPortOne(false);
-      setError(err.message);
-      setStatus('error');
-      onError?.(err);
-    }, [onError]);
+    const handlePortOneError = useCallback(
+      (err: Error) => {
+        setShowPortOne(false);
+        setError(err.message);
+        setStatus('error');
+        onError?.(err);
+      },
+      [onError]
+    );
 
     /**
      * 포트원 모달 닫기 (취소)

@@ -39,7 +39,6 @@ function normalizeRole(roleValue: string): { role: string; customRole?: string }
   return { role: 'other', customRole: roleValue };
 }
 
-
 // ============================================================================
 // Types
 // ============================================================================

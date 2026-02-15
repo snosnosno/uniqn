@@ -8,6 +8,7 @@
 import type { SettlementBreakdown, TaxType } from '@/types/schedule';
 import type { JobPostingCard, SalaryType, SalaryInfo } from '@/types/jobPosting';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
+import { SettlementCalculator } from '@/domains/settlement';
 
 // Re-export for backward compatibility
 export type { SalaryType, SalaryInfo, TaxType };
@@ -69,13 +70,7 @@ export function parseTimestamp(value: unknown): Date | null {
  * 근무 시간 계산 (시간 단위)
  */
 export function calculateHoursWorked(startTime: TimeInput, endTime: TimeInput): number {
-  const start = TimeNormalizer.parseTime(startTime);
-  const end = TimeNormalizer.parseTime(endTime);
-
-  if (!start || !end) return 0;
-
-  const totalMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
-  return totalMinutes / 60;
+  return SettlementCalculator.calculateHours(startTime, endTime);
 }
 
 /**

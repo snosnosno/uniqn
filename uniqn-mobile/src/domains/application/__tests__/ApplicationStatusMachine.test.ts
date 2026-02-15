@@ -174,8 +174,13 @@ describe('ApplicationStatusMachine', () => {
   describe('getStatusMetadata', () => {
     it('각 상태의 메타데이터에 필수 필드가 있다', () => {
       const statuses = [
-        'applied', 'pending', 'confirmed', 'rejected',
-        'cancelled', 'completed', 'cancellation_pending',
+        'applied',
+        'pending',
+        'confirmed',
+        'rejected',
+        'cancelled',
+        'completed',
+        'cancellation_pending',
       ] as const;
 
       for (const status of statuses) {

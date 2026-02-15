@@ -72,7 +72,7 @@ jest.mock('@/services', () => ({
 
 const mockAddToast = jest.fn();
 const mockUser = { uid: 'employer-1' };
-const mockAuthState = { user: mockUser };
+const mockAuthState: { user: { uid: string } | null } = { user: mockUser };
 const mockToastState = { addToast: mockAddToast };
 
 jest.mock('@/stores/authStore', () => ({
@@ -224,17 +224,15 @@ jest.mock('@/lib', () => ({
 
 jest.mock('@/shared/errors', () => ({
   errorHandlerPresets: {
-    settlement: (addToast: (t: { type: string; message: string }) => void) =>
-      (error: Error) => {
-        addToast({ type: 'error', message: error.message });
-      },
+    settlement: (addToast: (t: { type: string; message: string }) => void) => (error: Error) => {
+      addToast({ type: 'error', message: error.message });
+    },
   },
-  createMutationErrorHandler: (
-    _operation: string,
-    addToast: (t: { type: string; message: string }) => void
-  ) => (error: Error) => {
-    addToast({ type: 'error', message: error.message });
-  },
+  createMutationErrorHandler:
+    (_operation: string, addToast: (t: { type: string; message: string }) => void) =>
+    (error: Error) => {
+      addToast({ type: 'error', message: error.message });
+    },
 }));
 
 jest.mock('@/errors/guardErrors', () => ({
@@ -262,19 +260,21 @@ jest.mock('@/constants', () => ({
 // Test Utilities
 // ============================================================================
 
-function createMockSettlementWorkLog(overrides: {
-  id?: string;
-  jobPostingId?: string;
-  staffName?: string;
-  jobPostingTitle?: string;
-  hoursWorked?: number;
-  calculatedAmount?: number;
-  payrollStatus?: 'pending' | 'processing' | 'completed';
-  payrollAmount?: number;
-  role?: string;
-  customRole?: string;
-  date?: string;
-} = {}) {
+function createMockSettlementWorkLog(
+  overrides: {
+    id?: string;
+    jobPostingId?: string;
+    staffName?: string;
+    jobPostingTitle?: string;
+    hoursWorked?: number;
+    calculatedAmount?: number;
+    payrollStatus?: 'pending' | 'processing' | 'completed';
+    payrollAmount?: number;
+    role?: string;
+    customRole?: string;
+    date?: string;
+  } = {}
+) {
   const base = createMockWorkLog();
   return {
     ...base,

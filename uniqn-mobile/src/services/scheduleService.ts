@@ -27,11 +27,7 @@ import { toJobPostingCard } from '@/types/jobPosting';
 import { IdNormalizer } from '@/shared/id';
 import { ScheduleMerger, ScheduleConverter, type JobPostingCardWithMeta } from '@/domains/schedule';
 import { RealtimeManager } from '@/shared/realtime';
-import {
-  workLogRepository,
-  jobPostingRepository,
-  applicationRepository,
-} from '@/repositories';
+import { workLogRepository, jobPostingRepository, applicationRepository } from '@/repositories';
 
 // ============================================================================
 // Constants
@@ -87,14 +83,17 @@ async function fetchJobPostingCardBatch(
 
     for (const jobPosting of jobPostings) {
       const card = toJobPostingCard(jobPosting);
-      const location = typeof jobPosting.location === 'string'
-        ? jobPosting.location
-        : (jobPosting.location as { name?: string })?.name || '';
+      const location =
+        typeof jobPosting.location === 'string'
+          ? jobPosting.location
+          : (jobPosting.location as { name?: string })?.name || '';
       cardMap.set(jobPosting.id, {
         card,
         title: jobPosting.title || '이벤트',
         location,
-        contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as string | undefined,
+        contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as
+          | string
+          | undefined,
         ownerId: jobPosting.ownerId,
       });
     }
@@ -331,8 +330,7 @@ export async function getMySchedules(
     // ========================================
     // 3. Repository가 반환한 타입 안전한 데이터 사용
     // ========================================
-    const workLogs: WorkLog[] =
-      workLogsResult.status === 'fulfilled' ? workLogsResult.value : [];
+    const workLogs: WorkLog[] = workLogsResult.status === 'fulfilled' ? workLogsResult.value : [];
 
     const applications: Application[] =
       applicationsResult.status === 'fulfilled' ? applicationsResult.value : [];
@@ -483,14 +481,17 @@ export async function getScheduleById(scheduleId: string): Promise<ScheduleEvent
     try {
       const jobPosting = await jobPostingRepository.getById(normalizedJobId);
       if (jobPosting) {
-        const location = typeof jobPosting.location === 'string'
-          ? jobPosting.location
-          : (jobPosting.location as { name?: string })?.name || '';
+        const location =
+          typeof jobPosting.location === 'string'
+            ? jobPosting.location
+            : (jobPosting.location as { name?: string })?.name || '';
         cardInfo = {
           card: toJobPostingCard(jobPosting),
           title: jobPosting.title || '이벤트',
           location,
-          contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as string | undefined,
+          contactPhone: (jobPosting as unknown as Record<string, unknown>).contactPhone as
+            | string
+            | undefined,
           ownerId: jobPosting.ownerId,
         };
       }
@@ -538,7 +539,9 @@ export async function getUpcomingSchedules(
     });
 
     // confirmed 상태만 필터링
-    return schedules.filter((s) => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED);
+    return schedules.filter(
+      (s) => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED
+    );
   } catch (error) {
     throw handleServiceError(error, {
       operation: '다가오는 스케줄 조회',
@@ -627,7 +630,8 @@ export function getCalendarMarkedDates(
       };
     } else if (
       schedule.type === STATUS.SCHEDULE.CONFIRMED ||
-      (schedule.type === STATUS.SCHEDULE.APPLIED && markedDates[schedule.date].type !== STATUS.SCHEDULE.CONFIRMED)
+      (schedule.type === STATUS.SCHEDULE.APPLIED &&
+        markedDates[schedule.date].type !== STATUS.SCHEDULE.CONFIRMED)
     ) {
       markedDates[schedule.date] = {
         marked: true,

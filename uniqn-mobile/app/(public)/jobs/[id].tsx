@@ -145,7 +145,11 @@ export default function JobDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={getLayoutColor(isDark, 'refreshTint')}
+          />
         }
       >
         <JobDetail job={job} />
@@ -160,7 +164,8 @@ export default function JobDetailScreen() {
                 {applicationStatus?.status === STATUS.APPLICATION.APPLIED && '지원 완료 - 검토 중'}
                 {applicationStatus?.status === STATUS.APPLICATION.PENDING && '지원 검토 중'}
                 {applicationStatus?.status === STATUS.APPLICATION.CONFIRMED && '지원 승인됨'}
-                {applicationStatus?.status === STATUS.APPLICATION.REJECTED && '지원이 거절되었습니다'}
+                {applicationStatus?.status === STATUS.APPLICATION.REJECTED &&
+                  '지원이 거절되었습니다'}
               </Text>
               <Button
                 onPress={() => router.push('/(app)/(tabs)/schedule')}

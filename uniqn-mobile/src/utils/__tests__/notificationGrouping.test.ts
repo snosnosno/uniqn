@@ -615,20 +615,14 @@ describe('groupNotificationsWithCategoryFilter', () => {
   });
 
   it('system 카테고리로 필터링하면 시스템 알림만 반환한다', () => {
-    const result = groupNotificationsWithCategoryFilter(
-      notifications,
-      NotificationCategory.SYSTEM
-    );
+    const result = groupNotificationsWithCategoryFilter(notifications, NotificationCategory.SYSTEM);
     // Only ANNOUNCEMENT (1 item) -> individual
     expect(result).toHaveLength(1);
     expect(isGroupedNotification(result[0])).toBe(false);
   });
 
   it('빈 배열에 카테고리 필터를 적용해도 빈 배열을 반환한다', () => {
-    const result = groupNotificationsWithCategoryFilter(
-      [],
-      NotificationCategory.APPLICATION
-    );
+    const result = groupNotificationsWithCategoryFilter([], NotificationCategory.APPLICATION);
     expect(result).toEqual([]);
   });
 

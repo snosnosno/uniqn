@@ -188,11 +188,7 @@ export const NotificationList = memo(function NotificationList({
         onEndReachedThreshold={0.5}
         refreshControl={
           onRefresh ? (
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="#A855F7"
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} tintColor="#A855F7" />
           ) : undefined
         }
         ListEmptyComponent={ListEmptyComponent || defaultEmptyComponent}

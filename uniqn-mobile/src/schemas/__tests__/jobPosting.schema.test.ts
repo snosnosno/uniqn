@@ -70,12 +70,19 @@ describe('salaryTypeSchema', () => {
 // ============================================================================
 
 describe('roleSchema', () => {
-  it.each(['dealer', 'manager', 'chiprunner', 'admin'])('should accept: %s', (role) => {
-    expect(roleSchema.safeParse(role).success).toBe(true);
-  });
+  it.each(['dealer', 'floor', 'serving', 'manager', 'staff', 'other'])(
+    'should accept: %s',
+    (role) => {
+      expect(roleSchema.safeParse(role).success).toBe(true);
+    }
+  );
 
   it('should reject invalid role', () => {
-    expect(roleSchema.safeParse('staff').success).toBe(false);
+    expect(roleSchema.safeParse('chiprunner').success).toBe(false);
+  });
+
+  it('should reject legacy admin role', () => {
+    expect(roleSchema.safeParse('admin').success).toBe(false);
   });
 });
 
@@ -95,7 +102,7 @@ describe('roleRequirementSchema', () => {
   });
 
   it('should accept count of 100', () => {
-    const result = roleRequirementSchema.safeParse({ role: 'chiprunner', count: 100 });
+    const result = roleRequirementSchema.safeParse({ role: 'floor', count: 100 });
     expect(result.success).toBe(true);
   });
 

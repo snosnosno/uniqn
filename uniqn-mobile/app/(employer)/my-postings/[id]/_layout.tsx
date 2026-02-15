@@ -107,7 +107,10 @@ export default function JobPostingDetailLayout() {
             />
           ),
           headerRight: () => (
-            <HeaderQRButton tintColor={getLayoutColor(isDark, 'headerTint')} onPress={handleShowQR} />
+            <HeaderQRButton
+              tintColor={getLayoutColor(isDark, 'headerTint')}
+              onPress={handleShowQR}
+            />
           ),
         }}
       >

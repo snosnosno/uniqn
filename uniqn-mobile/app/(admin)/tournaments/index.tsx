@@ -384,7 +384,13 @@ export default function AdminTournamentsPage() {
                   ? '아직 승인된 대회공고가 없습니다'
                   : '거부된 대회공고가 없습니다'
             }
-            icon={selectedStatus === STATUS.TOURNAMENT.PENDING ? '📋' : selectedStatus === STATUS.TOURNAMENT.APPROVED ? '✅' : '❌'}
+            icon={
+              selectedStatus === STATUS.TOURNAMENT.PENDING
+                ? '📋'
+                : selectedStatus === STATUS.TOURNAMENT.APPROVED
+                  ? '✅'
+                  : '❌'
+            }
           />
         ) : (
           displayPostings.map((posting) => (

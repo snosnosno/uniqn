@@ -127,19 +127,13 @@ describe('queryUtils', () => {
 
     it('객체 포함 배열 비교 (동일 내용)', () => {
       expect(
-        areQueryKeysEqual(
-          ['jobs', { status: 'active' }],
-          ['jobs', { status: 'active' }]
-        )
+        areQueryKeysEqual(['jobs', { status: 'active' }], ['jobs', { status: 'active' }])
       ).toBe(true);
     });
 
     it('객체 포함 배열 비교 (다른 내용)', () => {
       expect(
-        areQueryKeysEqual(
-          ['jobs', { status: 'active' }],
-          ['jobs', { status: 'closed' }]
-        )
+        areQueryKeysEqual(['jobs', { status: 'active' }], ['jobs', { status: 'closed' }])
       ).toBe(false);
     });
 

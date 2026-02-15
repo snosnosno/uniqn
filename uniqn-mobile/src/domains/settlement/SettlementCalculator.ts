@@ -98,8 +98,7 @@ export class SettlementCalculator {
 
     if (!start || !end) return 0;
 
-    const totalMinutes = Math.max(0, (end.getTime() - start.getTime()) / (1000 * 60));
-    return totalMinutes / 60;
+    return TimeNormalizer.calculateDurationInHours(start, end);
   }
 
   // ==========================================================================

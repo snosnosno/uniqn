@@ -32,7 +32,10 @@ export { SettlementDetailModal } from './settlement/SettlementDetailModal';
 export type { SettlementDetailModalProps } from './settlement/SettlementDetailModal';
 
 export { SettlementEditModal } from './settlement/SettlementEditModal';
-export type { SettlementEditModalProps, SettlementEditData } from './settlement/SettlementEditModal';
+export type {
+  SettlementEditModalProps,
+  SettlementEditData,
+} from './settlement/SettlementEditModal';
 
 export { SettlementSettingsModal } from './settlement/SettlementSettingsModal';
 export type {

@@ -166,9 +166,7 @@ describe('normalizeJobSchedule', () => {
         postingType: 'fixed',
         daysPerWeek: 5,
         timeSlot: '19:00~02:00',
-        requiredRolesWithCount: [
-          { role: 'dealer', count: 3, filled: 1 },
-        ],
+        requiredRolesWithCount: [{ role: 'dealer', count: 3, filled: 1 }],
       });
       const result = normalizeJobSchedule(job);
       expect(result.type).toBe('fixed');
@@ -238,15 +236,11 @@ describe('normalizeJobSchedule', () => {
         dateSpecificRequirements: [
           {
             date: '2025-01-28',
-            timeSlots: [
-              { startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] },
-            ],
+            timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
           },
           {
             date: '2025-01-29',
-            timeSlots: [
-              { startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] },
-            ],
+            timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
           },
         ],
       });
@@ -284,9 +278,7 @@ describe('normalizeJobSchedule', () => {
             date: '2025-01-28',
             isMainDate: true,
             description: 'Day 1',
-            timeSlots: [
-              { startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] },
-            ],
+            timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
           },
         ],
       });

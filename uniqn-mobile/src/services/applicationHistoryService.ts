@@ -9,6 +9,9 @@ import {
   collection,
   doc,
   getDoc,
+  getDocs,
+  query,
+  where,
   runTransaction,
   serverTimestamp,
   Timestamp,
@@ -16,7 +19,13 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { MaxCapacityReachedError, ValidationError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
+import {
+  MaxCapacityReachedError,
+  ValidationError,
+  BusinessError,
+  ERROR_CODES,
+  isAppError,
+} from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseApplicationDocument, parseJobPostingDocument } from '@/schemas';
 import { getClosingStatus } from '@/utils/job-posting/dateUtils';
@@ -153,8 +162,20 @@ export function updateDateSpecificRequirementsFilled(
     }
   }
 
-  // 매칭 결과 로깅
-  if (expectedUpdates > 0 && successfulUpdates < expectedUpdates) {
+  // 매칭 결과 처리
+  if (expectedUpdates > 0 && successfulUpdates === 0) {
+    if (operation === 'decrement') {
+      // 취소 흐름에서는 throw 하지 않음 (교착 방지: 확정 취소가 실패하면 안 됨)
+      logger.error('dateSpecificRequirements filled 전체 매칭 실패 (취소 흐름)', {
+        operation,
+        expectedUpdates,
+      });
+    } else {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '모집 현황 업데이트에 실패했습니다. 공고 데이터를 확인해주세요.',
+      });
+    }
+  } else if (expectedUpdates > 0 && successfulUpdates < expectedUpdates) {
     logger.warn('dateSpecificRequirements filled 업데이트 일부 실패', {
       operation,
       expectedUpdates,
@@ -444,6 +465,31 @@ export async function cancelConfirmation(
   try {
     logger.info('확정 취소 시작', { applicationId, ownerId });
 
+    // 트랜잭션 전에 연관 WorkLog ID 수집 (트랜잭션 내 쿼리 불가)
+    // best-effort: 실패해도 확정 취소 자체는 진행
+    let relatedWorkLogIds: string[] = [];
+    try {
+      const applicationPreCheck = await getDoc(
+        doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId)
+      );
+      if (applicationPreCheck.exists()) {
+        const preData = applicationPreCheck.data();
+        if (preData?.applicantId && preData?.jobPostingId) {
+          const workLogsSnapshot = await getDocs(
+            query(
+              collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS),
+              where('staffId', '==', preData.applicantId),
+              where('jobPostingId', '==', preData.jobPostingId),
+              where('status', '==', STATUS.WORK_LOG.SCHEDULED)
+            )
+          );
+          relatedWorkLogIds = workLogsSnapshot.docs.map((d) => d.id);
+        }
+      }
+    } catch {
+      logger.warn('WorkLog 사전 조회 실패, WorkLog 취소 처리 생략', { applicationId });
+    }
+
     const result = await runTransaction(getFirebaseDb(), async (transaction) => {
       // 1. 지원서 읽기
       const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
@@ -541,7 +587,8 @@ export async function cancelConfirmation(
       // 7. 마감 해제 여부 확인 (closed → active 복원)
       const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
       const newFilledPositions = Math.max(0, currentFilled - decrementCount);
-      const shouldReopen = jobData.status === STATUS.JOB_POSTING.CLOSED && newFilledPositions < totalPositions;
+      const shouldReopen =
+        jobData.status === STATUS.JOB_POSTING.CLOSED && newFilledPositions < totalPositions;
 
       const jobUpdateData: Record<string, unknown> = {
         filledPositions: increment(-decrementCount),
@@ -572,6 +619,15 @@ export async function cancelConfirmation(
         cancelledAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
+
+      // 9. 연관 WorkLog cancelled 처리
+      for (const workLogId of relatedWorkLogIds) {
+        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
+        transaction.update(workLogRef, {
+          status: STATUS.WORK_LOG.CANCELLED,
+          updatedAt: serverTimestamp(),
+        });
+      }
 
       return {
         applicationId,

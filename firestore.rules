@@ -336,7 +336,8 @@ service cloud.firestore {
         request.auth.uid == resource.data.recipientId ||
         request.auth.uid == resource.data.userId
       ) && request.resource.data.diff(resource.data).affectedKeys()
-          .hasOnly(['isRead', 'readAt', '_batchUpdate']);
+          .hasOnly(['isRead', 'readAt', '_batchUpdate']) &&
+        (!('_batchUpdate' in request.resource.data) || request.resource.data._batchUpdate is bool);
 
       allow delete: if isSignedIn() && (
         request.auth.uid == resource.data.recipientId ||
@@ -567,10 +568,11 @@ service cloud.firestore {
         request.resource.data.staffId is string &&
         request.resource.data.jobPostingId is string &&
         request.resource.data.date is string &&
-        (!('status' in request.resource.data) || request.resource.data.status == 'scheduled');
+        request.resource.data.status == 'scheduled' &&
+        (!('payrollStatus' in request.resource.data) || request.resource.data.payrollStatus == 'pending');
 
-      // 소유자/공고작성자/admin만 수정 가능 + status enum 검증
-      // 허용값 출처: workLog.schema.ts
+      // 소유자/공고작성자/admin만 수정 가능 + status/payrollStatus enum 검증
+      // 허용값 출처: workLog.schema.ts, statusValues.ts
       allow update: if isSignedIn() && (
         isAdmin() ||
         request.auth.uid == resource.data.staffId ||
@@ -579,7 +581,9 @@ service cloud.firestore {
          get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
       ) &&
         (!('status' in request.resource.data) ||
-         request.resource.data.status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled']);
+         request.resource.data.status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled']) &&
+        (!('payrollStatus' in request.resource.data) ||
+         request.resource.data.payrollStatus in ['pending', 'processing', 'completed']);
 
       // 삭제 권한: Admin/Manager 또는 해당 공고 작성자 (Staff 포함)
       allow delete: if isSignedIn() && (

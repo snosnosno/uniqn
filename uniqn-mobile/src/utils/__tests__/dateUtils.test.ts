@@ -568,7 +568,10 @@ describe('dateUtils - Ranges', () => {
     });
 
     it('should return nulls for invalid format', () => {
-      expect(parseTimeSlotToDate('invalid', '2025-03-01')).toEqual({ startTime: null, endTime: null });
+      expect(parseTimeSlotToDate('invalid', '2025-03-01')).toEqual({
+        startTime: null,
+        endTime: null,
+      });
     });
   });
 

@@ -173,7 +173,10 @@ export async function searchJobPostings(
  */
 export async function getUrgentJobPostings(pageSize: number = 10): Promise<JobPosting[]> {
   try {
-    const { items } = await getJobPostings({ status: STATUS.JOB_POSTING.ACTIVE, isUrgent: true }, pageSize);
+    const { items } = await getJobPostings(
+      { status: STATUS.JOB_POSTING.ACTIVE, isUrgent: true },
+      pageSize
+    );
     return items;
   } catch (error) {
     throw handleServiceError(error, {

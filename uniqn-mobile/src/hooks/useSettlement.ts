@@ -167,17 +167,14 @@ export function useSettleWorkLog() {
       await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
       const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
 
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.settlement.all },
-        (old: unknown) => {
-          if (!Array.isArray(old)) return old;
-          return old.map((wl: Record<string, unknown>) =>
-            wl.workLogId === input.workLogId || wl.id === input.workLogId
-              ? { ...wl, payrollStatus: STATUS.PAYROLL.COMPLETED }
-              : wl
-          );
-        }
-      );
+      queryClient.setQueriesData({ queryKey: queryKeys.settlement.all }, (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((wl: Record<string, unknown>) =>
+          wl.workLogId === input.workLogId || wl.id === input.workLogId
+            ? { ...wl, payrollStatus: STATUS.PAYROLL.COMPLETED }
+            : wl
+        );
+      });
 
       return { previousData };
     },
@@ -222,18 +219,15 @@ export function useBulkSettlement() {
       await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
       const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
 
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.settlement.all },
-        (old: unknown) => {
-          if (!Array.isArray(old)) return old;
-          return old.map((wl: Record<string, unknown>) =>
-            input.workLogIds.includes(wl.workLogId as string) ||
-            input.workLogIds.includes(wl.id as string)
-              ? { ...wl, payrollStatus: STATUS.PAYROLL.COMPLETED }
-              : wl
-          );
-        }
-      );
+      queryClient.setQueriesData({ queryKey: queryKeys.settlement.all }, (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((wl: Record<string, unknown>) =>
+          input.workLogIds.includes(wl.workLogId as string) ||
+          input.workLogIds.includes(wl.id as string)
+            ? { ...wl, payrollStatus: STATUS.PAYROLL.COMPLETED }
+            : wl
+        );
+      });
 
       return { previousData };
     },
@@ -289,17 +283,12 @@ export function useUpdateSettlementStatus() {
       await queryClient.cancelQueries({ queryKey: queryKeys.settlement.all });
       const previousData = queryClient.getQueriesData({ queryKey: queryKeys.settlement.all });
 
-      queryClient.setQueriesData(
-        { queryKey: queryKeys.settlement.all },
-        (old: unknown) => {
-          if (!Array.isArray(old)) return old;
-          return old.map((wl: Record<string, unknown>) =>
-            wl.workLogId === workLogId || wl.id === workLogId
-              ? { ...wl, payrollStatus: status }
-              : wl
-          );
-        }
-      );
+      queryClient.setQueriesData({ queryKey: queryKeys.settlement.all }, (old: unknown) => {
+        if (!Array.isArray(old)) return old;
+        return old.map((wl: Record<string, unknown>) =>
+          wl.workLogId === workLogId || wl.id === workLogId ? { ...wl, payrollStatus: status } : wl
+        );
+      });
 
       return { previousData };
     },

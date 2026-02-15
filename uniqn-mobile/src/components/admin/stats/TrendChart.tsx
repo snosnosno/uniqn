@@ -64,12 +64,7 @@ function isDateToday(dateString: string): boolean {
 // Component
 // ============================================================================
 
-export function TrendChart({
-  title,
-  data,
-  color = '#9333EA',
-  suffix = '',
-}: TrendChartProps) {
+export function TrendChart({ title, data, color = '#9333EA', suffix = '' }: TrendChartProps) {
   const { isDarkMode } = useThemeStore();
 
   // 통계 계산
@@ -100,9 +95,7 @@ export function TrendChart({
   if (!data || data.length === 0) {
     return (
       <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">
-          {title}
-        </Text>
+        <Text className="text-base font-semibold text-gray-900 dark:text-white mb-4">{title}</Text>
         <View className="h-[120px] items-center justify-center">
           <Text className="text-gray-500 dark:text-gray-400">데이터가 없습니다</Text>
         </View>
@@ -114,13 +107,8 @@ export function TrendChart({
     <View className="bg-white dark:bg-surface rounded-xl p-4 border border-gray-100 dark:border-surface-overlay">
       {/* 헤더 */}
       <View className="flex-row justify-between items-center mb-4">
-        <Text className="text-base font-semibold text-gray-900 dark:text-white">
-          {title}
-        </Text>
-        <View
-          className="px-2.5 py-1 rounded-full"
-          style={{ backgroundColor: `${color}20` }}
-        >
+        <Text className="text-base font-semibold text-gray-900 dark:text-white">{title}</Text>
+        <View className="px-2.5 py-1 rounded-full" style={{ backgroundColor: `${color}20` }}>
           <Text style={{ color }} className="text-sm font-bold">
             총 {stats.total.toLocaleString()}
             {suffix}

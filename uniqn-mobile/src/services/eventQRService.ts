@@ -303,7 +303,10 @@ export async function processEventQRCheckIn(
       // 3-2. 상태 확인 및 출퇴근 처리
       if (action === 'checkIn') {
         // 출근 처리
-        if (workLog.status === STATUS.WORK_LOG.CHECKED_IN || workLog.status === STATUS.WORK_LOG.CHECKED_OUT) {
+        if (
+          workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
+          workLog.status === STATUS.WORK_LOG.CHECKED_OUT
+        ) {
           throw new AlreadyCheckedInError({
             message: '이미 출근 처리되었습니다',
             userMessage: '이미 출근 처리가 완료되었습니다',

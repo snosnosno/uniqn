@@ -418,34 +418,38 @@ export function ScheduleDetailModal({
         {/* 하단 버튼 영역: 취소 + 신고 (2열) - 고정 푸터 */}
         <View className="pt-4 border-t border-gray-200 dark:border-surface-overlay flex-row gap-3">
           {/* 지원 취소 버튼 (지원중 상태) */}
-          {schedule.type === STATUS.SCHEDULE.APPLIED && onCancelApplication && schedule.applicationId && (
-            <View className="flex-1">
-              <Button
-                variant="outline"
-                size="md"
-                onPress={handleCancelApplication}
-                className="border-red-300 dark:border-red-700"
-              >
-                <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
-              </Button>
-            </View>
-          )}
+          {schedule.type === STATUS.SCHEDULE.APPLIED &&
+            onCancelApplication &&
+            schedule.applicationId && (
+              <View className="flex-1">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onPress={handleCancelApplication}
+                  className="border-red-300 dark:border-red-700"
+                >
+                  <Text className="text-red-600 dark:text-red-400 font-semibold">지원 취소</Text>
+                </Button>
+              </View>
+            )}
 
           {/* 취소 요청 버튼 (확정 상태) */}
-          {schedule.type === STATUS.SCHEDULE.CONFIRMED && onRequestCancellation && schedule.applicationId && (
-            <View className="flex-1">
-              <Button
-                variant="outline"
-                size="md"
-                onPress={handleRequestCancellation}
-                className="border-orange-300 dark:border-orange-700"
-              >
-                <Text className="text-orange-600 dark:text-orange-400 font-semibold">
-                  취소 요청
-                </Text>
-              </Button>
-            </View>
-          )}
+          {schedule.type === STATUS.SCHEDULE.CONFIRMED &&
+            onRequestCancellation &&
+            schedule.applicationId && (
+              <View className="flex-1">
+                <Button
+                  variant="outline"
+                  size="md"
+                  onPress={handleRequestCancellation}
+                  className="border-orange-300 dark:border-orange-700"
+                >
+                  <Text className="text-orange-600 dark:text-orange-400 font-semibold">
+                    취소 요청
+                  </Text>
+                </Button>
+              </View>
+            )}
 
           {/* 신고 버튼 */}
           {schedule.ownerId && (

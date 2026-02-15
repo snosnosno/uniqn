@@ -166,7 +166,7 @@ describe('RoleResolver', () => {
       ['floor', '플로어'],
       ['serving', '서빙'],
       ['manager', '매니저'],
-      ['chiprunner', '칩러너'],
+      ['staff', '일반'],
     ] as const)('직무 %s → 표시명 %s', (roleId, expected) => {
       expect(RoleResolver.getStaffRoleDisplayName(roleId)).toBe(expected);
     });
@@ -207,10 +207,10 @@ describe('RoleResolver', () => {
     });
 
     it('roleIds (배열) 필드 처리', () => {
-      const result = RoleResolver.resolveStaffRoles({ roleIds: ['manager', 'chiprunner'] });
+      const result = RoleResolver.resolveStaffRoles({ roleIds: ['manager', 'floor'] });
       expect(result).toHaveLength(2);
       expect(result[0].roleId).toBe('manager');
-      expect(result[1].roleId).toBe('chiprunner');
+      expect(result[1].roleId).toBe('floor');
     });
 
     it('customRole 처리', () => {

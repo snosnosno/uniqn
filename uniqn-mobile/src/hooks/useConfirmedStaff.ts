@@ -112,8 +112,12 @@ export function useConfirmedStaff(
   options: UseConfirmedStaffOptions = {}
 ): UseConfirmedStaffReturn {
   const { realtime = false, date } = options;
+  const queryClient = useQueryClient();
   const { addToast } = useToastStore();
   const user = useAuthStore((state) => state.user);
+  const staffQueryKey = date
+    ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
+    : queryKeys.confirmedStaff.byJobPosting(jobPostingId);
 
   // 실시간 데이터 (realtime 모드용)
   const [realtimeData, setRealtimeData] = useState<GetConfirmedStaffResult | null>(null);
@@ -173,11 +177,6 @@ export function useConfirmedStaff(
   // ============================================================================
   // Mutations
   // ============================================================================
-
-  const queryClient = useQueryClient();
-  const staffQueryKey = date
-    ? queryKeys.confirmedStaff.byDate(jobPostingId, date)
-    : queryKeys.confirmedStaff.byJobPosting(jobPostingId);
 
   // 역할 변경 (낙관적 업데이트 제외 — UI 영향 적음)
   const changeRoleMutation = useMutation({
@@ -279,9 +278,7 @@ export function useConfirmedStaff(
       if (previous) {
         queryClient.setQueryData<GetConfirmedStaffResult>(staffQueryKey, {
           ...previous,
-          staff: previous.staff.map((s) =>
-            s.id === workLogId ? { ...s, status } : s
-          ),
+          staff: previous.staff.map((s) => (s.id === workLogId ? { ...s, status } : s)),
         });
       }
 

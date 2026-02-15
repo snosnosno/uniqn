@@ -53,10 +53,7 @@ const REQUIREMENTS: Requirement[] = [
   },
 ];
 
-const STRENGTH_CONFIG: Record<
-  StrengthLevel,
-  { label: string; color: string; barColor: string }
-> = {
+const STRENGTH_CONFIG: Record<StrengthLevel, { label: string; color: string; barColor: string }> = {
   weak: {
     label: '약함',
     color: 'text-error-600 dark:text-error-400',

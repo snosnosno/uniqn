@@ -466,7 +466,9 @@ export function toDateFromTimestamp(value: Timestamp | Date | undefined): Date |
   if (value instanceof Date) return value;
   if (typeof value.toDate === 'function') return value.toDate();
   // plain object fallback ({seconds, nanoseconds})
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ('seconds' in value && typeof (value as any).seconds === 'number') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return new Date((value as any).seconds * 1000);
   }
   return undefined;

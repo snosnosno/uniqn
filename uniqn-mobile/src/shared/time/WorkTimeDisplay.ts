@@ -225,5 +225,4 @@ export class WorkTimeDisplay {
     if (minutes > 0) return `${minutes}분`;
     return DEFAULT_DURATION_STR;
   }
-
 }

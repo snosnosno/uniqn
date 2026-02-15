@@ -362,7 +362,10 @@ describe('ApplicationValidator', () => {
     });
 
     it('유효하지 않은 assignment가 있으면 isValid: false + invalidIndices', () => {
-      mockIsValidAssignment.mockReturnValueOnce(true).mockReturnValueOnce(false).mockReturnValueOnce(false);
+      mockIsValidAssignment
+        .mockReturnValueOnce(true)
+        .mockReturnValueOnce(false)
+        .mockReturnValueOnce(false);
 
       const assignments = [createAssignment(), createAssignment(), createAssignment()];
       const result = validator.validateAssignments(assignments);
@@ -509,9 +512,7 @@ describe('ApplicationValidator', () => {
         dateSpecificRequirements: [
           {
             date: '2025-01-10',
-            timeSlots: [
-              { roles: [{ role: 'dealer', headcount: 2, filled: 2 }] },
-            ],
+            timeSlots: [{ roles: [{ role: 'dealer', headcount: 2, filled: 2 }] }],
           },
         ],
       });
@@ -569,9 +570,7 @@ describe('ApplicationValidator', () => {
     });
 
     it('INVALID_ASSIGNMENT 에러에 field 정보가 포함된다', () => {
-      mockIsValidAssignment
-        .mockReturnValueOnce(true)
-        .mockReturnValueOnce(false);
+      mockIsValidAssignment.mockReturnValueOnce(true).mockReturnValueOnce(false);
       const jobData = createJobPosting({ status: 'active' });
       const assignments = [createAssignment(), createAssignment()];
 

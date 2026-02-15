@@ -11,15 +11,6 @@ import type { EventQRCode, WorkLog } from '@/types';
 // Mock Setup
 // ============================================================================
 
-// Mock constants (must be defined before imports)
-const mockSTATUS = {
-  WORK_LOG: {
-    SCHEDULED: 'scheduled',
-    CHECKED_IN: 'checked_in',
-    CHECKED_OUT: 'checked_out',
-  },
-} as const;
-
 const mockEventQRRepositoryCreate = jest.fn();
 const mockEventQRRepositoryDeactivate = jest.fn();
 const mockEventQRRepositoryDeactivateByJobAndDate = jest.fn();
@@ -31,9 +22,12 @@ jest.mock('@/repositories', () => ({
   eventQRRepository: {
     create: (...args: unknown[]) => mockEventQRRepositoryCreate(...args),
     deactivate: (...args: unknown[]) => mockEventQRRepositoryDeactivate(...args),
-    deactivateByJobAndDate: (...args: unknown[]) => mockEventQRRepositoryDeactivateByJobAndDate(...args),
-    getActiveByJobAndDate: (...args: unknown[]) => mockEventQRRepositoryGetActiveByJobAndDate(...args),
-    validateSecurityCode: (...args: unknown[]) => mockEventQRRepositoryValidateSecurityCode(...args),
+    deactivateByJobAndDate: (...args: unknown[]) =>
+      mockEventQRRepositoryDeactivateByJobAndDate(...args),
+    getActiveByJobAndDate: (...args: unknown[]) =>
+      mockEventQRRepositoryGetActiveByJobAndDate(...args),
+    validateSecurityCode: (...args: unknown[]) =>
+      mockEventQRRepositoryValidateSecurityCode(...args),
     deactivateExpired: (...args: unknown[]) => mockEventQRRepositoryDeactivateExpired(...args),
   },
 }));
@@ -109,7 +103,7 @@ jest.mock('@/services/analyticsService', () => ({
 }));
 
 jest.mock('@/utils/dateUtils', () => ({
-  parseTimeSlotToDate: jest.fn((timeSlot: string, date: string) => ({
+  parseTimeSlotToDate: jest.fn((_timeSlot: string, date: string) => ({
     startTime: new Date(`${date}T09:00:00`),
     endTime: new Date(`${date}T18:00:00`),
   })),
@@ -140,7 +134,15 @@ jest.mock('@/errors', () => ({
     code = 'E6011';
     userMessage: string;
     workLogId?: string;
-    constructor({ message, userMessage, workLogId }: { message?: string; userMessage?: string; workLogId?: string }) {
+    constructor({
+      message,
+      userMessage,
+      workLogId,
+    }: {
+      message?: string;
+      userMessage?: string;
+      workLogId?: string;
+    }) {
       super(message || userMessage || 'Already Checked In');
       this.name = 'AlreadyCheckedInError';
       this.userMessage = userMessage || message || 'Already Checked In';
@@ -250,7 +252,11 @@ describe('eventQRService - generateEventQR', () => {
 
     await generateEventQR(input);
 
-    expect(mockEventQRRepositoryDeactivateByJobAndDate).toHaveBeenCalledWith('job-1', '2025-01-15', 'checkIn');
+    expect(mockEventQRRepositoryDeactivateByJobAndDate).toHaveBeenCalledWith(
+      'job-1',
+      '2025-01-15',
+      'checkIn'
+    );
   });
 
   it('3분 후 만료 시간을 설정해야 함', async () => {
@@ -492,7 +498,9 @@ describe('eventQRService - processEventQRCheckIn', () => {
       checkInTime: MockTimestamp.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
     });
 
-    mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(createMockEventQR({ action: 'checkOut' }));
+    mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
+      createMockEventQR({ action: 'checkOut' })
+    );
     mockGetDocs.mockResolvedValue({
       empty: false,
       docs: [{ id: 'wl-1', data: () => mockWorkLog }],
@@ -594,7 +602,9 @@ describe('eventQRService - processEventQRCheckIn', () => {
       status: STATUS.WORK_LOG.SCHEDULED,
     });
 
-    mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(createMockEventQR({ action: 'checkOut' }));
+    mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
+      createMockEventQR({ action: 'checkOut' })
+    );
     mockGetDocs.mockResolvedValue({
       empty: false,
       docs: [{ id: 'wl-1', data: () => mockWorkLog }],
@@ -756,7 +766,9 @@ describe('eventQRService - processEventQRCheckIn', () => {
       checkInTime: MockTimestamp.fromMillis(checkInTime),
     });
 
-    mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(createMockEventQR({ action: 'checkOut' }));
+    mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
+      createMockEventQR({ action: 'checkOut' })
+    );
     mockGetDocs.mockResolvedValue({
       empty: false,
       docs: [{ id: 'wl-1', data: () => mockWorkLog }],
@@ -791,7 +803,11 @@ describe('eventQRService - getActiveEventQR', () => {
     const result = await getActiveEventQR('job-1', '2025-01-15', 'checkIn');
 
     expect(result).toEqual(mockQR);
-    expect(mockEventQRRepositoryGetActiveByJobAndDate).toHaveBeenCalledWith('job-1', '2025-01-15', 'checkIn');
+    expect(mockEventQRRepositoryGetActiveByJobAndDate).toHaveBeenCalledWith(
+      'job-1',
+      '2025-01-15',
+      'checkIn'
+    );
   });
 
   it('활성 QR이 없으면 null을 반환해야 함', async () => {

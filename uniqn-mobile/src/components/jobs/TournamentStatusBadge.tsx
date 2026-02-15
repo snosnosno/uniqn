@@ -169,7 +169,8 @@ export const TournamentStatusBadge = memo(function TournamentStatusBadge(
   const sizeConfig = SIZE_CONFIG[size];
 
   // 거부 상태이고 사유가 있을 때만 모달 표시 가능
-  const canShowReason = showRejectionReason && approvalStatus === STATUS.TOURNAMENT.REJECTED && rejectionReason;
+  const canShowReason =
+    showRejectionReason && approvalStatus === STATUS.TOURNAMENT.REJECTED && rejectionReason;
 
   const rejectedDate = toDate(rejectedAt);
   const formattedDate = formatDateTime(rejectedDate);

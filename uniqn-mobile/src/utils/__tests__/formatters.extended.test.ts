@@ -23,7 +23,6 @@ describe('Formatters (Extended Coverage)', () => {
       expect(formatRole('floor')).toBe('플로어');
       expect(formatRole('serving')).toBe('서빙');
       expect(formatRole('manager')).toBe('매니저');
-      expect(formatRole('chiprunner')).toBe('칩러너');
       expect(formatRole('supervisor')).toBe('슈퍼바이저');
       expect(formatRole('other')).toBe('기타');
     });

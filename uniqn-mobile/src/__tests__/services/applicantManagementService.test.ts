@@ -38,8 +38,7 @@ jest.mock('@/repositories', () => ({
 const mockConfirmApplicationWithHistory = jest.fn();
 
 jest.mock('@/services/applicationHistoryService', () => ({
-  confirmApplicationWithHistory: (...args: unknown[]) =>
-    mockConfirmApplicationWithHistory(...args),
+  confirmApplicationWithHistory: (...args: unknown[]) => mockConfirmApplicationWithHistory(...args),
 }));
 
 // ============================================================================
@@ -453,9 +452,7 @@ describe('applicantManagementService', () => {
         status: 'applied',
       });
 
-      mockGetById
-        .mockResolvedValueOnce(application1)
-        .mockResolvedValueOnce(application2);
+      mockGetById.mockResolvedValueOnce(application1).mockResolvedValueOnce(application2);
 
       mockConfirmApplicationWithHistory
         .mockResolvedValueOnce({
@@ -486,9 +483,7 @@ describe('applicantManagementService', () => {
         status: 'confirmed',
       });
 
-      mockGetById
-        .mockResolvedValueOnce(application1)
-        .mockResolvedValueOnce(application2);
+      mockGetById.mockResolvedValueOnce(application1).mockResolvedValueOnce(application2);
 
       const { ValidationError } = jest.requireMock('@/errors');
 

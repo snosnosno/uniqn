@@ -17,7 +17,6 @@ import {
   getDeletionStatus,
   DELETION_REASONS,
 } from '../accountDeletionService';
-import { userRepository } from '@/repositories';
 import { AuthError } from '@/errors';
 import { STATUS } from '@/constants';
 import type { FirestoreUserProfile } from '@/types';
@@ -91,14 +90,11 @@ const mockAuth = {
 const mockUserProfile: FirestoreUserProfile = {
   uid: 'user123',
   email: 'test@example.com',
-  displayName: '테스트 유저',
-  phoneNumber: '01012345678',
-  photoURL: null,
+  photoURL: undefined,
   role: 'staff',
   name: '홍길동',
   nickname: 'tester',
-  isEmailVerified: true,
-  isPhoneVerified: true,
+  phone: '01012345678',
   createdAt: Timestamp.now(),
   updatedAt: Timestamp.now(),
 };
@@ -223,7 +219,8 @@ describe('accountDeletionService', () => {
 
       const scheduledDate = result.scheduledDeletionAt.toDate();
       const expectedDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-      const diffInDays = Math.abs(scheduledDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24);
+      const diffInDays =
+        Math.abs(scheduledDate.getTime() - expectedDate.getTime()) / (1000 * 60 * 60 * 24);
 
       expect(diffInDays).toBeLessThan(1); // 1일 이내 차이 허용
     });
@@ -233,9 +230,9 @@ describe('accountDeletionService', () => {
         currentUser: null,
       } as unknown as ReturnType<typeof getFirebaseAuth>);
 
-      await expect(
-        requestAccountDeletion('no_longer_needed', 'password123')
-      ).rejects.toThrow(AuthError);
+      await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toThrow(
+        AuthError
+      );
     });
 
     it('이메일이 없는 경우 에러를 발생시켜야 함', async () => {
@@ -243,9 +240,9 @@ describe('accountDeletionService', () => {
         currentUser: { uid: 'user123', email: null },
       } as unknown as ReturnType<typeof getFirebaseAuth>);
 
-      await expect(
-        requestAccountDeletion('no_longer_needed', 'password123')
-      ).rejects.toThrow(AuthError);
+      await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toThrow(
+        AuthError
+      );
     });
 
     it('잘못된 비밀번호 입력 시 AuthError를 발생시켜야 함', async () => {
@@ -253,9 +250,9 @@ describe('accountDeletionService', () => {
       (wrongPasswordError as { code?: string }).code = 'auth/wrong-password';
       mockReauthenticateWithCredential.mockRejectedValue(wrongPasswordError);
 
-      await expect(
-        requestAccountDeletion('no_longer_needed', 'wrongpassword')
-      ).rejects.toThrow(AuthError);
+      await expect(requestAccountDeletion('no_longer_needed', 'wrongpassword')).rejects.toThrow(
+        AuthError
+      );
     });
 
     it('재인증 실패 시 적절한 에러 메시지를 포함해야 함', async () => {
@@ -263,18 +260,16 @@ describe('accountDeletionService', () => {
       (wrongPasswordError as { code?: string }).code = 'auth/wrong-password';
       mockReauthenticateWithCredential.mockRejectedValue(wrongPasswordError);
 
-      await expect(
-        requestAccountDeletion('no_longer_needed', 'wrongpassword')
-      ).rejects.toThrow('비밀번호가 올바르지 않습니다');
+      await expect(requestAccountDeletion('no_longer_needed', 'wrongpassword')).rejects.toThrow(
+        '비밀번호가 올바르지 않습니다'
+      );
     });
 
     it('Repository 에러를 올바르게 처리해야 함', async () => {
       mockReauthenticateWithCredential.mockResolvedValue(undefined as never);
       mockRequestDeletion.mockRejectedValue(new Error('Repository error'));
 
-      await expect(
-        requestAccountDeletion('no_longer_needed', 'password123')
-      ).rejects.toThrow();
+      await expect(requestAccountDeletion('no_longer_needed', 'password123')).rejects.toThrow();
     });
 
     it('모든 탈퇴 사유 타입을 지원해야 함', async () => {

@@ -259,18 +259,18 @@ describe('JobCard role labels', () => {
     expect(getByText(/매니저/)).toBeTruthy();
   });
 
-  it('should display "칩러너" for chiprunner role', () => {
+  it('should display "서빙" for serving role', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('chiprunner')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('serving')} onPress={mockOnPress} />
     );
-    expect(getByText(/칩러너/)).toBeTruthy();
+    expect(getByText(/서빙/)).toBeTruthy();
   });
 
-  it('should display "관리자" for admin role', () => {
+  it('should display "일반" for staff role', () => {
     const { getByText } = render(
-      <JobCard job={createJobWithRole('admin')} onPress={mockOnPress} />
+      <JobCard job={createJobWithRole('staff')} onPress={mockOnPress} />
     );
-    expect(getByText(/관리자/)).toBeTruthy();
+    expect(getByText(/일반/)).toBeTruthy();
   });
 
   it('should display role as-is for unknown roles', () => {

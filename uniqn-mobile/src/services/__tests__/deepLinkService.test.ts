@@ -4,8 +4,7 @@
  * @description deepLinkService.ts의 전체 기능 테스트
  */
 
-import { Platform, Linking } from 'react-native';
-import { router } from 'expo-router';
+import { Platform } from 'react-native';
 import { deepLinkService } from '../deepLinkService';
 import type { NotificationType } from '@/types/notification';
 
@@ -81,8 +80,12 @@ const mockRouteMapper = {
     if (route.name === 'notices') return '/(app)/notices';
     if (route.name === 'employer/my-postings') return '/(employer)/my-postings';
     if (route.name === 'employer/posting') return `/(employer)/my-postings/${route.params?.id}`;
-    if (route.name === 'employer/applicants') return `/(employer)/applicants/${route.params?.jobId}`;
-    if (route.name === 'employer/settlement') return `/(employer)/settlement/${route.params?.jobId}`;
+    if (route.name === 'employer/applicants') {
+      return `/(employer)/applicants/${route.params?.jobId}`;
+    }
+    if (route.name === 'employer/settlement') {
+      return `/(employer)/settlement/${route.params?.jobId}`;
+    }
     if (route.name === 'admin/dashboard') return '/(admin)';
     if (route.name === 'admin/reports') return '/(admin)/reports';
     if (route.name === 'admin/report') return `/(admin)/reports/${route.params?.id}`;
@@ -93,10 +96,16 @@ const mockRouteMapper = {
   }),
 };
 
-const mockNotificationRouteMap: Record<string, (data?: Record<string, string>) => { name: string; params?: Record<string, string> }> = {
-  new_application: (data) => ({ name: 'employer/applicants', params: { jobId: data?.jobPostingId || '' } }),
-  application_confirmed: (data) => ({ name: 'schedule' }),
-  settlement_completed: (data) => ({ name: 'schedule' }),
+const mockNotificationRouteMap: Record<
+  string,
+  (data?: Record<string, string>) => { name: string; params?: Record<string, string> }
+> = {
+  new_application: (data) => ({
+    name: 'employer/applicants',
+    params: { jobId: data?.jobPostingId || '' },
+  }),
+  application_confirmed: (_data) => ({ name: 'schedule' }),
+  settlement_completed: (_data) => ({ name: 'schedule' }),
   job_updated: (data) => ({ name: 'job', params: { id: data?.jobPostingId || '' } }),
   announcement: () => ({ name: 'notices' }),
   new_report: (data) => ({ name: 'admin/report', params: { id: data?.reportId || '' } }),
@@ -697,7 +706,9 @@ describe('deepLinkService', () => {
       const result = await deepLinkService.openExternalUrl('unknown-scheme://test');
 
       expect(result).toBe(false);
-      expect(mockLoggerWarn).toHaveBeenCalledWith('URL을 열 수 없음', { url: 'unknown-scheme://test' });
+      expect(mockLoggerWarn).toHaveBeenCalledWith('URL을 열 수 없음', {
+        url: 'unknown-scheme://test',
+      });
       expect(mockOpenURL).not.toHaveBeenCalled();
     });
 

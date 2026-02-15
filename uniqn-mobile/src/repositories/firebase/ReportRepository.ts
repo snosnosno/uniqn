@@ -108,7 +108,12 @@ export class FirebaseReportRepository implements IReportRepository {
 
       const reportsRef = collection(getFirebaseDb(), COLLECTIONS.REPORTS);
       const q = new QueryBuilder(reportsRef)
-        .whereIf(filters?.status && filters.status !== 'all', FIELDS.REPORT.status, '==', filters?.status)
+        .whereIf(
+          filters?.status && filters.status !== 'all',
+          FIELDS.REPORT.status,
+          '==',
+          filters?.status
+        )
         .whereIf(
           filters?.severity && filters.severity !== 'all',
           FIELDS.REPORT.severity,
@@ -352,10 +357,7 @@ export class FirebaseReportRepository implements IReportRepository {
   /**
    * 스냅샷 파싱 (공통 로직)
    */
-  private parseSnapshot(
-    snapshot: Awaited<ReturnType<typeof getDocs>>,
-    context: string
-  ): Report[] {
+  private parseSnapshot(snapshot: Awaited<ReturnType<typeof getDocs>>, context: string): Report[] {
     const rawData = snapshot.docs.map((docSnap) => ({
       id: docSnap.id,
       ...(docSnap.data() as Record<string, unknown>),

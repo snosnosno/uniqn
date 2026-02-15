@@ -124,16 +124,16 @@ describe('NotificationStore', () => {
 
     it('should replace existing notifications', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'old1' }),
-        ]);
+        useNotificationStore.getState().setNotifications([createMockNotification({ id: 'old1' })]);
       });
 
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'new1' }),
-          createMockNotification({ id: 'new2' }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'new1' }),
+            createMockNotification({ id: 'new2' }),
+          ]);
       });
 
       expect(useNotificationStore.getState().notifications).toHaveLength(2);
@@ -148,9 +148,9 @@ describe('NotificationStore', () => {
   describe('addNotification', () => {
     it('should add notification to the beginning', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'existing' }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'existing' })]);
       });
 
       const newNotif = createMockNotification({ id: 'new' });
@@ -169,9 +169,9 @@ describe('NotificationStore', () => {
       });
 
       act(() => {
-        useNotificationStore.getState().addNotification(
-          createMockNotification({ id: 'n1', isRead: false })
-        );
+        useNotificationStore
+          .getState()
+          .addNotification(createMockNotification({ id: 'n1', isRead: false }));
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(1);
@@ -179,9 +179,9 @@ describe('NotificationStore', () => {
 
     it('should not increment unread count for read notification', () => {
       act(() => {
-        useNotificationStore.getState().addNotification(
-          createMockNotification({ id: 'n1', isRead: true })
-        );
+        useNotificationStore
+          .getState()
+          .addNotification(createMockNotification({ id: 'n1', isRead: true }));
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(0);
@@ -242,11 +242,13 @@ describe('NotificationStore', () => {
 
     it('should recalculate unread counts', () => {
       act(() => {
-        useNotificationStore.getState().addNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-          createMockNotification({ id: 'n2', isRead: false }),
-          createMockNotification({ id: 'n3', isRead: true }),
-        ]);
+        useNotificationStore
+          .getState()
+          .addNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: false }),
+            createMockNotification({ id: 'n3', isRead: true }),
+          ]);
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(2);
@@ -260,9 +262,9 @@ describe('NotificationStore', () => {
   describe('updateNotification', () => {
     it('should update notification fields', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', title: 'Old Title' }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', title: 'Old Title' })]);
       });
 
       act(() => {
@@ -274,10 +276,12 @@ describe('NotificationStore', () => {
 
     it('should decrement unread when marking as read', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-          createMockNotification({ id: 'n2', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: false }),
+          ]);
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(2);
@@ -291,9 +295,9 @@ describe('NotificationStore', () => {
 
     it('should increment unread when marking as unread', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: true }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: true })]);
       });
 
       expect(useNotificationStore.getState().unreadCount).toBe(0);
@@ -307,9 +311,9 @@ describe('NotificationStore', () => {
 
     it('should not change count for non-existent notification', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
       });
 
       act(() => {
@@ -327,10 +331,12 @@ describe('NotificationStore', () => {
   describe('removeNotification', () => {
     it('should remove notification by id', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1' }),
-          createMockNotification({ id: 'n2' }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1' }),
+            createMockNotification({ id: 'n2' }),
+          ]);
       });
 
       act(() => {
@@ -344,9 +350,9 @@ describe('NotificationStore', () => {
 
     it('should decrement unread count for unread notification', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
       });
 
       act(() => {
@@ -358,10 +364,12 @@ describe('NotificationStore', () => {
 
     it('should not decrement unread count for read notification', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: true }),
-          createMockNotification({ id: 'n2', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: true }),
+            createMockNotification({ id: 'n2', isRead: false }),
+          ]);
       });
 
       act(() => {
@@ -373,9 +381,7 @@ describe('NotificationStore', () => {
 
     it('should do nothing for non-existent notification', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1' }),
-        ]);
+        useNotificationStore.getState().setNotifications([createMockNotification({ id: 'n1' })]);
       });
 
       act(() => {
@@ -393,10 +399,12 @@ describe('NotificationStore', () => {
   describe('clearNotifications', () => {
     it('should clear all notifications and reset counts', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-          createMockNotification({ id: 'n2', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: false }),
+          ]);
       });
 
       act(() => {
@@ -416,9 +424,9 @@ describe('NotificationStore', () => {
   describe('markAsRead', () => {
     it('should mark notification as read', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
       });
 
       act(() => {
@@ -431,9 +439,9 @@ describe('NotificationStore', () => {
 
     it('should not change already-read notification', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: true }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: true })]);
       });
 
       const stateBefore = useNotificationStore.getState();
@@ -448,9 +456,9 @@ describe('NotificationStore', () => {
 
     it('should do nothing for non-existent notification', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
       });
 
       act(() => {
@@ -468,11 +476,13 @@ describe('NotificationStore', () => {
   describe('markAllAsRead', () => {
     it('should mark all notifications as read', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-          createMockNotification({ id: 'n2', isRead: false }),
-          createMockNotification({ id: 'n3', isRead: true }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: false }),
+            createMockNotification({ id: 'n3', isRead: true }),
+          ]);
       });
 
       act(() => {
@@ -573,10 +583,10 @@ describe('NotificationStore', () => {
 
     it('should update category setting', () => {
       act(() => {
-        useNotificationStore.getState().updateCategorySetting(
-          NotificationCategory.APPLICATION,
-          { enabled: false, pushEnabled: false }
-        );
+        useNotificationStore.getState().updateCategorySetting(NotificationCategory.APPLICATION, {
+          enabled: false,
+          pushEnabled: false,
+        });
       });
 
       const { settings } = useNotificationStore.getState();
@@ -637,11 +647,13 @@ describe('NotificationStore', () => {
   describe('getFilteredNotifications', () => {
     it('should filter by isRead', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-          createMockNotification({ id: 'n2', isRead: true }),
-          createMockNotification({ id: 'n3', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1', isRead: false }),
+            createMockNotification({ id: 'n2', isRead: true }),
+            createMockNotification({ id: 'n3', isRead: false }),
+          ]);
       });
 
       act(() => {
@@ -683,10 +695,12 @@ describe('NotificationStore', () => {
 
     it('should return all notifications with empty filter', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1' }),
-          createMockNotification({ id: 'n2' }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([
+            createMockNotification({ id: 'n1' }),
+            createMockNotification({ id: 'n2' }),
+          ]);
       });
 
       const filtered = useNotificationStore.getState().getFilteredNotifications();
@@ -769,9 +783,9 @@ describe('NotificationStore', () => {
   describe('reset', () => {
     it('should reset to initial state', () => {
       act(() => {
-        useNotificationStore.getState().setNotifications([
-          createMockNotification({ id: 'n1', isRead: false }),
-        ]);
+        useNotificationStore
+          .getState()
+          .setNotifications([createMockNotification({ id: 'n1', isRead: false })]);
         useNotificationStore.getState().setHasMore(false);
         useNotificationStore.getState().setFilter({ isRead: true });
       });

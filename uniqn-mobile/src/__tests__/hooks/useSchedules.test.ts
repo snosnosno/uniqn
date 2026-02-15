@@ -134,8 +134,8 @@ function createMockSchedule(overrides: Partial<ScheduleEvent> = {}): ScheduleEve
     status: 'not_started',
     sourceCollection: 'workLogs',
     sourceId: 'worklog-1',
-    createdAt: '2024-02-10T00:00:00Z',
-    updatedAt: '2024-02-10T00:00:00Z',
+    createdAt: new Date('2024-02-10T00:00:00Z'),
+    updatedAt: new Date('2024-02-10T00:00:00Z'),
     ...overrides,
   };
 }
@@ -772,10 +772,10 @@ describe('useSchedules Hooks', () => {
       });
 
       await waitFor(() => {
-        expect(mockGroupScheduleEvents).toHaveBeenCalledWith(
-          mockSchedules,
-          { enabled: true, minGroupSize: 2 }
-        );
+        expect(mockGroupScheduleEvents).toHaveBeenCalledWith(mockSchedules, {
+          enabled: true,
+          minGroupSize: 2,
+        });
       });
     });
 

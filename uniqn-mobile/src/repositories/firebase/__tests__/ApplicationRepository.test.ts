@@ -307,8 +307,14 @@ describe('FirebaseApplicationRepository', () => {
 
     it('should return applications with joined job posting data', async () => {
       const applications = [
-        { id: 'app-1', data: { id: 'app-1', applicantId: 'staff-1', jobPostingId: 'job-1', status: 'applied' } },
-        { id: 'app-2', data: { id: 'app-2', applicantId: 'staff-1', jobPostingId: 'job-2', status: 'confirmed' } },
+        {
+          id: 'app-1',
+          data: { id: 'app-1', applicantId: 'staff-1', jobPostingId: 'job-1', status: 'applied' },
+        },
+        {
+          id: 'app-2',
+          data: { id: 'app-2', applicantId: 'staff-1', jobPostingId: 'job-2', status: 'confirmed' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(applications));
@@ -376,9 +382,7 @@ describe('FirebaseApplicationRepository', () => {
         status: 'applied',
       };
 
-      (getDoc as jest.Mock).mockResolvedValue(
-        createMockDocSnap('job-1_staff-1', applicationData)
-      );
+      (getDoc as jest.Mock).mockResolvedValue(createMockDocSnap('job-1_staff-1', applicationData));
 
       const result = await repository.hasApplied('job-1', 'staff-1');
 
@@ -393,9 +397,7 @@ describe('FirebaseApplicationRepository', () => {
         status: 'cancelled',
       };
 
-      (getDoc as jest.Mock).mockResolvedValue(
-        createMockDocSnap('job-1_staff-1', applicationData)
-      );
+      (getDoc as jest.Mock).mockResolvedValue(createMockDocSnap('job-1_staff-1', applicationData));
 
       const result = await repository.hasApplied('job-1', 'staff-1');
 
@@ -430,7 +432,10 @@ describe('FirebaseApplicationRepository', () => {
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(applications));
 
-      const result = await repository.getByApplicantIdWithStatuses('staff-1', ['applied', 'confirmed']);
+      const result = await repository.getByApplicantIdWithStatuses('staff-1', [
+        'applied',
+        'confirmed',
+      ]);
 
       expect(result).toHaveLength(1);
     });
@@ -450,9 +455,18 @@ describe('FirebaseApplicationRepository', () => {
   describe('getStatsByApplicantId', () => {
     it('should return correct stats for applicant', async () => {
       const applications = [
-        { id: 'app-1', data: { id: 'app-1', applicantId: 'staff-1', jobPostingId: 'job-1', status: 'applied' } },
-        { id: 'app-2', data: { id: 'app-2', applicantId: 'staff-1', jobPostingId: 'job-2', status: 'confirmed' } },
-        { id: 'app-3', data: { id: 'app-3', applicantId: 'staff-1', jobPostingId: 'job-3', status: 'confirmed' } },
+        {
+          id: 'app-1',
+          data: { id: 'app-1', applicantId: 'staff-1', jobPostingId: 'job-1', status: 'applied' },
+        },
+        {
+          id: 'app-2',
+          data: { id: 'app-2', applicantId: 'staff-1', jobPostingId: 'job-2', status: 'confirmed' },
+        },
+        {
+          id: 'app-3',
+          data: { id: 'app-3', applicantId: 'staff-1', jobPostingId: 'job-3', status: 'confirmed' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(applications));
@@ -631,9 +645,7 @@ describe('FirebaseApplicationRepository', () => {
     it('should throw when job posting not found', async () => {
       (getDoc as jest.Mock).mockResolvedValue(createMockDocSnap('job-999', null));
 
-      await expect(
-        repository.findByJobPostingWithStats('job-999', 'employer-1')
-      ).rejects.toThrow();
+      await expect(repository.findByJobPostingWithStats('job-999', 'employer-1')).rejects.toThrow();
     });
   });
 });

@@ -207,26 +207,16 @@ describe('announcementService', () => {
     it('공지사항을 생성하고 ID를 반환해야 한다', async () => {
       mockRepo.create.mockResolvedValue('new-ann-id' as never);
 
-      const result = await createAnnouncement(
-        'author-1',
-        '관리자',
-        mockInput as never
-      );
+      const result = await createAnnouncement('author-1', '관리자', mockInput as never);
 
-      expect(mockRepo.create).toHaveBeenCalledWith(
-        'author-1',
-        '관리자',
-        mockInput
-      );
+      expect(mockRepo.create).toHaveBeenCalledWith('author-1', '관리자', mockInput);
       expect(result).toBe('new-ann-id');
     });
 
     it('repository 에러 시 에러를 던져야 한다', async () => {
       mockRepo.create.mockRejectedValue(new Error('생성 실패'));
 
-      await expect(
-        createAnnouncement('author-1', '관리자', mockInput as never)
-      ).rejects.toThrow();
+      await expect(createAnnouncement('author-1', '관리자', mockInput as never)).rejects.toThrow();
     });
   });
 
@@ -250,9 +240,7 @@ describe('announcementService', () => {
     it('repository 에러 시 에러를 던져야 한다', async () => {
       mockRepo.update.mockRejectedValue(new Error('수정 실패'));
 
-      await expect(
-        updateAnnouncement('ann-1', mockInput as never)
-      ).rejects.toThrow();
+      await expect(updateAnnouncement('ann-1', mockInput as never)).rejects.toThrow();
     });
   });
 

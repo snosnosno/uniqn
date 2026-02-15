@@ -192,7 +192,8 @@ export default function AuthenticatedJobDetailScreen() {
 
   // 취소 요청 가능 여부 (확정된 지원만)
   const canRequestCancel =
-    applicationStatus?.status === STATUS.APPLICATION.CONFIRMED && !applicationStatus?.cancellationRequest;
+    applicationStatus?.status === STATUS.APPLICATION.CONFIRMED &&
+    !applicationStatus?.cancellationRequest;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['top']}>
@@ -204,7 +205,11 @@ export default function AuthenticatedJobDetailScreen() {
         contentContainerStyle={{ paddingBottom: 100 }}
         showsVerticalScrollIndicator={false}
         refreshControl={
-          <RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={getLayoutColor(isDark, 'refreshTint')} />
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={refresh}
+            tintColor={getLayoutColor(isDark, 'refreshTint')}
+          />
         }
       >
         <JobDetail job={job} />

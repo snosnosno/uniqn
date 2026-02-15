@@ -216,9 +216,7 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
 
       if (jobPostingIds.size > 0) {
         try {
-          const jobPostings = await _jobPostingRepository.getByIdBatch(
-            Array.from(jobPostingIds)
-          );
+          const jobPostings = await _jobPostingRepository.getByIdBatch(Array.from(jobPostingIds));
 
           for (const job of jobPostings) {
             jobPostingMap.set(job.id, job);
@@ -770,7 +768,10 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         // 확정된 상태인지 확인 (명시적 상태 검증)
         if (applicationData.status !== STATUS.APPLICATION.CONFIRMED) {
           // 지원 대기 상태: 직접 취소 가능
-          if (applicationData.status === STATUS.APPLICATION.APPLIED || applicationData.status === STATUS.APPLICATION.PENDING) {
+          if (
+            applicationData.status === STATUS.APPLICATION.APPLIED ||
+            applicationData.status === STATUS.APPLICATION.PENDING
+          ) {
             throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
               userMessage: '아직 확정되지 않은 지원은 직접 취소할 수 있습니다',
             });
@@ -1048,7 +1049,10 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 지원 상태 확인 (applied 또는 pending만 확정 가능)
-        if (applicationData.status !== STATUS.APPLICATION.APPLIED && applicationData.status !== STATUS.APPLICATION.PENDING) {
+        if (
+          applicationData.status !== STATUS.APPLICATION.APPLIED &&
+          applicationData.status !== STATUS.APPLICATION.PENDING
+        ) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 확정할 수 있습니다.`,
           });
@@ -1187,7 +1191,10 @@ export class FirebaseApplicationRepository implements IApplicationRepository {
         }
 
         // 지원 상태 확인 (applied 또는 pending만 거절 가능)
-        if (applicationData.status !== STATUS.APPLICATION.APPLIED && applicationData.status !== STATUS.APPLICATION.PENDING) {
+        if (
+          applicationData.status !== STATUS.APPLICATION.APPLIED &&
+          applicationData.status !== STATUS.APPLICATION.PENDING
+        ) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: `지원 상태가 '${applicationData.status}'입니다. 대기 중인 지원만 거절할 수 있습니다.`,
           });

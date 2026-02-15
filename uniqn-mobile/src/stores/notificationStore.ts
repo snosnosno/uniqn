@@ -21,7 +21,11 @@ import type {
   NotificationSettings,
   NotificationFilter,
 } from '@/types/notification';
-import { NotificationCategory, NOTIFICATION_TYPE_TO_CATEGORY, createDefaultNotificationSettings } from '@/types/notification';
+import {
+  NotificationCategory,
+  NOTIFICATION_TYPE_TO_CATEGORY,
+  createDefaultNotificationSettings,
+} from '@/types/notification';
 import { logger } from '@/utils/logger';
 
 type NotificationCategoryType = (typeof NotificationCategory)[keyof typeof NotificationCategory];
@@ -131,7 +135,8 @@ function calculateUnreadByCategory(
 
   notifications.forEach((notification) => {
     if (!notification.isRead) {
-      const category = (NOTIFICATION_TYPE_TO_CATEGORY[notification.type] || 'system') as NotificationCategoryType;
+      const category = (NOTIFICATION_TYPE_TO_CATEGORY[notification.type] ||
+        'system') as NotificationCategoryType;
       if (category in counts) {
         counts[category]++;
       }

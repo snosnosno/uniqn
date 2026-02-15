@@ -435,11 +435,7 @@ describe('NotificationService', () => {
 
       const unsubscribe = subscribeToUnreadCount('user-1', onCount, onError);
 
-      expect(mockRepo.subscribeToUnreadCount).toHaveBeenCalledWith(
-        'user-1',
-        onCount,
-        onError
-      );
+      expect(mockRepo.subscribeToUnreadCount).toHaveBeenCalledWith('user-1', onCount, onError);
       expect(unsubscribe).toBe(mockUnsubscribe);
     });
   });
@@ -489,17 +485,20 @@ describe('NotificationService', () => {
 
       await saveNotificationSettings('user-1', settings as any);
 
-      expect(mockRepo.saveSettings).toHaveBeenCalledWith('user-1', expect.objectContaining({
-        enabled: false,
-      }));
+      expect(mockRepo.saveSettings).toHaveBeenCalledWith(
+        'user-1',
+        expect.objectContaining({
+          enabled: false,
+        })
+      );
     });
 
     it('should propagate repository errors', async () => {
       mockRepo.saveSettings.mockRejectedValue(new Error('Save failed'));
 
-      await expect(
-        saveNotificationSettings('user-1', createMockSettings() as any)
-      ).rejects.toThrow('Save failed');
+      await expect(saveNotificationSettings('user-1', createMockSettings() as any)).rejects.toThrow(
+        'Save failed'
+      );
     });
   });
 
@@ -513,11 +512,7 @@ describe('NotificationService', () => {
 
       await registerFCMToken('user-1', 'mock-fcm-token', metadata);
 
-      expect(mockRepo.registerFCMToken).toHaveBeenCalledWith(
-        'user-1',
-        'mock-fcm-token',
-        metadata
-      );
+      expect(mockRepo.registerFCMToken).toHaveBeenCalledWith('user-1', 'mock-fcm-token', metadata);
     });
 
     it('should handle Android platform token', async () => {
@@ -526,11 +521,7 @@ describe('NotificationService', () => {
 
       await registerFCMToken('user-1', 'android-token', metadata);
 
-      expect(mockRepo.registerFCMToken).toHaveBeenCalledWith(
-        'user-1',
-        'android-token',
-        metadata
-      );
+      expect(mockRepo.registerFCMToken).toHaveBeenCalledWith('user-1', 'android-token', metadata);
     });
 
     it('should propagate repository errors', async () => {

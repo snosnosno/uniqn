@@ -89,8 +89,12 @@ import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 const mockAuth = auth as jest.Mocked<typeof auth>;
 const mockReportRepo = reportRepository as jest.Mocked<typeof reportRepository>;
 const mockUserRepo = userRepository as jest.Mocked<typeof userRepository>;
-const mockCreateReportSchema = createReportInputSchema as jest.Mocked<typeof createReportInputSchema>;
-const mockReviewReportSchema = reviewReportInputSchema as jest.Mocked<typeof reviewReportInputSchema>;
+const mockCreateReportSchema = createReportInputSchema as jest.Mocked<
+  typeof createReportInputSchema
+>;
+const mockReviewReportSchema = reviewReportInputSchema as jest.Mocked<
+  typeof reviewReportInputSchema
+>;
 
 // ============================================================================
 // Tests
@@ -130,13 +134,10 @@ describe('reportService', () => {
       const result = await createReport(mockInput as never);
 
       expect(result).toBe('report-1');
-      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(
-        mockInput,
-        {
-          reporterId: 'user-1',
-          reporterName: '테스트 유저',
-        }
-      );
+      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(mockInput, {
+        reporterId: 'user-1',
+        reporterName: '테스트 유저',
+      });
     });
 
     it('인증되지 않은 사용자면 AuthError를 던져야 한다', async () => {
@@ -168,13 +169,10 @@ describe('reportService', () => {
       const result = await createReport(mockInput as never);
 
       expect(result).toBe('report-1');
-      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(
-        mockInput,
-        {
-          reporterId: 'user-1',
-          reporterName: '익명',
-        }
-      );
+      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(mockInput, {
+        reporterId: 'user-1',
+        reporterName: '익명',
+      });
     });
 
     it('프로필에 name이 없으면 nickname을 사용해야 한다', async () => {
@@ -190,13 +188,10 @@ describe('reportService', () => {
 
       await createReport(mockInput as never);
 
-      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(
-        mockInput,
-        {
-          reporterId: 'user-1',
-          reporterName: '닉네임유저',
-        }
-      );
+      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(mockInput, {
+        reporterId: 'user-1',
+        reporterName: '닉네임유저',
+      });
     });
 
     it('프로필이 없으면 익명으로 처리해야 한다', async () => {
@@ -209,13 +204,10 @@ describe('reportService', () => {
 
       await createReport(mockInput as never);
 
-      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(
-        mockInput,
-        {
-          reporterId: 'user-1',
-          reporterName: '익명',
-        }
-      );
+      expect(mockReportRepo.createWithTransaction).toHaveBeenCalledWith(mockInput, {
+        reporterId: 'user-1',
+        reporterName: '익명',
+      });
     });
 
     it('repository 에러 시 에러를 던져야 한다', async () => {
@@ -224,13 +216,9 @@ describe('reportService', () => {
         data: mockInput,
       } as never);
       mockUserRepo.getById.mockResolvedValue({ name: '유저' } as never);
-      mockReportRepo.createWithTransaction.mockRejectedValue(
-        new Error('트랜잭션 실패')
-      );
+      mockReportRepo.createWithTransaction.mockRejectedValue(new Error('트랜잭션 실패'));
 
-      await expect(createReport(mockInput as never)).rejects.toThrow(
-        '트랜잭션 실패'
-      );
+      await expect(createReport(mockInput as never)).rejects.toThrow('트랜잭션 실패');
     });
   });
 
@@ -283,9 +271,7 @@ describe('reportService', () => {
 
   describe('getMyReports', () => {
     it('내가 신고한 목록을 조회해야 한다', async () => {
-      const mockReports = [
-        { id: 'report-1', reporterId: 'user-1' },
-      ];
+      const mockReports = [{ id: 'report-1', reporterId: 'user-1' }];
       mockReportRepo.getByReporterId.mockResolvedValue(mockReports as never);
 
       const result = await getMyReports();
@@ -349,10 +335,7 @@ describe('reportService', () => {
 
       await reviewReport(mockInput as never);
 
-      expect(mockReportRepo.reviewWithTransaction).toHaveBeenCalledWith(
-        mockInput,
-        'user-1'
-      );
+      expect(mockReportRepo.reviewWithTransaction).toHaveBeenCalledWith(mockInput, 'user-1');
     });
 
     it('인증되지 않은 사용자면 AuthError를 던져야 한다', async () => {
@@ -378,13 +361,9 @@ describe('reportService', () => {
         success: true,
         data: mockInput,
       } as never);
-      mockReportRepo.reviewWithTransaction.mockRejectedValue(
-        new Error('처리 실패')
-      );
+      mockReportRepo.reviewWithTransaction.mockRejectedValue(new Error('처리 실패'));
 
-      await expect(reviewReport(mockInput as never)).rejects.toThrow(
-        '처리 실패'
-      );
+      await expect(reviewReport(mockInput as never)).rejects.toThrow('처리 실패');
     });
   });
 

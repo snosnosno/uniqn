@@ -19,7 +19,7 @@ import { ROLE_LABELS } from '@/constants';
  * 역할 정보를 일관되게 표현하기 위한 단일 타입
  */
 export interface RoleInfo {
-  /** 역할 식별자 (dealer, floor, manager, chiprunner, other 등) */
+  /** 역할 식별자 (dealer, floor, serving, manager, staff, other 등) */
   roleId: StaffRole | 'floor' | 'staff' | 'other' | string;
 
   /** 표시용 역할명 (딜러, 플로어, 매니저 등) */

@@ -43,7 +43,9 @@ function timestampToMs(ts: Timestamp | Date | undefined): number {
   if (ts instanceof Date) return ts.getTime();
   if (typeof ts.toDate === 'function') return ts.toDate().getTime();
   // plain object fallback ({seconds, nanoseconds})
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   if ('seconds' in ts && typeof (ts as any).seconds === 'number') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     return (ts as any).seconds * 1000;
   }
   return 0;

@@ -346,9 +346,7 @@ export function useBulkUpdateStatus() {
         queryClient.setQueryData(
           queryKeys.jobManagement.myPostings(),
           previous.map((p: Record<string, unknown>) =>
-            params.jobPostingIds.includes(p.id as string)
-              ? { ...p, status: params.status }
-              : p
+            params.jobPostingIds.includes(p.id as string) ? { ...p, status: params.status } : p
           )
         );
       }

@@ -11,11 +11,7 @@
 import { logger } from '@/utils/logger';
 import { withErrorHandling } from '@/utils/withErrorHandling';
 import { announcementRepository } from '@/repositories';
-import type {
-  Announcement,
-  CreateAnnouncementInput,
-  UpdateAnnouncementInput,
-} from '@/types';
+import type { Announcement, CreateAnnouncementInput, UpdateAnnouncementInput } from '@/types';
 import type { UserRole } from '@/types/common';
 import type {
   FetchAnnouncementsOptions,

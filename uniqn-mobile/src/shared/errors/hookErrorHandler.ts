@@ -72,7 +72,13 @@ export function createMutationErrorHandler(
   addToast: AddToastFn,
   options: ErrorHandlerOptions = {}
 ): (error: unknown, variables?: unknown, mutationContext?: unknown) => void {
-  const { showToast = true, context: extraContext, customMessages, showAlert, onRollback } = options;
+  const {
+    showToast = true,
+    context: extraContext,
+    customMessages,
+    showAlert,
+    onRollback,
+  } = options;
 
   return (error: unknown, _variables?: unknown, mutationContext?: unknown) => {
     // Optimistic Update 롤백 실행
@@ -323,7 +329,11 @@ export function createQueryErrorHandler(
  */
 export const errorHandlerPresets = {
   /** 확정 처리 에러 핸들러 */
-  confirm: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+  confirm: (
+    addToast: AddToastFn,
+    extraContext?: Record<string, unknown>,
+    showAlert?: ShowAlertFn
+  ) =>
     createMutationErrorHandler('확정 처리', addToast, {
       context: extraContext,
       showAlert,
@@ -366,7 +376,11 @@ export const errorHandlerPresets = {
     }),
 
   /** 정산 처리 에러 핸들러 */
-  settlement: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+  settlement: (
+    addToast: AddToastFn,
+    extraContext?: Record<string, unknown>,
+    showAlert?: ShowAlertFn
+  ) =>
     createMutationErrorHandler('정산 처리', addToast, {
       context: extraContext,
       showAlert,
@@ -377,7 +391,11 @@ export const errorHandlerPresets = {
     }),
 
   /** 출퇴근 처리 에러 핸들러 */
-  attendance: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+  attendance: (
+    addToast: AddToastFn,
+    extraContext?: Record<string, unknown>,
+    showAlert?: ShowAlertFn
+  ) =>
     createMutationErrorHandler('출퇴근 처리', addToast, {
       context: extraContext,
       showAlert,
@@ -390,7 +408,11 @@ export const errorHandlerPresets = {
     }),
 
   /** 프로필 업데이트 에러 핸들러 */
-  profile: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+  profile: (
+    addToast: AddToastFn,
+    extraContext?: Record<string, unknown>,
+    showAlert?: ShowAlertFn
+  ) =>
     createMutationErrorHandler('프로필 저장', addToast, {
       context: extraContext,
       showAlert,
@@ -400,7 +422,11 @@ export const errorHandlerPresets = {
     }),
 
   /** 공고 CRUD 에러 핸들러 */
-  jobPosting: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+  jobPosting: (
+    addToast: AddToastFn,
+    extraContext?: Record<string, unknown>,
+    showAlert?: ShowAlertFn
+  ) =>
     createMutationErrorHandler('공고 처리', addToast, {
       context: extraContext,
       showAlert,
@@ -422,7 +448,11 @@ export const errorHandlerPresets = {
     }),
 
   /** 알림 처리 에러 핸들러 */
-  notification: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+  notification: (
+    addToast: AddToastFn,
+    extraContext?: Record<string, unknown>,
+    showAlert?: ShowAlertFn
+  ) =>
     createMutationErrorHandler('알림 처리', addToast, {
       context: extraContext,
       showAlert,

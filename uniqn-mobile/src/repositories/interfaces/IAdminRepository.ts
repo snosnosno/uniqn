@@ -10,11 +10,7 @@
  * 3. 향후 백엔드 교체 가능성 확보
  */
 
-import type {
-  AdminUser,
-  AdminUserFilters,
-  PaginatedUsers,
-} from '@/types/admin';
+import type { AdminUser, AdminUserFilters, PaginatedUsers } from '@/types/admin';
 import type { UserRole } from '@/types/common';
 
 // ============================================================================
@@ -101,11 +97,7 @@ export interface IAdminRepository {
    * @param pageSize - 페이지 크기
    * @returns 페이지네이션된 사용자 목록
    */
-  getUsers(
-    filters?: AdminUserFilters,
-    page?: number,
-    pageSize?: number
-  ): Promise<PaginatedUsers>;
+  getUsers(filters?: AdminUserFilters, page?: number, pageSize?: number): Promise<PaginatedUsers>;
 
   /**
    * ID로 사용자 조회

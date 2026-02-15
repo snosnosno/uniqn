@@ -302,12 +302,7 @@ describe('ModalStore', () => {
       const onCancel = jest.fn();
 
       act(() => {
-        useModalStore.getState().showConfirm(
-          '확인',
-          '삭제하시겠습니까?',
-          onConfirm,
-          onCancel
-        );
+        useModalStore.getState().showConfirm('확인', '삭제하시겠습니까?', onConfirm, onCancel);
       });
 
       const modal = useModalStore.getState().modals[0];

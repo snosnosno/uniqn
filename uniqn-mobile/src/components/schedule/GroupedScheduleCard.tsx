@@ -92,8 +92,12 @@ export const GroupedScheduleCard = memo(function GroupedScheduleCard({
   const attendanceSummary = useMemo(() => {
     if (group.type !== STATUS.SCHEDULE.CONFIRMED) return null;
 
-    const checkedIn = group.dateStatuses.filter((d) => d.status === STATUS.ATTENDANCE.CHECKED_IN).length;
-    const checkedOut = group.dateStatuses.filter((d) => d.status === STATUS.ATTENDANCE.CHECKED_OUT).length;
+    const checkedIn = group.dateStatuses.filter(
+      (d) => d.status === STATUS.ATTENDANCE.CHECKED_IN
+    ).length;
+    const checkedOut = group.dateStatuses.filter(
+      (d) => d.status === STATUS.ATTENDANCE.CHECKED_OUT
+    ).length;
 
     // 우선순위: 근무 중 > 퇴근 완료 > 출근 전
     if (checkedIn > 0) return { label: '근무 중', status: STATUS.ATTENDANCE.CHECKED_IN };

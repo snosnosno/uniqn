@@ -98,7 +98,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
   // 출석 체크 여부 (QR 출근 찍었는지)
   const isCheckedIn =
-    staff.status === STATUS.WORK_LOG.CHECKED_IN || staff.status === STATUS.WORK_LOG.CHECKED_OUT || staff.status === STATUS.WORK_LOG.COMPLETED;
+    staff.status === STATUS.WORK_LOG.CHECKED_IN ||
+    staff.status === STATUS.WORK_LOG.CHECKED_OUT ||
+    staff.status === STATUS.WORK_LOG.COMPLETED;
 
   // 시간 표시 정보 (WorkTimeDisplay 사용 - 직원 화면과 일관성 확보)
   const timeInfo = useMemo(() => {
@@ -127,8 +129,10 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
   const workDuration = timeInfo.hasActualTime ? timeInfo.duration : null;
 
   // 액션 버튼 표시 조건
-  const canEditTime = staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
-  const canDelete = staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
+  const canEditTime =
+    staff.status !== STATUS.WORK_LOG.CANCELLED && staff.status !== STATUS.CONFIRMED_STAFF.NO_SHOW;
+  const canDelete =
+    staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CANCELLED;
 
   // 핸들러
   const handlePress = useCallback(() => {
@@ -161,7 +165,9 @@ export const ConfirmedStaffCard = React.memo(function ConfirmedStaffCard({
 
   // 상태 변경 가능 여부 (scheduled, checked_in, checked_out 간 자유 전환)
   const canChangeStatus =
-    staff.status === STATUS.WORK_LOG.SCHEDULED || staff.status === STATUS.WORK_LOG.CHECKED_IN || staff.status === STATUS.WORK_LOG.CHECKED_OUT;
+    staff.status === STATUS.WORK_LOG.SCHEDULED ||
+    staff.status === STATUS.WORK_LOG.CHECKED_IN ||
+    staff.status === STATUS.WORK_LOG.CHECKED_OUT;
 
   return (
     <Card variant="elevated" padding={compact ? 'sm' : 'md'}>

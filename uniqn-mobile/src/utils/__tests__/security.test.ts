@@ -76,9 +76,9 @@ describe('security', () => {
     });
 
     it('SQL 패턴 탐지', () => {
-      expect(hasSQLInjectionPattern("union select * from users")).toBe(true);
+      expect(hasSQLInjectionPattern('union select * from users')).toBe(true);
       expect(hasSQLInjectionPattern("'; drop table users;--")).toBe(true);
-      expect(hasSQLInjectionPattern("delete from users")).toBe(true);
+      expect(hasSQLInjectionPattern('delete from users')).toBe(true);
     });
 
     it('빈 문자열은 false', () => {
@@ -112,7 +112,7 @@ describe('security', () => {
     });
 
     it('SQL Injection 패턴이 있으면 false', () => {
-      expect(isSafeText("union select * from users")).toBe(false);
+      expect(isSafeText('union select * from users')).toBe(false);
     });
 
     it('maxLength 초과 시 false', () => {
@@ -272,9 +272,7 @@ describe('security', () => {
 
     it('연속 문자 패턴 감지', () => {
       const result = getPasswordStrength('Pass123word!');
-      expect(result.feedback).toEqual(
-        expect.arrayContaining([expect.stringContaining('연속')])
-      );
+      expect(result.feedback).toEqual(expect.arrayContaining([expect.stringContaining('연속')]));
     });
 
     it('빈 비밀번호는 점수 0', () => {

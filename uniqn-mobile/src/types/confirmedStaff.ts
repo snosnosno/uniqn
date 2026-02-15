@@ -321,8 +321,10 @@ export function groupStaffByDate(staffList: ConfirmedStaff[]): ConfirmedStaffGro
         stats: {
           total: staffInDate.length,
           checkedIn: staffInDate.filter((s) => s.status === STATUS.WORK_LOG.CHECKED_IN).length,
-          completed: staffInDate.filter((s) => s.status === STATUS.WORK_LOG.CHECKED_OUT || s.status === STATUS.WORK_LOG.COMPLETED)
-            .length,
+          completed: staffInDate.filter(
+            (s) =>
+              s.status === STATUS.WORK_LOG.CHECKED_OUT || s.status === STATUS.WORK_LOG.COMPLETED
+          ).length,
           noShow: staffInDate.filter((s) => s.status === 'no_show').length,
         },
       };

@@ -23,7 +23,13 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { BusinessError, PermissionError, ERROR_CODES, AlreadySettledError, isAppError } from '@/errors';
+import {
+  BusinessError,
+  PermissionError,
+  ERROR_CODES,
+  AlreadySettledError,
+  isAppError,
+} from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { COLLECTIONS, FIREBASE_LIMITS, STATUS } from '@/constants';
 import { SettlementCalculator } from '@/domains/settlement';
@@ -190,7 +196,10 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
         );
 
         // 3. 출퇴근 완료 여부 확인
-        if (workLog.status !== STATUS.WORK_LOG.CHECKED_OUT && workLog.status !== STATUS.WORK_LOG.COMPLETED) {
+        if (
+          workLog.status !== STATUS.WORK_LOG.CHECKED_OUT &&
+          workLog.status !== STATUS.WORK_LOG.COMPLETED
+        ) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '출퇴근이 완료된 근무 기록만 정산할 수 있습니다',
           });
@@ -229,18 +238,15 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       };
     } catch (error) {
       // 개별 정산은 성공/실패 결과를 반환하므로 throw 대신 로깅 후 반환
-      logger.error(
-        '개별 정산 처리 실패',
-        error instanceof Error ? error : undefined,
-        { workLogId: context.workLogId }
-      );
+      logger.error('개별 정산 처리 실패', error instanceof Error ? error : undefined, {
+        workLogId: context.workLogId,
+      });
 
-      const message =
-        isAppError(error)
-          ? error.userMessage
-          : error instanceof Error
-            ? error.message
-            : '정산 처리에 실패했습니다';
+      const message = isAppError(error)
+        ? error.userMessage
+        : error instanceof Error
+          ? error.message
+          : '정산 처리에 실패했습니다';
 
       return {
         success: false,
@@ -271,143 +277,183 @@ export class FirebaseSettlementRepository implements ISettlementRepository {
       }
 
       for (const batchIds of batches) {
-        await runTransaction(getFirebaseDb(), async (transaction) => {
-          // 1. 모든 근무 기록 조회
-          const workLogDocs = await Promise.all(
-            batchIds.map(async (id) => {
-              const ref = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, id);
-              const docSnap = await transaction.get(ref);
-              return { id, ref, doc: docSnap };
-            })
-          );
+        // 배치별 임시 결과 (트랜잭션 성공 시에만 최종 results에 반영)
+        let batchResults: SettlementResultDTO[] = [];
+        let batchSuccessCount = 0;
+        let batchFailedCount = 0;
+        let batchTotalAmount = 0;
 
-          // 2. 공고별로 그룹화하여 소유권 확인
-          const jobPostingIds = new Set<string>();
-          const parsedWorkLogMap = new Map<string, WorkLog>();
-          workLogDocs.forEach((wl) => {
-            if (wl.doc.exists()) {
-              const parsed = parseWorkLogDocument({
-                id: wl.doc.id,
-                ...(wl.doc.data() as Record<string, unknown>),
-              });
-              if (parsed) {
-                parsedWorkLogMap.set(wl.id, parsed);
-                jobPostingIds.add(IdNormalizer.normalizeJobId(parsed));
+        try {
+          await runTransaction(getFirebaseDb(), async (transaction) => {
+            // 트랜잭션 재시도 시 이전 결과 초기화
+            batchResults = [];
+            batchSuccessCount = 0;
+            batchFailedCount = 0;
+            batchTotalAmount = 0;
+
+            // 1. 모든 근무 기록 조회
+            const workLogDocs = await Promise.all(
+              batchIds.map(async (id) => {
+                const ref = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, id);
+                const docSnap = await transaction.get(ref);
+                return { id, ref, doc: docSnap };
+              })
+            );
+
+            // 2. 공고별로 그룹화하여 소유권 확인
+            const jobPostingIds = new Set<string>();
+            const parsedWorkLogMap = new Map<string, WorkLog>();
+            workLogDocs.forEach((wl) => {
+              if (wl.doc.exists()) {
+                const parsed = parseWorkLogDocument({
+                  id: wl.doc.id,
+                  ...(wl.doc.data() as Record<string, unknown>),
+                });
+                if (parsed) {
+                  parsedWorkLogMap.set(wl.id, parsed);
+                  jobPostingIds.add(IdNormalizer.normalizeJobId(parsed));
+                }
               }
+            });
+
+            const jobPostings = new Map<string, JobPosting>();
+            for (const jobId of jobPostingIds) {
+              const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobId);
+              const jobDoc = await transaction.get(jobRef);
+              if (jobDoc.exists()) {
+                const parsedJob = parseJobPostingDocument({
+                  id: jobDoc.id,
+                  ...(jobDoc.data() as Record<string, unknown>),
+                });
+                if (parsedJob) {
+                  jobPostings.set(jobId, parsedJob);
+                }
+              }
+            }
+
+            // 3. 각 근무 기록 처리
+            for (const { id, ref, doc: workLogDoc } of workLogDocs) {
+              if (!workLogDoc.exists() || !parsedWorkLogMap.has(id)) {
+                batchResults.push({
+                  success: false,
+                  workLogId: id,
+                  amount: 0,
+                  message: '근무 기록을 찾을 수 없습니다',
+                });
+                batchFailedCount++;
+                continue;
+              }
+
+              const parsedWorkLog = parsedWorkLogMap.get(id)!;
+              const workLog = parsedWorkLog as WorkLogWithOverrides;
+              const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
+              const jobPosting = jobPostings.get(normalizedJobId);
+
+              // 소유권 확인
+              if (!jobPosting || jobPosting.ownerId !== ownerId) {
+                batchResults.push({
+                  success: false,
+                  workLogId: id,
+                  amount: 0,
+                  message: '본인의 공고가 아닙니다',
+                });
+                batchFailedCount++;
+                continue;
+              }
+
+              // 상태 확인
+              if (
+                workLog.status !== STATUS.WORK_LOG.CHECKED_OUT &&
+                workLog.status !== STATUS.WORK_LOG.COMPLETED
+              ) {
+                batchResults.push({
+                  success: false,
+                  workLogId: id,
+                  amount: 0,
+                  message: '출퇴근이 완료되지 않았습니다',
+                });
+                batchFailedCount++;
+                continue;
+              }
+
+              // 이미 정산 완료
+              if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+                batchResults.push({
+                  success: false,
+                  workLogId: id,
+                  amount: 0,
+                  message: '이미 정산 완료되었습니다',
+                });
+                batchFailedCount++;
+                continue;
+              }
+
+              // 정산 금액 계산 (SettlementCalculator 사용)
+              const salaryInfo = getEffectiveSalaryInfoFromRoles(
+                workLog,
+                jobPosting.roles,
+                jobPosting.defaultSalary
+              );
+              const allowances = getEffectiveAllowances(workLog, jobPosting.allowances);
+              const taxSettings = getEffectiveTaxSettings(workLog, jobPosting.taxSettings);
+
+              const settlementResult = SettlementCalculator.calculate({
+                startTime: workLog.checkInTime,
+                endTime: workLog.checkOutTime,
+                salaryInfo,
+                allowances,
+                taxSettings,
+              });
+              const amount = settlementResult.afterTaxPay;
+
+              // 정산 처리
+              const updateData: Record<string, unknown> = {
+                payrollStatus: STATUS.PAYROLL.COMPLETED,
+                payrollAmount: amount,
+                payrollDate: serverTimestamp(),
+                updatedAt: serverTimestamp(),
+              };
+
+              if (context.notes !== undefined) {
+                updateData.payrollNotes = context.notes;
+              }
+
+              transaction.update(ref, updateData);
+
+              batchResults.push({
+                success: true,
+                workLogId: id,
+                amount,
+                message: '정산 완료',
+              });
+              batchSuccessCount++;
+              batchTotalAmount += amount;
             }
           });
 
-          const jobPostings = new Map<string, JobPosting>();
-          for (const jobId of jobPostingIds) {
-            const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobId);
-            const jobDoc = await transaction.get(jobRef);
-            if (jobDoc.exists()) {
-              const parsedJob = parseJobPostingDocument({
-                id: jobDoc.id,
-                ...(jobDoc.data() as Record<string, unknown>),
-              });
-              if (parsedJob) {
-                jobPostings.set(jobId, parsedJob);
-              }
-            }
-          }
+          // 트랜잭션 성공 후에만 최종 results에 반영
+          results.push(...batchResults);
+          successCount += batchSuccessCount;
+          failedCount += batchFailedCount;
+          totalAmount += batchTotalAmount;
+        } catch (batchError) {
+          // 배치 트랜잭션 실패 → 배치 전체를 실패로 기록 (DB 원자적 롤백)
+          logger.error('일괄 정산 배치 트랜잭션 실패', {
+            batchIds,
+            error: batchError instanceof Error ? batchError.message : String(batchError),
+            component: 'SettlementRepository',
+          });
 
-          // 3. 각 근무 기록 처리
-          for (const { id, ref, doc: workLogDoc } of workLogDocs) {
-            if (!workLogDoc.exists() || !parsedWorkLogMap.has(id)) {
-              results.push({
-                success: false,
-                workLogId: id,
-                amount: 0,
-                message: '근무 기록을 찾을 수 없습니다',
-              });
-              failedCount++;
-              continue;
-            }
-
-            const parsedWorkLog = parsedWorkLogMap.get(id)!;
-            const workLog = parsedWorkLog as WorkLogWithOverrides;
-            const normalizedJobId = IdNormalizer.normalizeJobId(workLog);
-            const jobPosting = jobPostings.get(normalizedJobId);
-
-            // 소유권 확인
-            if (!jobPosting || jobPosting.ownerId !== ownerId) {
-              results.push({
-                success: false,
-                workLogId: id,
-                amount: 0,
-                message: '본인의 공고가 아닙니다',
-              });
-              failedCount++;
-              continue;
-            }
-
-            // 상태 확인
-            if (workLog.status !== STATUS.WORK_LOG.CHECKED_OUT && workLog.status !== STATUS.WORK_LOG.COMPLETED) {
-              results.push({
-                success: false,
-                workLogId: id,
-                amount: 0,
-                message: '출퇴근이 완료되지 않았습니다',
-              });
-              failedCount++;
-              continue;
-            }
-
-            // 이미 정산 완료
-            if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-              results.push({
-                success: false,
-                workLogId: id,
-                amount: 0,
-                message: '이미 정산 완료되었습니다',
-              });
-              failedCount++;
-              continue;
-            }
-
-            // 정산 금액 계산 (SettlementCalculator 사용)
-            const salaryInfo = getEffectiveSalaryInfoFromRoles(
-              workLog,
-              jobPosting.roles,
-              jobPosting.defaultSalary
-            );
-            const allowances = getEffectiveAllowances(workLog, jobPosting.allowances);
-            const taxSettings = getEffectiveTaxSettings(workLog, jobPosting.taxSettings);
-
-            const settlementResult = SettlementCalculator.calculate({
-              startTime: workLog.checkInTime,
-              endTime: workLog.checkOutTime,
-              salaryInfo,
-              allowances,
-              taxSettings,
-            });
-            const amount = settlementResult.afterTaxPay;
-
-            // 정산 처리
-            const updateData: Record<string, unknown> = {
-              payrollStatus: STATUS.PAYROLL.COMPLETED,
-              payrollAmount: amount,
-              payrollDate: serverTimestamp(),
-              updatedAt: serverTimestamp(),
-            };
-
-            if (context.notes !== undefined) {
-              updateData.payrollNotes = context.notes;
-            }
-
-            transaction.update(ref, updateData);
-
+          for (const id of batchIds) {
             results.push({
-              success: true,
+              success: false,
               workLogId: id,
-              amount,
-              message: '정산 완료',
+              amount: 0,
+              message: '배치 트랜잭션 실패',
             });
-            successCount++;
-            totalAmount += amount;
+            failedCount++;
           }
-        });
+        }
       }
 
       const result: BulkSettlementResultDTO = {

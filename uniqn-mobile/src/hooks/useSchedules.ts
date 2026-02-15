@@ -366,11 +366,19 @@ export function useCalendarView(options: UseCalendarViewOptions | CalendarView =
   }, []);
 
   // 월별 스케줄 데이터
-  const { schedules, groupedSchedules, markedDates, stats, isLoading, isRefreshing, error, refresh } =
-    useSchedulesByMonth({
-      year: currentMonth.year,
-      month: currentMonth.month,
-    });
+  const {
+    schedules,
+    groupedSchedules,
+    markedDates,
+    stats,
+    isLoading,
+    isRefreshing,
+    error,
+    refresh,
+  } = useSchedulesByMonth({
+    year: currentMonth.year,
+    month: currentMonth.month,
+  });
 
   // 같은 지원(applicationId)의 연속/다중 날짜를 통합
   // 결과: (ScheduleEvent | GroupedScheduleEvent)[]

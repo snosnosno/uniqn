@@ -30,10 +30,10 @@ jest.mock('@/shared/role', () => ({
     }),
     toKey: jest.fn((name: string) => {
       const map: Record<string, string> = {
-        '딜러': 'dealer',
-        '플로어': 'floor',
-        '서빙': 'serving',
-        '매니저': 'manager',
+        딜러: 'dealer',
+        플로어: 'floor',
+        서빙: 'serving',
+        매니저: 'manager',
         dealer: 'dealer',
         floor: 'floor',
         serving: 'serving',
@@ -77,9 +77,7 @@ describe('extractRolesFromPosting', () => {
     });
 
     it('isCustom이 true인 역할을 보존한다', () => {
-      const roles: FormRoleWithCount[] = [
-        { name: '조명담당', count: 1, isCustom: true },
-      ];
+      const roles: FormRoleWithCount[] = [{ name: '조명담당', count: 1, isCustom: true }];
 
       const result = extractRolesFromPosting('fixed', roles);
       expect(result[0]!.isCustom).toBe(true);
@@ -139,9 +137,7 @@ describe('extractRolesFromPosting', () => {
           date: '2025-01-10',
           timeSlots: [
             {
-              roles: [
-                { role: 'other', customRole: '조명담당', headcount: 2 },
-              ],
+              roles: [{ role: 'other', customRole: '조명담당', headcount: 2 }],
             },
           ],
         },
@@ -258,9 +254,7 @@ describe('syncRolesWithExtracted', () => {
     const extracted: ExtractedRole[] = [
       { key: 'dealer', displayName: '딜러', count: 3, isCustom: false },
     ];
-    const existing: FormRoleWithCount[] = [
-      { name: '딜러', count: 3 },
-    ];
+    const existing: FormRoleWithCount[] = [{ name: '딜러', count: 3 }];
 
     const result = syncRolesWithExtracted(extracted, existing, false);
     expect(result).toBeNull();
@@ -271,9 +265,7 @@ describe('syncRolesWithExtracted', () => {
       { key: 'dealer', displayName: '딜러', count: 3, isCustom: false },
       { key: 'floor', displayName: '플로어', count: 2, isCustom: false },
     ];
-    const existing: FormRoleWithCount[] = [
-      { name: '딜러', count: 3 },
-    ];
+    const existing: FormRoleWithCount[] = [{ name: '딜러', count: 3 }];
 
     const result = syncRolesWithExtracted(extracted, existing, false);
     expect(result).not.toBeNull();
@@ -301,9 +293,7 @@ describe('syncRolesWithExtracted', () => {
     const extracted: ExtractedRole[] = [
       { key: 'dealer', displayName: '딜러', count: 5, isCustom: false },
     ];
-    const existing: FormRoleWithCount[] = [
-      { name: '딜러', count: 3 },
-    ];
+    const existing: FormRoleWithCount[] = [{ name: '딜러', count: 3 }];
 
     const result = syncRolesWithExtracted(extracted, existing, false);
     expect(result).not.toBeNull();
@@ -321,9 +311,7 @@ describe('syncRolesWithExtracted', () => {
         existingSalary: { type: 'hourly', amount: 12000 },
       },
     ];
-    const existing: FormRoleWithCount[] = [
-      { name: '딜러', count: 3 },
-    ];
+    const existing: FormRoleWithCount[] = [{ name: '딜러', count: 3 }];
 
     const result = syncRolesWithExtracted(extracted, existing, false);
     expect(result![1]!.salary).toEqual({ type: 'hourly', amount: 12000 });
@@ -379,9 +367,7 @@ describe('syncRolesWithExtracted', () => {
       { key: 'dealer', displayName: '딜러', count: 3, isCustom: false },
       { key: '조명담당', displayName: '조명담당', count: 1, isCustom: true },
     ];
-    const existing: FormRoleWithCount[] = [
-      { name: '딜러', count: 3 },
-    ];
+    const existing: FormRoleWithCount[] = [{ name: '딜러', count: 3 }];
 
     const result = syncRolesWithExtracted(extracted, existing, false);
     expect(result![1]!.isCustom).toBe(true);

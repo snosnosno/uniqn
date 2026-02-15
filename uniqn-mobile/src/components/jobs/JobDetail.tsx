@@ -222,7 +222,10 @@ export function JobDetail({ job }: JobDetailProps) {
               긴급
             </Badge>
           )}
-          <Badge variant={job.status === STATUS.JOB_POSTING.ACTIVE ? 'success' : 'default'} size="sm">
+          <Badge
+            variant={job.status === STATUS.JOB_POSTING.ACTIVE ? 'success' : 'default'}
+            size="sm"
+          >
             {job.status === STATUS.JOB_POSTING.ACTIVE ? '모집중' : '마감'}
           </Badge>
         </View>

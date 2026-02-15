@@ -210,11 +210,11 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           enableProguardInReleaseBuilds: true,
           enableShrinkResourcesInReleaseBuilds: true,
           includeNativeDebugSymbols: true,
-          newArchEnabled: false,
+          newArchEnabled: true,
         },
         ios: {
           deploymentTarget: '16.0',
-          newArchEnabled: false,
+          newArchEnabled: true,
         },
       },
     ],

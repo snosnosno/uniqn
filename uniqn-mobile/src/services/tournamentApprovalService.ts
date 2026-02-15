@@ -262,11 +262,10 @@ export async function getMyPendingTournamentPostings(ownerId: string): Promise<J
   try {
     logger.info('내 대회공고 목록 조회', { ownerId });
 
-    const postings = await jobPostingRepository.getByOwnerAndPostingType(
-      ownerId,
-      'tournament',
-      [STATUS.TOURNAMENT.PENDING, STATUS.TOURNAMENT.REJECTED]
-    );
+    const postings = await jobPostingRepository.getByOwnerAndPostingType(ownerId, 'tournament', [
+      STATUS.TOURNAMENT.PENDING,
+      STATUS.TOURNAMENT.REJECTED,
+    ]);
 
     logger.info('내 대회공고 목록 조회 완료', {
       ownerId,

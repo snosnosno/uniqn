@@ -196,7 +196,10 @@ export async function getJobPostingSettlementSummary(
       workLogsByRole[effectiveRole].count++;
 
       // 완료된 근무 기록
-      if (workLog.status === STATUS.WORK_LOG.CHECKED_OUT || workLog.status === STATUS.WORK_LOG.COMPLETED) {
+      if (
+        workLog.status === STATUS.WORK_LOG.CHECKED_OUT ||
+        workLog.status === STATUS.WORK_LOG.COMPLETED
+      ) {
         completedWorkLogs++;
 
         // 정산 상태별 분류

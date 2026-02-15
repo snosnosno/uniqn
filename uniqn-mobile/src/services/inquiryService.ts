@@ -140,7 +140,12 @@ export async function fetchAllInquiries(
 
     // QueryBuilder로 쿼리 구성
     const q = new QueryBuilder(collection(db, COLLECTIONS.INQUIRIES))
-      .whereIf(filters?.status && filters.status !== 'all', FIELDS.INQUIRY.status, '==', filters?.status)
+      .whereIf(
+        filters?.status && filters.status !== 'all',
+        FIELDS.INQUIRY.status,
+        '==',
+        filters?.status
+      )
       .orderByDesc(FIELDS.INQUIRY.createdAt)
       .paginate(pageSize, lastDoc)
       .build();
@@ -303,7 +308,10 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
 export async function getUnansweredCount(): Promise<number> {
   return withErrorHandling(async () => {
     const db = getFirebaseDb();
-    const q = query(collection(db, COLLECTIONS.INQUIRIES), where(FIELDS.INQUIRY.status, '==', STATUS.INQUIRY.OPEN));
+    const q = query(
+      collection(db, COLLECTIONS.INQUIRIES),
+      where(FIELDS.INQUIRY.status, '==', STATUS.INQUIRY.OPEN)
+    );
 
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;

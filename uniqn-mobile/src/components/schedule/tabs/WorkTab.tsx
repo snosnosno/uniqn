@@ -92,7 +92,8 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
   const hasActualTimes = schedule.checkInTime || schedule.checkOutTime;
 
   // QR 버튼 표시 조건: 확정 상태 + workLogId 있음
-  const canShowQRButton = schedule.type === STATUS.SCHEDULE.CONFIRMED && schedule.workLogId && onQRScan;
+  const canShowQRButton =
+    schedule.type === STATUS.SCHEDULE.CONFIRMED && schedule.workLogId && onQRScan;
 
   // 지원중 상태면 안내 메시지 표시
   if (schedule.type === STATUS.SCHEDULE.APPLIED) {

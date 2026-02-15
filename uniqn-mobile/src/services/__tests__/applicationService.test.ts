@@ -173,33 +173,25 @@ describe('ApplicationService', () => {
     });
 
     it('should throw error when application not found', async () => {
-      mockCancelWithTransaction.mockRejectedValue(
-        new Error('존재하지 않는 지원입니다')
-      );
+      mockCancelWithTransaction.mockRejectedValue(new Error('존재하지 않는 지원입니다'));
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when not the applicant', async () => {
-      mockCancelWithTransaction.mockRejectedValue(
-        new Error('본인의 지원만 취소할 수 있습니다')
-      );
+      mockCancelWithTransaction.mockRejectedValue(new Error('본인의 지원만 취소할 수 있습니다'));
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when already cancelled', async () => {
-      mockCancelWithTransaction.mockRejectedValue(
-        new Error('이미 취소된 지원입니다')
-      );
+      mockCancelWithTransaction.mockRejectedValue(new Error('이미 취소된 지원입니다'));
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });
 
     it('should throw error when confirmed', async () => {
-      mockCancelWithTransaction.mockRejectedValue(
-        new Error('확정된 지원은 취소할 수 없습니다')
-      );
+      mockCancelWithTransaction.mockRejectedValue(new Error('확정된 지원은 취소할 수 없습니다'));
 
       await expect(cancelApplication(applicationId, applicantId)).rejects.toThrow();
     });

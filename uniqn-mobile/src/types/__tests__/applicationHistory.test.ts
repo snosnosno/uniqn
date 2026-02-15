@@ -28,7 +28,9 @@ const mockAssignment = (overrides = {}): Assignment => ({
   ...overrides,
 });
 
-const createMockEntry = (overrides: Partial<ConfirmationHistoryEntry> = {}): ConfirmationHistoryEntry => ({
+const createMockEntry = (
+  overrides: Partial<ConfirmationHistoryEntry> = {}
+): ConfirmationHistoryEntry => ({
   confirmedAt: Timestamp.fromDate(new Date('2025-03-01T10:00:00Z')),
   assignments: [mockAssignment()],
   ...overrides,
@@ -229,10 +231,7 @@ describe('applicationHistory', () => {
     });
 
     it('should return 0 when no entries are cancelled', () => {
-      const entries: ConfirmationHistoryEntry[] = [
-        createMockEntry(),
-        createMockEntry(),
-      ];
+      const entries: ConfirmationHistoryEntry[] = [createMockEntry(), createMockEntry()];
 
       expect(countCancellations(entries)).toBe(0);
     });

@@ -229,7 +229,7 @@ describe('jobManagementService', () => {
       input.roles = [
         { role: 'dealer' as StaffRole, count: 5, filled: 0 },
         { role: 'manager' as StaffRole, count: 2, filled: 0 },
-        { role: 'chiprunner' as StaffRole, count: 3, filled: 0 },
+        { role: 'floor' as StaffRole, count: 3, filled: 0 },
       ];
 
       mockCreateWithTransaction.mockResolvedValue({
@@ -600,11 +600,7 @@ describe('jobManagementService', () => {
       );
 
       expect(successCount).toBe(2);
-      expect(mockBulkUpdateStatus).toHaveBeenCalledWith(
-        ['job-1', 'job-2'],
-        'closed',
-        'employer-1'
-      );
+      expect(mockBulkUpdateStatus).toHaveBeenCalledWith(['job-1', 'job-2'], 'closed', 'employer-1');
     });
 
     it('should only update owned job postings', async () => {
@@ -647,8 +643,7 @@ describe('jobManagementService', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              endTime: '18:00',
-              roles: [{ role: 'dealer' as StaffRole, count: 2, filled: 0 }],
+              roles: [{ role: 'dealer' as StaffRole, headcount: 2, filled: 0 }],
             },
           ],
         },
@@ -657,8 +652,7 @@ describe('jobManagementService', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              endTime: '18:00',
-              roles: [{ role: 'dealer' as StaffRole, count: 2, filled: 0 }],
+              roles: [{ role: 'dealer' as StaffRole, headcount: 2, filled: 0 }],
             },
           ],
         },
@@ -698,8 +692,7 @@ describe('jobManagementService', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              endTime: '18:00',
-              roles: [{ role: 'dealer' as StaffRole, count: 1, filled: 0 }],
+              roles: [{ role: 'dealer' as StaffRole, headcount: 1, filled: 0 }],
             },
           ],
         },
@@ -708,8 +701,7 @@ describe('jobManagementService', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              endTime: '18:00',
-              roles: [{ role: 'dealer' as StaffRole, count: 1, filled: 0 }],
+              roles: [{ role: 'dealer' as StaffRole, headcount: 1, filled: 0 }],
             },
           ],
         },
@@ -795,8 +787,9 @@ describe('jobManagementService', () => {
           timeSlots: [
             {
               startTime: '09:00',
-              endTime: '18:00',
-              roles: [{ role: 'other' as StaffRole, customRole: '사회자', count: 1, filled: 0 }],
+              roles: [
+                { role: 'other' as StaffRole, customRole: '사회자', headcount: 1, filled: 0 },
+              ],
             },
           ],
         },
@@ -807,7 +800,7 @@ describe('jobManagementService', () => {
         jobPosting: { ...input, id: 'custom-1', status: 'active', ownerId: 'employer-1' },
       });
 
-      const result = await createJobPosting(input, 'employer-1', '테스트 구인자');
+      await createJobPosting(input, 'employer-1', '테스트 구인자');
 
       expect(mockCreateWithTransaction).toHaveBeenCalled();
     });
@@ -1094,7 +1087,11 @@ describe('jobManagementService', () => {
     it('should update to active status (reopen)', async () => {
       mockBulkUpdateStatus.mockResolvedValue(2);
 
-      const successCount = await bulkUpdateJobPostingStatus(['job-1', 'job-2'], 'active', 'employer-1');
+      const successCount = await bulkUpdateJobPostingStatus(
+        ['job-1', 'job-2'],
+        'active',
+        'employer-1'
+      );
 
       expect(successCount).toBe(2);
       expect(mockBulkUpdateStatus).toHaveBeenCalledWith(['job-1', 'job-2'], 'active', 'employer-1');
@@ -1140,8 +1137,8 @@ describe('jobManagementService', () => {
           filled: 0,
           isCustom: false,
           salary: { type: 'hourly' as const, amount: 15000 },
-        } as unknown as typeof input.roles[0],
-      ];
+        },
+      ] as unknown as typeof input.roles;
 
       mockCreateWithTransaction.mockResolvedValue({
         id: 'test-doc-id',
@@ -1162,8 +1159,8 @@ describe('jobManagementService', () => {
           filled: 0,
           isCustom: true,
           salary: { type: 'hourly' as const, amount: 20000 },
-        } as unknown as typeof input.roles[0],
-      ];
+        },
+      ] as unknown as typeof input.roles;
 
       mockCreateWithTransaction.mockResolvedValue({
         id: 'test-doc-id',
@@ -1184,8 +1181,8 @@ describe('jobManagementService', () => {
           filled: 0,
           isCustom: false,
           salary: { type: 'daily' as const, amount: 120000 },
-        } as unknown as typeof input.roles[0],
-      ];
+        },
+      ] as unknown as typeof input.roles;
 
       mockCreateWithTransaction.mockResolvedValue({
         id: 'test-doc-id',

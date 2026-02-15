@@ -294,7 +294,10 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         }
 
         // 이미 출퇴근한 경우 삭제 불가
-        if (workLog.status === STATUS.WORK_LOG.CHECKED_IN || workLog.status === STATUS.WORK_LOG.CHECKED_OUT) {
+        if (
+          workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
+          workLog.status === STATUS.WORK_LOG.CHECKED_OUT
+        ) {
           throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
             userMessage: '이미 출퇴근한 스태프는 삭제할 수 없습니다',
           });
@@ -406,7 +409,11 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     logger.info('확정 스태프 실시간 구독 시작', { jobPostingId });
 
     const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-    const q = query(workLogsRef, where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId), orderBy(FIELDS.WORK_LOG.date, 'asc'));
+    const q = query(
+      workLogsRef,
+      where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
+      orderBy(FIELDS.WORK_LOG.date, 'asc')
+    );
 
     const unsubscribe = onSnapshot(
       q,

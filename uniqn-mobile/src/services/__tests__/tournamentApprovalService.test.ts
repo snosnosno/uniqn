@@ -43,7 +43,7 @@ jest.mock('firebase/functions', () => ({
   httpsCallable: jest.fn(() => mockHttpsCallable),
 }));
 
-const mockGetFirebaseFunctions = jest.fn(() => ({} as unknown));
+const mockGetFirebaseFunctions = jest.fn(() => ({}) as unknown);
 
 jest.mock('@/lib/firebase', () => ({
   getFirebaseFunctions: () => mockGetFirebaseFunctions(),
@@ -269,9 +269,7 @@ describe('TournamentApprovalService', () => {
         message: 'Unauthenticated',
       });
 
-      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow(
-        '로그인이 필요합니다'
-      );
+      await expect(resubmitTournamentPosting({ postingId })).rejects.toThrow('로그인이 필요합니다');
     });
 
     it('실패: 권한 없음 (공고 소유자가 아님)', async () => {
@@ -410,7 +408,7 @@ describe('TournamentApprovalService', () => {
             approvedBy: 'admin-1',
             approvedAt: '2026-02-12T00:00:00.000Z',
           },
-        } as JobPosting,
+        } as unknown as JobPosting,
       ];
 
       mockGetByPostingTypeAndApprovalStatus.mockResolvedValue(mockPostings);
@@ -650,7 +648,7 @@ describe('TournamentApprovalService', () => {
           approvedBy: 'admin-1',
           approvedAt: '2026-02-12T00:00:00.000Z',
         },
-      } as JobPosting;
+      } as unknown as JobPosting;
 
       mockGetById.mockResolvedValue(mockPosting);
 

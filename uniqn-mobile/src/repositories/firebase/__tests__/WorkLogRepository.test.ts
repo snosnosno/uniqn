@@ -4,12 +4,7 @@
  * @description Firebase WorkLog Repository 단위 테스트
  */
 
-import {
-  getDoc,
-  getDocs,
-  updateDoc,
-  onSnapshot,
-} from 'firebase/firestore';
+import { getDoc, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
 import { FirebaseWorkLogRepository } from '../WorkLogRepository';
 
 // ============================================================================
@@ -65,12 +60,24 @@ jest.mock('@/errors', () => ({
 jest.mock('@/utils/firestore/queryBuilder', () => {
   class MockQueryBuilder {
     constructor(_ref: unknown) {}
-    whereEqual() { return this; }
-    whereIf() { return this; }
-    where() { return this; }
-    orderBy() { return this; }
-    orderByDesc() { return this; }
-    limit() { return this; }
+    whereEqual() {
+      return this;
+    }
+    whereIf() {
+      return this;
+    }
+    where() {
+      return this;
+    }
+    orderBy() {
+      return this;
+    }
+    orderByDesc() {
+      return this;
+    }
+    limit() {
+      return this;
+    }
     build() {
       return { _query: true };
     }
@@ -185,9 +192,7 @@ describe('FirebaseWorkLogRepository', () => {
       const { parseWorkLogDocument } = require('@/schemas');
       parseWorkLogDocument.mockReturnValueOnce(null);
 
-      (getDoc as jest.Mock).mockResolvedValue(
-        createMockDocSnap('wl-1', { invalid: 'data' })
-      );
+      (getDoc as jest.Mock).mockResolvedValue(createMockDocSnap('wl-1', { invalid: 'data' }));
 
       const result = await repository.getById('wl-1');
 
@@ -207,8 +212,14 @@ describe('FirebaseWorkLogRepository', () => {
   describe('getByStaffId', () => {
     it('should return work logs for the given staff', async () => {
       const workLogs = [
-        { id: 'wl-1', data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'completed' } },
-        { id: 'wl-2', data: { id: 'wl-2', staffId: 'staff-1', date: '2025-01-19', status: 'scheduled' } },
+        {
+          id: 'wl-1',
+          data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'completed' },
+        },
+        {
+          id: 'wl-2',
+          data: { id: 'wl-2', staffId: 'staff-1', date: '2025-01-19', status: 'scheduled' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
@@ -248,7 +259,10 @@ describe('FirebaseWorkLogRepository', () => {
   describe('getByDate', () => {
     it('should return work logs for the given date', async () => {
       const workLogs = [
-        { id: 'wl-1', data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'scheduled' } },
+        {
+          id: 'wl-1',
+          data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'scheduled' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
@@ -273,8 +287,26 @@ describe('FirebaseWorkLogRepository', () => {
   describe('getByJobPostingId', () => {
     it('should return work logs for the given job posting', async () => {
       const workLogs = [
-        { id: 'wl-1', data: { id: 'wl-1', staffId: 'staff-1', jobPostingId: 'job-1', date: '2025-01-20', status: 'completed' } },
-        { id: 'wl-2', data: { id: 'wl-2', staffId: 'staff-2', jobPostingId: 'job-1', date: '2025-01-20', status: 'checked_in' } },
+        {
+          id: 'wl-1',
+          data: {
+            id: 'wl-1',
+            staffId: 'staff-1',
+            jobPostingId: 'job-1',
+            date: '2025-01-20',
+            status: 'completed',
+          },
+        },
+        {
+          id: 'wl-2',
+          data: {
+            id: 'wl-2',
+            staffId: 'staff-2',
+            jobPostingId: 'job-1',
+            date: '2025-01-20',
+            status: 'checked_in',
+          },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
@@ -331,8 +363,14 @@ describe('FirebaseWorkLogRepository', () => {
   describe('getByDateRange', () => {
     it('should return work logs within the date range', async () => {
       const workLogs = [
-        { id: 'wl-1', data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-15', status: 'completed' } },
-        { id: 'wl-2', data: { id: 'wl-2', staffId: 'staff-1', date: '2025-01-18', status: 'completed' } },
+        {
+          id: 'wl-1',
+          data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-15', status: 'completed' },
+        },
+        {
+          id: 'wl-2',
+          data: { id: 'wl-2', staffId: 'staff-1', date: '2025-01-18', status: 'completed' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
@@ -591,9 +629,7 @@ describe('FirebaseWorkLogRepository', () => {
       repository.subscribeByDate('staff-1', '2025-01-20', onData, onError);
 
       expect(onData).toHaveBeenCalledWith(
-        expect.arrayContaining([
-          expect.objectContaining({ id: 'wl-1' }),
-        ])
+        expect.arrayContaining([expect.objectContaining({ id: 'wl-1' })])
       );
     });
   });
@@ -667,7 +703,10 @@ describe('FirebaseWorkLogRepository', () => {
   describe('getByStaffIdWithFilters', () => {
     it('should return filtered work logs', async () => {
       const workLogs = [
-        { id: 'wl-1', data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'completed' } },
+        {
+          id: 'wl-1',
+          data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'completed' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));
@@ -682,8 +721,14 @@ describe('FirebaseWorkLogRepository', () => {
 
     it('should return all work logs when no filters provided', async () => {
       const workLogs = [
-        { id: 'wl-1', data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'completed' } },
-        { id: 'wl-2', data: { id: 'wl-2', staffId: 'staff-1', date: '2025-01-21', status: 'scheduled' } },
+        {
+          id: 'wl-1',
+          data: { id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'completed' },
+        },
+        {
+          id: 'wl-2',
+          data: { id: 'wl-2', staffId: 'staff-1', date: '2025-01-21', status: 'scheduled' },
+        },
       ];
 
       (getDocs as jest.Mock).mockResolvedValue(createMockQuerySnap(workLogs));

@@ -125,12 +125,16 @@ export const LazyScheduleDetailSheet = lazy(
 /**
  * SettlementList - 정산 목록 (구인자용)
  */
-export const LazySettlementList = lazy(() => import('@/components/employer/settlement/SettlementList'));
+export const LazySettlementList = lazy(
+  () => import('@/components/employer/settlement/SettlementList')
+);
 
 /**
  * ApplicantList - 지원자 목록 (구인자용)
  */
-export const LazyApplicantList = lazy(() => import('@/components/employer/applicants/ApplicantList'));
+export const LazyApplicantList = lazy(
+  () => import('@/components/employer/applicants/ApplicantList')
+);
 
 /**
  * JobFilters - 공고 필터

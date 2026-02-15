@@ -39,8 +39,7 @@ export type { CreateJobPostingResult, JobPostingStats };
 const ROLE_NAME_TO_CODE: Record<string, string> = {
   딜러: 'dealer',
   매니저: 'manager',
-  칩러너: 'chiprunner',
-  관리자: 'admin',
+  칩러너: 'floor', // v2.1.0: chiprunner → floor로 통합
   플로어: 'floor',
   서빙: 'serving',
   직원: 'staff',
@@ -216,53 +215,88 @@ async function createMultiplePostingsByDate(
   ownerName: string
 ): Promise<CreateJobPostingResult[]> {
   const results: CreateJobPostingResult[] = [];
+  const createdIds: string[] = [];
 
-  for (const dateReq of input.dateSpecificRequirements!) {
-    // 날짜 문자열 추출
-    let dateStr: string;
-    if (typeof dateReq.date === 'string') {
-      dateStr = dateReq.date;
-    } else if (dateReq.date && 'toDate' in dateReq.date) {
-      // Timestamp 타입
-      dateStr = (dateReq.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
-    } else if (dateReq.date && 'seconds' in dateReq.date) {
-      // Firestore 직렬화된 타입
-      dateStr =
-        new Date((dateReq.date as { seconds: number }).seconds * 1000)
-          .toISOString()
-          .split('T')[0] ?? '';
-    } else {
-      dateStr = '';
+  try {
+    for (const dateReq of input.dateSpecificRequirements!) {
+      // 날짜 문자열 추출
+      let dateStr: string;
+      if (typeof dateReq.date === 'string') {
+        dateStr = dateReq.date;
+      } else if (dateReq.date && 'toDate' in dateReq.date) {
+        // Timestamp 타입
+        dateStr = (dateReq.date as Timestamp).toDate().toISOString().split('T')[0] ?? '';
+      } else if (dateReq.date && 'seconds' in dateReq.date) {
+        // Firestore 직렬화된 타입
+        dateStr =
+          new Date((dateReq.date as { seconds: number }).seconds * 1000)
+            .toISOString()
+            .split('T')[0] ?? '';
+      } else {
+        dateStr = '';
+      }
+
+      // 해당 날짜의 역할 키 추출
+      const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);
+
+      // 해당 날짜에 사용되는 역할만 필터링 (급여 정보 포함)
+      const filteredRoles = input.roles.filter((role) => {
+        const roleKey = getRoleKeyFromFormRole(role as { name?: string; isCustom?: boolean });
+        return dateRoleKeys.has(roleKey);
+      }) as typeof input.roles;
+
+      // 단일 날짜용 input 생성 (해당 날짜의 역할만 포함)
+      const singleDateInput: CreateJobPostingInput = {
+        ...input,
+        roles: filteredRoles,
+        dateSpecificRequirements: [dateReq],
+        workDate: dateStr,
+      };
+
+      const result = await createSinglePosting(singleDateInput, ownerId, ownerName);
+      results.push(result);
+      createdIds.push(result.id);
+
+      logger.info('날짜별 공고 생성', {
+        id: result.id,
+        date: dateStr,
+        roles: Array.from(dateRoleKeys),
+      });
     }
-
-    // 해당 날짜의 역할 키 추출
-    const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);
-
-    // 해당 날짜에 사용되는 역할만 필터링 (급여 정보 포함)
-    const filteredRoles = input.roles.filter((role) => {
-      const roleKey = getRoleKeyFromFormRole(role as { name?: string; isCustom?: boolean });
-      return dateRoleKeys.has(roleKey);
-    }) as typeof input.roles;
-
-    // 단일 날짜용 input 생성 (해당 날짜의 역할만 포함)
-    const singleDateInput: CreateJobPostingInput = {
-      ...input,
-      roles: filteredRoles,
-      dateSpecificRequirements: [dateReq],
-      workDate: dateStr,
-    };
-
-    const result = await createSinglePosting(singleDateInput, ownerId, ownerName);
-    results.push(result);
-
-    logger.info('날짜별 공고 생성', {
-      id: result.id,
-      date: dateStr,
-      roles: Array.from(dateRoleKeys),
-    });
+  } catch (error) {
+    // 실패 시 이미 생성된 공고를 cancelled 상태로 롤백 (best-effort)
+    if (createdIds.length > 0) {
+      logger.warn('다중 공고 생성 실패, 롤백 시작', {
+        createdIds,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      await rollbackCreatedPostings(createdIds);
+    }
+    throw error;
   }
 
   return results;
+}
+
+/**
+ * 생성된 공고를 cancelled 상태로 롤백 (best-effort)
+ *
+ * @description 다중 공고 생성 중 실패 시 이미 생성된 공고를 취소 상태로 변경
+ * 개별 롤백 실패는 로깅만 하고 계속 진행
+ */
+async function rollbackCreatedPostings(createdIds: string[]): Promise<void> {
+  for (const id of createdIds) {
+    try {
+      await jobPostingRepository.updateStatus(id, 'cancelled');
+      logger.info('공고 롤백 완료', { id });
+    } catch (rollbackError) {
+      logger.error('공고 롤백 실패', {
+        id,
+        error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+        component: 'jobManagementService',
+      });
+    }
+  }
 }
 
 /**

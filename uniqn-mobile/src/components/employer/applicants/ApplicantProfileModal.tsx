@@ -31,7 +31,12 @@ export interface ApplicantProfileModalProps {
 
 export function ApplicantProfileModal({ visible, onClose, applicant }: ApplicantProfileModalProps) {
   // 사용자 프로필 조회 (모달이 열려있고 applicant가 있을 때만)
-  const { userProfile, isLoading: isProfileLoading, displayName, profilePhotoURL } = useUserProfile({
+  const {
+    userProfile,
+    isLoading: isProfileLoading,
+    displayName,
+    profilePhotoURL,
+  } = useUserProfile({
     userId: applicant?.applicantId,
     enabled: visible,
     fallbackName: applicant?.applicantName,
@@ -65,10 +70,7 @@ export function ApplicantProfileModal({ visible, onClose, applicant }: Applicant
         />
 
         {/* 프로필 정보 + 연락처 + 메시지 + 사전질문 + 상태 + 이력 */}
-        <ApplicantProfileContent
-          applicant={applicant}
-          userProfile={userProfile}
-        />
+        <ApplicantProfileContent applicant={applicant} userProfile={userProfile} />
 
         {/* 지원 일정 (Assignments) */}
         {applicant.assignments && applicant.assignments.length > 0 && (

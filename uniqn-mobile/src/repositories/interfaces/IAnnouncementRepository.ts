@@ -100,11 +100,7 @@ export interface IAnnouncementRepository {
    * @param input - 생성 입력 데이터
    * @returns 생성된 공지사항 ID
    */
-  create(
-    authorId: string,
-    authorName: string,
-    input: CreateAnnouncementInput
-  ): Promise<string>;
+  create(authorId: string, authorName: string, input: CreateAnnouncementInput): Promise<string>;
 
   // ==========================================================================
   // 수정 (Update)

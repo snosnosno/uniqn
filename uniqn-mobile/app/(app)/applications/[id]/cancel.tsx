@@ -145,7 +145,10 @@ export default function CancellationRequestScreen() {
     if (!application) return { allowed: false, reason: '지원서를 찾을 수 없습니다' };
 
     // 확정 또는 취소 요청 대기 중 상태 확인
-    if (application.status !== STATUS.APPLICATION.CONFIRMED && application.status !== STATUS.APPLICATION.CANCELLATION_PENDING) {
+    if (
+      application.status !== STATUS.APPLICATION.CONFIRMED &&
+      application.status !== STATUS.APPLICATION.CANCELLATION_PENDING
+    ) {
       return { allowed: false, reason: '확정된 지원만 취소 요청이 가능합니다' };
     }
 

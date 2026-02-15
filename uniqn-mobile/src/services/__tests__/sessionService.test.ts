@@ -5,9 +5,9 @@
  */
 
 import { AppState } from 'react-native';
-import { router } from 'expo-router';
+// router is used via mock
 import { sessionService } from '../sessionService';
-import type { AuthError } from '@/errors';
+// AuthError type is used via mock
 
 // ============================================================================
 // Mocks
@@ -25,7 +25,11 @@ const mockCurrentUser = {
   uid: 'test-user-id',
 };
 
-const mockAuth = {
+const mockAuth: {
+  currentUser: typeof mockCurrentUser | null;
+  signOut: jest.Mock;
+  onAuthStateChanged: jest.Mock;
+} = {
   currentUser: mockCurrentUser,
   signOut: mockSignOut,
   onAuthStateChanged: mockOnAuthStateChanged,
@@ -120,7 +124,10 @@ jest.mock('../crashlyticsService', () => ({
 jest.mock('@/errors', () => ({
   AuthError: class MockAuthError extends Error {
     code: string;
-    constructor(code: string, options?: { userMessage?: string; metadata?: Record<string, unknown> }) {
+    constructor(
+      code: string,
+      options?: { userMessage?: string; metadata?: Record<string, unknown> }
+    ) {
       super(options?.userMessage || code);
       this.code = code;
       this.name = 'AuthError';

@@ -227,11 +227,17 @@ export class MaintenanceError extends Error {
  * Babel wrapNativeSuper 환경에서 instanceof 대신 name으로 판별
  */
 export const isForceUpdateError = (error: unknown): error is ForceUpdateError => {
-  return error instanceof ForceUpdateError || (error instanceof Error && error.name === 'ForceUpdateError');
+  return (
+    error instanceof ForceUpdateError ||
+    (error instanceof Error && error.name === 'ForceUpdateError')
+  );
 };
 
 export const isMaintenanceError = (error: unknown): error is MaintenanceError => {
-  return error instanceof MaintenanceError || (error instanceof Error && error.name === 'MaintenanceError');
+  return (
+    error instanceof MaintenanceError ||
+    (error instanceof Error && error.name === 'MaintenanceError')
+  );
 };
 
 export default {

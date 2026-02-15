@@ -325,11 +325,10 @@ describe('useJobManagement Hooks', () => {
       const mockInput = {
         title: '테스트 공고',
         description: '설명',
-        location: '서울',
-        address: '강남구',
-        date: '2024-01-15',
+        location: { name: '서울', address: '강남구' },
+        workDate: '2024-01-15',
         startTime: '09:00',
-        endTime: '18:00',
+        roles: [{ name: 'dealer', count: 2 }],
       };
       const mockResult = { id: 'job-1', ...mockInput };
       mockCreateJobPosting.mockResolvedValueOnce(mockResult);
@@ -341,11 +340,7 @@ describe('useJobManagement Hooks', () => {
       });
 
       await waitFor(() => {
-        expect(mockCreateJobPosting).toHaveBeenCalledWith(
-          mockInput,
-          'employer-1',
-          '홍길동'
-        );
+        expect(mockCreateJobPosting).toHaveBeenCalledWith(mockInput, 'employer-1', '홍길동');
       });
     });
 
@@ -353,11 +348,10 @@ describe('useJobManagement Hooks', () => {
       const mockInput = {
         title: '테스트 공고',
         description: '설명',
-        location: '서울',
-        address: '강남구',
-        date: '2024-01-15',
+        location: { name: '서울', address: '강남구' },
+        workDate: '2024-01-15',
         startTime: '09:00',
-        endTime: '18:00',
+        roles: [{ name: 'dealer', count: 2 }],
       };
       const mockResults = [
         { id: 'job-1', ...mockInput },
@@ -385,11 +379,10 @@ describe('useJobManagement Hooks', () => {
       const mockInput = {
         title: '테스트 공고',
         description: '설명',
-        location: '서울',
-        address: '강남구',
-        date: '2024-01-15',
+        location: { name: '서울', address: '강남구' },
+        workDate: '2024-01-15',
         startTime: '09:00',
-        endTime: '18:00',
+        roles: [{ name: 'dealer', count: 2 }],
       };
       mockCreateJobPosting.mockResolvedValueOnce({ id: 'job-1', ...mockInput });
 
@@ -401,11 +394,7 @@ describe('useJobManagement Hooks', () => {
 
       await waitFor(() => {
         // mockProfile에 name이 '홍길동'으로 설정되어 있음
-        expect(mockCreateJobPosting).toHaveBeenCalledWith(
-          mockInput,
-          'employer-1',
-          '홍길동'
-        );
+        expect(mockCreateJobPosting).toHaveBeenCalledWith(mockInput, 'employer-1', '홍길동');
       });
     });
 
@@ -414,11 +403,10 @@ describe('useJobManagement Hooks', () => {
       const mockInput = {
         title: '테스트 공고',
         description: '설명',
-        location: '서울',
-        address: '강남구',
-        date: '2024-01-15',
+        location: { name: '서울', address: '강남구' },
+        workDate: '2024-01-15',
         startTime: '09:00',
-        endTime: '18:00',
+        roles: [{ name: 'dealer', count: 2 }],
       };
       mockCreateJobPosting.mockResolvedValueOnce({ id: 'job-1', ...mockInput });
 
@@ -439,11 +427,10 @@ describe('useJobManagement Hooks', () => {
       const mockInput = {
         title: '테스트 공고',
         description: '설명',
-        location: '서울',
-        address: '강남구',
-        date: '2024-01-15',
+        location: { name: '서울', address: '강남구' },
+        workDate: '2024-01-15',
         startTime: '09:00',
-        endTime: '18:00',
+        roles: [{ name: 'dealer', count: 2 }],
       };
       mockCreateJobPosting.mockResolvedValueOnce({ id: 'job-1', ...mockInput });
 
@@ -474,11 +461,10 @@ describe('useJobManagement Hooks', () => {
             input: {
               title: '테스트',
               description: '설명',
-              location: '서울',
-              address: '강남구',
-              date: '2024-01-15',
+              location: { name: '서울', address: '강남구' },
+              workDate: '2024-01-15',
               startTime: '09:00',
-              endTime: '18:00',
+              roles: [{ name: 'dealer', count: 2 }],
             },
           });
         } catch {
@@ -794,7 +780,6 @@ describe('useJobManagement Hooks', () => {
   describe('useJobManagement', () => {
     it('모든 기능을 통합하여 반환', () => {
       const mockPostings = [createMockJobPosting({ id: 'job-1' })];
-      const mockStats = createMockStats();
       mockData = mockPostings;
 
       const { result } = renderHook(() => useJobManagement());

@@ -4,15 +4,7 @@
  * @description 지원자 → 스태프 변환 서비스 테스트
  */
 
-import {
-  doc,
-  getDoc,
-  getDocs,
-  runTransaction,
-  serverTimestamp,
-  Timestamp,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { getDoc, getDocs, runTransaction, serverTimestamp, Timestamp } from 'firebase/firestore';
 import {
   convertApplicantToStaff,
   batchConvertApplicants,
@@ -20,8 +12,8 @@ import {
   canConvertToStaff,
   revertStaffConversion,
 } from '../applicantConversionService';
-import { ValidationError, BusinessError, ERROR_CODES } from '@/errors';
-import { STATUS, COLLECTIONS } from '@/constants';
+import { ValidationError, BusinessError } from '@/errors';
+import { STATUS } from '@/constants';
 import type { Application, JobPosting, Staff } from '@/types';
 
 // ============================================================================
@@ -86,18 +78,16 @@ const mockApplicationData: Application = {
   applicantEmail: 'test@example.com',
   applicantPhone: '01012345678',
   applicantNickname: 'tester',
-  applicantPhotoURL: null,
+  applicantPhotoURL: undefined,
   status: STATUS.APPLICATION.CONFIRMED,
   assignments: [
     {
       groupId: 'group1',
       roleIds: ['dealer'],
       dates: ['2024-01-15', '2024-01-16'],
-      timeSlot: {
-        startTime: '09:00',
-        endTime: '18:00',
-      },
+      timeSlot: '09:00~18:00',
       checkMethod: 'individual',
+      isGrouped: false,
     },
   ],
   createdAt: Timestamp.now(),
@@ -111,23 +101,24 @@ const mockJobPostingData: JobPosting = {
   postingType: 'regular',
   status: STATUS.JOB_POSTING.ACTIVE,
   location: {
+    name: '서울시 강남구',
     address: '서울시 강남구',
-    detailAddress: '123-45',
-    latitude: 37.5,
-    longitude: 127.0,
+    coordinates: {
+      latitude: 37.5,
+      longitude: 127.0,
+    },
   },
+  detailedAddress: '123-45',
+  workDate: '2024-01-15',
   workDates: ['2024-01-15', '2024-01-16'],
-  workTimes: {
-    startTime: '09:00',
-    endTime: '18:00',
-  },
-  salary: {
+  timeSlot: '09:00~18:00',
+  defaultSalary: {
     type: 'hourly',
     amount: 15000,
   },
-  requiredStaff: {
-    dealer: 5,
-  },
+  roles: [{ role: 'dealer', count: 5, filled: 0 }],
+  totalPositions: 5,
+  filledPositions: 0,
   createdAt: Timestamp.now(),
   updatedAt: Timestamp.now(),
 };
@@ -216,14 +207,14 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get.mockResolvedValueOnce(mockApplicationDoc);
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
 
-      await expect(
-        convertApplicantToStaff('nonexistent', 'job123', 'owner123')
-      ).rejects.toThrow(ValidationError);
+      await expect(convertApplicantToStaff('nonexistent', 'job123', 'owner123')).rejects.toThrow(
+        ValidationError
+      );
     });
 
     it('확정되지 않은 지원서인 경우 에러를 발생시켜야 함', async () => {
@@ -238,14 +229,14 @@ describe('applicantConversionService', () => {
         data: () => pendingApplication,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get.mockResolvedValueOnce(mockApplicationDoc);
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
 
-      await expect(
-        convertApplicantToStaff('app123', 'job123', 'owner123')
-      ).rejects.toThrow(ValidationError);
+      await expect(convertApplicantToStaff('app123', 'job123', 'owner123')).rejects.toThrow(
+        ValidationError
+      );
     });
 
     it('존재하지 않는 공고인 경우 에러를 발생시켜야 함', async () => {
@@ -259,16 +250,16 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc);
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
 
-      await expect(
-        convertApplicantToStaff('app123', 'job123', 'owner123')
-      ).rejects.toThrow(ValidationError);
+      await expect(convertApplicantToStaff('app123', 'job123', 'owner123')).rejects.toThrow(
+        ValidationError
+      );
     });
 
     it('공고 소유자가 아닌 경우 에러를 발생시켜야 함', async () => {
@@ -284,16 +275,16 @@ describe('applicantConversionService', () => {
         data: () => mockJobPostingData,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc);
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
 
-      await expect(
-        convertApplicantToStaff('app123', 'job123', 'wrongOwner')
-      ).rejects.toThrow(ValidationError);
+      await expect(convertApplicantToStaff('app123', 'job123', 'wrongOwner')).rejects.toThrow(
+        ValidationError
+      );
     });
 
     it('이미 해당 공고의 스태프인 경우 에러를 발생시켜야 함', async () => {
@@ -314,7 +305,7 @@ describe('applicantConversionService', () => {
         data: () => mockStaffData,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc)
@@ -326,9 +317,9 @@ describe('applicantConversionService', () => {
         empty: false,
       } as unknown as ReturnType<typeof getDocs>);
 
-      await expect(
-        convertApplicantToStaff('app123', 'job123', 'owner123')
-      ).rejects.toThrow(BusinessError);
+      await expect(convertApplicantToStaff('app123', 'job123', 'owner123')).rejects.toThrow(
+        BusinessError
+      );
     });
 
     it('skipExisting 옵션으로 기존 스태프 에러를 무시할 수 있어야 함', async () => {
@@ -366,7 +357,7 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc)
@@ -473,7 +464,7 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc)
@@ -481,11 +472,7 @@ describe('applicantConversionService', () => {
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
 
-      const result = await batchConvertApplicants(
-        ['app1', 'app2', 'app3'],
-        'job123',
-        'owner123'
-      );
+      const result = await batchConvertApplicants(['app1', 'app2', 'app3'], 'job123', 'owner123');
 
       expect(result.successCount).toBeGreaterThanOrEqual(0);
       expect(result.failedCount).toBeGreaterThanOrEqual(0);
@@ -511,7 +498,7 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc)
@@ -693,6 +680,7 @@ describe('applicantConversionService', () => {
       } as unknown as ReturnType<typeof getDoc>);
 
       // parseApplicationDocument가 null을 반환하도록 설정
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
       const { parseApplicationDocument } = require('@/schemas');
       (parseApplicationDocument as jest.Mock).mockReturnValueOnce(null);
 
@@ -735,7 +723,7 @@ describe('applicantConversionService', () => {
         data: () => mockJobPostingData,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc);
@@ -759,7 +747,7 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get.mockResolvedValueOnce(mockApplicationDoc);
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
@@ -776,7 +764,7 @@ describe('applicantConversionService', () => {
         data: () => mockApplicationData,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get.mockResolvedValueOnce(mockApplicationDoc);
         return callback(mockTransaction as unknown as Parameters<typeof callback>[0]);
       });
@@ -802,7 +790,7 @@ describe('applicantConversionService', () => {
         data: () => mockJobPostingData,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc);
@@ -828,7 +816,7 @@ describe('applicantConversionService', () => {
         exists: () => false,
       };
 
-      mockRunTransaction.mockImplementation(async (db, callback) => {
+      mockRunTransaction.mockImplementation(async (_db, callback) => {
         mockTransaction.get
           .mockResolvedValueOnce(mockApplicationDoc)
           .mockResolvedValueOnce(mockJobDoc);

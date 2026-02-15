@@ -165,7 +165,8 @@ const WorkLogItem = React.memo(function WorkLogItem({ workLog, onPress }: WorkLo
   const endTime = workLog.checkOutTime || workLog.scheduledEndTime;
   const workHours = calculateWorkHours(startTime, endTime);
 
-  const isCompleted = workLog.status === STATUS.WORK_LOG.COMPLETED || workLog.status === STATUS.WORK_LOG.CHECKED_OUT;
+  const isCompleted =
+    workLog.status === STATUS.WORK_LOG.COMPLETED || workLog.status === STATUS.WORK_LOG.CHECKED_OUT;
 
   return (
     <Pressable
@@ -293,7 +294,8 @@ export const WorkLogList: React.FC<WorkLogListProps> = React.memo(
     // 통계 계산
     const stats = useMemo(() => {
       const completed = workLogs.filter(
-        (log) => log.status === STATUS.WORK_LOG.COMPLETED || log.status === STATUS.WORK_LOG.CHECKED_OUT
+        (log) =>
+          log.status === STATUS.WORK_LOG.COMPLETED || log.status === STATUS.WORK_LOG.CHECKED_OUT
       ).length;
       const totalEarnings = workLogs.reduce((sum, log) => sum + (log.payrollAmount || 0), 0);
       return { completed, totalEarnings };

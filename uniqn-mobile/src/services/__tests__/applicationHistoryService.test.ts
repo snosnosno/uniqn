@@ -16,9 +16,11 @@ const mockTransaction = {
   update: jest.fn(),
 };
 
-const mockRunTransaction = jest.fn(async (_db: unknown, fn: (tx: typeof mockTransaction) => Promise<unknown>) => {
-  return fn(mockTransaction);
-});
+const mockRunTransaction = jest.fn(
+  async (_db: unknown, fn: (tx: typeof mockTransaction) => Promise<unknown>) => {
+    return fn(mockTransaction);
+  }
+);
 
 const mockGetDoc = jest.fn();
 const mockDoc = jest.fn((_db: unknown, ...pathSegments: string[]) => ({
@@ -39,7 +41,11 @@ jest.mock('firebase/firestore', () => ({
   increment: (n: number) => mockIncrement(n),
   Timestamp: {
     now: jest.fn(() => ({ seconds: 1700000000, nanoseconds: 0, toDate: () => new Date() })),
-    fromDate: jest.fn((d: Date) => ({ seconds: Math.floor(d.getTime() / 1000), nanoseconds: 0, toDate: () => d })),
+    fromDate: jest.fn((d: Date) => ({
+      seconds: Math.floor(d.getTime() / 1000),
+      nanoseconds: 0,
+      toDate: () => d,
+    })),
   },
 }));
 
@@ -89,12 +95,14 @@ jest.mock('@/types', () => ({
     assignments,
     confirmedBy,
   })),
-  addCancellationToEntry: jest.fn((entry: Record<string, unknown>, reason: string, cancelledBy: string) => ({
-    ...entry,
-    cancelledAt: { seconds: 1700000000, nanoseconds: 0 },
-    cancelReason: reason,
-    cancelledBy,
-  })),
+  addCancellationToEntry: jest.fn(
+    (entry: Record<string, unknown>, reason: string, cancelledBy: string) => ({
+      ...entry,
+      cancelledAt: { seconds: 1700000000, nanoseconds: 0 },
+      cancelReason: reason,
+      cancelledBy,
+    })
+  ),
   findActiveConfirmation: jest.fn(),
 }));
 
@@ -130,7 +138,12 @@ jest.mock('@/errors', () => {
     }
   }
   class MockMaxCapacityReachedError extends MockBusinessError {
-    constructor(options?: { userMessage?: string; jobPostingId?: string; maxCapacity?: number; currentCount?: number }) {
+    constructor(options?: {
+      userMessage?: string;
+      jobPostingId?: string;
+      maxCapacity?: number;
+      currentCount?: number;
+    }) {
       super('E6003', { userMessage: options?.userMessage ?? 'Max capacity' });
       this.name = 'MaxCapacityReachedError';
     }
@@ -148,7 +161,7 @@ jest.mock('@/errors', () => {
       UNKNOWN: 'E7001',
     },
     isAppError: jest.fn((e: unknown) => {
-      return e instanceof Error && ('code' in e);
+      return e instanceof Error && 'code' in e;
     }),
   };
 });
@@ -266,7 +279,10 @@ describe('ApplicationHistoryService', () => {
     // Default: doc() returns sequential ids for worklog refs
     let docCallCount = 0;
     mockDoc.mockImplementation((_db: unknown, ...pathSegments: string[]) => ({
-      id: pathSegments.length > 0 ? pathSegments[pathSegments.length - 1] : `wl-auto-${++docCallCount}`,
+      id:
+        pathSegments.length > 0
+          ? pathSegments[pathSegments.length - 1]
+          : `wl-auto-${++docCallCount}`,
       path: pathSegments.join('/'),
     }));
   });
@@ -294,9 +310,7 @@ describe('ApplicationHistoryService', () => {
           timeSlots: [
             {
               startTime: '18:00',
-              roles: [
-                { role: 'dealer', count: 3, filled: 1 },
-              ],
+              roles: [{ role: 'dealer', count: 3, filled: 1 }],
             },
           ],
         },
@@ -328,9 +342,7 @@ describe('ApplicationHistoryService', () => {
           timeSlots: [
             {
               startTime: '18:00',
-              roles: [
-                { role: 'dealer', count: 3, filled: 0 },
-              ],
+              roles: [{ role: 'dealer', count: 3, filled: 0 }],
             },
           ],
         },
@@ -422,12 +434,8 @@ describe('ApplicationHistoryService', () => {
       const appData = createMockApplicationData();
       const jobData = createMockJobData();
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(null);
@@ -447,24 +455,20 @@ describe('ApplicationHistoryService', () => {
     });
 
     it('should throw when application does not exist', async () => {
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', null)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', null));
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('존재하지 않는 지원입니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '존재하지 않는 지원입니다'
+      );
     });
 
     it('should throw when application data cannot be parsed', async () => {
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', { some: 'data' })
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', { some: 'data' }));
       mockParseApplicationDocument.mockReturnValue(null);
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('지원 데이터를 파싱할 수 없습니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '지원 데이터를 파싱할 수 없습니다'
+      );
     });
 
     it('should throw when application is already confirmed', async () => {
@@ -477,9 +481,7 @@ describe('ApplicationHistoryService', () => {
         ],
       });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
       mockParseApplicationDocument.mockReturnValue(appData);
       // findActiveConfirmation returns non-null (already confirmed)
       mockFindActiveConfirmation.mockReturnValue({
@@ -487,100 +489,84 @@ describe('ApplicationHistoryService', () => {
         assignments: [],
       });
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('이미 확정된 지원입니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '이미 확정된 지원입니다'
+      );
     });
 
     it('should throw when job does not exist', async () => {
       const appData = createMockApplicationData();
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', null)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', null));
       mockParseApplicationDocument.mockReturnValue(appData);
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw when job data cannot be parsed', async () => {
       const appData = createMockApplicationData();
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', { some: 'data' })
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', { some: 'data' }));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(null);
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('공고 데이터를 파싱할 수 없습니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '공고 데이터를 파싱할 수 없습니다'
+      );
     });
 
     it('should throw when owner does not match', async () => {
       const appData = createMockApplicationData();
       const jobData = createMockJobData({ ownerId: 'other-owner' });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('본인의 공고만 관리할 수 있습니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '본인의 공고만 관리할 수 있습니다'
+      );
     });
 
     it('should throw when no assignments to confirm', async () => {
       const appData = createMockApplicationData({ assignments: [] });
       const jobData = createMockJobData();
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
 
-      await expect(
-        confirmApplicationWithHistory('app-1', [], 'owner-1')
-      ).rejects.toThrow('확정할 일정을 선택해주세요');
+      await expect(confirmApplicationWithHistory('app-1', [], 'owner-1')).rejects.toThrow(
+        '확정할 일정을 선택해주세요'
+      );
     });
 
     it('should throw when capacity is exceeded', async () => {
       const appData = createMockApplicationData({
         assignments: [
-          { roleIds: ['dealer'], dates: ['2025-01-20', '2025-01-21', '2025-01-22'], timeSlot: '18:00~02:00' },
+          {
+            roleIds: ['dealer'],
+            dates: ['2025-01-20', '2025-01-21', '2025-01-22'],
+            timeSlot: '18:00~02:00',
+          },
         ],
       });
       const jobData = createMockJobData();
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       // total=3, filled=2, trying to add 3 => 2+3=5 > 3
       mockGetClosingStatus.mockReturnValue({ total: 3, filled: 2 });
 
-      await expect(
-        confirmApplicationWithHistory('app-1', undefined, 'owner-1')
-      ).rejects.toThrow('모집 인원이 마감되었습니다');
+      await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
+        '모집 인원이 마감되었습니다'
+      );
     });
 
     it('should use selectedAssignments over application assignments', async () => {
@@ -594,12 +580,8 @@ describe('ApplicationHistoryService', () => {
         },
       ];
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
 
@@ -618,24 +600,18 @@ describe('ApplicationHistoryService', () => {
       });
       const jobData = createMockJobData();
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
 
       await confirmApplicationWithHistory('app-1', undefined, 'owner-1');
 
       // Verify application update includes originalApplication
-      const updateCall = mockTransaction.update.mock.calls.find(
-        (call: unknown[]) => {
-          const data = call[1] as Record<string, unknown>;
-          return data.status === 'confirmed';
-        }
-      );
+      const updateCall = mockTransaction.update.mock.calls.find((call: unknown[]) => {
+        const data = call[1] as Record<string, unknown>;
+        return data.status === 'confirmed';
+      });
       expect(updateCall).toBeDefined();
       expect((updateCall![1] as Record<string, unknown>).originalApplication).toBeDefined();
     });
@@ -648,9 +624,7 @@ describe('ApplicationHistoryService', () => {
     it('should cancel an active confirmation', async () => {
       const activeConfirmation = {
         confirmedAt: { seconds: 1700000000, nanoseconds: 0 },
-        assignments: [
-          { roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' },
-        ],
+        assignments: [{ roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' }],
       };
 
       const appData = createMockApplicationData({
@@ -659,12 +633,8 @@ describe('ApplicationHistoryService', () => {
       });
       const jobData = createMockJobData();
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);
@@ -678,37 +648,31 @@ describe('ApplicationHistoryService', () => {
     });
 
     it('should throw when application does not exist', async () => {
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', null)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', null));
 
-      await expect(
-        cancelConfirmation('app-1', 'owner-1')
-      ).rejects.toThrow('존재하지 않는 지원입니다');
+      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
+        '존재하지 않는 지원입니다'
+      );
     });
 
     it('should throw when application data cannot be parsed', async () => {
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', { some: 'data' })
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', { some: 'data' }));
       mockParseApplicationDocument.mockReturnValue(null);
 
-      await expect(
-        cancelConfirmation('app-1', 'owner-1')
-      ).rejects.toThrow('지원 데이터를 파싱할 수 없습니다');
+      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
+        '지원 데이터를 파싱할 수 없습니다'
+      );
     });
 
     it('should throw when application is not confirmed', async () => {
       const appData = createMockApplicationData({ status: 'applied' });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
       mockParseApplicationDocument.mockReturnValue(appData);
 
-      await expect(
-        cancelConfirmation('app-1', 'owner-1')
-      ).rejects.toThrow('확정된 지원만 취소할 수 있습니다');
+      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
+        '확정된 지원만 취소할 수 있습니다'
+      );
     });
 
     it('should throw when no active confirmation found', async () => {
@@ -717,15 +681,13 @@ describe('ApplicationHistoryService', () => {
         confirmationHistory: [],
       });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockFindActiveConfirmation.mockReturnValue(null);
 
-      await expect(
-        cancelConfirmation('app-1', 'owner-1')
-      ).rejects.toThrow('취소할 확정 이력이 없습니다');
+      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
+        '취소할 확정 이력이 없습니다'
+      );
     });
 
     it('should throw when owner does not match', async () => {
@@ -739,19 +701,15 @@ describe('ApplicationHistoryService', () => {
       });
       const jobData = createMockJobData({ ownerId: 'other-owner' });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);
 
-      await expect(
-        cancelConfirmation('app-1', 'owner-1')
-      ).rejects.toThrow('본인의 공고만 관리할 수 있습니다');
+      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
+        '본인의 공고만 관리할 수 있습니다'
+      );
     });
 
     it('should throw when job does not exist', async () => {
@@ -764,26 +722,20 @@ describe('ApplicationHistoryService', () => {
         confirmationHistory: [activeConfirmation],
       });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', null)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', null));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);
 
-      await expect(
-        cancelConfirmation('app-1', 'owner-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should reopen job when cancellation brings filled below total', async () => {
       const activeConfirmation = {
         confirmedAt: { seconds: 1700000000, nanoseconds: 0 },
-        assignments: [
-          { roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' },
-        ],
+        assignments: [{ roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' }],
       };
       const appData = createMockApplicationData({
         status: 'confirmed',
@@ -791,12 +743,8 @@ describe('ApplicationHistoryService', () => {
       });
       const jobData = createMockJobData({ status: 'closed' });
 
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('app-1', appData)
-      );
-      mockTransaction.get.mockResolvedValueOnce(
-        createDocSnapshot('job-1', jobData)
-      );
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', appData));
+      mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('job-1', jobData));
       mockParseApplicationDocument.mockReturnValue(appData);
       mockParseJobPostingDocument.mockReturnValue(jobData);
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);
@@ -807,12 +755,10 @@ describe('ApplicationHistoryService', () => {
 
       expect(result.restoredStatus).toBe('applied');
       // Check that job update includes status: 'active'
-      const jobUpdateCall = mockTransaction.update.mock.calls.find(
-        (call: unknown[]) => {
-          const data = call[1] as Record<string, unknown>;
-          return data.filledPositions !== undefined && data.status === 'active';
-        }
-      );
+      const jobUpdateCall = mockTransaction.update.mock.calls.find((call: unknown[]) => {
+        const data = call[1] as Record<string, unknown>;
+        return data.filledPositions !== undefined && data.status === 'active';
+      });
       expect(jobUpdateCall).toBeDefined();
     });
   });
@@ -827,9 +773,7 @@ describe('ApplicationHistoryService', () => {
       ];
       const application = {
         originalApplication: { assignments: originalAssignments },
-        assignments: [
-          { roleIds: ['floor'], dates: ['2025-01-21'], timeSlot: '09:00~17:00' },
-        ],
+        assignments: [{ roleIds: ['floor'], dates: ['2025-01-21'], timeSlot: '09:00~17:00' }],
       } as any;
 
       const result = getOriginalApplicationData(application);
@@ -864,13 +808,9 @@ describe('ApplicationHistoryService', () => {
   // ==========================================================================
   describe('getConfirmedSelections', () => {
     it('should return active confirmation assignments', () => {
-      const assignments = [
-        { roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' },
-      ];
+      const assignments = [{ roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' }];
       const application = {
-        confirmationHistory: [
-          { confirmedAt: { seconds: 1700000000 }, assignments },
-        ],
+        confirmationHistory: [{ confirmedAt: { seconds: 1700000000 }, assignments }],
       } as any;
 
       mockFindActiveConfirmation.mockReturnValue({
@@ -924,9 +864,7 @@ describe('ApplicationHistoryService', () => {
   describe('isV2Application', () => {
     it('should return true when assignments exist and have length', () => {
       const application = {
-        assignments: [
-          { roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' },
-        ],
+        assignments: [{ roleIds: ['dealer'], dates: ['2025-01-20'], timeSlot: '18:00~02:00' }],
       } as any;
 
       expect(isV2Application(application)).toBe(true);
@@ -988,9 +926,9 @@ describe('ApplicationHistoryService', () => {
       mockGetDoc.mockResolvedValue(createDocSnapshot('app-1', { some: 'data' }));
       mockParseApplicationDocument.mockReturnValue(null);
 
-      await expect(
-        getApplicationHistorySummary('app-1')
-      ).rejects.toThrow('지원 데이터를 파싱할 수 없습니다');
+      await expect(getApplicationHistorySummary('app-1')).rejects.toThrow(
+        '지원 데이터를 파싱할 수 없습니다'
+      );
     });
 
     it('should count cancellations correctly', async () => {

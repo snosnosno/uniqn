@@ -539,7 +539,9 @@ export const isReportNotFoundError = (error: unknown): error is ReportNotFoundEr
 export const isReportAlreadyReviewedError = (
   error: unknown
 ): error is ReportAlreadyReviewedError => {
-  return error instanceof ReportAlreadyReviewedError || hasErrorName(error, 'ReportAlreadyReviewedError');
+  return (
+    error instanceof ReportAlreadyReviewedError || hasErrorName(error, 'ReportAlreadyReviewedError')
+  );
 };
 
 export const isCannotReportSelfError = (error: unknown): error is CannotReportSelfError => {

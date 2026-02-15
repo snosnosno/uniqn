@@ -90,20 +90,14 @@ describe('makeSelectionKey', () => {
 
 describe('areTimeSlotsStructureEqual', () => {
   it('동일한 시간대 구조이면 true', () => {
-    const slots1: TimeSlotInfo[] = [
-      createTestTimeSlot('s1', '09:00', ['dealer', 'floor']),
-    ];
-    const slots2: TimeSlotInfo[] = [
-      createTestTimeSlot('s2', '09:00', ['dealer', 'floor']),
-    ];
+    const slots1: TimeSlotInfo[] = [createTestTimeSlot('s1', '09:00', ['dealer', 'floor'])];
+    const slots2: TimeSlotInfo[] = [createTestTimeSlot('s2', '09:00', ['dealer', 'floor'])];
 
     expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(true);
   });
 
   it('시간대 수가 다르면 false', () => {
-    const slots1: TimeSlotInfo[] = [
-      createTestTimeSlot('s1', '09:00', ['dealer']),
-    ];
+    const slots1: TimeSlotInfo[] = [createTestTimeSlot('s1', '09:00', ['dealer'])];
     const slots2: TimeSlotInfo[] = [
       createTestTimeSlot('s2', '09:00', ['dealer']),
       createTestTimeSlot('s3', '14:00', ['floor']),
@@ -113,34 +107,22 @@ describe('areTimeSlotsStructureEqual', () => {
   });
 
   it('시작 시간이 다르면 false', () => {
-    const slots1: TimeSlotInfo[] = [
-      createTestTimeSlot('s1', '09:00', ['dealer']),
-    ];
-    const slots2: TimeSlotInfo[] = [
-      createTestTimeSlot('s2', '14:00', ['dealer']),
-    ];
+    const slots1: TimeSlotInfo[] = [createTestTimeSlot('s1', '09:00', ['dealer'])];
+    const slots2: TimeSlotInfo[] = [createTestTimeSlot('s2', '14:00', ['dealer'])];
 
     expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(false);
   });
 
   it('역할 ID가 다르면 false', () => {
-    const slots1: TimeSlotInfo[] = [
-      createTestTimeSlot('s1', '09:00', ['dealer']),
-    ];
-    const slots2: TimeSlotInfo[] = [
-      createTestTimeSlot('s2', '09:00', ['floor']),
-    ];
+    const slots1: TimeSlotInfo[] = [createTestTimeSlot('s1', '09:00', ['dealer'])];
+    const slots2: TimeSlotInfo[] = [createTestTimeSlot('s2', '09:00', ['floor'])];
 
     expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(false);
   });
 
   it('역할 수가 다르면 false', () => {
-    const slots1: TimeSlotInfo[] = [
-      createTestTimeSlot('s1', '09:00', ['dealer']),
-    ];
-    const slots2: TimeSlotInfo[] = [
-      createTestTimeSlot('s2', '09:00', ['dealer', 'floor']),
-    ];
+    const slots1: TimeSlotInfo[] = [createTestTimeSlot('s1', '09:00', ['dealer'])];
+    const slots2: TimeSlotInfo[] = [createTestTimeSlot('s2', '09:00', ['dealer', 'floor'])];
 
     expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(false);
   });
@@ -206,12 +188,8 @@ describe('areTimeSlotsStructureEqual', () => {
   });
 
   it('ID가 다르더라도 구조가 동일하면 true (id는 비교 대상 아님)', () => {
-    const slots1: TimeSlotInfo[] = [
-      createTestTimeSlot('id-aaa', '09:00', ['dealer']),
-    ];
-    const slots2: TimeSlotInfo[] = [
-      createTestTimeSlot('id-bbb', '09:00', ['dealer']),
-    ];
+    const slots1: TimeSlotInfo[] = [createTestTimeSlot('id-aaa', '09:00', ['dealer'])];
+    const slots2: TimeSlotInfo[] = [createTestTimeSlot('id-bbb', '09:00', ['dealer'])];
 
     expect(areTimeSlotsStructureEqual(slots1, slots2)).toBe(true);
   });
@@ -236,9 +214,7 @@ describe('areTimeSlotsStructureEqual', () => {
 describe('createGroupFromSchedules', () => {
   it('단일 스케줄에서 그룹을 생성한다', () => {
     const timeSlots = [createTestTimeSlot('s1', '09:00', ['dealer'])];
-    const schedules: DatedScheduleInfo[] = [
-      createTestSchedule('2024-01-17', timeSlots),
-    ];
+    const schedules: DatedScheduleInfo[] = [createTestSchedule('2024-01-17', timeSlots)];
 
     const group = createGroupFromSchedules(schedules);
 
@@ -342,9 +318,7 @@ describe('groupDatedSchedules', () => {
     });
 
     it('urgent 공고도 개별 날짜로 분리된다', () => {
-      const schedules: DatedScheduleInfo[] = [
-        createTestSchedule('2024-01-17', sameTimeSlots),
-      ];
+      const schedules: DatedScheduleInfo[] = [createTestSchedule('2024-01-17', sameTimeSlots)];
 
       const result = groupDatedSchedules(schedules, undefined, 'urgent');
 
@@ -365,9 +339,7 @@ describe('groupDatedSchedules', () => {
     });
 
     it('개별 그룹의 label은 formatDateDisplay 결과이다', () => {
-      const schedules: DatedScheduleInfo[] = [
-        createTestSchedule('2024-01-17', sameTimeSlots),
-      ];
+      const schedules: DatedScheduleInfo[] = [createTestSchedule('2024-01-17', sameTimeSlots)];
 
       const result = groupDatedSchedules(schedules, undefined, 'regular');
 
@@ -533,9 +505,7 @@ describe('groupDatedSchedules', () => {
     });
 
     it('단일 스케줄이면 단일 그룹', () => {
-      const schedules: DatedScheduleInfo[] = [
-        createTestSchedule('2024-01-17', sameTimeSlots),
-      ];
+      const schedules: DatedScheduleInfo[] = [createTestSchedule('2024-01-17', sameTimeSlots)];
       const dateReqs: DateSpecificRequirement[] = [
         { date: '2024-01-17', timeSlots: [], isGrouped: true },
       ];

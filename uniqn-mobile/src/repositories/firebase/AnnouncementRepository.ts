@@ -184,7 +184,12 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
       const { filters, pageSize = 20, lastDoc } = options;
 
       const q = new QueryBuilder(collection(getFirebaseDb(), COLLECTIONS.ANNOUNCEMENTS))
-        .whereIf(filters?.status && filters.status !== 'all', FIELDS.ANNOUNCEMENT.status, '==', filters?.status)
+        .whereIf(
+          filters?.status && filters.status !== 'all',
+          FIELDS.ANNOUNCEMENT.status,
+          '==',
+          filters?.status
+        )
         .orderByDesc(FIELDS.ANNOUNCEMENT.createdAt)
         .paginate(pageSize, lastDoc)
         .build();
@@ -218,13 +223,22 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
 
       const [draftSnap, publishedSnap, archivedSnap] = await Promise.all([
         getCountFromServer(
-          query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.DRAFT))
+          query(
+            collection(db, COLLECTIONS.ANNOUNCEMENTS),
+            where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.DRAFT)
+          )
         ),
         getCountFromServer(
-          query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.PUBLISHED))
+          query(
+            collection(db, COLLECTIONS.ANNOUNCEMENTS),
+            where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.PUBLISHED)
+          )
         ),
         getCountFromServer(
-          query(collection(db, COLLECTIONS.ANNOUNCEMENTS), where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.ARCHIVED))
+          query(
+            collection(db, COLLECTIONS.ANNOUNCEMENTS),
+            where(FIELDS.ANNOUNCEMENT.status, '==', STATUS.ANNOUNCEMENT.ARCHIVED)
+          )
         ),
       ]);
 
@@ -317,7 +331,9 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
       if (input.isPinned !== undefined) updateData.isPinned = input.isPinned;
       if (input.targetAudience !== undefined) updateData.targetAudience = input.targetAudience;
       if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl;
-      if (input.imageStoragePath !== undefined) updateData.imageStoragePath = input.imageStoragePath;
+      if (input.imageStoragePath !== undefined) {
+        updateData.imageStoragePath = input.imageStoragePath;
+      }
       if (input.images !== undefined) updateData.images = input.images;
 
       await updateDoc(docRef, updateData);

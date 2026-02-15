@@ -177,35 +177,41 @@ jest.mock('@/constants', () => ({
 // Mock the SettlementCalculator used by query/calculation modules
 jest.mock('@/domains/settlement', () => ({
   SettlementCalculator: {
-    calculate: jest.fn((input: { startTime: unknown; endTime: unknown; salaryInfo: { type: string; amount: number } }) => {
-      // Simple mock calculation
-      const hourlyRate = input.salaryInfo?.amount || 15000;
-      const salaryType = input.salaryInfo?.type || 'hourly';
+    calculate: jest.fn(
+      (input: {
+        startTime: unknown;
+        endTime: unknown;
+        salaryInfo: { type: string; amount: number };
+      }) => {
+        // Simple mock calculation
+        const hourlyRate = input.salaryInfo?.amount || 15000;
+        const salaryType = input.salaryInfo?.type || 'hourly';
 
-      if (salaryType === 'daily') {
+        if (salaryType === 'daily') {
+          return {
+            hoursWorked: 8,
+            totalPay: hourlyRate,
+            afterTaxPay: hourlyRate,
+          };
+        }
+
+        if (salaryType === 'monthly') {
+          return {
+            hoursWorked: 8,
+            totalPay: hourlyRate,
+            afterTaxPay: hourlyRate,
+          };
+        }
+
+        // hourly
+        const hoursWorked = 8;
         return {
-          hoursWorked: 8,
-          totalPay: hourlyRate,
-          afterTaxPay: hourlyRate,
+          hoursWorked,
+          totalPay: hourlyRate * hoursWorked,
+          afterTaxPay: hourlyRate * hoursWorked,
         };
       }
-
-      if (salaryType === 'monthly') {
-        return {
-          hoursWorked: 8,
-          totalPay: hourlyRate,
-          afterTaxPay: hourlyRate,
-        };
-      }
-
-      // hourly
-      const hoursWorked = 8;
-      return {
-        hoursWorked,
-        totalPay: hourlyRate * hoursWorked,
-        afterTaxPay: hourlyRate * hoursWorked,
-      };
-    }),
+    ),
   },
 }));
 
@@ -498,10 +504,7 @@ describe('settlementService', () => {
         message: '정산이 완료되었습니다',
       });
 
-      const result = await settleWorkLog(
-        { workLogId: 'worklog-1', amount: 120000 },
-        'employer-1'
-      );
+      const result = await settleWorkLog({ workLogId: 'worklog-1', amount: 120000 }, 'employer-1');
 
       expect(result.success).toBe(true);
       expect(result.amount).toBe(120000);
@@ -516,10 +519,7 @@ describe('settlementService', () => {
         message: '출퇴근이 완료된 근무 기록만 정산 가능합니다',
       });
 
-      const result = await settleWorkLog(
-        { workLogId: 'worklog-1', amount: 120000 },
-        'employer-1'
-      );
+      const result = await settleWorkLog({ workLogId: 'worklog-1', amount: 120000 }, 'employer-1');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('출퇴근이 완료된 근무 기록만');
@@ -533,10 +533,7 @@ describe('settlementService', () => {
         message: '이미 정산 완료된 근무 기록입니다',
       });
 
-      const result = await settleWorkLog(
-        { workLogId: 'worklog-1', amount: 120000 },
-        'employer-1'
-      );
+      const result = await settleWorkLog({ workLogId: 'worklog-1', amount: 120000 }, 'employer-1');
 
       expect(result.success).toBe(false);
       expect(result.message).toContain('이미 정산 완료된');
@@ -560,10 +557,7 @@ describe('settlementService', () => {
         ],
       });
 
-      const result = await bulkSettlement(
-        { workLogIds: ['worklog-1', 'worklog-2'] },
-        'employer-1'
-      );
+      const result = await bulkSettlement({ workLogIds: ['worklog-1', 'worklog-2'] }, 'employer-1');
 
       expect(result.totalCount).toBe(2);
       expect(result.successCount).toBeGreaterThanOrEqual(0);
@@ -587,10 +581,7 @@ describe('settlementService', () => {
         ],
       });
 
-      const result = await bulkSettlement(
-        { workLogIds: ['worklog-1', 'worklog-2'] },
-        'employer-1'
-      );
+      const result = await bulkSettlement({ workLogIds: ['worklog-1', 'worklog-2'] }, 'employer-1');
 
       expect(result.totalCount).toBe(2);
       // At least one should fail (already completed)
@@ -625,9 +616,9 @@ describe('settlementService', () => {
         })
       );
 
-      await expect(
-        updateSettlementStatus('worklog-1', 'completed', 'employer-1')
-      ).rejects.toThrow('본인의 공고에 대한 정산만 처리할 수 있습니다');
+      await expect(updateSettlementStatus('worklog-1', 'completed', 'employer-1')).rejects.toThrow(
+        '본인의 공고에 대한 정산만 처리할 수 있습니다'
+      );
     });
   });
 
@@ -670,9 +661,9 @@ describe('settlementService', () => {
     it('should throw error for non-existent job posting', async () => {
       mockJobPostingGetById.mockResolvedValue(null);
 
-      await expect(
-        getJobPostingSettlementSummary('non-existent', 'employer-1')
-      ).rejects.toThrow('존재하지 않는 공고입니다');
+      await expect(getJobPostingSettlementSummary('non-existent', 'employer-1')).rejects.toThrow(
+        '존재하지 않는 공고입니다'
+      );
     });
 
     it('should throw error for unauthorized owner', async () => {

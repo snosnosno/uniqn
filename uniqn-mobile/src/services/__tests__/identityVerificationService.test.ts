@@ -23,7 +23,7 @@ jest.mock('firebase/functions', () => ({
   httpsCallable: jest.fn(() => mockHttpsCallable),
 }));
 
-const mockGetFirebaseFunctions = jest.fn(() => ({} as unknown));
+const mockGetFirebaseFunctions = jest.fn(() => ({}) as unknown);
 
 jest.mock('@/lib/firebase', () => ({
   getFirebaseFunctions: () => mockGetFirebaseFunctions(),
@@ -596,7 +596,7 @@ describe('IdentityVerificationService', () => {
 
     it('verifyIdentityResult: 특수 문자 이름', async () => {
       const mockData: VerifiedIdentityData = {
-        name: 'O\'Brien',
+        name: "O'Brien",
         phone: '01012345678',
         birthDate: '19900101',
         gender: 'male',
@@ -605,7 +605,7 @@ describe('IdentityVerificationService', () => {
       mockHttpsCallable.mockResolvedValue({ data: { success: true, data: mockData } });
 
       const result = await verifyIdentityResult('identity-test');
-      expect(result.name).toBe('O\'Brien');
+      expect(result.name).toBe("O'Brien");
     });
 
     it('linkIdentityVerification: 빈 identityVerificationId', async () => {

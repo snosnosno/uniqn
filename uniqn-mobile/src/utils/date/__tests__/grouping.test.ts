@@ -4,10 +4,7 @@
  * @description 날짜 그룹화 유틸리티 함수들의 단위 테스트
  */
 
-import type {
-  DateSpecificRequirement,
-  TimeSlot,
-} from '@/types/jobPosting/dateRequirement';
+import type { DateSpecificRequirement, TimeSlot } from '@/types/jobPosting/dateRequirement';
 
 import {
   areDatesConsecutive,
@@ -31,9 +28,7 @@ import type { DateRangeGroup } from '../grouping';
 function createTimeSlot(overrides: Partial<TimeSlot> = {}): TimeSlot {
   return {
     startTime: '19:00',
-    roles: [
-      { role: 'dealer', headcount: 2 },
-    ],
+    roles: [{ role: 'dealer', headcount: 2 }],
     ...overrides,
   };
 }
@@ -392,9 +387,7 @@ describe('expandDateRangeToRequirements', () => {
   });
 
   it('확장된 각 요구사항에 timeSlots가 포함된다', () => {
-    const timeSlots = [
-      createTimeSlot({ startTime: '19:00' }),
-    ];
+    const timeSlots = [createTimeSlot({ startTime: '19:00' })];
     const group = createDateRangeGroup({
       startDate: '2025-01-15',
       endDate: '2025-01-16',
@@ -513,11 +506,7 @@ describe('getDateListFromRange', () => {
       startDate: '2025-01-15',
       endDate: '2025-01-17',
     });
-    expect(getDateListFromRange(group)).toEqual([
-      '2025-01-15',
-      '2025-01-16',
-      '2025-01-17',
-    ]);
+    expect(getDateListFromRange(group)).toEqual(['2025-01-15', '2025-01-16', '2025-01-17']);
   });
 
   it('유효하지 않은 startDate는 빈 배열을 반환한다', () => {
@@ -533,10 +522,6 @@ describe('getDateListFromRange', () => {
       startDate: '2025-01-30',
       endDate: '2025-02-01',
     });
-    expect(getDateListFromRange(group)).toEqual([
-      '2025-01-30',
-      '2025-01-31',
-      '2025-02-01',
-    ]);
+    expect(getDateListFromRange(group)).toEqual(['2025-01-30', '2025-01-31', '2025-02-01']);
   });
 });

@@ -145,7 +145,12 @@ describe('InAppMessageService', () => {
     it('영구 닫힌 메시지는 false를 반환해야 함', () => {
       mockGetState.mockReturnValue({
         history: {
-          'msg-1': { messageId: 'msg-1', dismissed: true, shownCount: 1, lastShownAt: new Date().toISOString() },
+          'msg-1': {
+            messageId: 'msg-1',
+            dismissed: true,
+            shownCount: 1,
+            lastShownAt: new Date().toISOString(),
+          },
         },
         hasSessionShownId: mockHasSessionShownId,
       });
@@ -253,7 +258,12 @@ describe('InAppMessageService', () => {
     it('once 빈도는 이력이 있으면 false를 반환해야 함', () => {
       mockGetState.mockReturnValue({
         history: {
-          'msg-1': { messageId: 'msg-1', dismissed: false, shownCount: 1, lastShownAt: new Date().toISOString() },
+          'msg-1': {
+            messageId: 'msg-1',
+            dismissed: false,
+            shownCount: 1,
+            lastShownAt: new Date().toISOString(),
+          },
         },
         hasSessionShownId: mockHasSessionShownId,
       });

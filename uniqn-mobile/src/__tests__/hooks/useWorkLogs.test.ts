@@ -296,9 +296,7 @@ describe('useWorkLogs Hooks', () => {
     });
 
     it('should return work logs for specific date', () => {
-      const mockWorkLogs = [
-        createMockWorkLog({ id: 'wl-date-1' }),
-      ];
+      const mockWorkLogs = [createMockWorkLog({ id: 'wl-date-1' })];
       mockData = mockWorkLogs;
 
       const { result } = renderHook(() => useWorkLogsByDate('2025-01-15'));

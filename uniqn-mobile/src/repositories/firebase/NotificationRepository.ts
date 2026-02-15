@@ -540,7 +540,11 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         },
       });
 
-      logger.info('FCM 토큰 등록', { userId, tokenPrefix: token.substring(0, 20), type: metadata.type });
+      logger.info('FCM 토큰 등록', {
+        userId,
+        tokenPrefix: token.substring(0, 20),
+        type: metadata.type,
+      });
     } catch (error) {
       throw handleServiceError(error, {
         operation: 'FCM 토큰 등록',
@@ -648,7 +652,13 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     onError?: (error: Error) => void
   ): () => void {
     return RealtimeManager.subscribe(RealtimeManager.Keys.unreadCount(userId), () => {
-      const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
+      const counterRef = doc(
+        getFirebaseDb(),
+        COLLECTIONS.USERS,
+        userId,
+        'counters',
+        'notifications'
+      );
 
       let firebaseUnsubscribe: (() => void) | null = null;
       let hasErrored = false;

@@ -177,9 +177,7 @@ describe('BiometricService', () => {
     it('저장 실패 시 에러를 던져야 함', async () => {
       mockSetRefreshToken.mockRejectedValue(new Error('Storage error'));
 
-      await expect(
-        saveBiometricCredentials('user-123', 'token')
-      ).rejects.toThrow();
+      await expect(saveBiometricCredentials('user-123', 'token')).rejects.toThrow();
     });
   });
 

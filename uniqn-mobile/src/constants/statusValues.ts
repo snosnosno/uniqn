@@ -12,8 +12,18 @@
  * - types/postingConfig.ts (TournamentApprovalStatus)
  */
 
-import type { ApplicationStatusType, JobPostingStatusType, InquiryStatusType } from './statusConfig';
-import type { WorkLogStatus, PayrollStatus, ScheduleType, AttendanceStatus, ConfirmedStaffStatus } from '@/shared/status/types';
+import type {
+  ApplicationStatusType,
+  JobPostingStatusType,
+  InquiryStatusType,
+} from './statusConfig';
+import type {
+  WorkLogStatus,
+  PayrollStatus,
+  ScheduleType,
+  AttendanceStatus,
+  ConfirmedStaffStatus,
+} from '@/shared/status/types';
 import type { ReportStatus } from '@/types/report';
 import type { AnnouncementStatus } from '@/types/announcement';
 import type { TournamentApprovalStatus } from '@/types/postingConfig';

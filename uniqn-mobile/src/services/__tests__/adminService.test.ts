@@ -35,7 +35,10 @@ jest.mock('@/errors', () => {
     code: string;
     userMessage: string;
     metadata?: Record<string, unknown>;
-    constructor(code: string, options?: { userMessage?: string; metadata?: Record<string, unknown> }) {
+    constructor(
+      code: string,
+      options?: { userMessage?: string; metadata?: Record<string, unknown> }
+    ) {
       super(options?.userMessage ?? 'Business error');
       this.name = 'BusinessError';
       this.code = code;
@@ -156,10 +159,13 @@ describe('AdminService', () => {
       mockRepo.getRecentUsers.mockResolvedValue([]);
 
       await expect(getDashboardStats()).rejects.toThrow();
-      expect(mockHandleServiceError).toHaveBeenCalledWith(error, expect.objectContaining({
-        operation: '대시보드 통계 조회',
-        component: 'adminService',
-      }));
+      expect(mockHandleServiceError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          operation: '대시보드 통계 조회',
+          component: 'adminService',
+        })
+      );
     });
   });
 
@@ -212,9 +218,12 @@ describe('AdminService', () => {
       mockRepo.getUsers.mockRejectedValue(error);
 
       await expect(getUsers()).rejects.toThrow();
-      expect(mockHandleServiceError).toHaveBeenCalledWith(error, expect.objectContaining({
-        operation: '사용자 목록 조회',
-      }));
+      expect(mockHandleServiceError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          operation: '사용자 목록 조회',
+        })
+      );
     });
   });
 
@@ -243,10 +252,13 @@ describe('AdminService', () => {
       mockRepo.getUserById.mockRejectedValue(error);
 
       await expect(getUserById('user-1')).rejects.toThrow();
-      expect(mockHandleServiceError).toHaveBeenCalledWith(error, expect.objectContaining({
-        operation: '사용자 조회',
-        context: { userId: 'user-1' },
-      }));
+      expect(mockHandleServiceError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          operation: '사용자 조회',
+          context: { userId: 'user-1' },
+        })
+      );
     });
   });
 
@@ -275,10 +287,13 @@ describe('AdminService', () => {
       mockRepo.updateUserRole.mockRejectedValue(error);
 
       await expect(updateUserRole('user-1', 'employer' as any)).rejects.toThrow();
-      expect(mockHandleServiceError).toHaveBeenCalledWith(error, expect.objectContaining({
-        operation: '사용자 역할 변경',
-        context: { userId: 'user-1', newRole: 'employer' },
-      }));
+      expect(mockHandleServiceError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          operation: '사용자 역할 변경',
+          context: { userId: 'user-1', newRole: 'employer' },
+        })
+      );
     });
   });
 
@@ -315,10 +330,13 @@ describe('AdminService', () => {
       mockRepo.setUserActive.mockRejectedValue(error);
 
       await expect(setUserActive('user-1', false)).rejects.toThrow();
-      expect(mockHandleServiceError).toHaveBeenCalledWith(error, expect.objectContaining({
-        operation: '사용자 상태 변경',
-        context: { userId: 'user-1', isActive: false },
-      }));
+      expect(mockHandleServiceError).toHaveBeenCalledWith(
+        error,
+        expect.objectContaining({
+          operation: '사용자 상태 변경',
+          context: { userId: 'user-1', isActive: false },
+        })
+      );
     });
   });
 

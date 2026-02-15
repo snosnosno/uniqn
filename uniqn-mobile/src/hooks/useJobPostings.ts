@@ -58,14 +58,11 @@ export function useJobPostings(options: UseJobPostingsOptions = {}) {
 
   // 전체 데이터를 플랫하게 변환 후 정렬
   // @see utils/jobPostingSorter.ts - 최적화된 정렬 로직
-  const jobs: JobPostingCard[] = useMemo(
-    () => {
-      const allJobs = query.data?.pages.flatMap((page) => page.items.map(convertToCard)) ?? [];
+  const jobs: JobPostingCard[] = useMemo(() => {
+    const allJobs = query.data?.pages.flatMap((page) => page.items.map(convertToCard)) ?? [];
 
-      return sortJobPostings(allJobs);
-    },
-    [query.data?.pages]
-  );
+    return sortJobPostings(allJobs);
+  }, [query.data?.pages]);
 
   const hasMore = query.hasNextPage ?? false;
 

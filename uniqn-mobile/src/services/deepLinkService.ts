@@ -437,7 +437,6 @@ export function createJobDeepLink(jobId: string, useWebUrl = false): string {
   return createDeepLink({ name: 'job', params: { id: jobId } }, { useWebUrl });
 }
 
-
 // ============================================================================
 // Web URL Filtering
 // ============================================================================

@@ -107,9 +107,9 @@ describe('BookmarkStore', () => {
       // Add 100 bookmarks
       for (let i = 0; i < 100; i++) {
         act(() => {
-          useBookmarkStore.getState().addBookmark(
-            createJob({ id: `job-${i}`, title: `공고 ${i}` })
-          );
+          useBookmarkStore
+            .getState()
+            .addBookmark(createJob({ id: `job-${i}`, title: `공고 ${i}` }));
         });
       }
 
@@ -117,9 +117,7 @@ describe('BookmarkStore', () => {
 
       // Adding 101st should remove oldest and keep count at 100
       act(() => {
-        useBookmarkStore.getState().addBookmark(
-          createJob({ id: 'job-new', title: '새 공고' })
-        );
+        useBookmarkStore.getState().addBookmark(createJob({ id: 'job-new', title: '새 공고' }));
       });
 
       const { bookmarks } = useBookmarkStore.getState();

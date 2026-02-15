@@ -113,9 +113,7 @@ export async function verifyIdentityResult(
  *
  * @param identityVerificationId 포트원 본인인증 ID
  */
-export async function linkIdentityVerification(
-  identityVerificationId: string
-): Promise<void> {
+export async function linkIdentityVerification(identityVerificationId: string): Promise<void> {
   try {
     logger.info('본인인증 연결 요청', { identityVerificationId });
 

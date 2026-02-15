@@ -131,7 +131,12 @@ function GridInfoItem({ icon, label, value }: GridInfoItemProps) {
 
 export function StaffProfileModal({ visible, onClose, staff }: StaffProfileModalProps) {
   // 사용자 프로필 조회 (모달이 열려있고 staff가 있을 때만)
-  const { userProfile, isLoading: isProfileLoading, displayName, profilePhotoURL } = useUserProfile({
+  const {
+    userProfile,
+    isLoading: isProfileLoading,
+    displayName,
+    profilePhotoURL,
+  } = useUserProfile({
     userId: staff?.staffId,
     enabled: visible,
     fallbackName: staff?.staffName,

@@ -188,7 +188,12 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
         // 지역 필터
         .whereIf(!!filters?.district, FIELDS.JOB_POSTING.locationDistrict, '==', filters?.district)
         // 긴급 공고 필터
-        .whereIf(filters?.isUrgent !== undefined, FIELDS.JOB_POSTING.isUrgent, '==', filters?.isUrgent)
+        .whereIf(
+          filters?.isUrgent !== undefined,
+          FIELDS.JOB_POSTING.isUrgent,
+          '==',
+          filters?.isUrgent
+        )
         // 구인자 필터 (내 공고)
         .whereIf(!!filters?.ownerId, FIELDS.JOB_POSTING.ownerId, '==', filters?.ownerId)
         // 날짜 범위 필터
@@ -264,7 +269,10 @@ export class FirebaseJobPostingRepository implements IJobPostingRepository {
 
       const jobPostingsRef = collection(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS);
 
-      let builder = new QueryBuilder(jobPostingsRef).whereEqual(FIELDS.JOB_POSTING.ownerId, ownerId);
+      let builder = new QueryBuilder(jobPostingsRef).whereEqual(
+        FIELDS.JOB_POSTING.ownerId,
+        ownerId
+      );
 
       if (status) {
         builder = builder.whereEqual(FIELDS.JOB_POSTING.status, status);

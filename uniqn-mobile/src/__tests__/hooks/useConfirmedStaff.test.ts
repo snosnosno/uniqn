@@ -17,11 +17,7 @@ import { resetCounters } from '../mocks/factories';
 // ============================================================================
 
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
-import type {
-  ConfirmedStaff,
-  ConfirmedStaffGroup,
-  ConfirmedStaffStats,
-} from '@/types';
+import type { ConfirmedStaff, ConfirmedStaffGroup, ConfirmedStaffStats } from '@/types';
 
 jest.mock('@/lib/firebase', () => ({
   db: {},
@@ -47,8 +43,7 @@ jest.mock('@/services', () => ({
   getConfirmedStaff: (...args: unknown[]) => mockGetConfirmedStaff(...args),
   getConfirmedStaffByDate: (...args: unknown[]) => mockGetConfirmedStaffByDate(...args),
   updateStaffRole: (...args: unknown[]) => mockUpdateStaffRole(...args),
-  updateConfirmedStaffWorkTime: (...args: unknown[]) =>
-    mockUpdateConfirmedStaffWorkTime(...args),
+  updateConfirmedStaffWorkTime: (...args: unknown[]) => mockUpdateConfirmedStaffWorkTime(...args),
   deleteConfirmedStaff: (...args: unknown[]) => mockDeleteConfirmedStaff(...args),
   markAsNoShow: (...args: unknown[]) => mockMarkAsNoShow(...args),
   updateStaffStatus: (...args: unknown[]) => mockUpdateStaffStatus(...args),
@@ -214,19 +209,14 @@ jest.mock('@/lib/queryClient', () => ({
 function createMockConfirmedStaff(overrides: Partial<ConfirmedStaff> = {}): ConfirmedStaff {
   return {
     id: 'staff-1',
-    workLogId: 'worklog-1',
     staffId: 'user-1',
     staffName: '홍길동',
-    jobPostingId: 'job-1',
     role: 'dealer',
     date: '2024-01-15',
-    startTime: '09:00',
-    endTime: '18:00',
+    timeSlot: '09:00-18:00',
     status: 'scheduled',
     checkInTime: null,
     checkOutTime: null,
-    confirmedAt: '2024-01-10T12:00:00Z',
-    confirmedBy: 'employer-1',
     ...overrides,
   };
 }
@@ -247,8 +237,16 @@ function createMockStats(): ConfirmedStaffStats {
 function createMockGroup(): ConfirmedStaffGroup {
   return {
     date: '2024-01-15',
+    formattedDate: '1월 15일 (월)',
     staff: [createMockConfirmedStaff()],
-    count: 1,
+    isToday: false,
+    isPast: false,
+    stats: {
+      total: 1,
+      checkedIn: 0,
+      completed: 0,
+      noShow: 0,
+    },
   };
 }
 
@@ -290,9 +288,7 @@ describe('useConfirmedStaff Hook', () => {
     });
 
     it('특정 날짜만 조회', async () => {
-      const mockStaff = [
-        createMockConfirmedStaff({ date: '2024-01-15' }),
-      ];
+      const mockStaff = [createMockConfirmedStaff({ date: '2024-01-15' })];
       mockGetConfirmedStaffByDate.mockResolvedValueOnce(mockStaff);
       mockData = {
         staff: mockStaff,
@@ -369,10 +365,9 @@ describe('useConfirmedStaff Hook', () => {
           onError: expect.any(Function),
         })
       );
-      expect(mockLoggerInfo).toHaveBeenCalledWith(
-        '확정 스태프 실시간 구독 시작',
-        { jobPostingId: 'job-1' }
-      );
+      expect(mockLoggerInfo).toHaveBeenCalledWith('확정 스태프 실시간 구독 시작', {
+        jobPostingId: 'job-1',
+      });
     });
 
     it('언마운트 시 실시간 구독 해제', () => {
@@ -435,6 +430,7 @@ describe('useConfirmedStaff Hook', () => {
         result.current.changeRole({
           workLogId: 'worklog-1',
           newRole: 'floor',
+          reason: '역할 변경 사유',
         });
       });
 
@@ -442,6 +438,7 @@ describe('useConfirmedStaff Hook', () => {
         expect(mockUpdateStaffRole).toHaveBeenCalledWith({
           workLogId: 'worklog-1',
           newRole: 'floor',
+          reason: '역할 변경 사유',
           changedBy: 'employer-1',
         });
       });
@@ -456,6 +453,7 @@ describe('useConfirmedStaff Hook', () => {
         result.current.changeRole({
           workLogId: 'worklog-1',
           newRole: 'floor',
+          reason: '역할 변경 사유',
           changedBy: 'admin-1',
         });
       });
@@ -478,6 +476,7 @@ describe('useConfirmedStaff Hook', () => {
         result.current.changeRole({
           workLogId: 'worklog-1',
           newRole: 'floor',
+          reason: '역할 변경 사유',
         });
       });
 
@@ -500,6 +499,7 @@ describe('useConfirmedStaff Hook', () => {
           result.current.changeRole({
             workLogId: 'worklog-1',
             newRole: 'floor',
+            reason: '역할 변경 사유',
           });
         } catch {
           // Expected
@@ -538,6 +538,7 @@ describe('useConfirmedStaff Hook', () => {
           workLogId: 'worklog-1',
           checkInTime: new Date('2024-01-15T09:00:00'),
           checkOutTime: new Date('2024-01-15T18:00:00'),
+          reason: '시간 수정 사유',
         });
       });
 
@@ -546,6 +547,7 @@ describe('useConfirmedStaff Hook', () => {
           workLogId: 'worklog-1',
           checkInTime: new Date('2024-01-15T09:00:00'),
           checkOutTime: new Date('2024-01-15T18:00:00'),
+          reason: '시간 수정 사유',
           modifiedBy: 'employer-1',
         });
       });
@@ -560,6 +562,8 @@ describe('useConfirmedStaff Hook', () => {
         result.current.updateWorkTime({
           workLogId: 'worklog-1',
           checkInTime: new Date('2024-01-15T09:00:00'),
+          checkOutTime: new Date('2024-01-15T18:00:00'),
+          reason: '시간 수정 사유',
         });
       });
 
@@ -581,6 +585,8 @@ describe('useConfirmedStaff Hook', () => {
           result.current.updateWorkTime({
             workLogId: 'worklog-1',
             checkInTime: new Date(),
+            checkOutTime: new Date(),
+            reason: '시간 수정 사유',
           });
         } catch {
           // Expected
@@ -617,6 +623,9 @@ describe('useConfirmedStaff Hook', () => {
       await act(async () => {
         result.current.removeStaff({
           workLogId: 'worklog-1',
+          jobPostingId: 'job-1',
+          staffId: 'user-1',
+          date: '2024-01-15',
           reason: '개인 사정',
         });
       });
@@ -624,6 +633,9 @@ describe('useConfirmedStaff Hook', () => {
       await waitFor(() => {
         expect(mockDeleteConfirmedStaff).toHaveBeenCalledWith({
           workLogId: 'worklog-1',
+          jobPostingId: 'job-1',
+          staffId: 'user-1',
+          date: '2024-01-15',
           reason: '개인 사정',
         });
       });
@@ -637,6 +649,9 @@ describe('useConfirmedStaff Hook', () => {
       await act(async () => {
         result.current.removeStaff({
           workLogId: 'worklog-1',
+          jobPostingId: 'job-1',
+          staffId: 'user-1',
+          date: '2024-01-15',
           reason: '개인 사정',
         });
       });
@@ -658,6 +673,9 @@ describe('useConfirmedStaff Hook', () => {
         try {
           result.current.removeStaff({
             workLogId: 'worklog-1',
+            jobPostingId: 'job-1',
+            staffId: 'user-1',
+            date: '2024-01-15',
           });
         } catch {
           // Expected

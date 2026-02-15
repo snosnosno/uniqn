@@ -64,7 +64,8 @@ export default function SupportScreen() {
 
   // 답변 대기 중인 문의 수
   const pendingCount = inquiries.filter(
-    (inquiry) => inquiry.status === STATUS.INQUIRY.OPEN || inquiry.status === STATUS.INQUIRY.IN_PROGRESS
+    (inquiry) =>
+      inquiry.status === STATUS.INQUIRY.OPEN || inquiry.status === STATUS.INQUIRY.IN_PROGRESS
   ).length;
 
   return (

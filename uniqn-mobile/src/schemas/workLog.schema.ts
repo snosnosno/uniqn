@@ -61,7 +61,9 @@ export const createWorkLogSchema = z.object({
   role: staffRoleSchema,
   scheduledStartTime: z.string().optional(),
   scheduledEndTime: z.string().optional(),
-  notes: z.string().max(500, { message: '메모는 500자를 초과할 수 없습니다' })
+  notes: z
+    .string()
+    .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
     .refine((val) => !val || xssValidation(val), { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
 });
@@ -77,10 +79,14 @@ export const updateWorkLogSchema = z.object({
   status: workLogStatusSchema.optional(),
   payrollStatus: payrollStatusSchema.optional(),
   payrollAmount: z.number().min(0, { message: '금액은 0 이상이어야 합니다' }).optional(),
-  payrollNotes: z.string().max(500, { message: '메모는 500자를 초과할 수 없습니다' })
+  payrollNotes: z
+    .string()
+    .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
     .refine((val) => !val || xssValidation(val), { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
-  notes: z.string().max(500, { message: '메모는 500자를 초과할 수 없습니다' })
+  notes: z
+    .string()
+    .max(500, { message: '메모는 500자를 초과할 수 없습니다' })
     .refine((val) => !val || xssValidation(val), { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
 });

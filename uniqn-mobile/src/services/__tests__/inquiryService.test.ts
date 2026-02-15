@@ -61,19 +61,16 @@ const firestoreModule = require('firebase/firestore');
 const mockGetCountFromServerFn = jest.fn();
 firestoreModule.getCountFromServer = mockGetCountFromServerFn;
 
-import {
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-} from 'firebase/firestore';
+import { getDocs, getDoc, addDoc, updateDoc } from 'firebase/firestore';
 import { processPaginatedResults } from '@/utils/firestore';
 
 const mockGetDocs = getDocs as jest.MockedFunction<typeof getDocs>;
 const mockGetDoc = getDoc as jest.MockedFunction<typeof getDoc>;
 const mockAddDoc = addDoc as jest.MockedFunction<typeof addDoc>;
 const mockUpdateDoc = updateDoc as jest.MockedFunction<typeof updateDoc>;
-const mockProcessPaginatedResults = processPaginatedResults as jest.MockedFunction<typeof processPaginatedResults>;
+const mockProcessPaginatedResults = processPaginatedResults as jest.MockedFunction<
+  typeof processPaginatedResults
+>;
 
 // ============================================================================
 // Tests
@@ -146,9 +143,7 @@ describe('inquiryService', () => {
     it('Firestore 에러 시 에러를 던져야 한다', async () => {
       mockGetDocs.mockRejectedValue(new Error('Firestore error'));
 
-      await expect(
-        fetchMyInquiries({ userId: 'user-1' })
-      ).rejects.toThrow();
+      await expect(fetchMyInquiries({ userId: 'user-1' })).rejects.toThrow();
     });
   });
 
@@ -291,12 +286,7 @@ describe('inquiryService', () => {
     it('문의를 생성하고 ID를 반환해야 한다', async () => {
       mockAddDoc.mockResolvedValue({ id: 'new-inq-id' } as never);
 
-      const result = await createInquiry(
-        'user-1',
-        'test@test.com',
-        '테스트',
-        mockInput as never
-      );
+      const result = await createInquiry('user-1', 'test@test.com', '테스트', mockInput as never);
 
       expect(result).toBe('new-inq-id');
       expect(mockAddDoc).toHaveBeenCalled();
@@ -343,12 +333,7 @@ describe('inquiryService', () => {
     it('문의에 응답해야 한다', async () => {
       mockUpdateDoc.mockResolvedValue(undefined as never);
 
-      await respondToInquiry(
-        'inq-1',
-        'admin-1',
-        '관리자',
-        mockInput as never
-      );
+      await respondToInquiry('inq-1', 'admin-1', '관리자', mockInput as never);
 
       expect(mockUpdateDoc).toHaveBeenCalled();
       const updateCall = mockUpdateDoc.mock.calls[0];
@@ -366,12 +351,7 @@ describe('inquiryService', () => {
         response: '답변 내용',
       };
 
-      await respondToInquiry(
-        'inq-1',
-        'admin-1',
-        '관리자',
-        inputWithoutStatus as never
-      );
+      await respondToInquiry('inq-1', 'admin-1', '관리자', inputWithoutStatus as never);
 
       expect(mockUpdateDoc).toHaveBeenCalled();
     });
@@ -417,9 +397,7 @@ describe('inquiryService', () => {
     it('Firestore 에러 시 에러를 던져야 한다', async () => {
       mockUpdateDoc.mockRejectedValue(new Error('상태 변경 실패'));
 
-      await expect(
-        updateInquiryStatus('inq-1', 'closed' as never)
-      ).rejects.toThrow();
+      await expect(updateInquiryStatus('inq-1', 'closed' as never)).rejects.toThrow();
     });
   });
 

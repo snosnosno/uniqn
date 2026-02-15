@@ -54,9 +54,10 @@ const getRoleLabel = (role: string, customRole?: string): string => {
   }
   const roleMap: Record<string, string> = {
     dealer: '딜러',
+    floor: '플로어',
+    serving: '서빙',
     manager: '매니저',
-    chiprunner: '칩러너',
-    admin: '관리자',
+    staff: '직원',
   };
   return roleMap[role] ?? role;
 };
@@ -67,12 +68,12 @@ const getRoleBadgeVariant = (
   switch (role) {
     case 'dealer':
       return 'primary';
+    case 'floor':
+      return 'success';
     case 'manager':
       return 'warning';
-    case 'chiprunner':
-      return 'success';
-    case 'admin':
-      return 'error';
+    case 'serving':
+      return 'warning';
     default:
       return 'default';
   }

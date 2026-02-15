@@ -127,17 +127,13 @@ describe('applicationHelpers', () => {
 
   describe('getPrimaryRole', () => {
     it('should return first role from first assignment', () => {
-      const app = createMockApplication([
-        createMockAssignment({ roleIds: ['dealer'] }),
-      ]);
+      const app = createMockApplication([createMockAssignment({ roleIds: ['dealer'] })]);
 
       expect(getPrimaryRole(app)).toBe('dealer');
     });
 
     it('should return first role when multiple roles exist', () => {
-      const app = createMockApplication([
-        createMockAssignment({ roleIds: ['floor', 'dealer'] }),
-      ]);
+      const app = createMockApplication([createMockAssignment({ roleIds: ['floor', 'dealer'] })]);
 
       expect(getPrimaryRole(app)).toBe('floor');
     });
@@ -149,9 +145,7 @@ describe('applicationHelpers', () => {
     });
 
     it('should return "other" when roleIds is empty', () => {
-      const app = createMockApplication([
-        createMockAssignment({ roleIds: [] }),
-      ]);
+      const app = createMockApplication([createMockAssignment({ roleIds: [] })]);
 
       expect(getPrimaryRole(app)).toBe('other');
     });
@@ -203,9 +197,7 @@ describe('applicationHelpers', () => {
     });
 
     it('should handle multi-role assignments', () => {
-      const app = createMockApplication([
-        createMockAssignment({ roleIds: ['dealer', 'floor'] }),
-      ]);
+      const app = createMockApplication([createMockAssignment({ roleIds: ['dealer', 'floor'] })]);
 
       const roles = getAllRoles(app);
 
@@ -286,10 +278,7 @@ describe('applicationHelpers', () => {
     });
 
     it('should return true for multiple assignments', () => {
-      const app = createMockApplication([
-        createMockAssignment(),
-        createMockAssignment(),
-      ]);
+      const app = createMockApplication([createMockAssignment(), createMockAssignment()]);
 
       expect(hasValidAssignments(app)).toBe(true);
     });

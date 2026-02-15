@@ -207,7 +207,9 @@ jest.mock('@tanstack/react-query', () => ({
     }) => {
       mockMutate.mockImplementation((args: unknown) => {
         mockIsPending = true;
-        const mutatePromise = options.onMutate ? options.onMutate(args) : Promise.resolve(undefined);
+        const mutatePromise = options.onMutate
+          ? options.onMutate(args)
+          : Promise.resolve(undefined);
         mutatePromise.then((context: unknown) => {
           return options
             .mutationFn(args)
@@ -360,10 +362,10 @@ describe('useNotifications Hooks', () => {
 
     it('should return cached notifications when offline', () => {
       mockIsOnline = false;
-      const cachedNotifications = [
-        createMockNotification({ id: 'cached-1' }),
-      ];
-      mockNotificationStoreState.notifications = cachedNotifications as ReturnType<typeof createMockNotification>[];
+      const cachedNotifications = [createMockNotification({ id: 'cached-1' })];
+      mockNotificationStoreState.notifications = cachedNotifications as ReturnType<
+        typeof createMockNotification
+      >[];
 
       const { result } = renderHook(() => useNotificationList());
 

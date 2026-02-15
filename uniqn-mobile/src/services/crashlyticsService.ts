@@ -140,7 +140,6 @@ export async function recordError(error: Error | AppError, context?: CrashContex
         ...fullContext,
         error: error.message,
       });
-
     } else {
       // Sentry로 에러 전송 (context + AppError 메타데이터 모두 포함)
       Sentry.withScope((scope) => {
@@ -186,7 +185,6 @@ export async function recordFatalError(
         ...fullContext,
         error: error.message,
       });
-
     } else {
       // Sentry로 에러 전송 (context + AppError 메타데이터 모두 포함)
       Sentry.withScope((scope) => {

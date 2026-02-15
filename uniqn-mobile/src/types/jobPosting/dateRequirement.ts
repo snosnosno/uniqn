@@ -212,4 +212,3 @@ export function createDefaultRole(): RoleRequirement {
     headcount: 1,
   };
 }
-

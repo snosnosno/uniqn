@@ -189,8 +189,7 @@ describe('notificationTemplates', () => {
 
     it('should generate CHECKIN_REMINDER title with default time', () => {
       const template = NotificationTemplates[NotificationType.CHECKIN_REMINDER];
-      const title =
-        typeof template.title === 'function' ? template.title({}) : template.title;
+      const title = typeof template.title === 'function' ? template.title({}) : template.title;
 
       expect(title).toContain('30분');
     });
@@ -331,8 +330,7 @@ describe('notificationTemplates', () => {
 
     it('should fallback ANNOUNCEMENT title to default', () => {
       const template = NotificationTemplates[NotificationType.ANNOUNCEMENT];
-      const title =
-        typeof template.title === 'function' ? template.title({}) : template.title;
+      const title = typeof template.title === 'function' ? template.title({}) : template.title;
 
       expect(title).toBe('공지사항');
     });
@@ -349,8 +347,7 @@ describe('notificationTemplates', () => {
 
     it('should fallback MAINTENANCE body to default', () => {
       const template = NotificationTemplates[NotificationType.MAINTENANCE];
-      const body =
-        typeof template.body === 'function' ? template.body({}) : template.body;
+      const body = typeof template.body === 'function' ? template.body({}) : template.body;
 
       expect(body).toContain('시스템 점검');
     });
@@ -358,9 +355,7 @@ describe('notificationTemplates', () => {
     it('should generate APP_UPDATE body with version', () => {
       const template = NotificationTemplates[NotificationType.APP_UPDATE];
       const body =
-        typeof template.body === 'function'
-          ? template.body({ version: '2.0.0' })
-          : template.body;
+        typeof template.body === 'function' ? template.body({ version: '2.0.0' }) : template.body;
 
       expect(body).toContain('2.0.0');
     });
@@ -373,8 +368,7 @@ describe('notificationTemplates', () => {
   describe('admin templates', () => {
     it('should generate INQUIRY_ANSWERED body', () => {
       const template = NotificationTemplates[NotificationType.INQUIRY_ANSWERED];
-      const body =
-        typeof template.body === 'function' ? template.body({}) : template.body;
+      const body = typeof template.body === 'function' ? template.body({}) : template.body;
 
       expect(body).toContain('답변');
     });

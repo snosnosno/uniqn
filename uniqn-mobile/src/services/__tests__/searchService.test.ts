@@ -212,10 +212,12 @@ describe('SearchService', () => {
     describe('search with sortBy option', () => {
       it('should sort by date (newest first)', async () => {
         // Use a query that matches all items (all descriptions contain '우대')
-        mockFetcher.mockResolvedValue(sampleJobs.map((j) => ({
-          ...j,
-          description: '경험자 우대합니다',
-        })));
+        mockFetcher.mockResolvedValue(
+          sampleJobs.map((j) => ({
+            ...j,
+            description: '경험자 우대합니다',
+          }))
+        );
         const result = await provider.search('우대', { sortBy: 'date' });
 
         expect(result.totalCount).toBe(3);
@@ -225,10 +227,12 @@ describe('SearchService', () => {
       });
 
       it('should sort by popularity (highest viewCount first)', async () => {
-        mockFetcher.mockResolvedValue(sampleJobs.map((j) => ({
-          ...j,
-          description: '경험자 우대합니다',
-        })));
+        mockFetcher.mockResolvedValue(
+          sampleJobs.map((j) => ({
+            ...j,
+            description: '경험자 우대합니다',
+          }))
+        );
         const result = await provider.search('우대', { sortBy: 'popularity' });
 
         expect(result.totalCount).toBe(3);
@@ -238,10 +242,12 @@ describe('SearchService', () => {
       });
 
       it('should maintain original order with relevance sort', async () => {
-        mockFetcher.mockResolvedValue(sampleJobs.map((j) => ({
-          ...j,
-          description: '경험자 우대합니다',
-        })));
+        mockFetcher.mockResolvedValue(
+          sampleJobs.map((j) => ({
+            ...j,
+            description: '경험자 우대합니다',
+          }))
+        );
         const result = await provider.search('우대', { sortBy: 'relevance' });
 
         expect(result.items[0].id).toBe('job-1');
@@ -343,17 +349,12 @@ describe('SearchService', () => {
     it('should throw when algolia config is missing', () => {
       const fetcher = jest.fn();
 
-      expect(() =>
-        createSearchProvider({ provider: 'algolia' }, fetcher)
-      ).toThrow();
+      expect(() => createSearchProvider({ provider: 'algolia' }, fetcher)).toThrow();
     });
 
     it('should default to ClientSideSearchProvider for unknown provider', () => {
       const fetcher = jest.fn();
-      const provider = createSearchProvider(
-        { provider: 'unknown' as any },
-        fetcher
-      );
+      const provider = createSearchProvider({ provider: 'unknown' as any }, fetcher);
 
       expect(provider).toBeInstanceOf(ClientSideSearchProvider);
     });

@@ -74,7 +74,9 @@ import { confirmedStaffRepository, userRepository } from '@/repositories';
 import type { WorkLog } from '@/types';
 
 // Get typed mock references
-const mockConfirmedStaffRepo = confirmedStaffRepository as jest.Mocked<typeof confirmedStaffRepository>;
+const mockConfirmedStaffRepo = confirmedStaffRepository as jest.Mocked<
+  typeof confirmedStaffRepository
+>;
 const mockUserRepo = userRepository as jest.Mocked<typeof userRepository>;
 
 // ============================================================================
@@ -119,9 +121,24 @@ describe('ConfirmedStaffService', () => {
   describe('getConfirmedStaff', () => {
     it('should return staff list, grouped data, and stats', async () => {
       const workLogs = [
-        createMockWorkLog({ id: 'wl-1', staffId: 'staff-1', date: '2025-01-20', status: 'scheduled' }),
-        createMockWorkLog({ id: 'wl-2', staffId: 'staff-2', date: '2025-01-20', status: 'checked_in' }),
-        createMockWorkLog({ id: 'wl-3', staffId: 'staff-1', date: '2025-01-21', status: 'completed' }),
+        createMockWorkLog({
+          id: 'wl-1',
+          staffId: 'staff-1',
+          date: '2025-01-20',
+          status: 'scheduled',
+        }),
+        createMockWorkLog({
+          id: 'wl-2',
+          staffId: 'staff-2',
+          date: '2025-01-20',
+          status: 'checked_in',
+        }),
+        createMockWorkLog({
+          id: 'wl-3',
+          staffId: 'staff-1',
+          date: '2025-01-21',
+          status: 'completed',
+        }),
       ];
       mockConfirmedStaffRepo.getByJobPostingId.mockResolvedValue(workLogs);
 
@@ -214,9 +231,7 @@ describe('ConfirmedStaffService', () => {
   // ==========================================================================
   describe('getConfirmedStaffByDate', () => {
     it('should return staff for a specific date', async () => {
-      const workLogs = [
-        createMockWorkLog({ id: 'wl-1', staffId: 'staff-1', date: '2025-01-20' }),
-      ];
+      const workLogs = [createMockWorkLog({ id: 'wl-1', staffId: 'staff-1', date: '2025-01-20' })];
       mockConfirmedStaffRepo.getByJobPostingAndDate.mockResolvedValue(workLogs);
 
       const result = await getConfirmedStaffByDate('job-1', '2025-01-20');
@@ -391,9 +406,7 @@ describe('ConfirmedStaffService', () => {
     });
 
     it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.deleteWithTransaction.mockRejectedValue(
-        new Error('Delete failed')
-      );
+      mockConfirmedStaffRepo.deleteWithTransaction.mockRejectedValue(new Error('Delete failed'));
 
       await expect(
         deleteConfirmedStaff({
@@ -452,13 +465,9 @@ describe('ConfirmedStaffService', () => {
     });
 
     it('should propagate repository errors', async () => {
-      mockConfirmedStaffRepo.updateStatus.mockRejectedValue(
-        new Error('Status update failed')
-      );
+      mockConfirmedStaffRepo.updateStatus.mockRejectedValue(new Error('Status update failed'));
 
-      await expect(updateStaffStatus('wl-1', 'cancelled')).rejects.toThrow(
-        'Status update failed'
-      );
+      await expect(updateStaffStatus('wl-1', 'cancelled')).rejects.toThrow('Status update failed');
     });
   });
 

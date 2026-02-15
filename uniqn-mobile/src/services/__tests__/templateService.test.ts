@@ -57,13 +57,7 @@ jest.mock('@/types', () => ({
 // Import mocked modules
 // ============================================================================
 
-import {
-  getDocs,
-  getDoc,
-  setDoc,
-  deleteDoc,
-  updateDoc,
-} from 'firebase/firestore';
+import { getDocs, getDoc, setDoc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { isAppError, AppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 
@@ -190,9 +184,7 @@ describe('templateService', () => {
       mockSetDoc.mockRejectedValue(error);
       mockHandleServiceError.mockReturnValue(error as unknown as AppError);
 
-      await expect(
-        saveTemplate(mockInput as never, 'user-1')
-      ).rejects.toThrow('저장 실패');
+      await expect(saveTemplate(mockInput as never, 'user-1')).rejects.toThrow('저장 실패');
       expect(mockHandleServiceError).toHaveBeenCalled();
     });
   });
@@ -327,9 +319,7 @@ describe('templateService', () => {
       mockIsAppError.mockReturnValue(false);
       mockHandleServiceError.mockReturnValue(genericError as unknown as AppError);
 
-      await expect(
-        deleteTemplate('tmpl-1', 'user-1')
-      ).rejects.toThrow('일반 에러');
+      await expect(deleteTemplate('tmpl-1', 'user-1')).rejects.toThrow('일반 에러');
       expect(mockHandleServiceError).toHaveBeenCalled();
     });
   });
@@ -362,11 +352,7 @@ describe('templateService', () => {
       } as never);
       mockUpdateDoc.mockResolvedValue(undefined as never);
 
-      await updateTemplate(
-        'tmpl-1',
-        { description: '새 설명' },
-        'user-1'
-      );
+      await updateTemplate('tmpl-1', { description: '새 설명' }, 'user-1');
 
       expect(mockUpdateDoc).toHaveBeenCalled();
       const updateData = mockUpdateDoc.mock.calls[0][1] as unknown as Record<string, unknown>;
@@ -381,11 +367,7 @@ describe('templateService', () => {
       } as never);
       mockUpdateDoc.mockResolvedValue(undefined as never);
 
-      await updateTemplate(
-        'tmpl-1',
-        { formData: { title: '새 제목' } as never },
-        'user-1'
-      );
+      await updateTemplate('tmpl-1', { formData: { title: '새 제목' } as never }, 'user-1');
 
       expect(mockUpdateDoc).toHaveBeenCalled();
       const updateData = mockUpdateDoc.mock.calls[0][1] as unknown as Record<string, unknown>;
@@ -399,9 +381,7 @@ describe('templateService', () => {
         data: () => undefined,
       } as never);
 
-      await expect(
-        updateTemplate('non-existent', { name: '수정' }, 'user-1')
-      ).rejects.toThrow();
+      await expect(updateTemplate('non-existent', { name: '수정' }, 'user-1')).rejects.toThrow();
     });
 
     it('다른 사용자의 템플릿이면 PermissionError를 던져야 한다', async () => {
@@ -413,9 +393,7 @@ describe('templateService', () => {
 
       mockIsAppError.mockReturnValue(true);
 
-      await expect(
-        updateTemplate('tmpl-1', { name: '수정' }, 'user-1')
-      ).rejects.toThrow();
+      await expect(updateTemplate('tmpl-1', { name: '수정' }, 'user-1')).rejects.toThrow();
     });
 
     it('AppError는 그대로 다시 던져야 한다', async () => {
@@ -423,9 +401,7 @@ describe('templateService', () => {
       mockGetDoc.mockRejectedValue(appError);
       mockIsAppError.mockReturnValue(true);
 
-      await expect(
-        updateTemplate('tmpl-1', { name: '수정' }, 'user-1')
-      ).rejects.toThrow('앱 에러');
+      await expect(updateTemplate('tmpl-1', { name: '수정' }, 'user-1')).rejects.toThrow('앱 에러');
     });
 
     it('비 AppError는 handleServiceError를 호출해야 한다', async () => {
@@ -434,9 +410,9 @@ describe('templateService', () => {
       mockIsAppError.mockReturnValue(false);
       mockHandleServiceError.mockReturnValue(genericError as unknown as AppError);
 
-      await expect(
-        updateTemplate('tmpl-1', { name: '수정' }, 'user-1')
-      ).rejects.toThrow('일반 에러');
+      await expect(updateTemplate('tmpl-1', { name: '수정' }, 'user-1')).rejects.toThrow(
+        '일반 에러'
+      );
       expect(mockHandleServiceError).toHaveBeenCalled();
     });
   });

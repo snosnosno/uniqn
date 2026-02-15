@@ -322,7 +322,10 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 2. 지원 내역
       const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
-      const applicationsQuery = query(applicationsRef, where(FIELDS.APPLICATION.applicantId, '==', userId));
+      const applicationsQuery = query(
+        applicationsRef,
+        where(FIELDS.APPLICATION.applicantId, '==', userId)
+      );
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       const applications = applicationsSnapshot.docs.map((docSnapshot) => {
@@ -385,7 +388,10 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 1. 지원 내역 익명화
       const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
-      const applicationsQuery = query(applicationsRef, where(FIELDS.APPLICATION.applicantId, '==', userId));
+      const applicationsQuery = query(
+        applicationsRef,
+        where(FIELDS.APPLICATION.applicantId, '==', userId)
+      );
       const applicationsSnapshot = await getDocs(applicationsQuery);
 
       applicationsSnapshot.docs.forEach((docSnapshot) => {
@@ -410,7 +416,10 @@ export class FirebaseUserRepository implements IUserRepository {
 
       // 3. 알림 삭제
       const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const notificationsQuery = query(notificationsRef, where(FIELDS.NOTIFICATION.recipientId, '==', userId));
+      const notificationsQuery = query(
+        notificationsRef,
+        where(FIELDS.NOTIFICATION.recipientId, '==', userId)
+      );
       const notificationsSnapshot = await getDocs(notificationsQuery);
 
       notificationsSnapshot.docs.forEach((docSnapshot) => {

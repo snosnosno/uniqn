@@ -17,6 +17,8 @@ import { createMockApplication, resetCounters } from '../mocks/factories';
 // ============================================================================
 
 import { useApplications } from '@/hooks/useApplications';
+import type { Assignment } from '@/types/assignment';
+import type { StaffRole } from '@/types/role';
 
 jest.mock('@/lib/firebase', () => ({
   db: {},
@@ -139,10 +141,9 @@ jest.mock('@tanstack/react-query', () => ({
 
         const executeMutation = async () => {
           try {
-            let context: unknown;
             if (options.onMutate) {
               const result = options.onMutate(args);
-              context = result instanceof Promise ? await result : result;
+              void (result instanceof Promise ? await result : result);
             }
 
             const result = await options.mutationFn(args);
@@ -163,10 +164,9 @@ jest.mock('@tanstack/react-query', () => ({
       mockMutateAsync.mockImplementation(async (args: unknown) => {
         try {
           mockIsPending = true;
-          let context: unknown;
           if (options.onMutate) {
             const result = options.onMutate(args);
-            context = result instanceof Promise ? await result : result;
+            void (result instanceof Promise ? await result : result);
           }
           const result = await options.mutationFn(args);
           options.onSuccess?.(result, args);
@@ -327,10 +327,12 @@ describe('useApplications Hook', () => {
 
   describe('v2.0 지원 제출', () => {
     it('Assignment를 포함한 지원을 제출', async () => {
-      const mockAssignments = [
+      const mockAssignments: Assignment[] = [
         {
-          roleIds: ['role-1'],
+          roleIds: ['dealer' as StaffRole],
           dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
         },
       ];
       const mockResult = {
@@ -369,9 +371,16 @@ describe('useApplications Hook', () => {
     });
 
     it('PreQuestion 답변을 포함한 지원을 제출', async () => {
-      const mockAssignments = [{ roleIds: ['role-1'], dates: ['2024-01-15'] }];
+      const mockAssignments: Assignment[] = [
+        {
+          roleIds: ['dealer' as StaffRole],
+          dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
+        },
+      ];
       const mockPreQuestionAnswers = [
-        { questionId: 'q1', answer: '답변1' },
+        { questionId: 'q1', question: '질문1', answer: '답변1', required: false },
       ];
       const mockResult = {
         id: 'app-1',
@@ -406,7 +415,14 @@ describe('useApplications Hook', () => {
     });
 
     it('메시지를 포함한 지원을 제출', async () => {
-      const mockAssignments = [{ roleIds: ['role-1'], dates: ['2024-01-15'] }];
+      const mockAssignments: Assignment[] = [
+        {
+          roleIds: ['dealer' as StaffRole],
+          dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
+        },
+      ];
       const mockResult = {
         id: 'app-1',
         jobPostingId: 'job-1',
@@ -441,7 +457,14 @@ describe('useApplications Hook', () => {
 
     it('프로필이 없으면 Auth 정보 사용', async () => {
       // Mock profile에 name이 있으므로 name이 사용됨을 확인
-      const mockAssignments = [{ roleIds: ['role-1'], dates: ['2024-01-15'] }];
+      const mockAssignments: Assignment[] = [
+        {
+          roleIds: ['dealer' as StaffRole],
+          dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
+        },
+      ];
       mockApplyToJobV2.mockResolvedValueOnce({
         id: 'app-1',
         jobPostingId: 'job-1',
@@ -466,7 +489,14 @@ describe('useApplications Hook', () => {
 
     it('프로필과 Auth 모두 없으면 익명 사용', async () => {
       // applicantName 필드 우선순위 테스트 (현재 mock에서는 profile.name이 사용됨)
-      const mockAssignments = [{ roleIds: ['role-1'], dates: ['2024-01-15'] }];
+      const mockAssignments: Assignment[] = [
+        {
+          roleIds: ['dealer' as StaffRole],
+          dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
+        },
+      ];
       mockApplyToJobV2.mockResolvedValueOnce({
         id: 'app-1',
         jobPostingId: 'job-1',
@@ -488,7 +518,14 @@ describe('useApplications Hook', () => {
     });
 
     it('성공 시 토스트 표시', async () => {
-      const mockAssignments = [{ roleIds: ['role-1'], dates: ['2024-01-15'] }];
+      const mockAssignments: Assignment[] = [
+        {
+          roleIds: ['dealer' as StaffRole],
+          dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
+        },
+      ];
       mockApplyToJobV2.mockResolvedValueOnce({
         id: 'app-1',
         jobPostingId: 'job-1',
@@ -513,7 +550,14 @@ describe('useApplications Hook', () => {
     });
 
     it('성공 시 캐시를 무효화', async () => {
-      const mockAssignments = [{ roleIds: ['role-1'], dates: ['2024-01-15'] }];
+      const mockAssignments: Assignment[] = [
+        {
+          roleIds: ['dealer' as StaffRole],
+          dates: ['2024-01-15'],
+          timeSlot: '18:00',
+          isGrouped: false,
+        },
+      ];
       mockApplyToJobV2.mockResolvedValueOnce({
         id: 'app-1',
         jobPostingId: 'job-1',
@@ -548,7 +592,14 @@ describe('useApplications Hook', () => {
         try {
           result.current.submitApplication({
             jobPostingId: 'job-1',
-            assignments: [{ roleIds: ['role-1'], dates: ['2024-01-15'] }],
+            assignments: [
+              {
+                roleIds: ['dealer' as StaffRole],
+                dates: ['2024-01-15'],
+                timeSlot: '18:00',
+                isGrouped: false,
+              },
+            ],
           });
         } catch {
           // Expected
@@ -623,9 +674,7 @@ describe('useApplications Hook', () => {
     });
 
     it('에러 발생 시 롤백 및 토스트 표시', async () => {
-      const mockApplications = [
-        createMockApplication({ id: 'app-1', status: 'pending' }),
-      ];
+      const mockApplications = [createMockApplication({ id: 'app-1', status: 'pending' })];
       mockQueryClient.getQueryData.mockReturnValueOnce(mockApplications);
       mockCancelApplication.mockRejectedValueOnce(new Error('취소 실패'));
 
@@ -694,9 +743,7 @@ describe('useApplications Hook', () => {
     });
 
     it('Optimistic Update로 즉시 UI 업데이트', async () => {
-      const mockApplications = [
-        createMockApplication({ id: 'app-1', status: 'confirmed' }),
-      ];
+      const mockApplications = [createMockApplication({ id: 'app-1', status: 'confirmed' })];
       mockQueryClient.getQueryData.mockReturnValueOnce(mockApplications);
       mockRequestCancellation.mockResolvedValueOnce(undefined);
 
@@ -735,9 +782,7 @@ describe('useApplications Hook', () => {
     });
 
     it('에러 발생 시 롤백', async () => {
-      const mockApplications = [
-        createMockApplication({ id: 'app-1', status: 'confirmed' }),
-      ];
+      const mockApplications = [createMockApplication({ id: 'app-1', status: 'confirmed' })];
       mockQueryClient.getQueryData.mockReturnValueOnce(mockApplications);
       mockRequestCancellation.mockRejectedValueOnce(new Error('요청 실패'));
 

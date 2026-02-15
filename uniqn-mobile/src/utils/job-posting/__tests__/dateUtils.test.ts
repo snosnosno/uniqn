@@ -260,7 +260,7 @@ describe('isValidTimeFormat', () => {
     expect(isValidTimeFormat('24:00')).toBe(false);
     expect(isValidTimeFormat('25:00')).toBe(false);
     expect(isValidTimeFormat('12:60')).toBe(false);
-    expect(isValidTimeFormat('9:30')).toBe(false);  // single digit hour
+    expect(isValidTimeFormat('9:30')).toBe(false); // single digit hour
     expect(isValidTimeFormat('abc')).toBe(false);
     expect(isValidTimeFormat('')).toBe(false);
     expect(isValidTimeFormat('12:00:00')).toBe(false);
@@ -316,9 +316,7 @@ describe('convertTournamentDatesToDateRequirements', () => {
   });
 
   it('각 변환된 항목에 고유 ID가 있다', () => {
-    const tournamentDates = [
-      { day: 1, date: '2025-01-10', startTime: '19:00' },
-    ];
+    const tournamentDates = [{ day: 1, date: '2025-01-10', startTime: '19:00' }];
 
     const result = convertTournamentDatesToDateRequirements(tournamentDates);
     expect(result[0]!.timeSlots[0]!.id).toBe('mock-id');
@@ -385,9 +383,7 @@ describe('convertDateRequirementsToTournamentDates', () => {
   });
 
   it('timeSlots가 비어있으면 기본 시간 09:00을 사용한다', () => {
-    const dateReqs = [
-      { date: '2025-01-10', timeSlots: [] },
-    ];
+    const dateReqs = [{ date: '2025-01-10', timeSlots: [] }];
 
     const result = convertDateRequirementsToTournamentDates(dateReqs);
     expect(result[0]!.startTime).toBe('09:00');
@@ -405,10 +401,7 @@ describe('calculateTotalFromDateReqs', () => {
         date: '2025-01-10',
         timeSlots: [
           {
-            roles: [
-              { headcount: 3 },
-              { headcount: 2 },
-            ],
+            roles: [{ headcount: 3 }, { headcount: 2 }],
           },
         ],
       },
@@ -436,10 +429,7 @@ describe('calculateTotalFromDateReqs', () => {
     const reqs = [
       {
         date: '2025-01-10',
-        timeSlots: [
-          { roles: [{ headcount: 2 }] },
-          { roles: [{ headcount: 3 }] },
-        ],
+        timeSlots: [{ roles: [{ headcount: 2 }] }, { roles: [{ headcount: 3 }] }],
       },
     ];
 
@@ -477,10 +467,7 @@ describe('calculateFilledFromDateReqs', () => {
         date: '2025-01-10',
         timeSlots: [
           {
-            roles: [
-              { filled: 2 },
-              { filled: 1 },
-            ],
+            roles: [{ filled: 2 }, { filled: 1 }],
           },
         ],
       },

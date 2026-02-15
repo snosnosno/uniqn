@@ -756,7 +756,9 @@ export default function StaffSettlementsScreen() {
 
   // 카운트 계산
   const staffCount = staffStats?.total ?? 0;
-  const pendingSettlementCount = workLogs.filter((log) => log.payrollStatus !== STATUS.PAYROLL.COMPLETED).length;
+  const pendingSettlementCount = workLogs.filter(
+    (log) => log.payrollStatus !== STATUS.PAYROLL.COMPLETED
+  ).length;
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>

@@ -62,8 +62,16 @@ const SOCIAL_CONFIG: Record<
   { loginFn: () => Promise<AuthResult>; label: string; errorMessage: string }
 > = {
   apple: { loginFn: signInWithApple, label: 'Apple', errorMessage: 'Apple 로그인에 실패했습니다.' },
-  google: { loginFn: signInWithGoogle, label: 'Google', errorMessage: 'Google 로그인에 실패했습니다.' },
-  kakao: { loginFn: signInWithKakao, label: '카카오', errorMessage: '카카오 로그인에 실패했습니다.' },
+  google: {
+    loginFn: signInWithGoogle,
+    label: 'Google',
+    errorMessage: 'Google 로그인에 실패했습니다.',
+  },
+  kakao: {
+    loginFn: signInWithKakao,
+    label: '카카오',
+    errorMessage: '카카오 로그인에 실패했습니다.',
+  },
 };
 
 export default function LoginScreen() {

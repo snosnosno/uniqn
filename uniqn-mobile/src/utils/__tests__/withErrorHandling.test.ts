@@ -54,10 +54,9 @@ jest.mock('@/errors', () => {
     },
     normalizeError: (error: unknown) => {
       if (error instanceof MockAppError) return error;
-      const e = new MockAppError(
-        error instanceof Error ? error.message : String(error),
-        { category: 'unknown' }
-      );
+      const e = new MockAppError(error instanceof Error ? error.message : String(error), {
+        category: 'unknown',
+      });
       return e;
     },
   };
@@ -113,9 +112,7 @@ describe('withErrorHandling', () => {
     it('logError: false 시 로깅 안 함', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('에러'));
 
-      await expect(
-        withErrorHandling(fn, { logError: false })
-      ).rejects.toThrow();
+      await expect(withErrorHandling(fn, { logError: false })).rejects.toThrow();
 
       expect(logger.error).not.toHaveBeenCalled();
     });
@@ -163,9 +160,7 @@ describe('withErrorHandling', () => {
     it('두 번째 인자로 문자열 전달 시 errorMessage로 사용', async () => {
       const fn = jest.fn().mockRejectedValue(new Error('원본 에러'));
 
-      await expect(
-        withErrorHandling(fn, '사용자 조회')
-      ).rejects.toThrow();
+      await expect(withErrorHandling(fn, '사용자 조회')).rejects.toThrow();
 
       expect(logger.error).toHaveBeenCalledWith(
         '사용자 조회',

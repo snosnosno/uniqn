@@ -33,12 +33,7 @@ import {
   reauthenticateWithCredential,
   fetchSignInMethodsForEmail,
 } from 'firebase/auth';
-import {
-  doc,
-  serverTimestamp,
-  Timestamp,
-  runTransaction,
-} from 'firebase/firestore';
+import { doc, serverTimestamp, Timestamp, runTransaction } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';

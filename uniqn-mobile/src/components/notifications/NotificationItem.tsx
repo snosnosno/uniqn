@@ -95,7 +95,9 @@ export const NotificationItem = memo(function NotificationItem({
           <View className="flex-1">
             {/* 제목 */}
             <View className="flex-row items-center">
-              {!notification.isRead && <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />}
+              {!notification.isRead && (
+                <View className="w-2 h-2 rounded-full bg-primary-500 mr-2" />
+              )}
               <Text
                 numberOfLines={1}
                 className={`

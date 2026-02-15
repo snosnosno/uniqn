@@ -63,7 +63,11 @@ export function useShare(): UseShareReturn {
    * 웹 플랫폼 공유 (Web Share API → 클립보드 fallback)
    */
   const webShare = useCallback(
-    async (options: { title: string; text: string; url?: string }): Promise<'shared' | 'dismissed'> => {
+    async (options: {
+      title: string;
+      text: string;
+      url?: string;
+    }): Promise<'shared' | 'dismissed'> => {
       // Web Share API 시도
       if (typeof navigator !== 'undefined' && navigator.share) {
         try {
@@ -108,7 +112,11 @@ export function useShare(): UseShareReturn {
         let action: 'shared' | 'dismissed';
 
         if (Platform.OS === 'web') {
-          action = await webShare({ title: options.title, text: options.message, url: options.url });
+          action = await webShare({
+            title: options.title,
+            text: options.message,
+            url: options.url,
+          });
         } else {
           const result = await Share.share(
             {

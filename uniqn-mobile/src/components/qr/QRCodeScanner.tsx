@@ -220,12 +220,8 @@ export function QRCodeScanner({
             {scanError ? (
               <View className="mt-6 px-8 items-center">
                 <View className="bg-red-900/80 rounded-xl p-4 w-full">
-                  <Text className="text-red-300 text-center font-semibold mb-1">
-                    스캔 실패
-                  </Text>
-                  <Text className="text-white text-center text-sm">
-                    {scanError.message}
-                  </Text>
+                  <Text className="text-red-300 text-center font-semibold mb-1">스캔 실패</Text>
+                  <Text className="text-white text-center text-sm">{scanError.message}</Text>
                   {scanError.isRetryable && (
                     <Text className="text-gray-400 text-center text-xs mt-2">
                       다시 스캔하거나 새 QR 코드를 요청하세요

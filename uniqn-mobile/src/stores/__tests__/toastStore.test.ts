@@ -5,11 +5,7 @@
  */
 
 import { act } from '@testing-library/react-native';
-import {
-  useToastStore,
-  selectToasts,
-  selectHasToasts,
-} from '../toastStore';
+import { useToastStore, selectToasts, selectHasToasts } from '../toastStore';
 
 // Mock generateId to return deterministic IDs
 let mockIdCounter = 0;

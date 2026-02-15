@@ -8,7 +8,8 @@
       "node": "22.12.0",
       "env": {
         "SENTRY_ORG": "129908fd396a",
-        "SENTRY_PROJECT": "uniqn-mobile"
+        "SENTRY_PROJECT": "uniqn-mobile",
+        "RCT_NEW_ARCH_ENABLED": "1"
       }
     },
     "development": {

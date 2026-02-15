@@ -298,8 +298,8 @@ describe('toggleExclusiveByDate', () => {
     const result = toggleExclusiveByDate(selectedKeys, newKey);
 
     expect(result.has(day1Key)).toBe(false); // 같은 날짜 제거
-    expect(result.has(day2Key)).toBe(true);  // 다른 날짜 유지
-    expect(result.has(newKey)).toBe(true);   // 새 키 추가
+    expect(result.has(day2Key)).toBe(true); // 다른 날짜 유지
+    expect(result.has(newKey)).toBe(true); // 새 키 추가
   });
 
   it('빈 Set에 새 키를 추가한다', () => {
@@ -356,10 +356,7 @@ describe('toggleExclusiveByDate', () => {
 // ============================================================================
 
 describe('toggleGroup', () => {
-  const groupKeys = [
-    '2024-01-17|09:00|dealer',
-    '2024-01-17|14:00|dealer',
-  ];
+  const groupKeys = ['2024-01-17|09:00|dealer', '2024-01-17|14:00|dealer'];
 
   it('그룹의 모든 항목이 미선택이면 전체 선택한다', () => {
     const selectedKeys = new Set<string>();

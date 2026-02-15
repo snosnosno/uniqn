@@ -369,9 +369,7 @@ describe('JobService', () => {
         createMockJobPosting({ id: 'urgent-1', isUrgent: true }),
         createMockJobPosting({ id: 'urgent-2', isUrgent: true }),
       ];
-      mockRepo.getList.mockResolvedValue(
-        createMockPaginatedResult(urgentJobs) as any
-      );
+      mockRepo.getList.mockResolvedValue(createMockPaginatedResult(urgentJobs) as any);
 
       const result = await getUrgentJobPostings();
 
@@ -384,9 +382,7 @@ describe('JobService', () => {
     });
 
     it('should use custom page size', async () => {
-      mockRepo.getList.mockResolvedValue(
-        createMockPaginatedResult([]) as any
-      );
+      mockRepo.getList.mockResolvedValue(createMockPaginatedResult([]) as any);
 
       await getUrgentJobPostings(5);
 
@@ -398,9 +394,7 @@ describe('JobService', () => {
     });
 
     it('should return empty array when no urgent postings', async () => {
-      mockRepo.getList.mockResolvedValue(
-        createMockPaginatedResult([]) as any
-      );
+      mockRepo.getList.mockResolvedValue(createMockPaginatedResult([]) as any);
 
       const result = await getUrgentJobPostings();
 
@@ -452,9 +446,7 @@ describe('JobService', () => {
 
     it('should filter by specific status when provided', async () => {
       const activeJobs = [createMockJobPosting({ id: 'a1', status: 'active' })];
-      mockRepo.getList.mockResolvedValue(
-        createMockPaginatedResult(activeJobs) as any
-      );
+      mockRepo.getList.mockResolvedValue(createMockPaginatedResult(activeJobs) as any);
 
       await getMyJobPostings('owner-1', { status: 'active' as any });
 
@@ -467,9 +459,7 @@ describe('JobService', () => {
     });
 
     it('should use active status as default when includeAll is false', async () => {
-      mockRepo.getList.mockResolvedValue(
-        createMockPaginatedResult([]) as any
-      );
+      mockRepo.getList.mockResolvedValue(createMockPaginatedResult([]) as any);
 
       await getMyJobPostings('owner-1', { includeAll: false });
 
@@ -482,9 +472,7 @@ describe('JobService', () => {
     });
 
     it('should only fetch specific status when both status and includeAll are set', async () => {
-      mockRepo.getList.mockResolvedValue(
-        createMockPaginatedResult([]) as any
-      );
+      mockRepo.getList.mockResolvedValue(createMockPaginatedResult([]) as any);
 
       await getMyJobPostings('owner-1', { status: 'closed' as any, includeAll: true });
 

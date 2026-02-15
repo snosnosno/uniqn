@@ -15,7 +15,7 @@ import {
   uploadMultipleAnnouncementImages,
   deleteMultipleAnnouncementImages,
 } from '../storageService';
-import type { UploadResult } from '../storageService';
+// UploadResult type is used implicitly
 
 // ============================================================================
 // Mock Dependencies
@@ -161,7 +161,8 @@ describe('StorageService', () => {
 
   describe('deleteProfileImage', () => {
     it('프로필 이미지를 성공적으로 삭제해야 함', async () => {
-      const imageUrl = 'https://firebasestorage.googleapis.com/v0/b/bucket/o/profile-images%2Fuser-123%2F123.jpg?token=abc';
+      const imageUrl =
+        'https://firebasestorage.googleapis.com/v0/b/bucket/o/profile-images%2Fuser-123%2F123.jpg?token=abc';
 
       mockDeleteObject.mockResolvedValue(undefined);
 
@@ -267,11 +268,10 @@ describe('StorageService', () => {
       expect(result.downloadURL).toBe(downloadURL);
       expect(result.path).toContain('announcements/');
       expect(result.path).toContain(userId);
-      expect(mockManipulateAsync).toHaveBeenCalledWith(
-        imageUri,
-        [{ resize: { width: 1200 } }],
-        { compress: 0.8, format: 'jpeg' }
-      );
+      expect(mockManipulateAsync).toHaveBeenCalledWith(imageUri, [{ resize: { width: 1200 } }], {
+        compress: 0.8,
+        format: 'jpeg',
+      });
     });
 
     it('진행률 콜백을 호출해야 함', async () => {
@@ -324,7 +324,8 @@ describe('StorageService', () => {
     });
 
     it('Firebase Storage URL에서 경로를 추출해야 함', async () => {
-      const imageUrl = 'https://firebasestorage.googleapis.com/v0/b/bucket/o/announcements%2Fadmin%2Fimage.jpg?token=xyz';
+      const imageUrl =
+        'https://firebasestorage.googleapis.com/v0/b/bucket/o/announcements%2Fadmin%2Fimage.jpg?token=xyz';
 
       mockDeleteObject.mockResolvedValue(undefined);
 
@@ -461,9 +462,24 @@ describe('StorageService', () => {
   describe('deleteMultipleAnnouncementImages', () => {
     it('여러 이미지를 병렬로 삭제해야 함', async () => {
       const images = [
-        { id: '1', url: 'announcements/admin/1.jpg', storagePath: 'announcements/admin/1.jpg', order: 0 },
-        { id: '2', url: 'announcements/admin/2.jpg', storagePath: 'announcements/admin/2.jpg', order: 1 },
-        { id: '3', url: 'announcements/admin/3.jpg', storagePath: 'announcements/admin/3.jpg', order: 2 },
+        {
+          id: '1',
+          url: 'announcements/admin/1.jpg',
+          storagePath: 'announcements/admin/1.jpg',
+          order: 0,
+        },
+        {
+          id: '2',
+          url: 'announcements/admin/2.jpg',
+          storagePath: 'announcements/admin/2.jpg',
+          order: 1,
+        },
+        {
+          id: '3',
+          url: 'announcements/admin/3.jpg',
+          storagePath: 'announcements/admin/3.jpg',
+          order: 2,
+        },
       ];
 
       mockDeleteObject.mockResolvedValue(undefined);
@@ -475,8 +491,18 @@ describe('StorageService', () => {
 
     it('일부 삭제 실패 시 계속 진행해야 함', async () => {
       const images = [
-        { id: '1', url: 'announcements/admin/1.jpg', storagePath: 'announcements/admin/1.jpg', order: 0 },
-        { id: '2', url: 'announcements/admin/2.jpg', storagePath: 'announcements/admin/2.jpg', order: 1 },
+        {
+          id: '1',
+          url: 'announcements/admin/1.jpg',
+          storagePath: 'announcements/admin/1.jpg',
+          order: 0,
+        },
+        {
+          id: '2',
+          url: 'announcements/admin/2.jpg',
+          storagePath: 'announcements/admin/2.jpg',
+          order: 1,
+        },
       ];
 
       mockDeleteObject

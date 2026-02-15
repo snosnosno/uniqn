@@ -58,9 +58,24 @@ function createGroupedScheduleEvent(
     roles: ['dealer'],
     timeSlot: '',
     dateStatuses: [
-      { date: '2025-01-15', formattedDate: '1/15(수)', status: 'not_started', scheduleEventId: 'evt-1' },
-      { date: '2025-01-16', formattedDate: '1/16(목)', status: 'not_started', scheduleEventId: 'evt-2' },
-      { date: '2025-01-17', formattedDate: '1/17(금)', status: 'not_started', scheduleEventId: 'evt-3' },
+      {
+        date: '2025-01-15',
+        formattedDate: '1/15(수)',
+        status: 'not_started',
+        scheduleEventId: 'evt-1',
+      },
+      {
+        date: '2025-01-16',
+        formattedDate: '1/16(목)',
+        status: 'not_started',
+        scheduleEventId: 'evt-2',
+      },
+      {
+        date: '2025-01-17',
+        formattedDate: '1/17(금)',
+        status: 'not_started',
+        scheduleEventId: 'evt-3',
+      },
     ],
     originalEvents: [],
     ...overrides,
@@ -165,12 +180,7 @@ describe('formatDateDisplay', () => {
   });
 
   it('비연속 날짜 4개 이상은 축약하여 표시한다', () => {
-    const result = formatDateDisplay([
-      '2025-01-15',
-      '2025-01-17',
-      '2025-01-20',
-      '2025-01-25',
-    ]);
+    const result = formatDateDisplay(['2025-01-15', '2025-01-17', '2025-01-20', '2025-01-25']);
     expect(result).toBe('1/15, 1/17 ... 1/25 (4일)');
   });
 
@@ -668,9 +678,7 @@ describe('extractAllDatesForCalendar', () => {
       status: 'checked_in',
     });
     const result = extractAllDatesForCalendar([event]);
-    expect(result).toEqual([
-      { date: '2025-01-15', type: 'confirmed', status: 'checked_in' },
-    ]);
+    expect(result).toEqual([{ date: '2025-01-15', type: 'confirmed', status: 'checked_in' }]);
   });
 
   it('GroupedScheduleEvent에서 모든 날짜를 개별적으로 추출한다', () => {
@@ -702,9 +710,24 @@ describe('extractAllDatesForCalendar', () => {
     const grouped = createGroupedScheduleEvent({
       type: 'confirmed',
       dateStatuses: [
-        { date: '2025-01-15', formattedDate: '1/15(수)', status: 'checked_in', scheduleEventId: 'e1' },
-        { date: '2025-01-16', formattedDate: '1/16(목)', status: 'checked_out', scheduleEventId: 'e2' },
-        { date: '2025-01-17', formattedDate: '1/17(금)', status: 'not_started', scheduleEventId: 'e3' },
+        {
+          date: '2025-01-15',
+          formattedDate: '1/15(수)',
+          status: 'checked_in',
+          scheduleEventId: 'e1',
+        },
+        {
+          date: '2025-01-16',
+          formattedDate: '1/16(목)',
+          status: 'checked_out',
+          scheduleEventId: 'e2',
+        },
+        {
+          date: '2025-01-17',
+          formattedDate: '1/17(금)',
+          status: 'not_started',
+          scheduleEventId: 'e3',
+        },
       ],
     });
     const result = extractAllDatesForCalendar([grouped]);

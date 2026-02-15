@@ -42,11 +42,7 @@ import type {
   SystemMetricsData,
   DailyCount,
 } from '../interfaces';
-import type {
-  AdminUser,
-  AdminUserFilters,
-  PaginatedUsers,
-} from '@/types/admin';
+import type { AdminUser, AdminUserFilters, PaginatedUsers } from '@/types/admin';
 import type { UserRole } from '@/types/common';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
@@ -137,22 +133,13 @@ export class FirebaseAdminRepository implements IAdminRepository {
           )
         ),
         getCountFromServer(
-          query(
-            collection(db, COLLECTIONS.USERS),
-            where(FIELDS.USER.role, '==', 'admin')
-          )
+          query(collection(db, COLLECTIONS.USERS), where(FIELDS.USER.role, '==', 'admin'))
         ),
         getCountFromServer(
-          query(
-            collection(db, COLLECTIONS.USERS),
-            where(FIELDS.USER.role, '==', 'employer')
-          )
+          query(collection(db, COLLECTIONS.USERS), where(FIELDS.USER.role, '==', 'employer'))
         ),
         getCountFromServer(
-          query(
-            collection(db, COLLECTIONS.USERS),
-            where(FIELDS.USER.role, '==', 'staff')
-          )
+          query(collection(db, COLLECTIONS.USERS), where(FIELDS.USER.role, '==', 'staff'))
         ),
       ]);
 
@@ -249,11 +236,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
       const totalPages = Math.ceil(total / pageSize);
       const offset = (page - 1) * pageSize;
 
-      let dataQuery = query(
-        collection(db, COLLECTIONS.USERS),
-        ...constraints,
-        limit(pageSize)
-      );
+      let dataQuery = query(collection(db, COLLECTIONS.USERS), ...constraints, limit(pageSize));
 
       if (offset > 0) {
         const prevSnap = await getDocs(
@@ -345,10 +328,7 @@ export class FirebaseAdminRepository implements IAdminRepository {
     }
   }
 
-  async updateUserRole(
-    userId: string,
-    newRole: UserRole
-  ): Promise<string | undefined> {
+  async updateUserRole(userId: string, newRole: UserRole): Promise<string | undefined> {
     try {
       logger.info('사용자 역할 변경', { userId, newRole });
       const db = getFirebaseDb();

@@ -211,15 +211,11 @@ describe('normalizeJobRoles', () => {
       dateSpecificRequirements: [
         {
           date: '2025-01-28',
-          timeSlots: [
-            { startTime: '19:00', roles: [{ role: 'dealer', headcount: 2, filled: 1 }] },
-          ],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 2, filled: 1 }] }],
         },
         {
           date: '2025-01-29',
-          timeSlots: [
-            { startTime: '19:00', roles: [{ role: 'dealer', headcount: 3, filled: 2 }] },
-          ],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3, filled: 2 }] }],
         },
       ],
     });
@@ -292,9 +288,7 @@ describe('getRolesForDateAndTime', () => {
       dateSpecificRequirements: [
         {
           date: '2025-01-28',
-          timeSlots: [
-            { startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] },
-          ],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
         },
       ],
     });
@@ -307,9 +301,7 @@ describe('getRolesForDateAndTime', () => {
       dateSpecificRequirements: [
         {
           date: '2025-01-28',
-          timeSlots: [
-            { startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] },
-          ],
+          timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
         },
       ],
     });

@@ -5,20 +5,14 @@
  * @version 2.0.0
  */
 
-import type {
-  ScheduleEvent,
-  WorkLog,
-  Application,
-  ScheduleStats,
-  ScheduleGroup,
-} from '@/types';
+import type { ScheduleEvent, WorkLog, Application, ScheduleFilters } from '@/types';
 
 // ============================================================================
 // Mock Setup
 // ============================================================================
 
 // Mock constants (must be defined before imports)
-const mockSTATUS = {
+const _mockSTATUS = {
   WORK_LOG: {
     SCHEDULED: 'scheduled',
     CHECKED_IN: 'checked_in',
@@ -35,6 +29,7 @@ const mockSTATUS = {
     PENDING: 'pending',
   },
 } as const;
+void _mockSTATUS;
 
 const mockWorkLogRepositoryGetByStaffIdWithFilters = jest.fn();
 const mockWorkLogRepositoryGetById = jest.fn();
@@ -45,12 +40,14 @@ const mockJobPostingRepositoryGetByIdBatch = jest.fn();
 
 jest.mock('@/repositories', () => ({
   workLogRepository: {
-    getByStaffIdWithFilters: (...args: unknown[]) => mockWorkLogRepositoryGetByStaffIdWithFilters(...args),
+    getByStaffIdWithFilters: (...args: unknown[]) =>
+      mockWorkLogRepositoryGetByStaffIdWithFilters(...args),
     getById: (...args: unknown[]) => mockWorkLogRepositoryGetById(...args),
     subscribeByStaffId: (...args: unknown[]) => mockWorkLogRepositorySubscribeByStaffId(...args),
   },
   applicationRepository: {
-    getByApplicantIdWithStatuses: (...args: unknown[]) => mockApplicationRepositoryGetByApplicantIdWithStatuses(...args),
+    getByApplicantIdWithStatuses: (...args: unknown[]) =>
+      mockApplicationRepositoryGetByApplicantIdWithStatuses(...args),
   },
   jobPostingRepository: {
     getById: (...args: unknown[]) => mockJobPostingRepositoryGetById(...args),
@@ -81,8 +78,9 @@ jest.mock('@/domains/schedule', () => ({
       settlementBreakdown: (workLog as { settlementBreakdown?: unknown }).settlementBreakdown,
     }),
     applicationToScheduleEvents: (app: Application, cardInfo?: unknown) => {
-      const dates = app.selectedDates || [app.date || '2025-01-15'];
-      return dates.map(date => ({
+      const appAny = app as unknown as { selectedDates?: string[]; date?: string };
+      const dates = appAny.selectedDates || [appAny.date || '2025-01-15'];
+      return dates.map((date: string) => ({
         id: `${app.id}-${date}`,
         jobPostingId: app.jobPostingId,
         jobPostingName: (cardInfo as { title?: string })?.title || '이벤트',
@@ -105,8 +103,8 @@ jest.mock('@/shared/id', () => ({
     normalizeJobId: (doc: { jobPostingId?: string }) => doc.jobPostingId || '',
     extractUnifiedIds: (workLogs: WorkLog[], apps: Application[]) => {
       const ids = new Set<string>();
-      workLogs.forEach(wl => ids.add(wl.jobPostingId));
-      apps.forEach(app => ids.add(app.jobPostingId));
+      workLogs.forEach((wl) => ids.add(wl.jobPostingId));
+      apps.forEach((app) => ids.add(app.jobPostingId));
       return ids;
     },
   },
@@ -233,8 +231,10 @@ function createMockScheduleEvent(overrides?: Partial<ScheduleEvent>): ScheduleEv
     endTime: null,
     checkInTime: null,
     checkOutTime: null,
+    sourceCollection: 'workLogs',
+    sourceId: 'wl-1',
     ...overrides,
-  };
+  } as ScheduleEvent;
 }
 
 // ============================================================================
@@ -249,7 +249,12 @@ describe('scheduleService - getMySchedules', () => {
   it('WorkLogs와 Applications를 병합하여 반환해야 함', async () => {
     const mockWorkLogs = [createMockWorkLog()];
     const mockApplications = [createMockApplication()];
-    const mockJobPosting = { id: 'job-1', title: '테스트 이벤트', location: '서울', ownerId: 'owner-1' };
+    const mockJobPosting = {
+      id: 'job-1',
+      title: '테스트 이벤트',
+      location: '서울',
+      ownerId: 'owner-1',
+    };
 
     mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue(mockWorkLogs);
     mockApplicationRepositoryGetByApplicantIdWithStatuses.mockResolvedValue(mockApplications);
@@ -260,7 +265,10 @@ describe('scheduleService - getMySchedules', () => {
 
     expect(result.schedules).toBeDefined();
     expect(result.stats).toBeDefined();
-    expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith('staff-123', expect.any(Object));
+    expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith(
+      'staff-123',
+      expect.any(Object)
+    );
     expect(mockApplicationRepositoryGetByApplicantIdWithStatuses).toHaveBeenCalled();
     expect(mockJobPostingRepositoryGetByIdBatch).toHaveBeenCalled();
   });
@@ -290,7 +298,7 @@ describe('scheduleService - getMySchedules', () => {
 
     await getMySchedules('staff-123', {
       status: 'checked_in',
-    });
+    } as Partial<ScheduleFilters> as ScheduleFilters);
 
     expect(mockWorkLogRepositoryGetByStaffIdWithFilters).toHaveBeenCalledWith('staff-123', {
       dateRange: undefined,
@@ -312,7 +320,7 @@ describe('scheduleService - getMySchedules', () => {
 
     const result = await getMySchedules('staff-123', {
       searchTerm: '강남',
-    });
+    } as Partial<ScheduleFilters> as ScheduleFilters);
 
     expect(result.schedules.length).toBeLessThanOrEqual(mockSchedules.length);
   });
@@ -330,9 +338,9 @@ describe('scheduleService - getMySchedules', () => {
 
     const result = await getMySchedules('staff-123', {
       type: STATUS.SCHEDULE.CONFIRMED,
-    });
+    } as Partial<ScheduleFilters> as ScheduleFilters);
 
-    expect(result.schedules.every(s => s.type === STATUS.SCHEDULE.CONFIRMED)).toBe(true);
+    expect(result.schedules.every((s) => s.type === STATUS.SCHEDULE.CONFIRMED)).toBe(true);
   });
 
   it('WorkLogs 조회 실패 시 Applications만으로 처리하고 경고 반환', async () => {
@@ -353,7 +361,9 @@ describe('scheduleService - getMySchedules', () => {
     const mockWorkLogs = [createMockWorkLog()];
 
     mockWorkLogRepositoryGetByStaffIdWithFilters.mockResolvedValue(mockWorkLogs);
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockRejectedValue(new Error('Firebase error'));
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockRejectedValue(
+      new Error('Firebase error')
+    );
     mockJobPostingRepositoryGetByIdBatch.mockResolvedValue([]);
     mockScheduleMergerMerge.mockImplementation((wl, _app) => wl);
 
@@ -365,7 +375,9 @@ describe('scheduleService - getMySchedules', () => {
 
   it('둘 다 실패 시 에러를 throw해야 함', async () => {
     mockWorkLogRepositoryGetByStaffIdWithFilters.mockRejectedValue(new Error('Firebase error'));
-    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockRejectedValue(new Error('Firebase error'));
+    mockApplicationRepositoryGetByApplicantIdWithStatuses.mockRejectedValue(
+      new Error('Firebase error')
+    );
 
     await expect(getMySchedules('staff-123')).rejects.toThrow();
   });
@@ -496,7 +508,12 @@ describe('scheduleService - getScheduleById', () => {
 
   it('존재하는 WorkLog를 ScheduleEvent로 변환해야 함', async () => {
     const mockWorkLog = createMockWorkLog();
-    const mockJobPosting = { id: 'job-1', title: '테스트 이벤트', location: '서울', ownerId: 'owner-1' };
+    const mockJobPosting = {
+      id: 'job-1',
+      title: '테스트 이벤트',
+      location: '서울',
+      ownerId: 'owner-1',
+    };
 
     mockWorkLogRepositoryGetById.mockResolvedValue(mockWorkLog);
     mockJobPostingRepositoryGetById.mockResolvedValue(mockJobPosting);
@@ -583,7 +600,11 @@ describe('scheduleService - getUpcomingSchedules', () => {
     const result = await getUpcomingSchedules('staff-123');
 
     expect(result.length).toBe(2);
-    expect(result.every(s => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED)).toBe(true);
+    expect(
+      result.every(
+        (s) => s.type === STATUS.SCHEDULE.CONFIRMED || s.type === STATUS.SCHEDULE.APPLIED
+      )
+    ).toBe(true);
   });
 });
 
@@ -617,7 +638,7 @@ describe('scheduleService - subscribeToSchedules', () => {
 
     subscribeToSchedules('staff-123', onUpdate);
 
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(onUpdate).toHaveBeenCalled();
   });
@@ -627,10 +648,12 @@ describe('scheduleService - subscribeToSchedules', () => {
     const onError = jest.fn();
     const mockError = new Error('Subscription error');
 
-    mockWorkLogRepositorySubscribeByStaffId.mockImplementation((_staffId, _callback, errorCallback) => {
-      if (errorCallback) errorCallback(mockError);
-      return jest.fn();
-    });
+    mockWorkLogRepositorySubscribeByStaffId.mockImplementation(
+      (_staffId, _callback, errorCallback) => {
+        if (errorCallback) errorCallback(mockError);
+        return jest.fn();
+      }
+    );
 
     subscribeToSchedules('staff-123', onUpdate, onError);
 
@@ -642,13 +665,15 @@ describe('scheduleService - subscribeToSchedules', () => {
     const onError = jest.fn();
     const mockError = new Error('Subscription error');
 
-    mockWorkLogRepositorySubscribeByStaffId.mockImplementation((_staffId, _callback, errorCallback) => {
-      if (errorCallback) {
-        errorCallback(mockError);
-        errorCallback(mockError);
+    mockWorkLogRepositorySubscribeByStaffId.mockImplementation(
+      (_staffId, _callback, errorCallback) => {
+        if (errorCallback) {
+          errorCallback(mockError);
+          errorCallback(mockError);
+        }
+        return jest.fn();
       }
-      return jest.fn();
-    });
+    );
 
     subscribeToSchedules('staff-123', onUpdate, onError);
 
@@ -725,8 +750,8 @@ describe('scheduleService - groupSchedulesByDate', () => {
     const groups = groupSchedulesByDate(schedules);
 
     expect(groups.length).toBe(2);
-    expect(groups.find(g => g.date === today)?.events.length).toBe(2);
-    expect(groups.find(g => g.date === tomorrow)?.events.length).toBe(1);
+    expect(groups.find((g) => g.date === today)?.events.length).toBe(2);
+    expect(groups.find((g) => g.date === tomorrow)?.events.length).toBe(1);
   });
 
   it('오늘 날짜를 표시해야 함', () => {

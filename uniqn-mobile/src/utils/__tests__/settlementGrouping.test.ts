@@ -216,7 +216,12 @@ describe('groupSettlementsByStaff', () => {
 
   it('customRoles가 올바르게 매핑된다', () => {
     const workLogs = [
-      createWorkLog({ id: 'wl-1', date: '2025-01-15', role: 'other' as any, customRole: '조명담당' }),
+      createWorkLog({
+        id: 'wl-1',
+        date: '2025-01-15',
+        role: 'other' as any,
+        customRole: '조명담당',
+      }),
     ];
     const result = groupSettlementsByStaff(workLogs, defaultContext);
     expect(result[0].roles).toEqual(['other']);
@@ -224,9 +229,7 @@ describe('groupSettlementsByStaff', () => {
   });
 
   it('customRoles가 모두 undefined이면 customRoles는 undefined이다', () => {
-    const workLogs = [
-      createWorkLog({ id: 'wl-1', date: '2025-01-15', role: 'dealer' as any }),
-    ];
+    const workLogs = [createWorkLog({ id: 'wl-1', date: '2025-01-15', role: 'dealer' as any })];
     const result = groupSettlementsByStaff(workLogs, defaultContext);
     expect(result[0].customRoles).toBeUndefined();
   });

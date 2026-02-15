@@ -234,7 +234,9 @@ export default function MyPostingsPage() {
       case 'active':
         return postings.filter((p) => p.status === STATUS.JOB_POSTING.ACTIVE);
       case 'closed':
-        return postings.filter((p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED);
+        return postings.filter(
+          (p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED
+        );
       case 'tournament':
         return postings.filter((p) => p.postingType === 'tournament');
       default:
@@ -249,7 +251,9 @@ export default function MyPostingsPage() {
     return {
       all: postings.length,
       active: postings.filter((p) => p.status === STATUS.JOB_POSTING.ACTIVE).length,
-      closed: postings.filter((p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED).length,
+      closed: postings.filter(
+        (p) => p.status === STATUS.JOB_POSTING.CLOSED || p.status === STATUS.JOB_POSTING.CANCELLED
+      ).length,
       tournament: postings.filter((p) => p.postingType === 'tournament').length,
     };
   }, [postings]);

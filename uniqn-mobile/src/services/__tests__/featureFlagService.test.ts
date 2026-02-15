@@ -6,7 +6,7 @@
  */
 
 import { featureFlagService, whenEnabled, selectByFlag } from '../featureFlagService';
-import type { FeatureFlagKey } from '../featureFlagService';
+// type FeatureFlagKey imported in service - not needed directly
 
 // ============================================================================
 // Mock Dependencies
@@ -36,7 +36,7 @@ jest.mock('react-native', () => ({
 }));
 
 // Mock __DEV__
-global.__DEV__ = true;
+(global as any).__DEV__ = true;
 
 // ============================================================================
 // Tests
@@ -46,8 +46,8 @@ describe('FeatureFlagService', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     // 각 테스트마다 서비스 초기화 상태 리셋
-    (featureFlagService as { initialized: boolean }).initialized = false;
-    (featureFlagService as { lastFetchTime: number }).lastFetchTime = 0;
+    (featureFlagService as unknown as { initialized: boolean }).initialized = false;
+    (featureFlagService as unknown as { lastFetchTime: number }).lastFetchTime = 0;
   });
 
   // ==========================================================================
@@ -123,7 +123,8 @@ describe('FeatureFlagService', () => {
       await featureFlagService.fetchAndActivate();
 
       // 캐시 시간을 과거로 설정
-      (featureFlagService as { lastFetchTime: number }).lastFetchTime = Date.now() - 13 * 60 * 60 * 1000;
+      (featureFlagService as unknown as { lastFetchTime: number }).lastFetchTime =
+        Date.now() - 13 * 60 * 60 * 1000;
 
       jest.clearAllMocks();
       await featureFlagService.fetchAndActivate();
@@ -301,7 +302,7 @@ describe('FeatureFlagService', () => {
       await featureFlagService.fetchAndActivate();
       featureFlagService.clearCache();
 
-      expect((featureFlagService as { lastFetchTime: number }).lastFetchTime).toBe(0);
+      expect((featureFlagService as unknown as { lastFetchTime: number }).lastFetchTime).toBe(0);
     });
 
     it('캐시 초기화 후 재fetch가 가능해야 함', async () => {
@@ -324,7 +325,7 @@ describe('FeatureFlagService', () => {
 
   describe('setFlagForTesting', () => {
     it('개발 모드에서 플래그를 강제 설정해야 함', () => {
-      global.__DEV__ = true;
+      (global as any).__DEV__ = true;
 
       featureFlagService.setFlagForTesting('enable_social_login', false);
 
@@ -332,14 +333,14 @@ describe('FeatureFlagService', () => {
     });
 
     it('프로덕션에서는 무시해야 함', () => {
-      global.__DEV__ = false;
+      (global as any).__DEV__ = false;
 
       const originalValue = featureFlagService.getFlag('enable_social_login');
       featureFlagService.setFlagForTesting('enable_social_login', !originalValue);
 
       expect(featureFlagService.getFlag('enable_social_login')).toBe(originalValue);
 
-      global.__DEV__ = true;
+      (global as any).__DEV__ = true;
     });
   });
 

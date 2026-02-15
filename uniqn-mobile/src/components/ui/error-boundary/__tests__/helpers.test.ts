@@ -17,7 +17,10 @@ jest.mock('@/errors', () => ({
 
 const mockIsAppError = isAppError as unknown as jest.Mock;
 
-function makeAppError(category: string, code = 'E0000'): Error & { category: string; code: string } {
+function makeAppError(
+  category: string,
+  code = 'E0000'
+): Error & { category: string; code: string } {
   const err = new Error('테스트') as Error & { category: string; code: string };
   err.category = category;
   err.code = code;
@@ -27,8 +30,9 @@ function makeAppError(category: string, code = 'E0000'): Error & { category: str
 describe('ErrorBoundary helpers', () => {
   beforeEach(() => {
     mockIsAppError.mockReset();
-    mockIsAppError.mockImplementation((e: unknown) =>
-      e !== null && e !== undefined && typeof e === 'object' && 'category' in e && 'code' in e
+    mockIsAppError.mockImplementation(
+      (e: unknown) =>
+        e !== null && e !== undefined && typeof e === 'object' && 'category' in e && 'code' in e
     );
   });
 

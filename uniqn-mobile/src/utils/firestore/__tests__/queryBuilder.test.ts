@@ -51,7 +51,10 @@ function createMockCollectionRef(): CollectionReference<DocumentData> {
   return { __type: 'collectionRef' } as unknown as CollectionReference<DocumentData>;
 }
 
-function createMockDoc(id: string, data: Record<string, unknown> = {}): QueryDocumentSnapshot<DocumentData> {
+function createMockDoc(
+  id: string,
+  data: Record<string, unknown> = {}
+): QueryDocumentSnapshot<DocumentData> {
   return {
     id,
     data: () => data,
@@ -544,10 +547,7 @@ describe('processPaginatedResults', () => {
   });
 
   it('docs가 pageSize 이하이면 hasMore: false', () => {
-    const docs = [
-      createMockDoc('1', { name: 'a' }),
-      createMockDoc('2', { name: 'b' }),
-    ];
+    const docs = [createMockDoc('1', { name: 'a' }), createMockDoc('2', { name: 'b' })];
     const mapper = (doc: QueryDocumentSnapshot<DocumentData>) => ({
       id: doc.id,
     });
@@ -585,10 +585,7 @@ describe('processPaginatedResults', () => {
 
 describe('processPaginatedResultsWithFilter', () => {
   it('mapper가 null을 반환하면 해당 항목을 제외한다', () => {
-    const docs = [
-      createMockDoc('1', { valid: true }),
-      createMockDoc('2', { valid: false }),
-    ];
+    const docs = [createMockDoc('1', { valid: true }), createMockDoc('2', { valid: false })];
     const mapper = (doc: QueryDocumentSnapshot<DocumentData>) => {
       const data = doc.data();
       return data.valid ? { id: doc.id } : null;
@@ -617,10 +614,7 @@ describe('processPaginatedResultsWithFilter', () => {
   });
 
   it('filter가 없으면 모든 매핑 결과를 반환한다', () => {
-    const docs = [
-      createMockDoc('1', {}),
-      createMockDoc('2', {}),
-    ];
+    const docs = [createMockDoc('1', {}), createMockDoc('2', {})];
     const mapper = (doc: QueryDocumentSnapshot<DocumentData>) => ({ id: doc.id });
 
     const result = processPaginatedResultsWithFilter(docs, 10, mapper);
@@ -628,11 +622,7 @@ describe('processPaginatedResultsWithFilter', () => {
   });
 
   it('hasMore는 원본 docs 기준으로 판단한다', () => {
-    const docs = [
-      createMockDoc('1', {}),
-      createMockDoc('2', {}),
-      createMockDoc('3', {}),
-    ];
+    const docs = [createMockDoc('1', {}), createMockDoc('2', {}), createMockDoc('3', {})];
     const mapper = (doc: QueryDocumentSnapshot<DocumentData>) => ({ id: doc.id });
 
     const result = processPaginatedResultsWithFilter(docs, 2, mapper);
@@ -648,10 +638,7 @@ describe('processPaginatedResultsWithFilter', () => {
   });
 
   it('lastDoc은 원본 docs의 마지막 문서이다', () => {
-    const docs = [
-      createMockDoc('1', {}),
-      createMockDoc('2', {}),
-    ];
+    const docs = [createMockDoc('1', {}), createMockDoc('2', {})];
     const mapper = (doc: QueryDocumentSnapshot<DocumentData>) => ({ id: doc.id });
 
     const result = processPaginatedResultsWithFilter(docs, 10, mapper);
