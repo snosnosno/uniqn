@@ -11,7 +11,7 @@ import { View, Text, Pressable } from 'react-native';
 import { Card, Badge, Avatar } from '@/components/ui';
 import { UserIcon, PhoneIcon, ClockIcon, CheckIcon, ChevronRightIcon } from '@/components/icons';
 import { USER_ROLE_LABELS, USER_ROLE_BADGE_VARIANT } from '@/types';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/date';
 import type { AdminUser } from '@/types';
 
 // ============================================================================

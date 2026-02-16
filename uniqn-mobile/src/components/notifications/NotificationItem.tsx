@@ -16,7 +16,7 @@ import { router, type Href } from 'expo-router';
 // 3. 내부 모듈
 import { ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/date';
 import { toDateFromTimestamp } from '@/types/notification';
 
 // 4. 타입

@@ -16,7 +16,7 @@ import {
   NotificationData,
   toDateFromTimestamp,
 } from '@/types/notification';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/date';
 
 export interface NotificationGroupItemProps {
   /** 그룹 데이터 */

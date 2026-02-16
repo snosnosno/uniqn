@@ -13,7 +13,7 @@ import { Button } from '../../ui/Button';
 import { Avatar } from '../../ui/Avatar';
 import { AlertCircleIcon, CalendarIcon, ClockIcon, BriefcaseIcon } from '../../icons';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { formatDateShort } from '@/utils/dateUtils';
+import { formatDateShort } from '@/utils/date';
 import { getAssignmentRoles } from '@/types/assignment';
 import type { ApplicantWithDetails } from '@/services';
 import type { Assignment } from '@/types';

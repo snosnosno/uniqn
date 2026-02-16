@@ -12,6 +12,8 @@ export type {
   ApplyContext,
   ApplicantListWithStats,
   SubscribeCallbacks,
+  ConfirmWithHistoryResult,
+  CancelConfirmationResult,
 } from './IApplicationRepository';
 
 // JobPosting Repository

@@ -19,6 +19,8 @@ jest.mock('@/repositories', () => ({
     subscribeById: jest.fn(),
     subscribeByStaffIdWithFilters: jest.fn(),
     subscribeTodayActive: jest.fn(),
+    updateWorkTimeTransaction: jest.fn(),
+    updatePayrollStatusTransaction: jest.fn(),
   },
 }));
 
@@ -111,16 +113,12 @@ import {
   subscribeToTodayWorkStatus,
 } from '../workLogService';
 import { workLogRepository } from '@/repositories';
-import { parseWorkLogDocument } from '@/schemas';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { trackSettlementComplete } from '../analyticsService';
-import { runTransaction } from 'firebase/firestore';
 import type { WorkLog } from '@/types';
 
 // Get typed mock references
 const mockRepo = workLogRepository as jest.Mocked<typeof workLogRepository>;
-const mockParseWorkLog = parseWorkLogDocument as jest.Mock;
-const mockRunTransaction = runTransaction as jest.Mock;
 const mockHandleServiceError = handleServiceError as jest.Mock;
 
 // ============================================================================
@@ -132,7 +130,6 @@ function createMockWorkLogData(overrides: Record<string, unknown> = {}) {
     id: 'worklog-1',
     staffId: 'staff-1',
     jobPostingId: 'job-1',
-    eventId: 'event-1',
     date: '2025-01-15',
     status: 'checked_in',
     role: 'dealer',
@@ -436,21 +433,7 @@ describe('WorkLogService', () => {
   // ==========================================================================
   describe('updateWorkTime', () => {
     it('should update work time using transaction', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updateWorkTimeTransaction.mockResolvedValue(undefined);
 
       const updates = {
         checkInTime: new Date('2025-01-15T09:00:00'),
@@ -459,123 +442,57 @@ describe('WorkLogService', () => {
       };
 
       await expect(updateWorkTime('worklog-1', updates)).resolves.toBeUndefined();
-      expect(mockRunTransaction).toHaveBeenCalled();
+      expect(mockRepo.updateWorkTimeTransaction).toHaveBeenCalledWith('worklog-1', updates);
     });
 
-    it('should throw when work log not found', async () => {
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => false,
-              id: 'worklog-1',
-              data: () => undefined,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
+    it('should throw when repository rejects (not found)', async () => {
+      mockRepo.updateWorkTimeTransaction.mockRejectedValue(
+        new Error('근무 기록을 찾을 수 없습니다')
       );
 
       await expect(updateWorkTime('worklog-1', {})).rejects.toThrow();
     });
 
-    it('should throw when work log data is invalid (parse returns null)', async () => {
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => ({ some: 'data' }),
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
+    it('should throw when repository rejects (invalid data)', async () => {
+      mockRepo.updateWorkTimeTransaction.mockRejectedValue(
+        new Error('근무 기록 데이터가 올바르지 않습니다')
       );
-      mockParseWorkLog.mockReturnValue(null);
 
       await expect(updateWorkTime('worklog-1', {})).rejects.toThrow();
     });
 
-    it('should throw when work log is already settled', async () => {
-      const settledWorkLog = createMockWorkLogData({ payrollStatus: 'completed' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => settledWorkLog,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
+    it('should throw when repository rejects (already settled)', async () => {
+      mockRepo.updateWorkTimeTransaction.mockRejectedValue(
+        new Error('이미 정산이 완료된 기록입니다')
       );
-      mockParseWorkLog.mockReturnValue(settledWorkLog);
 
       await expect(updateWorkTime('worklog-1', { notes: 'test' })).rejects.toThrow();
     });
 
     it('should only include provided fields in update', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      let capturedUpdateData: Record<string, unknown> = {};
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn((_ref: unknown, data: Record<string, unknown>) => {
-              capturedUpdateData = data;
-            }),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updateWorkTimeTransaction.mockResolvedValue(undefined);
 
       await updateWorkTime('worklog-1', { notes: 'Only notes updated' });
 
-      expect(capturedUpdateData).toHaveProperty('notes', 'Only notes updated');
-      expect(capturedUpdateData).toHaveProperty('updatedAt');
-      expect(capturedUpdateData).not.toHaveProperty('checkInTime');
-      expect(capturedUpdateData).not.toHaveProperty('checkOutTime');
+      expect(mockRepo.updateWorkTimeTransaction).toHaveBeenCalledWith('worklog-1', {
+        notes: 'Only notes updated',
+      });
     });
 
     it('should include checkInTime when provided', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      let capturedUpdateData: Record<string, unknown> = {};
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn((_ref: unknown, data: Record<string, unknown>) => {
-              capturedUpdateData = data;
-            }),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updateWorkTimeTransaction.mockResolvedValue(undefined);
 
       const checkInTime = new Date('2025-01-15T09:00:00');
       await updateWorkTime('worklog-1', { checkInTime });
 
-      expect(capturedUpdateData).toHaveProperty('checkInTime');
+      expect(mockRepo.updateWorkTimeTransaction).toHaveBeenCalledWith('worklog-1', {
+        checkInTime,
+      });
     });
 
     it('should propagate errors via handleServiceError', async () => {
       const error = new Error('Transaction failed');
-      mockRunTransaction.mockRejectedValue(error);
+      mockRepo.updateWorkTimeTransaction.mockRejectedValue(error);
       mockHandleServiceError.mockReturnValue(error);
 
       await expect(updateWorkTime('worklog-1', {})).rejects.toThrow('Transaction failed');
@@ -588,178 +505,80 @@ describe('WorkLogService', () => {
   // ==========================================================================
   describe('updatePayrollStatus', () => {
     it('should update payroll status using transaction', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await expect(
         updatePayrollStatus('worklog-1', 'completed' as any, 150000)
       ).resolves.toBeUndefined();
-      expect(mockRunTransaction).toHaveBeenCalled();
+      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
+        'worklog-1',
+        'completed',
+        150000
+      );
     });
 
-    it('should throw when work log not found', async () => {
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => false,
-              id: 'worklog-1',
-              data: () => undefined,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
+    it('should throw when repository rejects (not found)', async () => {
+      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(
+        new Error('근무 기록을 찾을 수 없습니다')
       );
 
       await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow();
     });
 
-    it('should throw when work log data is invalid', async () => {
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => ({ some: 'data' }),
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
+    it('should throw when repository rejects (invalid data)', async () => {
+      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(
+        new Error('근무 기록 데이터가 올바르지 않습니다')
       );
-      mockParseWorkLog.mockReturnValue(null);
 
       await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow();
     });
 
-    it('should throw when work log is already settled and trying to settle again', async () => {
-      const settledWorkLog = createMockWorkLogData({ payrollStatus: 'completed' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => settledWorkLog,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
+    it('should throw when repository rejects (already settled)', async () => {
+      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(
+        new Error('이미 정산이 완료된 기록입니다')
       );
-      mockParseWorkLog.mockReturnValue(settledWorkLog);
 
       await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow();
     });
 
     it('should include payrollAmount when amount is provided', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      let capturedUpdateData: Record<string, unknown> = {};
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn((_ref: unknown, data: Record<string, unknown>) => {
-              capturedUpdateData = data;
-            }),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await updatePayrollStatus('worklog-1', 'completed' as any, 200000);
 
-      expect(capturedUpdateData).toHaveProperty('payrollAmount', 200000);
+      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
+        'worklog-1',
+        'completed',
+        200000
+      );
     });
 
-    it('should set payrollDate when status is completed', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      let capturedUpdateData: Record<string, unknown> = {};
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn((_ref: unknown, data: Record<string, unknown>) => {
-              capturedUpdateData = data;
-            }),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+    it('should pass status and amount to repository transaction', async () => {
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await updatePayrollStatus('worklog-1', 'completed' as any, 150000);
 
-      expect(capturedUpdateData).toHaveProperty('payrollDate');
-      expect(capturedUpdateData).toHaveProperty('payrollStatus', 'completed');
+      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
+        'worklog-1',
+        'completed',
+        150000
+      );
     });
 
-    it('should not set payrollDate when status is not completed', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      let capturedUpdateData: Record<string, unknown> = {};
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn((_ref: unknown, data: Record<string, unknown>) => {
-              capturedUpdateData = data;
-            }),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+    it('should pass status without amount when not provided', async () => {
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await updatePayrollStatus('worklog-1', 'processing' as any);
 
-      expect(capturedUpdateData).not.toHaveProperty('payrollDate');
-      expect(capturedUpdateData).toHaveProperty('payrollStatus', 'processing');
+      expect(mockRepo.updatePayrollStatusTransaction).toHaveBeenCalledWith(
+        'worklog-1',
+        'processing',
+        undefined
+      );
     });
 
     it('should call trackSettlementComplete when status is completed with amount', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await updatePayrollStatus('worklog-1', 'completed' as any, 150000);
 
@@ -767,21 +586,7 @@ describe('WorkLogService', () => {
     });
 
     it('should not call trackSettlementComplete when status is not completed', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await updatePayrollStatus('worklog-1', 'processing' as any);
 
@@ -789,21 +594,7 @@ describe('WorkLogService', () => {
     });
 
     it('should not call trackSettlementComplete when amount is undefined', async () => {
-      const mockWorkLogData = createMockWorkLogData({ payrollStatus: 'pending' });
-      mockRunTransaction.mockImplementation(
-        async (_db: unknown, callback: (...args: unknown[]) => Promise<void>) => {
-          const mockTransaction = {
-            get: jest.fn().mockResolvedValue({
-              exists: () => true,
-              id: 'worklog-1',
-              data: () => mockWorkLogData,
-            }),
-            update: jest.fn(),
-          };
-          await callback(mockTransaction);
-        }
-      );
-      mockParseWorkLog.mockReturnValue(mockWorkLogData);
+      mockRepo.updatePayrollStatusTransaction.mockResolvedValue(undefined);
 
       await updatePayrollStatus('worklog-1', 'completed' as any);
 
@@ -812,12 +603,13 @@ describe('WorkLogService', () => {
 
     it('should propagate errors via handleServiceError', async () => {
       const error = new Error('Transaction failed');
-      mockRunTransaction.mockRejectedValue(error);
+      mockRepo.updatePayrollStatusTransaction.mockRejectedValue(error);
       mockHandleServiceError.mockReturnValue(error);
 
       await expect(updatePayrollStatus('worklog-1', 'completed' as any)).rejects.toThrow(
         'Transaction failed'
       );
+      expect(mockHandleServiceError).toHaveBeenCalled();
     });
   });
 

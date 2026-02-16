@@ -87,10 +87,11 @@ export interface INotificationRepository {
   markAsRead(notificationId: string): Promise<void>;
 
   /**
-   * 모든 알림 읽음 처리
+   * 모든 알림 읽음 처리 (배치)
    * @param userId - 사용자 ID
+   * @returns 업데이트된 알림 ID 목록
    */
-  markAllAsRead(userId: string): Promise<void>;
+  markAllAsRead(userId: string): Promise<{ updatedIds: string[] }>;
 
   // ==========================================================================
   // 삭제 (Delete)
@@ -99,14 +100,16 @@ export interface INotificationRepository {
   /**
    * 알림 삭제
    * @param notificationId - 알림 ID
+   * @returns 삭제된 알림의 미읽음 여부 및 수신자 ID
    */
-  delete(notificationId: string): Promise<void>;
+  delete(notificationId: string): Promise<{ wasUnread: boolean; recipientId?: string }>;
 
   /**
    * 여러 알림 삭제
    * @param notificationIds - 알림 ID 배열
+   * @returns 삭제된 미읽음 알림 수
    */
-  deleteMany(notificationIds: string[]): Promise<void>;
+  deleteMany(notificationIds: string[]): Promise<{ deletedUnreadCount: number }>;
 
   /**
    * 오래된 알림 정리

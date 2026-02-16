@@ -14,7 +14,7 @@ import { Avatar } from '../../ui/Avatar';
 import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { ClockIcon, MessageIcon, CheckIcon, XMarkIcon, CalendarIcon } from '../../icons';
 import { STATUS } from '@/constants';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/date';
 import { formatAppliedDate } from '@/utils/date';
 import { getRoleDisplayName } from '@/types/unified';
 import type { Application, CancellationRequestStatus } from '@/types';

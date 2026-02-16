@@ -6,7 +6,7 @@
  */
 
 import type { Unsubscribe } from 'firebase/firestore';
-import type { WorkLog, PayrollStatus, WorkLogStatus } from '@/types';
+import type { WorkLog, PayrollStatus, WorkLogStatus, QRCodeAction } from '@/types';
 
 /**
  * 근무 기록 조회 필터 옵션
@@ -248,4 +248,64 @@ export interface IWorkLogRepository {
    * @param status - 새 정산 상태
    */
   updatePayrollStatus(workLogId: string, status: PayrollStatus): Promise<void>;
+
+  /**
+   * 근무 시간 수정 (트랜잭션)
+   *
+   * @description 이미 정산 완료된 기록은 수정 불가
+   * @param workLogId - 근무 기록 ID
+   * @param updates - 수정할 필드
+   * @throws BusinessError - 정산 완료된 기록 수정 시도 시
+   */
+  updateWorkTimeTransaction(
+    workLogId: string,
+    updates: {
+      checkInTime?: Date;
+      checkOutTime?: Date;
+      notes?: string;
+    }
+  ): Promise<void>;
+
+  /**
+   * 정산 상태 업데이트 (트랜잭션, 중복 검증 포함)
+   *
+   * @description 중복 정산 방지 및 금액 지원
+   * @param workLogId - 근무 기록 ID
+   * @param status - 정산 상태
+   * @param amount - 정산 금액 (선택)
+   * @throws BusinessError - 중복 정산 시도 시
+   */
+  updatePayrollStatusTransaction(
+    workLogId: string,
+    status: PayrollStatus,
+    amount?: number
+  ): Promise<void>;
+
+  /**
+   * QR 체크인/체크아웃 트랜잭션 처리
+   *
+   * @description 원자적으로 WorkLog 상태 확인 + 업데이트
+   * - 출근: scheduled → checked_in (중복 출근 방지)
+   * - 퇴근: checked_in → checked_out (미출근 상태 방지)
+   *
+   * @param workLogId - 근무 기록 ID
+   * @param staffId - 스태프 ID (방어적 검증용)
+   * @param jobPostingId - 공고 ID (방어적 검증용)
+   * @param action - 출근/퇴근
+   * @param checkTime - 체크 시각
+   * @param date - 근무 날짜 (YYYY-MM-DD, timeSlot 파싱용)
+   * @returns action 결과 (출근/퇴근, 근무시간)
+   */
+  processQRCheckInOutTransaction(
+    workLogId: string,
+    staffId: string,
+    jobPostingId: string,
+    action: QRCodeAction,
+    checkTime: Date,
+    date: string
+  ): Promise<{
+    action: QRCodeAction;
+    hasExistingCheckInTime: boolean;
+    workDuration: number;
+  }>;
 }

@@ -13,7 +13,7 @@ import { ModalFooterButtons } from '../../ui/ModalFooterButtons';
 import { Card } from '../../ui/Card';
 import { TimeWheelPicker, type TimeValue } from '../../ui/TimeWheelPicker';
 import { AlertCircleIcon } from '../../icons';
-import { formatDate, parseTimeSlotToDate } from '@/utils/dateUtils';
+import { formatDate, parseTimeSlotToDate } from '@/utils/date';
 import { TimeInputField } from './TimeInputField';
 import {
   parseTimestamp,

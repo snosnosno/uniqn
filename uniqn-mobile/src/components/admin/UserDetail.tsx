@@ -30,7 +30,7 @@ import {
   getCountryByCode,
   type AdminUserProfile,
 } from '@/types';
-import { formatDate, formatRelativeTime } from '@/utils/dateUtils';
+import { formatDate, formatRelativeTime } from '@/utils/date';
 
 // ============================================================================
 // Types

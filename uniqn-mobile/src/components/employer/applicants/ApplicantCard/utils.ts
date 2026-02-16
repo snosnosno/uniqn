@@ -9,8 +9,9 @@ import { getAssignmentRoles } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
 import { formatAppliedDate } from '@/utils/date';
 import {
-  createAssignmentKey as createAssignmentKeyCore,
-  getDateFromKeyLegacy,
+  makeSelectionKey,
+  getDateFromKey as getDateFromKeyCore,
+  APPLICANT_SEPARATOR,
 } from '@/utils/assignment';
 import type { Assignment } from '@/types';
 import type { AssignmentDisplay } from './types';
@@ -59,7 +60,9 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
 
     for (const date of assignment.dates) {
       for (const role of roles) {
-        const key = `${date}_${assignment.timeSlot}_${role}`;
+        const key = makeSelectionKey(date, assignment.timeSlot, role, {
+          separator: APPLICANT_SEPARATOR,
+        });
         if (seen.has(key)) continue; // 중복 스킵
         seen.add(key);
 
@@ -97,7 +100,7 @@ export const formatAssignments = (assignments?: Assignment[]): AssignmentDisplay
  * @see selectionCore.ts - 통합 구현
  */
 export const createAssignmentKey = (date: string, timeSlot: string, role: string): string => {
-  return createAssignmentKeyCore(date, timeSlot, role);
+  return makeSelectionKey(date, timeSlot, role, { separator: APPLICANT_SEPARATOR });
 };
 
 /**
@@ -105,5 +108,5 @@ export const createAssignmentKey = (date: string, timeSlot: string, role: string
  * @see selectionCore.ts - 통합 구현
  */
 export const getDateFromKey = (key: string): string => {
-  return getDateFromKeyLegacy(key);
+  return getDateFromKeyCore(key, { separator: APPLICANT_SEPARATOR });
 };

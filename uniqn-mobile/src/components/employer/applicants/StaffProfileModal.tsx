@@ -28,7 +28,7 @@ import {
   type ConfirmedStaffStatus,
 } from '@/types';
 import { getRoleDisplayName } from '@/types/unified';
-import { formatTime } from '@/utils/dateUtils';
+import { formatTime } from '@/utils/date';
 import { formatBirthDate } from '@/utils/formatters';
 import { TimeNormalizer, type TimeInput } from '@/shared/time';
 import { useUserProfile } from '@/hooks/useUserProfile';

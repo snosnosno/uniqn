@@ -37,7 +37,7 @@ import {
 } from '../../icons';
 import { useEventQR } from '@/hooks/useEventQR';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDate } from '@/utils/date';
 
 // ============================================================================
 // Types

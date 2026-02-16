@@ -231,12 +231,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
           다음
         </Button>
 
-        <Button
-          onPress={handleSkipOptional}
-          variant="outline"
-          disabled={isLoading}
-          fullWidth
-        >
+        <Button onPress={handleSkipOptional} variant="outline" disabled={isLoading} fullWidth>
           나중에 입력하기
         </Button>
 

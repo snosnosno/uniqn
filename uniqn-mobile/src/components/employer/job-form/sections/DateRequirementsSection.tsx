@@ -26,7 +26,7 @@ import {
   groupConsecutiveDates,
   toDateString,
   type DateRangeGroup,
-} from '@/utils/dateRangeUtils';
+} from '@/utils/date';
 import { generateId } from '@/utils/generateId';
 import type { JobPostingFormData } from '@/types';
 import type {

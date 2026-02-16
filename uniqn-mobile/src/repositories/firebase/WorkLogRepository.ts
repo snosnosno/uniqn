@@ -26,11 +26,19 @@ import {
   updateDoc,
   serverTimestamp,
   onSnapshot,
+  runTransaction,
+  Timestamp,
   Unsubscribe,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
+import {
+  InvalidQRCodeError,
+  AlreadyCheckedInError,
+  NotCheckedInError,
+} from '@/errors/BusinessErrors';
+import { parseTimeSlotToDate } from '@/utils/date';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument } from '@/schemas';
 import { QueryBuilder } from '@/utils/firestore/queryBuilder';
@@ -42,7 +50,7 @@ import type {
   MonthlyPayrollSummary,
   WorkLogFilterOptions,
 } from '../interfaces';
-import type { WorkLog, PayrollStatus } from '@/types';
+import type { WorkLog, PayrollStatus, QRCodeAction } from '@/types';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================
@@ -821,6 +829,263 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
         operation: '정산 상태 변경',
         component: 'WorkLogRepository',
         context: { workLogId, status },
+      });
+    }
+  }
+
+  async updateWorkTimeTransaction(
+    workLogId: string,
+    updates: {
+      checkInTime?: Date;
+      checkOutTime?: Date;
+      notes?: string;
+    }
+  ): Promise<void> {
+    try {
+      const db = getFirebaseDb();
+
+      await runTransaction(db, async (transaction) => {
+        const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
+        const workLogDoc = await transaction.get(workLogRef);
+
+        if (!workLogDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+            userMessage: '근무 기록을 찾을 수 없습니다',
+          });
+        }
+
+        const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+        if (!workLog) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+            userMessage: '근무 기록 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 이미 정산 완료된 경우 수정 불가
+        if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+            userMessage: '이미 정산 완료된 근무 기록은 수정할 수 없습니다',
+          });
+        }
+
+        const updateData: Record<string, unknown> = {
+          updatedAt: serverTimestamp(),
+        };
+
+        if (updates.checkInTime) {
+          updateData.checkInTime = Timestamp.fromDate(updates.checkInTime);
+        }
+
+        if (updates.checkOutTime) {
+          updateData.checkOutTime = Timestamp.fromDate(updates.checkOutTime);
+        }
+
+        if (updates.notes !== undefined) {
+          updateData.notes = updates.notes;
+        }
+
+        transaction.update(workLogRef, updateData);
+      });
+    } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
+      throw handleServiceError(error, {
+        operation: '근무 시간 수정 (Transaction)',
+        component: 'WorkLogRepository',
+        context: { workLogId },
+      });
+    }
+  }
+
+  async updatePayrollStatusTransaction(
+    workLogId: string,
+    status: PayrollStatus,
+    amount?: number
+  ): Promise<void> {
+    try {
+      const db = getFirebaseDb();
+
+      await runTransaction(db, async (transaction) => {
+        const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
+        const workLogDoc = await transaction.get(workLogRef);
+
+        if (!workLogDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+            userMessage: '근무 기록을 찾을 수 없습니다',
+          });
+        }
+
+        const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+        if (!workLog) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+            userMessage: '근무 기록 데이터가 올바르지 않습니다',
+          });
+        }
+
+        // 중복 정산 방지
+        if (
+          status === STATUS.PAYROLL.COMPLETED &&
+          workLog.payrollStatus === STATUS.PAYROLL.COMPLETED
+        ) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
+            userMessage: '이미 정산 완료된 근무 기록입니다',
+          });
+        }
+
+        const updateData: Record<string, unknown> = {
+          payrollStatus: status,
+          updatedAt: serverTimestamp(),
+        };
+
+        if (amount !== undefined) {
+          updateData.payrollAmount = amount;
+        }
+
+        if (status === STATUS.PAYROLL.COMPLETED) {
+          updateData.payrollDate = serverTimestamp();
+        }
+
+        transaction.update(workLogRef, updateData);
+      });
+    } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
+      throw handleServiceError(error, {
+        operation: '정산 상태 업데이트 (Transaction)',
+        component: 'WorkLogRepository',
+        context: { workLogId, status },
+      });
+    }
+  }
+
+  async processQRCheckInOutTransaction(
+    workLogId: string,
+    staffId: string,
+    jobPostingId: string,
+    action: QRCodeAction,
+    checkTime: Date,
+    date: string
+  ): Promise<{
+    action: QRCodeAction;
+    hasExistingCheckInTime: boolean;
+    workDuration: number;
+  }> {
+    try {
+      const db = getFirebaseDb();
+
+      return await runTransaction(db, async (transaction) => {
+        const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
+        const workLogDoc = await transaction.get(workLogRef);
+
+        if (!workLogDoc.exists()) {
+          throw new InvalidQRCodeError({
+            message: '근무 기록이 존재하지 않습니다',
+            userMessage: '근무 기록을 찾을 수 없습니다',
+          });
+        }
+
+        const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
+        if (!workLog) {
+          throw new InvalidQRCodeError({
+            message: '근무 기록 데이터가 유효하지 않습니다',
+            userMessage: '근무 기록을 처리할 수 없습니다',
+          });
+        }
+
+        // 방어적 검증: staffId 일치 확인
+        if (workLog.staffId !== staffId) {
+          throw new InvalidQRCodeError({
+            message: 'WorkLog staffId 불일치',
+            userMessage: '권한이 없는 근무 기록입니다',
+          });
+        }
+
+        // 방어적 검증: jobPostingId 일치 확인
+        if (workLog.jobPostingId !== jobPostingId) {
+          throw new InvalidQRCodeError({
+            message: 'WorkLog jobPostingId 불일치',
+            userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
+          });
+        }
+
+        if (action === 'checkIn') {
+          // 출근 처리
+          if (
+            workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
+            workLog.status === STATUS.WORK_LOG.CHECKED_OUT
+          ) {
+            throw new AlreadyCheckedInError({
+              message: '이미 출근 처리되었습니다',
+              userMessage: '이미 출근 처리가 완료되었습니다',
+              workLogId,
+            });
+          }
+
+          const updateData: Record<string, unknown> = {
+            status: STATUS.WORK_LOG.CHECKED_IN,
+            updatedAt: serverTimestamp(),
+          };
+
+          // checkInTime이 없으면 timeSlot에서 파싱해서 저장
+          if (!workLog.checkInTime && workLog.timeSlot && date) {
+            const { startTime } = parseTimeSlotToDate(workLog.timeSlot, date);
+            if (startTime) {
+              updateData.checkInTime = Timestamp.fromDate(startTime);
+            }
+          }
+
+          transaction.update(workLogRef, updateData);
+
+          return {
+            action: 'checkIn' as const,
+            hasExistingCheckInTime: !!workLog.checkInTime,
+            workDuration: 0,
+          };
+        } else {
+          // 퇴근 처리
+          if (workLog.status !== STATUS.WORK_LOG.CHECKED_IN) {
+            throw new NotCheckedInError({
+              message: '먼저 출근 처리가 필요합니다',
+              userMessage: '출근 처리 후 퇴근할 수 있습니다',
+            });
+          }
+
+          transaction.update(workLogRef, {
+            status: STATUS.WORK_LOG.CHECKED_OUT,
+            checkOutTime: Timestamp.fromDate(checkTime),
+            updatedAt: serverTimestamp(),
+          });
+
+          // 근무 시간 계산
+          let workDuration = 0;
+          const checkInSource = workLog.checkInTime;
+          if (checkInSource) {
+            const startTime =
+              checkInSource instanceof Timestamp
+                ? checkInSource.toDate()
+                : new Date(checkInSource as string);
+            workDuration = Math.round(
+              (checkTime.getTime() - startTime.getTime()) / (1000 * 60 * 60)
+            );
+          }
+
+          return {
+            action: 'checkOut' as const,
+            hasExistingCheckInTime: false,
+            workDuration,
+          };
+        }
+      });
+    } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
+      throw handleServiceError(error, {
+        operation: 'QR 체크인/아웃 (Transaction)',
+        component: 'WorkLogRepository',
+        context: { workLogId, staffId, action },
       });
     }
   }

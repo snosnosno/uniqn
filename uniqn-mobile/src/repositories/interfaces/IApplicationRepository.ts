@@ -14,6 +14,8 @@ import type {
   Application,
   ApplicationStatus,
   ApplicationStats,
+  Assignment,
+  ConfirmationHistoryEntry,
   CreateApplicationInput,
   ConfirmApplicationInputV2,
   RejectApplicationInput,
@@ -21,7 +23,7 @@ import type {
   ReviewCancellationInput,
   JobPosting,
 } from '@/types';
-import type { Unsubscribe } from 'firebase/firestore';
+import type { Timestamp, Unsubscribe } from 'firebase/firestore';
 
 // ============================================================================
 // Types
@@ -52,6 +54,25 @@ export interface ApplyContext {
 export interface ApplicantListWithStats {
   applications: ApplicationWithJob[];
   stats: ApplicationStats;
+}
+
+/**
+ * 확정 (v2.0 confirmationHistory) 결과
+ */
+export interface ConfirmWithHistoryResult {
+  applicationId: string;
+  workLogIds: string[];
+  message: string;
+  historyEntry: ConfirmationHistoryEntry;
+}
+
+/**
+ * 확정 취소 (v2.0 confirmationHistory) 결과
+ */
+export interface CancelConfirmationResult {
+  applicationId: string;
+  cancelledAt: Timestamp;
+  restoredStatus: 'applied' | 'pending';
 }
 
 /**
@@ -253,6 +274,51 @@ export interface IApplicationRepository {
    * @throws PermissionError (소유자 아님), BusinessError (존재하지 않음)
    */
   markAsRead(applicationId: string, ownerId: string): Promise<void>;
+
+  /**
+   * 지원 확정 v2.0 (confirmationHistory 지원 트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 공고 소유자 확인
+   * 2. 정원 확인 (날짜별/역할별)
+   * 3. originalApplication 보존 (최초 확정 시)
+   * 4. confirmationHistory에 이력 추가
+   * 5. Assignment별 WorkLog 생성
+   * 6. 공고 filledPositions + dateSpecificRequirements 업데이트
+   *
+   * @param applicationId - 지원서 ID
+   * @param selectedAssignments - 확정할 일정 (없으면 전체)
+   * @param ownerId - 공고 소유자 ID
+   * @param notes - 메모
+   * @returns 확정 결과
+   */
+  confirmWithHistoryTransaction(
+    applicationId: string,
+    selectedAssignments: Assignment[] | undefined,
+    ownerId: string,
+    notes?: string
+  ): Promise<ConfirmWithHistoryResult>;
+
+  /**
+   * 확정 취소 v2.0 (confirmationHistory 지원 트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 활성 확정 존재 확인
+   * 2. confirmationHistory에 취소 정보 추가
+   * 3. 연관 WorkLog cancelled 처리
+   * 4. 공고 filledPositions + dateSpecificRequirements 감소
+   * 5. 상태를 원본(applied)으로 복원
+   *
+   * @param applicationId - 지원서 ID
+   * @param ownerId - 공고 소유자 ID
+   * @param cancelReason - 취소 사유
+   * @returns 취소 결과
+   */
+  cancelConfirmationTransaction(
+    applicationId: string,
+    ownerId: string,
+    cancelReason?: string
+  ): Promise<CancelConfirmationResult>;
 
   // ==========================================================================
   // 구인자 전용 (Employer)

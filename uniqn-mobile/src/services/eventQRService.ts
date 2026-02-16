@@ -21,31 +21,15 @@
  * }
  */
 
-import {
-  collection,
-  doc,
-  getDocs,
-  query,
-  where,
-  limit,
-  Timestamp,
-  serverTimestamp,
-  runTransaction,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { generateUUID } from '@/utils/generateId';
-import {
-  InvalidQRCodeError,
-  AlreadyCheckedInError,
-  NotCheckedInError,
-} from '@/errors/BusinessErrors';
-import { parseWorkLogDocument } from '@/schemas';
+import { InvalidQRCodeError } from '@/errors/BusinessErrors';
 import { trackCheckIn, trackCheckOut } from './analyticsService';
-import { parseTimeSlotToDate, toISODateString } from '@/utils/dateUtils';
-import { eventQRRepository } from '@/repositories';
+import { toISODateString } from '@/utils/date';
+import { eventQRRepository, workLogRepository } from '@/repositories';
 import type {
   QRCodeAction,
   EventQRCode,
@@ -54,7 +38,6 @@ import type {
   EventQRScanResult,
   EventQRValidationResult,
 } from '@/types';
-import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 /** QR 코드 유효 시간 (3분) */
 const QR_VALIDITY_DURATION_MS = 3 * 60 * 1000;
@@ -232,146 +215,32 @@ export async function processEventQRCheckIn(
 
     const { jobPostingId, date, action } = validation;
 
-    // 2. 해당 스태프의 WorkLog 찾기 (쿼리는 트랜잭션 외부에서)
-    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
-    const q = query(
-      workLogsRef,
-      where(FIELDS.WORK_LOG.jobPostingId, '==', jobPostingId),
-      where(FIELDS.WORK_LOG.staffId, '==', staffId),
-      where(FIELDS.WORK_LOG.date, '==', date),
-      limit(1)
+    // 2. 해당 스태프의 WorkLog 찾기 - Repository 사용
+    const workLog = await workLogRepository.findByJobPostingStaffDate(
+      jobPostingId!,
+      staffId,
+      date!
     );
-    const snapshot = await getDocs(q);
 
-    if (snapshot.empty) {
+    if (!workLog) {
       throw new InvalidQRCodeError({
         message: '해당 근무 기록을 찾을 수 없습니다',
         userMessage: '이 공고에 확정된 스태프가 아닙니다',
       });
     }
 
-    const workLogId = snapshot.docs[0].id;
+    const workLogId = workLog.id;
     const checkTime = new Date();
 
-    // 3. 트랜잭션으로 상태 확인 및 업데이트 (원자적 처리)
-    const result = await runTransaction(getFirebaseDb(), async (transaction) => {
-      // 3-1. WorkLog 읽기 (트랜잭션 내)
-      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
-      const workLogDoc = await transaction.get(workLogRef);
-
-      if (!workLogDoc.exists()) {
-        throw new InvalidQRCodeError({
-          message: '근무 기록이 존재하지 않습니다',
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new InvalidQRCodeError({
-          message: '근무 기록 데이터가 유효하지 않습니다',
-          userMessage: '근무 기록을 처리할 수 없습니다',
-        });
-      }
-
-      // 방어적 검증: staffId 일치 확인 (동시성 안전성 강화)
-      if (workLog.staffId !== staffId) {
-        logger.error('WorkLog staffId 불일치', {
-          expected: staffId,
-          actual: workLog.staffId,
-          workLogId,
-        });
-        throw new InvalidQRCodeError({
-          message: 'WorkLog staffId 불일치',
-          userMessage: '권한이 없는 근무 기록입니다',
-        });
-      }
-
-      // 방어적 검증: jobPostingId 일치 확인
-      if (workLog.jobPostingId !== jobPostingId) {
-        logger.error('WorkLog jobPostingId 불일치', {
-          expected: jobPostingId,
-          actual: workLog.jobPostingId,
-          workLogId,
-        });
-        throw new InvalidQRCodeError({
-          message: 'WorkLog jobPostingId 불일치',
-          userMessage: 'QR 코드와 근무 기록이 일치하지 않습니다',
-        });
-      }
-
-      // 3-2. 상태 확인 및 출퇴근 처리
-      if (action === 'checkIn') {
-        // 출근 처리
-        if (
-          workLog.status === STATUS.WORK_LOG.CHECKED_IN ||
-          workLog.status === STATUS.WORK_LOG.CHECKED_OUT
-        ) {
-          throw new AlreadyCheckedInError({
-            message: '이미 출근 처리되었습니다',
-            userMessage: '이미 출근 처리가 완료되었습니다',
-            workLogId,
-          });
-        }
-
-        // 업데이트할 데이터 구성
-        const updateData: Record<string, unknown> = {
-          status: STATUS.WORK_LOG.CHECKED_IN,
-          updatedAt: serverTimestamp(),
-        };
-
-        // checkInTime이 없으면 timeSlot에서 파싱해서 저장
-        // workLog는 이미 parseWorkLogDocument로 검증됨 (timeSlot은 스키마에 optional로 정의됨)
-        if (!workLog.checkInTime && workLog.timeSlot && date) {
-          const { startTime } = parseTimeSlotToDate(workLog.timeSlot, date);
-          if (startTime) {
-            updateData.checkInTime = Timestamp.fromDate(startTime);
-          }
-        }
-
-        // 3-3. 업데이트 (트랜잭션 내)
-        transaction.update(workLogRef, updateData);
-
-        return {
-          action: 'checkIn' as const,
-          hasExistingCheckInTime: !!workLog.checkInTime,
-          workDuration: 0,
-        };
-      } else {
-        // 퇴근 처리
-        if (workLog.status !== STATUS.WORK_LOG.CHECKED_IN) {
-          throw new NotCheckedInError({
-            message: '먼저 출근 처리가 필요합니다',
-            userMessage: '출근 처리 후 퇴근할 수 있습니다',
-          });
-        }
-
-        // 3-3. 업데이트 (트랜잭션 내)
-        transaction.update(workLogRef, {
-          status: STATUS.WORK_LOG.CHECKED_OUT,
-          checkOutTime: Timestamp.fromDate(checkTime),
-          updatedAt: serverTimestamp(),
-        });
-
-        // 근무 시간 계산
-        // workLog는 이미 parseWorkLogDocument로 검증됨
-        let workDuration = 0;
-        const checkInSource = workLog.checkInTime;
-        if (checkInSource) {
-          const startTime =
-            checkInSource instanceof Timestamp
-              ? checkInSource.toDate()
-              : new Date(checkInSource as string);
-          workDuration = Math.round((checkTime.getTime() - startTime.getTime()) / (1000 * 60 * 60));
-        }
-
-        return {
-          action: 'checkOut' as const,
-          hasExistingCheckInTime: false,
-          workDuration,
-        };
-      }
-    });
+    // 3. 트랜잭션으로 상태 확인 및 업데이트 (원자적 처리) - Repository 사용
+    const result = await workLogRepository.processQRCheckInOutTransaction(
+      workLogId,
+      staffId,
+      jobPostingId!,
+      action!,
+      checkTime,
+      date!
+    );
 
     // 4. Analytics (트랜잭션 외부 - 실패해도 출퇴근은 성공)
     if (result.action === 'checkIn') {

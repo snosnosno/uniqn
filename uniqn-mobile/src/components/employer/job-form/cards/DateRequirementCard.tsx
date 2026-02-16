@@ -13,7 +13,7 @@
 import React, { useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon, TrashIcon } from '@/components/icons';
-import { formatDateWithDay } from '@/utils/dateUtils';
+import { formatDateWithDay } from '@/utils/date';
 import { TimeSlotCard } from './TimeSlotCard';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
 import { useToast } from '@/stores/toastStore';

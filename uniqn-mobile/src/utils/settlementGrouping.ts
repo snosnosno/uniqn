@@ -15,11 +15,14 @@ import type {
   GroupSettlementOptions,
 } from '@/types/settlement';
 import {
-  calculateSettlementFromWorkLogWithTax,
+  getRoleSalaryFromRoles,
+  getEffectiveAllowances,
+  getEffectiveTaxSettings,
   type SalaryInfo,
   type Allowances,
   type TaxSettings,
 } from './settlement';
+import { SettlementCalculator } from '@/domains/settlement';
 import { isConsecutiveDates, formatSingleDate } from './scheduleGrouping';
 
 // ============================================================================
@@ -71,22 +74,21 @@ function createDateSettlementStatus(
   workLog: WorkLog,
   context: SettlementGroupingContext
 ): DateSettlementStatus {
-  // 정산 금액 계산
-  const settlementResult = calculateSettlementFromWorkLogWithTax(
-    {
-      checkInTime: workLog.checkInTime,
-      checkOutTime: workLog.checkOutTime,
-      role: workLog.role,
-      customRole: workLog.customRole,
-      customSalaryInfo: workLog.customSalaryInfo,
-      customAllowances: workLog.customAllowances,
-      customTaxSettings: workLog.customTaxSettings,
-    },
-    context.roles,
-    context.defaultSalary,
-    context.allowances,
-    context.taxSettings
-  );
+  // 급여/수당/세금 정보 결정 (개별 오버라이드 우선)
+  const salaryInfo =
+    workLog.customSalaryInfo ||
+    getRoleSalaryFromRoles(context.roles, workLog.role, workLog.customRole, context.defaultSalary);
+  const allowances = getEffectiveAllowances(workLog, context.allowances);
+  const taxSettings = getEffectiveTaxSettings(workLog, context.taxSettings);
+
+  // 정산 금액 계산 (SettlementCalculator 단일 소스 사용)
+  const settlementResult = SettlementCalculator.calculate({
+    startTime: workLog.checkInTime,
+    endTime: workLog.checkOutTime,
+    salaryInfo,
+    allowances,
+    taxSettings,
+  });
 
   // 출퇴근 완료 여부 확인
   const hasValidTimes = !!(workLog.checkInTime && workLog.checkOutTime);

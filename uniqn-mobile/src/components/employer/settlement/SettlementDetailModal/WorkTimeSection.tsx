@@ -7,7 +7,7 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { ClockIcon } from '../../../icons';
-import { formatTime } from '@/utils/dateUtils';
+import { formatTime } from '@/utils/date';
 import { formatDuration } from '@/utils/settlement';
 
 export interface WorkTimeSectionProps {

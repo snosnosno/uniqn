@@ -97,3 +97,6 @@ export {
   type TransitionResult,
   type StatusMetadata,
 } from './ApplicationStatusMachine';
+
+// DateRequirementUpdater - dateSpecificRequirements filled 계산
+export { updateDateSpecificRequirementsFilled } from './DateRequirementUpdater';

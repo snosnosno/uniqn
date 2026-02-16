@@ -14,7 +14,7 @@ import { PostingTypeBadge } from '@/components/jobs/PostingTypeBadge';
 import { TournamentStatusBadge } from '@/components/jobs/TournamentStatusBadge';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
-import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { JobPosting, PostingType, TournamentApprovalStatus } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';

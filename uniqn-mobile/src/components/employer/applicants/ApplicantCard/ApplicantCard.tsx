@@ -10,7 +10,7 @@ import { View, Text, LayoutAnimation } from 'react-native';
 import { useThemeStore } from '@/stores/themeStore';
 import { Card } from '../../../ui/Card';
 import { FixedScheduleDisplay } from '../../../jobs/FixedScheduleDisplay';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/date';
 import { useUserProfile } from '@/hooks/useUserProfile';
 
 // 분리된 모듈 import

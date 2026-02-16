@@ -10,7 +10,7 @@ import { View, Text, Pressable, TextInput } from 'react-native';
 import { SheetModal } from '../../ui/SheetModal';
 import { Avatar } from '../../ui/Avatar';
 import { ChevronDownIcon, ChevronUpIcon } from '../../icons';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDate } from '@/utils/date';
 import { logger } from '@/utils/logger';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import {

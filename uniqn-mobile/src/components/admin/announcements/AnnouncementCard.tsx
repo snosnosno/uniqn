@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 // 3. 내부 모듈
 import { getIconColor } from '@/constants/colors';
-import { formatDateKorean } from '@/utils/dateUtils';
+import { formatDateKorean } from '@/utils/date';
 import {
   ANNOUNCEMENT_STATUS_CONFIG,
   ANNOUNCEMENT_CATEGORY_LABELS,

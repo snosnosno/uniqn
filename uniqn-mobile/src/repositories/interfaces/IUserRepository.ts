@@ -147,6 +147,34 @@ export interface IUserRepository {
   cancelDeletion(userId: string): Promise<void>;
 
   // ==========================================================================
+  // 특수 작업 (Transaction)
+  // ==========================================================================
+
+  /**
+   * 고아 계정 마킹 (삭제 실패 시 Firestore에 기록)
+   *
+   * @description Cloud Function Scheduler가 주기적으로 정리
+   * @param uid - 사용자 ID
+   * @param reason - 마킹 사유
+   * @param phone - 전화번호 (선택)
+   * @param platform - 플랫폼 정보
+   */
+  markAsOrphan(uid: string, reason: string, phone?: string, platform?: string): Promise<void>;
+
+  /**
+   * 구인자 등록 (Transaction으로 원자적 처리)
+   *
+   * @description staff → employer 역할 전환
+   * - 현재 역할 검증 (이미 employer/admin이면 에러)
+   * - 전화번호 인증 확인
+   * - 역할 업데이트 + 동의 기록
+   *
+   * @param userId - 사용자 ID
+   * @returns 업데이트된 프로필
+   */
+  registerAsEmployer(userId: string): Promise<FirestoreUserProfile>;
+
+  // ==========================================================================
   // 데이터 내보내기 / 삭제
   // ==========================================================================
 

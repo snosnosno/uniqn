@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { View, Text } from 'react-native';
-import { formatTime, formatDate } from '@/utils/dateUtils';
+import { formatTime, formatDate } from '@/utils/date';
 import { parseTimestamp } from '@/utils/settlement';
 import type { ModificationHistoryItemProps } from './types';
 

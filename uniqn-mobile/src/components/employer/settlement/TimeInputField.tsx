@@ -8,7 +8,7 @@
 import React, { useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ClockIcon, CheckIcon, ChevronDownIcon } from '../../icons';
-import { formatTime } from '@/utils/dateUtils';
+import { formatTime } from '@/utils/date';
 import { formatTimeForInput } from './timeEditorUtils';
 
 // ============================================================================

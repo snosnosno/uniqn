@@ -61,7 +61,14 @@ jest.mock('@/lib/nativeAuth', () => {
 });
 
 // Firebase Web SDK
-jest.mock('firebase/auth');
+const mockUpdateProfile = jest.fn();
+jest.mock('firebase/auth', () => {
+  const actual = jest.createMockFromModule<Record<string, unknown>>('firebase/auth');
+  return {
+    ...actual,
+    updateProfile: (...args: unknown[]) => mockUpdateProfile(...args),
+  };
+});
 
 const mockSetDoc = jest.fn();
 jest.mock('firebase/firestore', () => ({
@@ -94,6 +101,7 @@ jest.mock('@/repositories', () => ({
     createOrMerge: jest.fn(),
     updateFields: jest.fn(),
     existsByEmail: jest.fn(),
+    markAsOrphan: jest.fn(),
   },
 }));
 
@@ -386,18 +394,16 @@ describe('AuthService', () => {
     it('should mark orphan account when native rollback fails', async () => {
       mockUserRepository.createOrMerge.mockRejectedValue(new Error('Firestore write failed'));
       mockNativeDelete.mockRejectedValue(new Error('delete failed'));
-      mockSetDoc.mockResolvedValue(undefined);
+      mockUserRepository.markAsOrphan.mockResolvedValue(undefined);
 
       await expect(signUp(validSignUpData)).rejects.toThrow();
 
-      // orphanAccounts 마킹 시도
-      expect(mockSetDoc).toHaveBeenCalledWith(
-        'mock-doc-ref',
-        expect.objectContaining({
-          uid: 'native-uid',
-          reason: 'native_signup_rollback_failed',
-          phone: validSignUpData.verifiedPhone,
-        })
+      // orphanAccounts 마킹 시도 (Repository 경유)
+      expect(mockUserRepository.markAsOrphan).toHaveBeenCalledWith(
+        'native-uid',
+        'native_signup_rollback_failed',
+        validSignUpData.verifiedPhone,
+        expect.any(String) // Platform.OS
       );
     });
   });

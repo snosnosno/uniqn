@@ -13,7 +13,6 @@ import {
   markAsRead as markAsReadService,
   markAllAsRead as markAllAsReadService,
   deleteNotification as deleteNotificationService,
-  subscribeToNotifications,
   getNotificationSettings,
   saveNotificationSettings,
   checkNotificationPermission,
@@ -199,42 +198,6 @@ export function useNotificationList(
       await query.refetch();
     },
   };
-}
-
-// ============================================================================
-// useNotificationRealtime
-// ============================================================================
-
-/**
- * 알림 실시간 구독 훅
- *
- * @note 로딩 상태는 React Query가 관리하므로 여기서는 데이터 동기화만 담당
- */
-export function useNotificationRealtime() {
-  const user = useAuthStore((state) => state.user);
-  const setNotifications = useNotificationStore((state) => state.setNotifications);
-  const unsubscribeRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    if (!user?.uid) {
-      return;
-    }
-
-    unsubscribeRef.current = subscribeToNotifications(
-      user.uid,
-      (notifications) => {
-        setNotifications(notifications);
-      },
-      (error) => {
-        logger.error('알림 구독 에러', error);
-      }
-    );
-
-    return () => {
-      unsubscribeRef.current?.();
-      unsubscribeRef.current = null;
-    };
-  }, [user?.uid, setNotifications]);
 }
 
 // ============================================================================
@@ -618,7 +581,6 @@ export function useGroupedNotifications(
 
 export default {
   useNotificationList,
-  useNotificationRealtime,
   useMarkAsRead,
   useMarkAllAsRead,
   useDeleteNotification,

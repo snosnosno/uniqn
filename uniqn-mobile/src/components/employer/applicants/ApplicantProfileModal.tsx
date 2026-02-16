@@ -9,7 +9,7 @@ import React, { useMemo } from 'react';
 import { View } from 'react-native';
 import { SheetModal } from '../../ui/SheetModal';
 import { useUserProfile } from '@/hooks/useUserProfile';
-import { formatRelativeTime } from '@/utils/dateUtils';
+import { formatRelativeTime } from '@/utils/date';
 import { ApplicantProfileHeader } from './ApplicantProfileHeader';
 import { ApplicantProfileContent } from './ApplicantProfileContent';
 import { ApplicantProfileAssignments } from './ApplicantProfileAssignments';

@@ -7,16 +7,25 @@
 import type { WorkLog } from '@/types/schedule';
 import type { GroupedSettlement } from '@/types/settlement';
 
-// Mock the settlement calculation utility
+// Mock the settlement utility (resolve 함수만 사용)
 jest.mock('../settlement', () => ({
-  calculateSettlementFromWorkLogWithTax: jest.fn(() => ({
-    hoursWorked: 8,
-    basePay: 120000,
-    allowancePay: 10000,
-    totalPay: 130000,
-    taxAmount: 4290,
-    afterTaxPay: 125710,
-  })),
+  getRoleSalaryFromRoles: jest.fn(() => ({ type: 'daily', amount: 150000 })),
+  getEffectiveAllowances: jest.fn(() => ({})),
+  getEffectiveTaxSettings: jest.fn(() => ({ type: 'none', value: 0 })),
+}));
+
+// Mock SettlementCalculator
+jest.mock('@/domains/settlement', () => ({
+  SettlementCalculator: {
+    calculate: jest.fn(() => ({
+      hoursWorked: 8,
+      basePay: 120000,
+      allowancePay: 10000,
+      totalPay: 130000,
+      taxAmount: 4290,
+      afterTaxPay: 125710,
+    })),
+  },
 }));
 
 import {

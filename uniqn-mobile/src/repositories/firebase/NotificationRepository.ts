@@ -32,8 +32,7 @@ import {
   type DocumentData,
   type DocumentSnapshot,
 } from 'firebase/firestore';
-import { httpsCallable } from 'firebase/functions';
-import { getFirebaseDb, getFirebaseFunctions } from '@/lib/firebase';
+import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError, normalizeError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
@@ -224,7 +223,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     }
   }
 
-  async markAllAsRead(userId: string): Promise<void> {
+  async markAllAsRead(userId: string): Promise<{ updatedIds: string[] }> {
     try {
       const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
       const q = query(
@@ -237,7 +236,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
       if (snapshot.empty) {
         logger.info('읽지 않은 알림 없음');
-        return;
+        return { updatedIds: [] };
       }
 
       const batch = writeBatch(getFirebaseDb());
@@ -256,48 +255,8 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
       await batch.commit();
 
-      // 🆕 배치 업데이트 후 카운터 리셋 + 플래그 정리 (Cloud Function 호출)
-      // 재시도 로직 (최대 3회)
-      const MAX_RETRIES = 3;
-      let retryCount = 0;
-      let resetSuccess = false;
-
-      while (retryCount < MAX_RETRIES && !resetSuccess) {
-        try {
-          const functions = getFirebaseFunctions();
-          const resetCounter = httpsCallable<{ notificationIds: string[] }, { success: boolean }>(
-            functions,
-            'resetUnreadCounter'
-          );
-          // 플래그 정리를 위해 알림 ID 목록 전달
-          await resetCounter({ notificationIds });
-          resetSuccess = true;
-          logger.info('미읽음 카운터 리셋 완료', { userId });
-        } catch (counterError) {
-          retryCount++;
-          if (retryCount < MAX_RETRIES) {
-            // 재시도 전 대기 (exponential backoff)
-            await new Promise((resolve) => setTimeout(resolve, 1000 * retryCount));
-            logger.warn('카운터 리셋 재시도', {
-              attempt: retryCount,
-              error: toError(counterError).message,
-            });
-          }
-        }
-      }
-
-      // 🆕 최종 실패 시 로컬 카운터라도 0으로 설정
-      if (!resetSuccess) {
-        logger.error('카운터 리셋 최종 실패 - 로컬 카운터 동기화', {
-          userId,
-          attempts: MAX_RETRIES,
-        });
-        // 동적 import로 순환 참조 방지
-        const { useNotificationStore } = await import('@/stores/notificationStore');
-        useNotificationStore.getState().setUnreadCount(0);
-      }
-
       logger.info('모든 알림 읽음 처리', { count: snapshot.size });
+      return { updatedIds: notificationIds };
     } catch (error) {
       throw handleServiceError(error, {
         operation: '모든 알림 읽음 처리',
@@ -311,40 +270,19 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   // 삭제 (Delete)
   // ==========================================================================
 
-  async delete(notificationId: string, userId?: string): Promise<void> {
+  async delete(notificationId: string): Promise<{ wasUnread: boolean; recipientId?: string }> {
     try {
       const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
 
-      // 🆕 삭제 전 미읽음 상태 확인 (카운터 감소 필요 여부)
+      // 삭제 전 미읽음 상태 확인 (카운터 관리는 Service 레이어에서 처리)
       const docSnap = await getDoc(docRef);
       const wasUnread = docSnap.exists() && docSnap.data()?.isRead === false;
-      const recipientId = userId || docSnap.data()?.recipientId;
+      const recipientId = docSnap.data()?.recipientId as string | undefined;
 
       await deleteDoc(docRef);
 
-      // 🆕 미읽음이었으면 카운터 감소 (Cloud Function 호출)
-      if (wasUnread && recipientId) {
-        try {
-          const functions = getFirebaseFunctions();
-          const decrementCounter = httpsCallable<{ delta: number }, { success: boolean }>(
-            functions,
-            'decrementUnreadCounter'
-          );
-          await decrementCounter({ delta: 1 });
-          logger.info('알림 삭제 후 카운터 감소', { notificationId });
-        } catch (counterError) {
-          // 카운터 감소 실패해도 삭제는 성공으로 처리
-          logger.warn('알림 삭제 후 카운터 감소 실패', {
-            notificationId,
-            error: toError(counterError).message,
-          });
-          // 로컬 store에서 직접 감소 (fallback)
-          const { useNotificationStore } = await import('@/stores/notificationStore');
-          useNotificationStore.getState().decrementUnreadCount(1);
-        }
-      }
-
       logger.info('알림 삭제', { notificationId, wasUnread });
+      return { wasUnread, recipientId };
     } catch (error) {
       throw handleServiceError(error, {
         operation: '알림 삭제',
@@ -354,11 +292,11 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     }
   }
 
-  async deleteMany(notificationIds: string[]): Promise<void> {
+  async deleteMany(notificationIds: string[]): Promise<{ deletedUnreadCount: number }> {
     try {
-      if (notificationIds.length === 0) return;
+      if (notificationIds.length === 0) return { deletedUnreadCount: 0 };
 
-      // 🆕 삭제 전 미읽음 알림 개수 확인
+      // 삭제 전 미읽음 알림 개수 확인 (카운터 관리는 Service 레이어에서 처리)
       let unreadCount = 0;
       const CHUNK_SIZE = 10; // in 쿼리 제한
 
@@ -384,32 +322,8 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
       await batch.commit();
 
-      // 🆕 미읽음이 있었으면 카운터 감소
-      if (unreadCount > 0) {
-        try {
-          const functions = getFirebaseFunctions();
-          const decrementCounter = httpsCallable<{ delta: number }, { success: boolean }>(
-            functions,
-            'decrementUnreadCounter'
-          );
-          await decrementCounter({ delta: unreadCount });
-          logger.info('여러 알림 삭제 후 카운터 감소', {
-            count: notificationIds.length,
-            unreadCount,
-          });
-        } catch (counterError) {
-          // 카운터 감소 실패해도 삭제는 성공으로 처리
-          logger.warn('여러 알림 삭제 후 카운터 감소 실패', {
-            unreadCount,
-            error: toError(counterError).message,
-          });
-          // 로컬 store에서 직접 감소 (fallback)
-          const { useNotificationStore } = await import('@/stores/notificationStore');
-          useNotificationStore.getState().decrementUnreadCount(unreadCount);
-        }
-      }
-
       logger.info('여러 알림 삭제', { count: notificationIds.length, unreadCount });
+      return { deletedUnreadCount: unreadCount };
     } catch (error) {
       throw handleServiceError(error, {
         operation: '여러 알림 삭제',

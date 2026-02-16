@@ -18,6 +18,9 @@ const mockEventQRRepositoryGetActiveByJobAndDate = jest.fn();
 const mockEventQRRepositoryValidateSecurityCode = jest.fn();
 const mockEventQRRepositoryDeactivateExpired = jest.fn();
 
+const mockWorkLogRepositoryFindByJobPostingStaffDate = jest.fn();
+const mockWorkLogRepositoryProcessQRCheckInOutTransaction = jest.fn();
+
 jest.mock('@/repositories', () => ({
   eventQRRepository: {
     create: (...args: unknown[]) => mockEventQRRepositoryCreate(...args),
@@ -30,51 +33,52 @@ jest.mock('@/repositories', () => ({
       mockEventQRRepositoryValidateSecurityCode(...args),
     deactivateExpired: (...args: unknown[]) => mockEventQRRepositoryDeactivateExpired(...args),
   },
+  workLogRepository: {
+    findByJobPostingStaffDate: (...args: unknown[]) =>
+      mockWorkLogRepositoryFindByJobPostingStaffDate(...args),
+    processQRCheckInOutTransaction: (...args: unknown[]) =>
+      mockWorkLogRepositoryProcessQRCheckInOutTransaction(...args),
+  },
 }));
 
 const mockGetDocs = jest.fn();
 const mockRunTransaction = jest.fn();
 
-// Create a mock Timestamp class
-class MockTimestamp {
-  private _milliseconds: number;
-
-  constructor(milliseconds: number) {
-    this._milliseconds = milliseconds;
+jest.mock('firebase/firestore', () => {
+  // MockTimestamp를 팩토리 내부에 정의하여 호이스팅 문제 방지
+  class MockTimestampImpl {
+    private _milliseconds: number;
+    constructor(milliseconds: number) {
+      this._milliseconds = milliseconds;
+    }
+    static now() {
+      return new MockTimestampImpl(Date.now());
+    }
+    static fromMillis(ms: number) {
+      return new MockTimestampImpl(ms);
+    }
+    static fromDate(date: Date) {
+      return new MockTimestampImpl(date.getTime());
+    }
+    toMillis() {
+      return this._milliseconds;
+    }
+    toDate() {
+      return new Date(this._milliseconds);
+    }
   }
-
-  static now() {
-    return new MockTimestamp(Date.now());
-  }
-
-  static fromMillis(ms: number) {
-    return new MockTimestamp(ms);
-  }
-
-  static fromDate(date: Date) {
-    return new MockTimestamp(date.getTime());
-  }
-
-  toMillis() {
-    return this._milliseconds;
-  }
-
-  toDate() {
-    return new Date(this._milliseconds);
-  }
-}
-
-jest.mock('firebase/firestore', () => ({
-  collection: jest.fn(() => ({ path: 'workLogs' })),
-  doc: jest.fn(() => ({ id: 'test-doc' })),
-  getDocs: (...args: unknown[]) => mockGetDocs(...args),
-  query: jest.fn((...args) => args),
-  where: jest.fn((field, op, value) => ({ field, op, value })),
-  limit: jest.fn((n) => ({ limit: n })),
-  Timestamp: MockTimestamp,
-  serverTimestamp: () => ({ _methodName: 'serverTimestamp' }),
-  runTransaction: (...args: unknown[]) => mockRunTransaction(...args),
-}));
+  return {
+    collection: jest.fn(() => ({ path: 'workLogs' })),
+    doc: jest.fn(() => ({ id: 'test-doc' })),
+    getDocs: (...args: unknown[]) => mockGetDocs(...args),
+    query: jest.fn((...args) => args),
+    where: jest.fn((field, op, value) => ({ field, op, value })),
+    limit: jest.fn((n) => ({ limit: n })),
+    Timestamp: MockTimestampImpl,
+    serverTimestamp: () => ({ _methodName: 'serverTimestamp' }),
+    runTransaction: (...args: unknown[]) => mockRunTransaction(...args),
+  };
+});
 
 jest.mock('@/lib/firebase', () => ({
   getFirebaseDb: jest.fn(() => ({ type: 'firestore' })),
@@ -102,7 +106,7 @@ jest.mock('@/services/analyticsService', () => ({
   trackCheckOut: jest.fn(),
 }));
 
-jest.mock('@/utils/dateUtils', () => ({
+jest.mock('@/utils/date', () => ({
   parseTimeSlotToDate: jest.fn((_timeSlot: string, date: string) => ({
     startTime: new Date(`${date}T09:00:00`),
     endTime: new Date(`${date}T18:00:00`),
@@ -433,6 +437,9 @@ describe('eventQRService - processEventQRCheckIn', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockIsAppError.mockReturnValue(false);
+    // Repository mock 반환값 초기화 (clearAllMocks는 반환값을 초기화하지 않음)
+    mockWorkLogRepositoryFindByJobPostingStaffDate.mockReset();
+    mockWorkLogRepositoryProcessQRCheckInOutTransaction.mockReset();
   });
 
   it('유효한 QR로 출근 처리해야 함', async () => {
@@ -448,26 +455,18 @@ describe('eventQRService - processEventQRCheckIn', () => {
     };
 
     const mockWorkLog = createMockWorkLog({
+      id: 'wl-1',
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.SCHEDULED,
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(createMockEventQR());
-    mockGetDocs.mockResolvedValue({
-      empty: false,
-      docs: [{ id: 'wl-1', data: () => mockWorkLog }],
-    });
-    mockRunTransaction.mockImplementation(async (_db, callback) => {
-      const mockTransaction = {
-        get: jest.fn().mockResolvedValue({
-          exists: () => true,
-          id: 'wl-1',
-          data: () => mockWorkLog,
-        }),
-        update: jest.fn(),
-      };
-      return callback(mockTransaction);
+    mockWorkLogRepositoryFindByJobPostingStaffDate.mockResolvedValue(mockWorkLog);
+    mockWorkLogRepositoryProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkIn',
+      hasExistingCheckInTime: false,
+      workDuration: 0,
     });
 
     const result = await processEventQRCheckIn(JSON.stringify(qrData), 'staff-123');
@@ -479,7 +478,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
   });
 
   it('유효한 QR로 퇴근 처리해야 함', async () => {
-    const { Timestamp: MockTimestamp } = jest.requireMock('firebase/firestore');
+    const { Timestamp: MockTS } = jest.requireMock('firebase/firestore');
     const now = Date.now();
     const qrData: EventQRDisplayData = {
       type: 'event',
@@ -492,29 +491,21 @@ describe('eventQRService - processEventQRCheckIn', () => {
     };
 
     const mockWorkLog = createMockWorkLog({
+      id: 'wl-1',
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: MockTimestamp.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
+      checkInTime: MockTS.fromDate(new Date(now - 3 * 60 * 60 * 1000)),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
       createMockEventQR({ action: 'checkOut' })
     );
-    mockGetDocs.mockResolvedValue({
-      empty: false,
-      docs: [{ id: 'wl-1', data: () => mockWorkLog }],
-    });
-    mockRunTransaction.mockImplementation(async (_db, callback) => {
-      const mockTransaction = {
-        get: jest.fn().mockResolvedValue({
-          exists: () => true,
-          id: 'wl-1',
-          data: () => mockWorkLog,
-        }),
-        update: jest.fn(),
-      };
-      return callback(mockTransaction);
+    mockWorkLogRepositoryFindByJobPostingStaffDate.mockResolvedValue(mockWorkLog);
+    mockWorkLogRepositoryProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      hasExistingCheckInTime: true,
+      workDuration: 180,
     });
 
     const result = await processEventQRCheckIn(JSON.stringify(qrData), 'staff-123');
@@ -713,6 +704,7 @@ describe('eventQRService - processEventQRCheckIn', () => {
     };
 
     const mockWorkLog = createMockWorkLog({
+      id: 'wl-1',
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.SCHEDULED,
@@ -721,33 +713,22 @@ describe('eventQRService - processEventQRCheckIn', () => {
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(createMockEventQR());
-    mockGetDocs.mockResolvedValue({
-      empty: false,
-      docs: [{ id: 'wl-1', data: () => mockWorkLog }],
-    });
-
-    const mockUpdate = jest.fn();
-    mockRunTransaction.mockImplementation(async (_db, callback) => {
-      const mockTransaction = {
-        get: jest.fn().mockResolvedValue({
-          exists: () => true,
-          id: 'wl-1',
-          data: () => mockWorkLog,
-        }),
-        update: mockUpdate,
-      };
-      return callback(mockTransaction);
+    mockWorkLogRepositoryFindByJobPostingStaffDate.mockResolvedValue(mockWorkLog);
+    mockWorkLogRepositoryProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkIn',
+      hasExistingCheckInTime: false,
+      workDuration: 0,
     });
 
     await processEventQRCheckIn(JSON.stringify(qrData), 'staff-123');
 
-    expect(mockUpdate).toHaveBeenCalled();
+    expect(mockWorkLogRepositoryProcessQRCheckInOutTransaction).toHaveBeenCalled();
   });
 
   it('퇴근 시 근무 시간을 계산해야 함', async () => {
-    const { Timestamp: MockTimestamp } = jest.requireMock('firebase/firestore');
+    const { Timestamp: MockTS } = jest.requireMock('firebase/firestore');
     const now = Date.now();
-    const checkInTime = now - 3 * 60 * 60 * 1000; // 3시간 전
+    const checkInMs = now - 3 * 60 * 60 * 1000; // 3시간 전
 
     const qrData: EventQRDisplayData = {
       type: 'event',
@@ -760,29 +741,21 @@ describe('eventQRService - processEventQRCheckIn', () => {
     };
 
     const mockWorkLog = createMockWorkLog({
+      id: 'wl-1',
       staffId: 'staff-123',
       jobPostingId: 'job-1',
       status: STATUS.WORK_LOG.CHECKED_IN,
-      checkInTime: MockTimestamp.fromMillis(checkInTime),
+      checkInTime: MockTS.fromMillis(checkInMs),
     });
 
     mockEventQRRepositoryValidateSecurityCode.mockResolvedValue(
       createMockEventQR({ action: 'checkOut' })
     );
-    mockGetDocs.mockResolvedValue({
-      empty: false,
-      docs: [{ id: 'wl-1', data: () => mockWorkLog }],
-    });
-    mockRunTransaction.mockImplementation(async (_db, callback) => {
-      const mockTransaction = {
-        get: jest.fn().mockResolvedValue({
-          exists: () => true,
-          id: 'wl-1',
-          data: () => mockWorkLog,
-        }),
-        update: jest.fn(),
-      };
-      return callback(mockTransaction);
+    mockWorkLogRepositoryFindByJobPostingStaffDate.mockResolvedValue(mockWorkLog);
+    mockWorkLogRepositoryProcessQRCheckInOutTransaction.mockResolvedValue({
+      action: 'checkOut',
+      hasExistingCheckInTime: true,
+      workDuration: 180,
     });
 
     const result = await processEventQRCheckIn(JSON.stringify(qrData), 'staff-123');

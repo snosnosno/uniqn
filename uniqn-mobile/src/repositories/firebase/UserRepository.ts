@@ -23,6 +23,8 @@ import {
   where,
   writeBatch,
   serverTimestamp,
+  runTransaction,
+  Timestamp,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -298,6 +300,105 @@ export class FirebaseUserRepository implements IUserRepository {
       logger.error('회원탈퇴 철회 실패', toError(error), { userId });
       throw handleServiceError(error, {
         operation: '회원탈퇴 철회',
+        component: 'UserRepository',
+        context: { userId },
+      });
+    }
+  }
+
+  // ==========================================================================
+  // 특수 작업 (Transaction)
+  // ==========================================================================
+
+  async markAsOrphan(
+    uid: string,
+    reason: string,
+    phone?: string,
+    platform?: string
+  ): Promise<void> {
+    try {
+      const db = getFirebaseDb();
+      await setDoc(doc(db, 'orphanAccounts', uid), {
+        uid,
+        phone: phone || null,
+        reason,
+        createdAt: serverTimestamp(),
+        platform: platform || null,
+      });
+      logger.warn('고아 계정 마킹 완료 (수동 정리 필요)', { uid, reason });
+    } catch (error) {
+      logger.error('고아 계정 마킹 실패', toError(error), { uid, reason });
+      // 마킹 실패는 throw하지 않음 (원래 동작 유지)
+    }
+  }
+
+  async registerAsEmployer(userId: string): Promise<FirestoreUserProfile> {
+    try {
+      const db = getFirebaseDb();
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
+
+      // Transaction으로 원자적 처리 (Race Condition 방지)
+      const updatedProfile = await runTransaction(db, async (transaction) => {
+        // 1. 현재 프로필 조회 (Transaction 내에서)
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '사용자 정보를 찾을 수 없습니다',
+          });
+        }
+
+        const profile = userDoc.data() as FirestoreUserProfile;
+
+        // 2. 이미 구인자인 경우
+        if (profile.role === 'employer' || profile.role === 'admin') {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '이미 구인자로 등록되어 있습니다',
+          });
+        }
+
+        // 3. 전화번호 인증 확인
+        if (!profile.phoneVerified) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '전화번호 인증을 먼저 완료해주세요',
+          });
+        }
+
+        // 4. Firestore 업데이트
+        const now = serverTimestamp();
+        const updateData = {
+          role: 'employer' as const,
+          employerAgreements: {
+            termsAgreedAt: now,
+            liabilityWaiverAgreedAt: now,
+          },
+          employerRegisteredAt: now,
+          updatedAt: now,
+        };
+
+        transaction.update(userRef, updateData);
+
+        // 5. 업데이트된 프로필 반환 (serverTimestamp는 실제 값으로 대체)
+        const timestamp = Timestamp.now();
+        return {
+          ...profile,
+          role: 'employer' as const,
+          employerAgreements: {
+            termsAgreedAt: timestamp,
+            liabilityWaiverAgreedAt: timestamp,
+          },
+          employerRegisteredAt: timestamp,
+          updatedAt: timestamp,
+        } as FirestoreUserProfile;
+      });
+
+      return updatedProfile;
+    } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
+      throw handleServiceError(error, {
+        operation: '구인자 등록 (Transaction)',
         component: 'UserRepository',
         context: { userId },
       });

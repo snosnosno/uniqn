@@ -922,13 +922,13 @@ describe('ApplicationHistoryService', () => {
       expect(result).toBeNull();
     });
 
-    it('should throw when application data cannot be parsed', async () => {
+    it('should return null when application data cannot be parsed', async () => {
       mockGetDoc.mockResolvedValue(createDocSnapshot('app-1', { some: 'data' }));
       mockParseApplicationDocument.mockReturnValue(null);
 
-      await expect(getApplicationHistorySummary('app-1')).rejects.toThrow(
-        '지원 데이터를 파싱할 수 없습니다'
-      );
+      const result = await getApplicationHistorySummary('app-1');
+
+      expect(result).toBeNull();
     });
 
     it('should count cancellations correctly', async () => {

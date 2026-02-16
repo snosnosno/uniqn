@@ -9,7 +9,7 @@ import React, { memo, useState, useCallback, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Modal } from '@/components/ui/Modal';
 import { CalendarIcon } from '@/components/icons';
-import { formatDateRangeWithCount, groupConsecutiveDates } from '@/utils/dateRangeUtils';
+import { formatDateRangeWithCount, groupConsecutiveDates } from '@/utils/date';
 
 // ============================================================================
 // Types

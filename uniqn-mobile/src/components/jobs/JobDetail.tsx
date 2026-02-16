@@ -13,11 +13,14 @@ import { DateRequirementDisplay } from './DateRequirementDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
 import { useJobSchedule } from '@/hooks';
-import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+  formatDateKoreanWithDay,
+} from '@/utils/date';
 import type { JobPosting, PostingType } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
-import { formatDateKoreanWithDay } from '@/utils/dateUtils';
 import { getRoleDisplayName } from '@/types/unified';
 import { STATUS } from '@/constants';
 

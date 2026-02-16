@@ -7,7 +7,7 @@
 import React from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { ChevronLeftIcon, ChevronRightIcon } from '../../../icons';
-import { formatDate } from '@/utils/dateUtils';
+import { formatDate } from '@/utils/date';
 import { parseTimestamp } from '@/utils/settlement';
 
 export interface DateNavigationHeaderProps {

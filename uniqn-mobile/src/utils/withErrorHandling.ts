@@ -3,6 +3,19 @@
  *
  * @description 비동기 함수에 대한 표준화된 에러 처리
  * @version 1.0.0
+ *
+ * @deprecated handleServiceError (@/errors/serviceErrorHandler) 사용을 권장합니다.
+ * withErrorHandling은 민감정보 마스킹, Firebase 에러 매핑, AppError 체인 보존이 없습니다.
+ * 마이그레이션 예시:
+ * ```typescript
+ * // Before:
+ * return withErrorHandling(async () => { ... }, 'operationName');
+ *
+ * // After:
+ * try { ... } catch (error) {
+ *   throw handleServiceError(error, { operation: '작업명', component: 'serviceName' });
+ * }
+ * ```
  */
 
 import { logger } from './logger';

@@ -34,6 +34,16 @@ type NotificationCategoryType = (typeof NotificationCategory)[keyof typeof Notif
 // Types
 // ============================================================================
 
+/**
+ * MMKV에 영속화되는 상태 (partialize 반환 타입)
+ */
+interface NotificationPersistState {
+  settings: NotificationSettings;
+  lastFetchedAt: number | null;
+  unreadCount: number;
+  cachedNotifications: NotificationData[];
+}
+
 interface NotificationState {
   // 오프라인 캐시 (React Query 데이터와 별도로 MMKV에 저장)
   notifications: NotificationData[];
@@ -51,6 +61,9 @@ interface NotificationState {
 
   // 계산된 값
   unreadByCategory: Record<NotificationCategoryType, number>;
+
+  // 로컬 카운터 변경 타임스탬프 (Race Condition 방지, 비영구)
+  lastCounterLocalUpdate: number;
 
   // 기본 액션
   setNotifications: (notifications: NotificationData[]) => void;
@@ -111,6 +124,7 @@ const initialState = {
   settings: createDefaultNotificationSettings(),
   filter: {} as NotificationFilter,
   unreadByCategory: createEmptyUnreadByCategory(),
+  lastCounterLocalUpdate: 0,
 };
 
 // ============================================================================
@@ -288,6 +302,8 @@ export const useNotificationStore = create<NotificationState>()(
           return {
             notifications: newNotifications,
             ...counts,
+            // Race Condition 방지: 로컬 변경 시점 기록
+            lastCounterLocalUpdate: notification.isRead ? state.lastCounterLocalUpdate : Date.now(),
           };
         });
       },
@@ -492,6 +508,8 @@ export const useNotificationStore = create<NotificationState>()(
       decrementUnreadCount: (delta = 1) => {
         set((state) => ({
           unreadCount: Math.max(0, state.unreadCount - delta),
+          // Race Condition 방지: 로컬 변경 시점 기록
+          lastCounterLocalUpdate: Date.now(),
         }));
       },
 
@@ -512,7 +530,7 @@ export const useNotificationStore = create<NotificationState>()(
       name: 'notification-storage',
       storage: createJSONStorage(() => mmkvStorage),
       // 캐싱할 데이터 선택
-      partialize: (state) => ({
+      partialize: (state): NotificationPersistState => ({
         settings: state.settings,
         lastFetchedAt: state.lastFetchedAt,
         // 앱 재시작 시 배지 카운트 즉시 표시를 위해 persist
@@ -527,25 +545,26 @@ export const useNotificationStore = create<NotificationState>()(
             logger.warn('[NotificationStore] 복원 실패', { error });
             return;
           }
+          if (!state) return;
 
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const persistedState = state as any;
+          // persist된 데이터에서 cachedNotifications 추출
+          const persisted = state as unknown as NotificationPersistState & NotificationState;
 
           // persist된 unreadCount 보존 (setNotifications가 재계산으로 덮어쓰지 않도록)
-          const persistedUnreadCount = persistedState?.unreadCount ?? 0;
+          const persistedUnreadCount = persisted.unreadCount ?? 0;
 
           // cachedNotifications가 있고 현재 notifications가 비어있으면 복원
           if (
-            persistedState?.cachedNotifications?.length > 0 &&
-            (!state?.notifications || state.notifications.length === 0)
+            persisted.cachedNotifications?.length > 0 &&
+            (!state.notifications || state.notifications.length === 0)
           ) {
             // 캐시된 알림으로 초기화
-            state?.setNotifications?.(persistedState.cachedNotifications);
+            state.setNotifications(persisted.cachedNotifications);
 
             // setNotifications가 cachedNotifications(최대 50개) 기반으로 재계산한 값 대신
             // persist된 원본 unreadCount 복원 (50개 초과 시 정확도 유지)
             if (persistedUnreadCount > 0) {
-              state?.setUnreadCount?.(persistedUnreadCount);
+              state.setUnreadCount(persistedUnreadCount);
             }
           }
         };

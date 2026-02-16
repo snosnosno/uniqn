@@ -22,7 +22,7 @@ import { FixedScheduleDisplay } from '@/components/jobs/FixedScheduleDisplay';
 import { EventQRModal } from '@/components/employer/qr/EventQRModal';
 import { TabHeader } from '@/components/headers';
 import { PlusIcon, UsersIcon, BriefcaseIcon, QrCodeIcon } from '@/components/icons';
-import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/date';
 import { STATUS } from '@/constants';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import type { JobPosting, PostingType, Allowances, TournamentApprovalStatus } from '@/types';

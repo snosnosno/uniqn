@@ -9,11 +9,7 @@ import type { TimeSlotInfo, DatedScheduleInfo } from '@/types/unified';
 import type { PostingType } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { formatDateDisplay } from '@/types/unified';
-import {
-  areDatesConsecutive,
-  formatDateRangeWithCount,
-  toDateString,
-} from '@/utils/dateRangeUtils';
+import { areDatesConsecutive, formatDateRangeWithCount, toDateString } from '@/utils/date';
 import { makeSelectionKey as makeSelectionKeyCore } from './selectionCore';
 
 // ============================================================================

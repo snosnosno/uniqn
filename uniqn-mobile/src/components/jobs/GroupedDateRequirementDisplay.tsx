@@ -17,8 +17,8 @@ import {
   groupRequirementsToDateRanges,
   formatDateRangeWithCount,
   toDateString,
-} from '@/utils/dateRangeUtils';
-import type { DateRangeGroup } from '@/utils/dateRangeUtils';
+  type DateRangeGroup,
+} from '@/utils/date';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 
 // ============================================================================

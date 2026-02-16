@@ -48,6 +48,8 @@ export type {
   IApplicationRepository,
   ApplicationWithJob,
   ApplyContext,
+  ConfirmWithHistoryResult,
+  CancelConfirmationResult,
   // JobPosting
   IJobPostingRepository,
   PaginatedJobPostings,

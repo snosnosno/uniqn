@@ -11,12 +11,15 @@ import { Badge } from '@/components/ui/Badge';
 import { BookmarkFilledIcon, BookmarkOutlineIcon } from '@/components/icons';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
-import { groupRequirementsToDateRanges, formatDateRangeWithCount } from '@/utils/dateRangeUtils';
+import {
+  groupRequirementsToDateRanges,
+  formatDateRangeWithCount,
+  formatDateShortWithDay,
+} from '@/utils/date';
 import type { JobPostingCard, PostingType, CardRole, SalaryInfo } from '@/types';
 import type { DateSpecificRequirement } from '@/types/jobPosting/dateRequirement';
 import { getRoleDisplayName } from '@/types/unified';
 import { getAllowanceItems } from '@/utils/allowanceUtils';
-import { formatDateShortWithDay } from '@/utils/dateUtils';
 import { useBookmarks } from '@/hooks';
 import { HIT_SLOP } from '@/constants';
 import { SCHEDULE_STATUS } from '@/constants/statusConfig';

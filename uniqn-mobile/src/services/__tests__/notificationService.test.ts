@@ -38,6 +38,7 @@ jest.mock('@/utils/logger', () => ({
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
+    appError: jest.fn(),
   },
 }));
 
@@ -294,7 +295,7 @@ describe('NotificationService', () => {
   // ==========================================================================
   describe('markAllAsRead', () => {
     it('should mark all notifications as read for a user', async () => {
-      mockRepo.markAllAsRead.mockResolvedValue(undefined);
+      mockRepo.markAllAsRead.mockResolvedValue({ updatedIds: [] });
 
       await markAllAsRead('user-1');
 
@@ -313,7 +314,7 @@ describe('NotificationService', () => {
   // ==========================================================================
   describe('deleteNotification', () => {
     it('should delete a notification via repository', async () => {
-      mockRepo.delete.mockResolvedValue(undefined);
+      mockRepo.delete.mockResolvedValue({ wasUnread: false });
 
       await deleteNotification('notification-1');
 
@@ -332,7 +333,7 @@ describe('NotificationService', () => {
   // ==========================================================================
   describe('deleteNotifications', () => {
     it('should delete multiple notifications via repository', async () => {
-      mockRepo.deleteMany.mockResolvedValue(undefined);
+      mockRepo.deleteMany.mockResolvedValue({ deletedUnreadCount: 0 });
 
       const ids = ['n-1', 'n-2', 'n-3'];
       await deleteNotifications(ids);
@@ -341,7 +342,7 @@ describe('NotificationService', () => {
     });
 
     it('should handle empty array', async () => {
-      mockRepo.deleteMany.mockResolvedValue(undefined);
+      mockRepo.deleteMany.mockResolvedValue({ deletedUnreadCount: 0 });
 
       await deleteNotifications([]);
 

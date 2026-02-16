@@ -19,7 +19,7 @@ import {
   getDayCount,
   isSingleDate,
   type DateRangeGroup,
-} from '@/utils/dateRangeUtils';
+} from '@/utils/date';
 import { MAX_TIME_SLOTS_PER_DATE, DEFAULT_START_TIME } from '@/constants';
 import { generateId } from '@/utils/generateId';
 import type { TimeSlot, RoleRequirement } from '@/types/jobPosting/dateRequirement';

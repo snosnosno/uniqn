@@ -2,7 +2,9 @@
  * UNIQN Mobile - Inquiry Service
  *
  * @description 문의 관리 서비스 (Firestore)
- * @version 1.0.0
+ * @version 1.1.0 - handleServiceError 패턴 적용
+ *
+ * TODO [P1-2]: Repository 패턴 전환 (현재 Firebase 직접 호출)
  */
 
 import {
@@ -20,7 +22,7 @@ import {
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { withErrorHandling } from '@/utils/withErrorHandling';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { ValidationError, ERROR_CODES } from '@/errors';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
@@ -37,6 +39,7 @@ import type {
 // ============================================================================
 
 const PAGE_SIZE = 20;
+const COMPONENT = 'inquiryService';
 
 // ============================================================================
 // Types
@@ -93,7 +96,7 @@ function docToInquiry(doc: QueryDocumentSnapshot): Inquiry {
 export async function fetchMyInquiries(
   options: FetchInquiriesOptions
 ): Promise<FetchInquiriesResult> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
     const { userId, pageSize = PAGE_SIZE, lastDoc } = options;
 
@@ -115,7 +118,7 @@ export async function fetchMyInquiries(
     const result = processPaginatedResults(snapshot.docs, pageSize, docToInquiry);
 
     logger.info('내 문의 조회 완료', {
-      component: 'inquiryService',
+      component: COMPONENT,
       userId,
       count: result.items.length,
     });
@@ -125,7 +128,13 @@ export async function fetchMyInquiries(
       lastDoc: result.lastDoc,
       hasMore: result.hasMore,
     };
-  }, 'fetchMyInquiries');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '내 문의 목록 조회',
+      component: COMPONENT,
+      context: { userId: options.userId },
+    });
+  }
 }
 
 /**
@@ -134,7 +143,7 @@ export async function fetchMyInquiries(
 export async function fetchAllInquiries(
   options: FetchInquiriesOptions
 ): Promise<FetchInquiriesResult> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
     const { filters, pageSize = PAGE_SIZE, lastDoc } = options;
 
@@ -154,7 +163,7 @@ export async function fetchAllInquiries(
     const result = processPaginatedResults(snapshot.docs, pageSize, docToInquiry);
 
     logger.info('전체 문의 조회 완료', {
-      component: 'inquiryService',
+      component: COMPONENT,
       count: result.items.length,
       filters,
     });
@@ -164,14 +173,19 @@ export async function fetchAllInquiries(
       lastDoc: result.lastDoc,
       hasMore: result.hasMore,
     };
-  }, 'fetchAllInquiries');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '전체 문의 목록 조회',
+      component: COMPONENT,
+    });
+  }
 }
 
 /**
  * 문의 상세 조회
  */
 export async function getInquiry(inquiryId: string): Promise<Inquiry | null> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
     const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
     const docSnap = await getDoc(docRef);
@@ -198,7 +212,13 @@ export async function getInquiry(inquiryId: string): Promise<Inquiry | null> {
       createdAt: data.createdAt,
       updatedAt: data.updatedAt,
     };
-  }, 'getInquiry');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '문의 상세 조회',
+      component: COMPONENT,
+      context: { inquiryId },
+    });
+  }
 }
 
 // ============================================================================
@@ -214,7 +234,7 @@ export async function createInquiry(
   userName: string,
   input: CreateInquiryInput
 ): Promise<string> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
 
     const inquiryData = {
@@ -233,13 +253,19 @@ export async function createInquiry(
     const docRef = await addDoc(collection(db, COLLECTIONS.INQUIRIES), inquiryData);
 
     logger.info('문의 생성 완료', {
-      component: 'inquiryService',
+      component: COMPONENT,
       inquiryId: docRef.id,
       category: input.category,
     });
 
     return docRef.id;
-  }, 'createInquiry');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '문의 생성',
+      component: COMPONENT,
+      context: { userId, category: input.category },
+    });
+  }
 }
 
 // ============================================================================
@@ -255,7 +281,7 @@ export async function respondToInquiry(
   responderName: string,
   input: RespondInquiryInput
 ): Promise<void> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
     const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
 
@@ -269,19 +295,25 @@ export async function respondToInquiry(
     });
 
     logger.info('문의 응답 완료', {
-      component: 'inquiryService',
+      component: COMPONENT,
       inquiryId,
       responderId,
       status: input.status,
     });
-  }, 'respondToInquiry');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '문의 응답',
+      component: COMPONENT,
+      context: { inquiryId, responderId },
+    });
+  }
 }
 
 /**
  * 문의 상태 변경 (관리자)
  */
 export async function updateInquiryStatus(inquiryId: string, status: InquiryStatus): Promise<void> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
     const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
 
@@ -291,11 +323,17 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
     });
 
     logger.info('문의 상태 변경 완료', {
-      component: 'inquiryService',
+      component: COMPONENT,
       inquiryId,
       status,
     });
-  }, 'updateInquiryStatus');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '문의 상태 변경',
+      component: COMPONENT,
+      context: { inquiryId, status },
+    });
+  }
 }
 
 // ============================================================================
@@ -306,7 +344,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
  * 미답변 문의 수 조회 (관리자)
  */
 export async function getUnansweredCount(): Promise<number> {
-  return withErrorHandling(async () => {
+  try {
     const db = getFirebaseDb();
     const q = query(
       collection(db, COLLECTIONS.INQUIRIES),
@@ -315,7 +353,12 @@ export async function getUnansweredCount(): Promise<number> {
 
     const snapshot = await getCountFromServer(q);
     return snapshot.data().count;
-  }, 'getUnansweredCount');
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '미답변 문의 수 조회',
+      component: COMPONENT,
+    });
+  }
 }
 
 // ============================================================================

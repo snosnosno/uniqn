@@ -1,10 +1,17 @@
 /**
  * UNIQN Mobile - 날짜 유틸리티
  *
- * @description 날짜/시간 처리 유틸리티 함수들
- * @version 2.0.0 - date/ 폴더로 통합됨, 하위 호환성을 위한 re-export
+ * @deprecated `@/utils/date`에서 직접 import하세요.
+ * ```typescript
+ * // Before
+ * import { formatDateKorean } from '@/utils/dateUtils';
  *
- * @see src/utils/date/index.ts 새로운 import 경로를 사용하세요
+ * // After
+ * import { formatDateKorean } from '@/utils/date';
+ * ```
+ *
+ * @description 하위 호환성을 위한 re-export 파일. 신규 코드에서 사용 금지.
+ * @version 2.0.0 - date/ 폴더로 통합됨
  */
 
 // Core

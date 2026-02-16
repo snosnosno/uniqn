@@ -12,25 +12,16 @@
  * - Repository: 단순 조회 캡슐화
  */
 
-import {
-  doc,
-  Timestamp,
-  serverTimestamp,
-  runTransaction,
-  type Unsubscribe,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
+import { type Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { maskSensitiveId, sanitizeLogData } from '@/utils/security';
-import { BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { parseWorkLogDocument } from '@/schemas';
 import { toDateString } from '@/utils/date';
 import { trackSettlementComplete } from './analyticsService';
 import { RealtimeManager } from '@/shared/realtime';
 import { workLogRepository, type WorkLogStats } from '@/repositories';
 import type { WorkLog, PayrollStatus } from '@/types';
-import { COLLECTIONS, STATUS } from '@/constants';
+import { STATUS } from '@/constants';
 
 // ============================================================================
 // Re-export Types
@@ -215,50 +206,7 @@ export async function updateWorkTime(
   try {
     logger.info('근무 시간 수정', { workLogId, updates: sanitizeLogData(updates) });
 
-    const db = getFirebaseDb();
-
-    await runTransaction(db, async (transaction) => {
-      const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
-      const workLogDoc = await transaction.get(workLogRef);
-
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-          userMessage: '근무 기록 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 이미 정산 완료된 경우 수정 불가
-      if (workLog.payrollStatus === STATUS.PAYROLL.COMPLETED) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-          userMessage: '이미 정산 완료된 근무 기록은 수정할 수 없습니다',
-        });
-      }
-
-      const updateData: Record<string, unknown> = {
-        updatedAt: serverTimestamp(),
-      };
-
-      if (updates.checkInTime) {
-        updateData.checkInTime = Timestamp.fromDate(updates.checkInTime);
-      }
-
-      if (updates.checkOutTime) {
-        updateData.checkOutTime = Timestamp.fromDate(updates.checkOutTime);
-      }
-
-      if (updates.notes !== undefined) {
-        updateData.notes = updates.notes;
-      }
-
-      transaction.update(workLogRef, updateData);
-    });
+    await workLogRepository.updateWorkTimeTransaction(workLogId, updates);
 
     logger.info('근무 시간 수정 완료', { workLogId });
   } catch (error) {
@@ -283,50 +231,7 @@ export async function updatePayrollStatus(
   try {
     logger.info('정산 상태 업데이트', { workLogId, status, amount });
 
-    const db = getFirebaseDb();
-
-    await runTransaction(db, async (transaction) => {
-      const workLogRef = doc(db, COLLECTIONS.WORK_LOGS, workLogId);
-      const workLogDoc = await transaction.get(workLogRef);
-
-      if (!workLogDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-          userMessage: '근무 기록을 찾을 수 없습니다',
-        });
-      }
-
-      const workLog = parseWorkLogDocument({ id: workLogDoc.id, ...workLogDoc.data() });
-      if (!workLog) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
-          userMessage: '근무 기록 데이터가 올바르지 않습니다',
-        });
-      }
-
-      // 중복 정산 방지
-      if (
-        status === STATUS.PAYROLL.COMPLETED &&
-        workLog.payrollStatus === STATUS.PAYROLL.COMPLETED
-      ) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_ALREADY_SETTLED, {
-          userMessage: '이미 정산 완료된 근무 기록입니다',
-        });
-      }
-
-      const updateData: Record<string, unknown> = {
-        payrollStatus: status,
-        updatedAt: serverTimestamp(),
-      };
-
-      if (amount !== undefined) {
-        updateData.payrollAmount = amount;
-      }
-
-      if (status === STATUS.PAYROLL.COMPLETED) {
-        updateData.payrollDate = serverTimestamp();
-      }
-
-      transaction.update(workLogRef, updateData);
-    });
+    await workLogRepository.updatePayrollStatusTransaction(workLogId, status, amount);
 
     logger.info('정산 상태 업데이트 완료', { workLogId });
 

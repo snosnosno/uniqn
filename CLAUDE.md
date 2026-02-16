@@ -34,7 +34,7 @@
 | **다크모드** | `dark:bg-gray-800` (NativeWind/Tailwind) | 라이트 모드만 적용 |
 | **경로** | `import { util } from '@/utils/util'` | 절대 시스템 경로 사용 |
 | **알림** | `toast.success('완료')` | `alert('완료')` |
-| **필드명** | `staffId`, `eventId` | `staff_id`, `event_id` |
+| **필드명** | `staffId`, `jobPostingId` | `staff_id`, `job_posting_id` |
 
 ---
 
@@ -238,8 +238,8 @@ type WorkLogStatus = 'pending';  // PascalCase
 | 컬렉션 | 핵심 필드 |
 |--------|-----------|
 | staff | staffId, name, role, userId |
-| workLogs | staffId, eventId, date, role |
-| applications | eventId, applicantId, status |
+| workLogs | staffId, jobPostingId, date, role |
+| applications | jobPostingId, applicantId, status |
 | jobPostings | id, title, location, salary |
 | notifications | userId, type, isRead, data |
 | settlements | jobPostingId, staffId, amount, status |
@@ -1119,7 +1119,7 @@ eas build --platform android    # Android 빌드
 
 **알려진 문서 간 불일치:**
 - ~~역할 정의: CLAUDE.md(5개 역할) vs DATA_SCHEMA.md(3개 역할)~~ → ✅ 해결됨 (3개 역할로 통합)
-- 필드명: CLAUDE.md(eventId) vs DATA_SCHEMA.md(jobPostingId 표준) — 마이그레이션 과도기
+- ~~필드명: CLAUDE.md(eventId) vs DATA_SCHEMA.md(jobPostingId 표준)~~ → ✅ 해결됨 (jobPostingId로 통일)
 
 ---
 
