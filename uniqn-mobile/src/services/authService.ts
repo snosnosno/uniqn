@@ -36,8 +36,8 @@ import {
 } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { httpsCallable } from 'firebase/functions';
-import { doc, setDoc, serverTimestamp, Timestamp, runTransaction } from 'firebase/firestore';
-import { getFirebaseAuth, getFirebaseDb, getFirebaseFunctions } from '@/lib/firebase';
+import { serverTimestamp, Timestamp } from 'firebase/firestore';
+import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
 import { syncToWebAuth, syncSignOut } from '@/lib/authBridge';
 
 import {
@@ -95,19 +95,7 @@ export async function markOrphanAccount(
   reason: string,
   phone?: string
 ): Promise<void> {
-  try {
-    const db = getFirebaseDb();
-    await setDoc(doc(db, 'orphanAccounts', uid), {
-      uid,
-      phone: phone || null,
-      reason,
-      createdAt: serverTimestamp(),
-      platform: Platform.OS,
-    });
-    logger.warn('고아 계정 마킹 완료 (수동 정리 필요)', { uid, reason });
-  } catch (markError) {
-    logger.error('고아 계정 마킹 실패', { uid, reason, error: markError });
-  }
+  await userRepository.markAsOrphan(uid, reason, phone, Platform.OS);
 }
 
 /** signUp용 UserProfile 객체 생성 (Web/Native 공통) */
@@ -494,17 +482,25 @@ export async function updateUserProfile(
     // 1. Firestore 업데이트
     await userRepository.updateFields(uid, updates);
 
-    // 2. Firebase Auth 업데이트 (photoURL 변경 시)
+    // 2. Firebase Auth 업데이트 (photoURL 또는 nickname 변경 시)
     // Note: name(본명)은 본인인증 정보이므로 수정 불가
     const currentUser = getFirebaseAuth().currentUser;
     if (currentUser && currentUser.uid === uid) {
-      // photoURL이 변경되면 Firebase Auth도 업데이트
-      if ('photoURL' in updates) {
-        const authUpdates: { photoURL?: string } = {
-          photoURL: updates.photoURL ?? undefined,
-        };
-        await updateProfile(currentUser, authUpdates);
-        logger.info('Firebase Auth 프로필 업데이트', { uid, fields: ['photoURL'] });
+      if ('photoURL' in updates || 'nickname' in updates) {
+        const authUpdates: { photoURL?: string; displayName?: string } = {};
+        if ('photoURL' in updates) {
+          authUpdates.photoURL = updates.photoURL ?? undefined;
+        }
+        if ('nickname' in updates && updates.nickname) {
+          authUpdates.displayName = updates.nickname;
+        }
+        if (Object.keys(authUpdates).length > 0) {
+          await updateProfile(currentUser, authUpdates);
+          logger.info('Firebase Auth 프로필 업데이트', {
+            uid,
+            fields: Object.keys(authUpdates),
+          });
+        }
       }
     }
 
@@ -852,72 +848,17 @@ export async function registerAsEmployer(): Promise<UserProfile> {
 
     logger.info('구인자 등록 시도', { uid: user.uid });
 
-    const db = getFirebaseDb();
-    const userRef = doc(db, 'users', user.uid);
-
-    // Transaction으로 원자적 처리 (Race Condition 방지)
-    const updatedProfile = await runTransaction(db, async (transaction) => {
-      // 1. 현재 프로필 조회 (Transaction 내에서)
-      const userDoc = await transaction.get(userRef);
-
-      if (!userDoc.exists()) {
-        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-          userMessage: '사용자 정보를 찾을 수 없습니다',
-        });
-      }
-
-      const profile = userDoc.data() as UserProfile;
-
-      // 2. 이미 구인자인 경우
-      if (profile.role === 'employer' || profile.role === 'admin') {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '이미 구인자로 등록되어 있습니다',
-        });
-      }
-
-      // 3. 전화번호 인증 확인
-      if (!profile.phoneVerified) {
-        throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-          userMessage: '전화번호 인증을 먼저 완료해주세요',
-        });
-      }
-
-      // 4. Firestore 업데이트
-      const now = serverTimestamp();
-      const updateData = {
-        role: 'employer' as const,
-        employerAgreements: {
-          termsAgreedAt: now,
-          liabilityWaiverAgreedAt: now,
-        },
-        employerRegisteredAt: now,
-        updatedAt: now,
-      };
-
-      transaction.update(userRef, updateData);
-
-      // 5. 업데이트된 프로필 반환 (serverTimestamp는 실제 값으로 대체)
-      const timestamp = Timestamp.now();
-      return {
-        ...profile,
-        role: 'employer' as const,
-        employerAgreements: {
-          termsAgreedAt: timestamp,
-          liabilityWaiverAgreedAt: timestamp,
-        },
-        employerRegisteredAt: timestamp,
-        updatedAt: timestamp,
-      } as UserProfile;
-    });
+    // Repository를 통한 Transaction 처리
+    const updatedProfile = await userRepository.registerAsEmployer(user.uid);
 
     logger.info('구인자 등록 성공', { uid: user.uid });
 
-    // 6. Analytics 이벤트
+    // Analytics 이벤트
     setUserProperties({
       user_role: 'employer',
     });
 
-    return updatedProfile;
+    return updatedProfile as UserProfile;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '구인자 등록',

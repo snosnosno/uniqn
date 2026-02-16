@@ -52,7 +52,7 @@ export interface SignUpRequest {
 
   // Step 3: 프로필 정보
   nickname: string;
-  role: 'staff' | 'employer';
+  role: 'staff';
 
   // Step 4: 약관 동의
   termsAgreed: boolean;

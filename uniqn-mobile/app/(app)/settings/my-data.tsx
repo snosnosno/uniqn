@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { Modal } from '@/components/ui/Modal';
 import { useAuthStore, useThemeStore, useToastStore } from '@/stores';
-import { getMyData, updateMyData, exportMyData } from '@/services';
+import { getMyData, exportMyData, updateUserProfile } from '@/services';
 import type { FirestoreUserProfile } from '@/types';
 import { logger } from '@/utils/logger';
 import { formatBirthDate } from '@/utils/formatters';
@@ -99,7 +99,19 @@ export default function MyDataScreen() {
 
     try {
       setIsSaving(true);
-      await updateMyData(user.uid, { [editField]: editValue || undefined });
+      const updatedValue = editValue || undefined;
+      // updateUserProfile을 사용하여 Firebase Auth displayName도 동기화 (C-1 수정 활용)
+      await updateUserProfile(user.uid, { [editField]: updatedValue });
+
+      // Zustand Store 동기화 (다른 화면에서도 즉시 반영)
+      const currentProfile = useAuthStore.getState().profile;
+      if (currentProfile) {
+        useAuthStore.getState().setProfile({
+          ...currentProfile,
+          [editField]: updatedValue,
+        });
+      }
+
       addToast({ type: 'success', message: '정보가 수정되었습니다' });
       setShowEditModal(false);
       loadData(); // 새로고침

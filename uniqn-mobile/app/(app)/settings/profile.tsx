@@ -107,10 +107,10 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
         await updateUserProfile(user.uid, updates);
 
         // authStore의 profile 업데이트 (로컬 상태 동기화)
+        // Note: updatedAt은 Firestore 서버에서 설정하므로 optimistic update에서 제외
         setProfile({
           ...profile,
           ...updates,
-          updatedAt: new Date(),
         });
 
         addToast({ type: 'success', message: '프로필이 저장되었습니다' });

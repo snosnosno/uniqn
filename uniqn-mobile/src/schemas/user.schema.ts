@@ -51,11 +51,6 @@ export const updateProfileSchema = z.object({
     .trim()
     .optional(),
   photoURL: z.string().url({ message: '올바른 URL 형식이 아닙니다' }).optional(),
-  bio: z
-    .string()
-    .max(200, { message: '자기소개는 200자를 초과할 수 없습니다' })
-    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
-    .optional(),
   // 추가 정보 (본인인증 정보가 아닌 필드만)
   region: z
     .string()

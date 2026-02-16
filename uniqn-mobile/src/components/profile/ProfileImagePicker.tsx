@@ -117,6 +117,7 @@ export function ProfileImagePicker({
         await updateProfilePhotoURL(user.uid, null);
 
         // 3. 로컬 상태 업데이트
+        // Note: Firestore에는 null로 전송 (updateProfilePhotoURL), Store에는 undefined (UserProfile 타입)
         if (profile) {
           setProfile({ ...profile, photoURL: undefined });
         }

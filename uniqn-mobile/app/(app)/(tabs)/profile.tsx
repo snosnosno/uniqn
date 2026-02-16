@@ -25,12 +25,12 @@ import {
   EditIcon,
   MegaphoneIcon,
 } from '@/components/icons';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthStore } from '@/stores/authStore';
 import { signOut } from '@/services/authService';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
-import { useState } from 'react';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -67,6 +67,16 @@ export default function ProfileScreen() {
   const reset = useAuthStore((state) => state.reset);
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // useUserProfile 훅과 동일한 displayName 로직
+  const displayName = useMemo(() => {
+    const baseName = profile?.name ?? user?.displayName ?? '이름 없음';
+    const nickname = profile?.nickname;
+    if (nickname && nickname !== baseName) {
+      return `${baseName}(${nickname})`;
+    }
+    return baseName;
+  }, [profile?.name, profile?.nickname, user?.displayName]);
 
   const handleLogout = () => {
     const performLogout = async () => {
@@ -144,7 +154,7 @@ export default function ProfileScreen() {
             />
             <View className="ml-4 flex-1">
               <Text className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                {profile?.name ?? user?.displayName ?? '이름 없음'}
+                {displayName}
               </Text>
               <Text className="text-sm text-gray-500 dark:text-gray-400">
                 {profile?.email ?? user?.email ?? '이메일 없음'}

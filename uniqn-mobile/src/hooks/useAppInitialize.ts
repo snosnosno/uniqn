@@ -30,7 +30,7 @@ import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
 import { notificationRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
-import { getUserProfile } from '@/services/authService';
+import { getUserProfile, signOut as authSignOut } from '@/services/authService';
 import {
   checkForceUpdate,
   ForceUpdateError,
@@ -264,7 +264,19 @@ export function useAppInitialize(): UseAppInitializeReturn {
               uid: authUser.uid,
               nickname: freshProfile.nickname,
             });
+          } else {
+            // Firestore 프로필 문서 없는 고아 계정 → 로그아웃 처리
+            logger.warn('Firestore 프로필 문서 없음 (고아 계정) - 로그아웃 처리', {
+              component: 'useAppInitialize',
+              uid: authUser.uid,
+              email: authUser.email,
+            });
+            await authSignOut();
+            useAuthStore.getState().reset();
+          }
 
+          // freshProfile이 존재할 때만 알림 카운터 로드
+          if (freshProfile) {
             // 🆕 미읽음 알림 카운터 로드 (Firestore 실시간 리스너 대체)
             try {
               // Repository를 통해 캐시된 카운터 조회
@@ -347,7 +359,7 @@ export function useAppInitialize(): UseAppInitializeReturn {
               });
               // 카운터 로드 실패해도 앱은 계속 진행
             }
-          }
+          } // end: if (freshProfile) - 알림 카운터 블록
         } catch (tokenError) {
           // 토큰 갱신 실패해도 앱은 계속 진행
           logger.warn('토큰 갱신 실패', {
