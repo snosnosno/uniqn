@@ -33,8 +33,8 @@ var __importStar = (this && this.__importStar) || (function () {
     };
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.createUserAccount = exports.processRegistration = exports.requestRegistration = exports.migrateJobPostings = exports.validateJobPostingData = exports.onWorkDateExpired = exports.expireByLastWorkDate = exports.onFixedPostingExpired = exports.manualExpireFixedPostings = exports.expireFixedPostings = exports.onJobPostingOGSync = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.backfillCiIndex = exports.linkIdentityVerification = exports.verifyIdentity = exports.cleanupPendingVerificationsScheduled = exports.cleanupExpiredTokensScheduled = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
-exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = void 0;
+exports.migrateJobPostings = exports.validateJobPostingData = exports.onWorkDateExpired = exports.expireByLastWorkDate = exports.onFixedPostingExpired = exports.manualExpireFixedPostings = exports.expireFixedPostings = exports.onJobPostingOGSync = exports.onTournamentApprovalChange = exports.resubmitJobPosting = exports.rejectJobPosting = exports.approveJobPosting = exports.cleanupOrphanAccountsScheduled = exports.recordLoginFailure = exports.sendLoginNotification = exports.forceDeleteAccount = exports.processScheduledDeletions = exports.decrementUnreadCounter = exports.initializeUnreadCounter = exports.resetUnreadCounter = exports.onNotificationDeleted = exports.onNotificationRead = exports.onTournamentPostingCreated = exports.onInquiryCreated = exports.onReportCreated = exports.onJobPostingClosed = exports.onSettlementCompleted = exports.onNoShow = exports.onJobPostingCancelled = exports.onJobPostingUpdated = exports.onCheckInOut = exports.onScheduleCancelled = exports.onScheduleCreated = exports.onWorkTimeChanged = exports.onApplicationStatusChanged = exports.onApplicationSubmitted = exports.sendSystemAnnouncement = exports.sendJobPostingAnnouncement = exports.getVerificationStatus = exports.verifyPhoneCode = exports.sendPhoneVerificationCode = exports.checkPhoneExists = exports.checkEmailExists = exports.backfillCiIndex = exports.linkIdentityVerification = exports.verifyIdentity = exports.cleanupPendingVerificationsScheduled = exports.cleanupExpiredTokensScheduled = exports.retryFailedCounterOpsScheduled = exports.cleanupRateLimitsScheduled = void 0;
+exports.updateEventParticipantCount = exports.updateJobPostingApplicantCount = exports.logActionHttp = exports.logAction = exports.deleteUser = exports.updateUser = exports.getDashboardStats = exports.onUserRoleChange = exports.createUserAccount = exports.processRegistration = exports.requestRegistration = void 0;
 const admin = __importStar(require("firebase-admin"));
 const firebase_functions_1 = require("firebase-functions");
 const https_1 = require("firebase-functions/v2/https");
@@ -64,6 +64,12 @@ Object.defineProperty(exports, "linkIdentityVerification", { enumerable: true, g
 // --- Migration Functions ---
 var backfillCiIndex_1 = require("./migrations/backfillCiIndex");
 Object.defineProperty(exports, "backfillCiIndex", { enumerable: true, get: function () { return backfillCiIndex_1.backfillCiIndex; } });
+// --- Email Verification Functions ---
+var checkEmailExists_1 = require("./auth/checkEmailExists");
+Object.defineProperty(exports, "checkEmailExists", { enumerable: true, get: function () { return checkEmailExists_1.checkEmailExists; } });
+// --- Phone Duplicate Check ---
+var checkPhoneExists_1 = require("./auth/checkPhoneExists");
+Object.defineProperty(exports, "checkPhoneExists", { enumerable: true, get: function () { return checkPhoneExists_1.checkPhoneExists; } });
 // --- Phone Verification Functions ---
 var phoneVerification_1 = require("./auth/phoneVerification");
 Object.defineProperty(exports, "sendPhoneVerificationCode", { enumerable: true, get: function () { return phoneVerification_1.sendPhoneVerificationCode; } });
@@ -118,6 +124,8 @@ Object.defineProperty(exports, "forceDeleteAccount", { enumerable: true, get: fu
 var loginNotification_1 = require("./account/loginNotification");
 Object.defineProperty(exports, "sendLoginNotification", { enumerable: true, get: function () { return loginNotification_1.sendLoginNotification; } });
 Object.defineProperty(exports, "recordLoginFailure", { enumerable: true, get: function () { return loginNotification_1.recordLoginFailure; } });
+var cleanupOrphanAccounts_1 = require("./account/cleanupOrphanAccounts");
+Object.defineProperty(exports, "cleanupOrphanAccountsScheduled", { enumerable: true, get: function () { return cleanupOrphanAccounts_1.cleanupOrphanAccountsScheduled; } });
 // --- Job Posting Approval Functions (Phase 7) ---
 var approveJobPosting_1 = require("./api/jobPostings/approveJobPosting");
 Object.defineProperty(exports, "approveJobPosting", { enumerable: true, get: function () { return approveJobPosting_1.approveJobPosting; } });

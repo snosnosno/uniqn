@@ -36,6 +36,12 @@ export { linkIdentityVerification } from './auth/linkIdentityVerification';
 // --- Migration Functions ---
 export { backfillCiIndex } from './migrations/backfillCiIndex';
 
+// --- Email Verification Functions ---
+export { checkEmailExists } from './auth/checkEmailExists';
+
+// --- Phone Duplicate Check ---
+export { checkPhoneExists } from './auth/checkPhoneExists';
+
 // --- Phone Verification Functions ---
 export {
   sendPhoneVerificationCode,
@@ -68,6 +74,7 @@ export { decrementUnreadCounterCallable as decrementUnreadCounter } from './noti
 // --- Account Management Functions ---
 export { processScheduledDeletions, forceDeleteAccount } from './account/scheduledDeletion';
 export { sendLoginNotification, recordLoginFailure } from './account/loginNotification';
+export { cleanupOrphanAccountsScheduled } from './account/cleanupOrphanAccounts';
 
 // --- Job Posting Approval Functions (Phase 7) ---
 export { approveJobPosting } from './api/jobPostings/approveJobPosting';

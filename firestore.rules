@@ -1041,6 +1041,20 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // --- Orphan Accounts (고아 계정 마킹 - 회원가입 롤백 실패 시) ---
+    // 클라이언트에서 생성만 가능, 읽기/수정/삭제는 Cloud Functions(Admin SDK)에서만
+    match /orphanAccounts/{uid} {
+      // 인증된 사용자가 본인 UID 문서만 생성 가능
+      allow create: if isSignedIn() && uid == request.auth.uid &&
+        request.resource.data.keys().hasAll(['uid', 'reason', 'createdAt', 'platform']) &&
+        request.resource.data.uid == request.auth.uid &&
+        request.resource.data.reason is string &&
+        request.resource.data.platform in ['ios', 'android', 'web'];
+
+      // 읽기/수정/삭제: Cloud Functions(Admin SDK)에서만 가능
+      allow read, update, delete: if false;
+    }
+
     // --- [서버 전용] Pending Verifications ---
     // Cloud Functions(Admin SDK)에서만 접근. 클라이언트 접근 차단.
     // 포트원 V2 본인인증 임시 저장 (TTL 30분, 스케줄러 자동 정리)
