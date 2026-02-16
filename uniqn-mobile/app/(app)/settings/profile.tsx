@@ -160,9 +160,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">이름</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">
-                  {profile.name ?? '-'}
-                </Text>
+                <Text className="text-gray-600 dark:text-gray-300">{profile.name ?? '-'}</Text>
               </View>
             </View>
 
@@ -180,9 +178,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
             <View className="mb-4">
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">전화번호</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
-                <Text className="text-gray-600 dark:text-gray-300">
-                  {profile.phone ?? '-'}
-                </Text>
+                <Text className="text-gray-600 dark:text-gray-300">{profile.phone ?? '-'}</Text>
               </View>
             </View>
 
@@ -201,11 +197,7 @@ function ProfileEditForm({ profile, user }: { profile: UserProfile; user: AuthUs
               <Text className="mb-1 text-sm text-gray-500 dark:text-gray-400">성별</Text>
               <View className="rounded-lg bg-gray-100 px-4 py-3 dark:bg-surface">
                 <Text className="text-gray-600 dark:text-gray-300">
-                  {profile.gender === 'male'
-                    ? '남성'
-                    : profile.gender === 'female'
-                      ? '여성'
-                      : '-'}
+                  {profile.gender === 'male' ? '남성' : profile.gender === 'female' ? '여성' : '-'}
                 </Text>
               </View>
             </View>

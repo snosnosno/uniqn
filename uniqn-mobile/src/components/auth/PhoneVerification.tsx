@@ -7,27 +7,19 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, Pressable, ActivityIndicator, Platform, useColorScheme } from 'react-native';
-import { signInWithPhoneNumber as webSignInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
+import {
+  signInWithPhoneNumber as webSignInWithPhoneNumber,
+  RecaptchaVerifier,
+} from 'firebase/auth';
+import { httpsCallable } from 'firebase/functions';
+import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
 import { ShieldCheckIcon, CheckCircleIcon, XCircleIcon } from '@/components/icons';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 
-// Native SDK는 네이티브 플랫폼에서만 import
-let getNativeAuth: (() => import('@react-native-firebase/auth').FirebaseAuthTypes.Module) | null =
-  null;
-let nativeSignInWithPhoneNumber:
-  | typeof import('@react-native-firebase/auth').signInWithPhoneNumber
-  | null = null;
-
-if (Platform.OS !== 'web') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const nativeAuth = require('@react-native-firebase/auth');
-  getNativeAuth = nativeAuth.getAuth;
-  nativeSignInWithPhoneNumber = nativeAuth.signInWithPhoneNumber;
-}
+import { getNativeAuth, nativeSignInWithPhoneNumber } from '@/lib/nativeAuth';
 
 // ============================================================================
 // Types
@@ -146,6 +138,24 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       try {
         const e164 = toE164(phone);
         logger.info('SMS 인증 요청', { phone: maskValue(e164, 'phone'), platform: Platform.OS });
+
+        // 전화번호 중복 체크 (SMS 발송 전)
+        try {
+          const functions = getFirebaseFunctions();
+          const checkPhone = httpsCallable<{ phone: string }, { exists: boolean }>(
+            functions,
+            'checkPhoneExists'
+          );
+          const checkResult = await checkPhone({ phone: cleaned });
+          if (checkResult.data.exists) {
+            setError('이미 가입된 전화번호입니다.');
+            setIsLoading(false);
+            return;
+          }
+        } catch (checkError) {
+          // 중복 체크 실패 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
+          logger.warn('전화번호 중복 체크 실패 - SMS 발송 계속 진행', { error: checkError });
+        }
 
         let result: ConfirmationResultLike;
 

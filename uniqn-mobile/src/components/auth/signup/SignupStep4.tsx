@@ -12,6 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
 import { signUpStep4Schema, type SignUpStep4Data } from '@/schemas';
+import { TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_CONSENT } from './termsContent';
 
 // ============================================================================
 // Types
@@ -40,67 +41,19 @@ const TERMS: TermItem[] = [
     key: 'termsAgreed',
     label: '이용약관 동의',
     required: true,
-    content: `UNIQN 이용약관
-
-제1조 (목적)
-본 약관은 UNIQN(이하 "회사")이 제공하는 서비스의 이용조건 및 절차에 관한 사항을 규정함을 목적으로 합니다.
-
-제2조 (정의)
-1. "서비스"란 회사가 제공하는 구인구직 플랫폼 서비스를 말합니다.
-2. "회원"이란 본 약관에 동의하고 서비스를 이용하는 자를 말합니다.
-3. "스태프"란 구인공고에 지원하는 회원을 말합니다.
-4. "구인자"란 구인공고를 등록하는 회원을 말합니다.
-
-제3조 (약관의 효력 및 변경)
-1. 본 약관은 서비스 화면에 게시하거나 기타의 방법으로 회원에게 공지함으로써 효력이 발생합니다.
-2. 회사는 필요한 경우 약관을 변경할 수 있으며, 변경된 약관은 제1항과 같은 방법으로 공지함으로써 효력이 발생합니다.
-
-(이하 생략)`,
+    content: TERMS_OF_SERVICE,
   },
   {
     key: 'privacyAgreed',
     label: '개인정보처리방침 동의',
     required: true,
-    content: `개인정보처리방침
-
-1. 수집하는 개인정보 항목
-- 필수항목: 이메일, 비밀번호, 이름, 휴대폰번호
-- 선택항목: 닉네임, 프로필사진
-
-2. 개인정보 수집 및 이용목적
-- 회원 식별 및 서비스 제공
-- 구인구직 매칭 서비스 제공
-- 본인인증 및 연락처 확인
-- 서비스 이용 통계 및 분석
-
-3. 개인정보 보유 및 이용기간
-- 회원 탈퇴 시까지
-- 법령에 따른 보존기간이 있는 경우 해당 기간
-
-4. 개인정보의 제3자 제공
-- 원칙적으로 제3자에게 제공하지 않습니다.
-- 단, 법령에 따른 경우 예외로 합니다.
-
-(이하 생략)`,
+    content: PRIVACY_POLICY,
   },
   {
     key: 'marketingAgreed',
     label: '마케팅 정보 수신 동의',
     required: false,
-    content: `마케팅 정보 수신 동의
-
-1. 수신 정보
-- 신규 기능 안내
-- 이벤트 및 프로모션 정보
-- 맞춤형 구인/구직 정보
-
-2. 수신 방법
-- 앱 푸시 알림
-- 이메일
-- SMS/MMS
-
-3. 동의 철회
-- 앱 설정에서 언제든지 수신 동의를 철회할 수 있습니다.`,
+    content: MARKETING_CONSENT,
   },
 ];
 

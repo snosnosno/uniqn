@@ -18,17 +18,7 @@ import { signInWithEmailAndPassword, signOut } from 'firebase/auth';
 import { getFirebaseAuth } from './firebase';
 import { logger } from '@/utils/logger';
 
-// Native SDK는 네이티브 플랫폼에서만 import
-let getNativeAuth: (() => import('@react-native-firebase/auth').FirebaseAuthTypes.Module) | null =
-  null;
-let nativeSignOut: typeof import('@react-native-firebase/auth').signOut | null = null;
-
-if (Platform.OS !== 'web') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const nativeAuth = require('@react-native-firebase/auth');
-  getNativeAuth = nativeAuth.getAuth;
-  nativeSignOut = nativeAuth.signOut;
-}
+import { getNativeAuth, nativeSignOut } from './nativeAuth';
 
 /**
  * Native auth 작업 후 Web SDK에 동기화

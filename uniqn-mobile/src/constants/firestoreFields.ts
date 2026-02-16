@@ -28,6 +28,7 @@ export const COMMON_FIELDS = {
 
 export const USER_FIELDS = {
   ...COMMON_FIELDS,
+  email: 'email',
   role: 'role',
   isActive: 'isActive',
   phoneVerified: 'phoneVerified',

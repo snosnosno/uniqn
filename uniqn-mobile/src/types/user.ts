@@ -122,7 +122,16 @@ export type EditableProfileFields = Pick<
  */
 export type ProfileViewFields = Pick<
   UserProfile,
-  'uid' | 'email' | 'name' | 'nickname' | 'phone' | 'birthDate' | 'gender' | 'role' | 'createdAt' | 'updatedAt'
+  | 'uid'
+  | 'email'
+  | 'name'
+  | 'nickname'
+  | 'phone'
+  | 'birthDate'
+  | 'gender'
+  | 'role'
+  | 'createdAt'
+  | 'updatedAt'
 >;
 
 /**

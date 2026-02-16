@@ -6,7 +6,14 @@
  */
 
 import { signInWithEmailAndPassword, signOut as firebaseSignOut } from 'firebase/auth';
-import { login, signUp, signOut, getUserProfile, updateUserProfile } from '../authService';
+import {
+  login,
+  signUp,
+  signOut,
+  getUserProfile,
+  updateUserProfile,
+  checkEmailExists,
+} from '../authService';
 
 // ============================================================================
 // Mock 변수 선언
@@ -36,13 +43,42 @@ jest.mock('@react-native-firebase/auth', () => ({
   },
 }));
 
+// nativeAuth 공통 모듈 (authService가 이 모듈에서 import)
+jest.mock('@/lib/nativeAuth', () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nativeAuth = require('@react-native-firebase/auth');
+  return {
+    hasNativeAuth: true,
+    getNativeAuth: nativeAuth.getAuth,
+    nativeSignInWithEmailAndPassword: nativeAuth.signInWithEmailAndPassword,
+    nativeSignInWithPhoneNumber: nativeAuth.signInWithPhoneNumber,
+    nativeLinkWithCredential: nativeAuth.linkWithCredential,
+    nativeUpdateProfile: nativeAuth.updateProfile,
+    nativeDeleteUser: nativeAuth.deleteUser,
+    nativeSignOut: nativeAuth.signOut,
+    NativeEmailAuthProvider: nativeAuth.EmailAuthProvider,
+  };
+});
+
 // Firebase Web SDK
 jest.mock('firebase/auth');
-jest.mock('firebase/firestore');
+
+const mockSetDoc = jest.fn();
+jest.mock('firebase/firestore', () => ({
+  doc: jest.fn(() => 'mock-doc-ref'),
+  setDoc: (...args: unknown[]) => mockSetDoc(...args),
+  serverTimestamp: jest.fn(() => 'mock-timestamp'),
+}));
+
+const mockHttpsCallable = jest.fn();
+jest.mock('firebase/functions', () => ({
+  httpsCallable: (...args: unknown[]) => mockHttpsCallable(...args),
+}));
 
 jest.mock('@/lib/firebase', () => ({
   getFirebaseAuth: jest.fn(() => ({ currentUser: null })),
   getFirebaseDb: jest.fn(() => ({})),
+  getFirebaseFunctions: jest.fn(() => ({})),
 }));
 
 // Auth Bridge (Dual SDK 동기화)
@@ -57,6 +93,7 @@ jest.mock('@/repositories', () => ({
     getById: jest.fn(),
     createOrMerge: jest.fn(),
     updateFields: jest.fn(),
+    existsByEmail: jest.fn(),
   },
 }));
 
@@ -336,6 +373,73 @@ describe('AuthService', () => {
 
       await expect(signUp(validSignUpData)).rejects.toThrow();
       expect(mockNativeDelete).toHaveBeenCalledWith(mockNativeAuthInstance.currentUser);
+    });
+
+    it('should reject non-staff role (role injection prevention)', async () => {
+      const hackedData = { ...validSignUpData, role: 'employer' as const };
+
+      await expect(signUp(hackedData as never)).rejects.toThrow();
+      // linkWithCredential이 호출되면 안 됨 (role 체크 단계에서 차단)
+      expect(mockLinkWithCredential).not.toHaveBeenCalled();
+    });
+
+    it('should mark orphan account when native rollback fails', async () => {
+      mockUserRepository.createOrMerge.mockRejectedValue(new Error('Firestore write failed'));
+      mockNativeDelete.mockRejectedValue(new Error('delete failed'));
+      mockSetDoc.mockResolvedValue(undefined);
+
+      await expect(signUp(validSignUpData)).rejects.toThrow();
+
+      // orphanAccounts 마킹 시도
+      expect(mockSetDoc).toHaveBeenCalledWith(
+        'mock-doc-ref',
+        expect.objectContaining({
+          uid: 'native-uid',
+          reason: 'native_signup_rollback_failed',
+          phone: validSignUpData.verifiedPhone,
+        })
+      );
+    });
+  });
+
+  // ==========================================================================
+  // checkEmailExists
+  // ==========================================================================
+  describe('checkEmailExists', () => {
+    it('should return true when email exists via Cloud Function', async () => {
+      const mockCallable = jest.fn().mockResolvedValue({ data: { exists: true } });
+      mockHttpsCallable.mockReturnValue(mockCallable);
+
+      const result = await checkEmailExists('existing@example.com');
+
+      expect(result).toBe(true);
+      expect(mockCallable).toHaveBeenCalledWith({ email: 'existing@example.com' });
+    });
+
+    it('should return false when email does not exist', async () => {
+      const mockCallable = jest.fn().mockResolvedValue({ data: { exists: false } });
+      mockHttpsCallable.mockReturnValue(mockCallable);
+
+      const result = await checkEmailExists('new@example.com');
+
+      expect(result).toBe(false);
+      expect(mockCallable).toHaveBeenCalledWith({ email: 'new@example.com' });
+    });
+
+    it('should normalize email to lowercase', async () => {
+      const mockCallable = jest.fn().mockResolvedValue({ data: { exists: false } });
+      mockHttpsCallable.mockReturnValue(mockCallable);
+
+      await checkEmailExists('User@Example.COM');
+
+      expect(mockCallable).toHaveBeenCalledWith({ email: 'user@example.com' });
+    });
+
+    it('should handle Cloud Function errors', async () => {
+      const mockCallable = jest.fn().mockRejectedValue(new Error('Function error'));
+      mockHttpsCallable.mockReturnValue(mockCallable);
+
+      await expect(checkEmailExists('test@example.com')).rejects.toThrow();
     });
   });
 

@@ -31,39 +31,23 @@ import {
   updateProfile,
   EmailAuthProvider,
   reauthenticateWithCredential,
-  fetchSignInMethodsForEmail,
   linkWithCredential,
   deleteUser as webDeleteUser,
 } from 'firebase/auth';
 import { Platform } from 'react-native';
-import { doc, serverTimestamp, Timestamp, runTransaction } from 'firebase/firestore';
-import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
+import { httpsCallable } from 'firebase/functions';
+import { doc, setDoc, serverTimestamp, Timestamp, runTransaction } from 'firebase/firestore';
+import { getFirebaseAuth, getFirebaseDb, getFirebaseFunctions } from '@/lib/firebase';
 import { syncToWebAuth, syncSignOut } from '@/lib/authBridge';
 
-// Native SDK는 네이티브 플랫폼에서만 import
-let getNativeAuth: (() => import('@react-native-firebase/auth').FirebaseAuthTypes.Module) | null =
-  null;
-let nativeSignInWithEmailAndPassword:
-  | typeof import('@react-native-firebase/auth').signInWithEmailAndPassword
-  | null = null;
-let nativeLinkWithCredential:
-  | typeof import('@react-native-firebase/auth').linkWithCredential
-  | null = null;
-let nativeUpdateProfile: typeof import('@react-native-firebase/auth').updateProfile | null = null;
-let nativeDeleteUser: typeof import('@react-native-firebase/auth').deleteUser | null = null;
-let NativeEmailAuthProvider: typeof import('@react-native-firebase/auth').EmailAuthProvider | null =
-  null;
-
-if (Platform.OS !== 'web') {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const nativeAuth = require('@react-native-firebase/auth');
-  getNativeAuth = nativeAuth.getAuth;
-  nativeSignInWithEmailAndPassword = nativeAuth.signInWithEmailAndPassword;
-  nativeLinkWithCredential = nativeAuth.linkWithCredential;
-  nativeUpdateProfile = nativeAuth.updateProfile;
-  nativeDeleteUser = nativeAuth.deleteUser;
-  NativeEmailAuthProvider = nativeAuth.EmailAuthProvider;
-}
+import {
+  getNativeAuth,
+  nativeSignInWithEmailAndPassword,
+  nativeLinkWithCredential,
+  nativeUpdateProfile,
+  nativeDeleteUser,
+  NativeEmailAuthProvider,
+} from '@/lib/nativeAuth';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
@@ -101,6 +85,68 @@ export interface AuthResult {
 /** 이메일 마스킹 (로깅용) - maskValue 래퍼 */
 const maskEmail = (email: string) => maskValue(email, 'email');
 
+/**
+ * 고아 계정 마킹 (삭제 실패 시 Firestore에 기록)
+ *
+ * Cloud Function Scheduler가 주기적으로 정리합니다.
+ */
+export async function markOrphanAccount(
+  uid: string,
+  reason: string,
+  phone?: string
+): Promise<void> {
+  try {
+    const db = getFirebaseDb();
+    await setDoc(doc(db, 'orphanAccounts', uid), {
+      uid,
+      phone: phone || null,
+      reason,
+      createdAt: serverTimestamp(),
+      platform: Platform.OS,
+    });
+    logger.warn('고아 계정 마킹 완료 (수동 정리 필요)', { uid, reason });
+  } catch (markError) {
+    logger.error('고아 계정 마킹 실패', { uid, reason, error: markError });
+  }
+}
+
+/** signUp용 UserProfile 객체 생성 (Web/Native 공통) */
+function buildUserProfile(uid: string, data: SignUpFormData): UserProfile {
+  return {
+    uid,
+    email: data.email,
+    name: data.name,
+    nickname: data.nickname,
+    phone: data.verifiedPhone,
+    phoneVerified: true,
+    birthDate: data.birthDate,
+    gender: data.gender,
+    role: data.role,
+    // Optional profile fields from Step 3
+    ...(data.region && { region: data.region }),
+    ...(data.experienceYears !== undefined && { experienceYears: data.experienceYears }),
+    ...(data.career && { career: data.career }),
+    ...(data.note && { note: data.note }),
+    termsAgreed: data.termsAgreed,
+    privacyAgreed: data.privacyAgreed,
+    marketingAgreed: data.marketingAgreed,
+    isActive: true,
+    createdAt: serverTimestamp() as Timestamp,
+    updatedAt: serverTimestamp() as Timestamp,
+  };
+}
+
+/** 회원가입 Analytics 이벤트 (Web/Native 공통) */
+function trackSignupAnalytics(uid: string, role: 'staff' | 'employer' | 'admin'): void {
+  trackSignup('email');
+  setUserId(uid);
+  setUserProperties({
+    user_role: role,
+    account_created_date: new Date().toISOString().split('T')[0],
+    has_verified_phone: true,
+  });
+}
+
 // ============================================================================
 // Auth Service
 // ============================================================================
@@ -116,7 +162,11 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     if (Platform.OS === 'web') {
       // 웹: web SDK만 사용
-      userCredential = await signInWithEmailAndPassword(getFirebaseAuth(), data.email, data.password);
+      userCredential = await signInWithEmailAndPassword(
+        getFirebaseAuth(),
+        data.email,
+        data.password
+      );
     } else {
       // 네이티브: Native SDK + Web SDK 동시 로그인 (Dual SDK)
       const [, webCredential] = await Promise.all([
@@ -179,6 +229,9 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
  * 이메일 중복 확인
  *
  * @description Step 1에서 다음 단계로 넘어가기 전에 이메일 중복 여부 확인
+ * Cloud Function을 통해 서버 측에서 Firebase Auth를 직접 조회합니다.
+ * (클라이언트의 fetchSignInMethodsForEmail은 Email Enumeration Protection으로 무력화됨)
+ *
  * @param email 확인할 이메일
  * @returns 이메일이 이미 존재하면 true, 없으면 false
  */
@@ -186,12 +239,17 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   try {
     logger.info('이메일 중복 확인', { email: maskEmail(email) });
 
-    const methods = await fetchSignInMethodsForEmail(getFirebaseAuth(), email);
-    const exists = methods.length > 0;
+    const functions = getFirebaseFunctions();
+    const checkEmail = httpsCallable<{ email: string }, { exists: boolean }>(
+      functions,
+      'checkEmailExists'
+    );
 
-    logger.info('이메일 중복 확인 완료', { email: maskEmail(email), exists });
+    const result = await checkEmail({ email: email.trim().toLowerCase() });
 
-    return exists;
+    logger.info('이메일 중복 확인 완료', { email: maskEmail(email), exists: result.data.exists });
+
+    return result.data.exists;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '이메일 중복 확인',
@@ -206,7 +264,18 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
-    logger.info('회원가입 시도', { email: maskEmail(data.email), role: data.role, platform: Platform.OS });
+    logger.info('회원가입 시도', {
+      email: maskEmail(data.email),
+      role: data.role,
+      platform: Platform.OS,
+    });
+
+    // 서버사이드 role 검증: 모든 가입은 staff로만 허용 (역할 탈취 방지)
+    if (data.role !== 'staff') {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '잘못된 역할입니다. 다시 시도해주세요.',
+      });
+    }
 
     if (Platform.OS === 'web') {
       // ===== Web Platform =====
@@ -227,35 +296,11 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         await updateProfile(currentUser, { displayName: data.nickname });
 
         // Firestore에 사용자 프로필 저장
-        const profile: UserProfile = {
-          uid: currentUser.uid,
-          email: data.email,
-          name: data.name,
-          nickname: data.nickname,
-          phone: data.verifiedPhone,
-          phoneVerified: true,
-          birthDate: data.birthDate,
-          gender: data.gender,
-          role: data.role,
-          termsAgreed: data.termsAgreed,
-          privacyAgreed: data.privacyAgreed,
-          marketingAgreed: data.marketingAgreed,
-          isActive: true,
-          createdAt: serverTimestamp() as Timestamp,
-          updatedAt: serverTimestamp() as Timestamp,
-        };
-
+        const profile = buildUserProfile(currentUser.uid, data);
         await userRepository.createOrMerge(currentUser.uid, { ...profile });
 
         logger.info('회원가입 성공', { uid: currentUser.uid, role: data.role });
-
-        trackSignup('email');
-        setUserId(currentUser.uid);
-        setUserProperties({
-          user_role: data.role,
-          account_created_date: new Date().toISOString().split('T')[0],
-          has_verified_phone: true,
-        });
+        trackSignupAnalytics(currentUser.uid, data.role);
 
         return { user: currentUser, profile };
       } catch (innerError) {
@@ -268,10 +313,15 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           await webDeleteUser(currentUser);
           logger.info('phone-only 고아 계정 삭제 완료', { uid: currentUser.uid });
         } catch (deleteError) {
-          logger.error('phone-only 고아 계정 삭제 실패 (수동 정리 필요)', {
+          logger.error('phone-only 고아 계정 삭제 실패', {
             uid: currentUser.uid,
             error: deleteError,
           });
+          await markOrphanAccount(
+            currentUser.uid,
+            'web_signup_rollback_failed',
+            data.verifiedPhone
+          );
         }
         throw innerError;
       }
@@ -306,43 +356,13 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       }
 
       // 5. Firestore에 사용자 프로필 저장
-      const profile: UserProfile = {
-        uid: nativeUser.uid,
-        email: data.email,
-        name: data.name,
-        nickname: data.nickname,
-        phone: data.verifiedPhone,
-        phoneVerified: true,
-        birthDate: data.birthDate,
-        gender: data.gender,
-        role: data.role,
-        // 동의 정보
-        termsAgreed: data.termsAgreed,
-        privacyAgreed: data.privacyAgreed,
-        marketingAgreed: data.marketingAgreed,
-        // 메타데이터
-        isActive: true,
-        createdAt: serverTimestamp() as Timestamp,
-        updatedAt: serverTimestamp() as Timestamp,
-      };
-
+      const profile = buildUserProfile(nativeUser.uid, data);
       await userRepository.createOrMerge(nativeUser.uid, { ...profile });
 
       logger.info('회원가입 성공', { uid: nativeUser.uid, role: data.role });
+      trackSignupAnalytics(nativeUser.uid, data.role);
 
-      // Analytics 이벤트
-      trackSignup('email');
-      setUserId(nativeUser.uid);
-      setUserProperties({
-        user_role: data.role,
-        account_created_date: new Date().toISOString().split('T')[0],
-        has_verified_phone: true,
-      });
-
-      return {
-        user: webUser,
-        profile,
-      };
+      return { user: webUser, profile };
     } catch (innerError) {
       // 고아 계정 롤백: phone-only 계정 삭제 (같은 번호로 재가입 가능하도록)
       logger.warn('회원가입 실패 - phone-only 계정 롤백 시도', {
@@ -353,10 +373,15 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         await nativeDeleteUser!(nativeUser);
         logger.info('phone-only 고아 계정 삭제 완료', { uid: nativeUser.uid });
       } catch (deleteError) {
-        logger.error('phone-only 고아 계정 삭제 실패 (수동 정리 필요)', {
+        logger.error('phone-only 고아 계정 삭제 실패', {
           uid: nativeUser.uid,
           error: deleteError,
         });
+        await markOrphanAccount(
+          nativeUser.uid,
+          'native_signup_rollback_failed',
+          data.verifiedPhone
+        );
       }
       // Web SDK 세션은 독립적으로 정리 (nativeUser.delete 성공/실패 무관)
       try {

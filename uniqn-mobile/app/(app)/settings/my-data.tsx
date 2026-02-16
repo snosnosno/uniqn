@@ -238,10 +238,7 @@ export default function MyDataScreen() {
             본인인증 정보
           </Text>
 
-          <DataRow
-            label="전화번호 인증"
-            value={userData?.phoneVerified ? '인증 완료' : '미인증'}
-          />
+          <DataRow label="전화번호 인증" value={userData?.phoneVerified ? '인증 완료' : '미인증'} />
           <DataRow label="이름" value={userData?.name ?? null} />
           <DataRow label="연락처" value={userData?.phone ?? null} />
           <DataRow
@@ -251,11 +248,7 @@ export default function MyDataScreen() {
           <DataRow
             label="성별"
             value={
-              userData?.gender === 'male'
-                ? '남성'
-                : userData?.gender === 'female'
-                  ? '여성'
-                  : null
+              userData?.gender === 'male' ? '남성' : userData?.gender === 'female' ? '여성' : null
             }
           />
         </Card>

@@ -241,19 +241,15 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
               onBlur={onBlur}
               editable={!isLoading}
               accessibilityLabel="이름 입력"
+              error={errors.name?.message}
             />
           )}
         />
-        {errors.name && (
-          <Text className="text-sm text-error-500 mt-1">{errors.name.message}</Text>
-        )}
       </View>
 
       {/* 생년월일 입력 */}
       <View>
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-          생년월일
-        </Text>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">생년월일</Text>
         <Controller
           control={control}
           name="birthDate"

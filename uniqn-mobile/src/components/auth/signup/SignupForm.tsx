@@ -2,13 +2,21 @@
  * UNIQN Mobile - 4단계 회원가입 폼 컴포넌트
  *
  * @description 플로우: 계정 → 본인인증 → 프로필 → 약관동의
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import React, { useState, useCallback } from 'react';
 import { View, Platform } from 'react-native';
+import Animated, { FadeInRight } from 'react-native-reanimated';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
+import { deleteUser as webDeleteUser } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase';
+import { getNativeAuth, nativeDeleteUser } from '@/lib/nativeAuth';
 import { StepIndicator, SIGNUP_STEPS } from '@/components/auth/StepIndicator';
+import { checkEmailExists, markOrphanAccount } from '@/services/authService';
+import { useToast } from '@/stores/toastStore';
+import { useModalStore } from '@/stores/modalStore';
+import { logger } from '@/utils/logger';
 import { SignupStep1 } from './SignupStep1';
 import { SignupStep2 } from './SignupStep2';
 import { SignupStep3 } from './SignupStep3';
@@ -44,6 +52,8 @@ interface FormDataState {
 export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
   const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormDataState>({});
+  const toast = useToast();
+  const showConfirm = useModalStore((s) => s.showConfirm);
 
   // Step 1: 계정 정보
   const handleStep1Next = useCallback((data: SignUpStep1Data) => {
@@ -57,9 +67,57 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
     setCurrentStep(3);
   }, []);
 
-  const handleStep2Back = useCallback(() => {
-    setCurrentStep(1);
+  // phone-only 계정 정리 (Step 2에서 생성된 Firebase Auth 계정)
+  const cleanupPhoneAccount = useCallback(async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const webUser = getFirebaseAuth().currentUser;
+        if (webUser) {
+          await webDeleteUser(webUser);
+          logger.info('Step2 뒤로가기 - phone-only 계정 삭제', { uid: webUser.uid });
+        }
+      } else if (getNativeAuth && nativeDeleteUser) {
+        const nativeUser = getNativeAuth().currentUser;
+        if (nativeUser) {
+          await nativeDeleteUser(nativeUser);
+          logger.info('Step2 뒤로가기 - phone-only 계정 삭제', { uid: nativeUser.uid });
+        }
+      }
+    } catch {
+      // 삭제 실패 시 고아 계정 마킹
+      const failedUid =
+        Platform.OS === 'web'
+          ? getFirebaseAuth().currentUser?.uid
+          : getNativeAuth?.()?.currentUser?.uid;
+      if (failedUid) {
+        await markOrphanAccount(failedUid, 'step2_back_cleanup_failed');
+      }
+      logger.warn('Step2 뒤로가기 - phone-only 계정 삭제 실패');
+    }
   }, []);
+
+  const handleStep2Back = useCallback(async () => {
+    // 현재 인증된 계정이 있는지 확인
+    const hasPhoneAccount =
+      Platform.OS === 'web' ? !!getFirebaseAuth().currentUser : !!getNativeAuth?.()?.currentUser;
+
+    const goBack = async () => {
+      await cleanupPhoneAccount();
+      setFormData((prev) => ({ ...prev, step2: undefined }));
+      setCurrentStep(1);
+    };
+
+    if (hasPhoneAccount) {
+      showConfirm(
+        '전화번호 인증 취소',
+        '이전 단계로 돌아가면 전화번호 인증을 다시 해야 합니다. 돌아가시겠습니까?',
+        goBack
+      );
+    } else {
+      setFormData((prev) => ({ ...prev, step2: undefined }));
+      setCurrentStep(1);
+    }
+  }, [cleanupPhoneAccount, showConfirm]);
 
   // Step 3: 프로필
   const handleStep3Next = useCallback((data: SignUpStep3Data) => {
@@ -74,6 +132,19 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
   // Step 4: 약관동의 및 최종 제출
   const handleStep4Submit = useCallback(
     async (data: SignUpStep4Data) => {
+      // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
+      try {
+        const emailExists = await checkEmailExists(formData.step1!.email);
+        if (emailExists) {
+          toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
+          setCurrentStep(1);
+          return;
+        }
+      } catch {
+        // 네트워크 오류 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
+        logger.warn('Step4 제출 전 이메일 재검증 실패 - 계속 진행');
+      }
+
       const updatedFormData = { ...formData, step4: data };
       setFormData(updatedFormData);
 
@@ -91,6 +162,10 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
         // Step 3: 프로필
         nickname: updatedFormData.step3!.nickname,
         role: updatedFormData.step3!.role,
+        region: updatedFormData.step3!.region,
+        experienceYears: updatedFormData.step3!.experienceYears,
+        career: updatedFormData.step3!.career,
+        note: updatedFormData.step3!.note,
         // Step 4: 약관동의
         termsAgreed: data.termsAgreed,
         privacyAgreed: data.privacyAgreed,
@@ -99,7 +174,7 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
 
       await onSubmit(completeData);
     },
-    [formData, onSubmit]
+    [formData, onSubmit, toast]
   );
 
   const handleStep4Back = useCallback(() => {
@@ -166,8 +241,14 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
           <StepIndicator currentStep={currentStep} steps={SIGNUP_STEPS} />
         </View>
 
-        {/* 현재 스텝 폼 */}
-        <View className="flex-1">{renderStep()}</View>
+        {/* 현재 스텝 폼 (fade 애니메이션) */}
+        <Animated.View
+          key={currentStep}
+          entering={FadeInRight.duration(200).springify()}
+          className="flex-1"
+        >
+          {renderStep()}
+        </Animated.View>
       </View>
     </KeyboardAwareScrollView>
   );

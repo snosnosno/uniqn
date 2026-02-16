@@ -13,9 +13,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Timestamp } from '@/lib/firebase';
 import { SignupForm } from '@/components/auth';
 import { signUp } from '@/services';
+import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore, type UserProfile as StoreUserProfile } from '@/stores/authStore';
 import { logger } from '@/utils/logger';
+import { extractUserMessage } from '@/errors';
 import type { SignUpFormData } from '@/schemas';
 
 /**
@@ -75,7 +77,7 @@ export default function SignUpScreen() {
         logger.error('회원가입 실패', error as Error);
         addToast({
           type: 'error',
-          message: error instanceof Error ? error.message : '회원가입에 실패했습니다.',
+          message: extractUserMessage(error),
         });
       } finally {
         setIsLoading(false);
@@ -92,8 +94,8 @@ export default function SignUpScreen() {
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-surface-overlay">
-        <Pressable onPress={handleBack} className="p-2 -ml-2">
-          <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
+        <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
+          <ChevronLeftIcon size={24} />
         </Pressable>
         <Text className="text-lg font-semibold text-gray-900 dark:text-white">회원가입</Text>
         <View className="w-8" />

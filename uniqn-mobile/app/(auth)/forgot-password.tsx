@@ -13,6 +13,8 @@ import { ForgotPasswordForm } from '@/components/auth';
 import { resetPassword } from '@/services';
 import { useToastStore } from '@/stores/toastStore';
 import { logger } from '@/utils/logger';
+import { extractUserMessage } from '@/errors';
+import { ChevronLeftIcon } from '@/components/icons';
 import type { ResetPasswordFormData } from '@/schemas';
 
 export default function ForgotPasswordScreen() {
@@ -30,7 +32,7 @@ export default function ForgotPasswordScreen() {
         logger.error('비밀번호 재설정 실패', error as Error);
         addToast({
           type: 'error',
-          message: error instanceof Error ? error.message : '이메일 발송에 실패했습니다.',
+          message: extractUserMessage(error) || '이메일 발송에 실패했습니다.',
         });
         throw error; // Form에서 에러 상태 처리를 위해 다시 throw
       } finally {
@@ -48,8 +50,8 @@ export default function ForgotPasswordScreen() {
     <SafeAreaView className="flex-1 bg-white dark:bg-surface-dark">
       {/* 헤더 */}
       <View className="flex-row items-center justify-between px-4 py-2 border-b border-gray-200 dark:border-surface-overlay">
-        <Pressable onPress={handleBack} className="p-2 -ml-2">
-          <Text className="text-gray-600 dark:text-gray-400 text-lg">←</Text>
+        <Pressable onPress={handleBack} className="p-2 -ml-2" accessibilityLabel="뒤로가기">
+          <ChevronLeftIcon size={24} />
         </Pressable>
         <Text className="text-lg font-semibold text-gray-900 dark:text-white">비밀번호 찾기</Text>
         <View className="w-8" />

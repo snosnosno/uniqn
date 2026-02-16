@@ -6,6 +6,7 @@
  */
 
 import { z } from 'zod';
+import { xssValidation } from '@/utils/security';
 
 /**
  * 이메일 검증 스키마
@@ -27,7 +28,7 @@ export const emailSchema = z
  * - 대문자 1개 이상
  * - 소문자 1개 이상
  * - 숫자 1개 이상
- * - 특수문자 1개 이상 (!@#$%^&*)
+ * - 특수문자 1개 이상 (영문/숫자/공백 외 모든 문자)
  * - 3자 이상 연속 문자 금지 (123, abc 등)
  */
 export const passwordSchema = z
@@ -44,8 +45,8 @@ export const passwordSchema = z
   .refine((val) => /[0-9]/.test(val), {
     message: '숫자를 포함해야 합니다',
   })
-  .refine((val) => /[!@#$%^&*]/.test(val), {
-    message: '특수문자를 포함해야 합니다 (!@#$%^&*)',
+  .refine((val) => /[^a-zA-Z0-9\s]/.test(val), {
+    message: '특수문자를 포함해야 합니다',
   })
   .refine(
     (val) => {
@@ -90,6 +91,7 @@ export const nicknameSchema = z
   .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
   .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
   .trim()
+  .refine(xssValidation, { message: '사용할 수 없는 문자열이 포함되어 있습니다' })
   .optional();
 
 /**
@@ -111,11 +113,10 @@ export const phoneSchema = z
 /**
  * 역할 선택 스키마 (회원가입 시)
  *
- * - staff: 스태프 (지원자)
- * - employer: 구인자 (공고 등록)
+ * 모든 사용자는 staff로 가입. 구인자는 가입 후 별도 등록.
  */
-export const roleSelectSchema = z.enum(['staff', 'employer'], {
-  error: '역할을 선택해주세요',
+export const roleSelectSchema = z.literal('staff', {
+  error: '잘못된 역할입니다',
 });
 
 /**
@@ -197,16 +198,38 @@ export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
 
 /**
  * 회원가입 Step 3 스키마 (프로필 정보)
+ *
+ * 닉네임만 필수, 나머지는 선택 (가입 후 프로필 설정에서도 수정 가능)
+ * 선택 필드 검증 규칙은 user.schema.ts의 updateProfileSchema와 동일
  */
 export const signUpStep3Schema = z.object({
   nickname: z
     .string()
     .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
     .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
-    .trim(),
-  role: z.enum(['staff', 'employer'], {
-    error: '역할을 선택해주세요',
-  }),
+    .trim()
+    .refine(xssValidation, { message: '사용할 수 없는 문자열이 포함되어 있습니다' }),
+  role: z.literal('staff'),
+  region: z
+    .string()
+    .max(50, { message: '지역은 50자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
+  experienceYears: z
+    .number()
+    .min(0, { message: '경력은 0년 이상이어야 합니다' })
+    .max(50, { message: '경력은 50년을 초과할 수 없습니다' })
+    .optional(),
+  career: z
+    .string()
+    .max(500, { message: '이력은 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
+  note: z
+    .string()
+    .max(300, { message: '기타사항은 300자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 });
 
 export type SignUpStep3Data = z.infer<typeof signUpStep3Schema>;
@@ -228,24 +251,19 @@ export type SignUpStep4Data = z.infer<typeof signUpStep4Schema>;
 
 /**
  * 전체 회원가입 스키마 (4단계)
+ *
+ * 개별 필드 스키마와 Step 스키마에서 조합. passwordConfirm은 Step1에서만 사용.
  */
 export const signUpSchema = z.object({
-  // Step 1: 계정 정보
+  // Step 1: 계정 정보 (passwordConfirm 제외)
   email: emailSchema,
   password: passwordSchema,
   // Step 2: 본인인증
-  name: nameSchema,
-  birthDate: birthDateSchema,
-  gender: signupGenderSchema,
-  phoneVerified: z.literal(true),
-  verifiedPhone: phoneSchema,
+  ...signUpStep2Schema.shape,
   // Step 3: 프로필
-  nickname: z.string(),
-  role: z.enum(['staff', 'employer']),
+  ...signUpStep3Schema.shape,
   // Step 4: 약관 동의
-  termsAgreed: z.boolean(),
-  privacyAgreed: z.boolean(),
-  marketingAgreed: z.boolean(),
+  ...signUpStep4Schema.shape,
 });
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;
