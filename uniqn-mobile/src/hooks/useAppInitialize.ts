@@ -27,7 +27,7 @@ import { validateEnv } from '@/lib/env';
 import { tryInitializeFirebase, getFirebaseAuth } from '@/lib/firebase';
 import { ensureDualSdkSync } from '@/lib/authBridge';
 import { migrateFromAsyncStorage } from '@/lib/mmkvStorage';
-import { notificationRepository } from '@/repositories';
+import { getUnreadCounterFromCache } from '@/services/notificationService';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
 import { getUserProfile, signOut as authSignOut } from '@/services/authService';
@@ -279,10 +279,8 @@ export function useAppInitialize(): UseAppInitializeReturn {
           if (freshProfile) {
             // 🆕 미읽음 알림 카운터 로드 (Firestore 실시간 리스너 대체)
             try {
-              // Repository를 통해 캐시된 카운터 조회
-              const cachedCount = await notificationRepository.getUnreadCounterFromCache(
-                authUser.uid
-              );
+              // Service를 통해 캐시된 카운터 조회
+              const cachedCount = await getUnreadCounterFromCache(authUser.uid);
 
               let unreadCount: number;
 

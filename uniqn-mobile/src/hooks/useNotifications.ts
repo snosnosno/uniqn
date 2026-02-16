@@ -7,7 +7,7 @@
 
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import type { NotificationPageCursor } from '@/services/notificationService';
 import {
   fetchNotifications,
   markAsRead as markAsReadService,
@@ -85,7 +85,7 @@ export function useNotificationList(
   } = useNotificationStore();
   const { addToast } = useToastStore();
   const { isOnline, isOffline } = useNetworkStatus();
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [lastDoc, setLastDoc] = useState<NotificationPageCursor | null>(null);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
   const hasSyncedRef = useRef(false);
 

@@ -410,6 +410,8 @@ export const useNotificationStore = create<NotificationState>()(
           return {
             notifications,
             ...counts,
+            // Race Condition 방지: 로컬 변경 시점 기록
+            lastCounterLocalUpdate: Date.now(),
           };
         });
       },
@@ -424,6 +426,8 @@ export const useNotificationStore = create<NotificationState>()(
             notifications,
             unreadCount: 0,
             unreadByCategory: createEmptyUnreadByCategory(),
+            // Race Condition 방지: 로컬 변경 시점 기록
+            lastCounterLocalUpdate: Date.now(),
           };
         });
       },

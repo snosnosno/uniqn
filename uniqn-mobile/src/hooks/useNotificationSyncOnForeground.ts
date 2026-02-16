@@ -85,9 +85,13 @@ export function useNotificationSyncOnForeground(
         // 포그라운드 복귀 시 놓친 알림 동기화
         queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
 
-        // 포그라운드 복귀 시 카운터 재동기화
+        // 포그라운드 복귀 시 카운터 재동기화 (C3: 반환값으로 Store 업데이트)
         if (userId) {
-          syncUnreadCounterFromServer(userId);
+          syncUnreadCounterFromServer(userId).then((count) => {
+            if (count !== null) {
+              useNotificationStore.getState().setUnreadCount(count);
+            }
+          });
         }
       }
       appStateRef.current = nextAppState;
@@ -134,7 +138,12 @@ export function useNotificationSyncOnForeground(
             }, 10_000);
           }
 
-          syncUnreadCounterFromServer(userId, true);
+          // C3: forceSync로 서버 카운터 가져와서 Store 업데이트
+          syncUnreadCounterFromServer(userId, true).then((count) => {
+            if (count !== null) {
+              useNotificationStore.getState().setUnreadCount(count);
+            }
+          });
         }
       );
     };

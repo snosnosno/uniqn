@@ -19,9 +19,9 @@ import { type NotificationPayload } from '@/services/pushNotificationService';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toError } from '@/errors';
 import { notificationRepository } from '@/repositories';
-import { useNotificationStore } from '@/stores/notificationStore';
 import { isSyncCacheValid, updateSyncCache } from '@/shared/cache/counterSyncCache';
 import { logger } from '@/utils/logger';
+import { NotificationType as NotificationTypeEnum } from '@/types/notification';
 import type {
   NotificationData,
   NotificationSettings,
@@ -40,16 +40,22 @@ const COMPONENT = 'notificationService';
 // Types
 // ============================================================================
 
+/**
+ * 페이지네이션 커서 타입 별칭
+ * @description Hook 레이어에서 firebase/firestore 직접 import을 방지하기 위한 추상화
+ */
+export type NotificationPageCursor = QueryDocumentSnapshot;
+
 interface FetchNotificationsOptions {
   userId: string;
   filter?: NotificationFilter;
   pageSize?: number;
-  lastDoc?: QueryDocumentSnapshot;
+  lastDoc?: NotificationPageCursor;
 }
 
 interface FetchNotificationsResult {
   notifications: NotificationData[];
-  lastDoc: QueryDocumentSnapshot | null;
+  lastDoc: NotificationPageCursor | null;
   hasMore: boolean;
 }
 
@@ -69,20 +75,20 @@ interface NotificationPermissionStatus {
 // ============================================================================
 
 /**
- * 미읽음 카운터 리셋 (재시도 + Store 폴백)
+ * 미읽음 카운터 리셋 (재시도, Store 참조 없음)
  *
- * @description markAllAsRead 후 Cloud Function으로 카운터 리셋
- * 최대 3회 재시도 (exponential backoff), 최종 실패 시 로컬 Store 폴백
+ * @description markAllAsRead 후 Cloud Function으로 서버 카운터 리셋
+ * 최대 3회 재시도 (exponential backoff)
+ * @returns 리셋 성공 여부 (실패 시 onSnapshot/foreground sync로 자동 보정됨)
  */
 async function resetUnreadCounterWithRetry(
   notificationIds: string[],
   userId: string
-): Promise<void> {
+): Promise<boolean> {
   const MAX_RETRIES = 3;
   let retryCount = 0;
-  let resetSuccess = false;
 
-  while (retryCount < MAX_RETRIES && !resetSuccess) {
+  while (retryCount < MAX_RETRIES) {
     try {
       const functions = getFirebaseFunctions();
       const resetCounter = httpsCallable<{ notificationIds: string[] }, { success: boolean }>(
@@ -90,8 +96,8 @@ async function resetUnreadCounterWithRetry(
         'resetUnreadCounter'
       );
       await resetCounter({ notificationIds });
-      resetSuccess = true;
       logger.info('미읽음 카운터 리셋 완료', { userId });
+      return true;
     } catch (counterError) {
       retryCount++;
       if (retryCount < MAX_RETRIES) {
@@ -104,22 +110,20 @@ async function resetUnreadCounterWithRetry(
     }
   }
 
-  if (!resetSuccess) {
-    logger.error('카운터 리셋 최종 실패 - 로컬 카운터 동기화', {
-      userId,
-      attempts: MAX_RETRIES,
-    });
-    useNotificationStore.getState().setUnreadCount(0);
-  }
+  logger.error('카운터 리셋 최종 실패 - onSnapshot/foreground sync에서 보정 예정', {
+    userId,
+    attempts: MAX_RETRIES,
+  });
+  return false;
 }
 
 /**
- * 미읽음 카운터 감소 (CF 호출 + Store 폴백)
+ * 미읽음 카운터 감소 (CF 호출, Store 참조 없음)
  *
- * @description delete/deleteMany 후 Cloud Function으로 카운터 감소
- * 실패 시 로컬 Store에서 직접 감소
+ * @description delete/deleteMany 후 Cloud Function으로 서버 카운터 감소
+ * @returns 감소 성공 여부 (실패 시 onSnapshot/foreground sync로 자동 보정됨)
  */
-async function decrementUnreadCounterWithRetry(delta: number): Promise<void> {
+async function decrementUnreadCounterWithRetry(delta: number): Promise<boolean> {
   try {
     const functions = getFirebaseFunctions();
     const decrementCounter = httpsCallable<{ delta: number }, { success: boolean }>(
@@ -128,12 +132,13 @@ async function decrementUnreadCounterWithRetry(delta: number): Promise<void> {
     );
     await decrementCounter({ delta });
     logger.info('미읽음 카운터 감소 완료', { delta });
+    return true;
   } catch (counterError) {
-    logger.warn('미읽음 카운터 감소 실패 - 로컬 폴백', {
+    logger.warn('미읽음 카운터 감소 실패 - onSnapshot/foreground sync에서 보정 예정', {
       delta,
       error: toError(counterError).message,
     });
-    useNotificationStore.getState().decrementUnreadCount(delta);
+    return false;
   }
 }
 
@@ -142,44 +147,38 @@ async function decrementUnreadCounterWithRetry(delta: number): Promise<void> {
 // ============================================================================
 
 /**
- * 서버에서 미읽음 카운터 동기화
+ * 서버에서 미읽음 카운터 조회
  *
  * @description 포그라운드 복귀 시 또는 멀티 디바이스 동기화를 위해 서버 카운터 조회
  * @param userId 사용자 ID
  * @param forceSync 캐시 무시하고 강제 동기화 (기본값: false)
+ * @returns 서버 카운터 값 (캐시 유효/조회 실패 시 null). Store 업데이트는 호출자가 처리
  *
- * @note 알림 목록 화면 진입 시에도 호출 가능하도록 export
  * @note 30초 캐시 TTL 적용으로 불필요한 Firestore 읽기 방지
  */
 export async function syncUnreadCounterFromServer(
   userId: string,
   forceSync: boolean = false
-): Promise<void> {
+): Promise<number | null> {
   try {
     if (!forceSync && isSyncCacheValid(userId)) {
       logger.debug('카운터 동기화 스킵 - 캐시 TTL 내', { userId });
-      return;
+      return null;
     }
 
     const serverCount = await notificationRepository.getUnreadCounterFromCache(userId);
-    updateSyncCache(userId);
 
+    // S1: 카운터 문서가 존재할 때만 캐시 갱신 (신규 가입자 30초 차단 방지)
     if (serverCount !== null) {
-      const localCount = useNotificationStore.getState().unreadCount;
-
-      if (serverCount !== localCount) {
-        useNotificationStore.getState().setUnreadCount(serverCount);
-        logger.info('포그라운드 복귀 - 카운터 동기화', {
-          serverCount,
-          localCount,
-          diff: serverCount - localCount,
-        });
-      }
+      updateSyncCache(userId);
     }
+
+    return serverCount;
   } catch (error) {
     logger.warn('카운터 동기화 실패', {
       error: error instanceof Error ? error.message : String(error),
     });
+    return null;
   }
 }
 
@@ -197,20 +196,54 @@ export function createNotificationFromFCM(
   payload: NotificationPayload,
   userId: string
 ): NotificationData | null {
-  const notificationId = payload.data?.notificationId as string | undefined;
+  const notificationId =
+    typeof payload.data?.notificationId === 'string' ? payload.data.notificationId : undefined;
   if (!notificationId) return null;
+
+  // FCM data 필드는 항상 string 값이므로 typeof 검증으로 안전성 확보
+  const rawType = typeof payload.data?.type === 'string' ? payload.data.type : '';
+  const link = typeof payload.data?.link === 'string' ? payload.data.link : undefined;
+
+  // W-NEW-1: as NotificationType 캐스트 대신 유효값 검증
+  const validTypes = Object.values(NotificationTypeEnum) as string[];
+  const type: NotificationType = validTypes.includes(rawType)
+    ? (rawType as NotificationType)
+    : NotificationTypeEnum.ANNOUNCEMENT;
 
   return {
     id: notificationId,
     recipientId: userId,
-    type: ((payload.data?.type as string) || 'announcement') as NotificationType,
+    type,
     title: payload.title || '',
     body: payload.body || '',
-    link: payload.data?.link as string | undefined,
+    link,
     data: payload.data as Record<string, string> | undefined,
     isRead: false,
     createdAt: Timestamp.now(),
   };
+}
+
+// ============================================================================
+// Counter Cache Query (useAppInitialize에서 사용)
+// ============================================================================
+
+/**
+ * 캐싱된 미읽음 카운터 조회 (Repository 래퍼)
+ *
+ * @description Hook 레이어에서 Repository 직접 호출을 방지하기 위한 Service 래퍼
+ * @param userId 사용자 ID
+ * @returns 캐싱된 카운터 값 (문서 없으면 null)
+ */
+export async function getUnreadCounterFromCache(userId: string): Promise<number | null> {
+  try {
+    return await notificationRepository.getUnreadCounterFromCache(userId);
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '캐시된 미읽음 카운터 조회',
+      component: COMPONENT,
+      context: { userId },
+    });
+  }
 }
 
 // ============================================================================
@@ -555,6 +588,7 @@ export const notificationService = {
 
   // Counter Sync
   syncUnreadCounterFromServer,
+  getUnreadCounterFromCache,
 
   // FCM Conversion
   createNotificationFromFCM,

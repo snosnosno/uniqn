@@ -89,6 +89,24 @@ export function usePushNotificationSetup(
   // Refs
   const isInitializingRef = useRef(false);
 
+  // W4: useRef로 핸들러 참조 안정화 (initialize 의존성에서 제외)
+  const handlersRef = useRef({
+    showForegroundToast,
+    addToast,
+    onNotificationReceived,
+    onNotificationTapped,
+    userId,
+  });
+
+  // 최신 값으로 ref 갱신 (매 렌더마다)
+  handlersRef.current = {
+    showForegroundToast,
+    addToast,
+    onNotificationReceived,
+    onNotificationTapped,
+    userId,
+  };
+
   // ============================================================================
   // Handlers
   // ============================================================================
@@ -96,44 +114,50 @@ export function usePushNotificationSetup(
   /**
    * 포그라운드 알림 수신 핸들러
    */
-  const handleNotificationReceived = useCallback(
-    (notification: NotificationPayload) => {
-      logger.info('포그라운드 알림 수신', {
-        title: notification.title,
-        type: notification.data?.type,
+  const handleNotificationReceived = useCallback((notification: NotificationPayload) => {
+    const {
+      showForegroundToast: show,
+      addToast: toast,
+      onNotificationReceived: onReceived,
+      userId: uid,
+    } = handlersRef.current;
+
+    logger.info('포그라운드 알림 수신', {
+      title: notification.title,
+      type: notification.data?.type,
+    });
+
+    trackEvent('notification_received', {
+      notification_type: (notification.data?.type as string) ?? 'unknown',
+      app_state: 'foreground',
+    });
+
+    // Service 레이어를 통해 FCM payload → NotificationData 변환
+    const notificationData = createNotificationFromFCM(notification, uid || '');
+    if (notificationData) {
+      useNotificationStore.getState().addNotification(notificationData);
+      queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
+      logger.info('FCM 알림을 로컬 store에 추가', { notificationId: notificationData.id });
+    }
+
+    onReceived?.(notification);
+
+    if (show && notification.title) {
+      toast({
+        type: 'info',
+        message: notification.body || notification.title,
+        duration: 5000,
       });
-
-      trackEvent('notification_received', {
-        notification_type: (notification.data?.type as string) ?? 'unknown',
-        app_state: 'foreground',
-      });
-
-      // Service 레이어를 통해 FCM payload → NotificationData 변환
-      const notificationData = createNotificationFromFCM(notification, userId || '');
-      if (notificationData) {
-        useNotificationStore.getState().addNotification(notificationData);
-        queryClient.invalidateQueries({ queryKey: queryKeys.notifications.all });
-        logger.info('FCM 알림을 로컬 store에 추가', { notificationId: notificationData.id });
-      }
-
-      onNotificationReceived?.(notification);
-
-      if (showForegroundToast && notification.title) {
-        addToast({
-          type: 'info',
-          message: notification.body || notification.title,
-          duration: 5000,
-        });
-      }
-    },
-    [showForegroundToast, addToast, onNotificationReceived, userId]
-  );
+    }
+  }, []);
 
   /**
    * 알림 터치 응답 핸들러
    */
   const handleNotificationResponse = useCallback(
     async (notification: NotificationPayload, actionIdentifier: string) => {
+      const { onNotificationTapped: onTapped } = handlersRef.current;
+
       logger.info('알림 터치', {
         title: notification.title,
         actionIdentifier,
@@ -146,7 +170,7 @@ export function usePushNotificationSetup(
         action: actionIdentifier,
       });
 
-      onNotificationTapped?.(notification);
+      onTapped?.(notification);
 
       const data = notification.data as Record<string, string> | undefined;
       const link = data?.link;
@@ -158,7 +182,7 @@ export function usePushNotificationSetup(
         logger.warn('알림 네비게이션 실패', { type: notificationType });
       }
     },
-    [onNotificationTapped]
+    []
   );
 
   // ============================================================================
@@ -191,7 +215,8 @@ export function usePushNotificationSetup(
     } finally {
       isInitializingRef.current = false;
     }
-  }, [isInitialized, handleNotificationReceived, handleNotificationResponse]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- 핸들러는 useRef 기반 stable 참조
+  }, [isInitialized]);
 
   const requestPermission = useCallback(async (): Promise<boolean> => {
     if (Platform.OS === 'web') return false;
@@ -240,13 +265,13 @@ export function usePushNotificationSetup(
     }
   }, [autoInitialize, initialize]);
 
-  // Effect 2: 핸들러 참조 갱신
+  // Effect 2: 핸들러 참조 갱신 (핸들러는 useRef 기반이므로 stable)
   useEffect(() => {
     if (isInitialized) {
       pushNotificationService.setNotificationReceivedHandler(handleNotificationReceived);
       pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
     }
-  }, [isInitialized, handleNotificationReceived, handleNotificationResponse]);
+  }, [isInitialized, handleNotificationReceived, handleNotificationResponse]); // stable refs
 
   // Effect 9: 클린업
   useEffect(() => {

@@ -35,7 +35,6 @@ import {
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError, normalizeError } from '@/errors';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { RealtimeManager } from '@/shared/realtime';
 import { QueryBuilder, processPaginatedResults, type PaginatedResult } from '@/utils/firestore';
 import { COLLECTIONS, FIELDS } from '@/constants';
@@ -52,6 +51,7 @@ import type { NotificationData, NotificationSettings } from '@/types/notificatio
 // ============================================================================
 
 const PAGE_SIZE = 20;
+const BATCH_LIMIT = 500; // Firestore writeBatch 최대 작업 수
 
 // ============================================================================
 // Helpers
@@ -89,82 +89,55 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   // ==========================================================================
 
   async getById(notificationId: string): Promise<NotificationData | null> {
-    try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
-      const docSnap = await getDoc(docRef);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
+    const docSnap = await getDoc(docRef);
 
-      if (!docSnap.exists()) {
-        return null;
-      }
-
-      return docToNotification(docSnap as QueryDocumentSnapshot<DocumentData>);
-    } catch (error) {
-      logger.error('알림 조회 실패', toError(error), { notificationId });
-      throw handleServiceError(error, {
-        operation: '알림 조회',
-        component: 'NotificationRepository',
-        context: { notificationId },
-      });
+    if (!docSnap.exists()) {
+      return null;
     }
+
+    return docToNotification(docSnap as QueryDocumentSnapshot<DocumentData>);
   }
 
   async getByUserId(
     userId: string,
     options: GetNotificationsOptions = {}
   ): Promise<PaginatedResult<NotificationData>> {
-    try {
-      const { filter, pageSize = PAGE_SIZE, lastDoc } = options;
+    const { filter, pageSize = PAGE_SIZE, lastDoc } = options;
 
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
 
-      // QueryBuilder로 쿼리 구성
-      const q = new QueryBuilder(notificationsRef)
-        .whereEqual(FIELDS.NOTIFICATION.recipientId, userId)
-        .whereIf(filter?.isRead !== undefined, FIELDS.NOTIFICATION.isRead, '==', filter?.isRead)
-        .orderByDesc(FIELDS.NOTIFICATION.createdAt)
-        .paginate(pageSize, lastDoc)
-        .build();
+    // QueryBuilder로 쿼리 구성
+    const q = new QueryBuilder(notificationsRef)
+      .whereEqual(FIELDS.NOTIFICATION.recipientId, userId)
+      .whereIf(filter?.isRead !== undefined, FIELDS.NOTIFICATION.isRead, '==', filter?.isRead)
+      .orderByDesc(FIELDS.NOTIFICATION.createdAt)
+      .paginate(pageSize, lastDoc)
+      .build();
 
-      const snapshot = await getDocs(q);
+    const snapshot = await getDocs(q);
 
-      const result = processPaginatedResults(snapshot.docs, pageSize, docToNotification);
+    const result = processPaginatedResults(snapshot.docs, pageSize, docToNotification);
 
-      logger.info('알림 목록 조회 성공', {
-        component: 'NotificationRepository',
-        count: result.items.length,
-        hasMore: result.hasMore,
-      });
+    logger.info('알림 목록 조회 성공', {
+      component: 'NotificationRepository',
+      count: result.items.length,
+      hasMore: result.hasMore,
+    });
 
-      return result;
-    } catch (error) {
-      logger.error('알림 목록 조회 실패', toError(error), { userId });
-      throw handleServiceError(error, {
-        operation: '알림 목록 조회',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
-    }
+    return result;
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    try {
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const q = query(
-        notificationsRef,
-        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
-        where(FIELDS.NOTIFICATION.isRead, '==', false)
-      );
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+    const q = query(
+      notificationsRef,
+      where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+      where(FIELDS.NOTIFICATION.isRead, '==', false)
+    );
 
-      const snapshot = await getCountFromServer(q);
-      return snapshot.data().count;
-    } catch (error) {
-      logger.error('미읽음 알림 수 조회 실패', toError(error), { userId });
-      throw handleServiceError(error, {
-        operation: '미읽음 알림 수 조회',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
-    }
+    const snapshot = await getCountFromServer(q);
+    return snapshot.data().count;
   }
 
   async getUnreadCounterFromCache(userId: string): Promise<number | null> {
@@ -176,29 +149,14 @@ export class FirebaseNotificationRepository implements INotificationRepository {
       return null;
     }
 
-    try {
-      const counterRef = doc(
-        getFirebaseDb(),
-        COLLECTIONS.USERS,
-        userId,
-        'counters',
-        'notifications'
-      );
-      const counterSnap = await getDoc(counterRef);
+    const counterRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId, 'counters', 'notifications');
+    const counterSnap = await getDoc(counterRef);
 
-      if (!counterSnap.exists()) {
-        return null; // 문서 없음
-      }
-
-      return counterSnap.data()?.unreadCount ?? 0;
-    } catch (error) {
-      logger.error('캐시된 미읽음 카운터 조회 실패', toError(error), { userId });
-      throw handleServiceError(error, {
-        operation: '캐시된 미읽음 카운터 조회',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
+    if (!counterSnap.exists()) {
+      return null; // 문서 없음
     }
+
+    return counterSnap.data()?.unreadCount ?? 0;
   }
 
   // ==========================================================================
@@ -206,45 +164,39 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   // ==========================================================================
 
   async markAsRead(notificationId: string): Promise<void> {
-    try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
-      await updateDoc(docRef, {
-        isRead: true,
-        readAt: serverTimestamp(),
-      });
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
+    await updateDoc(docRef, {
+      isRead: true,
+      readAt: serverTimestamp(),
+    });
 
-      logger.info('알림 읽음 처리', { notificationId });
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: '알림 읽음 처리',
-        component: 'NotificationRepository',
-        context: { notificationId },
-      });
-    }
+    logger.info('알림 읽음 처리', { notificationId });
   }
 
   async markAllAsRead(userId: string): Promise<{ updatedIds: string[] }> {
-    try {
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const q = query(
-        notificationsRef,
-        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
-        where(FIELDS.NOTIFICATION.isRead, '==', false)
-      );
+    const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+    const q = query(
+      notificationsRef,
+      where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+      where(FIELDS.NOTIFICATION.isRead, '==', false)
+    );
 
-      const snapshot = await getDocs(q);
+    const snapshot = await getDocs(q);
 
-      if (snapshot.empty) {
-        logger.info('읽지 않은 알림 없음');
-        return { updatedIds: [] };
-      }
+    if (snapshot.empty) {
+      logger.info('읽지 않은 알림 없음');
+      return { updatedIds: [] };
+    }
 
+    const now = serverTimestamp();
+    const notificationIds: string[] = snapshot.docs.map((d) => d.id);
+
+    // W-NEW-3: Firestore 배치 500개 제한 대응 - 청크 단위로 커밋
+    for (let i = 0; i < snapshot.docs.length; i += BATCH_LIMIT) {
+      const batchChunk = snapshot.docs.slice(i, i + BATCH_LIMIT);
       const batch = writeBatch(getFirebaseDb());
-      const now = serverTimestamp();
-      const notificationIds: string[] = [];
 
-      snapshot.docs.forEach((d) => {
-        notificationIds.push(d.id);
+      batchChunk.forEach((d) => {
         batch.update(d.ref, {
           isRead: true,
           readAt: now,
@@ -254,16 +206,10 @@ export class FirebaseNotificationRepository implements INotificationRepository {
       });
 
       await batch.commit();
-
-      logger.info('모든 알림 읽음 처리', { count: snapshot.size });
-      return { updatedIds: notificationIds };
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: '모든 알림 읽음 처리',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
     }
+
+    logger.info('모든 알림 읽음 처리', { count: snapshot.size });
+    return { updatedIds: notificationIds };
   }
 
   // ==========================================================================
@@ -271,66 +217,60 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   // ==========================================================================
 
   async delete(notificationId: string): Promise<{ wasUnread: boolean; recipientId?: string }> {
-    try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, notificationId);
 
-      // 삭제 전 미읽음 상태 확인 (카운터 관리는 Service 레이어에서 처리)
-      const docSnap = await getDoc(docRef);
-      const wasUnread = docSnap.exists() && docSnap.data()?.isRead === false;
-      const recipientId = docSnap.data()?.recipientId as string | undefined;
+    // 삭제 전 미읽음 상태 확인 (카운터 관리는 Service 레이어에서 처리)
+    const docSnap = await getDoc(docRef);
 
-      await deleteDoc(docRef);
-
-      logger.info('알림 삭제', { notificationId, wasUnread });
-      return { wasUnread, recipientId };
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: '알림 삭제',
-        component: 'NotificationRepository',
-        context: { notificationId },
-      });
+    // W2: 문서가 없으면 불필요한 deleteDoc 호출 방지
+    if (!docSnap.exists()) {
+      logger.warn('삭제할 알림이 존재하지 않음', { notificationId });
+      return { wasUnread: false };
     }
+
+    const wasUnread = docSnap.data()?.isRead === false;
+    const recipientId = docSnap.data()?.recipientId as string | undefined;
+
+    await deleteDoc(docRef);
+
+    logger.info('알림 삭제', { notificationId, wasUnread });
+    return { wasUnread, recipientId };
   }
 
   async deleteMany(notificationIds: string[]): Promise<{ deletedUnreadCount: number }> {
-    try {
-      if (notificationIds.length === 0) return { deletedUnreadCount: 0 };
+    if (notificationIds.length === 0) return { deletedUnreadCount: 0 };
 
-      // 삭제 전 미읽음 알림 개수 확인 (카운터 관리는 Service 레이어에서 처리)
-      let unreadCount = 0;
-      const CHUNK_SIZE = 10; // in 쿼리 제한
+    // 삭제 전 미읽음 알림 개수 확인 (카운터 관리는 Service 레이어에서 처리)
+    let unreadCount = 0;
+    const IN_QUERY_LIMIT = 10; // Firestore in 쿼리 제한
 
-      for (let i = 0; i < notificationIds.length; i += CHUNK_SIZE) {
-        const chunk = notificationIds.slice(i, i + CHUNK_SIZE);
-        const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-        const q = query(
-          notificationsRef,
-          where('__name__', 'in', chunk),
-          where(FIELDS.NOTIFICATION.isRead, '==', false)
-        );
-        const snapshot = await getCountFromServer(q);
-        unreadCount += snapshot.data().count;
-      }
+    for (let i = 0; i < notificationIds.length; i += IN_QUERY_LIMIT) {
+      const chunk = notificationIds.slice(i, i + IN_QUERY_LIMIT);
+      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+      const q = query(
+        notificationsRef,
+        where('__name__', 'in', chunk),
+        where(FIELDS.NOTIFICATION.isRead, '==', false)
+      );
+      const snapshot = await getCountFromServer(q);
+      unreadCount += snapshot.data().count;
+    }
 
-      // 배치 삭제 실행
+    // W3: Firestore 배치 500개 제한 대응 - 청크 단위로 커밋
+    for (let i = 0; i < notificationIds.length; i += BATCH_LIMIT) {
+      const batchChunk = notificationIds.slice(i, i + BATCH_LIMIT);
       const batch = writeBatch(getFirebaseDb());
 
-      notificationIds.forEach((id) => {
+      batchChunk.forEach((id) => {
         const docRef = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, id);
         batch.delete(docRef);
       });
 
       await batch.commit();
-
-      logger.info('여러 알림 삭제', { count: notificationIds.length, unreadCount });
-      return { deletedUnreadCount: unreadCount };
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: '여러 알림 삭제',
-        component: 'NotificationRepository',
-        context: { count: notificationIds.length },
-      });
     }
+
+    logger.info('여러 알림 삭제', { count: notificationIds.length, unreadCount });
+    return { deletedUnreadCount: unreadCount };
   }
 
   async deleteOlderThan(userId: string, daysToKeep: number): Promise<number> {
@@ -343,7 +283,7 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         notificationsRef,
         where(FIELDS.NOTIFICATION.recipientId, '==', userId),
         where(FIELDS.NOTIFICATION.createdAt, '<', Timestamp.fromDate(cutoffDate)),
-        limit(500) // 한 번에 처리할 최대 개수
+        limit(BATCH_LIMIT) // 한 번에 처리할 최대 개수 (writeBatch 제한과 통일)
       );
 
       const snapshot = await getDocs(q);
@@ -372,63 +312,46 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   // ==========================================================================
 
   async getSettings(userId: string): Promise<NotificationSettings> {
-    try {
-      const docRef = doc(
-        getFirebaseDb(),
-        COLLECTIONS.USERS,
-        userId,
-        'notificationSettings',
-        'default'
-      );
-      const docSnap = await getDoc(docRef);
+    const docRef = doc(
+      getFirebaseDb(),
+      COLLECTIONS.USERS,
+      userId,
+      'notificationSettings',
+      'default'
+    );
+    const docSnap = await getDoc(docRef);
 
-      if (!docSnap.exists()) {
-        return createDefaultNotificationSettings();
-      }
-
-      const parsed = parseNotificationSettingsDocument(docSnap.data());
-      if (!parsed) {
-        logger.warn('알림 설정 문서 파싱 실패, 기본값 반환', { userId });
-        return createDefaultNotificationSettings();
-      }
-
-      return parsed;
-    } catch (error) {
-      logger.error('알림 설정 조회 실패', toError(error), { userId });
-      throw handleServiceError(error, {
-        operation: '알림 설정 조회',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
+    if (!docSnap.exists()) {
+      return createDefaultNotificationSettings();
     }
+
+    const parsed = parseNotificationSettingsDocument(docSnap.data());
+    if (!parsed) {
+      logger.warn('알림 설정 문서 파싱 실패, 기본값 반환', { userId });
+      return createDefaultNotificationSettings();
+    }
+
+    return parsed;
   }
 
   async saveSettings(userId: string, settings: NotificationSettings): Promise<void> {
-    try {
-      const docRef = doc(
-        getFirebaseDb(),
-        COLLECTIONS.USERS,
-        userId,
-        'notificationSettings',
-        'default'
-      );
-      await setDoc(
-        docRef,
-        {
-          ...settings,
-          updatedAt: serverTimestamp(),
-        },
-        { merge: true }
-      );
+    const docRef = doc(
+      getFirebaseDb(),
+      COLLECTIONS.USERS,
+      userId,
+      'notificationSettings',
+      'default'
+    );
+    await setDoc(
+      docRef,
+      {
+        ...settings,
+        updatedAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
 
-      logger.info('알림 설정 저장', { userId });
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: '알림 설정 저장',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
-    }
+    logger.info('알림 설정 저장', { userId });
   }
 
   // ==========================================================================
@@ -440,68 +363,44 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     token: string,
     metadata: { type: 'expo' | 'fcm'; platform: 'ios' | 'android' }
   ): Promise<void> {
-    try {
-      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-      const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
+    const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
 
-      await updateDoc(userRef, {
-        [`fcmTokens.${tokenKey}`]: {
-          token,
-          type: metadata.type,
-          platform: metadata.platform,
-          registeredAt: serverTimestamp(),
-          lastRefreshedAt: serverTimestamp(),
-        },
-      });
-
-      logger.info('FCM 토큰 등록', {
-        userId,
-        tokenPrefix: token.substring(0, 20),
+    await updateDoc(userRef, {
+      [`fcmTokens.${tokenKey}`]: {
+        token,
         type: metadata.type,
-      });
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: 'FCM 토큰 등록',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
-    }
+        platform: metadata.platform,
+        registeredAt: serverTimestamp(),
+        lastRefreshedAt: serverTimestamp(),
+      },
+    });
+
+    logger.info('FCM 토큰 등록', {
+      userId,
+      tokenPrefix: token.substring(0, 20),
+      type: metadata.type,
+    });
   }
 
   async unregisterFCMToken(userId: string, token: string): Promise<void> {
-    try {
-      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-      const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
+    const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
 
-      await updateDoc(userRef, {
-        [`fcmTokens.${tokenKey}`]: deleteField(),
-      });
+    await updateDoc(userRef, {
+      [`fcmTokens.${tokenKey}`]: deleteField(),
+    });
 
-      logger.info('FCM 토큰 삭제', { userId, tokenPrefix: token.substring(0, 20) });
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: 'FCM 토큰 삭제',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
-    }
+    logger.info('FCM 토큰 삭제', { userId, tokenPrefix: token.substring(0, 20) });
   }
 
   async unregisterAllFCMTokens(userId: string): Promise<void> {
-    try {
-      const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-      await updateDoc(userRef, {
-        fcmTokens: {},
-      });
+    const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
+    await updateDoc(userRef, {
+      fcmTokens: {},
+    });
 
-      logger.info('모든 FCM 토큰 삭제', { userId });
-    } catch (error) {
-      throw handleServiceError(error, {
-        operation: '모든 FCM 토큰 삭제',
-        component: 'NotificationRepository',
-        context: { userId },
-      });
-    }
+    logger.info('모든 FCM 토큰 삭제', { userId });
   }
 
   // ==========================================================================
