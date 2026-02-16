@@ -6,18 +6,37 @@
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, Pressable, ActivityIndicator } from 'react-native';
-import nativeAuth from '@react-native-firebase/auth';
-import type { FirebaseAuthTypes } from '@react-native-firebase/auth';
+import { View, Text, Pressable, ActivityIndicator, Platform, useColorScheme } from 'react-native';
+import { signInWithPhoneNumber as webSignInWithPhoneNumber, RecaptchaVerifier } from 'firebase/auth';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { ShieldCheckIcon, CheckCircleIcon, XCircleIcon } from '@/components/icons';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 
+// Native SDK는 네이티브 플랫폼에서만 import
+let getNativeAuth: (() => import('@react-native-firebase/auth').FirebaseAuthTypes.Module) | null =
+  null;
+let nativeSignInWithPhoneNumber:
+  | typeof import('@react-native-firebase/auth').signInWithPhoneNumber
+  | null = null;
+
+if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nativeAuth = require('@react-native-firebase/auth');
+  getNativeAuth = nativeAuth.getAuth;
+  nativeSignInWithPhoneNumber = nativeAuth.signInWithPhoneNumber;
+}
+
 // ============================================================================
 // Types
 // ============================================================================
+
+/** 플랫폼 공통 ConfirmationResult 인터페이스 */
+interface ConfirmationResultLike {
+  confirm(code: string): Promise<unknown>;
+}
 
 export interface PhoneVerificationProps {
   /** 인증 완료 콜백 (인증된 전화번호 전달) */
@@ -28,6 +47,8 @@ export interface PhoneVerificationProps {
   initialPhone?: string;
   /** 비활성화 */
   disabled?: boolean;
+  /** 컴팩트 모드 (헤더/아이콘/설명 숨김) */
+  compact?: boolean;
 }
 
 type VerificationStep = 'input' | 'otp' | 'verified';
@@ -70,16 +91,19 @@ function toE164(phone: string): string {
 // ============================================================================
 
 export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
-  ({ onVerified, onError, initialPhone = '', disabled = false }) => {
+  ({ onVerified, onError, initialPhone = '', disabled = false, compact = false }) => {
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
     const [step, setStep] = useState<VerificationStep>(initialPhone ? 'verified' : 'input');
     const [phone, setPhone] = useState(initialPhone ? formatPhoneNumber(initialPhone) : '');
     const [otpCode, setOtpCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [timer, setTimer] = useState(0);
-    const [confirmation, setConfirmation] = useState<FirebaseAuthTypes.ConfirmationResult | null>(null);
+    const [confirmation, setConfirmation] = useState<ConfirmationResultLike | null>(null);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
 
     // 타이머 관리
     const isTimerActive = timer > 0;
@@ -121,16 +145,38 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
       try {
         const e164 = toE164(phone);
-        logger.info('SMS 인증 요청', { phone: maskValue(e164, 'phone') });
+        logger.info('SMS 인증 요청', { phone: maskValue(e164, 'phone'), platform: Platform.OS });
 
-        const result = await nativeAuth().signInWithPhoneNumber(e164);
+        let result: ConfirmationResultLike;
+
+        if (Platform.OS === 'web') {
+          // 웹: firebase/auth web SDK + RecaptchaVerifier
+          const auth = getFirebaseAuth();
+
+          if (!recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              size: 'invisible',
+            });
+          }
+
+          result = await webSignInWithPhoneNumber(auth, e164, recaptchaVerifierRef.current);
+        } else {
+          // 네이티브: @react-native-firebase/auth
+          if (!getNativeAuth || !nativeSignInWithPhoneNumber) {
+            throw new Error('네이티브 Firebase Auth를 사용할 수 없습니다.');
+          }
+          result = await nativeSignInWithPhoneNumber(getNativeAuth(), e164);
+        }
+
         setConfirmation(result);
         setStep('otp');
         setTimer(RESEND_COOLDOWN);
         setOtpCode('');
-
-        // OTP 입력은 autoFocus로 처리
       } catch (err) {
+        // reCAPTCHA 인스턴스 초기화 (재시도 대비)
+        if (Platform.OS === 'web') {
+          recaptchaVerifierRef.current = null;
+        }
         const errorMessage = getFirebasePhoneAuthErrorMessage(err);
         setError(errorMessage);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
@@ -171,6 +217,16 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       }
     }, [confirmation, otpCode, phone, onVerified, onError]);
 
+    // reCAPTCHA cleanup on unmount
+    useEffect(() => {
+      return () => {
+        if (recaptchaVerifierRef.current) {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        }
+      };
+    }, []);
+
     /** 재인증 (초기화) */
     const handleReset = useCallback(() => {
       setStep('input');
@@ -178,27 +234,42 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       setError(null);
       setConfirmation(null);
       setTimer(0);
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+        recaptchaVerifierRef.current = null;
+      }
     }, []);
 
     // ========== 인증 완료 상태 ==========
     if (step === 'verified') {
       return (
         <View className="w-full">
-          <View className="items-center mb-6">
-            <View className="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-full items-center justify-center mb-3">
-              <CheckCircleIcon size={32} color="#22c55e" />
+          {!compact && (
+            <View className="items-center mb-6">
+              <View className="w-16 h-16 bg-success-100 dark:bg-success-900/30 rounded-full items-center justify-center mb-3">
+                <CheckCircleIcon size={32} color="#22c55e" />
+              </View>
+              <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증 완료</Text>
             </View>
-            <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증 완료</Text>
-          </View>
+          )}
 
-          <View className="bg-success-50 dark:bg-success-900/20 rounded-xl p-4">
+          <View
+            className="rounded-xl p-4 border"
+            style={{
+              backgroundColor: isDark ? '#1f2937' : '#f0fdf4',
+              borderColor: isDark ? '#166534' : '#bbf7d0',
+            }}
+          >
             <View className="flex-row items-center mb-3">
               <CheckCircleIcon size={20} color="#22c55e" />
               <Text className="ml-2 text-success-700 dark:text-success-400 font-semibold">
                 인증 완료
               </Text>
             </View>
-            <View className="bg-white dark:bg-surface rounded-lg p-3">
+            <View
+              className="rounded-lg p-3"
+              style={{ backgroundColor: isDark ? '#374151' : '#ffffff' }}
+            >
               <View className="flex-row justify-between">
                 <Text className="text-gray-500 dark:text-gray-400 text-sm">휴대폰</Text>
                 <Text className="text-gray-900 dark:text-white font-medium">{phone}</Text>
@@ -218,15 +289,17 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     return (
       <View className="w-full">
         {/* 헤더 */}
-        <View className="items-center mb-6">
-          <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full items-center justify-center mb-3">
-            <ShieldCheckIcon size={32} color="#6366f1" />
+        {!compact && (
+          <View className="items-center mb-6">
+            <View className="w-16 h-16 bg-primary-100 dark:bg-primary-900/30 rounded-full items-center justify-center mb-3">
+              <ShieldCheckIcon size={32} color="#6366f1" />
+            </View>
+            <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증</Text>
+            <Text className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
+              안전한 서비스 이용을 위해 전화번호 인증이 필요합니다.
+            </Text>
           </View>
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">문자인증</Text>
-          <Text className="text-sm text-gray-500 dark:text-gray-400 text-center mt-1">
-            안전한 서비스 이용을 위해 전화번호 인증이 필요합니다.
-          </Text>
-        </View>
+        )}
 
         {/* 전화번호 입력 */}
         <View className="flex-col gap-3">
@@ -244,7 +317,12 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             </View>
             <Button
               onPress={handleRequestOTP}
-              disabled={disabled || isLoading || cleanPhoneNumber(phone).length < 10 || (step === 'otp' && timer > 0)}
+              disabled={
+                disabled ||
+                isLoading ||
+                cleanPhoneNumber(phone).length < 10 ||
+                (step === 'otp' && timer > 0)
+              }
               variant={step === 'otp' ? 'outline' : 'primary'}
               className="min-w-[100px]"
             >
@@ -272,7 +350,9 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
                     autoFocus
                     placeholder="인증번호 6자리"
                     value={otpCode}
-                    onChangeText={(text) => setOtpCode(text.replace(/\D/g, '').slice(0, OTP_LENGTH))}
+                    onChangeText={(text) =>
+                      setOtpCode(text.replace(/\D/g, '').slice(0, OTP_LENGTH))
+                    }
                     keyboardType="number-pad"
                     maxLength={OTP_LENGTH}
                     editable={!disabled && !isLoading}
@@ -284,11 +364,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
                   disabled={disabled || isLoading || otpCode.length !== OTP_LENGTH}
                   className="min-w-[100px]"
                 >
-                  {isLoading ? (
-                    <ActivityIndicator color="white" size="small" />
-                  ) : (
-                    '확인'
-                  )}
+                  {isLoading ? <ActivityIndicator color="white" size="small" /> : '확인'}
                 </Button>
               </View>
             </View>
@@ -314,7 +390,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         )}
 
         {/* 안내 문구 */}
-        {step === 'input' && (
+        {step === 'input' && !compact && (
           <View className="mt-6">
             <Text className="text-xs text-gray-400 dark:text-gray-500 text-center">
               전화번호 인증 정보는 회원 확인 용도로만 사용되며,{'\n'}
@@ -322,6 +398,9 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             </Text>
           </View>
         )}
+
+        {/* 웹용 invisible reCAPTCHA 컨테이너 */}
+        {Platform.OS === 'web' && <View nativeID="recaptcha-container" />}
       </View>
     );
   }

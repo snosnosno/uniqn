@@ -50,8 +50,8 @@ export function NotificationBadge({
     <Animated.View
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(200)}
+      style={{ position: 'absolute', top: -4, right: -4 }}
       className={`
-        absolute -top-1 -right-1
         bg-error-500 rounded-full
         items-center justify-center
         ${styles.container}

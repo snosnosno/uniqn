@@ -74,7 +74,7 @@ export function TabHeader({
         {showNotification && (
           <Pressable
             onPress={() => router.push('/(app)/notifications')}
-            className="p-2"
+            className="relative p-2"
             hitSlop={8}
             accessibilityRole="button"
             accessibilityLabel={`알림${unreadCount > 0 ? `, ${unreadCount}개의 읽지 않은 알림` : ''}`}

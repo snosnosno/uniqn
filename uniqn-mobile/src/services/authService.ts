@@ -32,11 +32,38 @@ import {
   EmailAuthProvider,
   reauthenticateWithCredential,
   fetchSignInMethodsForEmail,
+  linkWithCredential,
+  deleteUser as webDeleteUser,
 } from 'firebase/auth';
-import nativeAuth from '@react-native-firebase/auth';
+import { Platform } from 'react-native';
 import { doc, serverTimestamp, Timestamp, runTransaction } from 'firebase/firestore';
 import { getFirebaseAuth, getFirebaseDb } from '@/lib/firebase';
 import { syncToWebAuth, syncSignOut } from '@/lib/authBridge';
+
+// Native SDK는 네이티브 플랫폼에서만 import
+let getNativeAuth: (() => import('@react-native-firebase/auth').FirebaseAuthTypes.Module) | null =
+  null;
+let nativeSignInWithEmailAndPassword:
+  | typeof import('@react-native-firebase/auth').signInWithEmailAndPassword
+  | null = null;
+let nativeLinkWithCredential:
+  | typeof import('@react-native-firebase/auth').linkWithCredential
+  | null = null;
+let nativeUpdateProfile: typeof import('@react-native-firebase/auth').updateProfile | null = null;
+let nativeDeleteUser: typeof import('@react-native-firebase/auth').deleteUser | null = null;
+let NativeEmailAuthProvider: typeof import('@react-native-firebase/auth').EmailAuthProvider | null =
+  null;
+
+if (Platform.OS !== 'web') {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const nativeAuth = require('@react-native-firebase/auth');
+  getNativeAuth = nativeAuth.getAuth;
+  nativeSignInWithEmailAndPassword = nativeAuth.signInWithEmailAndPassword;
+  nativeLinkWithCredential = nativeAuth.linkWithCredential;
+  nativeUpdateProfile = nativeAuth.updateProfile;
+  nativeDeleteUser = nativeAuth.deleteUser;
+  NativeEmailAuthProvider = nativeAuth.EmailAuthProvider;
+}
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
@@ -83,13 +110,21 @@ const maskEmail = (email: string) => maskValue(email, 'email');
  */
 export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
-    logger.info('로그인 시도', { email: maskEmail(data.email) });
+    logger.info('로그인 시도', { email: maskEmail(data.email), platform: Platform.OS });
 
-    // Native SDK + Web SDK 동시 로그인 (Dual SDK)
-    const [, userCredential] = await Promise.all([
-      nativeAuth().signInWithEmailAndPassword(data.email, data.password),
-      signInWithEmailAndPassword(getFirebaseAuth(), data.email, data.password),
-    ]);
+    let userCredential;
+
+    if (Platform.OS === 'web') {
+      // 웹: web SDK만 사용
+      userCredential = await signInWithEmailAndPassword(getFirebaseAuth(), data.email, data.password);
+    } else {
+      // 네이티브: Native SDK + Web SDK 동시 로그인 (Dual SDK)
+      const [, webCredential] = await Promise.all([
+        nativeSignInWithEmailAndPassword!(getNativeAuth!(), data.email, data.password),
+        signInWithEmailAndPassword(getFirebaseAuth(), data.email, data.password),
+      ]);
+      userCredential = webCredential;
+    }
 
     // Custom Claims 갱신을 위해 토큰 강제 새로고침
     // 웹앱에서 가입한 계정도 모바일앱에서 최신 권한 정보를 가져옴
@@ -171,10 +206,80 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
-    logger.info('회원가입 시도', { email: maskEmail(data.email), role: data.role });
+    logger.info('회원가입 시도', { email: maskEmail(data.email), role: data.role, platform: Platform.OS });
 
+    if (Platform.OS === 'web') {
+      // ===== Web Platform =====
+      // Phone Auth 계정은 Step 2에서 web SDK로 이미 생성됨
+      const currentUser = getFirebaseAuth().currentUser;
+      if (!currentUser) {
+        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+          userMessage: '전화번호 인증이 필요합니다. 다시 시도해주세요.',
+        });
+      }
+
+      try {
+        // Email/Password credential 연결 (phone-only → email+phone)
+        const emailCredential = EmailAuthProvider.credential(data.email, data.password);
+        await linkWithCredential(currentUser, emailCredential);
+
+        // displayName 설정
+        await updateProfile(currentUser, { displayName: data.nickname });
+
+        // Firestore에 사용자 프로필 저장
+        const profile: UserProfile = {
+          uid: currentUser.uid,
+          email: data.email,
+          name: data.name,
+          nickname: data.nickname,
+          phone: data.verifiedPhone,
+          phoneVerified: true,
+          birthDate: data.birthDate,
+          gender: data.gender,
+          role: data.role,
+          termsAgreed: data.termsAgreed,
+          privacyAgreed: data.privacyAgreed,
+          marketingAgreed: data.marketingAgreed,
+          isActive: true,
+          createdAt: serverTimestamp() as Timestamp,
+          updatedAt: serverTimestamp() as Timestamp,
+        };
+
+        await userRepository.createOrMerge(currentUser.uid, { ...profile });
+
+        logger.info('회원가입 성공', { uid: currentUser.uid, role: data.role });
+
+        trackSignup('email');
+        setUserId(currentUser.uid);
+        setUserProperties({
+          user_role: data.role,
+          account_created_date: new Date().toISOString().split('T')[0],
+          has_verified_phone: true,
+        });
+
+        return { user: currentUser, profile };
+      } catch (innerError) {
+        // 롤백: phone-only 계정 삭제
+        logger.warn('회원가입 실패 - phone-only 계정 롤백 시도', {
+          uid: currentUser.uid,
+          component: 'authService',
+        });
+        try {
+          await webDeleteUser(currentUser);
+          logger.info('phone-only 고아 계정 삭제 완료', { uid: currentUser.uid });
+        } catch (deleteError) {
+          logger.error('phone-only 고아 계정 삭제 실패 (수동 정리 필요)', {
+            uid: currentUser.uid,
+            error: deleteError,
+          });
+        }
+        throw innerError;
+      }
+    }
+
+    // ===== Native Platform =====
     // 1. Phone Auth 계정은 Step 2에서 이미 생성됨 (nativeAuth)
-    const nativeUser = nativeAuth().currentUser;
+    const nativeUser = getNativeAuth!().currentUser;
     if (!nativeUser) {
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
         userMessage: '전화번호 인증이 필요합니다. 다시 시도해주세요.',
@@ -184,11 +289,11 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     // 2~5: 실패 시 phone-only 고아 계정 롤백을 위해 try-catch
     try {
       // 2. Email/Password credential 연결 (phone-only → email+phone)
-      const emailCredential = nativeAuth.EmailAuthProvider.credential(data.email, data.password);
-      await nativeUser.linkWithCredential(emailCredential);
+      const emailCredential = NativeEmailAuthProvider!.credential(data.email, data.password);
+      await nativeLinkWithCredential!(nativeUser, emailCredential);
 
       // 3. displayName 설정
-      await nativeUser.updateProfile({ displayName: data.nickname });
+      await nativeUpdateProfile!(nativeUser, { displayName: data.nickname });
 
       // 4. Web SDK 동기화 (Firestore Security Rules용)
       await syncToWebAuth(data.email, data.password);
@@ -245,18 +350,22 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         component: 'authService',
       });
       try {
-        await nativeUser.delete();
-        // Web SDK 세션도 정리 (Step 4 syncToWebAuth 이후 실패 시)
-        const auth = getFirebaseAuth();
-        if (auth.currentUser) {
-          await firebaseSignOut(auth);
-        }
+        await nativeDeleteUser!(nativeUser);
         logger.info('phone-only 고아 계정 삭제 완료', { uid: nativeUser.uid });
       } catch (deleteError) {
         logger.error('phone-only 고아 계정 삭제 실패 (수동 정리 필요)', {
           uid: nativeUser.uid,
           error: deleteError,
         });
+      }
+      // Web SDK 세션은 독립적으로 정리 (nativeUser.delete 성공/실패 무관)
+      try {
+        const auth = getFirebaseAuth();
+        if (auth.currentUser) {
+          await firebaseSignOut(auth);
+        }
+      } catch {
+        // Web SDK 정리 실패는 무시 (nativeUser 삭제가 핵심)
       }
       throw innerError;
     }

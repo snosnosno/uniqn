@@ -281,15 +281,18 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
         )}
       </View>
 
-      {/* 구분선 */}
-      <View className="border-t border-gray-200 dark:border-gray-700" />
-
       {/* 전화번호 인증 */}
-      <PhoneVerification
-        onVerified={handleVerified}
-        initialPhone={verifiedPhone || initialData?.verifiedPhone}
-        disabled={isLoading}
-      />
+      <View>
+        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          전화번호 인증
+        </Text>
+        <PhoneVerification
+          onVerified={handleVerified}
+          initialPhone={verifiedPhone || initialData?.verifiedPhone}
+          disabled={isLoading}
+          compact
+        />
+      </View>
       {errors.phoneVerified && !verifiedPhone && (
         <Text className="text-sm text-error-500 -mt-2">{errors.phoneVerified.message}</Text>
       )}
