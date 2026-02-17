@@ -4,7 +4,7 @@ UNIQN (구 T-HOLDEM) 프로젝트의 모든 개발 문서 모음입니다.
 
 **마지막 업데이트**: 2026년 2월 1일
 **프로젝트 버전**: v1.0.0 (모바일앱 중심 + RevenueCat 연동)
-**총 문서 수**: 46개 (13개 폴더)
+**총 문서 수**: 42개 (12개 폴더)
 
 ---
 
@@ -22,8 +22,7 @@ docs/
 ├── user/                  # 사용자 가이드
 ├── landing/               # 랜딩 페이지
 ├── planning/              # 기획/분석 문서
-├── releases/              # 릴리스 문서
-└── archived/              # 완료된 작업 보고서
+└── releases/              # 릴리스 문서
 ```
 
 ---
@@ -147,19 +146,6 @@ docs/
 | [DEPLOYMENT_CHECKLIST.md](releases/DEPLOYMENT_CHECKLIST.md) | v0.2.4 기능 배포 체크리스트 |
 | [DEPLOYMENT_SUMMARY_v0.2.4.md](releases/DEPLOYMENT_SUMMARY_v0.2.4.md) | v0.2.4 배포 요약 |
 | [PRODUCTION_TEST_GUIDE_v0.2.4.md](releases/PRODUCTION_TEST_GUIDE_v0.2.4.md) | v0.2.4 프로덕션 테스트 가이드 |
-
----
-
-## [archived/](archived/) - 완료된 작업 보고서
-
-과거 리팩토링 및 완료된 프로젝트 보고서
-
-| 문서 | 설명 |
-|------|------|
-| [REFACTORING_REPORT_2025-01-21.md](archived/REFACTORING_REPORT_2025-01-21.md) | useTables Hook 리팩토링 |
-| [REFACTORING_REPORT_PHASE1_2025-01-23.md](archived/REFACTORING_REPORT_PHASE1_2025-01-23.md) | applicantHelpers 모듈화 |
-| [PHASE_3-3_COMPLETION_REPORT.md](archived/PHASE_3-3_COMPLETION_REPORT.md) | Firestore Hook Library 마이그레이션 |
-| [tournament/COMPLETION_REPORT_2025-10-17.md](archived/tournament/COMPLETION_REPORT_2025-10-17.md) | 토너먼트 시스템 완성 보고서 |
 
 ---
 

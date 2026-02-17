@@ -1699,8 +1699,6 @@ npm run quality     # ✅ Lint, Format, TypeCheck 통과
 
 **참고 문서**:
 - [CRITICAL_ANALYSIS_V2.md](./CRITICAL_ANALYSIS_V2.md) - 초기 분석
-- [specs/001-zustand-migration/](../../specs/001-zustand-migration/) - Phase 3-1 문서
-- [specs/002-phase3-integration/](../../specs/002-phase3-integration/) - Phase 3-2 문서
 
 **최종 성과**:
 - ✅ TypeScript Strict Mode 100% (any 타입 67개 → 0개)
