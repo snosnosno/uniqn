@@ -147,7 +147,9 @@ export interface IJobPostingRepository {
   // ==========================================================================
 
   /**
-   * 공고 생성 (트랜잭션)
+   * 공고 생성
+   *
+   * @description 현재 setDoc 단독 사용. 향후 알림/로그 원자적 생성 시 트랜잭션 전환 예정.
    * @param input - 공고 생성 입력
    * @param context - 생성자 컨텍스트 (ownerId, ownerName)
    * @returns 생성된 공고 ID와 데이터

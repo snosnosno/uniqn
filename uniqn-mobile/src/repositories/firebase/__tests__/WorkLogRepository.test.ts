@@ -5,7 +5,7 @@
  */
 
 import { getDoc, getDocs, updateDoc, onSnapshot } from 'firebase/firestore';
-import { FirebaseWorkLogRepository } from '../WorkLogRepository';
+import { FirebaseWorkLogRepository } from '../workLog';
 
 // ============================================================================
 // Mocks
@@ -73,6 +73,9 @@ jest.mock('@/utils/firestore/queryBuilder', () => {
       return this;
     }
     orderByDesc() {
+      return this;
+    }
+    orderByAsc() {
       return this;
     }
     limit() {

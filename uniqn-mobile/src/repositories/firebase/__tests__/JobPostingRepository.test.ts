@@ -5,7 +5,7 @@
  */
 
 import { getDoc, getDocs, updateDoc, runTransaction } from 'firebase/firestore';
-import { FirebaseJobPostingRepository } from '../JobPostingRepository';
+import { FirebaseJobPostingRepository } from '../jobPosting';
 
 // firebase/firestore의 전역 mock에 documentId가 누락되어 있으므로 추가
 const firestoreMock = jest.requireMock('firebase/firestore');

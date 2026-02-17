@@ -23,11 +23,14 @@ const mockRunTransaction = jest.fn(
 );
 
 const mockGetDoc = jest.fn();
+const mockGetDocs = jest.fn((_q?: unknown) => Promise.resolve({ docs: [] }));
 const mockDoc = jest.fn((_db: unknown, ...pathSegments: string[]) => ({
   id: pathSegments[pathSegments.length - 1] || 'mock-doc-id',
   path: pathSegments.join('/'),
 }));
 const mockCollection = jest.fn((_db: unknown, path: string) => ({ path }));
+const mockQuery = jest.fn((..._args: unknown[]) => ({}));
+const mockWhere = jest.fn((..._args: unknown[]) => ({}));
 const mockServerTimestamp = jest.fn(() => ({ _serverTimestamp: true }));
 const mockIncrement = jest.fn((n: number) => ({ _increment: n }));
 
@@ -35,6 +38,9 @@ jest.mock('firebase/firestore', () => ({
   collection: (...args: unknown[]) => mockCollection(args[0], args[1] as string),
   doc: (...args: unknown[]) => mockDoc(args[0], ...(args.slice(1) as string[])),
   getDoc: (...args: unknown[]) => mockGetDoc(args[0]),
+  getDocs: (...args: unknown[]) => mockGetDocs(args[0]),
+  query: (...args: unknown[]) => mockQuery(...args),
+  where: (...args: unknown[]) => mockWhere(...args),
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   runTransaction: (...args: unknown[]) => mockRunTransaction(args[0], args[1] as any),
   serverTimestamp: () => mockServerTimestamp(),
@@ -149,20 +155,33 @@ jest.mock('@/errors', () => {
     }
   }
 
+  class MockPermissionError extends MockAppError {
+    constructor(code: string, options?: { userMessage?: string }) {
+      super(options?.userMessage ?? 'Permission error');
+      this.name = 'PermissionError';
+      this.code = code;
+    }
+  }
+
   return {
     ValidationError: MockValidationError,
     BusinessError: MockBusinessError,
+    PermissionError: MockPermissionError,
     MaxCapacityReachedError: MockMaxCapacityReachedError,
     ERROR_CODES: {
       VALIDATION_REQUIRED: 'E3001',
       VALIDATION_SCHEMA: 'E3003',
       SECURITY_UNAUTHORIZED_ACCESS: 'E5002',
       BUSINESS_INVALID_WORKLOG: 'E6006',
+      BUSINESS_INVALID_STATE: 'E6001',
+      FIREBASE_DOCUMENT_NOT_FOUND: 'E4002',
+      FIREBASE_PERMISSION_DENIED: 'E4001',
       UNKNOWN: 'E7001',
     },
     isAppError: jest.fn((e: unknown) => {
       return e instanceof Error && 'code' in e;
     }),
+    toError: jest.fn((e: unknown) => (e instanceof Error ? e : new Error(String(e)))),
   };
 });
 
@@ -183,9 +202,11 @@ jest.mock('@/constants', () => ({
     APPLICATION: {
       CONFIRMED: 'confirmed',
       APPLIED: 'applied',
+      PENDING: 'pending',
     },
     WORK_LOG: {
       SCHEDULED: 'scheduled',
+      CANCELLED: 'cancelled',
     },
     ATTENDANCE: {
       NOT_STARTED: 'not_started',
@@ -458,7 +479,7 @@ describe('ApplicationHistoryService', () => {
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', null));
 
       await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
-        '존재하지 않는 지원입니다'
+        '지원 내역을 찾을 수 없습니다'
       );
     });
 
@@ -467,7 +488,7 @@ describe('ApplicationHistoryService', () => {
       mockParseApplicationDocument.mockReturnValue(null);
 
       await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
-        '지원 데이터를 파싱할 수 없습니다'
+        '지원 데이터가 올바르지 않습니다'
       );
     });
 
@@ -501,7 +522,7 @@ describe('ApplicationHistoryService', () => {
       mockParseApplicationDocument.mockReturnValue(appData);
 
       await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
-        '존재하지 않는 공고입니다'
+        '공고를 찾을 수 없습니다'
       );
     });
 
@@ -513,7 +534,7 @@ describe('ApplicationHistoryService', () => {
       mockParseJobPostingDocument.mockReturnValue(null);
 
       await expect(confirmApplicationWithHistory('app-1', undefined, 'owner-1')).rejects.toThrow(
-        '공고 데이터를 파싱할 수 없습니다'
+        '공고 데이터가 올바르지 않습니다'
       );
     });
 
@@ -651,7 +672,7 @@ describe('ApplicationHistoryService', () => {
       mockTransaction.get.mockResolvedValueOnce(createDocSnapshot('app-1', null));
 
       await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
-        '존재하지 않는 지원입니다'
+        '지원 내역을 찾을 수 없습니다'
       );
     });
 
@@ -660,7 +681,7 @@ describe('ApplicationHistoryService', () => {
       mockParseApplicationDocument.mockReturnValue(null);
 
       await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
-        '지원 데이터를 파싱할 수 없습니다'
+        '지원 데이터가 올바르지 않습니다'
       );
     });
 
@@ -728,7 +749,7 @@ describe('ApplicationHistoryService', () => {
       mockFindActiveConfirmation.mockReturnValue(activeConfirmation);
 
       await expect(cancelConfirmation('app-1', 'owner-1')).rejects.toThrow(
-        '존재하지 않는 공고입니다'
+        '공고를 찾을 수 없습니다'
       );
     });
 

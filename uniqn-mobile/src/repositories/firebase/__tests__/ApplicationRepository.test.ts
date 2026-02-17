@@ -5,7 +5,7 @@
  */
 
 import { getDoc, getDocs, runTransaction, query } from 'firebase/firestore';
-import { FirebaseApplicationRepository } from '../ApplicationRepository';
+import { FirebaseApplicationRepository } from '../application';
 
 // ============================================================================
 // Mocks
@@ -191,7 +191,7 @@ jest.mock('@/constants', () => ({
 }));
 
 // Mock JobPostingRepository dependency
-jest.mock('../JobPostingRepository', () => ({
+jest.mock('../jobPosting', () => ({
   FirebaseJobPostingRepository: jest.fn().mockImplementation(() => ({
     getByIdBatch: jest.fn().mockResolvedValue([]),
   })),
@@ -321,7 +321,7 @@ describe('FirebaseApplicationRepository', () => {
 
       // Mock the job posting batch retrieval via the internal repository
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const { FirebaseJobPostingRepository } = require('../JobPostingRepository');
+      const { FirebaseJobPostingRepository } = require('../jobPosting');
       FirebaseJobPostingRepository.mockImplementation(() => ({
         getByIdBatch: jest.fn().mockResolvedValue([
           { id: 'job-1', title: '공고 1' },
