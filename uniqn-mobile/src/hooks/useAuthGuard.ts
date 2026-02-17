@@ -88,6 +88,10 @@ export function useAuthGuard(): void {
   const isAuthenticated = !!user;
   const userRole = profile?.role ?? null;
 
+  // 무한 루프 방지: profile 객체 대신 필요한 원시값만 추출
+  const socialProvider = profile?.socialProvider ?? null;
+  const phoneVerified = profile?.phoneVerified ?? null;
+
   // router를 ref로 저장하여 의존성 배열에서 제외 (안정적인 참조)
   const routerRef = useRef(router);
   routerRef.current = router;
@@ -118,12 +122,32 @@ export function useAuthGuard(): void {
 
     // (auth) 그룹: 이미 로그인되어 있으면 리다이렉트
     if (routeGroup === '(auth)' && isAuthenticated) {
+      // 소셜 로그인 프로필 미완성 + signup 화면 → 리다이렉트 안 함
+      const isSignupScreen = segments.includes('signup' as never);
+      if (isSignupScreen && socialProvider && !phoneVerified) {
+        return; // 프로필 완성 화면에 머무름
+      }
+
       logger.debug('이미 인증됨 - 앱으로 리다이렉트', {
         component: 'useAuthGuard',
         pathname,
       });
       routerRef.current.replace(config.redirectTo || '/(app)/(tabs)');
       return;
+    }
+
+    // 인증됨 + 소셜 프로필 미완성 → signup 화면으로 이동
+    if (isAuthenticated && socialProvider && !phoneVerified) {
+      const isOnSignup = segments.includes('signup' as never);
+      if (!isOnSignup) {
+        logger.debug('소셜 프로필 미완성 - signup으로 리다이렉트', {
+          component: 'useAuthGuard',
+          pathname,
+          socialProvider,
+        });
+        routerRef.current.replace('/(auth)/signup?mode=social');
+        return;
+      }
     }
 
     // 인증 필요 라우트 체크
@@ -160,7 +184,7 @@ export function useAuthGuard(): void {
     // router를 의존성에서 제외하여 무한 루프 방지
     // user 변경 시 isAuthenticated도 재계산됨
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user, isLoading, userRole, segments, pathname]);
+  }, [user, isLoading, userRole, socialProvider, phoneVerified, segments, pathname]);
 }
 
 // ============================================================================

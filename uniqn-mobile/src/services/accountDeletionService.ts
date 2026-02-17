@@ -11,7 +11,8 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import { reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { reauthenticateWithCredential, EmailAuthProvider, OAuthProvider } from 'firebase/auth';
+import { Platform } from 'react-native';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { AuthError, toError } from '@/errors';
@@ -68,7 +69,7 @@ export const DELETION_REASONS: Record<DeletionReason, string> = {
  */
 export async function requestAccountDeletion(
   reason: DeletionReason,
-  password: string,
+  password?: string,
   reasonDetail?: string
 ): Promise<DeletionRequest> {
   const currentUser = getFirebaseAuth().currentUser;
@@ -82,9 +83,53 @@ export async function requestAccountDeletion(
   try {
     logger.info('회원탈퇴 요청 시작', { userId: currentUser.uid, reason });
 
-    // 1. 비밀번호 재인증 (서비스 레이어에서 처리)
-    const credential = EmailAuthProvider.credential(currentUser.email, password);
-    await reauthenticateWithCredential(currentUser, credential);
+    // 1. 재인증 (Apple 사용자 vs 이메일 사용자 분기)
+    const isAppleUser = currentUser.providerData.some(
+      (p) => p.providerId === 'apple.com'
+    );
+
+    if (isAppleUser && Platform.OS === 'ios') {
+      // Apple 재인증: Apple Sign In 다이얼로그 → OAuthProvider credential
+      const AppleAuthentication = await import('expo-apple-authentication');
+      const { generateNonce, sha256 } = await import('@/utils/appleAuth');
+
+      const rawNonce = generateNonce();
+      const hashedNonce = await sha256(rawNonce);
+
+      const appleCredential = await AppleAuthentication.signInAsync({
+        requestedScopes: [
+          AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+          AppleAuthentication.AppleAuthenticationScope.EMAIL,
+        ],
+        nonce: hashedNonce,
+      });
+
+      if (!appleCredential.identityToken) {
+        throw new AuthError('E2002', {
+          userMessage: 'Apple 재인증에 실패했습니다.',
+        });
+      }
+
+      const oauthCredential = new OAuthProvider('apple.com').credential({
+        idToken: appleCredential.identityToken,
+        rawNonce,
+      });
+      await reauthenticateWithCredential(currentUser, oauthCredential);
+    } else if (isAppleUser) {
+      // Apple 사용자가 비-iOS 플랫폼에서 탈퇴 시도
+      throw new AuthError('E2002', {
+        userMessage: 'Apple 계정 탈퇴는 iOS 기기에서만 가능합니다.',
+      });
+    } else {
+      // 이메일 사용자: 비밀번호 재인증
+      if (!password) {
+        throw new AuthError('E2002', {
+          userMessage: '비밀번호를 입력해주세요.',
+        });
+      }
+      const credential = EmailAuthProvider.credential(currentUser.email, password);
+      await reauthenticateWithCredential(currentUser, credential);
+    }
 
     // 2. 탈퇴 요청 정보 준비
     const now = Timestamp.now();

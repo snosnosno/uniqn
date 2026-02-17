@@ -10,6 +10,8 @@ import { View, Text, Pressable, ActivityIndicator, Platform, useColorScheme } fr
 import {
   signInWithPhoneNumber as webSignInWithPhoneNumber,
   RecaptchaVerifier,
+  PhoneAuthProvider as WebPhoneAuthProvider,
+  linkWithCredential as webLinkWithCredential,
 } from 'firebase/auth';
 import { httpsCallable } from 'firebase/functions';
 import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
@@ -19,7 +21,12 @@ import { Button } from '@/components/ui/Button';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
 
-import { getNativeAuth, nativeSignInWithPhoneNumber } from '@/lib/nativeAuth';
+import {
+  getNativeAuth,
+  nativeSignInWithPhoneNumber,
+  NativePhoneAuthProvider,
+  nativeLinkWithCredential,
+} from '@/lib/nativeAuth';
 
 // ============================================================================
 // Types
@@ -41,6 +48,8 @@ export interface PhoneVerificationProps {
   disabled?: boolean;
   /** 컴팩트 모드 (헤더/아이콘/설명 숨김) */
   compact?: boolean;
+  /** 인증 모드: signIn(기본)=새 계정 생성, link=기존 계정에 전화번호 링크 */
+  mode?: 'signIn' | 'link';
 }
 
 type VerificationStep = 'input' | 'otp' | 'verified';
@@ -83,7 +92,7 @@ function toE164(phone: string): string {
 // ============================================================================
 
 export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
-  ({ onVerified, onError, initialPhone = '', disabled = false, compact = false }) => {
+  ({ onVerified, onError, initialPhone = '', disabled = false, compact = false, mode = 'signIn' }) => {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const [step, setStep] = useState<VerificationStep>(initialPhone ? 'verified' : 'input');
@@ -96,6 +105,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+    const verificationIdRef = useRef<string | null>(null);
 
     // 타이머 관리
     const isTimerActive = timer > 0;
@@ -148,7 +158,11 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           );
           const checkResult = await checkPhone({ phone: cleaned });
           if (checkResult.data.exists) {
-            setError('이미 가입된 전화번호입니다.');
+            setError(
+              mode === 'link'
+                ? '이미 다른 계정에 등록된 전화번호입니다.'
+                : '이미 가입된 전화번호입니다.'
+            );
             setIsLoading(false);
             return;
           }
@@ -179,6 +193,10 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         }
 
         setConfirmation(result);
+        // link 모드: verificationId 저장 (linkWithCredential에 사용)
+        if (mode === 'link' && 'verificationId' in result) {
+          verificationIdRef.current = (result as { verificationId: string }).verificationId;
+        }
         setStep('otp');
         setTimer(RESEND_COOLDOWN);
         setOtpCode('');
@@ -194,7 +212,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       } finally {
         setIsLoading(false);
       }
-    }, [phone, onError]);
+    }, [phone, onError, mode]);
 
     /** OTP 코드 확인 */
     const handleConfirmOTP = useCallback(async () => {
@@ -213,19 +231,47 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       setError(null);
 
       try {
-        await confirmation.confirm(otpCode);
+        if (mode === 'link' && verificationIdRef.current) {
+          // link 모드: 기존 계정(Apple 등)에 전화번호 링크
+          if (
+            Platform.OS !== 'web' &&
+            NativePhoneAuthProvider &&
+            nativeLinkWithCredential &&
+            getNativeAuth
+          ) {
+            const credential = NativePhoneAuthProvider.credential(
+              verificationIdRef.current,
+              otpCode
+            );
+            const nativeUser = getNativeAuth().currentUser;
+            if (!nativeUser) throw new Error('인증 정보가 없습니다.');
+            await nativeLinkWithCredential(nativeUser, credential);
+          } else {
+            // 웹 플랫폼 fallback
+            const credential = WebPhoneAuthProvider.credential(
+              verificationIdRef.current,
+              otpCode
+            );
+            const webUser = getFirebaseAuth().currentUser;
+            if (!webUser) throw new Error('인증 정보가 없습니다.');
+            await webLinkWithCredential(webUser, credential);
+          }
+        } else {
+          // signIn 모드 (기존): confirm()으로 로그인
+          await confirmation.confirm(otpCode);
+        }
         setStep('verified');
         onVerified(phone);
-        logger.info('SMS 인증 완료', { phone: maskValue(phone, 'phone') });
+        logger.info('SMS 인증 완료', { phone: maskValue(phone, 'phone'), mode });
       } catch (err) {
         const errorMessage = getFirebaseOTPErrorMessage(err);
         setError(errorMessage);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
-        logger.error('OTP 확인 실패', { error: err });
+        logger.error('OTP 확인 실패', { error: err, mode });
       } finally {
         setIsLoading(false);
       }
-    }, [confirmation, otpCode, phone, onVerified, onError]);
+    }, [confirmation, otpCode, phone, onVerified, onError, mode]);
 
     // reCAPTCHA cleanup on unmount
     useEffect(() => {
@@ -244,6 +290,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       setError(null);
       setConfirmation(null);
       setTimer(0);
+      verificationIdRef.current = null;
       if (recaptchaVerifierRef.current) {
         recaptchaVerifierRef.current.clear();
         recaptchaVerifierRef.current = null;
@@ -449,6 +496,10 @@ function getFirebaseOTPErrorMessage(error: unknown): string {
       return '인증 시간이 만료되었습니다. 다시 요청해주세요.';
     case 'auth/code-expired':
       return '인증번호가 만료되었습니다. 다시 요청해주세요.';
+    case 'auth/credential-already-in-use':
+      return '이미 다른 계정에 등록된 전화번호입니다.';
+    case 'auth/provider-already-linked':
+      return '이미 전화번호가 연결되어 있습니다.';
     default:
       return '인증에 실패했습니다. 다시 시도해주세요.';
   }

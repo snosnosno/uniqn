@@ -81,6 +81,9 @@ const SOCIAL_BUTTONS: SocialButtonConfig[] = [
  */
 const SOCIAL_LOGIN_ENABLED = __DEV__ || Constants.expoConfig?.extra?.socialLoginEnabled === true;
 
+/** Apple Sign In은 iOS에서 항상 활성화 (SOCIAL_LOGIN_ENABLED 무관) */
+const APPLE_ENABLED_ON_IOS = Platform.OS === 'ios';
+
 // ============================================================================
 // Component
 // ============================================================================
@@ -93,8 +96,8 @@ export function SocialLoginButtons({
   loadingProvider = null,
   disabled = false,
 }: SocialLoginButtonsProps) {
-  // 프로덕션에서 소셜 로그인 비활성화 시 렌더링하지 않음
-  if (!SOCIAL_LOGIN_ENABLED) {
+  // Apple은 iOS에서 항상 표시, 그 외 소셜은 플래그에 따름
+  if (!SOCIAL_LOGIN_ENABLED && !APPLE_ENABLED_ON_IOS) {
     return null;
   }
 
@@ -113,7 +116,13 @@ export function SocialLoginButtons({
     }
   };
 
-  const visibleButtons = SOCIAL_BUTTONS.filter((button) => button.showOn.includes(currentPlatform));
+  const visibleButtons = SOCIAL_BUTTONS.filter((button) => {
+    if (!button.showOn.includes(currentPlatform)) return false;
+    // Apple은 iOS에서 항상 표시
+    if (button.provider === 'apple') return APPLE_ENABLED_ON_IOS;
+    // 나머지는 기존 플래그
+    return SOCIAL_LOGIN_ENABLED;
+  });
 
   if (visibleButtons.length === 0) {
     return null;

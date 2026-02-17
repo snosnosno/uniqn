@@ -108,7 +108,7 @@ export interface UserVerificationStatus {
 /**
  * 소셜 로그인 제공자
  */
-export type SocialProvider = 'google' | 'apple';
+export type SocialProvider = 'google' | 'apple' | 'kakao' | 'naver';
 
 /**
  * 동의 항목

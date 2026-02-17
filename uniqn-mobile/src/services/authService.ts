@@ -2,34 +2,31 @@
  * UNIQN Mobile - 인증 서비스
  *
  * @description Firebase Auth 기반 인증 서비스
- * @version 1.0.0
+ * @version 2.0.0
  *
  * ============================================================================
  * 소셜 로그인 구현 상태
  * ============================================================================
- * 현재: Mock 구현 (개발 모드에서만 동작)
+ * ✅ Apple: 실제 구현 완료 (expo-apple-authentication, iOS 전용)
+ * 🔲 Google: Mock 구현 (개발 모드에서만 동작)
+ * 🔲 카카오: Mock 구현 (개발 모드에서만 동작)
  *
- * TODO [P1]: Apple 소셜 로그인 구현 (expo-apple-authentication)
  * TODO [P1]: Google 소셜 로그인 구현 (@react-native-google-signin/google-signin)
  * TODO [P2]: 카카오 소셜 로그인 구현 (@react-native-seoul/kakao-login + Cloud Functions)
- *
- * 필요 작업:
- * 1. 각 SDK 설치 및 네이티브 설정 (EAS Build 필요)
- * 2. Firebase Console에서 제공자 활성화
- * 3. Apple/Google: Developer Console에서 앱 등록
- * 4. 카카오: Kakao Developers에서 앱 등록 + Cloud Functions 연동
  * ============================================================================
  */
 
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  signInWithCredential,
   sendPasswordResetEmail,
   updatePassword,
   signOut as firebaseSignOut,
   User as FirebaseUser,
   updateProfile,
   EmailAuthProvider,
+  OAuthProvider,
   reauthenticateWithCredential,
   linkWithCredential,
   deleteUser as webDeleteUser,
@@ -43,10 +40,12 @@ import { syncToWebAuth, syncSignOut } from '@/lib/authBridge';
 import {
   getNativeAuth,
   nativeSignInWithEmailAndPassword,
+  nativeSignInWithCredential,
   nativeLinkWithCredential,
   nativeUpdateProfile,
   nativeDeleteUser,
   NativeEmailAuthProvider,
+  NativeOAuthProvider,
 } from '@/lib/nativeAuth';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
@@ -697,32 +696,271 @@ async function createMockProfile(
 }
 
 /**
- * Apple 소셜 로그인
+ * Apple 소셜 로그인 (iOS 전용)
  *
  * @description
  * - 개발 모드: Mock 데이터로 테스트
- * - 프로덕션: expo-apple-authentication 필요
+ * - 프로덕션: expo-apple-authentication + Dual SDK 동시 인증
  *
- * 구현 가이드:
- * 1. expo-apple-authentication 설치
- * 2. app.config.ts에 usesAppleSignIn: true 설정
- * 3. EAS Build 실행
- * 4. Apple Developer Console에서 Sign in with Apple 활성화
+ * 핵심: Web SDK와 Native SDK를 동시에 인증하여 ensureDualSdkSync() 통과
+ *
+ * @returns AuthResult (신규 사용자: phoneVerified=false, 기존 사용자: phoneVerified=true)
  */
 export async function signInWithApple(): Promise<AuthResult> {
   if (IS_DEV_MODE) {
     return createMockSocialLoginResult('apple', 'mock-apple@uniqn.dev', 'Apple 테스트 사용자');
   }
 
-  // 구현 예정:
-  // import * as AppleAuthentication from 'expo-apple-authentication';
-  // const credential = await AppleAuthentication.signInAsync({...});
-  // const oAuthCredential = OAuthProvider.credential('apple.com', credential.identityToken);
-  // const userCredential = await signInWithCredential(getFirebaseAuth(), oAuthCredential);
+  try {
+    logger.info('Apple 로그인 시도', { platform: Platform.OS });
 
-  throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
-    userMessage: 'Apple 로그인은 아직 준비 중입니다. 다른 로그인 방식을 이용해주세요',
-  });
+    // iOS에서만 지원
+    if (Platform.OS !== 'ios') {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: 'Apple 로그인은 iOS에서만 사용할 수 있습니다.',
+      });
+    }
+
+    // 동적 import (iOS 전용 모듈)
+    const AppleAuthentication = await import('expo-apple-authentication');
+    const { generateNonce, sha256 } = await import('@/utils/appleAuth');
+
+    // 1. Nonce 생성 (replay attack 방지)
+    const rawNonce = generateNonce();
+    const hashedNonce = await sha256(rawNonce);
+
+    // 2. Apple 네이티브 인증 다이얼로그
+    const appleCredential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+      nonce: hashedNonce,
+    });
+
+    const { identityToken } = appleCredential;
+    if (!identityToken) {
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage: 'Apple 인증 정보를 받지 못했습니다. 다시 시도해주세요.',
+      });
+    }
+
+    // Apple이 제공하는 이름 (최초 로그인 시에만 제공)
+    const appleName = appleCredential.fullName
+      ? [appleCredential.fullName.familyName, appleCredential.fullName.givenName]
+          .filter(Boolean)
+          .join('')
+      : '';
+
+    // 3. Firebase 양쪽 SDK credential 생성
+    // Web SDK: OAuthProvider credential
+    const webOAuthCredential = new OAuthProvider('apple.com').credential({
+      idToken: identityToken,
+      rawNonce,
+    });
+
+    // 4. Dual SDK 동시 인증 (핵심!)
+    // Native SDK: signInWithCredential 사용
+    if (!nativeSignInWithCredential || !getNativeAuth || !NativeOAuthProvider) {
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage: '네이티브 인증 모듈을 사용할 수 없습니다.',
+      });
+    }
+
+    const nativeOAuthCredential = NativeOAuthProvider.credential(
+      'apple.com',
+      identityToken,
+      rawNonce
+    );
+
+    const [, webResult] = await Promise.all([
+      nativeSignInWithCredential(getNativeAuth(), nativeOAuthCredential),
+      signInWithCredential(getFirebaseAuth(), webOAuthCredential),
+    ]);
+
+    const user = webResult.user;
+
+    // Custom Claims 갱신
+    await user.getIdToken(true);
+
+    // 5. Firestore 프로필 확인
+    const existingProfile = await getUserProfile(user.uid);
+
+    if (existingProfile && existingProfile.phoneVerified) {
+      // 기존 사용자 (프로필 완성됨) → 즉시 앱 진입
+      logger.info('Apple 로그인 성공 (기존 사용자)', { uid: user.uid });
+      trackLogin('apple');
+      setUserId(user.uid);
+      setUserProperties({
+        user_role: existingProfile.role,
+        has_verified_phone: true,
+      });
+      return { user, profile: existingProfile };
+    }
+
+    // 6. 신규/미완성 사용자 → 최소 프로필 생성
+    if (!existingProfile) {
+      const now = Timestamp.now();
+
+      // Firestore에 저장할 데이터 (serverTimestamp 사용)
+      await userRepository.createOrMerge(user.uid, {
+        uid: user.uid,
+        email: user.email || '',
+        name: appleName,
+        role: 'staff',
+        socialProvider: 'apple',
+        phoneVerified: false,
+        isActive: true,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+      });
+
+      // 클라이언트 반환용 프로필 (Timestamp.now() — serverTimestamp는 FieldValue이므로 직접 사용 불가)
+      const minimalProfile: UserProfile = {
+        uid: user.uid,
+        email: user.email || '',
+        name: appleName,
+        role: 'staff',
+        socialProvider: 'apple',
+        phoneVerified: false,
+        isActive: true,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      logger.info('Apple 신규 사용자 최소 프로필 생성', { uid: user.uid });
+      return { user, profile: minimalProfile };
+    }
+
+    // 기존 프로필 있지만 phoneVerified=false (이전에 중단된 가입)
+    logger.info('Apple 로그인 성공 (미완성 프로필)', { uid: user.uid });
+    return { user, profile: existingProfile };
+  } catch (error) {
+    // 사용자 취소 처리
+    const errorCode = (error as { code?: string }).code;
+    if (errorCode === 'ERR_REQUEST_CANCELED') {
+      logger.info('Apple 로그인 취소', { component: 'authService' });
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage: '', // 빈 메시지 → login.tsx에서 toast 미표시
+      });
+    }
+
+    // 부분 인증 상태 정리
+    try {
+      await syncSignOut();
+    } catch {
+      // 정리 실패 무시
+    }
+
+    throw handleServiceError(error, {
+      operation: 'Apple 로그인',
+      component: 'authService',
+    });
+  }
+}
+
+/**
+ * 소셜 로그인 프로필 완성
+ *
+ * @description Apple 로그인 후 기존 회원가입 Step 2→3→4 데이터로 프로필 업데이트
+ *
+ * @param uid - Firebase Auth UID
+ * @param data - Step 2(본인인증) + Step 3(프로필) + Step 4(약관) 데이터
+ * @returns 업데이트된 AuthResult
+ */
+export interface SocialProfileData {
+  // Step 2: 본인인증
+  name: string;
+  birthDate: string;
+  gender: 'male' | 'female';
+  phone: string;
+  // Step 3: 프로필
+  nickname: string;
+  region?: string;
+  experienceYears?: number;
+  career?: string;
+  note?: string;
+  // Step 4: 약관
+  termsAgreed: boolean;
+  privacyAgreed: boolean;
+  marketingAgreed?: boolean;
+}
+
+export async function completeSocialProfile(
+  uid: string,
+  data: SocialProfileData
+): Promise<AuthResult> {
+  try {
+    logger.info('소셜 프로필 완성 시도', { uid });
+
+    // Firestore 프로필 업데이트
+    await userRepository.updateFields(uid, {
+      name: data.name,
+      nickname: data.nickname,
+      phone: data.phone,
+      phoneVerified: true,
+      birthDate: data.birthDate,
+      gender: data.gender,
+      ...(data.region && { region: data.region }),
+      ...(data.experienceYears !== undefined && { experienceYears: data.experienceYears }),
+      ...(data.career && { career: data.career }),
+      ...(data.note && { note: data.note }),
+      termsAgreed: data.termsAgreed,
+      privacyAgreed: data.privacyAgreed,
+      marketingAgreed: data.marketingAgreed ?? false,
+    });
+
+    // Firebase Auth displayName 업데이트 (양쪽 SDK)
+    const webUser = getFirebaseAuth().currentUser;
+    if (webUser) {
+      await updateProfile(webUser, { displayName: data.nickname });
+    }
+
+    if (Platform.OS !== 'web' && getNativeAuth && nativeUpdateProfile) {
+      const nativeUser = getNativeAuth().currentUser;
+      if (nativeUser) {
+        await nativeUpdateProfile(nativeUser, { displayName: data.nickname });
+      }
+    }
+
+    // 업데이트된 프로필 조회
+    const updatedProfile = await getUserProfile(uid);
+    if (!updatedProfile) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '프로필 업데이트 후 조회에 실패했습니다.',
+      });
+    }
+
+    logger.info('소셜 프로필 완성 성공', { uid });
+
+    // 반환 시점에 user 확인
+    const currentUser = getFirebaseAuth().currentUser;
+    if (!currentUser) {
+      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+        userMessage: '인증 정보가 만료되었습니다. 다시 로그인해주세요.',
+      });
+    }
+
+    // Analytics — Firestore에서 socialProvider 조회하여 정확한 provider 기록
+    const provider = updatedProfile.socialProvider;
+    if (provider === 'apple' || provider === 'google' || provider === 'kakao') {
+      trackSignup(provider);
+    }
+    setUserId(uid);
+    setUserProperties({
+      user_role: 'staff',
+      account_created_date: new Date().toISOString().split('T')[0],
+      has_verified_phone: true,
+    });
+
+    return { user: currentUser, profile: updatedProfile };
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '소셜 프로필 완성',
+      component: 'authService',
+      context: { uid },
+    });
+  }
 }
 
 /**

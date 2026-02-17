@@ -9,7 +9,6 @@ import { useState, useCallback } from 'react';
 import { View, Text, KeyboardAvoidingView, Platform, ScrollView } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Timestamp } from '@/lib/firebase';
 import Constants from 'expo-constants';
 import { Divider } from '@/components/ui';
 import { LoginForm, SocialLoginButtons, BiometricButton } from '@/components/auth';
@@ -23,33 +22,10 @@ import {
 import { useBiometricAuth } from '@/hooks';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
-import type { UserProfile } from '@/types';
 import { logger } from '@/utils/logger';
+import { toStoreProfile } from '@/utils/profileConverter';
 import { extractErrorMessage } from '@/shared/errors';
 import type { LoginFormData } from '@/schemas';
-
-/**
- * AuthResult의 Firestore profile을 Store용 profile(Date 기반)로 변환
- */
-function toStoreProfile(profile: AuthResult['profile']): UserProfile {
-  const toDate = (value: unknown): Date => {
-    if (value instanceof Timestamp) return value.toDate();
-    if (value instanceof Date) return value;
-    return new Date();
-  };
-
-  return {
-    uid: profile.uid,
-    email: profile.email,
-    name: profile.name,
-    nickname: profile.nickname,
-    phone: profile.phone,
-    role: profile.role,
-    photoURL: profile.photoURL,
-    createdAt: toDate(profile.createdAt),
-    updatedAt: toDate(profile.updatedAt),
-  };
-}
 
 type SocialProvider = 'apple' | 'google' | 'kakao';
 
@@ -150,16 +126,31 @@ export default function LoginScreen() {
       try {
         const result = await config.loginFn();
         if (result.user) {
+          // 신규 소셜 사용자 (프로필 미완성) → 회원가입 플로우로 리다이렉트
+          if (result.profile.socialProvider && !result.profile.phoneVerified) {
+            setUser(result.user);
+            setProfile(toStoreProfile(result.profile));
+            router.replace('/(auth)/signup?mode=social');
+            return;
+          }
+          // 기존 사용자 → 정상 로그인
           await handleLoginSuccess(result, config.label);
         }
       } catch (error) {
-        logger.error(`${config.label} 로그인 실패`, error as Error);
-        addToast({ type: 'error', message: config.errorMessage });
+        // 사용자 취소 판별: userMessage가 빈 문자열이면 취소 (authService에서 명시적 설정)
+        const errorMsg = (error as { userMessage?: string })?.userMessage;
+        if (errorMsg === '') {
+          // 사용자가 인증 다이얼로그를 취소한 경우 — 에러 표시 안 함
+          logger.info(`${config.label} 로그인 취소`);
+        } else {
+          logger.error(`${config.label} 로그인 실패`, error as Error);
+          addToast({ type: 'error', message: errorMsg || config.errorMessage });
+        }
       } finally {
         setLoadingProvider(null);
       }
     },
-    [addToast, handleLoginSuccess]
+    [addToast, handleLoginSuccess, setUser, setProfile]
   );
 
   const handleAppleLogin = useCallback(() => handleSocialLogin('apple'), [handleSocialLogin]);
@@ -210,8 +201,8 @@ export default function LoginScreen() {
             isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
           />
 
-          {/* 소셜 로그인 (프로덕션에서는 숨김) */}
-          {SOCIAL_LOGIN_ENABLED && (
+          {/* 소셜 로그인 (Apple은 iOS에서 항상 표시) */}
+          {(SOCIAL_LOGIN_ENABLED || Platform.OS === 'ios') && (
             <>
               <Divider label="또는" spacing="lg" />
               <SocialLoginButtons

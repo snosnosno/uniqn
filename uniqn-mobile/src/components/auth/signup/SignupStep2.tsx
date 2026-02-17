@@ -24,6 +24,8 @@ interface SignupStep2Props {
   onBack: () => void;
   initialData?: Partial<SignUpStep2Data>;
   isLoading?: boolean;
+  /** PhoneVerification 모드: signIn(기본)=새 계정 생성, link=기존 계정에 링크 */
+  phoneMode?: 'signIn' | 'link';
 }
 
 // ============================================================================
@@ -186,7 +188,13 @@ function GenderSelector({
 // Component
 // ============================================================================
 
-export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: SignupStep2Props) {
+export function SignupStep2({
+  onNext,
+  onBack,
+  initialData,
+  isLoading = false,
+  phoneMode = 'signIn',
+}: SignupStep2Props) {
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
   );
@@ -287,6 +295,7 @@ export function SignupStep2({ onNext, onBack, initialData, isLoading = false }: 
           initialPhone={verifiedPhone || initialData?.verifiedPhone}
           disabled={isLoading}
           compact
+          mode={phoneMode}
         />
       </View>
       {errors.phoneVerified && !verifiedPhone && (

@@ -31,6 +31,12 @@ let _deleteUser: typeof import('@react-native-firebase/auth').deleteUser | null 
 let _signOut: typeof import('@react-native-firebase/auth').signOut | null = null;
 let _EmailAuthProvider: typeof import('@react-native-firebase/auth').EmailAuthProvider | null =
   null;
+let _signInWithCredential:
+  | typeof import('@react-native-firebase/auth').signInWithCredential
+  | null = null;
+let _PhoneAuthProvider: typeof import('@react-native-firebase/auth').PhoneAuthProvider | null =
+  null;
+let _OAuthProvider: typeof import('@react-native-firebase/auth').OAuthProvider | null = null;
 
 if (Platform.OS !== 'web') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -43,6 +49,9 @@ if (Platform.OS !== 'web') {
   _deleteUser = mod.deleteUser;
   _signOut = mod.signOut;
   _EmailAuthProvider = mod.EmailAuthProvider;
+  _signInWithCredential = mod.signInWithCredential;
+  _PhoneAuthProvider = mod.PhoneAuthProvider;
+  _OAuthProvider = mod.OAuthProvider;
 }
 
 // ============================================================================
@@ -60,3 +69,6 @@ export const nativeUpdateProfile = _updateProfile;
 export const nativeDeleteUser = _deleteUser;
 export const nativeSignOut = _signOut;
 export const NativeEmailAuthProvider = _EmailAuthProvider;
+export const nativeSignInWithCredential = _signInWithCredential;
+export const NativePhoneAuthProvider = _PhoneAuthProvider;
+export const NativeOAuthProvider = _OAuthProvider;

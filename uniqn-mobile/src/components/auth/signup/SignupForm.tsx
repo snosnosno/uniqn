@@ -12,7 +12,7 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { deleteUser as webDeleteUser } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { getNativeAuth, nativeDeleteUser } from '@/lib/nativeAuth';
-import { StepIndicator, SIGNUP_STEPS } from '@/components/auth/StepIndicator';
+import { StepIndicator, SIGNUP_STEPS, type StepInfo } from '@/components/auth/StepIndicator';
 import { checkEmailExists, markOrphanAccount } from '@/services/authService';
 import { useToast } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
@@ -36,7 +36,18 @@ import type {
 interface SignupFormProps {
   onSubmit: (data: SignUpFormData) => Promise<void>;
   isLoading?: boolean;
+  /** 모드: default(일반 회원가입), social(소셜 로그인 후 프로필 완성) */
+  mode?: 'default' | 'social';
+  /** 소셜 로그인에서 받은 데이터 (이름 pre-fill 등) */
+  socialData?: { name?: string };
 }
+
+/** 소셜 모드 스텝 (Step 1 생략: 본인인증 → 프로필 → 약관) */
+const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
+  { label: '본인인증', shortLabel: '인증' },
+  { label: '프로필', shortLabel: '프로필' },
+  { label: '약관동의', shortLabel: '약관' },
+];
 
 interface FormDataState {
   step1?: SignUpStep1Data;
@@ -49,11 +60,22 @@ interface FormDataState {
 // Component
 // ============================================================================
 
-export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
-  const [currentStep, setCurrentStep] = useState(1);
+export function SignupForm({
+  onSubmit,
+  isLoading = false,
+  mode = 'default',
+  socialData,
+}: SignupFormProps) {
+  const isSocial = mode === 'social';
+  // 소셜 모드: Step 1 생략 → Step 2부터 시작
+  const [currentStep, setCurrentStep] = useState(isSocial ? 2 : 1);
   const [formData, setFormData] = useState<FormDataState>({});
   const toast = useToast();
   const showConfirm = useModalStore((s) => s.showConfirm);
+
+  // 소셜 모드용 스텝 표시: Step 2→1, 3→2, 4→3
+  const steps = isSocial ? SOCIAL_SIGNUP_STEPS : SIGNUP_STEPS;
+  const displayStep = isSocial ? currentStep - 1 : currentStep;
 
   // Step 1: 계정 정보
   const handleStep1Next = useCallback((data: SignUpStep1Data) => {
@@ -97,6 +119,12 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
   }, []);
 
   const handleStep2Back = useCallback(async () => {
+    if (isSocial) {
+      // 소셜 모드: phone account cleanup 불필요 (이미 Apple 계정 존재)
+      // 뒤로가기는 signup.tsx에서 처리 (login 화면으로 이동)
+      return;
+    }
+
     // 현재 인증된 계정이 있는지 확인
     const hasPhoneAccount =
       Platform.OS === 'web' ? !!getFirebaseAuth().currentUser : !!getNativeAuth?.()?.currentUser;
@@ -117,7 +145,7 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
       setFormData((prev) => ({ ...prev, step2: undefined }));
       setCurrentStep(1);
     }
-  }, [cleanupPhoneAccount, showConfirm]);
+  }, [cleanupPhoneAccount, showConfirm, isSocial]);
 
   // Step 3: 프로필
   const handleStep3Next = useCallback((data: SignUpStep3Data) => {
@@ -132,17 +160,20 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
   // Step 4: 약관동의 및 최종 제출
   const handleStep4Submit = useCallback(
     async (data: SignUpStep4Data) => {
-      // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
-      try {
-        const emailExists = await checkEmailExists(formData.step1!.email);
-        if (emailExists) {
-          toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
-          setCurrentStep(1);
-          return;
+      // 소셜 모드에서는 이메일 중복 체크 불필요 (Step 1 없음)
+      if (!isSocial) {
+        // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
+        try {
+          const emailExists = await checkEmailExists(formData.step1!.email);
+          if (emailExists) {
+            toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
+            setCurrentStep(1);
+            return;
+          }
+        } catch {
+          // 네트워크 오류 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
+          logger.warn('Step4 제출 전 이메일 재검증 실패 - 계속 진행');
         }
-      } catch {
-        // 네트워크 오류 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
-        logger.warn('Step4 제출 전 이메일 재검증 실패 - 계속 진행');
       }
 
       const updatedFormData = { ...formData, step4: data };
@@ -150,9 +181,9 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
 
       // 전체 데이터 조합
       const completeData: SignUpFormData = {
-        // Step 1: 계정 정보
-        email: updatedFormData.step1!.email,
-        password: updatedFormData.step1!.password,
+        // Step 1: 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
+        email: isSocial ? '' : updatedFormData.step1!.email,
+        password: isSocial ? '' : updatedFormData.step1!.password,
         // Step 2: 본인인증
         name: updatedFormData.step2!.name,
         birthDate: updatedFormData.step2!.birthDate,
@@ -174,7 +205,7 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
 
       await onSubmit(completeData);
     },
-    [formData, onSubmit, toast]
+    [formData, onSubmit, toast, isSocial]
   );
 
   const handleStep4Back = useCallback(() => {
@@ -197,8 +228,13 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
           <SignupStep2
             onNext={handleStep2Next}
             onBack={handleStep2Back}
-            initialData={formData.step2}
+            initialData={
+              isSocial && !formData.step2
+                ? { name: socialData?.name || '' }
+                : formData.step2
+            }
             isLoading={isLoading}
+            phoneMode={isSocial ? 'link' : 'signIn'}
           />
         );
       case 3:
@@ -238,7 +274,7 @@ export function SignupForm({ onSubmit, isLoading = false }: SignupFormProps) {
       <View className="flex-1 p-4">
         {/* 스텝 인디케이터 */}
         <View className="mb-8">
-          <StepIndicator currentStep={currentStep} steps={SIGNUP_STEPS} />
+          <StepIndicator currentStep={displayStep} steps={steps} />
         </View>
 
         {/* 현재 스텝 폼 (fade 애니메이션) */}

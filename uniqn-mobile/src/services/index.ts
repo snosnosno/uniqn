@@ -18,10 +18,12 @@ export {
   signInWithApple,
   signInWithGoogle,
   signInWithKakao,
+  completeSocialProfile,
   changePassword,
   updateProfilePhotoURL,
   type UserProfile,
   type AuthResult,
+  type SocialProfileData,
 } from './authService';
 
 // Storage Service

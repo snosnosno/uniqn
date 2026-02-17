@@ -92,6 +92,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
   // iOS 설정
   ios: {
     supportsTablet: true,
+    usesAppleSignIn: true,
     bundleIdentifier: envConfig.bundleIdentifier,
     googleServicesFile: './GoogleService-Info.plist',
     infoPlist: {

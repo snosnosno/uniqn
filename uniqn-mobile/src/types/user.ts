@@ -64,6 +64,8 @@ export interface UserProfile<T = Date> {
   career?: string;
   /** 기타사항 */
   note?: string;
+  /** 소셜 로그인 제공자 (없으면 이메일 가입) */
+  socialProvider?: 'apple' | 'google' | 'kakao' | 'naver';
 
   // 동의 정보 (Firestore 전용, Store에서는 optional)
   /** 이용약관 동의 */
