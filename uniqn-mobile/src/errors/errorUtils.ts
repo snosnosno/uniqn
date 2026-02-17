@@ -337,7 +337,6 @@ export function isRetryableError(error: unknown): boolean {
   return retryableCodes.includes(appError.code as (typeof retryableCodes)[number]);
 }
 
-
 // ============================================================================
 // Error Boundary Helpers
 // ============================================================================

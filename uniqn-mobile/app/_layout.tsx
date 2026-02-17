@@ -61,12 +61,22 @@ try {
 }
 
 // LogBox 경고 억제 (써드파티 라이브러리 이슈)
+const SUPPRESSED_WARNINGS = [
+  'props.pointerEvents is deprecated', // expo-router 내부 이슈
+  'Image: style.tintColor is deprecated', // react-navigation 내부 이슈
+  'SafeAreaView has been deprecated', // react-native-calendars 등 써드파티 이슈 (RN 0.81.5+)
+];
+
 if (__DEV__) {
-  LogBox.ignoreLogs([
-    'props.pointerEvents is deprecated', // expo-router 내부 이슈
-    'Image: style.tintColor is deprecated', // react-navigation 내부 이슈
-    'SafeAreaView has been deprecated', // react-native-calendars 등 써드파티 이슈 (RN 0.81.5+)
-  ]);
+  LogBox.ignoreLogs(SUPPRESSED_WARNINGS);
+
+  // 웹 콘솔에서도 써드파티 경고 억제
+  const originalWarn = console.warn;
+  console.warn = (...args: unknown[]) => {
+    const message = typeof args[0] === 'string' ? args[0] : '';
+    if (SUPPRESSED_WARNINGS.some((w) => message.includes(w))) return;
+    originalWarn(...args);
+  };
 }
 
 /**

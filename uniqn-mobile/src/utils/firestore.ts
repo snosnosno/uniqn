@@ -437,7 +437,6 @@ export async function documentExists(collectionName: string, docId: string): Pro
   }
 }
 
-
 // ============================================================================
 // Timestamp Conversion Helpers
 // ============================================================================
