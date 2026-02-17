@@ -117,6 +117,10 @@ export default function CreateJobPostingScreen() {
         roles: formData.roles,
         defaultSalary,
         allowances: formData.allowances,
+        // 세금 설정 (type이 'none'이 아닐 때만 저장하여 Firestore 필드 절약)
+        ...(formData.taxSettings && formData.taxSettings.type !== 'none'
+          ? { taxSettings: formData.taxSettings }
+          : {}),
         useSameSalary: formData.useSameSalary,
         usesPreQuestions: formData.usesPreQuestions,
         preQuestions: formData.preQuestions,

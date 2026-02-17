@@ -393,6 +393,16 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
               ))}
             </View>
           )}
+
+          {/* 세금 */}
+          {job.taxSettings && job.taxSettings.type !== 'none' && (
+            <Text className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+              💸 세금{' '}
+              {job.taxSettings.type === 'rate'
+                ? `${job.taxSettings.value}%`
+                : `${job.taxSettings.value.toLocaleString('ko-KR')}원`}
+            </Text>
+          )}
         </View>
       </View>
 

@@ -15,7 +15,9 @@ import {
   calculateEstimatedCost,
   calculateTotalCount,
 } from '@/utils/salary';
-import type { SalaryType, SalaryInfo } from '@/types';
+import type { SalaryType, SalaryInfo, TaxSettings } from '@/types';
+import { TaxSettingsEditor } from '@/components/employer/settlement/TaxSettingsEditor';
+import { DEFAULT_TAX_SETTINGS } from '@/utils/settlement';
 
 // Sub-components
 import { RoleSalaryInput } from './RoleSalaryInput';
@@ -153,9 +155,23 @@ export const SalarySection = memo(function SalarySection({
   const { handleGuaranteedHoursChange, handleAllowanceChange, handleAllowanceProvidedToggle } =
     useAllowances(data.allowances, onUpdate);
 
+  // 세금 설정 변경
+  const handleTaxSettingsChange = useCallback(
+    (settings: TaxSettings) => {
+      onUpdate({ taxSettings: settings });
+    },
+    [onUpdate]
+  );
+
   // 계산된 값들
   const totalCount = useMemo(() => calculateTotalCount(roles), [roles]);
   const estimatedCost = useMemo(() => calculateEstimatedCost(roles), [roles]);
+
+  // 세금 미리보기용 1인 기준 금액
+  const previewTotalAmount = useMemo(() => {
+    if (!estimatedCost || estimatedCost <= 0 || totalCount <= 0) return 0;
+    return Math.round(estimatedCost / totalCount);
+  }, [estimatedCost, totalCount]);
 
   return (
     <View>
@@ -214,6 +230,16 @@ export const SalarySection = memo(function SalarySection({
         onGuaranteedHoursChange={handleGuaranteedHoursChange}
         onAllowanceChange={handleAllowanceChange}
         onAllowanceProvidedToggle={handleAllowanceProvidedToggle}
+      />
+
+      {/* 세금 설정 */}
+      <TaxSettingsEditor
+        taxSettings={data.taxSettings ?? DEFAULT_TAX_SETTINGS}
+        onChange={handleTaxSettingsChange}
+        totalAmount={previewTotalAmount}
+        showLabel={true}
+        showPreview={true}
+        className="mb-4"
       />
 
       {/* 예상 총 비용 */}

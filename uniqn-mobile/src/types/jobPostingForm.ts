@@ -5,7 +5,14 @@
  * @version 2.0.0 - 4가지 공고 타입 지원
  */
 
-import type { Location, SalaryInfo, Allowances, PostingType, PreQuestion } from './index';
+import type {
+  Location,
+  SalaryInfo,
+  Allowances,
+  PostingType,
+  PreQuestion,
+  TaxSettings,
+} from './index';
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import { STAFF_ROLES } from '@/constants';
 
@@ -165,6 +172,9 @@ export interface JobPostingFormData {
   useSameSalary: boolean;
   // 역할별 급여는 roles[].salary에 통합됨
 
+  /** 세금 설정 (선택) */
+  taxSettings?: TaxSettings;
+
   // ============================================================
   // Step 5: 사전질문 (선택)
   // ============================================================
@@ -210,6 +220,7 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   defaultSalary: undefined, // useSameSalary=true일 때만 사용
   allowances: {},
   useSameSalary: false, // false = 역할별 급여 (기본)
+  taxSettings: undefined, // 기본값: 세금 없음 (undefined → DEFAULT_TAX_SETTINGS로 폴백)
 
   // Step 5
   usesPreQuestions: false,

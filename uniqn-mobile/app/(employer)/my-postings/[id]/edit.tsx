@@ -289,6 +289,7 @@ export default function EditJobPostingScreen() {
         // 급여
         defaultSalary: existingJob.defaultSalary,
         allowances: existingJob.allowances || {},
+        taxSettings: existingJob.taxSettings, // undefined면 SalarySection에서 DEFAULT_TAX_SETTINGS 사용
         useSameSalary: existingJob.useSameSalary ?? false,
         // 사전질문
         usesPreQuestions: existingJob.usesPreQuestions || false,
@@ -379,6 +380,10 @@ export default function EditJobPostingScreen() {
         defaultSalary: formData.defaultSalary,
         useSameSalary: formData.useSameSalary,
         allowances: formData.allowances,
+        // 세금 설정 (항상 포함하여 기존 값 덮어쓰기 보장)
+        taxSettings: formData.taxSettings?.type !== 'none'
+          ? formData.taxSettings
+          : { type: 'none' as const, value: 0 },
         tags: formData.tags,
       };
 
