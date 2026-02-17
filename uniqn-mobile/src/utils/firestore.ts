@@ -437,34 +437,6 @@ export async function documentExists(collectionName: string, docId: string): Pro
   }
 }
 
-/**
- * 트랜잭션 재시도 래퍼
- *
- * @description Firebase 트랜잭션 충돌 시 자동 재시도
- */
-export async function withRetry<T>(
-  operation: () => Promise<T>,
-  options: { maxRetries?: number; onRetry?: (attempt: number, error: Error) => void } = {}
-): Promise<T> {
-  const { maxRetries = 3, onRetry } = options;
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
-    try {
-      return await operation();
-    } catch (error) {
-      lastError = error as Error;
-      onRetry?.(attempt, lastError);
-
-      if (attempt < maxRetries) {
-        // 지수 백오프
-        await new Promise((resolve) => setTimeout(resolve, Math.pow(2, attempt) * 100));
-      }
-    }
-  }
-
-  throw lastError;
-}
 
 // ============================================================================
 // Timestamp Conversion Helpers
@@ -508,7 +480,6 @@ export default {
   runBatchedTransaction,
   runBatchWrite,
   documentExists,
-  withRetry,
   normalizeTimestamp,
   timestampToDate,
 };

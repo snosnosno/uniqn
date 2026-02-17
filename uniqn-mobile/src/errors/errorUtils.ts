@@ -311,67 +311,6 @@ export function extractUserMessage(error: unknown): string {
 // ============================================================================
 
 /**
- * 재시도 옵션
- */
-export interface RetryOptions {
-  maxRetries?: number;
-  delayMs?: number;
-  backoffMultiplier?: number;
-  shouldRetry?: (error: AppError, attempt: number) => boolean;
-  onRetry?: (error: AppError, attempt: number) => void;
-}
-
-const DEFAULT_RETRY_OPTIONS: Required<RetryOptions> = {
-  maxRetries: 3,
-  delayMs: 1000,
-  backoffMultiplier: 2,
-  shouldRetry: (error) => error.isRetryable,
-  // eslint-disable-next-line @typescript-eslint/no-empty-function
-  onRetry: () => {}, // 기본값은 빈 함수 (옵션이 제공되면 덮어씀)
-};
-
-/**
- * 자동 재시도 로직이 포함된 비동기 함수 실행
- * - Exponential backoff (지수 백오프) 적용
- * - Jitter (지터) 추가로 서버 부하 분산
- */
-export async function withRetry<T>(fn: () => Promise<T>, options?: RetryOptions): Promise<T> {
-  const opts = { ...DEFAULT_RETRY_OPTIONS, ...options };
-  let lastError: AppError | null = null;
-
-  for (let attempt = 1; attempt <= opts.maxRetries + 1; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = normalizeError(error);
-
-      // 마지막 시도이거나 재시도 불가능한 에러면 throw
-      if (attempt > opts.maxRetries || !opts.shouldRetry(lastError, attempt)) {
-        throw lastError;
-      }
-
-      // 재시도 콜백
-      opts.onRetry(lastError, attempt);
-
-      // 지수 백오프 딜레이 + 지터 (서버 부하 분산)
-      const baseDelay = opts.delayMs * Math.pow(opts.backoffMultiplier, attempt - 1);
-      const jitter = Math.random() * 0.3 * baseDelay; // 0~30% 랜덤 추가
-      const delay = baseDelay + jitter;
-      await sleep(delay);
-    }
-  }
-
-  // 이론적으로 여기 도달하지 않지만, TypeScript를 위해
-  throw (
-    lastError ||
-    new AppError({
-      code: ERROR_CODES.UNKNOWN,
-      category: 'unknown',
-    })
-  );
-}
-
-/**
  * 재시도 가능한 에러인지 판별
  * 네트워크, Firebase unavailable, rate limit 에러는 재시도 가능
  */
@@ -398,12 +337,6 @@ export function isRetryableError(error: unknown): boolean {
   return retryableCodes.includes(appError.code as (typeof retryableCodes)[number]);
 }
 
-/**
- * 지연 함수
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 // ============================================================================
 // Error Boundary Helpers

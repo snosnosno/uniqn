@@ -23,10 +23,9 @@
  *
  * @example
  * // 에러 래핑
- * import { withErrorHandling, withRetry } from '@/errors';
+ * import { withErrorHandling } from '@/errors';
  *
  * const safeFetch = withErrorHandling(fetchData, { component: 'JobList' });
- * const retryableFetch = withRetry(fetchData, { maxRetries: 3 });
  */
 
 // ============================================================================
@@ -91,8 +90,6 @@ export {
   getErrorMessage,
   extractUserMessage,
   // Retry Utilities
-  type RetryOptions,
-  withRetry,
   isRetryableError,
   // Error Boundary Helpers
   isRecoverableError,

@@ -187,7 +187,6 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
         photosPermission: PERMISSION_MESSAGES.photoLibrary,
       },
     ],
-    '@react-native-community/datetimepicker',
     [
       'expo-notifications',
       {

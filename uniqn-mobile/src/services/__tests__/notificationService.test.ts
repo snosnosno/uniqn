@@ -47,10 +47,6 @@ jest.mock('@/services/pushNotificationService', () => ({
   requestPermission: jest.fn(),
 }));
 
-// Mock withErrorHandling to simply execute the passed function
-jest.mock('@/utils/withErrorHandling', () => ({
-  withErrorHandling: jest.fn((fn: () => Promise<unknown>) => fn()),
-}));
 
 // ============================================================================
 // Imports (after mocks)

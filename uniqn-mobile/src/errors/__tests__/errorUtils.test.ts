@@ -13,7 +13,6 @@ import {
   tryCatchSync,
   getErrorMessage,
   extractUserMessage,
-  withRetry,
   isRetryableError,
   isRecoverableError,
   requiresReauthentication,
@@ -437,114 +436,6 @@ describe('extractUserMessage', () => {
   });
 });
 
-// ============================================================================
-// withRetry Tests
-// ============================================================================
-
-describe('withRetry', () => {
-  beforeEach(() => {
-    jest.useFakeTimers();
-  });
-
-  afterEach(() => {
-    jest.useRealTimers();
-  });
-
-  it('첫 시도 성공 시 결과 반환', async () => {
-    const mockFn = jest.fn().mockResolvedValue('success');
-
-    const resultPromise = withRetry(mockFn);
-    const result = await resultPromise;
-
-    expect(result).toBe('success');
-    expect(mockFn).toHaveBeenCalledTimes(1);
-  });
-
-  it('재시도 후 성공', async () => {
-    const mockFn = jest
-      .fn()
-      .mockRejectedValueOnce(new NetworkError(ERROR_CODES.NETWORK_OFFLINE))
-      .mockResolvedValueOnce('success after retry');
-
-    const resultPromise = withRetry(mockFn, { maxRetries: 3, delayMs: 100 });
-
-    // 첫 번째 실패 후 딜레이
-    await jest.advanceTimersByTimeAsync(200);
-
-    const result = await resultPromise;
-
-    expect(result).toBe('success after retry');
-    expect(mockFn).toHaveBeenCalledTimes(2);
-  });
-
-  it('최대 재시도 횟수 초과 시 에러 throw', async () => {
-    jest.useRealTimers(); // 이 테스트는 실제 타이머 사용
-
-    const mockFn = jest.fn().mockRejectedValue(new NetworkError(ERROR_CODES.NETWORK_OFFLINE));
-
-    // 매우 짧은 딜레이로 빠르게 테스트
-    await expect(
-      withRetry(mockFn, { maxRetries: 2, delayMs: 1, backoffMultiplier: 1 })
-    ).rejects.toThrow(NetworkError);
-
-    expect(mockFn).toHaveBeenCalledTimes(3); // 초기 + 2 재시도
-
-    jest.useFakeTimers(); // 다른 테스트를 위해 fake timers 복원
-  });
-
-  it('재시도 불가능한 에러는 즉시 throw', async () => {
-    const nonRetryableError = new ValidationError(ERROR_CODES.VALIDATION_REQUIRED);
-    const mockFn = jest.fn().mockRejectedValue(nonRetryableError);
-
-    const resultPromise = withRetry(mockFn, {
-      maxRetries: 3,
-      shouldRetry: (error) => error.isRetryable,
-    });
-
-    await expect(resultPromise).rejects.toThrow(ValidationError);
-    expect(mockFn).toHaveBeenCalledTimes(1);
-  });
-
-  it('onRetry 콜백 호출', async () => {
-    const mockFn = jest
-      .fn()
-      .mockRejectedValueOnce(new NetworkError(ERROR_CODES.NETWORK_OFFLINE))
-      .mockResolvedValueOnce('success');
-    const onRetry = jest.fn();
-
-    const resultPromise = withRetry(mockFn, {
-      maxRetries: 3,
-      delayMs: 100,
-      onRetry,
-    });
-
-    await jest.advanceTimersByTimeAsync(200);
-    await resultPromise;
-
-    expect(onRetry).toHaveBeenCalledTimes(1);
-    expect(onRetry).toHaveBeenCalledWith(expect.any(NetworkError), 1);
-  });
-
-  it('shouldRetry 커스텀 조건', async () => {
-    const mockFn = jest
-      .fn()
-      .mockRejectedValueOnce(new AppError({ code: 'E5001', category: 'security' }))
-      .mockResolvedValueOnce('success');
-
-    const shouldRetry = jest.fn().mockReturnValue(true);
-
-    const resultPromise = withRetry(mockFn, {
-      maxRetries: 3,
-      delayMs: 100,
-      shouldRetry,
-    });
-
-    await jest.advanceTimersByTimeAsync(200);
-    await resultPromise;
-
-    expect(shouldRetry).toHaveBeenCalledWith(expect.any(AppError), 1);
-  });
-});
 
 // ============================================================================
 // isRetryableError Tests
