@@ -27,8 +27,9 @@ function isFirebaseSpecialObject(value: unknown): boolean {
  */
 function removeUndefinedValue(value: unknown): unknown {
   if (value === null || value === undefined) return value;
-  if (Array.isArray(value))
+  if (Array.isArray(value)) {
     return value.filter((v) => v !== undefined).map(removeUndefinedValue);
+  }
   if (typeof value !== 'object') return value;
   if (isFirebaseSpecialObject(value)) return value;
 

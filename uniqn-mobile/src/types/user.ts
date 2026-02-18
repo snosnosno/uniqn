@@ -13,7 +13,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import type { UserRole } from './common';
+import type { UserRole } from './role';
 
 // ============================================================================
 // Core Types

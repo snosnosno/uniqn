@@ -144,93 +144,6 @@ export function isValidDateFormat(date: string): boolean {
 }
 
 // ============================================================================
-// Migration Utilities
-// ============================================================================
-
-/**
- * TournamentDates → DateSpecificRequirements 변환
- */
-export function convertTournamentDatesToDateRequirements(
-  tournamentDates: {
-    day: number;
-    date: string;
-    startTime: string;
-  }[]
-): {
-  date: string;
-  timeSlots: {
-    id: string;
-    startTime: string;
-    isTimeToBeAnnounced: boolean;
-    tentativeDescription?: string;
-    roles: {
-      id: string;
-      role: 'dealer';
-      customRole?: string;
-      headcount: number;
-    }[];
-  }[];
-}[] {
-  return tournamentDates.map((td) => ({
-    date: td.date,
-    timeSlots: [
-      {
-        id: generateIdBase(),
-        startTime: td.startTime,
-        isTimeToBeAnnounced: false,
-        roles: [
-          {
-            id: generateIdBase(),
-            role: 'dealer' as const,
-            headcount: 1,
-          },
-        ],
-      },
-    ],
-  }));
-}
-
-/**
- * DateSpecificRequirements → TournamentDates 변환 (하위 호환)
- */
-export function convertDateRequirementsToTournamentDates(
-  dateRequirements: {
-    date: string | { seconds: number } | { toDate: () => Date };
-    timeSlots: {
-      startTime: string;
-    }[];
-  }[]
-): {
-  day: number;
-  date: string;
-  startTime: string;
-}[] {
-  return dateRequirements.map((dr, index) => {
-    let dateString: string;
-    if (typeof dr.date === 'string') {
-      dateString = dr.date;
-    } else if ('toDate' in dr.date && typeof dr.date.toDate === 'function') {
-      const dateObj = dr.date.toDate();
-      dateString = toISODateString(dateObj) ?? '';
-    } else if ('seconds' in dr.date) {
-      const dateObj = new Date(dr.date.seconds * 1000);
-      dateString = toISODateString(dateObj) ?? '';
-    } else {
-      dateString = '';
-    }
-
-    const firstTimeSlot = dr.timeSlots[0];
-    const startTime = firstTimeSlot?.startTime || '09:00';
-
-    return {
-      day: index + 1,
-      date: dateString,
-      startTime,
-    };
-  });
-}
-
-// ============================================================================
 // 마감 계산 유틸리티
 // ============================================================================
 
@@ -300,25 +213,13 @@ export function isFullyClosed(requirements: DateRequirementWithSlots[] | undefin
 }
 
 /**
- * 마감 여부 계산 (레거시 폴백 포함)
+ * 마감 여부 계산
  */
 export function getClosingStatus(jobData: {
   dateSpecificRequirements?: DateRequirementWithSlots[];
-  totalPositions?: number;
-  filledPositions?: number;
 }): { total: number; filled: number; isClosed: boolean } {
-  if (jobData.dateSpecificRequirements && jobData.dateSpecificRequirements.length > 0) {
-    const total = calculateTotalFromDateReqs(jobData.dateSpecificRequirements);
-    const filled = calculateFilledFromDateReqs(jobData.dateSpecificRequirements);
-    return {
-      total,
-      filled,
-      isClosed: total > 0 && filled >= total,
-    };
-  }
-
-  const total = jobData.totalPositions ?? 0;
-  const filled = jobData.filledPositions ?? 0;
+  const total = calculateTotalFromDateReqs(jobData.dateSpecificRequirements);
+  const filled = calculateFilledFromDateReqs(jobData.dateSpecificRequirements);
   return {
     total,
     filled,

@@ -132,7 +132,6 @@ export async function createWithTransaction(
       status: STATUS.JOB_POSTING.ACTIVE,
       ownerId: context.ownerId,
       ownerName: context.ownerName,
-      createdBy: context.ownerId,
       description: restInput.description || '',
       postingType: restInput.postingType || 'regular',
       totalPositions,

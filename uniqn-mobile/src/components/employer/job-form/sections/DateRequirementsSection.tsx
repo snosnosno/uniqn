@@ -14,13 +14,12 @@
  * - Firebase 저장 시 개별 DateSpecificRequirement로 확장 (호환성 유지)
  */
 
-import React, { useCallback, useMemo, useState, useEffect } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { PlusIcon } from '@/components/icons';
 import { DATE_CONSTRAINTS } from '@/constants';
 import { DatePickerModal, GroupingConfirmModal } from '../modals';
 import { DateRequirementCard, DateRangeCard } from '../cards';
-import { migrateFormDataForRead } from '@/services/jobPostingMigration';
 import {
   groupRequirementsToDateRanges,
   groupConsecutiveDates,
@@ -65,18 +64,6 @@ export function DateRequirementsSection({ data, onUpdate, errors }: DateRequirem
     if (!postingType) return { maxDates: 1, label: '단일 날짜' };
     return DATE_CONSTRAINTS[postingType];
   }, [postingType]);
-
-  // 마이그레이션: tournamentDates → dateSpecificRequirements 자동 변환
-  const { tournamentDates, dateSpecificRequirements } = data;
-  useEffect(() => {
-    const result = migrateFormDataForRead(data);
-    if (result.migrated && result.data.dateSpecificRequirements) {
-      onUpdate({
-        dateSpecificRequirements: result.data.dateSpecificRequirements as DateSpecificRequirement[],
-      });
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- data 전체가 아닌 특정 필드만 의존
-  }, [tournamentDates, dateSpecificRequirements, onUpdate]);
 
   // 현재 날짜 목록
   const dateRequirements = useMemo(() => {

@@ -37,9 +37,7 @@ export async function verifyOwnership(jobPostingId: string, ownerId: string): Pr
       return false;
     }
 
-    // ownerId 또는 createdBy로 소유권 확인
-    const postingOwnerId = jobPosting.ownerId ?? jobPosting.createdBy;
-    return postingOwnerId === ownerId;
+    return jobPosting.ownerId === ownerId;
   } catch (error) {
     logger.error('공고 소유권 검증 실패', toError(error), { jobPostingId, ownerId });
     return false;

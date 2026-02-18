@@ -28,14 +28,13 @@ export class RoleResolver {
   /**
    * 문자열 역할을 UserRole로 정규화
    *
-   * @description 대소문자 무관, 하위 호환성 지원 (manager → employer)
+   * @description 대소문자 무관
    *
    * @param role - 입력된 역할 문자열
    * @returns UserRole 값 또는 null (유효하지 않은 경우)
    *
    * @example
    * RoleResolver.normalizeUserRole('ADMIN') // 'admin'
-   * RoleResolver.normalizeUserRole('Manager') // 'employer'
    * RoleResolver.normalizeUserRole('invalid') // null
    */
   static normalizeUserRole(role: string | null | undefined): UserRole | null {
@@ -48,9 +47,6 @@ export class RoleResolver {
       case 'admin':
         return 'admin';
       case 'employer':
-        return 'employer';
-      case 'manager':
-        // 하위 호환성: 기존 'manager' → 'employer' 매핑
         return 'employer';
       case 'staff':
         return 'staff';

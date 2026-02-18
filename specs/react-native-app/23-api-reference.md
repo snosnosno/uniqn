@@ -1816,7 +1816,6 @@ eventQRCodes (N) ──── jobPostings (1)
 - [06-firebase.md](./06-firebase.md) - Firebase 연동 전략
 - [12-security.md](./12-security.md) - 보안 설계
 - [22-migration-mapping.md](./22-migration-mapping.md) - 마이그레이션 매핑
-- [DATA_FLOW.md](./DATA_FLOW.md) - 데이터 흐름 및 연결 관계
 
 ---
 

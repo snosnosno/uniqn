@@ -225,7 +225,7 @@ describe('normalizeJobRoles', () => {
     expect(result[0].filledCount).toBe(3); // 1 + 2
   });
 
-  it('레거시 roles 필드를 사용한다', () => {
+  it('레거시 roles 필드만 있으면 빈 배열을 반환한다 (폴백 제거됨)', () => {
     const job = createMinimalJob({
       roles: [
         { role: 'dealer', count: 2, filled: 1 },
@@ -233,7 +233,7 @@ describe('normalizeJobRoles', () => {
       ],
     });
     const result = normalizeJobRoles(job);
-    expect(result).toHaveLength(2);
+    expect(result).toHaveLength(0);
   });
 
   it('데이터가 없으면 빈 배열을 반환한다', () => {
@@ -248,10 +248,10 @@ describe('normalizeJobRoles', () => {
       requiredRolesWithCount: [],
       roles: [{ role: 'dealer', count: 2, filled: 0 }],
     });
-    // requiredRolesWithCount가 빈 배열이면 falsy가 아니므로 dateSpecificRequirements나 roles로 넘어감
-    // 실제로는 .length가 0이므로 다음 조건으로 넘어감
+    // requiredRolesWithCount가 빈 배열이면 falsy가 아니므로 dateSpecificRequirements로 넘어감
+    // roles 폴백이 제거되었으므로 빈 배열 반환
     const result = normalizeJobRoles(job);
-    expect(result).toHaveLength(1); // legacy roles로 폴백
+    expect(result).toHaveLength(0);
   });
 });
 
@@ -309,13 +309,12 @@ describe('getRolesForDateAndTime', () => {
     expect(result).toEqual([]);
   });
 
-  it('dateSpecificRequirements가 없으면 레거시 roles를 반환한다', () => {
+  it('dateSpecificRequirements가 없으면 빈 배열을 반환한다', () => {
     const job = createMinimalJob({
       roles: [{ role: 'dealer', count: 2, filled: 1 }],
     });
     const result = getRolesForDateAndTime(job, '2025-01-28', '19:00');
-    expect(result).toHaveLength(1);
-    expect(result[0].roleId).toBe('dealer');
+    expect(result).toEqual([]);
   });
 
   it('roles도 없으면 빈 배열을 반환한다', () => {

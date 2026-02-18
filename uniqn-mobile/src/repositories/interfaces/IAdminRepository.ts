@@ -11,7 +11,7 @@
  */
 
 import type { AdminUser, AdminUserFilters, PaginatedUsers } from '@/types/admin';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 
 // ============================================================================
 // Types

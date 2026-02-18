@@ -1,8 +1,8 @@
 /**
- * UNIQN Mobile - 회원가입 Step 4: 약관 동의
+ * UNIQN Mobile - 회원가입 Step 1: 약관 동의
  *
- * @description 이용약관, 개인정보처리방침, 마케팅 동의
- * @version 1.0.0
+ * @description 이용약관, 개인정보처리방침, 마케팅 동의 (개인정보 수집 전 동의)
+ * @version 1.1.0
  */
 
 import React, { useState } from 'react';
@@ -19,8 +19,7 @@ import { TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_CONSENT } from './termsCont
 // ============================================================================
 
 interface SignupStep4Props {
-  onSubmit: (data: SignUpStep4Data) => void;
-  onBack: () => void;
+  onNext: (data: SignUpStep4Data) => void;
   initialData?: Partial<SignUpStep4Data>;
   isLoading?: boolean;
 }
@@ -112,8 +111,7 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
 // ============================================================================
 
 export function SignupStep4({
-  onSubmit,
-  onBack,
+  onNext,
   initialData,
   isLoading = false,
 }: SignupStep4Props) {
@@ -209,18 +207,14 @@ export function SignupStep4({
       )}
 
       {/* 버튼 영역 */}
-      <View className="mt-6 flex-col gap-3">
+      <View className="mt-6">
         <Button
-          onPress={handleSubmit(onSubmit)}
+          onPress={handleSubmit(onNext)}
           disabled={!requiredChecked || isLoading}
           loading={isLoading}
           fullWidth
         >
-          가입 완료
-        </Button>
-
-        <Button onPress={onBack} variant="ghost" disabled={isLoading} fullWidth>
-          이전
+          다음
         </Button>
       </View>
 

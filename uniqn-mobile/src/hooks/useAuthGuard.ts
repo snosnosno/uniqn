@@ -7,8 +7,9 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, useSegments, usePathname } from 'expo-router';
-import { useAuthStore, hasPermission, selectIsLoading, selectProfile } from '@/stores/authStore';
+import { useAuthStore, selectIsLoading, selectProfile } from '@/stores/authStore';
 import type { UserRole } from '@/types';
+import { RoleResolver } from '@/shared/role';
 import { logger } from '@/utils/logger';
 
 // ============================================================================
@@ -163,7 +164,7 @@ export function useAuthGuard(): void {
 
     // 권한 체크 (requiredRole이 없으면 권한 체크 생략)
     const hasRequiredPermission = config.requiredRole
-      ? hasPermission(userRole, config.requiredRole)
+      ? RoleResolver.hasPermission(userRole, config.requiredRole)
       : true;
     if (config.requiredRole && !hasRequiredPermission) {
       logger.warn('권한 부족', {
@@ -198,7 +199,7 @@ export function useHasPermission(requiredRole: UserRole): boolean {
   const { profile } = useAuthStore();
   const userRole = profile?.role ?? null;
 
-  return hasPermission(userRole, requiredRole);
+  return RoleResolver.hasPermission(userRole, requiredRole);
 }
 
 /**

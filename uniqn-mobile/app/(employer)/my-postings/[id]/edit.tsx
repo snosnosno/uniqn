@@ -270,7 +270,6 @@ export default function EditJobPostingScreen() {
         // 일정
         workDate: existingJob.workDate || '',
         startTime: extractStartTime(existingJob.timeSlot),
-        tournamentDates: [],
         dateSpecificRequirements: existingJob.dateSpecificRequirements || [],
         daysPerWeek: existingJob.daysPerWeek ?? 5,
         isStartTimeNegotiable: existingJob.isStartTimeNegotiable ?? false,

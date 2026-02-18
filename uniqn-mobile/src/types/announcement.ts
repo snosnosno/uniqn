@@ -6,7 +6,8 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import type { FirebaseDocument, UserRole } from './common';
+import type { FirebaseDocument } from './common';
+import type { UserRole } from './role';
 import { toDate } from './common';
 
 // ============================================================================

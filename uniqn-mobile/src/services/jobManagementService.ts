@@ -8,7 +8,6 @@
 import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { migrateJobPostingForWrite } from './jobPostingMigration';
 import { jobPostingRepository } from '@/repositories';
 import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
 import type {
@@ -186,13 +185,9 @@ async function createSinglePosting(
   // input에서 roles 분리 (변환된 roles 사용)
   const { roles: _inputRoles, ...restInput } = input;
 
-  // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
-  const migrationResult = migrateJobPostingForWrite(restInput);
-  const migratedInput = migrationResult.data;
-
   // Repository 호출을 위한 입력 준비
   const preparedInput: CreateJobPostingInput = {
-    ...migratedInput,
+    ...restInput,
     roles: convertedRoles,
   };
 
@@ -380,13 +375,9 @@ export async function updateJobPosting(
     // input에서 roles를 분리 (변환된 roles 사용)
     const { roles: _inputRoles, ...restInput } = input;
 
-    // 하위 호환성: dateSpecificRequirements → tournamentDates 변환 (Phase 8)
-    const migrationResult = migrateJobPostingForWrite(restInput);
-    const migratedInput = migrationResult.data;
-
     // Repository 호출을 위한 입력 준비
     const preparedInput: UpdateJobPostingInput = {
-      ...migratedInput,
+      ...restInput,
       ...(convertedRoles ? { roles: convertedRoles } : {}),
     };
 

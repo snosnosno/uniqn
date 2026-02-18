@@ -6,7 +6,8 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import { FirebaseDocument, Location, StaffRole } from './common';
+import type { FirebaseDocument, Location } from './common';
+import type { StaffRole } from './role';
 import type {
   PostingType,
   FixedConfig,
@@ -16,7 +17,7 @@ import type {
 } from './postingConfig';
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
 import type { PreQuestion } from './preQuestion';
-import type { FormRoleWithCount, TournamentDay } from './jobPostingForm';
+import type { FormRoleWithCount } from './jobPostingForm';
 import type {
   TaxSettings as SettlementTaxSettings,
   TaxType,
@@ -120,8 +121,6 @@ export interface JobPosting extends FirebaseDocument {
    * @format "18:00 - 02:00" or "18:00~02:00"
    */
   timeSlot: string;
-  startTime?: Timestamp;
-  endTime?: Timestamp;
 
   // === 일정 정보 (v2.0: 다중 날짜) ===
   /**
@@ -151,8 +150,6 @@ export interface JobPosting extends FirebaseDocument {
 
   // === 소유자 정보 ===
   ownerId: string;
-  /** 공고 생성자 ID (하위 호환성 - ownerId로 통일 권장) */
-  createdBy?: string;
   ownerName?: string;
 
   // === 통계 ===
@@ -242,10 +239,9 @@ export interface CreateJobPostingInput {
 
   // 일정 (타입별 분기)
   workDate?: string; // regular/urgent
-  timeSlot?: string; // 기존 호환용 (deprecated)
+  timeSlot?: string; // 시간대 표시용
   startTime?: string; // 출근시간
-  tournamentDates?: TournamentDay[]; // tournament (deprecated, v2.0에서 dateSpecificRequirements로 대체)
-  dateSpecificRequirements?: DateSpecificRequirement[]; // v2.0: 날짜별 요구사항 (regular/urgent/tournament 공통)
+  dateSpecificRequirements?: DateSpecificRequirement[]; // 날짜별 요구사항 (regular/urgent/tournament 공통)
   daysPerWeek?: number; // fixed (0 = 협의, 1-7 = 일수)
   isStartTimeNegotiable?: boolean; // fixed: 출근시간 협의 여부
 

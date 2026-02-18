@@ -116,11 +116,6 @@ export function normalizeJobRoles(job: JobPosting): RoleInfo[] {
     return Array.from(roleMap.values());
   }
 
-  // 3. 레거시: roles 필드 사용
-  if (job.roles?.length) {
-    return job.roles.map(normalizeJobRoleStats);
-  }
-
   return [];
 }
 
@@ -138,8 +133,7 @@ export function getRolesForDateAndTime(
   timeSlot: string
 ): RoleInfo[] {
   if (!job.dateSpecificRequirements?.length) {
-    // 레거시: 모든 역할 반환
-    return job.roles?.map(normalizeJobRoleStats) ?? [];
+    return [];
   }
 
   // 해당 날짜의 요구사항 찾기

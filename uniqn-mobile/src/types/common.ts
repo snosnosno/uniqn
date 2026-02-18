@@ -4,16 +4,12 @@
  * @description 프로젝트 전반에서 사용되는 기본 타입들
  * @version 1.1.0
  *
- * Phase 8 변경사항:
- * - UserRole, StaffRole → role.ts로 이동
- * - 하위 호환성을 위해 re-export 유지
+ * 역할 타입(UserRole, StaffRole)은 role.ts에서 정의.
+ * 역할 타입 사용 시 '@/types/role'에서 직접 import할 것.
  */
 
 import { Timestamp } from 'firebase/firestore';
-
-// Phase 8: 역할 타입은 role.ts에서 정의 (하위 호환성을 위해 re-export)
 import type { UserRole, StaffRole } from './role';
-export type { UserRole, StaffRole };
 
 /**
  * FCM 토큰 레코드 (Map 구조)
@@ -21,7 +17,7 @@ export type { UserRole, StaffRole };
  */
 export interface FcmTokenRecord {
   token: string;
-  type: 'expo' | 'fcm' | 'native'; // native는 하위호환용 유지
+  type: 'expo' | 'fcm';
   platform: 'ios' | 'android';
   registeredAt: Timestamp | Date;
   lastRefreshedAt: Timestamp | Date;
@@ -49,8 +45,6 @@ export interface User extends FirebaseDocument {
   isActive: boolean;
   fcmTokens?: Record<string, FcmTokenRecord>; // 멀티 디바이스 지원 (Map 구조)
 }
-
-// StaffRole은 role.ts에서 정의됨 (re-export는 위에서 처리)
 
 /**
  * 스태프 타입

@@ -5,10 +5,10 @@
  */
 
 import { act } from '@testing-library/react-native';
+import { USER_ROLE_HIERARCHY } from '@/types/role';
+import { RoleResolver } from '@/shared/role';
 import {
   useAuthStore,
-  ROLE_HIERARCHY,
-  hasPermission,
   selectUser,
   selectProfile,
   selectIsAuthenticated,
@@ -282,46 +282,46 @@ describe('AuthStore', () => {
     });
   });
 
-  describe('ROLE_HIERARCHY', () => {
+  describe('USER_ROLE_HIERARCHY', () => {
     it('should have correct role values', () => {
-      expect(ROLE_HIERARCHY.admin).toBe(100);
-      expect(ROLE_HIERARCHY.employer).toBe(50);
-      expect(ROLE_HIERARCHY.staff).toBe(10);
+      expect(USER_ROLE_HIERARCHY.admin).toBe(100);
+      expect(USER_ROLE_HIERARCHY.employer).toBe(50);
+      expect(USER_ROLE_HIERARCHY.staff).toBe(10);
     });
 
     it('should have admin > employer > staff', () => {
-      expect(ROLE_HIERARCHY.admin).toBeGreaterThan(ROLE_HIERARCHY.employer);
-      expect(ROLE_HIERARCHY.employer).toBeGreaterThan(ROLE_HIERARCHY.staff);
+      expect(USER_ROLE_HIERARCHY.admin).toBeGreaterThan(USER_ROLE_HIERARCHY.employer);
+      expect(USER_ROLE_HIERARCHY.employer).toBeGreaterThan(USER_ROLE_HIERARCHY.staff);
     });
   });
 
   describe('hasPermission', () => {
     it('should return false for null role', () => {
-      expect(hasPermission(null, 'staff')).toBe(false);
-      expect(hasPermission(null, 'admin')).toBe(false);
+      expect(RoleResolver.hasPermission(null, 'staff')).toBe(false);
+      expect(RoleResolver.hasPermission(null, 'admin')).toBe(false);
     });
 
     it('should return true when user role >= required role', () => {
-      expect(hasPermission('admin', 'admin')).toBe(true);
-      expect(hasPermission('admin', 'employer')).toBe(true);
-      expect(hasPermission('admin', 'staff')).toBe(true);
+      expect(RoleResolver.hasPermission('admin', 'admin')).toBe(true);
+      expect(RoleResolver.hasPermission('admin', 'employer')).toBe(true);
+      expect(RoleResolver.hasPermission('admin', 'staff')).toBe(true);
     });
 
     it('should return false when user role < required role', () => {
-      expect(hasPermission('staff', 'admin')).toBe(false);
-      expect(hasPermission('staff', 'employer')).toBe(false);
+      expect(RoleResolver.hasPermission('staff', 'admin')).toBe(false);
+      expect(RoleResolver.hasPermission('staff', 'employer')).toBe(false);
     });
 
     it('should handle employer permissions correctly', () => {
-      expect(hasPermission('employer', 'employer')).toBe(true);
-      expect(hasPermission('employer', 'staff')).toBe(true);
-      expect(hasPermission('employer', 'admin')).toBe(false);
+      expect(RoleResolver.hasPermission('employer', 'employer')).toBe(true);
+      expect(RoleResolver.hasPermission('employer', 'staff')).toBe(true);
+      expect(RoleResolver.hasPermission('employer', 'admin')).toBe(false);
     });
 
     it('should handle staff permissions correctly', () => {
-      expect(hasPermission('staff', 'staff')).toBe(true);
-      expect(hasPermission('staff', 'employer')).toBe(false);
-      expect(hasPermission('staff', 'admin')).toBe(false);
+      expect(RoleResolver.hasPermission('staff', 'staff')).toBe(true);
+      expect(RoleResolver.hasPermission('staff', 'employer')).toBe(false);
+      expect(RoleResolver.hasPermission('staff', 'admin')).toBe(false);
     });
   });
 

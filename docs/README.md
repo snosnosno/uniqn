@@ -20,9 +20,7 @@ docs/
 ├── operations/            # 운영 문서
 ├── reference/             # 참조 문서
 ├── user/                  # 사용자 가이드
-├── landing/               # 랜딩 페이지
-├── planning/              # 기획/분석 문서
-└── releases/              # 릴리스 문서
+└── legacy/                # 레거시 문서 (참고용)
 ```
 
 ---
@@ -35,7 +33,6 @@ docs/
 |------|------|
 | [DEVELOPMENT_GUIDE.md](core/DEVELOPMENT_GUIDE.md) | 개발 가이드라인, 코딩 규칙, 프로젝트 구조 |
 | [TESTING_GUIDE.md](core/TESTING_GUIDE.md) | 테스트 작성 가이드 (모바일앱 14% MVP → 60% 목표) |
-| [CAPACITOR_MIGRATION_GUIDE.md](core/CAPACITOR_MIGRATION_GUIDE.md) | Capacitor 마이그레이션 가이드 |
 
 ---
 
@@ -71,7 +68,6 @@ docs/
 | [DEPLOYMENT.md](guides/DEPLOYMENT.md) | 배포 가이드 |
 | [ROLLBACK_PROCEDURES.md](guides/ROLLBACK_PROCEDURES.md) | 배포 롤백 절차 가이드 🆕 |
 | [I18N_GUIDE.md](guides/I18N_GUIDE.md) | 국제화(i18n) 가이드 |
-| [MIGRATION_GUIDE.md](guides/MIGRATION_GUIDE.md) | 마이그레이션 가이드 |
 | [PERFORMANCE.md](guides/PERFORMANCE.md) | 성능 최적화 가이드 |
 
 ---
@@ -116,36 +112,18 @@ docs/
 
 ---
 
-## [landing/](landing/) - 랜딩 페이지
+## [legacy/](legacy/) - 레거시 문서
+
+이전 버전(app2) 관련 기획/분석/릴리스 문서 (참고용)
 
 | 문서 | 설명 |
 |------|------|
-| [LANDING_PAGE.md](landing/LANDING_PAGE.md) | 랜딩페이지 구현 문서 |
-
----
-
-## [planning/](planning/) - 기획/분석 문서
-
-프로젝트 기획 및 분석 문서
-
-| 문서 | 설명 |
-|------|------|
-| [REFACTORING_PLAN.md](planning/REFACTORING_PLAN.md) | 프로젝트 리팩토링 계획 (6주 로드맵) |
-| [CRITICAL_ANALYSIS_V2.md](planning/CRITICAL_ANALYSIS_V2.md) | 프로젝트 비판적 분석 보고서 v2.0 |
-| [SPECKIT_PROMPTS.md](planning/SPECKIT_PROMPTS.md) | SpecKit 워크플로우 프롬프트 모음 |
-
----
-
-## [releases/](releases/) - 릴리스 문서
-
-배포 및 릴리스 관련 문서
-
-| 문서 | 설명 |
-|------|------|
-| [APP_RELEASE_CHECKLIST.md](releases/APP_RELEASE_CHECKLIST.md) | 📱 **앱스토어 출시 체크리스트** 🆕 |
-| [DEPLOYMENT_CHECKLIST.md](releases/DEPLOYMENT_CHECKLIST.md) | v0.2.4 기능 배포 체크리스트 |
-| [DEPLOYMENT_SUMMARY_v0.2.4.md](releases/DEPLOYMENT_SUMMARY_v0.2.4.md) | v0.2.4 배포 요약 |
-| [PRODUCTION_TEST_GUIDE_v0.2.4.md](releases/PRODUCTION_TEST_GUIDE_v0.2.4.md) | v0.2.4 프로덕션 테스트 가이드 |
+| [REFACTORING_PLAN.md](legacy/REFACTORING_PLAN.md) | 프로젝트 리팩토링 계획 (6주 로드맵) |
+| [CRITICAL_ANALYSIS_V2.md](legacy/CRITICAL_ANALYSIS_V2.md) | 프로젝트 비판적 분석 보고서 v2.0 |
+| [DEPLOYMENT_CHECKLIST.md](legacy/DEPLOYMENT_CHECKLIST.md) | v0.2.4 기능 배포 체크리스트 |
+| [DEPLOYMENT_SUMMARY_v0.2.4.md](legacy/DEPLOYMENT_SUMMARY_v0.2.4.md) | v0.2.4 배포 요약 |
+| [PRODUCTION_TEST_GUIDE_v0.2.4.md](legacy/PRODUCTION_TEST_GUIDE_v0.2.4.md) | v0.2.4 프로덕션 테스트 가이드 |
+| [MIGRATION_GUIDE.md](legacy/MIGRATION_GUIDE.md) | 마이그레이션 가이드 |
 
 ---
 
@@ -208,7 +186,7 @@ docs/
 - [ARCHITECTURE.md](reference/ARCHITECTURE.md) - 전체 시스템 아키텍처
 - [DATA_SCHEMA.md](reference/DATA_SCHEMA.md) - Firestore 데이터 스키마
 - [MULTI_TENANT_STATUS.md](features/MULTI_TENANT_STATUS.md) - 멀티테넌트 구조
-- [REFACTORING_PLAN.md](planning/REFACTORING_PLAN.md) - 리팩토링 계획
+- [REFACTORING_PLAN.md](legacy/REFACTORING_PLAN.md) - 리팩토링 계획
 
 ### 인증 & 권한
 - [AUTHENTICATION.md](reference/AUTHENTICATION.md) - 인증 시스템
@@ -224,7 +202,7 @@ docs/
 ### 테스트 & 품질
 - [TESTING_GUIDE.md](core/TESTING_GUIDE.md) - 테스트 작성 가이드
 - [PERFORMANCE.md](guides/PERFORMANCE.md) - 성능 최적화
-- [CRITICAL_ANALYSIS_V2.md](planning/CRITICAL_ANALYSIS_V2.md) - 품질 분석
+- [CRITICAL_ANALYSIS_V2.md](legacy/CRITICAL_ANALYSIS_V2.md) - 품질 분석
 
 ### 배포 & 운영
 - [DEPLOYMENT.md](guides/DEPLOYMENT.md) - 배포 절차
@@ -246,7 +224,7 @@ docs/
 ```markdown
 # 문서 제목
 
-**최종 업데이트**: 2026년 2월 17일
+**최종 업데이트**: 2026년 2월 18일
 **버전**: v0.2.3 (모바일앱 중심 + RevenueCat 연동)
 **상태**: ✅ **Production Ready** (또는 적절한 상태)
 

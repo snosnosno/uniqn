@@ -82,7 +82,6 @@ export const BasicInfoSection = memo(function BasicInfoSection({
         postingType: type,
         workDate: '',
         startTime: '',
-        tournamentDates: [],
         daysPerWeek: 5,
       });
     },

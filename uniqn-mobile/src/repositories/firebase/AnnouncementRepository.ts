@@ -38,7 +38,7 @@ import type {
   CreateAnnouncementInput,
   UpdateAnnouncementInput,
 } from '@/types';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 import type {
   IAnnouncementRepository,
   FetchAnnouncementsOptions,

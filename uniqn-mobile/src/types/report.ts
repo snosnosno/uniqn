@@ -366,23 +366,14 @@ export function getEmployerReportTypeInfo(
 }
 
 /**
- * 신고 유형 정보 조회 (통합)
- * @deprecated 구체적인 함수 사용 권장: getEmployeeReportTypeInfo, getEmployerReportTypeInfo
- */
-export function getReportTypeInfo(type: ReportType, reporterType?: ReporterType): ReportTypeInfo {
-  if (reporterType === 'employee') {
-    return getEmployerReportTypeInfo(type as EmployerReportType);
-  }
-  // 기본값: 구인자가 신고 (기존 동작 유지)
-  return getEmployeeReportTypeInfo(type as EmployeeReportType);
-}
-
-/**
  * 신고 유형에서 심각도 추출
  */
 export function getReportSeverity(
   type: ReportType,
   reporterType?: ReporterType
 ): 'low' | 'medium' | 'high' | 'critical' {
-  return getReportTypeInfo(type, reporterType).severity;
+  if (reporterType === 'employee') {
+    return getEmployerReportTypeInfo(type as EmployerReportType).severity;
+  }
+  return getEmployeeReportTypeInfo(type as EmployeeReportType).severity;
 }

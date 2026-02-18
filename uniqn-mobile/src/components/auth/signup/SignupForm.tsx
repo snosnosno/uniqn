@@ -1,8 +1,9 @@
 /**
  * UNIQN Mobile - 4단계 회원가입 폼 컴포넌트
  *
- * @description 플로우: 계정 → 본인인증 → 프로필 → 약관동의
- * @version 1.1.0
+ * @description 플로우: 약관동의 → 계정 → 본인인증 → 프로필
+ *              개인정보보호법 제15조에 따라 약관동의를 최우선 단계로 배치
+ * @version 2.0.0
  */
 
 import React, { useState, useCallback } from 'react';
@@ -42,18 +43,18 @@ interface SignupFormProps {
   socialData?: { name?: string };
 }
 
-/** 소셜 모드 스텝 (Step 1 생략: 본인인증 → 프로필 → 약관) */
+/** 소셜 모드 스텝 (계정정보 생략: 약관 → 본인인증 → 프로필) */
 const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
+  { label: '약관동의', shortLabel: '약관' },
   { label: '본인인증', shortLabel: '인증' },
   { label: '프로필', shortLabel: '프로필' },
-  { label: '약관동의', shortLabel: '약관' },
 ];
 
 interface FormDataState {
-  step1?: SignUpStep1Data;
-  step2?: SignUpStep2Data;
-  step3?: SignUpStep3Data;
-  step4?: SignUpStep4Data;
+  terms?: SignUpStep4Data;     // Step 1: 약관동의
+  account?: SignUpStep1Data;   // Step 2: 계정정보 (소셜 모드에서 생략)
+  identity?: SignUpStep2Data;  // Step 3: 본인인증
+  profile?: SignUpStep3Data;   // Step 4: 프로필
 }
 
 // ============================================================================
@@ -67,42 +68,62 @@ export function SignupForm({
   socialData,
 }: SignupFormProps) {
   const isSocial = mode === 'social';
-  // 소셜 모드: Step 1 생략 → Step 2부터 시작
-  const [currentStep, setCurrentStep] = useState(isSocial ? 2 : 1);
+  // 양쪽 모두 Step 1(약관동의)부터 시작
+  const [currentStep, setCurrentStep] = useState(1);
   const [formData, setFormData] = useState<FormDataState>({});
   const toast = useToast();
   const showConfirm = useModalStore((s) => s.showConfirm);
 
-  // 소셜 모드용 스텝 표시: Step 2→1, 3→2, 4→3
+  // 소셜 모드: Step 2(계정) 건너뛰므로 displayStep 조정 (1→1, 3→2, 4→3)
   const steps = isSocial ? SOCIAL_SIGNUP_STEPS : SIGNUP_STEPS;
-  const displayStep = isSocial ? currentStep - 1 : currentStep;
+  const displayStep = isSocial && currentStep >= 3 ? currentStep - 1 : currentStep;
 
-  // Step 1: 계정 정보
-  const handleStep1Next = useCallback((data: SignUpStep1Data) => {
-    setFormData((prev) => ({ ...prev, step1: data }));
-    setCurrentStep(2);
-  }, []);
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 1: 약관동의
+  // ──────────────────────────────────────────────────────────────────────────
 
-  // Step 2: 본인인증
-  const handleStep2Next = useCallback((data: SignUpStep2Data) => {
-    setFormData((prev) => ({ ...prev, step2: data }));
+  const handleTermsNext = useCallback((data: SignUpStep4Data) => {
+    setFormData((prev) => ({ ...prev, terms: data }));
+    // 소셜 모드: 계정정보 건너뛰고 본인인증(Step 3)으로
+    setCurrentStep(isSocial ? 3 : 2);
+  }, [isSocial]);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 2: 계정 정보 (소셜 모드에서는 렌더링되지 않음)
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const handleAccountNext = useCallback((data: SignUpStep1Data) => {
+    setFormData((prev) => ({ ...prev, account: data }));
     setCurrentStep(3);
   }, []);
 
-  // phone-only 계정 정리 (Step 2에서 생성된 Firebase Auth 계정)
+  const handleAccountBack = useCallback(() => {
+    setCurrentStep(1);
+  }, []);
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 3: 본인인증
+  // ──────────────────────────────────────────────────────────────────────────
+
+  const handleIdentityNext = useCallback((data: SignUpStep2Data) => {
+    setFormData((prev) => ({ ...prev, identity: data }));
+    setCurrentStep(4);
+  }, []);
+
+  // phone-only 계정 정리 (본인인증 단계에서 생성된 Firebase Auth 계정)
   const cleanupPhoneAccount = useCallback(async () => {
     try {
       if (Platform.OS === 'web') {
         const webUser = getFirebaseAuth().currentUser;
         if (webUser) {
           await webDeleteUser(webUser);
-          logger.info('Step2 뒤로가기 - phone-only 계정 삭제', { uid: webUser.uid });
+          logger.info('본인인증 뒤로가기 - phone-only 계정 삭제', { uid: webUser.uid });
         }
       } else if (getNativeAuth && nativeDeleteUser) {
         const nativeUser = getNativeAuth().currentUser;
         if (nativeUser) {
           await nativeDeleteUser(nativeUser);
-          logger.info('Step2 뒤로가기 - phone-only 계정 삭제', { uid: nativeUser.uid });
+          logger.info('본인인증 뒤로가기 - phone-only 계정 삭제', { uid: nativeUser.uid });
         }
       }
     } catch {
@@ -112,16 +133,18 @@ export function SignupForm({
           ? getFirebaseAuth().currentUser?.uid
           : getNativeAuth?.()?.currentUser?.uid;
       if (failedUid) {
-        await markOrphanAccount(failedUid, 'step2_back_cleanup_failed');
+        await markOrphanAccount(failedUid, 'identity_back_cleanup_failed');
       }
-      logger.warn('Step2 뒤로가기 - phone-only 계정 삭제 실패');
+      logger.warn('본인인증 뒤로가기 - phone-only 계정 삭제 실패');
     }
   }, []);
 
-  const handleStep2Back = useCallback(async () => {
+  const handleIdentityBack = useCallback(async () => {
     if (isSocial) {
       // 소셜 모드: phone account cleanup 불필요 (이미 Apple 계정 존재)
-      // 뒤로가기는 signup.tsx에서 처리 (login 화면으로 이동)
+      // 약관동의(Step 1)로 이동
+      setFormData((prev) => ({ ...prev, identity: undefined }));
+      setCurrentStep(1);
       return;
     }
 
@@ -131,8 +154,8 @@ export function SignupForm({
 
     const goBack = async () => {
       await cleanupPhoneAccount();
-      setFormData((prev) => ({ ...prev, step2: undefined }));
-      setCurrentStep(1);
+      setFormData((prev) => ({ ...prev, identity: undefined }));
+      setCurrentStep(2); // 계정정보로 이동
     };
 
     if (hasPhoneAccount) {
@@ -142,65 +165,58 @@ export function SignupForm({
         goBack
       );
     } else {
-      setFormData((prev) => ({ ...prev, step2: undefined }));
-      setCurrentStep(1);
+      setFormData((prev) => ({ ...prev, identity: undefined }));
+      setCurrentStep(2); // 계정정보로 이동
     }
   }, [cleanupPhoneAccount, showConfirm, isSocial]);
 
-  // Step 3: 프로필
-  const handleStep3Next = useCallback((data: SignUpStep3Data) => {
-    setFormData((prev) => ({ ...prev, step3: data }));
-    setCurrentStep(4);
-  }, []);
+  // ──────────────────────────────────────────────────────────────────────────
+  // Step 4: 프로필 (최종 제출)
+  // ──────────────────────────────────────────────────────────────────────────
 
-  const handleStep3Back = useCallback(() => {
-    setCurrentStep(2);
-  }, []);
-
-  // Step 4: 약관동의 및 최종 제출
-  const handleStep4Submit = useCallback(
-    async (data: SignUpStep4Data) => {
-      // 소셜 모드에서는 이메일 중복 체크 불필요 (Step 1 없음)
+  const handleProfileSubmit = useCallback(
+    async (data: SignUpStep3Data) => {
+      // 소셜 모드에서는 이메일 중복 체크 불필요 (계정정보 없음)
       if (!isSocial) {
         // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
         try {
-          const emailExists = await checkEmailExists(formData.step1!.email);
+          const emailExists = await checkEmailExists(formData.account!.email);
           if (emailExists) {
             toast.error('이미 사용 중인 이메일입니다. 다른 이메일을 입력해주세요.');
-            setCurrentStep(1);
+            setCurrentStep(2); // 계정정보(Step 2)로 이동
             return;
           }
         } catch {
           // 네트워크 오류 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
-          logger.warn('Step4 제출 전 이메일 재검증 실패 - 계속 진행');
+          logger.warn('최종 제출 전 이메일 재검증 실패 - 계속 진행');
         }
       }
 
-      const updatedFormData = { ...formData, step4: data };
+      const updatedFormData = { ...formData, profile: data };
       setFormData(updatedFormData);
 
       // 전체 데이터 조합
       const completeData: SignUpFormData = {
-        // Step 1: 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
-        email: isSocial ? '' : updatedFormData.step1!.email,
-        password: isSocial ? '' : updatedFormData.step1!.password,
-        // Step 2: 본인인증
-        name: updatedFormData.step2!.name,
-        birthDate: updatedFormData.step2!.birthDate,
-        gender: updatedFormData.step2!.gender,
-        phoneVerified: updatedFormData.step2!.phoneVerified,
-        verifiedPhone: updatedFormData.step2!.verifiedPhone,
-        // Step 3: 프로필
-        nickname: updatedFormData.step3!.nickname,
-        role: updatedFormData.step3!.role,
-        region: updatedFormData.step3!.region,
-        experienceYears: updatedFormData.step3!.experienceYears,
-        career: updatedFormData.step3!.career,
-        note: updatedFormData.step3!.note,
-        // Step 4: 약관동의
-        termsAgreed: data.termsAgreed,
-        privacyAgreed: data.privacyAgreed,
-        marketingAgreed: data.marketingAgreed,
+        // 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
+        email: isSocial ? '' : updatedFormData.account!.email,
+        password: isSocial ? '' : updatedFormData.account!.password,
+        // 본인인증
+        name: updatedFormData.identity!.name,
+        birthDate: updatedFormData.identity!.birthDate,
+        gender: updatedFormData.identity!.gender,
+        phoneVerified: updatedFormData.identity!.phoneVerified,
+        verifiedPhone: updatedFormData.identity!.verifiedPhone,
+        // 프로필
+        nickname: data.nickname,
+        role: data.role,
+        region: data.region,
+        experienceYears: data.experienceYears,
+        career: data.career,
+        note: data.note,
+        // 약관동의
+        termsAgreed: updatedFormData.terms!.termsAgreed,
+        privacyAgreed: updatedFormData.terms!.privacyAgreed,
+        marketingAgreed: updatedFormData.terms!.marketingAgreed,
       };
 
       await onSubmit(completeData);
@@ -208,50 +224,53 @@ export function SignupForm({
     [formData, onSubmit, toast, isSocial]
   );
 
-  const handleStep4Back = useCallback(() => {
+  const handleProfileBack = useCallback(() => {
     setCurrentStep(3);
   }, []);
 
-  // 현재 스텝 렌더링
+  // ──────────────────────────────────────────────────────────────────────────
+  // Render
+  // ──────────────────────────────────────────────────────────────────────────
+
   const renderStep = () => {
     switch (currentStep) {
-      case 1:
+      case 1: // 약관동의
         return (
-          <SignupStep1
-            onNext={handleStep1Next}
-            initialData={formData.step1}
+          <SignupStep4
+            onNext={handleTermsNext}
+            initialData={formData.terms}
             isLoading={isLoading}
           />
         );
-      case 2:
+      case 2: // 계정정보 (소셜 모드에서는 건너뜀)
+        return (
+          <SignupStep1
+            onNext={handleAccountNext}
+            onBack={handleAccountBack}
+            initialData={formData.account}
+            isLoading={isLoading}
+          />
+        );
+      case 3: // 본인인증
         return (
           <SignupStep2
-            onNext={handleStep2Next}
-            onBack={handleStep2Back}
+            onNext={handleIdentityNext}
+            onBack={handleIdentityBack}
             initialData={
-              isSocial && !formData.step2
+              isSocial && !formData.identity
                 ? { name: socialData?.name || '' }
-                : formData.step2
+                : formData.identity
             }
             isLoading={isLoading}
             phoneMode={isSocial ? 'link' : 'signIn'}
           />
         );
-      case 3:
+      case 4: // 프로필 (최종 제출)
         return (
           <SignupStep3
-            onNext={handleStep3Next}
-            onBack={handleStep3Back}
-            initialData={formData.step3}
-            isLoading={isLoading}
-          />
-        );
-      case 4:
-        return (
-          <SignupStep4
-            onSubmit={handleStep4Submit}
-            onBack={handleStep4Back}
-            initialData={formData.step4}
+            onNext={handleProfileSubmit}
+            onBack={handleProfileBack}
+            initialData={formData.profile}
             isLoading={isLoading}
           />
         );

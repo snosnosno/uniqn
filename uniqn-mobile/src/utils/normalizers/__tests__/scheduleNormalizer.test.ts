@@ -270,25 +270,6 @@ describe('normalizeJobSchedule', () => {
       }
     });
 
-    it('isMainDate와 description을 보존한다', () => {
-      const job = createMinimalJob({
-        postingType: 'tournament',
-        dateSpecificRequirements: [
-          {
-            date: '2025-01-28',
-            isMainDate: true,
-            description: 'Day 1',
-            timeSlots: [{ startTime: '19:00', roles: [{ role: 'dealer', headcount: 3 }] }],
-          },
-        ],
-      });
-      const result = normalizeJobSchedule(job);
-      const datedItem = result.items[0];
-      if (datedItem.type === 'dated') {
-        expect(datedItem.isMainDate).toBe(true);
-        expect(datedItem.description).toBe('Day 1');
-      }
-    });
   });
 
   describe('레거시 공고', () => {

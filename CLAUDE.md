@@ -55,7 +55,7 @@ T-HOLDEM/
 │   └── src/                 # 소스 코드 (497+ 파일, 테스트 제외)
 │       ├── components/      # UI 컴포넌트 (245개, 20개 폴더)
 │       ├── hooks/           # Custom Hooks (49개)
-│       ├── services/        # 비즈니스 서비스 (43개)
+│       ├── services/        # 비즈니스 서비스 (42개)
 │       ├── stores/          # Zustand Stores (8개)
 │       ├── repositories/    # Repository 패턴 (22개: 인터페이스 11 + 구현체 11)
 │       ├── shared/          # 공유 모듈 (26개, 9개 도메인)
@@ -137,7 +137,6 @@ function hasPermission(userRole: UserRole | null, required: UserRole): boolean {
 | `employer` | 50 | 공고 CRUD, 지원자 관리, 정산 |
 | `staff` | 10 | 지원, 스케줄, QR 출퇴근 |
 
-> **하위 호환성**: Firestore에 `manager` 역할이 남아있는 경우 `employer`로 자동 매핑됩니다 (`RoleResolver.normalizeUserRole()`).
 > 비로그인 사용자는 `(public)` 라우트에서 공고 열람만 가능합니다.
 
 > **주의: UserRole vs StaffRole 구분**
@@ -386,7 +385,7 @@ uniqn-mobile/
 │   │   └── ...                   # 기타 (applicant, headers, navigation 등 11개 폴더)
 │   │
 │   ├── hooks/                    # 49개 커스텀 훅
-│   ├── services/                 # 43개 비즈니스 서비스
+│   ├── services/                 # 42개 비즈니스 서비스
 │   ├── stores/                   # 8개 Zustand 스토어
 │   ├── types/                    # 27개 타입 정의
 │   ├── schemas/                  # 18개 Zod 스키마
@@ -586,7 +585,7 @@ Admin (4개):
   - tournamentApprovalService: 대회공고 승인
   - inquiryService: 문의 관리
 
-Infrastructure (25개):
+Infrastructure (24개):
   - pushNotificationService: FCM 토큰 관리
   - notificationSyncService: 알림 동기화
   - eventQRService: QR 생성/검증 (3분 유효)
@@ -603,7 +602,6 @@ Infrastructure (25개):
   - identityVerificationService: 본인 인증
   - inAppMessageService: 인앱 메시지
   - applicantConversionService: 지원자 변환
-  - jobPostingMigration: 공고 마이그레이션
   - biometricService: 생체인증
   - cacheService: 캐시 관리
   - versionService: 앱 버전 관리
@@ -1111,7 +1109,7 @@ eas build --platform android    # Android 빌드
 | specs/react-native-app/10-notifications.md | 1,522 | 31% | 앱개발자 | FCM, Zustand, UI, 30개 타입 |
 
 **레거시 표시 필요 (app2/ 전용):**
-- docs/core/CAPACITOR_MIGRATION_GUIDE.md (Expo 사용으로 불필요)
+- ~~docs/core/CAPACITOR_MIGRATION_GUIDE.md~~ → 삭제됨
 - docs/guides/MIGRATION_GUIDE.md (대상 불명확)
 - docs/reference/API_REFERENCE.md (웹앱/Cloud Functions 구분 필요)
 - docs/features/PERMISSION_SYSTEM.md (manager→employer 통합으로 레거시 표시 추가됨)

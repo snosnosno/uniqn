@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import type { UserRole } from './common';
+import type { UserRole } from './role';
 
 // ============================================================================
 // User Types (Admin View)

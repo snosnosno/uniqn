@@ -6,7 +6,6 @@
 
 import React, { memo } from 'react';
 import { View, Text } from 'react-native';
-import { Badge } from '@/components/ui/Badge';
 import { TBA_TIME_MARKER } from '@/types';
 import { formatDateDisplay, formatTimeSlotDisplay } from '@/types/unified';
 import { makeSelectionKey } from '@/utils/assignment';
@@ -27,8 +26,6 @@ import type { DateSelectionProps } from './types';
 export const DateSelection = memo(function DateSelection({
   date,
   timeSlots,
-  isMainDate,
-  description,
   selectedKeys,
   onRoleToggle,
   disabled,
@@ -42,16 +39,7 @@ export const DateSelection = memo(function DateSelection({
         <Text className="text-base font-semibold text-gray-900 dark:text-white">
           📅 {formattedDate}
         </Text>
-        {isMainDate && (
-          <Badge variant="primary" size="sm" className="ml-2">
-            메인
-          </Badge>
-        )}
       </View>
-
-      {description && (
-        <Text className="text-xs text-gray-500 dark:text-gray-400 mb-2">{description}</Text>
-      )}
 
       {/* 시간대별 역할 선택 */}
       <View className="flex-col gap-3">

@@ -56,10 +56,6 @@ export interface DateSelectionProps {
   date: string;
   /** 시간대 정보 배열 (v3.0: TimeSlotInfo[]) */
   timeSlots: TimeSlotInfo[];
-  /** 메인 날짜 여부 */
-  isMainDate?: boolean;
-  /** 설명 */
-  description?: string;
   /** 선택된 키 Set */
   selectedKeys: Set<SelectionKey>;
   /** 역할 토글 콜백 */

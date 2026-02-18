@@ -24,7 +24,7 @@ import type {
   AdminUser,
   SystemMetrics,
 } from '@/types/admin';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 
 // ============================================================================
 // Dashboard Stats Hook

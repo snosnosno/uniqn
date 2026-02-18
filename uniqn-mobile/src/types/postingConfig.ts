@@ -1,7 +1,7 @@
 /**
  * UNIQN Mobile - 공고 타입별 설정 타입 정의
  *
- * @description 웹앱(app2/)과 호환되는 PostingType 및 관련 설정 타입
+ * @description PostingType 및 관련 설정 타입
  * 4가지 공고 타입: regular, fixed, tournament, urgent
  *
  * @version 1.0.0
@@ -116,102 +116,13 @@ export interface UrgentConfig {
 }
 
 /**
- * 역할별 모집 인원 (레거시)
- *
- * @deprecated types/jobPosting/dateRequirement.ts의 RoleRequirement 사용 권장
- * @description 레거시 호환성을 위해 유지. 새 코드에서는 사용하지 않음
- */
-export interface LegacyRoleRequirement {
-  /** 역할 이름 */
-  name: string;
-
-  /** 필요 인원 */
-  count: number;
-}
-
-/**
- * @deprecated LegacyRoleRequirement로 대체됨
- */
-export type RoleRequirement = LegacyRoleRequirement;
-
-/**
- * 시간대 정보 (레거시 - 확장형)
- *
- * @deprecated types/jobPosting/dateRequirement.ts의 TimeSlot 사용 권장
- * @description 레거시 호환성을 위해 유지. 새 코드에서는 간소화된 버전 사용
- */
-export interface LegacyTimeSlot {
-  /** 시작 시간 (HH:mm 형식) */
-  time: string;
-
-  /** 역할별 필요 인원 */
-  roles: LegacyRoleRequirement[];
-
-  /** 특정 날짜에만 적용될 때 사용 (yyyy-MM-dd 형식) */
-  date?: string;
-
-  /** 종료 시간 (HH:mm 형식) */
-  endTime?: string;
-
-  /** 다른 날짜에 종료되는 경우 종료 날짜 (yyyy-MM-dd 형식) */
-  endDate?: string;
-
-  /** 당일 전체 운영 여부 (00:00 ~ 23:59) */
-  isFullDay?: boolean;
-
-  /** 다음날 종료 여부 (자정을 넘는 경우) */
-  endsNextDay?: boolean;
-
-  /** 기간 설정 (여러 날 연속 근무) */
-  duration?: {
-    /** 단일 날짜 또는 여러 날짜 */
-    type: 'single' | 'multi';
-    /** multi일 때 종료 날짜 */
-    endDate?: string;
-  };
-
-  /** 미정 여부 */
-  isTimeToBeAnnounced?: boolean;
-
-  /** 미정인 경우 추가 설명 */
-  tentativeDescription?: string;
-}
-
-/**
- * 시간대 정보 (v2.0)
- *
- * @description v2.0 타입을 사용. 레거시 호환을 위해 LegacyTimeSlot도 유지
+ * 시간대 정보
  * @see types/jobPosting/dateRequirement.ts
  */
 export type TimeSlot = TimeSlotV2;
 
 /**
- * 날짜별 요구사항 (레거시 - 확장형)
- *
- * @deprecated types/jobPosting/dateRequirement.ts의 DateSpecificRequirement 사용 권장
- * @description 레거시 호환성을 위해 유지. 새 코드에서는 간소화된 버전 사용
- */
-export interface LegacyDateSpecificRequirement {
-  /** 날짜 (yyyy-MM-dd 형식 또는 Firebase Timestamp) */
-  date: string | Timestamp | { seconds: number };
-
-  /** 해당 날짜의 시간대별 요구사항 */
-  timeSlots: LegacyTimeSlot[];
-
-  /** 메인 행사 날짜 여부 */
-  isMainDate?: boolean;
-
-  /** 표시 순서 (정렬용) */
-  displayOrder?: number;
-
-  /** 날짜 설명 (예: "Day 1", "예선전") */
-  description?: string;
-}
-
-/**
- * 날짜별 요구사항 (v2.0)
- *
- * @description v2.0 타입을 사용. 레거시 호환을 위해 LegacyDateSpecificRequirement도 유지
+ * 날짜별 요구사항
  * @see types/jobPosting/dateRequirement.ts
  */
 export type DateSpecificRequirement = DateSpecificRequirementV2;
@@ -297,13 +208,6 @@ export function sortDateRequirements(
       timeSlots: sortTimeSlots(req.timeSlots),
     }))
     .sort((a, b) => {
-      // displayOrder가 있으면 우선 (레거시 타입 지원)
-      const aOrder = 'displayOrder' in a ? a.displayOrder : undefined;
-      const bOrder = 'displayOrder' in b ? b.displayOrder : undefined;
-      if (aOrder !== undefined && bOrder !== undefined) {
-        return aOrder - bOrder;
-      }
-
       // 날짜 추출
       const dateA = getDateFromRequirement(a);
       const dateB = getDateFromRequirement(b);

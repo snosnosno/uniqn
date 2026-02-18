@@ -37,7 +37,7 @@ import {
   ANNOUNCEMENT_PRIORITY_LABELS,
   MAX_ANNOUNCEMENT_IMAGES,
 } from '@/types/announcement';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 
 interface AnnouncementFormProps {
   initialData?: Partial<CreateAnnouncementInput> & {

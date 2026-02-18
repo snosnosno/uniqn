@@ -5,7 +5,7 @@
  * @version 1.1.0
  */
 
-import type { StaffRole } from '../common';
+import type { StaffRole } from '../role';
 import { ROLE_LABELS } from '@/constants';
 
 // ============================================================================

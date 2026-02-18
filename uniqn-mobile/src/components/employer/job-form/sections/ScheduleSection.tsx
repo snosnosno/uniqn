@@ -5,20 +5,13 @@
  * @version 1.0.0
  */
 
-import React, { useCallback, useMemo, memo } from 'react';
+import React, { useMemo, memo } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { FormField } from '@/components';
 import { DatePicker } from '@/components/ui/DatePicker';
 import { TimePicker } from '@/components/ui/TimePicker';
-import {
-  CalendarIcon,
-  ClockIcon,
-  PlusIcon,
-  TrashIcon,
-  StarIcon,
-  CheckIcon,
-} from '@/components/icons';
-import type { JobPostingFormData, TournamentDay } from '@/types';
+import { CalendarIcon, ClockIcon, CheckIcon } from '@/components/icons';
+import type { JobPostingFormData } from '@/types';
 
 // ============================================================================
 // Types
@@ -244,157 +237,6 @@ const FixedSchedule = memo(function FixedSchedule({
   );
 });
 
-/** 토너먼트 일정 (tournament) */
-const TournamentSchedule = memo(function TournamentSchedule({
-  data,
-  onUpdate,
-  errors,
-}: {
-  data: JobPostingFormData;
-  onUpdate: (data: Partial<JobPostingFormData>) => void;
-  errors?: Record<string, string>;
-}) {
-  const tournamentDates = useMemo(() => data.tournamentDates || [], [data.tournamentDates]);
-  const today = useMemo(() => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    return d;
-  }, []);
-
-  const handleAddDay = useCallback(() => {
-    const newDay: TournamentDay = {
-      day: tournamentDates.length + 1,
-      date: '',
-      startTime: '',
-    };
-    onUpdate({ tournamentDates: [...tournamentDates, newDay] });
-  }, [tournamentDates, onUpdate]);
-
-  const handleDeleteDay = useCallback(
-    (index: number) => {
-      const newDates = tournamentDates
-        .filter((_, i) => i !== index)
-        .map((day, i) => ({ ...day, day: i + 1 }));
-      onUpdate({ tournamentDates: newDates });
-    },
-    [tournamentDates, onUpdate]
-  );
-
-  const handleDateChange = useCallback(
-    (index: number, date: Date | null) => {
-      const newDates = [...tournamentDates];
-      newDates[index] = { ...newDates[index], date: formatDate(date) };
-      onUpdate({ tournamentDates: newDates });
-    },
-    [tournamentDates, onUpdate]
-  );
-
-  const handleTimeChange = useCallback(
-    (index: number, time: string) => {
-      const newDates = [...tournamentDates];
-      newDates[index] = { ...newDates[index], startTime: time };
-      onUpdate({ tournamentDates: newDates });
-    },
-    [tournamentDates, onUpdate]
-  );
-
-  return (
-    <View>
-      <View className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
-        <View className="flex-row items-start">
-          <StarIcon size={20} color="#F59E0B" />
-          <View className="ml-2 flex-1">
-            <Text className="text-sm font-medium text-amber-800 dark:text-amber-200">
-              대회 공고 안내
-            </Text>
-            <Text className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-              대회 공고는 여러 날짜를 선택할 수 있습니다. 관리자 승인 후 게시됩니다.
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Day 목록 */}
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-sm font-medium text-gray-700 dark:text-gray-300">
-          대회 일정 ({tournamentDates.length}일)
-        </Text>
-        <Pressable
-          onPress={handleAddDay}
-          className="flex-row items-center px-3 py-2 bg-amber-500 dark:bg-amber-600 rounded-lg"
-        >
-          <PlusIcon size={16} color="#FFFFFF" />
-          <Text className="ml-1 text-white font-medium text-sm">Day 추가</Text>
-        </Pressable>
-      </View>
-
-      {tournamentDates.length === 0 ? (
-        <View className="p-6 bg-gray-50 dark:bg-surface/50 rounded-xl border-2 border-dashed border-gray-300 dark:border-surface-overlay items-center">
-          <CalendarIcon size={40} color="#9CA3AF" />
-          <Text className="mt-2 text-gray-500 dark:text-gray-400 text-center text-sm">
-            아직 추가된 일정이 없습니다.{'\n'}
-            {"'"}Day 추가{"'"} 버튼을 눌러 일정을 추가해주세요.
-          </Text>
-        </View>
-      ) : (
-        tournamentDates.map((day, index) => (
-          <View
-            key={`day-${index}`}
-            className="p-4 bg-white dark:bg-surface rounded-xl border border-gray-200 dark:border-surface-overlay mb-3"
-          >
-            <View className="flex-row items-center justify-between mb-3">
-              <View className="flex-row items-center">
-                <View className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 items-center justify-center">
-                  <Text className="text-amber-700 dark:text-amber-300 font-bold text-sm">
-                    {day.day}
-                  </Text>
-                </View>
-                <Text className="ml-2 font-semibold text-gray-900 dark:text-white">
-                  Day {day.day}
-                </Text>
-              </View>
-              {tournamentDates.length > 1 && (
-                <Pressable
-                  onPress={() => handleDeleteDay(index)}
-                  className="p-2 rounded-lg bg-red-50 dark:bg-red-900/20"
-                >
-                  <TrashIcon size={18} color="#EF4444" />
-                </Pressable>
-              )}
-            </View>
-
-            <View className="flex-row gap-3">
-              <View className="flex-1">
-                <Text className="text-xs text-gray-600 dark:text-gray-400 mb-1">날짜</Text>
-                <DatePicker
-                  value={parseDate(day.date)}
-                  onChange={(date) => handleDateChange(index, date)}
-                  placeholder="날짜 선택"
-                  minimumDate={today}
-                  mode="date"
-                />
-              </View>
-              <View className="flex-1">
-                <Text className="text-xs text-gray-600 dark:text-gray-400 mb-1">출근 시간</Text>
-                <TimePicker
-                  value={day.startTime}
-                  onChange={(time) => handleTimeChange(index, time)}
-                  placeholder="시간 선택"
-                />
-              </View>
-            </View>
-          </View>
-        ))
-      )}
-
-      {/* 에러 메시지 */}
-      {errors?.tournamentDates && (
-        <Text className="mt-2 text-sm text-red-500">{errors.tournamentDates}</Text>
-      )}
-    </View>
-  );
-});
-
 // ============================================================================
 // Main Component
 // ============================================================================
@@ -407,11 +249,10 @@ export const ScheduleSection = memo(function ScheduleSection({
   const { postingType } = data;
 
   // 공고 타입에 따라 다른 스케줄 UI 렌더링
+  // tournament/regular/urgent는 DateRequirementsSection에서 처리
   switch (postingType) {
     case 'fixed':
       return <FixedSchedule data={data} onUpdate={onUpdate} errors={errors} />;
-    case 'tournament':
-      return <TournamentSchedule data={data} onUpdate={onUpdate} errors={errors} />;
     case 'urgent':
       return <SingleDateSchedule data={data} onUpdate={onUpdate} errors={errors} isUrgent />;
     case 'regular':

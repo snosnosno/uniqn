@@ -21,20 +21,6 @@ import { STAFF_ROLES } from '@/constants';
 // ============================================================================
 
 /**
- * 대회 Day 정보
- *
- * @description 대회 공고에서 여러 날짜를 선택할 때 사용
- */
-export interface TournamentDay {
-  /** Day 번호 (1, 2, 3...) */
-  day: number;
-  /** 날짜 (YYYY-MM-DD) */
-  date: string;
-  /** 출근 시간 (HH:mm) */
-  startTime: string;
-}
-
-/**
  * 역할 + 인원 + 급여 정보
  *
  * @description 기본 역할: 직원, 매니저 / 추가 역할 가능
@@ -139,10 +125,6 @@ export interface JobPostingFormData {
   /** 출근 시간 협의 여부 (fixed 공고용) */
   isStartTimeNegotiable?: boolean;
 
-  // --- tournament: 여러 날짜 ---
-  /** 대회 일정 (Day 1, 2, 3...) */
-  tournamentDates: TournamentDay[];
-
   // --- 날짜별 요구사항 (v2.0) ---
   /** 날짜별 모집 정보 (regular/urgent/tournament 공통) */
   dateSpecificRequirements?: DateSpecificRequirement[];
@@ -209,7 +191,6 @@ export const INITIAL_JOB_POSTING_FORM_DATA: JobPostingFormData = {
   workDate: '',
   startTime: '',
   isStartTimeNegotiable: false,
-  tournamentDates: [],
   dateSpecificRequirements: [],
   daysPerWeek: 0, // 0 = 협의 (기본값)
 
@@ -269,13 +250,9 @@ export function validateStep(
           }
         }
       } else if (data.postingType === 'tournament') {
-        if (data.tournamentDates.length === 0) {
+        if (!data.dateSpecificRequirements || data.dateSpecificRequirements.length === 0) {
           errors.push('최소 1일 이상의 대회 일정을 추가해주세요');
         }
-        data.tournamentDates.forEach((day, idx) => {
-          if (!day.date) errors.push(`Day ${idx + 1}: 날짜를 선택해주세요`);
-          if (!day.startTime) errors.push(`Day ${idx + 1}: 출근 시간을 선택해주세요`);
-        });
       } else if (data.postingType === 'fixed') {
         // daysPerWeek: 0 = 협의, 1-7 = 일수 (모두 유효)
         if (data.daysPerWeek < 0 || data.daysPerWeek > 7) {

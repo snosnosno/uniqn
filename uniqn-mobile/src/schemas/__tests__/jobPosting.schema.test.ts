@@ -78,11 +78,7 @@ describe('roleSchema', () => {
   );
 
   it('should reject invalid role', () => {
-    expect(roleSchema.safeParse('chiprunner').success).toBe(false);
-  });
-
-  it('should reject legacy admin role', () => {
-    expect(roleSchema.safeParse('admin').success).toBe(false);
+    expect(roleSchema.safeParse('invalid_role').success).toBe(false);
   });
 });
 

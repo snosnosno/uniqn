@@ -86,9 +86,9 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
   switch (data.postingType) {
     case 'regular':
     case 'urgent':
-      // v2.0: dateSpecificRequirements 기반 검증
+    case 'tournament':
+      // dateSpecificRequirements 기반 검증
       if (hasDateRequirements) {
-        // 모든 날짜의 타임슬롯에 역할이 있는지 확인
         const hasIncomplete = data.dateSpecificRequirements!.some((req) => {
           return (
             !req.timeSlots ||
@@ -100,13 +100,7 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
           errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
         }
       } else {
-        // 하위호환성: 이전 필드 검증
-        if (!data.workDate) {
-          errors.workDate = '근무 날짜를 선택해주세요';
-        }
-        if (!data.startTime) {
-          errors.startTime = '출근 시간을 선택해주세요';
-        }
+        errors.dateSpecificRequirements = '날짜별 요구사항을 추가해주세요';
       }
       break;
     case 'fixed':
@@ -117,32 +111,6 @@ function validateSchedule(data: JobPostingFormData): Record<string, string> {
       // 출근 시간: 협의가 아닌 경우에만 필수
       if (!data.isStartTimeNegotiable && !data.startTime) {
         errors.startTime = '출근 시간을 선택해주세요';
-      }
-      break;
-    case 'tournament':
-      // v2.0: dateSpecificRequirements 기반 검증
-      if (hasDateRequirements) {
-        // 모든 날짜의 타임슬롯에 역할이 있는지 확인
-        const hasIncomplete = data.dateSpecificRequirements!.some((req) => {
-          return (
-            !req.timeSlots ||
-            req.timeSlots.length === 0 ||
-            req.timeSlots.some((slot) => !slot.roles || slot.roles.length === 0)
-          );
-        });
-        if (hasIncomplete) {
-          errors.dateSpecificRequirements = '모든 날짜의 역할과 인원을 입력해주세요';
-        }
-      } else {
-        // 하위호환성: 이전 필드 검증
-        if (!data.tournamentDates || data.tournamentDates.length === 0) {
-          errors.tournamentDates = '최소 1일 이상의 대회 일정을 추가해주세요';
-        } else {
-          const hasIncomplete = data.tournamentDates.some((d) => !d.date || !d.startTime);
-          if (hasIncomplete) {
-            errors.tournamentDates = '모든 대회 일정의 날짜와 시간을 입력해주세요';
-          }
-        }
       }
       break;
   }

@@ -43,7 +43,7 @@ import type {
   DailyCount,
 } from '../interfaces';
 import type { AdminUser, AdminUserFilters, PaginatedUsers } from '@/types/admin';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
 
 // ============================================================================

@@ -17,7 +17,8 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import { FirebaseDocument, StaffRole } from './common';
+import type { FirebaseDocument } from './common';
+import type { StaffRole } from './role';
 import type { Assignment } from './assignment';
 import type { OriginalApplication, ConfirmationHistoryEntry } from './applicationHistory';
 import type { PreQuestionAnswer } from './preQuestion';

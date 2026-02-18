@@ -15,7 +15,6 @@
  * - DateSpecificRequirement: dateRequirement.ts 정식 버전 사용
  * - TimeSlot: dateRequirement.ts 정식 버전 사용
  * - RoleRequirement: dateRequirement.ts 정식 버전 (폼용) / JobRoleStats (공고 통계용)
- * - Legacy*: 하위 호환성을 위한 레거시 타입 (신규 코드에서 사용 금지)
  */
 
 // 역할 타입 (Phase 8 - 통합)
@@ -162,10 +161,6 @@ export type {
   RoleWithCount,
   TournamentConfig,
   UrgentConfig,
-  // 레거시 타입 (하위 호환성 - 신규 코드에서 사용 금지)
-  LegacyRoleRequirement,
-  LegacyTimeSlot,
-  LegacyDateSpecificRequirement,
   TimeSlot,
   DateSpecificRequirement,
 } from './postingConfig';
@@ -269,7 +264,7 @@ export type { DateSettlementStatus, GroupedSettlement, GroupSettlementOptions } 
 export { isGroupedSettlement } from './settlement';
 
 // 공고 작성 폼 타입 (v2.0)
-export type { JobPostingFormData, TournamentDay, FormRoleWithCount } from './jobPostingForm';
+export type { JobPostingFormData, FormRoleWithCount } from './jobPostingForm';
 export {
   INITIAL_JOB_POSTING_FORM_DATA,
   DEFAULT_ROLES,
@@ -349,7 +344,6 @@ export {
   REPORT_SEVERITY_COLORS,
   REPORT_STATUS_LABELS,
   REPORT_STATUS_COLORS,
-  getReportTypeInfo,
   getReportSeverity,
 } from './report';
 

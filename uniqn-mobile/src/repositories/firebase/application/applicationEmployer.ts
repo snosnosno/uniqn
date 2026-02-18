@@ -66,9 +66,8 @@ export async function findByJobPostingWithStats(
       });
     }
 
-    // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-    const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-    if (postingOwnerId !== ownerId) {
+    // 공고 소유자 확인
+    if (jobData.ownerId !== ownerId) {
       throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
         userMessage: '본인의 공고만 조회할 수 있습니다',
       });
@@ -206,8 +205,7 @@ export function subscribeByJobPosting(
             return;
           }
 
-          const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-          if (postingOwnerId !== ownerId) {
+          if (jobData.ownerId !== ownerId) {
             const error = new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
               userMessage: '본인의 공고만 조회할 수 있습니다',
             });

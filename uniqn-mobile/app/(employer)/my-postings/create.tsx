@@ -108,7 +108,6 @@ export default function CreateJobPostingScreen() {
         ...(formData.contactPhone ? { contactPhone: formData.contactPhone } : {}),
         workDate: formData.workDate,
         startTime: formData.startTime,
-        tournamentDates: formData.tournamentDates,
         // v2.0: 날짜별 요구사항 (일정 데이터) - 새 형식을 레거시 형식으로 캐스팅
         dateSpecificRequirements:
           formData.dateSpecificRequirements as unknown as DateSpecificRequirement[],

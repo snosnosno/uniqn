@@ -228,7 +228,7 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
       {/* 버튼 영역 */}
       <View className="mt-4 flex-col gap-3">
         <Button onPress={handleSubmit(onNext)} disabled={isLoading} fullWidth>
-          다음
+          가입 완료
         </Button>
 
         <Button onPress={handleSkipOptional} variant="outline" disabled={isLoading} fullWidth>

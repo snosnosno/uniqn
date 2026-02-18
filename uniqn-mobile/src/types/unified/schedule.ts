@@ -34,12 +34,6 @@ export interface DatedScheduleInfo {
 
   /** 시간대별 정보 */
   timeSlots: TimeSlotInfo[];
-
-  /** 메인 행사 날짜 여부 (tournament용) */
-  isMainDate?: boolean;
-
-  /** 날짜 설명 (예: "Day 1", "예선전") */
-  description?: string;
 }
 
 /**
@@ -121,18 +115,12 @@ export function isFixedSchedule(schedule: NormalizedSchedule): schedule is Fixed
  */
 export function createDatedSchedule(
   date: string,
-  timeSlots: TimeSlotInfo[],
-  options?: {
-    isMainDate?: boolean;
-    description?: string;
-  }
+  timeSlots: TimeSlotInfo[]
 ): DatedScheduleInfo {
   return {
     type: 'dated',
     date,
     timeSlots,
-    isMainDate: options?.isMainDate,
-    description: options?.description,
   };
 }
 

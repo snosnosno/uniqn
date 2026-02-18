@@ -17,7 +17,7 @@ import type {
   UpdateAnnouncementInput,
   AnnouncementFilters,
 } from '@/types';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 
 // ============================================================================
 // Types

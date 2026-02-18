@@ -110,14 +110,6 @@ jest.mock('@/errors', () => {
   };
 });
 
-jest.mock('@/services/jobPostingMigration', () => ({
-  migrateJobPostingForWrite: jest.fn((input: unknown) => ({
-    data: input,
-    migrated: false,
-    migrationType: 'none',
-  })),
-}));
-
 // Import after mocks
 import {
   createJobPosting,

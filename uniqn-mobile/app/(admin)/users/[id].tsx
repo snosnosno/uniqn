@@ -29,7 +29,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 
 const ROLE_OPTIONS: { role: UserRole; label: string; description: string }[] = [
   { role: 'staff', label: '스태프', description: '지원 및 스케줄 확인만 가능' },

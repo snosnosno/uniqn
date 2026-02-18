@@ -22,6 +22,7 @@ import { logger } from '@/utils/logger';
 
 interface SignupStep1Props {
   onNext: (data: SignUpStep1Data) => void;
+  onBack: () => void;
   initialData?: Partial<SignUpStep1Data>;
   isLoading?: boolean;
 }
@@ -30,7 +31,7 @@ interface SignupStep1Props {
 // Component
 // ============================================================================
 
-export function SignupStep1({ onNext, initialData, isLoading = false }: SignupStep1Props) {
+export function SignupStep1({ onNext, onBack, initialData, isLoading = false }: SignupStep1Props) {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const {
@@ -154,8 +155,8 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
         />
       </View>
 
-      {/* 다음 버튼 */}
-      <View className="mt-6">
+      {/* 버튼 영역 */}
+      <View className="mt-6 flex-col gap-3">
         <Button
           onPress={handleSubmit(handleNext)}
           disabled={isProcessing}
@@ -163,6 +164,10 @@ export function SignupStep1({ onNext, initialData, isLoading = false }: SignupSt
           fullWidth
         >
           {isCheckingEmail ? '이메일 확인 중...' : '다음'}
+        </Button>
+
+        <Button onPress={onBack} variant="ghost" disabled={isProcessing} fullWidth>
+          이전
         </Button>
       </View>
     </View>

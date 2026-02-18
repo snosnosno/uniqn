@@ -9,8 +9,6 @@
  * - clampHeadcount
  * - isValidTimeFormat
  * - isValidDateFormat
- * - convertTournamentDatesToDateRequirements
- * - convertDateRequirementsToTournamentDates
  * - calculateTotalFromDateReqs
  * - calculateFilledFromDateReqs
  * - isFullyClosed
@@ -93,8 +91,6 @@ import {
   clampHeadcount,
   isValidTimeFormat,
   isValidDateFormat,
-  convertTournamentDatesToDateRequirements,
-  convertDateRequirementsToTournamentDates,
   calculateTotalFromDateReqs,
   calculateFilledFromDateReqs,
   isFullyClosed,
@@ -288,109 +284,6 @@ describe('isValidDateFormat', () => {
 });
 
 // ============================================================================
-// convertTournamentDatesToDateRequirements
-// ============================================================================
-
-describe('convertTournamentDatesToDateRequirements', () => {
-  it('토너먼트 날짜를 DateSpecificRequirement로 변환한다', () => {
-    const tournamentDates = [
-      { day: 1, date: '2025-01-10', startTime: '19:00' },
-      { day: 2, date: '2025-01-11', startTime: '14:00' },
-    ];
-
-    const result = convertTournamentDatesToDateRequirements(tournamentDates);
-
-    expect(result).toHaveLength(2);
-    expect(result[0]!.date).toBe('2025-01-10');
-    expect(result[0]!.timeSlots).toHaveLength(1);
-    expect(result[0]!.timeSlots[0]!.startTime).toBe('19:00');
-    expect(result[0]!.timeSlots[0]!.isTimeToBeAnnounced).toBe(false);
-    expect(result[0]!.timeSlots[0]!.roles).toHaveLength(1);
-    expect(result[0]!.timeSlots[0]!.roles[0]!.role).toBe('dealer');
-    expect(result[0]!.timeSlots[0]!.roles[0]!.headcount).toBe(1);
-  });
-
-  it('빈 배열이면 빈 배열을 반환한다', () => {
-    const result = convertTournamentDatesToDateRequirements([]);
-    expect(result).toEqual([]);
-  });
-
-  it('각 변환된 항목에 고유 ID가 있다', () => {
-    const tournamentDates = [{ day: 1, date: '2025-01-10', startTime: '19:00' }];
-
-    const result = convertTournamentDatesToDateRequirements(tournamentDates);
-    expect(result[0]!.timeSlots[0]!.id).toBe('mock-id');
-    expect(result[0]!.timeSlots[0]!.roles[0]!.id).toBe('mock-id');
-  });
-});
-
-// ============================================================================
-// convertDateRequirementsToTournamentDates
-// ============================================================================
-
-describe('convertDateRequirementsToTournamentDates', () => {
-  it('문자열 날짜를 변환한다', () => {
-    const dateReqs = [
-      {
-        date: '2025-01-10',
-        timeSlots: [{ startTime: '19:00' }],
-      },
-    ];
-
-    const result = convertDateRequirementsToTournamentDates(dateReqs);
-
-    expect(result).toHaveLength(1);
-    expect(result[0]!.day).toBe(1);
-    expect(result[0]!.date).toBe('2025-01-10');
-    expect(result[0]!.startTime).toBe('19:00');
-  });
-
-  it('toDate 메서드가 있는 Timestamp 객체를 변환한다', () => {
-    const dateReqs = [
-      {
-        date: { toDate: () => new Date('2025-01-10T00:00:00') },
-        timeSlots: [{ startTime: '14:00' }],
-      },
-    ];
-
-    const result = convertDateRequirementsToTournamentDates(dateReqs);
-    expect(result[0]!.date).toBe('2025-01-10');
-  });
-
-  it('seconds 필드가 있는 Timestamp 객체를 변환한다', () => {
-    const dateReqs = [
-      {
-        date: { seconds: new Date('2025-06-15T00:00:00Z').getTime() / 1000 },
-        timeSlots: [{ startTime: '09:00' }],
-      },
-    ];
-
-    const result = convertDateRequirementsToTournamentDates(dateReqs);
-    expect(result[0]!.date).toBe('2025-06-15');
-  });
-
-  it('day는 1부터 순차적으로 증가한다', () => {
-    const dateReqs = [
-      { date: '2025-01-10', timeSlots: [{ startTime: '19:00' }] },
-      { date: '2025-01-11', timeSlots: [{ startTime: '14:00' }] },
-      { date: '2025-01-12', timeSlots: [{ startTime: '10:00' }] },
-    ];
-
-    const result = convertDateRequirementsToTournamentDates(dateReqs);
-    expect(result[0]!.day).toBe(1);
-    expect(result[1]!.day).toBe(2);
-    expect(result[2]!.day).toBe(3);
-  });
-
-  it('timeSlots가 비어있으면 기본 시간 09:00을 사용한다', () => {
-    const dateReqs = [{ date: '2025-01-10', timeSlots: [] }];
-
-    const result = convertDateRequirementsToTournamentDates(dateReqs);
-    expect(result[0]!.startTime).toBe('09:00');
-  });
-});
-
-// ============================================================================
 // calculateTotalFromDateReqs
 // ============================================================================
 
@@ -574,44 +467,20 @@ describe('getClosingStatus', () => {
     expect(result.isClosed).toBe(true);
   });
 
-  it('dateSpecificRequirements가 없으면 레거시 필드를 사용한다', () => {
-    const jobData = {
-      totalPositions: 10,
-      filledPositions: 7,
-    };
-
-    const result = getClosingStatus(jobData);
-    expect(result.total).toBe(10);
-    expect(result.filled).toBe(7);
-    expect(result.isClosed).toBe(false);
-  });
-
-  it('레거시 필드가 가득 찼으면 isClosed: true', () => {
-    const jobData = {
-      totalPositions: 5,
-      filledPositions: 5,
-    };
-
-    const result = getClosingStatus(jobData);
-    expect(result.isClosed).toBe(true);
-  });
-
-  it('모든 필드가 없으면 기본값 0을 사용한다', () => {
+  it('dateSpecificRequirements가 없으면 0을 반환한다', () => {
     const result = getClosingStatus({});
     expect(result.total).toBe(0);
     expect(result.filled).toBe(0);
     expect(result.isClosed).toBe(false);
   });
 
-  it('dateSpecificRequirements가 빈 배열이면 레거시 필드를 사용한다', () => {
+  it('dateSpecificRequirements가 빈 배열이면 0을 반환한다', () => {
     const jobData = {
       dateSpecificRequirements: [],
-      totalPositions: 5,
-      filledPositions: 2,
     };
 
     const result = getClosingStatus(jobData);
-    expect(result.total).toBe(5);
-    expect(result.filled).toBe(2);
+    expect(result.total).toBe(0);
+    expect(result.filled).toBe(0);
   });
 });

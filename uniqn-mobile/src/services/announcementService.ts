@@ -12,7 +12,7 @@ import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { announcementRepository } from '@/repositories';
 import type { Announcement, CreateAnnouncementInput, UpdateAnnouncementInput } from '@/types';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 import type {
   FetchAnnouncementsOptions,
   FetchAnnouncementsResult,

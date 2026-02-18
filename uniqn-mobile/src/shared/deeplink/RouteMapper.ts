@@ -7,7 +7,7 @@
  * StatusMapper 패턴을 따름 (shared/status/StatusMapper.ts 참조)
  */
 
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 import {
   EXPO_ROUTES,
   AUTH_REQUIRED_ROUTES,

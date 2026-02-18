@@ -45,10 +45,7 @@ function normalizeDateRequirement(req: DateSpecificRequirement, _index: number):
   const dateStr = getDateFromRequirement(req);
   const timeSlots = (req.timeSlots ?? []).map(normalizeTimeSlot);
 
-  return createDatedSchedule(dateStr, timeSlots, {
-    isMainDate: req.isMainDate,
-    description: req.description,
-  });
+  return createDatedSchedule(dateStr, timeSlots);
 }
 
 /**

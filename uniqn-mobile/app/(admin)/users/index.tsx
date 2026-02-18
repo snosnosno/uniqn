@@ -21,7 +21,7 @@ import { useAdminUsers } from '@/hooks/useAdminDashboard';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import type { AdminUser, AdminUserFilters } from '@/types/admin';
-import type { UserRole } from '@/types/common';
+import type { UserRole } from '@/types/role';
 
 interface RoleChipProps {
   role: UserRole | 'all';

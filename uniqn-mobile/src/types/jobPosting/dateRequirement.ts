@@ -11,7 +11,7 @@
  */
 
 import { Timestamp } from 'firebase/firestore';
-import { StaffRole } from '../common';
+import type { StaffRole } from '../role';
 import type { SalaryInfo } from '../jobPosting';
 import { generateId } from '@/utils/generateId';
 
@@ -85,16 +85,6 @@ export interface DateSpecificRequirement {
    * - false/undefined: 개별 날짜로 표시
    */
   isGrouped?: boolean;
-
-  // === 레거시 호환 필드 ===
-  /** @deprecated 메인 행사 날짜 여부 - 레거시 데이터 호환용 */
-  isMainDate?: boolean;
-
-  /** @deprecated 표시 순서 (정렬용) - 레거시 데이터 호환용 */
-  displayOrder?: number;
-
-  /** @deprecated 날짜 설명 (예: "Day 1", "예선전") - 레거시 데이터 호환용 */
-  description?: string;
 }
 
 /**
@@ -164,11 +154,6 @@ export function sortDateRequirements(
       timeSlots: sortTimeSlots(req.timeSlots),
     }))
     .sort((a, b) => {
-      // displayOrder가 있으면 우선 (레거시)
-      if (a.displayOrder !== undefined && b.displayOrder !== undefined) {
-        return a.displayOrder - b.displayOrder;
-      }
-
       const dateA = getDateString(a.date);
       const dateB = getDateString(b.date);
 

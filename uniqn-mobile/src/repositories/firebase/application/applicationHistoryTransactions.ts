@@ -114,9 +114,8 @@ export async function confirmWithHistoryTransaction(
         });
       }
 
-      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-      if (postingOwnerId !== ownerId) {
+      // 공고 소유자 확인
+      if (jobData.ownerId !== ownerId) {
         throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
         });
@@ -131,7 +130,7 @@ export async function confirmWithHistoryTransaction(
         });
       }
 
-      // 4. 정원 확인 (dateSpecificRequirements 기반 계산, 레거시 폴백)
+      // 4. 정원 확인 (dateSpecificRequirements 기반 계산)
       const { total: totalPositions, filled: currentFilled } = getClosingStatus(jobData);
       const assignmentCount = assignmentsToConfirm.reduce((sum, a) => sum + a.dates.length, 0);
 
@@ -175,7 +174,7 @@ export async function confirmWithHistoryTransaction(
             staffName: applicationData.applicantName,
             jobPostingId: applicationData.jobPostingId,
             jobPostingName: jobData.title,
-            ownerId: postingOwnerId,
+            ownerId: jobData.ownerId,
             role,
             date,
             timeSlot: assignment.timeSlot,
@@ -368,9 +367,8 @@ export async function cancelConfirmationTransaction(
         });
       }
 
-      // 공고 소유자 확인: ownerId 또는 createdBy 필드 사용 (하위 호환성)
-      const postingOwnerId = jobData.ownerId ?? jobData.createdBy;
-      if (postingOwnerId !== ownerId) {
+      // 공고 소유자 확인
+      if (jobData.ownerId !== ownerId) {
         throw new PermissionError(ERROR_CODES.FIREBASE_PERMISSION_DENIED, {
           userMessage: '본인의 공고만 관리할 수 있습니다',
         });

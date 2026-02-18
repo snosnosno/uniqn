@@ -12,8 +12,6 @@ export {
   useUser,
   useProfile,
   useHasRole,
-  hasPermission,
-  ROLE_HIERARCHY,
   selectUser,
   selectProfile,
   selectIsAuthenticated,

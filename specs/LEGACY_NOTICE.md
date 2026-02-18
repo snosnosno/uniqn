@@ -14,25 +14,10 @@
 
 ---
 
-### ⚠️ 레거시 (DEPRECATED)
+### 레거시 스펙 (삭제됨)
 
-> **중요**: 아래 폴더들은 **레거시 웹앱(app2/)**용 스펙입니다.
->
-> app2/는 2025년 말부터 개발이 중단되었으며, 현재 모든 개발은 **uniqn-mobile/**에서 진행됩니다.
->
-> 이 폴더들은 **역사적 참고용**으로만 보관됩니다.
-
-| 폴더 | 대상 | 상태 | 설명 |
-|------|------|------|------|
-| `001-authcontext-tests/` | app2/ | DEPRECATED | AuthContext 테스트 스펙 |
-| `001-hooks-tests/` | app2/ | DEPRECATED | Hooks 테스트 스펙 |
-| `001-job-posting-form-split/` | app2/ | DEPRECATED | JobPostingForm 리팩토링 스펙 |
-| `001-schedule-modal-split/` | app2/ | DEPRECATED | ScheduleModal 분리 스펙 |
-| `001-tournament-approval-system/` | app2/ | DEPRECATED | 대회공고 승인 시스템 스펙 |
-| `001-zustand-migration/` | app2/ | DEPRECATED | Zustand 마이그레이션 스펙 |
-| `002-phase3-integration/` | app2/ | DEPRECATED | Phase 3 통합 스펙 |
-| `002-unifieddatacontext-tests/` | app2/ | DEPRECATED | UnifiedDataContext 테스트 스펙 |
-| `003-ui-component-tests/` | app2/ | DEPRECATED | UI 컴포넌트 테스트 스펙 |
+> 과거 레거시 웹앱(app2/)용 스펙 폴더들(001-*, 002-*, 003-*)이 존재했으나,
+> 모바일앱 전환 완료 후 삭제되었습니다. git 히스토리에서 확인 가능합니다.
 
 ---
 

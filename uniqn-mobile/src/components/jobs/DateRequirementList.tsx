@@ -105,11 +105,6 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
         <Text className="text-sm font-medium text-gray-700 dark:text-gray-300 mr-1">
           {formattedDate}
         </Text>
-        {requirement.isMainDate && (
-          <Badge variant="primary" size="sm">
-            메인
-          </Badge>
-        )}
       </View>
     );
   }
@@ -121,20 +116,9 @@ const DateItem = memo(function DateItem({ requirement, compact }: DateItemProps)
           <Text className="text-base font-semibold text-gray-900 dark:text-white mr-2">
             {formattedDate}
           </Text>
-          {requirement.isMainDate && (
-            <Badge variant="primary" size="sm">
-              메인
-            </Badge>
-          )}
         </View>
         <Text className="text-sm text-gray-500 dark:text-gray-400">{totalPositions}명 모집</Text>
       </View>
-
-      {requirement.description && (
-        <Text className="text-sm text-gray-500 dark:text-gray-400 mb-2">
-          {requirement.description}
-        </Text>
-      )}
 
       {requirement.timeSlots.map((slot, index) => (
         <TimeSlotItem key={index} slot={slot} compact={compact} />

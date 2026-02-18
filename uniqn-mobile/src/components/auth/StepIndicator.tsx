@@ -28,10 +28,10 @@ interface StepIndicatorProps {
 // ============================================================================
 
 export const SIGNUP_STEPS: StepInfo[] = [
+  { label: '약관동의', shortLabel: '약관' },
   { label: '계정 정보', shortLabel: '계정' },
   { label: '본인인증', shortLabel: '인증' },
   { label: '프로필', shortLabel: '프로필' },
-  { label: '약관동의', shortLabel: '약관' },
 ];
 
 // ============================================================================

@@ -27,10 +27,10 @@ describe('RoleResolver', () => {
       expect(RoleResolver.normalizeUserRole(input)).toBe(expected);
     });
 
-    it('하위 호환성: manager → employer', () => {
-      expect(RoleResolver.normalizeUserRole('manager')).toBe('employer');
-      expect(RoleResolver.normalizeUserRole('Manager')).toBe('employer');
-      expect(RoleResolver.normalizeUserRole('MANAGER')).toBe('employer');
+    it('manager는 유효하지 않은 UserRole', () => {
+      expect(RoleResolver.normalizeUserRole('manager')).toBeNull();
+      expect(RoleResolver.normalizeUserRole('Manager')).toBeNull();
+      expect(RoleResolver.normalizeUserRole('MANAGER')).toBeNull();
     });
 
     it('공백 트림 처리', () => {
@@ -95,7 +95,7 @@ describe('RoleResolver', () => {
     // 문자열 정규화 후 체크
     it('문자열 역할도 정규화하여 처리', () => {
       expect(RoleResolver.hasPermission('ADMIN', 'employer')).toBe(true);
-      expect(RoleResolver.hasPermission('Manager', 'employer')).toBe(true); // manager → employer
+      expect(RoleResolver.hasPermission('Manager', 'employer')).toBe(false); // manager는 유효하지 않음
       expect(RoleResolver.hasPermission('Staff', 'admin')).toBe(false);
     });
 
@@ -319,7 +319,7 @@ describe('RoleResolver', () => {
     it('정규화 후 유효성 검사 (대소문자 무관)', () => {
       expect(RoleResolver.isValidUserRole('ADMIN')).toBe(true);
       expect(RoleResolver.isValidUserRole('Employer')).toBe(true);
-      expect(RoleResolver.isValidUserRole('Manager')).toBe(true); // → employer
+      expect(RoleResolver.isValidUserRole('Manager')).toBe(false); // manager는 유효하지 않음
     });
   });
 });
