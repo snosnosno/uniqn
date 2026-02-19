@@ -254,6 +254,7 @@ export const queryKeys = {
     details: () => [...queryKeys.jobPostings.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.jobPostings.all, 'detail', id] as const,
     mine: () => [...queryKeys.jobPostings.all, 'mine'] as const,
+    search: (term: string) => [...queryKeys.jobPostings.all, 'search', term] as const,
   },
 
   // 지원서

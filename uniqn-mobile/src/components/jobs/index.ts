@@ -36,6 +36,7 @@ export { ResubmitButton } from './ResubmitButton';
 
 export { PostingTypeChips } from './PostingTypeChips';
 export { DateSlider } from './DateSlider';
+export { SearchBar } from './SearchBar';
 
 // ============================================================================
 // PreQuestion Components
