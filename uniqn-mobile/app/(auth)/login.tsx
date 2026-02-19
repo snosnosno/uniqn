@@ -209,9 +209,9 @@ export default function LoginScreen() {
                 onAppleLogin={handleAppleLogin}
                 onGoogleLogin={handleGoogleLogin}
                 onKakaoLogin={handleKakaoLogin}
-                isLoading={isLoading || isBiometricAuthenticating}
+                isLoading={isLoading || isSocialLoading || isBiometricAuthenticating}
                 loadingProvider={loadingProvider}
-                disabled={isLoading || isBiometricAuthenticating}
+                disabled={isLoading || isSocialLoading || isBiometricAuthenticating}
               />
             </>
           )}

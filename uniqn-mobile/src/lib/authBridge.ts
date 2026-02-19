@@ -107,7 +107,17 @@ export async function ensureDualSdkSync(): Promise<void> {
       return; // 양쪽 일치 (둘 다 로그인 또는 둘 다 로그아웃)
     }
 
-    // 불일치 감지 → 안전하게 양쪽 모두 로그아웃
+    // Web SDK만 로그인된 경우 허용 (Apple 소셜 로그인은 Web SDK만 인증)
+    // Firestore Security Rules는 Web SDK 토큰으로 동작하므로 정상
+    if (webLoggedIn && !nativeLoggedIn) {
+      logger.info('Web SDK만 인증됨 (소셜 로그인) - 정상 상태로 허용', {
+        component: 'authBridge',
+        webUid: webUser?.uid,
+      });
+      return;
+    }
+
+    // Native만 로그인된 경우 → 비정상 상태, 양쪽 로그아웃
     logger.warn('Dual SDK 상태 불일치 감지 - 양쪽 로그아웃으로 복구', {
       component: 'authBridge',
       nativeLoggedIn,

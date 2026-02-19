@@ -28,7 +28,6 @@ import {
 import { useAppInitialize } from '@/hooks/useAppInitialize';
 import { useAuthGuard } from '@/hooks/useAuthGuard';
 import { useNavigationTracking } from '@/hooks/useNavigationTracking';
-import { useNotificationHandler } from '@/hooks/useNotificationHandler';
 import { useDeepLinkSetup } from '@/hooks/useDeepLink';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useThemeStore } from '@/stores/themeStore';
@@ -103,8 +102,8 @@ function MainNavigator() {
   // 딥링크 리스너 설정 (인증 체크 포함)
   useDeepLinkSetup();
 
-  // 푸시 알림 수신 처리
-  useNotificationHandler();
+  // 푸시 알림 핸들러는 (app)/_layout.tsx에서 초기화
+  // (온보딩 플로우와 통합되어 권한 요청 중복 방지)
 
   // 전역 네트워크 상태 연동
   const { isOnline } = useNetworkStatus();

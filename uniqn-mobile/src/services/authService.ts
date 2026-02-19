@@ -40,12 +40,10 @@ import { syncToWebAuth, syncSignOut } from '@/lib/authBridge';
 import {
   getNativeAuth,
   nativeSignInWithEmailAndPassword,
-  nativeSignInWithCredential,
   nativeLinkWithCredential,
   nativeUpdateProfile,
   nativeDeleteUser,
   NativeEmailAuthProvider,
-  NativeOAuthProvider,
 } from '@/lib/nativeAuth';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
@@ -700,9 +698,10 @@ async function createMockProfile(
  *
  * @description
  * - 개발 모드: Mock 데이터로 테스트
- * - 프로덕션: expo-apple-authentication + Dual SDK 동시 인증
+ * - 프로덕션: expo-apple-authentication + Web SDK 인증
  *
- * 핵심: Web SDK와 Native SDK를 동시에 인증하여 ensureDualSdkSync() 통과
+ * 핵심: Web SDK로만 인증 (Apple credential 1회용 특성상 Native SDK 동기화 생략)
+ * Firestore Security Rules는 Web SDK 토큰으로 동작하므로 문제 없음
  *
  * @returns AuthResult (신규 사용자: phoneVerified=false, 기존 사용자: phoneVerified=true)
  */
@@ -752,31 +751,23 @@ export async function signInWithApple(): Promise<AuthResult> {
           .join('')
       : '';
 
-    // 3. Firebase 양쪽 SDK credential 생성
-    // Web SDK: OAuthProvider credential
+    // 3. Web SDK 인증 (Firestore Security Rules용 — 반드시 먼저 실행)
+    // Apple credential은 1회용이므로 Web SDK를 우선 인증
     const webOAuthCredential = new OAuthProvider('apple.com').credential({
       idToken: identityToken,
       rawNonce,
     });
 
-    // 4. Dual SDK 동시 인증 (핵심!)
-    // Native SDK: signInWithCredential 사용
-    if (!nativeSignInWithCredential || !getNativeAuth || !NativeOAuthProvider) {
-      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-        userMessage: '네이티브 인증 모듈을 사용할 수 없습니다.',
-      });
-    }
+    const webResult = await signInWithCredential(getFirebaseAuth(), webOAuthCredential);
+    logger.info('Apple 로그인: Web SDK 인증 성공', { component: 'authService' });
 
-    const nativeOAuthCredential = NativeOAuthProvider.credential(
-      'apple.com',
-      identityToken,
-      rawNonce
-    );
-
-    const [, webResult] = await Promise.all([
-      nativeSignInWithCredential(getNativeAuth(), nativeOAuthCredential),
-      signInWithCredential(getFirebaseAuth(), webOAuthCredential),
-    ]);
+    // 4. Native SDK 동기화 생략
+    // Apple credential은 1회용 — Web SDK가 소비하면 Native SDK에 재사용 불가
+    // Firestore Security Rules는 Web SDK 토큰으로 동작하므로 문제 없음
+    // TODO [P2]: Cloud Function createCustomToken 구현 후 Native SDK 동기화 추가
+    logger.info('Apple 로그인: Web SDK 인증 완료 (Native SDK 동기화 생략)', {
+      component: 'authService',
+    });
 
     const user = webResult.user;
 
@@ -787,6 +778,13 @@ export async function signInWithApple(): Promise<AuthResult> {
     const existingProfile = await getUserProfile(user.uid);
 
     if (existingProfile && existingProfile.phoneVerified) {
+      // 비활성화된 계정 체크 (명시적으로 false인 경우만)
+      if (existingProfile.isActive === false) {
+        throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_DISABLED, {
+          userMessage: '비활성화된 계정입니다. 고객센터에 문의해주세요',
+        });
+      }
+
       // 기존 사용자 (프로필 완성됨) → 즉시 앱 진입
       logger.info('Apple 로그인 성공 (기존 사용자)', { uid: user.uid });
       trackLogin('apple');
@@ -836,20 +834,46 @@ export async function signInWithApple(): Promise<AuthResult> {
     logger.info('Apple 로그인 성공 (미완성 프로필)', { uid: user.uid });
     return { user, profile: existingProfile };
   } catch (error) {
-    // 사용자 취소 처리
+    // 사용자 취소 처리 (expo-apple-authentication 에러 코드 방어적 체크)
     const errorCode = (error as { code?: string }).code;
-    if (errorCode === 'ERR_REQUEST_CANCELED') {
+    const errorMessage = (error as { message?: string }).message ?? '';
+
+    const isCanceled =
+      errorCode === 'ERR_REQUEST_CANCELED' ||
+      errorCode === 'ERR_CANCELED' ||
+      errorMessage.includes('canceled') ||
+      errorMessage.includes('cancelled');
+
+    if (isCanceled) {
       logger.info('Apple 로그인 취소', { component: 'authService' });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         userMessage: '', // 빈 메시지 → login.tsx에서 toast 미표시
       });
     }
 
+    // Firebase 에러 상세 로깅 (진단용)
+    const firebaseCode = errorCode;
+    const firebaseMsg = errorMessage;
+    logger.error('Apple 로그인 실패 상세', error instanceof Error ? error : new Error(String(error)), {
+      component: 'authService',
+      firebaseCode,
+      firebaseMessage: firebaseMsg,
+      platform: Platform.OS,
+    });
+
     // 부분 인증 상태 정리
     try {
       await syncSignOut();
     } catch {
       // 정리 실패 무시
+    }
+
+    // Firebase 인증 에러는 소셜 로그인 맥락에 맞는 메시지로 변환
+    if (firebaseCode?.startsWith('auth/')) {
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage: 'Apple 로그인에 실패했습니다. 다시 시도해주세요.',
+        metadata: { firebaseCode, provider: 'apple' },
+      });
     }
 
     throw handleServiceError(error, {
@@ -910,12 +934,14 @@ export async function completeSocialProfile(
       marketingAgreed: data.marketingAgreed ?? false,
     });
 
-    // Firebase Auth displayName 업데이트 (양쪽 SDK)
+    // Firebase Auth displayName 업데이트
     const webUser = getFirebaseAuth().currentUser;
     if (webUser) {
       await updateProfile(webUser, { displayName: data.nickname });
     }
 
+    // Native SDK displayName 업데이트 (이메일 가입 사용자만 해당)
+    // Apple 소셜 로그인은 Web SDK만 인증하므로 nativeUser=null → 자동 스킵됨
     if (Platform.OS !== 'web' && getNativeAuth && nativeUpdateProfile) {
       const nativeUser = getNativeAuth().currentUser;
       if (nativeUser) {

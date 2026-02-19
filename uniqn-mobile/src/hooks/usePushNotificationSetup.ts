@@ -201,12 +201,10 @@ export function usePushNotificationSetup(
       pushNotificationService.setNotificationReceivedHandler(handleNotificationReceived);
       pushNotificationService.setNotificationResponseHandler(handleNotificationResponse);
 
-      let permission = await pushNotificationService.checkPermission();
+      const permission = await pushNotificationService.checkPermission();
 
-      if (permission.status === 'undetermined' && permission.canAskAgain) {
-        permission = await pushNotificationService.requestPermission();
-      }
-
+      // 권한 상태만 확인하고 자동 요청하지 않음
+      // 권한 요청은 온보딩 플로우(NotificationPermissionScreen)에서만 수행
       setPermissionStatus(permission.status);
       setIsInitialized(true);
       logger.info('알림 핸들러 초기화 완료', { permissionStatus: permission.status });
