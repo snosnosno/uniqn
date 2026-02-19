@@ -3,6 +3,8 @@
  *
  * @description 공고 북마크(즐겨찾기) 기능 제공
  * @version 1.1.0
+ *
+ * @todo 북마크 목록 화면 구현 필요 (프로필 탭 또는 설정에서 "내 북마크" 페이지 추가)
  */
 
 import { useCallback, useMemo } from 'react';

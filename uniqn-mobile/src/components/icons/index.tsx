@@ -269,6 +269,16 @@ export const HeartIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
   return <Feather name="heart" size={size} color={resolvedColor} />;
 };
 
+export const HeartFilledIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
+  const resolvedColor = color || '#EF4444';
+  return <MaterialIcons name="favorite" size={size} color={resolvedColor} />;
+};
+
+export const HeartOutlineIcon = ({ size = DEFAULT_SIZE, color }: IconProps) => {
+  const resolvedColor = useDefaultColor(color);
+  return <MaterialIcons name="favorite-border" size={size} color={resolvedColor} />;
+};
+
 // Bookmark Icons (즐겨찾기)
 type BookmarkIconProps = IconProps & { filled?: boolean };
 

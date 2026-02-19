@@ -8,7 +8,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { View, Text, Pressable, Platform } from 'react-native';
 import { Badge } from '@/components/ui/Badge';
-import { BookmarkFilledIcon, BookmarkOutlineIcon } from '@/components/icons';
+import { HeartFilledIcon, HeartOutlineIcon } from '@/components/icons';
 import { PostingTypeBadge } from './PostingTypeBadge';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import {
@@ -300,9 +300,9 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             accessibilityLabel={bookmarked ? '북마크 해제' : '북마크 추가'}
           >
             {bookmarked ? (
-              <BookmarkFilledIcon size={22} color="#F59E0B" />
+              <HeartFilledIcon size={22} color="#EF4444" />
             ) : (
-              <BookmarkOutlineIcon size={22} />
+              <HeartOutlineIcon size={22} />
             )}
           </View>
         ) : (
@@ -314,9 +314,9 @@ export const JobCard = memo(function JobCard({ job, onPress, applicationStatus }
             accessibilityRole="button"
           >
             {bookmarked ? (
-              <BookmarkFilledIcon size={22} color="#F59E0B" />
+              <HeartFilledIcon size={22} color="#EF4444" />
             ) : (
-              <BookmarkOutlineIcon size={22} />
+              <HeartOutlineIcon size={22} />
             )}
           </Pressable>
         )}
