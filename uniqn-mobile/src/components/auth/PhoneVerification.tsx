@@ -128,9 +128,7 @@ interface VerificationForLinkResult {
  *
  * @returns verificationId + settled ref (컴포넌트 unmount 시 settled.current=true로 후속 콜백 차단)
  */
-function requestVerificationForLink(
-  e164: string
-): Promise<VerificationForLinkResult> {
+function requestVerificationForLink(e164: string): Promise<VerificationForLinkResult> {
   // [W-1 FIX] Promise.race로 타임아웃 보호 — 이벤트가 발생하지 않으면 UI 영구 멈춤 방지
   const LISTENER_TIMEOUT_MS = (AUTO_VERIFY_TIMEOUT_SECONDS + 15) * 1000;
 
@@ -161,11 +159,7 @@ function requestVerificationForLink(
     }
 
     try {
-      const listener = nativeVerifyPhoneNumber(
-        getNativeAuth(),
-        e164,
-        AUTO_VERIFY_TIMEOUT_SECONDS
-      );
+      const listener = nativeVerifyPhoneNumber(getNativeAuth(), e164, AUTO_VERIFY_TIMEOUT_SECONDS);
 
       // [W-2 FIX] listener 캡처 — unmount 시 removeAllListeners로 구독 해제
       listenerRef = listener as unknown as { removeAllListeners(event: string): void };
@@ -197,9 +191,7 @@ function requestVerificationForLink(
                 errorCode: sdkError?.code,
                 errorMessage: sdkError?.message,
               });
-              reject(
-                new Error(sdkError?.message || '전화번호 인증 요청에 실패했습니다.')
-              );
+              reject(new Error(sdkError?.message || '전화번호 인증 요청에 실패했습니다.'));
               break;
             }
           }
@@ -301,9 +293,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             platform: Platform.OS,
             webUser: !!getFirebaseAuth().currentUser,
           });
-          setError(
-            '인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.'
-          );
+          setError('인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
           return;
         }
         logger.info('link 모드: Native SDK currentUser 확인됨', {
@@ -340,8 +330,11 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             return;
           }
         } catch (checkError) {
-          // 중복 체크 실패 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
-          logger.warn('전화번호 중복 체크 실패 - SMS 발송 계속 진행', { error: checkError });
+          // 중복 체크 실패 시 SMS 발송 중단 (중복 계정 생성 및 SMS 비용 낭비 방지)
+          logger.error('전화번호 중복 체크 실패 - SMS 발송 중단', { error: checkError });
+          setError('전화번호 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
+          setIsLoading(false);
+          return;
         }
 
         // ─── [BUG #1 FIX] 모드별 분기: link → verifyPhoneNumber, signIn → signInWithPhoneNumber ───
@@ -379,7 +372,12 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             setConfirmation(null);
 
             // [C-2 FIX] Android 자동인증 완료 시 OTP 코드가 있으면 자동으로 linkWithCredential 실행
-            if (linkResult.autoCode && NativePhoneAuthProvider && nativeLinkWithCredential && getNativeAuth) {
+            if (
+              linkResult.autoCode &&
+              NativePhoneAuthProvider &&
+              nativeLinkWithCredential &&
+              getNativeAuth
+            ) {
               const nativeUser = getNativeAuth().currentUser;
               if (nativeUser) {
                 try {
@@ -431,6 +429,11 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         }
 
         setStep('otp');
+        // 기존 타이머 명시적 정리 후 리셋 (재발송 시 경쟁 조건 방지)
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
         setTimer(RESEND_COOLDOWN);
         setOtpCode('');
       } catch (err) {
@@ -513,10 +516,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             if (!verificationIdRef.current) {
               throw new Error('인증 세션이 만료되었습니다. 다시 시도해주세요.');
             }
-            const credential = WebPhoneAuthProvider.credential(
-              verificationIdRef.current,
-              otpCode
-            );
+            const credential = WebPhoneAuthProvider.credential(verificationIdRef.current, otpCode);
             const webUser = getFirebaseAuth().currentUser;
             if (!webUser) {
               logger.error('link 모드 OTP 확인 실패: Web SDK currentUser null');
@@ -540,7 +540,9 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         const firebaseCode = (err as { code?: string })?.code;
         const errorMessage = firebaseCode
           ? getFirebaseOTPErrorMessage(err)
-          : (err instanceof Error ? err.message : '인증에 실패했습니다. 다시 시도해주세요.');
+          : err instanceof Error
+            ? err.message
+            : '인증에 실패했습니다. 다시 시도해주세요.';
         setError(errorMessage);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
         logger.error('OTP 확인 실패', {

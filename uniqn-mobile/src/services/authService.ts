@@ -51,6 +51,7 @@ import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
 import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
+import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from './sessionService';
 import {
   trackLogin,
   trackSignup,
@@ -142,6 +143,9 @@ function trackSignupAnalytics(uid: string, role: 'staff' | 'employer' | 'admin')
  */
 export async function login(data: LoginFormData): Promise<AuthResult> {
   try {
+    // Rate Limiting 체크 (잠금 상태면 AuthError throw)
+    await checkLoginAttempts(data.email);
+
     logger.info('로그인 시도', { email: maskEmail(data.email), platform: Platform.OS });
 
     let userCredential;
@@ -184,6 +188,9 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
 
     logger.info('로그인 성공', { uid: userCredential.user.uid });
 
+    // 로그인 성공 시 시도 횟수 초기화
+    await resetLoginAttempts(data.email);
+
     // Analytics 이벤트
     trackLogin('email');
     setUserId(userCredential.user.uid);
@@ -197,6 +204,20 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       profile,
     };
   } catch (error) {
+    // 로그인 실패 시 시도 횟수 증가
+    // Rate Limiting 에러와 프로필 미존재 에러는 제외 (정상 자격 증명인데 데이터 불일치인 경우 잠김 방지)
+    const skipIncrement =
+      error instanceof AuthError &&
+      (error.code === ERROR_CODES.AUTH_RATE_LIMITED ||
+        error.code === ERROR_CODES.AUTH_USER_NOT_FOUND);
+    if (!skipIncrement) {
+      try {
+        await incrementLoginAttempts(data.email);
+      } catch {
+        // Rate limiting 업데이트 실패는 무시 (원래 에러가 우선)
+      }
+    }
+
     // 부분 로그인 상태 정리 (한쪽만 성공한 경우)
     try {
       await syncSignOut();
@@ -543,6 +564,23 @@ export function getCurrentUser(): FirebaseUser | null {
 }
 
 /**
+ * 현재 로그인된 사용자 가져오기 (필수)
+ *
+ * @description getCurrentUser()의 non-null 버전.
+ * 서비스 레이어에서 Firebase auth 직접 접근 대신 사용.
+ * @throws {AuthError} 로그인되지 않은 경우
+ */
+export function requireCurrentUser(): FirebaseUser {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) {
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '인증이 필요합니다',
+    });
+  }
+  return user;
+}
+
+/**
  * 인증 상태 변경 리스너
  */
 export function onAuthStateChanged(callback: (user: FirebaseUser | null) => void): () => void {
@@ -796,17 +834,35 @@ export async function signInWithApple(): Promise<AuthResult> {
     const existingProfile = await getUserProfile(user.uid);
 
     if (existingProfile && existingProfile.phoneVerified) {
-      // 기존 사용자 (프로필 완성됨) → Native SDK 동기화는 best-effort
+      // 기존 사용자 (프로필 완성됨) → Native SDK 동기화 (2회 재시도)
       if (nativeSignInWithCustomToken && getNativeAuth) {
-        try {
-          const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
-            getFirebaseFunctions(),
-            'createCustomToken'
-          );
-          const tokenResult = await createCustomTokenFn();
-          await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
-        } catch {
-          // 기존 사용자: 동기화 실패해도 앱 사용 가능 (Firestore는 Web SDK로 동작)
+        const MAX_SYNC_ATTEMPTS = 2;
+        const SYNC_RETRY_DELAY_MS = 1000;
+        const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
+          getFirebaseFunctions(),
+          'createCustomToken'
+        );
+        for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt++) {
+          try {
+            const tokenResult = await createCustomTokenFn();
+            await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
+            logger.info('Apple 로그인: Native SDK 동기화 완료 (기존 사용자)', {
+              component: 'authService',
+              attempt,
+            });
+            break;
+          } catch (syncError) {
+            logger.warn(
+              `Apple 로그인: Native SDK 동기화 실패 (기존 사용자, 시도 ${attempt}/${MAX_SYNC_ATTEMPTS})`,
+              {
+                component: 'authService',
+                error: syncError instanceof Error ? syncError.message : String(syncError),
+              }
+            );
+            if (attempt < MAX_SYNC_ATTEMPTS) {
+              await new Promise((r) => setTimeout(r, SYNC_RETRY_DELAY_MS));
+            }
+          }
         }
       }
 
@@ -852,12 +908,17 @@ export async function signInWithApple(): Promise<AuthResult> {
           });
           break;
         } catch (nativeSyncError) {
-          logger.warn(`Apple 로그인: Native SDK 동기화 실패 (시도 ${attempt}/${MAX_SYNC_ATTEMPTS})`, {
-            component: 'authService',
-            attempt,
-            error:
-              nativeSyncError instanceof Error ? nativeSyncError.message : String(nativeSyncError),
-          });
+          logger.warn(
+            `Apple 로그인: Native SDK 동기화 실패 (시도 ${attempt}/${MAX_SYNC_ATTEMPTS})`,
+            {
+              component: 'authService',
+              attempt,
+              error:
+                nativeSyncError instanceof Error
+                  ? nativeSyncError.message
+                  : String(nativeSyncError),
+            }
+          );
           if (attempt < MAX_SYNC_ATTEMPTS) {
             await new Promise((r) => setTimeout(r, SYNC_RETRY_DELAY_MS));
           }
@@ -869,7 +930,8 @@ export async function signInWithApple(): Promise<AuthResult> {
           uid: user.uid,
         });
         throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-          userMessage: 'Apple 로그인 처리 중 오류가 발생했습니다. 네트워크를 확인하고 다시 시도해주세요.',
+          userMessage:
+            'Apple 로그인 처리 중 오류가 발생했습니다. 네트워크를 확인하고 다시 시도해주세요.',
           metadata: { reason: 'native_sdk_sync_failed', uid: user.uid },
         });
       }

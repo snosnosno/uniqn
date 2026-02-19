@@ -140,6 +140,16 @@ export function useNetworkStatus(
   const wasOnlineRef = useRef(true);
   const isInitializedRef = useRef(false);
 
+  // 콜백을 ref로 캡처하여 useEffect 의존성에서 제거 (불필요한 재구독 방지)
+  const onOfflineRef = useRef(onOffline);
+  const onOnlineRef = useRef(onOnline);
+  useEffect(() => {
+    onOfflineRef.current = onOffline;
+  }, [onOffline]);
+  useEffect(() => {
+    onOnlineRef.current = onOnline;
+  }, [onOnline]);
+
   /**
    * 네트워크 연결 수동 확인
    */
@@ -208,24 +218,17 @@ export function useNetworkStatus(
         component: 'useNetworkStatus',
         connectionType: status.connectionType,
       });
-      onOffline?.();
+      onOfflineRef.current?.();
     } else if (!wasOnline && status.isOnline) {
       logger.info('네트워크 상태 변경: 온라인', {
         component: 'useNetworkStatus',
         connectionType: status.connectionType,
       });
-      onOnline?.();
+      onOnlineRef.current?.();
     }
 
     wasOnlineRef.current = status.isOnline;
-  }, [
-    status.isOnline,
-    status.isOffline,
-    status.isChecking,
-    status.connectionType,
-    onOffline,
-    onOnline,
-  ]);
+  }, [status.isOnline, status.isOffline, status.isChecking, status.connectionType]);
 
   // 네트워크 상태 구독
   useEffect(() => {
