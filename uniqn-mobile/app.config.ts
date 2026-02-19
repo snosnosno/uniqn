@@ -215,6 +215,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
           newArchEnabled: true,
         },
         ios: {
+          useFrameworks: 'static',
           deploymentTarget: '16.0',
           newArchEnabled: true,
         },
