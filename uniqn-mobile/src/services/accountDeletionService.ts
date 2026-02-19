@@ -113,6 +113,26 @@ export async function requestAccountDeletion(
         rawNonce,
       });
       await reauthenticateWithCredential(currentUser, oauthCredential);
+
+      // Apple Token Revocation (App Store 심사 필수 요구사항)
+      if (appleCredential.authorizationCode) {
+        try {
+          const { httpsCallable } = await import('firebase/functions');
+          const { getFirebaseFunctions } = await import('@/lib/firebase');
+          const revokeAppleTokenFn = httpsCallable<
+            { authorizationCode: string },
+            { success: boolean }
+          >(getFirebaseFunctions(), 'revokeAppleToken');
+          await revokeAppleTokenFn({ authorizationCode: appleCredential.authorizationCode });
+          logger.info('Apple 토큰 파기 완료', { userId: currentUser.uid });
+        } catch (revokeError) {
+          // 파기 실패해도 탈퇴는 계속 진행 (non-fatal)
+          logger.warn('Apple 토큰 파기 실패 (탈퇴는 계속 진행)', {
+            userId: currentUser.uid,
+            error: revokeError instanceof Error ? revokeError.message : String(revokeError),
+          });
+        }
+      }
     } else if (isAppleUser) {
       // Apple 사용자가 비-iOS 플랫폼에서 탈퇴 시도
       throw new AuthError('E2002', {

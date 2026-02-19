@@ -68,7 +68,12 @@ export async function syncSignOut(): Promise<void> {
   // async 래퍼로 감싸서 getNativeAuth()/getFirebaseAuth()의 동기 throw도
   // rejected Promise로 변환 → Promise.allSettled가 정상 처리
   const results = await Promise.allSettled([
-    (async () => nativeSignOut!(getNativeAuth!()))(),
+    (async () => {
+      if (nativeSignOut && getNativeAuth) {
+        return nativeSignOut(getNativeAuth());
+      }
+      logger.debug('Native SDK 로그아웃 스킵 (SDK 없음)', { component: 'authBridge' });
+    })(),
     (async () => signOut(getFirebaseAuth()))(),
   ]);
 
@@ -97,7 +102,11 @@ export async function ensureDualSdkSync(): Promise<void> {
   }
 
   try {
-    const nativeUser = getNativeAuth!().currentUser;
+    if (!getNativeAuth) {
+      logger.debug('Native SDK 미초기화 - 동기화 확인 스킵', { component: 'authBridge' });
+      return;
+    }
+    const nativeUser = getNativeAuth().currentUser;
     const webUser = getFirebaseAuth().currentUser;
 
     const nativeLoggedIn = !!nativeUser;

@@ -44,6 +44,7 @@ import {
   nativeUpdateProfile,
   nativeDeleteUser,
   NativeEmailAuthProvider,
+  nativeSignInWithCustomToken,
 } from '@/lib/nativeAuth';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
@@ -745,11 +746,36 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
 
     // Apple이 제공하는 이름 (최초 로그인 시에만 제공)
-    const appleName = appleCredential.fullName
-      ? [appleCredential.fullName.familyName, appleCredential.fullName.givenName]
-          .filter(Boolean)
-          .join('')
-      : '';
+    // MMKV에 즉시 캐시하여 이름 유실 방지 (Firestore 쓰기 실패 시에도 복구 가능)
+    // Apple User ID로 사용자별 캐시 키 생성 (공유 기기 대응)
+    const appleNameCacheKey = `apple_name_cache_${appleCredential.user}`;
+    const { getMMKVInstance } = await import('@/lib/mmkvStorage');
+    const mmkv = getMMKVInstance();
+
+    let appleName: string;
+    if (appleCredential.fullName) {
+      const nameFromApple = [
+        appleCredential.fullName.familyName,
+        appleCredential.fullName.givenName,
+      ]
+        .filter(Boolean)
+        .join('');
+      if (nameFromApple) {
+        appleName = nameFromApple;
+        mmkv.set(appleNameCacheKey, appleName);
+        logger.debug('Apple 이름 MMKV 캐시 저장', { component: 'authService' });
+      } else {
+        // fullName 객체는 있지만 값이 비어있음 (이름 공유 거부) → 캐시 복구 시도
+        appleName = mmkv.getString(appleNameCacheKey) ?? '';
+      }
+    } else {
+      // fullName이 null (재로그인 시) → 캐시에서 복구
+      const cachedName = mmkv.getString(appleNameCacheKey);
+      appleName = cachedName ?? '';
+      if (cachedName) {
+        logger.debug('Apple 이름 MMKV 캐시에서 복구', { component: 'authService' });
+      }
+    }
 
     // 3. Web SDK 인증 (Firestore Security Rules용 — 반드시 먼저 실행)
     // Apple credential은 1회용이므로 Web SDK를 우선 인증
@@ -761,23 +787,37 @@ export async function signInWithApple(): Promise<AuthResult> {
     const webResult = await signInWithCredential(getFirebaseAuth(), webOAuthCredential);
     logger.info('Apple 로그인: Web SDK 인증 성공', { component: 'authService' });
 
-    // 4. Native SDK 동기화 생략
-    // Apple credential은 1회용 — Web SDK가 소비하면 Native SDK에 재사용 불가
-    // Firestore Security Rules는 Web SDK 토큰으로 동작하므로 문제 없음
-    // TODO [P2]: Cloud Function createCustomToken 구현 후 Native SDK 동기화 추가
-    logger.info('Apple 로그인: Web SDK 인증 완료 (Native SDK 동기화 생략)', {
-      component: 'authService',
-    });
+    // 4. Native SDK 동기화 (Cloud Function Custom Token 방식)
+    // Apple credential은 1회용이라 Web SDK가 소비 후 Native SDK에 재사용 불가
+    // Custom Token을 발급받아 Native SDK에 별도 인증
+    if (nativeSignInWithCustomToken && getNativeAuth) {
+      try {
+        const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
+          getFirebaseFunctions(),
+          'createCustomToken'
+        );
+        const tokenResult = await createCustomTokenFn();
+        await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
+        logger.info('Apple 로그인: Native SDK 동기화 완료', { component: 'authService' });
+      } catch (nativeSyncError) {
+        // Native SDK 동기화 실패는 치명적이지 않음 (Firestore는 Web SDK로 동작)
+        logger.warn('Apple 로그인: Native SDK 동기화 실패 (앱 기능에 영향 없음)', {
+          component: 'authService',
+          error:
+            nativeSyncError instanceof Error ? nativeSyncError.message : String(nativeSyncError),
+        });
+      }
+    }
 
     const user = webResult.user;
 
-    // Custom Claims 갱신
-    await user.getIdToken(true);
-
-    // 5. Firestore 프로필 확인
+    // 5. Firestore 프로필 확인 (getIdToken보다 먼저 — Claims 타이밍 이슈 해결)
     const existingProfile = await getUserProfile(user.uid);
 
     if (existingProfile && existingProfile.phoneVerified) {
+      // 기존 사용자 (프로필 완성됨) → Claims 포함 토큰 갱신 후 앱 진입
+      await user.getIdToken(true);
+
       // 비활성화된 계정 체크 (명시적으로 false인 경우만)
       if (existingProfile.isActive === false) {
         throw new AuthError(ERROR_CODES.AUTH_ACCOUNT_DISABLED, {
@@ -785,7 +825,6 @@ export async function signInWithApple(): Promise<AuthResult> {
         });
       }
 
-      // 기존 사용자 (프로필 완성됨) → 즉시 앱 진입
       logger.info('Apple 로그인 성공 (기존 사용자)', { uid: user.uid });
       trackLogin('apple');
       setUserId(user.uid);
@@ -813,6 +852,14 @@ export async function signInWithApple(): Promise<AuthResult> {
         updatedAt: serverTimestamp(),
       });
 
+      // 프로필 생성 후 best-effort 토큰 갱신 (onUserRoleChange 트리거가 Claims 설정)
+      // 신규 사용자는 phoneVerified=false → signup 플로우이므로 claims 즉시 불필요
+      try {
+        await user.getIdToken(true);
+      } catch {
+        // Claims 미설정이어도 signup 플로우 진행 가능
+      }
+
       // 클라이언트 반환용 프로필 (Timestamp.now() — serverTimestamp는 FieldValue이므로 직접 사용 불가)
       const minimalProfile: UserProfile = {
         uid: user.uid,
@@ -831,20 +878,15 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
 
     // 기존 프로필 있지만 phoneVerified=false (이전에 중단된 가입)
+    await user.getIdToken(true);
     logger.info('Apple 로그인 성공 (미완성 프로필)', { uid: user.uid });
     return { user, profile: existingProfile };
   } catch (error) {
-    // 사용자 취소 처리 (expo-apple-authentication 에러 코드 방어적 체크)
+    // 사용자 취소 처리
+    // expo-apple-authentication은 취소 시 code='ERR_REQUEST_CANCELED'인 CodedError를 throw
     const errorCode = (error as { code?: string }).code;
-    const errorMessage = (error as { message?: string }).message ?? '';
 
-    const isCanceled =
-      errorCode === 'ERR_REQUEST_CANCELED' ||
-      errorCode === 'ERR_CANCELED' ||
-      errorMessage.includes('canceled') ||
-      errorMessage.includes('cancelled');
-
-    if (isCanceled) {
+    if (errorCode === 'ERR_REQUEST_CANCELED') {
       logger.info('Apple 로그인 취소', { component: 'authService' });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         userMessage: '', // 빈 메시지 → login.tsx에서 toast 미표시
@@ -852,14 +894,19 @@ export async function signInWithApple(): Promise<AuthResult> {
     }
 
     // Firebase 에러 상세 로깅 (진단용)
+    const errorMessage = (error as { message?: string }).message ?? '';
     const firebaseCode = errorCode;
     const firebaseMsg = errorMessage;
-    logger.error('Apple 로그인 실패 상세', error instanceof Error ? error : new Error(String(error)), {
-      component: 'authService',
-      firebaseCode,
-      firebaseMessage: firebaseMsg,
-      platform: Platform.OS,
-    });
+    logger.error(
+      'Apple 로그인 실패 상세',
+      error instanceof Error ? error : new Error(String(error)),
+      {
+        component: 'authService',
+        firebaseCode,
+        firebaseMessage: firebaseMsg,
+        platform: Platform.OS,
+      }
+    );
 
     // 부분 인증 상태 정리
     try {
@@ -940,13 +987,27 @@ export async function completeSocialProfile(
       await updateProfile(webUser, { displayName: data.nickname });
     }
 
-    // Native SDK displayName 업데이트 (이메일 가입 사용자만 해당)
-    // Apple 소셜 로그인은 Web SDK만 인증하므로 nativeUser=null → 자동 스킵됨
+    // Native SDK displayName 업데이트
     if (Platform.OS !== 'web' && getNativeAuth && nativeUpdateProfile) {
       const nativeUser = getNativeAuth().currentUser;
       if (nativeUser) {
         await nativeUpdateProfile(nativeUser, { displayName: data.nickname });
       }
+    }
+
+    // Custom Claims 갱신: updateFields → onUserRoleChange 트리거가 Claims 설정
+    // 프로필 완성 후 강제 갱신하여 최신 Claims 포함
+    try {
+      const claimsUser = getFirebaseAuth().currentUser;
+      if (claimsUser) {
+        await claimsUser.getIdToken(true);
+        logger.info('소셜 프로필 완성 후 Custom Claims 갱신 완료', { uid });
+      }
+    } catch (claimsError) {
+      logger.warn('소셜 프로필 완성 후 Claims 갱신 실패 (무시)', {
+        uid,
+        error: claimsError instanceof Error ? claimsError.message : String(claimsError),
+      });
     }
 
     // 업데이트된 프로필 조회

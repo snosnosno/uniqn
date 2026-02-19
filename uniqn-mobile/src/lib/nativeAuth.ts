@@ -37,6 +37,9 @@ let _signInWithCredential:
 let _PhoneAuthProvider: typeof import('@react-native-firebase/auth').PhoneAuthProvider | null =
   null;
 let _OAuthProvider: typeof import('@react-native-firebase/auth').OAuthProvider | null = null;
+let _signInWithCustomToken:
+  | typeof import('@react-native-firebase/auth').signInWithCustomToken
+  | null = null;
 
 if (Platform.OS !== 'web') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -52,6 +55,7 @@ if (Platform.OS !== 'web') {
   _signInWithCredential = mod.signInWithCredential;
   _PhoneAuthProvider = mod.PhoneAuthProvider;
   _OAuthProvider = mod.OAuthProvider;
+  _signInWithCustomToken = mod.signInWithCustomToken;
 }
 
 // ============================================================================
@@ -72,3 +76,4 @@ export const NativeEmailAuthProvider = _EmailAuthProvider;
 export const nativeSignInWithCredential = _signInWithCredential;
 export const NativePhoneAuthProvider = _PhoneAuthProvider;
 export const NativeOAuthProvider = _OAuthProvider;
+export const nativeSignInWithCustomToken = _signInWithCustomToken;

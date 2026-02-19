@@ -234,36 +234,62 @@ export function useAppInitialize(): UseAppInitializeReturn {
             );
           }
 
-          // authStore에 user 설정 (MMKV 복원 실패 시에도 인증 상태 보장)
-          useAuthStore.getState().setUser(authUser);
-
-          // Firestore에서 최신 프로필 가져오기
+          // Firestore에서 최신 프로필 가져오기 (setUser보다 먼저 — 부분 인증 상태 방지)
           logger.debug('Firestore에서 최신 프로필 가져오는 중...', {
             component: 'useAppInitialize',
           });
           const freshProfile = await getUserProfile(authUser.uid);
           if (freshProfile) {
-            // Timestamp를 Date로 변환하여 authStore에 저장
-            useAuthStore.getState().setProfile({
-              ...freshProfile,
-              createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
-              updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
-              employerAgreements: freshProfile.employerAgreements
-                ? {
-                    termsAgreedAt:
-                      freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-                    liabilityWaiverAgreedAt:
-                      freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ??
-                      new Date(),
-                  }
-                : undefined,
-              employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
-            });
-            logger.info('최신 프로필 로드 완료', {
-              component: 'useAppInitialize',
-              uid: authUser.uid,
-              nickname: freshProfile.nickname,
-            });
+            // 소셜 로그인 미완성 프로필 → setProfile + setUser 후 useAuthGuard가 signup 리다이렉트
+            if (freshProfile.socialProvider && !freshProfile.phoneVerified) {
+              logger.info('소셜 로그인 미완성 프로필 감지 - signup 리다이렉트 대기', {
+                component: 'useAppInitialize',
+                uid: authUser.uid,
+                socialProvider: freshProfile.socialProvider,
+              });
+              // setProfile → setUser 순서: profile 먼저 설정하여 useAuthGuard가 정확한 상태 감지
+              useAuthStore.getState().setProfile({
+                ...freshProfile,
+                createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
+                updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
+                employerAgreements: freshProfile.employerAgreements
+                  ? {
+                      termsAgreedAt:
+                        freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+                      liabilityWaiverAgreedAt:
+                        freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ??
+                        new Date(),
+                    }
+                  : undefined,
+                employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
+              });
+              useAuthStore.getState().setUser(authUser);
+              // 알림 카운터 등 불필요한 초기화 건너뛰기
+            } else {
+              // 완성된 프로필: setProfile → setUser 순서 (profile 준비 후 인증 상태 전환)
+              // Timestamp를 Date로 변환하여 authStore에 저장
+              useAuthStore.getState().setProfile({
+                ...freshProfile,
+                createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
+                updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
+                employerAgreements: freshProfile.employerAgreements
+                  ? {
+                      termsAgreedAt:
+                        freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
+                      liabilityWaiverAgreedAt:
+                        freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ??
+                        new Date(),
+                    }
+                  : undefined,
+                employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
+              });
+              useAuthStore.getState().setUser(authUser);
+              logger.info('최신 프로필 로드 완료', {
+                component: 'useAppInitialize',
+                uid: authUser.uid,
+                nickname: freshProfile.nickname,
+              });
+            }
           } else {
             // Firestore 프로필 문서 없는 고아 계정 → 로그아웃 처리
             logger.warn('Firestore 프로필 문서 없음 (고아 계정) - 로그아웃 처리', {
@@ -275,8 +301,8 @@ export function useAppInitialize(): UseAppInitializeReturn {
             useAuthStore.getState().reset();
           }
 
-          // freshProfile이 존재할 때만 알림 카운터 로드
-          if (freshProfile) {
+          // 완성된 프로필이 있을 때만 알림 카운터 로드
+          if (freshProfile && freshProfile.phoneVerified) {
             // 🆕 미읽음 알림 카운터 로드 (Firestore 실시간 리스너 대체)
             try {
               // Service를 통해 캐시된 카운터 조회
@@ -359,11 +385,31 @@ export function useAppInitialize(): UseAppInitializeReturn {
             }
           } // end: if (freshProfile) - 알림 카운터 블록
         } catch (tokenError) {
-          // 토큰 갱신 실패해도 앱은 계속 진행
-          logger.warn('토큰 갱신 실패', {
-            component: 'useAppInitialize',
-            error: tokenError instanceof Error ? tokenError.message : String(tokenError),
-          });
+          // 치명적 에러 vs 일시적 에러 분기
+          const errorCode = (tokenError as { code?: string }).code;
+          const fatalCodes = [
+            'auth/user-token-expired',
+            'auth/user-disabled',
+            'auth/user-not-found',
+          ];
+
+          if (fatalCodes.includes(errorCode ?? '')) {
+            // 치명적 에러: 재인증 필요 → 로그아웃 + 상태 초기화
+            logger.warn('치명적 토큰 에러 - 로그아웃 처리', {
+              component: 'useAppInitialize',
+              errorCode,
+              error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            });
+            await authSignOut();
+            useAuthStore.getState().reset();
+          } else {
+            // 일시적 에러 (네트워크 등): 앱 계속 진행
+            logger.warn('토큰 갱신 실패 (일시적) - 앱 계속 진행', {
+              component: 'useAppInitialize',
+              errorCode,
+              error: tokenError instanceof Error ? tokenError.message : String(tokenError),
+            });
+          }
         }
       } else {
         // Firebase Auth에 사용자가 없으면 MMKV에서 복원된 stale 인증 상태 정리
