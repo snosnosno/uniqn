@@ -10,12 +10,13 @@
  * @since 2025-02-01
  */
 
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
-import { logger } from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { broadcastNotification } from '../utils/notificationUtils';
-
-const db = admin.firestore();
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { logger } from "firebase-functions";
+import { handleTriggerError } from "../errors/errorHandler";
+import {
+  broadcastNotification,
+  getAdminUserIds,
+} from "../utils/notificationUtils";
 
 // ============================================================================
 // Types
@@ -43,13 +44,13 @@ interface InquiryData {
  * - 모든 관리자에게 알림 전송
  */
 export const onInquiryCreated = onDocumentCreated(
-  { document: 'inquiries/{inquiryId}', region: 'asia-northeast3' },
+  { document: "inquiries/{inquiryId}", region: "asia-northeast3" },
   async (event) => {
     const inquiryId = event.params.inquiryId;
     const inquiry = event.data?.data() as InquiryData | undefined;
     if (!inquiry) return;
 
-    logger.info('새로운 문의 접수', {
+    logger.info("새로운 문의 접수", {
       inquiryId,
       userName: inquiry.userName,
       category: inquiry.category,
@@ -57,39 +58,34 @@ export const onInquiryCreated = onDocumentCreated(
     });
 
     try {
-      // 1. 모든 관리자 조회
-      const adminUsersSnap = await db
-        .collection('users')
-        .where('role', '==', 'admin')
-        .get();
+      // 1. 모든 관리자 조회 (캐시 사용)
+      const adminIds = await getAdminUserIds();
 
-      if (adminUsersSnap.empty) {
-        logger.warn('관리자가 없습니다');
+      if (adminIds.length === 0) {
+        logger.warn("관리자가 없습니다");
         return;
       }
 
-      const adminIds = adminUsersSnap.docs.map((doc) => doc.id);
-
-      logger.info('알림 대상 관리자 수', {
+      logger.info("알림 대상 관리자 수", {
         count: adminIds.length,
       });
 
       // 2. 알림 전송 (broadcastNotification 사용)
       const results = await broadcastNotification(
         adminIds,
-        'new_inquiry',
-        '💬 새로운 문의 접수',
+        "new_inquiry",
+        "💬 새로운 문의 접수",
         `${inquiry.userName}님의 문의: ${inquiry.subject}`,
         {
           link: `/admin/inquiries/${inquiryId}`,
-          priority: 'normal',
+          priority: "normal",
           data: {
             inquiryId,
             category: inquiry.category,
             subject: inquiry.subject,
             userName: inquiry.userName,
           },
-        }
+        },
       );
 
       // 3. 결과 로깅
@@ -104,17 +100,17 @@ export const onInquiryCreated = onDocumentCreated(
         }
       });
 
-      logger.info('문의 접수 알림 전송 완료', {
+      logger.info("문의 접수 알림 전송 완료", {
         inquiryId,
         totalAdmins: adminIds.length,
         successCount,
         failureCount,
       });
     } catch (error: unknown) {
-      logger.error('문의 접수 알림 처리 중 오류 발생', {
-        inquiryId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: "문의 접수 알림 처리",
+        context: { inquiryId },
       });
     }
-  });
+  },
+);

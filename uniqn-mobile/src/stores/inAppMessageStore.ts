@@ -34,7 +34,7 @@ export const useInAppMessageStore = create<InAppMessageState & InAppMessageActio
       history: {},
       allMessages: [],
       isLoading: false,
-      sessionShownIds: [],
+      sessionShownIds: new Set<string>(),
 
       // Actions
       setMessages: (messages: InAppMessage[]) => {
@@ -161,22 +161,19 @@ export const useInAppMessageStore = create<InAppMessageState & InAppMessageActio
         set({ isLoading: loading });
       },
 
-      // 세션 표시 ID 추가 (중복 방지)
       addSessionShownId: (messageId: string) => {
         const { sessionShownIds } = get();
-        if (!sessionShownIds.includes(messageId)) {
-          set({ sessionShownIds: [...sessionShownIds, messageId] });
+        if (!sessionShownIds.has(messageId)) {
+          set({ sessionShownIds: new Set(sessionShownIds).add(messageId) });
         }
       },
 
-      // 세션 표시 여부 확인
       hasSessionShownId: (messageId: string) => {
-        return get().sessionShownIds.includes(messageId);
+        return get().sessionShownIds.has(messageId);
       },
 
-      // 세션 ID 목록 초기화
       resetSessionIds: () => {
-        set({ sessionShownIds: [] });
+        set({ sessionShownIds: new Set<string>() });
       },
     }),
     {
@@ -225,7 +222,7 @@ export const selectIsMessageDismissed = (state: InAppMessageState, messageId: st
  * 특정 메시지가 현재 세션에서 이미 표시되었는지 확인
  */
 export const selectIsSessionShown = (state: InAppMessageState, messageId: string): boolean =>
-  state.sessionShownIds.includes(messageId);
+  state.sessionShownIds.has(messageId);
 
 // ============================================================================
 // State Selectors (불필요한 리렌더링 방지)

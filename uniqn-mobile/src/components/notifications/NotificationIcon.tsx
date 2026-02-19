@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text } from 'react-native';
 import {
   UserPlusIcon,
@@ -159,7 +159,7 @@ const categoryColors: Record<NotificationCategory, { bg: string; icon: string }>
   },
 };
 
-export function NotificationIcon({
+export const NotificationIcon = memo(function NotificationIcon({
   type,
   size = 20,
   useEmoji = false,
@@ -172,6 +172,7 @@ export function NotificationIcon({
     const emoji = typeEmojis[type] || '🔔';
     return (
       <View
+        importantForAccessibility="no-hide-descendants"
         className={`
           w-10 h-10 rounded-full items-center justify-center
           ${colors.bg}
@@ -187,6 +188,7 @@ export function NotificationIcon({
 
   return (
     <View
+      importantForAccessibility="no-hide-descendants"
       className={`
         w-10 h-10 rounded-full items-center justify-center
         ${colors.bg}
@@ -196,6 +198,6 @@ export function NotificationIcon({
       <IconComponent size={size} color={colors.icon} />
     </View>
   );
-}
+});
 
 export default NotificationIcon;

@@ -51,10 +51,10 @@ const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
 ];
 
 interface FormDataState {
-  terms?: SignUpStep4Data;     // Step 1: 약관동의
-  account?: SignUpStep1Data;   // Step 2: 계정정보 (소셜 모드에서 생략)
-  identity?: SignUpStep2Data;  // Step 3: 본인인증
-  profile?: SignUpStep3Data;   // Step 4: 프로필
+  terms?: SignUpStep4Data; // Step 1: 약관동의
+  account?: SignUpStep1Data; // Step 2: 계정정보 (소셜 모드에서 생략)
+  identity?: SignUpStep2Data; // Step 3: 본인인증
+  profile?: SignUpStep3Data; // Step 4: 프로필
 }
 
 // ============================================================================
@@ -82,11 +82,14 @@ export function SignupForm({
   // Step 1: 약관동의
   // ──────────────────────────────────────────────────────────────────────────
 
-  const handleTermsNext = useCallback((data: SignUpStep4Data) => {
-    setFormData((prev) => ({ ...prev, terms: data }));
-    // 소셜 모드: 계정정보 건너뛰고 본인인증(Step 3)으로
-    setCurrentStep(isSocial ? 3 : 2);
-  }, [isSocial]);
+  const handleTermsNext = useCallback(
+    (data: SignUpStep4Data) => {
+      setFormData((prev) => ({ ...prev, terms: data }));
+      // 소셜 모드: 계정정보 건너뛰고 본인인증(Step 3)으로
+      setCurrentStep(isSocial ? 3 : 2);
+    },
+    [isSocial]
+  );
 
   // ──────────────────────────────────────────────────────────────────────────
   // Step 2: 계정 정보 (소셜 모드에서는 렌더링되지 않음)
@@ -257,9 +260,7 @@ export function SignupForm({
             onNext={handleIdentityNext}
             onBack={handleIdentityBack}
             initialData={
-              isSocial && !formData.identity
-                ? { name: socialData?.name || '' }
-                : formData.identity
+              isSocial && !formData.identity ? { name: socialData?.name || '' } : formData.identity
             }
             isLoading={isLoading}
             phoneMode={isSocial ? 'link' : 'signIn'}

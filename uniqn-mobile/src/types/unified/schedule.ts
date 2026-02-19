@@ -113,10 +113,7 @@ export function isFixedSchedule(schedule: NormalizedSchedule): schedule is Fixed
  * @param options - 추가 옵션
  * @returns DatedScheduleInfo 객체
  */
-export function createDatedSchedule(
-  date: string,
-  timeSlots: TimeSlotInfo[]
-): DatedScheduleInfo {
+export function createDatedSchedule(date: string, timeSlots: TimeSlotInfo[]): DatedScheduleInfo {
   return {
     type: 'dated',
     date,

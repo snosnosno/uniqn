@@ -18,6 +18,7 @@ import { ChevronRightIcon, TrashIcon } from '@/components/icons';
 import { getIconColor } from '@/constants/colors';
 import { formatRelativeTime } from '@/utils/date';
 import { toDateFromTimestamp } from '@/types/notification';
+import { logger } from '@/utils/logger';
 
 // 4. 타입
 import type { NotificationData } from '@/types/notification';
@@ -55,7 +56,11 @@ export const NotificationItem = memo(function NotificationItem({
     if (onPress) {
       onPress(notification);
     } else if (notification.link) {
-      router.push(notification.link as Href);
+      try {
+        router.push(notification.link as Href);
+      } catch (error) {
+        logger.warn('알림 딥링크 이동 실패', { link: notification.link, error: String(error) });
+      }
     }
   }, [notification, onPress]);
 
@@ -168,7 +173,10 @@ export const NotificationItem = memo(function NotificationItem({
  */
 export function NotificationItemSkeleton() {
   return (
-    <View className="px-4 py-3 border-b border-gray-100 dark:border-surface">
+    <View
+      className="px-4 py-3 border-b border-gray-100 dark:border-surface"
+      accessibilityElementsHidden={true}
+    >
       <View className="flex-row items-start">
         {/* 아이콘 스켈레톤 */}
         <View className="w-10 h-10 rounded-full bg-gray-200 dark:bg-surface animate-pulse mr-3" />

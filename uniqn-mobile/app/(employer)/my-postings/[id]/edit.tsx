@@ -380,9 +380,10 @@ export default function EditJobPostingScreen() {
         useSameSalary: formData.useSameSalary,
         allowances: formData.allowances,
         // 세금 설정 (항상 포함하여 기존 값 덮어쓰기 보장)
-        taxSettings: formData.taxSettings?.type !== 'none'
-          ? formData.taxSettings
-          : { type: 'none' as const, value: 0 },
+        taxSettings:
+          formData.taxSettings?.type !== 'none'
+            ? formData.taxSettings
+            : { type: 'none' as const, value: 0 },
         tags: formData.tags,
       };
 

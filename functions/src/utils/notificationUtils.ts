@@ -10,14 +10,40 @@
  * @note 개발 단계이므로 레거시 호환 코드 없음
  */
 
-import * as admin from 'firebase-admin';
-import { logger } from 'firebase-functions';
-import { Expo, ExpoPushMessage, ExpoPushTicket } from 'expo-server-sdk';
-import { getPushTokens, removeInvalidTokens, isTokenInvalidError } from './fcmTokenUtils';
+import * as admin from "firebase-admin";
+import { logger } from "firebase-functions";
+import { Expo, ExpoPushMessage, ExpoPushTicket } from "expo-server-sdk";
+import {
+  getPushTokens,
+  removeInvalidTokens,
+  isTokenInvalidError,
+} from "./fcmTokenUtils";
 
 const expo = new Expo();
 
 const db = admin.firestore();
+
+// ============================================================================
+// Admin Cache
+// ============================================================================
+
+let adminCache: { userIds: string[]; fetchedAt: number } | null = null;
+const ADMIN_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+export async function getAdminUserIds(): Promise<string[]> {
+  if (adminCache && Date.now() - adminCache.fetchedAt < ADMIN_CACHE_TTL) {
+    return adminCache.userIds;
+  }
+
+  const adminUsersSnap = await db
+    .collection("users")
+    .where("role", "==", "admin")
+    .get();
+
+  const userIds = adminUsersSnap.docs.map((doc) => doc.id);
+  adminCache = { userIds, fetchedAt: Date.now() };
+  return userIds;
+}
 
 // ============================================================================
 // Types
@@ -25,55 +51,55 @@ const db = admin.firestore();
 
 /** 알림 타입 */
 export type NotificationType =
-  | 'new_application'
-  | 'application_confirmed'
-  | 'application_rejected'
-  | 'application_cancelled'
-  | 'confirmation_cancelled'
-  | 'cancellation_approved'     // 취소 요청 승인
-  | 'cancellation_rejected'     // 취소 요청 거절
-  | 'staff_checked_in'
-  | 'staff_checked_out'
-  | 'check_in_confirmed'    // 출근 확인 (스태프 본인에게)
-  | 'check_out_confirmed'   // 퇴근 확인 (스태프 본인에게)
-  | 'checkin_reminder'
-  | 'no_show_alert'
-  | 'schedule_change'
-  | 'schedule_created'
-  | 'schedule_cancelled'
-  | 'settlement_completed'
-  | 'settlement_requested'
-  | 'job_updated'
-  | 'job_cancelled'
-  | 'job_closed'
-  | 'announcement'
-  | 'maintenance'
-  | 'app_update'
-  | 'inquiry_answered'
-  | 'report_resolved'
-  | 'new_report'
-  | 'new_inquiry'
-  | 'tournament_approval_request';
+  | "new_application"
+  | "application_confirmed"
+  | "application_rejected"
+  | "application_cancelled"
+  | "confirmation_cancelled"
+  | "cancellation_approved" // 취소 요청 승인
+  | "cancellation_rejected" // 취소 요청 거절
+  | "staff_checked_in"
+  | "staff_checked_out"
+  | "check_in_confirmed" // 출근 확인 (스태프 본인에게)
+  | "check_out_confirmed" // 퇴근 확인 (스태프 본인에게)
+  | "checkin_reminder"
+  | "no_show_alert"
+  | "schedule_change"
+  | "schedule_created"
+  | "schedule_cancelled"
+  | "settlement_completed"
+  | "settlement_requested"
+  | "job_updated"
+  | "job_cancelled"
+  | "job_closed"
+  | "announcement"
+  | "maintenance"
+  | "app_update"
+  | "inquiry_answered"
+  | "report_resolved"
+  | "new_report"
+  | "new_inquiry"
+  | "tournament_approval_request";
 
 /** 알림 카테고리 */
 export type NotificationCategory =
-  | 'application'
-  | 'attendance'
-  | 'settlement'
-  | 'job'
-  | 'system'
-  | 'admin';
+  | "application"
+  | "attendance"
+  | "settlement"
+  | "job"
+  | "system"
+  | "admin";
 
 /** 알림 우선순위 */
-export type NotificationPriority = 'low' | 'normal' | 'high' | 'urgent';
+export type NotificationPriority = "low" | "normal" | "high" | "urgent";
 
 /** Android 알림 채널 */
 export type AndroidChannelId =
-  | 'applications'
-  | 'reminders'
-  | 'settlement'
-  | 'announcements'
-  | 'default';
+  | "applications"
+  | "reminders"
+  | "settlement"
+  | "announcements"
+  | "default";
 
 /** 알림 생성 옵션 */
 export interface CreateNotificationOptions {
@@ -158,7 +184,7 @@ export interface FailedCounterOperation {
   /** 사용자 ID */
   userId: string;
   /** 연산 종류 */
-  operation: 'increment' | 'decrement';
+  operation: "increment" | "decrement";
   /** 변경량 */
   delta: number;
   /** 관련 알림 ID */
@@ -170,7 +196,7 @@ export interface FailedCounterOperation {
   /** 재시도 횟수 */
   retryCount: number;
   /** 상태 */
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: "pending" | "processing" | "completed" | "failed";
   /** 마지막 재시도 시간 */
   lastRetryAt?: admin.firestore.Timestamp | admin.firestore.FieldValue;
   /** 마지막 에러 메시지 */
@@ -185,68 +211,68 @@ export interface FailedCounterOperation {
 
 /** 알림 타입 → 카테고리 매핑 */
 const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
-  new_application: 'application',
-  application_confirmed: 'application',
-  application_rejected: 'application',
-  application_cancelled: 'application',
-  confirmation_cancelled: 'application',
-  cancellation_approved: 'application',
-  cancellation_rejected: 'application',
-  staff_checked_in: 'attendance',
-  staff_checked_out: 'attendance',
-  check_in_confirmed: 'attendance',
-  check_out_confirmed: 'attendance',
-  checkin_reminder: 'attendance',
-  no_show_alert: 'attendance',
-  schedule_change: 'attendance',
-  schedule_created: 'attendance',
-  schedule_cancelled: 'attendance',
-  settlement_completed: 'settlement',
-  settlement_requested: 'settlement',
-  job_updated: 'job',
-  job_cancelled: 'job',
-  job_closed: 'job',
-  announcement: 'system',
-  maintenance: 'system',
-  app_update: 'system',
-  inquiry_answered: 'admin',
-  report_resolved: 'admin',
-  new_report: 'admin',
-  new_inquiry: 'admin',
-  tournament_approval_request: 'admin',
+  new_application: "application",
+  application_confirmed: "application",
+  application_rejected: "application",
+  application_cancelled: "application",
+  confirmation_cancelled: "application",
+  cancellation_approved: "application",
+  cancellation_rejected: "application",
+  staff_checked_in: "attendance",
+  staff_checked_out: "attendance",
+  check_in_confirmed: "attendance",
+  check_out_confirmed: "attendance",
+  checkin_reminder: "attendance",
+  no_show_alert: "attendance",
+  schedule_change: "attendance",
+  schedule_created: "attendance",
+  schedule_cancelled: "attendance",
+  settlement_completed: "settlement",
+  settlement_requested: "settlement",
+  job_updated: "job",
+  job_cancelled: "job",
+  job_closed: "job",
+  announcement: "system",
+  maintenance: "system",
+  app_update: "system",
+  inquiry_answered: "admin",
+  report_resolved: "admin",
+  new_report: "admin",
+  new_inquiry: "admin",
+  tournament_approval_request: "admin",
 };
 
 /** 알림 타입 → Android 채널 매핑 */
 const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
-  new_application: 'applications',
-  application_confirmed: 'applications',
-  application_rejected: 'applications',
-  application_cancelled: 'applications',
-  confirmation_cancelled: 'applications',
-  cancellation_approved: 'applications',
-  cancellation_rejected: 'applications',
-  staff_checked_in: 'reminders',
-  staff_checked_out: 'reminders',
-  check_in_confirmed: 'default',
-  check_out_confirmed: 'default',
-  checkin_reminder: 'reminders',
-  no_show_alert: 'reminders',
-  schedule_change: 'reminders',
-  schedule_created: 'reminders',
-  schedule_cancelled: 'reminders',
-  settlement_completed: 'settlement',
-  settlement_requested: 'settlement',
-  job_updated: 'announcements',
-  job_cancelled: 'announcements',
-  job_closed: 'announcements',
-  announcement: 'announcements',
-  maintenance: 'announcements',
-  app_update: 'announcements',
-  inquiry_answered: 'default',
-  report_resolved: 'default',
-  new_report: 'default',
-  new_inquiry: 'default',
-  tournament_approval_request: 'default',
+  new_application: "applications",
+  application_confirmed: "applications",
+  application_rejected: "applications",
+  application_cancelled: "applications",
+  confirmation_cancelled: "applications",
+  cancellation_approved: "applications",
+  cancellation_rejected: "applications",
+  staff_checked_in: "reminders",
+  staff_checked_out: "reminders",
+  check_in_confirmed: "default",
+  check_out_confirmed: "default",
+  checkin_reminder: "reminders",
+  no_show_alert: "reminders",
+  schedule_change: "reminders",
+  schedule_created: "reminders",
+  schedule_cancelled: "reminders",
+  settlement_completed: "settlement",
+  settlement_requested: "settlement",
+  job_updated: "announcements",
+  job_cancelled: "announcements",
+  job_closed: "announcements",
+  announcement: "announcements",
+  maintenance: "announcements",
+  app_update: "announcements",
+  inquiry_answered: "default",
+  report_resolved: "default",
+  new_report: "default",
+  new_inquiry: "default",
+  tournament_approval_request: "default",
 };
 
 /**
@@ -255,8 +281,8 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
  * @description urgent 우선순위 알림은 사용자가 방해 금지 모드를 설정해도 전송됨
  */
 const URGENT_NOTIFICATION_TYPES: NotificationType[] = [
-  'checkin_reminder',
-  'no_show_alert',
+  "checkin_reminder",
+  "no_show_alert",
 ];
 
 // ============================================================================
@@ -272,14 +298,14 @@ const URGENT_NOTIFICATION_TYPES: NotificationType[] = [
  * @description Firestore 경로: users/{userId}/notificationSettings/default
  */
 async function getUserNotificationSettings(
-  userId: string
+  userId: string,
 ): Promise<UserNotificationSettings | null> {
   try {
     const settingsDoc = await db
-      .collection('users')
+      .collection("users")
       .doc(userId)
-      .collection('notificationSettings')
-      .doc('default')
+      .collection("notificationSettings")
+      .doc("default")
       .get();
 
     if (!settingsDoc.exists) {
@@ -288,7 +314,7 @@ async function getUserNotificationSettings(
 
     return settingsDoc.data() as UserNotificationSettings;
   } catch (error: unknown) {
-    logger.warn('알림 설정 조회 실패', {
+    logger.warn("알림 설정 조회 실패", {
       userId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -303,7 +329,7 @@ async function getUserNotificationSettings(
  * @returns 현재 방해 금지 시간인지 여부
  */
 function isQuietHoursActive(
-  quietHours: UserNotificationSettings['quietHours']
+  quietHours: UserNotificationSettings["quietHours"],
 ): boolean {
   if (!quietHours?.enabled) {
     return false;
@@ -316,8 +342,8 @@ function isQuietHoursActive(
   const currentMinute = koreaTime.getUTCMinutes();
   const currentTime = currentHour * 60 + currentMinute;
 
-  const [startHour, startMinute] = quietHours.start.split(':').map(Number);
-  const [endHour, endMinute] = quietHours.end.split(':').map(Number);
+  const [startHour, startMinute] = quietHours.start.split(":").map(Number);
+  const [endHour, endMinute] = quietHours.end.split(":").map(Number);
   const startTime = startHour * 60 + startMinute;
   const endTime = endHour * 60 + endMinute;
 
@@ -339,7 +365,7 @@ function isQuietHoursActive(
  */
 async function checkNotificationPermission(
   userId: string,
-  type: NotificationType
+  type: NotificationType,
 ): Promise<{ allowed: boolean; reason?: string }> {
   const settings = await getUserNotificationSettings(userId);
 
@@ -350,12 +376,12 @@ async function checkNotificationPermission(
 
   // 전체 알림 비활성화
   if (!settings.enabled) {
-    return { allowed: false, reason: 'notifications_disabled' };
+    return { allowed: false, reason: "notifications_disabled" };
   }
 
   // 전체 푸시 비활성화
   if (settings.pushEnabled === false) {
-    return { allowed: false, reason: 'push_disabled' };
+    return { allowed: false, reason: "push_disabled" };
   }
 
   // 카테고리별 설정 확인
@@ -379,7 +405,7 @@ async function checkNotificationPermission(
     // urgent 알림은 방해 금지 시간에도 전송
     const isUrgent = URGENT_NOTIFICATION_TYPES.includes(type);
     if (!isUrgent) {
-      return { allowed: false, reason: 'quiet_hours' };
+      return { allowed: false, reason: "quiet_hours" };
     }
   }
 
@@ -420,12 +446,12 @@ export async function createAndSendNotification(
   type: NotificationType,
   title: string,
   body: string,
-  options: CreateNotificationOptions = {}
+  options: CreateNotificationOptions = {},
 ): Promise<NotificationResult> {
   const {
     link,
     data = {},
-    priority = 'normal',
+    priority = "normal",
     channelId = TYPE_TO_CHANNEL[type],
     relatedId,
     senderId,
@@ -436,11 +462,11 @@ export async function createAndSendNotification(
   // 0. 알림 설정 확인 + 사용자 문서 조회 (병렬 처리로 성능 최적화)
   const [permissionCheck, userDoc] = await Promise.all([
     checkNotificationPermission(recipientId, type),
-    db.collection('users').doc(recipientId).get(),
+    db.collection("users").doc(recipientId).get(),
   ]);
 
   if (!permissionCheck.allowed) {
-    logger.info('사용자 알림 설정에 의해 푸시 전송 생략', {
+    logger.info("사용자 알림 설정에 의해 푸시 전송 생략", {
       recipientId,
       type,
       category,
@@ -448,7 +474,7 @@ export async function createAndSendNotification(
     });
 
     // Firestore에는 알림 문서 생성 (인앱 알림용), FCM만 생략
-    const notificationRef = db.collection('notifications').doc();
+    const notificationRef = db.collection("notifications").doc();
     const notificationId = notificationRef.id;
 
     await notificationRef.set({
@@ -484,7 +510,7 @@ export async function createAndSendNotification(
   }
 
   // 1. Firestore 알림 문서 생성
-  const notificationRef = db.collection('notifications').doc();
+  const notificationRef = db.collection("notifications").doc();
   const notificationId = notificationRef.id;
 
   const notificationDoc = {
@@ -514,7 +540,7 @@ export async function createAndSendNotification(
     // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
   });
 
-  logger.info('알림 문서 생성 완료', {
+  logger.info("알림 문서 생성 완료", {
     notificationId,
     recipientId,
     type,
@@ -525,7 +551,7 @@ export async function createAndSendNotification(
   const tokens = getPushTokens(userData);
 
   if (tokens.length === 0) {
-    logger.warn('FCM 토큰이 없습니다', {
+    logger.warn("FCM 토큰이 없습니다", {
       recipientId,
       notificationId,
     });
@@ -545,7 +571,7 @@ export async function createAndSendNotification(
     data: {
       type,
       notificationId,
-      link: link ?? '',
+      link: link ?? "",
       ...data,
     },
     channelId,
@@ -565,7 +591,7 @@ export async function createAndSendNotification(
   if (fcmResult.invalidTokens.length > 0) {
     // 비동기로 처리 (알림 전송 결과에 영향 주지 않음)
     removeInvalidTokens(recipientId, fcmResult.invalidTokens).catch((error) => {
-      logger.error('만료 토큰 정리 실패', {
+      logger.error("만료 토큰 정리 실패", {
         recipientId,
         tokenCount: fcmResult.invalidTokens.length,
         error: error.message,
@@ -573,7 +599,7 @@ export async function createAndSendNotification(
     });
   }
 
-  logger.info('알림 전송 완료', {
+  logger.info("알림 전송 완료", {
     notificationId,
     recipientId,
     success: fcmResult.success,
@@ -609,9 +635,15 @@ export async function sendMulticast(
     data?: Record<string, string>;
     channelId?: AndroidChannelId;
     priority?: NotificationPriority;
-  }
+  },
 ): Promise<MulticastResult> {
-  const { title, body, data = {}, channelId = 'default', priority = 'normal' } = payload;
+  const {
+    title,
+    body,
+    data = {},
+    channelId = "default",
+    priority = "normal",
+  } = payload;
 
   // 토큰 형식별 분리 (원본 인덱스 보존)
   const expoIndices: number[] = [];
@@ -629,7 +661,9 @@ export async function sendMulticast(
   const fcmTokens = fcmIndices.map((i) => tokens[i]);
 
   // 원본 tokens 배열 순서와 일치하는 응답 배열
-  const orderedResponses: MulticastResult['responses'] = new Array(tokens.length);
+  const orderedResponses: MulticastResult["responses"] = new Array(
+    tokens.length,
+  );
   const invalidTokens: string[] = [];
   let totalSuccess = 0;
   let totalFailure = 0;
@@ -637,14 +671,14 @@ export async function sendMulticast(
   // ── 1. Expo Push Token → Expo Push API ──
   if (expoTokens.length > 0) {
     const expoPriority =
-      priority === 'urgent' || priority === 'high' ? 'high' : 'normal';
+      priority === "urgent" || priority === "high" ? "high" : "normal";
 
     const messages: ExpoPushMessage[] = expoTokens.map((token) => ({
       to: token,
       title,
       body,
       data,
-      sound: 'default' as const,
+      sound: "default" as const,
       channelId,
       priority: expoPriority,
     }));
@@ -662,7 +696,7 @@ export async function sendMulticast(
           const token = expoTokens[expoIdx];
           processedCount++;
 
-          if (ticket.status === 'ok') {
+          if (ticket.status === "ok") {
             totalSuccess++;
             orderedResponses[originalIdx] = {
               success: true,
@@ -677,13 +711,13 @@ export async function sendMulticast(
             };
 
             // DeviceNotRegistered → 토큰 만료
-            if (ticket.details?.error === 'DeviceNotRegistered' && token) {
+            if (ticket.details?.error === "DeviceNotRegistered" && token) {
               invalidTokens.push(token);
             }
           }
         });
       } catch (error: unknown) {
-        logger.error('Expo Push API 전송 실패', {
+        logger.error("Expo Push API 전송 실패", {
           error: error instanceof Error ? error.message : String(error),
           chunkSize: chunk.length,
         });
@@ -700,7 +734,7 @@ export async function sendMulticast(
       }
     }
 
-    logger.info('Expo Push 전송 완료', {
+    logger.info("Expo Push 전송 완료", {
       total: expoTokens.length,
       success: totalSuccess,
       failure: totalFailure,
@@ -710,7 +744,7 @@ export async function sendMulticast(
   // ── 2. FCM Token → admin.messaging() (하위호환, 전환기) ──
   if (fcmTokens.length > 0) {
     const androidPriority =
-      priority === 'urgent' || priority === 'high' ? 'high' : 'normal';
+      priority === "urgent" || priority === "high" ? "high" : "normal";
 
     const message: admin.messaging.MulticastMessage = {
       notification: {
@@ -722,14 +756,14 @@ export async function sendMulticast(
       android: {
         priority: androidPriority,
         notification: {
-          sound: 'default',
+          sound: "default",
           channelId,
         },
       },
       apns: {
         payload: {
           aps: {
-            sound: 'default',
+            sound: "default",
             badge: 1,
           },
         },
@@ -758,13 +792,13 @@ export async function sendMulticast(
       totalSuccess += response.successCount;
       totalFailure += response.failureCount;
 
-      logger.info('FCM 전송 완료', {
+      logger.info("FCM 전송 완료", {
         total: fcmTokens.length,
         success: response.successCount,
         failure: response.failureCount,
       });
     } catch (error: unknown) {
-      logger.error('FCM 멀티캐스트 전송 실패', {
+      logger.error("FCM 멀티캐스트 전송 실패", {
         error: error instanceof Error ? error.message : String(error),
         tokenCount: fcmTokens.length,
       });
@@ -782,7 +816,7 @@ export async function sendMulticast(
 
   // 만료된 토큰이 있으면 로깅
   if (invalidTokens.length > 0) {
-    logger.info('만료/무효 토큰 감지', {
+    logger.info("만료/무효 토큰 감지", {
       invalidCount: invalidTokens.length,
       totalTokens: tokens.length,
     });
@@ -810,22 +844,25 @@ export async function sendMulticast(
 export async function updateUnreadCounter(
   userId: string,
   delta: number = 1,
-  notificationId?: string
+  notificationId?: string,
 ): Promise<void> {
   // 증가만 허용 (감소는 decrementUnreadCounter 사용)
   if (delta <= 0) {
-    logger.warn('updateUnreadCounter는 양수만 허용, decrementUnreadCounter 사용 필요', {
-      userId,
-      delta,
-    });
+    logger.warn(
+      "updateUnreadCounter는 양수만 허용, decrementUnreadCounter 사용 필요",
+      {
+        userId,
+        delta,
+      },
+    );
     return;
   }
 
   const counterRef = db
-    .collection('users')
+    .collection("users")
     .doc(userId)
-    .collection('counters')
-    .doc('notifications');
+    .collection("counters")
+    .doc("notifications");
 
   try {
     await counterRef.set(
@@ -833,17 +870,18 @@ export async function updateUnreadCounter(
         unreadCount: admin.firestore.FieldValue.increment(delta),
         lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
       },
-      { merge: true }
+      { merge: true },
     );
 
-    logger.info('미읽음 카운터 증가', {
+    logger.info("미읽음 카운터 증가", {
       userId,
       delta,
     });
   } catch (error: unknown) {
     // 🆕 실패 시 _failedCounterOps에 기록 (배치 재동기화용)
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    logger.error('미읽음 카운터 증가 실패 - 복구 대기열에 추가', {
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
+    logger.error("미읽음 카운터 증가 실패 - 복구 대기열에 추가", {
       userId,
       delta,
       notificationId,
@@ -851,22 +889,23 @@ export async function updateUnreadCounter(
     });
 
     try {
-      await db.collection('_failedCounterOps').add({
+      await db.collection("_failedCounterOps").add({
         userId,
-        operation: 'increment',
+        operation: "increment",
         delta,
         notificationId: notificationId ?? null,
         error: errorMessage,
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         retryCount: 0,
-        status: 'pending', // pending | processing | completed | failed
+        status: "pending", // pending | processing | completed | failed
       });
     } catch (recordError) {
       // 실패 기록도 실패하면 로깅만 (추가 조치 없음)
-      logger.error('실패 기록 저장 실패', {
+      logger.error("실패 기록 저장 실패", {
         userId,
         originalError: errorMessage,
-        recordError: recordError instanceof Error ? recordError.message : 'Unknown',
+        recordError:
+          recordError instanceof Error ? recordError.message : "Unknown",
       });
     }
 
@@ -889,13 +928,13 @@ export async function updateUnreadCounter(
 export async function decrementUnreadCounter(
   userId: string,
   delta: number = 1,
-  notificationId?: string
+  notificationId?: string,
 ): Promise<void> {
   const counterRef = db
-    .collection('users')
+    .collection("users")
     .doc(userId)
-    .collection('counters')
-    .doc('notifications');
+    .collection("counters")
+    .doc("notifications");
 
   const MAX_RETRIES = 3;
   let lastError: Error | null = null;
@@ -904,7 +943,9 @@ export async function decrementUnreadCounter(
     try {
       await db.runTransaction(async (transaction) => {
         const counterDoc = await transaction.get(counterRef);
-        const currentCount = counterDoc.exists ? (counterDoc.data()?.unreadCount ?? 0) : 0;
+        const currentCount = counterDoc.exists
+          ? (counterDoc.data()?.unreadCount ?? 0)
+          : 0;
 
         // 음수 방지: 최소 0
         const newCount = Math.max(0, currentCount - delta);
@@ -915,11 +956,11 @@ export async function decrementUnreadCounter(
             unreadCount: newCount,
             lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
-          { merge: true }
+          { merge: true },
         );
       });
 
-      logger.info('미읽음 카운터 감소 (트랜잭션)', {
+      logger.info("미읽음 카운터 감소 (트랜잭션)", {
         userId,
         delta,
         attempt,
@@ -931,8 +972,10 @@ export async function decrementUnreadCounter(
 
       if (attempt < MAX_RETRIES) {
         // 재시도 전 대기 (exponential backoff)
-        await new Promise((resolve) => setTimeout(resolve, 100 * Math.pow(2, attempt)));
-        logger.warn('카운터 감소 트랜잭션 재시도', {
+        await new Promise((resolve) =>
+          setTimeout(resolve, 100 * Math.pow(2, attempt)),
+        );
+        logger.warn("카운터 감소 트랜잭션 재시도", {
           userId,
           delta,
           attempt,
@@ -943,7 +986,7 @@ export async function decrementUnreadCounter(
   }
 
   // 🆕 최대 재시도 초과 시 실패 기록
-  logger.error('미읽음 카운터 감소 최종 실패 - 복구 대기열에 추가', {
+  logger.error("미읽음 카운터 감소 최종 실패 - 복구 대기열에 추가", {
     userId,
     delta,
     notificationId,
@@ -951,27 +994,28 @@ export async function decrementUnreadCounter(
   });
 
   try {
-    await db.collection('_failedCounterOps').add({
+    await db.collection("_failedCounterOps").add({
       userId,
-      operation: 'decrement',
+      operation: "decrement",
       delta,
       notificationId: notificationId ?? null,
-      error: lastError?.message ?? 'Max retries exceeded',
+      error: lastError?.message ?? "Max retries exceeded",
       createdAt: admin.firestore.FieldValue.serverTimestamp(),
       retryCount: 0,
-      status: 'pending',
+      status: "pending",
     });
 
     // 사용자 문서에 동기화 필요 플래그 설정
-    await db.collection('users').doc(userId).update({
+    await db.collection("users").doc(userId).update({
       _counterSyncRequired: true,
       _counterSyncRequestedAt: admin.firestore.FieldValue.serverTimestamp(),
     });
   } catch (recordError) {
-    logger.error('실패 기록 저장 실패', {
+    logger.error("실패 기록 저장 실패", {
       userId,
       originalError: lastError?.message,
-      recordError: recordError instanceof Error ? recordError.message : 'Unknown',
+      recordError:
+        recordError instanceof Error ? recordError.message : "Unknown",
     });
   }
 
@@ -989,20 +1033,20 @@ export async function decrementUnreadCounter(
  */
 export async function resetUnreadCounter(userId: string): Promise<void> {
   const counterRef = db
-    .collection('users')
+    .collection("users")
     .doc(userId)
-    .collection('counters')
-    .doc('notifications');
+    .collection("counters")
+    .doc("notifications");
 
   await counterRef.set(
     {
       unreadCount: 0,
       lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
     },
-    { merge: true }
+    { merge: true },
   );
 
-  logger.info('미읽음 카운터 리셋', {
+  logger.info("미읽음 카운터 리셋", {
     userId,
   });
 }
@@ -1023,23 +1067,23 @@ export async function resetUnreadCounter(userId: string): Promise<void> {
  *   });
  */
 export async function retryFailedCounterOps(
-  batchSize: number = 100
+  batchSize: number = 100,
 ): Promise<{ success: number; failed: number; skipped: number }> {
   const MAX_RETRY_COUNT = 3;
 
   // pending 상태의 실패 기록 조회
   const failedOpsQuery = db
-    .collection('_failedCounterOps')
-    .where('status', '==', 'pending')
-    .where('retryCount', '<', MAX_RETRY_COUNT)
-    .orderBy('retryCount', 'asc')
-    .orderBy('createdAt', 'asc')
+    .collection("_failedCounterOps")
+    .where("status", "==", "pending")
+    .where("retryCount", "<", MAX_RETRY_COUNT)
+    .orderBy("retryCount", "asc")
+    .orderBy("createdAt", "asc")
     .limit(batchSize);
 
   const snapshot = await failedOpsQuery.get();
 
   if (snapshot.empty) {
-    logger.info('재처리할 실패 카운터 연산 없음');
+    logger.info("재처리할 실패 카운터 연산 없음");
     return { success: 0, failed: 0, skipped: 0 };
   }
 
@@ -1054,30 +1098,32 @@ export async function retryFailedCounterOps(
     try {
       // 재처리 중 표시
       await doc.ref.update({
-        status: 'processing',
+        status: "processing",
         lastRetryAt: admin.firestore.FieldValue.serverTimestamp(),
       });
 
       // 카운터 연산 재시도
       const counterRef = db
-        .collection('users')
+        .collection("users")
         .doc(userId)
-        .collection('counters')
-        .doc('notifications');
+        .collection("counters")
+        .doc("notifications");
 
-      if (operation === 'increment') {
+      if (operation === "increment") {
         await counterRef.set(
           {
             unreadCount: admin.firestore.FieldValue.increment(delta),
             lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
           },
-          { merge: true }
+          { merge: true },
         );
-      } else if (operation === 'decrement') {
+      } else if (operation === "decrement") {
         // 감소는 트랜잭션으로 음수 방지
         await db.runTransaction(async (transaction) => {
           const counterDoc = await transaction.get(counterRef);
-          const currentCount = counterDoc.exists ? (counterDoc.data()?.unreadCount ?? 0) : 0;
+          const currentCount = counterDoc.exists
+            ? (counterDoc.data()?.unreadCount ?? 0)
+            : 0;
           const newCount = Math.max(0, currentCount - delta);
 
           transaction.set(
@@ -1086,7 +1132,7 @@ export async function retryFailedCounterOps(
               unreadCount: newCount,
               lastUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
             },
-            { merge: true }
+            { merge: true },
           );
         });
       }
@@ -1096,21 +1142,34 @@ export async function retryFailedCounterOps(
       success++;
     } catch (retryError: unknown) {
       const newRetryCount = (data.retryCount ?? 0) + 1;
-      const errorMessage = retryError instanceof Error ? retryError.message : 'Unknown error';
+      const errorMessage =
+        retryError instanceof Error ? retryError.message : "Unknown error";
 
       if (newRetryCount >= MAX_RETRY_COUNT) {
-        // 최대 재시도 초과 시 실패로 표시
-        await doc.ref.update({
-          status: 'failed',
-          retryCount: newRetryCount,
-          lastError: errorMessage,
-          failedAt: admin.firestore.FieldValue.serverTimestamp(),
-        });
+        // 30일 이상 된 문서는 삭제
+        const createdAt = data.createdAt as
+          | admin.firestore.Timestamp
+          | undefined;
+        const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
+        if (createdAt && createdAt.toMillis() < thirtyDaysAgo) {
+          await doc.ref.delete();
+          logger.info("30일 경과 실패 카운터 연산 삭제", {
+            docId: doc.id,
+            userId,
+          });
+        } else {
+          await doc.ref.update({
+            status: "failed",
+            retryCount: newRetryCount,
+            lastError: errorMessage,
+            failedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
         failed++;
       } else {
         // 다음 재시도를 위해 대기
         await doc.ref.update({
-          status: 'pending',
+          status: "pending",
           retryCount: newRetryCount,
           lastError: errorMessage,
         });
@@ -1119,7 +1178,7 @@ export async function retryFailedCounterOps(
     }
   }
 
-  logger.info('실패 카운터 연산 재처리 완료', {
+  logger.info("실패 카운터 연산 재처리 완료", {
     total: snapshot.size,
     success,
     failed,
@@ -1144,7 +1203,7 @@ export async function broadcastNotification(
   type: NotificationType,
   title: string,
   body: string,
-  options: CreateNotificationOptions = {}
+  options: CreateNotificationOptions = {},
 ): Promise<Map<string, NotificationResult>> {
   const results = new Map<string, NotificationResult>();
 
@@ -1159,21 +1218,21 @@ export async function broadcastNotification(
         createAndSendNotification(recipientId, type, title, body, options)
           .then((result) => ({ recipientId, result }))
           .catch((error) => {
-            logger.error('개별 알림 전송 실패', {
+            logger.error("개별 알림 전송 실패", {
               recipientId,
               error: error.message,
             });
             return {
               recipientId,
               result: {
-                notificationId: '',
+                notificationId: "",
                 fcmSent: false,
                 successCount: 0,
                 failureCount: 0,
               },
             };
-          })
-      )
+          }),
+      ),
     );
 
     for (const { recipientId, result } of batchResults) {

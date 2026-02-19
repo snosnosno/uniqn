@@ -265,10 +265,7 @@ export async function getStatsByApplicantId(
 ): Promise<Record<ApplicationStatus, number>> {
   try {
     const applicationsRef = collection(getFirebaseDb(), COLLECTIONS.APPLICATIONS);
-    const q = query(
-      applicationsRef,
-      where(FIELDS.APPLICATION.applicantId, '==', applicantId)
-    );
+    const q = query(applicationsRef, where(FIELDS.APPLICATION.applicantId, '==', applicantId));
     const snapshot = await getDocs(q);
 
     const stats: Record<ApplicationStatus, number> = {

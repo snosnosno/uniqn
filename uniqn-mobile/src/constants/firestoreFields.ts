@@ -65,6 +65,7 @@ export const NOTIFICATION_FIELDS = {
   ...COMMON_FIELDS,
   recipientId: 'recipientId',
   isRead: 'isRead',
+  type: 'type',
 } as const;
 
 export const EVENT_QR_FIELDS = {

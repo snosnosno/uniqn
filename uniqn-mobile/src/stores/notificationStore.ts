@@ -25,6 +25,7 @@ import {
   NotificationCategory,
   NOTIFICATION_TYPE_TO_CATEGORY,
   createDefaultNotificationSettings,
+  toDateFromTimestamp,
 } from '@/types/notification';
 import { logger } from '@/utils/logger';
 
@@ -65,6 +66,9 @@ interface NotificationState {
   // 로컬 카운터 변경 타임스탬프 (Race Condition 방지, 비영구)
   lastCounterLocalUpdate: number;
 
+  // 오프라인 → 온라인 정합성 플래그 (비영구)
+  needsServerSync: boolean;
+
   // 기본 액션
   setNotifications: (notifications: NotificationData[]) => void;
   addNotification: (notification: NotificationData) => void;
@@ -99,6 +103,7 @@ interface NotificationState {
 
   // 유틸리티
   getFilteredNotifications: () => NotificationData[];
+  setNeedsServerSync: (value: boolean) => void;
   reset: () => void;
 }
 
@@ -125,6 +130,7 @@ const initialState = {
   filter: {} as NotificationFilter,
   unreadByCategory: createEmptyUnreadByCategory(),
   lastCounterLocalUpdate: 0,
+  needsServerSync: false,
 };
 
 // ============================================================================
@@ -245,17 +251,17 @@ function applyFilter(
       }
     }
 
-    // 날짜 필터
+    // 날짜 필터 (MMKV 역직렬화 후 plain object 대응)
     if (filter.startDate) {
-      const createdAt = notification.createdAt.toDate?.() || notification.createdAt;
-      if (createdAt < filter.startDate) {
+      const createdAt = toDateFromTimestamp(notification.createdAt);
+      if (!createdAt || createdAt < filter.startDate) {
         return false;
       }
     }
 
     if (filter.endDate) {
-      const createdAt = notification.createdAt.toDate?.() || notification.createdAt;
-      if (createdAt > filter.endDate) {
+      const createdAt = toDateFromTimestamp(notification.createdAt);
+      if (!createdAt || createdAt > filter.endDate) {
         return false;
       }
     }
@@ -526,6 +532,10 @@ export const useNotificationStore = create<NotificationState>()(
         return applyFilter(state.notifications, state.filter);
       },
 
+      setNeedsServerSync: (value: boolean) => {
+        set({ needsServerSync: value });
+      },
+
       reset: () => {
         set(initialState);
       },
@@ -569,6 +579,16 @@ export const useNotificationStore = create<NotificationState>()(
             // persist된 원본 unreadCount 복원 (50개 초과 시 정확도 유지)
             if (persistedUnreadCount > 0) {
               state.setUnreadCount(persistedUnreadCount);
+            }
+
+            // 캐시된 알림의 미읽음 수와 persist된 카운터 비교
+            const cachedUnread = persisted.cachedNotifications.filter((n) => !n.isRead).length;
+            if (
+              persistedUnreadCount > cachedUnread + 5 ||
+              persistedUnreadCount < cachedUnread - 5
+            ) {
+              // 5개 이상 차이 시 서버 동기화 필요 표시
+              state.needsServerSync = true;
             }
           }
         };

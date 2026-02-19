@@ -75,7 +75,7 @@ describe('InAppMessageStore', () => {
       expect(state.history).toEqual({});
       expect(state.allMessages).toEqual([]);
       expect(state.isLoading).toBe(false);
-      expect(state.sessionShownIds).toEqual([]);
+      expect(state.sessionShownIds).toEqual(new Set());
     });
   });
 
@@ -506,7 +506,7 @@ describe('InAppMessageStore', () => {
         useInAppMessageStore.getState().addSessionShownId('msg-1');
       });
 
-      expect(useInAppMessageStore.getState().sessionShownIds).toContain('msg-1');
+      expect(useInAppMessageStore.getState().sessionShownIds.has('msg-1')).toBe(true);
     });
 
     it('addSessionShownId should not add duplicate IDs', () => {
@@ -517,7 +517,7 @@ describe('InAppMessageStore', () => {
         useInAppMessageStore.getState().addSessionShownId('msg-1');
       });
 
-      expect(useInAppMessageStore.getState().sessionShownIds).toHaveLength(1);
+      expect(useInAppMessageStore.getState().sessionShownIds.size).toBe(1);
     });
 
     it('hasSessionShownId should return true for shown ID', () => {
@@ -544,7 +544,7 @@ describe('InAppMessageStore', () => {
         useInAppMessageStore.getState().resetSessionIds();
       });
 
-      expect(useInAppMessageStore.getState().sessionShownIds).toEqual([]);
+      expect(useInAppMessageStore.getState().sessionShownIds.size).toBe(0);
     });
   });
 

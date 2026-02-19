@@ -84,9 +84,7 @@ export async function requestAccountDeletion(
     logger.info('회원탈퇴 요청 시작', { userId: currentUser.uid, reason });
 
     // 1. 재인증 (Apple 사용자 vs 이메일 사용자 분기)
-    const isAppleUser = currentUser.providerData.some(
-      (p) => p.providerId === 'apple.com'
-    );
+    const isAppleUser = currentUser.providerData.some((p) => p.providerId === 'apple.com');
 
     if (isAppleUser && Platform.OS === 'ios') {
       // Apple 재인증: Apple Sign In 다이얼로그 → OAuthProvider credential

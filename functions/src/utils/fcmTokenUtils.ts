@@ -9,8 +9,8 @@
  * Expo Push Token과 FCM Token 모두 반환 — sendMulticast()에서 형식별 분기 처리
  */
 
-import * as admin from 'firebase-admin';
-import { logger } from 'firebase-functions';
+import * as admin from "firebase-admin";
+import { logger } from "firebase-functions";
 
 const db = admin.firestore();
 
@@ -20,8 +20,8 @@ const db = admin.firestore();
 
 export interface FcmTokenRecord {
   token: string;
-  type: 'expo' | 'fcm';
-  platform: 'ios' | 'android';
+  type: "expo" | "fcm";
+  platform: "ios" | "android";
   registeredAt: admin.firestore.Timestamp;
   lastRefreshedAt: admin.firestore.Timestamp;
 }
@@ -46,21 +46,27 @@ export interface UserFcmData {
  *   await sendMulticast(tokens, message);
  * }
  */
-export function getPushTokens(userData: UserFcmData | undefined | null): string[] {
+export function getPushTokens(
+  userData: UserFcmData | undefined | null,
+): string[] {
   if (!userData) {
     return [];
   }
 
   const { fcmTokens } = userData;
 
-  if (!fcmTokens || typeof fcmTokens !== 'object') {
+  if (!fcmTokens || typeof fcmTokens !== "object") {
     return [];
   }
 
   const tokens: string[] = [];
 
   for (const record of Object.values(fcmTokens)) {
-    if (!record || typeof record.token !== 'string' || record.token.length === 0) {
+    if (
+      !record ||
+      typeof record.token !== "string" ||
+      record.token.length === 0
+    ) {
       continue;
     }
 
@@ -71,9 +77,6 @@ export function getPushTokens(userData: UserFcmData | undefined | null): string[
   return [...new Set(tokens)];
 }
 
-/** @deprecated getPushTokens()로 대체. 하위 호환용 별칭 */
-export const getFcmTokens = getPushTokens;
-
 /**
  * FCM 토큰 유효성 검사
  *
@@ -81,7 +84,7 @@ export const getFcmTokens = getPushTokens;
  * @returns 유효 여부
  */
 export function isValidFcmToken(token: unknown): token is string {
-  return typeof token === 'string' && token.length > 0;
+  return typeof token === "string" && token.length > 0;
 }
 
 /**
@@ -91,7 +94,7 @@ export function isValidFcmToken(token: unknown): token is string {
  * @returns 사용자 ID와 토큰 배열 매핑
  */
 export function extractAllFcmTokens(
-  usersData: Array<{ id: string; data: UserFcmData | undefined }>
+  usersData: Array<{ id: string; data: UserFcmData | undefined }>,
 ): Map<string, string[]> {
   const result = new Map<string, string[]>();
 
@@ -134,16 +137,16 @@ export function flattenTokens(tokenMap: Map<string, string[]>): string[] {
  */
 export async function removeInvalidToken(
   userId: string,
-  invalidToken: string
+  invalidToken: string,
 ): Promise<boolean> {
   try {
-    const userRef = db.collection('users').doc(userId);
+    const userRef = db.collection("users").doc(userId);
     const tokenKey = await findTokenKeyByValue(userRef, invalidToken);
 
     if (!tokenKey) {
-      logger.warn('제거할 토큰 키를 찾을 수 없음', {
+      logger.warn("제거할 토큰 키를 찾을 수 없음", {
         userId,
-        token: invalidToken.substring(0, 20) + '...',
+        token: invalidToken.substring(0, 20) + "...",
       });
       return false;
     }
@@ -152,14 +155,14 @@ export async function removeInvalidToken(
       [`fcmTokens.${tokenKey}`]: admin.firestore.FieldValue.delete(),
     });
 
-    logger.info('만료된 FCM 토큰 제거 완료', {
+    logger.info("만료된 FCM 토큰 제거 완료", {
       userId,
-      token: invalidToken.substring(0, 20) + '...',
+      token: invalidToken.substring(0, 20) + "...",
     });
 
     return true;
   } catch (error: unknown) {
-    logger.error('FCM 토큰 제거 실패', {
+    logger.error("FCM 토큰 제거 실패", {
       userId,
       error: error instanceof Error ? error.message : String(error),
     });
@@ -176,16 +179,19 @@ export async function removeInvalidToken(
  */
 export async function removeInvalidTokens(
   userId: string,
-  invalidTokens: string[]
+  invalidTokens: string[],
 ): Promise<number> {
   if (invalidTokens.length === 0) {
     return 0;
   }
 
   try {
-    const userRef = db.collection('users').doc(userId);
+    const userRef = db.collection("users").doc(userId);
     const userDoc = await userRef.get();
-    const fcmTokens = (userDoc.data()?.fcmTokens ?? {}) as Record<string, FcmTokenRecord>;
+    const fcmTokens = (userDoc.data()?.fcmTokens ?? {}) as Record<
+      string,
+      FcmTokenRecord
+    >;
 
     // 토큰 값으로 키 매핑
     const tokenToKey = new Map<string, string>();
@@ -209,14 +215,14 @@ export async function removeInvalidTokens(
       await userRef.update(updateData);
     }
 
-    logger.info('만료된 FCM 토큰 일괄 제거 완료', {
+    logger.info("만료된 FCM 토큰 일괄 제거 완료", {
       userId,
       removedCount,
     });
 
     return removedCount;
   } catch (error: unknown) {
-    logger.error('FCM 토큰 일괄 제거 실패', {
+    logger.error("FCM 토큰 일괄 제거 실패", {
       userId,
       tokenCount: invalidTokens.length,
       error: error instanceof Error ? error.message : String(error),
@@ -230,10 +236,13 @@ export async function removeInvalidTokens(
  */
 async function findTokenKeyByValue(
   userRef: admin.firestore.DocumentReference,
-  token: string
+  token: string,
 ): Promise<string | null> {
   const userDoc = await userRef.get();
-  const fcmTokens = (userDoc.data()?.fcmTokens ?? {}) as Record<string, FcmTokenRecord>;
+  const fcmTokens = (userDoc.data()?.fcmTokens ?? {}) as Record<
+    string,
+    FcmTokenRecord
+  >;
 
   for (const [key, record] of Object.entries(fcmTokens)) {
     if (record?.token === token) {
@@ -253,10 +262,10 @@ async function findTokenKeyByValue(
  */
 export function isTokenInvalidError(errorCode: string | undefined): boolean {
   const invalidTokenErrors = [
-    'messaging/invalid-registration-token',
-    'messaging/registration-token-not-registered',
-    'messaging/invalid-argument',
-    'messaging/unregistered',
+    "messaging/invalid-registration-token",
+    "messaging/registration-token-not-registered",
+    "messaging/invalid-argument",
+    "messaging/unregistered",
   ];
 
   return errorCode !== undefined && invalidTokenErrors.includes(errorCode);

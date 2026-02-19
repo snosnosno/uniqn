@@ -90,12 +90,13 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
   // 카테고리 토글
   const handleCategoryToggle = useCallback(
     (category: NotificationCategory, enabled: boolean) => {
+      const current = settings.categories[category] ?? { enabled: true, pushEnabled: true };
       onSettingsChange({
         ...settings,
         categories: {
           ...settings.categories,
           [category]: {
-            ...settings.categories[category],
+            ...current,
             enabled,
           },
         },
@@ -107,12 +108,13 @@ export const NotificationSettingsComponent = memo(function NotificationSettings(
   // 푸시 알림 토글
   const handlePushToggle = useCallback(
     (category: NotificationCategory, pushEnabled: boolean) => {
+      const current = settings.categories[category] ?? { enabled: true, pushEnabled: true };
       onSettingsChange({
         ...settings,
         categories: {
           ...settings.categories,
           [category]: {
-            ...settings.categories[category],
+            ...current,
             pushEnabled,
           },
         },

@@ -101,19 +101,27 @@ export async function updateWorkTimeTransaction(
       }
 
       // workDuration 재계산: checkIn/checkOut이 모두 확정된 경우
-      const finalCheckIn = updates.checkInTime ?? (workLog.checkInTime instanceof Timestamp
-        ? workLog.checkInTime.toDate()
-        : workLog.checkInTime ? new Date(workLog.checkInTime as string) : null);
-      const finalCheckOut = updates.checkOutTime ?? (workLog.checkOutTime instanceof Timestamp
-        ? workLog.checkOutTime.toDate()
-        : workLog.checkOutTime ? new Date(workLog.checkOutTime as string) : null);
+      const finalCheckIn =
+        updates.checkInTime ??
+        (workLog.checkInTime instanceof Timestamp
+          ? workLog.checkInTime.toDate()
+          : workLog.checkInTime
+            ? new Date(workLog.checkInTime as string)
+            : null);
+      const finalCheckOut =
+        updates.checkOutTime ??
+        (workLog.checkOutTime instanceof Timestamp
+          ? workLog.checkOutTime.toDate()
+          : workLog.checkOutTime
+            ? new Date(workLog.checkOutTime as string)
+            : null);
 
       if (finalCheckIn && finalCheckOut) {
-        const inTime = finalCheckIn instanceof Date ? finalCheckIn : new Date(finalCheckIn as string);
-        const outTime = finalCheckOut instanceof Date ? finalCheckOut : new Date(finalCheckOut as string);
-        const durationMinutes = Math.round(
-          (outTime.getTime() - inTime.getTime()) / (1000 * 60)
-        );
+        const inTime =
+          finalCheckIn instanceof Date ? finalCheckIn : new Date(finalCheckIn as string);
+        const outTime =
+          finalCheckOut instanceof Date ? finalCheckOut : new Date(finalCheckOut as string);
+        const durationMinutes = Math.round((outTime.getTime() - inTime.getTime()) / (1000 * 60));
         updateData.workDuration = Math.round((durationMinutes / 60) * 100) / 100;
       }
 

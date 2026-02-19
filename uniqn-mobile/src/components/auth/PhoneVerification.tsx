@@ -92,7 +92,14 @@ function toE164(phone: string): string {
 // ============================================================================
 
 export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
-  ({ onVerified, onError, initialPhone = '', disabled = false, compact = false, mode = 'signIn' }) => {
+  ({
+    onVerified,
+    onError,
+    initialPhone = '',
+    disabled = false,
+    compact = false,
+    mode = 'signIn',
+  }) => {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const [step, setStep] = useState<VerificationStep>(initialPhone ? 'verified' : 'input');
@@ -248,10 +255,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             await nativeLinkWithCredential(nativeUser, credential);
           } else {
             // 웹 플랫폼 fallback
-            const credential = WebPhoneAuthProvider.credential(
-              verificationIdRef.current,
-              otpCode
-            );
+            const credential = WebPhoneAuthProvider.credential(verificationIdRef.current, otpCode);
             const webUser = getFirebaseAuth().currentUser;
             if (!webUser) throw new Error('인증 정보가 없습니다.');
             await webLinkWithCredential(webUser, credential);

@@ -105,7 +105,7 @@ export function useNotificationList(
     },
     // 오프라인 시 쿼리 비활성화
     enabled: enabled && !!user?.uid && isOnline,
-    staleTime: cachingPolicies.frequent, // 5분
+    staleTime: cachingPolicies.nearRealtime, // 2분
   });
 
   // 스토어 동기화 (오프라인 캐시용)

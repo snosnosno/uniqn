@@ -96,7 +96,7 @@ describe('InAppMessageService', () => {
       allMessages: [],
       currentMessage: null,
       messageQueue: [],
-      sessionShownIds: [],
+      sessionShownIds: new Set<string>(),
       resetSessionIds: mockResetSessionIds,
       enqueueMessage: mockEnqueueMessage,
       showNextMessage: mockShowNextMessage,

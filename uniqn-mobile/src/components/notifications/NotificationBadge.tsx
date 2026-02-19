@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text } from 'react-native';
 import Animated, { FadeIn, FadeOut } from 'react-native-reanimated';
 
@@ -35,7 +35,7 @@ const sizeStyles = {
   },
 };
 
-export function NotificationBadge({
+export const NotificationBadge = memo(function NotificationBadge({
   count,
   maxCount = 99,
   size = 'md',
@@ -51,6 +51,7 @@ export function NotificationBadge({
       entering={FadeIn.duration(200)}
       exiting={FadeOut.duration(200)}
       style={{ position: 'absolute', top: -4, right: -4 }}
+      accessibilityLabel={`읽지 않은 알림 ${count}개`}
       className={`
         bg-error-500 rounded-full
         items-center justify-center
@@ -61,12 +62,12 @@ export function NotificationBadge({
       <Text className={`text-white font-bold ${styles.text}`}>{displayCount}</Text>
     </Animated.View>
   );
-}
+});
 
 /**
  * 인라인 뱃지 (절대 위치가 아닌 인라인 표시용)
  */
-export function NotificationBadgeInline({
+export const NotificationBadgeInline = memo(function NotificationBadgeInline({
   count,
   maxCount = 99,
   size = 'md',
@@ -79,6 +80,7 @@ export function NotificationBadgeInline({
 
   return (
     <View
+      accessibilityLabel={`읽지 않은 알림 ${count}개`}
       className={`
         bg-error-500 rounded-full
         items-center justify-center
@@ -89,6 +91,6 @@ export function NotificationBadgeInline({
       <Text className={`text-white font-bold ${styles.text}`}>{displayCount}</Text>
     </View>
   );
-}
+});
 
 export default NotificationBadge;

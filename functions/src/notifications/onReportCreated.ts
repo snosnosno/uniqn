@@ -10,12 +10,13 @@
  * @since 2025-02-01
  */
 
-import { onDocumentCreated } from 'firebase-functions/v2/firestore';
-import { logger } from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { broadcastNotification } from '../utils/notificationUtils';
-
-const db = admin.firestore();
+import { onDocumentCreated } from "firebase-functions/v2/firestore";
+import { logger } from "firebase-functions";
+import { handleTriggerError } from "../errors/errorHandler";
+import {
+  broadcastNotification,
+  getAdminUserIds,
+} from "../utils/notificationUtils";
 
 // ============================================================================
 // Types
@@ -36,20 +37,20 @@ interface ReportData {
 // 신고 유형 라벨 매핑
 const REPORT_TYPE_LABELS: Record<string, string> = {
   // 스태프 신고 (구인자 → 스태프)
-  tardiness: '지각',
-  negligence: '근무태만',
-  no_show: '노쇼',
-  early_leave: '무단 조퇴',
-  inappropriate: '부적절한 행동',
-  dress_code: '복장 불량',
-  communication: '소통 문제',
+  tardiness: "지각",
+  negligence: "근무태만",
+  no_show: "노쇼",
+  early_leave: "무단 조퇴",
+  inappropriate: "부적절한 행동",
+  dress_code: "복장 불량",
+  communication: "소통 문제",
   // 구인자 신고 (구직자 → 구인자)
-  false_posting: '허위 공고',
-  employer_negligence: '근무 관리 태만',
-  unfair_treatment: '부당한 대우',
-  inappropriate_behavior: '부적절한 행동',
+  false_posting: "허위 공고",
+  employer_negligence: "근무 관리 태만",
+  unfair_treatment: "부당한 대우",
+  inappropriate_behavior: "부적절한 행동",
   // 공통
-  other: '기타',
+  other: "기타",
 };
 
 // ============================================================================
@@ -72,13 +73,13 @@ function getReportTypeLabel(type: string): string {
  * - 모든 관리자에게 알림 전송
  */
 export const onReportCreated = onDocumentCreated(
-  { document: 'reports/{reportId}', region: 'asia-northeast3' },
+  { document: "reports/{reportId}", region: "asia-northeast3" },
   async (event) => {
     const reportId = event.params.reportId;
     const report = event.data?.data() as ReportData | undefined;
     if (!report) return;
 
-    logger.info('새로운 신고 접수', {
+    logger.info("새로운 신고 접수", {
       reportId,
       reporterName: report.reporterName,
       targetName: report.targetName,
@@ -86,20 +87,15 @@ export const onReportCreated = onDocumentCreated(
     });
 
     try {
-      // 1. 모든 관리자 조회
-      const adminUsersSnap = await db
-        .collection('users')
-        .where('role', '==', 'admin')
-        .get();
+      // 1. 모든 관리자 조회 (캐시 사용)
+      const adminIds = await getAdminUserIds();
 
-      if (adminUsersSnap.empty) {
-        logger.warn('관리자가 없습니다');
+      if (adminIds.length === 0) {
+        logger.warn("관리자가 없습니다");
         return;
       }
 
-      const adminIds = adminUsersSnap.docs.map((doc) => doc.id);
-
-      logger.info('알림 대상 관리자 수', {
+      logger.info("알림 대상 관리자 수", {
         count: adminIds.length,
       });
 
@@ -109,20 +105,20 @@ export const onReportCreated = onDocumentCreated(
       // 3. 알림 전송 (broadcastNotification 사용)
       const results = await broadcastNotification(
         adminIds,
-        'new_report',
-        '🚨 새로운 신고 접수',
+        "new_report",
+        "🚨 새로운 신고 접수",
         `${report.reporterName}님이 ${report.targetName}님을 신고했습니다. (${reportTypeLabel})`,
         {
           link: `/admin/reports/${reportId}`,
-          priority: 'high',
+          priority: "high",
           data: {
             reportId,
             reportType: report.type,
             reporterName: report.reporterName,
             targetName: report.targetName,
-            severity: report.severity || 'medium',
+            severity: report.severity || "medium",
           },
-        }
+        },
       );
 
       // 4. 결과 로깅
@@ -137,17 +133,17 @@ export const onReportCreated = onDocumentCreated(
         }
       });
 
-      logger.info('신고 접수 알림 전송 완료', {
+      logger.info("신고 접수 알림 전송 완료", {
         reportId,
         totalAdmins: adminIds.length,
         successCount,
         failureCount,
       });
     } catch (error: unknown) {
-      logger.error('신고 접수 알림 처리 중 오류 발생', {
-        reportId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: "신고 접수 알림 처리",
+        context: { reportId },
       });
     }
-  });
+  },
+);

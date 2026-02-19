@@ -1266,6 +1266,17 @@ service cloud.firestore {
       allow delete: if isAdmin();
     }
 
+    // --- In-App Messages (인앱 메시지) ---
+    // 서버(Cloud Functions/Admin SDK)에서만 생성·수정·삭제 가능
+    // 클라이언트는 활성 메시지 읽기만 가능
+    match /inAppMessages/{messageId} {
+      // 읽기: 모든 인증된 사용자
+      allow read: if isSignedIn();
+
+      // 생성/수정/삭제: 관리자만 가능
+      allow create, update, delete: if isAdmin();
+    }
+
     // Fallback rule: deny all other access
     match /{document=**} {
       allow read, write: if false;

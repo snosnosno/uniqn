@@ -13,7 +13,6 @@
 import { useState, useCallback } from 'react';
 import { Text, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
 import { StackHeader } from '@/components/headers';
 import {
   NotificationList,
@@ -26,9 +25,7 @@ import {
   useMarkAllAsRead,
   useDeleteNotification,
 } from '@/hooks/useNotifications';
-import { syncUnreadCounterFromServer } from '@/hooks/useNotificationHandler';
 import { useNotificationStore } from '@/stores/notificationStore';
-import { useAuthStore } from '@/stores/authStore';
 import type {
   NotificationData,
   NotificationCategory,
@@ -39,19 +36,7 @@ export default function NotificationsScreen() {
   // 카테고리 필터 상태
   const [selectedCategory, setSelectedCategory] = useState<NotificationCategoryFilter>('all');
 
-  // 사용자 ID
-  const userId = useAuthStore((state) => state.user?.uid);
-
-  // 🆕 화면 포커스 시 서버 카운터 동기화 (멀티 디바이스 대응)
-  useFocusEffect(
-    useCallback(() => {
-      if (userId) {
-        syncUnreadCounterFromServer(userId);
-      }
-    }, [userId])
-  );
-
-  // 그룹화된 알림 목록 훅 (무한스크롤 + 그룹핑 지원)
+  // 그룹화된 알림 목록 훅 (카운터는 실시간 구독이 동기화) (무한스크롤 + 그룹핑 지원)
   const {
     groupedNotifications,
     unreadCount,

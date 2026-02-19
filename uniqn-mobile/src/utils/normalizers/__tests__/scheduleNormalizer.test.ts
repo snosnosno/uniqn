@@ -269,7 +269,6 @@ describe('normalizeJobSchedule', () => {
         expect(datedItem.timeSlots).toHaveLength(2);
       }
     });
-
   });
 
   describe('레거시 공고', () => {

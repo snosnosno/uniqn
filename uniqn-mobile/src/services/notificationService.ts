@@ -15,7 +15,10 @@ import { httpsCallable } from 'firebase/functions';
 import { Platform } from 'react-native';
 import { getFirebaseFunctions } from '@/lib/firebase';
 import * as pushNotificationService from '@/services/pushNotificationService';
-import { type NotificationPayload } from '@/services/pushNotificationService';
+import {
+  type NotificationPayload,
+  type NotificationPermissionStatus,
+} from '@/services/pushNotificationService';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { toError } from '@/errors';
 import { notificationRepository } from '@/repositories';
@@ -57,17 +60,6 @@ interface FetchNotificationsResult {
   notifications: NotificationData[];
   lastDoc: NotificationPageCursor | null;
   hasMore: boolean;
-}
-
-interface NotificationPermissionStatus {
-  granted: boolean;
-  canAskAgain: boolean;
-  status: 'granted' | 'denied' | 'undetermined';
-  ios?: {
-    allowsAlert: boolean;
-    allowsBadge: boolean;
-    allowsSound: boolean;
-  };
 }
 
 // ============================================================================

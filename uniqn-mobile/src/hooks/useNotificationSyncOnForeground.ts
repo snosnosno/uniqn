@@ -67,18 +67,20 @@ export function useNotificationSyncOnForeground(
 
     const handleAppStateChange = async (nextAppState: AppStateStatus) => {
       if (appStateRef.current.match(/inactive|background/) && nextAppState === 'active') {
-        clearBadge();
+        clearBadge().catch((e) => logger.warn('배지 초기화 실패', { error: String(e) }));
 
         // 권한 상태 재확인 (설정 앱에서 변경했을 수 있음)
         const permission = await pushNotificationService.checkPermission();
 
         // 권한이 새로 부여되었으면 토큰 등록
         if (permission.granted && !isTokenRegistered && userId) {
-          registerToken();
+          registerToken().catch((e) => logger.warn('토큰 등록 실패', { error: String(e) }));
         } else if (permission.granted && isTokenRegistered) {
           if (tokenRefreshService.shouldRefreshOnForeground()) {
             logger.info('포그라운드 복귀 시 토큰 갱신 트리거');
-            tokenRefreshService.triggerRefresh();
+            tokenRefreshService
+              .triggerRefresh()
+              .catch((e) => logger.warn('토큰 갱신 실패', { error: String(e) }));
           }
         }
 
@@ -87,11 +89,13 @@ export function useNotificationSyncOnForeground(
 
         // 포그라운드 복귀 시 카운터 재동기화 (C3: 반환값으로 Store 업데이트)
         if (userId) {
-          syncUnreadCounterFromServer(userId).then((count) => {
-            if (count !== null) {
-              useNotificationStore.getState().setUnreadCount(count);
-            }
-          });
+          syncUnreadCounterFromServer(userId)
+            .then((count) => {
+              if (count !== null) {
+                useNotificationStore.getState().setUnreadCount(count);
+              }
+            })
+            .catch((e) => logger.warn('포그라운드 카운터 동기화 실패', { error: String(e) }));
         }
       }
       appStateRef.current = nextAppState;
@@ -139,16 +143,31 @@ export function useNotificationSyncOnForeground(
           }
 
           // C3: forceSync로 서버 카운터 가져와서 Store 업데이트
-          syncUnreadCounterFromServer(userId, true).then((count) => {
-            if (count !== null) {
-              useNotificationStore.getState().setUnreadCount(count);
-            }
-          });
+          syncUnreadCounterFromServer(userId, true)
+            .then((count) => {
+              if (count !== null) {
+                useNotificationStore.getState().setUnreadCount(count);
+              }
+            })
+            .catch((e) => logger.warn('forceSync 카운터 동기화 실패', { error: String(e) }));
         }
       );
     };
 
     currentUnsubscribe = subscribe();
+
+    // 오프라인 캐시 정합성: rehydration 시 불일치 감지된 경우 즉시 서버 동기화
+    if (useNotificationStore.getState().needsServerSync) {
+      syncUnreadCounterFromServer(userId, true)
+        .then((count) => {
+          if (count !== null) {
+            const store = useNotificationStore.getState();
+            store.setUnreadCount(count);
+            store.setNeedsServerSync(false);
+          }
+        })
+        .catch((e) => logger.warn('캐시 정합성 동기화 실패', { error: String(e) }));
+    }
 
     return () => {
       currentUnsubscribe?.();

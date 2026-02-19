@@ -12,11 +12,12 @@
  * @since 2025-01-18
  */
 
-import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
-import { logger } from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { createAndSendNotification } from '../utils/notificationUtils';
-import { formatTime, extractUserId } from '../utils/helpers';
+import { onDocumentUpdated } from "firebase-functions/v2/firestore";
+import { logger } from "firebase-functions";
+import * as admin from "firebase-admin";
+import { createAndSendNotification } from "../utils/notificationUtils";
+import { handleTriggerError } from "../errors/errorHandler";
+import { formatTime, extractUserId } from "../utils/helpers";
 
 const db = admin.firestore();
 
@@ -52,7 +53,7 @@ interface WorkLogData {
  * - 구인자에게 staff_checked_in/staff_checked_out 알림 전송
  */
 export const onCheckInOut = onDocumentUpdated(
-  { document: 'workLogs/{workLogId}', region: 'asia-northeast3' },
+  { document: "workLogs/{workLogId}", region: "asia-northeast3" },
   async (event) => {
     const workLogId = event.params.workLogId;
     const before = event.data?.before.data() as WorkLogData | undefined;
@@ -68,11 +69,11 @@ export const onCheckInOut = onDocumentUpdated(
     }
 
     // 출근+퇴근 동시 설정 시 (데이터 복구 등) 각각 처리
-    const checkTypes: Array<'check_in' | 'check_out'> = [];
-    if (isCheckIn) checkTypes.push('check_in');
-    if (isCheckOut) checkTypes.push('check_out');
+    const checkTypes: Array<"check_in" | "check_out"> = [];
+    if (isCheckIn) checkTypes.push("check_in");
+    if (isCheckOut) checkTypes.push("check_out");
 
-    logger.info('QR 출퇴근 감지', {
+    logger.info("QR 출퇴근 감지", {
       workLogId,
       staffId: after.staffId,
       jobPostingId: after.jobPostingId,
@@ -82,12 +83,12 @@ export const onCheckInOut = onDocumentUpdated(
     try {
       // 1. 공고 정보 조회
       const jobPostingDoc = await db
-        .collection('jobPostings')
+        .collection("jobPostings")
         .doc(after.jobPostingId)
         .get();
 
       if (!jobPostingDoc.exists) {
-        logger.warn('공고를 찾을 수 없습니다', {
+        logger.warn("공고를 찾을 수 없습니다", {
           workLogId,
           jobPostingId: after.jobPostingId,
         });
@@ -98,10 +99,10 @@ export const onCheckInOut = onDocumentUpdated(
 
       // 2. 근무자 정보 조회 (스태프 이름 - 구인자 알림용)
       const actualUserId = extractUserId(after.staffId);
-      const staffDoc = await db.collection('users').doc(actualUserId).get();
+      const staffDoc = await db.collection("users").doc(actualUserId).get();
 
       if (!staffDoc.exists) {
-        logger.warn('근무자를 찾을 수 없습니다', {
+        logger.warn("근무자를 찾을 수 없습니다", {
           workLogId,
           staffId: after.staffId,
           actualUserId,
@@ -109,31 +110,31 @@ export const onCheckInOut = onDocumentUpdated(
         return;
       }
 
-      const staffName = staffDoc.data()?.name || '스태프';
+      const staffName = staffDoc.data()?.name || "스태프";
       const employerId = jobPosting?.ownerId ?? jobPosting?.createdBy;
 
       // 3. 각 체크 타입별 알림 전송 (동시 출퇴근 시 양쪽 모두 처리)
       for (const checkType of checkTypes) {
-        const isIn = checkType === 'check_in';
+        const isIn = checkType === "check_in";
         const checkTime = isIn ? after.checkInTime : after.checkOutTime;
         const formattedTime = formatTime(checkTime);
 
         // 근무자 알림
         const staffResult = await createAndSendNotification(
           actualUserId,
-          isIn ? 'check_in_confirmed' : 'check_out_confirmed',
-          isIn ? '✅ 출근 확인' : '✅ 퇴근 확인',
-          `'${jobPosting?.title || '이벤트'}' ${isIn ? '출근' : '퇴근'}이 확인되었습니다. (${formattedTime})`,
+          isIn ? "check_in_confirmed" : "check_out_confirmed",
+          isIn ? "✅ 출근 확인" : "✅ 퇴근 확인",
+          `'${jobPosting?.title || "이벤트"}' ${isIn ? "출근" : "퇴근"}이 확인되었습니다. (${formattedTime})`,
           {
-            link: '/schedule',
+            link: "/schedule",
             data: {
               workLogId,
               jobPostingId: after.jobPostingId,
-              jobPostingTitle: jobPosting?.title || '',
-              date: after.date || '',
+              jobPostingTitle: jobPosting?.title || "",
+              date: after.date || "",
               checkTime: formattedTime,
             },
-          }
+          },
         );
 
         logger.info(`${checkType} 알림 전송 완료 (근무자)`, {
@@ -146,21 +147,21 @@ export const onCheckInOut = onDocumentUpdated(
         if (employerId) {
           const employerResult = await createAndSendNotification(
             employerId,
-            isIn ? 'staff_checked_in' : 'staff_checked_out',
-            isIn ? '🟢 출근 알림' : '🔴 퇴근 알림',
-            `${staffName}님이 ${formattedTime}에 ${isIn ? '출근' : '퇴근'}했습니다.`,
+            isIn ? "staff_checked_in" : "staff_checked_out",
+            isIn ? "🟢 출근 알림" : "🔴 퇴근 알림",
+            `${staffName}님이 ${formattedTime}에 ${isIn ? "출근" : "퇴근"}했습니다.`,
             {
               link: `/employer/applicants/${after.jobPostingId}`,
               data: {
                 workLogId,
                 jobPostingId: after.jobPostingId,
-                jobPostingTitle: jobPosting?.title || '',
+                jobPostingTitle: jobPosting?.title || "",
                 staffId: after.staffId,
                 staffName,
-                date: after.date || '',
+                date: after.date || "",
                 checkTime: formattedTime,
               },
-            }
+            },
           );
 
           logger.info(`${checkType} 알림 전송 완료 (구인자)`, {
@@ -171,10 +172,10 @@ export const onCheckInOut = onDocumentUpdated(
         }
       }
     } catch (error: unknown) {
-      logger.error('출퇴근 알림 처리 중 오류 발생', {
-        workLogId,
-        error: error instanceof Error ? error.message : String(error),
-        stack: error instanceof Error ? error.stack : undefined,
+      handleTriggerError(error, {
+        operation: "출퇴근 알림 처리",
+        context: { workLogId },
       });
     }
-  });
+  },
+);

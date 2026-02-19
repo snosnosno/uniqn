@@ -165,7 +165,7 @@ export interface InAppMessageState {
   /** 로딩 상태 */
   isLoading: boolean;
   /** 세션 내 표시된 메시지 ID 목록 (비영구) */
-  sessionShownIds: string[];
+  sessionShownIds: Set<string>;
 }
 
 /**
@@ -199,22 +199,6 @@ export interface InAppMessageActions {
 // ============================================================================
 // Service Types
 // ============================================================================
-
-/**
- * 메시지 필터 조건
- */
-export interface InAppMessageFilter {
-  /** 현재 사용자 역할 */
-  userRole?: UserRole | null;
-  /** 현재 사용자 ID */
-  userId?: string;
-  /** 현재 앱 버전 */
-  appVersion?: string;
-  /** 현재 플랫폼 */
-  platform?: 'ios' | 'android' | 'web';
-  /** 현재 화면 */
-  currentScreen?: string;
-}
 
 /**
  * Remote Config에서 받은 메시지 데이터

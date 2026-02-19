@@ -12,6 +12,7 @@ import {
   dismissMessagePermanently,
   resetSession,
 } from '@/services/inAppMessageService';
+import { useInAppMessages } from '@/hooks/useInAppMessages';
 import { InAppBanner } from './InAppBanner';
 import { InAppModal } from './InAppModal';
 import type { InAppMessage } from '@/types/inAppMessage';
@@ -27,6 +28,9 @@ export function InAppMessageManager() {
   useEffect(() => {
     resetSession();
   }, []);
+
+  // Firestore에서 활성 메시지 조회 및 처리
+  useInAppMessages();
 
   // 메시지 닫기 핸들러
   const handleDismiss = useCallback(() => {

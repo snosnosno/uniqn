@@ -5,7 +5,7 @@
  * @version 1.0.0
  */
 
-import React, { useCallback } from 'react';
+import React, { memo, useCallback } from 'react';
 import { View, Text, Pressable, ScrollView } from 'react-native';
 import { NotificationCategory, NOTIFICATION_CATEGORY_LABELS } from '@/types/notification';
 
@@ -55,7 +55,7 @@ const CATEGORY_OPTIONS: { key: NotificationCategoryFilter; label: string }[] = [
 // Component
 // ============================================================================
 
-export function NotificationCategoryTabs({
+export const NotificationCategoryTabs = memo(function NotificationCategoryTabs({
   selectedCategory,
   onSelectCategory,
   unreadByCategory,
@@ -120,6 +120,6 @@ export function NotificationCategoryTabs({
       </ScrollView>
     </View>
   );
-}
+});
 
 export default NotificationCategoryTabs;

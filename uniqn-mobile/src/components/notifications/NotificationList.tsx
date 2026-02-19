@@ -138,6 +138,7 @@ export const NotificationList = memo(function NotificationList({
   if (error) {
     return (
       <View
+        accessibilityRole="alert"
         className={`flex-1 bg-gray-50 dark:bg-surface-dark items-center justify-center p-4 ${className}`}
       >
         <Text className="text-error-600 dark:text-error-400 text-center">

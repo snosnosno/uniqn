@@ -58,6 +58,23 @@ const BATCH_LIMIT = 500; // Firestore writeBatch 최대 작업 수
 // ============================================================================
 
 /**
+ * FCM 토큰에서 Firestore Map 키 생성 (듀얼 해시 기반)
+ *
+ * @description substring(0,32) 방식 대신 FNV-1a 변형 듀얼 해시로 키 생성.
+ * 두 개의 독립적 32비트 해시를 조합하여 충돌 확률을 ~1/9조로 낮춤.
+ */
+function createTokenKey(token: string): string {
+  let h1 = 0x811c9dc5 >>> 0;
+  let h2 = 0x01000193 >>> 0;
+  for (let i = 0; i < token.length; i++) {
+    const ch = token.charCodeAt(i);
+    h1 = Math.imul(h1 ^ ch, 0x01000193) >>> 0;
+    h2 = Math.imul(h2 ^ ch, 0x5bd1e995) >>> 0;
+  }
+  return `tk_${h1.toString(36)}_${h2.toString(36)}`;
+}
+
+/**
  * Firestore 문서를 NotificationData로 변환
  */
 function docToNotification(doc: QueryDocumentSnapshot<DocumentData>): NotificationData {
@@ -111,6 +128,15 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     const q = new QueryBuilder(notificationsRef)
       .whereEqual(FIELDS.NOTIFICATION.recipientId, userId)
       .whereIf(filter?.isRead !== undefined, FIELDS.NOTIFICATION.isRead, '==', filter?.isRead)
+      .whereIn(FIELDS.NOTIFICATION.type, filter?.types)
+      .whereGreaterOrEqual(
+        FIELDS.NOTIFICATION.createdAt,
+        filter?.startDate ? Timestamp.fromDate(filter.startDate) : undefined
+      )
+      .whereLessOrEqual(
+        FIELDS.NOTIFICATION.createdAt,
+        filter?.endDate ? Timestamp.fromDate(filter.endDate) : undefined
+      )
       .orderByDesc(FIELDS.NOTIFICATION.createdAt)
       .paginate(pageSize, lastDoc)
       .build();
@@ -208,6 +234,25 @@ export class FirebaseNotificationRepository implements INotificationRepository {
       await batch.commit();
     }
 
+    // _batchUpdate 플래그 정리 (실패해도 읽음 처리 결과에 영향 없음)
+    Promise.resolve()
+      .then(async () => {
+        for (let i = 0; i < notificationIds.length; i += BATCH_LIMIT) {
+          const cleanupChunk = notificationIds.slice(i, i + BATCH_LIMIT);
+          const cleanupBatch = writeBatch(getFirebaseDb());
+
+          cleanupChunk.forEach((id) => {
+            const ref = doc(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS, id);
+            cleanupBatch.update(ref, { _batchUpdate: deleteField() });
+          });
+
+          await cleanupBatch.commit();
+        }
+      })
+      .catch((error) => {
+        logger.warn('_batchUpdate 플래그 정리 실패', { error: String(error) });
+      });
+
     logger.info('모든 알림 읽음 처리', { count: snapshot.size });
     return { updatedIds: notificationIds };
   }
@@ -274,36 +319,49 @@ export class FirebaseNotificationRepository implements INotificationRepository {
   }
 
   async deleteOlderThan(userId: string, daysToKeep: number): Promise<number> {
+    const MAX_ITERATIONS = 10; // 안전장치: 최대 5000건
+    let totalDeleted = 0;
+
     try {
       const cutoffDate = new Date();
       cutoffDate.setDate(cutoffDate.getDate() - daysToKeep);
 
-      const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
-      const q = query(
-        notificationsRef,
-        where(FIELDS.NOTIFICATION.recipientId, '==', userId),
-        where(FIELDS.NOTIFICATION.createdAt, '<', Timestamp.fromDate(cutoffDate)),
-        limit(BATCH_LIMIT) // 한 번에 처리할 최대 개수 (writeBatch 제한과 통일)
-      );
+      for (let iteration = 0; iteration < MAX_ITERATIONS; iteration++) {
+        const notificationsRef = collection(getFirebaseDb(), COLLECTIONS.NOTIFICATIONS);
+        const q = query(
+          notificationsRef,
+          where(FIELDS.NOTIFICATION.recipientId, '==', userId),
+          where(FIELDS.NOTIFICATION.createdAt, '<', Timestamp.fromDate(cutoffDate)),
+          limit(BATCH_LIMIT)
+        );
 
-      const snapshot = await getDocs(q);
+        const snapshot = await getDocs(q);
 
-      if (snapshot.empty) {
-        return 0;
+        if (snapshot.empty) {
+          break;
+        }
+
+        const batch = writeBatch(getFirebaseDb());
+        snapshot.docs.forEach((d) => {
+          batch.delete(d.ref);
+        });
+
+        await batch.commit();
+        totalDeleted += snapshot.size;
+
+        // 500개 미만이면 더 이상 없음
+        if (snapshot.size < BATCH_LIMIT) {
+          break;
+        }
       }
 
-      const batch = writeBatch(getFirebaseDb());
-      snapshot.docs.forEach((d) => {
-        batch.delete(d.ref);
-      });
-
-      await batch.commit();
-
-      logger.info('오래된 알림 정리', { count: snapshot.size, daysToKeep });
-      return snapshot.size;
+      if (totalDeleted > 0) {
+        logger.info('오래된 알림 정리', { count: totalDeleted, daysToKeep });
+      }
+      return totalDeleted;
     } catch (error) {
-      logger.error('오래된 알림 정리 실패', toError(error), { userId, daysToKeep });
-      return 0;
+      logger.error('오래된 알림 정리 실패', toError(error), { userId, daysToKeep, totalDeleted });
+      return totalDeleted;
     }
   }
 
@@ -364,7 +422,9 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     metadata: { type: 'expo' | 'fcm'; platform: 'ios' | 'android' }
   ): Promise<void> {
     const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-    const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+    const tokenKey = createTokenKey(token);
+    // 레거시 키 (substring 방식) — 존재하면 삭제하여 중복 방지
+    const legacyTokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
 
     await updateDoc(userRef, {
       [`fcmTokens.${tokenKey}`]: {
@@ -374,6 +434,8 @@ export class FirebaseNotificationRepository implements INotificationRepository {
         registeredAt: serverTimestamp(),
         lastRefreshedAt: serverTimestamp(),
       },
+      // 레거시 키 정리 (이미 없으면 no-op)
+      ...(tokenKey !== legacyTokenKey ? { [`fcmTokens.${legacyTokenKey}`]: deleteField() } : {}),
     });
 
     logger.info('FCM 토큰 등록', {
@@ -385,10 +447,13 @@ export class FirebaseNotificationRepository implements INotificationRepository {
 
   async unregisterFCMToken(userId: string, token: string): Promise<void> {
     const userRef = doc(getFirebaseDb(), COLLECTIONS.USERS, userId);
-    const tokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
+    const tokenKey = createTokenKey(token);
+    const legacyTokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
 
     await updateDoc(userRef, {
       [`fcmTokens.${tokenKey}`]: deleteField(),
+      // 레거시 키도 함께 삭제 (이미 없으면 no-op)
+      ...(tokenKey !== legacyTokenKey ? { [`fcmTokens.${legacyTokenKey}`]: deleteField() } : {}),
     });
 
     logger.info('FCM 토큰 삭제', { userId, tokenPrefix: token.substring(0, 20) });

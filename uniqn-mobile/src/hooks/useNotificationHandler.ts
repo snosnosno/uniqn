@@ -18,30 +18,6 @@ import {
 import { useFCMTokenManager } from './useFCMTokenManager';
 import { useNotificationSyncOnForeground } from './useNotificationSyncOnForeground';
 
-// 하위호환 re-export (C3: Store 업데이트 포함 래퍼)
-import { syncUnreadCounterFromServer as _syncFromService } from '@/services/notificationService';
-import { useNotificationStore } from '@/stores/notificationStore';
-
-/**
- * 서버에서 미읽음 카운터 동기화 + Store 업데이트
- *
- * @description Service의 syncUnreadCounterFromServer는 값만 반환하므로,
- * 이 래퍼에서 Store.setUnreadCount()를 호출하여 하위호환 유지.
- * @deprecated notifications.tsx에서 직접 사용 중. 향후 훅 내부로 통합 예정.
- */
-export async function syncUnreadCounterFromServer(
-  userId: string,
-  forceSync: boolean = false
-): Promise<void> {
-  const serverCount = await _syncFromService(userId, forceSync);
-  if (serverCount !== null) {
-    useNotificationStore.getState().setUnreadCount(serverCount);
-  }
-}
-
-/** @deprecated clearCounterSyncCache는 shared/cache에서 직접 import하세요 */
-export { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
-
 // ============================================================================
 // Types
 // ============================================================================

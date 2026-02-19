@@ -110,11 +110,7 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
 // Component
 // ============================================================================
 
-export function SignupStep4({
-  onNext,
-  initialData,
-  isLoading = false,
-}: SignupStep4Props) {
+export function SignupStep4({ onNext, initialData, isLoading = false }: SignupStep4Props) {
   const [modalContent, setModalContent] = useState<TermItem | null>(null);
 
   const {

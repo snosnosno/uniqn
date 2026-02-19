@@ -299,7 +299,6 @@ export const queryKeys = {
     unreadCount: () => [...queryKeys.notifications.all, 'unreadCount'] as const,
     // P2 아키텍처: Query Keys 중앙 관리 확장
     settings: () => [...queryKeys.notifications.all, 'settings'] as const,
-    permission: () => [...queryKeys.notifications.all, 'permission'] as const,
   },
 
   // 설정
@@ -436,6 +435,11 @@ export const queryKeys = {
     unansweredCount: () => [...queryKeys.inquiries.all, 'unansweredCount'] as const,
     /** FAQ */
     faq: (category?: string) => [...queryKeys.inquiries.all, 'faq', category] as const,
+  },
+  // 인앱 메시지
+  inAppMessages: {
+    all: ['inAppMessages'] as const,
+    active: () => [...queryKeys.inAppMessages.all, 'active'] as const,
   },
 } as const;
 

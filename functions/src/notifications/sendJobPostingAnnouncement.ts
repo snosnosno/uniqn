@@ -10,13 +10,23 @@
  * @note 개발 단계이므로 레거시 호환 코드 없음 (fcmTokens: string[] 배열만 사용)
  */
 
-import { onCall } from 'firebase-functions/v2/https';
-import { logger } from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { extractAllFcmTokens, flattenTokens } from '../utils/fcmTokenUtils';
-import { sendMulticast, updateUnreadCounter } from '../utils/notificationUtils';
-import { requireAuth, requireRole, requireString, requireMaxLength } from '../errors/validators';
-import { NotFoundError, ValidationError, handleFunctionError, ERROR_CODES } from '../errors';
+import { onCall } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions";
+import * as admin from "firebase-admin";
+import { extractAllFcmTokens, flattenTokens } from "../utils/fcmTokenUtils";
+import { sendMulticast, updateUnreadCounter } from "../utils/notificationUtils";
+import {
+  requireAuth,
+  requireRole,
+  requireString,
+  requireMaxLength,
+} from "../errors/validators";
+import {
+  NotFoundError,
+  ValidationError,
+  handleFunctionError,
+  ERROR_CODES,
+} from "../errors";
 
 const db = admin.firestore();
 
@@ -51,46 +61,55 @@ interface SendAnnouncementResponse {
  * 공지 전송 Cloud Function
  *
  * @description
- * - 권한 검증 (admin, manager만 가능)
+ * - 권한 검증 (admin, employer만 가능)
  * - 스태프 FCM 토큰 조회
  * - FCM 멀티캐스트 전송
  * - Firestore 알림 문서 생성
  * - 전송 결과 반환
  */
 export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
-  { region: 'asia-northeast3' },
+  { region: "asia-northeast3" },
   async (request): Promise<SendAnnouncementResponse> => {
-    logger.info('공지 전송 요청 수신', { data: request.data, userId: request.auth?.uid });
+    logger.info("공지 전송 요청 수신", {
+      data: request.data,
+      userId: request.auth?.uid,
+    });
 
     try {
       // 1. 인증 및 권한 검증
       const userId = requireAuth(request);
-      requireRole(request, 'admin', 'manager');
+      requireRole(request, "admin", "employer");
 
       // 2. 입력 데이터 검증
-      const eventId = requireString(request.data.eventId, '이벤트 ID');
-      const title = requireString(request.data.title, '공지 제목');
-      requireMaxLength(title, 50, '공지 제목');
+      const eventId = requireString(request.data.eventId, "이벤트 ID");
+      const title = requireString(request.data.title, "공지 제목");
+      requireMaxLength(title, 50, "공지 제목");
 
-      const announcementMessage = requireString(request.data.message, '공지 내용');
-      requireMaxLength(announcementMessage, 500, '공지 내용');
+      const announcementMessage = requireString(
+        request.data.message,
+        "공지 내용",
+      );
+      requireMaxLength(announcementMessage, 500, "공지 내용");
 
       const targetStaffIds = request.data.targetStaffIds;
       if (!Array.isArray(targetStaffIds) || targetStaffIds.length === 0) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '대상 스태프가 필요합니다.',
-          field: 'targetStaffIds',
+          userMessage: "대상 스태프가 필요합니다.",
+          field: "targetStaffIds",
         });
       }
 
       const jobPostingTitle = request.data.jobPostingTitle;
 
       // 3. 공고 정보 조회
-      const jobPostingDoc = await db.collection('jobPostings').doc(eventId).get();
+      const jobPostingDoc = await db
+        .collection("jobPostings")
+        .doc(eventId)
+        .get();
 
       if (!jobPostingDoc.exists) {
         throw new NotFoundError({
-          userMessage: '공고를 찾을 수 없습니다.',
+          userMessage: "공고를 찾을 수 없습니다.",
           metadata: { eventId },
         });
       }
@@ -98,15 +117,16 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
       const jobPosting = jobPostingDoc.data();
 
       // 공고 제목으로 알림 제목 prefix 생성
-      const actualJobPostingTitle = jobPostingTitle || jobPosting?.title || '공고';
+      const actualJobPostingTitle =
+        jobPostingTitle || jobPosting?.title || "공고";
       const notificationTitle = `[${actualJobPostingTitle}] ${title}`;
 
       // 4. 발신자 정보 조회
-      const senderDoc = await db.collection('users').doc(userId).get();
-      const senderName = senderDoc.data()?.name || '관리자';
+      const senderDoc = await db.collection("users").doc(userId).get();
+      const senderName = senderDoc.data()?.name || "관리자";
 
       // 5. 공지 문서 생성
-      const announcementRef = db.collection('jobPostingAnnouncements').doc();
+      const announcementRef = db.collection("jobPostingAnnouncements").doc();
       const announcementId = announcementRef.id;
 
       const announcementData = {
@@ -119,23 +139,29 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         targetStaffIds,
         sentCount: 0,
         failedCount: 0,
-        status: 'sending',
+        status: "sending",
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         metadata: {
-          jobPostingTitle: jobPosting?.title || '공고',
-          location: jobPosting?.location || '',
+          jobPostingTitle: jobPosting?.title || "공고",
+          location: jobPosting?.location || "",
         },
       };
 
       await announcementRef.set(announcementData);
 
       // 6. 스태프 FCM 토큰 조회 (배치 처리, fcmTokens: string[] 배열만 사용)
-      const allUsersData: Array<{ id: string; data: FirebaseFirestore.DocumentData | undefined }> = [];
+      const allUsersData: Array<{
+        id: string;
+        data: FirebaseFirestore.DocumentData | undefined;
+      }> = [];
       const chunkSize = 10; // Firestore in 쿼리 제한
 
       for (let i = 0; i < targetStaffIds.length; i += chunkSize) {
         const chunk = targetStaffIds.slice(i, i + chunkSize);
-        const usersSnapshot = await db.collection('users').where('__name__', 'in', chunk).get();
+        const usersSnapshot = await db
+          .collection("users")
+          .where("__name__", "in", chunk)
+          .get();
 
         usersSnapshot.docs.forEach((doc) => {
           allUsersData.push({ id: doc.id, data: doc.data() });
@@ -153,7 +179,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         }
       }
 
-      logger.info('FCM 토큰 조회 완료', {
+      logger.info("FCM 토큰 조회 완료", {
         totalStaff: targetStaffIds.length,
         usersWithTokens: staffTokensMap.size,
         totalTokens: allTokens.length,
@@ -165,10 +191,10 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
       const errors: Array<{ userId: string; error: string }> = [];
 
       if (allTokens.length === 0) {
-        logger.warn('FCM 토큰이 없는 스태프만 있습니다.');
+        logger.warn("FCM 토큰이 없는 스태프만 있습니다.");
 
         await announcementRef.update({
-          status: 'failed',
+          status: "failed",
           sentAt: admin.firestore.FieldValue.serverTimestamp(),
           failedCount: targetStaffIds.length,
         });
@@ -176,7 +202,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         return {
           success: false,
           announcementId,
-          error: 'FCM 토큰이 있는 스태프가 없습니다.',
+          error: "FCM 토큰이 있는 스태프가 없습니다.",
         };
       }
 
@@ -187,13 +213,13 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         title: `📢 ${notificationTitle}`,
         body: announcementMessage,
         data: {
-          type: 'announcement',
+          type: "announcement",
           announcementId,
           eventId,
           link: `/jobs/${eventId}`,
         },
-        channelId: 'announcements',
-        priority: 'high',
+        channelId: "announcements",
+        priority: "high",
       });
 
       // 전송 결과 처리 (토큰 → 사용자 역매핑)
@@ -209,7 +235,7 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
           failedUserIds.add(staffId);
           errors.push({
             userId: staffId,
-            error: resp.error || '알 수 없는 오류',
+            error: resp.error || "알 수 없는 오류",
           });
         }
       });
@@ -226,18 +252,18 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
         const notificationBatch = db.batch();
 
         batchIds.forEach((staffId) => {
-          const notificationRef = db.collection('notifications').doc();
+          const notificationRef = db.collection("notifications").doc();
           notificationBatch.set(notificationRef, {
             id: notificationRef.id,
             recipientId: staffId,
-            type: 'announcement',
-            category: 'system',
-            priority: 'high',
+            type: "announcement",
+            category: "system",
+            priority: "high",
             title: `📢 ${notificationTitle}`,
             body: announcementMessage,
             link: `/jobs/${eventId}`,
             data: {
-              type: 'announcement',
+              type: "announcement",
               announcementId,
               eventId,
             },
@@ -256,8 +282,8 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
           batchIds.map((staffId) =>
             updateUnreadCounter(staffId, 1).catch(() => {
               // 에러는 updateUnreadCounter 내부에서 로깅 및 기록됨
-            })
-          )
+            }),
+          ),
         );
       }
 
@@ -281,14 +307,14 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
       }
 
       await announcementRef.update({
-        status: successIds.length > 0 ? 'sent' : 'failed',
+        status: successIds.length > 0 ? "sent" : "failed",
         sentCount: successIds.length,
         failedCount: failedIds.length,
         sentAt: admin.firestore.FieldValue.serverTimestamp(),
         sendResult,
       });
 
-      logger.info('공지 전송 완료', {
+      logger.info("공지 전송 완료", {
         announcementId,
         successCount: successIds.length,
         failedCount: failedIds.length,
@@ -301,9 +327,9 @@ export const sendJobPostingAnnouncement = onCall<SendAnnouncementRequest>(
       };
     } catch (error: unknown) {
       throw handleFunctionError(error, {
-        operation: 'sendJobPostingAnnouncement',
+        operation: "sendJobPostingAnnouncement",
         context: { eventId: request.data?.eventId },
       });
     }
-  }
+  },
 );

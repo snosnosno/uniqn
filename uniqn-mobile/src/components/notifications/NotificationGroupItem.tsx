@@ -6,7 +6,7 @@
  */
 
 import React, { memo, useState, useCallback } from 'react';
-import { View, Text, Pressable, LayoutAnimation } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
 import Animated, { FadeIn, FadeOut, Layout } from 'react-native-reanimated';
 import { ChevronDownIcon, ChevronUpIcon } from '@/components/icons';
 import { NotificationIcon } from './NotificationIcon';
@@ -55,7 +55,6 @@ export const NotificationGroupItem = memo(function NotificationGroupItem({
 
   // 펼침/접힘 토글
   const toggleExpanded = useCallback(() => {
-    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
     setIsExpanded((prev) => !prev);
   }, []);
 
