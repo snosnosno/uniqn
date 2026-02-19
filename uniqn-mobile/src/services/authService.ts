@@ -790,32 +790,26 @@ export async function signInWithApple(): Promise<AuthResult> {
     // 4. Native SDK 동기화 (Cloud Function Custom Token 방식)
     // Apple credential은 1회용이라 Web SDK가 소비 후 Native SDK에 재사용 불가
     // Custom Token을 발급받아 Native SDK에 별도 인증
-    if (nativeSignInWithCustomToken && getNativeAuth) {
-      try {
-        const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
-          getFirebaseFunctions(),
-          'createCustomToken'
-        );
-        const tokenResult = await createCustomTokenFn();
-        await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
-        logger.info('Apple 로그인: Native SDK 동기화 완료', { component: 'authService' });
-      } catch (nativeSyncError) {
-        // Native SDK 동기화 실패는 치명적이지 않음 (Firestore는 Web SDK로 동작)
-        logger.warn('Apple 로그인: Native SDK 동기화 실패 (앱 기능에 영향 없음)', {
-          component: 'authService',
-          error:
-            nativeSyncError instanceof Error ? nativeSyncError.message : String(nativeSyncError),
-        });
-      }
-    }
-
     const user = webResult.user;
 
-    // 5. Firestore 프로필 확인 (getIdToken보다 먼저 — Claims 타이밍 이슈 해결)
+    // 4-A. Firestore 프로필 확인 (Native SDK 동기화보다 먼저 — 기존 사용자는 동기화 불필요)
     const existingProfile = await getUserProfile(user.uid);
 
     if (existingProfile && existingProfile.phoneVerified) {
-      // 기존 사용자 (프로필 완성됨) → Claims 포함 토큰 갱신 후 앱 진입
+      // 기존 사용자 (프로필 완성됨) → Native SDK 동기화는 best-effort
+      if (nativeSignInWithCustomToken && getNativeAuth) {
+        try {
+          const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
+            getFirebaseFunctions(),
+            'createCustomToken'
+          );
+          const tokenResult = await createCustomTokenFn();
+          await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
+        } catch {
+          // 기존 사용자: 동기화 실패해도 앱 사용 가능 (Firestore는 Web SDK로 동작)
+        }
+      }
+
       await user.getIdToken(true);
 
       // 비활성화된 계정 체크 (명시적으로 false인 경우만)
@@ -833,6 +827,52 @@ export async function signInWithApple(): Promise<AuthResult> {
         has_verified_phone: true,
       });
       return { user, profile: existingProfile };
+    }
+
+    // 4-B. 신규/미완성 사용자: Native SDK 동기화 필수 (전화번호 link 모드에 필요)
+    // [C-2 FIX] 동기화 실패 시 throw → 사용자를 signup 교착 상태에 빠뜨리지 않음
+    // [W-4 FIX] httpsCallable을 루프 밖에서 1회만 생성
+    if (nativeSignInWithCustomToken && getNativeAuth) {
+      const MAX_SYNC_ATTEMPTS = 2;
+      const SYNC_RETRY_DELAY_MS = 1000;
+      let nativeSyncSuccess = false;
+      const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
+        getFirebaseFunctions(),
+        'createCustomToken'
+      );
+
+      for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt++) {
+        try {
+          const tokenResult = await createCustomTokenFn();
+          await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
+          nativeSyncSuccess = true;
+          logger.info('Apple 로그인: Native SDK 동기화 완료 (신규 사용자)', {
+            component: 'authService',
+            attempt,
+          });
+          break;
+        } catch (nativeSyncError) {
+          logger.warn(`Apple 로그인: Native SDK 동기화 실패 (시도 ${attempt}/${MAX_SYNC_ATTEMPTS})`, {
+            component: 'authService',
+            attempt,
+            error:
+              nativeSyncError instanceof Error ? nativeSyncError.message : String(nativeSyncError),
+          });
+          if (attempt < MAX_SYNC_ATTEMPTS) {
+            await new Promise((r) => setTimeout(r, SYNC_RETRY_DELAY_MS));
+          }
+        }
+      }
+      if (!nativeSyncSuccess) {
+        logger.error('Apple 로그인: Native SDK 동기화 최종 실패 - 신규 사용자 가입 불가', {
+          component: 'authService',
+          uid: user.uid,
+        });
+        throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+          userMessage: 'Apple 로그인 처리 중 오류가 발생했습니다. 네트워크를 확인하고 다시 시도해주세요.',
+          metadata: { reason: 'native_sdk_sync_failed', uid: user.uid },
+        });
+      }
     }
 
     // 6. 신규/미완성 사용자 → 최소 프로필 생성
@@ -886,7 +926,7 @@ export async function signInWithApple(): Promise<AuthResult> {
     // expo-apple-authentication은 취소 시 code='ERR_REQUEST_CANCELED'인 CodedError를 throw
     const errorCode = (error as { code?: string }).code;
 
-    if (errorCode === 'ERR_REQUEST_CANCELED') {
+    if (errorCode === 'ERR_REQUEST_CANCELED' || errorCode === 'ERR_CANCELED') {
       logger.info('Apple 로그인 취소', { component: 'authService' });
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         userMessage: '', // 빈 메시지 → login.tsx에서 toast 미표시
