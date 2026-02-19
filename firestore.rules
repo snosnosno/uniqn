@@ -363,8 +363,8 @@ service cloud.firestore {
       // Manager and Staff can create job postings and update their own
       // v2.0: 앱 타입 정의에 맞춘 status 허용 값 + location 객체 지원
       allow create: if hasValidRole() &&
-        request.resource.data.keys().hasAll(['title', 'location', 'status', 'createdBy']) &&
-        request.resource.data.createdBy == request.auth.uid &&
+        request.resource.data.keys().hasAll(['title', 'location', 'status', 'ownerId']) &&
+        request.resource.data.ownerId == request.auth.uid &&
         isSafeText(request.resource.data.title, 200) &&
         (!('description' in request.resource.data) || request.resource.data.description is string) &&
         request.resource.data.location is map &&
@@ -390,7 +390,7 @@ service cloud.firestore {
         (!('fixedConfig' in request.resource.data) || validateFixedConfig(request.resource.data.fixedConfig)) &&
         (!('tournamentConfig' in request.resource.data) || validateTournamentConfig(request.resource.data.tournamentConfig)) &&
         (!('urgentConfig' in request.resource.data) || validateUrgentConfig(request.resource.data.urgentConfig))) ||
-        (hasValidRole() && request.auth.uid == resource.data.createdBy &&
+        (hasValidRole() && request.auth.uid == resource.data.ownerId &&
          (!('postingType' in request.resource.data) || request.resource.data.postingType == resource.data.postingType) &&
          (!('fixedConfig' in request.resource.data) || validateFixedConfig(request.resource.data.fixedConfig)) &&
          // Tournament 승인 필드는 admin만 수정 가능
@@ -412,32 +412,32 @@ service cloud.firestore {
 
       // Admin can delete any job posting, Manager/Staff can delete their own
       allow delete: if (isAdmin()) ||
-        (hasValidRole() && request.auth.uid == resource.data.createdBy);
+        (hasValidRole() && request.auth.uid == resource.data.ownerId);
         
       // --- Subcollections for Job Postings ---
       // Staff subcollection
       match /staff/{userId} {
         allow read: if isSignedIn();
         allow write: if isPrivileged() ||
-          (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid);
+          (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid);
       }
 
       // WorkLogs subcollection
       match /workLogs/{workLogId} {
         allow read: if isSignedIn();
         allow write: if isPrivileged() ||
-          (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid);
+          (hasValidRole() && get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid);
       }
 
       // Hybrid Architecture: Applications subcollection (공고별 지원서)
       match /applications/{appId} {
         allow read: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
         allow write: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
       }
 
@@ -445,11 +445,11 @@ service cloud.firestore {
       match /workSessions/{sessionId} {
         allow read: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
         allow write: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
       }
 
@@ -457,11 +457,11 @@ service cloud.firestore {
       match /attendance/{recordId} {
         allow read: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
         allow write: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
       }
 
@@ -469,11 +469,11 @@ service cloud.firestore {
       match /payroll/{payrollId} {
         allow read: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
         allow write: if isSignedIn() && (
           isPrivileged() ||
-          get(/databases/$(database)/documents/jobPostings/$(postId)).data.createdBy == request.auth.uid
+          get(/databases/$(database)/documents/jobPostings/$(postId)).data.ownerId == request.auth.uid
         );
       }
     }
@@ -486,7 +486,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.applicantId ||
         (resource.data.keys().hasAny(['jobPostingId']) &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       );
 
       // 사용자는 본인 지원서 생성 가능
@@ -501,11 +501,11 @@ service cloud.firestore {
       allow update: if (isPrivileged() ||
         (hasValidRole() && (
           (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid) ||
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid) ||
           (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.ownerId == request.auth.uid) ||
           (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.ownerId == request.auth.uid)
         ))) &&
         (!('status' in request.resource.data) ||
          request.resource.data.status in
@@ -517,11 +517,11 @@ service cloud.firestore {
         isPrivileged() ||
         (hasValidRole() && (
           (resource.data.keys().hasAny(['jobPostingId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid) ||
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid) ||
           (resource.data.keys().hasAny(['postId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.postId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.createdBy == request.auth.uid) ||
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.postId)).data.ownerId == request.auth.uid) ||
           (resource.data.keys().hasAny(['eventId']) && exists(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)) &&
-           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.createdBy == request.auth.uid)
+           get(/databases/$(database)/documents/jobPostings/$(resource.data.eventId)).data.ownerId == request.auth.uid)
         ))
       );
     }
@@ -558,7 +558,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.staffId ||
         (isPrivileged() &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       );
 
       // 관리자 및 유효한 역할을 가진 사용자가 생성/수정 가능
@@ -578,7 +578,7 @@ service cloud.firestore {
         request.auth.uid == resource.data.staffId ||
         (hasValidRole() &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       ) &&
         (!('status' in request.resource.data) ||
          request.resource.data.status in ['scheduled', 'checked_in', 'checked_out', 'completed', 'cancelled']) &&
@@ -590,7 +590,7 @@ service cloud.firestore {
         isPrivileged() ||
         (hasValidRole() &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       );
     }
 
@@ -1235,7 +1235,7 @@ service cloud.firestore {
         isPrivileged() ||
         (hasValidRole() &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       );
 
       // 생성: 구인자/관리자 + 공고 소유자 확인
@@ -1251,7 +1251,7 @@ service cloud.firestore {
         request.resource.data.expiresAt is timestamp &&
         request.resource.data.isActive is bool &&
         exists(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)) &&
-        get(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)).data.createdBy == request.auth.uid;
+        get(/databases/$(database)/documents/jobPostings/$(request.resource.data.jobPostingId)).data.ownerId == request.auth.uid;
 
       // 수정: 공고 작성자 또는 관리자 (isActive 변경만)
       // v2.0: eventId → jobPostingId 필드명 정규화
@@ -1259,7 +1259,7 @@ service cloud.firestore {
         isAdmin() ||
         (isPrivileged() &&
          exists(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)) &&
-         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.createdBy == request.auth.uid)
+         get(/databases/$(database)/documents/jobPostings/$(resource.data.jobPostingId)).data.ownerId == request.auth.uid)
       ) && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['isActive']);
 
       // 삭제: 관리자만
