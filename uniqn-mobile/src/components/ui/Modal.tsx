@@ -102,6 +102,7 @@ function WebModal({
       if (typeof document !== 'undefined') {
         document.body.style.overflow = 'hidden';
       }
+      return undefined;
     } else {
       setIsAnimating(false);
       // 애니메이션 완료 후 언마운트

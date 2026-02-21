@@ -69,6 +69,7 @@ export type NotificationType =
   | "schedule_cancelled"
   | "settlement_completed"
   | "settlement_requested"
+  | "negative_settlement_alert"
   | "job_updated"
   | "job_cancelled"
   | "job_closed"
@@ -229,6 +230,7 @@ const TYPE_TO_CATEGORY: Record<NotificationType, NotificationCategory> = {
   schedule_cancelled: "attendance",
   settlement_completed: "settlement",
   settlement_requested: "settlement",
+  negative_settlement_alert: "admin",
   job_updated: "job",
   job_cancelled: "job",
   job_closed: "job",
@@ -262,6 +264,7 @@ const TYPE_TO_CHANNEL: Record<NotificationType, AndroidChannelId> = {
   schedule_cancelled: "reminders",
   settlement_completed: "settlement",
   settlement_requested: "settlement",
+  negative_settlement_alert: "settlement",
   job_updated: "announcements",
   job_cancelled: "announcements",
   job_closed: "announcements",

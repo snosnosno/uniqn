@@ -103,6 +103,7 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
   [NotificationType.SETTLEMENT_COMPLETED]: () => '/schedule',
   [NotificationType.SETTLEMENT_REQUESTED]: (data) =>
     data?.jobPostingId ? `/employer/settlement/${data.jobPostingId}` : '/employer/my-postings',
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: () => '/admin/dashboard',
 
   // === 공고 관련 ===
   [NotificationType.JOB_UPDATED]: (data) =>

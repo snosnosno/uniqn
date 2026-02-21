@@ -6,8 +6,6 @@
  */
 
 /* eslint-disable no-undef */
-/* eslint-disable @typescript-eslint/no-require-imports */
-/* eslint-disable @typescript-eslint/no-empty-function */
 
 // ============================================================================
 // Expo Linking Mock (MUST be before any service imports)

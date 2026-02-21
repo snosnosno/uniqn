@@ -22,7 +22,7 @@
 import { onCall } from "firebase-functions/v2/https";
 import { logger } from "firebase-functions";
 import * as admin from "firebase-admin";
-import { requireAuth, requireRole, handleFunctionError } from "../errors";
+import { requireAuth, requireRole } from "../errors";
 
 const db = admin.firestore();
 

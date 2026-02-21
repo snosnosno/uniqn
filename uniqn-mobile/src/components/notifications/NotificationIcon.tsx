@@ -68,6 +68,7 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: BanknotesIcon,
   [NotificationType.SETTLEMENT_REQUESTED]: BanknotesIcon,
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: ExclamationCircleIcon,
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: BriefcaseIcon,
@@ -112,6 +113,7 @@ const typeEmojis: Record<NotificationType, string> = {
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '💰',
   [NotificationType.SETTLEMENT_REQUESTED]: '📝',
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: '⚠️',
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: '📋',

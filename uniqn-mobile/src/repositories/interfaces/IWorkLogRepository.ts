@@ -282,6 +282,15 @@ export interface IWorkLogRepository {
   ): Promise<void>;
 
   /**
+   * 음수 정산 플래그 기록 (관리자 알림 트리거용)
+   *
+   * @description Cloud Function onNegativeSettlement 트리거를 위한 플래그 기록
+   * @param workLogId - 근무 기록 ID
+   * @param amount - 음수 정산 금액
+   */
+  flagNegativeSettlement(workLogId: string, amount: number): Promise<void>;
+
+  /**
    * QR 체크인/체크아웃 트랜잭션 처리
    *
    * @description 원자적으로 WorkLog 상태 확인 + 업데이트

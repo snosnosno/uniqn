@@ -123,6 +123,7 @@ export function CircularProgress({
       return () => animation.stop();
     } else {
       pulseAnim.setValue(1);
+      return undefined;
     }
   }, [remainingSeconds, isExpired, pulseAnim]);
 

@@ -5,7 +5,6 @@
  * "include of non-modular header inside framework module" 에러 발생.
  * Podfile post_install에 CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES = YES 추가.
  */
-/* eslint-disable @typescript-eslint/no-require-imports */
 const { withDangerousMod } = require('expo/config-plugins');
 const fs = require('fs');
 const path = require('path');

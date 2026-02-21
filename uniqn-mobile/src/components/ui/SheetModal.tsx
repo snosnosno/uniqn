@@ -89,6 +89,7 @@ function WebSheetModal({
       if (typeof document !== 'undefined') {
         document.body.style.overflow = 'hidden';
       }
+      return undefined;
     } else {
       setIsAnimating(false);
       const timer = setTimeout(() => setShouldRender(false), 300);

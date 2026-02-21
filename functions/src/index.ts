@@ -7,7 +7,6 @@ import {
   requireAuth,
   requireRole,
   requireString,
-  requireMaxLength,
   requireEnum,
   NotFoundError,
   handleFunctionError,
@@ -65,6 +64,7 @@ export { onJobPostingUpdated } from './notifications/onJobPostingUpdated';
 export { onJobPostingCancelled } from './notifications/onJobPostingCancelled';
 export { onNoShow } from './notifications/onNoShow';
 export { onSettlementCompleted } from './notifications/onSettlementCompleted';
+export { onNegativeSettlement } from './notifications/onNegativeSettlement';
 export { onJobPostingClosed } from './notifications/onJobPostingClosed';
 export { onReportCreated } from './notifications/onReportCreated';
 export { onInquiryCreated } from './notifications/onInquiryCreated';
@@ -505,7 +505,7 @@ export const onUserRoleChange = onDocumentWritten(
 
 export const getDashboardStats = onRequest(
   { region: 'asia-northeast3', cors: true },
-  async (request, response) => {
+  async (_request, response) => {
     try {
       const now = new Date();
       const ongoingEventsQuery = db.collection("events").where("endDate", ">=", now);

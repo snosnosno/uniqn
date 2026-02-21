@@ -261,6 +261,13 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     link: (d) => `/admin/tournaments/${d.jobPostingId}`,
     icon: '🏆',
   },
+
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: {
+    title: '⚠️ 음수 정산 경고',
+    body: (d) => `${d.staffName || '스태프'}님의 정산 금액이 -${d.amount || '0'}원입니다.`,
+    link: () => '/admin/dashboard',
+    icon: '⚠️',
+  },
 };
 
 // ============================================================================

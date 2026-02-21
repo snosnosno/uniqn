@@ -59,6 +59,8 @@ export const NotificationType = {
   SETTLEMENT_COMPLETED: 'settlement_completed',
   /** 정산 요청 (구인자에게) */
   SETTLEMENT_REQUESTED: 'settlement_requested',
+  /** 음수 정산 경고 (관리자에게) */
+  NEGATIVE_SETTLEMENT_ALERT: 'negative_settlement_alert',
 
   // === 공고 관련 ===
   /** 공고 수정됨 */
@@ -138,6 +140,7 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: NotificationCategory.SETTLEMENT,
   [NotificationType.SETTLEMENT_REQUESTED]: NotificationCategory.SETTLEMENT,
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: NotificationCategory.ADMIN,
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: NotificationCategory.JOB,
@@ -193,6 +196,7 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: 'high',
   [NotificationType.SETTLEMENT_REQUESTED]: 'normal',
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: 'urgent',
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: 'low',
@@ -350,6 +354,7 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: AndroidChannelId.SETTLEMENT,
   [NotificationType.SETTLEMENT_REQUESTED]: AndroidChannelId.SETTLEMENT,
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: AndroidChannelId.SETTLEMENT,
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: AndroidChannelId.ANNOUNCEMENTS,
@@ -400,6 +405,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   // 정산 관련
   [NotificationType.SETTLEMENT_COMPLETED]: '정산 완료',
   [NotificationType.SETTLEMENT_REQUESTED]: '정산 요청',
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: '음수 정산 경고',
 
   // 공고 관련
   [NotificationType.JOB_UPDATED]: '공고 수정',

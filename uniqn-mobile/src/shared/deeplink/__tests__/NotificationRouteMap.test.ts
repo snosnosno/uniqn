@@ -1,7 +1,7 @@
 /**
  * NotificationRouteMap 테스트
  *
- * @description 29개 알림 타입 전체 딥링크 매핑 테스트
+ * @description 30개 알림 타입 전체 딥링크 매핑 테스트
  */
 
 import { NotificationType } from '@/types/notification';
@@ -17,8 +17,8 @@ describe('NotificationRouteMap', () => {
     // NotificationType의 모든 값을 배열로 가져오기
     const allNotificationTypes = Object.values(NotificationType) as NotificationType[];
 
-    it('29개 알림 타입이 모두 매핑되어 있어야 함', () => {
-      expect(allNotificationTypes.length).toBe(29);
+    it('30개 알림 타입이 모두 매핑되어 있어야 함', () => {
+      expect(allNotificationTypes.length).toBe(30);
 
       allNotificationTypes.forEach((type) => {
         expect(NOTIFICATION_ROUTE_MAP[type]).toBeDefined();
@@ -136,7 +136,12 @@ describe('NotificationRouteMap', () => {
     });
   });
 
-  describe('정산 관련 알림 (2개)', () => {
+  describe('정산 관련 알림 (3개)', () => {
+    it('NEGATIVE_SETTLEMENT_ALERT → admin/dashboard', () => {
+      const route = NOTIFICATION_ROUTE_MAP[NotificationType.NEGATIVE_SETTLEMENT_ALERT]();
+      expect(route.name).toBe('admin/dashboard');
+    });
+
     it('SETTLEMENT_COMPLETED → schedule', () => {
       const route = NOTIFICATION_ROUTE_MAP[NotificationType.SETTLEMENT_COMPLETED]();
       expect(route.name).toBe('schedule');
@@ -245,6 +250,7 @@ describe('NotificationRouteMap', () => {
       expect(isAdminOnlyNotification(NotificationType.NEW_REPORT)).toBe(true);
       expect(isAdminOnlyNotification(NotificationType.NEW_INQUIRY)).toBe(true);
       expect(isAdminOnlyNotification(NotificationType.TOURNAMENT_APPROVAL_REQUEST)).toBe(true);
+      expect(isAdminOnlyNotification(NotificationType.NEGATIVE_SETTLEMENT_ALERT)).toBe(true);
     });
 
     it('일반 알림은 false', () => {

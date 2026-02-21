@@ -27,6 +27,7 @@ import {
   getPasswordStrength,
   maskSensitiveId,
   sanitizeLogData,
+  normalizeForSecurity,
 } from '../security';
 
 describe('security', () => {
@@ -64,6 +65,122 @@ describe('security', () => {
       expect(hasXSSPattern('')).toBe(false);
       expect(hasXSSPattern(null as unknown as string)).toBe(false);
       expect(hasXSSPattern(undefined as unknown as string)).toBe(false);
+    });
+
+    it('SVG 태그 탐지', () => {
+      expect(hasXSSPattern('<svg onload=alert(1)>')).toBe(true);
+      expect(hasXSSPattern('<svg/onload=alert(1)>')).toBe(true);
+    });
+
+    it('data:base64 URI 탐지 (위험한 MIME 타입)', () => {
+      expect(hasXSSPattern('data:text/html;base64,PHNjcmlwdD5hbGVydCgxKTwvc2NyaXB0Pg==')).toBe(
+        true
+      );
+      expect(hasXSSPattern('data:application/javascript;base64,YWxlcnQoMSk=')).toBe(true);
+      expect(hasXSSPattern('data:text/javascript;base64,YWxlcnQoMSk=')).toBe(true);
+    });
+
+    it('data:image base64 URI는 허용 (false positive 방지)', () => {
+      expect(hasXSSPattern('data:image/png;base64,iVBORw0KGgo=')).toBe(false);
+      expect(hasXSSPattern('data:image/jpeg;base64,/9j/4AAQ=')).toBe(false);
+      expect(hasXSSPattern('data:image/svg+xml;base64,PHN2Zz4=')).toBe(false);
+    });
+
+    // --- 인코딩 공격 방어 테스트 ---
+
+    it('HTML 10진수 엔티티 인코딩된 script 태그 탐지', () => {
+      expect(hasXSSPattern('&#60;script&#62;alert(1)&#60;/script&#62;')).toBe(true);
+    });
+
+    it('HTML 16진수 엔티티 인코딩된 script 태그 탐지', () => {
+      expect(hasXSSPattern('&#x3c;script&#x3e;alert(1)&#x3c;/script&#x3e;')).toBe(true);
+    });
+
+    it('명명된 HTML 엔티티 인코딩된 태그 탐지', () => {
+      expect(hasXSSPattern('&lt;script&gt;alert(1)&lt;/script&gt;')).toBe(true);
+    });
+
+    it('URL 인코딩된 javascript: 프로토콜 탐지', () => {
+      expect(hasXSSPattern('%6Aavascript:alert(1)')).toBe(true);
+      expect(hasXSSPattern('java%73cript:alert(1)')).toBe(true);
+    });
+
+    it('이중 URL 인코딩 공격 탐지', () => {
+      expect(hasXSSPattern('%253Cscript%253Ealert(1)%253C/script%253E')).toBe(true);
+    });
+
+    it('Cyrillic 호모그래프 공격 탐지 (jаvаscript:)', () => {
+      // \u0430 = Cyrillic 'а' (시각적으로 Latin 'a'와 동일)
+      expect(hasXSSPattern('j\u0430v\u0430script:alert(1)')).toBe(true);
+    });
+
+    it('Cyrillic 호모그래프: on이벤트 핸들러', () => {
+      // \u043E = Cyrillic 'о' (looks like Latin 'o')
+      expect(hasXSSPattern('\u043Enclick=alert(1)')).toBe(true);
+    });
+
+    it('연속 호출 시 lastIndex 버그 없음', () => {
+      // /g 플래그 regex의 lastIndex가 리셋되는지 검증
+      expect(hasXSSPattern('javascript:void(0)')).toBe(true);
+      expect(hasXSSPattern('javascript:void(0)')).toBe(true);
+      expect(hasXSSPattern('javascript:void(0)')).toBe(true);
+    });
+
+    it('정상 한글 텍스트는 false (false positive 방지)', () => {
+      expect(hasXSSPattern('안녕하세요 반갑습니다')).toBe(false);
+      expect(hasXSSPattern('포커 딜러 모집합니다')).toBe(false);
+      expect(hasXSSPattern('서울특별시 강남구 역삼동 123-45')).toBe(false);
+      expect(hasXSSPattern('시급 15,000원 ~ 20,000원')).toBe(false);
+    });
+
+    it('영문+숫자 일반 텍스트는 false', () => {
+      expect(hasXSSPattern('John Doe joined as a dealer')).toBe(false);
+      expect(hasXSSPattern('Event #2024-001 started')).toBe(false);
+    });
+  });
+
+  // ============================================================================
+  // normalizeForSecurity 테스트
+  // ============================================================================
+  describe('normalizeForSecurity', () => {
+    it('빈 문자열 처리', () => {
+      expect(normalizeForSecurity('')).toBe('');
+      expect(normalizeForSecurity(null as unknown as string)).toBe('');
+    });
+
+    it('HTML 10진수 엔티티 디코딩', () => {
+      expect(normalizeForSecurity('&#60;')).toBe('<');
+      expect(normalizeForSecurity('&#62;')).toBe('>');
+    });
+
+    it('HTML 16진수 엔티티 디코딩', () => {
+      expect(normalizeForSecurity('&#x3c;')).toBe('<');
+      expect(normalizeForSecurity('&#x3E;')).toBe('>');
+    });
+
+    it('명명된 HTML 엔티티 디코딩', () => {
+      expect(normalizeForSecurity('&lt;&gt;&amp;&quot;&#39;')).toBe('<>&"\'');
+    });
+
+    it('URL 인코딩 디코딩', () => {
+      expect(normalizeForSecurity('%3Cscript%3E')).toBe('<script>');
+    });
+
+    it('이중 URL 인코딩 디코딩', () => {
+      expect(normalizeForSecurity('%253C')).toBe('<');
+    });
+
+    it('Cyrillic → Latin 호모그래프 치환', () => {
+      // \u0430 = Cyrillic а, \u0435 = Cyrillic е
+      expect(normalizeForSecurity('\u0430\u0435')).toBe('ae');
+    });
+
+    it('일반 한글은 변경 없음', () => {
+      expect(normalizeForSecurity('안녕하세요')).toBe('안녕하세요');
+    });
+
+    it('잘못된 URL 인코딩은 무시', () => {
+      expect(normalizeForSecurity('%ZZ')).toBe('%ZZ');
     });
   });
 
@@ -201,6 +318,19 @@ describe('security', () => {
 
     it('빈 문자열은 위험', () => {
       expect(isSafeUrl('')).toBe(false);
+    });
+
+    it('URL 인코딩된 javascript: 프로토콜 차단', () => {
+      expect(isSafeUrl('%6Aavascript:alert(1)')).toBe(false);
+      expect(isSafeUrl('java%73cript:alert(1)')).toBe(false);
+    });
+
+    it('Cyrillic 호모그래프 javascript: 차단', () => {
+      expect(isSafeUrl('j\u0430v\u0430script:alert(1)')).toBe(false);
+    });
+
+    it('이중 인코딩된 data: 프로토콜 차단', () => {
+      expect(isSafeUrl('%2564ata:text/html,evil')).toBe(false);
     });
   });
 

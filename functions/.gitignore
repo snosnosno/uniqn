@@ -1,3 +1,6 @@
+# Build output
+lib/
+
 # Python bytecode
 __pycache__/
 

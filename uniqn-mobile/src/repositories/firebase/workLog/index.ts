@@ -35,6 +35,7 @@ import {
 
 import {
   updatePayrollStatus,
+  flagNegativeSettlement,
   updateWorkTimeTransaction,
   updatePayrollStatusTransaction,
   processQRCheckInOutTransaction,
@@ -72,6 +73,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
 
   // Write
   updatePayrollStatus = updatePayrollStatus;
+  flagNegativeSettlement = flagNegativeSettlement;
   updateWorkTimeTransaction = updateWorkTimeTransaction;
   updatePayrollStatusTransaction = updatePayrollStatusTransaction;
   processQRCheckInOutTransaction = processQRCheckInOutTransaction;

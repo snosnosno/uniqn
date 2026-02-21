@@ -97,7 +97,7 @@ export async function calculateSettlement(
 
     const netPay = Math.max(0, settlementResult.afterTaxPay - deductions);
 
-    // 음수 정산 금액 경고 (로깅만, 0으로 처리)
+    // 음수 정산 금액 경고 (0으로 처리 + 관리자 알림 트리거)
     if (settlementResult.afterTaxPay - deductions < 0) {
       logger.warn('공제 후 금액이 음수', {
         workLogId: input.workLogId,
@@ -105,6 +105,20 @@ export async function calculateSettlement(
         deductions,
         adjustedNetPay: netPay,
       });
+
+      // 관리자 알림을 위한 Firestore 플래그 기록 (Cloud Function 트리거)
+      try {
+        await workLogRepository.flagNegativeSettlement(
+          input.workLogId,
+          settlementResult.afterTaxPay - deductions
+        );
+      } catch (flagError) {
+        // 플래그 기록 실패 시 정산 로직에 영향 없도록 로깅만
+        logger.error('음수 정산 플래그 기록 실패', {
+          workLogId: input.workLogId,
+          error: flagError instanceof Error ? flagError.message : String(flagError),
+        });
+      }
     }
 
     const result: SettlementCalculation = {

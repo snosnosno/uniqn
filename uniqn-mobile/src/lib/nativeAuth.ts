@@ -40,9 +40,8 @@ let _OAuthProvider: typeof import('@react-native-firebase/auth').OAuthProvider |
 let _signInWithCustomToken:
   | typeof import('@react-native-firebase/auth').signInWithCustomToken
   | null = null;
-let _verifyPhoneNumber:
-  | typeof import('@react-native-firebase/auth').verifyPhoneNumber
-  | null = null;
+let _verifyPhoneNumber: typeof import('@react-native-firebase/auth').verifyPhoneNumber | null =
+  null;
 
 if (Platform.OS !== 'web') {
   // eslint-disable-next-line @typescript-eslint/no-require-imports

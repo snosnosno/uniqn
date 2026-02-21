@@ -16,6 +16,7 @@ import type {
   RoleWithCount,
 } from './postingConfig';
 import type { DateSpecificRequirement } from './jobPosting/dateRequirement';
+import { getDateString } from './jobPosting/dateRequirement';
 import type { PreQuestion } from './preQuestion';
 import type { FormRoleWithCount } from './jobPostingForm';
 import type {
@@ -352,68 +353,91 @@ export interface JobPostingCard {
   tournamentConfig?: TournamentConfig;
 }
 
+// ============================================================================
+// Firestore Raw Data Types (레거시 호환)
+// ============================================================================
+
+/**
+ * Firestore에서 실제로 오는 역할 데이터
+ *
+ * @description 레거시 데이터에서 필드명이 다를 수 있음:
+ * - role/name: 역할 ID
+ * - headcount/count: 모집 인원
+ */
+interface FirestoreRawRoleData {
+  role?: string;
+  /** @deprecated legacy: role 대신 name 사용 */
+  name?: string;
+  customRole?: string;
+  headcount?: number;
+  /** @deprecated legacy: headcount 대신 count 사용 */
+  count?: number;
+  filled?: number;
+  salary?: SalaryInfo;
+}
+
+/**
+ * Firestore에서 실제로 오는 시간대 데이터
+ */
+interface FirestoreRawTimeSlotData {
+  startTime?: string;
+  /** @deprecated legacy: startTime 대신 time 사용 */
+  time?: string;
+  isTimeToBeAnnounced?: boolean;
+  roles?: FirestoreRawRoleData[];
+}
+
+// Raw data → 정규화 헬퍼 함수
+
+function extractRoleId(r: FirestoreRawRoleData): string {
+  return r.role ?? r.name ?? '';
+}
+
+function extractRoleCount(r: FirestoreRawRoleData): number {
+  return r.headcount ?? r.count ?? 0;
+}
+
+function extractStartTime(ts: FirestoreRawTimeSlotData): string {
+  return ts.startTime ?? ts.time ?? '';
+}
+
+// ============================================================================
+// toJobPostingCard
+// ============================================================================
+
 /**
  * JobPosting을 JobPostingCard로 변환
  */
 export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
   // posting.roles에서 역할별 급여 조회 헬퍼
   const getRoleSalary = (roleId: string, customRole?: string): SalaryInfo | undefined => {
-    // customRole이 있는 경우 (기타 역할)
     if (roleId === 'other' && customRole) {
-      const found = posting.roles.find(
-        (r) =>
-          (r.role as string) === 'other' && (r as { customRole?: string }).customRole === customRole
-      );
-      return (found as { salary?: SalaryInfo } | undefined)?.salary;
+      return posting.roles.find((r) => r.role === 'other' && r.customRole === customRole)?.salary;
     }
-    // 일반 역할
-    const found = posting.roles.find((r) => (r.role as string) === roleId);
-    return (found as { salary?: SalaryInfo } | undefined)?.salary;
+    return posting.roles.find((r) => r.role === roleId)?.salary;
   };
 
   // dateSpecificRequirements → CardDateRequirement 변환
+  // timeSlots를 FirestoreRawTimeSlotData로 취급 (레거시 필드명 호환)
   const dateRequirements: CardDateRequirement[] = (posting.dateSpecificRequirements ?? [])
     .map((req) => {
-      // 날짜 문자열 추출
-      let dateStr: string;
-      if (typeof req.date === 'string') {
-        dateStr = req.date;
-      } else if (req.date instanceof Timestamp) {
-        dateStr = req.date.toDate().toISOString().split('T')[0] ?? '';
-      } else if (req.date && 'seconds' in req.date) {
-        dateStr = new Date(req.date.seconds * 1000).toISOString().split('T')[0] ?? '';
-      } else {
-        dateStr = '';
-      }
+      const rawTimeSlots = (req.timeSlots ?? []) as unknown as FirestoreRawTimeSlotData[];
 
       return {
-        date: dateStr,
-        isGrouped: (req as { isGrouped?: boolean }).isGrouped,
-        timeSlots: (req.timeSlots ?? []).map((ts) => ({
-          startTime:
-            (ts as { startTime?: string; time?: string }).startTime ||
-            (ts as { startTime?: string; time?: string }).time ||
-            '',
-          isTimeToBeAnnounced:
-            (ts as { isTimeToBeAnnounced?: boolean }).isTimeToBeAnnounced ?? false,
+        date: getDateString(req.date),
+        isGrouped: req.isGrouped,
+        timeSlots: rawTimeSlots.map((ts) => ({
+          startTime: extractStartTime(ts),
+          isTimeToBeAnnounced: ts.isTimeToBeAnnounced ?? false,
           roles: (ts.roles ?? []).map((r) => {
-            const roleId =
-              (r as { role?: string; name?: string }).role ||
-              (r as { role?: string; name?: string }).name ||
-              '';
-            const customRole = (r as { customRole?: string }).customRole;
-            // dateSpecificRequirements의 salary가 없으면 posting.roles에서 조회
-            const directSalary = (r as { salary?: SalaryInfo }).salary;
-            const resolvedSalary = directSalary ?? getRoleSalary(roleId, customRole);
+            const roleId = extractRoleId(r);
+            const resolvedSalary = r.salary ?? getRoleSalary(roleId, r.customRole);
 
             return {
               role: roleId,
-              customRole,
-              count:
-                (r as { headcount?: number; count?: number }).headcount ||
-                (r as { headcount?: number; count?: number }).count ||
-                0,
-              filled: (r as { filled?: number }).filled ?? 0,
+              customRole: r.customRole,
+              count: extractRoleCount(r),
+              filled: r.filled ?? 0,
               salary: resolvedSalary,
             };
           }),
@@ -431,10 +455,10 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
           startTime: posting.timeSlot?.split(/[-~]/)[0]?.trim() || '',
           roles: posting.roles.map((r) => ({
             role: r.role,
-            customRole: (r as { customRole?: string }).customRole,
+            customRole: r.customRole,
             count: r.count,
             filled: r.filled ?? 0,
-            salary: (r as { salary?: SalaryInfo }).salary,
+            salary: r.salary,
           })),
         },
       ],
@@ -443,10 +467,7 @@ export const toJobPostingCard = (posting: JobPosting): JobPostingCard => {
 
   // defaultSalary 결정: 명시적 defaultSalary 또는 첫 번째 역할의 급여
   const resolvedDefaultSalary: SalaryInfo | undefined =
-    posting.defaultSalary ??
-    (posting.roles.find((r) => (r as { salary?: SalaryInfo }).salary)?.salary as
-      | SalaryInfo
-      | undefined);
+    posting.defaultSalary ?? posting.roles.find((r) => r.salary)?.salary;
 
   return {
     id: posting.id,

@@ -12,11 +12,11 @@
  * - 중복 쿼리 패턴 제거 (Repository에서 통합)
  */
 
-import { auth } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { reportRepository, userRepository } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
-import { AuthError, ValidationError, ERROR_CODES, toError } from '@/errors';
+import { ValidationError, ERROR_CODES, toError } from '@/errors';
+import { requireCurrentUser } from './authService';
 import type {
   Report,
   CreateReportInput,
@@ -42,12 +42,7 @@ export type { ReportFilters } from '@/repositories';
  * - 중복 체크 + 생성이 원자적으로 처리됨
  */
 export async function createReport(input: CreateReportInput): Promise<string> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다',
-    });
-  }
+  const user = requireCurrentUser();
 
   // 1. Zod 스키마 검증 (비즈니스 로직: Service에서 처리)
   const validationResult = createReportInputSchema.safeParse(input);
@@ -115,12 +110,7 @@ export async function getReportsByStaff(staffId: string): Promise<Report[]> {
  * 내가 신고한 목록 조회
  */
 export async function getMyReports(): Promise<Report[]> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다',
-    });
-  }
+  const user = requireCurrentUser();
 
   logger.info('Getting my reports', { userId: user.uid });
   return reportRepository.getByReporterId(user.uid);
@@ -144,12 +134,7 @@ export async function getReportById(reportId: string): Promise<Report | null> {
  * @description Repository의 트랜잭션으로 상태 검증 + 업데이트 원자적 처리
  */
 export async function reviewReport(input: ReviewReportInput): Promise<void> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다',
-    });
-  }
+  const user = requireCurrentUser();
 
   // 1. Zod 스키마 검증 (비즈니스 로직: Service에서 처리)
   const validationResult = reviewReportInputSchema.safeParse(input);
@@ -215,12 +200,7 @@ export interface GetAllReportsFilters {
  * 필터링 및 정렬 기능을 제공합니다.
  */
 export async function getAllReports(filters: GetAllReportsFilters = {}): Promise<Report[]> {
-  const user = auth.currentUser;
-  if (!user) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
-      userMessage: '인증이 필요합니다',
-    });
-  }
+  requireCurrentUser();
 
   logger.info('Getting all reports (admin)', { filters });
   return reportRepository.getAll(filters);

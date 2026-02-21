@@ -247,6 +247,12 @@ export const NOTIFICATION_ROUTE_MAP: Record<
    * → 대회 관리 페이지로 이동
    */
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: () => ({ name: 'admin/tournaments' }),
+
+  /**
+   * 음수 정산 경고 (관리자에게)
+   * → 관리자 통계 페이지로 이동
+   */
+  [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: () => ({ name: 'admin/dashboard' }),
 };
 
 // ============================================================================
@@ -279,6 +285,7 @@ export function isAdminOnlyNotification(type: NotificationType): boolean {
     NotificationType.NEW_REPORT,
     NotificationType.NEW_INQUIRY,
     NotificationType.TOURNAMENT_APPROVAL_REQUEST,
+    NotificationType.NEGATIVE_SETTLEMENT_ALERT,
   ];
   return adminTypes.includes(type);
 }

@@ -49,6 +49,30 @@ export async function updatePayrollStatus(workLogId: string, status: PayrollStat
   }
 }
 
+export async function flagNegativeSettlement(workLogId: string, amount: number): Promise<void> {
+  try {
+    const docRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
+
+    await updateDoc(docRef, {
+      _negativeSettlementDetected: true,
+      _negativeSettlementAmount: amount,
+      _negativeSettlementDetectedAt: serverTimestamp(),
+    });
+
+    logger.info('음수 정산 플래그 기록', { workLogId, amount });
+  } catch (error) {
+    logger.error('음수 정산 플래그 기록 실패', toError(error), {
+      workLogId,
+      amount,
+    });
+    throw handleServiceError(error, {
+      operation: '음수 정산 플래그 기록',
+      component: 'WorkLogRepository',
+      context: { workLogId },
+    });
+  }
+}
+
 export async function updateWorkTimeTransaction(
   workLogId: string,
   updates: {
