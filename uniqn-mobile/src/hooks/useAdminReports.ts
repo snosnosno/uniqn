@@ -15,7 +15,7 @@ import {
   getAllReports,
   getReportById,
   reviewReport,
-  type GetAllReportsFilters,
+  type ReportFilters,
 } from '@/services/reportService';
 import { queryKeys, cachingPolicies } from '@/lib/queryClient';
 import { useToastStore } from '@/stores/toastStore';
@@ -31,7 +31,7 @@ const getToast = () => useToastStore.getState();
 // Types
 // ============================================================================
 
-export type { GetAllReportsFilters as ReportFilters };
+export type { ReportFilters };
 
 // ============================================================================
 // Hooks
@@ -48,11 +48,12 @@ export type { GetAllReportsFilters as ReportFilters };
  * });
  * ```
  */
-export function useAdminReports(filters: GetAllReportsFilters = {}) {
+export function useAdminReports(filters: ReportFilters = {}) {
   return useQuery({
     queryKey: [...queryKeys.reports.all, 'admin', filters],
     queryFn: () => getAllReports(filters),
-    staleTime: cachingPolicies.frequent, // 5분
+    staleTime: cachingPolicies.frequent, // 2분
+    select: (result) => result.reports,
   });
 }
 

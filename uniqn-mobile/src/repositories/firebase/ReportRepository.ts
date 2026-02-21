@@ -24,6 +24,9 @@ import {
   orderBy,
   runTransaction,
   serverTimestamp,
+  getCountFromServer,
+  type QueryDocumentSnapshot,
+  type DocumentData,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -41,7 +44,8 @@ import { getReportSeverity } from '@/types/report';
 import type {
   IReportRepository,
   CreateReportContext,
-  ReportFilters,
+  FetchReportsOptions,
+  FetchReportsResult,
   ReportCounts,
 } from '../interfaces';
 import type { Report, CreateReportInput, ReviewReportInput, ReportStatus } from '@/types/report';
@@ -102,12 +106,13 @@ export class FirebaseReportRepository implements IReportRepository {
     return this.queryReports('reporterId', reporterId, '신고자별 신고 목록 조회');
   }
 
-  async getAll(filters?: ReportFilters): Promise<Report[]> {
+  async getAll(options: FetchReportsOptions = {}): Promise<FetchReportsResult> {
     try {
-      logger.info('전체 신고 목록 조회', { filters });
+      const { filters, pageSize = 50, cursor } = options;
+      logger.info('전체 신고 목록 조회', { filters, pageSize });
 
       const reportsRef = collection(getFirebaseDb(), COLLECTIONS.REPORTS);
-      const q = new QueryBuilder(reportsRef)
+      const constraints = new QueryBuilder(reportsRef)
         .whereIf(
           filters?.status && filters.status !== 'all',
           FIELDS.REPORT.status,
@@ -127,15 +132,22 @@ export class FirebaseReportRepository implements IReportRepository {
           filters?.reporterType
         )
         .orderByDesc(FIELDS.REPORT.createdAt)
+        .paginate(pageSize, cursor as QueryDocumentSnapshot<DocumentData> | undefined)
         .build();
 
-      const snapshot = await getDocs(q);
-      return this.parseSnapshot(snapshot, '전체 신고');
+      const snapshot = await getDocs(constraints);
+      const reports = this.parseSnapshot(snapshot, '전체 신고');
+
+      const hasMore = snapshot.docs.length > pageSize;
+      const items = hasMore ? reports.slice(0, pageSize) : reports;
+      const nextCursor = hasMore ? snapshot.docs[pageSize - 1] : null;
+
+      return { reports: items, nextCursor, hasMore };
     } catch (error) {
       throw handleServiceError(error, {
         operation: '전체 신고 목록 조회',
         component: 'ReportRepository',
-        context: { filters },
+        context: { filters: options.filters },
       });
     }
   }
@@ -144,14 +156,31 @@ export class FirebaseReportRepository implements IReportRepository {
     try {
       logger.info('대상별 신고 통계 조회', { targetId });
 
-      const reports = await this.getByTargetId(targetId);
+      const db = getFirebaseDb();
+      const reportsRef = collection(db, COLLECTIONS.REPORTS);
+      const severities = ['critical', 'high', 'medium', 'low'] as const;
+
+      // 심각도별 카운트를 병렬로 조회 (전체 문서 로드 대신 서버 카운트)
+      const counts = await Promise.all(
+        severities.map((severity) =>
+          getCountFromServer(
+            query(
+              reportsRef,
+              where(FIELDS.REPORT.targetId, '==', targetId),
+              where(FIELDS.REPORT.severity, '==', severity)
+            )
+          )
+        )
+      );
+
+      const [critical, high, medium, low] = counts.map((snap) => snap.data().count);
 
       return {
-        total: reports.length,
-        critical: reports.filter((r) => r.severity === 'critical').length,
-        high: reports.filter((r) => r.severity === 'high').length,
-        medium: reports.filter((r) => r.severity === 'medium').length,
-        low: reports.filter((r) => r.severity === 'low').length,
+        total: critical + high + medium + low,
+        critical,
+        high,
+        medium,
+        low,
       };
     } catch (error) {
       logger.error('대상별 신고 통계 조회 실패', toError(error), { targetId });
@@ -185,33 +214,39 @@ export class FirebaseReportRepository implements IReportRepository {
       const db = getFirebaseDb();
       const reportsRef = collection(db, COLLECTIONS.REPORTS);
 
-      // 새 문서 ID 미리 생성
+      // 1. 중복 신고 검사 (트랜잭션 외부에서 수행)
+      //
+      // ⚠️ Race Condition 인지:
+      // getDocs는 트랜잭션 내부에서 사용할 수 없어 (Firebase SDK 제약)
+      // 중복 체크와 생성 사이에 이론적 race condition 존재.
+      // 실제 발생 확률은 극히 낮음:
+      //   - 같은 reporter가 같은 target/jobPosting에 동시 신고하는 상황은 비현실적
+      //   - UI에서 중복 클릭 방지 (버튼 disabled) 적용됨
+      // 향후 개선: 복합 키 기반 문서 ID (reporter_target_jobPosting) 사용 시
+      //   트랜잭션 내 get+set으로 원자적 중복 방지 가능
+      const existingQuery = query(
+        reportsRef,
+        where(FIELDS.REPORT.reporterId, '==', context.reporterId),
+        where(FIELDS.REPORT.targetId, '==', input.targetId),
+        where(FIELDS.REPORT.jobPostingId, '==', input.jobPostingId),
+        where(FIELDS.REPORT.status, '==', STATUS.REPORT.PENDING)
+      );
+
+      const existingSnapshot = await getDocs(existingQuery);
+
+      if (!existingSnapshot.empty) {
+        throw new DuplicateReportError({
+          userMessage: '이미 해당 건에 대해 신고하셨습니다',
+          targetId: input.targetId,
+          jobPostingId: input.jobPostingId,
+        });
+      }
+
+      // 2. 새 문서 ID 미리 생성
       const newReportRef = doc(reportsRef);
 
+      // 3. 트랜잭션으로 문서 생성
       await runTransaction(db, async (transaction) => {
-        // 1. 중복 신고 검사 (같은 reporter + target + jobPosting + pending 상태)
-        const existingQuery = query(
-          reportsRef,
-          where(FIELDS.REPORT.reporterId, '==', context.reporterId),
-          where(FIELDS.REPORT.targetId, '==', input.targetId),
-          where(FIELDS.REPORT.jobPostingId, '==', input.jobPostingId),
-          where(FIELDS.REPORT.status, '==', STATUS.REPORT.PENDING)
-        );
-
-        // 트랜잭션 내에서 쿼리 실행
-        // Note: Firestore 트랜잭션에서 쿼리는 get()만 지원되므로
-        // 외부에서 확인 후 트랜잭션 내에서 다시 확인
-        const existingSnapshot = await getDocs(existingQuery);
-
-        if (!existingSnapshot.empty) {
-          throw new DuplicateReportError({
-            userMessage: '이미 해당 건에 대해 신고하셨습니다',
-            targetId: input.targetId,
-            jobPostingId: input.jobPostingId,
-          });
-        }
-
-        // 2. 신고 문서 생성
         const reportData: Record<string, unknown> = {
           type: input.type,
           reporterType: input.reporterType,

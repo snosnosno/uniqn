@@ -90,8 +90,10 @@ export function useUpdateUserRole() {
     }) => updateUserRole(userId, newRole, reason),
     onSuccess: (_data, variables) => {
       logger.info('사용자 역할 변경 성공', { userId: variables.userId });
-      // 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
+      // 캐시 무효화 (세분화: 해당 사용자 + 목록 + 대시보드)
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.userDetail(variables.userId) });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.dashboard() });
     },
     onError: (error, variables) => {
       logger.error('사용자 역할 변경 실패', toError(error), {
@@ -119,8 +121,9 @@ export function useSetUserActive() {
         userId: variables.userId,
         isActive: variables.isActive,
       });
-      // 캐시 무효화
-      queryClient.invalidateQueries({ queryKey: queryKeys.admin.all });
+      // 캐시 무효화 (세분화: 해당 사용자 + 목록)
+      queryClient.invalidateQueries({ queryKey: queryKeys.admin.userDetail(variables.userId) });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'users'] });
     },
     onError: (error, variables) => {
       logger.error('사용자 상태 변경 실패', toError(error), {
@@ -138,8 +141,8 @@ export function useSystemMetrics(enabled = true) {
   return useQuery({
     queryKey: queryKeys.admin.metrics(),
     queryFn: getSystemMetrics,
-    staleTime: cachingPolicies.frequent,
-    gcTime: 10 * 60 * 1000,
+    staleTime: cachingPolicies.stable, // 30분 (비용이 높은 쿼리)
+    gcTime: 60 * 60 * 1000, // 1시간
     enabled,
   });
 }

@@ -14,6 +14,7 @@
 
 import { logger } from '@/utils/logger';
 import { reportRepository, userRepository } from '@/repositories';
+import type { ReportFilters, FetchReportsResult } from '@/repositories';
 import { createReportInputSchema, reviewReportInputSchema } from '@/schemas';
 import { ValidationError, ERROR_CODES, toError } from '@/errors';
 import { requireCurrentUser } from './authService';
@@ -21,15 +22,13 @@ import type {
   Report,
   CreateReportInput,
   ReviewReportInput,
-  ReportStatus,
-  ReporterType,
 } from '@/types/report';
 
 // ============================================================================
 // Types (Repository에서 재사용)
 // ============================================================================
 
-export type { ReportFilters } from '@/repositories';
+export type { ReportFilters, FetchReportsResult } from '@/repositories';
 
 // ============================================================================
 // Create Report
@@ -182,28 +181,16 @@ export async function getReportCountByStaff(staffId: string): Promise<{
 // ============================================================================
 
 /**
- * 신고 필터 옵션 (관리자용)
- */
-export interface GetAllReportsFilters {
-  /** 신고 상태 필터 */
-  status?: ReportStatus | 'all';
-  /** 심각도 필터 */
-  severity?: 'low' | 'medium' | 'high' | 'critical' | 'all';
-  /** 신고자 유형 필터 */
-  reporterType?: ReporterType | 'all';
-}
-
-/**
  * 전체 신고 목록 조회 (관리자용)
  *
  * @description 관리자가 모든 신고를 조회하고 처리할 수 있도록
- * 필터링 및 정렬 기능을 제공합니다.
+ * 필터링 및 페이지네이션 기능을 제공합니다.
  */
-export async function getAllReports(filters: GetAllReportsFilters = {}): Promise<Report[]> {
+export async function getAllReports(filters: ReportFilters = {}): Promise<FetchReportsResult> {
   requireCurrentUser();
 
   logger.info('Getting all reports (admin)', { filters });
-  return reportRepository.getAll(filters);
+  return reportRepository.getAll({ filters });
 }
 
 // ============================================================================

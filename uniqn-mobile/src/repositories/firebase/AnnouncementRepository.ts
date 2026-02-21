@@ -19,16 +19,16 @@ import {
   getDocs,
   addDoc,
   updateDoc,
-  deleteDoc,
   serverTimestamp,
   increment,
   getCountFromServer,
+  runTransaction,
   type QueryDocumentSnapshot,
   type DocumentData,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { toError } from '@/errors';
+import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { QueryBuilder, processPaginatedResultsWithFilter } from '@/utils/firestore';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
@@ -45,6 +45,16 @@ import type {
   FetchAnnouncementsResult,
   AnnouncementCountByStatus,
 } from '../interfaces/IAnnouncementRepository';
+
+// ============================================================================
+// 상태 전이 규칙
+// ============================================================================
+
+const ALLOWED_TRANSITIONS: Record<string, string[]> = {
+  draft: ['published'],
+  published: ['archived'],
+  archived: ['published'],
+};
 
 // ============================================================================
 // Helpers
@@ -139,7 +149,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         .orderByDesc(FIELDS.ANNOUNCEMENT.isPinned)
         .orderByDesc(FIELDS.ANNOUNCEMENT.priority)
         .orderByDesc(FIELDS.ANNOUNCEMENT.publishedAt)
-        .paginate(pageSize, lastDoc)
+        .paginate(pageSize, lastDoc as QueryDocumentSnapshot<DocumentData> | undefined)
         .build();
 
       const snapshot = await getDocs(q);
@@ -191,7 +201,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
           filters?.status
         )
         .orderByDesc(FIELDS.ANNOUNCEMENT.createdAt)
-        .paginate(pageSize, lastDoc)
+        .paginate(pageSize, lastDoc as QueryDocumentSnapshot<DocumentData> | undefined)
         .build();
 
       const snapshot = await getDocs(q);
@@ -354,12 +364,38 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
 
   async publish(announcementId: string): Promise<void> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.ANNOUNCEMENTS, announcementId);
+      const db = getFirebaseDb();
+      const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
-      await updateDoc(docRef, {
-        status: STATUS.ANNOUNCEMENT.PUBLISHED as AnnouncementStatus,
-        publishedAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(docRef);
+
+        if (!docSnap.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공지사항을 찾을 수 없습니다',
+            metadata: { announcementId },
+          });
+        }
+
+        const currentStatus = docSnap.data().status as string;
+        const allowed = ALLOWED_TRANSITIONS[currentStatus];
+
+        if (!allowed?.includes(STATUS.ANNOUNCEMENT.PUBLISHED)) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: `현재 상태(${currentStatus})에서는 발행할 수 없습니다`,
+            metadata: {
+              announcementId,
+              currentStatus,
+              targetStatus: STATUS.ANNOUNCEMENT.PUBLISHED,
+            },
+          });
+        }
+
+        transaction.update(docRef, {
+          status: STATUS.ANNOUNCEMENT.PUBLISHED as AnnouncementStatus,
+          publishedAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
       });
 
       logger.info('공지사항 발행 완료', {
@@ -367,6 +403,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         announcementId,
       });
     } catch (error) {
+      if (isAppError(error)) throw error;
       logger.error('공지사항 발행 실패', toError(error), { announcementId });
       throw handleServiceError(error, {
         operation: '공지사항 발행',
@@ -378,11 +415,33 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
 
   async archive(announcementId: string): Promise<void> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.ANNOUNCEMENTS, announcementId);
+      const db = getFirebaseDb();
+      const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
-      await updateDoc(docRef, {
-        status: STATUS.ANNOUNCEMENT.ARCHIVED as AnnouncementStatus,
-        updatedAt: serverTimestamp(),
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(docRef);
+
+        if (!docSnap.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공지사항을 찾을 수 없습니다',
+            metadata: { announcementId },
+          });
+        }
+
+        const currentStatus = docSnap.data().status as string;
+        const allowed = ALLOWED_TRANSITIONS[currentStatus];
+
+        if (!allowed?.includes(STATUS.ANNOUNCEMENT.ARCHIVED)) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: `현재 상태(${currentStatus})에서는 보관할 수 없습니다`,
+            metadata: { announcementId, currentStatus, targetStatus: STATUS.ANNOUNCEMENT.ARCHIVED },
+          });
+        }
+
+        transaction.update(docRef, {
+          status: STATUS.ANNOUNCEMENT.ARCHIVED as AnnouncementStatus,
+          updatedAt: serverTimestamp(),
+        });
       });
 
       logger.info('공지사항 보관 완료', {
@@ -390,6 +449,7 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
         announcementId,
       });
     } catch (error) {
+      if (isAppError(error)) throw error;
       logger.error('공지사항 보관 실패', toError(error), { announcementId });
       throw handleServiceError(error, {
         operation: '공지사항 보관',
@@ -422,14 +482,28 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
 
   async delete(announcementId: string): Promise<void> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.ANNOUNCEMENTS, announcementId);
-      await deleteDoc(docRef);
+      const db = getFirebaseDb();
+      const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
+
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(docRef);
+
+        if (!docSnap.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공지사항을 찾을 수 없습니다',
+            metadata: { announcementId },
+          });
+        }
+
+        transaction.delete(docRef);
+      });
 
       logger.info('공지사항 삭제 완료', {
         component: 'AnnouncementRepository',
         announcementId,
       });
     } catch (error) {
+      if (isAppError(error)) throw error;
       logger.error('공지사항 삭제 실패', toError(error), { announcementId });
       throw handleServiceError(error, {
         operation: '공지사항 삭제',

@@ -52,6 +52,9 @@ export type { INotificationRepository, GetNotificationsOptions } from './INotifi
 export type {
   IReportRepository,
   CreateReportContext,
+  ReportPaginationCursor,
+  FetchReportsOptions,
+  FetchReportsResult,
   ReportFilters,
   ReportCounts,
 } from './IReportRepository';
@@ -79,10 +82,20 @@ export type {
 // Announcement Repository
 export type {
   IAnnouncementRepository,
+  AnnouncementPaginationCursor,
   FetchAnnouncementsOptions,
   FetchAnnouncementsResult,
   AnnouncementCountByStatus,
 } from './IAnnouncementRepository';
+
+// Inquiry Repository
+export type {
+  IInquiryRepository,
+  InquiryPaginationCursor,
+  FetchInquiriesOptions,
+  FetchInquiriesResult,
+  CreateInquiryContext,
+} from './IInquiryRepository';
 
 // Admin Repository
 export type {

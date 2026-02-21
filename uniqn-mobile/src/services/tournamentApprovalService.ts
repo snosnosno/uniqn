@@ -83,7 +83,7 @@ function mapFirebaseFunctionError(error: unknown): Error {
         userMessage: '공고를 찾을 수 없습니다',
       });
     case 'failed-precondition':
-      return new BusinessError(ERROR_CODES.BUSINESS_INVALID_WORKLOG, {
+      return new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         userMessage: errorMessage || '이미 처리된 공고입니다',
       });
     case 'invalid-argument':

@@ -22,6 +22,9 @@ import type {
 // Types
 // ============================================================================
 
+/** 페이지네이션 커서 (구현체 내부 타입 은닉) */
+export type ReportPaginationCursor = unknown;
+
 /**
  * 신고 생성 컨텍스트 (트랜잭션에서 사용)
  */
@@ -42,6 +45,24 @@ export interface ReportFilters {
   severity?: 'low' | 'medium' | 'high' | 'critical' | 'all';
   /** 신고자 유형 필터 */
   reporterType?: ReporterType | 'all';
+}
+
+/**
+ * 신고 목록 조회 옵션
+ */
+export interface FetchReportsOptions {
+  filters?: ReportFilters;
+  pageSize?: number;
+  cursor?: ReportPaginationCursor;
+}
+
+/**
+ * 신고 목록 조회 결과
+ */
+export interface FetchReportsResult {
+  reports: Report[];
+  nextCursor: ReportPaginationCursor | null;
+  hasMore: boolean;
 }
 
 /**
@@ -100,11 +121,11 @@ export interface IReportRepository {
   getByReporterId(reporterId: string): Promise<Report[]>;
 
   /**
-   * 전체 신고 목록 조회 (관리자용)
-   * @param filters - 필터 조건
-   * @returns 필터링된 신고 목록
+   * 전체 신고 목록 조회 (관리자용, 페이지네이션)
+   * @param options - 필터 + 페이지네이션 옵션
+   * @returns 페이지네이션된 신고 목록
    */
-  getAll(filters?: ReportFilters): Promise<Report[]>;
+  getAll(options?: FetchReportsOptions): Promise<FetchReportsResult>;
 
   /**
    * 대상별 신고 통계 조회

@@ -19,7 +19,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  updateDoc,
   query,
   where,
   orderBy,
@@ -27,6 +26,7 @@ import {
   startAfter,
   getCountFromServer,
   serverTimestamp,
+  runTransaction,
   Timestamp,
   type QueryConstraint,
   type DocumentSnapshot,
@@ -225,7 +225,11 @@ export class FirebaseAdminRepository implements IAdminRepository {
         constraints.push(where(FIELDS.USER.phoneVerified, '==', filters.isVerified));
       }
 
-      const sortField = filters.sortBy || 'createdAt';
+      const ALLOWED_SORT_FIELDS = ['createdAt', 'name', 'email', 'role', 'lastLoginAt'] as const;
+      const requestedSort = filters.sortBy || 'createdAt';
+      const sortField = (ALLOWED_SORT_FIELDS as readonly string[]).includes(requestedSort)
+        ? requestedSort
+        : 'createdAt';
       const sortOrder = filters.sortOrder || 'desc';
       constraints.push(orderBy(sortField, sortOrder));
 
@@ -332,20 +336,26 @@ export class FirebaseAdminRepository implements IAdminRepository {
     try {
       logger.info('사용자 역할 변경', { userId, newRole });
       const db = getFirebaseDb();
-      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
 
-      if (!userDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-          userMessage: '사용자를 찾을 수 없습니다',
-          metadata: { userId },
+      const currentRole = await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '사용자를 찾을 수 없습니다',
+            metadata: { userId },
+          });
+        }
+
+        const prevRole = userDoc.data()?.role as string | undefined;
+
+        transaction.update(userRef, {
+          role: newRole,
+          updatedAt: serverTimestamp(),
         });
-      }
 
-      const currentRole = userDoc.data()?.role as string | undefined;
-
-      await updateDoc(doc(db, COLLECTIONS.USERS, userId), {
-        role: newRole,
-        updatedAt: serverTimestamp(),
+        return prevRole;
       });
 
       logger.info('사용자 역할 변경 완료', {
@@ -375,18 +385,22 @@ export class FirebaseAdminRepository implements IAdminRepository {
     try {
       logger.info('사용자 상태 변경', { userId, isActive });
       const db = getFirebaseDb();
-      const userDoc = await getDoc(doc(db, COLLECTIONS.USERS, userId));
+      const userRef = doc(db, COLLECTIONS.USERS, userId);
 
-      if (!userDoc.exists()) {
-        throw new BusinessError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-          userMessage: '사용자를 찾을 수 없습니다',
-          metadata: { userId },
+      await runTransaction(db, async (transaction) => {
+        const userDoc = await transaction.get(userRef);
+
+        if (!userDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '사용자를 찾을 수 없습니다',
+            metadata: { userId },
+          });
+        }
+
+        transaction.update(userRef, {
+          isActive,
+          updatedAt: serverTimestamp(),
         });
-      }
-
-      await updateDoc(doc(db, COLLECTIONS.USERS, userId), {
-        isActive,
-        updatedAt: serverTimestamp(),
       });
 
       logger.info('사용자 상태 변경 완료', { userId, isActive });

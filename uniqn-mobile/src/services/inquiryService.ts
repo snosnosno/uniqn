@@ -1,31 +1,19 @@
 /**
  * UNIQN Mobile - Inquiry Service
  *
- * @description 문의 관리 서비스 (Firestore)
- * @version 1.1.0 - handleServiceError 패턴 적용
+ * @description 문의 관리 서비스 (Repository 패턴)
+ * @version 2.0.0 - Repository 패턴 전환
  *
- * TODO [P1-2]: Repository 패턴 전환 (현재 Firebase 직접 호출)
+ * 아키텍처:
+ * Service Layer → Repository Layer → Firebase
  */
 
-import {
-  collection,
-  doc,
-  query,
-  where,
-  getDocs,
-  getDoc,
-  addDoc,
-  updateDoc,
-  serverTimestamp,
-  QueryDocumentSnapshot,
-  getCountFromServer,
-} from 'firebase/firestore';
-import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
-import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import { ValidationError, ERROR_CODES } from '@/errors';
-import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
+import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { inquiryRepository } from '@/repositories';
+import { requireCurrentUser } from './authService';
+import { createInquirySchema, respondInquirySchema } from '@/schemas';
 import type {
   Inquiry,
   InquiryStatus,
@@ -33,57 +21,29 @@ import type {
   RespondInquiryInput,
   InquiryFilters,
 } from '@/types';
+import type { InquiryPaginationCursor } from '@/repositories';
 
 // ============================================================================
 // Constants
 // ============================================================================
 
-const PAGE_SIZE = 20;
 const COMPONENT = 'inquiryService';
 
 // ============================================================================
-// Types
+// Types (하위 호환용)
 // ============================================================================
 
 interface FetchInquiriesOptions {
   userId?: string;
   filters?: InquiryFilters;
   pageSize?: number;
-  lastDoc?: QueryDocumentSnapshot;
+  lastDoc?: InquiryPaginationCursor;
 }
 
 interface FetchInquiriesResult {
   inquiries: Inquiry[];
-  lastDoc: QueryDocumentSnapshot | null;
+  lastDoc: InquiryPaginationCursor | null;
   hasMore: boolean;
-}
-
-// ============================================================================
-// Helper Functions
-// ============================================================================
-
-/**
- * Firestore 문서를 Inquiry로 변환
- */
-function docToInquiry(doc: QueryDocumentSnapshot): Inquiry {
-  const data = doc.data();
-  return {
-    id: doc.id,
-    userId: data.userId,
-    userEmail: data.userEmail,
-    userName: data.userName,
-    category: data.category,
-    subject: data.subject,
-    message: data.message,
-    status: data.status,
-    attachments: data.attachments,
-    response: data.response,
-    responderId: data.responderId,
-    responderName: data.responderName,
-    respondedAt: data.respondedAt,
-    createdAt: data.createdAt,
-    updatedAt: data.updatedAt,
-  };
 }
 
 // ============================================================================
@@ -97,8 +57,7 @@ export async function fetchMyInquiries(
   options: FetchInquiriesOptions
 ): Promise<FetchInquiriesResult> {
   try {
-    const db = getFirebaseDb();
-    const { userId, pageSize = PAGE_SIZE, lastDoc } = options;
+    const { userId, pageSize, lastDoc: cursor } = options;
 
     if (!userId) {
       throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
@@ -107,25 +66,14 @@ export async function fetchMyInquiries(
       });
     }
 
-    // QueryBuilder로 쿼리 구성
-    const q = new QueryBuilder(collection(db, COLLECTIONS.INQUIRIES))
-      .whereEqual(FIELDS.INQUIRY.userId, userId)
-      .orderByDesc(FIELDS.INQUIRY.createdAt)
-      .paginate(pageSize, lastDoc)
-      .build();
-
-    const snapshot = await getDocs(q);
-    const result = processPaginatedResults(snapshot.docs, pageSize, docToInquiry);
-
-    logger.info('내 문의 조회 완료', {
-      component: COMPONENT,
-      userId,
-      count: result.items.length,
+    const result = await inquiryRepository.getByUserId(userId, {
+      pageSize,
+      cursor,
     });
 
     return {
-      inquiries: result.items,
-      lastDoc: result.lastDoc,
+      inquiries: result.inquiries,
+      lastDoc: result.nextCursor,
       hasMore: result.hasMore,
     };
   } catch (error) {
@@ -144,33 +92,17 @@ export async function fetchAllInquiries(
   options: FetchInquiriesOptions
 ): Promise<FetchInquiriesResult> {
   try {
-    const db = getFirebaseDb();
-    const { filters, pageSize = PAGE_SIZE, lastDoc } = options;
+    const { filters, pageSize, lastDoc: cursor } = options;
 
-    // QueryBuilder로 쿼리 구성
-    const q = new QueryBuilder(collection(db, COLLECTIONS.INQUIRIES))
-      .whereIf(
-        filters?.status && filters.status !== 'all',
-        FIELDS.INQUIRY.status,
-        '==',
-        filters?.status
-      )
-      .orderByDesc(FIELDS.INQUIRY.createdAt)
-      .paginate(pageSize, lastDoc)
-      .build();
-
-    const snapshot = await getDocs(q);
-    const result = processPaginatedResults(snapshot.docs, pageSize, docToInquiry);
-
-    logger.info('전체 문의 조회 완료', {
-      component: COMPONENT,
-      count: result.items.length,
+    const result = await inquiryRepository.getAll({
       filters,
+      pageSize,
+      cursor,
     });
 
     return {
-      inquiries: result.items,
-      lastDoc: result.lastDoc,
+      inquiries: result.inquiries,
+      lastDoc: result.nextCursor,
       hasMore: result.hasMore,
     };
   } catch (error) {
@@ -186,32 +118,7 @@ export async function fetchAllInquiries(
  */
 export async function getInquiry(inquiryId: string): Promise<Inquiry | null> {
   try {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
-    const docSnap = await getDoc(docRef);
-
-    if (!docSnap.exists()) {
-      return null;
-    }
-
-    const data = docSnap.data();
-    return {
-      id: docSnap.id,
-      userId: data.userId,
-      userEmail: data.userEmail,
-      userName: data.userName,
-      category: data.category,
-      subject: data.subject,
-      message: data.message,
-      status: data.status,
-      attachments: data.attachments,
-      response: data.response,
-      responderId: data.responderId,
-      responderName: data.responderName,
-      respondedAt: data.respondedAt,
-      createdAt: data.createdAt,
-      updatedAt: data.updatedAt,
-    };
+    return await inquiryRepository.getById(inquiryId);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '문의 상세 조회',
@@ -234,31 +141,26 @@ export async function createInquiry(
   userName: string,
   input: CreateInquiryInput
 ): Promise<string> {
+  requireCurrentUser();
+  const validationResult = createInquirySchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '입력값을 확인해주세요',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
+  }
   try {
-    const db = getFirebaseDb();
-
-    const inquiryData = {
-      userId,
-      userEmail,
-      userName,
-      category: input.category,
-      subject: input.subject,
-      message: input.message,
-      status: STATUS.INQUIRY.OPEN as InquiryStatus,
-      attachments: input.attachments || [],
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp(),
-    };
-
-    const docRef = await addDoc(collection(db, COLLECTIONS.INQUIRIES), inquiryData);
+    const validated = validationResult.data;
+    const id = await inquiryRepository.create({ userId, userEmail, userName }, validated);
 
     logger.info('문의 생성 완료', {
       component: COMPONENT,
-      inquiryId: docRef.id,
+      inquiryId: id,
       category: input.category,
     });
 
-    return docRef.id;
+    return id;
   } catch (error) {
     throw handleServiceError(error, {
       operation: '문의 생성',
@@ -281,18 +183,17 @@ export async function respondToInquiry(
   responderName: string,
   input: RespondInquiryInput
 ): Promise<void> {
-  try {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
-
-    await updateDoc(docRef, {
-      response: input.response,
-      responderId,
-      responderName,
-      respondedAt: serverTimestamp(),
-      status: input.status || STATUS.INQUIRY.CLOSED,
-      updatedAt: serverTimestamp(),
+  requireCurrentUser();
+  const validationResult = respondInquirySchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '입력값을 확인해주세요',
+      errors: validationResult.error.flatten().fieldErrors,
     });
+  }
+  try {
+    await inquiryRepository.respond(inquiryId, responderId, responderName, validationResult.data);
 
     logger.info('문의 응답 완료', {
       component: COMPONENT,
@@ -312,15 +213,13 @@ export async function respondToInquiry(
 /**
  * 문의 상태 변경 (관리자)
  */
-export async function updateInquiryStatus(inquiryId: string, status: InquiryStatus): Promise<void> {
+export async function updateInquiryStatus(
+  inquiryId: string,
+  status: InquiryStatus
+): Promise<void> {
+  requireCurrentUser();
   try {
-    const db = getFirebaseDb();
-    const docRef = doc(db, COLLECTIONS.INQUIRIES, inquiryId);
-
-    await updateDoc(docRef, {
-      status,
-      updatedAt: serverTimestamp(),
-    });
+    await inquiryRepository.updateStatus(inquiryId, status);
 
     logger.info('문의 상태 변경 완료', {
       component: COMPONENT,
@@ -345,14 +244,7 @@ export async function updateInquiryStatus(inquiryId: string, status: InquiryStat
  */
 export async function getUnansweredCount(): Promise<number> {
   try {
-    const db = getFirebaseDb();
-    const q = query(
-      collection(db, COLLECTIONS.INQUIRIES),
-      where(FIELDS.INQUIRY.status, '==', STATUS.INQUIRY.OPEN)
-    );
-
-    const snapshot = await getCountFromServer(q);
-    return snapshot.data().count;
+    return await inquiryRepository.getUnansweredCount();
   } catch (error) {
     throw handleServiceError(error, {
       operation: '미답변 문의 수 조회',

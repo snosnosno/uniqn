@@ -414,21 +414,29 @@ describe('reportService', () => {
         { id: 'report-1', status: 'pending' },
         { id: 'report-2', status: 'resolved' },
       ];
-      mockReportRepo.getAll.mockResolvedValue(mockReports as never);
+      mockReportRepo.getAll.mockResolvedValue({
+        reports: mockReports,
+        nextCursor: null,
+        hasMore: false,
+      } as never);
 
       const result = await getAllReports();
 
-      expect(mockReportRepo.getAll).toHaveBeenCalledWith({});
-      expect(result).toEqual(mockReports);
+      expect(mockReportRepo.getAll).toHaveBeenCalledWith({ filters: {} });
+      expect(result).toEqual({ reports: mockReports, nextCursor: null, hasMore: false });
     });
 
     it('필터를 적용하여 조회할 수 있어야 한다', async () => {
-      mockReportRepo.getAll.mockResolvedValue([]);
+      mockReportRepo.getAll.mockResolvedValue({
+        reports: [],
+        nextCursor: null,
+        hasMore: false,
+      } as never);
 
       const filters = { status: 'pending' as const, severity: 'high' as const };
       await getAllReports(filters);
 
-      expect(mockReportRepo.getAll).toHaveBeenCalledWith(filters);
+      expect(mockReportRepo.getAll).toHaveBeenCalledWith({ filters });
     });
 
     it('인증되지 않은 사용자면 AuthError를 던져야 한다', async () => {

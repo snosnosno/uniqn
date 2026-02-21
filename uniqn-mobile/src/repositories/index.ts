@@ -36,6 +36,7 @@ import {
   FirebaseSettlementRepository,
   FirebaseConfirmedStaffRepository,
   FirebaseAnnouncementRepository,
+  FirebaseInquiryRepository,
   FirebaseAdminRepository,
 } from './firebase';
 
@@ -74,6 +75,9 @@ export type {
   // Report
   IReportRepository,
   CreateReportContext,
+  ReportPaginationCursor,
+  FetchReportsOptions,
+  FetchReportsResult,
   ReportFilters,
   ReportCounts,
   // Settlement
@@ -92,9 +96,16 @@ export type {
   ConfirmedStaffSubscriptionCallbacks,
   // Announcement
   IAnnouncementRepository,
+  AnnouncementPaginationCursor,
   FetchAnnouncementsOptions,
   FetchAnnouncementsResult,
   AnnouncementCountByStatus,
+  // Inquiry
+  IInquiryRepository,
+  InquiryPaginationCursor,
+  FetchInquiriesOptions,
+  FetchInquiriesResult,
+  CreateInquiryContext,
   // Admin
   IAdminRepository,
   DashboardCounts,
@@ -117,6 +128,7 @@ export {
   FirebaseSettlementRepository,
   FirebaseConfirmedStaffRepository,
   FirebaseAnnouncementRepository,
+  FirebaseInquiryRepository,
   FirebaseAdminRepository,
 } from './firebase';
 
@@ -330,6 +342,27 @@ export const confirmedStaffRepository = new FirebaseConfirmedStaffRepository();
  * ```
  */
 export const announcementRepository = new FirebaseAnnouncementRepository();
+
+/**
+ * Inquiry Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { inquiryRepository } from '@/repositories';
+ *
+ * // 문의 조회
+ * const inquiry = await inquiryRepository.getById(inquiryId);
+ *
+ * // 사용자 문의 목록
+ * const { inquiries } = await inquiryRepository.getByUserId(userId);
+ *
+ * // 문의 생성
+ * const id = await inquiryRepository.create(context, input);
+ * ```
+ */
+export const inquiryRepository = new FirebaseInquiryRepository();
 
 /**
  * Admin Repository 싱글톤 인스턴스

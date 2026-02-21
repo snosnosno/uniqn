@@ -6,7 +6,7 @@
  */
 
 import { useQuery, useMutation, useInfiniteQuery } from '@tanstack/react-query';
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
+import type { AnnouncementPaginationCursor } from '@/repositories';
 import {
   fetchPublishedAnnouncements,
   fetchAllAnnouncements,
@@ -48,11 +48,11 @@ export function usePublishedAnnouncements() {
     queryKey: queryKeys.announcements.published({ userRole }),
     queryFn: async ({ pageParam }) => {
       const result = await fetchPublishedAnnouncements(userRole, {
-        lastDoc: pageParam as QueryDocumentSnapshot<DocumentData> | undefined,
+        lastDoc: pageParam as AnnouncementPaginationCursor | undefined,
       });
       return result;
     },
-    initialPageParam: undefined as QueryDocumentSnapshot<DocumentData> | undefined,
+    initialPageParam: undefined as AnnouncementPaginationCursor | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     staleTime: cachingPolicies.frequent,
   });
@@ -96,11 +96,11 @@ export function useAllAnnouncements(filters?: AnnouncementFilters) {
     queryFn: async ({ pageParam }) => {
       const result = await fetchAllAnnouncements({
         filters,
-        lastDoc: pageParam as QueryDocumentSnapshot<DocumentData> | undefined,
+        lastDoc: pageParam as AnnouncementPaginationCursor | undefined,
       });
       return result;
     },
-    initialPageParam: undefined as QueryDocumentSnapshot<DocumentData> | undefined,
+    initialPageParam: undefined as AnnouncementPaginationCursor | undefined,
     getNextPageParam: (lastPage) => (lastPage.hasMore ? lastPage.lastDoc : undefined),
     staleTime: cachingPolicies.frequent,
   });

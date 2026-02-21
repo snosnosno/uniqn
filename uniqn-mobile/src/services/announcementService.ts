@@ -9,8 +9,11 @@
  */
 
 import { logger } from '@/utils/logger';
+import { ValidationError, ERROR_CODES } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { announcementRepository } from '@/repositories';
+import { requireCurrentUser } from './authService';
+import { createAnnouncementSchema, updateAnnouncementSchema } from '@/schemas/announcement.schema';
 import type { Announcement, CreateAnnouncementInput, UpdateAnnouncementInput } from '@/types';
 import type { UserRole } from '@/types/role';
 import type {
@@ -87,14 +90,24 @@ export async function createAnnouncement(
   authorName: string,
   input: CreateAnnouncementInput
 ): Promise<string> {
+  const admin = requireCurrentUser();
+  const validationResult = createAnnouncementSchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '입력값을 확인해주세요',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
+  }
   try {
-    const id = await announcementRepository.create(authorId, authorName, input);
+    const id = await announcementRepository.create(authorId, authorName, validationResult.data);
 
     logger.info('공지사항 생성 완료', {
       component: COMPONENT,
       announcementId: id,
-      title: input.title,
+      title: validationResult.data.title,
       authorId,
+      adminId: admin.uid,
     });
 
     return id;
@@ -118,8 +131,17 @@ export async function updateAnnouncement(
   announcementId: string,
   input: UpdateAnnouncementInput
 ): Promise<void> {
+  requireCurrentUser();
+  const validationResult = updateAnnouncementSchema.safeParse(input);
+  if (!validationResult.success) {
+    const firstError = validationResult.error.issues[0];
+    throw new ValidationError(ERROR_CODES.VALIDATION_SCHEMA, {
+      userMessage: firstError?.message || '입력값을 확인해주세요',
+      errors: validationResult.error.flatten().fieldErrors,
+    });
+  }
   try {
-    await announcementRepository.update(announcementId, input);
+    await announcementRepository.update(announcementId, validationResult.data);
 
     logger.info('공지사항 수정 완료', {
       component: COMPONENT,
@@ -138,12 +160,14 @@ export async function updateAnnouncement(
  * 공지사항 발행 (관리자)
  */
 export async function publishAnnouncement(announcementId: string): Promise<void> {
+  const admin = requireCurrentUser();
   try {
     await announcementRepository.publish(announcementId);
 
     logger.info('공지사항 발행 완료', {
       component: COMPONENT,
       announcementId,
+      adminId: admin.uid,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -158,12 +182,14 @@ export async function publishAnnouncement(announcementId: string): Promise<void>
  * 공지사항 보관 (관리자)
  */
 export async function archiveAnnouncement(announcementId: string): Promise<void> {
+  const admin = requireCurrentUser();
   try {
     await announcementRepository.archive(announcementId);
 
     logger.info('공지사항 보관 완료', {
       component: COMPONENT,
       announcementId,
+      adminId: admin.uid,
     });
   } catch (error) {
     throw handleServiceError(error, {
@@ -178,12 +204,14 @@ export async function archiveAnnouncement(announcementId: string): Promise<void>
  * 공지사항 삭제 (관리자)
  */
 export async function deleteAnnouncement(announcementId: string): Promise<void> {
+  const admin = requireCurrentUser();
   try {
     await announcementRepository.delete(announcementId);
 
     logger.info('공지사항 삭제 완료', {
       component: COMPONENT,
       announcementId,
+      adminId: admin.uid,
     });
   } catch (error) {
     throw handleServiceError(error, {

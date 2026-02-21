@@ -6,15 +6,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  RefreshControl,
-  ActivityIndicator,
-  Alert,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, RefreshControl, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import {
   UserIcon,
@@ -29,6 +21,7 @@ import { EmptyState } from '@/components/ui/EmptyState';
 import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { useToastStore } from '@/stores/toastStore';
+import { useModal } from '@/stores/modalStore';
 import type { UserRole } from '@/types/role';
 
 const ROLE_OPTIONS: { role: UserRole; label: string; description: string }[] = [
@@ -62,6 +55,7 @@ function InfoRow({ icon, label, value }: InfoRowProps) {
 export default function AdminUserDetailPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { addToast } = useToastStore();
+  const { showConfirm } = useModal();
   const [selectedRole, setSelectedRole] = useState<UserRole | null>(null);
 
   const {
@@ -78,26 +72,20 @@ export default function AdminUserDetailPage() {
   const handleRoleChange = useCallback(async () => {
     if (!id || !selectedRole || selectedRole === user?.role) return;
 
-    Alert.alert('역할 변경', '사용자의 역할을 변경하시겠습니까?', [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '변경',
-        onPress: async () => {
-          try {
-            await updateRoleMutation.mutateAsync({
-              userId: id,
-              newRole: selectedRole,
-              reason: '관리자에 의한 역할 변경',
-            });
-            addToast({ type: 'success', message: '역할이 변경되었습니다.' });
-            setSelectedRole(null);
-          } catch {
-            addToast({ type: 'error', message: '역할 변경에 실패했습니다.' });
-          }
-        },
-      },
-    ]);
-  }, [id, selectedRole, user?.role, updateRoleMutation, addToast]);
+    showConfirm('역할 변경', '사용자의 역할을 변경하시겠습니까?', async () => {
+      try {
+        await updateRoleMutation.mutateAsync({
+          userId: id,
+          newRole: selectedRole,
+          reason: '관리자에 의한 역할 변경',
+        });
+        addToast({ type: 'success', message: '역할이 변경되었습니다.' });
+        setSelectedRole(null);
+      } catch {
+        addToast({ type: 'error', message: '역할 변경에 실패했습니다.' });
+      }
+    });
+  }, [id, selectedRole, user?.role, updateRoleMutation, addToast, showConfirm]);
 
   const handleToggleActive = useCallback(() => {
     if (!id || !user) return;
@@ -108,29 +96,22 @@ export default function AdminUserDetailPage() {
       ? '이 계정을 활성화하시겠습니까?'
       : '이 계정을 비활성화하시겠습니까? 사용자는 로그인할 수 없게 됩니다.';
 
-    Alert.alert(title, message, [
-      { text: '취소', style: 'cancel' },
-      {
-        text: newStatus ? '활성화' : '비활성화',
-        style: newStatus ? 'default' : 'destructive',
-        onPress: async () => {
-          try {
-            await setActiveMutation.mutateAsync({
-              userId: id,
-              isActive: newStatus,
-              reason: '관리자에 의한 상태 변경',
-            });
-            addToast({
-              type: 'success',
-              message: newStatus ? '계정이 활성화되었습니다.' : '계정이 비활성화되었습니다.',
-            });
-          } catch {
-            addToast({ type: 'error', message: '상태 변경에 실패했습니다.' });
-          }
-        },
-      },
-    ]);
-  }, [id, user, setActiveMutation, addToast]);
+    showConfirm(title, message, async () => {
+      try {
+        await setActiveMutation.mutateAsync({
+          userId: id,
+          isActive: newStatus,
+          reason: '관리자에 의한 상태 변경',
+        });
+        addToast({
+          type: 'success',
+          message: newStatus ? '계정이 활성화되었습니다.' : '계정이 비활성화되었습니다.',
+        });
+      } catch {
+        addToast({ type: 'error', message: '상태 변경에 실패했습니다.' });
+      }
+    });
+  }, [id, user, setActiveMutation, addToast, showConfirm]);
 
   const getRoleBadgeVariant = (role: UserRole): 'error' | 'primary' | 'success' => {
     switch (role) {

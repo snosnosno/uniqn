@@ -10,7 +10,6 @@
  * 3. 향후 백엔드 교체 가능성 확보
  */
 
-import type { QueryDocumentSnapshot, DocumentData } from 'firebase/firestore';
 import type {
   Announcement,
   CreateAnnouncementInput,
@@ -23,15 +22,20 @@ import type { UserRole } from '@/types/role';
 // Types
 // ============================================================================
 
+/**
+ * 페이지네이션 커서 (구현체 의존 없는 opaque 타입)
+ */
+export type AnnouncementPaginationCursor = unknown;
+
 export interface FetchAnnouncementsOptions {
   filters?: AnnouncementFilters;
   pageSize?: number;
-  lastDoc?: QueryDocumentSnapshot<DocumentData>;
+  lastDoc?: AnnouncementPaginationCursor;
 }
 
 export interface FetchAnnouncementsResult {
   announcements: Announcement[];
-  lastDoc: QueryDocumentSnapshot<DocumentData> | null;
+  lastDoc: AnnouncementPaginationCursor | null;
   hasMore: boolean;
 }
 

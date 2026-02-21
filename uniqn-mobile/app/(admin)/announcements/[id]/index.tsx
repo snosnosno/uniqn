@@ -5,15 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  Pressable,
-  ActivityIndicator,
-  Alert,
-  Platform,
-} from 'react-native';
+import { View, Text, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { Image } from 'expo-image';
 import { Stack, useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,12 +22,14 @@ import {
   ANNOUNCEMENT_PRIORITY_CONFIG,
   getAnnouncementImages,
 } from '@/types/announcement';
+import { useModal } from '@/stores/modalStore';
 
 export default function AnnouncementDetailPage() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
+  const { showConfirm } = useModal();
   const { data: announcement, isLoading, error } = useAnnouncementDetail(id ?? '');
   const { mutate: publishAnnouncement } = usePublishAnnouncement();
   const { mutate: archiveAnnouncement } = useArchiveAnnouncement();
@@ -66,75 +60,40 @@ export default function AnnouncementDetailPage() {
 
   // Handle publish
   const handlePublish = useCallback(() => {
-    const doPublish = () => {
+    showConfirm('공지사항 발행', '이 공지사항을 발행하시겠습니까?', () => {
       setActionLoading('publish');
       publishAnnouncement(id!, {
         onSettled: () => setActionLoading(null),
       });
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm('이 공지사항을 발행하시겠습니까?')) {
-        doPublish();
-      }
-    } else {
-      Alert.alert('공지사항 발행', '이 공지사항을 발행하시겠습니까?', [
-        { text: '취소', style: 'cancel' },
-        { text: '발행', onPress: doPublish },
-      ]);
-    }
-  }, [id, publishAnnouncement]);
+    });
+  }, [id, publishAnnouncement, showConfirm]);
 
   // Handle archive
   const handleArchive = useCallback(() => {
-    const doArchive = () => {
+    showConfirm('공지사항 보관', '이 공지사항을 보관하시겠습니까?', () => {
       setActionLoading('archive');
       archiveAnnouncement(id!, {
         onSettled: () => setActionLoading(null),
       });
-    };
-
-    if (Platform.OS === 'web') {
-      if (window.confirm('이 공지사항을 보관하시겠습니까?')) {
-        doArchive();
-      }
-    } else {
-      Alert.alert('공지사항 보관', '이 공지사항을 보관하시겠습니까?', [
-        { text: '취소', style: 'cancel' },
-        { text: '보관', onPress: doArchive },
-      ]);
-    }
-  }, [id, archiveAnnouncement]);
+    });
+  }, [id, archiveAnnouncement, showConfirm]);
 
   // Handle delete
   const handleDelete = useCallback(() => {
-    const doDelete = () => {
-      setActionLoading('delete');
-      deleteAnnouncement(id!, {
-        onSuccess: () => {
-          router.back();
-        },
-        onSettled: () => setActionLoading(null),
-      });
-    };
-
-    if (Platform.OS === 'web') {
-      if (
-        window.confirm('이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.')
-      ) {
-        doDelete();
+    showConfirm(
+      '공지사항 삭제',
+      '이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.',
+      () => {
+        setActionLoading('delete');
+        deleteAnnouncement(id!, {
+          onSuccess: () => {
+            router.back();
+          },
+          onSettled: () => setActionLoading(null),
+        });
       }
-    } else {
-      Alert.alert(
-        '공지사항 삭제',
-        '이 공지사항을 삭제하시겠습니까?\n삭제된 공지사항은 복구할 수 없습니다.',
-        [
-          { text: '취소', style: 'cancel' },
-          { text: '삭제', style: 'destructive', onPress: doDelete },
-        ]
-      );
-    }
-  }, [id, deleteAnnouncement, router]);
+    );
+  }, [id, deleteAnnouncement, router, showConfirm]);
 
   if (isLoading) {
     return (

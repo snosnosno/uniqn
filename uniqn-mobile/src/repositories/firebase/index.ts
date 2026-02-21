@@ -15,5 +15,6 @@ export { FirebaseReportRepository } from './ReportRepository';
 export { FirebaseSettlementRepository } from './SettlementRepository';
 export { FirebaseConfirmedStaffRepository } from './ConfirmedStaffRepository';
 export { FirebaseAnnouncementRepository } from './AnnouncementRepository';
+export { FirebaseInquiryRepository } from './InquiryRepository';
 export { FirebaseAdminRepository } from './AdminRepository';
 export { FirebaseInAppMessageRepository } from './InAppMessageRepository';

@@ -30,7 +30,7 @@ import type {
   InquiryCategory,
 } from '@/types';
 import { FAQ_DATA, filterFAQByCategory } from '@/types';
-import type { QueryDocumentSnapshot } from 'firebase/firestore';
+import type { InquiryPaginationCursor } from '@/repositories';
 import { stableFilters } from '@/utils/queryUtils';
 
 // ============================================================================
@@ -62,7 +62,7 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
   const { enabled = true, pageSize = 20 } = options;
   const user = useAuthStore((state) => state.user);
   const [additionalInquiries, setAdditionalInquiries] = useState<Inquiry[]>([]);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [lastDoc, setLastDoc] = useState<InquiryPaginationCursor | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
@@ -129,7 +129,7 @@ interface UseAllInquiriesOptions {
 export function useAllInquiries(options: UseAllInquiriesOptions = {}) {
   const { enabled = true, pageSize = 20, filters } = options;
   const [allInquiries, setAllInquiries] = useState<Inquiry[]>([]);
-  const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
+  const [lastDoc, setLastDoc] = useState<InquiryPaginationCursor | null>(null);
   const [hasMore, setHasMore] = useState(true);
 
   const query = useQuery({
