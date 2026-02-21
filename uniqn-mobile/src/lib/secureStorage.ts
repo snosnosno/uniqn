@@ -17,6 +17,7 @@
 import { Platform } from 'react-native';
 import { logger } from '@/utils/logger';
 import { isSensitiveKey, KNOWN_STORAGE_KEYS } from '@/config/securityConfig';
+import { getMMKVInstance } from '@/lib/mmkvStorage';
 
 // ============================================================================
 // Types
@@ -67,6 +68,15 @@ const STORAGE_PREFIX = 'uniqn_secure_';
 const DEFAULT_KEYCHAIN_ACCESSIBLE: KeychainAccessible = 'WHEN_UNLOCKED_THIS_DEVICE_ONLY';
 
 /**
+ * SecureStore 키 정제
+ * expo-secure-store는 영숫자, ".", "-", "_"만 허용
+ * 허용되지 않는 문자는 "_"로 치환
+ */
+function sanitizeKey(key: string): string {
+  return key.replace(/[^a-zA-Z0-9._-]/g, '_');
+}
+
+/**
  * 웹 플랫폼에서 사용할 스토리지 결정
  * 민감한 키는 sessionStorage 사용 (XSS 방지)
  * @see config/securityConfig.ts - SENSITIVE_STORAGE_KEYS
@@ -79,12 +89,13 @@ function getWebStorage(key: string): Storage {
 // Platform-specific Imports
 // ============================================================================
 
-let SecureStore: typeof import('expo-secure-store') | null = null;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let SecureStore: any = null;
 
 /**
  * SecureStore 모듈 로드 (네이티브 전용)
  */
-async function loadSecureStore(): Promise<typeof import('expo-secure-store') | null> {
+function loadSecureStore(): typeof SecureStore {
   if (Platform.OS === 'web') {
     return null;
   }
@@ -94,10 +105,11 @@ async function loadSecureStore(): Promise<typeof import('expo-secure-store') | n
   }
 
   try {
-    SecureStore = await import('expo-secure-store');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    SecureStore = require('expo-secure-store');
     return SecureStore;
   } catch (error) {
-    logger.warn('expo-secure-store 로드 실패, localStorage 사용', { error });
+    logger.warn('expo-secure-store 로드 실패, MMKV 폴백 사용', { error });
     return null;
   }
 }
@@ -129,7 +141,8 @@ export async function setItem<T>(
   const { expiresIn, keychainAccessible = DEFAULT_KEYCHAIN_ACCESSIBLE } = options;
 
   try {
-    const storageKey = STORAGE_PREFIX + key;
+    const rawKey = STORAGE_PREFIX + key;
+    const storageKey = sanitizeKey(rawKey);
 
     // 저장 데이터 구성
     const data: StoredData<T> = {
@@ -143,17 +156,18 @@ export async function setItem<T>(
     if (Platform.OS === 'web') {
       // 웹: 민감 데이터는 sessionStorage (XSS 방지), 나머지는 localStorage
       const storage = getWebStorage(key);
-      storage.setItem(storageKey, serialized);
+      storage.setItem(rawKey, serialized);
     } else {
       // 네이티브: SecureStore
-      const store = await loadSecureStore();
+      const store = loadSecureStore();
       if (store) {
-        await store.setItemAsync(storageKey, serialized, {
+        store.setItem(storageKey, serialized, {
           keychainAccessible: getSecureStoreAccessible(keychainAccessible),
         });
       } else {
-        // 폴백: AsyncStorage 형태
-        localStorage.setItem(storageKey, serialized);
+        // 폴백: MMKV 스토리지
+        const mmkv = getMMKVInstance();
+        mmkv.set(rawKey, serialized);
       }
     }
 
@@ -175,19 +189,21 @@ export async function setItem<T>(
  */
 export async function getItem<T>(key: string): Promise<T | null> {
   try {
-    const storageKey = STORAGE_PREFIX + key;
+    const rawKey = STORAGE_PREFIX + key;
+    const storageKey = sanitizeKey(rawKey);
     let serialized: string | null = null;
 
     if (Platform.OS === 'web') {
       // 웹: 민감 데이터는 sessionStorage, 나머지는 localStorage
       const storage = getWebStorage(key);
-      serialized = storage.getItem(storageKey);
+      serialized = storage.getItem(rawKey);
     } else {
-      const store = await loadSecureStore();
+      const store = loadSecureStore();
       if (store) {
-        serialized = await store.getItemAsync(storageKey);
+        serialized = store.getItem(storageKey);
       } else {
-        serialized = localStorage.getItem(storageKey);
+        const mmkv = getMMKVInstance();
+        serialized = mmkv.getString(rawKey) ?? null;
       }
     }
 
@@ -216,18 +232,20 @@ export async function getItem<T>(key: string): Promise<T | null> {
  */
 export async function deleteItem(key: string): Promise<void> {
   try {
-    const storageKey = STORAGE_PREFIX + key;
+    const rawKey = STORAGE_PREFIX + key;
+    const storageKey = sanitizeKey(rawKey);
 
     if (Platform.OS === 'web') {
       // 웹: 민감 데이터는 sessionStorage, 나머지는 localStorage
       const storage = getWebStorage(key);
-      storage.removeItem(storageKey);
+      storage.removeItem(rawKey);
     } else {
-      const store = await loadSecureStore();
+      const store = loadSecureStore();
       if (store) {
         await store.deleteItemAsync(storageKey);
       } else {
-        localStorage.removeItem(storageKey);
+        const mmkv = getMMKVInstance();
+        mmkv.delete(rawKey);
       }
     }
 
@@ -311,18 +329,20 @@ function getSecureStoreAccessible(
  */
 export async function isExpired(key: string): Promise<boolean> {
   try {
-    const storageKey = STORAGE_PREFIX + key;
+    const rawKey = STORAGE_PREFIX + key;
+    const storageKey = sanitizeKey(rawKey);
     let serialized: string | null = null;
 
     if (Platform.OS === 'web') {
       const storage = getWebStorage(key);
-      serialized = storage.getItem(storageKey);
+      serialized = storage.getItem(rawKey);
     } else {
-      const store = await loadSecureStore();
+      const store = loadSecureStore();
       if (store) {
-        serialized = await store.getItemAsync(storageKey);
+        serialized = store.getItem(storageKey);
       } else {
-        serialized = localStorage.getItem(storageKey);
+        const mmkv = getMMKVInstance();
+        serialized = mmkv.getString(rawKey) ?? null;
       }
     }
 
@@ -350,18 +370,20 @@ export async function hasItem(key: string): Promise<boolean> {
  */
 export async function getStoredAt(key: string): Promise<number | null> {
   try {
-    const storageKey = STORAGE_PREFIX + key;
+    const rawKey = STORAGE_PREFIX + key;
+    const storageKey = sanitizeKey(rawKey);
     let serialized: string | null = null;
 
     if (Platform.OS === 'web') {
       const storage = getWebStorage(key);
-      serialized = storage.getItem(storageKey);
+      serialized = storage.getItem(rawKey);
     } else {
-      const store = await loadSecureStore();
+      const store = loadSecureStore();
       if (store) {
-        serialized = await store.getItemAsync(storageKey);
+        serialized = store.getItem(storageKey);
       } else {
-        serialized = localStorage.getItem(storageKey);
+        const mmkv = getMMKVInstance();
+        serialized = mmkv.getString(rawKey) ?? null;
       }
     }
 

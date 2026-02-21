@@ -365,7 +365,7 @@ export function ReportModal({
             variant="secondary"
             onPress={handleClose}
             disabled={isLoading}
-            className="flex-1"
+            style={{ flex: 1 }}
             accessibilityLabel="신고 취소"
             accessibilityHint="신고를 취소하고 모달을 닫습니다"
           >
@@ -376,7 +376,7 @@ export function ReportModal({
             onPress={handleSubmit}
             loading={isLoading}
             disabled={!isValid}
-            className="flex-1"
+            style={{ flex: 1 }}
             icon={<AlertTriangleIcon size={18} color="#FFFFFF" />}
             accessibilityLabel="신고 제출"
             accessibilityHint={

@@ -31,6 +31,7 @@ import { useJobDetail } from '@/hooks/useJobDetail';
 import { useConfirmedStaff } from '@/hooks/useConfirmedStaff';
 import { useToastStore } from '@/stores/toastStore';
 import { reportService, markAsNoShow } from '@/services';
+import { isDuplicateReportError, isCannotReportSelfError } from '@/errors';
 import { UsersIcon, CurrencyYenIcon } from '@/components/icons';
 import { STATUS } from '@/constants';
 import { logger } from '@/utils/logger';
@@ -363,11 +364,29 @@ export default function StaffSettlementsScreen() {
         });
         setShowReportModal(false);
         setSelectedStaff(null);
-      } catch {
-        addToast({
-          type: 'error',
-          message: '신고 접수에 실패했습니다.',
+      } catch (error) {
+        logger.error('신고 접수 실패', error as Error, {
+          type: input.type,
+          targetId: input.targetId,
+          jobPostingId: input.jobPostingId,
         });
+
+        if (isDuplicateReportError(error)) {
+          addToast({
+            type: 'warning',
+            message: '이미 해당 건에 대해 신고하셨습니다.',
+          });
+        } else if (isCannotReportSelfError(error)) {
+          addToast({
+            type: 'warning',
+            message: '본인을 신고할 수 없습니다.',
+          });
+        } else {
+          addToast({
+            type: 'error',
+            message: '신고 접수에 실패했습니다.',
+          });
+        }
       } finally {
         setIsSubmittingReport(false);
       }

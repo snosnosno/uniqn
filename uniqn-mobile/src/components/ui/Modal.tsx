@@ -220,7 +220,7 @@ function WebModal({
               style={{ flex: 1 }}
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="always"
             >
               <View className="p-5">{children}</View>
             </ScrollView>
@@ -383,7 +383,7 @@ function NativeModal({
               <ScrollView
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
               >
                 <View className="p-5">{children}</View>
               </ScrollView>
