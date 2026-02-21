@@ -20,6 +20,8 @@ interface BasicInfoSectionProps {
   data: JobPostingFormData;
   onUpdate: (data: Partial<JobPostingFormData>) => void;
   errors?: Record<string, string>;
+  /** 수정 모드 여부 (공고 타입 변경 불가) */
+  isEdit?: boolean;
 }
 
 // ============================================================================
@@ -30,6 +32,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   data,
   onUpdate,
   errors = {},
+  isEdit = false,
 }: BasicInfoSectionProps) {
   const [locationName, setLocationName] = useState(data.location?.name || '');
   const [locationAddress, setLocationAddress] = useState(data.location?.address || '');
@@ -116,7 +119,7 @@ export const BasicInfoSection = memo(function BasicInfoSection({
   return (
     <View>
       {/* 공고 타입 선택 */}
-      <PostingTypeSelector value={data.postingType} onChange={handlePostingTypeChange} />
+      <PostingTypeSelector value={data.postingType} onChange={handlePostingTypeChange} disabled={isEdit} />
 
       {/* 제목 */}
       <FormField label="공고 제목" required error={errors.title} className="mt-4">

@@ -476,6 +476,7 @@ export default function EditJobPostingScreen() {
                 data={formData}
                 onUpdate={updateFormData}
                 errors={errors.basicInfo}
+                isEdit
               />
             </SectionCard>
           </View>

@@ -423,9 +423,26 @@ export async function cancelConfirmationTransaction(
         jobUpdateData.status = STATUS.JOB_POSTING.ACTIVE;
       }
 
+      // 8. 연관 WorkLog 읽기 (모든 읽기를 쓰기 전에 수행)
+      const workLogSnapshots: Array<{
+        ref: ReturnType<typeof doc>;
+        data: Record<string, unknown> | undefined;
+        exists: boolean;
+      }> = [];
+      for (const workLogId of relatedWorkLogIds) {
+        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
+        const workLogSnap = await transaction.get(workLogRef);
+        workLogSnapshots.push({
+          ref: workLogRef,
+          data: workLogSnap.exists() ? (workLogSnap.data() as Record<string, unknown>) : undefined,
+          exists: workLogSnap.exists(),
+        });
+      }
+
+      // 9. 공고 업데이트
       transaction.update(jobRef, jobUpdateData);
 
-      // 8. 지원서 상태 복원 (originalApplication 기반)
+      // 10. 지원서 상태 복원 (originalApplication 기반)
       const restoredAssignments = applicationData.originalApplication?.assignments;
       const restoredStatus = STATUS.APPLICATION.APPLIED;
 
@@ -437,18 +454,13 @@ export async function cancelConfirmationTransaction(
         updatedAt: serverTimestamp(),
       });
 
-      // 9. 연관 WorkLog cancelled 처리 (상태 확인 후 scheduled만 취소)
-      for (const workLogId of relatedWorkLogIds) {
-        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
-        const workLogSnap = await transaction.get(workLogRef);
-        if (workLogSnap.exists()) {
-          const wlData = workLogSnap.data();
-          if (wlData?.status === STATUS.WORK_LOG.SCHEDULED) {
-            transaction.update(workLogRef, {
-              status: STATUS.WORK_LOG.CANCELLED,
-              updatedAt: serverTimestamp(),
-            });
-          }
+      // 11. 연관 WorkLog cancelled 처리 (scheduled만 취소)
+      for (const snapshot of workLogSnapshots) {
+        if (snapshot.exists && snapshot.data?.status === STATUS.WORK_LOG.SCHEDULED) {
+          transaction.update(snapshot.ref, {
+            status: STATUS.WORK_LOG.CANCELLED,
+            updatedAt: serverTimestamp(),
+          });
         }
       }
 

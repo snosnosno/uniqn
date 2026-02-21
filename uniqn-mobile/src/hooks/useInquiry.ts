@@ -63,7 +63,8 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
   const user = useAuthStore((state) => state.user);
   const [additionalInquiries, setAdditionalInquiries] = useState<Inquiry[]>([]);
   const [lastDoc, setLastDoc] = useState<QueryDocumentSnapshot | null>(null);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
+  const [isFetchingNextPage, setIsFetchingNextPage] = useState(false);
 
   const query = useQuery({
     queryKey: [...inquiryKeys.mine(), user?.uid],
@@ -72,34 +73,41 @@ export function useMyInquiries(options: UseMyInquiriesOptions = {}) {
       const result = await fetchMyInquiries({ userId: user.uid, pageSize });
       setLastDoc(result.lastDoc);
       setHasMore(result.hasMore);
-      setAdditionalInquiries([]); // 새로고침 시 추가 데이터 초기화
+      setAdditionalInquiries([]);
       return result;
     },
     enabled: enabled && !!user?.uid,
-    staleTime: cachingPolicies.realtime, // 항상 최신 데이터 사용
+    staleTime: cachingPolicies.realtime,
   });
 
   const fetchNextPage = useCallback(async () => {
-    if (!hasMore || !user?.uid || !lastDoc) return;
+    if (!hasMore || !user?.uid || !lastDoc || isFetchingNextPage) return;
 
-    const result = await fetchMyInquiries({
-      userId: user.uid,
-      pageSize,
-      lastDoc,
-    });
+    setIsFetchingNextPage(true);
+    try {
+      const result = await fetchMyInquiries({
+        userId: user.uid,
+        pageSize,
+        lastDoc,
+      });
 
-    setAdditionalInquiries((prev) => [...prev, ...result.inquiries]);
-    setLastDoc(result.lastDoc);
-    setHasMore(result.hasMore);
-  }, [hasMore, user?.uid, lastDoc, pageSize]);
+      setAdditionalInquiries((prev) => [...prev, ...result.inquiries]);
+      setLastDoc(result.lastDoc);
+      setHasMore(result.hasMore);
+    } catch {
+      setHasMore(false);
+    } finally {
+      setIsFetchingNextPage(false);
+    }
+  }, [hasMore, user?.uid, lastDoc, pageSize, isFetchingNextPage]);
 
-  // 쿼리 결과와 추가 로드 데이터 합침
   const allInquiries = [...(query.data?.inquiries || []), ...additionalInquiries];
 
   return {
     inquiries: allInquiries,
     isLoading: query.isLoading,
     isRefreshing: query.isRefetching,
+    isFetchingNextPage,
     isError: query.isError,
     error: query.error,
     hasMore,

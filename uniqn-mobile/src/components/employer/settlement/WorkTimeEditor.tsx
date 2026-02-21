@@ -401,17 +401,16 @@ export function WorkTimeEditor({
             </Text>
           </View>
         </View>
+        {/* 휠 피커 모달 (SheetModal 내부에서 렌더링하여 iOS Modal 스태킹 문제 방지) */}
+        <TimeWheelPicker
+          visible={activePicker !== null}
+          value={activePickerValue}
+          title={activePickerTitle}
+          minuteInterval={15}
+          onConfirm={handlePickerConfirm}
+          onClose={() => setActivePicker(null)}
+        />
       </SheetModal>
-
-      {/* 휠 피커 모달 (메인 모달 바깥에서 렌더링) */}
-      <TimeWheelPicker
-        visible={activePicker !== null}
-        value={activePickerValue}
-        title={activePickerTitle}
-        minuteInterval={15}
-        onConfirm={handlePickerConfirm}
-        onClose={() => setActivePicker(null)}
-      />
     </>
   );
 }

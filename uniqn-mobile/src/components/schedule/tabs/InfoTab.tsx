@@ -296,7 +296,7 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
         </Text>
 
         {schedule.type === STATUS.SCHEDULE.COMPLETED ? (
-          // 완료 상태: 실제 근무시간 + 예정 시간 비교 (WorkTimeDisplay 사용)
+          // 완료 상태: 실제 근무시간만 표시
           <View className="mt-2">
             {getActualTimeDisplay(schedule) && (
               <View className="flex-row items-center">
@@ -309,12 +309,6 @@ export const InfoTab = memo(function InfoTab({ schedule }: InfoTabProps) {
                 </Text>
               </View>
             )}
-            <View className="flex-row items-center mt-1">
-              <ClockIcon size={14} color="#9CA3AF" />
-              <Text className="ml-1.5 text-sm text-gray-500 dark:text-gray-400">
-                예정: {getTimeDisplay(schedule)}
-              </Text>
-            </View>
           </View>
         ) : (
           // 지원중/확정 상태: 예정 시간 (WorkTimeDisplay 사용)

@@ -270,6 +270,10 @@ export async function cancelWithTransaction(
         });
       }
 
+      // 공고 읽기 (모든 읽기를 쓰기 전에 수행)
+      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
+      const jobDoc = await transaction.get(jobRef);
+
       // 지원 취소 처리
       transaction.update(applicationRef, {
         status: STATUS.APPLICATION.CANCELLED,
@@ -277,8 +281,6 @@ export async function cancelWithTransaction(
       });
 
       // 공고의 지원자 수 감소 (존재 확인 + 음수 방지)
-      const jobRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, applicationData.jobPostingId);
-      const jobDoc = await transaction.get(jobRef);
       if (jobDoc.exists()) {
         const currentCount = (jobDoc.data()?.applicationCount as number) ?? 0;
         transaction.update(jobRef, {

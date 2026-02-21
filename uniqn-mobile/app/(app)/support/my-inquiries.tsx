@@ -14,7 +14,8 @@ import { useMyInquiries } from '@/hooks/useInquiry';
 import type { Inquiry } from '@/types';
 
 export default function MyInquiriesScreen() {
-  const { inquiries, isLoading, isRefreshing, hasMore, fetchNextPage, refetch } = useMyInquiries();
+  const { inquiries, isLoading, isRefreshing, isFetchingNextPage, hasMore, fetchNextPage, refetch } =
+    useMyInquiries();
 
   const handleInquiryPress = useCallback((inquiry: Inquiry) => {
     router.push(`/(app)/support/inquiry/${inquiry.id}`);
@@ -38,13 +39,13 @@ export default function MyInquiriesScreen() {
   );
 
   const renderFooter = useCallback(() => {
-    if (!hasMore) return null;
+    if (!isFetchingNextPage) return null;
     return (
       <View className="items-center py-4">
         <ActivityIndicator size="small" color="#A855F7" />
       </View>
     );
-  }, [hasMore]);
+  }, [isFetchingNextPage]);
 
   const renderEmpty = useCallback(
     () => (

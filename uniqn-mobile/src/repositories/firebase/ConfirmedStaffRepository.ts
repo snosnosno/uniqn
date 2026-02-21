@@ -311,6 +311,11 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
           });
         }
 
+        // Application 조회 (모든 읽기를 쓰기 전에 수행)
+        const applicationId = `${context.jobPostingId}_${context.staffId}`;
+        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
+        const applicationDoc = await transaction.get(applicationRef);
+
         // 1. WorkLog 상태를 cancelled로 변경
         transaction.update(workLogRef, {
           status: STATUS.WORK_LOG.CANCELLED,
@@ -320,10 +325,6 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
         });
 
         // 2. Application이 있으면 상태 복원
-        const applicationId = `${context.jobPostingId}_${context.staffId}`;
-        const applicationRef = doc(getFirebaseDb(), COLLECTIONS.APPLICATIONS, applicationId);
-        const applicationDoc = await transaction.get(applicationRef);
-
         if (applicationDoc.exists()) {
           transaction.update(applicationRef, {
             status: STATUS.APPLICATION.APPLIED,

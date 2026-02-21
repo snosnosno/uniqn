@@ -185,7 +185,7 @@ function WebSheetModal({
               style={{ flex: 1, maxHeight: windowHeight * 0.7 }}
               contentContainerStyle={{ flexGrow: 1 }}
               showsVerticalScrollIndicator={false}
-              keyboardShouldPersistTaps="handled"
+              keyboardShouldPersistTaps="always"
             >
               {children}
             </ScrollView>
@@ -313,7 +313,7 @@ function NativeSheetModal({
                 style={{ flex: 1 }}
                 contentContainerStyle={{ flexGrow: 1 }}
                 showsVerticalScrollIndicator={false}
-                keyboardShouldPersistTaps="handled"
+                keyboardShouldPersistTaps="always"
               >
                 {children}
               </ScrollView>

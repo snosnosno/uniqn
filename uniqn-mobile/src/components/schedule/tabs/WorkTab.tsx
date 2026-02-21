@@ -193,16 +193,6 @@ export const WorkTab = memo(function WorkTab({ schedule, onQRScan }: WorkTabProp
         )}
       </View>
 
-      {/* 예정 시간 (참고용) */}
-      {(schedule.startTime || schedule.endTime) && (
-        <View className="mb-5 p-3 bg-gray-50 dark:bg-surface/30 rounded-lg">
-          <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">예정 시간</Text>
-          <Text className="text-sm text-gray-600 dark:text-gray-400">
-            {formatTime(schedule.startTime)} - {formatTime(schedule.endTime)} (
-            {calculateDuration(schedule.startTime, schedule.endTime)})
-          </Text>
-        </View>
-      )}
 
       {/* QR 스캔 버튼 */}
       {canShowQRButton && (
