@@ -106,4 +106,9 @@ export type {
 } from './IAdminRepository';
 
 // Review Repository
-export type { IReviewRepository, CreateReviewContext } from './IReviewRepository';
+export type {
+  IReviewRepository,
+  CreateReviewContext,
+  ReviewPaginationCursor,
+  PaginatedReviews,
+} from './IReviewRepository';

@@ -197,7 +197,7 @@ export interface Review {
   revieweeId: string;
   revieweeName: string;
   sentiment: ReviewSentiment;
-  tags: string[];
+  tags: ReviewTag[];
   comment?: string;
   bubbleScoreChange: number;
   createdAt: Timestamp;
@@ -215,7 +215,7 @@ export interface CreateReviewInput {
   revieweeName: string;
   reviewerType: ReviewerType;
   sentiment: ReviewSentiment;
-  tags: string[];
+  tags: ReviewTag[];
   comment?: string;
 }
 
@@ -335,7 +335,8 @@ export function calculateNewBubbleScore(
 ): Omit<BubbleScore, 'lastUpdatedAt'> {
   const score = current?.score ?? BUBBLE_SCORE.INITIAL;
   const change = getSentimentScoreChange(sentiment);
-  const newScore = Math.round(Math.max(BUBBLE_SCORE.MIN, Math.min(BUBBLE_SCORE.MAX, score + change)) * 10) / 10;
+  const factor = 10 ** BUBBLE_SCORE.DECIMAL_PLACES;
+  const newScore = Math.round(Math.max(BUBBLE_SCORE.MIN, Math.min(BUBBLE_SCORE.MAX, score + change)) * factor) / factor;
 
   return {
     score: newScore,

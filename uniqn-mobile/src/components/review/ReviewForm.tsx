@@ -10,7 +10,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import SentimentSelector from './SentimentSelector';
 import ReviewTagSelector from './ReviewTagSelector';
-import type { ReviewerType, ReviewSentiment } from '@/types/review';
+import type { ReviewerType, ReviewSentiment, ReviewTag } from '@/types/review';
 import { REVIEW_COMMENT_MAX_LENGTH, REVIEW_TAG_LIMITS } from '@/types/review';
 import { reviewFormSchema, type ReviewFormSchema } from '@/schemas/review.schema';
 
@@ -63,7 +63,7 @@ export default function ReviewForm({
 
   const handleTagsChange = useCallback(
     (newTags: string[]) => {
-      setValue('tags', newTags, { shouldValidate: true });
+      setValue('tags', newTags as ReviewTag[], { shouldValidate: true });
     },
     [setValue]
   );

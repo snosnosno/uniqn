@@ -108,6 +108,15 @@ export interface IWorkLogRepository {
   getByJobPostingId(jobPostingId: string): Promise<WorkLog[]>;
 
   /**
+   * 구인자(ownerId)의 완료된 근무 기록 조회
+   *
+   * @description 미작성 평가 목록에서 employer-side pending reviews 조회용
+   * @param ownerId - 구인자 ID
+   * @returns 완료된(checked_out) 근무 기록 목록
+   */
+  getCompletedByOwnerId(ownerId: string): Promise<WorkLog[]>;
+
+  /**
    * 오늘 출근한 근무 기록 조회
    * @param staffId - 스태프 ID
    * @returns 출근 중인 근무 기록 또는 null

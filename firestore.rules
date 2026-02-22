@@ -147,9 +147,10 @@ service cloud.firestore {
       allow create: if isSignedIn() && isOwner(userId);
 
       // 본인 문서 수정: 일반 업데이트 또는 구인자 등록
+      // bubbleScore: 트랜잭션 내에서만 업데이트 (클라이언트 직접 수정 차단)
       allow update: if isSignedIn() && isOwner(userId) && (
-        // 일반 프로필 업데이트 (role 변경 불가)
-        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role'])) ||
+        // 일반 프로필 업데이트 (role, bubbleScore 변경 불가)
+        (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['role', 'bubbleScore'])) ||
         // 구인자 등록 (staff → employer)
         isValidEmployerRegistration()
       );
@@ -1264,6 +1265,39 @@ service cloud.firestore {
 
       // 삭제: 관리자만
       allow delete: if isAdmin();
+    }
+
+    // --- Reviews Collection (버블 상호 평가) ---
+    // 문서 ID: `{workLogId}_{reviewerType}` (결정적 ID)
+    // 평가는 생성 후 수정/삭제 불가 (불변)
+    match /reviews/{reviewId} {
+      // 읽기: 인증된 사용자 (블라인드 로직은 앱 레벨에서 처리)
+      allow read: if isSignedIn();
+
+      // 생성: 본인의 평가만 가능 + 필수 필드 검증
+      allow create: if isSignedIn() &&
+        request.resource.data.reviewerId == request.auth.uid &&
+        request.resource.data.keys().hasAll([
+          'workLogId', 'jobPostingId', 'jobPostingTitle', 'workDate',
+          'reviewerId', 'reviewerName', 'reviewerType',
+          'revieweeId', 'revieweeName',
+          'sentiment', 'tags', 'bubbleScoreChange', 'createdAt'
+        ]) &&
+        request.resource.data.reviewerType in ['employer', 'staff'] &&
+        request.resource.data.sentiment in ['positive', 'neutral', 'negative'] &&
+        request.resource.data.tags is list &&
+        request.resource.data.tags.size() >= 1 &&
+        request.resource.data.tags.size() <= 5 &&
+        request.resource.data.bubbleScoreChange in [-1.0, -1, 0, 0.0, 1.0, 1] &&
+        request.resource.data.reviewerId != request.resource.data.revieweeId &&
+        (!('comment' in request.resource.data) || (
+          request.resource.data.comment is string &&
+          request.resource.data.comment.size() <= 200 &&
+          hasNoXSS(request.resource.data.comment)
+        ));
+
+      // 수정/삭제: 불가 (평가는 불변)
+      allow update, delete: if false;
     }
 
     // --- In-App Messages (인앱 메시지) ---

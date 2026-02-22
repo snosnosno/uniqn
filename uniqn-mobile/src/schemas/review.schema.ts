@@ -85,7 +85,7 @@ export const createReviewInputSchema = z.object({
   reviewerType: reviewerTypeSchema,
   sentiment: reviewSentimentSchema,
   tags: z
-    .array(z.string())
+    .array(reviewTagSchema)
     .min(REVIEW_TAG_LIMITS.MIN, `태그를 최소 ${REVIEW_TAG_LIMITS.MIN}개 선택해주세요`)
     .max(REVIEW_TAG_LIMITS.MAX, `태그는 최대 ${REVIEW_TAG_LIMITS.MAX}개까지 선택 가능합니다`)
     .refine((arr) => new Set(arr).size === arr.length, '중복된 태그가 있습니다'),
@@ -104,7 +104,7 @@ export type CreateReviewInputSchema = z.infer<typeof createReviewInputSchema>;
 export const reviewFormSchema = z.object({
   sentiment: reviewSentimentSchema,
   tags: z
-    .array(z.string())
+    .array(reviewTagSchema)
     .min(REVIEW_TAG_LIMITS.MIN, `태그를 최소 ${REVIEW_TAG_LIMITS.MIN}개 선택해주세요`)
     .max(REVIEW_TAG_LIMITS.MAX, `태그는 최대 ${REVIEW_TAG_LIMITS.MAX}개까지 선택 가능합니다`)
     .refine((arr) => new Set(arr).size === arr.length, '중복된 태그가 있습니다'),

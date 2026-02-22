@@ -13,12 +13,22 @@
 
 import { logger } from '@/utils/logger';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { isAppError, ValidationError, ERROR_CODES } from '@/errors';
-import { reviewRepository } from '@/repositories';
+import {
+  isAppError,
+  ValidationError,
+  ERROR_CODES,
+  CannotReviewSelfError,
+  ReviewPeriodExpiredError,
+  UnauthorizedReviewError,
+  ReviewNotFoundError,
+} from '@/errors';
+import { reviewRepository, workLogRepository } from '@/repositories';
 import { createReviewInputSchema } from '@/schemas/review.schema';
 import { ReviewValidator } from '@/domains/review';
+import { REVIEW_DEADLINE_DAYS } from '@/types/review';
+import type { WorkLogForReview } from '@/domains/review';
 import type { CreateReviewInput, ReviewerType, Review, ReviewBlindResult } from '@/types/review';
-import type { CreateReviewContext } from '@/repositories';
+import type { CreateReviewContext, ReviewPaginationCursor, PaginatedReviews } from '@/repositories';
 
 // ============================================================================
 // Service
@@ -83,7 +93,58 @@ export async function createReview(
       });
     }
 
-    // 4. Repository 트랜잭션 (중복 확인 + WorkLog 상태 + 버블 점수 포함)
+    // 4. 도메인 검증: WorkLog 상태, 권한, 기한 (사전 검증 — fast fail)
+    const workLog = await workLogRepository.getById(input.workLogId);
+    if (!workLog) {
+      throw new ReviewNotFoundError({
+        userMessage: '평가 대상을 찾을 수 없습니다',
+        workLogId: input.workLogId,
+      });
+    }
+
+    const workLogData: WorkLogForReview = {
+      id: input.workLogId,
+      staffId: workLog.staffId,
+      ownerId: workLog.ownerId ?? '',
+      jobPostingId: workLog.jobPostingId,
+      status: workLog.status,
+      date: workLog.date,
+      completedAt: workLog.checkOutTime as WorkLogForReview['completedAt'],
+    };
+
+    const eligibility = validator.checkEligibility(
+      workLogData,
+      context.reviewerId,
+      input.reviewerType
+    );
+
+    if (!eligibility.eligible) {
+      switch (eligibility.code) {
+        case 'REVIEW_PERIOD_EXPIRED':
+          throw new ReviewPeriodExpiredError({
+            userMessage: eligibility.reason,
+            workLogId: input.workLogId,
+            deadlineDays: REVIEW_DEADLINE_DAYS,
+          });
+        case 'CANNOT_REVIEW_SELF':
+          throw new CannotReviewSelfError({
+            userMessage: eligibility.reason,
+          });
+        case 'UNAUTHORIZED_REVIEWER':
+          throw new UnauthorizedReviewError({
+            userMessage: eligibility.reason,
+            workLogId: input.workLogId,
+            reviewerType: input.reviewerType,
+          });
+        default:
+          throw new ReviewNotFoundError({
+            userMessage: eligibility.reason,
+            workLogId: input.workLogId,
+          });
+      }
+    }
+
+    // 5. Repository 트랜잭션 (중복 확인 + 버블 점수 원자적 업데이트)
     const reviewId = await reviewRepository.createWithTransaction(input, context);
 
     logger.info('리뷰 생성 완료', {
@@ -129,14 +190,15 @@ export async function getReviewsWithBlindCheck(
 }
 
 /**
- * 받은 리뷰 목록 조회
+ * 받은 리뷰 목록 조회 (커서 기반 페이지네이션)
  */
 export async function getReceivedReviews(
   revieweeId: string,
-  limit?: number
-): Promise<Review[]> {
+  pageSize?: number,
+  cursor?: ReviewPaginationCursor
+): Promise<PaginatedReviews> {
   try {
-    return await reviewRepository.getByRevieweeId(revieweeId, limit);
+    return await reviewRepository.getByRevieweeId(revieweeId, pageSize, cursor);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '받은 리뷰 목록 조회',
@@ -147,14 +209,15 @@ export async function getReceivedReviews(
 }
 
 /**
- * 작성한 리뷰 목록 조회
+ * 작성한 리뷰 목록 조회 (커서 기반 페이지네이션)
  */
 export async function getGivenReviews(
   reviewerId: string,
-  limit?: number
-): Promise<Review[]> {
+  pageSize?: number,
+  cursor?: ReviewPaginationCursor
+): Promise<PaginatedReviews> {
   try {
-    return await reviewRepository.getByReviewerId(reviewerId, limit);
+    return await reviewRepository.getByReviewerId(reviewerId, pageSize, cursor);
   } catch (error) {
     throw handleServiceError(error, {
       operation: '작성한 리뷰 목록 조회',

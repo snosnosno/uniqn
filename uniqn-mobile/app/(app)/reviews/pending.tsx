@@ -11,38 +11,65 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { EmptyState, Skeleton } from '@/components/ui';
 import { usePendingReviews } from '@/hooks/useReviews';
+import type { PendingReviewItem } from '@/hooks/useReviews';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
-import type { ScheduleEvent } from '@/types';
+import type { Timestamp } from 'firebase/firestore';
 
-function getDaysRemaining(workDate: string): number {
-  const diff = REVIEW_DEADLINE_DAYS - (Date.now() - new Date(workDate).getTime()) / (1000 * 60 * 60 * 24);
+/**
+ * D-day 계산 — checkOutTime 우선, 없으면 workDate 기준
+ * ReviewValidator.isExpired와 동일한 기준 사용
+ */
+function getDaysRemaining(item: PendingReviewItem): number {
+  let baseTime: number;
+  const cot = item.checkOutTime;
+
+  if (cot) {
+    if (cot instanceof Date) {
+      baseTime = cot.getTime();
+    } else if (typeof cot === 'string') {
+      baseTime = new Date(cot).getTime();
+    } else {
+      baseTime = (cot as Timestamp).toDate().getTime();
+    }
+  } else {
+    baseTime = new Date(item.workDate).getTime();
+  }
+
+  const diff = REVIEW_DEADLINE_DAYS - (Date.now() - baseTime) / (1000 * 60 * 60 * 24);
   return Math.max(0, Math.ceil(diff));
 }
 
-interface PendingReviewItemProps {
-  schedule: ScheduleEvent;
+interface PendingReviewCardProps {
+  item: PendingReviewItem;
   onPress: () => void;
 }
 
-function PendingReviewItem({ schedule, onPress }: PendingReviewItemProps) {
-  const daysRemaining = getDaysRemaining(schedule.date);
+function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
+  const daysRemaining = getDaysRemaining(item);
   const isUrgent = daysRemaining <= 2;
 
   return (
     <Pressable
       onPress={onPress}
       className="mb-3 rounded-xl border border-gray-200 bg-white p-4 active:opacity-80 dark:border-surface-overlay dark:bg-surface"
-      accessibilityLabel={`${schedule.jobPostingName} 평가하기`}
+      accessibilityLabel={`${item.jobPostingTitle} 평가하기`}
       accessibilityRole="button"
     >
       <View className="flex-row items-start justify-between">
         <View className="flex-1 mr-3">
           <Text className="text-base font-semibold text-gray-900 dark:text-white" numberOfLines={1}>
-            {schedule.jobPostingName}
+            {item.jobPostingTitle}
           </Text>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {schedule.date} · {schedule.location}
-          </Text>
+          <View className="mt-1 flex-row items-center gap-2">
+            <Text className="text-sm text-gray-500 dark:text-gray-400">
+              {item.workDate}{item.location ? ` · ${item.location}` : ''}
+            </Text>
+            {item.reviewerType === 'employer' && (
+              <View className="rounded bg-blue-100 px-1.5 py-0.5 dark:bg-blue-900/30">
+                <Text className="text-xs text-blue-700 dark:text-blue-300">구인자 평가</Text>
+              </View>
+            )}
+          </View>
         </View>
         <View
           className={`rounded-full px-2.5 py-1 ${isUrgent ? 'bg-red-100 dark:bg-red-900/30' : 'bg-yellow-100 dark:bg-yellow-900/30'}`}
@@ -70,18 +97,17 @@ export default function PendingReviewsScreen() {
   const { pendingReviews, pendingCount, isLoading } = usePendingReviews();
 
   const handlePress = useCallback(
-    (schedule: ScheduleEvent) => {
-      // usePendingReviews에서 workLogId/ownerId 필수 필터 적용 완료
+    (item: PendingReviewItem) => {
       router.push({
         pathname: '/(app)/reviews/write',
         params: {
-          workLogId: schedule.workLogId ?? '',
-          revieweeId: schedule.ownerId ?? '',
-          revieweeName: schedule.jobPostingCard?.ownerName || schedule.jobPostingName,
-          reviewerType: 'staff',
-          jobPostingId: schedule.jobPostingId,
-          jobPostingTitle: schedule.jobPostingName,
-          workDate: schedule.date,
+          workLogId: item.workLogId,
+          revieweeId: item.revieweeId,
+          revieweeName: item.revieweeName,
+          reviewerType: item.reviewerType,
+          jobPostingId: item.jobPostingId,
+          jobPostingTitle: item.jobPostingTitle,
+          workDate: item.workDate,
         },
       });
     },
@@ -112,11 +138,11 @@ export default function PendingReviewsScreen() {
             <Text className="mb-3 text-sm text-gray-500 dark:text-gray-400">
               작성 대기 {pendingCount}건
             </Text>
-            {pendingReviews.map((schedule) => (
-              <PendingReviewItem
-                key={schedule.workLogId}
-                schedule={schedule}
-                onPress={() => handlePress(schedule)}
+            {pendingReviews.map((item) => (
+              <PendingReviewCard
+                key={`${item.workLogId}_${item.reviewerType}`}
+                item={item}
+                onPress={() => handlePress(item)}
               />
             ))}
           </View>

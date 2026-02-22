@@ -26,6 +26,20 @@ export interface CreateReviewContext {
   reviewerName: string;
 }
 
+/**
+ * 페이지네이션 커서 (구현체 의존 없는 opaque 타입)
+ */
+export type ReviewPaginationCursor = unknown;
+
+/**
+ * 페이지네이션된 리뷰 결과
+ */
+export interface PaginatedReviews {
+  items: Review[];
+  lastDoc: ReviewPaginationCursor | null;
+  hasMore: boolean;
+}
+
 // ============================================================================
 // Interface
 // ============================================================================
@@ -67,22 +81,32 @@ export interface IReviewRepository {
   ): Promise<ReviewBlindResult>;
 
   /**
-   * 피평가자별 받은 리뷰 목록 (최신순)
+   * 피평가자별 받은 리뷰 목록 (최신순, 커서 기반 페이지네이션)
    *
    * @param revieweeId - 피평가자 ID
-   * @param limit - 조회 개수 (기본 20)
-   * @returns 리뷰 목록
+   * @param pageSize - 페이지 크기 (기본 20)
+   * @param cursor - 이전 페이지의 lastDoc (첫 페이지는 undefined)
+   * @returns 페이지네이션된 리뷰 결과
    */
-  getByRevieweeId(revieweeId: string, limit?: number): Promise<Review[]>;
+  getByRevieweeId(
+    revieweeId: string,
+    pageSize?: number,
+    cursor?: ReviewPaginationCursor
+  ): Promise<PaginatedReviews>;
 
   /**
-   * 평가자별 작성한 리뷰 목록 (최신순)
+   * 평가자별 작성한 리뷰 목록 (최신순, 커서 기반 페이지네이션)
    *
    * @param reviewerId - 평가자 ID
-   * @param limit - 조회 개수 (기본 20)
-   * @returns 리뷰 목록
+   * @param pageSize - 페이지 크기 (기본 20)
+   * @param cursor - 이전 페이지의 lastDoc (첫 페이지는 undefined)
+   * @returns 페이지네이션된 리뷰 결과
    */
-  getByReviewerId(reviewerId: string, limit?: number): Promise<Review[]>;
+  getByReviewerId(
+    reviewerId: string,
+    pageSize?: number,
+    cursor?: ReviewPaginationCursor
+  ): Promise<PaginatedReviews>;
 
   // ==========================================================================
   // 트랜잭션 (Write) - 원자적 처리
@@ -102,9 +126,6 @@ export interface IReviewRepository {
    * @returns 생성된 리뷰 문서 ID
    * @throws AlreadyReviewedError (이미 평가함)
    * @throws ReviewNotFoundError (WorkLog 없음)
-   * @throws ReviewPeriodExpiredError (기한 만료)
-   * @throws CannotReviewSelfError (본인 평가)
-   * @throws UnauthorizedReviewError (권한 없음)
    */
   createWithTransaction(
     input: CreateReviewInput,

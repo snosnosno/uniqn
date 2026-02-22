@@ -19,10 +19,6 @@ import {
   doc,
   getDoc,
   getDocs,
-  query,
-  where,
-  orderBy,
-  limit as firestoreLimit,
   runTransaction,
   serverTimestamp,
 } from 'firebase/firestore';
@@ -33,27 +29,25 @@ import { handleServiceError } from '@/errors/serviceErrorHandler';
 import {
   AlreadyReviewedError,
   ReviewNotFoundError,
-  CannotReviewSelfError,
-  ReviewPeriodExpiredError,
-  UnauthorizedReviewError,
 } from '@/errors';
 import { COLLECTIONS } from '@/constants';
 import {
   calculateNewBubbleScore,
   getSentimentScoreChange,
-  REVIEW_DEADLINE_DAYS,
 } from '@/types/review';
-import { ReviewValidator } from '@/domains/review';
-import type { WorkLogForReview } from '@/domains/review';
+import { QueryBuilder, processPaginatedResults } from '@/utils/firestore';
 import type {
   IReviewRepository,
   CreateReviewContext,
+  ReviewPaginationCursor,
+  PaginatedReviews,
 } from '../interfaces/IReviewRepository';
-import type { DocumentData, DocumentSnapshot } from 'firebase/firestore';
+import type { DocumentData, DocumentSnapshot, QueryDocumentSnapshot } from 'firebase/firestore';
 import type {
   Review,
   CreateReviewInput,
   ReviewerType,
+  ReviewTag,
   ReviewBlindResult,
 } from '@/types/review';
 
@@ -62,7 +56,7 @@ import type {
 // ============================================================================
 
 /** Firestore DocumentSnapshot → Review 변환 */
-function toReview(docSnap: DocumentSnapshot<DocumentData>): Review {
+function toReview(docSnap: DocumentSnapshot<DocumentData> | QueryDocumentSnapshot<DocumentData>): Review {
   const data = docSnap.data()!;
   return {
     workLogId: data.workLogId as string,
@@ -75,12 +69,19 @@ function toReview(docSnap: DocumentSnapshot<DocumentData>): Review {
     revieweeId: data.revieweeId as string,
     revieweeName: data.revieweeName as string,
     sentiment: data.sentiment as Review['sentiment'],
-    tags: data.tags as string[],
+    tags: data.tags as ReviewTag[],
     comment: data.comment as string | undefined,
     bubbleScoreChange: data.bubbleScoreChange as number,
     createdAt: data.createdAt,
   };
 }
+
+/** processPaginatedResults용 mapper */
+function mapDocToReview(docSnap: QueryDocumentSnapshot<DocumentData>): Review {
+  return toReview(docSnap);
+}
+
+const DEFAULT_PAGE_SIZE = 20;
 
 // ============================================================================
 // Repository Implementation
@@ -90,7 +91,6 @@ function toReview(docSnap: DocumentSnapshot<DocumentData>): Review {
  * Firebase Review Repository
  */
 export class FirebaseReviewRepository implements IReviewRepository {
-  private readonly validator = new ReviewValidator();
 
   // ==========================================================================
   // 조회 (Read)
@@ -164,19 +164,28 @@ export class FirebaseReviewRepository implements IReviewRepository {
     }
   }
 
-  async getByRevieweeId(revieweeId: string, queryLimit = 20): Promise<Review[]> {
+  async getByRevieweeId(
+    revieweeId: string,
+    pageSize = DEFAULT_PAGE_SIZE,
+    cursor?: ReviewPaginationCursor
+  ): Promise<PaginatedReviews> {
     try {
-      logger.info('받은 리뷰 목록 조회', { revieweeId, limit: queryLimit });
+      logger.info('받은 리뷰 목록 조회', { revieweeId, pageSize });
 
-      const q = query(
-        collection(getFirebaseDb(), COLLECTIONS.REVIEWS),
-        where('revieweeId', '==', revieweeId),
-        orderBy('createdAt', 'desc'),
-        firestoreLimit(queryLimit)
-      );
+      const q = new QueryBuilder(collection(getFirebaseDb(), COLLECTIONS.REVIEWS))
+        .whereEqual('revieweeId', revieweeId)
+        .orderByDesc('createdAt')
+        .paginate(pageSize, cursor as QueryDocumentSnapshot<DocumentData> | undefined)
+        .build();
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(toReview);
+      const result = processPaginatedResults(snapshot.docs, pageSize, mapDocToReview);
+
+      return {
+        items: result.items,
+        lastDoc: result.lastDoc,
+        hasMore: result.hasMore,
+      };
     } catch (error) {
       throw handleServiceError(error, {
         operation: '받은 리뷰 목록 조회',
@@ -186,19 +195,28 @@ export class FirebaseReviewRepository implements IReviewRepository {
     }
   }
 
-  async getByReviewerId(reviewerId: string, queryLimit = 20): Promise<Review[]> {
+  async getByReviewerId(
+    reviewerId: string,
+    pageSize = DEFAULT_PAGE_SIZE,
+    cursor?: ReviewPaginationCursor
+  ): Promise<PaginatedReviews> {
     try {
-      logger.info('작성한 리뷰 목록 조회', { reviewerId, limit: queryLimit });
+      logger.info('작성한 리뷰 목록 조회', { reviewerId, pageSize });
 
-      const q = query(
-        collection(getFirebaseDb(), COLLECTIONS.REVIEWS),
-        where('reviewerId', '==', reviewerId),
-        orderBy('createdAt', 'desc'),
-        firestoreLimit(queryLimit)
-      );
+      const q = new QueryBuilder(collection(getFirebaseDb(), COLLECTIONS.REVIEWS))
+        .whereEqual('reviewerId', reviewerId)
+        .orderByDesc('createdAt')
+        .paginate(pageSize, cursor as QueryDocumentSnapshot<DocumentData> | undefined)
+        .build();
 
       const snapshot = await getDocs(q);
-      return snapshot.docs.map(toReview);
+      const result = processPaginatedResults(snapshot.docs, pageSize, mapDocToReview);
+
+      return {
+        items: result.items,
+        lastDoc: result.lastDoc,
+        hasMore: result.hasMore,
+      };
     } catch (error) {
       throw handleServiceError(error, {
         operation: '작성한 리뷰 목록 조회',
@@ -217,13 +235,6 @@ export class FirebaseReviewRepository implements IReviewRepository {
     context: CreateReviewContext
   ): Promise<string> {
     try {
-      // 본인 평가 방지 (트랜잭션 전 빠른 체크)
-      if (input.revieweeId === context.reviewerId) {
-        throw new CannotReviewSelfError({
-          userMessage: '본인을 평가할 수 없습니다',
-        });
-      }
-
       logger.info('리뷰 생성 트랜잭션 시작', {
         workLogId: input.workLogId,
         reviewerType: input.reviewerType,
@@ -258,57 +269,7 @@ export class FirebaseReviewRepository implements IReviewRepository {
           });
         }
 
-        const rawWorkLog = workLogSnap.data();
-        if (!rawWorkLog?.staffId || !rawWorkLog?.ownerId || !rawWorkLog?.status) {
-          throw new ReviewNotFoundError({
-            userMessage: '근무 기록 데이터가 불완전합니다',
-            workLogId: input.workLogId,
-          });
-        }
-        const workLogData: WorkLogForReview = {
-          id: input.workLogId,
-          staffId: rawWorkLog.staffId as string,
-          ownerId: rawWorkLog.ownerId as string,
-          jobPostingId: rawWorkLog.jobPostingId as string,
-          status: rawWorkLog.status as string,
-          date: rawWorkLog.date as string,
-          completedAt: rawWorkLog.completedAt,
-        };
-
-        // 4. 검증: 도메인 규칙 (상태, 권한, 기한)
-        const eligibility = this.validator.checkEligibility(
-          workLogData,
-          context.reviewerId,
-          input.reviewerType
-        );
-
-        if (!eligibility.eligible) {
-          switch (eligibility.code) {
-            case 'REVIEW_PERIOD_EXPIRED':
-              throw new ReviewPeriodExpiredError({
-                userMessage: eligibility.reason,
-                workLogId: input.workLogId,
-                deadlineDays: REVIEW_DEADLINE_DAYS,
-              });
-            case 'CANNOT_REVIEW_SELF':
-              throw new CannotReviewSelfError({
-                userMessage: eligibility.reason,
-              });
-            case 'UNAUTHORIZED_REVIEWER':
-              throw new UnauthorizedReviewError({
-                userMessage: eligibility.reason,
-                workLogId: input.workLogId,
-                reviewerType: input.reviewerType,
-              });
-            default:
-              throw new ReviewNotFoundError({
-                userMessage: eligibility.reason,
-                workLogId: input.workLogId,
-              });
-          }
-        }
-
-        // 5. 쓰기: 리뷰 문서 생성
+        // 4. 쓰기: 리뷰 문서 생성
         const bubbleScoreChange = getSentimentScoreChange(input.sentiment);
 
         const reviewData: Record<string, unknown> = {
@@ -333,7 +294,7 @@ export class FirebaseReviewRepository implements IReviewRepository {
 
         transaction.set(reviewRef, reviewData);
 
-        // 6. 쓰기: 피평가자 bubbleScore 업데이트
+        // 5. 쓰기: 피평가자 bubbleScore 업데이트
         if (!userSnap.exists()) {
           logger.warn('피평가자 user 문서 없음 — bubbleScore 업데이트 건너뜀', {
             component: 'ReviewRepository',

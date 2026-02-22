@@ -206,6 +206,50 @@ export async function getByDate(staffId: string, date: string): Promise<WorkLog[
   }
 }
 
+export async function getCompletedByOwnerId(ownerId: string): Promise<WorkLog[]> {
+  try {
+    logger.info('구인자별 완료된 근무 기록 조회', { ownerId });
+
+    const workLogsRef = collection(getFirebaseDb(), COLLECTIONS.WORK_LOGS);
+
+    const q = new QueryBuilder(workLogsRef)
+      .whereEqual(FIELDS.WORK_LOG.ownerId, ownerId)
+      .whereEqual(FIELDS.WORK_LOG.status, STATUS.WORK_LOG.CHECKED_OUT)
+      .orderByDesc(FIELDS.WORK_LOG.date)
+      .limit(DEFAULT_PAGE_SIZE)
+      .build();
+
+    const snapshot = await getDocs(q);
+
+    const items: WorkLog[] = [];
+
+    for (const docSnapshot of snapshot.docs) {
+      const workLog = parseWorkLogDocument({
+        id: docSnapshot.id,
+        ...docSnapshot.data(),
+      });
+
+      if (workLog) {
+        items.push(workLog);
+      }
+    }
+
+    logger.info('구인자별 완료된 근무 기록 조회 완료', {
+      ownerId,
+      count: items.length,
+    });
+
+    return items;
+  } catch (error) {
+    logger.error('구인자별 완료된 근무 기록 조회 실패', toError(error), { ownerId });
+    throw handleServiceError(error, {
+      operation: '구인자별 완료된 근무 기록 조회',
+      component: 'WorkLogRepository',
+      context: { ownerId },
+    });
+  }
+}
+
 export async function getByJobPostingId(jobPostingId: string): Promise<WorkLog[]> {
   try {
     logger.info('공고별 근무 기록 조회', { jobPostingId });

@@ -18,6 +18,7 @@ import {
   getByStaffIdWithFilters,
   getByDate,
   getByJobPostingId,
+  getCompletedByOwnerId,
   getTodayCheckedIn,
   getStats,
   getMonthlyPayroll,
@@ -58,6 +59,7 @@ export class FirebaseWorkLogRepository implements IWorkLogRepository {
   getByStaffIdWithFilters = getByStaffIdWithFilters;
   getByDate = getByDate;
   getByJobPostingId = getByJobPostingId;
+  getCompletedByOwnerId = getCompletedByOwnerId;
   getTodayCheckedIn = getTodayCheckedIn;
   getStats = getStats;
   getMonthlyPayroll = getMonthlyPayroll;

@@ -56,6 +56,7 @@ export const WORK_LOG_FIELDS = {
   ...COMMON_FIELDS,
   staffId: 'staffId',
   jobPostingId: 'jobPostingId',
+  ownerId: 'ownerId',
   date: 'date',
   checkInTime: 'checkInTime',
   payrollStatus: 'payrollStatus',

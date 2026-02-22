@@ -115,6 +115,8 @@ export type {
   // Review
   IReviewRepository,
   CreateReviewContext,
+  ReviewPaginationCursor,
+  PaginatedReviews,
 } from './interfaces';
 
 // ============================================================================
