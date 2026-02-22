@@ -547,3 +547,163 @@ export const isReportAlreadyReviewedError = (
 export const isCannotReportSelfError = (error: unknown): error is CannotReportSelfError => {
   return error instanceof CannotReportSelfError || hasErrorName(error, 'CannotReportSelfError');
 };
+
+// ============================================================================
+// 리뷰/평가 관련 에러
+// ============================================================================
+
+/**
+ * 이미 평가 완료 에러
+ */
+export class AlreadyReviewedError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      workLogId: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_ALREADY_REVIEWED,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        workLogId: options?.workLogId,
+      },
+    });
+    this.name = 'AlreadyReviewedError';
+    Object.setPrototypeOf(this, AlreadyReviewedError.prototype);
+  }
+}
+
+/**
+ * 평가 기한 만료 에러
+ */
+export class ReviewPeriodExpiredError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      workLogId: string;
+      deadlineDays: number;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_REVIEW_PERIOD_EXPIRED,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        workLogId: options?.workLogId,
+        deadlineDays: options?.deadlineDays,
+      },
+    });
+    this.name = 'ReviewPeriodExpiredError';
+    Object.setPrototypeOf(this, ReviewPeriodExpiredError.prototype);
+  }
+}
+
+/**
+ * 본인 평가 불가 에러
+ */
+export class CannotReviewSelfError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_CANNOT_REVIEW_SELF,
+      category: 'business',
+      severity: 'low',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+    });
+    this.name = 'CannotReviewSelfError';
+    Object.setPrototypeOf(this, CannotReviewSelfError.prototype);
+  }
+}
+
+/**
+ * 평가 대상 없음 에러
+ */
+export class ReviewNotFoundError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      workLogId: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_REVIEW_NOT_FOUND,
+      category: 'business',
+      severity: 'medium',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        workLogId: options?.workLogId,
+      },
+    });
+    this.name = 'ReviewNotFoundError';
+    Object.setPrototypeOf(this, ReviewNotFoundError.prototype);
+  }
+}
+
+/**
+ * 평가 권한 없음 에러
+ */
+export class UnauthorizedReviewError extends AppError {
+  constructor(
+    options?: Partial<{
+      message: string;
+      userMessage: string;
+      workLogId: string;
+      reviewerType: string;
+    }>
+  ) {
+    super({
+      code: ERROR_CODES.BUSINESS_UNAUTHORIZED_REVIEW,
+      category: 'business',
+      severity: 'medium',
+      isRetryable: false,
+      message: options?.message,
+      userMessage: options?.userMessage,
+      metadata: {
+        workLogId: options?.workLogId,
+        reviewerType: options?.reviewerType,
+      },
+    });
+    this.name = 'UnauthorizedReviewError';
+    Object.setPrototypeOf(this, UnauthorizedReviewError.prototype);
+  }
+}
+
+// Type Guards - 리뷰/평가 관련
+export const isAlreadyReviewedError = (error: unknown): error is AlreadyReviewedError => {
+  return error instanceof AlreadyReviewedError || hasErrorName(error, 'AlreadyReviewedError');
+};
+
+export const isReviewPeriodExpiredError = (error: unknown): error is ReviewPeriodExpiredError => {
+  return error instanceof ReviewPeriodExpiredError || hasErrorName(error, 'ReviewPeriodExpiredError');
+};
+
+export const isCannotReviewSelfError = (error: unknown): error is CannotReviewSelfError => {
+  return error instanceof CannotReviewSelfError || hasErrorName(error, 'CannotReviewSelfError');
+};
+
+export const isReviewNotFoundError = (error: unknown): error is ReviewNotFoundError => {
+  return error instanceof ReviewNotFoundError || hasErrorName(error, 'ReviewNotFoundError');
+};
+
+export const isUnauthorizedReviewError = (error: unknown): error is UnauthorizedReviewError => {
+  return error instanceof UnauthorizedReviewError || hasErrorName(error, 'UnauthorizedReviewError');
+};

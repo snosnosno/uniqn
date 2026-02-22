@@ -14,6 +14,8 @@ import { TabHeader } from '@/components/headers';
 import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon, MenuIcon } from '@/components/icons';
 import { router } from 'expo-router';
 import { useCalendarView, useQRCodeScanner, useCurrentWorkStatus, useApplications } from '@/hooks';
+import { usePendingReviews } from '@/hooks/useReviews';
+import ReviewPromptBanner from '@/components/review/ReviewPromptBanner';
 import { useThemeStore } from '@/stores/themeStore';
 import { getLayoutColor } from '@/constants/colors';
 import { formatCurrency } from '@/utils/formatters';
@@ -222,6 +224,9 @@ export default function ScheduleScreen() {
   // 현재 근무 상태
   const { isWorking } = useCurrentWorkStatus();
 
+  // 미작성 평가 수
+  const { pendingCount } = usePendingReviews();
+
   // 지원 취소 훅
   const { cancelApplication } = useApplications();
 
@@ -416,6 +421,16 @@ export default function ScheduleScreen() {
 
       {/* 통계 카드 */}
       <StatsCard stats={stats} isLoading={isLoading} />
+
+      {/* 미작성 평가 배너 */}
+      {pendingCount > 0 && (
+        <View className="mt-2">
+          <ReviewPromptBanner
+            pendingCount={pendingCount}
+            onPress={() => router.push('/(app)/reviews/pending')}
+          />
+        </View>
+      )}
 
       {/* 캘린더 뷰 */}
       {viewMode === 'calendar' && (

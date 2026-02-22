@@ -58,6 +58,8 @@ export type InvalidationEvent =
   | 'notification.markAllAsRead'
   // 프로필
   | 'profile.update'
+  // 리뷰/평가
+  | 'review.create'
   // 관리자
   | 'admin.tournament.approve'
   | 'admin.tournament.reject'
@@ -79,6 +81,8 @@ export interface InvalidationContext {
   userId?: string;
   /** 날짜 (YYYY-MM-DD) */
   date?: string;
+  /** 피평가자 ID (리뷰) */
+  revieweeId?: string;
 }
 
 /**
@@ -106,6 +110,11 @@ type InvalidationTarget =
   | 'user.profile'
   | 'tournaments.all'
   | 'announcements.all'
+  | 'reviews.all'
+  | 'reviews.byWorkLog'
+  | 'reviews.myGiven'
+  | 'reviews.pending'
+  | 'reviews.bubbleScore'
   | 'admin.all';
 
 // ============================================================================
@@ -275,6 +284,7 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
     'confirmedStaff.byJobPosting',
     'settlement.byJobPosting',
     'schedules.mine',
+    'reviews.pending',
   ],
 
   /**
@@ -300,14 +310,14 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * - 정산 목록
    * - 근무기록 (상태 업데이트)
    */
-  'settlement.process': ['settlement.byJobPosting', 'settlement.all', 'workLogs.all'],
+  'settlement.process': ['settlement.byJobPosting', 'settlement.all', 'workLogs.all', 'reviews.pending'],
 
   /**
    * 일괄 정산
    * - 정산 전체
    * - 근무기록
    */
-  'settlement.bulkProcess': ['settlement.all', 'settlement.byJobPosting', 'workLogs.all'],
+  'settlement.bulkProcess': ['settlement.all', 'settlement.byJobPosting', 'workLogs.all', 'reviews.pending'],
 
   // ========================================
   // 알림 이벤트
@@ -323,6 +333,26 @@ export const invalidationGraph: Record<InvalidationEvent, InvalidationTarget[]> 
    * 전체 읽음 처리
    */
   'notification.markAllAsRead': ['notifications.all', 'notifications.unreadCount'],
+
+  // ========================================
+  // 리뷰/평가 이벤트
+  // ========================================
+
+  /**
+   * 리뷰 생성
+   * - 해당 근무 양방향 리뷰
+   * - 내가 작성한 리뷰
+   * - 미작성 평가 목록
+   * - 피평가자 버블 점수
+   * - 프로필 버블 점수 (비정규화)
+   */
+  'review.create': [
+    'reviews.byWorkLog',
+    'reviews.myGiven',
+    'reviews.pending',
+    'reviews.bubbleScore',
+    'user.profile',
+  ],
 
   // ========================================
   // 프로필 이벤트
@@ -449,6 +479,22 @@ function getQueryKeyForTarget(
     case 'user.profile':
       return context?.userId ? queryKeys.user.profile(context.userId) : queryKeys.user.all;
 
+    // 리뷰/평가
+    case 'reviews.all':
+      return queryKeys.reviews.all;
+    case 'reviews.byWorkLog':
+      return context?.workLogId
+        ? queryKeys.reviews.byWorkLog(context.workLogId)
+        : queryKeys.reviews.all;
+    case 'reviews.myGiven':
+      return queryKeys.reviews.myGiven();
+    case 'reviews.pending':
+      return queryKeys.reviews.pending();
+    case 'reviews.bubbleScore':
+      return context?.revieweeId
+        ? queryKeys.reviews.bubbleScore(context.revieweeId)
+        : queryKeys.reviews.all;
+
     // 관리자
     case 'tournaments.all':
       return queryKeys.tournaments.all;
@@ -573,6 +619,7 @@ export function invalidateDomain(
     | 'settlement'
     | 'notifications'
     | 'user'
+    | 'reviews'
     | 'admin'
 ): void {
   const domainKeys: Record<typeof domain, readonly unknown[]> = {
@@ -584,6 +631,7 @@ export function invalidateDomain(
     settlement: queryKeys.settlement.all,
     notifications: queryKeys.notifications.all,
     user: queryKeys.user.all,
+    reviews: queryKeys.reviews.all,
     admin: queryKeys.admin.all,
   };
 

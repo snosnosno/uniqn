@@ -86,6 +86,17 @@ export interface UserProfile<T = Date> {
   /** 구인자 등록 일시 */
   employerRegisteredAt?: T;
 
+  // 버블 점수 (리뷰/평가 시스템)
+  /** 버블 점수 (비정규화, reviews 컬렉션에서 계산) */
+  bubbleScore?: {
+    score: number;
+    totalReviewCount: number;
+    positiveCount: number;
+    neutralCount: number;
+    negativeCount: number;
+    lastUpdatedAt: T;
+  };
+
   // 메타데이터
   /** 활성 상태 (Firestore 전용, Store에서는 optional) */
   isActive?: boolean;

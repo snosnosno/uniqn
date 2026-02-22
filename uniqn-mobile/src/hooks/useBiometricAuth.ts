@@ -314,6 +314,13 @@ export function useBiometricAuth(): UseBiometricAuthReturn {
                 }
               : undefined,
             employerRegisteredAt: profile.employerRegisteredAt?.toDate?.() ?? undefined,
+            bubbleScore: profile.bubbleScore
+              ? {
+                  ...profile.bubbleScore,
+                  lastUpdatedAt:
+                    profile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+                }
+              : undefined,
           });
         }
       } catch (tokenError) {

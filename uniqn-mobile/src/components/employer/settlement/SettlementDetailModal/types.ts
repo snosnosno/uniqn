@@ -25,6 +25,8 @@ export interface SettlementDetailModalProps {
   groupedSettlement?: GroupedSettlement;
   /** 날짜 변경 콜백 */
   onDateChange?: (workLog: WorkLog) => void;
+  /** 공고 제목 (평가 연동용) */
+  jobPostingTitle?: string;
 }
 
 /**

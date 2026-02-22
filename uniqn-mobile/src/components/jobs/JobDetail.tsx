@@ -12,7 +12,9 @@ import { PostingTypeBadge } from './PostingTypeBadge';
 import { DateRequirementDisplay } from './DateRequirementDisplay';
 import { FixedScheduleDisplay } from './FixedScheduleDisplay';
 import { RoleSalaryDisplay } from './RoleSalaryDisplay';
+import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
 import { useJobSchedule } from '@/hooks';
+import { useUserProfile } from '@/hooks/useUserProfile';
 import {
   groupRequirementsToDateRanges,
   formatDateRangeWithCount,
@@ -178,6 +180,12 @@ function DateRequirementsGroupedDisplay({
 export function JobDetail({ job }: JobDetailProps) {
   // v3.0: 통합 타입 Hook 사용
   const { isFixed, isDated, fixedSchedule } = useJobSchedule(job);
+
+  // 구인자 프로필 (버블 점수 표시용)
+  const { userProfile: ownerProfile } = useUserProfile({
+    userId: job.ownerId,
+    enabled: !!job.ownerId,
+  });
 
   const handleCall = () => {
     if (job.contactPhone) {
@@ -345,6 +353,26 @@ export function JobDetail({ job }: JobDetailProps) {
                 외 {job.preQuestions.length - 3}개 질문
               </Text>
             )}
+          </View>
+        </View>
+      )}
+
+      {/* 구인자 정보 + 버블 점수 */}
+      {(job.ownerName || ownerProfile?.bubbleScore) && (
+        <View className="p-4 border-t border-gray-100 dark:border-surface-overlay">
+          <View className="flex-row items-center">
+            <Text className="text-lg mr-3">👤</Text>
+            <View className="flex-1">
+              <Text className="text-xs text-gray-500 dark:text-gray-400 mb-1">구인자</Text>
+              <View className="flex-row items-center gap-2">
+                <Text className="text-sm text-gray-900 dark:text-white">
+                  {job.ownerName ?? '구인자'}
+                </Text>
+                {ownerProfile?.bubbleScore && (
+                  <BubbleScoreBadge score={ownerProfile.bubbleScore.score} size="sm" />
+                )}
+              </View>
+            </View>
           </View>
         </View>
       )}

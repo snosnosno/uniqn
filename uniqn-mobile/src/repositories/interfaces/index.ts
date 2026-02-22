@@ -104,3 +104,6 @@ export type {
   DailyCount,
   SystemMetricsData,
 } from './IAdminRepository';
+
+// Review Repository
+export type { IReviewRepository, CreateReviewContext } from './IReviewRepository';

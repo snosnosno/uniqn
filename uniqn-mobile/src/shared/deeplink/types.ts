@@ -44,7 +44,11 @@ export type DeepLinkRoute =
   | { name: 'admin/report'; params: { id: string } }
   | { name: 'admin/inquiries' }
   | { name: 'admin/inquiry'; params: { id: string } }
-  | { name: 'admin/tournaments' };
+  | { name: 'admin/tournaments' }
+
+  // === 리뷰/평가 라우트 ===
+  | { name: 'reviews/detail'; params: { workLogId: string } }
+  | { name: 'reviews/pending' };
 
 // ============================================================================
 // ParsedDeepLink - 딥링크 파싱 결과

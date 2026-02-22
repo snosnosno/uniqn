@@ -38,6 +38,7 @@ import {
   FirebaseAnnouncementRepository,
   FirebaseInquiryRepository,
   FirebaseAdminRepository,
+  FirebaseReviewRepository,
 } from './firebase';
 
 // ============================================================================
@@ -111,6 +112,9 @@ export type {
   DashboardCounts,
   DailyCount,
   SystemMetricsData,
+  // Review
+  IReviewRepository,
+  CreateReviewContext,
 } from './interfaces';
 
 // ============================================================================
@@ -130,6 +134,7 @@ export {
   FirebaseAnnouncementRepository,
   FirebaseInquiryRepository,
   FirebaseAdminRepository,
+  FirebaseReviewRepository,
 } from './firebase';
 
 // ============================================================================
@@ -384,3 +389,21 @@ export const inquiryRepository = new FirebaseInquiryRepository();
  * ```
  */
 export const adminRepository = new FirebaseAdminRepository();
+
+/**
+ * Review Repository 싱글톤 인스턴스
+ *
+ * @description 프로덕션에서 사용하는 기본 인스턴스
+ *
+ * @example
+ * ```typescript
+ * import { reviewRepository } from '@/repositories';
+ *
+ * // 블라인드 조회
+ * const result = await reviewRepository.getReviewsWithBlindCheck(workLogId, 'employer');
+ *
+ * // 리뷰 생성 (트랜잭션)
+ * const reviewId = await reviewRepository.createWithTransaction(input, context);
+ * ```
+ */
+export const reviewRepository = new FirebaseReviewRepository();

@@ -437,6 +437,17 @@ export const queryKeys = {
     /** FAQ */
     faq: (category?: string) => [...queryKeys.inquiries.all, 'faq', category] as const,
   },
+  // 리뷰/평가 (버블)
+  reviews: {
+    all: ['reviews'] as const,
+    byWorkLog: (workLogId: string) => [...queryKeys.reviews.all, 'byWorkLog', workLogId] as const,
+    myGiven: () => [...queryKeys.reviews.all, 'myGiven'] as const,
+    myReceived: () => [...queryKeys.reviews.all, 'myReceived'] as const,
+    bubbleScore: (userId: string) => [...queryKeys.reviews.all, 'bubbleScore', userId] as const,
+    eligibility: (workLogId: string) => [...queryKeys.reviews.all, 'eligibility', workLogId] as const,
+    pending: () => [...queryKeys.reviews.all, 'pending'] as const,
+  },
+
   // 인앱 메시지
   inAppMessages: {
     all: ['inAppMessages'] as const,
@@ -536,6 +547,11 @@ export const queryCachingOptions = {
     staleTime: cachingPolicies.stable,
     gcTime: 2 * 60 * 60 * 1000, // 2시간
   },
+  /** 리뷰/평가 - 10분 */
+  reviews: {
+    staleTime: cachingPolicies.standard,
+    gcTime: 15 * 60 * 1000, // 15분
+  },
 } as const;
 
 // ============================================================================
@@ -573,6 +589,8 @@ export const invalidateQueries = {
   },
   /** 공지사항 관련 모든 쿼리 무효화 */
   announcements: () => queryClient.invalidateQueries({ queryKey: queryKeys.announcements.all }),
+  /** 리뷰/평가 관련 모든 쿼리 무효화 */
+  reviews: () => queryClient.invalidateQueries({ queryKey: queryKeys.reviews.all }),
   all: () => queryClient.invalidateQueries(),
 };
 

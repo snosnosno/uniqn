@@ -125,6 +125,14 @@ const deepLinkGenerators: Record<NotificationType, (data?: NotificationLinkData)
     data?.applicationId ? `/admin/inquiries/${data.applicationId}` : '/admin/inquiries',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: (data) =>
     data?.jobPostingId ? `/admin/tournaments/${data.jobPostingId}` : '/admin/tournaments',
+
+  // === 리뷰/평가 관련 ===
+  [NotificationType.REVIEW_REQUEST]: (data) =>
+    data?.workLogId ? `/reviews/${data.workLogId}` : '/reviews/pending',
+  [NotificationType.REVIEW_RECEIVED]: (data) =>
+    data?.workLogId ? `/reviews/${data.workLogId}` : '/schedule',
+  [NotificationType.REVIEW_REMINDER]: (data) =>
+    data?.workLogId ? `/reviews/${data.workLogId}` : '/reviews/pending',
 };
 
 // ============================================================================

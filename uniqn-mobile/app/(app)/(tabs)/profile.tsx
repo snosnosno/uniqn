@@ -31,6 +31,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { signOut } from '@/services/authService';
 import { useToastStore } from '@/stores/toastStore';
 import { getRoleDisplayName } from '@/types/unified';
+import BubbleScoreBadge from '@/components/review/BubbleScoreBadge';
+import { useBubbleScore } from '@/hooks/useReviews';
 
 interface MenuItemProps {
   icon: React.ReactNode;
@@ -67,6 +69,7 @@ export default function ProfileScreen() {
   const reset = useAuthStore((state) => state.reset);
   const addToast = useToastStore((state) => state.addToast);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const bubbleScore = useBubbleScore();
 
   // useUserProfile 훅과 동일한 displayName 로직
   const displayName = useMemo(() => {
@@ -159,12 +162,13 @@ export default function ProfileScreen() {
               <Text className="text-sm text-gray-500 dark:text-gray-400">
                 {profile?.email ?? user?.email ?? '이메일 없음'}
               </Text>
-              <View className="mt-1 flex-row items-center">
+              <View className="mt-1 flex-row items-center gap-2">
                 <View className="rounded-full bg-primary-100 px-2 py-0.5 dark:bg-primary-900/30">
                   <Text className="text-xs font-medium text-primary-700 dark:text-primary-300">
                     {profile?.role ? getRoleDisplayName(profile.role) : '미설정'}
                   </Text>
                 </View>
+                {bubbleScore && <BubbleScoreBadge score={bubbleScore.score} />}
               </View>
             </View>
             <EditIcon size={20} color="#9CA3AF" />

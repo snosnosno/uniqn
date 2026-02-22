@@ -262,6 +262,13 @@ export function useAppInitialize(): UseAppInitializeReturn {
                     }
                   : undefined,
                 employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
+                bubbleScore: freshProfile.bubbleScore
+                  ? {
+                      ...freshProfile.bubbleScore,
+                      lastUpdatedAt:
+                        freshProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+                    }
+                  : undefined,
               });
               useAuthStore.getState().setUser(authUser);
               // 알림 카운터 등 불필요한 초기화 건너뛰기
@@ -282,6 +289,13 @@ export function useAppInitialize(): UseAppInitializeReturn {
                     }
                   : undefined,
                 employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
+                bubbleScore: freshProfile.bubbleScore
+                  ? {
+                      ...freshProfile.bubbleScore,
+                      lastUpdatedAt:
+                        freshProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+                    }
+                  : undefined,
               });
               useAuthStore.getState().setUser(authUser);
               logger.info('최신 프로필 로드 완료', {

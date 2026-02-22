@@ -268,6 +268,31 @@ export const NotificationTemplates: Record<NotificationType, NotificationTemplat
     link: () => '/admin/dashboard',
     icon: '⚠️',
   },
+
+  // =========================================================================
+  // 리뷰/평가 관련
+  // =========================================================================
+
+  [NotificationType.REVIEW_REQUEST]: {
+    title: '평가를 남겨주세요',
+    body: (d) => `"${d.jobTitle}" 근무가 완료되었습니다. ${d.revieweeName}님에 대한 평가를 남겨주세요.`,
+    link: (d) => `/reviews/${d.workLogId}`,
+    icon: '📝',
+  },
+
+  [NotificationType.REVIEW_RECEIVED]: {
+    title: '새로운 평가 도착',
+    body: (d) => `"${d.jobTitle}" 근무에 대한 평가가 도착했습니다. 내 평가를 작성하면 확인할 수 있습니다.`,
+    link: (d) => `/reviews/${d.workLogId}`,
+    icon: '⭐',
+  },
+
+  [NotificationType.REVIEW_REMINDER]: {
+    title: '평가 마감 임박',
+    body: (d) => `"${d.jobTitle}" 근무 평가 마감까지 2일 남았습니다.`,
+    link: (d) => `/reviews/${d.workLogId}`,
+    icon: '⏰',
+  },
 };
 
 // ============================================================================

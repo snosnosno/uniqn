@@ -269,6 +269,7 @@ const categoriesSettingsSchema = z.object({
   job: categoryNotificationSettingSchema,
   system: categoryNotificationSettingSchema,
   admin: categoryNotificationSettingSchema,
+  review: categoryNotificationSettingSchema,
 });
 
 /**

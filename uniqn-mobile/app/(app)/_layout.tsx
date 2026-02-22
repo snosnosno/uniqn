@@ -116,6 +116,12 @@ export default function AppLayout() {
           }}
         />
         <Stack.Screen name="settings" />
+        <Stack.Screen
+          name="reviews"
+          options={{
+            headerShown: false,
+          }}
+        />
       </Stack>
     </NetworkErrorBoundary>
   );

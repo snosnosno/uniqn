@@ -18,3 +18,4 @@ export { FirebaseAnnouncementRepository } from './AnnouncementRepository';
 export { FirebaseInquiryRepository } from './InquiryRepository';
 export { FirebaseAdminRepository } from './AdminRepository';
 export { FirebaseInAppMessageRepository } from './InAppMessageRepository';
+export { FirebaseReviewRepository } from './ReviewRepository';

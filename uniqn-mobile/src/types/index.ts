@@ -347,6 +347,39 @@ export {
   getReportSeverity,
 } from './report';
 
+// 리뷰/평가 타입 (버블 시스템)
+export type {
+  ReviewerType,
+  ReviewSentiment,
+  EmployerToStaffTag,
+  StaffToEmployerTag,
+  ReviewTag,
+  ReviewTagInfo,
+  BubbleScore,
+  BubbleScoreColorRange,
+  Review,
+  CreateReviewInput,
+  ReviewBlindResult,
+} from './review';
+
+export {
+  EMPLOYER_TO_STAFF_TAGS,
+  STAFF_TO_EMPLOYER_TAGS,
+  BUBBLE_SCORE,
+  REVIEW_DEADLINE_DAYS,
+  REVIEW_TAG_LIMITS,
+  REVIEW_COMMENT_MAX_LENGTH,
+  SENTIMENT_LABELS,
+  SENTIMENT_EMOJI,
+  SENTIMENT_COLORS,
+  BUBBLE_SCORE_COLORS,
+  getTagsForReviewerType,
+  getAllowedTagKeys,
+  getBubbleScoreColor,
+  getSentimentScoreChange,
+  calculateNewBubbleScore,
+} from './review';
+
 // ============================================================================
 // 통합 타입 (Unified Types)
 // ============================================================================

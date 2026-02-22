@@ -876,6 +876,7 @@ export default function StaffSettlementsScreen() {
         onEditTime={handleEditTimeFromDetail}
         onEditAmount={handleEditAmountFromDetail}
         onSettle={handleSettleFromDetail}
+        jobPostingTitle={posting?.title}
       />
 
       {/* 시간 수정 모달 (정산 탭용) */}

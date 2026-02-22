@@ -151,6 +151,13 @@ export default function EmployerRegisterScreen() {
             }
           : undefined,
         employerRegisteredAt: updatedProfile.employerRegisteredAt?.toDate?.() ?? undefined,
+        bubbleScore: updatedProfile.bubbleScore
+          ? {
+              ...updatedProfile.bubbleScore,
+              lastUpdatedAt:
+                updatedProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
+            }
+          : undefined,
       });
 
       toast.success('구인자로 등록되었습니다');

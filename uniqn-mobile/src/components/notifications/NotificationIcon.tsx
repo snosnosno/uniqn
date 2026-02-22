@@ -86,6 +86,11 @@ const typeIcons: Record<NotificationType, IconComponent> = {
   [NotificationType.NEW_REPORT]: ExclamationCircleIcon,
   [NotificationType.NEW_INQUIRY]: ChatBubbleLeftIcon,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: BriefcaseIcon,
+
+  // 리뷰/평가 관련
+  [NotificationType.REVIEW_REQUEST]: ChatBubbleLeftIcon,
+  [NotificationType.REVIEW_RECEIVED]: CheckCircleIcon,
+  [NotificationType.REVIEW_REMINDER]: ClockIcon,
 };
 
 // 타입별 이모지 매핑
@@ -131,6 +136,11 @@ const typeEmojis: Record<NotificationType, string> = {
   [NotificationType.NEW_REPORT]: '🚨',
   [NotificationType.NEW_INQUIRY]: '💬',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '🏆',
+
+  // 리뷰/평가 관련
+  [NotificationType.REVIEW_REQUEST]: '📝',
+  [NotificationType.REVIEW_RECEIVED]: '⭐',
+  [NotificationType.REVIEW_REMINDER]: '⏰',
 };
 
 // 카테고리별 색상
@@ -158,6 +168,10 @@ const categoryColors: Record<NotificationCategory, { bg: string; icon: string }>
   [NotificationCategory.ADMIN]: {
     bg: 'bg-indigo-100 dark:bg-indigo-900/30',
     icon: '#6366f1', // indigo-500
+  },
+  [NotificationCategory.REVIEW]: {
+    bg: 'bg-amber-100 dark:bg-amber-900/30',
+    icon: '#f59e0b', // amber-500
   },
 };
 

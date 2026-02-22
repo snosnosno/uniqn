@@ -54,6 +54,7 @@ export const COLLECTIONS = {
   EVENT_QR_CODES: 'eventQRCodes',
   TEMPLATES: 'mobileJobPostingTemplates',
   IN_APP_MESSAGES: 'inAppMessages',
+  REVIEWS: 'reviews',
 } as const;
 
 // ============================================================================

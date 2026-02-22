@@ -89,6 +89,14 @@ export const NotificationType = {
   NEW_INQUIRY: 'new_inquiry',
   /** 대회공고 승인 요청 (관리자에게) */
   TOURNAMENT_APPROVAL_REQUEST: 'tournament_approval_request',
+
+  // === 리뷰/평가 관련 ===
+  /** 평가 요청 (근무 완료 후 양쪽에게) */
+  REVIEW_REQUEST: 'review_request',
+  /** 평가 도착 (상대방이 평가 완료 시) */
+  REVIEW_RECEIVED: 'review_received',
+  /** 평가 마감 리마인더 (D-2) */
+  REVIEW_REMINDER: 'review_reminder',
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
@@ -108,6 +116,7 @@ export const NotificationCategory = {
   JOB: 'job', // 공고 관련
   SYSTEM: 'system', // 시스템
   ADMIN: 'admin', // 관리자
+  REVIEW: 'review', // 리뷰/평가
 } as const;
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare -- const/type 합성 패턴
@@ -158,6 +167,11 @@ export const NOTIFICATION_TYPE_TO_CATEGORY: Record<NotificationType, Notificatio
   [NotificationType.NEW_REPORT]: NotificationCategory.ADMIN,
   [NotificationType.NEW_INQUIRY]: NotificationCategory.ADMIN,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: NotificationCategory.ADMIN,
+
+  // 리뷰/평가 관련
+  [NotificationType.REVIEW_REQUEST]: NotificationCategory.REVIEW,
+  [NotificationType.REVIEW_RECEIVED]: NotificationCategory.REVIEW,
+  [NotificationType.REVIEW_REMINDER]: NotificationCategory.REVIEW,
 };
 
 // ============================================================================
@@ -214,6 +228,11 @@ export const NOTIFICATION_DEFAULT_PRIORITY: Record<NotificationType, Notificatio
   [NotificationType.NEW_REPORT]: 'high',
   [NotificationType.NEW_INQUIRY]: 'normal',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: 'high',
+
+  // 리뷰/평가 관련
+  [NotificationType.REVIEW_REQUEST]: 'normal',
+  [NotificationType.REVIEW_RECEIVED]: 'normal',
+  [NotificationType.REVIEW_REMINDER]: 'high',
 };
 
 // ============================================================================
@@ -372,6 +391,11 @@ export const NOTIFICATION_TYPE_TO_CHANNEL: Record<NotificationType, AndroidChann
   [NotificationType.NEW_REPORT]: AndroidChannelId.DEFAULT,
   [NotificationType.NEW_INQUIRY]: AndroidChannelId.DEFAULT,
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: AndroidChannelId.DEFAULT,
+
+  // 리뷰/평가 관련
+  [NotificationType.REVIEW_REQUEST]: AndroidChannelId.DEFAULT,
+  [NotificationType.REVIEW_RECEIVED]: AndroidChannelId.DEFAULT,
+  [NotificationType.REVIEW_REMINDER]: AndroidChannelId.REMINDERS,
 };
 
 // ============================================================================
@@ -423,6 +447,11 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   [NotificationType.NEW_REPORT]: '새 신고',
   [NotificationType.NEW_INQUIRY]: '새 문의',
   [NotificationType.TOURNAMENT_APPROVAL_REQUEST]: '대회 승인 요청',
+
+  // 리뷰/평가 관련
+  [NotificationType.REVIEW_REQUEST]: '평가 요청',
+  [NotificationType.REVIEW_RECEIVED]: '평가 도착',
+  [NotificationType.REVIEW_REMINDER]: '평가 마감 임박',
 };
 
 /**
@@ -435,6 +464,7 @@ export const NOTIFICATION_CATEGORY_LABELS: Record<NotificationCategory, string> 
   [NotificationCategory.JOB]: '공고',
   [NotificationCategory.SYSTEM]: '시스템',
   [NotificationCategory.ADMIN]: '관리자',
+  [NotificationCategory.REVIEW]: '평가',
 };
 
 // ============================================================================

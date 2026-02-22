@@ -253,6 +253,25 @@ export const NOTIFICATION_ROUTE_MAP: Record<
    * → 관리자 통계 페이지로 이동
    */
   [NotificationType.NEGATIVE_SETTLEMENT_ALERT]: () => ({ name: 'admin/dashboard' }),
+
+  // ============================================================================
+  // 리뷰/평가 관련 (3개)
+  // ============================================================================
+
+  [NotificationType.REVIEW_REQUEST]: (data) =>
+    data?.workLogId
+      ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
+      : { name: 'reviews/pending' },
+
+  [NotificationType.REVIEW_RECEIVED]: (data) =>
+    data?.workLogId
+      ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
+      : { name: 'schedule' },
+
+  [NotificationType.REVIEW_REMINDER]: (data) =>
+    data?.workLogId
+      ? { name: 'reviews/detail', params: { workLogId: data.workLogId } }
+      : { name: 'reviews/pending' },
 };
 
 // ============================================================================

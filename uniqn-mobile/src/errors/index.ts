@@ -118,6 +118,12 @@ export {
   ReportNotFoundError,
   ReportAlreadyReviewedError,
   CannotReportSelfError,
+  // 리뷰/평가 관련
+  AlreadyReviewedError,
+  ReviewPeriodExpiredError,
+  CannotReviewSelfError,
+  ReviewNotFoundError,
+  UnauthorizedReviewError,
   // Type Guards
   isAlreadyAppliedError,
   isApplicationClosedError,
@@ -131,6 +137,11 @@ export {
   isReportNotFoundError,
   isReportAlreadyReviewedError,
   isCannotReportSelfError,
+  isAlreadyReviewedError,
+  isReviewPeriodExpiredError,
+  isCannotReviewSelfError,
+  isReviewNotFoundError,
+  isUnauthorizedReviewError,
 } from './BusinessErrors';
 
 // ============================================================================

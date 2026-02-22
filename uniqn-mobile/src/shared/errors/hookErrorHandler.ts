@@ -458,6 +458,18 @@ export const errorHandlerPresets = {
       showAlert,
       showToast: false, // 알림 처리 실패는 조용히 로깅만
     }),
+
+  /** 리뷰/평가 에러 핸들러 */
+  review: (addToast: AddToastFn, extraContext?: Record<string, unknown>, showAlert?: ShowAlertFn) =>
+    createMutationErrorHandler('평가 처리', addToast, {
+      context: extraContext,
+      showAlert,
+      customMessages: {
+        [ERROR_CODES.BUSINESS_ALREADY_REVIEWED]: '이미 평가를 완료하셨습니다.',
+        [ERROR_CODES.BUSINESS_REVIEW_PERIOD_EXPIRED]: '평가 기한(7일)이 만료되었습니다.',
+        [ERROR_CODES.BUSINESS_CANNOT_REVIEW_SELF]: '본인을 평가할 수 없습니다.',
+      },
+    }),
 } as const;
 
 // ============================================================================

@@ -6,7 +6,8 @@
  */
 
 import React, { useMemo, useCallback, useState } from 'react';
-import { View } from 'react-native';
+import { View, Text, Pressable } from 'react-native';
+import { router } from 'expo-router';
 import { useSettlementDateNavigation } from '@/hooks';
 import { SheetModal } from '../../../ui/SheetModal';
 import { useThemeStore } from '@/stores/themeStore';
@@ -49,6 +50,7 @@ export function SettlementDetailModal({
   onSettle,
   groupedSettlement,
   onDateChange,
+  jobPostingTitle,
 }: SettlementDetailModalProps) {
   // 다크모드 감지
   const { isDarkMode: isDark } = useThemeStore();
@@ -175,9 +177,39 @@ export function SettlementDetailModal({
           onToggle={() => setIsAmountHistoryExpanded(!isAmountHistoryExpanded)}
         />
 
-        {/* 정산 완료 표시 */}
+        {/* 정산 완료 표시 + 평가 버튼 */}
         {payrollStatus === STATUS.PAYROLL.COMPLETED && (
-          <SettlementCompletedBanner payrollDate={workLog.payrollDate} />
+          <>
+            <SettlementCompletedBanner payrollDate={workLog.payrollDate} />
+            <View className="px-4 pb-2">
+              <Pressable
+                onPress={() => {
+                  onClose();
+                  setTimeout(() => {
+                    router.push({
+                      pathname: '/(app)/reviews/write',
+                      params: {
+                        workLogId: workLog.id,
+                        revieweeId: workLog.staffId,
+                        revieweeName: displayName,
+                        reviewerType: 'employer',
+                        jobPostingId: workLog.jobPostingId,
+                        jobPostingTitle: jobPostingTitle ?? '',
+                        workDate: workLog.date,
+                      },
+                    });
+                  }, 300);
+                }}
+                className="flex-row items-center justify-center rounded-lg border border-primary-200 bg-primary-50 px-4 py-3 active:opacity-80 dark:border-primary-800 dark:bg-primary-900/20"
+                accessibilityLabel="스태프 평가하기"
+                accessibilityRole="button"
+              >
+                <Text className="text-sm font-medium text-primary-700 dark:text-primary-300">
+                  📝 평가 남기기
+                </Text>
+              </Pressable>
+            </View>
+          </>
         )}
 
         {/* 액션 버튼 (미정산일 때만) */}

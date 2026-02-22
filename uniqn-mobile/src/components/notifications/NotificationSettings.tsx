@@ -66,6 +66,10 @@ const categoryInfo: Record<NotificationCategory, { description: string; color: s
     description: '문의 답변, 신고 처리 알림',
     color: 'bg-indigo-500',
   },
+  [NotificationCategory.REVIEW]: {
+    description: '근무 평가 요청, 평가 도착 알림',
+    color: 'bg-amber-500',
+  },
 };
 
 export const NotificationSettingsComponent = memo(function NotificationSettings({
