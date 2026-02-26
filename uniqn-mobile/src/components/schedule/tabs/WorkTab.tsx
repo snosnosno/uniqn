@@ -16,6 +16,7 @@ import { STATUS } from '@/constants';
 import { ATTENDANCE_STATUS } from '@/constants/statusConfig';
 import type { ScheduleEvent } from '@/types';
 import { useThemeStore } from '@/stores/themeStore';
+import { formatPhoneNumber } from '@/utils/phone';
 
 // ============================================================================
 // Types
@@ -35,20 +36,6 @@ export interface WorkTabProps {
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/**
- * 전화번호 포맷팅 (010-1234-5678 형식)
- */
-function formatPhoneNumber(phone: string): string {
-  const cleaned = phone.replace(/\D/g, '');
-  if (cleaned.length === 11) {
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7)}`;
-  }
-  if (cleaned.length === 10) {
-    return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-  }
-  return phone;
-}
 
 // ============================================================================
 // Sub Components

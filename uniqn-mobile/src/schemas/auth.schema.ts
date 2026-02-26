@@ -103,7 +103,8 @@ export const phoneSchema = z
   .refine(
     (val) => {
       const cleaned = val.replace(/[-\s]/g, '');
-      return /^01[0-9]{8,9}$/.test(cleaned);
+      // E.164 (+8210...) 또는 로컬 (010...) 형식 허용
+      return /^\+82[0-9]{9,10}$/.test(cleaned) || /^01[0-9]{8,9}$/.test(cleaned);
     },
     {
       message: '올바른 전화번호 형식이 아닙니다 (예: 010-1234-5678)',

@@ -5,8 +5,9 @@
  * 회원가입 Step 2에서 SMS 인증 발송 전 전화번호 중복을 확인합니다.
  * 인증 없이 호출 가능 (회원가입 전이므로).
  * Firebase Auth + Firestore 양쪽 모두 확인하여 정합성을 보장합니다.
+ * Auth에 phone-only 고아 계정이 있으면 즉시 삭제하여 재가입을 허용합니다.
  *
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 import { onCall } from 'firebase-functions/v2/https';
@@ -15,33 +16,38 @@ import * as admin from 'firebase-admin';
 import { ValidationError, ERROR_CODES } from '../errors/AppError';
 import { handleFunctionError } from '../errors/errorHandler';
 import { checkIpRateLimit } from '../middleware/rateLimiter';
+import { isValidKoreanPhone, toE164, maskPhone } from '../utils/phone';
+
+const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
 
 /**
- * 한국 전화번호 형식 검증 (E.164 또는 010 형식)
+ * reCAPTCHA v3 토큰 검증
+ *
+ * @returns 유효 여부 (SECRET_KEY 미설정 시 true 반환)
  */
-function isValidKoreanPhone(phone: string): boolean {
-  // E.164: +821012345678 또는 로컬: 01012345678
-  const e164Regex = /^\+82[0-9]{9,10}$/;
-  const localRegex = /^01[0-9]{8,9}$/;
-  return e164Regex.test(phone) || localRegex.test(phone);
-}
+async function verifyRecaptchaToken(token: string): Promise<boolean> {
+  if (!RECAPTCHA_SECRET_KEY) {
+    logger.debug('RECAPTCHA_SECRET_KEY 미설정 - 검증 스킵');
+    return true;
+  }
 
-/**
- * 전화번호를 E.164 형식으로 변환
- */
-function toE164(phone: string): string {
-  const cleaned = phone.replace(/[-\s]/g, '');
-  if (cleaned.startsWith('+82')) return cleaned;
-  if (cleaned.startsWith('0')) return `+82${cleaned.slice(1)}`;
-  return `+82${cleaned}`;
-}
+  try {
+    const response = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: `secret=${encodeURIComponent(RECAPTCHA_SECRET_KEY)}&response=${encodeURIComponent(token)}`,
+    });
+    const data = await response.json() as { success: boolean; score?: number };
 
-/**
- * 전화번호 마스킹 (로그용)
- */
-function maskPhone(phone: string): string {
-  if (phone.length < 4) return '***';
-  return `${phone.slice(0, 3)}****${phone.slice(-4)}`;
+    if (!data.success || (data.score !== undefined && data.score < 0.3)) {
+      logger.warn('reCAPTCHA 검증 실패', { success: data.success, score: data.score });
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.error('reCAPTCHA API 호출 실패', { error: err });
+    return true; // API 장애 시 통과 (가용성 우선)
+  }
 }
 
 /**
@@ -50,7 +56,7 @@ function maskPhone(phone: string): string {
  * - Firebase Auth에서 해당 전화번호로 등록된 계정 존재 여부 확인
  * - Firestore users 컬렉션에서 phone 필드 조회
  * - 인증 불필요 (회원가입 전 호출)
- * - IP 기반 Rate Limiting 적용
+ * - IP 기반 Rate Limiting + reCAPTCHA v3 (웹) 적용
  */
 export const checkPhoneExists = onCall(
   { region: 'asia-northeast3', cors: true },
@@ -70,7 +76,25 @@ export const checkPhoneExists = onCall(
         });
       }
 
-      // 2. 전화번호 파라미터 검증
+      // 2. reCAPTCHA v3 검증 (웹 요청만, 네이티브는 스킵)
+      const platform = request.data?.platform as string | undefined;
+      const recaptchaToken = request.data?.recaptchaToken as string | undefined;
+
+      if (platform === 'web' || (!platform && recaptchaToken)) {
+        if (!recaptchaToken) {
+          throw new ValidationError(ERROR_CODES.AUTH_RATE_LIMITED, {
+            userMessage: '보안 검증에 실패했습니다. 페이지를 새로고침하고 다시 시도해주세요.',
+          });
+        }
+        const isValid = await verifyRecaptchaToken(recaptchaToken);
+        if (!isValid) {
+          throw new ValidationError(ERROR_CODES.AUTH_RATE_LIMITED, {
+            userMessage: '보안 검증에 실패했습니다. 다시 시도해주세요.',
+          });
+        }
+      }
+
+      // 3. 전화번호 파라미터 검증
       const rawPhone = request.data?.phone;
       if (!rawPhone || typeof rawPhone !== 'string' || rawPhone.trim().length === 0) {
         throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
@@ -79,7 +103,7 @@ export const checkPhoneExists = onCall(
         });
       }
 
-      // 3. 전화번호 정규화 + 형식 검증
+      // 4. 전화번호 정규화 + 형식 검증
       const cleaned = rawPhone.replace(/[-\s]/g, '');
 
       if (!isValidKoreanPhone(cleaned)) {
@@ -91,11 +115,34 @@ export const checkPhoneExists = onCall(
 
       const e164Phone = toE164(cleaned);
 
-      // 4. Firebase Auth에서 확인
+      // 5. Firebase Auth에서 확인 + 고아 계정 즉시 정리
       let existsInAuth = false;
       try {
-        await admin.auth().getUserByPhoneNumber(e164Phone);
-        existsInAuth = true;
+        const authUser = await admin.auth().getUserByPhoneNumber(e164Phone);
+
+        // 고아 계정 감지: Auth에 존재하지만 Firestore users 문서가 없는 phone-only 계정
+        // (가입 중단/크래시로 생성된 계정 → 즉시 삭제하여 재가입 허용)
+        if (!authUser.email) {
+          const userDoc = await admin.firestore().collection('users').doc(authUser.uid).get();
+          if (!userDoc.exists) {
+            logger.info('고아 phone-only 계정 감지 → 즉시 삭제', {
+              uid: authUser.uid,
+              phone: maskPhone(e164Phone),
+            });
+            await admin.auth().deleteUser(authUser.uid);
+            // orphanAccounts 마킹 문서도 함께 정리
+            try {
+              await admin.firestore().collection('orphanAccounts').doc(authUser.uid).delete();
+            } catch {
+              // orphanAccounts 문서 미존재 시 무시
+            }
+            existsInAuth = false;
+          } else {
+            existsInAuth = true;
+          }
+        } else {
+          existsInAuth = true;
+        }
       } catch (authError: unknown) {
         if (
           authError &&
@@ -109,18 +156,12 @@ export const checkPhoneExists = onCall(
         }
       }
 
-      // 5. Firestore에서도 확인 (Auth에 없지만 Firestore에만 있는 경우 대비)
+      // 6. Firestore에서도 확인 (Auth에 없지만 Firestore에만 있는 경우 대비)
       let existsInFirestore = false;
       if (!existsInAuth) {
-        // 로컬 형식으로도 검색 (010-xxxx-xxxx)
-        const localPhone = cleaned.startsWith('+82') ? `0${cleaned.slice(3)}` : cleaned;
-        const formattedPhone = localPhone.length === 11
-          ? `${localPhone.slice(0, 3)}-${localPhone.slice(3, 7)}-${localPhone.slice(7)}`
-          : localPhone;
-
         const snapshot = await admin.firestore()
           .collection('users')
-          .where('phone', 'in', [e164Phone, localPhone, formattedPhone])
+          .where('phone', '==', e164Phone)
           .limit(1)
           .get();
 
@@ -139,7 +180,7 @@ export const checkPhoneExists = onCall(
     } catch (error) {
       throw handleFunctionError(error, {
         operation: 'checkPhoneExists',
-        context: { phone: request.data?.phone ? maskPhone(request.data.phone) : undefined },
+        context: { phone: typeof request.data?.phone === 'string' ? maskPhone(request.data.phone) : undefined },
       });
     }
   }

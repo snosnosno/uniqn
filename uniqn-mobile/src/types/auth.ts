@@ -73,39 +73,6 @@ export interface ResetPasswordRequest {
 export type VerificationStatus = 'pending' | 'verified' | 'failed' | 'expired';
 
 /**
- * 전화번호 인증
- */
-export interface PhoneVerification {
-  id: string;
-  userId: string;
-  phoneNumber: string;
-  verificationCode: string;
-  status: VerificationStatus;
-  attempts: number;
-  maxAttempts: number;
-  expiresAt: Timestamp;
-  verifiedAt?: Timestamp;
-  createdAt: Timestamp;
-  updatedAt: Timestamp;
-}
-
-/**
- * 사용자 인증 상태
- *
- * ⚠️ 이메일 인증은 사용하지 않음 - 휴대폰 본인인증으로 대체
- * - emailVerified: Firebase 기본 필드 (참조용, 실제 검증에 사용 안함)
- * - phoneVerified: 휴대폰 본인인증 완료 여부 (필수)
- */
-export interface UserVerificationStatus {
-  userId: string;
-  emailVerified: boolean; // Firebase 기본 필드 (미사용)
-  phoneVerified: boolean; // 휴대폰 본인인증 완료 여부 (필수)
-  phoneNumber?: string;
-  verifiedAt?: Timestamp;
-  updatedAt: Timestamp;
-}
-
-/**
  * 소셜 로그인 제공자
  */
 export type SocialProvider = 'google' | 'apple' | 'kakao' | 'naver';

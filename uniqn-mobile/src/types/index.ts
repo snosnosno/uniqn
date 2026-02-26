@@ -63,8 +63,6 @@ export type {
   SignUpRequest,
   ResetPasswordRequest,
   VerificationStatus,
-  PhoneVerification,
-  UserVerificationStatus,
   SocialProvider,
   ConsentItems,
   SessionInfo,

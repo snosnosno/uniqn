@@ -3,13 +3,15 @@
  *
  * @description Firebase Phone Auth(SMS OTP) 기반 전화번호 인증
  *
- * [v1.1.0] BUG FIX - 소셜로그인 후 인증 실패 수정
- *  - BUG #1: link 모드에서 signInWithPhoneNumber → verifyPhoneNumber 전환
- *  - BUG #2: Native SDK currentUser null 감지 및 사전 차단
- *  - BUG #3: link 모드에서 confirm() fallback 차단
- *  - 디버깅: OTP 실패 시 Firebase 에러 코드 명시적 로깅
+ * [v1.2.0] BUG FIX - 10건 버그 수정
+ *  - [C1] 웹 link 모드: signInWithPhoneNumber → PhoneAuthProvider.verifyPhoneNumber (세션 파괴 방지)
+ *  - [C2] Native SDK 없을 때 Web SDK fallback (Apple→Phone 교착 해소)
+ *  - [H2] reCAPTCHA clear() 호출 + DOM 컨테이너 재생성
+ *  - [H5] iOS 개발 모드 reCAPTCHA fallback 안내
+ *  - [M1] 리스너 타임아웃 조정 + 재발송 시 상태 초기화
+ *  - [M2] onReset 콜백 추가 ("다시 인증하기" 시 부모 상태 동기화)
  *
- * @version 1.1.0
+ * @version 1.2.0
  */
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
@@ -20,13 +22,14 @@ import {
   PhoneAuthProvider as WebPhoneAuthProvider,
   linkWithCredential as webLinkWithCredential,
 } from 'firebase/auth';
-import { httpsCallable } from 'firebase/functions';
-import { getFirebaseAuth, getFirebaseFunctions } from '@/lib/firebase';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { ShieldCheckIcon, CheckCircleIcon, XCircleIcon } from '@/components/icons';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { logger } from '@/utils/logger';
 import { maskValue } from '@/errors/serviceErrorHandler';
+import { formatPhoneNumber, cleanPhoneNumber, toE164, formatE164ToDisplay } from '@/utils/phone';
+import { checkPhoneExists } from '@/services/authService';
 
 import {
   getNativeAuth,
@@ -48,6 +51,8 @@ interface ConfirmationResultLike {
 export interface PhoneVerificationProps {
   /** 인증 완료 콜백 (인증된 전화번호 전달) */
   onVerified: (phone: string) => void;
+  /** 인증 초기화 콜백 ("다시 인증하기" 클릭 시 부모 상태 동기화) */
+  onReset?: () => void;
   /** 인증 실패 콜백 */
   onError?: (error: Error) => void;
   /** 초기 전화번호 (뒤로갔다 돌아올 때) */
@@ -68,34 +73,12 @@ type VerificationStep = 'input' | 'otp' | 'verified';
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60; // seconds
-const COUNTRY_CODE = '+82';
 /** verifyPhoneNumber auto-verify timeout (Android용, iOS에서는 무시) */
 const AUTO_VERIFY_TIMEOUT_SECONDS = 60;
 
 // ============================================================================
 // Helpers
 // ============================================================================
-
-/** 전화번호 포맷팅 (010-1234-5678) */
-function formatPhoneNumber(value: string): string {
-  const cleaned = value.replace(/\D/g, '');
-  if (cleaned.length <= 3) return cleaned;
-  if (cleaned.length <= 7) return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-  return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
-}
-
-/** 전화번호에서 숫자만 추출 */
-function cleanPhoneNumber(value: string): string {
-  return value.replace(/\D/g, '');
-}
-
-/** 한국 전화번호를 E.164 형식으로 변환 (010... → +8210...) */
-function toE164(phone: string): string {
-  const cleaned = cleanPhoneNumber(phone);
-  // 010으로 시작하면 0 제거
-  const withoutLeadingZero = cleaned.startsWith('0') ? cleaned.slice(1) : cleaned;
-  return `${COUNTRY_CODE}${withoutLeadingZero}`;
-}
 
 /** PhoneAuthSnapshot의 state 리터럴 (SDK 타입과 일치) */
 type PhoneAuthSnapshotState = 'sent' | 'timeout' | 'verified' | 'error';
@@ -130,7 +113,8 @@ interface VerificationForLinkResult {
  */
 function requestVerificationForLink(e164: string): Promise<VerificationForLinkResult> {
   // [W-1 FIX] Promise.race로 타임아웃 보호 — 이벤트가 발생하지 않으면 UI 영구 멈춤 방지
-  const LISTENER_TIMEOUT_MS = (AUTO_VERIFY_TIMEOUT_SECONDS + 15) * 1000;
+  // [M1 FIX] 재발송 쿨다운(60초)보다 약간 길게 설정 → 재발송 시 이전 리스너 확실히 종료
+  const LISTENER_TIMEOUT_MS = (RESEND_COOLDOWN + 5) * 1000;
 
   const verificationPromise = new Promise<VerificationForLinkResult>((resolve, reject) => {
     if (!nativeVerifyPhoneNumber || !getNativeAuth) {
@@ -211,13 +195,16 @@ function requestVerificationForLink(e164: string): Promise<VerificationForLinkRe
     }
   });
 
+  let timeoutId: ReturnType<typeof setTimeout>;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    setTimeout(() => {
+    timeoutId = setTimeout(() => {
       reject(new Error('인증 요청 시간이 초과되었습니다. 다시 시도해주세요.'));
     }, LISTENER_TIMEOUT_MS);
   });
 
-  return Promise.race([verificationPromise, timeoutPromise]);
+  return Promise.race([verificationPromise, timeoutPromise]).finally(() => {
+    clearTimeout(timeoutId);
+  });
 }
 
 // ============================================================================
@@ -227,6 +214,7 @@ function requestVerificationForLink(e164: string): Promise<VerificationForLinkRe
 export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
   ({
     onVerified,
+    onReset,
     onError,
     initialPhone = '',
     disabled = false,
@@ -236,16 +224,26 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const [step, setStep] = useState<VerificationStep>(initialPhone ? 'verified' : 'input');
-    const [phone, setPhone] = useState(initialPhone ? formatPhoneNumber(initialPhone) : '');
+    const [phone, setPhone] = useState(
+      initialPhone
+        ? initialPhone.startsWith('+82')
+          ? formatE164ToDisplay(initialPhone)
+          : formatPhoneNumber(initialPhone)
+        : ''
+    );
     const [otpCode, setOtpCode] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [timer, setTimer] = useState(0);
     const [confirmation, setConfirmation] = useState<ConfirmationResultLike | null>(null);
+    /** [H2 FIX] reCAPTCHA DOM 컨테이너 재생성용 key (에러 후 잔여 iframe 제거) */
+    const [recaptchaKey, setRecaptchaKey] = useState(0);
 
     const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
     const verificationIdRef = useRef<string | null>(null);
+    /** 마지막으로 중복체크한 전화번호 (재발송 시 스킵용) */
+    const lastCheckedPhoneRef = useRef<string | null>(null);
     /** [C-1 FIX] PhoneAuthListener 정리용 — settled로 콜백 차단, unsubscribe로 구독 해제 */
     const phoneListenerSettledRef = useRef<{ current: boolean } | null>(null);
     const phoneListenerRef = useRef<{ removeAllListeners(event: string): void } | null>(null);
@@ -277,6 +275,91 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       }
     }, []);
 
+    /** signIn 모드: signInWithPhoneNumber로 OTP 요청 */
+    const requestOtpForSignIn = useCallback(
+      async (e164: string): Promise<ConfirmationResultLike> => {
+        if (Platform.OS === 'web') {
+          const auth = getFirebaseAuth();
+          if (!recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              size: 'invisible',
+            });
+          }
+          return webSignInWithPhoneNumber(auth, e164, recaptchaVerifierRef.current);
+        }
+        if (!getNativeAuth || !nativeSignInWithPhoneNumber) {
+          throw new Error('네이티브 Firebase Auth를 사용할 수 없습니다.');
+        }
+        return nativeSignInWithPhoneNumber(getNativeAuth(), e164);
+      },
+      []
+    );
+
+    /** link 모드: verifyPhoneNumber로 OTP 요청 (기존 세션 보존) */
+    const requestOtpForLink = useCallback(
+      async (
+        e164: string
+      ): Promise<{ autoCompleted: boolean }> => {
+        if (Platform.OS === 'web') {
+          const auth = getFirebaseAuth();
+          if (!recaptchaVerifierRef.current) {
+            recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+              size: 'invisible',
+            });
+          }
+          const phoneProvider = new WebPhoneAuthProvider(auth);
+          const verificationId = await phoneProvider.verifyPhoneNumber(
+            e164,
+            recaptchaVerifierRef.current
+          );
+          verificationIdRef.current = verificationId;
+          setConfirmation(null);
+          return { autoCompleted: false };
+        }
+
+        // 네이티브 link 모드: 이전 리스너 정리
+        if (phoneListenerSettledRef.current) {
+          phoneListenerSettledRef.current.current = true;
+        }
+        if (phoneListenerRef.current) {
+          phoneListenerRef.current.removeAllListeners('state_changed');
+          phoneListenerRef.current = null;
+        }
+        const linkResult = await requestVerificationForLink(e164);
+        verificationIdRef.current = linkResult.verificationId;
+        phoneListenerSettledRef.current = linkResult.settled;
+        phoneListenerRef.current = linkResult.listener;
+        setConfirmation(null);
+
+        // Android 자동인증 처리
+        if (
+          linkResult.autoCode &&
+          NativePhoneAuthProvider &&
+          nativeLinkWithCredential &&
+          getNativeAuth
+        ) {
+          const nativeUser = getNativeAuth().currentUser;
+          if (nativeUser) {
+            try {
+              const credential = NativePhoneAuthProvider.credential(
+                linkResult.verificationId,
+                linkResult.autoCode
+              );
+              await nativeLinkWithCredential(nativeUser, credential);
+              logger.info('Android 자동인증: linkWithCredential 성공', { uid: nativeUser.uid });
+              return { autoCompleted: true };
+            } catch (autoLinkErr) {
+              logger.warn('Android 자동인증 linkWithCredential 실패, 수동 입력 전환', {
+                error: autoLinkErr,
+              });
+            }
+          }
+        }
+        return { autoCompleted: false };
+      },
+      []
+    );
+
     /** 인증번호 요청 */
     const handleRequestOTP = useCallback(async () => {
       const cleaned = cleanPhoneNumber(phone);
@@ -285,20 +368,17 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         return;
       }
 
-      // ─── [BUG #2 FIX] link 모드: Native SDK currentUser 사전 검증 ───
+      // link 모드: currentUser 사전 검증
       if (mode === 'link' && Platform.OS !== 'web') {
         const nativeUser = getNativeAuth?.()?.currentUser;
-        if (!nativeUser) {
-          logger.error('link 모드 SMS 요청 실패: Native SDK에 로그인된 사용자 없음', {
+        const webUser = getFirebaseAuth().currentUser;
+        if (!nativeUser && !webUser) {
+          logger.error('link 모드 SMS 요청 실패: 양쪽 SDK 모두 사용자 없음', {
             platform: Platform.OS,
-            webUser: !!getFirebaseAuth().currentUser,
           });
           setError('인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
           return;
         }
-        logger.info('link 모드: Native SDK currentUser 확인됨', {
-          uid: nativeUser.uid,
-        });
       }
 
       setIsLoading(true);
@@ -306,140 +386,70 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
       try {
         const e164 = toE164(phone);
-        logger.info('SMS 인증 요청', {
-          phone: maskValue(e164, 'phone'),
-          platform: Platform.OS,
-          mode,
-        });
+        logger.info('SMS 인증 요청', { phone: maskValue(e164, 'phone'), platform: Platform.OS, mode });
 
-        // 전화번호 중복 체크 (SMS 발송 전)
-        try {
-          const functions = getFirebaseFunctions();
-          const checkPhone = httpsCallable<{ phone: string }, { exists: boolean }>(
-            functions,
-            'checkPhoneExists'
-          );
-          const checkResult = await checkPhone({ phone: cleaned });
-          if (checkResult.data.exists) {
-            setError(
-              mode === 'link'
-                ? '이미 다른 계정에 등록된 전화번호입니다.'
-                : '이미 가입된 전화번호입니다.'
-            );
+        // 전화번호 중복 체크 (같은 번호 재발송 시 스킵)
+        if (lastCheckedPhoneRef.current !== cleaned) {
+          try {
+            const exists = await checkPhoneExists(cleaned);
+            if (exists) {
+              setError(
+                mode === 'link'
+                  ? '이미 다른 계정에 등록된 전화번호입니다.'
+                  : '이미 가입된 전화번호입니다.'
+              );
+              setIsLoading(false);
+              return;
+            }
+            lastCheckedPhoneRef.current = cleaned;
+          } catch (checkError) {
+            logger.error('전화번호 중복 체크 실패 - SMS 발송 중단', { error: checkError });
+            setError('전화번호 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
             setIsLoading(false);
             return;
           }
-        } catch (checkError) {
-          // 중복 체크 실패 시 SMS 발송 중단 (중복 계정 생성 및 SMS 비용 낭비 방지)
-          logger.error('전화번호 중복 체크 실패 - SMS 발송 중단', { error: checkError });
-          setError('전화번호 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-          setIsLoading(false);
-          return;
         }
 
-        // ─── [BUG #1 FIX] 모드별 분기: link → verifyPhoneNumber, signIn → signInWithPhoneNumber ───
+        // 모드별 OTP 요청
         if (mode === 'link') {
-          // link 모드: verifyPhoneNumber 사용 (현재 세션 교체 방지)
-          if (Platform.OS === 'web') {
-            // 웹 link 모드: signInWithPhoneNumber로 verificationId 추출
-            const auth = getFirebaseAuth();
-            if (!recaptchaVerifierRef.current) {
-              recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                size: 'invisible',
-              });
-            }
-            const result = await webSignInWithPhoneNumber(auth, e164, recaptchaVerifierRef.current);
-            // 웹에서는 ConfirmationResult에서 verificationId 추출
-            if ('verificationId' in result) {
-              verificationIdRef.current = (result as { verificationId: string }).verificationId;
-            }
-            setConfirmation(result);
-          } else {
-            // 네이티브 link 모드: verifyPhoneNumber 사용 (세션 안전)
-            // 이전 리스너가 있으면 정리
-            if (phoneListenerSettledRef.current) {
-              phoneListenerSettledRef.current.current = true;
-            }
-            if (phoneListenerRef.current) {
-              phoneListenerRef.current.removeAllListeners('state_changed');
-              phoneListenerRef.current = null;
-            }
-            const linkResult = await requestVerificationForLink(e164);
-            verificationIdRef.current = linkResult.verificationId;
-            phoneListenerSettledRef.current = linkResult.settled;
-            phoneListenerRef.current = linkResult.listener;
-            // link 모드에서는 confirmation 불필요 (confirm() 사용 안 함)
-            setConfirmation(null);
-
-            // [C-2 FIX] Android 자동인증 완료 시 OTP 코드가 있으면 자동으로 linkWithCredential 실행
-            if (
-              linkResult.autoCode &&
-              NativePhoneAuthProvider &&
-              nativeLinkWithCredential &&
-              getNativeAuth
-            ) {
-              const nativeUser = getNativeAuth().currentUser;
-              if (nativeUser) {
-                try {
-                  const credential = NativePhoneAuthProvider.credential(
-                    linkResult.verificationId,
-                    linkResult.autoCode
-                  );
-                  await nativeLinkWithCredential(nativeUser, credential);
-                  logger.info('Android 자동인증: linkWithCredential 성공', {
-                    uid: nativeUser.uid,
-                  });
-                  setStep('verified');
-                  onVerified(phone);
-                  setIsLoading(false);
-                  return; // 자동 완료 — OTP 입력 화면 스킵
-                } catch (autoLinkErr) {
-                  // 자동 링크 실패 시 수동 OTP 입력으로 fallback
-                  logger.warn('Android 자동인증 linkWithCredential 실패, 수동 입력 전환', {
-                    error: autoLinkErr,
-                  });
-                }
-              }
-            }
+          const { autoCompleted } = await requestOtpForLink(e164);
+          if (autoCompleted) {
+            setStep('verified');
+            onVerified(toE164(phone));
+            setIsLoading(false);
+            return;
           }
         } else {
-          // signIn 모드: 기존 signInWithPhoneNumber 사용
-          let result: ConfirmationResultLike;
-
-          if (Platform.OS === 'web') {
-            const auth = getFirebaseAuth();
-            if (!recaptchaVerifierRef.current) {
-              recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
-                size: 'invisible',
-              });
-            }
-            result = await webSignInWithPhoneNumber(auth, e164, recaptchaVerifierRef.current);
-          } else {
-            if (!getNativeAuth || !nativeSignInWithPhoneNumber) {
-              throw new Error('네이티브 Firebase Auth를 사용할 수 없습니다.');
-            }
-            result = await nativeSignInWithPhoneNumber(getNativeAuth(), e164);
-          }
-
+          const result = await requestOtpForSignIn(e164);
           setConfirmation(result);
-          // signIn 모드에서도 verificationId 백업 (fallback 대비)
           if ('verificationId' in result) {
             verificationIdRef.current = (result as { verificationId: string }).verificationId;
           }
         }
 
+        // 공통 후처리
         setStep('otp');
-        // 기존 타이머 명시적 정리 후 리셋 (재발송 시 경쟁 조건 방지)
         if (timerRef.current) {
           clearInterval(timerRef.current);
           timerRef.current = null;
         }
         setTimer(RESEND_COOLDOWN);
         setOtpCode('');
+        if (step === 'otp') {
+          setConfirmation(null);
+        }
       } catch (err) {
-        // reCAPTCHA 인스턴스 초기화 (재시도 대비)
+        // reCAPTCHA 정리
         if (Platform.OS === 'web') {
-          recaptchaVerifierRef.current = null;
+          if (recaptchaVerifierRef.current) {
+            try {
+              recaptchaVerifierRef.current.clear();
+            } catch {
+              // clear 실패 무시
+            }
+            recaptchaVerifierRef.current = null;
+          }
+          setRecaptchaKey((prev) => prev + 1);
         }
         const errorMessage = getFirebasePhoneAuthErrorMessage(err);
         setError(errorMessage);
@@ -452,7 +462,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       } finally {
         setIsLoading(false);
       }
-    }, [phone, onError, onVerified, mode]);
+    }, [phone, onError, onVerified, mode, step, requestOtpForSignIn, requestOtpForLink]);
 
     /** OTP 코드 확인 */
     const handleConfirmOTP = useCallback(async () => {
@@ -483,40 +493,43 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       try {
         if (mode === 'link') {
           // ─── link 모드: PhoneAuthProvider.credential + linkWithCredential ───
+          const vid = verificationIdRef.current;
+          if (!vid) {
+            throw new Error('인증 세션이 만료되었습니다. 인증번호를 다시 요청해주세요.');
+          }
+
           if (
             Platform.OS !== 'web' &&
             NativePhoneAuthProvider &&
             nativeLinkWithCredential &&
             getNativeAuth
           ) {
-            // [BUG #2 FIX] link 전 currentUser 재확인
             const nativeUser = getNativeAuth().currentUser;
-            if (!nativeUser) {
-              logger.error('link 모드 OTP 확인 실패: Native SDK currentUser null', {
-                webUser: !!getFirebaseAuth().currentUser,
-                verificationId: !!verificationIdRef.current,
+            if (nativeUser) {
+              // Native SDK로 link (기본 경로)
+              const credential = NativePhoneAuthProvider.credential(vid, otpCode);
+              logger.info('link 모드: Native linkWithCredential 시도', {
+                uid: nativeUser.uid,
               });
-              throw new Error(
-                '인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.'
-              );
+              await nativeLinkWithCredential(nativeUser, credential);
+            } else {
+              // [C2 FIX] Native SDK 없음 → Web SDK fallback (Apple 로그인 후 Native sync 실패 시)
+              const webUser = getFirebaseAuth().currentUser;
+              if (!webUser) {
+                logger.error('link 모드 OTP 실패: 양쪽 SDK 모두 사용자 없음');
+                throw new Error(
+                  '인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.'
+                );
+              }
+              logger.info('link 모드: Web SDK fallback linkWithCredential 시도', {
+                uid: webUser.uid,
+              });
+              const credential = WebPhoneAuthProvider.credential(vid, otpCode);
+              await webLinkWithCredential(webUser, credential);
             }
-
-            // [W-5 FIX] 지역 변수 캡처 (non-null assertion 제거)
-            const vid = verificationIdRef.current;
-            if (!vid) {
-              throw new Error('인증 세션이 만료되었습니다. 인증번호를 다시 요청해주세요.');
-            }
-            const credential = NativePhoneAuthProvider.credential(vid, otpCode);
-            logger.info('link 모드: linkWithCredential 시도', {
-              uid: nativeUser.uid,
-            });
-            await nativeLinkWithCredential(nativeUser, credential);
           } else {
             // 웹 플랫폼 link 모드
-            if (!verificationIdRef.current) {
-              throw new Error('인증 세션이 만료되었습니다. 다시 시도해주세요.');
-            }
-            const credential = WebPhoneAuthProvider.credential(verificationIdRef.current, otpCode);
+            const credential = WebPhoneAuthProvider.credential(vid, otpCode);
             const webUser = getFirebaseAuth().currentUser;
             if (!webUser) {
               logger.error('link 모드 OTP 확인 실패: Web SDK currentUser null');
@@ -533,7 +546,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         }
 
         setStep('verified');
-        onVerified(phone);
+        onVerified(toE164(phone));
         logger.info('SMS 인증 완료', { phone: maskValue(phone, 'phone'), mode });
       } catch (err) {
         // ─── 디버깅 강화: Firebase 에러 코드 명시적 로깅 ───
@@ -599,7 +612,10 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         phoneListenerRef.current.removeAllListeners('state_changed');
         phoneListenerRef.current = null;
       }
-    }, []);
+      lastCheckedPhoneRef.current = null;
+      // [M2 FIX] 부모 컴포넌트에 인증 해제 알림 (verifiedPhone 상태 동기화)
+      onReset?.();
+    }, [onReset]);
 
     // ========== 인증 완료 상태 ==========
     if (step === 'verified') {
@@ -718,6 +734,8 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
                     maxLength={OTP_LENGTH}
                     editable={!disabled && !isLoading}
                     accessibilityLabel="인증번호 입력"
+                    textContentType="oneTimeCode"
+                    autoComplete="one-time-code"
                   />
                 </View>
                 <Button
@@ -742,11 +760,19 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
         {/* 개발 모드 안내 */}
         {__DEV__ && (
-          <View className="flex-row items-center justify-center mt-4">
-            <View className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
-            <Text className="text-xs text-gray-400 dark:text-gray-500">
-              개발 모드: Firebase Console 테스트 번호를 사용하세요
-            </Text>
+          <View className="items-center mt-4 gap-1">
+            <View className="flex-row items-center justify-center">
+              <View className="w-2 h-2 bg-yellow-500 rounded-full mr-2" />
+              <Text className="text-xs text-gray-400 dark:text-gray-500">
+                개발 모드: Firebase Console 테스트 번호를 사용하세요
+              </Text>
+            </View>
+            {/* [H5] iOS 시뮬레이터에서 APNs 미작동 시 reCAPTCHA 표시 안내 */}
+            {Platform.OS === 'ios' && (
+              <Text className="text-xs text-gray-400 dark:text-gray-500">
+                시뮬레이터: reCAPTCHA 인증이 표시될 수 있습니다
+              </Text>
+            )}
           </View>
         )}
 
@@ -760,8 +786,10 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           </View>
         )}
 
-        {/* 웹용 invisible reCAPTCHA 컨테이너 */}
-        {Platform.OS === 'web' && <View nativeID="recaptcha-container" />}
+        {/* [H2 FIX] 웹용 invisible reCAPTCHA 컨테이너 (key로 에러 후 DOM 재생성) */}
+        {Platform.OS === 'web' && (
+          <View nativeID="recaptcha-container" key={`recaptcha-${recaptchaKey}`} />
+        )}
       </View>
     );
   }

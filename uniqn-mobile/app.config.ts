@@ -238,6 +238,8 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     buildDate: new Date().toISOString(),
     // 소셜 로그인 활성화 여부 (SDK 구현 전까지 개발 환경에서만 활성화)
     socialLoginEnabled: environment === 'development',
+    // reCAPTCHA v3 사이트 키 (웹 전용, 전화번호 중복체크 봇 방지)
+    recaptchaSiteKey: process.env.EXPO_PUBLIC_RECAPTCHA_SITE_KEY || '',
   },
 
   // 업데이트 설정 (EAS Update)

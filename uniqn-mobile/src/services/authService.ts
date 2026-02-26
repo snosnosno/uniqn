@@ -353,14 +353,17 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       await nativeUpdateProfile!(nativeUser, { displayName: data.nickname });
 
       // 4. Web SDK 동기화 (Firestore Security Rules용)
-      await syncToWebAuth(data.email, data.password);
-      const webUser = getFirebaseAuth().currentUser;
-
-      if (!webUser) {
-        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-          userMessage: 'Web SDK 동기화에 실패했습니다. 다시 시도해주세요.',
+      // [H4 FIX] non-fatal: 실패해도 가입 진행 — login()에서 양쪽 동시 로그인하므로 복구됨
+      try {
+        await syncToWebAuth(data.email, data.password);
+      } catch (syncError) {
+        logger.warn('Web SDK 동기화 실패 - 로그인 시 자동 동기화됨', {
+          component: 'authService',
+          uid: nativeUser.uid,
+          error: syncError instanceof Error ? syncError.message : String(syncError),
         });
       }
+      const webUser = getFirebaseAuth().currentUser;
 
       // 5. Firestore에 사용자 프로필 저장
       const profile = buildUserProfile(nativeUser.uid, data);
@@ -369,7 +372,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       logger.info('회원가입 성공', { uid: nativeUser.uid, role: data.role });
       trackSignupAnalytics(nativeUser.uid, data.role);
 
-      return { user: webUser, profile };
+      return { user: webUser ?? (nativeUser as unknown as FirebaseUser), profile };
     } catch (innerError) {
       // 고아 계정 롤백: phone-only 계정 삭제 (같은 번호로 재가입 가능하도록)
       logger.warn('회원가입 실패 - phone-only 계정 롤백 시도', {
@@ -763,6 +766,15 @@ export async function signInWithApple(): Promise<AuthResult> {
     const AppleAuthentication = await import('expo-apple-authentication');
     const { generateNonce, sha256 } = await import('@/utils/appleAuth');
 
+    // Apple Sign In 가용성 확인 (Apple ID 미로그인, 2FA 미설정 등)
+    const isAvailable = await AppleAuthentication.isAvailableAsync();
+    if (!isAvailable) {
+      throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+        userMessage:
+          'Apple 로그인을 사용할 수 없습니다. 기기 설정에서 Apple ID에 로그인되어 있는지 확인해주세요.',
+      });
+    }
+
     // 1. Nonce 생성 (replay attack 방지)
     const rawNonce = generateNonce();
     const hashedNonce = await sha256(rawNonce);
@@ -885,8 +897,8 @@ export async function signInWithApple(): Promise<AuthResult> {
       return { user, profile: existingProfile };
     }
 
-    // 4-B. 신규/미완성 사용자: Native SDK 동기화 필수 (전화번호 link 모드에 필요)
-    // [C-2 FIX] 동기화 실패 시 throw → 사용자를 signup 교착 상태에 빠뜨리지 않음
+    // 4-B. 신규/미완성 사용자: Native SDK 동기화 시도 (best-effort)
+    // 실패해도 Web SDK fallback으로 전화번호 link 가능 (PhoneVerification [C2 FIX])
     // [W-4 FIX] httpsCallable을 루프 밖에서 1회만 생성
     if (nativeSignInWithCustomToken && getNativeAuth) {
       const MAX_SYNC_ATTEMPTS = 2;
@@ -925,14 +937,10 @@ export async function signInWithApple(): Promise<AuthResult> {
         }
       }
       if (!nativeSyncSuccess) {
-        logger.error('Apple 로그인: Native SDK 동기화 최종 실패 - 신규 사용자 가입 불가', {
+        // [C2a FIX] Native SDK 동기화 실패 시 throw 대신 경고만 — Web SDK로 phone link 가능
+        logger.warn('Apple 로그인: Native SDK 동기화 최종 실패 - Web SDK fallback으로 진행', {
           component: 'authService',
           uid: user.uid,
-        });
-        throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
-          userMessage:
-            'Apple 로그인 처리 중 오류가 발생했습니다. 네트워크를 확인하고 다시 시도해주세요.',
-          metadata: { reason: 'native_sdk_sync_failed', uid: user.uid },
         });
       }
     }
@@ -995,6 +1003,21 @@ export async function signInWithApple(): Promise<AuthResult> {
       });
     }
 
+    // Apple 인증 실패 (다이얼로그 표시 전 거부)
+    // 원인: 기기 과열(thermal throttling), Apple ID 미설정, 2FA 미활성화 등
+    if (errorCode === 'ERR_REQUEST_UNKNOWN') {
+      logger.warn('Apple 인증 거부 (ERR_REQUEST_UNKNOWN)', {
+        component: 'authService',
+        platform: Platform.OS,
+        hint: 'thermal_state/memory 부족 또는 Apple ID 설정 문제 가능',
+      });
+      throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+        userMessage:
+          'Apple 로그인에 실패했습니다. 기기가 과열 상태이거나 Apple ID 설정에 문제가 있을 수 있습니다. 잠시 후 다시 시도해주세요.',
+        metadata: { errorCode, provider: 'apple' },
+      });
+    }
+
     // Firebase 에러 상세 로깅 (진단용)
     const errorMessage = (error as { message?: string }).message ?? '';
     const firebaseCode = errorCode;
@@ -1046,6 +1069,7 @@ export interface SocialProfileData {
   name: string;
   birthDate: string;
   gender: 'male' | 'female';
+  /** 전화번호 (E.164 형식: +821012345678) */
   phone: string;
   // Step 3: 프로필
   nickname: string;
@@ -1324,6 +1348,36 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
       operation: '프로필 사진 업데이트',
       component: 'authService',
       context: { uid },
+    });
+  }
+}
+
+/**
+ * 전화번호 중복 확인 (Cloud Function 호출)
+ *
+ * @param phone 전화번호 (숫자만 또는 E.164 형식)
+ * @returns 중복 여부
+ */
+export async function checkPhoneExists(phone: string): Promise<boolean> {
+  try {
+    const { getRecaptchaToken } = await import('@/utils/recaptcha');
+    const recaptchaToken = await getRecaptchaToken('check_phone');
+
+    const checkPhone = httpsCallable<
+      { phone: string; recaptchaToken?: string; platform?: string },
+      { exists: boolean }
+    >(getFirebaseFunctions(), 'checkPhoneExists');
+    const result = await checkPhone({
+      phone,
+      recaptchaToken: recaptchaToken || undefined,
+      platform: Platform.OS,
+    });
+    return result.data.exists;
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '전화번호 중복 확인',
+      component: 'authService',
+      context: { phone: maskValue(phone, 'phone') },
     });
   }
 }

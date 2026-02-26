@@ -11,6 +11,7 @@ import { Input, FormField } from '@/components';
 import { MapPinIcon, PhoneIcon } from '@/components/icons';
 import type { JobPostingFormData, Location, PostingType } from '@/types';
 import { PostingTypeSelector } from '../shared';
+import { formatPhoneNumber } from '@/utils/phone';
 
 // ============================================================================
 // Types
@@ -91,29 +92,13 @@ export const BasicInfoSection = memo(function BasicInfoSection({
     [onUpdate]
   );
 
-  // 연락처 포맷팅 (숫자만 입력하면 자동으로 - 추가)
-  const formatPhoneNumber = useCallback((phoneNumber: string): string => {
-    const cleaned = phoneNumber.replace(/\D/g, ''); // 숫자만 추출
-
-    if (cleaned.length <= 3) {
-      return cleaned;
-    } else if (cleaned.length <= 7) {
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3)}`;
-    } else if (cleaned.length <= 10) {
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 6)}-${cleaned.slice(6)}`;
-    } else {
-      // 11자리 이상
-      return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 7)}-${cleaned.slice(7, 11)}`;
-    }
-  }, []);
-
   // 연락처 변경 핸들러
   const handlePhoneChange = useCallback(
     (phone: string) => {
       const formatted = formatPhoneNumber(phone);
       onUpdate({ contactPhone: formatted });
     },
-    [formatPhoneNumber, onUpdate]
+    [onUpdate]
   );
 
   return (

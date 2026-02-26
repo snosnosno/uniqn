@@ -26,14 +26,6 @@ initSentry();
 export { cleanupRateLimitsScheduled } from './scheduled/cleanupRateLimits';
 export { retryFailedCounterOpsScheduled } from './scheduled/retryFailedCounterOps';
 export { cleanupExpiredTokensScheduled } from './scheduled/cleanupExpiredTokens';
-export { cleanupPendingVerificationsScheduled } from './scheduled/cleanupPendingVerifications';
-
-// --- Identity Verification Functions ---
-export { verifyIdentity } from './auth/verifyIdentity';
-export { linkIdentityVerification } from './auth/linkIdentityVerification';
-
-// --- Migration Functions ---
-export { backfillCiIndex } from './migrations/backfillCiIndex';
 
 // --- Email Verification Functions ---
 export { checkEmailExists } from './auth/checkEmailExists';
@@ -44,13 +36,6 @@ export { revokeAppleToken } from './auth/revokeAppleToken';
 
 // --- Phone Duplicate Check ---
 export { checkPhoneExists } from './auth/checkPhoneExists';
-
-// --- Phone Verification Functions ---
-export {
-  sendPhoneVerificationCode,
-  verifyPhoneCode,
-  getVerificationStatus,
-} from './auth/phoneVerification';
 
 // --- Notification Functions ---
 export { sendJobPostingAnnouncement } from './notifications/sendJobPostingAnnouncement';
