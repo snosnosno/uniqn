@@ -81,7 +81,8 @@ export const nameSchema = z
   .trim()
   .refine((val) => /^[가-힣a-zA-Z\s]+$/.test(val), {
     message: '이름은 한글, 영문, 공백만 입력 가능합니다',
-  });
+  })
+  .refine(xssValidation, { message: '사용할 수 없는 문자열이 포함되어 있습니다' });
 
 /**
  * 닉네임 검증 스키마
@@ -91,8 +92,7 @@ export const nicknameSchema = z
   .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
   .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
   .trim()
-  .refine(xssValidation, { message: '사용할 수 없는 문자열이 포함되어 있습니다' })
-  .optional();
+  .refine(xssValidation, { message: '사용할 수 없는 문자열이 포함되어 있습니다' });
 
 /**
  * 전화번호 검증 스키마
@@ -131,12 +131,12 @@ export const loginSchema = z.object({
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 /**
- * 회원가입 Step 1 스키마 (계정 정보)
+ * 회원가입 Account 스키마 (계정 정보)
  *
  * 플로우: 계정 → 본인인증 → 프로필 → 약관동의
  * ⚠️ 이메일 인증 사용 안함 - 휴대폰 본인인증으로 대체
  */
-export const signUpStep1Schema = z
+export const signUpAccountSchema = z
   .object({
     email: emailSchema,
     password: passwordSchema,
@@ -147,7 +147,7 @@ export const signUpStep1Schema = z
     path: ['passwordConfirm'],
   });
 
-export type SignUpStep1Data = z.infer<typeof signUpStep1Schema>;
+export type SignUpAccountData = z.infer<typeof signUpAccountSchema>;
 
 /**
  * 생년월일 검증 스키마 (YYYYMMDD)
@@ -181,11 +181,11 @@ export const signupGenderSchema = z.enum(['male', 'female'], {
 });
 
 /**
- * 회원가입 Step 2 스키마 (본인인증 - 필수)
+ * 회원가입 Identity 스키마 (본인인증 - 필수)
  *
  * 이름/생년월일/성별 입력 + Firebase Phone Auth(SMS OTP) 전화번호 인증
  */
-export const signUpStep2Schema = z.object({
+export const signUpIdentitySchema = z.object({
   name: nameSchema,
   birthDate: birthDateSchema,
   gender: signupGenderSchema,
@@ -195,21 +195,16 @@ export const signUpStep2Schema = z.object({
   verifiedPhone: phoneSchema,
 });
 
-export type SignUpStep2Data = z.infer<typeof signUpStep2Schema>;
+export type SignUpIdentityData = z.infer<typeof signUpIdentitySchema>;
 
 /**
- * 회원가입 Step 3 스키마 (프로필 정보)
+ * 회원가입 Profile 스키마 (프로필 정보)
  *
  * 닉네임만 필수, 나머지는 선택 (가입 후 프로필 설정에서도 수정 가능)
  * 선택 필드 검증 규칙은 user.schema.ts의 updateProfileSchema와 동일
  */
-export const signUpStep3Schema = z.object({
-  nickname: z
-    .string()
-    .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
-    .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
-    .trim()
-    .refine(xssValidation, { message: '사용할 수 없는 문자열이 포함되어 있습니다' }),
+export const signUpProfileSchema = z.object({
+  nickname: nicknameSchema,
   role: z.literal('staff'),
   region: z
     .string()
@@ -233,12 +228,12 @@ export const signUpStep3Schema = z.object({
     .optional(),
 });
 
-export type SignUpStep3Data = z.infer<typeof signUpStep3Schema>;
+export type SignUpProfileData = z.infer<typeof signUpProfileSchema>;
 
 /**
- * 회원가입 Step 4 스키마 (약관 동의)
+ * 회원가입 Terms 스키마 (약관 동의)
  */
-export const signUpStep4Schema = z.object({
+export const signUpTermsSchema = z.object({
   termsAgreed: z.boolean().refine((val) => val === true, {
     message: '이용약관에 동의해주세요',
   }),
@@ -248,7 +243,7 @@ export const signUpStep4Schema = z.object({
   marketingAgreed: z.boolean(),
 });
 
-export type SignUpStep4Data = z.infer<typeof signUpStep4Schema>;
+export type SignUpTermsData = z.infer<typeof signUpTermsSchema>;
 
 /**
  * 전체 회원가입 스키마 (4단계)
@@ -256,15 +251,15 @@ export type SignUpStep4Data = z.infer<typeof signUpStep4Schema>;
  * 개별 필드 스키마와 Step 스키마에서 조합. passwordConfirm은 Step1에서만 사용.
  */
 export const signUpSchema = z.object({
-  // Step 1: 계정 정보 (passwordConfirm 제외)
+  // 계정 정보 (passwordConfirm 제외)
   email: emailSchema,
   password: passwordSchema,
-  // Step 2: 본인인증
-  ...signUpStep2Schema.shape,
-  // Step 3: 프로필
-  ...signUpStep3Schema.shape,
-  // Step 4: 약관 동의
-  ...signUpStep4Schema.shape,
+  // 본인인증
+  ...signUpIdentitySchema.shape,
+  // 프로필
+  ...signUpProfileSchema.shape,
+  // 약관 동의
+  ...signUpTermsSchema.shape,
 });
 
 export type SignUpFormData = z.infer<typeof signUpSchema>;

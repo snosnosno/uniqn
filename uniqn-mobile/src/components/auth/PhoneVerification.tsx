@@ -232,6 +232,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         : ''
     );
     const [otpCode, setOtpCode] = useState('');
+    const [otpAttempts, setOtpAttempts] = useState(0);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [timer, setTimer] = useState(0);
@@ -297,9 +298,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
     /** link 모드: verifyPhoneNumber로 OTP 요청 (기존 세션 보존) */
     const requestOtpForLink = useCallback(
-      async (
-        e164: string
-      ): Promise<{ autoCompleted: boolean }> => {
+      async (e164: string): Promise<{ autoCompleted: boolean }> => {
         if (Platform.OS === 'web') {
           const auth = getFirebaseAuth();
           if (!recaptchaVerifierRef.current) {
@@ -386,7 +385,11 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
 
       try {
         const e164 = toE164(phone);
-        logger.info('SMS 인증 요청', { phone: maskValue(e164, 'phone'), platform: Platform.OS, mode });
+        logger.info('SMS 인증 요청', {
+          phone: maskValue(e164, 'phone'),
+          platform: Platform.OS,
+          mode,
+        });
 
         // 전화번호 중복 체크 (같은 번호 재발송 시 스킵)
         if (lastCheckedPhoneRef.current !== cleaned) {
@@ -464,8 +467,19 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       }
     }, [phone, onError, onVerified, mode, step, requestOtpForSignIn, requestOtpForLink]);
 
+    const MAX_OTP_ATTEMPTS = 5;
+
     /** OTP 코드 확인 */
     const handleConfirmOTP = useCallback(async () => {
+      // [M7] OTP 시도 횟수 제한
+      if (otpAttempts >= MAX_OTP_ATTEMPTS) {
+        setError('인증번호 입력 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.');
+        setStep('input');
+        setOtpAttempts(0);
+        setOtpCode('');
+        return;
+      }
+
       // ─── [BUG #3 FIX] link 모드에서 verificationId 필수 검증 ───
       if (mode === 'link') {
         if (!verificationIdRef.current) {
@@ -557,6 +571,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             ? err.message
             : '인증에 실패했습니다. 다시 시도해주세요.';
         setError(errorMessage);
+        setOtpAttempts((prev) => prev + 1);
         onError?.(err instanceof Error ? err : new Error(errorMessage));
         logger.error('OTP 확인 실패', {
           error: err,
@@ -570,7 +585,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       } finally {
         setIsLoading(false);
       }
-    }, [confirmation, otpCode, phone, onVerified, onError, mode]);
+    }, [confirmation, otpCode, phone, onVerified, onError, mode, otpAttempts]);
 
     // reCAPTCHA + PhoneAuthListener cleanup on unmount
     useEffect(() => {
@@ -595,6 +610,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
     const handleReset = useCallback(() => {
       setStep('input');
       setOtpCode('');
+      setOtpAttempts(0);
       setError(null);
       setConfirmation(null);
       setTimer(0);

@@ -35,10 +35,10 @@ export {
   phoneSchema,
   roleSelectSchema,
   loginSchema,
-  signUpStep1Schema,
-  signUpStep2Schema,
-  signUpStep3Schema,
-  signUpStep4Schema,
+  signUpAccountSchema,
+  signUpIdentitySchema,
+  signUpProfileSchema,
+  signUpTermsSchema,
   signUpSchema,
   resetPasswordSchema,
   verificationCodeSchema,
@@ -46,13 +46,27 @@ export {
 
 export type {
   LoginFormData,
-  SignUpStep1Data,
-  SignUpStep2Data,
-  SignUpStep3Data,
-  SignUpStep4Data,
+  SignUpAccountData,
+  SignUpIdentityData,
+  SignUpProfileData,
+  SignUpTermsData,
   SignUpFormData,
   ResetPasswordFormData,
   VerificationCodeData,
+} from './auth.schema';
+
+// Backward compatibility (deprecated)
+export {
+  signUpAccountSchema as signUpStep1Schema,
+  signUpIdentitySchema as signUpStep2Schema,
+  signUpProfileSchema as signUpStep3Schema,
+  signUpTermsSchema as signUpStep4Schema,
+} from './auth.schema';
+export type {
+  SignUpAccountData as SignUpStep1Data,
+  SignUpIdentityData as SignUpStep2Data,
+  SignUpProfileData as SignUpStep3Data,
+  SignUpTermsData as SignUpStep4Data,
 } from './auth.schema';
 
 // 구인공고 스키마

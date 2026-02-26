@@ -20,7 +20,7 @@ interface CreateCustomTokenResponse {
 }
 
 export const createCustomToken = onCall(
-  { region: 'asia-northeast3', enforceAppCheck: true },
+  { region: 'asia-northeast3' },
   async (request): Promise<CreateCustomTokenResponse> => {
     try {
       const uid = requireAuth(request);

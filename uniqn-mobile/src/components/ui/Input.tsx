@@ -30,15 +30,10 @@ export interface InputProps extends Omit<TextInputProps, 'style'> {
   type?: InputType;
 }
 
-export function Input({
-  label,
-  error,
-  hint,
-  leftIcon,
-  rightIcon,
-  type = 'text',
-  ...props
-}: InputProps) {
+export const Input = React.forwardRef<TextInput, InputProps>(function Input(
+  { label, error, hint, leftIcon, rightIcon, type = 'text', ...props },
+  ref
+) {
   const [showPassword, setShowPassword] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const isDarkMode = useThemeStore((state) => state.isDarkMode);
@@ -84,6 +79,7 @@ export function Input({
         {leftIcon && <View className="mr-2">{leftIcon}</View>}
 
         <TextInput
+          ref={ref}
           {...props}
           accessibilityLabel={props.accessibilityLabel ?? label}
           secureTextEntry={isPassword && !showPassword}
@@ -125,6 +121,6 @@ export function Input({
       )}
     </View>
   );
-}
+});
 
 export default Input;

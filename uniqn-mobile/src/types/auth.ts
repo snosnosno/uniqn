@@ -36,28 +36,28 @@ export interface LoginRequest {
 /**
  * 회원가입 요청 (4단계)
  *
- * 플로우: 계정 → 본인인증 → 프로필 → 약관동의
+ * 플로우: 약관동의 → 계정 → 본인인증 → 프로필
  */
 export interface SignUpRequest {
-  // Step 1: 계정 정보
+  // Step 1: 약관 동의
+  termsAgreed: boolean;
+  privacyAgreed: boolean;
+  marketingAgreed: boolean;
+
+  // Step 2: 계정 정보
   email: string;
   password: string;
 
-  // Step 2: 본인인증 (이름/생년월일/성별 + 전화번호 SMS 인증)
+  // Step 3: 본인인증 (이름/생년월일/성별 + 전화번호 SMS 인증)
   name: string;
   birthDate: string; // YYYYMMDD
   gender: 'male' | 'female';
-  phoneVerified: boolean;
-  verifiedPhone?: string;
+  phoneVerified: true;
+  verifiedPhone: string;
 
-  // Step 3: 프로필 정보
+  // Step 4: 프로필 정보
   nickname: string;
   role: 'staff';
-
-  // Step 4: 약관 동의
-  termsAgreed: boolean;
-  privacyAgreed: boolean;
-  marketingAgreed?: boolean;
 }
 
 /**
@@ -75,7 +75,7 @@ export type VerificationStatus = 'pending' | 'verified' | 'failed' | 'expired';
 /**
  * 소셜 로그인 제공자
  */
-export type SocialProvider = 'google' | 'apple' | 'kakao' | 'naver';
+export type SocialProvider = 'google' | 'apple' | 'kakao';
 
 /**
  * 동의 항목
@@ -84,7 +84,6 @@ export interface ConsentItems {
   terms: boolean; // 이용약관 (필수)
   privacy: boolean; // 개인정보처리방침 (필수)
   marketing: boolean; // 마케팅 수신 동의 (선택)
-  push: boolean; // 푸시 알림 동의 (선택)
 }
 
 /**

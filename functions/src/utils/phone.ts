@@ -28,6 +28,7 @@ export function cleanPhoneNumber(value: string): string {
 export function toE164(phone: string): string {
   const cleaned = phone.replace(/[-\s]/g, '');
   if (cleaned.startsWith('+82')) return cleaned;
+  if (cleaned.startsWith('82') && cleaned.length >= 11) return `+${cleaned}`;
   if (cleaned.startsWith('0')) return `${COUNTRY_CODE}${cleaned.slice(1)}`;
   return `${COUNTRY_CODE}${cleaned}`;
 }

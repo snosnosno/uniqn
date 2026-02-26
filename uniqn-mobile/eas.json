@@ -67,7 +67,7 @@
       },
       "android": {
         "serviceAccountKeyPath": "./playstore-credentials.json",
-        "track": "internal"
+        "track": "UNIQN 1"
       }
     }
   }

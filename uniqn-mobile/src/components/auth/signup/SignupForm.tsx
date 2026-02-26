@@ -18,15 +18,15 @@ import { checkEmailExists, markOrphanAccount } from '@/services/authService';
 import { useToast } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
-import { SignupStep1 } from './SignupStep1';
-import { SignupStep2 } from './SignupStep2';
-import { SignupStep3 } from './SignupStep3';
-import { SignupStep4 } from './SignupStep4';
+import { SignupStepAccount } from './SignupStepAccount';
+import { SignupStepIdentity } from './SignupStepIdentity';
+import { SignupStepProfile } from './SignupStepProfile';
+import { SignupStepTerms } from './SignupStepTerms';
 import type {
-  SignUpStep1Data,
-  SignUpStep2Data,
-  SignUpStep3Data,
-  SignUpStep4Data,
+  SignUpAccountData,
+  SignUpIdentityData,
+  SignUpProfileData,
+  SignUpTermsData,
   SignUpFormData,
 } from '@/schemas';
 
@@ -51,10 +51,10 @@ const SOCIAL_SIGNUP_STEPS: StepInfo[] = [
 ];
 
 interface FormDataState {
-  terms?: SignUpStep4Data; // Step 1: 약관동의
-  account?: SignUpStep1Data; // Step 2: 계정정보 (소셜 모드에서 생략)
-  identity?: SignUpStep2Data; // Step 3: 본인인증
-  profile?: SignUpStep3Data; // Step 4: 프로필
+  terms?: SignUpTermsData; // Step 1: 약관동의
+  account?: SignUpAccountData; // Step 2: 계정정보 (소셜 모드에서 생략)
+  identity?: SignUpIdentityData; // Step 3: 본인인증
+  profile?: SignUpProfileData; // Step 4: 프로필
 }
 
 // ============================================================================
@@ -83,7 +83,7 @@ export function SignupForm({
   // ──────────────────────────────────────────────────────────────────────────
 
   const handleTermsNext = useCallback(
-    (data: SignUpStep4Data) => {
+    (data: SignUpTermsData) => {
       setFormData((prev) => ({ ...prev, terms: data }));
       // 소셜 모드: 계정정보 건너뛰고 본인인증(Step 3)으로
       setCurrentStep(isSocial ? 3 : 2);
@@ -95,7 +95,7 @@ export function SignupForm({
   // Step 2: 계정 정보 (소셜 모드에서는 렌더링되지 않음)
   // ──────────────────────────────────────────────────────────────────────────
 
-  const handleAccountNext = useCallback((data: SignUpStep1Data) => {
+  const handleAccountNext = useCallback((data: SignUpAccountData) => {
     setFormData((prev) => ({ ...prev, account: data }));
     setCurrentStep(3);
   }, []);
@@ -108,7 +108,7 @@ export function SignupForm({
   // Step 3: 본인인증
   // ──────────────────────────────────────────────────────────────────────────
 
-  const handleIdentityNext = useCallback((data: SignUpStep2Data) => {
+  const handleIdentityNext = useCallback((data: SignUpIdentityData) => {
     setFormData((prev) => ({ ...prev, identity: data }));
     setCurrentStep(4);
   }, []);
@@ -178,7 +178,7 @@ export function SignupForm({
   // ──────────────────────────────────────────────────────────────────────────
 
   const handleProfileSubmit = useCallback(
-    async (data: SignUpStep3Data) => {
+    async (data: SignUpProfileData) => {
       // 소셜 모드에서는 이메일 중복 체크 불필요 (계정정보 없음)
       if (!isSocial) {
         // 이메일 Race Condition 방지: 제출 직전 이메일 중복 재검증
@@ -198,17 +198,32 @@ export function SignupForm({
       const updatedFormData = { ...formData, profile: data };
       setFormData(updatedFormData);
 
+      // [S4] 필수 폼 데이터 방어적 체크
+      if (!updatedFormData.identity || !updatedFormData.terms) {
+        logger.error('필수 폼 데이터 누락', { component: 'SignupForm' });
+        toast.error('입력 데이터가 누락되었습니다. 처음부터 다시 시작해주세요.');
+        setCurrentStep(1);
+        return;
+      }
+
+      if (!isSocial && !updatedFormData.account) {
+        logger.error('계정 정보 누락', { component: 'SignupForm' });
+        toast.error('계정 정보가 누락되었습니다. 다시 입력해주세요.');
+        setCurrentStep(2);
+        return;
+      }
+
       // 전체 데이터 조합
       const completeData: SignUpFormData = {
         // 계정 정보 (소셜 모드에서는 빈 값 — signup.tsx에서 무시됨)
         email: isSocial ? '' : updatedFormData.account!.email,
         password: isSocial ? '' : updatedFormData.account!.password,
         // 본인인증
-        name: updatedFormData.identity!.name,
-        birthDate: updatedFormData.identity!.birthDate,
-        gender: updatedFormData.identity!.gender,
-        phoneVerified: updatedFormData.identity!.phoneVerified,
-        verifiedPhone: updatedFormData.identity!.verifiedPhone,
+        name: updatedFormData.identity.name,
+        birthDate: updatedFormData.identity.birthDate,
+        gender: updatedFormData.identity.gender,
+        phoneVerified: updatedFormData.identity.phoneVerified,
+        verifiedPhone: updatedFormData.identity.verifiedPhone,
         // 프로필
         nickname: data.nickname,
         role: data.role,
@@ -217,9 +232,9 @@ export function SignupForm({
         career: data.career,
         note: data.note,
         // 약관동의
-        termsAgreed: updatedFormData.terms!.termsAgreed,
-        privacyAgreed: updatedFormData.terms!.privacyAgreed,
-        marketingAgreed: updatedFormData.terms!.marketingAgreed,
+        termsAgreed: updatedFormData.terms.termsAgreed,
+        privacyAgreed: updatedFormData.terms.privacyAgreed,
+        marketingAgreed: updatedFormData.terms.marketingAgreed,
       };
 
       await onSubmit(completeData);
@@ -239,7 +254,7 @@ export function SignupForm({
     switch (currentStep) {
       case 1: // 약관동의
         return (
-          <SignupStep4
+          <SignupStepTerms
             onNext={handleTermsNext}
             initialData={formData.terms}
             isLoading={isLoading}
@@ -247,7 +262,7 @@ export function SignupForm({
         );
       case 2: // 계정정보 (소셜 모드에서는 건너뜀)
         return (
-          <SignupStep1
+          <SignupStepAccount
             onNext={handleAccountNext}
             onBack={handleAccountBack}
             initialData={formData.account}
@@ -256,7 +271,7 @@ export function SignupForm({
         );
       case 3: // 본인인증
         return (
-          <SignupStep2
+          <SignupStepIdentity
             onNext={handleIdentityNext}
             onBack={handleIdentityBack}
             initialData={
@@ -268,7 +283,7 @@ export function SignupForm({
         );
       case 4: // 프로필 (최종 제출)
         return (
-          <SignupStep3
+          <SignupStepProfile
             onNext={handleProfileSubmit}
             onBack={handleProfileBack}
             initialData={formData.profile}

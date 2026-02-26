@@ -12,7 +12,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
 import { PasswordStrength } from '@/components/ui/PasswordStrength';
-import { signUpStep1Schema, type SignUpStep1Data } from '@/schemas';
+import { signUpAccountSchema, type SignUpAccountData } from '@/schemas';
 import { checkEmailExists } from '@/services/authService';
 import { logger } from '@/utils/logger';
 
@@ -20,10 +20,10 @@ import { logger } from '@/utils/logger';
 // Types
 // ============================================================================
 
-interface SignupStep1Props {
-  onNext: (data: SignUpStep1Data) => void;
+interface SignupStepAccountProps {
+  onNext: (data: SignUpAccountData) => void;
   onBack: () => void;
-  initialData?: Partial<SignUpStep1Data>;
+  initialData?: Partial<SignUpAccountData>;
   isLoading?: boolean;
 }
 
@@ -31,7 +31,12 @@ interface SignupStep1Props {
 // Component
 // ============================================================================
 
-export function SignupStep1({ onNext, onBack, initialData, isLoading = false }: SignupStep1Props) {
+export function SignupStepAccount({
+  onNext,
+  onBack,
+  initialData,
+  isLoading = false,
+}: SignupStepAccountProps) {
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
 
   const {
@@ -40,8 +45,8 @@ export function SignupStep1({ onNext, onBack, initialData, isLoading = false }: 
     watch,
     setError,
     formState: { errors },
-  } = useForm<SignUpStep1Data>({
-    resolver: zodResolver(signUpStep1Schema),
+  } = useForm<SignUpAccountData>({
+    resolver: zodResolver(signUpAccountSchema),
     mode: 'onBlur',
     defaultValues: {
       email: initialData?.email || '',
@@ -53,7 +58,7 @@ export function SignupStep1({ onNext, onBack, initialData, isLoading = false }: 
   const password = watch('password');
 
   const handleNext = useCallback(
-    async (data: SignUpStep1Data) => {
+    async (data: SignUpAccountData) => {
       setIsCheckingEmail(true);
       try {
         const exists = await checkEmailExists(data.email);
@@ -174,4 +179,4 @@ export function SignupStep1({ onNext, onBack, initialData, isLoading = false }: 
   );
 }
 
-export default SignupStep1;
+export default SignupStepAccount;

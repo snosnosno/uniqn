@@ -11,16 +11,16 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { SheetModal } from '@/components/ui/SheetModal';
 import { Button } from '@/components/ui/Button';
-import { signUpStep4Schema, type SignUpStep4Data } from '@/schemas';
+import { signUpTermsSchema, type SignUpTermsData } from '@/schemas';
 import { TERMS_OF_SERVICE, PRIVACY_POLICY, MARKETING_CONSENT } from './termsContent';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface SignupStep4Props {
-  onNext: (data: SignUpStep4Data) => void;
-  initialData?: Partial<SignUpStep4Data>;
+interface SignupStepTermsProps {
+  onNext: (data: SignUpTermsData) => void;
+  initialData?: Partial<SignUpTermsData>;
   isLoading?: boolean;
 }
 
@@ -110,7 +110,7 @@ function Checkbox({ checked, onChange, label, required, disabled, onViewContent 
 // Component
 // ============================================================================
 
-export function SignupStep4({ onNext, initialData, isLoading = false }: SignupStep4Props) {
+export function SignupStepTerms({ onNext, initialData, isLoading = false }: SignupStepTermsProps) {
   const [modalContent, setModalContent] = useState<TermItem | null>(null);
 
   const {
@@ -119,8 +119,8 @@ export function SignupStep4({ onNext, initialData, isLoading = false }: SignupSt
     watch,
     setValue,
     formState: { errors },
-  } = useForm<SignUpStep4Data>({
-    resolver: zodResolver(signUpStep4Schema),
+  } = useForm<SignUpTermsData>({
+    resolver: zodResolver(signUpTermsSchema),
     defaultValues: {
       termsAgreed: initialData?.termsAgreed || false,
       privacyAgreed: initialData?.privacyAgreed || false,
@@ -235,4 +235,4 @@ export function SignupStep4({ onNext, initialData, isLoading = false }: SignupSt
   );
 }
 
-export default SignupStep4;
+export default SignupStepTerms;

@@ -85,6 +85,127 @@ export interface AuthResult {
 const maskEmail = (email: string) => maskValue(email, 'email');
 
 /**
+ * [H3] Native Auth 안전 가드
+ *
+ * getNativeAuth!() 강제 언래핑 대신 사용. Native SDK 미초기화 시 명확한 에러.
+ */
+function requireNativeAuth() {
+  if (!getNativeAuth) {
+    throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+      userMessage: '네이티브 인증을 사용할 수 없습니다. 앱을 다시 시작해주세요.',
+    });
+  }
+  return getNativeAuth();
+}
+
+function requireNativeLink() {
+  if (!nativeLinkWithCredential) {
+    throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+      userMessage: '네이티브 인증을 사용할 수 없습니다.',
+    });
+  }
+  return nativeLinkWithCredential;
+}
+
+function requireNativeEmailProvider() {
+  if (!NativeEmailAuthProvider) {
+    throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+      userMessage: '네이티브 인증을 사용할 수 없습니다.',
+    });
+  }
+  return NativeEmailAuthProvider;
+}
+
+/**
+ * [H5] Phone-only 고아 계정 롤백 (Web/Native 공통)
+ *
+ * 회원가입 실패 시 phone-only 계정을 삭제하고, 실패 시 고아 계정으로 마킹.
+ */
+async function rollbackPhoneOnlyAccount(
+  uid: string,
+  reason: string,
+  phone?: string
+): Promise<void> {
+  logger.warn('phone-only 계정 롤백 시도', { uid, reason, component: 'authService' });
+
+  try {
+    if (Platform.OS === 'web') {
+      const webUser = getFirebaseAuth().currentUser;
+      if (webUser && webUser.uid === uid) {
+        await webDeleteUser(webUser);
+      }
+    } else {
+      const nativeAuth = getNativeAuth?.();
+      const nativeUser = nativeAuth?.currentUser;
+      if (nativeUser && nativeUser.uid === uid && nativeDeleteUser) {
+        await nativeDeleteUser(nativeUser);
+      }
+    }
+    logger.info('phone-only 고아 계정 삭제 완료', { uid });
+  } catch (deleteError) {
+    logger.error('phone-only 고아 계정 삭제 실패 - 고아 마킹', {
+      uid,
+      error: deleteError,
+    });
+    await markOrphanAccount(uid, reason, phone);
+  }
+
+  // Web SDK 세션 정리 (Platform 무관)
+  try {
+    const auth = getFirebaseAuth();
+    if (auth.currentUser) {
+      await firebaseSignOut(auth);
+    }
+  } catch {
+    // Web SDK 정리 실패는 무시
+  }
+}
+
+/**
+ * [H6] Native SDK Custom Token 동기화 (재시도 포함)
+ *
+ * Apple 소셜 로그인에서 Web SDK 인증 후 Native SDK 동기화용.
+ * @returns 성공 여부
+ */
+async function syncNativeWithCustomToken(_uid: string, context: string): Promise<boolean> {
+  if (!nativeSignInWithCustomToken || !getNativeAuth) {
+    return false;
+  }
+
+  const MAX_ATTEMPTS = 2;
+  const RETRY_DELAY_MS = 1000;
+  const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
+    getFirebaseFunctions(),
+    'createCustomToken'
+  );
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const tokenResult = await createCustomTokenFn();
+      await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
+      logger.info(`Apple 로그인: Native SDK 동기화 완료 (${context})`, {
+        component: 'authService',
+        attempt,
+      });
+      return true;
+    } catch (syncError) {
+      logger.warn(
+        `Apple 로그인: Native SDK 동기화 실패 (${context}, 시도 ${attempt}/${MAX_ATTEMPTS})`,
+        {
+          component: 'authService',
+          error: syncError instanceof Error ? syncError.message : String(syncError),
+        }
+      );
+      if (attempt < MAX_ATTEMPTS) {
+        await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
+      }
+    }
+  }
+
+  return false;
+}
+
+/**
  * 고아 계정 마킹 (삭제 실패 시 Firestore에 기록)
  *
  * Cloud Function Scheduler가 주기적으로 정리합니다.
@@ -108,7 +229,7 @@ function buildUserProfile(uid: string, data: SignUpFormData): UserProfile {
     phoneVerified: true,
     birthDate: data.birthDate,
     gender: data.gender,
-    role: data.role,
+    role: 'staff',
     // Optional profile fields from Step 3
     ...(data.region && { region: data.region }),
     ...(data.experienceYears !== undefined && { experienceYears: data.experienceYears }),
@@ -159,8 +280,14 @@ export async function login(data: LoginFormData): Promise<AuthResult> {
       );
     } else {
       // 네이티브: Native SDK + Web SDK 동시 로그인 (Dual SDK)
+      const nativeAuth = requireNativeAuth();
+      if (!nativeSignInWithEmailAndPassword) {
+        throw new AuthError(ERROR_CODES.AUTH_INVALID_CREDENTIALS, {
+          userMessage: '네이티브 인증을 사용할 수 없습니다. 앱을 다시 시작해주세요.',
+        });
+      }
       const [, webCredential] = await Promise.all([
-        nativeSignInWithEmailAndPassword!(getNativeAuth!(), data.email, data.password),
+        nativeSignInWithEmailAndPassword(nativeAuth, data.email, data.password),
         signInWithEmailAndPassword(getFirebaseAuth(), data.email, data.password),
       ]);
       userCredential = webCredential;
@@ -311,32 +438,20 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
         return { user: currentUser, profile };
       } catch (innerError) {
-        // 롤백: phone-only 계정 삭제
-        logger.warn('회원가입 실패 - phone-only 계정 롤백 시도', {
-          uid: currentUser.uid,
-          component: 'authService',
-        });
-        try {
-          await webDeleteUser(currentUser);
-          logger.info('phone-only 고아 계정 삭제 완료', { uid: currentUser.uid });
-        } catch (deleteError) {
-          logger.error('phone-only 고아 계정 삭제 실패', {
-            uid: currentUser.uid,
-            error: deleteError,
-          });
-          await markOrphanAccount(
-            currentUser.uid,
-            'web_signup_rollback_failed',
-            data.verifiedPhone
-          );
-        }
+        // [H5] 공통 롤백 함수로 phone-only 계정 정리
+        await rollbackPhoneOnlyAccount(
+          currentUser.uid,
+          'web_signup_rollback_failed',
+          data.verifiedPhone
+        );
         throw innerError;
       }
     }
 
     // ===== Native Platform =====
     // 1. Phone Auth 계정은 Step 2에서 이미 생성됨 (nativeAuth)
-    const nativeUser = getNativeAuth!().currentUser;
+    const nativeAuth = requireNativeAuth();
+    const nativeUser = nativeAuth.currentUser;
     if (!nativeUser) {
       throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
         userMessage: '전화번호 인증이 필요합니다. 다시 시도해주세요.',
@@ -346,11 +461,15 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     // 2~5: 실패 시 phone-only 고아 계정 롤백을 위해 try-catch
     try {
       // 2. Email/Password credential 연결 (phone-only → email+phone)
-      const emailCredential = NativeEmailAuthProvider!.credential(data.email, data.password);
-      await nativeLinkWithCredential!(nativeUser, emailCredential);
+      const NativeEmail = requireNativeEmailProvider();
+      const nativeLink = requireNativeLink();
+      const emailCredential = NativeEmail.credential(data.email, data.password);
+      await nativeLink(nativeUser, emailCredential);
 
       // 3. displayName 설정
-      await nativeUpdateProfile!(nativeUser, { displayName: data.nickname });
+      if (nativeUpdateProfile) {
+        await nativeUpdateProfile(nativeUser, { displayName: data.nickname });
+      }
 
       // 4. Web SDK 동기화 (Firestore Security Rules용)
       // [H4 FIX] non-fatal: 실패해도 가입 진행 — login()에서 양쪽 동시 로그인하므로 복구됨
@@ -374,34 +493,12 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
       return { user: webUser ?? (nativeUser as unknown as FirebaseUser), profile };
     } catch (innerError) {
-      // 고아 계정 롤백: phone-only 계정 삭제 (같은 번호로 재가입 가능하도록)
-      logger.warn('회원가입 실패 - phone-only 계정 롤백 시도', {
-        uid: nativeUser.uid,
-        component: 'authService',
-      });
-      try {
-        await nativeDeleteUser!(nativeUser);
-        logger.info('phone-only 고아 계정 삭제 완료', { uid: nativeUser.uid });
-      } catch (deleteError) {
-        logger.error('phone-only 고아 계정 삭제 실패', {
-          uid: nativeUser.uid,
-          error: deleteError,
-        });
-        await markOrphanAccount(
-          nativeUser.uid,
-          'native_signup_rollback_failed',
-          data.verifiedPhone
-        );
-      }
-      // Web SDK 세션은 독립적으로 정리 (nativeUser.delete 성공/실패 무관)
-      try {
-        const auth = getFirebaseAuth();
-        if (auth.currentUser) {
-          await firebaseSignOut(auth);
-        }
-      } catch {
-        // Web SDK 정리 실패는 무시 (nativeUser 삭제가 핵심)
-      }
+      // [H5] 공통 롤백 함수로 phone-only 계정 정리
+      await rollbackPhoneOnlyAccount(
+        nativeUser.uid,
+        'native_signup_rollback_failed',
+        data.verifiedPhone
+      );
       throw innerError;
     }
   } catch (error) {
@@ -846,37 +943,8 @@ export async function signInWithApple(): Promise<AuthResult> {
     const existingProfile = await getUserProfile(user.uid);
 
     if (existingProfile && existingProfile.phoneVerified) {
-      // 기존 사용자 (프로필 완성됨) → Native SDK 동기화 (2회 재시도)
-      if (nativeSignInWithCustomToken && getNativeAuth) {
-        const MAX_SYNC_ATTEMPTS = 2;
-        const SYNC_RETRY_DELAY_MS = 1000;
-        const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
-          getFirebaseFunctions(),
-          'createCustomToken'
-        );
-        for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt++) {
-          try {
-            const tokenResult = await createCustomTokenFn();
-            await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
-            logger.info('Apple 로그인: Native SDK 동기화 완료 (기존 사용자)', {
-              component: 'authService',
-              attempt,
-            });
-            break;
-          } catch (syncError) {
-            logger.warn(
-              `Apple 로그인: Native SDK 동기화 실패 (기존 사용자, 시도 ${attempt}/${MAX_SYNC_ATTEMPTS})`,
-              {
-                component: 'authService',
-                error: syncError instanceof Error ? syncError.message : String(syncError),
-              }
-            );
-            if (attempt < MAX_SYNC_ATTEMPTS) {
-              await new Promise((r) => setTimeout(r, SYNC_RETRY_DELAY_MS));
-            }
-          }
-        }
-      }
+      // [H6] 기존 사용자 (프로필 완성됨) → Native SDK 동기화
+      await syncNativeWithCustomToken(user.uid, '기존 사용자');
 
       await user.getIdToken(true);
 
@@ -897,52 +965,14 @@ export async function signInWithApple(): Promise<AuthResult> {
       return { user, profile: existingProfile };
     }
 
-    // 4-B. 신규/미완성 사용자: Native SDK 동기화 시도 (best-effort)
-    // 실패해도 Web SDK fallback으로 전화번호 link 가능 (PhoneVerification [C2 FIX])
-    // [W-4 FIX] httpsCallable을 루프 밖에서 1회만 생성
-    if (nativeSignInWithCustomToken && getNativeAuth) {
-      const MAX_SYNC_ATTEMPTS = 2;
-      const SYNC_RETRY_DELAY_MS = 1000;
-      let nativeSyncSuccess = false;
-      const createCustomTokenFn = httpsCallable<void, { customToken: string }>(
-        getFirebaseFunctions(),
-        'createCustomToken'
-      );
-
-      for (let attempt = 1; attempt <= MAX_SYNC_ATTEMPTS; attempt++) {
-        try {
-          const tokenResult = await createCustomTokenFn();
-          await nativeSignInWithCustomToken(getNativeAuth(), tokenResult.data.customToken);
-          nativeSyncSuccess = true;
-          logger.info('Apple 로그인: Native SDK 동기화 완료 (신규 사용자)', {
-            component: 'authService',
-            attempt,
-          });
-          break;
-        } catch (nativeSyncError) {
-          logger.warn(
-            `Apple 로그인: Native SDK 동기화 실패 (시도 ${attempt}/${MAX_SYNC_ATTEMPTS})`,
-            {
-              component: 'authService',
-              attempt,
-              error:
-                nativeSyncError instanceof Error
-                  ? nativeSyncError.message
-                  : String(nativeSyncError),
-            }
-          );
-          if (attempt < MAX_SYNC_ATTEMPTS) {
-            await new Promise((r) => setTimeout(r, SYNC_RETRY_DELAY_MS));
-          }
-        }
-      }
-      if (!nativeSyncSuccess) {
-        // [C2a FIX] Native SDK 동기화 실패 시 throw 대신 경고만 — Web SDK로 phone link 가능
-        logger.warn('Apple 로그인: Native SDK 동기화 최종 실패 - Web SDK fallback으로 진행', {
-          component: 'authService',
-          uid: user.uid,
-        });
-      }
+    // [H6] 4-B. 신규/미완성 사용자: Native SDK 동기화 시도 (best-effort)
+    // 실패해도 Web SDK fallback으로 전화번호 link 가능
+    const nativeSyncSuccess = await syncNativeWithCustomToken(user.uid, '신규 사용자');
+    if (!nativeSyncSuccess) {
+      logger.warn('Apple 로그인: Native SDK 동기화 최종 실패 - Web SDK fallback으로 진행', {
+        component: 'authService',
+        uid: user.uid,
+      });
     }
 
     // 6. 신규/미완성 사용자 → 최소 프로필 생성
@@ -1090,39 +1120,44 @@ export async function completeSocialProfile(
   try {
     logger.info('소셜 프로필 완성 시도', { uid });
 
-    // Firestore 프로필 업데이트
-    await userRepository.updateFields(uid, {
+    // [W7] verifyAndSaveProfile CF 호출 (서버사이드 phone 검증 + Firestore 저장)
+    // CF가 전화번호 대조, 중복 검사, XSS 검증, Batch Write, Claims 설정을 모두 처리
+    const verifyAndSave = httpsCallable<
+      {
+        verifiedPhone: string;
+        name: string;
+        birthDate: string;
+        gender: 'male' | 'female';
+        nickname: string;
+        region?: string;
+        experienceYears?: number;
+        career?: string;
+        note?: string;
+        termsAgreed: boolean;
+        privacyAgreed: boolean;
+        marketingAgreed: boolean;
+        mode: 'signup' | 'social';
+      },
+      { success: boolean; uid: string }
+    >(getFirebaseFunctions(), 'verifyAndSaveProfile');
+
+    await verifyAndSave({
+      verifiedPhone: data.phone,
       name: data.name,
-      nickname: data.nickname,
-      phone: data.phone,
-      phoneVerified: true,
       birthDate: data.birthDate,
       gender: data.gender,
-      ...(data.region && { region: data.region }),
-      ...(data.experienceYears !== undefined && { experienceYears: data.experienceYears }),
-      ...(data.career && { career: data.career }),
-      ...(data.note && { note: data.note }),
+      nickname: data.nickname,
+      region: data.region,
+      experienceYears: data.experienceYears,
+      career: data.career,
+      note: data.note,
       termsAgreed: data.termsAgreed,
       privacyAgreed: data.privacyAgreed,
       marketingAgreed: data.marketingAgreed ?? false,
+      mode: 'social',
     });
 
-    // Firebase Auth displayName 업데이트
-    const webUser = getFirebaseAuth().currentUser;
-    if (webUser) {
-      await updateProfile(webUser, { displayName: data.nickname });
-    }
-
-    // Native SDK displayName 업데이트
-    if (Platform.OS !== 'web' && getNativeAuth && nativeUpdateProfile) {
-      const nativeUser = getNativeAuth().currentUser;
-      if (nativeUser) {
-        await nativeUpdateProfile(nativeUser, { displayName: data.nickname });
-      }
-    }
-
-    // Custom Claims 갱신: updateFields → onUserRoleChange 트리거가 Claims 설정
-    // 프로필 완성 후 강제 갱신하여 최신 Claims 포함
+    // Custom Claims 갱신 (CF가 setCustomUserClaims 호출 후, 클라이언트 토큰 새로고침)
     try {
       const claimsUser = getFirebaseAuth().currentUser;
       if (claimsUser) {

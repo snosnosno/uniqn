@@ -5,24 +5,25 @@
  * @version 4.0.0
  */
 
-import React, { useState, useCallback, useRef } from 'react';
-import { View, Text, Pressable, TextInput } from 'react-native';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { View, Text, Pressable, type TextInput } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
-import { signUpStep2Schema } from '@/schemas';
-import type { SignUpStep2Data } from '@/schemas';
+import { signUpIdentitySchema } from '@/schemas';
+import type { SignUpIdentityData } from '@/schemas';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface SignupStep2Props {
-  onNext: (data: SignUpStep2Data) => void;
+interface SignupStepIdentityProps {
+  onNext: (data: SignUpIdentityData) => void;
   onBack: () => void;
-  initialData?: Partial<SignUpStep2Data>;
+  initialData?: Partial<SignUpIdentityData>;
   isLoading?: boolean;
   /** PhoneVerification 모드: signIn(기본)=새 계정 생성, link=기존 계정에 링크 */
   phoneMode?: 'signIn' | 'link';
@@ -49,10 +50,27 @@ function BirthDateInput({
   const monthRef = useRef<TextInput>(null);
   const dayRef = useRef<TextInput>(null);
 
+  // [W4] 부모 value 변경 시 내부 state 동기화 (form reset 등)
+  // 빈 문자열은 부분 입력 중 리셋이므로 내부 state 유지
+  useEffect(() => {
+    if (!value) return;
+    const parentYear = value.substring(0, 4);
+    const parentMonth = value.substring(4, 6);
+    const parentDay = value.substring(6, 8);
+    if (parentYear !== year || parentMonth !== month || parentDay !== day) {
+      setYear(parentYear);
+      setMonth(parentMonth);
+      setDay(parentDay);
+    }
+    // value만 의존 (내부 state 변경 시 무한 루프 방지)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
   const updateValue = (y: string, m: string, d: string) => {
     if (y.length === 4 && m.length === 2 && d.length === 2) {
       onChange(`${y}${m}${d}`);
-    } else if (y === '' && m === '' && d === '') {
+    } else {
+      // 조건 미충족 시 빈 문자열로 리셋 → 폼 검증이 불완전 입력을 방지
       onChange('');
     }
   };
@@ -95,11 +113,9 @@ function BirthDateInput({
         />
       </View>
       <View className="flex-1">
-        <TextInput
+        <Input
           ref={monthRef}
-          className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 dark:border-gray-700 dark:bg-surface dark:text-gray-100"
           placeholder="MM"
-          placeholderTextColor="#9CA3AF"
           value={month}
           onChangeText={handleMonthChange}
           keyboardType="number-pad"
@@ -109,11 +125,9 @@ function BirthDateInput({
         />
       </View>
       <View className="flex-1">
-        <TextInput
+        <Input
           ref={dayRef}
-          className="rounded-lg border border-gray-200 bg-white px-4 py-3 text-gray-900 dark:border-gray-700 dark:bg-surface dark:text-gray-100"
           placeholder="DD"
-          placeholderTextColor="#9CA3AF"
           value={day}
           onChangeText={handleDayChange}
           keyboardType="number-pad"
@@ -188,13 +202,13 @@ function GenderSelector({
 // Component
 // ============================================================================
 
-export function SignupStep2({
+export function SignupStepIdentity({
   onNext,
   onBack,
   initialData,
   isLoading = false,
   phoneMode = 'signIn',
-}: SignupStep2Props) {
+}: SignupStepIdentityProps) {
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
   );
@@ -204,8 +218,8 @@ export function SignupStep2({
     handleSubmit,
     setValue,
     formState: { errors },
-  } = useForm<SignUpStep2Data>({
-    resolver: zodResolver(signUpStep2Schema),
+  } = useForm<SignUpIdentityData>({
+    resolver: zodResolver(signUpIdentitySchema),
     defaultValues: {
       name: initialData?.name || '',
       birthDate: initialData?.birthDate || '',
@@ -224,8 +238,15 @@ export function SignupStep2({
     [setValue]
   );
 
+  /** [M2 FIX] "다시 인증하기" 시 부모 상태 초기화 */
+  const handlePhoneReset = useCallback(() => {
+    setVerifiedPhone(null);
+    setValue('phoneVerified', false as unknown as true);
+    setValue('verifiedPhone', '');
+  }, [setValue]);
+
   const onSubmit = useCallback(
-    (data: SignUpStep2Data) => {
+    (data: SignUpIdentityData) => {
       onNext(data);
     },
     [onNext]
@@ -292,6 +313,10 @@ export function SignupStep2({
         </Text>
         <PhoneVerification
           onVerified={handleVerified}
+          onReset={handlePhoneReset}
+          onError={(error) =>
+            logger.error('전화번호 인증 오류', { component: 'SignupStepIdentity', error })
+          }
           initialPhone={verifiedPhone || initialData?.verifiedPhone}
           disabled={isLoading}
           compact
@@ -316,4 +341,4 @@ export function SignupStep2({
   );
 }
 
-export default SignupStep2;
+export default SignupStepIdentity;

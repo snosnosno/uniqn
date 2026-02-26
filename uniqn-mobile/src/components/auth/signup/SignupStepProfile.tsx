@@ -12,16 +12,16 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
-import { signUpStep3Schema, type SignUpStep3Data } from '@/schemas';
+import { signUpProfileSchema, type SignUpProfileData } from '@/schemas';
 
 // ============================================================================
 // Types
 // ============================================================================
 
-interface SignupStep3Props {
-  onNext: (data: SignUpStep3Data) => void;
+interface SignupStepProfileProps {
+  onNext: (data: SignUpProfileData) => void;
   onBack: () => void;
-  initialData?: Partial<SignUpStep3Data>;
+  initialData?: Partial<SignUpProfileData>;
   isLoading?: boolean;
 }
 
@@ -29,15 +29,20 @@ interface SignupStep3Props {
 // Component
 // ============================================================================
 
-export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: SignupStep3Props) {
+export function SignupStepProfile({
+  onNext,
+  onBack,
+  initialData,
+  isLoading = false,
+}: SignupStepProfileProps) {
   const {
     control,
     handleSubmit,
     trigger,
     getValues,
     formState: { errors },
-  } = useForm<SignUpStep3Data>({
-    resolver: zodResolver(signUpStep3Schema),
+  } = useForm<SignUpProfileData>({
+    resolver: zodResolver(signUpProfileSchema),
     mode: 'onBlur',
     defaultValues: {
       nickname: initialData?.nickname || '',
@@ -243,4 +248,4 @@ export function SignupStep3({ onNext, onBack, initialData, isLoading = false }: 
   );
 }
 
-export default SignupStep3;
+export default SignupStepProfile;
