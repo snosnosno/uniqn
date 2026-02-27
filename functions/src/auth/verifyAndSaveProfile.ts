@@ -67,7 +67,7 @@ function hasXSSPattern(text: string): boolean {
     /<\s*object/i,
     /<\s*embed/i,
     /<\s*link\b/i,
-    /data\s*:/i,
+    /data\s*:\s*(text|image|application|multipart)\//i,
     /expression\s*\(/i,
   ];
   return patterns.some((p) => p.test(text));
@@ -308,6 +308,28 @@ export const verifyAndSaveProfile = onCall(
           });
           throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
             userMessage: "이미 등록된 전화번호입니다.",
+          });
+        }
+      }
+
+      // ── 4-b. 닉네임 중복 검사 ────────────────────────────────────────
+
+      const nicknameSnap = await db
+        .collection("users")
+        .where("nickname", "==", nickname)
+        .limit(1)
+        .get();
+
+      if (!nicknameSnap.empty) {
+        const nicknameOwner = nicknameSnap.docs[0];
+        if (nicknameOwner.id !== uid) {
+          logger.warn("verifyAndSaveProfile: 닉네임 중복", {
+            uid,
+            existingUid: nicknameOwner.id,
+            nickname,
+          });
+          throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+            userMessage: "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
           });
         }
       }

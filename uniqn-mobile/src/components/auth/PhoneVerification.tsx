@@ -735,7 +735,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           {step === 'otp' && (
             <View className="flex-col gap-3 mt-2">
               <Text className="text-sm text-gray-600 dark:text-gray-300">
-                인증번호가 발송되었습니다. 60초 내에 입력해주세요.
+                인증번호가 발송되었습니다. 수신까지 최대 1분 소요될 수 있습니다.
               </Text>
               <View className="flex-row gap-2">
                 <View className="flex-1">

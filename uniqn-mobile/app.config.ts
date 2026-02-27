@@ -122,6 +122,7 @@ export default ({ config }: ConfigContext): ExpoConfig => ({
     permissions: [
       'android.permission.CAMERA',
       'android.permission.VIBRATE',
+      'android.permission.POST_NOTIFICATIONS',
     ],
     // App Links (production 빌드에서만 활성화 - assetlinks.json에 production 패키지만 등록)
     ...(environment === 'production' ? {

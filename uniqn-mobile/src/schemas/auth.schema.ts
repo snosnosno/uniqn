@@ -133,7 +133,7 @@ export type LoginFormData = z.infer<typeof loginSchema>;
 /**
  * 회원가입 Account 스키마 (계정 정보)
  *
- * 플로우: 계정 → 본인인증 → 프로필 → 약관동의
+ * 플로우: 약관동의 → 계정 → 본인인증 → 프로필
  * ⚠️ 이메일 인증 사용 안함 - 휴대폰 본인인증으로 대체
  */
 export const signUpAccountSchema = z

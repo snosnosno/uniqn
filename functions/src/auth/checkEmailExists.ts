@@ -36,7 +36,7 @@ function isValidEmail(email: string): boolean {
 /**
  * 이메일 중복 확인
  *
- * - Firebase Auth에서 해당 이메일로 등록된 계정 존재 여부 확인
+ * - Firebase Auth + Firestore 양쪽 모두 확인하여 정합성 보장
  * - 인증 불필요 (회원가입 전 호출)
  * - IP 기반 Rate Limiting 적용
  */
@@ -97,14 +97,27 @@ export const checkEmailExists = onCall(
         }
       }
 
+      // 5. Firestore에서도 확인 (Auth에 없지만 Firestore에만 있는 경우 — 데이터 정합성)
+      let existsInFirestore = false;
+      if (!existsInAuth) {
+        const snapshot = await admin
+          .firestore()
+          .collection('users')
+          .where('email', '==', email)
+          .limit(1)
+          .get();
+        existsInFirestore = !snapshot.empty;
+      }
+
+      const exists = existsInAuth || existsInFirestore;
+
       logger.info('이메일 중복 확인 완료', {
-        email: `${email.slice(0, 3)}***@${email.split('@')[1]}`,
-        exists: existsInAuth,
+        email: maskEmail(email),
+        exists,
+        source: existsInAuth ? 'auth' : existsInFirestore ? 'firestore' : 'none',
       });
 
-      return {
-        exists: existsInAuth,
-      };
+      return { exists };
     } catch (error) {
       throw handleFunctionError(error, {
         operation: 'checkEmailExists',

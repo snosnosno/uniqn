@@ -16,9 +16,15 @@ service cloud.firestore {
     
     // XSS 패턴 검사
     function hasNoXSS(text) {
-      return !text.matches('.*<script.*>.*</script>.*') &&
-             !text.matches('.*javascript:.*') &&
-             !text.matches('.*on\\w+\\s*=.*');
+      return !text.matches('.*<script.*') &&
+             !text.matches('.*javascript\\s*:.*') &&
+             !text.matches('.*on\\w+\\s*=.*') &&
+             !text.matches('.*<\\s*iframe.*') &&
+             !text.matches('.*<\\s*object.*') &&
+             !text.matches('.*<\\s*embed.*') &&
+             !text.matches('.*<\\s*link\\b.*') &&
+             !text.matches('.*data\\s*:\\s*(text|image|application|multipart)/.*') &&
+             !text.matches('.*expression\\s*\\(.*');
     }
     
     // SQL Injection 패턴 검사
@@ -143,8 +149,10 @@ service cloud.firestore {
       // 관리자는 모든 쓰기 가능
       allow write: if isSignedIn() && isPrivileged();
 
-      // 본인 문서 생성
-      allow create: if isSignedIn() && isOwner(userId);
+      // 본인 문서 생성 (role은 반드시 'staff' — 권한 상승 방지)
+      // 회원가입은 verifyAndSaveProfile CF(Admin SDK)를 경유하므로 이 규칙은 방어적 백업
+      allow create: if isSignedIn() && isOwner(userId) &&
+        request.resource.data.role == 'staff';
 
       // 본인 문서 수정: 일반 업데이트 또는 구인자 등록
       // bubbleScore: 트랜잭션 내에서만 업데이트 (클라이언트 직접 수정 차단)

@@ -29,7 +29,16 @@ const RECAPTCHA_SECRET_KEY = process.env.RECAPTCHA_SECRET_KEY;
  */
 async function verifyRecaptchaToken(token: string): Promise<boolean> {
   if (!RECAPTCHA_SECRET_KEY) {
-    logger.debug("RECAPTCHA_SECRET_KEY 미설정 - 검증 스킵");
+    // 프로덕션 환경에서 SECRET_KEY 미설정은 보안 위험 — 요청 차단
+    const isEmulator = process.env.FUNCTIONS_EMULATOR === "true";
+    if (!isEmulator) {
+      logger.error("RECAPTCHA_SECRET_KEY 미설정 — 프로덕션 환경에서 봇 보호 불가", {
+        severity: "critical",
+        metric: "captcha_secret_missing",
+      });
+      return false;
+    }
+    logger.debug("RECAPTCHA_SECRET_KEY 미설정 - 개발 환경 검증 스킵");
     return true;
   }
 

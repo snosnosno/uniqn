@@ -20,11 +20,6 @@ export {
   SignupStepIdentity,
   SignupStepProfile,
   SignupStepTerms,
-  // Backward compatibility (deprecated)
-  SignupStep1,
-  SignupStep2,
-  SignupStep3,
-  SignupStep4,
 } from './signup';
 
 // Social Login

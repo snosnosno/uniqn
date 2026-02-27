@@ -41,7 +41,6 @@ import {
   getNativeAuth,
   nativeSignInWithEmailAndPassword,
   nativeLinkWithCredential,
-  nativeUpdateProfile,
   nativeDeleteUser,
   NativeEmailAuthProvider,
   nativeSignInWithCustomToken,
@@ -218,30 +217,57 @@ export async function markOrphanAccount(
   await userRepository.markAsOrphan(uid, reason, phone, Platform.OS);
 }
 
-/** signUp용 UserProfile 객체 생성 (Web/Native 공통) */
-function buildUserProfile(uid: string, data: SignUpFormData): UserProfile {
+/** CF verifyAndSaveProfile 요청 페이로드 */
+interface VerifyAndSavePayload {
+  verifiedPhone: string;
+  name: string;
+  birthDate: string;
+  gender: 'male' | 'female';
+  nickname: string;
+  region?: string;
+  experienceYears?: number;
+  career?: string;
+  note?: string;
+  termsAgreed: boolean;
+  privacyAgreed: boolean;
+  marketingAgreed: boolean;
+  email?: string;
+  mode: 'signup' | 'social';
+}
+
+/** SignUpFormData → VerifyAndSavePayload 변환 */
+function toVerifyPayload(data: SignUpFormData): VerifyAndSavePayload {
   return {
-    uid,
-    email: data.email,
+    verifiedPhone: data.verifiedPhone,
     name: data.name,
-    nickname: data.nickname,
-    phone: data.verifiedPhone,
-    phoneVerified: true,
     birthDate: data.birthDate,
     gender: data.gender,
-    role: 'staff',
-    // Optional profile fields from Step 3
-    ...(data.region && { region: data.region }),
-    ...(data.experienceYears !== undefined && { experienceYears: data.experienceYears }),
-    ...(data.career && { career: data.career }),
-    ...(data.note && { note: data.note }),
+    nickname: data.nickname,
+    region: data.region,
+    experienceYears: data.experienceYears,
+    career: data.career,
+    note: data.note,
     termsAgreed: data.termsAgreed,
     privacyAgreed: data.privacyAgreed,
     marketingAgreed: data.marketingAgreed,
-    isActive: true,
-    createdAt: serverTimestamp() as Timestamp,
-    updatedAt: serverTimestamp() as Timestamp,
+    email: data.email,
+    mode: 'signup',
   };
+}
+
+/**
+ * verifyAndSaveProfile CF 호출 (일반 가입 / 소셜 프로필 완성 공통)
+ *
+ * 서버사이드에서 전화번호 검증, XSS 검증, 중복 검사, Batch Write,
+ * Custom Claims 설정, displayName 설정을 모두 처리합니다.
+ */
+async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): Promise<void> {
+  const verifyAndSave = httpsCallable<
+    VerifyAndSavePayload,
+    { success: boolean; uid: string }
+  >(getFirebaseFunctions(), 'verifyAndSaveProfile');
+
+  await verifyAndSave(payload);
 }
 
 /** 회원가입 Analytics 이벤트 (Web/Native 공통) */
@@ -395,6 +421,14 @@ export async function checkEmailExists(email: string): Promise<boolean> {
 
 /**
  * 회원가입 (4단계 완료 후 호출)
+ *
+ * 플로우:
+ * 1. linkWithCredential로 phone-only 계정에 이메일/비밀번호 연결
+ * 2. Web SDK 동기화 (네이티브만 — CF 호출에 필요)
+ * 3. verifyAndSaveProfile CF 호출 (서버사이드 검증 + Firestore 저장 + Claims 설정)
+ * 4. 토큰 갱신 + 프로필 조회
+ *
+ * 실패 시 phone-only 계정 롤백
  */
 export async function signUp(data: SignUpFormData): Promise<AuthResult> {
   try {
@@ -404,7 +438,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       platform: Platform.OS,
     });
 
-    // 서버사이드 role 검증: 모든 가입은 staff로만 허용 (역할 탈취 방지)
+    // 클라이언트 role 사전 검증 (서버에서도 하드코딩하므로 방어적 체크)
     if (data.role !== 'staff') {
       throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
         userMessage: '잘못된 역할입니다. 다시 시도해주세요.',
@@ -413,7 +447,6 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
     if (Platform.OS === 'web') {
       // ===== Web Platform =====
-      // Phone Auth 계정은 Step 2에서 web SDK로 이미 생성됨
       const currentUser = getFirebaseAuth().currentUser;
       if (!currentUser) {
         throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
@@ -422,23 +455,29 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       }
 
       try {
-        // Email/Password credential 연결 (phone-only → email+phone)
+        // 1. Email/Password credential 연결 (phone-only → email+phone)
         const emailCredential = EmailAuthProvider.credential(data.email, data.password);
         await linkWithCredential(currentUser, emailCredential);
 
-        // displayName 설정
-        await updateProfile(currentUser, { displayName: data.nickname });
+        // 2. CF 호출: 서버사이드 검증 + Firestore 저장 + Claims + displayName
+        await callVerifyAndSaveProfile(toVerifyPayload(data));
 
-        // Firestore에 사용자 프로필 저장
-        const profile = buildUserProfile(currentUser.uid, data);
-        await userRepository.createOrMerge(currentUser.uid, { ...profile });
+        // 3. Custom Claims 갱신
+        await currentUser.getIdToken(true);
 
-        logger.info('회원가입 성공', { uid: currentUser.uid, role: data.role });
-        trackSignupAnalytics(currentUser.uid, data.role);
+        // 4. 저장된 프로필 조회
+        const profile = await getUserProfile(currentUser.uid);
+        if (!profile) {
+          throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+            userMessage: '프로필 저장 후 조회에 실패했습니다.',
+          });
+        }
+
+        logger.info('회원가입 성공', { uid: currentUser.uid });
+        trackSignupAnalytics(currentUser.uid, 'staff');
 
         return { user: currentUser, profile };
       } catch (innerError) {
-        // [H5] 공통 롤백 함수로 phone-only 계정 정리
         await rollbackPhoneOnlyAccount(
           currentUser.uid,
           'web_signup_rollback_failed',
@@ -449,7 +488,6 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
     }
 
     // ===== Native Platform =====
-    // 1. Phone Auth 계정은 Step 2에서 이미 생성됨 (nativeAuth)
     const nativeAuth = requireNativeAuth();
     const nativeUser = nativeAuth.currentUser;
     if (!nativeUser) {
@@ -458,42 +496,57 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
       });
     }
 
-    // 2~5: 실패 시 phone-only 고아 계정 롤백을 위해 try-catch
     try {
-      // 2. Email/Password credential 연결 (phone-only → email+phone)
+      // 1. Email/Password credential 연결 (phone-only → email+phone)
       const NativeEmail = requireNativeEmailProvider();
       const nativeLink = requireNativeLink();
       const emailCredential = NativeEmail.credential(data.email, data.password);
       await nativeLink(nativeUser, emailCredential);
 
-      // 3. displayName 설정
-      if (nativeUpdateProfile) {
-        await nativeUpdateProfile(nativeUser, { displayName: data.nickname });
-      }
-
-      // 4. Web SDK 동기화 (Firestore Security Rules용)
-      // [H4 FIX] non-fatal: 실패해도 가입 진행 — login()에서 양쪽 동시 로그인하므로 복구됨
+      // 2. Web SDK 동기화 (CF 호출에 Web SDK 인증 토큰 필요)
+      // linkWithCredential 후 Firebase Auth 전파 지연 대비 1회 재시도
       try {
         await syncToWebAuth(data.email, data.password);
       } catch (syncError) {
-        logger.warn('Web SDK 동기화 실패 - 로그인 시 자동 동기화됨', {
-          component: 'authService',
-          uid: nativeUser.uid,
+        logger.warn('syncToWebAuth 1차 실패 — 1초 후 재시도', {
           error: syncError instanceof Error ? syncError.message : String(syncError),
         });
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        try {
+          await syncToWebAuth(data.email, data.password);
+        } catch (retryError) {
+          logger.error('syncToWebAuth 재시도 실패', {
+            error: retryError instanceof Error ? retryError.message : String(retryError),
+          });
+          throw retryError;
+        }
       }
+
+      // 3. CF 호출: 서버사이드 검증 + Firestore 저장 + Claims + displayName
+      await callVerifyAndSaveProfile(toVerifyPayload(data));
+
+      // 4. Custom Claims 갱신 (syncToWebAuth 성공 후 webUser는 반드시 존재)
       const webUser = getFirebaseAuth().currentUser;
+      if (!webUser) {
+        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+          userMessage: 'Web SDK 동기화 후 인증 정보를 찾을 수 없습니다.',
+        });
+      }
+      await webUser.getIdToken(true);
 
-      // 5. Firestore에 사용자 프로필 저장
-      const profile = buildUserProfile(nativeUser.uid, data);
-      await userRepository.createOrMerge(nativeUser.uid, { ...profile });
+      // 5. 저장된 프로필 조회
+      const profile = await getUserProfile(nativeUser.uid);
+      if (!profile) {
+        throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
+          userMessage: '프로필 저장 후 조회에 실패했습니다.',
+        });
+      }
 
-      logger.info('회원가입 성공', { uid: nativeUser.uid, role: data.role });
-      trackSignupAnalytics(nativeUser.uid, data.role);
+      logger.info('회원가입 성공', { uid: nativeUser.uid });
+      trackSignupAnalytics(nativeUser.uid, 'staff');
 
-      return { user: webUser ?? (nativeUser as unknown as FirebaseUser), profile };
+      return { user: webUser, profile };
     } catch (innerError) {
-      // [H5] 공통 롤백 함수로 phone-only 계정 정리
       await rollbackPhoneOnlyAccount(
         nativeUser.uid,
         'native_signup_rollback_failed',
@@ -1120,28 +1173,8 @@ export async function completeSocialProfile(
   try {
     logger.info('소셜 프로필 완성 시도', { uid });
 
-    // [W7] verifyAndSaveProfile CF 호출 (서버사이드 phone 검증 + Firestore 저장)
-    // CF가 전화번호 대조, 중복 검사, XSS 검증, Batch Write, Claims 설정을 모두 처리
-    const verifyAndSave = httpsCallable<
-      {
-        verifiedPhone: string;
-        name: string;
-        birthDate: string;
-        gender: 'male' | 'female';
-        nickname: string;
-        region?: string;
-        experienceYears?: number;
-        career?: string;
-        note?: string;
-        termsAgreed: boolean;
-        privacyAgreed: boolean;
-        marketingAgreed: boolean;
-        mode: 'signup' | 'social';
-      },
-      { success: boolean; uid: string }
-    >(getFirebaseFunctions(), 'verifyAndSaveProfile');
-
-    await verifyAndSave({
+    // 공통 CF 호출: 서버사이드 phone 검증 + Firestore 저장 + Claims 설정
+    await callVerifyAndSaveProfile({
       verifiedPhone: data.phone,
       name: data.name,
       birthDate: data.birthDate,
