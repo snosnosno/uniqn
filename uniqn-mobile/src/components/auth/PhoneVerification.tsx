@@ -438,6 +438,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         }
         setTimer(RESEND_COOLDOWN);
         setOtpCode('');
+        setOtpAttempts(0); // 재발송 시 시도 횟수 초기화
         if (step === 'otp') {
           setConfirmation(null);
         }

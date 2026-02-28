@@ -14,7 +14,7 @@ import { deleteUser as webDeleteUser } from 'firebase/auth';
 import { getFirebaseAuth } from '@/lib/firebase';
 import { getNativeAuth, nativeDeleteUser } from '@/lib/nativeAuth';
 import { StepIndicator, SIGNUP_STEPS, type StepInfo } from '@/components/auth/StepIndicator';
-import { checkEmailExists, markOrphanAccount } from '@/services/authService';
+import { checkEmailExists, checkNicknameExists, markOrphanAccount } from '@/services/authService';
 import { useToast } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
@@ -144,9 +144,8 @@ export function SignupForm({
 
   const handleIdentityBack = useCallback(async () => {
     if (isSocial) {
-      // 소셜 모드: phone account cleanup 불필요 (이미 Apple 계정 존재)
-      // 약관동의(Step 1)로 이동
-      setFormData((prev) => ({ ...prev, identity: undefined }));
+      // 소셜 모드: identity 데이터 보존 (phone link 상태 유지)
+      // 재진입 시 useEffect auto-detect로 자동 복구됨
       setCurrentStep(1);
       return;
     }
@@ -195,6 +194,18 @@ export function SignupForm({
         }
       }
 
+      // 닉네임 Race Condition 방지: 제출 직전 닉네임 중복 재검증
+      try {
+        const nicknameExists = await checkNicknameExists(data.nickname);
+        if (nicknameExists) {
+          toast.error('이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.');
+          return;
+        }
+      } catch {
+        // 네트워크 오류 시 경고만 남기고 계속 진행 (서버 CF가 최종 방어)
+        logger.warn('최종 제출 전 닉네임 재검증 실패 - 계속 진행');
+      }
+
       const updatedFormData = { ...formData, profile: data };
       setFormData(updatedFormData);
 
@@ -222,7 +233,7 @@ export function SignupForm({
         name: updatedFormData.identity.name,
         birthDate: updatedFormData.identity.birthDate,
         gender: updatedFormData.identity.gender,
-        phoneVerified: updatedFormData.identity.phoneVerified,
+        phoneVerified: true, // Step 3 통과 시 반드시 true
         verifiedPhone: updatedFormData.identity.verifiedPhone,
         // 프로필
         nickname: data.nickname,

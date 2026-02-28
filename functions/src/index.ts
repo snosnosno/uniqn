@@ -37,6 +37,9 @@ export { revokeAppleToken } from './auth/revokeAppleToken';
 // --- Phone Duplicate Check ---
 export { checkPhoneExists } from './auth/checkPhoneExists';
 
+// --- Nickname Duplicate Check ---
+export { checkNicknameExists } from './auth/checkNicknameExists';
+
 // --- Profile Verification & Save ---
 export { verifyAndSaveProfile } from './auth/verifyAndSaveProfile';
 

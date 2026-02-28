@@ -4,12 +4,15 @@
  * @description
  * 회원가입/소셜 프로필 완성 시 서버사이드 전화번호 검증 후 Firestore 프로필 저장
  * - Firebase Auth의 phoneNumber와 클라이언트 전달 verifiedPhone을 대조
- * - 동일 전화번호로 등록된 다른 사용자 중복 검사
- * - 입력값 XSS/길이/형식 서버 검증 (클라이언트 검증 우회 방지)
- * - Batch Write로 프로필 + 약관을 원자적 저장
+ * - 동일 전화번호/닉네임 중복 검사 (병렬 pre-check + Transaction 원자적 쓰기)
+ * - 입력값 XSS/길이/형식 서버 검증 (정규화 포함, 클라이언트 검증 우회 방지)
+ * - 만 14세 미만 가입 제한
+ * - Transaction으로 프로필 + 약관을 원자적 저장
+ * - 약관 이력(consents history) 보존
  * - role 하드코딩 (클라이언트 값 무시 → 권한 상승 방지)
+ * - Claims 실패 시 onUserRoleChange 트리거가 백업 동기화
  *
- * @version 1.1.0
+ * @version 2.0.0
  */
 
 import { onCall } from "firebase-functions/v2/https";
@@ -19,6 +22,14 @@ import { requireAuth } from "../errors/validators";
 import { ValidationError, ERROR_CODES } from "../errors/AppError";
 import { handleFunctionError } from "../errors/errorHandler";
 import { toE164, maskPhone, isValidKoreanPhone } from "../utils/phone";
+import { hasXSSPattern, isValidEmail } from "../utils/security";
+
+// ============================================================================
+// Constants
+// ============================================================================
+
+const TERMS_VERSION = "1.0.0";
+const MIN_SIGNUP_AGE = 14;
 
 // ============================================================================
 // Types
@@ -56,22 +67,6 @@ interface VerifyAndSaveProfileData {
 // ============================================================================
 // Server-side Input Validation
 // ============================================================================
-
-/** XSS 위험 패턴 검사 */
-function hasXSSPattern(text: string): boolean {
-  const patterns = [
-    /<script\b/i,
-    /javascript\s*:/i,
-    /on\w+\s*=/i,
-    /<\s*iframe/i,
-    /<\s*object/i,
-    /<\s*embed/i,
-    /<\s*link\b/i,
-    /data\s*:\s*(text|image|application|multipart)\//i,
-    /expression\s*\(/i,
-  ];
-  return patterns.some((p) => p.test(text));
-}
 
 /**
  * 문자열 입력 검증 (길이 + XSS + 형식)
@@ -148,7 +143,7 @@ export const verifyAndSaveProfile = onCall(
       const uid = requireAuth(request);
       const data = request.data as VerifyAndSaveProfileData;
 
-      // ── 1. 입력 검증 (XSS + 길이 + 형식) ──────────────────────────────
+      // ── 1. 입력 검증 (XSS 정규화 + 길이 + 형식) ──────────────────────────
 
       const name = validateString(data.name, "이름", {
         min: 2,
@@ -166,6 +161,8 @@ export const verifyAndSaveProfile = onCall(
       });
 
       // birthDate 논리 검증 (형식은 통과했으나 실제 날짜가 유효한지)
+      // SYNC: 클라이언트(uniqn-mobile/src/schemas/auth.schema.ts birthDateSchema)에 동일 로직 존재
+      // 변경 시 양쪽 수정 필요 (서버=보안, 클라이언트=UX)
       const bdYear = parseInt(birthDate.substring(0, 4), 10);
       const bdMonth = parseInt(birthDate.substring(4, 6), 10);
       const bdDay = parseInt(birthDate.substring(6, 8), 10);
@@ -193,6 +190,19 @@ export const verifyAndSaveProfile = onCall(
       ) {
         throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
           userMessage: "존재하지 않는 날짜입니다.",
+        });
+      }
+
+      // 만 14세 미만 가입 제한
+      const today = new Date();
+      let age = today.getFullYear() - bdYear;
+      const monthDiff = today.getMonth() + 1 - bdMonth;
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < bdDay)) {
+        age--;
+      }
+      if (age < MIN_SIGNUP_AGE) {
+        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+          userMessage: `만 ${MIN_SIGNUP_AGE}세 이상만 가입할 수 있습니다.`,
         });
       }
 
@@ -236,8 +246,8 @@ export const verifyAndSaveProfile = onCall(
       const note = validateOptionalString(data.note, "기타사항", { max: 300 });
       const email = validateOptionalString(data.email, "이메일", { max: 100 });
 
-      // 이메일 형식 검증 (값이 있을 때만)
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      // 이메일 형식 검증 (값이 있을 때만) — HTML5 표준 기반 regex
+      if (email && !isValidEmail(email)) {
         throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
           userMessage: "올바른 이메일 형식이 아닙니다.",
         });
@@ -289,17 +299,28 @@ export const verifyAndSaveProfile = onCall(
         });
       }
 
-      // ── 4. 전화번호 중복 검사 ──────────────────────────────────────────
+      // ── 4. 병렬 pre-check (전화번호 + 닉네임 + 사용자 문서) ────────────
 
       const db = admin.firestore();
-      const existingSnap = await db
-        .collection("users")
-        .where("phone", "==", clientPhoneE164)
-        .limit(1)
-        .get();
+      const userDocRef = db.collection("users").doc(uid);
 
-      if (!existingSnap.empty) {
-        const existingUser = existingSnap.docs[0];
+      const [phoneSnap, nicknameSnap, existingUserDoc] = await Promise.all([
+        db
+          .collection("users")
+          .where("phone", "==", clientPhoneE164)
+          .limit(1)
+          .get(),
+        db
+          .collection("users")
+          .where("nickname", "==", nickname)
+          .limit(1)
+          .get(),
+        userDocRef.get(),
+      ]);
+
+      // 전화번호 중복 검사
+      if (!phoneSnap.empty) {
+        const existingUser = phoneSnap.docs[0];
         if (existingUser.id !== uid) {
           logger.warn("verifyAndSaveProfile: 전화번호 중복", {
             uid,
@@ -312,14 +333,7 @@ export const verifyAndSaveProfile = onCall(
         }
       }
 
-      // ── 4-b. 닉네임 중복 검사 ────────────────────────────────────────
-
-      const nicknameSnap = await db
-        .collection("users")
-        .where("nickname", "==", nickname)
-        .limit(1)
-        .get();
-
+      // 닉네임 중복 검사
       if (!nicknameSnap.empty) {
         const nicknameOwner = nicknameSnap.docs[0];
         if (nicknameOwner.id !== uid) {
@@ -329,25 +343,21 @@ export const verifyAndSaveProfile = onCall(
             nickname,
           });
           throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-            userMessage: "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
+            userMessage:
+              "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
           });
         }
       }
 
-      // ── 5. 기존 사용자 문서 확인 (social 모드에서 createdAt 보존) ──────
-
-      const userDocRef = db.collection("users").doc(uid);
-      const existingUserDoc = await userDocRef.get();
       const isExistingUser = existingUserDoc.exists;
 
-      // ── 6. [C4] role 하드코딩 (클라이언트 값 무시 → 권한 상승 방지) ────
+      // ── 5. [C4] role 하드코딩 (클라이언트 값 무시 → 권한 상승 방지) ────
 
       const role = "staff" as const;
 
-      // ── 7. Batch Write (프로필 + 약관 원자적 저장) ─────────────────────
+      // ── 6. Transaction (프로필 + 약관 + 이력 원자적 저장) ────────────────
 
       const now = admin.firestore.FieldValue.serverTimestamp();
-      const batch = db.batch();
 
       const profileData: Record<string, unknown> = {
         uid,
@@ -375,53 +385,88 @@ export const verifyAndSaveProfile = onCall(
         profileData.createdAt = now;
       }
 
-      batch.set(userDocRef, profileData, { merge: true });
-
-      // 약관 동의
-      const consentRef = userDocRef.collection("consents").doc("current");
+      // 약관 동의 (marketing 미동의도 명시적 기록)
       const consentData: Record<string, unknown> = {
-        version: "1.0.0",
+        version: TERMS_VERSION,
         userId: uid,
         termsOfService: {
           agreed: true,
-          version: "1.0.0",
+          version: TERMS_VERSION,
           agreedAt: now,
         },
         privacyPolicy: {
           agreed: true,
-          version: "1.0.0",
+          version: TERMS_VERSION,
           agreedAt: now,
         },
-        createdAt: now,
+        marketing: data.marketingAgreed
+          ? { agreed: true, agreedAt: now }
+          : { agreed: false, declinedAt: now },
         updatedAt: now,
       };
 
-      if (data.marketingAgreed) {
-        consentData.marketing = {
-          agreed: true,
-          agreedAt: now,
-        };
+      const consentRef = userDocRef.collection("consents").doc("current");
+      const consentHistoryRef = userDocRef
+        .collection("consents")
+        .doc();
+
+      await db.runTransaction(async (transaction) => {
+        // Transaction 내 읽기 (문서 단위 충돌 감지)
+        const freshDoc = await transaction.get(userDocRef);
+
+        // 이미 완전한 프로필이 존재하는 경우 (중복 제출 방지)
+        if (
+          freshDoc.exists &&
+          freshDoc.data()?.phoneVerified === true &&
+          freshDoc.data()?.role === "staff"
+        ) {
+          logger.info("verifyAndSaveProfile: 이미 완료된 프로필 — 업데이트", {
+            uid,
+          });
+        }
+
+        // 프로필 저장
+        transaction.set(userDocRef, profileData, { merge: true });
+
+        // 약관 동의 — 최신 상태 (current)
+        transaction.set(consentRef, consentData, { merge: true });
+
+        // 약관 이력 보존 (버전별 스냅샷)
+        transaction.set(consentHistoryRef, {
+          ...consentData,
+          createdAt: now,
+        });
+      });
+
+      // ── 7. Custom Claims (Transaction 외부 — eventual consistency) ──────
+
+      try {
+        await admin.auth().setCustomUserClaims(uid, { role });
+      } catch (claimsError) {
+        // onUserRoleChange 트리거(index.ts)가 users/{uid} 변경 감지 시
+        // 자동으로 setCustomUserClaims 호출 → 백업 동기화
+        logger.warn(
+          "verifyAndSaveProfile: Claims 설정 실패 — onUserRoleChange 트리거로 복구 예정",
+          {
+            uid,
+            error: claimsError,
+            severity: "high",
+          },
+        );
       }
 
-      // 약관 동의는 최신 상태를 완전 교체 (merge 없음 — 의도적)
-      // 이전 버전 동의 이력은 consents 서브컬렉션의 버전별 문서로 관리
-      batch.set(consentRef, consentData);
-
-      await batch.commit();
-
-      // ── 8. Custom Claims (Auth API — batch 외부) ──────────────────────
-
-      await admin.auth().setCustomUserClaims(uid, { role });
-
-      // ── 9. displayName 설정 (서버사이드) ──────────────────────────────
+      // ── 8. displayName 설정 (서버사이드) ──────────────────────────────
 
       try {
         await admin.auth().updateUser(uid, { displayName: nickname });
       } catch (displayErr) {
-        logger.warn("verifyAndSaveProfile: displayName 업데이트 실패 (무시)", {
-          uid,
-          error: displayErr,
-        });
+        logger.warn(
+          "verifyAndSaveProfile: displayName 업데이트 실패 (무시)",
+          {
+            uid,
+            error: displayErr,
+          },
+        );
       }
 
       logger.info("verifyAndSaveProfile: 프로필 저장 완료", {

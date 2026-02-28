@@ -151,6 +151,9 @@ export type SignUpAccountData = z.infer<typeof signUpAccountSchema>;
 
 /**
  * 생년월일 검증 스키마 (YYYYMMDD)
+ *
+ * SYNC: 서버(functions/src/auth/verifyAndSaveProfile.ts)에 동일 검증 로직 존재
+ * 변경 시 양쪽 수정 필요 (클라이언트=UX, 서버=보안)
  */
 export const birthDateSchema = z
   .string()
@@ -171,6 +174,19 @@ export const birthDateSchema = z
       return date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day;
     },
     { message: '올바른 생년월일을 입력해주세요' }
+  )
+  .refine(
+    (val) => {
+      const year = parseInt(val.substring(0, 4), 10);
+      const month = parseInt(val.substring(4, 6), 10);
+      const day = parseInt(val.substring(6, 8), 10);
+      const today = new Date();
+      let age = today.getFullYear() - year;
+      const m = today.getMonth() + 1 - month;
+      if (m < 0 || (m === 0 && today.getDate() < day)) age--;
+      return age >= 14;
+    },
+    { message: '만 14세 이상만 가입할 수 있습니다' }
   );
 
 /**
@@ -189,10 +205,8 @@ export const signUpIdentitySchema = z.object({
   name: nameSchema,
   birthDate: birthDateSchema,
   gender: signupGenderSchema,
-  phoneVerified: z.literal(true, {
-    error: '전화번호 인증이 필요합니다',
-  }),
-  verifiedPhone: phoneSchema,
+  phoneVerified: z.boolean(),
+  verifiedPhone: phoneSchema.or(z.literal('')),
 });
 
 export type SignUpIdentityData = z.infer<typeof signUpIdentitySchema>;
@@ -251,11 +265,15 @@ export type SignUpTermsData = z.infer<typeof signUpTermsSchema>;
  * 개별 필드 스키마와 Step 스키마에서 조합. passwordConfirm은 Step1에서만 사용.
  */
 export const signUpSchema = z.object({
-  // 계정 정보 (passwordConfirm 제외)
-  email: emailSchema,
-  password: passwordSchema,
-  // 본인인증
+  // 계정 정보 (소셜 모드는 빈 문자열 허용)
+  email: emailSchema.or(z.literal('')),
+  password: passwordSchema.or(z.literal('')),
+  // 본인인증 (최종 제출 시 phoneVerified는 반드시 true)
   ...signUpIdentitySchema.shape,
+  phoneVerified: z.literal(true, {
+    error: '전화번호 인증이 필요합니다',
+  }),
+  verifiedPhone: phoneSchema,
   // 프로필
   ...signUpProfileSchema.shape,
   // 약관 동의

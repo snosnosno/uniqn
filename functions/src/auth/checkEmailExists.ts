@@ -6,31 +6,23 @@
  * 인증 없이 호출 가능 (회원가입 전이므로).
  * Firebase Auth + Firestore 양쪽 모두 확인하여 정합성을 보장합니다.
  *
- * @version 1.0.0
+ * @version 1.2.0
  */
 
-import { onCall } from 'firebase-functions/v2/https';
-import { logger } from 'firebase-functions';
-import * as admin from 'firebase-admin';
-import { ValidationError, ERROR_CODES } from '../errors/AppError';
-import { handleFunctionError } from '../errors/errorHandler';
-import { checkIpRateLimit } from '../middleware/rateLimiter';
+import { onCall } from "firebase-functions/v2/https";
+import { logger } from "firebase-functions";
+import * as admin from "firebase-admin";
+import { ValidationError, ERROR_CODES } from "../errors/AppError";
+import { isValidEmail } from "../utils/security";
+import { withCallableGuard } from "../middleware/callableGuard";
 
 /**
  * 이메일 마스킹 (로그용)
  */
 function maskEmail(email: string): string {
-  const [local, domain] = email.split('@');
-  if (!domain) return '***';
+  const [local, domain] = email.split("@");
+  if (!domain) return "***";
   return `${local.slice(0, 3)}***@${domain}`;
-}
-
-/**
- * 이메일 형식 검증
- */
-function isValidEmail(email: string): boolean {
-  const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return regex.test(email);
 }
 
 /**
@@ -38,91 +30,91 @@ function isValidEmail(email: string): boolean {
  *
  * - Firebase Auth + Firestore 양쪽 모두 확인하여 정합성 보장
  * - 인증 불필요 (회원가입 전 호출)
- * - IP 기반 Rate Limiting 적용
+ * - IP 기반 Rate Limiting + reCAPTCHA v3 (웹) 적용
  */
 export const checkEmailExists = onCall(
-  { region: 'asia-northeast3', cors: true },
-  async (request) => {
-    try {
-      // 1. IP 기반 Rate Limiting (미인증 상태이므로 IP로 제한)
-      const clientIp = request.rawRequest?.ip || 'unknown';
-      const rateLimitResult = await checkIpRateLimit(clientIp, {
-        windowMs: 60 * 1000,     // 1분
-        maxRequests: 10,          // IP당 1분에 10회
-        keyPrefix: 'ratelimit:check-email',
-      });
-
-      if (!rateLimitResult.allowed) {
-        throw new ValidationError(ERROR_CODES.AUTH_RATE_LIMITED, {
-          userMessage: '너무 많은 요청입니다. 잠시 후 다시 시도해주세요.',
-        });
-      }
-
-      // 2. 이메일 파라미터 검증
-      const rawEmail = request.data?.email;
-      if (!rawEmail || typeof rawEmail !== 'string' || rawEmail.trim().length === 0) {
-        throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
-          userMessage: '이메일을 입력해주세요.',
-          field: 'email',
-        });
-      }
-
-      // 3. 이메일 정규화 + 형식 검증
-      const email = rawEmail.trim().toLowerCase();
-
-      if (!isValidEmail(email)) {
-        throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-          userMessage: '올바른 이메일 형식이 아닙니다.',
-          field: 'email',
-        });
-      }
-
-      // 4. Firebase Auth에서 확인 (linkWithCredential의 실제 검증 소스)
-      let existsInAuth = false;
-      try {
-        await admin.auth().getUserByEmail(email);
-        existsInAuth = true;
-      } catch (authError: unknown) {
-        // auth/user-not-found는 정상 (이메일 미사용)
+  { region: "asia-northeast3", cors: true },
+  (request) =>
+    withCallableGuard(
+      request,
+      {
+        operation: "checkEmailExists",
+        rateLimit: {
+          maxRequests: 10,
+          keyPrefix: "ratelimit:check-email",
+        },
+        errorContext: (req) => ({
+          email: req.data?.email ? maskEmail(req.data.email) : undefined,
+        }),
+      },
+      async (req) => {
+        // 1. 이메일 파라미터 검증
+        const rawEmail = req.data?.email;
         if (
-          authError &&
-          typeof authError === 'object' &&
-          'code' in authError &&
-          (authError as { code: string }).code === 'auth/user-not-found'
+          !rawEmail ||
+          typeof rawEmail !== "string" ||
+          rawEmail.trim().length === 0
         ) {
-          existsInAuth = false;
-        } else {
-          // 그 외 에러는 전파
-          throw authError;
+          throw new ValidationError(ERROR_CODES.VALIDATION_REQUIRED, {
+            userMessage: "이메일을 입력해주세요.",
+            field: "email",
+          });
         }
-      }
 
-      // 5. Firestore에서도 확인 (Auth에 없지만 Firestore에만 있는 경우 — 데이터 정합성)
-      let existsInFirestore = false;
-      if (!existsInAuth) {
-        const snapshot = await admin
-          .firestore()
-          .collection('users')
-          .where('email', '==', email)
-          .limit(1)
-          .get();
-        existsInFirestore = !snapshot.empty;
-      }
+        // 2. 이메일 정규화 + 형식 검증
+        const email = rawEmail.trim().toLowerCase();
 
-      const exists = existsInAuth || existsInFirestore;
+        if (!isValidEmail(email)) {
+          throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+            userMessage: "올바른 이메일 형식이 아닙니다.",
+            field: "email",
+          });
+        }
 
-      logger.info('이메일 중복 확인 완료', {
-        email: maskEmail(email),
-        exists,
-        source: existsInAuth ? 'auth' : existsInFirestore ? 'firestore' : 'none',
-      });
+        // 3. Firebase Auth에서 확인 (linkWithCredential의 실제 검증 소스)
+        let existsInAuth = false;
+        try {
+          await admin.auth().getUserByEmail(email);
+          existsInAuth = true;
+        } catch (authError: unknown) {
+          // auth/user-not-found는 정상 (이메일 미사용)
+          if (
+            authError &&
+            typeof authError === "object" &&
+            "code" in authError &&
+            (authError as { code: string }).code === "auth/user-not-found"
+          ) {
+            existsInAuth = false;
+          } else {
+            throw authError;
+          }
+        }
 
-      return { exists };
-    } catch (error) {
-      throw handleFunctionError(error, {
-        operation: 'checkEmailExists',
-        context: { email: request.data?.email ? maskEmail(request.data.email) : undefined },
-      });
-    }
-  }
+        // 4. Firestore에서도 확인 (Auth에 없지만 Firestore에만 있는 경우 — 데이터 정합성)
+        let existsInFirestore = false;
+        if (!existsInAuth) {
+          const snapshot = await admin
+            .firestore()
+            .collection("users")
+            .where("email", "==", email)
+            .limit(1)
+            .get();
+          existsInFirestore = !snapshot.empty;
+        }
+
+        const exists = existsInAuth || existsInFirestore;
+
+        logger.info("이메일 중복 확인 완료", {
+          email: maskEmail(email),
+          exists,
+          source: existsInAuth
+            ? "auth"
+            : existsInFirestore
+              ? "firestore"
+              : "none",
+        });
+
+        return { exists };
+      },
+    ),
 );

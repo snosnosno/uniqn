@@ -127,7 +127,7 @@ export const XSS_PATTERNS: RegExp[] = [
   /<script[^>]*>.*?<\/script>/gi,
   /javascript:/gi,
   /vbscript:/gi,
-  /on\w+\s*=/gi,
+  /\bon(click|load|error|mouseover|mouseout|mousedown|mouseup|mousemove|focus|blur|submit|change|input|keydown|keyup|keypress|touchstart|touchend|touchmove|dragstart|drag|drop|scroll|resize|unload|beforeunload|abort|contextmenu)\s*=/gi,
   /data:text\/html/gi,
   /data:(?!image\/)[^;,]*;base64/gi,
   /<iframe[^>]*>/gi,

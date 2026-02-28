@@ -2,16 +2,19 @@
  * UNIQN Mobile - 회원가입 Step 2: 본인인증
  *
  * @description 이름/생년월일/성별 입력 + Firebase Phone Auth(SMS OTP) 전화번호 인증
- * @version 4.0.0
+ * @version 4.1.0
  */
 
-import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { View, Text, Pressable, type TextInput } from 'react-native';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { View, Text } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
+import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
+import { GenderSelector } from '@/components/auth/signup/GenderSelector';
+import { getFirebaseAuth } from '@/lib/firebase';
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';
@@ -30,175 +33,6 @@ interface SignupStepIdentityProps {
 }
 
 // ============================================================================
-// Sub-components
-// ============================================================================
-
-/** 생년월일 입력 (년/월/일 3칸) */
-function BirthDateInput({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: string;
-  onChange: (value: string) => void;
-  disabled?: boolean;
-}) {
-  const [year, setYear] = useState(value ? value.substring(0, 4) : '');
-  const [month, setMonth] = useState(value ? value.substring(4, 6) : '');
-  const [day, setDay] = useState(value ? value.substring(6, 8) : '');
-
-  const monthRef = useRef<TextInput>(null);
-  const dayRef = useRef<TextInput>(null);
-
-  // [W4] 부모 value 변경 시 내부 state 동기화 (form reset 등)
-  // 빈 문자열은 부분 입력 중 리셋이므로 내부 state 유지
-  useEffect(() => {
-    if (!value) return;
-    const parentYear = value.substring(0, 4);
-    const parentMonth = value.substring(4, 6);
-    const parentDay = value.substring(6, 8);
-    if (parentYear !== year || parentMonth !== month || parentDay !== day) {
-      setYear(parentYear);
-      setMonth(parentMonth);
-      setDay(parentDay);
-    }
-    // value만 의존 (내부 state 변경 시 무한 루프 방지)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [value]);
-
-  const updateValue = (y: string, m: string, d: string) => {
-    if (y.length === 4 && m.length === 2 && d.length === 2) {
-      onChange(`${y}${m}${d}`);
-    } else {
-      // 조건 미충족 시 빈 문자열로 리셋 → 폼 검증이 불완전 입력을 방지
-      onChange('');
-    }
-  };
-
-  const handleYearChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 4);
-    setYear(cleaned);
-    if (cleaned.length === 4) {
-      monthRef.current?.focus();
-    }
-    updateValue(cleaned, month, day);
-  };
-
-  const handleMonthChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 2);
-    setMonth(cleaned);
-    if (cleaned.length === 2) {
-      dayRef.current?.focus();
-    }
-    updateValue(year, cleaned, day);
-  };
-
-  const handleDayChange = (text: string) => {
-    const cleaned = text.replace(/\D/g, '').slice(0, 2);
-    setDay(cleaned);
-    updateValue(year, month, cleaned);
-  };
-
-  return (
-    <View className="flex-row gap-2">
-      <View className="flex-[2]">
-        <Input
-          placeholder="YYYY"
-          value={year}
-          onChangeText={handleYearChange}
-          keyboardType="number-pad"
-          maxLength={4}
-          editable={!disabled}
-          accessibilityLabel="출생 연도"
-        />
-      </View>
-      <View className="flex-1">
-        <Input
-          ref={monthRef}
-          placeholder="MM"
-          value={month}
-          onChangeText={handleMonthChange}
-          keyboardType="number-pad"
-          maxLength={2}
-          editable={!disabled}
-          accessibilityLabel="출생 월"
-        />
-      </View>
-      <View className="flex-1">
-        <Input
-          ref={dayRef}
-          placeholder="DD"
-          value={day}
-          onChangeText={handleDayChange}
-          keyboardType="number-pad"
-          maxLength={2}
-          editable={!disabled}
-          accessibilityLabel="출생 일"
-        />
-      </View>
-    </View>
-  );
-}
-
-/** 성별 선택 (남성/여성 버튼) */
-function GenderSelector({
-  value,
-  onChange,
-  disabled,
-}: {
-  value?: 'male' | 'female';
-  onChange: (value: 'male' | 'female') => void;
-  disabled?: boolean;
-}) {
-  return (
-    <View className="flex-row gap-3">
-      <Pressable
-        onPress={() => !disabled && onChange('male')}
-        className={`flex-1 py-3 rounded-xl items-center border ${
-          value === 'male'
-            ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
-            : 'bg-white dark:bg-surface border-gray-200 dark:border-gray-700'
-        }`}
-        accessibilityRole="radio"
-        accessibilityState={{ selected: value === 'male' }}
-        accessibilityLabel="남성"
-      >
-        <Text
-          className={`text-base font-medium ${
-            value === 'male'
-              ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
-        >
-          남성
-        </Text>
-      </Pressable>
-      <Pressable
-        onPress={() => !disabled && onChange('female')}
-        className={`flex-1 py-3 rounded-xl items-center border ${
-          value === 'female'
-            ? 'bg-primary-50 dark:bg-primary-900/30 border-primary-500'
-            : 'bg-white dark:bg-surface border-gray-200 dark:border-gray-700'
-        }`}
-        accessibilityRole="radio"
-        accessibilityState={{ selected: value === 'female' }}
-        accessibilityLabel="여성"
-      >
-        <Text
-          className={`text-base font-medium ${
-            value === 'female'
-              ? 'text-primary-600 dark:text-primary-400'
-              : 'text-gray-500 dark:text-gray-400'
-          }`}
-        >
-          여성
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
-
-// ============================================================================
 // Component
 // ============================================================================
 
@@ -212,6 +46,8 @@ export function SignupStepIdentity({
   const [verifiedPhone, setVerifiedPhone] = useState<string | null>(
     initialData?.verifiedPhone || null
   );
+  // "다시 인증하기" 클릭 시 true → useEffect 자동 복원 방지
+  const phoneManuallyReset = useRef(false);
 
   const {
     control,
@@ -224,7 +60,7 @@ export function SignupStepIdentity({
       name: initialData?.name || '',
       birthDate: initialData?.birthDate || '',
       gender: initialData?.gender,
-      phoneVerified: initialData?.phoneVerified || (false as unknown as true),
+      phoneVerified: initialData?.phoneVerified || (false),
       verifiedPhone: initialData?.verifiedPhone || '',
     },
   });
@@ -238,10 +74,33 @@ export function SignupStepIdentity({
     [setValue]
   );
 
+  // 소셜 모드: 이미 link된 전화번호 자동 감지 (중단 복구 / 뒤로가기 후 재진입)
+  // "다시 인증하기"로 명시적 리셋된 경우에는 자동 복원하지 않음
+  useEffect(() => {
+    if (phoneMode !== 'link' || phoneManuallyReset.current) return;
+
+    const currentUser = getFirebaseAuth().currentUser;
+    if (!currentUser) return;
+
+    const phoneProvider = currentUser.providerData.find(
+      (p) => p.providerId === 'phone'
+    );
+
+    if (phoneProvider?.phoneNumber) {
+      logger.info('소셜 모드: 이미 전화번호 링크됨', {
+        component: 'SignupStepIdentity',
+      });
+      setVerifiedPhone(phoneProvider.phoneNumber);
+      setValue('phoneVerified', true);
+      setValue('verifiedPhone', phoneProvider.phoneNumber);
+    }
+  }, [phoneMode, setValue]);
+
   /** [M2 FIX] "다시 인증하기" 시 부모 상태 초기화 */
   const handlePhoneReset = useCallback(() => {
+    phoneManuallyReset.current = true;
     setVerifiedPhone(null);
-    setValue('phoneVerified', false as unknown as true);
+    setValue('phoneVerified', false);
     setValue('verifiedPhone', '');
   }, [setValue]);
 

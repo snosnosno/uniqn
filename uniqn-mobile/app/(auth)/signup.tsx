@@ -2,8 +2,8 @@
  * UNIQN Mobile - SignUp Screen
  * 4단계 회원가입 화면
  *
- * @description 계정 → 본인인증 → 프로필 → 약관동의
- *              소셜 모드: 본인인증 → 프로필 → 약관동의 (Step 1 생략)
+ * @description 약관동의 → 계정 → 본인인증 → 프로필
+ *              소셜 모드: 약관동의 → 본인인증 → 프로필 (계정 생략)
  * @version 2.1.0
  */
 

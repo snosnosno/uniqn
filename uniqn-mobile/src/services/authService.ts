@@ -399,13 +399,20 @@ export async function checkEmailExists(email: string): Promise<boolean> {
   try {
     logger.info('이메일 중복 확인', { email: maskEmail(email) });
 
-    const functions = getFirebaseFunctions();
-    const checkEmail = httpsCallable<{ email: string }, { exists: boolean }>(
-      functions,
-      'checkEmailExists'
-    );
+    const { getRecaptchaToken } = await import('@/utils/recaptcha');
+    const recaptchaToken = await getRecaptchaToken('check_email');
 
-    const result = await checkEmail({ email: email.trim().toLowerCase() });
+    const functions = getFirebaseFunctions();
+    const checkEmail = httpsCallable<
+      { email: string; recaptchaToken?: string; platform?: string },
+      { exists: boolean }
+    >(functions, 'checkEmailExists');
+
+    const result = await checkEmail({
+      email: email.trim().toLowerCase(),
+      recaptchaToken: recaptchaToken || undefined,
+      platform: Platform.OS,
+    });
 
     logger.info('이메일 중복 확인 완료', { email: maskEmail(email), exists: result.data.exists });
 
@@ -415,6 +422,32 @@ export async function checkEmailExists(email: string): Promise<boolean> {
       operation: '이메일 중복 확인',
       component: 'authService',
       context: { email: maskEmail(email) },
+    });
+  }
+}
+
+/**
+ * 닉네임 중복 확인
+ *
+ * @param nickname 확인할 닉네임
+ * @returns 중복 여부
+ */
+export async function checkNicknameExists(nickname: string): Promise<boolean> {
+  try {
+    const checkNickname = httpsCallable<
+      { nickname: string; platform?: string },
+      { exists: boolean }
+    >(getFirebaseFunctions(), 'checkNicknameExists');
+    const result = await checkNickname({
+      nickname: nickname.trim(),
+      platform: Platform.OS,
+    });
+    return result.data.exists;
+  } catch (error) {
+    throw handleServiceError(error, {
+      operation: '닉네임 중복 확인',
+      component: 'authService',
+      context: { nickname },
     });
   }
 }

@@ -6,13 +6,15 @@
  * @version 1.2.0
  */
 
-import React, { useCallback } from 'react';
-import { View, Text, TextInput } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, TextInput, ActivityIndicator } from 'react-native';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Input } from '@/components/ui/Input';
 import { Button } from '@/components/ui/Button';
+import { checkNicknameExists } from '@/services/authService';
 import { signUpProfileSchema, type SignUpProfileData } from '@/schemas';
+import { logger } from '@/utils/logger';
 
 // ============================================================================
 // Types
@@ -29,17 +31,23 @@ interface SignupStepProfileProps {
 // Component
 // ============================================================================
 
+type NicknameStatus = 'idle' | 'checking' | 'available' | 'taken';
+
 export function SignupStepProfile({
   onNext,
   onBack,
   initialData,
   isLoading = false,
 }: SignupStepProfileProps) {
+  const [nicknameStatus, setNicknameStatus] = useState<NicknameStatus>('idle');
+  const lastCheckedNickname = useRef('');
+
   const {
     control,
     handleSubmit,
     trigger,
     getValues,
+    setError,
     formState: { errors },
   } = useForm<SignUpProfileData>({
     resolver: zodResolver(signUpProfileSchema),
@@ -54,13 +62,53 @@ export function SignupStepProfile({
     },
   });
 
+  // 닉네임 중복 검사 (onBlur 시 호출)
+  const handleNicknameBlur = useCallback(
+    async (formOnBlur: () => void) => {
+      formOnBlur();
+      const nickname = getValues('nickname').trim();
+
+      if (nickname.length < 2 || nickname === lastCheckedNickname.current) return;
+
+      setNicknameStatus('checking');
+      try {
+        const exists = await checkNicknameExists(nickname);
+        lastCheckedNickname.current = nickname;
+        if (exists) {
+          setNicknameStatus('taken');
+          setError('nickname', {
+            type: 'manual',
+            message: '이미 사용 중인 닉네임입니다',
+          });
+        } else {
+          setNicknameStatus('available');
+        }
+      } catch (error) {
+        logger.warn('닉네임 중복 확인 실패', { error });
+        setNicknameStatus('idle');
+      }
+    },
+    [getValues, setError]
+  );
+
+  // 닉네임 변경 시 상태 리셋
+  const handleNicknameChange = useCallback(
+    (formOnChange: (value: string) => void, text: string) => {
+      formOnChange(text);
+      if (nicknameStatus !== 'idle') {
+        setNicknameStatus('idle');
+      }
+    },
+    [nicknameStatus]
+  );
+
   // 나중에 입력하기: 닉네임만 검증 후 선택 필드 없이 진행
   const handleSkipOptional = useCallback(async () => {
     const isValid = await trigger('nickname');
-    if (isValid) {
+    if (isValid && nicknameStatus !== 'taken') {
       onNext({ nickname: getValues('nickname'), role: 'staff' as const });
     }
-  }, [trigger, getValues, onNext]);
+  }, [trigger, getValues, onNext, nicknameStatus]);
 
   return (
     <View className="w-full flex-col gap-4">
@@ -79,16 +127,32 @@ export function SignupStepProfile({
             control={control}
             name="nickname"
             render={({ field: { onChange, onBlur, value } }) => (
-              <Input
-                placeholder="닉네임을 입력하세요 (2-15자)"
-                value={value}
-                onChangeText={onChange}
-                onBlur={onBlur}
-                autoCapitalize="none"
-                error={errors.nickname?.message}
-                editable={!isLoading}
-                maxLength={15}
-              />
+              <View>
+                <View className="flex-row items-center">
+                  <View className="flex-1">
+                    <Input
+                      placeholder="닉네임을 입력하세요 (2-15자)"
+                      value={value}
+                      onChangeText={(text) => handleNicknameChange(onChange, text)}
+                      onBlur={() => handleNicknameBlur(onBlur)}
+                      autoCapitalize="none"
+                      error={errors.nickname?.message}
+                      editable={!isLoading}
+                      maxLength={15}
+                    />
+                  </View>
+                  {nicknameStatus === 'checking' && (
+                    <View className="ml-2">
+                      <ActivityIndicator size="small" />
+                    </View>
+                  )}
+                </View>
+                {nicknameStatus === 'available' && !errors.nickname && (
+                  <Text className="mt-1 text-xs text-green-600 dark:text-green-400">
+                    사용 가능한 닉네임입니다
+                  </Text>
+                )}
+              </View>
             )}
           />
           <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
@@ -232,7 +296,11 @@ export function SignupStepProfile({
 
       {/* 버튼 영역 */}
       <View className="mt-4 flex-col gap-3">
-        <Button onPress={handleSubmit(onNext)} disabled={isLoading} fullWidth>
+        <Button
+          onPress={handleSubmit(onNext)}
+          disabled={isLoading || nicknameStatus === 'taken'}
+          fullWidth
+        >
           가입 완료
         </Button>
 
