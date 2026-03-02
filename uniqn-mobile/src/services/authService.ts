@@ -30,6 +30,7 @@ import {
   reauthenticateWithCredential,
   linkWithCredential,
   deleteUser as webDeleteUser,
+  unlink as webUnlink,
 } from 'firebase/auth';
 import { Platform } from 'react-native';
 import { httpsCallable } from 'firebase/functions';
@@ -44,6 +45,7 @@ import {
   nativeDeleteUser,
   NativeEmailAuthProvider,
   nativeSignInWithCustomToken,
+  nativeUnlink,
 } from '@/lib/nativeAuth';
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
@@ -120,7 +122,7 @@ function requireNativeEmailProvider() {
  *
  * 회원가입 실패 시 phone-only 계정을 삭제하고, 실패 시 고아 계정으로 마킹.
  */
-async function rollbackPhoneOnlyAccount(
+export async function rollbackPhoneOnlyAccount(
   uid: string,
   reason: string,
   phone?: string
@@ -157,6 +159,63 @@ async function rollbackPhoneOnlyAccount(
     }
   } catch {
     // Web SDK 정리 실패는 무시
+  }
+}
+
+/**
+ * 현재 로그인된 사용자의 UID 반환 (Web/Native 공통)
+ */
+export function getCurrentUserUid(): string | null {
+  if (Platform.OS === 'web') {
+    return getFirebaseAuth().currentUser?.uid ?? null;
+  }
+  return getNativeAuth?.()?.currentUser?.uid ?? null;
+}
+
+/**
+ * 현재 사용자에게 link된 전화번호 반환 (phone provider)
+ */
+export function getLinkedPhoneNumber(): string | null {
+  const user = getFirebaseAuth().currentUser;
+  if (!user) return null;
+  const phoneProvider = user.providerData.find((p) => p.providerId === 'phone');
+  return phoneProvider?.phoneNumber ?? null;
+}
+
+/**
+ * 현재 사용자의 phone provider 연결 해제
+ *
+ * 소셜 모드에서 "다시 인증하기" 시 호출하여
+ * 이전 전화번호 link를 제거한 후 새 번호로 재인증할 수 있도록 합니다.
+ */
+export async function unlinkPhoneProvider(): Promise<void> {
+  try {
+    if (Platform.OS === 'web') {
+      const user = getFirebaseAuth().currentUser;
+      if (user) {
+        const hasPhone = user.providerData.some((p) => p.providerId === 'phone');
+        if (hasPhone) {
+          await webUnlink(user, 'phone');
+        }
+      }
+    } else {
+      const nativeAuth = getNativeAuth?.();
+      const nativeUser = nativeAuth?.currentUser;
+      if (nativeUser && nativeUnlink) {
+        const hasPhone = nativeUser.providerData.some(
+          (p: { providerId: string }) => p.providerId === 'phone',
+        );
+        if (hasPhone) {
+          await nativeUnlink(nativeUser, 'phone');
+        }
+      }
+    }
+  } catch (error) {
+    // auth/no-such-provider는 이미 unlink된 상태 → 무시
+    const code = (error as { code?: string })?.code;
+    if (code !== 'auth/no-such-provider') {
+      throw error;
+    }
   }
 }
 
@@ -434,12 +493,15 @@ export async function checkEmailExists(email: string): Promise<boolean> {
  */
 export async function checkNicknameExists(nickname: string): Promise<boolean> {
   try {
+    const { getRecaptchaToken } = await import('@/utils/recaptcha');
+    const recaptchaToken = await getRecaptchaToken('check_nickname');
     const checkNickname = httpsCallable<
-      { nickname: string; platform?: string },
+      { nickname: string; recaptchaToken?: string; platform?: string },
       { exists: boolean }
     >(getFirebaseFunctions(), 'checkNicknameExists');
     const result = await checkNickname({
       nickname: nickname.trim(),
+      recaptchaToken: recaptchaToken || undefined,
       platform: Platform.OS,
     });
     return result.data.exists;
@@ -511,6 +573,20 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
         return { user: currentUser, profile };
       } catch (innerError) {
+        // email credential이 이미 link된 경우, unlink하여 phone-only로 복원
+        try {
+          const webUser = getFirebaseAuth().currentUser;
+          if (webUser) {
+            const hasEmail = webUser.providerData.some(
+              (p) => p.providerId === 'password',
+            );
+            if (hasEmail) {
+              await webUnlink(webUser, 'password');
+            }
+          }
+        } catch {
+          // unlink 실패 시 무시 — rollback에서 전체 삭제
+        }
         await rollbackPhoneOnlyAccount(
           currentUser.uid,
           'web_signup_rollback_failed',
@@ -580,6 +656,22 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
 
       return { user: webUser, profile };
     } catch (innerError) {
+      // email credential이 이미 link된 경우, unlink하여 phone-only로 복원
+      try {
+        if (nativeUnlink) {
+          const currentNativeUser = nativeAuth.currentUser;
+          if (currentNativeUser) {
+            const hasEmail = currentNativeUser.providerData.some(
+              (p: { providerId: string }) => p.providerId === 'password',
+            );
+            if (hasEmail) {
+              await nativeUnlink(currentNativeUser, 'password');
+            }
+          }
+        }
+      } catch {
+        // unlink 실패 시 무시 — rollback에서 전체 삭제
+      }
       await rollbackPhoneOnlyAccount(
         nativeUser.uid,
         'native_signup_rollback_failed',

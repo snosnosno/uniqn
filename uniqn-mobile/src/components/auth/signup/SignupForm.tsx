@@ -10,11 +10,13 @@ import React, { useState, useCallback } from 'react';
 import { View, Platform } from 'react-native';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
-import { deleteUser as webDeleteUser } from 'firebase/auth';
-import { getFirebaseAuth } from '@/lib/firebase';
-import { getNativeAuth, nativeDeleteUser } from '@/lib/nativeAuth';
 import { StepIndicator, SIGNUP_STEPS, type StepInfo } from '@/components/auth/StepIndicator';
-import { checkEmailExists, checkNicknameExists, markOrphanAccount } from '@/services/authService';
+import {
+  checkEmailExists,
+  checkNicknameExists,
+  rollbackPhoneOnlyAccount,
+  getCurrentUserUid,
+} from '@/services/authService';
 import { useToast } from '@/stores/toastStore';
 import { useModalStore } from '@/stores/modalStore';
 import { logger } from '@/utils/logger';
@@ -115,31 +117,9 @@ export function SignupForm({
 
   // phone-only 계정 정리 (본인인증 단계에서 생성된 Firebase Auth 계정)
   const cleanupPhoneAccount = useCallback(async () => {
-    try {
-      if (Platform.OS === 'web') {
-        const webUser = getFirebaseAuth().currentUser;
-        if (webUser) {
-          await webDeleteUser(webUser);
-          logger.info('본인인증 뒤로가기 - phone-only 계정 삭제', { uid: webUser.uid });
-        }
-      } else if (getNativeAuth && nativeDeleteUser) {
-        const nativeUser = getNativeAuth().currentUser;
-        if (nativeUser) {
-          await nativeDeleteUser(nativeUser);
-          logger.info('본인인증 뒤로가기 - phone-only 계정 삭제', { uid: nativeUser.uid });
-        }
-      }
-    } catch {
-      // 삭제 실패 시 고아 계정 마킹
-      const failedUid =
-        Platform.OS === 'web'
-          ? getFirebaseAuth().currentUser?.uid
-          : getNativeAuth?.()?.currentUser?.uid;
-      if (failedUid) {
-        await markOrphanAccount(failedUid, 'identity_back_cleanup_failed');
-      }
-      logger.warn('본인인증 뒤로가기 - phone-only 계정 삭제 실패');
-    }
+    const uid = getCurrentUserUid();
+    if (!uid) return;
+    await rollbackPhoneOnlyAccount(uid, 'identity_back_cleanup');
   }, []);
 
   const handleIdentityBack = useCallback(async () => {
@@ -151,8 +131,7 @@ export function SignupForm({
     }
 
     // 현재 인증된 계정이 있는지 확인
-    const hasPhoneAccount =
-      Platform.OS === 'web' ? !!getFirebaseAuth().currentUser : !!getNativeAuth?.()?.currentUser;
+    const hasPhoneAccount = !!getCurrentUserUid();
 
     const goBack = async () => {
       await cleanupPhoneAccount();
@@ -189,8 +168,9 @@ export function SignupForm({
             return;
           }
         } catch {
-          // 네트워크 오류 시 경고만 남기고 계속 진행 (Firebase Auth가 최종 방어)
-          logger.warn('최종 제출 전 이메일 재검증 실패 - 계속 진행');
+          logger.warn('최종 제출 전 이메일 재검증 실패');
+          toast.error('이메일 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+          return;
         }
       }
 
@@ -202,8 +182,9 @@ export function SignupForm({
           return;
         }
       } catch {
-        // 네트워크 오류 시 경고만 남기고 계속 진행 (서버 CF가 최종 방어)
-        logger.warn('최종 제출 전 닉네임 재검증 실패 - 계속 진행');
+        logger.warn('최종 제출 전 닉네임 재검증 실패');
+        toast.error('닉네임 확인 중 오류가 발생했습니다. 다시 시도해주세요.');
+        return;
       }
 
       const updatedFormData = { ...formData, profile: data };
@@ -233,7 +214,7 @@ export function SignupForm({
         name: updatedFormData.identity.name,
         birthDate: updatedFormData.identity.birthDate,
         gender: updatedFormData.identity.gender,
-        phoneVerified: true, // Step 3 통과 시 반드시 true
+        phoneVerified: updatedFormData.identity.phoneVerified as true, // Step 3 Zod 검증 통과 후 항상 true
         verifiedPhone: updatedFormData.identity.verifiedPhone,
         // 프로필
         nickname: data.nickname,

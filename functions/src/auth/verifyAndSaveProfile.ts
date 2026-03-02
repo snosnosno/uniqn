@@ -299,63 +299,18 @@ export const verifyAndSaveProfile = onCall(
         });
       }
 
-      // ── 4. 병렬 pre-check (전화번호 + 닉네임 + 사용자 문서) ────────────
+      // ── 4. role 하드코딩 (클라이언트 값 무시 → 권한 상승 방지) ────────
 
       const db = admin.firestore();
       const userDocRef = db.collection("users").doc(uid);
 
-      const [phoneSnap, nicknameSnap, existingUserDoc] = await Promise.all([
-        db
-          .collection("users")
-          .where("phone", "==", clientPhoneE164)
-          .limit(1)
-          .get(),
-        db
-          .collection("users")
-          .where("nickname", "==", nickname)
-          .limit(1)
-          .get(),
-        userDocRef.get(),
-      ]);
-
-      // 전화번호 중복 검사
-      if (!phoneSnap.empty) {
-        const existingUser = phoneSnap.docs[0];
-        if (existingUser.id !== uid) {
-          logger.warn("verifyAndSaveProfile: 전화번호 중복", {
-            uid,
-            existingUid: existingUser.id,
-            phone: maskPhone(clientPhoneE164),
-          });
-          throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-            userMessage: "이미 등록된 전화번호입니다.",
-          });
-        }
-      }
-
-      // 닉네임 중복 검사
-      if (!nicknameSnap.empty) {
-        const nicknameOwner = nicknameSnap.docs[0];
-        if (nicknameOwner.id !== uid) {
-          logger.warn("verifyAndSaveProfile: 닉네임 중복", {
-            uid,
-            existingUid: nicknameOwner.id,
-            nickname,
-          });
-          throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
-            userMessage:
-              "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
-          });
-        }
-      }
-
-      const isExistingUser = existingUserDoc.exists;
-
-      // ── 5. [C4] role 하드코딩 (클라이언트 값 무시 → 권한 상승 방지) ────
-
       const role = "staff" as const;
 
-      // ── 6. Transaction (프로필 + 약관 + 이력 원자적 저장) ────────────────
+      // ── 5. Transaction (중복 검증 + 프로필 + 약관 + 이력 원자적 저장) ────
+      //
+      // 전화번호/닉네임 중복 검사를 Transaction 내부에서 수행하여
+      // TOCTOU(Time-of-Check Time-of-Use) 레이스 컨디션을 방지합니다.
+      // Admin SDK Transaction.get(query)는 반환된 문서에 pessimistic lock을 적용합니다.
 
       const now = admin.firestore.FieldValue.serverTimestamp();
 
@@ -379,11 +334,6 @@ export const verifyAndSaveProfile = onCall(
         profileData.experienceYears = experienceYears;
       if (career) profileData.career = career;
       if (note) profileData.note = note;
-
-      // 신규 사용자에만 createdAt 설정 (기존 사용자의 createdAt 보존)
-      if (!isExistingUser) {
-        profileData.createdAt = now;
-      }
 
       // 약관 동의 (marketing 미동의도 명시적 기록)
       const consentData: Record<string, unknown> = {
@@ -411,8 +361,53 @@ export const verifyAndSaveProfile = onCall(
         .doc();
 
       await db.runTransaction(async (transaction) => {
-        // Transaction 내 읽기 (문서 단위 충돌 감지)
-        const freshDoc = await transaction.get(userDocRef);
+        // Transaction 내 읽기 — 모든 읽기를 쓰기 전에 완료 (Firestore 규칙)
+        const [freshDoc, phoneSnap, nicknameSnap] = await Promise.all([
+          transaction.get(userDocRef),
+          transaction.get(
+            db
+              .collection("users")
+              .where("phone", "==", clientPhoneE164)
+              .limit(1),
+          ),
+          transaction.get(
+            db
+              .collection("users")
+              .where("nickname", "==", nickname)
+              .limit(1),
+          ),
+        ]);
+
+        // 전화번호 중복 검사
+        if (!phoneSnap.empty) {
+          const existingUser = phoneSnap.docs[0];
+          if (existingUser.id !== uid) {
+            logger.warn("verifyAndSaveProfile: 전화번호 중복", {
+              uid,
+              existingUid: existingUser.id,
+              phone: maskPhone(clientPhoneE164),
+            });
+            throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+              userMessage: "이미 등록된 전화번호입니다.",
+            });
+          }
+        }
+
+        // 닉네임 중복 검사
+        if (!nicknameSnap.empty) {
+          const nicknameOwner = nicknameSnap.docs[0];
+          if (nicknameOwner.id !== uid) {
+            logger.warn("verifyAndSaveProfile: 닉네임 중복", {
+              uid,
+              existingUid: nicknameOwner.id,
+              nickname,
+            });
+            throw new ValidationError(ERROR_CODES.VALIDATION_FORMAT, {
+              userMessage:
+                "이미 사용 중인 닉네임입니다. 다른 닉네임을 입력해주세요.",
+            });
+          }
+        }
 
         // 이미 완전한 프로필이 존재하는 경우 (중복 제출 방지)
         if (
@@ -423,6 +418,11 @@ export const verifyAndSaveProfile = onCall(
           logger.info("verifyAndSaveProfile: 이미 완료된 프로필 — 업데이트", {
             uid,
           });
+        }
+
+        // 신규 사용자에만 createdAt 설정 (기존 사용자의 createdAt 보존)
+        if (!freshDoc.exists) {
+          profileData.createdAt = now;
         }
 
         // 프로필 저장
@@ -473,7 +473,6 @@ export const verifyAndSaveProfile = onCall(
         uid,
         mode: data.mode,
         phone: maskPhone(clientPhoneE164),
-        isExistingUser,
       });
 
       return { success: true, uid };

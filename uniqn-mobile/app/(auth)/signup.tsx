@@ -11,9 +11,8 @@ import { useState, useCallback } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getFirebaseAuth } from '@/lib/firebase';
 import { SignupForm } from '@/components/auth';
-import { signUp, completeSocialProfile } from '@/services';
+import { signUp, completeSocialProfile, getCurrentUser } from '@/services';
 import { ChevronLeftIcon } from '@/components/icons';
 import { useToastStore } from '@/stores/toastStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -62,7 +61,7 @@ export default function SignUpScreen() {
     async (data: SignUpFormData) => {
       setIsLoading(true);
       try {
-        const user = getFirebaseAuth().currentUser;
+        const user = getCurrentUser();
         if (!user) {
           addToast({ type: 'error', message: '인증 정보가 없습니다. 다시 로그인해주세요.' });
           router.replace('/(auth)/login');

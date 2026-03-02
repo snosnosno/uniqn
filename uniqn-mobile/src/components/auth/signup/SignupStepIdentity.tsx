@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { PhoneVerification } from '@/components/auth/PhoneVerification';
 import { BirthDateInput } from '@/components/auth/signup/BirthDateInput';
 import { GenderSelector } from '@/components/auth/signup/GenderSelector';
-import { getFirebaseAuth } from '@/lib/firebase';
+import { getLinkedPhoneNumber, unlinkPhoneProvider } from '@/services/authService';
 import { signUpIdentitySchema } from '@/schemas';
 import type { SignUpIdentityData } from '@/schemas';
 import { logger } from '@/utils/logger';
@@ -79,30 +79,32 @@ export function SignupStepIdentity({
   useEffect(() => {
     if (phoneMode !== 'link' || phoneManuallyReset.current) return;
 
-    const currentUser = getFirebaseAuth().currentUser;
-    if (!currentUser) return;
-
-    const phoneProvider = currentUser.providerData.find(
-      (p) => p.providerId === 'phone'
-    );
-
-    if (phoneProvider?.phoneNumber) {
+    const linkedPhone = getLinkedPhoneNumber();
+    if (linkedPhone) {
       logger.info('소셜 모드: 이미 전화번호 링크됨', {
         component: 'SignupStepIdentity',
       });
-      setVerifiedPhone(phoneProvider.phoneNumber);
+      setVerifiedPhone(linkedPhone);
       setValue('phoneVerified', true);
-      setValue('verifiedPhone', phoneProvider.phoneNumber);
+      setValue('verifiedPhone', linkedPhone);
     }
   }, [phoneMode, setValue]);
 
-  /** [M2 FIX] "다시 인증하기" 시 부모 상태 초기화 */
-  const handlePhoneReset = useCallback(() => {
+  /** [M2 FIX] "다시 인증하기" 시 부모 상태 + phone provider 초기화 */
+  const handlePhoneReset = useCallback(async () => {
     phoneManuallyReset.current = true;
+    // link 모드에서는 Firebase Auth에서 phone provider 해제 (재인증 허용)
+    if (phoneMode === 'link') {
+      try {
+        await unlinkPhoneProvider();
+      } catch (error) {
+        logger.warn('phone provider unlink 실패', { error });
+      }
+    }
     setVerifiedPhone(null);
     setValue('phoneVerified', false);
     setValue('verifiedPhone', '');
-  }, [setValue]);
+  }, [phoneMode, setValue]);
 
   const onSubmit = useCallback(
     (data: SignUpIdentityData) => {

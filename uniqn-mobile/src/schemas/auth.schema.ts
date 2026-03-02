@@ -205,8 +205,10 @@ export const signUpIdentitySchema = z.object({
   name: nameSchema,
   birthDate: birthDateSchema,
   gender: signupGenderSchema,
-  phoneVerified: z.boolean(),
-  verifiedPhone: phoneSchema.or(z.literal('')),
+  phoneVerified: z.boolean().refine((val) => val === true, {
+    message: '전화번호 인증이 필요합니다',
+  }),
+  verifiedPhone: phoneSchema,
 });
 
 export type SignUpIdentityData = z.infer<typeof signUpIdentitySchema>;
