@@ -30,6 +30,7 @@ import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
 import { toError, BusinessError, ERROR_CODES, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
+import { parseUserDocument } from '@/schemas';
 import type { IUserRepository, DeletionRequest, UserDataExport } from '../interfaces';
 import type { FirestoreUserProfile, MyDataEditableFields } from '@/types';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
@@ -57,7 +58,13 @@ export class FirebaseUserRepository implements IUserRepository {
         return null;
       }
 
-      return userDoc.data() as FirestoreUserProfile;
+      const data = userDoc.data() as FirestoreUserProfile;
+      const parsed = parseUserDocument(data);
+      if (!parsed) {
+        logger.warn('사용자 문서 파싱 실패', { userId });
+        return null;
+      }
+      return parsed;
     } catch (error) {
       logger.error('사용자 조회 실패', toError(error), { userId });
       throw handleServiceError(error, {
@@ -99,8 +106,13 @@ export class FirebaseUserRepository implements IUserRepository {
       for (const result of results) {
         if (result.status === 'fulfilled') {
           for (const docSnapshot of result.value.docs) {
-            const profile = docSnapshot.data() as FirestoreUserProfile;
-            profileMap.set(docSnapshot.id, profile);
+            const data = docSnapshot.data() as FirestoreUserProfile;
+            const parsed = parseUserDocument(data);
+            if (!parsed) {
+              logger.warn('사용자 문서 파싱 실패', { userId: docSnapshot.id });
+              continue;
+            }
+            profileMap.set(docSnapshot.id, parsed);
           }
         } else {
           logger.warn('사용자 배치 조회 일부 실패', { error: result.reason });

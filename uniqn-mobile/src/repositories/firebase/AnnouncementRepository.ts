@@ -328,31 +328,53 @@ export class FirebaseAnnouncementRepository implements IAnnouncementRepository {
 
   async update(announcementId: string, input: UpdateAnnouncementInput): Promise<void> {
     try {
-      const docRef = doc(getFirebaseDb(), COLLECTIONS.ANNOUNCEMENTS, announcementId);
+      const db = getFirebaseDb();
+      const docRef = doc(db, COLLECTIONS.ANNOUNCEMENTS, announcementId);
 
-      const updateData: Record<string, unknown> = {
-        updatedAt: serverTimestamp(),
-      };
+      await runTransaction(db, async (transaction) => {
+        const docSnap = await transaction.get(docRef);
 
-      if (input.title !== undefined) updateData.title = input.title;
-      if (input.content !== undefined) updateData.content = input.content;
-      if (input.category !== undefined) updateData.category = input.category;
-      if (input.priority !== undefined) updateData.priority = input.priority;
-      if (input.isPinned !== undefined) updateData.isPinned = input.isPinned;
-      if (input.targetAudience !== undefined) updateData.targetAudience = input.targetAudience;
-      if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl;
-      if (input.imageStoragePath !== undefined) {
-        updateData.imageStoragePath = input.imageStoragePath;
-      }
-      if (input.images !== undefined) updateData.images = input.images;
+        if (!docSnap.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공지사항을 찾을 수 없습니다',
+            metadata: { announcementId },
+          });
+        }
 
-      await updateDoc(docRef, updateData);
+        // 보관된 공지사항은 수정 불가
+        const currentStatus = docSnap.data().status as string;
+        if (currentStatus === STATUS.ANNOUNCEMENT.ARCHIVED) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '보관된 공지사항은 수정할 수 없습니다',
+            metadata: { announcementId, currentStatus },
+          });
+        }
+
+        const updateData: Record<string, unknown> = {
+          updatedAt: serverTimestamp(),
+        };
+
+        if (input.title !== undefined) updateData.title = input.title;
+        if (input.content !== undefined) updateData.content = input.content;
+        if (input.category !== undefined) updateData.category = input.category;
+        if (input.priority !== undefined) updateData.priority = input.priority;
+        if (input.isPinned !== undefined) updateData.isPinned = input.isPinned;
+        if (input.targetAudience !== undefined) updateData.targetAudience = input.targetAudience;
+        if (input.imageUrl !== undefined) updateData.imageUrl = input.imageUrl;
+        if (input.imageStoragePath !== undefined) {
+          updateData.imageStoragePath = input.imageStoragePath;
+        }
+        if (input.images !== undefined) updateData.images = input.images;
+
+        transaction.update(docRef, updateData);
+      });
 
       logger.info('공지사항 수정 완료', {
         component: 'AnnouncementRepository',
         announcementId,
       });
     } catch (error) {
+      if (isAppError(error)) throw error;
       logger.error('공지사항 수정 실패', toError(error), { announcementId });
       throw handleServiceError(error, {
         operation: '공지사항 수정',

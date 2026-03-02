@@ -13,8 +13,9 @@
 import { logger } from '@/utils/logger';
 import { isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { applicationRepository } from '@/repositories';
+import { applicationRepository, jobPostingRepository } from '@/repositories';
 import type { ConversionResult, ConversionOptions } from '@/repositories';
+import { getClosingStatus } from '@/utils/job-posting/dateUtils';
 
 // ============================================================================
 // Types
@@ -94,6 +95,20 @@ export async function batchConvertApplicants(
       jobPostingId,
       managerId,
     });
+
+    // 사전 정원 검증 (부분 실패 최소화)
+    const jobPosting = await jobPostingRepository.getById(jobPostingId);
+    if (jobPosting) {
+      const { total, filled } = getClosingStatus(jobPosting);
+      const remaining = total > 0 ? total - filled : Infinity;
+      if (remaining < applicationIds.length) {
+        logger.warn('일괄 변환 정원 부족 경고', {
+          jobPostingId,
+          remaining,
+          requested: applicationIds.length,
+        });
+      }
+    }
 
     const result: BulkConversionResult = {
       successCount: 0,

@@ -316,6 +316,13 @@ async function rollbackCreatedPostings(createdIds: string[]): Promise<void> {
 
   for (const id of createdIds) {
     try {
+      // 멱등성: 이미 취소된 공고는 건너뛰기
+      const posting = await jobPostingRepository.getById(id);
+      if (posting?.status === 'cancelled') {
+        logger.info('이미 롤백된 공고, 건너뜀', { id });
+        continue;
+      }
+
       await jobPostingRepository.updateStatus(id, 'cancelled');
       logger.info('공고 롤백 완료', { id });
     } catch (rollbackError) {

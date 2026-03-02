@@ -410,14 +410,12 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
                   ? '이미 다른 계정에 등록된 전화번호입니다.'
                   : '이미 가입된 전화번호입니다.'
               );
-              setIsLoading(false);
               return;
             }
             lastCheckedPhoneRef.current = cleaned;
           } catch (checkError) {
             logger.error('전화번호 중복 체크 실패 - SMS 발송 중단', { error: checkError });
             setError('전화번호 확인 중 오류가 발생했습니다. 잠시 후 다시 시도해주세요.');
-            setIsLoading(false);
             return;
           }
         }
@@ -434,8 +432,9 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         } else {
           const result = await requestOtpForSignIn(e164);
           setConfirmation(result);
-          if ('verificationId' in result) {
-            verificationIdRef.current = (result as { verificationId: string }).verificationId;
+          const resultWithVid = result as unknown as Record<string, unknown>;
+          if (typeof resultWithVid.verificationId === 'string') {
+            verificationIdRef.current = resultWithVid.verificationId;
           }
         }
 
@@ -472,7 +471,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
       } finally {
         setIsLoading(false);
       }
-    }, [phone, onError, onVerified, mode, step, requestOtpForSignIn, requestOtpForLink]);
+    }, [phone, onError, onVerified, mode, requestOtpForSignIn, requestOtpForLink]);
 
     const MAX_OTP_ATTEMPTS = 5;
 
@@ -757,6 +756,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
             <View className="flex-col gap-3 mt-2">
               <Text className="text-sm text-gray-600 dark:text-gray-300">
                 인증번호가 발송되었습니다. 수신까지 최대 1분 소요될 수 있습니다.
+                {'\n'}문자가 오지 않으면 스팸함을 확인해주세요.
               </Text>
               <View className="flex-row gap-2">
                 <View className="flex-1">

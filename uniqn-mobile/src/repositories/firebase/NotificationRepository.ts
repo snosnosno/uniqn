@@ -20,6 +20,7 @@ import {
   deleteDoc,
   deleteField,
   writeBatch,
+  runTransaction,
   query,
   where,
   orderBy,
@@ -52,6 +53,7 @@ import type { NotificationData, NotificationSettings } from '@/types/notificatio
 
 const PAGE_SIZE = 20;
 const BATCH_LIMIT = 500; // Firestore writeBatch 최대 작업 수
+const MAX_FCM_TOKENS = 10; // 디바이스당 토큰 최대 개수
 
 // ============================================================================
 // Helpers
@@ -426,16 +428,48 @@ export class FirebaseNotificationRepository implements INotificationRepository {
     // 레거시 키 (substring 방식) — 존재하면 삭제하여 중복 방지
     const legacyTokenKey = token.substring(0, 32).replace(/[^a-zA-Z0-9]/g, '_');
 
-    await updateDoc(userRef, {
-      [`fcmTokens.${tokenKey}`]: {
-        token,
-        type: metadata.type,
-        platform: metadata.platform,
-        registeredAt: serverTimestamp(),
-        lastRefreshedAt: serverTimestamp(),
-      },
-      // 레거시 키 정리 (이미 없으면 no-op)
-      ...(tokenKey !== legacyTokenKey ? { [`fcmTokens.${legacyTokenKey}`]: deleteField() } : {}),
+    await runTransaction(getFirebaseDb(), async (transaction) => {
+      const userDoc = await transaction.get(userRef);
+      if (!userDoc.exists()) {
+        logger.warn('FCM 토큰 등록 실패 - 사용자 없음', { userId });
+        return;
+      }
+
+      const currentTokens = (userDoc.data().fcmTokens ?? {}) as Record<
+        string,
+        { registeredAt?: { toMillis?: () => number } }
+      >;
+      const isExisting = tokenKey in currentTokens || legacyTokenKey in currentTokens;
+
+      // 새 토큰이고 제한 초과 시 가장 오래된 토큰 제거
+      if (!isExisting && Object.keys(currentTokens).length >= MAX_FCM_TOKENS) {
+        let oldestKey: string | null = null;
+        let oldestTime = Infinity;
+
+        for (const [key, val] of Object.entries(currentTokens)) {
+          const ts = val?.registeredAt?.toMillis?.() ?? 0;
+          if (ts < oldestTime) {
+            oldestTime = ts;
+            oldestKey = key;
+          }
+        }
+
+        if (oldestKey) {
+          transaction.update(userRef, { [`fcmTokens.${oldestKey}`]: deleteField() });
+        }
+      }
+
+      transaction.update(userRef, {
+        [`fcmTokens.${tokenKey}`]: {
+          token,
+          type: metadata.type,
+          platform: metadata.platform,
+          registeredAt: serverTimestamp(),
+          lastRefreshedAt: serverTimestamp(),
+        },
+        // 레거시 키 정리 (이미 없으면 no-op)
+        ...(tokenKey !== legacyTokenKey ? { [`fcmTokens.${legacyTokenKey}`]: deleteField() } : {}),
+      });
     });
 
     logger.info('FCM 토큰 등록', {

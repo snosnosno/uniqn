@@ -46,10 +46,22 @@ export const createScheduleEventSchema = z.object({
   /** 공고 ID */
   jobPostingId: z.string().min(1, { message: '공고 ID는 필수입니다' }),
   /** 공고명 */
-  jobPostingName: z.string().min(1, { message: '공고명은 필수입니다' }),
-  location: z.string().min(1, { message: '장소는 필수입니다' }),
-  detailedAddress: z.string().optional(),
-  role: z.string().min(1, { message: '역할은 필수입니다' }),
+  jobPostingName: z
+    .string()
+    .min(1, { message: '공고명은 필수입니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+  location: z
+    .string()
+    .min(1, { message: '장소는 필수입니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+  detailedAddress: z
+    .string()
+    .refine((val) => !val || xssValidation(val), { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
+  role: z
+    .string()
+    .min(1, { message: '역할은 필수입니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
   notes: z
     .string()
     .max(500, { message: '메모는 500자를 초과할 수 없습니다' })

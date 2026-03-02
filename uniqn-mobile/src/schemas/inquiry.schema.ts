@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { xssValidation } from '@/utils/security';
+import { xssValidation, isSafeUrl } from '@/utils/security';
 
 // ============================================================================
 // 기본 스키마
@@ -62,7 +62,10 @@ export const inquiryMessageSchema = z
  */
 export const inquiryAttachmentSchema = z.object({
   name: z.string().min(1, { message: '파일 이름이 필요합니다' }),
-  url: z.string().url({ message: '올바른 URL 형식이 아닙니다' }),
+  url: z
+    .string()
+    .url({ message: '올바른 URL 형식이 아닙니다' })
+    .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' }),
   type: z.string().min(1, { message: '파일 타입이 필요합니다' }),
   size: z
     .number()
@@ -138,8 +141,11 @@ export type InquiryFilterData = z.infer<typeof inquiryFilterSchema>;
 export const faqItemSchema = z.object({
   id: z.string().min(1),
   category: inquiryCategorySchema,
-  question: z.string().min(1),
-  answer: z.string().min(1),
+  question: z
+    .string()
+    .min(1)
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
+  answer: z.string().min(1).refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
   order: z.number().int().min(0),
   isActive: z.boolean().optional().default(true),
 });

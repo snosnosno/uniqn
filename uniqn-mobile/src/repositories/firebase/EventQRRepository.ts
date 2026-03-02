@@ -22,6 +22,8 @@ import {
   orderBy,
   limit,
   Timestamp,
+  writeBatch,
+  runTransaction,
 } from 'firebase/firestore';
 import { getFirebaseDb } from '@/lib/firebase';
 import { logger } from '@/utils/logger';
@@ -89,12 +91,23 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
       const docSnap = snapshot.docs[0];
       const data = docSnap.data() as Omit<EventQRCode, 'id'>;
 
-      // 만료 확인 및 자동 비활성화
+      // 만료 확인 및 자동 비활성화 (트랜잭션으로 TOCTOU 방지)
       if (data.expiresAt.toMillis() < Date.now()) {
-        await updateDoc(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
-          isActive: false,
+        return await runTransaction(getFirebaseDb(), async (transaction) => {
+          const freshDoc = await transaction.get(
+            doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id)
+          );
+          if (!freshDoc.exists()) return null;
+
+          const freshData = freshDoc.data() as Omit<EventQRCode, 'id'>;
+          if (!freshData.isActive) return null;
+
+          if (freshData.expiresAt.toMillis() < Date.now()) {
+            transaction.update(freshDoc.ref, { isActive: false });
+            return null;
+          }
+          return { id: freshDoc.id, ...freshData };
         });
-        return null;
       }
 
       return { id: docSnap.id, ...data };
@@ -197,13 +210,16 @@ export class FirebaseEventQRRepository implements IEventQRRepository {
 
       const snapshot = await getDocs(q);
 
-      await Promise.all(
-        snapshot.docs.map((docSnap) =>
-          updateDoc(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
-            isActive: false,
-          })
-        )
-      );
+      if (snapshot.empty) return 0;
+
+      // writeBatch로 원자적 배치 비활성화
+      const batch = writeBatch(getFirebaseDb());
+      snapshot.docs.forEach((docSnap) => {
+        batch.update(doc(getFirebaseDb(), COLLECTIONS.EVENT_QR_CODES, docSnap.id), {
+          isActive: false,
+        });
+      });
+      await batch.commit();
 
       return snapshot.docs.length;
     } catch (error) {

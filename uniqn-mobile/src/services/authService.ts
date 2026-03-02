@@ -789,26 +789,51 @@ export async function updateUserProfile(
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });
 
-    // 1. Firestore 업데이트
-    await userRepository.updateFields(uid, updates);
-
-    // 2. Firebase Auth 업데이트 (photoURL 또는 nickname 변경 시)
+    // Auth 업데이트 대상 구성
     // Note: name(본명)은 본인인증 정보이므로 수정 불가
-    if ('photoURL' in updates || 'nickname' in updates) {
-      const authUpdates: { photoURL?: string; displayName?: string } = {};
-      if ('photoURL' in updates) {
-        authUpdates.photoURL = updates.photoURL ?? undefined;
-      }
-      if ('nickname' in updates && updates.nickname) {
-        authUpdates.displayName = updates.nickname;
-      }
-      if (Object.keys(authUpdates).length > 0) {
-        await updateProfile(currentUser, authUpdates);
-        logger.info('Firebase Auth 프로필 업데이트', {
+    const authUpdates: { photoURL?: string; displayName?: string } = {};
+    if ('photoURL' in updates) {
+      authUpdates.photoURL = updates.photoURL ?? undefined;
+    }
+    if ('nickname' in updates && updates.nickname) {
+      authUpdates.displayName = updates.nickname;
+    }
+
+    const hasAuthUpdates = Object.keys(authUpdates).length > 0;
+
+    // 1. Auth 먼저 업데이트 (이전 값 백업하여 롤백 대비)
+    if (hasAuthUpdates) {
+      await updateProfile(currentUser, authUpdates);
+      logger.info('Firebase Auth 프로필 업데이트', {
+        uid,
+        fields: Object.keys(authUpdates),
+      });
+    }
+
+    // 2. Firestore 업데이트 (실패 시 Auth 롤백)
+    try {
+      await userRepository.updateFields(uid, updates);
+    } catch (firestoreError) {
+      if (hasAuthUpdates) {
+        const previousAuth: { photoURL?: string; displayName?: string } = {};
+        if ('photoURL' in updates) previousAuth.photoURL = currentUser.photoURL ?? undefined;
+        if ('nickname' in updates) previousAuth.displayName = currentUser.displayName ?? undefined;
+
+        logger.warn('Firestore 프로필 업데이트 실패 - Auth 롤백 시도', {
           uid,
-          fields: Object.keys(authUpdates),
+          error: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),
         });
+        try {
+          await updateProfile(currentUser, previousAuth);
+          logger.info('Auth 프로필 롤백 완료', { uid });
+        } catch (rollbackError) {
+          logger.error('Auth 프로필 롤백 실패 - 수동 복구 필요', {
+            uid,
+            error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+          });
+        }
       }
+      throw firestoreError;
     }
 
     logger.info('프로필 업데이트 성공', { uid });

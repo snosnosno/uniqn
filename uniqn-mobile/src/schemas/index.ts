@@ -222,6 +222,7 @@ export {
   notificationSettingsSchema,
   userSettingsSchema,
   searchUsersSchema,
+  parseUserDocument,
 } from './user.schema';
 
 export type {

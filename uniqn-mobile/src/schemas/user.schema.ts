@@ -86,9 +86,17 @@ export type UpdateProfileData = z.infer<typeof updateProfileSchema>;
  * 스태프 프로필 스키마
  */
 export const staffProfileSchema = z.object({
-  preferredRoles: z.array(z.string()).optional(),
-  preferredRegions: z.array(z.string()).optional(),
-  experience: z.string().max(500, { message: '경력 설명은 500자를 초과할 수 없습니다' }).optional(),
+  preferredRoles: z
+    .array(z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }))
+    .optional(),
+  preferredRegions: z
+    .array(z.string().refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }))
+    .optional(),
+  experience: z
+    .string()
+    .max(500, { message: '경력 설명은 500자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
   availableDays: z.array(z.number().min(0).max(6)).optional(), // 0=일요일, 6=토요일
 });
 
@@ -215,3 +223,20 @@ export const passwordChangeSchema = z
   });
 
 export type PasswordChangeData = z.infer<typeof passwordChangeSchema>;
+
+// ============================================================================
+// Firestore 문서 파서
+// ============================================================================
+
+/**
+ * Firestore 사용자 문서 경량 검증
+ *
+ * @description 필수 필드(role, status) 존재 확인.
+ * User 문서는 스키마가 넓고 선택 필드가 많아 Zod 전체 파싱 대신 경량 검증 적용.
+ */
+export function parseUserDocument<T>(data: T | undefined): T | null {
+  if (!data || typeof data !== 'object') return null;
+  const record = data as Record<string, unknown>;
+  if (!record.role || !record.status) return null;
+  return data;
+}

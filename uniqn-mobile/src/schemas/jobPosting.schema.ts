@@ -83,14 +83,23 @@ export const basicInfoSchema = z.object({
       message: '위험한 문자열이 포함되어 있습니다',
     }),
 
-  location: z.string().min(1, { message: '근무 장소를 선택해주세요' }).trim(),
+  location: z
+    .string()
+    .min(1, { message: '근무 장소를 선택해주세요' })
+    .trim()
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
 
-  district: z.string().trim().optional(),
+  district: z
+    .string()
+    .trim()
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
+    .optional(),
 
   detailedAddress: z
     .string()
     .trim()
     .max(200, { message: '상세 주소는 200자를 초과할 수 없습니다' })
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
 
   description: z
@@ -106,7 +115,8 @@ export const basicInfoSchema = z.object({
     .string()
     .min(1, { message: '문의 연락처를 입력해주세요' })
     .max(25, { message: '문의 연락처는 25자를 초과할 수 없습니다' })
-    .trim(),
+    .trim()
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' }),
 });
 
 export type BasicInfoData = z.infer<typeof basicInfoSchema>;

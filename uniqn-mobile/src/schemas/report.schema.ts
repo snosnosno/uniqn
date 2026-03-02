@@ -6,7 +6,7 @@
  */
 
 import { z } from 'zod';
-import { xssValidation } from '@/utils/security';
+import { xssValidation, isSafeUrl } from '@/utils/security';
 import { timestampSchema, optionalTimestampSchema } from './common';
 
 // ============================================================================
@@ -129,7 +129,12 @@ export const createReportInputSchema = z.object({
     }),
 
   evidenceUrls: z
-    .array(z.string().url({ message: '올바른 URL 형식이어야 합니다' }))
+    .array(
+      z
+        .string()
+        .url({ message: '올바른 URL 형식이어야 합니다' })
+        .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' })
+    )
     .max(5, { message: '증거 파일은 최대 5개까지 첨부 가능합니다' })
     .optional(),
 });
