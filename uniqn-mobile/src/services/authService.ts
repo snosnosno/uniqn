@@ -50,7 +50,8 @@ import {
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
-import { AuthError, BusinessError, ERROR_CODES } from '@/errors';
+import { AuthError, BusinessError, ValidationError, ERROR_CODES } from '@/errors';
+import { sanitizeInput, isSafeUrl } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from './sessionService';
 import {
@@ -203,7 +204,7 @@ export async function unlinkPhoneProvider(): Promise<void> {
       const nativeUser = nativeAuth?.currentUser;
       if (nativeUser && nativeUnlink) {
         const hasPhone = nativeUser.providerData.some(
-          (p: { providerId: string }) => p.providerId === 'phone',
+          (p: { providerId: string }) => p.providerId === 'phone'
         );
         if (hasPhone) {
           await nativeUnlink(nativeUser, 'phone');
@@ -321,10 +322,10 @@ function toVerifyPayload(data: SignUpFormData): VerifyAndSavePayload {
  * Custom Claims 설정, displayName 설정을 모두 처리합니다.
  */
 async function callVerifyAndSaveProfile(payload: VerifyAndSavePayload): Promise<void> {
-  const verifyAndSave = httpsCallable<
-    VerifyAndSavePayload,
-    { success: boolean; uid: string }
-  >(getFirebaseFunctions(), 'verifyAndSaveProfile');
+  const verifyAndSave = httpsCallable<VerifyAndSavePayload, { success: boolean; uid: string }>(
+    getFirebaseFunctions(),
+    'verifyAndSaveProfile'
+  );
 
   await verifyAndSave(payload);
 }
@@ -577,9 +578,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
         try {
           const webUser = getFirebaseAuth().currentUser;
           if (webUser) {
-            const hasEmail = webUser.providerData.some(
-              (p) => p.providerId === 'password',
-            );
+            const hasEmail = webUser.providerData.some((p) => p.providerId === 'password');
             if (hasEmail) {
               await webUnlink(webUser, 'password');
             }
@@ -662,7 +661,7 @@ export async function signUp(data: SignUpFormData): Promise<AuthResult> {
           const currentNativeUser = nativeAuth.currentUser;
           if (currentNativeUser) {
             const hasEmail = currentNativeUser.providerData.some(
-              (p: { providerId: string }) => p.providerId === 'password',
+              (p: { providerId: string }) => p.providerId === 'password'
             );
             if (hasEmail) {
               await nativeUnlink(currentNativeUser, 'password');
@@ -750,6 +749,13 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
  * 마케팅 동의 상태 업데이트
  */
 export async function updateMarketingConsent(uid: string, marketingAgreed: boolean): Promise<void> {
+  const currentUser = requireCurrentUser();
+  if (uid !== currentUser.uid) {
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '권한이 없습니다',
+    });
+  }
+
   try {
     logger.info('마케팅 동의 업데이트', { uid, marketingAgreed });
 
@@ -773,6 +779,13 @@ export async function updateUserProfile(
   uid: string,
   updates: Partial<EditableProfileFields>
 ): Promise<void> {
+  const currentUser = requireCurrentUser();
+  if (uid !== currentUser.uid) {
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '권한이 없습니다',
+    });
+  }
+
   try {
     logger.info('프로필 업데이트', { uid, updates: Object.keys(updates) });
 
@@ -781,8 +794,7 @@ export async function updateUserProfile(
 
     // 2. Firebase Auth 업데이트 (photoURL 또는 nickname 변경 시)
     // Note: name(본명)은 본인인증 정보이므로 수정 불가
-    const currentUser = getFirebaseAuth().currentUser;
-    if (currentUser && currentUser.uid === uid) {
+    if (currentUser) {
       if ('photoURL' in updates || 'nickname' in updates) {
         const authUpdates: { photoURL?: string; displayName?: string } = {};
         if ('photoURL' in updates) {
@@ -872,7 +884,7 @@ export function onAuthStateChanged(callback: (user: FirebaseUser | null) => void
 /**
  * 개발 모드 여부 확인
  */
-const IS_DEV_MODE = __DEV__ || process.env.NODE_ENV === 'development';
+const IS_DEV_MODE = __DEV__;
 
 /**
  * Mock 소셜 로그인 결과 생성
@@ -1101,6 +1113,9 @@ export async function signInWithApple(): Promise<AuthResult> {
         logger.debug('Apple 이름 MMKV 캐시에서 복구', { component: 'authService' });
       }
     }
+
+    // XSS 방어: Apple 이름 sanitization (CF 최종 검증 전 임시 보호)
+    appleName = sanitizeInput(appleName).slice(0, 20);
 
     // 3. Web SDK 인증 (Firestore Security Rules용 — 반드시 먼저 실행)
     // Apple credential은 1회용이므로 Web SDK를 우선 인증
@@ -1518,19 +1533,25 @@ export async function registerAsEmployer(): Promise<UserProfile> {
  * @param photoURL 새 프로필 사진 URL (null이면 삭제)
  */
 export async function updateProfilePhotoURL(uid: string, photoURL: string | null): Promise<void> {
+  const currentUser = requireCurrentUser();
+  if (uid !== currentUser.uid) {
+    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+      userMessage: '권한이 없습니다',
+    });
+  }
+
+  // URL 안전성 검증 (javascript:, vbscript:, data: 등 차단)
+  if (photoURL && !isSafeUrl(photoURL)) {
+    throw new ValidationError(ERROR_CODES.SECURITY_XSS_DETECTED, {
+      userMessage: '허용되지 않는 URL 형식입니다',
+    });
+  }
+
   try {
-    const user = getFirebaseAuth().currentUser;
-
-    if (!user) {
-      throw new AuthError(ERROR_CODES.AUTH_USER_NOT_FOUND, {
-        userMessage: '로그인이 필요합니다',
-      });
-    }
-
     logger.info('프로필 사진 업데이트', { uid });
 
     // 1. Firebase Auth 프로필 업데이트
-    await updateProfile(user, { photoURL });
+    await updateProfile(currentUser, { photoURL });
 
     // 2. Firestore 사용자 문서 업데이트
     await userRepository.updateFields(uid, { photoURL: photoURL ?? null });

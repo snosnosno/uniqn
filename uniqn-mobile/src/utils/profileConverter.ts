@@ -43,6 +43,11 @@ export function toStoreProfile(profile: {
   termsAgreed?: boolean;
   privacyAgreed?: boolean;
   marketingAgreed?: boolean;
+  region?: string;
+  experienceYears?: number;
+  career?: string;
+  note?: string;
+  isActive?: boolean;
   createdAt: unknown;
   updatedAt: unknown;
 }): UserProfile {
@@ -61,6 +66,11 @@ export function toStoreProfile(profile: {
     termsAgreed: profile.termsAgreed,
     privacyAgreed: profile.privacyAgreed,
     marketingAgreed: profile.marketingAgreed,
+    region: profile.region,
+    experienceYears: profile.experienceYears,
+    career: profile.career,
+    note: profile.note,
+    isActive: profile.isActive,
     createdAt: toDate(profile.createdAt),
     updatedAt: toDate(profile.updatedAt),
   };

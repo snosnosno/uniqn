@@ -105,10 +105,34 @@ export function SignupStepProfile({
   // 나중에 입력하기: 닉네임만 검증 후 선택 필드 없이 진행
   const handleSkipOptional = useCallback(async () => {
     const isValid = await trigger('nickname');
-    if (isValid && nicknameStatus !== 'taken') {
-      onNext({ nickname: getValues('nickname'), role: 'staff' as const });
+    if (!isValid) return;
+
+    const nickname = getValues('nickname').trim();
+    let isTaken = nicknameStatus === 'taken';
+
+    // blur 미실행 시 서버 중복 검사 수행
+    if (nicknameStatus !== 'available' && nickname.length >= 2) {
+      setNicknameStatus('checking');
+      try {
+        const exists = await checkNicknameExists(nickname);
+        lastCheckedNickname.current = nickname;
+        if (exists) {
+          isTaken = true;
+          setNicknameStatus('taken');
+          setError('nickname', { type: 'manual', message: '이미 사용 중인 닉네임입니다' });
+          return;
+        }
+        setNicknameStatus('available');
+      } catch (error) {
+        logger.warn('닉네임 중복 확인 실패 (스킵)', { error });
+        // 서버 에러 시 진행 허용 — CF Transaction에서 최종 검증
+      }
     }
-  }, [trigger, getValues, onNext, nicknameStatus]);
+
+    if (!isTaken) {
+      onNext({ nickname, role: 'staff' as const });
+    }
+  }, [trigger, getValues, onNext, nicknameStatus, setError]);
 
   return (
     <View className="w-full flex-col gap-4">
