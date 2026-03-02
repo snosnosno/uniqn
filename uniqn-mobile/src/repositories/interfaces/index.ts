@@ -14,6 +14,8 @@ export type {
   SubscribeCallbacks,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  ConversionResult,
+  ConversionOptions,
 } from './IApplicationRepository';
 
 // JobPosting Repository
@@ -76,6 +78,7 @@ export type {
   UpdateConfirmedStaffWorkTimeContext,
   DeleteConfirmedStaffContext,
   MarkNoShowContext,
+  UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from './IConfirmedStaffRepository';
 

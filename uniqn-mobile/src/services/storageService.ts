@@ -165,13 +165,13 @@ export async function replaceProfileImage(
   newImageUri: string,
   oldImageUrl?: string | null
 ): Promise<string> {
-  // 1. 이전 이미지 삭제 (있는 경우)
+  // 1. 새 이미지 업로드 먼저 (실패 시 이전 이미지 보존)
+  const result = await uploadProfileImage(userId, newImageUri);
+
+  // 2. 업로드 성공 후 이전 이미지 삭제 (삭제 실패는 deleteProfileImage 내부에서 무시)
   if (oldImageUrl) {
     await deleteProfileImage(oldImageUrl);
   }
-
-  // 2. 새 이미지 업로드
-  const result = await uploadProfileImage(userId, newImageUri);
 
   return result.downloadURL;
 }

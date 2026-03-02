@@ -13,7 +13,6 @@ import { EmptyState, Skeleton } from '@/components/ui';
 import { usePendingReviews } from '@/hooks/useReviews';
 import type { PendingReviewItem } from '@/hooks/useReviews';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
-import type { Timestamp } from 'firebase/firestore';
 
 /**
  * D-day 계산 — checkOutTime 우선, 없으면 workDate 기준
@@ -29,7 +28,7 @@ function getDaysRemaining(item: PendingReviewItem): number {
     } else if (typeof cot === 'string') {
       baseTime = new Date(cot).getTime();
     } else {
-      baseTime = (cot as Timestamp).toDate().getTime();
+      baseTime = (cot as { toDate(): Date }).toDate().getTime();
     }
   } else {
     baseTime = new Date(item.workDate).getTime();
@@ -62,7 +61,8 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
           </Text>
           <View className="mt-1 flex-row items-center gap-2">
             <Text className="text-sm text-gray-500 dark:text-gray-400">
-              {item.workDate}{item.location ? ` · ${item.location}` : ''}
+              {item.workDate}
+              {item.location ? ` · ${item.location}` : ''}
             </Text>
             {item.reviewerType === 'employer' && (
               <View className="rounded bg-blue-100 px-1.5 py-0.5 dark:bg-blue-900/30">
@@ -96,23 +96,20 @@ function PendingReviewCard({ item, onPress }: PendingReviewCardProps) {
 export default function PendingReviewsScreen() {
   const { pendingReviews, pendingCount, isLoading } = usePendingReviews();
 
-  const handlePress = useCallback(
-    (item: PendingReviewItem) => {
-      router.push({
-        pathname: '/(app)/reviews/write',
-        params: {
-          workLogId: item.workLogId,
-          revieweeId: item.revieweeId,
-          revieweeName: item.revieweeName,
-          reviewerType: item.reviewerType,
-          jobPostingId: item.jobPostingId,
-          jobPostingTitle: item.jobPostingTitle,
-          workDate: item.workDate,
-        },
-      });
-    },
-    []
-  );
+  const handlePress = useCallback((item: PendingReviewItem) => {
+    router.push({
+      pathname: '/(app)/reviews/write',
+      params: {
+        workLogId: item.workLogId,
+        revieweeId: item.revieweeId,
+        revieweeName: item.revieweeName,
+        reviewerType: item.reviewerType,
+        jobPostingId: item.jobPostingId,
+        jobPostingTitle: item.jobPostingTitle,
+        workDate: item.workDate,
+      },
+    });
+  }, []);
 
   return (
     <SafeAreaView className="flex-1 bg-gray-50 dark:bg-surface-dark" edges={['bottom']}>

@@ -21,7 +21,6 @@ import {
   query,
   where,
   orderBy,
-  updateDoc,
   runTransaction,
   onSnapshot,
   Timestamp,
@@ -35,13 +34,13 @@ import { BusinessError, ERROR_CODES, toError, isAppError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { parseWorkLogDocument, parseWorkLogDocuments } from '@/schemas';
 import type { WorkLog, WorkTimeModification, RoleChangeHistory } from '@/types';
-import type { ConfirmedStaffStatus } from '@/types/confirmedStaff';
 import type {
   IConfirmedStaffRepository,
   UpdateRoleContext,
   UpdateConfirmedStaffWorkTimeContext,
   DeleteConfirmedStaffContext,
   MarkNoShowContext,
+  UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
 } from '../interfaces';
 import { COLLECTIONS, FIELDS, STATUS } from '@/constants';
@@ -359,17 +358,51 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     try {
       logger.info('노쇼 처리', { workLogId: context.workLogId });
 
-      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        // 1. WorkLog 읽기
+        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
+        const workLogDoc = await transaction.get(workLogRef);
+        if (!workLogDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '근무 기록을 찾을 수 없습니다',
+          });
+        }
 
-      await updateDoc(workLogRef, {
-        status: STATUS.CONFIRMED_STAFF.NO_SHOW,
-        noShowReason: context.reason,
-        noShowAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        // 2. JobPosting 읽기 → 소유자 확인
+        const workLogData = workLogDoc.data();
+        const jobPostingId = workLogData?.jobPostingId;
+        if (typeof jobPostingId !== 'string' || !jobPostingId) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '근무 기록에 공고 정보가 없습니다',
+          });
+        }
+        const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+        const jobPostingDoc = await transaction.get(jobPostingRef);
+        if (!jobPostingDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공고를 찾을 수 없습니다',
+          });
+        }
+        if (jobPostingDoc.data()?.ownerId !== context.ownerId) {
+          throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+            userMessage: '공고 소유자만 노쇼 처리할 수 있습니다',
+          });
+        }
+
+        // 3. WorkLog 업데이트
+        transaction.update(workLogRef, {
+          status: STATUS.CONFIRMED_STAFF.NO_SHOW,
+          noShowReason: context.reason,
+          noShowAt: serverTimestamp(),
+          updatedAt: serverTimestamp(),
+        });
       });
 
       logger.info('노쇼 처리 완료', { workLogId: context.workLogId });
     } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
       throw handleServiceError(error, {
         operation: '노쇼 처리',
         component: 'ConfirmedStaffRepository',
@@ -378,23 +411,60 @@ export class FirebaseConfirmedStaffRepository implements IConfirmedStaffReposito
     }
   }
 
-  async updateStatus(workLogId: string, status: ConfirmedStaffStatus): Promise<void> {
+  async updateStatus(context: UpdateStaffStatusContext): Promise<void> {
     try {
-      logger.info('스태프 상태 변경', { workLogId, status });
+      logger.info('스태프 상태 변경', { workLogId: context.workLogId, status: context.status });
 
-      const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, workLogId);
+      await runTransaction(getFirebaseDb(), async (transaction) => {
+        // 1. WorkLog 읽기
+        const workLogRef = doc(getFirebaseDb(), COLLECTIONS.WORK_LOGS, context.workLogId);
+        const workLogDoc = await transaction.get(workLogRef);
+        if (!workLogDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '근무 기록을 찾을 수 없습니다',
+          });
+        }
 
-      await updateDoc(workLogRef, {
-        status,
-        updatedAt: serverTimestamp(),
+        // 2. JobPosting 읽기 → 소유자 확인
+        const workLogData = workLogDoc.data();
+        const jobPostingId = workLogData?.jobPostingId;
+        if (typeof jobPostingId !== 'string' || !jobPostingId) {
+          throw new BusinessError(ERROR_CODES.BUSINESS_INVALID_STATE, {
+            userMessage: '근무 기록에 공고 정보가 없습니다',
+          });
+        }
+        const jobPostingRef = doc(getFirebaseDb(), COLLECTIONS.JOB_POSTINGS, jobPostingId);
+        const jobPostingDoc = await transaction.get(jobPostingRef);
+        if (!jobPostingDoc.exists()) {
+          throw new BusinessError(ERROR_CODES.FIREBASE_DOCUMENT_NOT_FOUND, {
+            userMessage: '공고를 찾을 수 없습니다',
+          });
+        }
+        if (jobPostingDoc.data()?.ownerId !== context.ownerId) {
+          throw new BusinessError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
+            userMessage: '공고 소유자만 상태를 변경할 수 있습니다',
+          });
+        }
+
+        // 3. WorkLog 업데이트
+        transaction.update(workLogRef, {
+          status: context.status,
+          updatedAt: serverTimestamp(),
+        });
       });
 
-      logger.info('스태프 상태 변경 완료', { workLogId, status });
+      logger.info('스태프 상태 변경 완료', {
+        workLogId: context.workLogId,
+        status: context.status,
+      });
     } catch (error) {
+      if (isAppError(error)) {
+        throw error;
+      }
       throw handleServiceError(error, {
         operation: '스태프 상태 변경',
         component: 'ConfirmedStaffRepository',
-        context: { workLogId, status },
+        context: { workLogId: context.workLogId, status: context.status },
       });
     }
   }

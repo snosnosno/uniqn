@@ -31,6 +31,7 @@ import { getUnreadCounterFromCache } from '@/services/notificationService';
 import { logger } from '@/utils/logger';
 import { startTrace } from '@/services/performanceService';
 import { getUserProfile, signOut as authSignOut } from '@/services/authService';
+import { toStoreProfile } from '@/utils/profileConverter';
 import {
   checkForceUpdate,
   ForceUpdateError,
@@ -248,55 +249,13 @@ export function useAppInitialize(): UseAppInitializeReturn {
                 socialProvider: freshProfile.socialProvider,
               });
               // setProfile → setUser 순서: profile 먼저 설정하여 useAuthGuard가 정확한 상태 감지
-              useAuthStore.getState().setProfile({
-                ...freshProfile,
-                createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
-                updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
-                employerAgreements: freshProfile.employerAgreements
-                  ? {
-                      termsAgreedAt:
-                        freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-                      liabilityWaiverAgreedAt:
-                        freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ??
-                        new Date(),
-                    }
-                  : undefined,
-                employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
-                bubbleScore: freshProfile.bubbleScore
-                  ? {
-                      ...freshProfile.bubbleScore,
-                      lastUpdatedAt:
-                        freshProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
-                    }
-                  : undefined,
-              });
+              useAuthStore.getState().setProfile(toStoreProfile(freshProfile));
               useAuthStore.getState().setUser(authUser);
               // 알림 카운터 등 불필요한 초기화 건너뛰기
             } else {
               // 완성된 프로필: setProfile → setUser 순서 (profile 준비 후 인증 상태 전환)
               // Timestamp를 Date로 변환하여 authStore에 저장
-              useAuthStore.getState().setProfile({
-                ...freshProfile,
-                createdAt: freshProfile.createdAt?.toDate?.() ?? new Date(),
-                updatedAt: freshProfile.updatedAt?.toDate?.() ?? new Date(),
-                employerAgreements: freshProfile.employerAgreements
-                  ? {
-                      termsAgreedAt:
-                        freshProfile.employerAgreements.termsAgreedAt?.toDate?.() ?? new Date(),
-                      liabilityWaiverAgreedAt:
-                        freshProfile.employerAgreements.liabilityWaiverAgreedAt?.toDate?.() ??
-                        new Date(),
-                    }
-                  : undefined,
-                employerRegisteredAt: freshProfile.employerRegisteredAt?.toDate?.() ?? undefined,
-                bubbleScore: freshProfile.bubbleScore
-                  ? {
-                      ...freshProfile.bubbleScore,
-                      lastUpdatedAt:
-                        freshProfile.bubbleScore.lastUpdatedAt?.toDate?.() ?? new Date(),
-                    }
-                  : undefined,
-              });
+              useAuthStore.getState().setProfile(toStoreProfile(freshProfile));
               useAuthStore.getState().setUser(authUser);
               logger.info('최신 프로필 로드 완료', {
                 component: 'useAppInitialize',

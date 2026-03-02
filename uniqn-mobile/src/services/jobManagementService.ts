@@ -7,6 +7,7 @@
 
 import { Timestamp } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
+import { BusinessError, ERROR_CODES, toError } from '@/errors';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
 import { jobPostingRepository } from '@/repositories';
 import type { CreateJobPostingResult, JobPostingStats } from '@/repositories';
@@ -209,11 +210,42 @@ async function createMultiplePostingsByDate(
   ownerId: string,
   ownerName: string
 ): Promise<CreateJobPostingResult[]> {
+  const dateRequirements = input.dateSpecificRequirements;
+
+  // 사전 검증: dateSpecificRequirements 존재 확인
+  if (!dateRequirements || dateRequirements.length === 0) {
+    throw new BusinessError(ERROR_CODES.VALIDATION_REQUIRED, {
+      userMessage: '날짜별 요구사항이 없습니다',
+    });
+  }
+
+  // 사전 검증: 모든 날짜 데이터의 유효성 확인 (루프 진입 전)
+  for (const dateReq of dateRequirements) {
+    if (!dateReq.date) {
+      throw new BusinessError(ERROR_CODES.VALIDATION_FORMAT, {
+        userMessage: '날짜 정보가 누락된 항목이 있습니다',
+      });
+    }
+
+    // 해당 날짜에 역할이 매핑되는지 확인
+    const dateRoleKeys = extractRoleKeysFromDateReq([dateReq]);
+    const filteredRoles = input.roles.filter((role) => {
+      const roleKey = getRoleKeyFromFormRole(role as { name?: string; isCustom?: boolean });
+      return dateRoleKeys.has(roleKey);
+    });
+
+    if (filteredRoles.length === 0) {
+      throw new BusinessError(ERROR_CODES.VALIDATION_SCHEMA, {
+        userMessage: '역할이 매핑되지 않는 날짜가 있습니다',
+      });
+    }
+  }
+
   const results: CreateJobPostingResult[] = [];
   const createdIds: string[] = [];
 
   try {
-    for (const dateReq of input.dateSpecificRequirements!) {
+    for (const dateReq of dateRequirements) {
       // 날짜 문자열 추출
       let dateStr: string;
       if (typeof dateReq.date === 'string') {
@@ -280,17 +312,28 @@ async function createMultiplePostingsByDate(
  * 개별 롤백 실패는 로깅만 하고 계속 진행
  */
 async function rollbackCreatedPostings(createdIds: string[]): Promise<void> {
+  const failedIds: string[] = [];
+
   for (const id of createdIds) {
     try {
       await jobPostingRepository.updateStatus(id, 'cancelled');
       logger.info('공고 롤백 완료', { id });
     } catch (rollbackError) {
-      logger.error('공고 롤백 실패', {
+      failedIds.push(id);
+      logger.error('공고 롤백 실패', toError(rollbackError), {
         id,
-        error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
         component: 'jobManagementService',
       });
     }
+  }
+
+  if (failedIds.length > 0) {
+    logger.error('일부 공고 롤백 실패 — 수동 정리 필요', {
+      failedIds,
+      totalCreated: createdIds.length,
+      failedCount: failedIds.length,
+      component: 'jobManagementService',
+    });
   }
 }
 

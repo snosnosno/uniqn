@@ -50,7 +50,7 @@ import {
 import { userRepository } from '@/repositories';
 import { logger } from '@/utils/logger';
 import { clearCounterSyncCache } from '@/shared/cache/counterSyncCache';
-import { AuthError, BusinessError, ValidationError, ERROR_CODES } from '@/errors';
+import { AuthError, BusinessError, PermissionError, ValidationError, ERROR_CODES } from '@/errors';
 import { sanitizeInput, isSafeUrl } from '@/utils/security';
 import { handleServiceError, maskValue } from '@/errors/serviceErrorHandler';
 import { checkLoginAttempts, incrementLoginAttempts, resetLoginAttempts } from './sessionService';
@@ -751,7 +751,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 export async function updateMarketingConsent(uid: string, marketingAgreed: boolean): Promise<void> {
   const currentUser = requireCurrentUser();
   if (uid !== currentUser.uid) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+    throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '권한이 없습니다',
     });
   }
@@ -781,7 +781,7 @@ export async function updateUserProfile(
 ): Promise<void> {
   const currentUser = requireCurrentUser();
   if (uid !== currentUser.uid) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+    throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '권한이 없습니다',
     });
   }
@@ -794,22 +794,20 @@ export async function updateUserProfile(
 
     // 2. Firebase Auth 업데이트 (photoURL 또는 nickname 변경 시)
     // Note: name(본명)은 본인인증 정보이므로 수정 불가
-    if (currentUser) {
-      if ('photoURL' in updates || 'nickname' in updates) {
-        const authUpdates: { photoURL?: string; displayName?: string } = {};
-        if ('photoURL' in updates) {
-          authUpdates.photoURL = updates.photoURL ?? undefined;
-        }
-        if ('nickname' in updates && updates.nickname) {
-          authUpdates.displayName = updates.nickname;
-        }
-        if (Object.keys(authUpdates).length > 0) {
-          await updateProfile(currentUser, authUpdates);
-          logger.info('Firebase Auth 프로필 업데이트', {
-            uid,
-            fields: Object.keys(authUpdates),
-          });
-        }
+    if ('photoURL' in updates || 'nickname' in updates) {
+      const authUpdates: { photoURL?: string; displayName?: string } = {};
+      if ('photoURL' in updates) {
+        authUpdates.photoURL = updates.photoURL ?? undefined;
+      }
+      if ('nickname' in updates && updates.nickname) {
+        authUpdates.displayName = updates.nickname;
+      }
+      if (Object.keys(authUpdates).length > 0) {
+        await updateProfile(currentUser, authUpdates);
+        logger.info('Firebase Auth 프로필 업데이트', {
+          uid,
+          fields: Object.keys(authUpdates),
+        });
       }
     }
 
@@ -1535,7 +1533,7 @@ export async function registerAsEmployer(): Promise<UserProfile> {
 export async function updateProfilePhotoURL(uid: string, photoURL: string | null): Promise<void> {
   const currentUser = requireCurrentUser();
   if (uid !== currentUser.uid) {
-    throw new AuthError(ERROR_CODES.AUTH_SESSION_EXPIRED, {
+    throw new PermissionError(ERROR_CODES.SECURITY_UNAUTHORIZED_ACCESS, {
       userMessage: '권한이 없습니다',
     });
   }
@@ -1547,14 +1545,33 @@ export async function updateProfilePhotoURL(uid: string, photoURL: string | null
     });
   }
 
+  const previousPhotoURL = currentUser.photoURL;
+
   try {
     logger.info('프로필 사진 업데이트', { uid });
 
     // 1. Firebase Auth 프로필 업데이트
     await updateProfile(currentUser, { photoURL });
 
-    // 2. Firestore 사용자 문서 업데이트
-    await userRepository.updateFields(uid, { photoURL: photoURL ?? null });
+    // 2. Firestore 사용자 문서 업데이트 (실패 시 Auth 롤백)
+    try {
+      await userRepository.updateFields(uid, { photoURL: photoURL ?? null });
+    } catch (firestoreError) {
+      logger.warn('Firestore 프로필 사진 업데이트 실패 - Auth 롤백 시도', {
+        uid,
+        error: firestoreError instanceof Error ? firestoreError.message : String(firestoreError),
+      });
+      try {
+        await updateProfile(currentUser, { photoURL: previousPhotoURL });
+        logger.info('Auth 프로필 사진 롤백 완료', { uid });
+      } catch (rollbackError) {
+        logger.error('Auth 프로필 사진 롤백 실패 - 수동 복구 필요', {
+          uid,
+          error: rollbackError instanceof Error ? rollbackError.message : String(rollbackError),
+        });
+      }
+      throw firestoreError;
+    }
 
     logger.info('프로필 사진 업데이트 성공', { uid });
   } catch (error) {

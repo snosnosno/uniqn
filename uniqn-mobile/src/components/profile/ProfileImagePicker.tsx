@@ -116,10 +116,9 @@ export function ProfileImagePicker({
         // 2. 프로필 URL null로 업데이트
         await updateProfilePhotoURL(user.uid, null);
 
-        // 3. 로컬 상태 업데이트
-        // Note: Firestore에는 null로 전송 (updateProfilePhotoURL), Store에는 undefined (UserProfile 타입)
+        // 3. 로컬 상태 업데이트 (Firestore와 동일하게 null)
         if (profile) {
-          setProfile({ ...profile, photoURL: undefined });
+          setProfile({ ...profile, photoURL: null });
         }
 
         addToast({ type: 'success', message: '프로필 사진이 삭제되었습니다' });

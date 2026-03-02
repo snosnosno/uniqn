@@ -18,7 +18,6 @@ import { workLogRepository } from '@/repositories';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 import type { CreateReviewInput, ReviewerType } from '@/types/review';
 import type { ScheduleEvent, WorkLog } from '@/types';
-import type { Timestamp } from 'firebase/firestore';
 import type { CreateReviewContext, ReviewPaginationCursor } from '@/repositories';
 
 // ============================================================================
@@ -35,7 +34,8 @@ export function useWorkLogReviews(workLogId: string | undefined, myReviewerType:
   const currentUserId = useAuthStore((s) => s.profile?.uid);
   return useQuery({
     queryKey: [...queryKeys.reviews.byWorkLog(workLogId ?? ''), myReviewerType, currentUserId],
-    queryFn: () => reviewService.getReviewsWithBlindCheck(workLogId!, myReviewerType, currentUserId!),
+    queryFn: () =>
+      reviewService.getReviewsWithBlindCheck(workLogId!, myReviewerType, currentUserId!),
     enabled: !!workLogId && !!currentUserId,
     staleTime: queryCachingOptions.reviews.staleTime,
     gcTime: queryCachingOptions.reviews.gcTime,
@@ -138,7 +138,7 @@ function toBaseTime(checkOutTime: unknown, fallbackDate: string): number {
   if (checkOutTime) {
     if (checkOutTime instanceof Date) return checkOutTime.getTime();
     if (typeof checkOutTime === 'string') return new Date(checkOutTime).getTime();
-    return (checkOutTime as Timestamp).toDate().getTime();
+    return (checkOutTime as { toDate(): Date }).toDate().getTime();
   }
   return new Date(fallbackDate).getTime();
 }
@@ -215,9 +215,7 @@ export function usePendingReviews() {
   const pendingReviews = useMemo(() => {
     const givenReviews = givenPage?.items ?? [];
     // givenReviews를 ${workLogId}_${reviewerType} 키로 관리 — 역할별 중복 체크
-    const givenSet = new Set(
-      givenReviews.map((r) => `${r.workLogId}_${r.reviewerType}`)
-    );
+    const givenSet = new Set(givenReviews.map((r) => `${r.workLogId}_${r.reviewerType}`));
 
     const items: PendingReviewItem[] = [];
 

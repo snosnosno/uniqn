@@ -7,7 +7,7 @@
 
 import { z } from 'zod';
 import { passwordSchema, passwordConfirmSchema } from './auth.schema';
-import { xssValidation } from '@/utils/security';
+import { xssValidation, isSafeUrl } from '@/utils/security';
 
 // ============================================================================
 // 사용자 역할 스키마
@@ -49,8 +49,14 @@ export const updateProfileSchema = z.object({
     .min(2, { message: '닉네임은 최소 2자 이상이어야 합니다' })
     .max(15, { message: '닉네임은 15자를 초과할 수 없습니다' })
     .trim()
+    .refine(xssValidation, { message: '위험한 문자열이 포함되어 있습니다' })
     .optional(),
-  photoURL: z.string().url({ message: '올바른 URL 형식이 아닙니다' }).optional(),
+  photoURL: z
+    .string()
+    .url({ message: '올바른 URL 형식이 아닙니다' })
+    .refine((url) => isSafeUrl(url), { message: '허용되지 않는 URL 형식입니다' })
+    .nullable()
+    .optional(),
   // 추가 정보 (본인인증 정보가 아닌 필드만)
   region: z
     .string()

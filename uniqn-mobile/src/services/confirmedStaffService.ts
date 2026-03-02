@@ -21,6 +21,7 @@ import type { Unsubscribe } from 'firebase/firestore';
 import { logger } from '@/utils/logger';
 import { toError } from '@/errors';
 import { confirmedStaffRepository, userRepository } from '@/repositories';
+import { requireCurrentUser } from './authService';
 import {
   workLogToConfirmedStaff,
   groupStaffByDate,
@@ -248,9 +249,10 @@ export async function deleteConfirmedStaff(input: DeleteConfirmedStaffInput): Pr
  * @description 스태프 노쇼 상태로 변경
  */
 export async function markAsNoShow(workLogId: string, reason?: string): Promise<void> {
+  const currentUser = requireCurrentUser();
   logger.info('노쇼 처리', { workLogId, reason });
 
-  await confirmedStaffRepository.markAsNoShow({ workLogId, reason });
+  await confirmedStaffRepository.markAsNoShow({ workLogId, ownerId: currentUser.uid, reason });
 
   logger.info('노쇼 처리 완료', { workLogId });
 }
@@ -264,9 +266,10 @@ export async function updateStaffStatus(
   workLogId: string,
   status: ConfirmedStaffStatus
 ): Promise<void> {
+  const currentUser = requireCurrentUser();
   logger.info('스태프 상태 변경', { workLogId, status });
 
-  await confirmedStaffRepository.updateStatus(workLogId, status);
+  await confirmedStaffRepository.updateStatus({ workLogId, ownerId: currentUser.uid, status });
 
   logger.info('스태프 상태 변경 완료', { workLogId, status });
 }

@@ -52,6 +52,8 @@ export type {
   ApplyContext,
   ConfirmWithHistoryResult,
   CancelConfirmationResult,
+  ConversionResult,
+  ConversionOptions,
   // JobPosting
   IJobPostingRepository,
   PaginatedJobPostings,
@@ -94,6 +96,7 @@ export type {
   UpdateConfirmedStaffWorkTimeContext,
   DeleteConfirmedStaffContext,
   MarkNoShowContext,
+  UpdateStaffStatusContext,
   ConfirmedStaffSubscriptionCallbacks,
   // Announcement
   IAnnouncementRepository,

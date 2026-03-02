@@ -35,7 +35,7 @@ export function toStoreProfile(profile: {
   nickname?: string;
   phone?: string;
   role: string;
-  photoURL?: string;
+  photoURL?: string | null;
   phoneVerified?: boolean;
   birthDate?: string;
   gender?: 'male' | 'female';
@@ -50,6 +50,19 @@ export function toStoreProfile(profile: {
   isActive?: boolean;
   createdAt: unknown;
   updatedAt: unknown;
+  employerAgreements?: {
+    termsAgreedAt: unknown;
+    liabilityWaiverAgreedAt: unknown;
+  };
+  employerRegisteredAt?: unknown;
+  bubbleScore?: {
+    score: number;
+    totalReviewCount: number;
+    positiveCount: number;
+    neutralCount: number;
+    negativeCount: number;
+    lastUpdatedAt: unknown;
+  };
 }): UserProfile {
   return {
     uid: profile.uid,
@@ -73,5 +86,20 @@ export function toStoreProfile(profile: {
     isActive: profile.isActive,
     createdAt: toDate(profile.createdAt),
     updatedAt: toDate(profile.updatedAt),
+    employerAgreements: profile.employerAgreements
+      ? {
+          termsAgreedAt: toDate(profile.employerAgreements.termsAgreedAt),
+          liabilityWaiverAgreedAt: toDate(profile.employerAgreements.liabilityWaiverAgreedAt),
+        }
+      : undefined,
+    employerRegisteredAt: profile.employerRegisteredAt
+      ? toDate(profile.employerRegisteredAt)
+      : undefined,
+    bubbleScore: profile.bubbleScore
+      ? {
+          ...profile.bubbleScore,
+          lastUpdatedAt: toDate(profile.bubbleScore.lastUpdatedAt),
+        }
+      : undefined,
   };
 }

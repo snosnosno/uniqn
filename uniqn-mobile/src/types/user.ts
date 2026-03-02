@@ -44,8 +44,8 @@ export interface UserProfile<T = Date> {
   phone?: string;
   /** 사용자 역할 */
   role: UserRole;
-  /** 프로필 사진 URL */
-  photoURL?: string;
+  /** 프로필 사진 URL (삭제 시 null) */
+  photoURL?: string | null;
 
   // 전화번호 인증 (Firebase Phone Auth)
   /** 전화번호 인증 완료 여부 */

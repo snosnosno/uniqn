@@ -21,6 +21,7 @@ import * as admin from "firebase-admin";
 import { requireAuth } from "../errors/validators";
 import { ValidationError, ERROR_CODES } from "../errors/AppError";
 import { handleFunctionError } from "../errors/errorHandler";
+import { withCallableGuard } from "../middleware/callableGuard";
 import { toE164, maskPhone, isValidKoreanPhone } from "../utils/phone";
 import { hasXSSPattern, isValidEmail } from "../utils/security";
 
@@ -138,7 +139,16 @@ function validateOptionalString(
 
 export const verifyAndSaveProfile = onCall(
   { region: "asia-northeast3" },
-  async (request) => {
+  (request) =>
+    withCallableGuard(request, {
+      operation: "verifyAndSaveProfile",
+      rateLimit: {
+        maxRequests: 3,
+        authenticatedMaxRequests: 5,
+        keyPrefix: "ratelimit:verify-profile",
+      },
+      requireRecaptcha: false,
+    }, async (request) => {
     try {
       const uid = requireAuth(request);
       const data = request.data as VerifyAndSaveProfileData;
@@ -485,5 +495,5 @@ export const verifyAndSaveProfile = onCall(
         },
       });
     }
-  },
+  }),
 );

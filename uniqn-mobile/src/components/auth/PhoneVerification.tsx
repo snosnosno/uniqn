@@ -378,6 +378,15 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           setError('인증 세션이 만료되었습니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
           return;
         }
+        // Native만 인증됨 — 이후 CF 호출 시 Web SDK 인증 토큰 부재로 실패
+        if (nativeUser && !webUser) {
+          logger.warn('link 모드 SMS 요청 실패: Native SDK만 인증됨 (Web SDK 없음)', {
+            platform: Platform.OS,
+            nativeUid: nativeUser.uid,
+          });
+          setError('인증 상태가 불완전합니다. 앱을 종료하고 다시 소셜 로그인해주세요.');
+          return;
+        }
       }
 
       setIsLoading(true);
@@ -438,7 +447,7 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
         }
         setTimer(RESEND_COOLDOWN);
         setOtpCode('');
-        setOtpAttempts(0); // 재발송 시 시도 횟수 초기화
+        // OTP 시도 횟수 유지 (재발송 시 리셋하지 않음 — 세션 내 브루트포스 방지)
       } catch (err) {
         // reCAPTCHA 정리
         if (Platform.OS === 'web') {
@@ -508,6 +517,20 @@ export const PhoneVerification: React.FC<PhoneVerificationProps> = React.memo(
           const vid = verificationIdRef.current;
           if (!vid) {
             throw new Error('인증 세션이 만료되었습니다. 인증번호를 다시 요청해주세요.');
+          }
+
+          // TOCTOU 방지: link 직전 전화번호 중복 재검증
+          // signIn 모드는 이미 phone-only 계정을 보유하므로 재검증 불가 (CF Transaction이 최종 보호)
+          try {
+            const phoneStillAvailable = !(await checkPhoneExists(cleanPhoneNumber(phone)));
+            if (!phoneStillAvailable) {
+              setError('이미 다른 계정에 등록된 전화번호입니다. 다시 확인해주세요.');
+              setIsLoading(false);
+              return;
+            }
+          } catch {
+            // 재검증 실패 시 link 진행 (CF Transaction이 최종 보호)
+            logger.warn('OTP 확인 전 전화번호 재검증 실패 — link 진행');
           }
 
           if (

@@ -60,7 +60,17 @@ export interface DeleteConfirmedStaffContext {
  */
 export interface MarkNoShowContext {
   workLogId: string;
+  ownerId: string;
   reason?: string;
+}
+
+/**
+ * 상태 변경 입력 (Repository용)
+ */
+export interface UpdateStaffStatusContext {
+  workLogId: string;
+  ownerId: string;
+  status: ConfirmedStaffStatus;
 }
 
 // ============================================================================
@@ -150,18 +160,20 @@ export interface IConfirmedStaffRepository {
   deleteWithTransaction(context: DeleteConfirmedStaffContext): Promise<void>;
 
   /**
-   * 노쇼 처리
+   * 노쇼 처리 (트랜잭션)
    *
-   * @description 스태프 노쇼 상태로 변경
+   * @description 스태프 노쇼 상태로 변경 + 공고 소유자 검증
+   * @throws BusinessError 공고 소유자가 아닌 경우
    */
   markAsNoShow(context: MarkNoShowContext): Promise<void>;
 
   /**
-   * 상태 변경
+   * 상태 변경 (트랜잭션)
    *
-   * @description 일반적인 상태 변경
+   * @description 일반적인 상태 변경 + 공고 소유자 검증
+   * @throws BusinessError 공고 소유자가 아닌 경우
    */
-  updateStatus(workLogId: string, status: ConfirmedStaffStatus): Promise<void>;
+  updateStatus(context: UpdateStaffStatusContext): Promise<void>;
 
   // ==========================================================================
   // Real-time Subscription

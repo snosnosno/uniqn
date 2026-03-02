@@ -76,6 +76,29 @@ export interface CancelConfirmationResult {
 }
 
 /**
+ * 지원자→스태프 변환 결과
+ */
+export interface ConversionResult {
+  applicationId: string;
+  staffId: string;
+  workLogIds: string[];
+  isNewStaff: boolean;
+  message: string;
+}
+
+/**
+ * 지원자→스태프 변환 옵션
+ */
+export interface ConversionOptions {
+  /** 이미 스태프인 경우 건너뛰기 (기본: false, 에러 발생) */
+  skipExisting?: boolean;
+  /** WorkLog 생성 여부 (기본: true) */
+  createWorkLogs?: boolean;
+  /** 변환 메모 */
+  notes?: string;
+}
+
+/**
  * 실시간 구독 콜백
  */
 export interface SubscribeCallbacks {
@@ -319,6 +342,47 @@ export interface IApplicationRepository {
     ownerId: string,
     cancelReason?: string
   ): Promise<CancelConfirmationResult>;
+
+  // ==========================================================================
+  // Conversion Transactions (지원자 → 스태프 변환)
+  // ==========================================================================
+
+  /**
+   * 지원자를 스태프로 변환 (트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 지원서/공고 상태 확인 + 권한 검증
+   * 2. 스태프 중복 확인 (pre-fetch + 트랜잭션 내 재검증)
+   * 3. Staff 문서 생성/업데이트
+   * 4. Assignment별 WorkLog 생성
+   * 5. 지원서 상태를 completed로 변경
+   */
+  convertApplicantToStaffTransaction(
+    applicationId: string,
+    jobPostingId: string,
+    managerId: string,
+    options?: ConversionOptions
+  ): Promise<ConversionResult>;
+
+  /**
+   * 스태프 변환 취소 (롤백 트랜잭션)
+   *
+   * 원자적으로 처리되는 작업:
+   * 1. 지원서/공고 읽기 + 권한 확인
+   * 2. 관련 WorkLog cancelled 처리 (scheduled 상태만)
+   * 3. 지원서 상태를 confirmed로 복원
+   */
+  revertStaffConversionTransaction(applicationId: string, managerId: string): Promise<void>;
+
+  /**
+   * 스태프 존재 여부 확인
+   */
+  isAlreadyStaff(userId: string, jobPostingId?: string): Promise<boolean>;
+
+  /**
+   * 변환 가능 여부 확인
+   */
+  canConvertToStaff(applicationId: string): Promise<{ canConvert: boolean; reason?: string }>;
 
   // ==========================================================================
   // 구인자 전용 (Employer)
