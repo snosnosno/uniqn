@@ -12,7 +12,7 @@ import { View, Text, Pressable, ActivityIndicator } from 'react-native';
 import QRCode from 'react-native-qrcode-svg';
 import { Modal, Button } from '@/components/ui';
 import { RefreshIcon, ClockIcon, CheckCircleIcon } from '@/components/icons';
-import { stringifyQRData } from '@/services/eventQRService';
+import { stringifyQRData } from '@/services/work/eventQRService';
 import type { QRCodeAction, EventQRDisplayData } from '@/types';
 
 // ============================================================================

@@ -15,7 +15,7 @@ import {
   isCurrentlyWorking,
   getWorkLogStats,
   getMonthlyPayroll,
-} from '@/services/workLogService';
+} from '@/services/work/workLogService';
 import { useAuthStore } from '@/stores/authStore';
 import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
 

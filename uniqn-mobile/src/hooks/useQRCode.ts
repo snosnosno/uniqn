@@ -8,7 +8,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { processEventQRCheckIn } from '@/services/eventQRService';
+import { processEventQRCheckIn } from '@/services/work/eventQRService';
 import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { queryClient, queryKeys } from '@/lib/queryClient';

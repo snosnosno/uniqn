@@ -14,7 +14,7 @@ import { useQRCodeScanner, useQRScannerModal, useQRDisplayModal } from '@/hooks/
 // Mock eventQRService
 const mockProcessEventQRCheckIn = jest.fn();
 
-jest.mock('@/services/eventQRService', () => ({
+jest.mock('@/services/work/eventQRService', () => ({
   processEventQRCheckIn: (...args: unknown[]) => mockProcessEventQRCheckIn(...args),
 }));
 

@@ -25,7 +25,7 @@ const mockSubscribeToSchedules = jest.fn();
 const mockGroupSchedulesByDate = jest.fn();
 const mockGetCalendarMarkedDates = jest.fn();
 
-jest.mock('@/services/scheduleService', () => ({
+jest.mock('@/services/work/scheduleService', () => ({
   getMySchedules: (...args: unknown[]) => mockGetMySchedules(...args),
   getSchedulesByMonth: (...args: unknown[]) => mockGetSchedulesByMonth(...args),
   getSchedulesByDate: (...args: unknown[]) => mockGetSchedulesByDate(...args),

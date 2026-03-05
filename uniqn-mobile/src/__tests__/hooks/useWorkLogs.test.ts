@@ -44,7 +44,7 @@ const mockIsCurrentlyWorking = jest.fn();
 const mockGetWorkLogStats = jest.fn();
 const mockGetMonthlyPayroll = jest.fn();
 
-jest.mock('@/services/workLogService', () => ({
+jest.mock('@/services/work/workLogService', () => ({
   getMyWorkLogs: (...args: unknown[]) => mockGetMyWorkLogs(...args),
   getWorkLogsByDate: (...args: unknown[]) => mockGetWorkLogsByDate(...args),
   getWorkLogById: (...args: unknown[]) => mockGetWorkLogById(...args),

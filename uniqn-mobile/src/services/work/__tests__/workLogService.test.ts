@@ -90,7 +90,7 @@ jest.mock('@/shared/realtime', () => ({
   },
 }));
 
-jest.mock('../observability/analyticsService', () => ({
+jest.mock('../../observability/analyticsService', () => ({
   trackSettlementComplete: jest.fn(),
 }));
 
@@ -114,7 +114,7 @@ import {
 } from '../workLogService';
 import { workLogRepository } from '@/repositories';
 import { handleServiceError } from '@/errors/serviceErrorHandler';
-import { trackSettlementComplete } from '../observability/analyticsService';
+import { trackSettlementComplete } from '../../observability/analyticsService';
 import type { WorkLog } from '@/types';
 
 // Get typed mock references

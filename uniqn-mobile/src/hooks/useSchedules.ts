@@ -18,7 +18,7 @@ import {
   subscribeToSchedules,
   groupSchedulesByDate,
   getCalendarMarkedDates,
-} from '@/services/scheduleService';
+} from '@/services/work/scheduleService';
 import { useAuthStore } from '@/stores/authStore';
 import { queryKeys, cachingPolicies, queryCachingOptions } from '@/lib/queryClient';
 import { logger } from '@/utils/logger';

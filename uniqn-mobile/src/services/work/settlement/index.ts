@@ -5,8 +5,8 @@
  * @version 1.0.0
  *
  * 기존 import 경로 호환성 유지:
- * - import { getWorkLogsByJobPosting } from '@/services/settlementService'
- * - import { getWorkLogsByJobPosting } from '@/services/settlement'
+ * - import { getWorkLogsByJobPosting } from '@/services/work/settlement'
+ * - import { getWorkLogsByJobPosting } from '@/services/work'
  * - import { getWorkLogsByJobPosting } from '@/services'
  */
 

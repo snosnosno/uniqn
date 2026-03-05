@@ -12,7 +12,7 @@ import {
   createCheckedInSchedule,
   createCompletedSchedule,
   resetCounters,
-} from '../mocks/factories';
+} from '../../../__tests__/mocks/factories';
 
 // Import after mocks
 import {
@@ -26,7 +26,7 @@ import {
   getUpcomingSchedules,
   subscribeToSchedules,
   getScheduleStats,
-} from '@/services/scheduleService';
+} from '@/services/work/scheduleService';
 import type { ScheduleEvent } from '@/types';
 
 // Mock Firebase

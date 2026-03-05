@@ -10,67 +10,11 @@ export * from './auth';
 // Jobs Domain (job, application, applicantManagement, applicantConversion, jobManagement, template, search)
 export * from './jobs';
 
-// Schedule Service
-export {
-  getMySchedules,
-  getSchedulesByDate,
-  getSchedulesByMonth,
-  getScheduleById,
-  getTodaySchedules,
-  getUpcomingSchedules,
-  getScheduleStats,
-  subscribeToSchedules,
-  groupSchedulesByDate,
-  getCalendarMarkedDates,
-  type ScheduleQueryResult,
-} from './scheduleService';
-
-// Work Log Service
-export {
-  getMyWorkLogs,
-  getWorkLogsByDate,
-  getWorkLogById,
-  getTodayCheckedInWorkLog,
-  isCurrentlyWorking,
-  getWorkLogStats,
-  getMonthlyPayroll,
-  updateWorkTime,
-  updatePayrollStatus,
-  type WorkLogStats,
-} from './workLogService';
-// @deprecated checkIn, checkOut 함수 제거됨 - eventQRService.processEventQRCheckIn 사용
-// @deprecated QR Code Service가 삭제되었습니다.
-// Event QR 시스템을 사용하세요: eventQRService의 generateEventQR, validateEventQR 등
-// QR 관련 타입은 @/types에서 import: QRCodeAction, EventQRCode, EventQRDisplayData 등
+// Work Domain (schedule, workLog, confirmedStaff, eventQR, settlement)
+export * from './work';
 
 // Notifications Domain (notification, push, sync, inApp)
 export * from './notifications';
-
-// ============================================================================
-// 구인자용 서비스 (Employer Services)
-// ============================================================================
-
-// Settlement Service (구인자용 정산 관리) - Phase 3 분할 완료
-export {
-  getWorkLogsByJobPosting,
-  calculateSettlement,
-  updateWorkTimeForSettlement,
-  settleWorkLog,
-  bulkSettlement,
-  updateSettlementStatus,
-  getJobPostingSettlementSummary,
-  getMySettlementSummary,
-  type SettlementWorkLog,
-  type CalculateSettlementInput,
-  type SettlementCalculation,
-  type SettleWorkLogInput,
-  type BulkSettlementInput,
-  type SettlementResult,
-  type BulkSettlementResult,
-  type JobPostingSettlementSummary,
-  type UpdateWorkTimeInput,
-  type SettlementFilters,
-} from './settlement';
 
 // ============================================================================
 // Observability (분석/모니터링/세션)
@@ -87,33 +31,6 @@ export {
   isEmployerOnlyNotification,
   type NavigationContext,
 } from '@/shared/deeplink';
-
-// Confirmed Staff Service (구인자용 확정 스태프 관리)
-export {
-  getConfirmedStaff,
-  getConfirmedStaffByDate,
-  updateStaffRole,
-  updateWorkTime as updateConfirmedStaffWorkTime,
-  deleteConfirmedStaff,
-  markAsNoShow,
-  updateStaffStatus,
-  subscribeToConfirmedStaff,
-  type GetConfirmedStaffResult,
-} from './confirmedStaffService';
-
-// Event QR Service (구인자용 현장 출퇴근 QR)
-// 타입은 @/types에서 import하세요: EventQRCode, EventQRDisplayData, etc.
-export {
-  generateEventQR,
-  validateEventQR,
-  processEventQRCheckIn,
-  getActiveEventQR,
-  deactivateEventQR,
-  cleanupExpiredQRCodes,
-  getQRRemainingSeconds,
-  stringifyQRData,
-  QR_REFRESH_INTERVAL_MS,
-} from './eventQRService';
 
 // ============================================================================
 // 관리자 서비스 (Admin Services)

@@ -13,7 +13,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { useToastStore } from '@/stores/toastStore';
 import { errorHandlerPresets } from '@/shared/errors/hookErrorHandler';
 import * as reviewService from '@/services/reviewService';
-import { getMySchedules } from '@/services/scheduleService';
+import { getMySchedules } from '@/services/work/scheduleService';
 import { workLogRepository, jobPostingRepository } from '@/repositories';
 import { REVIEW_DEADLINE_DAYS } from '@/types/review';
 import type { CreateReviewInput, ReviewerType } from '@/types/review';

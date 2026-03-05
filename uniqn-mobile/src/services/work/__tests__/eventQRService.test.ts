@@ -175,7 +175,7 @@ import {
   getQRRemainingSeconds,
   stringifyQRData,
   QR_REFRESH_INTERVAL_MS,
-} from '@/services/eventQRService';
+} from '@/services/work/eventQRService';
 import type { EventQRDisplayData } from '@/types';
 import { STATUS } from '@/constants';
 

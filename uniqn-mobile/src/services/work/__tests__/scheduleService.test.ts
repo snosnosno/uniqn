@@ -181,7 +181,7 @@ import {
   getScheduleStats,
   groupSchedulesByDate,
   getCalendarMarkedDates,
-} from '@/services/scheduleService';
+} from '@/services/work/scheduleService';
 import { STATUS } from '@/constants';
 import { Timestamp } from 'firebase/firestore';
 
